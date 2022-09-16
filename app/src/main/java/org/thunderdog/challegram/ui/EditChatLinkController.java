@@ -275,12 +275,21 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
     tdlib.client().send(
       isCreation ? new TdApi.CreateChatInviteLink(getArgumentsStrict().chatId, linkName, actualExpireDate, createsJoinRequest ? 0 : memberLimit, createsJoinRequest) : new TdApi.EditChatInviteLink(getArgumentsStrict().chatId, getArgumentsStrict().existingInviteLink.inviteLink, linkName, actualExpireDate, createsJoinRequest ? 0 : memberLimit, createsJoinRequest), result -> {
         runOnUiThreadOptional(() -> {
-          if (result.getConstructor() == TdApi.ChatInviteLink.CONSTRUCTOR) {
-            getArgumentsStrict().controller.onLinkCreated((TdApi.ChatInviteLink) result, getArgumentsStrict().existingInviteLink);
-            navigateBack();
-          } else if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
-            UI.showError(result);
-            setDoneInProgress(false);
+          switch (result.getConstructor()) {
+            case TdApi.ChatInviteLink.CONSTRUCTOR: {
+              if (getArgumentsStrict().controller != null) {
+                getArgumentsStrict().controller.onLinkCreated((TdApi.ChatInviteLink) result, getArgumentsStrict().existingInviteLink);
+              } else {
+                // TODO: properly handle entering from Recent Actions
+              }
+              navigateBack();
+              break;
+            }
+            case TdApi.Error.CONSTRUCTOR: {
+              UI.showError(result); // TODO show as tooltip
+              setDoneInProgress(false);
+              break;
+            }
           }
         });
       });
@@ -409,9 +418,11 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
     @Nullable
     public final TdApi.ChatInviteLink existingInviteLink;
     public final long chatId;
+
+    @Nullable
     public final ChatLinksController controller;
 
-    public Args (@Nullable TdApi.ChatInviteLink existingInviteLink, long chatId, ChatLinksController controller) {
+    public Args (@Nullable TdApi.ChatInviteLink existingInviteLink, long chatId, @Nullable ChatLinksController controller) {
       this.existingInviteLink = existingInviteLink;
       this.chatId = chatId;
       this.controller = controller;

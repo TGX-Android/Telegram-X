@@ -81,8 +81,8 @@ public class ForceTouchView extends FrameLayoutFix implements
   PopupLayout.AnimatedPopupProvider, FactorAnimator.Target,
   ChatListener, NotificationSettingsListener, TdlibCache.UserDataChangeListener, TdlibCache.SupergroupDataChangeListener, TdlibCache.BasicGroupDataChangeListener, ThemeChangeListener, TdlibCache.UserStatusChangeListener, SensitiveContentContainer {
   private ForceTouchContext forceTouchContext;
-  private RelativeLayout contentWrap;
-  private View backgroundView;
+  private final RelativeLayout contentWrap;
+  private final View backgroundView;
 
   public interface StateListener {
     void onPrepareToExitForceTouch (ForceTouchContext context);

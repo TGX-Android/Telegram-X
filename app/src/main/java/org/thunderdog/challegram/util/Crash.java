@@ -152,7 +152,7 @@ public class Crash {
   }
 
   public boolean shouldShowAtApplicationStart () {
-    if (appVersionCode != BuildConfig.VERSION_CODE || BitwiseUtils.getFlag(flags, Flags.RESOLVED)) {
+    if (appVersionCode != BuildConfig.ORIGINAL_VERSION_CODE || BitwiseUtils.getFlag(flags, Flags.RESOLVED)) {
       // User has installed a new APK or pressed "Launch App". Forgetting the last error.
       return false;
     }

@@ -38,6 +38,7 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Size;
+import org.thunderdog.challegram.util.CharacterStyleFilter;
 import org.thunderdog.challegram.v.HeaderEditText;
 
 import me.vkryl.android.ViewUtils;
@@ -85,7 +86,10 @@ public class EditHeaderView extends FrameLayoutFix implements RtlCheckListener, 
     input.addTextChangedListener(this);
     input.checkRtl();
     input.setLayoutParams(params);
-    input.setFilters(new InputFilter[] {new CodePointCountFilter(TdConstants.MAX_CHAT_TITLE_LENGTH)});
+    input.setFilters(new InputFilter[] {
+      new CodePointCountFilter(TdConstants.MAX_CHAT_TITLE_LENGTH),
+      new CharacterStyleFilter()
+    });
     addView(input);
   }
 

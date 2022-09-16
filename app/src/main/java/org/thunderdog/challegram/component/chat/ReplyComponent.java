@@ -29,11 +29,13 @@ import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.MediaWrapper;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
+import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageFileLocal;
@@ -50,6 +52,7 @@ import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextEntity;
+import org.thunderdog.challegram.util.text.TextMedia;
 import org.thunderdog.challegram.util.text.TextStyleProvider;
 
 import me.vkryl.android.util.SingleViewProvider;
@@ -59,7 +62,7 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.Td;
 
-public class ReplyComponent implements Client.ResultHandler, Runnable, Destroyable {
+public class ReplyComponent implements Client.ResultHandler, Destroyable {
   private static final int FLAG_ALLOW_TOUCH_EVENTS = 1 << 1;
   private static final int FLAG_FORCE_TITLE = 1 << 3;
   private static final int FLAG_LOADING = 1 << 4;
@@ -87,7 +90,6 @@ public class ReplyComponent implements Client.ResultHandler, Runnable, Destroyab
 
   private Text trimmedTitle, trimmedContent;
 
-  private View currentView;
   private ViewProvider viewProvider;
 
   public ReplyComponent (@NonNull Tdlib tdlib) {
@@ -144,7 +146,7 @@ public class ReplyComponent implements Client.ResultHandler, Runnable, Destroyab
   }
 
   public void setCurrentView (@Nullable View view) {
-    this.currentView = view;
+    setViewProvider(new SingleViewProvider(view));
   }
 
   public void setViewProvider (@Nullable ViewProvider viewProvider) {
@@ -152,40 +154,14 @@ public class ReplyComponent implements Client.ResultHandler, Runnable, Destroyab
   }
 
   public void invalidate (boolean requestImage) {
-    if (requestImage) {
-      UI.post(this);
-    } else {
-      if (currentView != null) {
-        UI.invalidate(currentView);
-      } else if (viewProvider != null) {
-        viewProvider.postInvalidate();
-      }
+    if (!UI.inUiThread()) {
+      UI.post(() -> invalidate(requestImage));
+      return;
     }
-  }
-
-  @Override
-  public void run () {
-    if (currentView != null) {
-      currentView.invalidate();
-      if (parent != null) {
-        View view = currentView;
-        if (view instanceof MessageViewGroup) {
-          view = ((MessageViewGroup) currentView).getMessageView();
-        }
-        if (view instanceof MessageView) {
-          ((MessageView) view).invalidateReplyReceiver();
-        }
-      }
-
-      if (currentView instanceof ReplyView) {
-        ((ReplyView) currentView).invalidateReceiver();
-      }
-    } else if (viewProvider != null) {
-      viewProvider.invalidate();
-      if (isMessageComponent()) {
-        parent.invalidateReplyReceiver();
-      }
+    if (requestImage || (trimmedContent != null && trimmedContent.hasMedia())) {
+      viewProvider.invalidateContent(this);
     }
+    viewProvider.invalidate();
   }
   
   private boolean isMessageComponent () {
@@ -254,8 +230,26 @@ public class ReplyComponent implements Client.ResultHandler, Runnable, Destroyab
       .singleLine()
       .textFlags(Text.FLAG_CUSTOM_LONG_PRESS)
       .ignoreNewLines().ignoreContinuousNewLines()
-      .entities(content != null && !Td.isEmpty(content.formattedText) ? TextEntity.valueOf(tdlib, content.formattedText.text, content.formattedText.entities, null) : null)
-      .viewProvider(viewProvider != null ? viewProvider : currentView != null ? new SingleViewProvider(currentView) : null)
+      .entities(
+        content != null && !Td.isEmpty(content.formattedText) ? TextEntity.valueOf(tdlib, content.formattedText.text, content.formattedText.entities, null) : null,
+        (text, specificMedia) -> {
+          if (isMessageComponent()) {
+            parent.invalidateReplyTextMediaReceiver(text, specificMedia);
+          } else {
+            viewProvider.performWithViews((view) -> {
+              if (view instanceof ReplyView) {
+                ComplexReceiver receiver = ((ReplyView) view).getTextMediaReceiver();
+                if (!text.invalidateMediaContent(receiver, specificMedia)) {
+                  requestTextContent(receiver);
+                }
+              } else {
+                throw new UnsupportedOperationException();
+              }
+            });
+          }
+        }
+      )
+      .viewProvider(viewProvider)
       .build();
 
     if (Looper.myLooper() == Looper.getMainLooper()) {
@@ -266,12 +260,24 @@ public class ReplyComponent implements Client.ResultHandler, Runnable, Destroyab
         ReplyComponent.this.trimmedContent = __trimmedContent;
       });
     }
+    if (trimmedContent.hasMedia()) {
+      invalidate(true);
+    }
   }
 
-  public void requestPreview (DoubleImageReceiver receiver) {
+  public void requestTextContent (ComplexReceiver textMediaReceiver) {
+    if (trimmedContent != null) {
+      trimmedContent.requestMedia(textMediaReceiver);
+    } else {
+      textMediaReceiver.clear();
+    }
+  }
+
+  public void requestPreview (DoubleImageReceiver receiver, ComplexReceiver textMediaReceiver) {
     int imageHeight = isMessageComponent() ? mHeight : height;
     receiver.setRadius(previewCircle ? imageHeight / 2 : 0);
     receiver.requestFile(miniThumbnail, preview);
+    requestTextContent(textMediaReceiver);
   }
 
   private Path path;
@@ -362,7 +368,7 @@ public class ReplyComponent implements Client.ResultHandler, Runnable, Destroyab
     };
   }
 
-  public void draw (Canvas c, int startX, int startY, int endX, int width, Receiver receiver, boolean rtl) {
+  public void draw (Canvas c, int startX, int startY, int endX, int width, Receiver receiver, ComplexReceiver textMediaReceiver, boolean rtl) {
     boolean isWhite = parent != null && parent.separateReplyFromContent();
 
     lastX = startX;
@@ -405,6 +411,9 @@ public class ReplyComponent implements Client.ResultHandler, Runnable, Destroyab
         receiver.drawPlaceholderContour(c, contour);
       }
       receiver.draw(c);
+      if (Config.DEBUG_STICKER_OUTLINES) {
+        receiver.drawPlaceholderContour(c, contour);
+      }
       ViewSupport.restoreClipPath(c, restoreToCount);
     }
 
@@ -416,7 +425,7 @@ public class ReplyComponent implements Client.ResultHandler, Runnable, Destroyab
       }
 
       if (trimmedContent != null) {
-        trimmedContent.draw(c, startX + textLeft, startX + textLeft + trimmedContent.getWidth(), 0, startY + Screen.dp(22f));
+        trimmedContent.draw(c, startX + textLeft, startX + textLeft + trimmedContent.getWidth(), 0, startY + Screen.dp(22f), null, 1f, textMediaReceiver);
       }
 
       if (rtl) {
@@ -436,7 +445,7 @@ public class ReplyComponent implements Client.ResultHandler, Runnable, Destroyab
     }
 
     if (trimmedContent != null) {
-      trimmedContent.draw(c, left, left + trimmedContent.getWidth(), 0, startY + Screen.dp(19f));
+      trimmedContent.draw(c, left, left + trimmedContent.getWidth(), 0, startY + Screen.dp(19f), null, 1f, textMediaReceiver);
     }
 
     Paints.getRectF().set(startX, startY, startX + lineWidth, startY + height);
@@ -619,7 +628,7 @@ public class ReplyComponent implements Client.ResultHandler, Runnable, Destroyab
           return;
         }
         thumbnail = sticker.thumbnail != null ? sticker.thumbnail : TD.toThumbnail(sticker);
-        contour = Td.buildOutline(sticker.outline, Math.min((float) height / (float) sticker.width, (float) height / (float) sticker.height));
+        contour = Td.buildOutline(sticker, isMessageComponent() ? mHeight : height);
         break;
       }
       case TdApi.MessageVideo.CONSTRUCTOR: {
@@ -664,7 +673,7 @@ public class ReplyComponent implements Client.ResultHandler, Runnable, Destroyab
             miniThumbnail = webPage.document.minithumbnail;
           } else if (webPage.sticker != null && webPage.sticker.thumbnail != null) {
             thumbnail = webPage.sticker.thumbnail;
-            contour = Td.buildOutline(webPage.sticker.outline, Math.min((float) height / (float) webPage.sticker.width, (float) height / (float) webPage.sticker.height));
+            contour = Td.buildOutline(webPage.sticker, isMessageComponent() ? mHeight : height);
           } else if (webPage.animation != null && webPage.animation.thumbnail != null) {
             thumbnail = webPage.animation.thumbnail;
             miniThumbnail = webPage.animation.minithumbnail;

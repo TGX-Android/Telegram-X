@@ -197,6 +197,20 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
     pager = new RtlViewPager(context);
     pager.setLayoutParams(params);
     pager.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? View.OVER_SCROLL_IF_CONTENT_SCROLLS : View.OVER_SCROLL_NEVER);
+    pager.addOnPageChangeListener(new androidx.viewpager.widget.ViewPager.OnPageChangeListener() {
+      @Override
+      public void onPageScrolled (int position, float positionOffset, int positionOffsetPixels) {
+        currentPosition = position;
+        currentPositionOffset = positionOffset;
+        context().checkDisallowScreenshots();
+      }
+
+      @Override
+      public void onPageSelected (int position) { }
+
+      @Override
+      public void onPageScrollStateChanged (int state) { }
+    });
     pager.addOnPageChangeListener(this);
     pager.setAdapter(adapter);
     if (!overridePagerParent()) {
@@ -398,6 +412,32 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
     return getCachedControllerForPosition(getCurrentPagerItemPosition());
   }
 
+  private int currentPosition;
+  private float currentPositionOffset;
+
+  @Override
+  public boolean shouldDisallowScreenshots () {
+    if (super.shouldDisallowScreenshots()) {
+      return true;
+    }
+    if (isSearchAntagonistHidden()) {
+      return false;
+    }
+    ViewController<?> controller = getCurrentPagerItem();
+    if (controller != null && controller.shouldDisallowScreenshots()) {
+      return true;
+    }
+    if (currentPositionOffset != 0f) {
+      int targetPosition = currentPosition + (currentPositionOffset > 0f ? 1 : -1);
+      int position = adapter.reversePosition(targetPosition);
+      ViewController<?> otherController = getCachedControllerForPosition(position);
+      if (otherController != null && otherController.shouldDisallowScreenshots()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   protected void setCurrentPagerPosition (int position, boolean animated) {
     if (headerCell != null && animated) {
       headerCell.getTopView().setFromTo(pager.getCurrentItem(), position);
@@ -555,6 +595,9 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
     public Object instantiateItem (@NonNull ViewGroup container, int position) {
       ViewController<?> c = prepareViewController(reversePosition(position));
       container.addView(c.get());
+      if ((position == parent.currentPosition || (parent.currentPositionOffset != 0f && position == parent.currentPosition + (parent.currentPositionOffset > 0f ? 1 : -1))) && c.shouldDisallowScreenshots()) {
+        parent.context().checkDisallowScreenshots();
+      }
       return c;
     }
 

@@ -926,7 +926,7 @@ public class RecordAudioVideoController implements
       return false;
     }
 
-    CharSequence restrictionText = tdlib.getRestrictionText(tdlib.chat(targetChatId), R.id.right_sendMedia, needVideo ? R.string.ChatDisabledVideoNotes : R.string.ChatDisabledVoice, needVideo ? R.string.ChatRestrictedVideoNotes : R.string.ChatRestrictedVoice, needVideo ? R.string.ChatRestrictedVideoNotesUntil : R.string.ChatRestrictedVoiceUntil);
+    CharSequence restrictionText = tdlib.getVoiceVideoRestricitonText(tdlib.chat(targetChatId), needVideo);
     if (restrictionText != null) {
       if (view != null) {
         context.tooltipManager().builder(view).controller(targetController).icon(R.drawable.baseline_warning_24).show(tdlib, restrictionText).hideDelayed();
@@ -1372,7 +1372,7 @@ public class RecordAudioVideoController implements
       throw new IllegalStateException();
     }
     roundKey = "round" + SystemClock.uptimeMillis() + "_" + System.currentTimeMillis() + "_" + Math.random();
-    tdlib.client().send(new TdApi.UploadFile(new TdApi.InputFileGenerated(null, roundKey, 0), ChatId.isSecret(targetChatId) ? new TdApi.FileTypeSecret() : new TdApi.FileTypeVideoNote(), 1), object -> {
+    tdlib.client().send(new TdApi.PreliminaryUploadFile(new TdApi.InputFileGenerated(null, roundKey, 0), ChatId.isSecret(targetChatId) ? new TdApi.FileTypeSecret() : new TdApi.FileTypeVideoNote(), 1), object -> {
       if (object.getConstructor() == TdApi.File.CONSTRUCTOR) {
         setRoundGenerationFile((TdApi.File) object);
       } else {
@@ -1412,7 +1412,7 @@ public class RecordAudioVideoController implements
         tdlib.client().send(new TdApi.FinishFileGeneration(roundGenerationId, new TdApi.Error()), tdlib.silentHandler());
       }
       if (roundFile != null) {
-        tdlib.client().send(new TdApi.CancelUploadFile(roundFile.id), tdlib.silentHandler());
+        tdlib.client().send(new TdApi.CancelPreliminaryUploadFile(roundFile.id), tdlib.silentHandler());
       }
       resetRoundState();
     }
@@ -1446,7 +1446,7 @@ public class RecordAudioVideoController implements
       if (!StringUtils.isEmpty(roundKey) && StringUtils.equalsOrBothEmpty(file.local.path, roundOutputPath)) {
         setRoundFile(file);
       } else {
-        tdlib.client().send(new TdApi.CancelUploadFile(file.id), tdlib.silentHandler());
+        tdlib.client().send(new TdApi.CancelPreliminaryUploadFile(file.id), tdlib.silentHandler());
       }
     });
   }
@@ -1640,7 +1640,7 @@ public class RecordAudioVideoController implements
 
     if (sendOptions != null) {
       if (videoPreviewView.hasTrim()) {
-        tdlib.client().send(new TdApi.CancelUploadFile(roundFile.id), tdlib.okHandler());
+        tdlib.client().send(new TdApi.CancelPreliminaryUploadFile(roundFile.id), tdlib.okHandler());
         double startTimeSeconds = videoPreviewView.getStartTime();
         double endTimeSeconds = videoPreviewView.getEndTime();
         String conversion = VideoGenerationInfo.makeConversion(roundFile.id, false, 0, (long) (startTimeSeconds * 1_000_000), (long) (endTimeSeconds * 1_000_000), true, 0);

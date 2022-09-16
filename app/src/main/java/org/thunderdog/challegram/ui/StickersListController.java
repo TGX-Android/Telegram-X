@@ -35,7 +35,6 @@ import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.TD;
-import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.Menu;
@@ -189,7 +188,7 @@ public class StickersListController extends ViewController<StickersListControlle
   public CharSequence getName () {
     if (info != null) {
       TdApi.TextEntity[] entities = Td.findEntities(info.title);
-      return Emoji.instance().replaceEmoji(TD.formatString(this, info.title, entities, null, null));
+      return TD.formatString(this, info.title, entities, null, null);
     }
     return null;
   }

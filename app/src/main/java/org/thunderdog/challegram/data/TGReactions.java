@@ -237,7 +237,7 @@ public class TGReactions {
     for (TGReactions.MessageReactionEntry entry : reactionsListEntry) {
       Counter counter = entry.counter;
 
-      int bubbleWidth = (int) counter.getTargetWidth() + Screen.dp(36);   // bubble width
+      int bubbleWidth = entry.getBubbleTargetWidth();
       int nextLastLineWidth = lastLineWidth + bubbleWidth + (lastLineWidth > 0 ? padding : 0);
       if (nextLastLineWidth > maxWidth) {
         nextLastLineWidth = bubbleWidth;
@@ -872,6 +872,11 @@ public class TGReactions {
     public int getBubbleWidth () {
       int addW = Screen.dp((TGMessage.reactionsTextStyleProvider().getTextSizeInDp() + 1f) / 3f);
       return (int) (counter.getWidth() + getReactionImageSize() + addW);
+    }
+
+    public int getBubbleTargetWidth () {
+      int addW = Screen.dp((TGMessage.reactionsTextStyleProvider().getTextSizeInDp() + 1f) / 3f);
+      return (int) (counter.getTargetWidth() + getReactionImageSize() + addW);
     }
 
     public int getBubbleHeight () {

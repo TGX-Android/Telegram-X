@@ -57,8 +57,8 @@ public class GifState {
   private static final int FLAG_APPLY_NEXT = 1;
   private static final int FLAG_FROZEN = 1 << 1;
 
-  private int width, height, rotation;
-  private Callback callback;
+  private final int width, height, rotation;
+  private final Callback callback;
   private int flags;
   private final int queueSize;
 
@@ -73,9 +73,9 @@ public class GifState {
   }
 
   public interface Callback {
-    void onDrawNextFrame ();
-    void onApplyNextFrame (long no);
-    boolean onDraw ();
+    void onRequestNextFrame ();
+    void onApplyNextFrame (long frameNo);
+    boolean onDraw (long frameNo);
   }
 
   public interface FrameReader {
@@ -154,8 +154,12 @@ public class GifState {
     free.clear();
   }
 
-  public void setCanApplyNext () {
-    flags |= FLAG_APPLY_NEXT;
+  public boolean setCanApplyNext () {
+    if (!BitwiseUtils.getFlag(flags, FLAG_APPLY_NEXT)) {
+      flags |= FLAG_APPLY_NEXT;
+      return true;
+    }
+    return false;
   }
 
   public void setFrozen (boolean isFrozen) {
@@ -180,7 +184,7 @@ public class GifState {
             }
             free.offer(busy);
           }
-          callback.onDrawNextFrame();
+          callback.onRequestNextFrame();
         }
         flags &= ~FLAG_APPLY_NEXT;
       }
@@ -222,17 +226,17 @@ public class GifState {
     Frame frame = getFrame();
     if (frame != null) {
       if (willDraw) {
-        onDraw();
+        onDraw(frame.no);
       }
       return frame.bitmap;
     }
     return null;
   }
 
-  public void onDraw () {
-    if (callback.onDraw()) {
+  private void onDraw (long frameNo) {
+    if (callback.onDraw(frameNo)) {
       synchronized (busy) {
-        callback.onDrawNextFrame();
+        callback.onRequestNextFrame();
       }
     }
   }

@@ -41,17 +41,15 @@ import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextStyleProvider;
-import org.thunderdog.challegram.widget.PageBlockView;
 
 import java.util.ArrayList;
 
 import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.android.util.ViewProvider;
 import me.vkryl.android.widget.FrameLayoutFix;
-import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.td.Td;
 
-public abstract class PageBlock implements MultipleViewProvider.InvalidateContentProvider {
+public abstract class PageBlock {
   protected final ViewController<?> context;
   protected final TdApi.PageBlock block;
   protected MultipleViewProvider currentViews;
@@ -62,7 +60,6 @@ public abstract class PageBlock implements MultipleViewProvider.InvalidateConten
     this.context = context;
     this.block = block;
     this.currentViews = new MultipleViewProvider();
-    this.currentViews.setContentProvider(this);
   }
 
   public ViewController<?> parent () {
@@ -81,6 +78,10 @@ public abstract class PageBlock implements MultipleViewProvider.InvalidateConten
   public final void setAnchor (String anchor, boolean isBottom) {
     this.anchor = anchor;
     this.anchorIsBottom = isBottom;
+  }
+
+  public boolean belongsToBlock (PageBlock pageBlock) {
+    return pageBlock == this || (pageBlock != null && chatLinkBlock == pageBlock);
   }
 
   public void requestIcons (ComplexReceiver receiver) {
@@ -156,16 +157,6 @@ public abstract class PageBlock implements MultipleViewProvider.InvalidateConten
   public void mergeWith (PageBlock topBlock) {
     mergeTop = true;
     topBlock.mergeBottom = true;
-  }
-
-  @Override
-  public void invalidateContent () {
-    final ReferenceList<View> views = currentViews.getViewsList();
-    for (View view : views) {
-      if (view instanceof PageBlockView) {
-        ((PageBlockView) view).requestFiles(true);
-      }
-    }
   }
 
   public final ViewProvider getViewProvider () {

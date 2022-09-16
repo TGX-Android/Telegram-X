@@ -29,11 +29,13 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGFoundChat;
+import org.thunderdog.challegram.emoji.EmojiFilter;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.util.CharacterStyleFilter;
 import org.thunderdog.challegram.widget.BetterChatView;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 
@@ -169,8 +171,20 @@ public class EditNameController extends EditBaseController<EditNameController.Ar
         )
       );
     }
-    items.add((firstName = new ListItem(items.isEmpty() ? ListItem.TYPE_EDITTEXT : ListItem.TYPE_EDITTEXT_NO_PADDING, R.id.edit_first_name, 0, R.string.login_FirstName).setStringValue(firstNameValue).setInputFilters(new InputFilter[] {new CodePointCountFilter(TdConstants.MAX_NAME_LENGTH) })));
-    items.add((lastName = new ListItem(ListItem.TYPE_EDITTEXT_NO_PADDING, R.id.edit_last_name, 0, mode == MODE_RENAME_CONTACT || mode == MODE_ADD_CONTACT ? R.string.LastName : R.string.login_LastName).setStringValue(lastNameValue).setInputFilters(new InputFilter[] {new CodePointCountFilter(TdConstants.MAX_NAME_LENGTH)}).setOnEditorActionListener(new SimpleEditorActionListener(EditorInfo.IME_ACTION_DONE, this))));
+    items.add((firstName = new ListItem(items.isEmpty() ? ListItem.TYPE_EDITTEXT : ListItem.TYPE_EDITTEXT_NO_PADDING, R.id.edit_first_name, 0, R.string.login_FirstName)
+      .setStringValue(firstNameValue)
+      .setInputFilters(new InputFilter[] {
+        new CodePointCountFilter(TdConstants.MAX_NAME_LENGTH),
+        new EmojiFilter(),
+        new CharacterStyleFilter()
+      })));
+    items.add((lastName = new ListItem(ListItem.TYPE_EDITTEXT_NO_PADDING, R.id.edit_last_name, 0, mode == MODE_RENAME_CONTACT || mode == MODE_ADD_CONTACT ? R.string.LastName : R.string.login_LastName)
+      .setStringValue(lastNameValue)
+      .setInputFilters(new InputFilter[] {
+        new CodePointCountFilter(TdConstants.MAX_NAME_LENGTH),
+        new EmojiFilter(),
+        new CharacterStyleFilter()
+      }).setOnEditorActionListener(new SimpleEditorActionListener(EditorInfo.IME_ACTION_DONE, this))));
     TdApi.TermsOfService termsOfService = mode == MODE_SIGNUP ? getArgumentsStrict().authState.termsOfService : null;
     if (termsOfService != null && termsOfService.minUserAge != 0) {
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.plural(R.string.AgeVerification, termsOfService.minUserAge), false));

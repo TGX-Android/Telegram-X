@@ -48,6 +48,7 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.collection.LongList;
 import me.vkryl.core.collection.LongSparseIntArray;
+import me.vkryl.td.Td;
 
 public class StickersController extends RecyclerViewController<StickersController.Args> implements Client.ResultHandler, View.OnClickListener, StickersListener {
   public static final int MODE_STICKERS = 0;
@@ -256,7 +257,18 @@ public class StickersController extends RecyclerViewController<StickersControlle
     for (TGStickerSetInfo info : stickerSets) {
       stickerSetIds[i++] = info.getId();
     }
-    tdlib.client().send(new TdApi.ReorderInstalledStickerSets(mode == MODE_MASKS, stickerSetIds), tdlib.okHandler());
+    tdlib.client().send(new TdApi.ReorderInstalledStickerSets(getStickerType(), stickerSetIds), tdlib.okHandler());
+  }
+
+  private TdApi.StickerType getStickerType () {
+    switch (mode) {
+      case MODE_STICKERS:
+      case MODE_STICKERS_ARCHIVED:
+        return new TdApi.StickerTypeRegular();
+      case MODE_MASKS:
+        return new TdApi.StickerTypeMask();
+    }
+    throw new IllegalStateException("mode == " + mode);
   }
 
   private boolean parentFocusApplied;
@@ -275,10 +287,10 @@ public class StickersController extends RecyclerViewController<StickersControlle
   }
 
   @Override
-  public void onInstalledStickerSetsUpdated (final long[] stickerSetIds, boolean isMasks) {
-    if ((mode == MODE_MASKS && isMasks) || (mode == MODE_STICKERS && !isMasks)/* || (mode == MODE_STICKERS_ARCHIVED && !isMasks)*/) {
-      tdlib.ui().post(() -> {
-        if (!isDestroyed() && !isLoading && stickerSets != null) {
+  public void onInstalledStickerSetsUpdated (final long[] stickerSetIds, TdApi.StickerType stickerType) {
+    if (Td.equalsTo(getStickerType(), stickerType)) {
+      runOnUiThreadOptional(() -> {
+        if (!isLoading && stickerSets != null) {
           changeStickerSets(stickerSetIds);
         }
       });
@@ -344,9 +356,10 @@ public class StickersController extends RecyclerViewController<StickersControlle
       isLoading = true;
       isLoadingMore = isMore;
       switch (mode) {
-        case MODE_STICKERS: {
+        case MODE_STICKERS:
+        case MODE_MASKS: {
           if (!isMore) {
-            tdlib.client().send(new TdApi.GetInstalledStickerSets(false), this);
+            tdlib.client().send(new TdApi.GetInstalledStickerSets(getStickerType()), this);
           }
           break;
         }
@@ -363,13 +376,7 @@ public class StickersController extends RecyclerViewController<StickersControlle
             offsetStickerSetId = 0;
             limit = Screen.calculateLoadingItems(Screen.dp(72f), 20);
           }
-          tdlib.client().send(new TdApi.GetArchivedStickerSets(false, offsetStickerSetId, limit), this);
-          break;
-        }
-        case MODE_MASKS: {
-          if (!isMore) {
-            tdlib.client().send(new TdApi.GetInstalledStickerSets(true), this);
-          }
+          tdlib.client().send(new TdApi.GetArchivedStickerSets(getStickerType(), offsetStickerSetId, limit), this);
           break;
         }
       }
@@ -544,7 +551,8 @@ public class StickersController extends RecyclerViewController<StickersControlle
     if (stickerSets == null) {
       return;
     }
-    TdApi.StickerSetInfo newRawInfo = new TdApi.StickerSetInfo(rawInfo.id, rawInfo.title, rawInfo.title, rawInfo.thumbnail, rawInfo.thumbnailOutline, rawInfo.isInstalled, true, rawInfo.isOfficial, rawInfo.stickerType, rawInfo.isViewed, rawInfo.size, rawInfo.covers);
+    TdApi.StickerSetInfo newRawInfo = Td.copyOf(rawInfo);
+    newRawInfo.isArchived = true;
     TGStickerSetInfo info = new TGStickerSetInfo(tdlib, newRawInfo);
     info.setBoundList(stickerSets);
     stickerSets.add(0, info);
@@ -568,7 +576,9 @@ public class StickersController extends RecyclerViewController<StickersControlle
       }
     }
 
-    TdApi.StickerSetInfo newRawInfo = new TdApi.StickerSetInfo(rawInfo.id, rawInfo.title, rawInfo.title, rawInfo.thumbnail, rawInfo.thumbnailOutline, true, true, rawInfo.isOfficial, rawInfo.stickerType, rawInfo.isViewed, rawInfo.size, rawInfo.covers);
+    TdApi.StickerSetInfo newRawInfo = Td.copyOf(rawInfo);
+    newRawInfo.isInstalled = true;
+    newRawInfo.isArchived = true;
     TGStickerSetInfo info = new TGStickerSetInfo(tdlib, newRawInfo);
     info.setBoundList(archivedSets);
 
@@ -632,7 +642,7 @@ public class StickersController extends RecyclerViewController<StickersControlle
         stickerSets.trimToSize();
 
         if (mode == MODE_MASKS) {
-          tdlib.client().send(new TdApi.GetArchivedStickerSets(true, 0, 100), object1 -> {
+          tdlib.client().send(new TdApi.GetArchivedStickerSets(getStickerType(), 0, 100), object1 -> {
             final ArrayList<TGStickerSetInfo> archivedSets;
 
             if (object1.getConstructor() == TdApi.StickerSets.CONSTRUCTOR && ((TdApi.StickerSets) object1).sets.length > 0) {

@@ -30,6 +30,7 @@ import android.os.Build;
 import android.view.View;
 
 import androidx.annotation.FloatRange;
+import androidx.annotation.Nullable;
 
 import org.drinkmore.Tracer;
 import org.thunderdog.challegram.Log;
@@ -52,7 +53,8 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
   private ImageFile file, cachedFile;
   private final WatcherReference reference;
 
-  private View view;
+  private final @Nullable View view;
+  private ReceiverUpdateListener updateListener;
   private Bitmap bitmap;
   private float alpha = 1f, progress;
 
@@ -97,6 +99,11 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
   }
 
   @Override
+  public void setUpdateListener (ReceiverUpdateListener listener) {
+    this.updateListener = listener;
+  }
+
+  @Override
   public void invalidate () {
     if (view != null) {
       /*if (drawRegion.isEmpty()) {
@@ -104,11 +111,17 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
       }*/
       view.invalidate(drawRegion.left, drawRegion.top, drawRegion.right, drawRegion.bottom);
     }
+    if (updateListener != null) {
+      updateListener.onRequestInvalidate(this);
+    }
   }
 
   public void invalidateFully () {
     if (view != null) {
       view.invalidate();
+    }
+    if (updateListener != null) {
+      updateListener.onRequestInvalidate(this);
     }
   }
 

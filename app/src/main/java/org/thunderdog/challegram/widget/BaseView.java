@@ -23,6 +23,7 @@ import android.view.ViewParent;
 import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.MessagesManager;
@@ -32,6 +33,7 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.ThreadInfo;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.ChatsController;
 import org.thunderdog.challegram.ui.MainController;
@@ -48,7 +50,7 @@ import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.MessageId;
 
-public class BaseView extends SparseDrawableView implements ClickHelper.Delegate, View.OnClickListener {
+public class BaseView extends SparseDrawableView implements ClickHelper.Delegate, View.OnClickListener, TdlibDelegate {
   public interface ActionListProvider {
     ForceTouchView.ActionListener onCreateActions (View v, ForceTouchView.ForceTouchContext context, IntList ids, IntList icons, StringList strings, ViewController<?> target);
   }
@@ -74,6 +76,16 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
     this.forceTouchHelper = new ClickHelper(this);
     this.forceTouchHelper.setNoSound(true);
     setUseDefaultClickListener(true);
+  }
+
+  @Override
+  public BaseActivity context () {
+    return UI.getContext(getContext());
+  }
+
+  @Override
+  public Tdlib tdlib () {
+    return tdlib;
   }
 
   public interface TranslationChangeListener {

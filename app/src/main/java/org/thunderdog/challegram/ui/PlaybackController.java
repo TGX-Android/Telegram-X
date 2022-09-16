@@ -90,7 +90,7 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
-import me.vkryl.android.util.MultipleViewProvider;
+import me.vkryl.android.util.InvalidateContentProvider;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.ColorUtils;
@@ -210,7 +210,7 @@ public class PlaybackController extends ViewController<Void> implements Menu, Mo
   }
 
   @Override
-  public void onEmojiPartLoaded () {
+  public void onEmojiUpdated (boolean isPackSwitch) {
     if (coverView != null) {
       coverView.invalidate();
     }
@@ -1351,7 +1351,7 @@ public class PlaybackController extends ViewController<Void> implements Menu, Mo
     }
   }
 
-  private static class CoverView extends SparseDrawableView implements FactorAnimator.Target, MultipleViewProvider.InvalidateContentProvider {
+  private static class CoverView extends SparseDrawableView implements FactorAnimator.Target, InvalidateContentProvider {
     private final ComplexReceiver preview;
     private final ImageReceiver receiver, source;
     private PlaybackController controller;
@@ -1850,8 +1850,9 @@ public class PlaybackController extends ViewController<Void> implements Menu, Mo
     private MediaPreview mediaPreview;
 
     @Override
-    public void invalidateContent () {
+    public boolean invalidateContent (Object cause) {
       requestFiles(true);
+      return true;
     }
 
     public void setItem (InlineResultCommon item) {

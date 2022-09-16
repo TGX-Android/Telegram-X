@@ -59,7 +59,7 @@ public class TGAudio {
   public TGAudio (Tdlib tdlib, TGRecord record) {
     this.tdlib = tdlib;
     this.msg = null;
-    this.voice = new TdApi.VoiceNote(record.getDuration(), null, "audio/ogg", false, "", TD.newFile(record.getFile()));
+    this.voice = new TdApi.VoiceNote(record.getDuration(), null, "audio/ogg", null, TD.newFile(record.getFile()));
   }
 
   public Tdlib tdlib () {

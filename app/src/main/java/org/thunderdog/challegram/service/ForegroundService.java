@@ -33,6 +33,7 @@ import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibNotificationManager;
+import org.thunderdog.challegram.tool.Intents;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -174,7 +175,7 @@ public class ForegroundService extends Service {
     NotificationCompat.Builder b = new NotificationCompat.Builder(this, channelId)
       .setSmallIcon(iconRes)
       .setContentTitle(title)
-      .setContentIntent(PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class), 0));
+      .setContentIntent(PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class), Intents.mutabilityFlags(false)));
     if (!StringUtils.isEmpty(text)) {
       b.setContentText(text);
     }

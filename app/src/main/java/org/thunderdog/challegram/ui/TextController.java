@@ -491,7 +491,10 @@ public class TextController extends ViewController<TextController.Arguments> imp
 
       this.id = id;
       this.idStr = Integer.toString(id + 1);
-      this.wrapper = new TextWrapper(line, TGMessage.getTextStyleProvider(), TextColorSets.Regular.NORMAL, Text.makeEntities(line, Text.ENTITY_FLAGS_EXTERNAL, null, context.tdlib(), null)).addTextFlags(Text.FLAG_CUSTOM_LONG_PRESS | Text.FLAG_NO_TRIM | Text.FLAG_ARTICLE).setViewProvider(holder);
+      this.wrapper = new TextWrapper(line, TGMessage.getTextStyleProvider(), TextColorSets.Regular.NORMAL)
+        .setEntities(Text.makeEntities(line, Text.ENTITY_FLAGS_EXTERNAL, null, context.tdlib(), null), null)
+        .addTextFlags(Text.FLAG_CUSTOM_LONG_PRESS | Text.FLAG_NO_TRIM | Text.FLAG_ARTICLE)
+        .setViewProvider(holder);
       this.wrapper.prepare(Screen.currentWidth());
     }
 

@@ -558,7 +558,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
   private void loadTrending (int offset, int limit, int cellCount) {
     if (!trendingLoading) {
       trendingLoading = true;
-      tdlib.client().send(new TdApi.GetTrendingStickerSets(offset, limit), object -> {
+      tdlib.client().send(new TdApi.GetTrendingStickerSets(new TdApi.StickerTypeRegular(), offset, limit), object -> {
         final ArrayList<TGStickerSetInfo> parsedStickerSets = new ArrayList<>();
         final ArrayList<MediaStickersAdapter.StickerItem> items = new ArrayList<>();
         final int unreadItemCount;
@@ -1399,10 +1399,10 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
   }
 
   @Override
-  public void onInstalledStickerSetsUpdated (final long[] stickerSetIds, boolean isMasks) {
-    if (!isMasks) {
-      tdlib.ui().post(() -> {
-        if (!isDestroyed() && !loadingStickers) {
+  public void onInstalledStickerSetsUpdated (final long[] stickerSetIds, TdApi.StickerType stickerType) {
+    if (stickerType.getConstructor() == TdApi.StickerTypeRegular.CONSTRUCTOR) {
+      runOnUiThreadOptional(() -> {
+        if (!loadingStickers) {
           changeStickers(stickerSetIds);
         }
       });
@@ -1447,14 +1447,14 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
   private TdApi.TrendingStickerSets scheduledFeaturedSets;
 
   @Override
-  public void onTrendingStickersUpdated (final TdApi.TrendingStickerSets stickerSets, int unreadCount) {
-    tdlib.ui().post(() -> {
-      if (!isDestroyed()) {
-        if (getArguments() != null) {
-          getArguments().setHasNewHots(getUnreadCount(stickerSets.sets) > 0);
-        }
-        scheduleFeaturedSets(stickerSets);
+  public void onTrendingStickersUpdated (final TdApi.StickerType stickerType, final TdApi.TrendingStickerSets stickerSets, int unreadCount) {
+    if (stickerType.getConstructor() != TdApi.StickerTypeRegular.CONSTRUCTOR)
+      return;
+    runOnUiThreadOptional(() -> {
+      if (getArguments() != null) {
+        getArguments().setHasNewHots(getUnreadCount(stickerSets.sets) > 0);
       }
+      scheduleFeaturedSets(stickerSets);
     });
   }
 
@@ -1848,7 +1848,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
           tdlib.client().send(new TdApi.GetRecentStickers(false), this);
         } else {
           pendingRecentStickers = stickers;
-          tdlib.client().send(new TdApi.GetInstalledStickerSets(false), this);
+          tdlib.client().send(new TdApi.GetInstalledStickerSets(new TdApi.StickerTypeRegular()), this);
         }
         break;
       }

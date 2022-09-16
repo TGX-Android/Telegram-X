@@ -165,7 +165,8 @@ public class Settings {
   private static final int VERSION_37 = 37; // removed weird "wallpaper_" + file.remote.id unused legacy cache
   private static final int VERSION_38 = 38; // int32 -> int64
   private static final int VERSION_39 = 39; // drop all previously stored crashes
-  private static final int VERSION = VERSION_39;
+  private static final int VERSION_40 = 40; // drop legacy crash management ids
+  private static final int VERSION = VERSION_40;
 
   private static final AtomicBoolean hasInstance = new AtomicBoolean(false);
   private static volatile Settings instance;
@@ -369,6 +370,7 @@ public class Settings {
   public static final long SETTING_FLAG_CAMERA_SHOW_GRID = 1 << 12;
 
   public static final long SETTING_FLAG_NO_EMBEDS = 1 << 13;
+  public static final long SETTING_FLAG_LIMIT_STICKERS_FPS = 1 << 14;
 
   private static final @Deprecated int DISABLED_FLAG_OTHER_NEED_RAISE_TO_SPEAK = 1 << 2;
   private static final @Deprecated int DISABLED_FLAG_OTHER_AUTODOWNLOAD_IN_BACKGROUND = 1 << 3;
@@ -466,6 +468,7 @@ public class Settings {
   private Integer _notificationFlags;
 
   private static final long DEFAULT_LOG_SIZE = ByteUnit.MIB.toBytes(50);
+  private static final int DEFAULT_LOG_GLOBAL_VERBOSITY_LEVEL = 0;
 
   public class TdlibLogSettings {
     private final String settingsKey, maxSizeKey, verbosityKey;
@@ -587,7 +590,11 @@ public class Settings {
 
     public void setVerbosity (@Nullable String module, int verbosity) {
       if (StringUtils.isEmpty(module)) {
-        putInt(verbosityKey, verbosity);
+        if (verbosity != DEFAULT_LOG_GLOBAL_VERBOSITY_LEVEL) {
+          putInt(verbosityKey, verbosity);
+        } else {
+          remove(verbosityKey);
+        }
         setLogVerbosityLevel(verbosity);
       } else {
         if (_modules == null)
@@ -633,15 +640,16 @@ public class Settings {
     public void apply () {
       if (UI.TEST_MODE == UI.TEST_MODE_AUTO)
         return;
-      int globalVerbosityLevel = 0;
+      int globalVerbosityLevel = DEFAULT_LOG_GLOBAL_VERBOSITY_LEVEL;
       if (_modules == null)
         _modules = new HashMap<>();
       for (final LevelDB.Entry entry : pmc.find(verbosityKey)) {
         final String key = entry.key();
-        int verbosityLevel = Math.max(1, entry.asInt()); // At least error
+        int verbosityLevel = entry.asInt();
         if (verbosityKey.length() == key.length()) {
-          globalVerbosityLevel = verbosityLevel;
+          globalVerbosityLevel = Math.max(0, verbosityLevel); // Can't be negative
         } else if (key.length() > verbosityKey.length() + 1) {
+          verbosityLevel = Math.max(1, verbosityLevel); // At least error
           String module = key.substring(verbosityKey.length() + 1);
           int[] value = _modules.get(module);
           int defaultVerbosityLevel = value != null ? value[1] : queryLogVerbosityLevel(module);
@@ -1804,6 +1812,14 @@ public class Settings {
       }
       case VERSION_39: {
         pmc.removeByPrefix(KEY_TDLIB_CRASH_PREFIX);
+        break;
+      }
+      case VERSION_40: {
+        pmc
+          .remove("crash_id_debug")
+          .remove("crash_id_release")
+          .remove("crash_id_reported_debug")
+          .remove("crash_id_reported_release");
         break;
       }
     }

@@ -53,9 +53,9 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.camera.CameraController;
-import org.thunderdog.challegram.util.Crash;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Test;
+import org.thunderdog.challegram.util.Crash;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.BetterChatView;
@@ -67,7 +67,6 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
@@ -1185,11 +1184,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
       case R.id.btn_test_recovery: {
         Crash.Builder crash = (Crash.Builder) ((ListItem) v.getTag()).getData();
         Settings.instance().storeTestCrash(crash);
-        if (BitwiseUtils.getFlag(crash.build().getFlags(), Crash.Flags.SAVE_APPLICATION_LOG_EVENT)) {
-          TdlibManager.instance().saveCrashes();
-        } else{
-          System.exit(0);
-        }
+        System.exit(0);
         break;
       }
       case R.id.btn_test_recovery_tdlib: {

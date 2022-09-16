@@ -166,7 +166,7 @@ public class EncryptionKeyController extends ViewController<EncryptionKeyControl
   }
 
   @Override
-  public void onEmojiPartLoaded () {
+  public void onEmojiUpdated (boolean isPackSwitch) {
     if (bottomText != null)
       bottomText.invalidate();
     if (rightText != null)

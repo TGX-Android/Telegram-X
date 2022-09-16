@@ -22,8 +22,10 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ComplexReceiver;
+import org.thunderdog.challegram.receiver.RefreshRateLimiter;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.MessageListener;
@@ -52,44 +54,26 @@ import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
 
 public class MessagePreviewView extends BaseView implements AttachDelegate, Destroyable, ChatListener, MessageListener, TdlibCache.UserDataChangeListener, TGLegacyManager.EmojiLoadListener {
-  private static class MeasurableEntry<T extends ListAnimator.Measurable> implements ListAnimator.Measurable {
-    protected T content;
-
-    protected MeasurableEntry (T content) {
-      this.content = content;
-    }
-
-    @Override
-    public final int getSpacingStart (boolean isFirst) {
-      return content.getSpacingStart(isFirst);
-    }
-
-    @Override
-    public final int getSpacingEnd (boolean isLast) {
-      return content.getSpacingEnd(isLast);
-    }
-
-    @Override
-    public final int getWidth () {
-      return content.getWidth();
-    }
-
-    @Override
-    public final int getHeight () {
-      return content.getHeight();
-    }
-  }
-
-  private static class TextEntry extends MeasurableEntry<Text> {
+  private static class TextEntry extends ListAnimator.MeasurableEntry<Text> implements Destroyable {
     public Drawable drawable;
+    public ComplexReceiver receiver;
 
-    public TextEntry (Text text, Drawable drawable) {
+    public TextEntry (Text text, Drawable drawable, ComplexReceiver receiver) {
       super(text);
       this.drawable = drawable;
+      this.receiver = receiver;
+    }
+
+    @Override
+    public void performDestroy () {
+      super.performDestroy();
+      if (receiver != null) {
+        receiver.performDestroy();
+      }
     }
   }
 
-  private static class MediaEntry extends MeasurableEntry<MediaPreview> implements Destroyable {
+  private static class MediaEntry extends ListAnimator.MeasurableEntry<MediaPreview> implements Destroyable {
     final ComplexReceiver receiver;
 
     public MediaEntry (MediaPreview preview, ComplexReceiver receiver) {
@@ -99,9 +83,12 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
 
     @Override
     public void performDestroy () {
+      super.performDestroy();
       receiver.performDestroy();
     }
   }
+
+  private final RefreshRateLimiter emojiUpdateLimiter = new RefreshRateLimiter(this, Config.MAX_ANIMATED_EMOJI_REFRESH_RATE);
 
   public MessagePreviewView (Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -215,6 +202,19 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     return Math.max(0, getMeasuredWidth() - Screen.dp(PADDING_SIZE) * 2 - getTextHorizontalOffset() - Screen.dp(getLinePadding()) - contentInset);
   }
 
+  private ComplexReceiver newComplexReceiver (boolean forTextMedia) {
+    ComplexReceiver receiver = new ComplexReceiver(forTextMedia ? null : this);
+    if (forTextMedia) {
+      receiver.setUpdateListener(emojiUpdateLimiter);
+    }
+    if (isAttached) {
+      receiver.attach();
+    } else {
+      receiver.detach();
+    }
+    return receiver;
+  }
+
   private void buildText (boolean isLayout) {
     int textWidth = calculateTextWidth();
     if (this.lastTextWidth != textWidth || !isLayout) {
@@ -230,6 +230,12 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
         if (isLayout && !contentText.isEmpty()) {
           for (ListAnimator.Entry<TextEntry> entry : contentText) {
             entry.item.content.changeMaxWidth(textWidth);
+            if (entry.item.receiver != null || entry.item.content.hasMedia()) {
+              if (entry.item.receiver == null) {
+                entry.item.receiver = newComplexReceiver(true);
+              }
+              entry.item.content.requestMedia(entry.item.receiver);
+            }
           }
         } else {
           buildContentText(textWidth, false);
@@ -259,20 +265,10 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
 
     if (preview == null) {
       this.mediaPreview.replace(null, animated);
-    } else if (animated || this.mediaPreview.isEmpty()) {
-      ComplexReceiver receiver = new ComplexReceiver(this);
-      if (isAttached) {
-        receiver.attach();
-      } else {
-        receiver.detach();
-      }
+    } else {
+      ComplexReceiver receiver = newComplexReceiver(false);
       preview.requestFiles(receiver, false);
       this.mediaPreview.replace(new MediaEntry(preview, receiver), animated);
-    } else {
-      MediaEntry entry = this.mediaPreview.singleton().item;
-      entry.receiver.clear();
-      entry.content = preview;
-      preview.requestFiles(entry.receiver, false);
     }
   }
 
@@ -301,7 +297,8 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
         null,
         availWidth,
         Paints.robotoStyleProvider(TEXT_SIZE),
-        TextColorSets.Regular.MESSAGE_AUTHOR
+        TextColorSets.Regular.MESSAGE_AUTHOR,
+        null
       ).viewProvider(viewProvider)
        .singleLine()
        .allClickable()
@@ -327,20 +324,36 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     TdApi.FormattedText text = getContentText();
     int iconRes = contentPreview != null && contentPreview.emoji != null ? contentPreview.emoji.iconRepresentation : 0;
     Text newText;
+    ComplexReceiver receiver;
     if (!Td.isEmpty(text)) {
       newText = new Text.Builder(tdlib,
-        text, null, availWidth, Paints.robotoStyleProvider(TEXT_SIZE), TextColorSets.Regular.NORMAL
+        text, null, availWidth, Paints.robotoStyleProvider(TEXT_SIZE), TextColorSets.Regular.NORMAL, (text1, specificMedia) -> {
+          for (ListAnimator.Entry<TextEntry> entry : contentText) {
+            if (entry.item.content == text1) {
+              if (!text1.invalidateMediaContent(entry.item.receiver, specificMedia)) {
+                text1.requestMedia(entry.item.receiver);
+              }
+            }
+          }
+        }
       ).viewProvider(viewProvider)
-       .lineMarginProvider(iconRes != 0 ? (Text.LineMarginProvider) (lineIndex, y, defaultMaxWidth, lineHeight) -> lineIndex == 0 ? Screen.dp(2f) + Screen.dp(18f) : 0 : null)
+       .lineMarginProvider(iconRes != 0 ? (lineIndex, y, defaultMaxWidth, lineHeight) -> lineIndex == 0 ? Screen.dp(2f) + Screen.dp(18f) : 0 : null)
        .singleLine()
        .ignoreNewLines()
        .ignoreContinuousNewLines()
        .addFlags(Text.FLAG_CUSTOM_LONG_PRESS)
        .build();
+      if (newText.hasMedia()) {
+        receiver = newComplexReceiver(true);
+        newText.requestMedia(receiver);
+      } else {
+        receiver = null;
+      }
     } else {
       newText = null;
+      receiver = null;
     }
-    this.contentText.replace(newText != null || iconRes != 0 ? new TextEntry(newText, getSparseDrawable(iconRes, R.id.theme_color_icon)) : null, animated);
+    this.contentText.replace(newText != null || iconRes != 0 ? new TextEntry(newText, getSparseDrawable(iconRes, R.id.theme_color_icon), receiver) : null, animated);
   }
 
   @Override
@@ -368,7 +381,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
         Drawables.draw(c, entry.item.drawable, textX, contextTextY + (entry.item.content != null ? entry.item.content.getLineHeight(false) : Screen.dp(TEXT_SIZE)) / 2f - entry.item.drawable.getMinimumHeight() / 2f, PorterDuffPaint.get(R.id.theme_color_icon, entry.getVisibility()));
       }
       if (entry.item.content != null) {
-        entry.item.content.draw(c, textX, contextTextY, null, entry.getVisibility());
+        entry.item.content.draw(c, textX, contextTextY, null, entry.getVisibility(), entry.item.receiver);
       }
     }
   }
@@ -453,6 +466,11 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     for (ListAnimator.Entry<MediaEntry> entry : mediaPreview) {
       entry.item.receiver.attach();
     }
+    for (ListAnimator.Entry<TextEntry> entry : contentText) {
+      if (entry.item.receiver != null) {
+        entry.item.receiver.attach();
+      }
+    }
   }
 
   @Override
@@ -460,6 +478,11 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     this.isAttached = false;
     for (ListAnimator.Entry<MediaEntry> entry : mediaPreview) {
       entry.item.receiver.attach();
+    }
+    for (ListAnimator.Entry<TextEntry> entry : contentText) {
+      if (entry.item.receiver != null) {
+        entry.item.receiver.detach();
+      }
     }
   }
 
@@ -470,7 +493,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
   }
 
   @Override
-  public void onEmojiPartLoaded () {
+  public void onEmojiUpdated (boolean isPackSwitch) {
     invalidate();
   }
 }

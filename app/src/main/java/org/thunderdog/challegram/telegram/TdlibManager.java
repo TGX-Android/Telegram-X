@@ -354,9 +354,16 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
 
   public String tdlibCommitHash () {
     if (!StringUtils.isEmpty(tdlibCommitHash)) {
-      return this.tdlibCommitHash;
+      return StringUtils.limit(this.tdlibCommitHash, 7);
     }
     return Td.tdlibCommitHash();
+  }
+
+  public String tdlibCommitHashFull () {
+    if (!StringUtils.isEmpty(tdlibCommitHash)) {
+      return this.tdlibCommitHash;
+    }
+    return Td.tdlibCommitHashFull();
   }
 
   public String tdlibVersion () {
@@ -1613,23 +1620,46 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
 
   private static final String EXPERIMENTAL_BUILD_ERROR = "EXPERIMENTAL_BUILD_DETECTED";
 
-  public synchronized void checkDeviceToken () {
+  public void checkDeviceToken () {
+    checkDeviceToken(null);
+  }
+
+  public void checkDeviceToken (@Nullable RunnableBool after) {
+    checkDeviceToken(3, after);
+  }
+
+  public synchronized void checkDeviceToken (int retryCount, @Nullable RunnableBool after) {
+    if (this.tokenState == TokenState.OK) {
+      if (after != null) {
+        after.runWithBool(true);
+      }
+      return;
+    }
     if (BuildConfig.EXPERIMENTAL) {
       setTokenState(TokenState.ERROR, EXPERIMENTAL_BUILD_ERROR, null);
+      if (after != null) {
+        after.runWithBool(false);
+      }
       return;
     }
     setTokenState(TokenState.INITIALIZING);
-    TdlibNotificationUtils.getDeviceToken(new TdlibNotificationUtils.RegisterCallback() {
+    TdlibNotificationUtils.getDeviceToken(retryCount, new TdlibNotificationUtils.RegisterCallback() {
       @Override
       public void onSuccess (@NonNull TdApi.DeviceTokenFirebaseCloudMessaging token) {
         // TODO: use TdApi.DeviceToken instead of taking token's String value directly
         setDeviceToken(token.token);
+        if (after != null) {
+          after.runWithBool(true);
+        }
       }
 
       @Override
       public void onError (@NonNull String errorKey, @Nullable Throwable e) {
         Log.e(Log.TAG_FCM, "Failed to retrieve push token", e);
         setTokenState(TokenState.ERROR, errorKey, e);
+        if (after != null) {
+          after.runWithBool(false);
+        }
       }
     });
   }

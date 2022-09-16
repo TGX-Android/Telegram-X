@@ -36,7 +36,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
 
-public class PrefixEditText extends EditText implements InputFilter, View.OnLongClickListener {
+public class PrefixEditText extends EmojiEditText implements InputFilter, View.OnLongClickListener {
   private String prefix;
   private int minLength;
   private boolean forceEdit;
@@ -44,6 +44,7 @@ public class PrefixEditText extends EditText implements InputFilter, View.OnLong
 
   public PrefixEditText (Context context) {
     super(context);
+    initDefault();
     editable = true;
     setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
     setFilters(new InputFilter[] {this});

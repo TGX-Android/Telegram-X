@@ -20,6 +20,7 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.view.View;
 
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
@@ -31,6 +32,8 @@ public interface Receiver extends TooltipOverlayView.LocationProvider {
   View getTargetView ();
   int getTargetWidth ();
   int getTargetHeight ();
+
+  void setUpdateListener (ReceiverUpdateListener listener);
 
   int getLeft ();
   int getTop ();
@@ -72,12 +75,16 @@ public interface Receiver extends TooltipOverlayView.LocationProvider {
       final boolean translate = left != 0 || top != 0;
       final int restoreToCount;
       if (translate) {
-        restoreToCount = c.save();
+        restoreToCount = Views.save(c);
         c.translate(left, top);
       } else {
         restoreToCount = -1;
       }
-      c.drawPath(path, alpha != 1f ? Paints.fillingPaint(ColorUtils.alphaColor(alpha, Theme.placeholderColor())) : Paints.getPlaceholderPaint());
+      if (Config.DEBUG_STICKER_OUTLINES) {
+        c.drawPath(path, Paints.fillingPaint(ColorUtils.alphaColor(alpha, 0x99ff0000)));
+      } else {
+        c.drawPath(path, alpha != 1f ? Paints.fillingPaint(ColorUtils.alphaColor(alpha, Theme.placeholderColor())) : Paints.getPlaceholderPaint());
+      }
       if (translate) {
         Views.restore(c, restoreToCount);
       }

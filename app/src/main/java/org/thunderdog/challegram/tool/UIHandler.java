@@ -15,7 +15,6 @@
 package org.thunderdog.challegram.tool;
 
 import android.content.Context;
-import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.view.Gravity;
@@ -26,7 +25,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.StringRes;
 
 import org.thunderdog.challegram.BaseActivity;
-import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.MainActivity;
 import org.thunderdog.challegram.R;
@@ -35,7 +33,6 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGAudio;
 import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.ViewController;
-import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.util.Unlockable;
 import org.thunderdog.challegram.widget.ToastView;
@@ -53,7 +50,6 @@ public class UIHandler extends Handler {
   private static final int UNLOCK = 6;
   private static final int OPEN_FILE = 7;
   private static final int SET_CONTROLLER = 8;
-  private static final int EMOJI_LOADED = 9;
   private static final int OPEN_LINK = 13;
   private static final int OPEN_GALLERY = 14;
   private static final int OPEN_CAMERA = 15;
@@ -190,10 +186,6 @@ public class UIHandler extends Handler {
 
   public void openLink (String url) {
     sendMessage(Message.obtain(this, OPEN_LINK, url));
-  }
-
-  public void emojiLoaded (boolean isChange) {
-    sendMessage(Message.obtain(this, EMOJI_LOADED, isChange ? 1 : 0, 0));
   }
 
   public void unlock (Unlockable unlockable, long delay) {
@@ -362,28 +354,9 @@ public class UIHandler extends Handler {
 
         break;
       }
-      case EMOJI_LOADED: {
-        TGLegacyManager.instance().onEmojiLoaded(msg.arg1 == 1);
-        break;
-      }
       case COPY_TEXT: {
         try {
-          CharSequence text = (CharSequence) msg.obj;
-          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-            android.content.ClipboardManager clipboard = (android.content.ClipboardManager) UI.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
-            if (clipboard != null) {
-              android.content.ClipData clip = android.content.ClipData.newPlainText(BuildConfig.PROJECT_NAME, text);
-              clipboard.setPrimaryClip(clip);
-            }
-          } else {
-            //noinspection deprecation
-            android.text.ClipboardManager clipboard = (android.text.ClipboardManager) UI.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
-            if (clipboard != null) {
-              //noinspection deprecation
-              clipboard.setText(text);
-            }
-          }
-
+          U.copyText((CharSequence) msg.obj);
           if (msg.arg1 != 0) {
             showCustomToast(msg.arg1, Toast.LENGTH_SHORT, 0);
           }

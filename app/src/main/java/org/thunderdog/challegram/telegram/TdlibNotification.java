@@ -14,24 +14,40 @@
  */
 package org.thunderdog.challegram.telegram;
 
+import android.graphics.Bitmap;
+import android.os.SystemClock;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
+import android.text.style.ImageSpan;
 import android.text.style.URLSpan;
+import android.text.style.UnderlineSpan;
 
 import androidx.annotation.Nullable;
+import androidx.collection.LongSparseArray;
+import androidx.collection.SparseArrayCompat;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.TDLib;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.loader.ImageFile;
+import org.thunderdog.challegram.loader.ImageReader;
+import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.UI;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
-import me.vkryl.core.StringUtils;
 import me.vkryl.core.BitwiseUtils;
+import me.vkryl.core.StringUtils;
+import me.vkryl.core.collection.LongSet;
+import me.vkryl.core.lambda.Filter;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
@@ -367,7 +383,8 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
   }
 
   private CharSequence getPreview (TD.ContentPreview content) {
-    CharSequence text = TD.toCharSequence(content.buildFormattedText(false), false, false);
+    TdApi.FormattedText formattedText = content.buildFormattedText(false);
+    CharSequence text = TD.toCharSequence(formattedText, false, false);
     if (text instanceof Spanned) {
       Spanned spanned = (Spanned) text;
       URLSpan[] spans = spanned.getSpans(0, text.length(), URLSpan.class);
@@ -378,16 +395,209 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
           int start = spanned.getSpanStart(span);
           int end = spanned.getSpanEnd(span);
           if (start != -1 && end != -1) {
-            if (b == null)
+            if (b == null) {
               b = new SpannableStringBuilder(text);
+            }
             ForegroundColorSpan colorSpan = new ForegroundColorSpan(tdlib.getColor(R.id.theme_color_notificationLink));
             b.setSpan(colorSpan, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
           }
         }
-        if (b != null)
-          return b;
+        if (b != null) {
+          text = b;
+        }
       }
     }
-    return text;
+    return applyCustomEmoji(text, formattedText);
+  }
+
+  private CharSequence applyCustomEmoji (CharSequence text, TdApi.FormattedText formattedText) {
+    if (!Config.SYSTEM_SUPPORTS_CUSTOM_IMAGE_SPANS) {
+      // No need to wait for files that won't be used.
+      return text;
+    }
+    if (formattedText.entities == null || formattedText.entities.length == 0) {
+      return text;
+    }
+    TdApi.TextEntity lastSpoilerEntity = null;
+    LongSparseArray<List<TdApi.TextEntity>> customEmojiEntities = null;
+    for (TdApi.TextEntity entity : formattedText.entities) {
+      //noinspection SwitchIntDef
+      switch (entity.type.getConstructor()) {
+        case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
+          lastSpoilerEntity = entity;
+          break;
+        case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
+          if (lastSpoilerEntity == null || entity.offset >= lastSpoilerEntity.offset + lastSpoilerEntity.length) {
+            if (customEmojiEntities == null) {
+              customEmojiEntities = new LongSparseArray<>();
+            }
+            long customEmojiId = ((TdApi.TextEntityTypeCustomEmoji) entity.type).customEmojiId;
+            List<TdApi.TextEntity> list = customEmojiEntities.get(customEmojiId);
+            if (list == null) {
+              list = new ArrayList<>();
+              customEmojiEntities.put(customEmojiId, list);
+            }
+            list.add(entity);
+          }
+          break;
+      }
+    }
+    if (customEmojiEntities == null || customEmojiEntities.isEmpty()) {
+      return text;
+    }
+    TDLib.Tag.notifications("Preparing to fetch info about %d custom emoji", customEmojiEntities.size());
+    CountDownLatch customEmojiLatch = new CountDownLatch(customEmojiEntities.size());
+    LongSparseArray<TdlibEmojiManager.Entry> customEmojis = new LongSparseArray<>();
+    LongSet awaitingCustomEmojiIds = new LongSet();
+    Filter<TdlibEmojiManager.Entry> filter = (entry) ->
+      !entry.isNotFound() && entry.sticker != null && entry.sticker.thumbnail != null;
+    TdlibEmojiManager.Watcher watcher = (context, customEmojiId, entry) -> {
+      synchronized (customEmojis) {
+        if (filter.accept(entry)) {
+          customEmojis.put(customEmojiId, entry);
+        }
+        awaitingCustomEmojiIds.remove(customEmojiId);
+      }
+      customEmojiLatch.countDown();
+    };
+    for (int i = 0; i < customEmojiEntities.size(); i++) {
+      long customEmojiId = customEmojiEntities.keyAt(i);
+      TdlibEmojiManager.Entry entry = tdlib.emoji().findOrPostponeRequest(customEmojiId, watcher);
+      if (entry != null) {
+        if (filter.accept(entry)) {
+          customEmojis.put(customEmojiId, entry);
+        }
+        customEmojiLatch.countDown();
+      } else {
+        awaitingCustomEmojiIds.add(customEmojiId);
+      }
+    }
+    // TODO: request all custom emojis before getting to this method,
+    // e.g. in a separate loop before notification gets to TdlibNotificationStyle
+    tdlib.emoji().performPostponedRequests();
+    long awaitStartTimeMs = SystemClock.uptimeMillis();
+    boolean awaitEmojiSuccess;
+    try {
+      awaitEmojiSuccess = customEmojiLatch.await(TdlibNotificationStyle.MEDIA_LOAD_TIMEOUT, TimeUnit.MILLISECONDS);
+    } catch (InterruptedException e) {
+      awaitEmojiSuccess = false;
+    }
+    SparseArrayCompat<LongSet> fileToCustomEmojiIds = new SparseArrayCompat<>();
+    SparseArrayCompat<ImageFile> files = new SparseArrayCompat<>();
+    synchronized (customEmojis) {
+      TDLib.Tag.notifications(
+        "Fetched %d out of %d custom emoji, success: %b, elapsed: %dms",
+        customEmojis.size(),
+        customEmojiEntities.size(),
+        awaitEmojiSuccess,
+        SystemClock.uptimeMillis() - awaitStartTimeMs
+      );
+      if (!awaitEmojiSuccess) {
+        for (long customEmojiId : awaitingCustomEmojiIds) {
+          tdlib.emoji().forgetWatcher(customEmojiId, watcher);
+        }
+      }
+      for (int i = 0; i < customEmojis.size(); i++) {
+        TdlibEmojiManager.Entry entry = customEmojis.valueAt(i);
+        //noinspection ConstantConditions
+        int thumbnailFileId = entry.sticker.thumbnail.file.id;
+        ImageFile thumbnailFile = files.get(thumbnailFileId);
+        if (thumbnailFile == null) {
+          thumbnailFile = TD.toImageFile(tdlib, entry.sticker.thumbnail);
+          if (thumbnailFile != null) {
+            thumbnailFile.setSize(Screen.dp(15f));
+            thumbnailFile.setNoBlur();
+            files.put(thumbnailFileId, thumbnailFile);
+          }
+        }
+        if (thumbnailFile != null) {
+          LongSet childCustomEmojiIds = fileToCustomEmojiIds.get(thumbnailFileId);
+          if (childCustomEmojiIds == null) {
+            childCustomEmojiIds = new LongSet();
+            fileToCustomEmojiIds.put(thumbnailFileId, childCustomEmojiIds);
+          }
+          childCustomEmojiIds.add(entry.customEmojiId);
+        }
+      }
+    }
+    if (files.isEmpty()) {
+      return text;
+    }
+    TDLib.Tag.notifications("Downloading %d emoji files", files.size());
+    CountDownLatch downloadLatch = new CountDownLatch(files.size());
+    for (int i = 0; i < files.size(); i++) {
+      TdApi.File file = files.valueAt(i).getFile();
+      tdlib.client().send(new TdApi.DownloadFile(file.id, 32, 0, 0, true), result -> {
+        switch (result.getConstructor()) {
+          case TdApi.File.CONSTRUCTOR:
+            synchronized (file) {
+              Td.copyTo((TdApi.File) result, file);
+            }
+            break;
+          case TdApi.Error.CONSTRUCTOR:
+            TDLib.Tag.notifications("Failed to fetch one of emoji files: %s", TD.toErrorString(result));
+            break;
+        }
+        downloadLatch.countDown();
+      });
+    }
+    awaitStartTimeMs = SystemClock.uptimeMillis();
+    boolean awaitFilesSuccess;
+    try {
+      awaitFilesSuccess = downloadLatch.await(TdlibNotificationStyle.MEDIA_LOAD_TIMEOUT, TimeUnit.MILLISECONDS);
+    } catch (InterruptedException e) {
+      awaitFilesSuccess = false;
+    }
+    TDLib.Tag.notifications(
+      "Downloaded %d emoji files, success: %b, elapsed: %d",
+      files.size(),
+      awaitFilesSuccess,
+      SystemClock.uptimeMillis() - awaitStartTimeMs
+    );
+
+    SpannableStringBuilder b = null;
+    for (int i = 0; i < files.size(); i++) {
+      ImageFile previewFile = files.valueAt(i);
+      if (previewFile == null)
+        continue;
+      int thumbnailFileId = previewFile.getFile().id;
+      synchronized (previewFile.getFile()) {
+        if (!TD.isFileLoaded(previewFile.getFile())) {
+          continue;
+        }
+      }
+      LongSet childCustomEmojiIds = fileToCustomEmojiIds.get(thumbnailFileId);
+      if (childCustomEmojiIds == null)
+        continue;
+      Bitmap bitmap = ImageReader.readImage(previewFile, previewFile.getFilePath());
+      if (bitmap != null) {
+        for (Long customEmojiId : childCustomEmojiIds) {
+          List<TdApi.TextEntity> entities = customEmojiEntities.get(customEmojiId);
+          if (entities != null) {
+            for (TdApi.TextEntity entity : entities) {
+              if (b == null) {
+                b = new SpannableStringBuilder(text);
+              }
+              ImageSpan imageSpan = new ImageSpan(
+                UI.getAppContext(),
+                bitmap,
+                ImageSpan.ALIGN_BASELINE
+              );
+              b.setSpan(imageSpan,
+                entity.offset,
+                entity.offset + entity.length,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+              );
+              b.setSpan(new UnderlineSpan(),
+                entity.offset,
+                entity.offset + entity.length,
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+              );
+            }
+          }
+        }
+      }
+    }
+    return b != null ? b : text;
   }
 }

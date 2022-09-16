@@ -32,6 +32,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.ChatEventUtil;
 import org.thunderdog.challegram.data.SponsoredMessageUtils;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
@@ -793,7 +794,7 @@ public class MessagesLoader implements Client.ResultHandler {
           throw new JSONException("audio.title is empty");
         if (performer.isEmpty())
           throw new JSONException("audio.performer is empty");
-        audio = new TdApi.Audio(duration, title, performer, "audio.mp3", "audio/mp3", null, null, new TdApi.File());
+        audio = new TdApi.Audio(duration, title, performer, "audio.mp3", "audio/mp3", null, null, null, new TdApi.File());
       }
 
       if (data.has("voice")) {
@@ -808,7 +809,7 @@ public class MessagesLoader implements Client.ResultHandler {
         } else {
           throw new JSONException("Invalid voice value: " + rawItem);
         }
-        voice = new TdApi.VoiceNote(duration, TD.newRandomWaveform(), "audio/ogg", false, "", new TdApi.File());
+        voice = new TdApi.VoiceNote(duration, TD.newRandomWaveform(), "audio/ogg", null, new TdApi.File());
       }
 
       if (data.has("photo")) {
@@ -858,9 +859,10 @@ public class MessagesLoader implements Client.ResultHandler {
           width,
           height,
           null,
-          new TdApi.StickerTypeStatic(),
-          null,
+          new TdApi.StickerFormatWebp(), new TdApi.StickerTypeRegular(),
+          null, 0, null,
           new TdApi.Thumbnail(new TdApi.ThumbnailFormatWebp(), width, height, thumbFile),
+          false,
           null,
           file
         );
@@ -1142,33 +1144,21 @@ public class MessagesLoader implements Client.ResultHandler {
     final boolean isChannel = tdlib.isChannel(chatId);
 
     for (TdApi.ChatEvent event : events) {
-      TdApi.Message m = null;
-      switch (event.action.getConstructor()) {
-        case TdApi.ChatEventMemberJoined.CONSTRUCTOR:
-        case TdApi.ChatEventMessageTtlChanged.CONSTRUCTOR:
-        case TdApi.ChatEventMemberLeft.CONSTRUCTOR:
-        case TdApi.ChatEventTitleChanged.CONSTRUCTOR:
-        case TdApi.ChatEventPhotoChanged.CONSTRUCTOR:
-        case TdApi.ChatEventMemberPromoted.CONSTRUCTOR:
-        case TdApi.ChatEventMemberRestricted.CONSTRUCTOR:
-        case TdApi.ChatEventMemberInvited.CONSTRUCTOR:
-        case TdApi.ChatEventPermissionsChanged.CONSTRUCTOR:
-        case TdApi.ChatEventVideoChatCreated.CONSTRUCTOR:
-        case TdApi.ChatEventInviteLinkEdited.CONSTRUCTOR:
-        case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR:
-        case TdApi.ChatEventVideoChatEnded.CONSTRUCTOR: {
+      TdApi.Message m;
+      switch (ChatEventUtil.getActionMessageMode(event.action)) {
+        case ChatEventUtil.ActionMessageMode.ONLY_FULL: {
           // Only full message
           m = newMessage(chatId, isChannel, event);
           m.content = new TdApiExt.MessageChatEvent(event, true, false);
           break;
         }
-
-        case TdApi.ChatEventDescriptionChanged.CONSTRUCTOR:
-        case TdApi.ChatEventMessageDeleted.CONSTRUCTOR:
-        case TdApi.ChatEventMessageEdited.CONSTRUCTOR:
-        case TdApi.ChatEventMessagePinned.CONSTRUCTOR:
-        case TdApi.ChatEventUsernameChanged.CONSTRUCTOR:
-        case TdApi.ChatEventPollStopped.CONSTRUCTOR: {
+        case ChatEventUtil.ActionMessageMode.ONLY_SERVICE: {
+          // Only service message
+          m = newMessage(chatId, isChannel, event);
+          m.content = new TdApiExt.MessageChatEvent(event, false, false);
+          break;
+        }
+        case ChatEventUtil.ActionMessageMode.SERVICE_AND_FULL: {
           // Service + full message
 
           m = newMessage(chatId, isChannel, event);
@@ -1179,34 +1169,11 @@ public class MessagesLoader implements Client.ResultHandler {
           m.content = new TdApiExt.MessageChatEvent(event, false, false);
           break;
         }
-
-        case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR:
-        case TdApi.ChatEventInvitesToggled.CONSTRUCTOR:
-        case TdApi.ChatEventSignMessagesToggled.CONSTRUCTOR:
-        case TdApi.ChatEventHasProtectedContentToggled.CONSTRUCTOR:
-        case TdApi.ChatEventIsAllHistoryAvailableToggled.CONSTRUCTOR:
-        case TdApi.ChatEventStickerSetChanged.CONSTRUCTOR:
-        case TdApi.ChatEventLinkedChatChanged.CONSTRUCTOR:
-        case TdApi.ChatEventSlowModeDelayChanged.CONSTRUCTOR:
-        case TdApi.ChatEventLocationChanged.CONSTRUCTOR:
-        case TdApi.ChatEventVideoChatMuteNewParticipantsToggled.CONSTRUCTOR:
-        case TdApi.ChatEventMemberJoinedByInviteLink.CONSTRUCTOR:
-        case TdApi.ChatEventMemberJoinedByRequest.CONSTRUCTOR:
-        case TdApi.ChatEventInviteLinkRevoked.CONSTRUCTOR:
-        case TdApi.ChatEventInviteLinkDeleted.CONSTRUCTOR:
-        case TdApi.ChatEventVideoChatParticipantVolumeLevelChanged.CONSTRUCTOR:
-        case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR: {
-          // Only service message
-          m = newMessage(chatId, isChannel, event);
-          m.content = new TdApiExt.MessageChatEvent(event, false, false);
-          break;
-        }
+        default:
+          throw new UnsupportedOperationException(event.action.toString());
       }
-      if (m != null) {
-        out.add(m);
-      }
+      out.add(m);
     }
-
     TdApi.Message[] array = new TdApi.Message[out.size()];
     out.toArray(array);
     return array;

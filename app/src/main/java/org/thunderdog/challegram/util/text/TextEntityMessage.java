@@ -14,6 +14,7 @@
  */
 package org.thunderdog.challegram.util.text;
 
+import android.text.style.ClickableSpan;
 import android.view.View;
 
 import androidx.annotation.NonNull;
@@ -36,12 +37,13 @@ import org.thunderdog.challegram.util.StringList;
 
 import java.util.List;
 
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
+// TODO merge with TextEntityCustom into one type
 public class TextEntityMessage extends TextEntity {
   private static final int FLAG_CLICKABLE = 1;
   private static final int FLAG_ESSENTIAL = 1 << 1;
@@ -52,9 +54,11 @@ public class TextEntityMessage extends TextEntity {
   private static final int FLAG_STRIKETHROUGH = 1 << 6;
   private static final int FLAG_FULL_WIDTH = 1 << 7;
   private static final int FLAG_SPOILER = 1 << 8;
+  private static final int FLAG_CUSTOM_EMOJI = 1 << 9;
 
-  private final int flags;
-  private final TdApi.TextEntity clickableEntity, spoilerEntity;
+  private final TdApi.TextEntity clickableEntity, spoilerEntity, emojiEntity;
+  private int flags;
+  private ClickableSpan onClickListener;
 
   private static boolean hasEntityType (List<TdApi.TextEntity> entities, @TdApi.TextEntityType.Constructors int typeConstructor) {
     if (entities != null) {
@@ -99,9 +103,19 @@ public class TextEntityMessage extends TextEntity {
   }
 
   public TextEntityMessage (@Nullable Tdlib tdlib, String in, int offset, int end, TdApi.TextEntity entity, @Nullable List<TdApi.TextEntity> parentEntities, @Nullable TdlibUi.UrlOpenParameters openParameters) {
-    super(tdlib, offset, end, (entity.type.getConstructor() == TdApi.TextEntityTypeBold.CONSTRUCTOR || hasEntityType(parentEntities, TdApi.TextEntityTypeBold.CONSTRUCTOR)) && Text.needFakeBold(in, offset, end), openParameters);
+    this(tdlib,
+      (entity.type.getConstructor() == TdApi.TextEntityTypeBold.CONSTRUCTOR || hasEntityType(parentEntities, TdApi.TextEntityTypeBold.CONSTRUCTOR)) && Text.needFakeBold(in, offset, end),
+      offset, end,
+      entity, parentEntities,
+      openParameters
+    );
+  }
+
+  private TextEntityMessage (@Nullable Tdlib tdlib, boolean needFakeBold, int offset, int end, TdApi.TextEntity entity, @Nullable List<TdApi.TextEntity> parentEntities, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+    super(tdlib, offset, end, needFakeBold, openParameters);
     TdApi.TextEntity clickableEntity = isClickable(entity.type) ? entity : null;
     TdApi.TextEntity spoilerEntity = entity.type.getConstructor() == TdApi.TextEntityTypeSpoiler.CONSTRUCTOR ? entity : null;
+    TdApi.TextEntity emojiEntity = entity.type.getConstructor() == TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR ? entity : null;
     int flags = addFlags(entity.type);
     if (parentEntities != null) {
       for (int i = parentEntities.size() - 1; i >= 0; i--) {
@@ -122,13 +136,62 @@ public class TextEntityMessage extends TextEntity {
     if (spoilerEntity != null) {
       flags |= FLAG_SPOILER;
     }
+    this.emojiEntity = emojiEntity;
+    if (emojiEntity != null) {
+      flags |= FLAG_CUSTOM_EMOJI;
+    }
     this.flags = flags;
+  }
+
+  private TextEntityMessage (@Nullable Tdlib tdlib, boolean needFakeBold, int offset, int end, TdApi.TextEntity clickableEntity, TdApi.TextEntity spoilerEntity, TdApi.TextEntity emojiEntity, int flags, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+    super(tdlib, offset, end, needFakeBold, openParameters);
+    this.clickableEntity = clickableEntity;
+    this.spoilerEntity = spoilerEntity;
+    this.emojiEntity = emojiEntity;
+    this.flags = flags;
+  }
+
+  @Override
+  public TextEntity setOnClickListener (ClickableSpan onClickListener) {
+    this.onClickListener = onClickListener;
+    this.flags |= FLAG_CLICKABLE;
+    return this;
+  }
+
+  @Override
+  public ClickableSpan getOnClickListener () {
+    return onClickListener;
+  }
+
+  @Override
+  public TextEntity makeBold (boolean needFakeBold) {
+    this.flags |= FLAG_BOLD;
+    this.needFakeBold = needFakeBold;
+    return this;
+  }
+
+  @Override
+  public TextEntity createCopy () {
+    TextEntityMessage copy = new TextEntityMessage(tdlib, needFakeBold, start, end, clickableEntity, spoilerEntity, emojiEntity, flags, openParameters);
+    if (customColorSet != null) {
+      copy.setCustomColorSet(customColorSet);
+    }
+    if (onClickListener != null) {
+      copy.setOnClickListener(onClickListener);
+    }
+    if (BitwiseUtils.getFlag(flags, FLAG_BOLD) && !BitwiseUtils.getFlag(copy.flags, FLAG_BOLD)) {
+      copy.makeBold(needFakeBold);
+    }
+    return copy;
   }
 
   private TextColorSetOverride monospaceColorSet;
 
   @Override
   public TextColorSet getSpecialColorSet (@NonNull TextColorSet defaultColorSet) {
+    if (customColorSet != null) {
+      return customColorSet;
+    }
     if (isMonospace()) {
       if (monospaceColorSet == null || monospaceColorSet.originalColorSet() != defaultColorSet) {
         monospaceColorSet = new TextColorSetOverride(defaultColorSet) {
@@ -153,6 +216,24 @@ public class TextEntityMessage extends TextEntity {
     return false;
   }
 
+  @Override
+  public boolean isCustomEmoji () {
+    return BitwiseUtils.getFlag(flags, FLAG_CUSTOM_EMOJI);
+  }
+
+  @Override
+  public boolean hasMedia () {
+    return isCustomEmoji();
+  }
+
+  @Override
+  public long getCustomEmojiId () {
+    if (isCustomEmoji()) {
+      return ((TdApi.TextEntityTypeCustomEmoji) emojiEntity.type).customEmojiId;
+    }
+    return 0;
+  }
+
   public static boolean isClickable (TdApi.TextEntityType type) {
     switch (type.getConstructor()) {
       case TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR:
@@ -170,6 +251,16 @@ public class TextEntityMessage extends TextEntity {
       case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
       case TdApi.TextEntityTypePre.CONSTRUCTOR: {
         return true;
+      }
+      case TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR: // TODO
+
+      case TdApi.TextEntityTypeBold.CONSTRUCTOR:
+      case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
+      case TdApi.TextEntityTypeItalic.CONSTRUCTOR:
+      case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
+      case TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR:
+      case TdApi.TextEntityTypeUnderline.CONSTRUCTOR: {
+        return false;
       }
     }
     return false;
@@ -220,9 +311,9 @@ public class TextEntityMessage extends TextEntity {
     TextEntityMessage b = (TextEntityMessage) bRaw;
     switch (compareMode) {
       case COMPARE_MODE_NORMAL:
-        return this.flags == b.flags;
+        return this.flags == b.flags && this.customColorSet == b.customColorSet;
       case COMPARE_MODE_CLICK_HIGHLIGHT:
-        return Td.equalsTo(this.clickableEntity, b.clickableEntity);
+        return Td.equalsTo(this.clickableEntity, b.clickableEntity) && this.onClickListener == b.onClickListener;
       case COMPARE_MODE_SPOILER: {
         if (Td.equalsTo(this.spoilerEntity, b.spoilerEntity)) {
           return true;
@@ -305,6 +396,10 @@ public class TextEntityMessage extends TextEntity {
     final ViewController<?> context = findRoot(view);
     if (context == null) {
       Log.v("performClick ignored, because ancestor not found");
+      return;
+    }
+    if (onClickListener != null) {
+      onClickListener.onClick(view);
       return;
     }
     switch (clickableEntity.type.getConstructor()) {
@@ -408,6 +503,18 @@ public class TextEntityMessage extends TextEntity {
         }
         break;
       }
+      case TdApi.TextEntityTypeBold.CONSTRUCTOR:
+      case TdApi.TextEntityTypeCode.CONSTRUCTOR:
+      case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
+      case TdApi.TextEntityTypeItalic.CONSTRUCTOR:
+      case TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR:
+      case TdApi.TextEntityTypePre.CONSTRUCTOR:
+      case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
+      case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
+      case TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR:
+      case TdApi.TextEntityTypeUnderline.CONSTRUCTOR:
+        // Non-clickable
+        break;
     }
   }
 
@@ -418,6 +525,9 @@ public class TextEntityMessage extends TextEntity {
       Log.v("performLongPress ignored, because ancestor not found");
       return false;
     }
+    if (onClickListener != null) {
+      return false;
+    }
 
     if (clickableEntity.type.getConstructor() == TdApi.TextEntityTypeBotCommand.CONSTRUCTOR) {
       String command = Td.substring(text.getText(), clickableEntity);
@@ -425,13 +535,10 @@ public class TextEntityMessage extends TextEntity {
     }
 
     final String copyText;
-    switch (clickableEntity.type.getConstructor()) {
-      case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
-        copyText = ((TdApi.TextEntityTypeTextUrl) clickableEntity.type).url;
-        break;
-      default:
-        copyText = Td.substring(text.getText(), clickableEntity);
-        break;
+    if (clickableEntity.type.getConstructor() == TdApi.TextEntityTypeTextUrl.CONSTRUCTOR) {
+      copyText = ((TdApi.TextEntityTypeTextUrl) clickableEntity.type).url;
+    } else {
+      copyText = Td.substring(text.getText(), clickableEntity);
     }
 
     final boolean canShare = clickableEntity.type.getConstructor() == TdApi.TextEntityTypeUrl.CONSTRUCTOR || clickableEntity.type.getConstructor() == TdApi.TextEntityTypeTextUrl.CONSTRUCTOR;
@@ -462,6 +569,15 @@ public class TextEntityMessage extends TextEntity {
       case TdApi.TextEntityTypePre.CONSTRUCTOR: {
         break;
       }
+      case TdApi.TextEntityTypeBotCommand.CONSTRUCTOR: // Unreachable because of the condition above
+      case TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR: // TODO
+
+      case TdApi.TextEntityTypeBold.CONSTRUCTOR:
+      case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
+      case TdApi.TextEntityTypeItalic.CONSTRUCTOR:
+      case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
+      case TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR:
+      case TdApi.TextEntityTypeUnderline.CONSTRUCTOR:
       default: {
         Log.i("Long press is unsupported for entity: %s", clickableEntity);
         return false;

@@ -27,7 +27,6 @@ import org.thunderdog.challegram.data.TGMessageBotInfo;
 import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.MessagesController;
-import org.thunderdog.challegram.util.text.Text;
 
 import java.util.ArrayList;
 
@@ -177,7 +176,7 @@ public class BotHelper implements Client.ResultHandler, Runnable, InlineSearchCo
 
     if (full.botInfo != null) {
       if (!StringUtils.isEmpty(full.botInfo.description) && !context.areScheduledOnly()) {
-        this.botInfoMessage = new TGMessageBotInfo(context.getManager(), chatId, new TdApi.FormattedText(full.botInfo.description, Text.findEntities(full.botInfo.description, Text.ENTITY_FLAGS_ALL)));
+        this.botInfoMessage = new TGMessageBotInfo(context.getManager(), chatId, full.botInfo.description);
       }
 
       if (full.botInfo.commands.length > 0) {

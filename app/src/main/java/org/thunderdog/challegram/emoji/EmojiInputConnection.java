@@ -31,7 +31,6 @@ public class EmojiInputConnection extends InputConnectionWrapper {
     @NonNull final InputConnection inputConnection) {
     super(inputConnection, false);
     mTextView = textView;
-    // EmojiCompat.get().updateEditorInfoAttrs(outAttrs);
   }
 
   @Override

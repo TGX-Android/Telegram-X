@@ -27,9 +27,11 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.emoji.EmojiFilter;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.util.CharacterStyleFilter;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 
 import me.vkryl.android.text.CodePointCountFilter;
@@ -98,13 +100,17 @@ public class EditBioController extends EditBaseController<EditBioController.Argu
     ListItem[] items;
     if (isDescription()) {
       item.setInputFilters(new InputFilter[]{
-        new CodePointCountFilter(TdConstants.MAX_CHANNEL_DESCRIPTION_LENGTH)
+        new CodePointCountFilter(TdConstants.MAX_CHANNEL_DESCRIPTION_LENGTH),
+        new EmojiFilter(),
+        new CharacterStyleFilter()
       });
       items = new ListItem[] {item};
     } else {
       item.setInputFilters(new InputFilter[]{
         new CodePointCountFilter(tdlib.maxBioLength()),
-        new RestrictFilter(new char[]{'\n'})
+        new EmojiFilter(),
+        new CharacterStyleFilter(),
+        new RestrictFilter(new char[] {'\n'})
           .setListener((filter, source, start, end, index, c) -> {
           if (end - start == 1) {
             onDoneClick(null);
