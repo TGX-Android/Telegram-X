@@ -139,7 +139,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
   }
 
   @Override
-  public void onEmojiPartLoaded () {
+  public void onEmojiUpdated (boolean isPackSwitch) {
     adapter.updateValuedSettingByLongId(chatId);
   }
 

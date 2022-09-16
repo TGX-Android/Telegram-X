@@ -2576,7 +2576,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   // Updates
 
   @Override
-  public void onEmojiPartLoaded () {
+  public void onEmojiUpdated (boolean isPackSwitch) {
     if (chatsView != null) {
       chatsView.invalidateAll();
     }

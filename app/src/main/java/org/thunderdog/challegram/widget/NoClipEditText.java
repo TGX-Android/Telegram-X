@@ -20,12 +20,13 @@ import android.view.View;
 
 import java.lang.reflect.Field;
 
-public class NoClipEditText extends EditText {
+public class NoClipEditText extends EmojiEditText {
   private static Field mScrollYField;
   private int ignoreTopCount, ignoreBottomCount, scrollY;
 
   public NoClipEditText(Context context) {
     super(context);
+    initDefault();
 
     if (mScrollYField == null) {
       try {

@@ -14,6 +14,8 @@
  */
 package org.thunderdog.challegram.data;
 
+import androidx.annotation.NonNull;
+
 import org.drinkless.td.libcore.telegram.TdApi;
 
 public class TdApiExt {
@@ -32,15 +34,17 @@ public class TdApiExt {
 
     @Override
     public int getConstructor () {
+      //noinspection WrongConstant
       return CONSTRUCTOR;
     }
 
     @Override
+    @NonNull
     public String toString () {
       return "MessageChatEvent{" +
         "event=" + event +
         ", isFull=" + isFull +
-        ", noDate=" + hideDate +
+        ", hideDate=" + hideDate +
         '}';
     }
   }

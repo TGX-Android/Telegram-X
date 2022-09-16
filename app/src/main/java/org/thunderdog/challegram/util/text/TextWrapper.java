@@ -32,9 +32,11 @@ import org.thunderdog.challegram.unsorted.Settings;
 import me.vkryl.android.animator.ListAnimator;
 import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.android.util.ViewProvider;
+import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.BitwiseUtils;
+import me.vkryl.core.lambda.Destroyable;
 
-public class TextWrapper implements ListAnimator.Measurable {
+public class TextWrapper implements ListAnimator.Measurable, Destroyable, Text.TextMediaListener {
   private static final int PORTRAIT_INDEX = 0;
   private static final int LANDSCAPE_INDEX = 1;
 
@@ -53,7 +55,7 @@ public class TextWrapper implements ListAnimator.Measurable {
 
   private int textFlags;
 
-  private TextWrapper (String text, TextStyleProvider textStyleProvider, TextColorSet colorTheme) {
+  public TextWrapper (String text, TextStyleProvider textStyleProvider, TextColorSet colorTheme) {
     this.sizes = new int[2];
     this.texts = new Text[2];
     this.textSizes = new int[2];
@@ -63,25 +65,19 @@ public class TextWrapper implements ListAnimator.Measurable {
     this.maxLines = -1;
   }
 
-  public TextWrapper (String text, TextStyleProvider textStyleProvider, @NonNull TextColorSet colorTheme, @Nullable TextEntity[] entities) {
+  public TextWrapper (String text, TextStyleProvider textStyleProvider, @NonNull TextColorSet colorTheme, @Nullable TextEntity[] entities, @Nullable TextMediaListener textMediaListener) {
     this(text, textStyleProvider, colorTheme);
-    this.entities = entities;
+    setEntities(entities, textMediaListener);
   }
 
-  public TextWrapper (Tdlib tdlib, @NonNull TdApi.FormattedText text, TextStyleProvider styleProvider, @NonNull TextColorSet colorTheme, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public TextWrapper (Tdlib tdlib, @NonNull TdApi.FormattedText text, TextStyleProvider styleProvider, @NonNull TextColorSet colorTheme, @Nullable TdlibUi.UrlOpenParameters openParameters, @Nullable TextMediaListener textMediaListener) {
     this(text.text, styleProvider, colorTheme);
-    this.entities = TextEntity.valueOf(tdlib, text, openParameters);
+    setEntities(TextEntity.valueOf(tdlib, text, openParameters), textMediaListener);
   }
 
-  public TextWrapper (Tdlib tdlib, String text, TextStyleProvider styleProvider, @NonNull TextColorSet colorTheme, int linkFlags, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public TextWrapper (Tdlib tdlib, String text, TextStyleProvider styleProvider, @NonNull TextColorSet colorTheme, int linkFlags, @Nullable TdlibUi.UrlOpenParameters openParameters, @Nullable TextMediaListener textMediaListener) {
     this(text, styleProvider, colorTheme);
-    this.entities = Text.makeEntities(text, linkFlags, entities, tdlib, openParameters);
-  }
-
-  public TextWrapper (Tdlib tdlib, String text, TextStyleProvider styleProvider, @NonNull TextColorSet colorTheme, int linkFlags, @Nullable TdlibUi.UrlOpenParameters openParameters, int maxLines) {
-    this(text, styleProvider, colorTheme);
-    this.entities = Text.makeEntities(text, linkFlags, null, tdlib, openParameters);
-    this.maxLines = maxLines;
+    setEntities(Text.makeEntities(text, linkFlags, null, tdlib, openParameters), textMediaListener);
   }
 
   private TextWrapper setTextFlags (int textFlags) {
@@ -123,6 +119,30 @@ public class TextWrapper implements ListAnimator.Measurable {
     return this;
   }
 
+  public interface TextMediaListener {
+    void onInvalidateTextMedia (TextWrapper wrapper, Text text, @Nullable TextMedia specificMedia);
+  }
+
+  private TextMediaListener textMediaListener;
+
+  public TextWrapper setTextMediaListener (TextMediaListener textMediaListener) {
+    this.textMediaListener = textMediaListener;
+    return this;
+  }
+
+  public TextWrapper setEntities (TextEntity[] entities, TextMediaListener listener) {
+    this.entities = entities;
+    this.textMediaListener = listener;
+    return this;
+  }
+
+  @Override
+  public void onInvalidateTextMedia (Text text, @Nullable TextMedia specificMedia) {
+    if (textMediaListener != null && text == getCurrent()) {
+      textMediaListener.onInvalidateTextMedia(this, text, specificMedia);
+    }
+  }
+
   public int getMaxLines () {
     return this.maxLines;
   }
@@ -145,12 +165,36 @@ public class TextWrapper implements ListAnimator.Measurable {
     return getInternal(isPortrait ? PORTRAIT_INDEX : LANDSCAPE_INDEX, maxWidth);
   }
 
-  public void requestIcons (ComplexReceiver receiver) {
+  public boolean hasMedia () {
+    for (Text text : texts) {
+      if (text != null && text.hasMedia())
+        return true;
+    }
+    return false;
+  }
+
+  public int getMaxMediaCount () {
+    int count = 0;
+    for (Text text : texts) {
+      if (text != null) {
+        count = Math.max(count, text.getMediaCount());
+      }
+    }
+    return count;
+  }
+
+  public boolean belongsToWrapper (Text text) {
+    return text != null && ArrayUtils.indexOf(texts, text) != -1;
+  }
+
+  public void requestMedia (ComplexReceiver receiver) {
+    requestMedia(receiver, -1, -1);
+  }
+
+  public void requestMedia (ComplexReceiver receiver, int startKey, int maxMediaCount) {
     Text text = getCurrent();
     if (text != null) {
-      text.requestIcons(receiver, -1);
-    } else {
-      FormattedText.requestIcons(entities, receiver, -1);
+      text.requestMedia(receiver, startKey, maxMediaCount);
     }
   }
 
@@ -173,11 +217,17 @@ public class TextWrapper implements ListAnimator.Measurable {
     boolean sizeChanged = textSizes[index] != textSizePx || (texts[index] != null && texts[index].getMaxLineCount() != maxLines);
     if (sizeChanged || texts[index] == null || sizes[index] != maxWidth) {
       boolean needBigEmoji = BitwiseUtils.getFlag(textFlags, Text.FLAG_BIG_EMOJI) && Settings.instance().useBigEmoji();
-      if (texts[index] != null && !sizeChanged && !needBigEmoji) {
-        texts[index].set(maxWidth, text);
+      final Text oldText = texts[index];
+      Text text = oldText;
+      if (text != null && !sizeChanged && !needBigEmoji) {
+        text.set(maxWidth, this.text);
       } else {
-        Text.Builder b = new Text.Builder(this.text, maxWidth, textStyleProvider, colorTheme).maxLineCount(maxLines).entities(entities).lineWidthProvider(lineWidthProvider).textFlags(BitwiseUtils.setFlag(textFlags, Text.FLAG_BIG_EMOJI, false));
-        Text text = b.build();
+        Text.Builder b = new Text.Builder(this.text, maxWidth, textStyleProvider, colorTheme)
+          .maxLineCount(maxLines)
+          .entities(entities, this)
+          .lineWidthProvider(lineWidthProvider)
+          .textFlags(BitwiseUtils.setFlag(textFlags, Text.FLAG_BIG_EMOJI, false));
+        text = b.build();
         if (needBigEmoji) {
           // TODO move inside Text class
           int emojiCount = text.getEmojiOnlyCount();
@@ -188,16 +238,26 @@ public class TextWrapper implements ListAnimator.Measurable {
               float desiredEmojiSize = maxEmojiSize - (maxEmojiSize - textSizeDp) / SCALABLE_EMOJI_COUNT * (emojiCount - 1);
               if (desiredEmojiSize > textSizeDp) {
                 TextStyleProvider newProvider = new TextStyleProvider(textStyleProvider.getTextPaintStorage()).setTextSize(desiredEmojiSize).setAllowSp(true);
+                text.performDestroy();
                 text = b.textFlags(textFlags).styleProvider(newProvider).build();
               }
             }
           }
         }
         texts[index] = text;
+        if (oldText != null) {
+          oldText.performDestroy();
+        }
       }
-      texts[index].setViewProvider(viewProvider);
+      text.setViewProvider(viewProvider);
       sizes[index] = maxWidth;
       textSizes[index] = textSizePx;
+      if (index == (isPortrait ? PORTRAIT_INDEX : LANDSCAPE_INDEX) &&
+        text.hasMedia()) {
+        if (textMediaListener == null)
+          throw new IllegalStateException();
+        text.notifyMediaChanged(null);
+      }
     }
     return texts[index];
   }
@@ -287,9 +347,13 @@ public class TextWrapper implements ListAnimator.Measurable {
   }
 
   public final void draw (Canvas c, int startX, int startY, TextColorSet colorTheme, float alpha) {
+    draw(c, startX, startY, colorTheme, alpha, null);
+  }
+
+  public final void draw (Canvas c, int startX, int startY, TextColorSet colorTheme, float alpha, ComplexReceiver textMediaReceiver) {
     final Text text = getCurrent();
     if (text != null) {
-      text.draw(c, startX, startX, 0, startY, colorTheme, alpha);
+      text.draw(c, startX, startX, 0, startY, colorTheme, alpha, textMediaReceiver);
     }
   }
 
@@ -306,10 +370,21 @@ public class TextWrapper implements ListAnimator.Measurable {
     draw(c, startX, endX, endXPadding, startY, colorTheme, alpha, null);
   }
 
-  public final void draw (Canvas c, int startX, int endX, int endXPadding, int startY, TextColorSet colorTheme, float alpha, @Nullable ComplexReceiver iconReceiver) {
+  public final void draw (Canvas c, int startX, int endX, int endXPadding, int startY, TextColorSet colorTheme, float alpha, @Nullable ComplexReceiver textMediaReceiver) {
     final Text text = getCurrent();
     if (text != null) {
-      text.draw(c, startX, endX, endXPadding, startY, colorTheme, alpha, iconReceiver);
+      text.draw(c, startX, endX, endXPadding, startY, colorTheme, alpha, textMediaReceiver);
+    }
+  }
+
+  @Override
+  public void performDestroy () {
+    for (int i = 0; i < texts.length; i++) {
+      Text text = texts[i];
+      if (text != null) {
+        text.performDestroy();
+        texts[i] = null;
+      }
     }
   }
 
@@ -334,9 +409,9 @@ public class TextWrapper implements ListAnimator.Measurable {
     return text != null && text.performLongPress(view);
   }
 
-  public static TextWrapper parseRichText (ViewController<?> context, @Nullable Text.ClickCallback callback, TdApi.RichText richText, TextStyleProvider textStyleProvider, @NonNull TextColorSet colorTheme, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public static TextWrapper parseRichText (ViewController<?> context, @Nullable Text.ClickCallback callback, TdApi.RichText richText, TextStyleProvider textStyleProvider, @NonNull TextColorSet colorTheme, @Nullable TdlibUi.UrlOpenParameters openParameters, @Nullable TextMediaListener textMediaListener) {
     FormattedText formattedText = FormattedText.parseRichText(context, richText, openParameters);
-    return new TextWrapper(formattedText.text, textStyleProvider, colorTheme, formattedText.entities)
+    return new TextWrapper(formattedText.text, textStyleProvider, colorTheme, formattedText.entities, textMediaListener)
       .addTextFlags(Text.FLAG_CUSTOM_LONG_PRESS)
       .setClickCallback(callback);
   }

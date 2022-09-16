@@ -41,16 +41,14 @@ import org.thunderdog.challegram.util.MessageSourceProvider;
 import org.thunderdog.challegram.util.UserProvider;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
-import org.thunderdog.challegram.widget.SmallChatView;
 
 import me.vkryl.android.animator.BounceAnimator;
 import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.core.StringUtils;
-import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
-public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewProvider.InvalidateContentProvider, UserProvider, TooltipOverlayView.LocationProvider {
+public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, TooltipOverlayView.LocationProvider {
   private final Tdlib tdlib;
 
   private long chatId;
@@ -75,7 +73,7 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
 
   private ImageFile avatarFile;
 
-  private final MultipleViewProvider currentViews = new MultipleViewProvider().setContentProvider(this);
+  private final MultipleViewProvider currentViews = new MultipleViewProvider();
   private final BounceAnimator isAnonymous = new BounceAnimator(currentViews);
   private final int horizontalPadding;
 
@@ -196,7 +194,7 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
         this.avatarFile = null;
       }
       if (currentWidth > 0) {
-        currentViews.invalidateContent();
+        currentViews.invalidateContent(this);
       }
     }
   }
@@ -322,19 +320,6 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
     return avatarPlaceholder;
   }
 
-  // IMAGE UPDATING
-
-  @Override
-  public void invalidateContent () {
-    ReferenceList<View> views = currentViews.getViewsList();
-    for (View view : views) {
-      if (view instanceof SmallChatView) {
-        ((SmallChatView) view).invalidateContent(this);
-      }
-    }
-  }
-
-
   // Layouting
 
   private int currentWidth;
@@ -395,7 +380,8 @@ public class DoubleTextWrapper implements MessageSourceProvider, MultipleViewPro
       return;
     }
     if (!StringUtils.isEmpty(subtitle)) {
-      trimmedSubtitle = new Text.Builder(tdlib, subtitle, null, availWidth, Paints.robotoStyleProvider(15), TextColorSets.Regular.LIGHT)
+      // TODO: custom emoji support
+      trimmedSubtitle = new Text.Builder(tdlib, subtitle, null, availWidth, Paints.robotoStyleProvider(15), TextColorSets.Regular.LIGHT, null)
         .singleLine()
         .build();
     } else {

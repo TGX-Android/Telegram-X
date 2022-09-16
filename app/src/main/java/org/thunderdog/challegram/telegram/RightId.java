@@ -35,6 +35,7 @@ import java.lang.annotation.RetentionPolicy;
   R.id.right_banUsers,
   R.id.right_inviteUsers,
   R.id.right_pinMessages,
-  R.id.right_addNewAdmins
+  R.id.right_addNewAdmins,
+  R.id.right_sendVoiceVideo // Fake right id for UserFullInfo.hasRestrictedVoiceAndVideoNoteMessages
 })
 public @interface RightId {}

@@ -26,7 +26,8 @@ public abstract class GenerationInfo {
   static final String TYPE_MUSIC_THUMB = "mthumb";
   static final String TYPE_VIDEO = "video";
   static final String TYPE_AVATAR = "avatar";
-  public static final String TYPE_STICKER_PREVIEW = "asthumb";
+  public static final String TYPE_LOTTIE_STICKER_PREVIEW = "asthumb";
+  public static final String TYPE_VIDEO_STICKER_PREVIEW = "vsthumb";
 
   protected final long generationId;
   protected final String originalPath;

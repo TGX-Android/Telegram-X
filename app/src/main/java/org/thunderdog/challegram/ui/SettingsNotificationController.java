@@ -88,6 +88,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.StringUtils;
@@ -1443,7 +1444,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
           adapter.updateValuedSetting(secretInfo);
         }
         if (updated) {
-          TdlibManager.instance().onUpdateSecretChatNotifications();
+          tdlib.context().onUpdateSecretChatNotifications();
         }
         break;
       }
@@ -1497,7 +1498,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
               .build(), (optionView, optionId) -> {
               switch (optionId) {
                 case R.id.btn_retry: {
-                  TdlibManager.instance().checkDeviceToken();
+                  tdlib.context().checkDeviceToken(0, null);
                   break;
                 }
                 case R.id.btn_share: {
@@ -1544,7 +1545,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
       /*case R.id.btn_appBadge: {
         boolean enabled = adapter.toggleView(v);
         if (Settings.instance().setNeedBadgeCounter(enabled)) {
-          TdlibManager.instance().resetBadge();
+          tdlib.context().resetBadge();
         }
         break;
       }*/
@@ -1553,7 +1554,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         int flag = item.getIntValue();
         if (Settings.instance().setNotificationFlag(flag, enabled)) {
           TdApi.NotificationSettingsScope scope = getScope(item);
-          TdlibManager.instance().onUpdateNotifications(scope, null);
+          tdlib.context().onUpdateNotifications(scope, null);
           if (dismissedHint != null) {
             dismissedHint.setString(enabled ? R.string.IncludeDismissedHintOff : R.string.IncludeDismissedHintOn);
             adapter.updateValuedSetting(dismissedHint);
@@ -1571,7 +1572,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
           (viewId == R.id.btn_notificationMode_selected && enabled) ? NOTIFICATION_MODE_SELECTED :
           (viewId == R.id.btn_notificationMode_all && enabled) ? NOTIFICATION_MODE_ALL : -1;
         if (updateNotificationMode(oldMode, newMode, false)) {
-          TdlibManager.instance().onUpdateAllNotifications();
+          tdlib.context().onUpdateAllNotifications();
         }
         break;
       }
@@ -1620,7 +1621,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
             break;
         }
         if (Settings.instance().setBadgeFlags(newFlags)) {
-          TdlibManager.instance().resetBadge();
+          tdlib.context().resetBadge();
           switch (flag) {
             case Settings.BADGE_FLAG_MESSAGES: {
               int i = adapter.indexOfViewById(R.id.btn_appBadgeCountMessagesInfo);
@@ -2022,7 +2023,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
           adapter.updateValuedSetting(mergeInfo);
         }
         if (updated) {
-          TdlibManager.instance().onUpdateAllNotifications();
+          tdlib.context().onUpdateAllNotifications();
         }
         break;
       }
@@ -2093,7 +2094,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
     if (update) {
       int newMode = getNotificationMode();
       if (oldMode != newMode && updateNotificationMode(oldMode, newMode, true)) {
-        TdlibManager.instance().onUpdateAllNotifications();
+        tdlib.context().onUpdateAllNotifications();
       }
     }
     adapter.updateAllValuedSettings();

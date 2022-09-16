@@ -88,7 +88,7 @@ public class TGMessageContact extends TGMessage implements TdlibCache.UserDataCh
         TGMessageContact.this.user = user;
         buildAvatar();
         // buildName();
-        invalidateContent();
+        invalidateContent(this);
         invalidate();
       }
     });

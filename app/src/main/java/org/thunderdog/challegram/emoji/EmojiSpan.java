@@ -14,10 +14,30 @@
  */
 package org.thunderdog.challegram.emoji;
 
+import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.text.Layout;
+import android.view.View;
+
+import org.thunderdog.challegram.loader.ComplexReceiver;
 
 public interface EmojiSpan {
-  CharSequence getEmojiCode ();
   int getRawSize (Paint paint);
-  boolean needRefresh ();
+
+  boolean isCustomEmoji ();
+  default long getCustomEmojiId () {
+    return 0;
+  }
+  default boolean belongsToSurface (CustomEmojiSurfaceProvider customEmojiSurfaceProvider) {
+    return false;
+  }
+  default void requestCustomEmoji (ComplexReceiver receiver, int mediaKey) {
+    receiver.clearReceivers(mediaKey);
+  }
+
+  default boolean needRefresh () {
+    return false;
+  }
+
+  default void onOverlayDraw (Canvas c, View view, Layout layout) { }
 }

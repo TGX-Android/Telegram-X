@@ -41,19 +41,30 @@ public class TGMessageBotInfo extends TGMessage {
 
   private Drawable icon;
 
-  public TGMessageBotInfo (MessagesManager context, long chatId, TdApi.FormattedText description) {
+  public TGMessageBotInfo (MessagesManager context, long chatId, String description) {
+    this(context, chatId, new TdApi.FormattedText(description, Text.findEntities(description, Text.ENTITY_FLAGS_ALL)));
+  }
+
+  private TGMessageBotInfo (MessagesManager context, long chatId, TdApi.FormattedText description) {
     super(context, TD.newFakeMessage(chatId, context.controller().tdlib().sender(chatId), new TdApi.MessageText(description, null)));
 
     if (!tdlib().isRepliesChat(ChatId.fromUserId(getSender().getUserId()))) {
       String text = Lang.getString(R.string.WhatThisBotCanDo);
-      this.titleWrapper = new TextWrapper(text, getTextStyleProvider(), getTextColorSet(), null).addTextFlags(Text.FLAG_ALL_BOLD);
+      this.titleWrapper = new TextWrapper(text, getTextStyleProvider(), getTextColorSet()).addTextFlags(Text.FLAG_ALL_BOLD);
       this.titleWrapper.setViewProvider(currentViews);
     }
 
-    this.textWrapper = new TextWrapper(description.text, getTextStyleProvider(), getTextColorSet(), TextEntity.valueOf(tdlib, description, null)).setClickCallback(clickCallback());
+    this.textWrapper = new TextWrapper(description.text, getTextStyleProvider(), getTextColorSet())
+      .setEntities(TextEntity.valueOf(tdlib, description, null), null)
+      .setClickCallback(clickCallback());
     this.textWrapper.setViewProvider(currentViews);
 
     icon = Drawables.get(context.controller().context().getResources(), R.drawable.baseline_help_24);
+  }
+
+  @Override
+  public boolean canSwipe () {
+    return false;
   }
 
   @Override

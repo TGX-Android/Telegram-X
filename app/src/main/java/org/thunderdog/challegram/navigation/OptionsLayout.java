@@ -34,7 +34,6 @@ import androidx.annotation.Nullable;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
-import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeColorId;
@@ -48,7 +47,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.widget.CustomTextView;
-import org.thunderdog.challegram.widget.NoScrollTextView;
+import org.thunderdog.challegram.widget.EmojiTextView;
 
 import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.Animated;
@@ -135,7 +134,8 @@ public class OptionsLayout extends LinearLayout implements Animated {
   }
 
   public static TextView genOptionView (Context context, int id, CharSequence string, int color, int icon, OnClickListener onClickListener, @Nullable ThemeListenerList themeProvider, @Nullable ThemeDelegate forcedTheme) {
-    TextView text = new NoScrollTextView(context);
+    EmojiTextView text = new EmojiTextView(context);
+    text.setScrollDisabled(true);
 
     text.setId(id);
     text.setTypeface(Fonts.getRobotoRegular());
@@ -173,7 +173,7 @@ public class OptionsLayout extends LinearLayout implements Animated {
       }
     }
     Views.setClickable(text);
-    text.setText(Emoji.instance().replaceEmoji(string));
+    text.setText(string);
 
     return text;
   }

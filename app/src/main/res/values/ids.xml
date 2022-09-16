@@ -1172,6 +1172,7 @@
   <item type="id" name="right_readMessages" />
   <item type="id" name="right_sendMessages" />
   <item type="id" name="right_sendMedia" />
+  <item type="id" name="right_sendVoiceVideo" />
   <item type="id" name="right_sendStickersAndGifs" />
   <item type="id" name="right_sendPolls" />
   <item type="id" name="right_embedLinks" />

@@ -213,7 +213,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
   }
 
   @Override
-  public void onEmojiPartLoaded () {
+  public void onEmojiUpdated (boolean isPackSwitch) {
     invalidate();
   }
 
@@ -694,9 +694,15 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
       trimmedSubtitle = trimmedSubtitleExpanded = null;
     } else {
       TextColorSet colorSet = this::getSubtitleColor;
-      trimmedSubtitle = new Text.Builder(subtitle, getCurrentScaledTextMaxWidth(), Paints.robotoStyleProvider(14), colorSet).singleLine().entities(subtitleEntities).build();
+      trimmedSubtitle = new Text.Builder(subtitle, getCurrentScaledTextMaxWidth(), Paints.robotoStyleProvider(14), colorSet)
+        .singleLine()
+        .entities(subtitleEntities, null)
+        .build();
       if (trimmedSubtitle.isEllipsized() || (expandedSubtitle != null && !expandedSubtitle.equals(subtitle))) {
-        trimmedSubtitleExpanded = new Text.Builder(expandedSubtitle != null ? expandedSubtitle : subtitle, getExpandedMaxTextWidth(), Paints.robotoStyleProvider(14), colorSet).singleLine().entities(expandedSubtitle != null ? null /*TODO*/ : subtitleEntities).build();
+        trimmedSubtitleExpanded = new Text.Builder(expandedSubtitle != null ? expandedSubtitle : subtitle, getExpandedMaxTextWidth(), Paints.robotoStyleProvider(14), colorSet)
+          .singleLine()
+          .entities(expandedSubtitle != null ? null /*TODO*/ : subtitleEntities, null)
+          .build();
       } else {
         trimmedSubtitleExpanded = null;
       }

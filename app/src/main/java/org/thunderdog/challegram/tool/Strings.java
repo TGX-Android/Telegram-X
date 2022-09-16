@@ -428,14 +428,17 @@ public class Strings {
     return letters == null || StringUtils.isEmpty(letters.text);
   }
 
+  @Deprecated
   public static boolean findWord (String text, String word) {
     return highlightWords(text, word, 0, null) != text;
   }
 
+  @Deprecated
   public static CharSequence highlightWords (String text, String highlight, int startIndex, @Nullable char[] special) {
     return highlightWords(text, highlight, startIndex, special, 0);
   }
 
+  @Deprecated
   public static void forceHighlightSpansThemeId (CharSequence text, @ThemeId int forceThemeId) {
     CustomTypefaceSpan[] args = null;
     if (text instanceof Spannable) {
@@ -450,7 +453,8 @@ public class Strings {
     }
   }
 
-  public static CharSequence highlightWords (String text, String highlight, int startIndex, @Nullable char[] special, @ThemeId int forceThemeId) {
+  @Deprecated
+  private static CharSequence highlightWords (String text, String highlight, int startIndex, @Nullable char[] special, @ThemeId int forceThemeId) {
     if (StringUtils.isEmpty(text) || StringUtils.isEmpty(highlight)) {
       return text;
     }

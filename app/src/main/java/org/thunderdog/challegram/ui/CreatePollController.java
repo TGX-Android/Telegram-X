@@ -34,16 +34,17 @@ import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.ThreadInfo;
+import org.thunderdog.challegram.emoji.EmojiFilter;
 import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.NavigationStack;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
-import org.thunderdog.challegram.util.DoneListener;
+import org.thunderdog.challegram.util.CharacterStyleFilter;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.v.CustomRecyclerView;
-import org.thunderdog.challegram.v.EditTextBase;
+import org.thunderdog.challegram.v.EditText;
 import org.thunderdog.challegram.widget.FillingDecoration;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 import org.thunderdog.challegram.widget.RadioView;
@@ -149,18 +150,14 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
             editText.setRadioActive(item == correctOptionItem, false);
             editText.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
             Views.setSingleLine(editText.getEditText(), false);
-            editText.setMaxLength(TdConstants.MAX_POLL_OPTION_LENGTH);
             editText.setAlwaysActive(true);
             editText.getEditText().setLineDisabled(true);
-            editText.getEditText().setBackspaceListener(new EditTextBase.BackspaceListener() {
-              @Override
-              public boolean onBackspacePressed (EditTextBase v, Editable text, int selectionStart, int selectionEnd) {
-                if (options.size() > 1 && (text.length() == 0 || text.toString().trim().isEmpty())) {
-                  removeOption((ListItem) ((ViewGroup) v.getParent().getParent()).getTag());
-                  return true;
-                }
-                return false;
+            editText.getEditText().setBackspaceListener((v, text, selectionStart, selectionEnd) -> {
+              if (options.size() > 1 && (text.length() == 0 || text.toString().trim().isEmpty())) {
+                removeOption((ListItem) ((ViewGroup) v.getParent().getParent()).getTag());
+                return true;
               }
+              return false;
             });
             editText.setNeedNextButton((v) -> {
               ListItem listItem = (ListItem) ((ViewGroup) v.getParent()).getTag();
@@ -564,13 +561,11 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
 
   private ListItem createNewOption () {
     ListItem option = new ListItem(ListItem.TYPE_EDITTEXT_POLL_OPTION, R.id.option).setInputFilters(new InputFilter[] {
+      new CodePointCountFilter(TdConstants.MAX_POLL_OPTION_LENGTH),
+      new EmojiFilter(),
+      new CharacterStyleFilter(),
       new RestrictFilter(new char[] {'\n'})
-    }).setOnEditorActionListener(new EditBaseController.SimpleEditorActionListener(EditorInfo.IME_ACTION_NEXT, new DoneListener() {
-      @Override
-      public boolean onDoneClick (View v) {
-        return addOption();
-      }
-    }));
+    }).setOnEditorActionListener(new EditBaseController.SimpleEditorActionListener(EditorInfo.IME_ACTION_NEXT, v -> addOption()));
     this.options.add(option);
     return option;
   }

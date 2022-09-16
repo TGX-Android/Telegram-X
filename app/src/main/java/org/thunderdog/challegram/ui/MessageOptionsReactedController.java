@@ -132,7 +132,7 @@ public class MessageOptionsReactedController extends MessageOptionsPagerControll
   }
 
   @Override
-  public int getItemsHeight () {
+  public int getItemsHeight (RecyclerView recyclerView) {
     if (adapter.getItems().size() == 0) {
       return 0;
     }

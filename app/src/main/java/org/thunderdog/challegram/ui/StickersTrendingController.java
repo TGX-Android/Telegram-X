@@ -125,71 +125,70 @@ public class StickersTrendingController extends ViewController<Void> implements 
   public void onRecentStickersUpdated (int[] stickerIds, boolean isAttached) { }
 
   @Override
-  public void onInstalledStickerSetsUpdated (long[] stickerSetIds, boolean isMasks) {
+  public void onInstalledStickerSetsUpdated (long[] stickerSetIds, TdApi.StickerType stickerType) {
+    if (stickerType.getConstructor() != TdApi.StickerTypeRegular.CONSTRUCTOR)
+      return;
     final LongSparseArray<TGStickerSetInfo> sets = new LongSparseArray<>(stickerSetIds.length);
     for (long setId : stickerSetIds) {
       sets.put(setId, null);
     }
-    tdlib.ui().post(() -> {
-      if (!isDestroyed() && !loadingTrending && stickerSets != null) {
-        for (TGStickerSetInfo stickerSet : stickerSets) {
-          int i = sets.indexOfKey(stickerSet.getId());
-          if (i >= 0) {
-            stickerSet.setIsInstalled();
-            adapter.updateDone(stickerSet);
-          } else {
-            stickerSet.setIsNotInstalled();
-            adapter.updateDone(stickerSet);
-          }
+    runOnUiThreadOptional(() -> {
+      for (TGStickerSetInfo stickerSet : stickerSets) {
+        int i = sets.indexOfKey(stickerSet.getId());
+        if (i >= 0) {
+          stickerSet.setIsInstalled();
+        } else {
+          stickerSet.setIsNotInstalled();
         }
+        adapter.updateDone(stickerSet);
       }
     });
   }
 
   @Override
   public void onStickerSetArchived (TdApi.StickerSetInfo stickerSet) {
+    if (stickerSet.stickerType.getConstructor() != TdApi.StickerTypeRegular.CONSTRUCTOR)
+      return;
     final long stickerSetId = stickerSet.id;
-    tdlib.ui().post(() -> {
-      if (!isDestroyed() && !loadingTrending && stickerSets != null) {
-        for (TGStickerSetInfo stickerSet1 : stickerSets) {
-          if (stickerSetId == stickerSet1.getId()) {
-            stickerSet1.setIsArchived();
-            adapter.updateDone(stickerSet1);
-            break;
-          }
+    runOnUiThreadOptional(() -> {
+      for (TGStickerSetInfo stickerSet1 : stickerSets) {
+        if (stickerSetId == stickerSet1.getId()) {
+          stickerSet1.setIsArchived();
+          adapter.updateDone(stickerSet1);
+          break;
         }
       }
     });
   }
 
   @Override
-  public void onStickerSetRemoved (TdApi.StickerSetInfo stickerSet) {
-    final long stickerSetId = stickerSet.id;
-    tdlib.ui().post(() -> {
-      if (!isDestroyed() && !loadingTrending && stickerSets != null) {
-        for (TGStickerSetInfo stickerSet1 : stickerSets) {
-          if (stickerSetId == stickerSet1.getId()) {
-            stickerSet1.setIsNotInstalled();
-            stickerSet1.setIsNotArchived();
-            adapter.updateDone(stickerSet1);
-            break;
-          }
+  public void onStickerSetRemoved (TdApi.StickerSetInfo removedStickerSet) {
+    if (removedStickerSet.stickerType.getConstructor() != TdApi.StickerTypeRegular.CONSTRUCTOR)
+      return;
+    final long removedStickerSetId = removedStickerSet.id;
+    runOnUiThreadOptional(() -> {
+      for (TGStickerSetInfo stickerSet : stickerSets) {
+        if (removedStickerSetId == stickerSet.getId()) {
+          stickerSet.setIsNotInstalled();
+          stickerSet.setIsNotArchived();
+          adapter.updateDone(stickerSet);
+          break;
         }
       }
     });
   }
 
   @Override
-  public void onStickerSetInstalled (TdApi.StickerSetInfo stickerSet) {
-    final long stickerSetId = stickerSet.id;
-    tdlib.ui().post(() -> {
-      if (!isDestroyed() && !loadingTrending && stickerSets != null) {
-        for (TGStickerSetInfo stickerSet1 : stickerSets) {
-          if (stickerSetId == stickerSet1.getId()) {
-            stickerSet1.setIsInstalled();
-            adapter.updateDone(stickerSet1);
-            break;
-          }
+  public void onStickerSetInstalled (TdApi.StickerSetInfo installedStickerSet) {
+    if (installedStickerSet.stickerType.getConstructor() != TdApi.StickerTypeRegular.CONSTRUCTOR)
+      return;
+    final long installedStickerSetId = installedStickerSet.id;
+    runOnUiThreadOptional(() -> {
+      for (TGStickerSetInfo stickerSet : stickerSets) {
+        if (installedStickerSetId == stickerSet.getId()) {
+          stickerSet.setIsInstalled();
+          adapter.updateDone(stickerSet);
+          break;
         }
       }
     });
@@ -201,9 +200,11 @@ public class StickersTrendingController extends ViewController<Void> implements 
   }
 
   @Override
-  public void onTrendingStickersUpdated (final TdApi.TrendingStickerSets stickerSets, int unreadCount) {
-    tdlib.ui().post(() -> {
-      if (!loadingTrending && (StickersTrendingController.this.stickerSets == null || StickersTrendingController.this.stickerSets.isEmpty()) && stickerSets.sets.length > 0) {
+  public void onTrendingStickersUpdated (final TdApi.StickerType stickerType, final TdApi.TrendingStickerSets stickerSets, int unreadCount) {
+    if (stickerType.getConstructor() != TdApi.StickerTypeRegular.CONSTRUCTOR || stickerSets.sets.length == 0)
+      return;
+    runOnUiThreadOptional(() -> {
+      if (!loadingTrending) {
         loadTrending(0, 20, 0);
       }
     });
@@ -217,7 +218,7 @@ public class StickersTrendingController extends ViewController<Void> implements 
   private void loadTrending (int offset, int limit, int cellCount) {
     if (!loadingTrending) {
       loadingTrending = true;
-      tdlib.client().send(new TdApi.GetTrendingStickerSets(offset, limit), result -> {
+      tdlib.client().send(new TdApi.GetTrendingStickerSets(new TdApi.StickerTypeRegular(), offset, limit), result -> {
         switch (result.getConstructor()) {
           case TdApi.TrendingStickerSets.CONSTRUCTOR: {
             final TdApi.TrendingStickerSets trendingStickerSets = (TdApi.TrendingStickerSets) result;

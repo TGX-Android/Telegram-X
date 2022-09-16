@@ -15,20 +15,13 @@
 package org.thunderdog.challegram.component.chat;
 
 import android.graphics.Canvas;
-import android.util.Log;
 
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGMessage;
-import org.thunderdog.challegram.data.TGMessageBotInfo;
-import org.thunderdog.challegram.data.TGMessageChat;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.ui.MessagesController;
-import org.thunderdog.challegram.unsorted.Settings;
-
-import me.vkryl.core.MathUtils;
 
 public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
   private CustomTouchHelper helper;
@@ -57,8 +50,6 @@ public class MessagesTouchHelperCallback extends CustomTouchHelper.Callback {
     }
     TGMessage m = MessagesHolder.findMessageView(holder.itemView).getMessage();
     if (!m.canSwipe() ||
-        m instanceof TGMessageChat ||
-        m instanceof TGMessageBotInfo ||
         m.isSending() ||
         m.getChatId() == 0) {
       return 0;

@@ -56,9 +56,38 @@ public class MediaPreviewSimple extends MediaPreview {
 
   private boolean drawColoredFileBackground;
 
-  public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, TdApi.ProfilePhoto profilePhoto, TdApi.Thumbnail thumbnail) {
+  public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, TdApi.ProfilePhoto profilePhoto) {
     super(size, cornerRadius);
-    // TODO avatar preview
+    if (profilePhoto.minithumbnail != null) {
+      this.previewImage = new ImageFileLocal(profilePhoto.minithumbnail);
+      this.previewImage.setSize(size);
+      this.previewImage.setScaleType(ImageFile.CENTER_CROP);
+      this.previewImage.setDecodeSquare(true);
+    }
+    if (profilePhoto.small != null) {
+      this.targetImage = new ImageFile(tdlib, profilePhoto.small, null);
+      this.targetImage.setSize(size);
+      this.targetImage.setScaleType(ImageFile.CENTER_CROP);
+      this.targetImage.setDecodeSquare(true);
+      this.targetImage.setNoBlur();
+    }
+  }
+
+  public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, TdApi.ChatPhoto chatPhoto) {
+    super(size, cornerRadius);
+    if (chatPhoto.minithumbnail != null) {
+      this.previewImage = new ImageFileLocal(chatPhoto.minithumbnail);
+      this.previewImage.setSize(size);
+      this.previewImage.setScaleType(ImageFile.CENTER_CROP);
+      this.previewImage.setDecodeSquare(true);
+    }
+    if (chatPhoto.sizes.length > 0) {
+      this.targetImage = new ImageFile(tdlib, chatPhoto.sizes[0].photo);
+      this.targetImage.setSize(size);
+      this.targetImage.setScaleType(ImageFile.CENTER_CROP);
+      this.targetImage.setDecodeSquare(true);
+    }
+    // TODO handle animation?
   }
 
   public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, TdApi.ChatPhotoInfo chatPhotoInfo) {
@@ -69,8 +98,8 @@ public class MediaPreviewSimple extends MediaPreview {
       this.previewImage.setScaleType(ImageFile.CENTER_CROP);
       this.previewImage.setDecodeSquare(true);
     }
-    if (chatPhotoInfo.big != null) {
-      this.targetImage = new ImageFile(tdlib, chatPhotoInfo.big, null);
+    if (chatPhotoInfo.small != null) {
+      this.targetImage = new ImageFile(tdlib, chatPhotoInfo.small, null);
       this.targetImage.setSize(size);
       this.targetImage.setScaleType(ImageFile.CENTER_CROP);
       this.targetImage.setDecodeSquare(true);
@@ -94,8 +123,8 @@ public class MediaPreviewSimple extends MediaPreview {
       }
       this.previewGif = TD.toGifFile(tdlib, thumbnail);
       if (this.previewGif != null) {
-        this.previewGif.setOptimize(true);
-        this.previewGif.setSize(size);
+        this.previewGif.setOptimizationMode(GifFile.OptimizationMode.STICKER_PREVIEW);
+        this.previewGif.setRequestedSize(size);
         this.previewGif.setScaleType(GifFile.CENTER_CROP);
         this.previewGif.setPlayOnce();
       }
@@ -150,8 +179,8 @@ public class MediaPreviewSimple extends MediaPreview {
       }
       this.targetGif = TD.toGifFile(tdlib, thumbnail);
       if (this.targetGif != null) {
-        this.targetGif.setOptimize(true);
-        this.targetGif.setSize(size);
+        this.targetGif.setOptimizationMode(GifFile.OptimizationMode.STICKER_PREVIEW);
+        this.targetGif.setRequestedSize(size);
         this.targetGif.setScaleType(GifFile.CENTER_CROP);
         this.targetGif.setPlayOnce();
       }
@@ -184,14 +213,14 @@ public class MediaPreviewSimple extends MediaPreview {
       }
       this.previewGif = TD.toGifFile(tdlib, sticker.thumbnail);
       if (this.previewGif != null) {
-        this.previewGif.setSize(size);
+        this.previewGif.setRequestedSize(size);
         this.previewGif.setScaleType(GifFile.FIT_CENTER);
       }
     }
-    if (Td.isAnimated(sticker.type)) {
+    if (Td.isAnimated(sticker.format)) {
       this.targetGif = new GifFile(tdlib, sticker);
-      this.targetGif.setOptimize(true);
-      this.targetGif.setSize(size);
+      this.targetGif.setOptimizationMode(GifFile.OptimizationMode.STICKER_PREVIEW);
+      this.targetGif.setRequestedSize(size);
       this.targetGif.setScaleType(GifFile.FIT_CENTER);
       this.targetGif.setPlayOnce();
     } else {

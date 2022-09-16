@@ -1098,7 +1098,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
 
   public void invalidateContent () {
     if (invalidateContentReceiver) {
-      if ((viewProvider == null || !viewProvider.invalidateContent())) {
+      if ((viewProvider == null || !viewProvider.invalidateContent(this))) {
         Log.i("Warning: FileProgressComponent.invalidateContent ignored");
       }
     }

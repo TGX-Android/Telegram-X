@@ -58,6 +58,7 @@ import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Passcode;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.AppBuildInfo;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.UserProvider;
 import org.thunderdog.challegram.util.WrapperProvider;
@@ -79,6 +80,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -440,6 +442,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private final HashSet<Long> knownChatIds = new HashSet<>();
   private final HashMap<Long, Integer> chatOnlineMemberCount = new HashMap<>();
   private final TdlibCache cache;
+  private final TdlibEmojiManager emoji;
   private final TdlibListeners listeners;
   private final TdlibFilesManager filesManager;
   private final TdlibStatusManager statusManager;
@@ -523,7 +526,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   private boolean disableContactRegisteredNotifications = false;
 
-  private int installedStickerSetCount;
   private int[] favoriteStickerIds;
   private int unreadTrendingStickerSetsCount;
 
@@ -578,6 +580,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     this.cache = new TdlibCache(this);
     if (needMeasure) {
       Log.v("INITIALIZATION: Tdlib.cache -> %dms", SystemClock.uptimeMillis() - ms);
+      ms = SystemClock.uptimeMillis();
+    }
+    this.emoji = new TdlibEmojiManager(this);
+    if (needMeasure) {
+      Log.v("INITIALIZATION: Tdlib.emoji -> %dms", SystemClock.uptimeMillis() - ms);
       ms = SystemClock.uptimeMillis();
     }
     this.filesManager = new TdlibFilesManager(this);
@@ -1134,6 +1141,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public String tdlibCommitHash () {
     return context().tdlibCommitHash();
+  }
+
+  public String tdlibCommitHashFull () {
+    return context().tdlibCommitHashFull();
   }
 
   public String tdlibVersion () {
@@ -1765,7 +1776,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       awaitingGenerations.put(id, generation);
     }
 
-    client().send(new TdApi.UploadFile(new TdApi.InputFileGenerated(null, id, 0), isSecret ? new TdApi.FileTypeSecret() : fileType, priority), object -> {
+    client().send(new TdApi.PreliminaryUploadFile(new TdApi.InputFileGenerated(null, id, 0), isSecret ? new TdApi.FileTypeSecret() : fileType, priority), object -> {
       switch (object.getConstructor()) {
         case TdApi.File.CONSTRUCTOR:
           generation.file = (TdApi.File) object;
@@ -2047,6 +2058,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public TdlibCache cache () {
     return cache;
+  }
+
+  public TdlibEmojiManager emoji () {
+    return emoji;
   }
 
   public TdlibListeners listeners () {
@@ -3775,22 +3790,46 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private final HashMap<String, TdApi.MessageContent> pendingMessageTexts = new HashMap<>();
   private final HashMap<String, TdApi.FormattedText> pendingMessageCaptions = new HashMap<>();
 
-  public void editMessageText (long chatId, long messageId, TdApi.InputMessageText content, @Nullable TdApi.WebPage webPage, boolean isSingleEmoji) {
+  public void editMessageText (long chatId, long messageId, TdApi.InputMessageText content, @Nullable TdApi.WebPage webPage) {
     if (content.disableWebPagePreview) {
       webPage = null;
     }
     TD.parseEntities(content.text);
     TdApi.MessageText messageText = new TdApi.MessageText(content.text, webPage);
-    if ((content.text.entities != null && content.text.entities.length > 0) || !isSingleEmoji) {
+    if (!Emoji.instance().isSingleEmoji(content.text)) {
       performEdit(chatId, messageId, messageText, new TdApi.EditMessageText(chatId, messageId, null, content), pendingMessageTexts);
-    } else {
+      return;
+    }
+    long customEmojiId = 0;
+    if (content.text.entities != null) {
+      for (TdApi.TextEntity entity : content.text.entities) {
+        if (entity.type.getConstructor() == TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR) {
+          customEmojiId = ((TdApi.TextEntityTypeCustomEmoji) entity.type).customEmojiId;
+          break;
+        }
+      }
+    }
+    Runnable animatedEmojiFallback = () -> {
       client().send(new TdApi.GetAnimatedEmoji(content.text.text), result -> {
         if (result.getConstructor() == TdApi.AnimatedEmoji.CONSTRUCTOR) {
-          performEdit(chatId, messageId, new TdApi.MessageAnimatedEmoji((TdApi.AnimatedEmoji) result, content.text.text), new TdApi.EditMessageText(chatId, messageId, null, content), pendingMessageTexts);
+          TdApi.MessageAnimatedEmoji animatedEmoji = new TdApi.MessageAnimatedEmoji((TdApi.AnimatedEmoji) result, content.text.text);
+          performEdit(chatId, messageId, animatedEmoji, new TdApi.EditMessageText(chatId, messageId, null, content), pendingMessageTexts);
         } else {
           performEdit(chatId, messageId, messageText, new TdApi.EditMessageText(chatId, messageId, null, content), pendingMessageTexts);
         }
       });
+    };
+    if (customEmojiId != 0) {
+      emoji().findOrRequest(customEmojiId, entry -> {
+        if (entry != null && !entry.isNotFound()) {
+          TdApi.MessageAnimatedEmoji animatedEmoji = new TdApi.MessageAnimatedEmoji(new TdApi.AnimatedEmoji(entry.sticker, 0, null), content.text.text);
+          performEdit(chatId, messageId, animatedEmoji, new TdApi.EditMessageText(chatId, messageId, null, content), pendingMessageTexts);
+        } else {
+          animatedEmojiFallback.run();
+        }
+      });
+    } else {
+      animatedEmojiFallback.run();
     }
   }
 
@@ -4278,9 +4317,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     });
   }
 
-  public void setInactiveSessionTtl (int ttlDays, RunnableData<TdApi.Error> after) {
+  public void setInactiveSessionTtl (int ttlDays, @Nullable RunnableData<TdApi.Error> after) {
     client().send(new TdApi.SetInactiveSessionTtl(ttlDays), result -> {
-      after.runWithData(result.getConstructor() == TdApi.Error.CONSTRUCTOR ? (TdApi.Error) result : null);
+      if (after != null) {
+        after.runWithData(result.getConstructor() == TdApi.Error.CONSTRUCTOR ? (TdApi.Error) result : null);
+      }
       if (result.getConstructor() == TdApi.Ok.CONSTRUCTOR) {
         this.sessionsInfo = null;
         listeners.notifyInactiveSessionTtlChanged(ttlDays);
@@ -4762,7 +4803,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private void updateNotificationParameters (Client client) {
     final int notificationGroupCountMax, notificationGroupSizeMax;
 
-    if (BuildConfig.EXPERIMENTAL || isServiceInstance()) {
+    if (Config.FORCE_DISABLE_NOTIFICATIONS || isServiceInstance()) {
       // Disable Notifications API if we are running experimental build
       notificationGroupCountMax = 0;
       notificationGroupSizeMax = 1;
@@ -4775,7 +4816,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     client.send(new TdApi.SetOption("notification_group_size_max", new TdApi.OptionValueInteger(notificationGroupSizeMax)), okHandler);
   }
 
-  private static final String DEVICE_TOKEN_KEY = "device_token";
   private String lastReportedConnectionParams;
 
   public void checkConnectionParams () {
@@ -4788,40 +4828,77 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   private void checkConnectionParams (Client client, boolean force) {
-    if (BuildConfig.EXPERIMENTAL || isServiceInstance()) {
-      return;
-    }
-    int state = context().getTokenState();
-    final String deviceToken = getRegisteredDeviceToken();
-    if (!StringUtils.isEmpty(deviceToken) && (state == TdlibManager.TokenState.NONE || state == TdlibManager.TokenState.INITIALIZING)) {
-      state = TdlibManager.TokenState.OK;
-    }
-    if (state == TdlibManager.TokenState.NONE)
-      return;
-    String error = context().getTokenError();
-    Map<String, Object> members = new LinkedHashMap<>();
-    switch (state) {
-      case TdlibManager.TokenState.ERROR: {
-        members.put(DEVICE_TOKEN_KEY, "FIREBASE_ERROR");
-        if (!StringUtils.isEmpty(error)) {
-          members.put("firebase_error", error);
+    Map<String, Object> params = new LinkedHashMap<>();
+    if (isServiceInstance()) {
+      params.put("device_token", "HIDDEN");
+    } else {
+      int state = context().getTokenState();
+      final String deviceToken = getRegisteredDeviceToken();
+      if (!StringUtils.isEmpty(deviceToken) && (state == TdlibManager.TokenState.NONE || state == TdlibManager.TokenState.INITIALIZING)) {
+        state = TdlibManager.TokenState.OK;
+      }
+      String error = context().getTokenError();
+      switch (state) {
+        case TdlibManager.TokenState.ERROR: {
+          params.put("device_token", "FIREBASE_ERROR");
+          if (!StringUtils.isEmpty(error)) {
+            params.put("firebase_error", error);
+          }
+          break;
         }
-        break;
-      }
-      case TdlibManager.TokenState.INITIALIZING: {
-        members.put(DEVICE_TOKEN_KEY, "FIREBASE_INITIALIZING");
-        break;
-      }
-      case TdlibManager.TokenState.OK: {
-        members.put(DEVICE_TOKEN_KEY, deviceToken);
-        break;
-      }
-      default: {
-        members.put(DEVICE_TOKEN_KEY, "UNKNOWN");
-        break;
+        case TdlibManager.TokenState.INITIALIZING: {
+          params.put("device_token", "FIREBASE_INITIALIZING");
+          break;
+        }
+        case TdlibManager.TokenState.OK: {
+          params.put("device_token", deviceToken);
+          break;
+        }
+        case TdlibManager.TokenState.NONE:
+          return;
+        default:
+          throw new IllegalStateException(Integer.toString(state));
       }
     }
-    String connectionParams = JSON.stringify(JSON.toObject(members));
+    long timeZoneOffset = TimeUnit.MILLISECONDS.toSeconds(
+      TimeZone.getDefault().getRawOffset() +
+      TimeZone.getDefault().getDSTSavings()
+    );
+    params.put("package_id", UI.getAppContext().getPackageName());
+    String installerName = U.getInstallerPackageName();
+    if (!StringUtils.isEmpty(installerName)) {
+      params.put("installer", installerName);
+    }
+    String fingerprint = U.getApkFingerprint("SHA1", false);
+    if (!StringUtils.isEmpty(fingerprint)) {
+      params.put("data", fingerprint);
+    }
+    params.put("tz_offset", timeZoneOffset);
+
+    Map<String, Object> git = new LinkedHashMap<>();
+    git.put("remote", BuildConfig.REMOTE_URL.replaceAll("^(https?://)?github\\.com/", ""));
+    git.put("commit", BuildConfig.COMMIT);
+    git.put("tdlib", tdlibCommitHash());
+    git.put("date", BuildConfig.COMMIT_DATE);
+    List<Map<String, Object>> pullRequests = null;
+    //noinspection ConstantConditions
+    for (int i = 0; i < BuildConfig.PULL_REQUEST_ID.length; i++) {
+      Map<String, Object> pr = new LinkedHashMap<>();
+      pr.put("id", BuildConfig.PULL_REQUEST_ID[i]);
+      pr.put("commit", BuildConfig.PULL_REQUEST_COMMIT[i]);
+      pr.put("date", BuildConfig.PULL_REQUEST_COMMIT_DATE[i]);
+      if (pullRequests == null) {
+        pullRequests = new ArrayList<>();
+      }
+      pullRequests.add(pr);
+    }
+    //noinspection ConstantConditions
+    if (pullRequests != null) {
+      git.put("prs", pullRequests);
+    }
+    params.put("git", git);
+
+    String connectionParams = JSON.stringify(JSON.toObject(params));
     if (connectionParams != null && (force || !StringUtils.equalsOrBothEmpty(lastReportedConnectionParams, connectionParams))) {
       this.lastReportedConnectionParams = connectionParams;
       client.send(new TdApi.SetOption("connection_parameters", new TdApi.OptionValueString(connectionParams)), okHandler);
@@ -7543,11 +7620,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   private void updateInstalledStickerSets (TdApi.UpdateInstalledStickerSets update) {
-    if (!update.isMasks) {
-      synchronized (dataLock) {
-        installedStickerSetCount = update.stickerSetIds.length;
-      }
-    }
     listeners.updateInstalledStickerSets(update);
   }
 
@@ -8761,7 +8833,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
     switch (chat.type.getConstructor()) {
       case TdApi.ChatTypePrivate.CONSTRUCTOR: {
-        TdApi.User user = cache().user(ChatId.toUserId(chat.id));
+        long userId = ChatId.toUserId(chat.id);
+        TdApi.User user = cache().user(userId);
         boolean isUnavailable = user == null;
         if (!isUnavailable) {
           switch (user.type.getConstructor()) {
@@ -8773,6 +8846,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         }
         if (isUnavailable)
           return new RestrictionStatus(chat.id, RESTRICTION_STATUS_UNAVAILABLE, 0);
+        if (rightId == R.id.right_sendVoiceVideo) {
+          TdApi.UserFullInfo userFullInfo = cache().userFull(userId);
+          if (userFullInfo != null && userFullInfo.hasRestrictedVoiceAndVideoNoteMessages) {
+            return new RestrictionStatus(chat.id, RESTRICTION_STATUS_RESTRICTED, 0);
+          }
+        }
         return null;
       }
       case TdApi.ChatTypeSecret.CONSTRUCTOR: {
@@ -8788,9 +8867,18 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
             }
             return null;
           }
+          if (rightId == R.id.right_sendVoiceVideo) {
+            TdApi.UserFullInfo userFullInfo = cache().userFull(secretChat.userId);
+            if (userFullInfo != null && userFullInfo.hasRestrictedVoiceAndVideoNoteMessages) {
+              return new RestrictionStatus(chat.id, RESTRICTION_STATUS_RESTRICTED, 0);
+            }
+          }
         }
         return new RestrictionStatus(chat.id, RESTRICTION_STATUS_UNAVAILABLE, 0);
       }
+      case TdApi.ChatTypeBasicGroup.CONSTRUCTOR:
+      case TdApi.ChatTypeSupergroup.CONSTRUCTOR:
+        break;
     }
     if (!TD.checkRight(chat.permissions, rightId))
       return new RestrictionStatus(chat.id, isNotSpecificallyRestricted ? RESTRICTION_STATUS_EVERYONE : RESTRICTION_STATUS_RESTRICTED, 0);
@@ -8829,9 +8917,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         case TdApi.InputMessageDocument.CONSTRUCTOR:
         case TdApi.InputMessagePhoto.CONSTRUCTOR:
         case TdApi.InputMessageVideo.CONSTRUCTOR:
+          return getMediaRestrictionText(chat);
         case TdApi.InputMessageVideoNote.CONSTRUCTOR:
         case TdApi.InputMessageVoiceNote.CONSTRUCTOR:
-          return getMediaRestrictionText(chat);
+          return getVoiceVideoRestricitonText(chat, message.getConstructor() == TdApi.MessageVideoNote.CONSTRUCTOR);
       }
     }
     return getMessageRestrictionText(chat);
@@ -8843,6 +8932,16 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public CharSequence getMediaRestrictionText (TdApi.Chat chat) {
     return getRestrictionText(chat, R.id.right_sendMedia, R.string.ChatDisabledMedia, R.string.ChatRestrictedMedia, R.string.ChatRestrictedMediaUntil);
+  }
+
+  public CharSequence getVoiceVideoRestricitonText (TdApi.Chat chat, boolean needVideo) {
+    return getRestrictionText(chat, R.id.right_sendVoiceVideo,
+      needVideo ? R.string.ChatDisabledVideoNotes : R.string.ChatDisabledVoice,
+      needVideo ? R.string.ChatRestrictedVideoNotes : R.string.ChatRestrictedVoice,
+      needVideo ? R.string.ChatRestrictedVideoNotesUntil : R.string.ChatRestrictedVoiceUntil,
+      R.string.UserDisabledMessages,
+      needVideo ? R.string.XRestrictedVideoMessages : R.string.XRestrictedVoiceMessages
+    );
   }
 
   public CharSequence getGifRestrictionText (TdApi.Chat chat) {
@@ -8862,10 +8961,17 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public CharSequence getRestrictionText (TdApi.Chat chat, @RightId int rightId, @StringRes int defaultRes, @StringRes int specificRes, @StringRes int specificUntilRes) {
+    return getRestrictionText(chat, rightId, defaultRes, specificRes, specificUntilRes, R.string.UserDisabledMessages, 0);
+  }
+
+  public CharSequence getRestrictionText (TdApi.Chat chat, @RightId int rightId,
+                                          @StringRes int defaultRes, @StringRes int specificRes, @StringRes int specificUntilRes,
+                                          @StringRes int defaultUserRes, @StringRes int specificUserRes) {
     RestrictionStatus status = getRestrictionStatus(chat, rightId);
     if (status != null) {
       switch (rightId) {
-        case R.id.right_sendStickersAndGifs: {
+        case R.id.right_sendStickersAndGifs:
+        case R.id.right_sendVoiceVideo: {
           CharSequence restriction = getMediaRestrictionText(chat);
           if (restriction != null)
             return restriction;
@@ -8879,6 +8985,17 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           break;
         }
       }
+      if (status.isUserChat()) {
+        switch (status.status) {
+          case RESTRICTION_STATUS_RESTRICTED:
+            if (specificUserRes != 0) {
+              return Lang.getStringBold(specificUserRes, cache().userFirstName(chatUserId(chat)));
+            }
+            break;
+          case RESTRICTION_STATUS_EVERYONE:
+            return Lang.getString(defaultUserRes);
+        }
+      }
       switch (status.status) {
         case RESTRICTION_STATUS_BANNED:
           return status.untilDate != 0 ? Lang.getString(R.string.ChatBannedUntil, Lang.getUntilDate(status.untilDate, TimeUnit.SECONDS)) : Lang.getString(R.string.ChatBanned);
@@ -8886,7 +9003,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           return status.untilDate != 0 ? Lang.getString(specificUntilRes, Lang.getUntilDate(status.untilDate, TimeUnit.SECONDS)) : Lang.getString(specificRes);
         case RESTRICTION_STATUS_UNAVAILABLE:
         case RESTRICTION_STATUS_EVERYONE:
-          return Lang.getString(status.isUserChat() ? R.string.UserDisabledMessages : defaultRes);
+          return Lang.getString(defaultRes);
       }
 
       throw new UnsupportedOperationException();

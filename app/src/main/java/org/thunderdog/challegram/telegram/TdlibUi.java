@@ -32,6 +32,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.IdRes;
+import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
@@ -116,6 +117,7 @@ import org.thunderdog.challegram.ui.SettingsLanguageController;
 import org.thunderdog.challegram.ui.SettingsLogOutController;
 import org.thunderdog.challegram.ui.SettingsNotificationController;
 import org.thunderdog.challegram.ui.SettingsPhoneController;
+import org.thunderdog.challegram.ui.SettingsPrivacyController;
 import org.thunderdog.challegram.ui.SettingsProxyController;
 import org.thunderdog.challegram.ui.SettingsSessionsController;
 import org.thunderdog.challegram.ui.SettingsThemeController;
@@ -141,6 +143,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -1644,11 +1648,23 @@ public class TdlibUi extends Handler {
       }
       switch (object.getConstructor()) {
         case TdApi.StickerSet.CONSTRUCTOR: {
-          StickerSetWrap.showStickerSet(context, (TdApi.StickerSet) object);
+          TdApi.StickerSet stickerSet = (TdApi.StickerSet) object;
+          if (stickerSet.stickerType.getConstructor() == TdApi.StickerTypeCustomEmoji.CONSTRUCTOR) {
+            // TODO support custom emoji sets
+            showLinkTooltip(context.tdlib(), R.drawable.baseline_warning_24, Lang.getString(R.string.InternalUrlUnsupported), openParameters);
+            return;
+          }
+          StickerSetWrap.showStickerSet(context, stickerSet);
           break;
         }
         case TdApi.StickerSetInfo.CONSTRUCTOR: {
-          StickerSetWrap.showStickerSet(context, (TdApi.StickerSetInfo) object);
+          TdApi.StickerSetInfo stickerSetInfo = (TdApi.StickerSetInfo) object;
+          if (stickerSetInfo.stickerType.getConstructor() == TdApi.StickerTypeCustomEmoji.CONSTRUCTOR) {
+            // TODO support custom emoji sets
+            showLinkTooltip(context.tdlib(), R.drawable.baseline_warning_24, Lang.getString(R.string.InternalUrlUnsupported), openParameters);
+            return;
+          }
+          StickerSetWrap.showStickerSet(context, stickerSetInfo);
           break;
         }
         case TdApi.Error.CONSTRUCTOR: {
@@ -1664,9 +1680,9 @@ public class TdlibUi extends Handler {
     tdlib.client().send(new TdApi.SearchStickerSet(name), newStickerSetHandler(context, openParameters));
   }
 
-  public void showStickerSet (TdlibDelegate context, long setId) {
+  public void showStickerSet (TdlibDelegate context, long setId, @Nullable UrlOpenParameters openParameters) {
     // TODO progress
-    tdlib.client().send(new TdApi.GetStickerSet(setId), newStickerSetHandler(context, null));
+    tdlib.client().send(new TdApi.GetStickerSet(setId), newStickerSetHandler(context, openParameters));
   }
 
   // Confirm phone
@@ -3326,6 +3342,12 @@ public class TdlibUi extends Handler {
               startBot(context, startBot.botUsername, startBot.startParameter, BOT_MODE_START_IN_GROUP, openParameters);
               break;
             }
+            case TdApi.InternalLinkTypeBotAddToChannel.CONSTRUCTOR: {
+              TdApi.InternalLinkTypeBotAddToChannel addToChannel = (TdApi.InternalLinkTypeBotAddToChannel) linkType;
+              // TODO add to channel flow
+              showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.InternalUrlUnsupported), openParameters);
+              break;
+            }
             case TdApi.InternalLinkTypeGame.CONSTRUCTOR: {
               TdApi.InternalLinkTypeGame game = (TdApi.InternalLinkTypeGame) linkType;
               startBot(context, game.botUsername, game.gameShortName, BOT_MODE_START_GAME, openParameters);
@@ -3333,6 +3355,16 @@ public class TdlibUi extends Handler {
             }
             case TdApi.InternalLinkTypeSettings.CONSTRUCTOR: {
               SettingsController c = new SettingsController(context.context(), context.tdlib());
+              context.context().navigation().navigateTo(c);
+              break;
+            }
+            case TdApi.InternalLinkTypeLanguageSettings.CONSTRUCTOR: {
+              SettingsLanguageController c = new SettingsLanguageController(context.context(), context.tdlib());
+              context.context().navigation().navigateTo(c);
+              break;
+            }
+            case TdApi.InternalLinkTypePrivacyAndSecuritySettings.CONSTRUCTOR: {
+              SettingsPrivacyController c = new SettingsPrivacyController(context.context(), context.tdlib());
               context.context().navigation().navigateTo(c);
               break;
             }
@@ -3347,6 +3379,14 @@ public class TdlibUi extends Handler {
               SettingsWebsitesController websites = new SettingsWebsitesController(context.context(), context.tdlib());
               ViewController<?> c = new SimpleViewPagerController(context.context(), context.tdlib(), new ViewController[] {sessions, websites}, new String[] {Lang.getString(R.string.Devices).toUpperCase(), Lang.getString(R.string.Websites).toUpperCase()}, false);
               context.context().navigation().navigateTo(c);
+              break;
+            }
+
+            case TdApi.InternalLinkTypeAttachmentMenuBot.CONSTRUCTOR:
+            case TdApi.InternalLinkTypeInvoice.CONSTRUCTOR:
+            case TdApi.InternalLinkTypePremiumFeatures.CONSTRUCTOR:
+            case TdApi.InternalLinkTypeRestorePurchases.CONSTRUCTOR: {
+              showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.InternalUrlUnsupported), openParameters);
               break;
             }
             case TdApi.InternalLinkTypeChangePhoneNumber.CONSTRUCTOR: {
@@ -6216,7 +6256,33 @@ public class TdlibUi extends Handler {
     return Lang.getStringSecure(R.string.format_commit, Lang.codeCreator(), Td.tdlibVersion(), Td.tdlibCommitHash());
   }
 
-  public void showPremiumAlert (ViewController<?> context, View view) {
+  // Telegram Premium
+
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    PremiumFeature.STICKER,
+    PremiumFeature.RESTRICT_VOICE_AND_VIDEO_MESSAGES
+  })
+  public @interface PremiumFeature {
+    int
+      STICKER = 1,
+      RESTRICT_VOICE_AND_VIDEO_MESSAGES = 2;
+  }
+
+  public boolean showPremiumAlert (ViewController<?> context, View view, @PremiumFeature int premiumFeature) {
+    if (tdlib.hasPremium())
+      return false;
+    int stringRes;
+    switch (premiumFeature) {
+      case PremiumFeature.STICKER:
+        stringRes = R.string.PremiumRequiredSticker;
+        break;
+      case PremiumFeature.RESTRICT_VOICE_AND_VIDEO_MESSAGES:
+        stringRes = R.string.PremiumRequiredVoiceVideo;
+        break;
+      default:
+        throw new IllegalStateException();
+    }
     // TODO proper alert with sections
     context
       .context()
@@ -6226,10 +6292,21 @@ public class TdlibUi extends Handler {
       .controller(context)
       .show(tdlib,
         Strings.buildMarkdown(context,
-          Lang.getString(R.string.PremiumRequiredSticker),
+          Lang.getString(stringRes),
           null
         )
       )
       .hideDelayed();
+    return true;
+  }
+
+  // Video Chats & Live Streams
+
+  public void openVoiceChatInvitation (ViewController<?> context, TdApi.InternalLinkTypeVideoChat invitation) {
+    // TODO some confirmation screen & join voice chat if agreed
+  }
+
+  public void openVoiceChat (ViewController<?> context, int groupCallId, @Nullable UrlOpenParameters openParameters) {
+    // TODO open voice chat layer
   }
 }

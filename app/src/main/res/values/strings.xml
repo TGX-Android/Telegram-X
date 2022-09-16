@@ -332,6 +332,8 @@
   <string name="ChatContentGroupLeft_outgoing">Left the group</string>
   <string name="ChatContentGroupJoin">Joined the group via invite link</string>
   <string name="ChatContentGroupJoin_outgoing">Joined the group via invite link</string>
+  <string name="ChatContentGroupAccept">Was accepted to the group</string>
+  <string name="ChatContentGroupAccept_outgoing">Were accepted to the group</string>
   <string name="ChatContentGroupJoinPublic">Joined the group</string>
   <string name="ChatContentGroupJoinPublic_outgoing">Joined the group</string>
   <string name="ChatContentGroupKickYou">Kicked you from the group</string>
@@ -665,7 +667,7 @@
   <string name="RestrictSavingGroupInfo">Copying and forwarding is restricted by group admins</string>
   <string name="RestrictSavingChannelInfo">Copying and forwarding is restricted by channel admins</string>
   <string name="RestrictSavingGroupHint">Members won\'t be able to copy, save or forward content from this group.</string>
-  <string name="RestrictSavingChannelHint">Subscribers won\'t be able to copy, save and forward content from this channel.</string>
+  <string name="RestrictSavingChannelHint">Subscribers won\'t be able to copy, save or forward content from this channel.</string>
   <string name="PostNotFound">Post not found</string>
   <string name="OpenSupergroup">Open Supergroup</string>
   <string name="Call">Call</string>
@@ -768,6 +770,7 @@
   <string name="game_ActionYouScoredInGame_one">You scored %1$s in %2$s</string>
   <string name="game_ActionYouScoredInGame_other">You scored %1$s in %2$s</string>
   <string name="NotificationActionPinnedNoTextChannel">%1$s pinned a message</string>
+  <string name="YouPinnedMessage">You pinned a message</string>
   <string name="NotificationGame">Invited you to play %1$s</string>
   <string name="NotificationGame_outgoing">You invited to play %1$s</string>
   <string name="NotificationGame_group">Invited you to play %1$s</string>
@@ -802,7 +805,7 @@
   <string name="AwaitingEncryption">Waiting for %1$s to get online…</string>
   <string name="XJoinedSecretChat">%1$s joined the secret chat</string>
   <string name="YouJoinedSecretChat">You joined the secret chat</string>
-  <string name="SecretChatCancelled">Secret chat cancelled</string>
+  <string name="SecretChatCancelled">Secret chat canceled</string>
   <string name="SecretChats">Secret Chats</string>
   <string name="ChatTitleSecretChat">%1$s (secret chat)</string>
   <string name="format_EncryptedDescription">• %1$s\n• %2$s\n• %3$s\n• %4$s</string>
@@ -1347,6 +1350,10 @@
   <string name="XAcceptedToChannel">%1$s was accepted to the channel</string>
   <string name="YouAcceptedToGroup">You were accepted to the group</string>
   <string name="YouAcceptedToChannel">You were accepted to the channel</string>
+  <string name="XAcceptedToGroupBy">%1$s was accepted to the group by %2$s</string>
+  <string name="XAcceptedToChannelBy">%1$s was accepted to the channel by %2$s</string>
+  <string name="YouAcceptedToGroupBy">You were accepted to the group by %1$s</string>
+  <string name="YouAcceptedToChannelBy">You were accepted to the channel by %1$s</string>
   <string name="LinkJoinOther">%1$s joined via %2$s\'s invite link %3$s</string>
   <string name="LinkJoinOtherYou">You joined via %1$s\'s invite link %2$s</string>
   <string name="LinkJoinTemp">%1$s joined via %2$s\'s temporary invite link %3$s</string>
@@ -1410,14 +1417,14 @@
   <string name="OutgoingCall">Outgoing Call</string>
   <string name="IncomingCall">Incoming Call</string>
   <string name="MissedCall">Missed Call</string>
-  <string name="CallMessageOutgoingMissed">Cancelled Call</string>
+  <string name="CallMessageOutgoingMissed">Canceled Call</string>
   <string name="CallMessageIncomingDeclined">Declined Call</string>
   <string name="Declined">Declined</string>
   <string name="DeclineCall">Decline</string>
   <string name="AnswerCall">Answer</string>
   <string name="OutgoingCallBusy">Outgoing Call (Busy)</string>
   <string name="Missed">Missed</string>
-  <string name="Cancelled">Cancelled</string>
+  <string name="Cancelled">Canceled</string>
   <string name="Outgoing">Outgoing</string>
   <string name="Incoming">Incoming</string>
   <string name="CallAgain">Call Again</string>
@@ -1441,8 +1448,8 @@
   <string name="VoipExchangingKeysShort">Exchanging keys</string>
   <string name="VoipEstablishing">Connecting…</string>
   <string name="VoipEnded">Call ended</string>
-  <string name="VoipCancelled">Call cancelled</string>
-  <string name="VoipDeclined">Call cancelled</string>
+  <string name="VoipCancelled">Call canceled</string>
+  <string name="VoipDeclined">Call canceled</string>
   <string name="VoipMissed">Call missed</string>
   <string name="VoipMissedOutgoing">Call missed</string>
   <string name="VoipUnknown">Call answered</string>
@@ -2003,7 +2010,7 @@
   <string name="EditMarkdown">Edit Markdown</string>
   <string name="ForceBuiltinDecoding">Force built-in media decoding</string>
   <string name="CompressAudio">Compress audio in videos</string>
-  <string name="EditMarkdownHint2">Edit text in messages using the old-school way: `**`**bold**`**`, `__`__italic__`__`, `~~`~~strikethrough~~`~~`,``` `monospace`, `||`||spoiler||`||`,``` [text](url)</string>
+  <string name="EditMarkdownHint2">Edit text in messages using the old-school way: `**`**bold**`**`, `__`__italic__`__`, `~~`~~strikethrough~~`~~`, ````monospace````, `||`||spoiler||`||`, `[`text`](`url`)`</string>
   <string name="MessageNotFound">Message not found</string>
   <string name="SyncHintTitle">Find Contacts</string>
   <string name="SyncHint">To help you connect with friends and family, allow %1$s access to your contacts.</string>
@@ -2238,6 +2245,7 @@
   <string name="AutoInstantViewTelegram">telegram.org + telegra.ph</string>
   <string name="AutoInstantViewAll">All links</string>
   <string name="DeepLinkUnsupported">Unknown or broken link format</string>
+  <string name="InternalUrlUnsupported">Sorry, this type of links are not yet supported.</string>
   <string name="AppUpdateRequiredTitle">Update required</string>
   <string name="AppUpdateOk">Update</string>
   <string name="ProxySponsor">Proxy sponsor</string>
@@ -2950,6 +2958,7 @@
   <string name="error_CHANNELS_TOO_MUCH">Sorry, you are a member of too many groups or channels. Please leave some before joining a new one.</string>
   <string name="error_PHONE_NUMBER_BANNED">Sorry, this phone number is banned. Contact us at login@stel.com if you need help.</string>
   <string name="error_CHANNELS_ADMIN_LOCATED_TOO_MUCH">Sorry, you have too many location-based groups already. Please delete one of your existing ones first.</string>
+  <string name="error_PREMIUM_ACCOUNT_REQUIRED">This feature requires Telegram Premium subscription.</string>
   <string name="errorPrivacyAddMember">Sorry, the user restricted who can add them to chats in their privacy settings.</string>
   <string name="UserPrivacyRestricted">Sorry, the user restricted this action in their privacy settings.</string>
   <string name="NobodyLikesSpam2">Sorry, you can interact only with mutual contacts at the moment.</string> <!--PEER_FLOOD-->
@@ -2994,7 +3003,7 @@
   <string name="NotificationsGuideSyncGlobalOff">You have data sync turned off in system settings. Notifications may not arrive when app is closed.\n\nData sync may be implicitly turned off by the battery optimization mode on your device.</string>
   <string name="NotificationsGuideSyncAppOff">You have data sync turned off for Telegram X. Notifications may not arrive when app is closed.\n\nData sync may be implicitly turned off by the battery optimization mode on your device.</string>
   <string name="NotificationsGuideFirebaseUnavailable">Google Play Services are unavailable. Please check you have them installed and up-to-date.\n\nNotifications may arrive with big delays or not arrive at all without them.</string>
-  <string name="NotificationsGuideFirebaseError">**Firebase Services** have failed to function properly due to error: %1$s\n\nNotifications may arrive with big delays or not arrive at all without them.\n\nPlease make sure:\n• Google Play Services are installed and up-to-date\n• Telegram X is up-to-date\n• Firebase services are enabled\n• They are not blocked by your Internet service or DNS provider\n• If you have firewall or ad blocking software, Firebase domains are whitelisted\n• You can see 404 message in a browser on this page: https://firebaseinstallations.googleapis.com/\n• System date and time is correct\n• Problem doesn\'t go away after restarting your device\n• All system updates are installed.\n\nIf the steps above do not help, you might want to share the detailed error report to @tgandroidtests, or look up for troubleshooting tips for your device.</string>
+  <string name="NotificationsGuideFirebaseError">**Firebase Services** have failed to function properly due to error: %1$s\n\nNotifications may arrive with big delays or not arrive at all without them.\n\nPlease make sure:\n• Google Play Services are installed and up-to-date\n• Telegram X is up-to-date\n• Firebase services are enabled\n• They are not blocked by your Internet service or DNS provider\n• If you have firewall or ad blocking software, Firebase domains are whitelisted\n• You can see 404 message in a browser on this page: https://firebaseinstallations.googleapis.com/\n• System date and time is correct\n• Problem doesn\'t go away after restarting your device\n• All system updates are installed.\n\nIf the steps above do not help, you might want to share the detailed error report to @tgandroidtests and look up for additional troubleshooting tips for your device.</string>
   <string name="NotificationsGuideError">**Telegram X** was unable to display some notifications for this account due to an unknown system error.\n\nPlease make sure:\n• All system updates are installed\n• Telegram X is up-to-date\n• There are no notification restrictions in system settings.\n\nIf the steps above do not help, you might want to share the detailed error report to @tgandroidtests, or look up for troubleshooting tips for your device.</string>
   <string name="NotificationsGuideErrorChat">**Telegram X** was unable to display some notifications from %1$s due to an unknown system error.\n\nPlease make sure:\n• All system updates are installed\n• Telegram X is up-to-date\n• There are no notification restrictions in system settings.\n\nIf the steps above do not help, you might want to share the detailed error report to @tgandroidtests, or look up for troubleshooting tips for your device.</string>
   <string name="TurnSyncOnApp">Turn on data sync</string>
@@ -3235,7 +3244,7 @@
   <string name="ChatRestrictedGifs">The admins of this group have restricted your ability to send GIFs.</string>
   <string name="ChatRestrictedGifsUntil">Admins have restricted you from sending GIFs in this group until %1$s</string>
   <string name="ChatRestrictedBots">The admins of this group have restricted your ability to send inline content.</string>
-  <string name="ChatRestrictedBotsUntil">The admins of this group have restricted your ability to send inline content. until %1$s</string>
+  <string name="ChatRestrictedBotsUntil">The admins of this group have restricted your ability to send inline content until %1$s</string>
   <string name="ChatRestrictedStickers">Admins have restricted you from sending stickers in this group</string>
   <string name="ChatRestrictedStickersUntil">Admins have restricted you from sending stickers in this group until %1$s</string>
   <string name="ChatRestrictedDice">Admins have restricted you from rolling a die in this group. Hold to send it as an emoji.</string>
@@ -3290,6 +3299,21 @@
   <string name="PrivacyPhotoEverybody">Everybody can see your profile photo</string>
   <string name="PrivacyPhotoEverybodyExcept">Everybody (%1$s) can see your profile photo</string>
   <string name="PrivacyPhotoTitle">Profile Photo</string>
+
+  <string name="PrivacyVoiceVideoNobody">Nobody can send you voice messages</string>
+  <string name="PrivacyVoiceVideoNobodyExcept">Nobody (%1$s) can send you voice messages</string>
+  <string name="PrivacyVoiceVideoContacts">Only contacts can send you voice messages</string>
+  <string name="PrivacyVoiceVideoContactsExcept">Only contacts (%1$s) can send you voice messages</string>
+  <string name="PrivacyVoiceVideoEverybody">Everybody can send you voice messages</string>
+  <string name="PrivacyVoiceVideoEverybodyExcept">Everybody (%1$s) can send you voice messages</string>
+  <string name="PrivacyVoiceVideoExceptionOn">Allowed</string>
+  <string name="PrivacyVoiceVideoExceptionOff">Disallowed</string>
+  <string name="PrivacyVoiceVideoExceptionContacts">Only contacts</string>
+  <string name="PrivacyVoiceVideoTitle">Voice and Video Messages</string>
+  <string name="WhoCanSendVoiceVideo">Who can send me voice or video messages?</string>
+  <string name="VoiceVideoPrivacyDesc">You can restrict who can send you voice or video messages with granular precision.</string>
+
+  <string name="EditPrivacyVoice">Send Me Voice Messages</string>
 
   <string name="WhoCanForwardLink">Who can add a link to my account when forwarding my messages?</string>
   <string name="WhoCanForwardLinkInfo">You can restrict who can include a link to your account when forwarding your messages to other chats.</string>
@@ -3593,8 +3617,8 @@
   <string name="LeaveXChats_one">You will be unable to return to %1$s chat</string>
   <string name="LeaveXChats_other">You will be unable to return to %1$s chats</string>
 
-  <string name="ClosingXSecretChats_one">%1$s secret chat will be cancelled</string>
-  <string name="ClosingXSecretChats_other">%1$s secret chats will be cancelled</string>
+  <string name="ClosingXSecretChats_one">%1$s secret chat will be canceled</string>
+  <string name="ClosingXSecretChats_other">%1$s secret chats will be canceled</string>
 
   <string name="NoUndoWarn">This action cannot be undone.</string>
 
@@ -4345,6 +4369,13 @@
 
   <string name="ExperimentalBuildTitle">Caution: experimental build</string>
   <string name="ExperimentalBuildInfo">This version of **Telegram X** is not designed for long-term use.\n\nIt may completely stop working over a time and you cannot turn notifications on.\n\nIf you are looking for the proper Telegram X APK file, see https://t.me/tgx_log</string>
+
+  <string name="PremiumRequiredSticker">Sending this sticker requires **Telegram Premium** subscription.</string>
+  <string name="PremiumRequiredVoiceVideo">This setting requires **Telegram Premium** subscription.</string>
+  <string name="PremiumRequired">This feature requires **Telegram Premium** subscription.</string>
+
+  <string name="XRestrictedVoiceMessages">%1$s doesn\'t accept voice messages.</string>
+  <string name="XRestrictedVideoMessages">%1$s doesn\'t accept video messages.</string>
 
   <string name="format_PRMadeBy">%1$s by %2$s</string>
 </resources>

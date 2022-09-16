@@ -95,6 +95,7 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
 
     public boolean navigateBackOnStop;
     public long locationOwnerChatId;
+    public boolean isFaded;
 
     public long chatId, messageThreadId;
 
@@ -127,6 +128,11 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
 
     public Args setLocationOwnerChatId (long chatId) {
       this.locationOwnerChatId = chatId;
+      return this;
+    }
+
+    public Args setIsFaded (boolean isFaded) {
+      this.isFaded = isFaded;
       return this;
     }
   }
@@ -442,6 +448,7 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
                 } else {
                   view.setLocationImage(args.iconImage);
                 }
+                view.setIsFaded(args.isFaded);
                 break;
               }
               case MODE_LIVE_LOCATION: {

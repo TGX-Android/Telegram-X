@@ -206,7 +206,7 @@ AVFrame *alloc_picture (AVPixelFormat pix_fmt, int width, int height) {
   return f;
 }
 
-JNI_FUNC(jlong, createDecoder, jstring src, jintArray data) {
+JNI_FUNC(jlong, createDecoder, jstring src, jintArray data, jdouble startMediaTimestamp) {
 
   VideoInfo *info = new VideoInfo(jni::from_jstring(env, src));
 
@@ -285,11 +285,22 @@ JNI_FUNC(jlong, createDecoder, jstring src, jintArray data) {
   info->dstWidth = dstWidth;
   info->dstHeight = dstHeight;
 
+  if (startMediaTimestamp != 0) {
+    int ret = 0;
+    int64_t ts = (int64_t) (startMediaTimestamp * (double) AV_TIME_BASE);
+    ret = avformat_seek_file(info->fmt_ctx, -1, std::numeric_limits<int64_t>::min(), ts,
+                             std::numeric_limits<int64_t>::max(), 0);
+    if (ret < 0) {
+      loge(TAG_GIF_LOADER, "can't seek to startMediaTimestamp %s, %s", info->path.c_str(), av_err2str(ret));
+    }
+  }
+
   jint *dataArr = env->GetIntArrayElements(data, 0);
   if (dataArr != nullptr) {
     dataArr[0] = dstWidth;
     dataArr[1] = dstHeight;
-    AVDictionaryEntry *rotate_tag = av_dict_get(info->video_stream->metadata, "rotate", nullptr, 0);
+    dataArr[2] = (int) (1000 * av_q2d(info->video_stream->avg_frame_rate));
+    /*AVDictionaryEntry *rotate_tag = av_dict_get(info->video_stream->metadata, "rotate", nullptr, 0);
     if (rotate_tag && *rotate_tag->value && strcmp(rotate_tag->value, "0") != 0) {
       char *tail;
       dataArr[2] = (int) av_strtod(rotate_tag->value, &tail);
@@ -298,7 +309,7 @@ JNI_FUNC(jlong, createDecoder, jstring src, jintArray data) {
       }
     } else {
       dataArr[2] = 0;
-    }
+    }*/
     env->ReleaseIntArrayElements(data, dataArr, 0);
   }
 
@@ -655,7 +666,7 @@ JNI_FUNC(jint, createLottieCache, jlong ptr, jstring jCachePath, jobject firstFr
               return 3;
             }
             uint32_t frameSize = 0;
-            if (fread(&frameSize, sizeof(frameSize), 1, cacheFile) != 1 || (frameSize == 0 || fseek(cacheFile, frameSize, SEEK_CUR) != 0))
+            if (fread(&frameSize, sizeof(frameSize), 1, cacheFile) != 1 || (frameSize != 0 && fseek(cacheFile, frameSize, SEEK_CUR) != 0))
               break;
             if (readFrameCount == 0)
               firstFrameSize = frameSize;

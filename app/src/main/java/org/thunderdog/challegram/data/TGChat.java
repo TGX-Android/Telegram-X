@@ -26,6 +26,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -42,6 +43,7 @@ import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.util.text.TextEntityCustom;
+import org.thunderdog.challegram.util.text.TextMedia;
 import org.thunderdog.challegram.util.text.TextStyleProvider;
 
 import java.lang.ref.Reference;
@@ -1073,9 +1075,20 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
         .ignoreContinuousNewLines()
         .ignoreNewLines(isSingleLine())
         .lineMarginProvider((lineIndex, y, defaultMaxWidth, lineHeight) -> lineIndex == 0 ? textIconsPadding : 0)
-        .entities(entities)
+        .viewProvider(currentViews)
+        .entities(entities, (text, specificMedia) -> {
+          if (this.trimmedText == text) {
+            for (View view : currentViews) {
+              ComplexReceiver receiver = ((ChatView) view).getTextMediaReceiver();
+              if (!text.invalidateMediaContent(receiver, specificMedia)) {
+                text.requestMedia(receiver);
+              }
+            }
+          }
+        })
         .noClickable()
         .build();
+      currentViews.invalidateContent(this);
     } else {
       trimmedText = null;
     }

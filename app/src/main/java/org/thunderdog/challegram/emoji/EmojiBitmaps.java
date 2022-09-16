@@ -25,6 +25,7 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Media;
+import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.tool.EmojiCode;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
@@ -141,7 +142,7 @@ class EmojiBitmaps {
       } else {
         bitmaps[page1][page2] = resultFinal;
       }
-      UI.emojiLoaded(false);
+      TGLegacyManager.instance().notifyEmojiChanged(false);
     });
   }
 }

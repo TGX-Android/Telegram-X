@@ -45,9 +45,8 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.core.ColorUtils;
-import me.vkryl.core.reference.ReferenceList;
 
-public abstract class InlineResult <T> implements MessageSourceProvider, MultipleViewProvider.InvalidateContentProvider {
+public abstract class InlineResult <T> implements MessageSourceProvider {
   public static final int TYPE_ARTICLE = 0;
   public static final int TYPE_VIDEO = 1;
   public static final int TYPE_CONTACT = 2;
@@ -87,7 +86,6 @@ public abstract class InlineResult <T> implements MessageSourceProvider, Multipl
     this.id = id;
     this.data = data;
     this.currentViews = new MultipleViewProvider();
-    this.currentViews.setContentProvider(this);
   }
 
   public final T data () {
@@ -317,6 +315,10 @@ public abstract class InlineResult <T> implements MessageSourceProvider, Multipl
     requestContent(receiver, false);
   }
 
+  public void requestTextMedia (ComplexReceiver textMediaReceiver) {
+    textMediaReceiver.clear();
+  }
+
   private MediaPreview mediaPreview;
 
   protected final void setMediaPreview (MediaPreview mediaPreview) {
@@ -329,18 +331,6 @@ public abstract class InlineResult <T> implements MessageSourceProvider, Multipl
 
   public void requestContent (ComplexReceiver receiver, boolean isInvalidate) {
     receiver.clear();
-  }
-
-  @Override
-  public void invalidateContent () {
-    ReferenceList<View> views = currentViews.getViewsList();
-    for (View view : views) {
-      if (view instanceof CustomResultView) {
-        ((CustomResultView) view).invalidateContent(this);
-      } else if (view instanceof MultipleViewProvider.InvalidateContentProvider) {
-        ((MultipleViewProvider.InvalidateContentProvider) view).invalidateContent();
-      }
-    }
   }
 
   private FactorAnimator highlightAnimator;
@@ -463,7 +453,7 @@ public abstract class InlineResult <T> implements MessageSourceProvider, Multipl
       case TdApi.InlineQueryResultDocument.CONSTRUCTOR: {
         TdApi.InlineQueryResultDocument doc = (TdApi.InlineQueryResultDocument) result;
         if (TGMimeType.isAudioMimeType(doc.document.mimeType)) {
-          TdApi.InlineQueryResultAudio audio = new TdApi.InlineQueryResultAudio(doc.id, new TdApi.Audio(0, doc.title, doc.description, doc.document.fileName, doc.document.mimeType, doc.document.minithumbnail, doc.document.thumbnail, doc.document.document));
+          TdApi.InlineQueryResultAudio audio = new TdApi.InlineQueryResultAudio(doc.id, new TdApi.Audio(0, doc.title, doc.description, doc.document.fileName, doc.document.mimeType, doc.document.minithumbnail, doc.document.thumbnail, null, doc.document.document));
           return new InlineResultCommon(context, tdlib, audio, builder);
         } else {
           return new InlineResultCommon(context, tdlib, doc);

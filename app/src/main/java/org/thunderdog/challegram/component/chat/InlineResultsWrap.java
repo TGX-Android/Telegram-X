@@ -59,6 +59,7 @@ import org.thunderdog.challegram.theme.ThemeListenerList;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.ui.SimpleMediaViewController;
 import org.thunderdog.challegram.util.CancellableResultHandler;
@@ -397,23 +398,8 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
   }
 
   @Override
-  public void onEmojiPartLoaded () {
-    if (recyclerView != null) {
-      RecyclerView.LayoutManager manager = recyclerView.getLayoutManager();
-      if (manager != null) {
-        LinearLayoutManager lm = (LinearLayoutManager) recyclerView.getLayoutManager();
-        int first = lm.findFirstVisibleItemPosition();
-        int last = lm.findLastVisibleItemPosition();
-        if (first != -1 && last != -1) {
-          for (int i = Math.max(1, first); i <= last; i++) {
-            View view = manager.findViewByPosition(i);
-            if (view != null) {
-              view.invalidate();
-            }
-          }
-        }
-      }
-    }
+  public void onEmojiUpdated (boolean isPackSwitch) {
+    Views.invalidateChildren(recyclerView);
   }
 
   private void checkLoadMore () {

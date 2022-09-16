@@ -28,6 +28,7 @@ import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
@@ -67,17 +68,15 @@ public class TGMessageText extends TGMessage {
     }
   }
 
-  public TGMessageText (MessagesManager context, TdApi.Message msg, TdApi.FormattedText text) {
-    super(context, msg);
-    this.currentMessageText = new TdApi.MessageText(text, null);
-    setText(text, true);
-  }
-
   public TGMessageText (MessagesManager context, TdApi.Message msg, TdApi.SponsoredMessage text) {
     super(context, msg);
     this.sponsoredMetadata = text;
     this.currentMessageText = (TdApi.MessageText) text.content;
-    setText(currentMessageText.text, true);
+    setText(currentMessageText.text, false);
+  }
+
+  public TGMessageText (MessagesManager context, TdApi.Message msg, TdApi.FormattedText text) {
+    this(context, msg, new TdApi.MessageText(text, null), null);
   }
 
   public TdApi.File getTargetFile () {
@@ -198,10 +197,19 @@ public class TGMessageText extends TGMessage {
     if (this.text == null || !Td.equalsTo(this.text, text)) {
       this.text = text;
       TextColorSet colorSet = isErrorMessage() ? TextColorSets.Regular.NEGATIVE : getTextColorSet();
+      TextWrapper.TextMediaListener textMediaListener = (wrapper, updatedText, specificTextMedia) -> {
+        if (this.wrapper == wrapper) {
+          invalidateTextMediaReceiver(updatedText, specificTextMedia);
+        }
+      };
       if (text.entities != null || !parseEntities) {
-        this.wrapper = new TextWrapper(text.text, getTextStyleProvider(), colorSet, TextEntity.valueOf(tdlib, text, openParameters())).setClickCallback(clickCallback());
+        this.wrapper = new TextWrapper(text.text, getTextStyleProvider(), colorSet)
+          .setEntities(TextEntity.valueOf(tdlib, text, openParameters()), textMediaListener)
+          .setClickCallback(clickCallback());
       } else {
-        this.wrapper = new TextWrapper(tdlib, text.text, getTextStyleProvider(), colorSet, Text.ENTITY_FLAGS_NONE, openParameters()).setClickCallback(clickCallback());
+        this.wrapper = new TextWrapper(text.text, getTextStyleProvider(), colorSet)
+          .setEntities(Text.makeEntities(text.text, Text.ENTITY_FLAGS_ALL, null, tdlib, openParameters()), textMediaListener)
+          .setClickCallback(clickCallback());
       }
       this.wrapper.addTextFlags(Text.FLAG_BIG_EMOJI);
       if (useBubbles()) {
@@ -211,9 +219,32 @@ public class TGMessageText extends TGMessage {
         this.wrapper.addTextFlags(Text.FLAG_BOUNDS_NOT_STRICT);
       }
       this.wrapper.setViewProvider(currentViews);
+      if (hasMedia()) {
+        invalidateTextMediaReceiver();
+      }
       return true;
     }
     return false;
+  }
+
+  private boolean hasMedia () {
+    return wrapper.hasMedia() || (webPage != null && webPage.hasMedia());
+  }
+
+  private static final int WEB_PAGE_RECEIVERS_KEY = Integer.MAX_VALUE / 2;
+
+  @Override
+  public void requestTextMedia (ComplexReceiver textMediaReceiver) {
+    if (wrapper != null) {
+      wrapper.requestMedia(textMediaReceiver, 0, WEB_PAGE_RECEIVERS_KEY);
+      if (webPage != null) {
+        webPage.requestTextMedia(textMediaReceiver, WEB_PAGE_RECEIVERS_KEY);
+      } else {
+        textMediaReceiver.clearReceiversWithHigherKey(WEB_PAGE_RECEIVERS_KEY);
+      }
+    } else {
+      textMediaReceiver.clear();
+    }
   }
 
   @Override
@@ -305,7 +336,7 @@ public class TGMessageText extends TGMessage {
       setWebPage(newText.webPage);
       rebuildContent();
       if (!Td.equalsTo(oldWebPage, newText.webPage)) {
-        invalidateContent();
+        invalidateContent(this);
         invalidatePreviewReceiver();
       }
     }
@@ -369,9 +400,9 @@ public class TGMessageText extends TGMessage {
 
   @Override
   protected void drawContent (MessageView view, Canvas c, int startX, int startY, int maxWidth, Receiver preview, Receiver receiver) {
-    wrapper.draw(c, startX, getStartXRtl(startX, maxWidth), Config.MOVE_BUBBLE_TIME_RTL_TO_LEFT ? 0 : getBubbleTimePartWidth(), startY + getTextTopOffset(), null, 1f);
+    wrapper.draw(c, startX, getStartXRtl(startX, maxWidth), Config.MOVE_BUBBLE_TIME_RTL_TO_LEFT ? 0 : getBubbleTimePartWidth(), startY + getTextTopOffset(), null, 1f, view.getTextMediaReceiver());
     if (webPage != null && receiver != null) {
-      webPage.draw(view, c, Lang.rtl() ? startX + maxWidth - webPage.getWidth() : startX, getWebY(), preview, receiver, 1f);
+      webPage.draw(view, c, Lang.rtl() ? startX + maxWidth - webPage.getWidth() : startX, getWebY(), preview, receiver, 1f, view.getTextMediaReceiver());
     }
   }
 
@@ -465,6 +496,9 @@ public class TGMessageText extends TGMessage {
 
   @Override
   protected void onMessageContainerDestroyed () {
+    if (wrapper != null) {
+      wrapper.performDestroy();
+    }
     if (webPage != null) {
       webPage.performDestroy();
     }

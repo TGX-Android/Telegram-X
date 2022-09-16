@@ -19,7 +19,6 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.BitmapShader;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Point;
@@ -31,8 +30,11 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.text.style.CharacterStyle;
+import android.text.style.ClickableSpan;
 import android.util.SparseIntArray;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -60,7 +62,6 @@ import org.thunderdog.challegram.component.chat.MessageQuickActionSwipeHelper;
 import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessageViewGroup;
 import org.thunderdog.challegram.component.chat.MessagesManager;
-import org.thunderdog.challegram.component.chat.MessagesTouchHelperCallback;
 import org.thunderdog.challegram.component.chat.ReplyComponent;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.config.Device;
@@ -93,10 +94,12 @@ import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.ReactionsCounterDrawable;
 import org.thunderdog.challegram.util.text.Counter;
+import org.thunderdog.challegram.util.text.FormattedText;
 import org.thunderdog.challegram.util.text.Letters;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
@@ -104,6 +107,7 @@ import org.thunderdog.challegram.util.text.TextColorSetOverride;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.util.text.TextEntityCustom;
+import org.thunderdog.challegram.util.text.TextMedia;
 import org.thunderdog.challegram.util.text.TextPart;
 import org.thunderdog.challegram.util.text.TextStyleProvider;
 import org.thunderdog.challegram.util.text.TextWrapper;
@@ -115,6 +119,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -125,6 +130,7 @@ import me.vkryl.android.SdkVersion;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.util.ClickHelper;
+import me.vkryl.android.util.InvalidateContentProvider;
 import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.BitwiseUtils;
@@ -141,7 +147,7 @@ import me.vkryl.td.ChatId;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
 
-public abstract class TGMessage implements MultipleViewProvider.InvalidateContentProvider, TdlibDelegate, FactorAnimator.Target, Comparable<TGMessage>, Counter.Callback {
+public abstract class TGMessage implements InvalidateContentProvider, TdlibDelegate, FactorAnimator.Target, Comparable<TGMessage>, Counter.Callback {
   private static final int MAXIMUM_CHANNEL_MERGE_TIME_DIFF = 150;
   private static final int MAXIMUM_COMMON_MERGE_TIME_DIFF = 900;
 
@@ -1665,7 +1671,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return useBubbles() && (!useBubble() || separateReplyFromBubble());
   }
 
-  public final void draw (MessageView view, Canvas c, @NonNull ImageReceiver avatarReceiver, Receiver replyReceiver, DoubleImageReceiver previewReceiver, ImageReceiver contentReceiver, GifReceiver gifReceiver, ComplexReceiver complexReceiver) {
+  public final void draw (MessageView view, Canvas c, @NonNull ImageReceiver avatarReceiver, Receiver replyReceiver, ComplexReceiver replyTextMediaReceiver, DoubleImageReceiver previewReceiver, ImageReceiver contentReceiver, GifReceiver gifReceiver, ComplexReceiver complexReceiver) {
     final int viewWidth = view.getMeasuredWidth();
     final int viewHeight = view.getMeasuredHeight();
 
@@ -1778,7 +1784,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
 
     if (hasFooter()) {
-      drawFooter(c);
+      drawFooter(view, c);
     }
 
     // Header
@@ -2082,7 +2088,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         startX += xTextPadding;
       }
 
-      replyData.draw(c, startX, top, endX, width, replyReceiver, Lang.rtl());
+      replyData.draw(c, startX, top, endX, width, replyReceiver, replyTextMediaReceiver, Lang.rtl());
     }
 
     if (contentOffset != 0) {
@@ -2124,18 +2130,21 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     if (parentViewGroup != null) {
       parentViewGroup.setSelectableTranslation(contentOffset);
     }
-    if (contentOffset != 0) {
-      c.save();
+    final boolean savedContentTranslation = contentOffset != 0;
+    int globalRestoreToCount = -1;
+    if (savedContentTranslation) {
+      globalRestoreToCount = Views.save(c);
       c.translate(contentOffset, 0);
     }
     final boolean savedTranslation = translation != 0f;
+    int restoreToCount = -1;
     if (savedTranslation) {
-      c.save();
+      restoreToCount = Views.save(c);
       c.translate(translation, 0);
     }
     drawOverlay(view, c, pContentX, pContentY, pContentMaxWidth);
     if (savedTranslation) {
-      c.restore();
+      Views.restore(c, restoreToCount);
       drawTranslate(view, c);
     } else if (dismissFactor != 0f) {
       drawTranslate(view, c);
@@ -2143,11 +2152,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     if (useBubbles()) {
       if (useBubbleTime()) {
         drawBubbleTimePart(c, view);
-        com.google.android.exoplayer2.util.Log.i("OVERLAYWTF_DRAWOVR", "");
       }
     }
-    if (contentOffset != 0) {
-      c.restore();
+    if (savedContentTranslation) {
+      Views.restore(c, globalRestoreToCount);
     }
   }
 
@@ -2368,8 +2376,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   private void performWithViews (@NonNull RunnableData<MessageView> act) {
-    final ReferenceList<View> attachedToViews = currentViews.getViewsList();
-    for (View view : attachedToViews) {
+    for (View view : currentViews) {
       act.runWithData((MessageView) view);
     }
   }
@@ -2379,8 +2386,13 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   @Override
-  public final void invalidateContent () {
-    invalidateContentReceiver();
+  public final boolean invalidateContent (Object cause) {
+    if (cause == replyData) {
+      invalidateReplyReceiver();
+    } else {
+      invalidateContentReceiver();
+    }
+    return true;
   }
 
   public final void invalidateContentReceiver (long messageId, int arg) {
@@ -2401,6 +2413,18 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
 
   public final void invalidateReplyReceiver () {
     performWithViews(view -> view.invalidateReplyReceiver(msg.chatId, msg.id));
+  }
+
+  public final void invalidateTextMediaReceiver () {
+    performWithViews(view -> requestTextMedia(view.getTextMediaReceiver()));
+  }
+
+  public final void invalidateTextMediaReceiver (@NonNull Text text, @Nullable TextMedia textMedia) {
+    performWithViews(view -> view.invalidateTextMediaReceiver(this, text, textMedia));
+  }
+
+  public final void invalidateReplyTextMediaReceiver (@NonNull Text text, @Nullable TextMedia textMedia) {
+    performWithViews(view -> view.invalidateReplyTextMediaReceiver(this, text, textMedia));
   }
 
   // Touch
@@ -2488,8 +2512,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
   });
 
+  protected final void highlightOtherMessage (MessageId messageId) {
+    manager.controller().highlightMessage(messageId, toMessageId());
+  }
+
   protected final void highlightOtherMessage (long otherMessageId) {
-    manager.controller().highlightMessage(new MessageId(msg.chatId, otherMessageId), toMessageId());
+    highlightOtherMessage(new MessageId(msg.chatId, otherMessageId));
   }
 
   private float mInitialTouchX;
@@ -2781,11 +2809,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     } else {
       colorTheme = getChatAuthorColorSet();
     }
-    return new Text.Builder(tdlib, text, openParameters(), maxWidth, getNameStyleProvider(), colorTheme)
+    return new Text.Builder(tdlib, text, openParameters(), maxWidth, getNameStyleProvider(), colorTheme, null)
       .singleLine()
       .clipTextArea()
       .allBold(allBold)
       .allClickable(allActive)
+      .viewProvider(currentViews)
       .onClick(isForward ? this::onForwardClick : this::onNameClick)
       .build();
   }
@@ -2825,7 +2854,13 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         hAuthorChatMark = null;
       }
       if (isPsa) {
-        hPsaTextT = new Text.Builder(tdlib, Lang.getPsaNotificationType(controller(), msg.forwardInfo.publicServiceAnnouncementType), openParameters(), maxWidth, getNameStyleProvider(), getChatAuthorPsaColorSet()).allClickable().singleLine().onClick(this::onNameClick).build();
+        CharSequence text = Lang.getPsaNotificationType(controller(), msg.forwardInfo.publicServiceAnnouncementType);
+        hPsaTextT = new Text.Builder(tdlib, text, openParameters(), maxWidth, getNameStyleProvider(), getChatAuthorPsaColorSet(), null)
+          .allClickable()
+          .singleLine()
+          .viewProvider(currentViews)
+          .onClick(this::onNameClick)
+          .build();
       } else {
         hPsaTextT = null;
       }
@@ -2879,7 +2914,14 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     int nameMaxWidth;
     if (isPsa) {
       nameMaxWidth = totalMaxWidth;
-      hPsaTextT = max > 0 ? new Text.Builder(tdlib, Lang.getPsaNotificationType(controller(), msg.forwardInfo.publicServiceAnnouncementType), openParameters(), max, getNameStyleProvider(), getChatAuthorPsaColorSet()).allClickable().singleLine().onClick(this::onNameClick).build() : null;
+      CharSequence text = Lang.getPsaNotificationType(controller(), msg.forwardInfo.publicServiceAnnouncementType);
+      hPsaTextT = max <= 0 ? null :
+        new Text.Builder(tdlib, text, openParameters(), max, getNameStyleProvider(), getChatAuthorPsaColorSet(), null)
+        .allClickable()
+        .singleLine()
+        .viewProvider(currentViews)
+        .onClick(this::onNameClick)
+        .build();
     } else {
       hPsaTextT = null;
       nameMaxWidth = max;
@@ -2960,7 +3002,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     boolean isPsa = isPsa() && !forceForwardedInfo();
     fAuthorNameT = makeName(forwardInfo.getAuthorName(), !(forwardInfo instanceof TGSourceHidden), isPsa, false, msg.viaBotUserId, (int) (isPsa ? totalMax : max), true);
     if (isPsa) {
-      fPsaTextT = new Text.Builder(tdlib, Lang.getPsaNotificationType(controller(), msg.forwardInfo.publicServiceAnnouncementType), openParameters(), (int) max, getNameStyleProvider(), getChatAuthorPsaColorSet()).allClickable().singleLine().onClick(this::onForwardClick).build();
+      CharSequence text = Lang.getPsaNotificationType(controller(), msg.forwardInfo.publicServiceAnnouncementType);
+      fPsaTextT = new Text.Builder(tdlib, text, openParameters(), (int) max, getNameStyleProvider(), getChatAuthorPsaColorSet(), null)
+        .allClickable()
+        .singleLine()
+        .onClick(this::onForwardClick)
+        .build();
     } else {
       fPsaTextT = null;
     }
@@ -3502,9 +3549,9 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     receiver.setBounds(left, top, left + size, top + size);
   }
 
-  public final void requestReply (DoubleImageReceiver receiver) {
+  public final void requestReply (DoubleImageReceiver receiver, ComplexReceiver textMediaReceiver) {
     if (replyData != null) {
-      replyData.requestPreview(receiver);
+      replyData.requestPreview(receiver, textMediaReceiver);
     } else {
       receiver.clear();
     }
@@ -3526,10 +3573,23 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     computeQuickButtons();
   }
 
+  public final void requestAllTextMedia (MessageView view) {
+    requestTextMedia(view.getTextMediaReceiver());
 
-  // public static final float IMAGE_CONTENT_DEFAULT_RADIUS = 3f;
-  // public static final float BUBBLE_MERGE_RADIUS = 6f;
-  // public static final float BUBBLE_DEFAULT_RADIUS = BUBBLE_BIG_RADIUS_AVAILABLE ? 18f : BUBBLE_MERGE_RADIUS;
+    if (footerText != null) {
+      footerText.requestMedia(view.getFooterTextMediaReceiver(true));
+    } else {
+      ComplexReceiver receiver = view.getFooterTextMediaReceiver(false);
+      if (receiver != null) {
+        receiver.clear();
+      }
+    }
+  }
+
+  public void requestTextMedia (ComplexReceiver textMediaReceiver) {
+    // override in children
+    textMediaReceiver.clear();
+  }
 
   public int getImageContentRadius (boolean isPreview) {
     return 0;
@@ -4348,8 +4408,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return msg.canBeDeletedForAllUsers;
   }
 
-  public final boolean canBeSelected () {
-    return (!isNotSent() || canResend()) && (flags & FLAG_UNSUPPORTED) == 0 && !(this instanceof TGMessageChat) && allowInteraction() && !isSponsored();
+  public boolean canBeSelected () {
+    return (!isNotSent() || canResend()) && (flags & FLAG_UNSUPPORTED) == 0 && allowInteraction() && !isSponsored();
+  }
+
+  public boolean canBePinned () {
+    return !isNotSent() && allowInteraction() && !isSponsored();
   }
 
   public boolean canEditText () {
@@ -4493,6 +4557,10 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return chat;
   }
 
+  public boolean isUserChat () {
+    return ChatId.isUserChat(getChatId());
+  }
+
   public long getChannelId () {
     return ChatId.toSupergroupId(msg.chatId);
   }
@@ -4632,15 +4700,11 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   protected boolean shouldHideMedia () {
-    return (flags & FLAG_HIDE_MEDIA) != 0;
+    return BitwiseUtils.getFlag(flags, FLAG_HIDE_MEDIA);
   }
 
   public final void setMediaVisible (MediaItem media, boolean isVisible) {
-    if (isVisible) {
-      flags |= FLAG_HIDE_MEDIA;
-    } else {
-      flags &= ~FLAG_HIDE_MEDIA;
-    }
+    this.flags = BitwiseUtils.setFlag(flags, FLAG_HIDE_MEDIA, !isVisible);
     invalidate();
   }
 
@@ -6253,10 +6317,12 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   private boolean needHideEventDate () {
+    //noinspection WrongConstant
     return hideEventDate || (msg.content.getConstructor() == TdApiExt.MessageChatEvent.CONSTRUCTOR && ((TdApiExt.MessageChatEvent) msg.content).hideDate);
   }
 
   public final boolean isEventLog () {
+    //noinspection WrongConstant
     return (flags & FLAG_EVENT_LOG) != 0 || msg.content.getConstructor() == TdApiExt.MessageChatEvent.CONSTRUCTOR;
   }
 
@@ -6274,16 +6340,24 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   public void setFooter (String title, String text, TdApi.TextEntity[] entities) {
     this.footerTitle = title;
 
-    TextWrapper wrapper = new TextWrapper(text, getSmallerTextStyleProvider(), getTextColorSet(), TextEntity.valueOf(tdlib, text, entities, openParameters())).setClickCallback(clickCallback());
+    final TextWrapper footerWrapper = new TextWrapper(text, getSmallerTextStyleProvider(), getTextColorSet())
+      .setEntities(TextEntity.valueOf(tdlib, text, entities, openParameters()), (wrapper, text1, specificMedia) -> {
+        if (footerText == wrapper) {
+          performWithViews(view -> {
+            view.invalidateFooterTextMediaReceiver(this, text1, specificMedia);
+          });
+        }
+      })
+      .setClickCallback(clickCallback());
     if (useBubbles()) {
-      wrapper.addTextFlags(Text.FLAG_ADJUST_TO_CURRENT_WIDTH);
+      footerWrapper.addTextFlags(Text.FLAG_ADJUST_TO_CURRENT_WIDTH);
     }
     if (Config.USE_NONSTRICT_TEXT_ALWAYS || !useBubbles()) {
-      wrapper.addTextFlags(Text.FLAG_BOUNDS_NOT_STRICT);
+      footerWrapper.addTextFlags(Text.FLAG_BOUNDS_NOT_STRICT);
     }
-    wrapper.setViewProvider(currentViews);
+    footerWrapper.setViewProvider(currentViews);
 
-    this.footerText = wrapper;
+    this.footerText = footerWrapper;
   }
 
   protected final int getFooterTop () {
@@ -6493,7 +6567,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     DrawAlgorithms.drawDirection(c, endX - Screen.dp(12f), cy, ColorUtils.alphaColor(alpha, Theme.getColor(iconColorId)), Gravity.RIGHT);
   }
 
-  private void drawFooter (Canvas c) {
+  private void drawFooter (MessageView view, Canvas c) {
     int contentX, contentY = getFooterTop();
     if (useBubbles()) {
       // int bubblePadding = getBubbleContentPadding();
@@ -6513,7 +6587,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     paint.setColor(Theme.getColor(R.id.theme_color_textNeutral));
     c.drawText(trimmedFooterTitle != null ? trimmedFooterTitle : footerTitle, contentX, contentY + Screen.dp(15f), paint);
 
-    footerText.draw(c, contentX, contentY + Screen.dp(22f), null, 1f);
+    footerText.draw(c, contentX, contentY + Screen.dp(22f), null, 1f, view.getFooterTextMediaReceiver(true));
   }
 
   // Locale change
@@ -6691,7 +6765,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     }
   }
 
-  private static TextStyleProvider styleProvider, simpleStyleProvider, biggerStyleProvider, smallerStyleProvider, nameProvider, timeProvider, reactionBubbleProvider;
+  private static TextStyleProvider styleProvider, simpleStyleProvider, biggerStyleProvider, smallerStyleProvider, nameProvider, timeProvider, reactionBubbleProvider, bubbleServiceProvider;
 
   public static TextStyleProvider reactionsTextStyleProvider () {
     if (reactionBubbleProvider == null) {
@@ -6721,6 +6795,22 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
       Settings.instance().addChatFontSizeChangeListener(styleProvider);
     }
     return styleProvider;
+  }
+
+  public static TextStyleProvider getServiceTextStyleProvider (boolean bubbleMode) {
+    if (bubbleMode) {
+      return bubbleServiceTextStyleProvider();
+    } else {
+      return getTextStyleProvider();
+    }
+  }
+
+  public static TextStyleProvider bubbleServiceTextStyleProvider () {
+    if (bubbleServiceProvider == null) {
+      bubbleServiceProvider = new TextStyleProvider(Fonts.newRobotoStorage()).setTextSizeDiff(-2f).setTextSize(Settings.instance().getChatFontSize()).setAllowSp(true);
+      Settings.instance().addChatFontSizeChangeListener(bubbleServiceProvider);
+    }
+    return bubbleServiceProvider;
   }
 
   public static TextStyleProvider getSmallerTextStyleProvider () {
@@ -6934,37 +7024,11 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return parsedMessage;
   }
 
-  private static void appendRight (StringBuilder b, int res, boolean oldValue, boolean value, boolean needEqual) {
-    if (oldValue != value) {
-      b.append('\n');
-      b.append(value ? '+' : '-');
-      b.append(' ');
-      b.append(Lang.getString(res));
-    } else if (needEqual && value) {
-      b.append('\n');
-      b.append(Lang.getString(res));
-      if (!value)
-        b.append(" (-)");
-    }
+  public static TGMessage valueOf (MessagesManager context, TdApi.Message msg) {
+    return valueOf(context, msg, msg.content);
   }
 
-  private static void appendRight (StringBuilder b, int res, int doubleRes, String oldValue, String newValue, boolean needEqual) {
-    if (!StringUtils.equalsOrBothEmpty(oldValue, newValue)) {
-      b.append('\n');
-      if (StringUtils.isEmpty(oldValue)) {
-        b.append("+ ").append(Lang.getString(res, newValue));
-      } else if (StringUtils.isEmpty(newValue)) {
-        b.append("- ").append(Lang.getString(res, oldValue));
-      } else {
-        b.append("+ ").append(Lang.getString(doubleRes, oldValue, newValue));
-      }
-    } else if (needEqual && !StringUtils.isEmpty(newValue)) {
-      b.append(Lang.getString(res, newValue));
-    }
-  }
-
-  private static TGMessage valueOf (MessagesManager context, TdApi.Message msg) {
-    TdApi.MessageContent content = msg.content;
+  public static TGMessage valueOf (MessagesManager context, TdApi.Message msg, TdApi.MessageContent content) {
     final Tdlib tdlib = context.controller().tdlib();
     try {
       if (content == null) {
@@ -6976,567 +7040,14 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         return text;
       }
 
+      //noinspection WrongConstant
       if (content.getConstructor() == TdApiExt.MessageChatEvent.CONSTRUCTOR) {
-        TdApiExt.MessageChatEvent event = (TdApiExt.MessageChatEvent) content;
-        // Try to convert chat event to some existing native message type
-        switch (event.event.action.getConstructor()) {
-          case TdApi.ChatEventMemberJoined.CONSTRUCTOR: {
-            final long userId = Td.getSenderUserId(event.event.memberId);
-            content = new TdApi.MessageChatAddMembers(new long[] {userId});
-            break;
-          }
-          case TdApi.ChatEventMemberLeft.CONSTRUCTOR: {
-            final long userId = Td.getSenderUserId(event.event.memberId);
-            content = new TdApi.MessageChatDeleteMember(userId);
-            break;
-          }
-          case TdApi.ChatEventMessageTtlChanged.CONSTRUCTOR:
-            content = new TdApi.MessageChatSetTtl(((TdApi.ChatEventMessageTtlChanged) event.event.action).newMessageTtl);
-            break;
-          case TdApi.ChatEventVideoChatCreated.CONSTRUCTOR:
-            content = new TdApi.MessageVideoChatStarted(((TdApi.ChatEventVideoChatCreated) event.event.action).groupCallId);
-            break;
-          case TdApi.ChatEventVideoChatEnded.CONSTRUCTOR:
-            content = new TdApi.MessageVideoChatEnded(0); // ((TdApi.ChatEventVideoChatEnded) event.event.action).groupCallId
-            break;
-          case TdApi.ChatEventTitleChanged.CONSTRUCTOR: {
-            TdApi.ChatEventTitleChanged e = (TdApi.ChatEventTitleChanged) event.event.action;
-            content = new TdApi.MessageChatChangeTitle(e.newTitle);
-            break;
-          }
-          case TdApi.ChatEventPhotoChanged.CONSTRUCTOR: {
-            TdApi.ChatEventPhotoChanged e = (TdApi.ChatEventPhotoChanged) event.event.action;
-            if (e.newPhoto != null || e.oldPhoto != null) {
-              content = new TdApi.MessageChatChangePhoto(e.newPhoto != null ? e.newPhoto : e.oldPhoto);
-            } else {
-              content = new TdApi.MessageChatDeletePhoto();
-            }
-            break;
-          }
-          case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR:
-          case TdApi.ChatEventDescriptionChanged.CONSTRUCTOR:
-          case TdApi.ChatEventHasProtectedContentToggled.CONSTRUCTOR:
-          case TdApi.ChatEventInviteLinkDeleted.CONSTRUCTOR:
-          case TdApi.ChatEventInviteLinkEdited.CONSTRUCTOR:
-          case TdApi.ChatEventInviteLinkRevoked.CONSTRUCTOR:
-          case TdApi.ChatEventInvitesToggled.CONSTRUCTOR:
-          case TdApi.ChatEventIsAllHistoryAvailableToggled.CONSTRUCTOR:
-          case TdApi.ChatEventLinkedChatChanged.CONSTRUCTOR:
-          case TdApi.ChatEventLocationChanged.CONSTRUCTOR:
-          case TdApi.ChatEventMemberInvited.CONSTRUCTOR:
-          case TdApi.ChatEventMemberJoinedByInviteLink.CONSTRUCTOR:
-          case TdApi.ChatEventMemberJoinedByRequest.CONSTRUCTOR:
-          case TdApi.ChatEventMemberPromoted.CONSTRUCTOR:
-          case TdApi.ChatEventMemberRestricted.CONSTRUCTOR:
-          case TdApi.ChatEventMessageDeleted.CONSTRUCTOR:
-          case TdApi.ChatEventMessageEdited.CONSTRUCTOR:
-          case TdApi.ChatEventMessagePinned.CONSTRUCTOR:
-          case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR:
-          case TdApi.ChatEventPermissionsChanged.CONSTRUCTOR:
-          case TdApi.ChatEventPollStopped.CONSTRUCTOR:
-          case TdApi.ChatEventSignMessagesToggled.CONSTRUCTOR:
-          case TdApi.ChatEventSlowModeDelayChanged.CONSTRUCTOR:
-          case TdApi.ChatEventStickerSetChanged.CONSTRUCTOR:
-          case TdApi.ChatEventUsernameChanged.CONSTRUCTOR:
-          case TdApi.ChatEventVideoChatMuteNewParticipantsToggled.CONSTRUCTOR:
-          case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR:
-          case TdApi.ChatEventVideoChatParticipantVolumeLevelChanged.CONSTRUCTOR:
-            // No native message interpretation.
-            break;
-        }
+        return ChatEventUtil.newMessage(context, msg, (TdApiExt.MessageChatEvent) content);
       }
 
       int unsupportedStringRes = R.string.UnsupportedMessage;
 
       switch (content.getConstructor()) {
-        case TdApiExt.MessageChatEvent.CONSTRUCTOR: {
-          TdApiExt.MessageChatEvent event = (TdApiExt.MessageChatEvent) content;
-          if (event.isFull) {
-            TGMessage fullMessage = null;
-            switch (event.event.action.getConstructor()) {
-              case TdApi.ChatEventUsernameChanged.CONSTRUCTOR: {
-                TdApi.ChatEventUsernameChanged e = (TdApi.ChatEventUsernameChanged) event.event.action;
-                TdApi.FormattedText text;
-                if (StringUtils.isEmpty(e.newUsername)) {
-                  text = new TdApi.FormattedText("", null);
-                } else {
-                  String link = TD.getLink(e.newUsername);
-                  text = new TdApi.FormattedText(link, new TdApi.TextEntity[] {new TdApi.TextEntity(0, link.length(), new TdApi.TextEntityTypeUrl())});
-                }
-                fullMessage = new TGMessageText(context, msg, text);
-                if (!StringUtils.isEmpty(e.oldUsername)) {
-                  String link = TD.getLink(e.oldUsername);
-                  fullMessage.setFooter(Lang.getString(R.string.EventLogPreviousLink), link, new TdApi.TextEntity[] {new TdApi.TextEntity(0, link.length(), new TdApi.TextEntityTypeUrl())});
-                }
-                break;
-              }
-
-              case TdApi.ChatEventDescriptionChanged.CONSTRUCTOR: {
-                TdApi.ChatEventDescriptionChanged e = (TdApi.ChatEventDescriptionChanged) event.event.action;
-
-                TdApi.FormattedText text;
-                if (StringUtils.isEmpty(e.newDescription)) {
-                  text = new TdApi.FormattedText("", null);
-                } else {
-                  text = new TdApi.FormattedText(e.newDescription, Text.findEntities(e.newDescription, Text.ENTITY_FLAGS_ALL_NO_COMMANDS));
-                }
-
-                fullMessage = new TGMessageText(context, msg, text);
-                if (!StringUtils.isEmpty(e.oldDescription)) {
-                  fullMessage.setFooter(Lang.getString(R.string.EventLogPreviousGroupDescription), e.oldDescription, null);
-                }
-                break;
-              }
-
-              case TdApi.ChatEventMemberInvited.CONSTRUCTOR: {
-                TdApi.ChatEventMemberInvited e = (TdApi.ChatEventMemberInvited) event.event.action;
-                TdApi.User user = tdlib.cache().user(e.userId);
-                String userName = TD.getUserName(user);
-                StringBuilder b = new StringBuilder(Lang.getString(R.string.group_user_added, "", userName).trim());
-                int start = b.lastIndexOf(userName);
-                ArrayList<TdApi.TextEntity> entities = new ArrayList<>(3);
-                entities.add(new TdApi.TextEntity(0, start - 1, new TdApi.TextEntityTypeItalic()));
-                entities.add(new TdApi.TextEntity(start, userName.length(), new TdApi.TextEntityTypeMentionName(e.userId)));
-                if (user != null && !StringUtils.isEmpty(user.username)) {
-                  b.append(" / ");
-                  entities.add(new TdApi.TextEntity(b.length(), user.username.length() + 1, new TdApi.TextEntityTypeMention()));
-                  b.append('@');
-                  b.append(user.username);
-                }
-                TdApi.TextEntity[] array = new TdApi.TextEntity[entities.size()];
-                entities.toArray(array);
-                TdApi.FormattedText text = new TdApi.FormattedText(b.toString(), array);
-                fullMessage = new TGMessageText(context, msg, text);
-                break;
-              }
-
-              case TdApi.ChatEventMessageDeleted.CONSTRUCTOR: {
-                TdApi.ChatEventMessageDeleted e = (TdApi.ChatEventMessageDeleted) event.event.action;
-                fullMessage = valueOf(context, e.message);
-                break;
-              }
-
-              case TdApi.ChatEventMessageEdited.CONSTRUCTOR: {
-                TdApi.ChatEventMessageEdited e = (TdApi.ChatEventMessageEdited) event.event.action;
-                fullMessage = valueOf(context, TD.removeWebPage(e.newMessage));
-                int footerRes;
-                TdApi.Message oldMessage = TD.removeWebPage(e.oldMessage);
-                TdApi.FormattedText originalText = Td.textOrCaption(oldMessage.content);
-                switch (oldMessage.content.getConstructor()) {
-                  case TdApi.MessageText.CONSTRUCTOR:
-                    footerRes = R.string.EventLogOriginalMessages;
-                    break;
-                  default:
-                    footerRes = R.string.EventLogOriginalCaption;
-                    break;
-                }
-                String text = Td.isEmpty(originalText) ? Lang.getString(R.string.EventLogOriginalCaptionEmpty) : originalText.text;
-                fullMessage.setFooter(Lang.getString(footerRes), text, originalText != null ? originalText.entities : null);
-                break;
-              }
-              case TdApi.ChatEventMessagePinned.CONSTRUCTOR: {
-                TdApi.ChatEventMessagePinned e = (TdApi.ChatEventMessagePinned) event.event.action;
-                fullMessage = valueOf(context, e.message);
-                break;
-              }
-              case TdApi.ChatEventPollStopped.CONSTRUCTOR: {
-                TdApi.ChatEventPollStopped e = (TdApi.ChatEventPollStopped) event.event.action;
-                fullMessage = valueOf(context, e.message);
-                break;
-              }
-              case TdApi.ChatEventInviteLinkEdited.CONSTRUCTOR: {
-                TdApi.ChatEventInviteLinkEdited e = (TdApi.ChatEventInviteLinkEdited) event.event.action;
-
-                boolean changedLimit = e.oldInviteLink.memberLimit != e.newInviteLink.memberLimit;
-                boolean changedExpires = e.oldInviteLink.expirationDate != e.newInviteLink.expirationDate;
-
-                String link = StringUtils.urlWithoutProtocol(e.newInviteLink.inviteLink);
-                String prevLimit = e.oldInviteLink.memberLimit != 0 ? Strings.buildCounter(e.oldInviteLink.memberLimit) : Lang.getString(R.string.EventLogEditedInviteLinkNoLimit);
-                String newLimit = e.newInviteLink.memberLimit != 0 ? Strings.buildCounter(e.newInviteLink.memberLimit) : Lang.getString(R.string.EventLogEditedInviteLinkNoLimit);
-
-                String text;
-                if (changedLimit && changedExpires) {
-                  String expires;
-                  if (e.newInviteLink.expirationDate == 0) {
-                    expires = Lang.getString(R.string.LinkExpiresNever);
-                  } else if (DateUtils.isToday(e.newInviteLink.expirationDate, TimeUnit.SECONDS)) {
-                    expires = Lang.getString(R.string.LinkExpiresTomorrow, Lang.time(e.newInviteLink.expirationDate, TimeUnit.SECONDS));
-                  } else if (DateUtils.isTomorrow(e.newInviteLink.expirationDate, TimeUnit.SECONDS)) {
-                    expires = Lang.getString(R.string.LinkExpiresTomorrow, Lang.time(e.newInviteLink.expirationDate, TimeUnit.SECONDS));
-                  } else {
-                    expires = Lang.getString(R.string.LinkExpiresFuture, Lang.getDate(e.newInviteLink.expirationDate, TimeUnit.SECONDS), Lang.time(e.newInviteLink.expirationDate, TimeUnit.SECONDS));
-                  }
-                  text = Lang.getString(R.string.EventLogEditedInviteLink, link, prevLimit, newLimit, expires);
-                } else if (changedLimit) {
-                  text = Lang.getString(R.string.EventLogEditedInviteLinkLimit, link, prevLimit, newLimit);
-                } else {
-                  if (e.newInviteLink.expirationDate == 0) {
-                    text = Lang.getString(R.string.EventLogEditedInviteLinkExpireNever, link);
-                  } else if (DateUtils.isToday(e.newInviteLink.expirationDate, TimeUnit.SECONDS)) {
-                    text = Lang.getString(R.string.EventLogEditedInviteLinkExpireToday, link, Lang.time(e.newInviteLink.expirationDate, TimeUnit.SECONDS));
-                  } else if (DateUtils.isTomorrow(e.newInviteLink.expirationDate, TimeUnit.SECONDS)) {
-                    text = Lang.getString(R.string.EventLogEditedInviteLinkExpireTomorrow, link, Lang.time(e.newInviteLink.expirationDate, TimeUnit.SECONDS));
-                  } else {
-                    text = Lang.getString(R.string.EventLogEditedInviteLinkExpireFuture, link, Lang.getDate(e.newInviteLink.expirationDate, TimeUnit.SECONDS), Lang.time(e.newInviteLink.expirationDate, TimeUnit.SECONDS));
-                  }
-                }
-
-                TdApi.FormattedText formattedText = new TdApi.FormattedText(text, Td.findEntities(text));
-                fullMessage = new TGMessageText(context, msg, formattedText);
-                break;
-              }
-              case TdApi.ChatEventPermissionsChanged.CONSTRUCTOR: {
-                StringBuilder b = new StringBuilder(Lang.getString(R.string.EventLogPermissions));
-                int length = b.length();
-
-                b.append("\n");
-
-                TdApi.ChatEventPermissionsChanged permissions = (TdApi.ChatEventPermissionsChanged) event.event.action;
-
-                appendRight(b, R.string.EventLogPermissionSendMessages, permissions.oldPermissions.canSendMessages, permissions.newPermissions.canSendMessages, true);
-                appendRight(b, R.string.EventLogPermissionSendMedia, permissions.oldPermissions.canSendMediaMessages, permissions.newPermissions.canSendMediaMessages, true);
-                appendRight(b, R.string.EventLogPermissionSendStickers, permissions.oldPermissions.canSendOtherMessages, permissions.newPermissions.canSendOtherMessages, true);
-                appendRight(b, R.string.EventLogPermissionSendPolls, permissions.oldPermissions.canSendPolls, permissions.newPermissions.canSendPolls, true);
-                appendRight(b, R.string.EventLogPermissionSendEmbed, permissions.oldPermissions.canAddWebPagePreviews, permissions.newPermissions.canAddWebPagePreviews, true);
-                appendRight(b, R.string.EventLogPermissionAddUsers, permissions.oldPermissions.canInviteUsers, permissions.newPermissions.canInviteUsers, true);
-                appendRight(b, R.string.EventLogPermissionPinMessages, permissions.oldPermissions.canPinMessages, permissions.newPermissions.canPinMessages, true);
-                appendRight(b, R.string.EventLogPermissionChangeInfo, permissions.oldPermissions.canChangeInfo, permissions.newPermissions.canChangeInfo, true);
-
-                TdApi.FormattedText formattedText = new TdApi.FormattedText(b.toString().trim(), new TdApi.TextEntity[] {new TdApi.TextEntity(0, length, new TdApi.TextEntityTypeItalic())});
-                fullMessage = new TGMessageText(context, msg, formattedText);
-                break;
-              }
-              case TdApi.ChatEventMemberPromoted.CONSTRUCTOR:
-              case TdApi.ChatEventMemberRestricted.CONSTRUCTOR: {
-                final TdApi.MessageSender memberId;
-
-                StringBuilder b = new StringBuilder();
-                ArrayList<TdApi.TextEntity> entities = new ArrayList<>();
-                final TdApi.ChatMemberStatus oldStatus, newStatus;
-                final boolean isPromote, isTransferOwnership;
-                boolean isAnonymous = false;
-
-                final int stringRes;
-                int restrictedUntil = 0;
-
-                if (event.event.action.getConstructor() == TdApi.ChatEventMemberPromoted.CONSTRUCTOR) {
-                  TdApi.ChatEventMemberPromoted e = (TdApi.ChatEventMemberPromoted) event.event.action;
-                  memberId = new TdApi.MessageSenderUser(e.userId);
-
-                  isPromote = true;
-
-                  // TYPE_EDIT = 0, TYPE_ASSIGN = 1, TYPE_REMOVE = 2, TYPE_TRANSFER = 3
-                  int type = 0;
-
-                  if (e.oldStatus.getConstructor() != TdApi.ChatMemberStatusCreator.CONSTRUCTOR && e.newStatus.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR) {
-                    isTransferOwnership = true;
-                    oldStatus = e.oldStatus;
-                    newStatus = new TdApi.ChatMemberStatusCreator();
-                    type = 3;
-                  } else if (e.oldStatus.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR && e.newStatus.getConstructor() != TdApi.ChatMemberStatusCreator.CONSTRUCTOR) {
-                    isTransferOwnership = true;
-                    oldStatus = e.oldStatus;
-                    newStatus = new TdApi.ChatMemberStatusCreator();
-                    type = 4;
-                  } else {
-                    isTransferOwnership = false;
-
-                    if (e.oldStatus.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR && e.newStatus.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR) {
-                      type = 5;
-                      isAnonymous = ((TdApi.ChatMemberStatusCreator) e.oldStatus).isAnonymous != ((TdApi.ChatMemberStatusCreator) e.newStatus).isAnonymous;
-                    }
-
-                    switch (e.oldStatus.getConstructor()) {
-                      case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
-                        oldStatus = e.oldStatus;
-                        break;
-                      default:
-                        if (!isAnonymous) {
-                          type = 1;
-                          oldStatus = new TdApi.ChatMemberStatusAdministrator(null, false, new TdApi.ChatAdministratorRights());
-                        } else {
-                          oldStatus = e.oldStatus;
-                        }
-                        break;
-                    }
-
-                    switch (e.newStatus.getConstructor()) {
-                      case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
-                        newStatus = e.newStatus;
-                        break;
-                      default:
-                        if (!isAnonymous) {
-                          type = 2;
-                          newStatus = new TdApi.ChatMemberStatusAdministrator(null, false, new TdApi.ChatAdministratorRights());
-                        } else {
-                          newStatus = e.newStatus;
-                        }
-                        break;
-                    }
-                  }
-
-                  switch (type) {
-                    case 1:
-                      stringRes = R.string.EventLogPromotedNew;
-                      break;
-                    case 2:
-                      stringRes = R.string.EventLogUnpromoted;
-                      break;
-                    case 3:
-                      stringRes = R.string.EventLogTransferredOwnership;
-                      break;
-                    case 4:
-                      stringRes = R.string.EventLogNoLongerCreator;
-                      break;
-                    default:
-                      stringRes = R.string.EventLogPromoted;
-                      break;
-                  }
-
-                } else {
-                  TdApi.ChatEventMemberRestricted e = (TdApi.ChatEventMemberRestricted) event.event.action;
-
-                  memberId = e.memberId;
-                  isPromote = false;
-                  isTransferOwnership = false;
-
-                  if (msg.isChannelPost) {
-                    oldStatus = null;
-                    newStatus = null;
-                    if (e.newStatus.getConstructor() == TdApi.ChatMemberStatusBanned.CONSTRUCTOR) {
-                      stringRes = R.string.EventLogChannelRestricted;
-                    } else {
-                      stringRes = R.string.EventLogChannelUnrestricted;
-                    }
-                  } else {
-                    oldStatus = e.oldStatus;
-                    newStatus = e.newStatus;
-                    // STATUS_NORMAL = 0, STATUS_BANNED = 1, STATUS_RESTRICTED = 2
-                    int prevState = 0, newState = 0;
-
-                    switch (e.oldStatus.getConstructor()) {
-                      case TdApi.ChatMemberStatusBanned.CONSTRUCTOR:
-                        prevState = 1;
-                        break;
-                      case TdApi.ChatMemberStatusRestricted.CONSTRUCTOR:
-                        prevState = 2;
-                        break;
-                    }
-
-                    switch (e.newStatus.getConstructor()) {
-                      case TdApi.ChatMemberStatusBanned.CONSTRUCTOR:
-                        newState = 1;
-                        break;
-                      case TdApi.ChatMemberStatusRestricted.CONSTRUCTOR:
-                        newState = 2;
-                        break;
-                    }
-
-                    if (e.oldStatus.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR && e.newStatus.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR) {
-                      isAnonymous = ((TdApi.ChatMemberStatusCreator) e.oldStatus).isAnonymous != ((TdApi.ChatMemberStatusCreator) e.newStatus).isAnonymous;
-                      stringRes = R.string.EventLogPromoted;
-                    } else if (newState == 1 && prevState == 0) {
-                      stringRes = R.string.EventLogGroupBanned;
-                      restrictedUntil = ((TdApi.ChatMemberStatusBanned) newStatus).bannedUntilDate;
-                    } else if (newState != 0) {
-                      stringRes = prevState != 0 ? R.string.EventLogRestrictedUntil : R.string.EventLogRestrictedNew;
-                      restrictedUntil = newStatus.getConstructor() == TdApi.ChatMemberStatusBanned.CONSTRUCTOR ? ((TdApi.ChatMemberStatusBanned) newStatus).bannedUntilDate : ((TdApi.ChatMemberStatusRestricted) newStatus).restrictedUntilDate;
-                    } else {
-                      stringRes = R.string.EventLogRestrictedDeleted;
-                    }
-
-                    /* else {
-                      throw new IllegalArgumentException("server bug: " + event.event.action);
-                    }*/
-                  }
-                }
-
-                String userName = tdlib.senderName(memberId);
-                String username = tdlib.senderUsername(memberId);
-
-                b.append(Lang.getString(stringRes));
-
-                int start = b.indexOf("%1$s");
-                if (start != -1) {
-                  entities.add(new TdApi.TextEntity(0, start - 1, new TdApi.TextEntityTypeItalic()));
-
-                  b.replace(start, start + 4, "");
-                  b.insert(start, userName);
-                  if (memberId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR) {
-                    // TODO support for MessageSenderChat
-                    entities.add(new TdApi.TextEntity(start, userName.length(), new TdApi.TextEntityTypeMentionName(((TdApi.MessageSenderUser) memberId).userId)));
-                  }
-                  start += userName.length();
-                  if (!StringUtils.isEmpty(username)) {
-                    b.insert(start, " / @");
-                    start += 3;
-                    b.insert(start + 1, username);
-                    entities.add(new TdApi.TextEntity(start, username.length() + 1, new TdApi.TextEntityTypeMention()));
-                    start += username.length() + 1;
-                  }
-                }
-
-                int i = b.indexOf("%2$s");
-                if (i != -1) {
-                  int duration = restrictedUntil - event.event.date;
-                  String str;
-
-                  if (restrictedUntil == 0) {
-                    str = Lang.getString(R.string.UserRestrictionsUntilForever);
-                  } else if (Lang.preferTimeForDuration(duration)) {
-                    str = Lang.getString(R.string.UntilX, Lang.getDate(restrictedUntil, TimeUnit.SECONDS));
-                  } else {
-                    str = Lang.getDuration(duration, 0, 0, false);
-                  }
-
-                  b.replace(i, i + 4, str);
-                }
-
-                if (start < b.length() - 1) {
-                  entities.add(new TdApi.TextEntity(start, b.length() - start, new TdApi.TextEntityTypeItalic()));
-                }
-
-                b.append('\n');
-
-                if (isTransferOwnership) {
-                  // no need to show anything
-                } else if (isAnonymous) {
-                  appendRight(b, R.string.EventLogPromotedRemainAnonymous, ((TdApi.ChatMemberStatusCreator) oldStatus).isAnonymous, ((TdApi.ChatMemberStatusCreator) newStatus).isAnonymous, false);
-                } else if (isPromote) {
-                  final TdApi.ChatMemberStatusAdministrator oldAdmin = (TdApi.ChatMemberStatusAdministrator) oldStatus;
-                  final TdApi.ChatMemberStatusAdministrator newAdmin = (TdApi.ChatMemberStatusAdministrator) newStatus;
-                  appendRight(b, msg.isChannelPost ? R.string.EventLogPromotedManageChannel : R.string.EventLogPromotedManageGroup, oldAdmin.rights.canManageChat, newAdmin.rights.canManageChat, false);
-                  appendRight(b, msg.isChannelPost ? R.string.EventLogPromotedChangeChannelInfo : R.string.EventLogPromotedChangeGroupInfo, oldAdmin.rights.canChangeInfo, newAdmin.rights.canChangeInfo, false);
-                  if (msg.isChannelPost) {
-                    appendRight(b, R.string.EventLogPromotedPostMessages, oldAdmin.rights.canChangeInfo, newAdmin.rights.canChangeInfo, false);
-                    appendRight(b, R.string.EventLogPromotedEditMessages, oldAdmin.rights.canEditMessages, newAdmin.rights.canEditMessages, false);
-                  }
-                  appendRight(b, R.string.EventLogPromotedDeleteMessages, oldAdmin.rights.canDeleteMessages, newAdmin.rights.canDeleteMessages, false);
-                  appendRight(b, R.string.EventLogPromotedBanUsers, oldAdmin.rights.canRestrictMembers, newAdmin.rights.canRestrictMembers, false);
-                  appendRight(b, R.string.EventLogPromotedAddUsers, oldAdmin.rights.canInviteUsers, newAdmin.rights.canInviteUsers, false);
-                  if (!msg.isChannelPost) {
-                    appendRight(b, R.string.EventLogPromotedPinMessages, oldAdmin.rights.canPinMessages, newAdmin.rights.canPinMessages, false);
-                  }
-                  appendRight(b, msg.isChannelPost ? R.string.EventLogPromotedManageLiveStreams : R.string.EventLogPromotedManageVoiceChats, oldAdmin.rights.canManageVideoChats, newAdmin.rights.canManageVideoChats, false);
-                  if (!msg.isChannelPost) {
-                    appendRight(b, R.string.EventLogPromotedRemainAnonymous, oldAdmin.rights.isAnonymous, newAdmin.rights.isAnonymous, false);
-                  }
-                  appendRight(b, R.string.EventLogPromotedAddAdmins, oldAdmin.rights.canPromoteMembers, newAdmin.rights.canPromoteMembers, false);
-                  appendRight(b, R.string.EventLogPromotedTitle, R.string.EventLogPromotedTitleChange, oldAdmin.customTitle, newAdmin.customTitle, false);
-                } else if (oldStatus != null && newStatus != null) {
-                  final boolean oldCanReadMessages = oldStatus.getConstructor() != TdApi.ChatMemberStatusBanned.CONSTRUCTOR;
-                  final boolean newCanReadMessages = newStatus.getConstructor() != TdApi.ChatMemberStatusBanned.CONSTRUCTOR;
-
-                  final TdApi.ChatMemberStatusRestricted oldBan = oldStatus.getConstructor() == TdApi.ChatMemberStatusRestricted.CONSTRUCTOR ? (TdApi.ChatMemberStatusRestricted) oldStatus : null;
-                  final TdApi.ChatMemberStatusRestricted newBan = newStatus.getConstructor() == TdApi.ChatMemberStatusRestricted.CONSTRUCTOR ? (TdApi.ChatMemberStatusRestricted) newStatus : null;
-
-                  if (memberId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR) {
-                    appendRight(b, R.string.EventLogRestrictedReadMessages, oldCanReadMessages, newCanReadMessages, false);
-                  }
-                  appendRight(b, R.string.EventLogRestrictedSendMessages, oldBan != null ? oldBan.permissions.canSendMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canSendMessages : newCanReadMessages, false);
-                  appendRight(b, R.string.EventLogRestrictedSendMedia, oldBan != null ? oldBan.permissions.canSendMediaMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canSendMediaMessages : newCanReadMessages, false);
-                  appendRight(b, R.string.EventLogRestrictedSendStickers, oldBan != null ? oldBan.permissions.canSendOtherMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canSendOtherMessages : newCanReadMessages, false);
-                  appendRight(b, R.string.EventLogRestrictedSendPolls, oldBan != null ? oldBan.permissions.canSendOtherMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canSendOtherMessages : newCanReadMessages, false);
-                  appendRight(b, R.string.EventLogRestrictedSendEmbed, oldBan != null ? oldBan.permissions.canAddWebPagePreviews : oldCanReadMessages, newBan != null ? newBan.permissions.canAddWebPagePreviews : newCanReadMessages, false);
-                  appendRight(b, R.string.EventLogRestrictedAddUsers, oldBan != null ? oldBan.permissions.canInviteUsers : oldCanReadMessages, newBan != null ? newBan.permissions.canInviteUsers : newCanReadMessages, false);
-                  appendRight(b, R.string.EventLogRestrictedPinMessages, oldBan != null ? oldBan.permissions.canPinMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canPinMessages : newCanReadMessages, false);
-                  appendRight(b, R.string.EventLogRestrictedChangeInfo, oldBan != null ? oldBan.permissions.canChangeInfo : oldCanReadMessages, newBan != null ? newBan.permissions.canChangeInfo : newCanReadMessages, false);
-                }
-
-                TdApi.FormattedText formattedText = new TdApi.FormattedText(b.toString().trim(), null);
-                if (!entities.isEmpty()) {
-                  formattedText.entities = new TdApi.TextEntity[entities.size()];
-                  entities.toArray(formattedText.entities);
-                }
-                fullMessage = new TGMessageText(context, msg, formattedText);
-                break;
-              }
-              case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR: {
-                TdApi.ChatEventAvailableReactionsChanged e = (TdApi.ChatEventAvailableReactionsChanged) event.event.action;
-
-                final List<String> addedReactions = new ArrayList<>();
-                final List<String> removedReactions = new ArrayList<>();
-
-                for (String newAvailableReaction : e.newAvailableReactions) {
-                  if (ArrayUtils.indexOf(e.oldAvailableReactions, newAvailableReaction) == -1) {
-                    addedReactions.add(newAvailableReaction);
-                  }
-                }
-
-                for (String oldAvailableReaction : e.oldAvailableReactions) {
-                  if (ArrayUtils.indexOf(e.newAvailableReactions, oldAvailableReaction) == -1) {
-                    removedReactions.add(oldAvailableReaction);
-                  }
-                }
-
-                List<TdApi.TextEntity> entities = new ArrayList<>();
-                StringBuilder text = new StringBuilder();
-
-                if (e.oldAvailableReactions.length == 0) {
-                  // Enabled reactions
-                  text.append(Lang.getString(R.string.EventLogReactionsEnabled));
-                } else if (e.newAvailableReactions.length == 0) {
-                  // Disabled reactions
-                  text.append(Lang.getString(R.string.EventLogReactionsDisabled));
-                } else {
-                  // Changed available reactions
-                  text.append(Lang.getString(R.string.EventLogReactionsChanged));
-                }
-                entities.add(new TdApi.TextEntity(0, text.length(), new TdApi.TextEntityTypeItalic()));
-                if (e.newAvailableReactions.length > 0) {
-                  text.append("\n").append(TextUtils.join(" ", e.newAvailableReactions));
-                }
-
-                if (!addedReactions.isEmpty() && e.oldAvailableReactions.length > 0) {
-                  // + Added:
-                  text.append("\n\n");
-                  text.append(Lang.getString(R.string.EventLogReactionsAdded, TextUtils.join(" ", addedReactions)));
-                }
-
-                if (!removedReactions.isEmpty()) {
-                  // – Removed:
-                  text.append("\n\n");
-                  text.append(Lang.getString(R.string.EventLogReactionsRemoved, TextUtils.join(" ", removedReactions)));
-                }
-
-                TdApi.FormattedText formattedText = new TdApi.FormattedText(text.toString(), entities.toArray(new TdApi.TextEntity[0]));
-                fullMessage = new TGMessageText(context, msg, formattedText);
-                break;
-              }
-              case TdApi.ChatEventHasProtectedContentToggled.CONSTRUCTOR:
-              case TdApi.ChatEventInviteLinkDeleted.CONSTRUCTOR:
-              case TdApi.ChatEventInviteLinkRevoked.CONSTRUCTOR:
-              case TdApi.ChatEventInvitesToggled.CONSTRUCTOR:
-              case TdApi.ChatEventIsAllHistoryAvailableToggled.CONSTRUCTOR:
-              case TdApi.ChatEventLinkedChatChanged.CONSTRUCTOR:
-              case TdApi.ChatEventLocationChanged.CONSTRUCTOR:
-              case TdApi.ChatEventMemberJoined.CONSTRUCTOR:
-              case TdApi.ChatEventMemberJoinedByInviteLink.CONSTRUCTOR:
-              case TdApi.ChatEventMemberJoinedByRequest.CONSTRUCTOR:
-              case TdApi.ChatEventMemberLeft.CONSTRUCTOR:
-              case TdApi.ChatEventMessageTtlChanged.CONSTRUCTOR:
-              case TdApi.ChatEventMessageUnpinned.CONSTRUCTOR:
-              case TdApi.ChatEventPhotoChanged.CONSTRUCTOR:
-              case TdApi.ChatEventSignMessagesToggled.CONSTRUCTOR:
-              case TdApi.ChatEventSlowModeDelayChanged.CONSTRUCTOR:
-              case TdApi.ChatEventStickerSetChanged.CONSTRUCTOR:
-              case TdApi.ChatEventTitleChanged.CONSTRUCTOR:
-              case TdApi.ChatEventVideoChatCreated.CONSTRUCTOR:
-              case TdApi.ChatEventVideoChatEnded.CONSTRUCTOR:
-              case TdApi.ChatEventVideoChatMuteNewParticipantsToggled.CONSTRUCTOR:
-              case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR:
-              case TdApi.ChatEventVideoChatParticipantVolumeLevelChanged.CONSTRUCTOR:
-                // Only TGMessageChat is displayed for these events
-                break;
-            }
-            if (fullMessage == null) {
-              throw new IllegalArgumentException("unsupported: " + event.event.action);
-            }
-            return fullMessage.setIsEventLog(event, 0);
-          }
-          return new TGMessageChat(context, msg, ((TdApiExt.MessageChatEvent) msg.content).event).setIsEventLog((TdApiExt.MessageChatEvent) msg.content, 0);
-        }
-
         case TdApi.MessageAnimatedEmoji.CONSTRUCTOR: {
           TdApi.MessageAnimatedEmoji emoji = nonNull((TdApi.MessageAnimatedEmoji) content);
           TdApi.MessageContent pendingContent = tdlib.getPendingMessageText(msg.chatId, msg.id);
@@ -7568,14 +7079,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         case TdApi.MessagePhoto.CONSTRUCTOR: {
           return new TGMessageMedia(context, msg, nonNull(((TdApi.MessagePhoto) content).photo), ((TdApi.MessagePhoto) content).caption);
         }
-        case TdApi.MessageExpiredPhoto.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageExpiredPhoto) content);
-        }
         case TdApi.MessageVideo.CONSTRUCTOR: {
           return new TGMessageMedia(context, msg, nonNull(((TdApi.MessageVideo) content).video), ((TdApi.MessageVideo) content).caption);
-        }
-        case TdApi.MessageExpiredVideo.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageExpiredVideo) content);
         }
         case TdApi.MessageAnimation.CONSTRUCTOR: {
           return new TGMessageMedia(context, msg, nonNull(((TdApi.MessageAnimation) content).animation), ((TdApi.MessageAnimation) content).caption);
@@ -7583,24 +7088,15 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         case TdApi.MessageVideoNote.CONSTRUCTOR: {
           return new TGMessageVideo(context, msg, nonNull(((TdApi.MessageVideoNote) content).videoNote), ((TdApi.MessageVideoNote) content).isViewed);
         }
-        case TdApi.MessageDocument.CONSTRUCTOR: {
-          TdApi.MessageDocument document = nonNull((TdApi.MessageDocument) content);
-          if (TD.canConvertToVideo(document.document)) {
-            return new TGMessageMedia(context, msg, document.document, document.caption);
-          } else {
-            return new TGMessageFile(context, msg);
-          }
-        }
         case TdApi.MessageDice.CONSTRUCTOR: {
           return new TGMessageSticker(context, msg, nonNull(((TdApi.MessageDice) content)));
         }
         case TdApi.MessageSticker.CONSTRUCTOR: {
           return new TGMessageSticker(context, msg, nonNull(((TdApi.MessageSticker) content).sticker), false, 0);
         }
-        case TdApi.MessageVoiceNote.CONSTRUCTOR: {
-          return new TGMessageFile(context, msg);
-        }
-        case TdApi.MessageAudio.CONSTRUCTOR: {
+        case TdApi.MessageVoiceNote.CONSTRUCTOR:
+        case TdApi.MessageAudio.CONSTRUCTOR:
+        case TdApi.MessageDocument.CONSTRUCTOR: {
           return new TGMessageFile(context, msg);
         }
         case TdApi.MessagePoll.CONSTRUCTOR: {
@@ -7610,93 +7106,99 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
           TdApi.MessageLocation location = (TdApi.MessageLocation) content;
           return new TGMessageLocation(context, msg, nonNull(location.location), location.livePeriod, location.expiresIn);
         }
-        /*case TdApi.MessageInvoice.CONSTRUCTOR: {
-          return new TGMessageInvoice(msg, validateContent((TdApi.MessageInvoice) content));
-        }*/
+        case TdApi.MessageVenue.CONSTRUCTOR: {
+          return new TGMessageLocation(context, msg, ((TdApi.MessageVenue) content).venue);
+        }
         case TdApi.MessageContact.CONSTRUCTOR: {
           return new TGMessageContact(context, msg, (TdApi.MessageContact) content);
-        }
-        case TdApi.MessagePinMessage.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessagePinMessage) content);
-        }
-        case TdApi.MessageScreenshotTaken.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageScreenshotTaken) content);
-        }
-        case TdApi.MessageChatSetTtl.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageChatSetTtl) content);
-        }
-        case TdApi.MessageGameScore.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageGameScore) content);
         }
         case TdApi.MessageGame.CONSTRUCTOR: {
           return new TGMessageGame(context, msg, ((TdApi.MessageGame) content).game);
         }
+        case TdApi.MessageExpiredPhoto.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageExpiredPhoto) content);
+        }
+        case TdApi.MessageExpiredVideo.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageExpiredVideo) content);
+        }
+        case TdApi.MessagePinMessage.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessagePinMessage) content);
+        }
+        case TdApi.MessageScreenshotTaken.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageScreenshotTaken) content);
+        }
+        case TdApi.MessageChatSetTtl.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageChatSetTtl) content);
+        }
+        case TdApi.MessageGameScore.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageGameScore) content);
+        }
         case TdApi.MessageContactRegistered.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageContactRegistered) content);
+          return new TGMessageService(context, msg, (TdApi.MessageContactRegistered) content);
         }
         case TdApi.MessageChatChangePhoto.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageChatChangePhoto) content);
+          return new TGMessageService(context, msg, (TdApi.MessageChatChangePhoto) content);
         }
         case TdApi.MessageCustomServiceAction.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageCustomServiceAction) content);
+          return new TGMessageService(context, msg, (TdApi.MessageCustomServiceAction) content);
         }
         case TdApi.MessagePaymentSuccessful.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessagePaymentSuccessful) content);
+          return new TGMessageService(context, msg, (TdApi.MessagePaymentSuccessful) content);
         }
         case TdApi.MessageChatDeletePhoto.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, TGMessageChat.TYPE_DELETE_PHOTO);
+          return new TGMessageService(context, msg, (TdApi.MessageChatDeletePhoto) content);
         }
         case TdApi.MessageChatAddMembers.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageChatAddMembers) content);
+          return new TGMessageService(context, msg, (TdApi.MessageChatAddMembers) content);
         }
         case TdApi.MessageBasicGroupChatCreate.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageBasicGroupChatCreate) content);
+          return new TGMessageService(context, msg, (TdApi.MessageBasicGroupChatCreate) content);
         }
         case TdApi.MessageChatChangeTitle.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageChatChangeTitle) content);
+          return new TGMessageService(context, msg, (TdApi.MessageChatChangeTitle) content);
         }
         case TdApi.MessageChatDeleteMember.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageChatDeleteMember) content);
+          return new TGMessageService(context, msg, (TdApi.MessageChatDeleteMember) content);
         }
         case TdApi.MessageChatJoinByLink.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageChatJoinByLink) content);
+          return new TGMessageService(context, msg, (TdApi.MessageChatJoinByLink) content);
         }
         case TdApi.MessageChatJoinByRequest.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageChatJoinByRequest) content);
+          return new TGMessageService(context, msg, (TdApi.MessageChatJoinByRequest) content);
         }
         case TdApi.MessageProximityAlertTriggered.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageProximityAlertTriggered) content);
+          return new TGMessageService(context, msg, (TdApi.MessageProximityAlertTriggered) content);
         }
         case TdApi.MessageInviteVideoChatParticipants.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageInviteVideoChatParticipants) content);
+          return new TGMessageService(context, msg, (TdApi.MessageInviteVideoChatParticipants) content);
         }
         case TdApi.MessageVideoChatStarted.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageVideoChatStarted) content);
+          return new TGMessageService(context, msg, (TdApi.MessageVideoChatStarted) content);
         }
         case TdApi.MessageVideoChatScheduled.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageVideoChatScheduled) content);
+          return new TGMessageService(context, msg, (TdApi.MessageVideoChatScheduled) content);
         }
         case TdApi.MessageVideoChatEnded.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageVideoChatEnded) content);
-        }
-        case TdApi.MessageVenue.CONSTRUCTOR: {
-          return new TGMessageLocation(context, msg, ((TdApi.MessageVenue) content).venue);
+          return new TGMessageService(context, msg, (TdApi.MessageVideoChatEnded) content);
         }
         case TdApi.MessageSupergroupChatCreate.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageSupergroupChatCreate) content);
+          return new TGMessageService(context, msg, (TdApi.MessageSupergroupChatCreate) content);
         }
         case TdApi.MessageWebsiteConnected.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageWebsiteConnected) content);
+          return new TGMessageService(context, msg, (TdApi.MessageWebsiteConnected) content);
         }
         case TdApi.MessageChatUpgradeTo.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageChatUpgradeTo) content);
+          return new TGMessageService(context, msg, (TdApi.MessageChatUpgradeTo) content);
         }
         case TdApi.MessageChatUpgradeFrom.CONSTRUCTOR: {
-          return new TGMessageChat(context, msg, (TdApi.MessageChatUpgradeFrom) content);
+          return new TGMessageService(context, msg, (TdApi.MessageChatUpgradeFrom) content);
         }
         // unsupported
         case TdApi.MessageInvoice.CONSTRUCTOR:
         case TdApi.MessagePassportDataSent.CONSTRUCTOR:
+        case TdApi.MessageGiftedPremium.CONSTRUCTOR:
+        case TdApi.MessageChatSetTheme.CONSTRUCTOR:
+        case TdApi.MessageWebAppDataSent.CONSTRUCTOR:
           break;
         case TdApi.MessageUnsupported.CONSTRUCTOR:
           unsupportedStringRes = R.string.UnsupportedMessageType;
@@ -7704,6 +7206,7 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
         // bots only
         case TdApi.MessagePassportDataReceived.CONSTRUCTOR:
         case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
+        case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
           Log.e("Received bot message for a regular user:\n%s", msg);
           break;
         default: {
@@ -7846,6 +7349,19 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
     return messageAvailableReactions;
   }
 
+  // Utils
+
+  public void runOnUiThread (Runnable act) {
+    tdlib.ui().post(act);
+  }
+
+  public void runOnUiThreadOptional (Runnable act) {
+    runOnUiThread(() -> {
+      if (!isDestroyed()) {
+        act.run();
+      }
+    });
+  }
 
   // quick action
 
@@ -7952,7 +7468,8 @@ public abstract class TGMessage implements MultipleViewProvider.InvalidateConten
   }
 
   @Nullable public SwipeQuickAction getQuickAction (boolean isLeft, int index) {
-    return (isLeft ? leftActions : rightActions).get(index);
+    List<SwipeQuickAction> swipeQuickActions = (isLeft ? leftActions : rightActions);
+    return index >= 0 && index < swipeQuickActions.size() ? swipeQuickActions.get(index) : null;
   }
 
   public int getQuickDefaultPosition (boolean isLeft) {

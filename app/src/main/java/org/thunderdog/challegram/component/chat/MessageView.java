@@ -24,8 +24,8 @@ import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -35,7 +35,6 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGMessageBotInfo;
-import org.thunderdog.challegram.data.TGMessageChat;
 import org.thunderdog.challegram.data.TGMessageLocation;
 import org.thunderdog.challegram.data.TGMessageSticker;
 import org.thunderdog.challegram.data.TGMessageText;
@@ -48,6 +47,7 @@ import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.player.TGPlayerController;
+import org.thunderdog.challegram.receiver.RefreshRateLimiter;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.Theme;
@@ -61,6 +61,8 @@ import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.StringList;
+import org.thunderdog.challegram.util.text.Text;
+import org.thunderdog.challegram.util.text.TextMedia;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
 import org.thunderdog.challegram.widget.SparseDrawableView;
 
@@ -85,7 +87,6 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   private static final int FLAG_CAUGHT_MESSAGE_TOUCH = 1 << 2;
   private static final int FLAG_WILL_CALL_LONG_PRESS = 1 << 3;
   private static final int FLAG_LONG_PRESSED = 1 << 4;
-  private static final int FLAG_USE_REPLY_RECEIVER = 1 << 5;
   private static final int FLAG_DISABLE_MEASURE = 1 << 6;
   private static final int FLAG_USE_COMPLEX_RECEIVER = 1 << 7;
 
@@ -94,11 +95,15 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   private int flags;
 
   private final ImageReceiver avatarReceiver;
+  private final GifReceiver gifReceiver;
+  private final ComplexReceiver reactionsComplexReceiver, textMediaReceiver, replyTextMediaReceiver;
+  private final DoubleImageReceiver replyReceiver;
+  private final RefreshRateLimiter refreshRateLimiter;
+  private ComplexReceiver footerTextMediaReceiver;
+
   private ImageReceiver contentReceiver;
-  private DoubleImageReceiver previewReceiver, replyReceiver;
-  private GifReceiver gifReceiver;
+  private DoubleImageReceiver previewReceiver;
   private ComplexReceiver complexReceiver;
-  private ComplexReceiver reactionsComplexReceiver;
   private MessageViewGroup parentMessageViewGroup;
   private MessagesManager manager;
 
@@ -107,7 +112,14 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     avatarReceiver = new ImageReceiver(this, Screen.dp(20.5f));
     reactionsComplexReceiver = new ComplexReceiver(this);
     gifReceiver = new GifReceiver(this);
-    setUseReplyReceiver();
+    this.refreshRateLimiter = new RefreshRateLimiter(this, Config.MAX_ANIMATED_EMOJI_REFRESH_RATE);
+    textMediaReceiver = new ComplexReceiver()
+      .setUpdateListener(refreshRateLimiter);
+    replyTextMediaReceiver = new ComplexReceiver()
+      .setUpdateListener(refreshRateLimiter);
+    //noinspection ContantConditions
+    replyReceiver = new DoubleImageReceiver(this, Config.USE_SCALED_ROUNDINGS ? Screen.dp(Theme.getImageRadius()) : 0);
+
     setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
     if (Config.HARDWARE_MESSAGE_LAYER) {
       Views.setLayerType(this, LAYER_TYPE_HARDWARE);
@@ -132,30 +144,20 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
   @Override
   public void performDestroy () {
-    destroy();
-  }
-
-  public void destroy () {
-    if (avatarReceiver != null){
-      avatarReceiver.destroy();
-    }
+    avatarReceiver.destroy();
+    replyReceiver.destroy();
+    replyTextMediaReceiver.performDestroy();
+    gifReceiver.destroy();
+    reactionsComplexReceiver.performDestroy();
+    textMediaReceiver.performDestroy();
     if (contentReceiver != null) {
       contentReceiver.destroy();
     }
     if (previewReceiver != null) {
       previewReceiver.destroy();
     }
-    if (replyReceiver != null) {
-      replyReceiver.destroy();
-    }
-    if (gifReceiver != null) {
-      gifReceiver.destroy();
-    }
     if (complexReceiver != null) {
       complexReceiver.performDestroy();
-    }
-    if (reactionsComplexReceiver != null) {
-      reactionsComplexReceiver.performDestroy();
     }
     if (msg != null) {
       msg.onDestroy();
@@ -175,12 +177,6 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     flags |= FLAG_USE_COMPLEX_RECEIVER;
   }
 
-  public void setUseReplyReceiver () {
-    //noinspection ContantConditions
-    replyReceiver = new DoubleImageReceiver(this, Config.USE_SCALED_ROUNDINGS ? Screen.dp(Theme.getImageRadius()) : 0);
-    flags |= FLAG_USE_REPLY_RECEIVER;
-  }
-
   @Override
   public void invalidate () {
     super.invalidate();
@@ -197,24 +193,42 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     }
   }
 
+  public void invalidateTextMediaReceiver (@NonNull TGMessage msg, Text text, @Nullable TextMedia textMedia) {
+    invalidateTextMediaReceiver(msg, text, textMedia, textMediaReceiver);
+  }
+
+  public void invalidateReplyTextMediaReceiver (@NonNull TGMessage msg, @NonNull Text text, @Nullable TextMedia textMedia) {
+    invalidateTextMediaReceiver(msg, text, textMedia, replyTextMediaReceiver);
+  }
+
+  public void invalidateFooterTextMediaReceiver (@NonNull TGMessage msg, @NonNull Text text, @Nullable TextMedia textMedia) {
+    invalidateTextMediaReceiver(msg, text, textMedia, getFooterTextMediaReceiver(true));
+  }
+
+  private void invalidateTextMediaReceiver (@NonNull TGMessage msg, @NonNull Text text, @Nullable TextMedia textMedia, @NonNull ComplexReceiver receiver) {
+    if (this.msg == msg) {
+      if (!text.invalidateMediaContent(receiver, textMedia)) {
+        msg.requestTextMedia(receiver);
+      }
+    }
+  }
+
   public void invalidateReplyReceiver (long chatId, long messageId) {
-    if ((flags * FLAG_USE_REPLY_RECEIVER) != 0 && msg != null && msg.getChatId() == chatId && msg.getId() == messageId) {
-      msg.requestReply(replyReceiver);
+    if (msg != null && msg.getChatId() == chatId && msg.getId() == messageId) {
+      msg.requestReply(replyReceiver, replyTextMediaReceiver);
     }
   }
 
   public void invalidateReplyReceiver () {
-    if ((flags & FLAG_USE_REPLY_RECEIVER) != 0 && msg != null) {
-      msg.requestReply(replyReceiver);
+    if (msg != null) {
+      msg.requestReply(replyReceiver, replyTextMediaReceiver);
     }
   }
 
   private void checkLegacyComponents (MessageView view) {
     if (msg != null) {
       msg.layoutAvatar(view, avatarReceiver);
-      if ((flags & FLAG_USE_REPLY_RECEIVER) != 0) {
-        msg.requestReply(replyReceiver);
-      }
+      msg.requestReply(replyReceiver, replyTextMediaReceiver);
     }
   }
 
@@ -258,6 +272,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     message.resetTransformState();
     message.requestAvatar(avatarReceiver);
     message.requestReactions(reactionsComplexReceiver);
+    message.requestAllTextMedia(this);
 
     if ((flags & FLAG_USE_COMMON_RECEIVER) != 0) {
       previewReceiver.setRadius(message.getImageContentRadius(true));
@@ -290,11 +305,17 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     }
   }
 
+  @NonNull
+  public ComplexReceiver getTextMediaReceiver () {
+    return textMediaReceiver;
+  }
+
   public void invalidateContentReceiver (long chatId, long messageId, int arg) {
     if (msg != null && chatId == msg.getChatId()) {
       if ((flags & FLAG_USE_COMPLEX_RECEIVER) != 0) {
         if (msg.isDescendantOrSelf(messageId)) {
           msg.requestMediaContent(complexReceiver, true, arg);
+          msg.requestTextMedia(textMediaReceiver);
         }
       } else if (messageId == msg.getId()) {
         if (gifReceiver != null && msg.needGifReceiver()) {
@@ -308,6 +329,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
             msg.requestPreview(previewReceiver);
           }
         }
+        msg.requestTextMedia(textMediaReceiver);
         if ((flags & FLAG_DISABLE_MEASURE) != 0 && getParent() instanceof MessageViewGroup) {
           ((MessageViewGroup) getParent()).invalidateContent(msg);
         }
@@ -443,7 +465,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
   @Override
   public void onDraw (Canvas c) {
-    msg.draw(this, c, avatarReceiver, replyReceiver, previewReceiver, contentReceiver, gifReceiver, complexReceiver);
+    msg.draw(this, c, avatarReceiver, replyReceiver, replyTextMediaReceiver, previewReceiver, contentReceiver, gifReceiver, complexReceiver);
   }
 
   public ImageReceiver getAvatarReceiver () {
@@ -474,6 +496,19 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     return previewReceiver;
   }
 
+  public ComplexReceiver getFooterTextMediaReceiver (boolean force) {
+    if (footerTextMediaReceiver == null) {
+      footerTextMediaReceiver = new ComplexReceiver()
+        .setUpdateListener(refreshRateLimiter);
+      if (isAttached) {
+        footerTextMediaReceiver.attach();
+      } else {
+        footerTextMediaReceiver.detach();
+      }
+    }
+    return footerTextMediaReceiver;
+  }
+
   private boolean isAttached = true;
 
   public void onAttachedToRecyclerView () {
@@ -482,9 +517,9 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       avatarReceiver.attach();
       gifReceiver.attach();
       reactionsComplexReceiver.attach();
-      if ((flags & FLAG_USE_REPLY_RECEIVER) != 0) {
-        replyReceiver.attach();
-      }
+      textMediaReceiver.attach();
+      replyReceiver.attach();
+      replyTextMediaReceiver.attach();
       if ((flags & FLAG_USE_COMMON_RECEIVER) != 0) {
         contentReceiver.attach();
         previewReceiver.attach();
@@ -501,9 +536,9 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       avatarReceiver.detach();
       gifReceiver.detach();
       reactionsComplexReceiver.detach();
-      if ((flags & FLAG_USE_REPLY_RECEIVER) != 0) {
-        replyReceiver.detach();
-      }
+      textMediaReceiver.detach();
+      replyReceiver.detach();
+      replyTextMediaReceiver.detach();
       if ((flags & FLAG_USE_COMMON_RECEIVER) != 0) {
         contentReceiver.detach();
         previewReceiver.detach();
@@ -582,15 +617,6 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     if (msg.isEventLog()) {
       showEventLogOptions(m, msg);
       return true;
-    }
-
-    if (msg instanceof TGMessageChat) {
-      if (isSent) {
-        return showChatOptions(m, (TGMessageChat) msg, sender);
-      } else {
-        m.showMessageOptions(msg, new int[] {R.id.btn_messageDelete}, new String[] {Lang.getString(R.string.Delete)}, new int[] {R.drawable.baseline_delete_24}, null, sender, true);
-        return true;
-      }
     }
 
     IntList ids = new IntList(6);
@@ -766,7 +792,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
     int moreOptions = 0;
 
-    if (m.canPinAnyMessage(true) && isSent) {
+    if (m.canPinAnyMessage(true) && isSent && msg.canBePinned()) {
       if (!isMore) {
         int totalCount = msg.getMessageCount();
         int pinnedCount = msg.getPinnedMessageCount();
@@ -1109,68 +1135,6 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     return tag;
   }
 
-  @Deprecated
-  private boolean showChatOptions (MessagesController m, TGMessageChat msg, TdApi.ChatMember messageSender) {
-    if (msg.getMessage() != null) {
-      TdApi.MessageContent content = msg.getMessage().content;
-      if (content != null) {
-        switch (content.getConstructor()) {
-          case TdApi.MessageChatUpgradeFrom.CONSTRUCTOR: {
-            long basicGroupId = ((TdApi.MessageChatUpgradeFrom) content).basicGroupId;
-            if (basicGroupId != 0) {
-              m.tdlib().ui().openBasicGroupChat(m, basicGroupId, null);
-              return true;
-            }
-            return false;
-          }
-          case TdApi.MessageChatUpgradeTo.CONSTRUCTOR: {
-            long supergroupId = ((TdApi.MessageChatUpgradeTo) content).supergroupId;
-            if (supergroupId != 0) {
-              m.tdlib().ui().openSupergroupChat(m, supergroupId, null);
-              return true;
-            }
-            return false;
-          }
-        }
-      }
-    }
-
-    IntList ids = new IntList(2);
-    StringList strings = new StringList(2);
-    IntList icons = new IntList(2);
-
-    if (m.canWriteMessages() && msg.canReplyTo()) {
-      ids.append(R.id.btn_messageReply);
-      strings.append(R.string.Reply);
-      icons.append(R.drawable.baseline_reply_24);
-    }
-
-    if (Config.COMMENTS_SUPPORTED && msg.getReplyCount() > 0) {
-      ids.append(R.id.btn_messageReplies);
-      strings.append(Lang.plural(R.string.ViewXReplies, msg.getReplyCount()));
-      icons.append(R.drawable.baseline_reply_all_24);
-    }
-
-    if (m.tdlib().canCopyPostLink(msg.getMessage())) {
-      ids.append(R.id.btn_messageCopyLink);
-      strings.append(R.string.CopyLink);
-      icons.append(R.drawable.baseline_link_24);
-    }
-
-    if (this.msg.canBeDeletedForSomebody()) {
-      ids.append(R.id.btn_messageDelete);
-      strings.append(R.string.Delete);
-      icons.append(R.drawable.baseline_delete_24);
-    }
-
-    if (ids.isEmpty()) {
-      return false;
-    }
-
-    m.showMessageOptions(msg, ids.get(), strings.get(), icons.get(), null, messageSender, true);
-    return true;
-  }
-
   private void showEventLogRestrict (MessagesController m, boolean isRestrict, TdApi.MessageSender sender, TdApi.ChatMemberStatus myStatus, TdApi.ChatMember member) {
     if (isRestrict && TD.canRestrictMember(myStatus, member.status) == TD.RESTRICT_MODE_NEW) {
       member = null;
@@ -1327,13 +1291,10 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       return false;
     }
     ViewController<?> c = ViewController.findRoot(this);
-    if (c == null || !(c instanceof MessagesController)) {
+    if (!(c instanceof MessagesController)) {
       return false;
     }
     MessagesController m = (MessagesController) c;
-    if (msg instanceof TGMessageChat) {
-      return onMessageClick(0, 0);
-    }
     if (msg.canBeSelected()) {
       selectMessage(m, msg, touchX, touchY);
       return true;
@@ -1433,7 +1394,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   }
 
   private boolean startSwipeIfNeeded (float diffX) {
-    if (msg == null || msg.isNotSent() || msg instanceof TGMessageBotInfo || msg instanceof TGMessageChat || msg.isSponsored() || UI.getContext(getContext()).getRecordAudioVideoController().isOpen()) {
+    if (msg == null || msg.isNotSent() || !msg.canSwipe() || msg.isSponsored() || UI.getContext(getContext()).getRecordAudioVideoController().isOpen()) {
       return false;
     }
     MessagesController m = msg.messagesController();

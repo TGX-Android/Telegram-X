@@ -414,7 +414,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
   }
 
   @Override
-  public void onEmojiPartLoaded () {
+  public void onEmojiUpdated (boolean isPackSwitch) {
     adapter.updateAllValuedSettingsById(R.id.user);
   }
 }

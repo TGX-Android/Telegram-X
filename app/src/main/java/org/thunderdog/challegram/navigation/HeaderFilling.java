@@ -145,7 +145,7 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
   }
 
   @Override
-  public void onEmojiPartLoaded () {
+  public void onEmojiUpdated (boolean isPackSwitch) {
     invalidateOngoingBar();
   }
 

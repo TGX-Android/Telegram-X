@@ -35,10 +35,11 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.widget.EmojiEditText;
 
 import me.vkryl.core.ColorUtils;
 
-public class HeaderEditText extends EditTextBase implements ActionMode.Callback, RtlCheckListener {
+public class HeaderEditText extends EmojiEditText implements ActionMode.Callback, RtlCheckListener {
   public HeaderEditText (Context context) {
     super(context);
     init();

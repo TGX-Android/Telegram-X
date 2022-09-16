@@ -56,7 +56,6 @@ import org.thunderdog.challegram.widget.FileProgressComponent;
 import java.io.File;
 
 import me.vkryl.android.AnimatorUtils;
-import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
@@ -95,7 +94,7 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
 
     this.mutedVideoFile = new GifFile(tdlib, videoNote.video, GifFile.TYPE_MPEG4);
     this.mutedVideoFile.setIsRoundVideo(msg.chatId, msg.id);
-    this.mutedVideoFile.setSize(Screen.dp(200f));
+    this.mutedVideoFile.setRequestedSize(Screen.dp(200f));
     if (!Settings.instance().needAutoplayGIFs()) {
       this.mutedVideoFile.setIsStill(true);
     }
@@ -394,8 +393,9 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
       int centerY = receiver.getBottom() - radius - Screen.dp(10f);
 
       final float scale = .6f + (1f - unmuteFactor) * .4f;
+      final boolean needScale = scale != 1f;
       int restoreToCount;
-      if (scale != 1f) {
+      if (needScale) {
         restoreToCount = Views.save(c);
         c.scale(scale, scale, centerX, centerY);
       } else {
@@ -407,7 +407,7 @@ public class TGMessageVideo extends TGMessage implements FileProgressComponent.S
       Drawable drawable = view.getSparseDrawable(R.drawable.deproko_baseline_sound_muted_24, 0);
       Drawables.draw(c, drawable, centerX - drawable.getMinimumWidth() / 2f, centerY - drawable.getMinimumHeight() / 2f, paint);
       paint.setAlpha(255);
-      if (scale != 1f) {
+      if (needScale) {
         Views.restore(c, restoreToCount);
       }
     }

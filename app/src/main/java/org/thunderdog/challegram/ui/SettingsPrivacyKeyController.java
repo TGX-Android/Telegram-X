@@ -43,6 +43,7 @@ import java.util.List;
 
 import me.vkryl.core.collection.LongList;
 import me.vkryl.td.ChatId;
+import me.vkryl.td.Td;
 
 public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.UserPrivacySetting> implements View.OnClickListener, UserPickerMultiDelegate, PrivacySettingsListener {
 
@@ -78,6 +79,8 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
         return R.drawable.baseline_phone_in_talk_24;
       case TdApi.UserPrivacySettingAllowPeerToPeerCalls.CONSTRUCTOR:
         return R.drawable.baseline_swap_horiz_24;
+      case TdApi.UserPrivacySettingAllowPrivateVoiceAndVideoNoteMessages.CONSTRUCTOR:
+        return R.drawable.baseline_mic_24;
     }
     return 0;
   }
@@ -100,6 +103,8 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
         return isException ? R.string.EditPrivacyForward : R.string.PrivacyForwardLinkTitle;
       case TdApi.UserPrivacySettingShowProfilePhoto.CONSTRUCTOR:
         return isException ? R.string.EditPrivacyPhoto : R.string.PrivacyPhotoTitle;
+      case TdApi.UserPrivacySettingAllowPrivateVoiceAndVideoNoteMessages.CONSTRUCTOR:
+        return isException ? R.string.EditPrivacyVoice : R.string.PrivacyVoiceVideoTitle;
     }
     throw new IllegalStateException("privacyKey == " + privacyKey);
   }
@@ -115,34 +120,8 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
   public boolean restoreInstanceState (Bundle in, String keyPrefix) {
     super.restoreInstanceState(in, keyPrefix);
     @TdApi.UserPrivacySetting.Constructors int constructor = in.getInt(keyPrefix + "setting", 0);
-    TdApi.UserPrivacySetting setting = null;
-    switch (constructor) {
-      case TdApi.UserPrivacySettingAllowCalls.CONSTRUCTOR:
-        setting = new TdApi.UserPrivacySettingAllowCalls();
-        break;
-      case TdApi.UserPrivacySettingAllowChatInvites.CONSTRUCTOR:
-        setting = new TdApi.UserPrivacySettingAllowChatInvites();
-        break;
-      case TdApi.UserPrivacySettingAllowFindingByPhoneNumber.CONSTRUCTOR:
-        setting = new TdApi.UserPrivacySettingAllowFindingByPhoneNumber();
-        break;
-      case TdApi.UserPrivacySettingAllowPeerToPeerCalls.CONSTRUCTOR:
-        setting = new TdApi.UserPrivacySettingAllowPeerToPeerCalls();
-        break;
-      case TdApi.UserPrivacySettingShowLinkInForwardedMessages.CONSTRUCTOR:
-        setting = new TdApi.UserPrivacySettingShowLinkInForwardedMessages();
-        break;
-      case TdApi.UserPrivacySettingShowPhoneNumber.CONSTRUCTOR:
-        setting = new TdApi.UserPrivacySettingShowPhoneNumber();
-        break;
-      case TdApi.UserPrivacySettingShowProfilePhoto.CONSTRUCTOR:
-        setting = new TdApi.UserPrivacySettingShowProfilePhoto();
-        break;
-      case TdApi.UserPrivacySettingShowStatus.CONSTRUCTOR:
-        setting = new TdApi.UserPrivacySettingShowStatus();
-        break;
-    }
-    if (setting != null) {
+    if (constructor != 0) {
+      TdApi.UserPrivacySetting setting = Td.constructUserPrivacySetting(constructor);
       setArguments(setting);
       return true;
     }
@@ -269,6 +248,11 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
           b.setSpan(new CustomTypefaceSpan(Fonts.getRobotoMedium(), R.id.theme_color_background_textLight), 0, i + 1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
           hintItem = new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, b, false);
         }
+        break;
+      }
+      case TdApi.UserPrivacySettingAllowPrivateVoiceAndVideoNoteMessages.CONSTRUCTOR: {
+        headerItem = new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.WhoCanSendVoiceVideo);
+        hintItem = new ListItem(ListItem.TYPE_DESCRIPTION, R.id.btn_description, 0, R.string.VoiceVideoPrivacyDesc);
         break;
       }
       default: {

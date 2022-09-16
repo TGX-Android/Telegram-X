@@ -16,6 +16,7 @@ package org.thunderdog.challegram.loader.gif;
 
 import android.os.SystemClock;
 
+import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -25,6 +26,8 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.unsorted.Settings;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,25 +44,57 @@ public class GifFile {
 
   public static final int FLAG_ROUND_VIDEO = 1;
   public static final int FLAG_STILL = 1 << 1;
-  public static final int FLAG_OPTIMIZE = 1 << 2;
-  public static final int FLAG_PLAY_ONCE = 1 << 3;
-  public static final int FLAG_UNIQUE = 1 << 4;
-  public static final int FLAG_DECODE_LAST_FRAME = 1 << 5;
+  public static final int FLAG_PLAY_ONCE = 1 << 2;
+  public static final int FLAG_UNIQUE = 1 << 3;
+  public static final int FLAG_DECODE_LAST_FRAME = 1 << 4;
+
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    OptimizationMode.NONE,
+    OptimizationMode.STICKER_PREVIEW,
+    OptimizationMode.EMOJI
+  })
+  public @interface OptimizationMode {
+    int NONE = 0, STICKER_PREVIEW = 1, EMOJI = 2;
+  }
 
   protected final Tdlib tdlib;
   protected final TdApi.File file;
-  private int type;
+  private final int type;
   private int scaleType;
   private int flags;
+  private @OptimizationMode int optimizationMode;
   private long chatId, messageId;
   private boolean isLooped, isFrozen;
   private int vibrationPattern = Emoji.VIBRATION_PATTERN_NONE;
   private int fitzpatrickType;
+  private double startMediaTimestamp;
 
   private final long creationTime;
 
   public GifFile (Tdlib tdlib, TdApi.Animation gif) {
-    this(tdlib, gif.animation, "video/mp4".equals(gif.mimeType) ? GifFile.TYPE_MPEG4 : "image/gif".equals(gif.mimeType) ? GifFile.TYPE_GIF : TD.isAnimatedSticker(gif.mimeType) ? GifFile.TYPE_TG_LOTTIE : 0);
+    this(tdlib, gif.animation,
+      "video/webm".equals(gif.mimeType) ? GifFile.TYPE_WEBM :
+      "video/mp4".equals(gif.mimeType) ? GifFile.TYPE_MPEG4 :
+      "image/gif".equals(gif.mimeType) ? GifFile.TYPE_GIF :
+      TD.isAnimatedSticker(gif.mimeType) ? GifFile.TYPE_TG_LOTTIE :
+      0
+    );
+  }
+
+  public GifFile (Tdlib tdlib, TdApi.AnimatedChatPhoto animatedChatPhoto) {
+    this(tdlib, animatedChatPhoto.file, GifFile.TYPE_MPEG4);
+    if (animatedChatPhoto.mainFrameTimestamp != 0) {
+      this.startMediaTimestamp = animatedChatPhoto.mainFrameTimestamp;
+    }
+  }
+
+  public GifFile (Tdlib tdlib, TdApi.Sticker sticker) {
+    this(tdlib, sticker.sticker, sticker.format);
+  }
+
+  public GifFile (Tdlib tdlib, TdApi.File file, TdApi.StickerFormat format) {
+    this(tdlib, file, toFileType(format));
   }
 
   public GifFile (Tdlib tdlib, TdApi.File file, int type) {
@@ -69,29 +104,20 @@ public class GifFile {
     this.creationTime = SystemClock.uptimeMillis();
   }
 
-  public GifFile (Tdlib tdlib, TdApi.Sticker sticker) {
-    this(tdlib, sticker.sticker, sticker.type);
-  }
-
-  public GifFile (Tdlib tdlib, TdApi.File file, TdApi.StickerType type) {
-    this(tdlib, file, toFileType(type));
-  }
-
   public boolean isLottie () {
     return type == TYPE_TG_LOTTIE;
   }
 
-  private static int toFileType (TdApi.StickerType type) {
-    switch (type.getConstructor()) {
-      case TdApi.StickerTypeAnimated.CONSTRUCTOR:
+  private static int toFileType (TdApi.StickerFormat format) {
+    switch (format.getConstructor()) {
+      case TdApi.StickerFormatTgs.CONSTRUCTOR:
         return TYPE_TG_LOTTIE;
-      case TdApi.StickerTypeVideo.CONSTRUCTOR:
+      case TdApi.StickerFormatWebm.CONSTRUCTOR:
         return TYPE_MPEG4;
-      case TdApi.StickerTypeMask.CONSTRUCTOR:
-      case TdApi.StickerTypeStatic.CONSTRUCTOR:
+      case TdApi.StickerFormatWebp.CONSTRUCTOR:
         break;
     }
-    throw new IllegalArgumentException(type.toString());
+    throw new IllegalArgumentException(format.toString());
   }
 
   public int getFitzpatrickType () {
@@ -102,8 +128,12 @@ public class GifFile {
     this.fitzpatrickType = fitzpatrickType;
   }
 
+  public double getStartMediaTimestamp () {
+    return startMediaTimestamp;
+  }
+
   public interface FrameChangeListener {
-    void onFrameChanged (GifFile file, long frameNo, long frameDelta);
+    void onFrameChanged (GifFile file, double frameNo, double frameDelta);
   }
 
   private long totalFrameCount;
@@ -122,7 +152,7 @@ public class GifFile {
     this.frameChangeListener = listener;
   }
 
-  public void onFrameChange (long frameNo, long frameDelta) {
+  public void onFrameChange (double frameNo, double frameDelta) {
     if (frameChangeListener != null) {
       frameChangeListener.onFrameChanged(this, frameNo, frameDelta);
     }
@@ -160,12 +190,21 @@ public class GifFile {
     return false;
   }
 
-  public void setOptimize (boolean needOptimize) {
-    this.flags = BitwiseUtils.setFlag(flags, FLAG_OPTIMIZE, needOptimize);
+  public void setOptimizationMode (@OptimizationMode int optimizationMode) {
+    this.optimizationMode = optimizationMode;
   }
 
-  public boolean needOptimize () {
-    return BitwiseUtils.getFlag(flags, FLAG_OPTIMIZE);
+  public @OptimizationMode int getOptimizationMode () {
+    return optimizationMode;
+  }
+
+  public boolean isOneTimeCache () { // Delete cache file as soon as file no longer displayed
+    return optimizationMode == OptimizationMode.EMOJI || optimizationMode == OptimizationMode.STICKER_PREVIEW;
+  }
+
+  @Deprecated(forRemoval = true)
+  public boolean hasOptimizations () {
+    return optimizationMode != OptimizationMode.NONE;
   }
 
   public void setPlayOnce (boolean playOnce) {
@@ -242,8 +281,14 @@ public class GifFile {
     this.scaleType = scaleType;
   }
 
-  public void setSize (int size) {
-    // todo?
+  private int requestedSize;
+
+  public void setRequestedSize (int size) {
+    this.requestedSize = size;
+  }
+
+  public int getRequestedSize () {
+    return requestedSize;
   }
 
   public TdApi.File getFile () {
@@ -282,16 +327,19 @@ public class GifFile {
     b.append('_');
     b.append(getFileId());
     if (flags != 0) {
-      b.append(',');
-      b.append(flags);
+      b.append(',').append(flags);
+    }
+    if (optimizationMode != OptimizationMode.NONE) {
+      b.append(",o").append(optimizationMode);
     }
     if (fitzpatrickType != 0) {
-      b.append(",f");
-      b.append(fitzpatrickType);
+      b.append(",f").append(fitzpatrickType);
     }
     if (isUnique() || isPlayOnce()) {
-      b.append(',');
-      b.append(creationTime);
+      b.append(",o").append(creationTime);
+    }
+    if (startMediaTimestamp != 0) {
+      b.append(",t").append(startMediaTimestamp);
     }
     return b;
   }

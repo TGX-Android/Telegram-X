@@ -36,6 +36,7 @@ import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextEntity;
+import org.thunderdog.challegram.util.text.TextMedia;
 import org.thunderdog.challegram.util.text.TextWrapper;
 import org.thunderdog.challegram.widget.SimplestCheckBox;
 
@@ -204,19 +205,40 @@ public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult>
     }
   }
 
+  @Override
+  public void requestTextMedia (ComplexReceiver textMediaReceiver) {
+    if (descWrap != null) {
+      descWrap.requestMedia(textMediaReceiver);
+    } else {
+      textMediaReceiver.clear();
+    }
+  }
+
   private TextWrapper titleWrap, descWrap, urlWrap;
   private static final float TEXT_PADDING = 6f;
 
   @Override
   protected void layoutInternal (int contentWidth) {
     if (titleWrap == null) {
-      titleWrap = new TextWrapper(tdlib, title, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL, 0, null, 2);
+      titleWrap = new TextWrapper(title, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL)
+        .setMaxLines(2);
       titleWrap.addTextFlags(Text.FLAG_ALL_BOLD);
       titleWrap.setMaxLines(2);
     }
     if (descWrap == null && !StringUtils.isEmpty(description)) {
-      descWrap = descriptionEntities != null && descriptionEntities.length > 0 ? new TextWrapper(description, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL, TextEntity.valueOf(tdlib, new TdApi.FormattedText(description, descriptionEntities), null)) :
-        new TextWrapper(tdlib, description, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL, 0, null, 4);
+      descWrap = new TextWrapper(description, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL)
+          .setMaxLines(4);
+      if (descriptionEntities != null && descriptionEntities.length > 0) {
+        descWrap.setEntities(TextEntity.valueOf(tdlib, new TdApi.FormattedText(description, descriptionEntities), null), (wrapper, text, specificMedia) -> {
+          if (descWrap == wrapper) {
+            currentViews.performWithViews(view -> {
+              if (!text.invalidateMediaContent(((CustomResultView) view).getTextMediaReceiver(), specificMedia)) {
+                ((CustomResultView) view).invalidateTextMedia(this);
+              }
+            });
+          }
+        });
+      }
       descWrap.setViewProvider(currentViews);
       descWrap.addTextFlags(Text.FLAG_CUSTOM_LONG_PRESS);
       descWrap.setMaxLines(3);
@@ -228,7 +250,8 @@ public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult>
       } catch (Throwable ignored) {
         displayUrl = url;
       }
-      urlWrap = new TextWrapper(displayUrl, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL, TextEntity.valueOf(tdlib, displayUrl, new TdApi.TextEntity[] { new TdApi.TextEntity(0, displayUrl.length(), isEmail ? new TdApi.TextEntityTypeEmailAddress() : new TdApi.TextEntityTypeUrl() )}, null));
+      urlWrap = new TextWrapper(displayUrl, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL)
+        .setEntities(TextEntity.valueOf(tdlib, displayUrl, new TdApi.TextEntity[] { new TdApi.TextEntity(0, displayUrl.length(), isEmail ? new TdApi.TextEntityTypeEmailAddress() : new TdApi.TextEntityTypeUrl() )}, null), null);
       urlWrap.setMaxLines(2);
       urlWrap.setViewProvider(currentViews);
       urlWrap.addTextFlags(Text.FLAG_CUSTOM_LONG_PRESS);
@@ -276,7 +299,7 @@ public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult>
         textY += Screen.dp(TEXT_PADDING);
       else
         hadText = true;
-      descWrap.draw(c, textX, textY, null, 1f);
+      descWrap.draw(c, textX, textY, null, 1f, view.getTextMediaReceiver());
       textY += descWrap.getHeight();
     }
 

@@ -56,13 +56,14 @@ import java.io.File;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import me.vkryl.android.util.InvalidateContentProvider;
 import me.vkryl.android.util.MultipleViewProvider;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
-public class MediaItem implements MessageSourceProvider, MultipleViewProvider.InvalidateContentProvider {
+public class MediaItem implements MessageSourceProvider, InvalidateContentProvider {
   public static final int TYPE_PHOTO = 0;
   public static final int TYPE_VIDEO = 1;
   public static final int TYPE_GIF = 2;
@@ -690,13 +691,11 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
     switch (msg.content.getConstructor()) {
       case TdApiExt.MessageChatEvent.CONSTRUCTOR: {
         TdApiExt.MessageChatEvent event = ((TdApiExt.MessageChatEvent) msg.content);
-        if (event.isFull) {
-          switch (event.event.action.getConstructor()) {
-            case TdApi.ChatEventPhotoChanged.CONSTRUCTOR: {
-              TdApi.ChatEventPhotoChanged changedPhoto = (TdApi.ChatEventPhotoChanged) event.event.action;
-              if (changedPhoto.oldPhoto != null || changedPhoto.newPhoto != null) {
-                return new MediaItem(context, tdlib, msg.chatId, 0, changedPhoto.newPhoto != null ? changedPhoto.newPhoto : changedPhoto.oldPhoto).setSourceSender(new TdApi.MessageSenderUser(Td.getSenderUserId(event.event.memberId))).setSourceDate(event.event.date);
-              }
+        switch (event.event.action.getConstructor()) {
+          case TdApi.ChatEventPhotoChanged.CONSTRUCTOR: {
+            TdApi.ChatEventPhotoChanged changedPhoto = (TdApi.ChatEventPhotoChanged) event.event.action;
+            if (changedPhoto.oldPhoto != null || changedPhoto.newPhoto != null) {
+              return new MediaItem(context, tdlib, msg.chatId, 0, changedPhoto.newPhoto != null ? changedPhoto.newPhoto : changedPhoto.oldPhoto).setSourceSender(event.event.memberId).setSourceDate(event.event.date);
             }
           }
         }
@@ -1365,25 +1364,30 @@ public class MediaItem implements MessageSourceProvider, MultipleViewProvider.In
   }
 
   @Override
-  public void invalidateContent () {
+  public boolean invalidateContent (Object cause) {
+    int successCount = 0;
     if (currentViews != null) {
       ReferenceList<View> views = currentViews.getViewsList();
       for (View view : views) {
         if (view instanceof MediaSmallView) {
           ((MediaSmallView) view).invalidateContent(this);
+          successCount++;
         } else if (view.getParent() instanceof MediaCellView) {
           ((MediaCellView) view.getParent()).invalidateContent(this);
+          successCount++;
         }
       }
     }
     if (thumbViewHolder != null) {
       ReferenceList<View> views = thumbViewHolder.getViewsList();
       for (View view : views) {
-        if (view instanceof MultipleViewProvider.InvalidateContentProvider) {
-          ((MultipleViewProvider.InvalidateContentProvider) view).invalidateContent();
+        if (view instanceof InvalidateContentProvider) {
+          ((InvalidateContentProvider) view).invalidateContent(cause);
+          successCount++;
         }
       }
     }
+    return successCount > 0;
   }
 
   // Image-related stuff

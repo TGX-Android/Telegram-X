@@ -261,7 +261,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
   }
 
   @Override
-  public void onEmojiPartLoaded () {
+  public void onEmojiUpdated (boolean isPackSwitch) {
     invalidate();
   }
 

@@ -16,7 +16,6 @@ package org.thunderdog.challegram;
 
 import android.Manifest;
 import android.animation.ValueAnimator;
-import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.Notification;
@@ -64,6 +63,7 @@ import android.provider.Settings;
 import android.text.BoringLayout;
 import android.text.Layout;
 import android.text.Spannable;
+import android.text.Spanned;
 import android.text.StaticLayout;
 import android.text.TextPaint;
 import android.text.format.DateUtils;
@@ -194,19 +194,26 @@ public class U {
     return 0;
   }
 
-  private static boolean isAppSideLoadedImpl () {
+  public static final String VENDOR_GOOGLE_PLAY = "com.android.vending";
+
+  @Nullable
+  public static String getInstallerPackageName () {
     try {
       String packageName = UI.getAppContext().getPackageName();
       String installerPackageName = UI.getAppContext().getPackageManager().getInstallerPackageName(packageName);
       if (StringUtils.isEmpty(installerPackageName)) {
-        return true;
+        return null;
       }
-      Log.v("Installer package: %s", installerPackageName);
-      return !"com.android.vending".equals(installerPackageName);
+      return installerPackageName;
     } catch (Throwable t) {
       Log.v("Unable to determine installer package", t);
+      return null;
     }
-    return false;
+  }
+
+  private static boolean isAppSideLoadedImpl () {
+    String installerId = getInstallerPackageName();
+    return StringUtils.isEmpty(installerId) || !VENDOR_GOOGLE_PLAY.equals(installerId);
   }
 
   public static String gzipFileToString (String path) {
@@ -2429,40 +2436,72 @@ public class U {
     return i * -1 - 1;
   }
 
-  public static CharSequence getUsefulMetadata (@Nullable Tdlib tdlib) {
+  public static int getVideoRotation (String path) {
+    int rotation = 0;
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+      MediaMetadataRetriever retriever = null;
+      try {
+        retriever = U.openRetriever(path);
+        String rotationString = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION);
+        rotation = StringUtils.parseInt(rotationString);
+      } catch (Throwable ignored) { }
+      U.closeRetriever(retriever);
+    }
+    return rotation;
+  }
+
+  public static String getUsefulMetadata (@Nullable Tdlib tdlib) {
     AppBuildInfo buildInfo = org.thunderdog.challegram.unsorted.Settings.instance().getCurrentBuildInformation();
-    return Lang.getAppBuildAndVersion(tdlib) + " (" + BuildConfig.COMMIT + ")\n" +
+    String metadata = Lang.getAppBuildAndVersion(tdlib) + " (" + BuildConfig.COMMIT + ")\n" +
       (!buildInfo.getPullRequests().isEmpty() ? "PRs: " + buildInfo.pullRequestsList() + "\n" : "") +
       "TDLib: " + Td.tdlibVersion() + " (tdlib/td@" + Td.tdlibCommitHash() + ")\n" +
       "Android: " + SdkVersion.getPrettyName() + " (" + Build.VERSION.SDK_INT + ")" + "\n" +
-      "Device: " + Build.BRAND + " " + Build.MODEL + " (" + Build.DISPLAY + ")\n" +
-      "Package: " + UI.getAppContext().getPackageName() + "\n" +
-      "Fingerprint: " + U.getApkFingerprint("SHA1");
+      "Device: " + Build.MANUFACTURER + " " + Build.BRAND + " " + Build.MODEL + " (" + Build.DISPLAY + ")\n" +
+      "Screen: " + Screen.widestSide() + "x" + Screen.smallestSide() + " (density: " + Screen.density() + ", fps: " + Screen.refreshRate() + ")" + "\n" +
+      "Build: `" + Build.FINGERPRINT + "`\n" +
+      "Package: " + UI.getAppContext().getPackageName();
+    String installerName = U.getInstallerPackageName();
+    if (!StringUtils.isEmpty(installerName)) {
+      metadata += "\nInstaller: " + (U.VENDOR_GOOGLE_PLAY.equals(installerName) ? "Google Play" : installerName);
+    }
+    String fingerprint = U.getApkFingerprint("SHA1");
+    if (!StringUtils.isEmpty(fingerprint)) {
+      metadata += "\nFingerprint: `" + fingerprint + "`";
+    }
+    return metadata;
+  }
+
+  public static String getApkFingerprint (String algorithm) {
+    return getApkFingerprint(algorithm, true);
   }
 
   /**
    * @param algorithm string like: SHA1, SHA256, MD5.
    */
   @SuppressWarnings("PackageManagerGetSignatures")
-  public static String getApkFingerprint (String algorithm) {
+  @Nullable
+  public static String getApkFingerprint (String algorithm, boolean needSeparator) {
     try {
       final PackageInfo info = UI.getAppContext().getPackageManager()
         .getPackageInfo(BuildConfig.APPLICATION_ID, PackageManager.GET_SIGNATURES);
-
       for (Signature signature : info.signatures) {
         final MessageDigest md = MessageDigest.getInstance(algorithm);
         md.update(signature.toByteArray());
 
         final byte[] digest = md.digest();
-        final StringBuilder toRet = new StringBuilder();
+        final StringBuilder fingerprint = new StringBuilder(digest.length * 2 + (digest.length - 1));
         for (int i = 0; i < digest.length; i++) {
-          if (i != 0) toRet.append(":");
+          if (i != 0 && needSeparator) {
+            fingerprint.append(":");
+          }
           int b = digest[i] & 0xff;
           String hex = Integer.toHexString(b);
-          if (hex.length() == 1) toRet.append("0");
-          toRet.append(hex);
+          if (hex.length() == 1) {
+            fingerprint.append("0");
+          }
+          fingerprint.append(hex);
         }
-        return toRet.toString();
+        return fingerprint.toString();
       }
     } catch (Throwable e) {
       Log.e("Unable to get app fingerprint");
@@ -3531,5 +3570,61 @@ public class U {
 
   public static String getCpuArchitecture () {
     return System.getProperty("os.arch");
+  }
+
+  public static void copyText (CharSequence text) {
+    //noinspection ObsoleteSdkInt
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+      android.content.ClipboardManager clipboard = (android.content.ClipboardManager) UI.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+      if (clipboard != null) {
+        android.content.ClipData clip = null;
+        if (text instanceof Spanned) {
+          String htmlText = TD.toHtmlCopyText((Spanned) text);
+          if (!StringUtils.isEmpty(htmlText)) {
+            clip = android.content.ClipData.newHtmlText(BuildConfig.PROJECT_NAME, text, htmlText);
+          }
+        }
+        if (clip == null) {
+          clip = android.content.ClipData.newPlainText(BuildConfig.PROJECT_NAME, text);
+        }
+        clipboard.setPrimaryClip(clip);
+      }
+    } else {
+      //noinspection deprecation
+      android.text.ClipboardManager clipboard = (android.text.ClipboardManager) UI.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+      if (clipboard != null) {
+        //noinspection deprecation
+        clipboard.setText(text);
+      }
+    }
+  }
+
+  public static CharSequence getPasteText (Context context) {
+    //noinspection ObsoleteSdkInt
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+      android.content.ClipboardManager clipboard = (android.content.ClipboardManager) UI.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+      if (clipboard != null) {
+        android.content.ClipData clipData = clipboard.getPrimaryClip();
+        if (clipData == null || clipData.getItemCount() != 1) {
+          return null;
+        }
+        android.content.ClipData.Item clipItem = clipData.getItemAt(0);
+        if (clipData.getDescription().hasMimeType("text/html")) {
+          String htmlText = clipItem.getHtmlText();
+          return TD.htmlToCharSequence(htmlText);
+        } else if (clipData.getDescription().hasMimeType("text/plain")) {
+          return clipItem.getText();
+        }
+        return null;
+      }
+    } else {
+      //noinspection deprecation
+      android.text.ClipboardManager clipboard = (android.text.ClipboardManager) UI.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+      if (clipboard != null) {
+        //noinspection deprecation
+        return clipboard.getText();
+      }
+    }
+    return null;
   }
 }

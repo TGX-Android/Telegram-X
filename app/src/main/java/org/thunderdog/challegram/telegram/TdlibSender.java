@@ -24,6 +24,8 @@ import org.thunderdog.challegram.util.text.Letters;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.ChatId;
+import me.vkryl.td.Td;
+import me.vkryl.td.TdConstants;
 
 public class TdlibSender {
   private static final int FLAG_BOT = 1;
@@ -108,6 +110,10 @@ public class TdlibSender {
     return isChat() && inChatId == getChatId() && !tdlib.isChannel(getChatId());
   }
 
+  public boolean isSameSender (@Nullable TdlibSender sender) {
+    return sender != null && Td.equalsTo(this.sender, sender.sender);
+  }
+
   public boolean isSelf () {
     return getUserId() == tdlib.myUserId();
   }
@@ -168,6 +174,10 @@ public class TdlibSender {
 
   // flags
 
+  public boolean isServiceChannelBot () {
+    return getUserId() == TdConstants.TELEGRAM_CHANNEL_BOT_ACCOUNT_ID;
+  }
+
   public boolean isBot () {
     return BitwiseUtils.getFlag(flags, FLAG_BOT);
   }
@@ -186,5 +196,16 @@ public class TdlibSender {
 
   public boolean hasChatMark () {
     return isScam() || isFake();
+  }
+
+  // Creators
+
+  public static TdlibSender[] valueOfUserIds (Tdlib tdlib, long inChatId, long[] userIds) {
+    TdlibSender[] senders = new TdlibSender[userIds.length];
+    for (int i = 0; i < userIds.length; i++) {
+      long userId = userIds[i];
+      senders[i] = new TdlibSender(tdlib, inChatId, new TdApi.MessageSenderUser(userId));
+    }
+    return senders;
   }
 }

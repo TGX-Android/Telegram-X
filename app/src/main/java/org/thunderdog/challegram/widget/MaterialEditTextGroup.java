@@ -145,8 +145,8 @@ public class MaterialEditTextGroup extends FrameLayoutFix implements View.OnFocu
 
     editText = new MaterialEditText(context) {
       @Override
-      public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
-        InputConnection conn = super.onCreateInputConnection(outAttrs);
+      public InputConnection createInputConnection (EditorInfo outAttrs) {
+        InputConnection conn = super.createInputConnection(outAttrs);
         if (nextCallback != null && nextCallback.needNextButton(MaterialEditTextGroup.this)) {
           outAttrs.imeOptions &= ~EditorInfo.IME_FLAG_NO_ENTER_ACTION;
         }

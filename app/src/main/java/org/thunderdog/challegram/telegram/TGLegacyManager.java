@@ -14,11 +14,11 @@
  */
 package org.thunderdog.challegram.telegram;
 
-import java.lang.ref.Reference;
-import java.util.ArrayList;
-import java.util.List;
+import androidx.annotation.AnyThread;
 
-import me.vkryl.core.reference.ReferenceUtils;
+import org.thunderdog.challegram.tool.UI;
+
+import me.vkryl.core.reference.ReferenceList;
 
 public class TGLegacyManager {
   private static TGLegacyManager instance;
@@ -31,59 +31,31 @@ public class TGLegacyManager {
   }
 
   public interface EmojiLoadListener {
-    void onEmojiPartLoaded ();
-    default void onEmojiPackChanged () {
-      onEmojiPartLoaded();
-    }
+    void onEmojiUpdated (boolean isPackSwitch);
   }
 
-  private final List<Reference<EmojiLoadListener>> emojiListeners;
+  private final ReferenceList<EmojiLoadListener> emojiListeners;
 
   private TGLegacyManager () {
-    this.emojiListeners = new ArrayList<>();
+    this.emojiListeners = new ReferenceList<>(true);
   }
 
   public void addEmojiListener (EmojiLoadListener listener) {
-    synchronized (this) {
-      ReferenceUtils.addReference(emojiListeners, listener);
-    }
+    this.emojiListeners.add(listener);
   }
 
   public void removeEmojiListener (EmojiLoadListener listener) {
-    synchronized (this) {
-      ReferenceUtils.removeReference(emojiListeners, listener);
-    }
+    this.emojiListeners.remove(listener);
   }
 
-  public void onEmojiLoaded (boolean isChange) {
-    synchronized (this) {
-      final int size = emojiListeners.size();
-      for (int i = size - 1; i >= 0; i--) {
-        EmojiLoadListener listener = emojiListeners.get(i).get();
-        if (listener != null) {
-          if (isChange) {
-            listener.onEmojiPackChanged();
-          } else {
-            listener.onEmojiPartLoaded();
-          }
-        } else {
-          emojiListeners.remove(i);
-        }
-      }
+  @AnyThread
+  public void notifyEmojiChanged (boolean isPackSwitch) {
+    if (!UI.inUiThread()) {
+      UI.post(() -> notifyEmojiChanged(isPackSwitch));
+      return;
     }
-  }
-
-  public void onEmojiPackChanged () {
-    synchronized (this) {
-      final int size = emojiListeners.size();
-      for (int i = size - 1; i >= 0; i--) {
-        EmojiLoadListener listener = emojiListeners.get(i).get();
-        if (listener != null) {
-          listener.onEmojiPackChanged();
-        } else {
-          emojiListeners.remove(i);
-        }
-      }
+    for (EmojiLoadListener listener : emojiListeners) {
+      listener.onEmojiUpdated(isPackSwitch);
     }
   }
 }

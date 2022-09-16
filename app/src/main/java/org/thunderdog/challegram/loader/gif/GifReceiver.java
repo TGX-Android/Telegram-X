@@ -19,37 +19,45 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.SystemClock;
 import android.view.View;
 
+import androidx.annotation.AnyThread;
 import androidx.annotation.Nullable;
+import androidx.annotation.UiThread;
 
 import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.Receiver;
+import org.thunderdog.challegram.loader.ReceiverUpdateListener;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.MathUtils;
 
 public class GifReceiver implements GifWatcher, Runnable, Receiver {
   private static final int STATE_LOADED = 0x01;
 
-  private static @Nullable GifHandler __handler;
+  private static @Nullable Handler __handler;
 
-  public static GifHandler getHandler () {
+  static Handler getHandler () {
     if (__handler == null) {
       synchronized (GifReceiver.class) {
         if (__handler == null) {
-          __handler = new GifHandler();
+          __handler = new Handler(Looper.getMainLooper());
         }
       }
     }
     return __handler;
   }
 
-  private View view;
-  private GifWatcherReference reference;
+  private final @Nullable View view;
+  private ReceiverUpdateListener updateListener;
+  private final GifWatcherReference reference;
   private int state;
   private GifState gif;
 
@@ -76,6 +84,11 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
     this.bitmapRect = new Rect();
     this.drawRegion = new Rect();
     this.progressRect = new RectF();
+  }
+
+  @Override
+  public void setUpdateListener (ReceiverUpdateListener listener) {
+    this.updateListener = listener;
   }
 
   @Override
@@ -229,7 +242,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
           int centerX = (left + right) / 2;
           int centerY = (top + bottom) / 2;
 
-          return x >= centerX - sourceWidth / 2 && x <= centerX + sourceWidth / 2 && y >= centerY - sourceHeight / 2 && y <= centerY + sourceHeight / 2;
+          return x >= centerX - sourceWidth / 2f && x <= centerX + sourceWidth / 2f && y >= centerY - sourceHeight / 2f && y <= centerY + sourceHeight / 2f;
         }
         case ImageFile.CENTER_CROP:
         default: {
@@ -319,16 +332,23 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
 
   // Loader stuff
 
+  @AnyThread
   @Override
   public void gifLoaded (GifFile file, GifState gif) {
-    getHandler().onLoad(this, file, gif);
+    getHandler().post(() -> {
+      onLoad(file, gif);
+    });
   }
 
+  @AnyThread
   @Override
   public void gifProgress (GifFile file, float progress) {
-    getHandler().onProgress(this, file, progress);
+    getHandler().post(() -> {
+      onProgress(file, progress);
+    });
   }
 
+  @UiThread
   public void onLoad (GifFile file, GifState gif) {
     int fileId = this.file == null ? 0 : this.file.getFileId();
     if (file.getFileId() == fileId) {
@@ -339,6 +359,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
     }
   }
 
+  @UiThread
   @Override
   public void gifFrameChanged (GifFile file) {
     int fileId = this.file == null ? 0 : this.file.getFileId();
@@ -354,6 +375,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
   private static final long CHANGE_PROGRESS_DURATION = 140l;
   private static final long ROTATION_DURATION = 2400l;
 
+  @UiThread
   public void onProgress (GifFile file, float progress) {
     int fileId = this.file == null ? 0 : this.file.getFileId();
     if (file.getFileId() == fileId) {
@@ -370,15 +392,17 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
     progress = 0f;
     sweepAnimationStart = 0l;
     sweep = sweepFactor = sweepDiff = sweepStart = 0f;
-    rotationAnimationStart = System.currentTimeMillis();
-    view.removeCallbacks(this);
-    view.postDelayed(this, 16l);
+    rotationAnimationStart = SystemClock.uptimeMillis();
+    if (view != null) {
+      view.removeCallbacks(this);
+      view.postDelayed(this, 16l);
+    }
   }
 
   @Override
   public void run () {
     invalidateProgress();
-    if (state != STATE_LOADED && file != null) {
+    if (state != STATE_LOADED && file != null && view != null) {
       view.postDelayed(this, 16l);
     }
   }
@@ -397,9 +421,9 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
 
     if (rotationAnimationStart == 0l) {
       rotation = 0f;
-      rotationAnimationStart = System.currentTimeMillis();
+      rotationAnimationStart = SystemClock.uptimeMillis();
     } else {
-      ms = System.currentTimeMillis();
+      ms = SystemClock.uptimeMillis();
       rotation = (float) (ms - rotationAnimationStart) / (float) ROTATION_DURATION;
     }
 
@@ -413,7 +437,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
   private long sweepAnimationStart;
 
   private void startSweepAnimation (float fromProgress) {
-    sweepAnimationStart = System.currentTimeMillis();
+    sweepAnimationStart = SystemClock.uptimeMillis();
 
     if (sweep == 0f) {
       sweep = fromProgress;
@@ -429,7 +453,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
   }
 
   private void onSweepFrame () {
-    float input = (float) (System.currentTimeMillis() - sweepAnimationStart) / (float) CHANGE_PROGRESS_DURATION;
+    float input = (float) (SystemClock.uptimeMillis() - sweepAnimationStart) / (float) CHANGE_PROGRESS_DURATION;
 
     if (input <= 0f) {
       sweepFactor = 0f;
@@ -443,12 +467,22 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
   }
 
   private void invalidateProgress () {
-    view.invalidate((int) progressRect.left - progressOffset, (int) progressRect.top - progressOffset, (int) progressRect.right + progressOffset, (int) progressRect.bottom + progressOffset);
+    if (view != null) {
+      view.invalidate((int) progressRect.left - progressOffset, (int) progressRect.top - progressOffset, (int) progressRect.right + progressOffset, (int) progressRect.bottom + progressOffset);
+    }
+    if (updateListener != null) {
+      updateListener.onRequestInvalidate(this);
+    }
   }
 
   @Override
   public void invalidate () {
-    view.invalidate(left, top, right, bottom);
+    if (view != null) {
+      view.invalidate(left, top, right, bottom);
+    }
+    if (updateListener != null) {
+      updateListener.onRequestInvalidate(this);
+    }
   }
 
   // Private stuff
@@ -506,11 +540,11 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
 
           float dx, dy;
           if (gif.isRotated()) {
-            dx = (viewWidth - futureHeight) / 2;
-            dy = (viewHeight - futureWidth) / 2;
+            dx = (viewWidth - futureHeight) / 2f;
+            dy = (viewHeight - futureWidth) / 2f;
           } else {
-            dx = (viewWidth - futureWidth) / 2;
-            dy = (viewHeight - futureHeight) / 2;
+            dx = (viewWidth - futureWidth) / 2f;
+            dy = (viewHeight - futureHeight) / 2f;
           }
 
           bitmapMatrix.setScale(scale, scale);
@@ -542,11 +576,11 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
 
           float dx, dy;
           if (gif.isRotated()) {
-            dx = (viewWidth - futureHeight) / 2;
-            dy = (viewHeight - futureWidth) / 2;
+            dx = (viewWidth - futureHeight) / 2f;
+            dy = (viewHeight - futureWidth) / 2f;
           } else {
-            dx = (viewWidth - futureWidth) / 2;
-            dy = (viewHeight - futureHeight) / 2;
+            dx = (viewWidth - futureWidth) / 2f;
+            dy = (viewHeight - futureHeight) / 2f;
           }
 
           bitmapMatrix.setScale(scale, scale);
@@ -583,6 +617,28 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
     }
   }
 
+  private static final int DRAW_BATCH_STARTED = 1;
+  private static final int DRAW_BATCH_DRAWN = 1 << 1;
+
+  private int drawBatchFlags;
+
+  public void beginDrawBatch () {
+    // Use when drawing the same GifReceiver multiple times on one canvas
+    drawBatchFlags = DRAW_BATCH_STARTED;
+  }
+
+  public void finishDrawBatch () {
+    int flags = drawBatchFlags;
+    if (gif != null && BitwiseUtils.getFlag(flags, DRAW_BATCH_STARTED) && BitwiseUtils.getFlag(flags, DRAW_BATCH_DRAWN)) {
+      synchronized (gif.getBusyList()) {
+        if (gif.hasBitmap()) {
+          gif.getBitmap(true);
+        }
+      }
+    }
+    this.drawBatchFlags = 0;
+  }
+
   public void draw (Canvas c) {
     if (file == null) {
       return;
@@ -591,7 +647,13 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
     if (gif != null) {
       synchronized (gif.getBusyList()) {
         if (gif.hasBitmap()) {
-          gif.applyNext();
+          final boolean inBatch = BitwiseUtils.getFlag(drawBatchFlags, DRAW_BATCH_STARTED);
+          if (!inBatch || !BitwiseUtils.getFlag(drawBatchFlags, DRAW_BATCH_DRAWN)) {
+            gif.applyNext();
+            if (inBatch) {
+              drawBatchFlags |= DRAW_BATCH_DRAWN;
+            }
+          }
           final int alpha = (int) (255f * MathUtils.clamp(this.alpha));
           Paint bitmapPaint = Paints.getBitmapPaint();
           int restoreAlpha = bitmapPaint.getAlpha();
@@ -615,15 +677,15 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
                 float scale = (float) width / (float) height;
                 c.scale(scale, scale, width / 2, height / 2);
               }*/
-              c.rotate(rotation, width / 2, height / 2);
+              c.rotate(rotation, width / 2f, height / 2f);
             }
 
             c.concat(bitmapMatrix);
-            c.drawBitmap(gif.getBitmap(true), 0f, 0f, bitmapPaint);
+            c.drawBitmap(gif.getBitmap(!inBatch), 0f, 0f, bitmapPaint);
 
             c.restore();
           } else {
-            c.drawBitmap(gif.getBitmap(true), bitmapRect, drawRegion, bitmapPaint);
+            c.drawBitmap(gif.getBitmap(!inBatch), bitmapRect, drawRegion, bitmapPaint);
           }
           if (alpha != restoreAlpha) {
             bitmapPaint.setAlpha(restoreAlpha);

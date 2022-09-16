@@ -41,6 +41,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextEntity;
+import org.thunderdog.challegram.util.text.TextMedia;
 import org.thunderdog.challegram.util.text.TextWrapper;
 
 import java.util.ArrayList;
@@ -182,6 +183,9 @@ public class TGMessageMedia extends TGMessage {
     mosaicWrapper.destroy();
     cancelScheduledHotOpening(null, false);
     closeHot(null, true, false);
+    if (wrapper != null) {
+      wrapper.performDestroy();
+    }
   }
 
   private void updateRounds () {
@@ -251,8 +255,18 @@ public class TGMessageMedia extends TGMessage {
     this.captionMessageId = messageId;
     if (!Td.equalsTo(this.caption, caption)) {
       this.caption = caption;
+      if (this.wrapper != null) {
+        this.wrapper.performDestroy();
+      }
       if (!Td.isEmpty(caption)) {
-        this.wrapper = new TextWrapper(caption.text, getTextStyleProvider(), getTextColorSet(), TextEntity.valueOf(tdlib, caption, openParameters())).addTextFlags(Text.FLAG_BIG_EMOJI).setClickCallback(clickCallback());
+        this.wrapper = new TextWrapper(caption.text, getTextStyleProvider(), getTextColorSet())
+          .setEntities(TextEntity.valueOf(tdlib, caption, openParameters()), (wrapper, text, specificMedia) -> {
+            if (this.wrapper == wrapper) {
+              invalidateTextMediaReceiver(text, specificMedia);
+            }
+          })
+          .addTextFlags(Text.FLAG_BIG_EMOJI)
+          .setClickCallback(clickCallback());
         this.wrapper.setViewProvider(currentViews);
         if (Config.USE_NONSTRICT_TEXT_ALWAYS || !useBubbles()) {
           this.wrapper.addTextFlags(Text.FLAG_BOUNDS_NOT_STRICT);
@@ -261,9 +275,19 @@ public class TGMessageMedia extends TGMessage {
         this.wrapper = null;
       }
       updateRounds();
+      invalidateTextMediaReceiver();
       return true;
     }
     return false;
+  }
+
+  @Override
+  public void requestTextMedia (ComplexReceiver textMediaReceiver) {
+    if (wrapper != null) {
+      wrapper.requestMedia(textMediaReceiver);
+    } else {
+      textMediaReceiver.clear();
+    }
   }
 
   @Override
@@ -520,7 +544,7 @@ public class TGMessageMedia extends TGMessage {
     }
 
     if (wrapper != null) {
-      wrapper.draw(c, getTextX(view, wrapper, false), getTextX(view, wrapper, true), Config.MOVE_BUBBLE_TIME_RTL_TO_LEFT ? 0 : getBubbleTimePartWidth(), startY + mosaicWrapper.getHeight() + Screen.dp(TEXT_MARGIN), null, 1f);
+      wrapper.draw(c, getTextX(view, wrapper, false), getTextX(view, wrapper, true), Config.MOVE_BUBBLE_TIME_RTL_TO_LEFT ? 0 : getBubbleTimePartWidth(), startY + mosaicWrapper.getHeight() + Screen.dp(TEXT_MARGIN), null, 1f, view.getTextMediaReceiver());
     }
   }
 

@@ -16,10 +16,12 @@ package org.thunderdog.challegram.loader.gif;
 
 import android.view.View;
 
+import androidx.annotation.UiThread;
+
 import java.lang.ref.WeakReference;
 
 public class GifWatcherReference {
-  private WeakReference<GifWatcher> reference;
+  private final WeakReference<GifWatcher> reference;
 
   public GifWatcherReference (GifWatcher watcher) {
     reference = new WeakReference<>(watcher);
@@ -39,6 +41,7 @@ public class GifWatcherReference {
     }
   }
 
+  @UiThread
   public void gifFrameChanged (GifFile file) {
     GifWatcher watcher = reference.get();
     if (watcher != null) {

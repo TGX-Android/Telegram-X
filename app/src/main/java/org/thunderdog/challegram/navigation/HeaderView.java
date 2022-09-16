@@ -61,7 +61,7 @@ import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.util.ToggleDelegate;
 import org.thunderdog.challegram.v.HeaderEditText;
 import org.thunderdog.challegram.widget.ClearButton;
-import org.thunderdog.challegram.widget.NoScrollTextView;
+import org.thunderdog.challegram.widget.EmojiTextView;
 import org.thunderdog.challegram.widget.PopupLayout;
 
 import java.util.ArrayList;
@@ -145,7 +145,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
   }
 
   @Override
-  public void onEmojiPartLoaded () {
+  public void onEmojiUpdated (boolean isPackSwitch) {
     if (textTitle != null) {
       textTitle.invalidate();
     }
@@ -868,7 +868,8 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
   public TextView genTextTitle (Context context) {
     FrameLayoutFix.LayoutParams params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | (Lang.rtl() ? Gravity.RIGHT : Gravity.LEFT));
     params.topMargin = Screen.dp(15f) + getCurrentHeaderOffset();
-    TextView text = new NoScrollTextView(context);
+    EmojiTextView text = new EmojiTextView(context);
+    text.setScrollDisabled(true);
     text.setTag(this);
     text.setMovementMethod(LinkMovementMethod.getInstance());
     text.setHighlightColor(Theme.textLinkHighlightColor());

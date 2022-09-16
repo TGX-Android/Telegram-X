@@ -53,10 +53,14 @@ public class PageBlockRelatedArticle extends PageBlock {
     this.openParameters = openParameters;
 
     if (!StringUtils.isEmpty(article.title)) {
-      title = new TextWrapper(article.title, PageBlockRichText.getParagraphProvider(), TextColorSets.InstantView.NORMAL, null).setMaxLines(3).addTextFlags(Text.FLAG_ALL_BOLD | Text.FLAG_ARTICLE);
+      title = new TextWrapper(article.title, PageBlockRichText.getParagraphProvider(), TextColorSets.InstantView.NORMAL)
+        .setMaxLines(3)
+        .addTextFlags(Text.FLAG_ALL_BOLD | Text.FLAG_ARTICLE);
     }
     if (!StringUtils.isEmpty(article.description)) {
-      description = new TextWrapper(article.description, PageBlockRichText.getCaptionProvider(), TextColorSets.InstantView.NORMAL, null).setMaxLines(3).addTextFlags(Text.FLAG_ARTICLE);
+      description = new TextWrapper(article.description, PageBlockRichText.getCaptionProvider(), TextColorSets.InstantView.NORMAL)
+        .setMaxLines(3)
+        .addTextFlags(Text.FLAG_ARTICLE);
     }
     String info;
     if (article.publishDate != 0 && !StringUtils.isEmptyOrBlank(article.author)) {
@@ -69,7 +73,7 @@ public class PageBlockRelatedArticle extends PageBlock {
       info = null;
     }
     if (!StringUtils.isEmpty(info)) {
-      this.info = new TextWrapper(null, info, PageBlockRichText.getCaptionProvider(), TextColorSets.InstantView.CAPTION, 0, openParameters);
+      this.info = new TextWrapper(info, PageBlockRichText.getCaptionProvider(), TextColorSets.InstantView.CAPTION);
     }
     if (article.photo != null) {
       if (article.photo.minithumbnail != null) {

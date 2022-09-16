@@ -127,7 +127,6 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.core.Media;
-import org.thunderdog.challegram.data.CrashLog;
 import org.thunderdog.challegram.data.InlineResultButton;
 import org.thunderdog.challegram.data.InlineResultCommand;
 import org.thunderdog.challegram.data.MessageListManager;
@@ -203,7 +202,6 @@ import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.camera.CameraAccessImageView;
-import org.thunderdog.challegram.unsorted.CrashManager;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Test;
 import org.thunderdog.challegram.util.CancellableResultHandler;
@@ -645,7 +643,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           updateButtonsY();
         }
       };
-      inputView.setIsSecret(Settings.instance().needsIncognitoMode(chat));
+      inputView.setNoPersonalizedLearning(Settings.instance().needsIncognitoMode(chat));
       inputView.setId(R.id.msg_input);
       inputView.setTextColor(Theme.textAccentColor());
       addThemePaintColorListener(inputView.getPlaceholderPaint(), R.id.theme_color_textPlaceholder);
@@ -1883,9 +1881,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (currentUsername != null) {
         currentUsername = "@" + currentUsername + " ";
         if (inputView.getText().toString().equals(currentUsername.toString())) {
-          inputView.setInput("", false);
+          inputView.setInput("", false, true);
         } else {
-          inputView.setInput(currentUsername, true);
+          inputView.setInput(currentUsername, true, true);
         }
       }
       return true;
@@ -2446,7 +2444,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     if (item instanceof TGSwitchInline) {
       if (inputView != null) {
-        inputView.setInput(item.toString(), true);
+        inputView.setInput(item.toString(), true, false);
       }
       return;
     }
@@ -2498,42 +2496,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     if (item instanceof TdApi.Audio) {
       sendAudio((TdApi.Audio) item, false);
-      return;
-    }
-
-    /*if (item instanceof TGAudioSet) {
-      final long chatId = chat.id;
-      final SparseArrayCompat<TGAudio> audios = ((TGAudioSet) item).getSet();
-      Background.instance().post(new Runnable() {
-        @Override
-        public void run () {
-          for (int i = audios.size() - 1; i >= 0; i--) {
-            MessagesHelper.send(chatId, obtainSilentMode(), 0, audios.valueAt(i).getAudio());
-          }
-        }
-      });
-      return;
-    }*/
-
-    /*if (item instanceof PhotoItem) {
-      MessagesHelper.send(chat.id, obtainSilentMode(), 0, (PhotoItem) item);
-      return;
-    }*/
-
-    /*if (item instanceof TGForward) {
-      TGForward forward = (TGForward) item;
-      if (forward.isMultiple()) {
-        MessagesHelper.forward(chat.id, forward.getChatId(), forward.getMessageIds(), SilentButton.isSilent(chat));
-      } else {
-        MessagesHelper.forward(chat.id, forward.getChatId(), new long[] {forward.getMessageId()}, SilentButton.isSilent(chat));
-      }
-      return;
-    }*/
-
-    if (item instanceof CrashLog) {
-      final CrashLog crash = (CrashLog) item;
-      sendFiles(Collections.singletonList(crash.getFile()), false, false, false, null);
-      Background.instance().post(() -> CrashManager.instance().revoke(crash.getId()));
       return;
     }
   }
@@ -2613,7 +2575,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         inputView.setEnabled(enabled);
       }
       if (enabled) {
-        inputView.setIsSecret(Settings.instance().needsIncognitoMode(chat));
+        inputView.setNoPersonalizedLearning(Settings.instance().needsIncognitoMode(chat));
       }
     }
 
@@ -3025,7 +2987,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   @Override
-  public void onEmojiPartLoaded () {
+  public void onEmojiUpdated (boolean isPackSwitch) {
     invalidateEmojiViews(false);
   }
 
@@ -3668,7 +3630,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void openVoiceChatInvitation (TdApi.InternalLinkTypeVideoChat invitation) {
-    // TODO some confirmation screen & join voice chat if agreed
+    tdlib.ui().openVoiceChatInvitation(this, invitation);
   }
 
   @Override
@@ -3714,9 +3676,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (pagerContentAdapter != null && pagerContentAdapter.isLocked) {
       pagerContentAdapter.isLocked = false;
       pagerContentAdapter.notifyDataSetChanged();
-    }
-    if (inputView != null && needSaveDraftOnEachTextChange()) {
-      inputView.setTextChangedSinceChatOpened(false);
     }
     messagesView.setMessageAnimatorEnabled(true);
     registerRaiseListener();
@@ -3804,25 +3763,24 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (isEditingMessage()) {
         // TODO save local draft
       } else if (inputView != null && inputView.textChangedSinceChatOpened() && isFocused()) {
-        TdApi.FormattedText outputText = inputView.getOutputText(false);
-        TdApi.DraftMessage draftMessage = new TdApi.DraftMessage(getCurrentReplyId(), (int) (System.currentTimeMillis() / 1000l), new TdApi.InputMessageText(outputText, getCurrentAllowLinkPreview(), false));
-        tdlib.client().send(new TdApi.SetChatDraftMessage(messageThread != null ? messageThread.getChatId() : chat.id, messageThread != null ? messageThread.getMessageThreadId() : 0, draftMessage), tdlib.okHandler());
-
-        for (int i = 0; i < stackSize() - 1; i++) {
-          ViewController<?> c = stackItemAt(i);
-          if (c instanceof MessagesController) {
-            MessagesController m = (MessagesController) c;
-            if (m.compareChat(getChatId(), messageThread, areScheduledOnly()) && m.canSaveDraft() && m.inputView != null && !m.isEditingMessage()) {
-              m.updateDraftMessage(getChatId(), !Td.isEmpty(draftMessage) ? draftMessage : null);
-            }
-          }
-        }
+        final TdApi.FormattedText outputText = inputView.getOutputText(false);
+        final long replyToMessageId = getCurrentReplyId();
+        final long date = tdlib.currentTime(TimeUnit.SECONDS);
+        final TdApi.InputMessageText inputMessageText = new TdApi.InputMessageText(
+          outputText,
+          getCurrentAllowLinkPreview(),
+          false
+        );
+        final TdApi.DraftMessage draftMessage = new TdApi.DraftMessage(replyToMessageId, (int) date, inputMessageText);
+        final long outputChatId = messageThread != null ? messageThread.getChatId() : chat.id;
+        final long messageThreadId = messageThread != null ? messageThread.getMessageThreadId() : 0;
+        tdlib.client().send(new TdApi.SetChatDraftMessage(
+          outputChatId,
+          messageThreadId,
+          !Td.isEmpty(draftMessage) ? draftMessage : null
+        ), tdlib.okHandler());
       }
     }
-  }
-
-  public boolean needSaveDraftOnEachTextChange () {
-    return false; //FIXME TDLib isSecretChat();
   }
 
   @Override
@@ -3839,9 +3797,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Override
   public void onBlur () {
-    if (!needSaveDraftOnEachTextChange()) {
-      saveDraft();
-    }
+    saveDraft();
 
     super.onBlur();
 
@@ -4155,7 +4111,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     this.selectedMessage = msg;
     this.selectedMessageTag = selectedMessageTag;
     this.selectedMessageSender = selectedMessageSender;
-    StringBuilder b = new StringBuilder();
+    SpannableStringBuilder b = new SpannableStringBuilder();
     if (chat != null) {
       final boolean isChannel = tdlib.isChannel(chat.id);
       if (!isChannel && msg.getMessage().content != null) {
@@ -4223,7 +4179,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       b.append(Lang.getString(resId));
     }
-    String text = b.toString().trim();
+
+    CharSequence text = StringUtils.trim(b);
 
     if (withReactions && msg.canBeReacted() && msg.getMessageAvailableReactions().length > 0) {
       Options messageOptions = getOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons);
@@ -4283,7 +4240,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         if (users.userIds.length > 1) {
           receiptText.setText(MessageSeenController.getViewString(message, users.totalCount).toString());
         } else if (users.userIds.length == 1) {
-          receiptText.setText(Emoji.instance().replaceEmoji(tdlib.senderName(new TdApi.MessageSenderUser(users.userIds[0]))));
+          receiptText.setText(tdlib.senderName(new TdApi.MessageSenderUser(users.userIds[0])));
         } else {
           receiptText.setText(MessageSeenController.getNobodyString(message));
         }
@@ -4312,7 +4269,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     } else {
       str = command.getCommand() + "@" + command.getUsername() + " ";
     }
-    inputView.setInput(str, true);
+    inputView.setInput(str, true, true);
     Keyboard.show(inputView);
 
     return true;
@@ -4328,7 +4285,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     } else {
       str = command + ' ';
     }
-    inputView.setInput(str, true);
+    inputView.setInput(str, true, true);
     Keyboard.show(inputView);
     return true;
   }
@@ -4336,7 +4293,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void setInputInlineBot (long userId, String username) {
     if (canWriteMessages()) {
       // pressed via @NephoBot message
-      inputView.setInput(username + " ", true);
+      inputView.setInput(username + " ", true, true);
       Keyboard.show(inputView);
     } else {
       tdlib.ui().openPrivateChat(this, userId, new TdlibUi.ChatOpenParameters().keepStack());
@@ -4517,7 +4474,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         b.append(" ]");
       }
       TdApi.FormattedText text = Td.textOrCaption(msg.content);
-      if (msg.content.getConstructor() != TdApi.MessageText.CONSTRUCTOR) {
+      if (msg.content.getConstructor() != TdApi.MessageText.CONSTRUCTOR && msg.content.getConstructor() != TdApi.MessageAnimatedEmoji.CONSTRUCTOR) {
         b.append("\n[");
         b.append(TD.buildShortPreview(tdlib, msg, false));
         b.append("]");
@@ -5345,7 +5302,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           TdApi.MessageContent content = selectedMessage.getMessage().content;
           if (content.getConstructor() == TdApi.MessageSticker.CONSTRUCTOR) {
             TdApi.MessageSticker sticker = (TdApi.MessageSticker) content;
-            tdlib.ui().showStickerSet(this, sticker.sticker.setId);
+            tdlib.ui().showStickerSet(this, sticker.sticker.setId, null);
           }
         }
         return true;
@@ -5593,7 +5550,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     if (inputView != null) {
       inputView.setVisibility(View.GONE);
-      inputView.setTextSilently("");
+      inputView.setInput("", false, false);
     }
 
     hideAttachButtons();
@@ -6022,7 +5979,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     attachedPreview = null;
     flags &= ~FLAG_REPLY_ANIMATING;
     setReplyFactor(0f);
-    replyView.destroy();
+    replyView.clear();
   }
 
   public void closeReply (final boolean byUser) {
@@ -6080,7 +6037,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     if (isSendingText) {
       setReplyFactor(0f);
-      replyView.destroy();
+      replyView.clear();
       flags &= ~FLAG_REPLY_ANIMATING;
       return;
     }
@@ -6097,7 +6054,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       @Override
       public void onAnimationEnd (Animator animation) {
         setForceHw(false);
-        replyView.destroy();
+        replyView.clear();
         flags &= ~FLAG_REPLY_ANIMATING;
       }
     });
@@ -6317,7 +6274,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (pendingText != null) {
         text = pendingText;
       }
-      inputView.setInput(Settings.instance().getNewSetting(Settings.SETTING_FLAG_EDIT_MARKDOWN) ? TD.toMarkdown(text) : TD.toCharSequence(text), true);
+      inputView.setInput(Settings.instance().getNewSetting(Settings.SETTING_FLAG_EDIT_MARKDOWN) ? TD.toMarkdown(text) : TD.toCharSequence(text), true, false);
     }
     Keyboard.show(inputView);
   }
@@ -6351,7 +6308,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return;
     }
 
-    TdApi.FormattedText newText = inputView.getOutputText(applyMarkdown);
+    TdApi.FormattedText newText = Td.trim(inputView.getOutputText(applyMarkdown));
     if (Td.isEmpty(newText) && !isEditingMessage())
       return;
 
@@ -6367,16 +6324,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         TdApi.InputMessageText newInputMessageText = new TdApi.InputMessageText(newText, getCurrentAllowLinkPreview(), false);
         if (!Td.equalsTo(newInputMessageText.text, oldMessageText.text) || (newInputMessageText.disableWebPagePreview && oldMessageText.webPage != null) || (!newInputMessageText.disableWebPagePreview && oldMessageText.webPage == null && attachedPreview != null)) {
-          String newString = newText.text.trim();
-          if (newString.length() == 0)
-            return;
           final int maxLength = tdlib.maxMessageTextLength();
-          final int newTextLength = newString.codePointCount(0, newString.length());
+          final int newTextLength = newText.text.codePointCount(0, newText.text.length());
           if (newTextLength > maxLength) {
             showBottomHint(Lang.pluralBold(R.string.EditMessageTextTooLong, newTextLength - maxLength), true);
             return;
           }
-          tdlib.editMessageText(editingMessage.chatId, editingMessage.id, newInputMessageText, attachedPreview, Emoji.instance().isSingleEmoji(newString));
+          tdlib.editMessageText(editingMessage.chatId, editingMessage.id, newInputMessageText, attachedPreview);
         }
         break;
       }
@@ -6457,7 +6411,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void onCommandClick () {
-    inputView.setInput("/", true);
+    inputView.setInput("/", true, true);
     Keyboard.show(inputView);
   }
 
@@ -7432,7 +7386,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     if (switchInline.inCurrentChat && canWriteMessages() && hasWritePermission()) {
       if (inputView != null) {
-        inputView.setInput("@" + user.username + " " + switchInline.query, true);
+        inputView.setInput("@" + user.username + " " + switchInline.query, true, true);
       }
       return;
     }
@@ -7560,7 +7514,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       pickDateOrProceed(forceDisableNotification, schedulingState, (forceDisableNotification1, schedulingState1, disableMarkdown) -> {
         if (sendSticker(view, sticker.getSticker(), sticker.getFoundByEmoji(), true, forceDisableNotification, schedulingState1)) {
           lastJunkTime = SystemClock.uptimeMillis();
-          inputView.setInput("", false);
+          inputView.setInput("", false, true);
         }
       });
       return true;
@@ -7692,7 +7646,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void onUsernamePick (String username) {
-    inputView.setInput("@" + username + " ", true);
+    inputView.setInput("@" + username + " ", true, true);
   }
 
   // Link preview
@@ -8070,15 +8024,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
     setInputInlineBot(0, "@" + tdlib.getAnimationSearchBotUsername());
   }
 
-  public void onInputTextChange (CharSequence charSequence) {
+  public void onInputTextChange (CharSequence charSequence, boolean byUserAction) {
     if (sendMenu != null) {
       sendMenu.hideMenu();
     }
     if (emojiLayout != null) {
       emojiLayout.onTextChanged(charSequence);
     }
-    if (needSaveDraftOnEachTextChange() && isFocused()) {
-      saveDraft();
+    updateSendButton(charSequence, true);
+    if (byUserAction) {
+      setTyping(charSequence.length() > 0);
+      inputView.setTextChangedSinceChatOpened(true);
     }
   }
 
@@ -8162,8 +8118,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (sticker == null) {
       return false;
     }
-    if (sticker.premiumAnimation != null && !tdlib.hasPremium()) {
-      tdlib.ui().showPremiumAlert(this, view);
+    if (sticker.isPremium && tdlib.ui().showPremiumAlert(this, view, TdlibUi.PremiumFeature.STICKER)) {
       return false;
     }
     return sendContent(view, R.id.right_sendStickersAndGifs, R.string.ChatDisabledStickers, R.string.ChatRestrictedStickers, R.string.ChatRestrictedStickersUntil, allowReply, forceDisableNotification, schedulingState, () -> new TdApi.InputMessageSticker(new TdApi.InputFileId(sticker.sticker.id), null, 0, 0, emoji));
@@ -8569,7 +8524,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void checkSendButton (boolean animated) {
-    setSendVisible(inputView.getText().length() > 0 || isEditingMessage() || isVoiceShowing, animated);
+    setSendVisible(inputView.getText().length() > 0 || isEditingMessage() || isVoiceShowing, animated && getParentOrSelf().isAttachedToNavigationController());
   }
 
   private void displaySendButton () {
@@ -8742,7 +8697,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             if (allowLinkPreview) {
               obtainAllowLinkPreview(true);
             }
-            inputView.setInput("", false);
+            inputView.setInput("", false, true);
           }
           setIsSendingText(false);
           /*if (success) {
@@ -8850,7 +8805,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       pickDateOrProceed(forceDisableNotification, schedulingState, (forceDisableNotification1, schedulingState1, disableMarkdown) -> {
         tdlib.sendInlineQueryResult(chat.id, getMessageThreadId(), allowReply ? obtainReplyId() : 0, new TdApi.MessageSendOptions(forceDisableNotification1 || obtainSilentMode(), false, false, schedulingState1), inlineQueryId, id);
         if (clearInput) {
-          inputView.setInput("", false);
+          inputView.setInput("", false, true);
           inputView.getInlineSearchContext().resetInlineBotsCache();
         }
       });
@@ -9646,8 +9601,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Override
   public void onChatDraftMessageChanged (final long chatId, final @Nullable TdApi.DraftMessage draftMessage) {
-    tdlib.ui().post(() -> {
+    runOnUiThreadOptional(() -> {
       if (getChatId() == chatId && inputView != null && !inputView.textChangedSinceChatOpened() && !isSecretChat() && messageThread == null) {
+        // Applying server chat draft changes only if text wasn't changed while chat was open
         updateDraftMessage(chatId, draftMessage);
       }
     });

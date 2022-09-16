@@ -623,7 +623,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   @Override
-  public final void onEmojiPartLoaded () {
+  public void onEmojiUpdated (boolean isPackSwitch) {
     if (dialogMessages != null) {
       try {
         for (int i = dialogMessages.size() - 1; i >= 0; i--) {
@@ -1146,6 +1146,8 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     setSystemNightMode(newConfig.uiMode & Configuration.UI_MODE_NIGHT_MASK);
     if (needRecreate) {
       recreate();
+    } else {
+      Screen.checkRefreshRate();
     }
   }
 
@@ -2402,27 +2404,27 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   public final void checkDisallowScreenshots () {
+    if (UI.TEST_MODE == UI.TEST_MODE_AUTO) {
+      // Allow screen capture in Firebase Labs
+      return;
+    }
     boolean disallowScreenshots = false;
-    if (UI.TEST_MODE != UI.TEST_MODE_AUTO) {
-      disallowScreenshots = (navigation.shouldDisallowScreenshots() || Passcode.instance().shouldDisallowScreenshots());
-      if (!disallowScreenshots) {
-        for (PopupLayout popupLayout : windows) {
-          if (popupLayout.shouldDisallowScreenshots()) {
-            disallowScreenshots = true;
-            break;
-          }
-        }
+    disallowScreenshots = (navigation.shouldDisallowScreenshots() || Passcode.instance().shouldDisallowScreenshots());
+    for (PopupLayout popupLayout : windows) {
+      boolean shouldDisallowScreenshots = popupLayout.shouldDisallowScreenshots();
+      popupLayout.checkWindowFlags();
+      if (shouldDisallowScreenshots) {
+        disallowScreenshots = true;
       }
-      if (!disallowScreenshots) {
-        for (int i = 0; i < forgottenWindows.size(); i++) {
-          PopupLayout popupLayout = forgottenWindows.valueAt(i);
-          if (popupLayout == null)
-            continue;
-          if (popupLayout.shouldDisallowScreenshots()) {
-            disallowScreenshots = true;
-            break;
-          }
-        }
+    }
+    for (int i = 0; i < forgottenWindows.size(); i++) {
+      PopupLayout popupLayout = forgottenWindows.valueAt(i);
+      if (popupLayout == null)
+        continue;
+      boolean shouldDisallowScreenshots = popupLayout.shouldDisallowScreenshots();
+      popupLayout.checkWindowFlags();
+      if (shouldDisallowScreenshots) {
+        disallowScreenshots = true;
       }
     }
     setDisallowScreenshots(disallowScreenshots);

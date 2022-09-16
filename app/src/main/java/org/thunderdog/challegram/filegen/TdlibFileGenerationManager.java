@@ -139,7 +139,8 @@ public final class TdlibFileGenerationManager {
   private static final int TASK_COPY_FILE = 7;
   private static final int TASK_EXPORT_LANGUAGE = 8;
   private static final int TASK_EXPORT_THEME = 9;
-  private static final int TASK_GENERATE_ANIMATED_STICKER_PREVIEW = 10;
+  private static final int TASK_GENERATE_LOTTIE_STICKER_PREVIEW = 10;
+  private static final int TASK_GENERATE_VIDEO_STICKER_PREVIEW = 11;
 
   private final Tdlib tdlib;
 
@@ -252,9 +253,16 @@ public final class TdlibFileGenerationManager {
         obj[2] = null;
         break;
       }
-      case TASK_GENERATE_ANIMATED_STICKER_PREVIEW: {
+      case TASK_GENERATE_LOTTIE_STICKER_PREVIEW:
+      case TASK_GENERATE_VIDEO_STICKER_PREVIEW:{
         Object[] obj = (Object[]) msg.obj;
-        generateAnimatedStickerThumb((String) obj[0], (String) obj[1], BitwiseUtils.mergeLong(msg.arg1, msg.arg2), (String) obj[2]);
+        generateAnimatedStickerThumb(
+          (String) obj[0],
+          (String) obj[1],
+          BitwiseUtils.mergeLong(msg.arg1, msg.arg2),
+          (String) obj[2],
+          msg.what == TASK_GENERATE_VIDEO_STICKER_PREVIEW
+        );
         obj[0] = null;
         obj[1] = null;
         break;
@@ -361,8 +369,12 @@ public final class TdlibFileGenerationManager {
       }
       return;
     }
-    if (conversion.startsWith(GenerationInfo.TYPE_STICKER_PREVIEW)) {
-      generateAnimatedStickerThumb(originalPath, conversion, generationId, destinationPath);
+    if (conversion.startsWith(GenerationInfo.TYPE_LOTTIE_STICKER_PREVIEW)) {
+      generateAnimatedStickerThumb(originalPath, conversion, generationId, destinationPath, false);
+      return;
+    }
+    if (conversion.startsWith(GenerationInfo.TYPE_VIDEO_STICKER_PREVIEW)) {
+      generateAnimatedStickerThumb(originalPath, conversion, generationId, destinationPath, true);
       return;
     }
     if (conversion.startsWith("copy")) {
@@ -657,16 +669,31 @@ public final class TdlibFileGenerationManager {
     return ok && !canceled;
   }
 
-  private void generateAnimatedStickerThumb (final String fromPath, final String conversion, final long generationId, final String destinationPath) {
+  private void generateAnimatedStickerThumb (final String fromPath, final String conversion, final long generationId, final String destinationPath, boolean isVideo) {
     if (Thread.currentThread() != queue()) {
-      queue().sendMessage(Message.obtain(queue().getHandler(), TASK_GENERATE_ANIMATED_STICKER_PREVIEW, BitwiseUtils.splitLongToFirstInt(generationId), BitwiseUtils.splitLongToSecondInt(generationId), new Object[] {fromPath, conversion, destinationPath}), 0);
+      queue().sendMessage(Message.obtain(
+        queue().getHandler(),
+        isVideo ?
+          TASK_GENERATE_VIDEO_STICKER_PREVIEW :
+          TASK_GENERATE_LOTTIE_STICKER_PREVIEW,
+        BitwiseUtils.splitLongToFirstInt(generationId),
+        BitwiseUtils.splitLongToSecondInt(generationId),
+        new Object[] {
+          fromPath, conversion, destinationPath
+        }
+      ), 0);
       return;
     }
 
     getContentExecutor().execute(() -> {
       boolean success = false;
       try {
-        Bitmap result = ImageReader.decodeLottieFrame(fromPath, 512);
+        Bitmap result;
+        if (isVideo) {
+          result = ImageReader.decodeVideoFrame(fromPath, 512);
+        } else {
+          result = ImageReader.decodeLottieFrame(fromPath, 512);
+        }
         if (result != null) {
           try (FileOutputStream out = new FileOutputStream(destinationPath)) {
             success = result.compress(U.compressFormat(true), COMPRESSION_LEVEL, out);

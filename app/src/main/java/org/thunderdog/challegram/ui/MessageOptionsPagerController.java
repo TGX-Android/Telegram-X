@@ -18,7 +18,6 @@ import android.animation.Animator;
 import android.content.Context;
 import android.content.res.Resources;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
@@ -26,7 +25,6 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
 
@@ -62,6 +60,7 @@ import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.v.CustomRecyclerView;
+import org.thunderdog.challegram.widget.CustomTextView;
 import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.ReactionsSelectorRecyclerView;
 import org.thunderdog.challegram.widget.ViewPager;
@@ -473,12 +472,32 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
       + (context.isKeyboardVisible() && Device.NEED_ADD_KEYBOARD_SIZE ? Screen.getNavigationBarHeight() : 0);
   }
 
+  private CharSequence cachedHint;
+  private int cachedHintHeight, cachedHintAvailWidth;
+
   private int getContentOffset () {
     if (needShowOptions) {
+      int optionItemsHeight = Screen.dp(54) * options.items.length;
+      int hintHeight;
+      if (!StringUtils.isEmpty(options.info)) {
+        int availWidth = Screen.currentWidth() - Screen.dp(16f) * 2; // FIXME: rely on parent view width
+        if (cachedHint != null && cachedHintAvailWidth == availWidth && cachedHint.equals(options.info)) {
+          hintHeight = cachedHintHeight;
+        } else {
+          hintHeight = CustomTextView.measureHeight(this, options.info, 15f, availWidth);
+          cachedHint = options.info;
+          cachedHintAvailWidth = availWidth;
+          cachedHintHeight = hintHeight;
+        }
+        hintHeight += Screen.dp(14f) + Screen.dp(6f);
+      } else {
+        hintHeight = 0;
+      }
       return (
         getTargetHeight()
           - (Screen.dp(54) + HeaderView.getTopOffset())
-          - (Screen.dp(54 * options.items.length + (StringUtils.isEmpty(options.info) ? 0 : 40)))
+          - optionItemsHeight
+          - hintHeight
           - Screen.dp(1)
       );
     } else {
@@ -856,7 +875,7 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
         top = getContentOffset();
       }
       if (position == itemCount - 1 || isUnknown) {
-        final int itemsHeight = isUnknown ? view.getMeasuredHeight() : controller.getItemsHeight();// - SettingHolder.measureHeightForType(ListItem.TYPE_HEADER);
+        final int itemsHeight = isUnknown ? view.getMeasuredHeight() : controller.getItemsHeight(parent);// - SettingHolder.measureHeightForType(ListItem.TYPE_HEADER);
         final int parentHeight = parent.getMeasuredHeight(); // - getShadowBottomHeight();
         bottom = Math.max(0, parentHeight - itemsHeight /*- getHiddenContentHeight() - getPagerTopViewHeight()*/);
       }
@@ -870,7 +889,7 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
       super(context, tdlib);
     }
 
-    public abstract int getItemsHeight ();
+    public abstract int getItemsHeight (RecyclerView parent);
 
     public final void ensureMaxScrollY (int scrollY, int maxScrollY) {
       CustomRecyclerView recyclerView = getRecyclerView();

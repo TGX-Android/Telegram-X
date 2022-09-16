@@ -38,6 +38,12 @@ public class DoubleImageReceiver implements Receiver {
     }
   }
 
+  @Override
+  public void setUpdateListener (ReceiverUpdateListener listener) {
+    preview.setUpdateListener(listener);
+    receiver.setUpdateListener(listener);
+  }
+
   public void setAnimationDisabled (boolean disabled) {
     this.preview.setAnimationDisabled(disabled);
     this.receiver.setAnimationDisabled(disabled);

@@ -32,6 +32,7 @@ import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.preview.PreviewLayout;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
@@ -465,6 +466,15 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
       if (component != null) {
         component.performDestroy();
       }
+      if (siteName != null) {
+        siteName.performDestroy();
+      }
+      if (title != null) {
+        title.performDestroy();
+      }
+      if (description != null) {
+        description.performDestroy();
+      }
     }
   }
 
@@ -481,6 +491,19 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
       return webPage.video != null && Math.max(webPage.video.width, webPage.video.height) >= 400;
     }
     return false;
+  }
+
+  public boolean hasMedia () {
+    // The only TdApi.FormattedText inside TdApi.WebPage is `description`
+    return description != null && description.hasMedia();
+  }
+
+  public void requestTextMedia (ComplexReceiver receiver, int startKey) {
+    if (hasMedia()) {
+      description.requestMedia(receiver, startKey, Integer.MAX_VALUE);
+    } else {
+      receiver.clearReceiversWithHigherKey(startKey);
+    }
   }
 
   private int contentY;
@@ -661,7 +684,8 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
         .lineWidthProvider(provider)
         .textFlags(Text.FLAG_ALL_BOLD | (Lang.rtl() ? Text.FLAG_ALIGN_RIGHT : 0))
         .clipTextArea()
-        .entities(new TextEntity[]{TextEntity.valueOf(parent.tdlib, actualSiteName, new TdApi.TextEntity(0, actualSiteName.length(), new TdApi.TextEntityTypeTextUrl(url)), parent.openParameters())})
+        .viewProvider(viewProvider)
+        .entities(new TextEntity[]{TextEntity.valueOf(parent.tdlib, actualSiteName, new TdApi.TextEntity(0, actualSiteName.length(), new TdApi.TextEntityTypeTextUrl(url)), parent.openParameters())}, null)
         .build();
       textHeight += siteName.getHeight();
     } else {
@@ -685,11 +709,15 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
       title = new Text.Builder(webPage.title, maxWidth, TGMessage.getTextStyleProvider(), parent.getTextColorSet())
         .maxLineCount(TD.hasInstantView(webPage) ? -1 : MAX_TITLE_LINES).lineWidthProvider(provider)
         .textFlags(Text.FLAG_ALL_BOLD | (Lang.rtl() ? Text.FLAG_ALIGN_RIGHT : 0))
+        .viewProvider(viewProvider)
         .clipTextArea()
         .build();
       textHeight += title.getHeight();
     } else {
       title = null;
+    }
+    if (description != null) {
+      description.performDestroy();
     }
     if (!Td.isEmpty(webPage.description)) {
       if (textHeight > 0)
@@ -708,8 +736,9 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
       description = new Text.Builder(webPage.description.text, maxWidth, TGMessage.getTextStyleProvider(), parent.getTextColorSet())
         .maxLineCount(MAX_DESCRIPTION_LINES)
         .lineWidthProvider(provider)
+        .viewProvider(viewProvider)
         .textFlags(Lang.rtl() ? Text.FLAG_ALIGN_RIGHT : 0)
-        .entities(TextEntity.valueOf(parent.tdlib, webPage.description, parent.openParameters()))
+        .entities(TextEntity.valueOf(parent.tdlib, webPage.description, parent.openParameters()), parent::invalidateTextMediaReceiver)
         .build();
       textHeight += description.getHeight();
     } else {
@@ -790,14 +819,14 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     int maxHeight = parent.getSmallestMaxContentHeight();
     int contentWidth, contentHeight;
 
-    if (webPage.sticker != null && (Math.max(webPage.sticker.width, webPage.sticker.height) <= STICKER_SIZE_LIMIT || Td.isAnimated(webPage.sticker.type))) {
+    if (webPage.sticker != null && (Math.max(webPage.sticker.width, webPage.sticker.height) <= STICKER_SIZE_LIMIT || Td.isAnimated(webPage.sticker.format))) {
       float max = Screen.dp(TGMessageSticker.MAX_STICKER_SIZE);
       float ratio = Math.min(max / (float) webPage.sticker.width, max / (float) webPage.sticker.height);
 
       contentWidth = (int) (webPage.sticker.width * ratio);
       contentHeight = (int) (webPage.sticker.height * ratio);
 
-      if (Td.isAnimated(webPage.sticker.type)) {
+      if (Td.isAnimated(webPage.sticker.format)) {
         this.simpleGifFile = new GifFile(parent.tdlib(), webPage.sticker);
         this.simpleGifFile.setScaleType(ImageFile.FIT_CENTER);
       } else {
@@ -1094,7 +1123,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     @Override
     public void onClickAt (View view, float x, float y) {
       if (webPage.sticker != null && webPage.sticker.setId != 0) {
-        parent.tdlib().ui().showStickerSet(parent.controller(), webPage.sticker.setId);
+        parent.tdlib().ui().showStickerSet(parent.controller(), webPage.sticker.setId, null);
       }
     }
   });
@@ -1124,7 +1153,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
       (description != null && description.onTouchEvent(view, e, callback));
   }
 
-  private void drawHeader (Canvas c, int startX, int startY, int previewWidth, boolean rtl) {
+  private void drawHeader (Canvas c, int startX, int startY, int previewWidth, boolean rtl, ComplexReceiver textMediaReceiver) {
     RectF rectF = Paints.getRectF();
     if (rtl) {
       rectF.set(startX + previewWidth - lineWidth, startY, startX + previewWidth, startY + height);
@@ -1148,16 +1177,16 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
     if (description != null) {
       if (textY > 0)
         textY += Screen.dp(TEXT_PADDING);
-      description.draw(c, rtl ? startX : startX + paddingLeft, rtl ? startX + previewWidth - paddingLeft : startX + previewWidth, 0, startY + textY);
+      description.draw(c, rtl ? startX : startX + paddingLeft, rtl ? startX + previewWidth - paddingLeft : startX + previewWidth, 0, startY + textY, null, 1f, textMediaReceiver);
       textY += description.getHeight();
     }
   }
 
-  public void draw (MessageView view, Canvas c, int startX, int startY, Receiver preview, Receiver receiver, float alpha) {
+  public void draw (MessageView view, Canvas c, int startX, int startY, Receiver preview, Receiver receiver, float alpha, ComplexReceiver textMediaReceiver) {
     int previewWidth = getWidth();
     boolean rtl = Lang.rtl();
     if (type != TYPE_TELEGRAM_AD) {
-      drawHeader(c, startX, startY, previewWidth, rtl);
+      drawHeader(c, startX, startY, previewWidth, rtl, textMediaReceiver);
     }
     if (component != null) {
       component.draw(view, c, rtl ? startX : startX + paddingLeft, startY + componentY, preview, receiver, parent != null ? parent.getContentBackgroundColor() : 0, parent != null ? parent.getContentReplaceColor() : 0, alpha, 0f);

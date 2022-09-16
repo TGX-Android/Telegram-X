@@ -69,7 +69,7 @@ public class TGStickerObj {
       this.fullAnimation = null;
       this.premiumFullAnimation = null;
       this.stickerType = stickerType;
-      if (sticker != null && (sticker.thumbnail != null || !Td.isAnimated(sticker.type))) {
+      if (sticker != null && (sticker.thumbnail != null || !Td.isAnimated(sticker.format))) {
         this.preview = TD.toImageFile(tdlib, sticker.thumbnail);
         if (this.preview != null) {
           this.preview.setSize(Screen.dp(82f));
@@ -89,7 +89,7 @@ public class TGStickerObj {
   }
 
   public boolean isPremium () {
-    return sticker != null && sticker.premiumAnimation != null;
+    return sticker != null && sticker.isPremium;
   }
 
   public boolean needViewPackButton () {
@@ -145,11 +145,11 @@ public class TGStickerObj {
   }
 
   public boolean isAnimated () {
-    return sticker != null && Td.isAnimated(sticker.type);
+    return sticker != null && Td.isAnimated(sticker.format);
   }
 
   public ImageFile getFullImage () {
-    if (fullImage == null && sticker != null && !Td.isAnimated(sticker.type) && tdlib != null) {
+    if (fullImage == null && sticker != null && !Td.isAnimated(sticker.format) && tdlib != null) {
       this.fullImage = new ImageFile(tdlib, sticker.sticker);
       this.fullImage.setScaleType(ImageFile.FIT_CENTER);
       this.fullImage.setSize(Screen.dp(190f));
@@ -159,17 +159,17 @@ public class TGStickerObj {
   }
 
   public GifFile getPreviewAnimation () {
-    if (previewAnimation == null && sticker != null && Td.isAnimated(sticker.type) && tdlib != null) {
+    if (previewAnimation == null && sticker != null && Td.isAnimated(sticker.format) && tdlib != null) {
       this.previewAnimation = new GifFile(tdlib, sticker);
       this.previewAnimation.setPlayOnce();
       this.previewAnimation.setScaleType(ImageFile.FIT_CENTER);
-      this.previewAnimation.setOptimize(true);
+      this.previewAnimation.setOptimizationMode(GifFile.OptimizationMode.STICKER_PREVIEW);
     }
     return previewAnimation;
   }
 
   public GifFile getFullAnimation () {
-    if (fullAnimation == null && sticker != null && Td.isAnimated(sticker.type) && tdlib != null) {
+    if (fullAnimation == null && sticker != null && Td.isAnimated(sticker.format) && tdlib != null) {
       this.fullAnimation = new GifFile(tdlib, sticker);
       this.fullAnimation.setScaleType(ImageFile.FIT_CENTER);
       this.fullAnimation.setUnique(true);
@@ -178,8 +178,8 @@ public class TGStickerObj {
   }
 
   public GifFile getPremiumFullAnimation () {
-    if (premiumFullAnimation == null && sticker != null && Td.isAnimated(sticker.type) && tdlib != null && sticker.premiumAnimation != null) {
-      this.premiumFullAnimation = new GifFile(tdlib, sticker.premiumAnimation, sticker.type);
+    if (premiumFullAnimation == null && sticker != null && Td.isAnimated(sticker.format) && tdlib != null && sticker.premiumAnimation != null) {
+      this.premiumFullAnimation = new GifFile(tdlib, sticker.premiumAnimation, sticker.format);
       this.premiumFullAnimation.setScaleType(ImageFile.FIT_CENTER);
       this.premiumFullAnimation.setUnique(true);
     }

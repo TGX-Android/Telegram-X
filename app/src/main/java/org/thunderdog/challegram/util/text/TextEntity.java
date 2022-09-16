@@ -16,6 +16,7 @@ package org.thunderdog.challegram.util.text;
 
 import android.text.Spanned;
 import android.text.TextPaint;
+import android.text.style.CharacterStyle;
 import android.text.style.ClickableSpan;
 import android.view.View;
 
@@ -25,6 +26,7 @@ import androidx.annotation.Nullable;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -43,10 +45,13 @@ public abstract class TextEntity {
 
   protected final @Nullable Tdlib tdlib;
   protected final @Nullable TdlibUi.UrlOpenParameters openParameters;
-  protected final boolean needFakeBold;
-  protected final int start, end;
+  protected boolean needFakeBold;
+  protected int start, end;
 
   private Object tag;
+
+  @Nullable
+  protected TextColorSet customColorSet;
 
   public TextEntity (@Nullable Tdlib tdlib, int start, int end, boolean needFakeBold, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     this.tdlib = tdlib;
@@ -56,12 +61,27 @@ public abstract class TextEntity {
     this.end = end;
   }
 
+  public void setStartEnd (int start, int end) {
+    this.start = start;
+    this.end = end;
+  }
+
+  public void offset (int by) {
+    this.start += by;
+    this.end += by;
+  }
+
   public Object getTag () {
     return tag;
   }
 
   public TextEntity setTag (Object tag) {
     this.tag = tag;
+    return this;
+  }
+
+  public TextEntity setCustomColorSet (TextColorSet customColorSet) {
+    this.customColorSet = customColorSet;
     return this;
   }
 
@@ -90,6 +110,8 @@ public abstract class TextEntity {
 
   public abstract int getType ();
 
+  public abstract boolean hasMedia ();
+
   public final int getStart () {
     return start;
   }
@@ -100,18 +122,27 @@ public abstract class TextEntity {
   public abstract TdApi.TextEntity getSpoiler ();
   public abstract boolean isBold ();
   public abstract boolean isIcon ();
-  public TextIcon getIcon () { return null; }
+  public TdApi.RichTextIcon getIcon () { return null; }
   public abstract boolean isItalic ();
   public abstract boolean isUnderline ();
   public abstract boolean isStrikethrough ();
   public abstract boolean hasAnchor (String anchor);
   public abstract boolean isFullWidth ();
+  public abstract boolean isCustomEmoji ();
+  public abstract long getCustomEmojiId ();
+  public abstract TextEntity createCopy ();
+
+  // TODO: TextEntityCustom & TextEntityMessage to make things simpler
+  public abstract TextEntity setOnClickListener (ClickableSpan onClickListener);
+  public abstract ClickableSpan getOnClickListener ();
+  public abstract TextEntity makeBold (boolean needFakeBold);
 
   final TextPaint getTextPaint (TextStyleProvider textStyleProvider, boolean forceBold) {
     // different typefaces
     boolean isBold = forceBold || isBold();
     boolean isItalic = isItalic();
     boolean isFixed = isMonospace();
+    boolean isExtraBold = isBold && forceBold;
 
     // different storages
     boolean isUnderline = isUnderline();
@@ -119,6 +150,9 @@ public abstract class TextEntity {
 
     Fonts.TextPaintStorage storage = textStyleProvider.getTextPaintStorage();
 
+    /*if (isExtraBold) {
+      storage = storage.getExtraBoldStorage();
+    }*/
     if (isFixed) {
       storage = storage.getMonospaceStorage();
     }
@@ -135,7 +169,7 @@ public abstract class TextEntity {
     } else if (isItalic) {
       textPaint = storage.getItalicPaint();
     } else if (isBold) {
-      textPaint = needFakeBold ? storage.getFakeBoldPaint() : storage.getBoldPaint();
+      textPaint = /*isExtraBold || */needFakeBold ? storage.getFakeBoldPaint() : storage.getBoldPaint();
     } else {
       textPaint = storage.getRegularPaint();
     }
@@ -174,6 +208,14 @@ public abstract class TextEntity {
     return valueOf(tdlib, text.text, text.entities, openParameters);
   }
 
+  public static TextEntity valueOf (String text, Highlight.Part highlightPart, TextColorSet highlightedColorSet) {
+    return new TextEntityCustom(
+      null, null,
+      text, highlightPart.start, highlightPart.end,
+      0, null
+    ).setCustomColorSet(highlightedColorSet);
+  }
+
   public static TextEntity[] valueOf (ViewController<?> context, Tdlib tdlib, CharSequence text, TdlibUi.UrlOpenParameters openParameters) {
     if (StringUtils.isEmpty(text)) {
       return null;
@@ -181,20 +223,43 @@ public abstract class TextEntity {
     if (!(text instanceof Spanned)) {
       return null;
     }
-    ClickableSpan[] spans = ((Spanned) text).getSpans(0, text.length(), ClickableSpan.class);
+    CharacterStyle[] spans = ((Spanned) text).getSpans(0, text.length(), CharacterStyle.class);
     if (spans == null || spans.length == 0) {
       return null;
     }
-    TextEntity[] entities = new TextEntity[spans.length];
+    List<TextEntity> entities = new ArrayList<>();
     String str = text.toString();
-    int i = 0;
-    for (ClickableSpan span : spans) {
+    for (CharacterStyle span : spans) {
       int startIndex = ((Spanned) text).getSpanStart(span);
       int endIndex = ((Spanned) text).getSpanEnd(span);
-      entities[i] = new TextEntityCustom(context, tdlib, str, startIndex, endIndex, TextEntityCustom.FLAG_CLICKABLE, openParameters).setOnClickListener(span);
-      i++;
+      if (span instanceof ClickableSpan) {
+        entities.add(new TextEntityCustom(context, tdlib, str, startIndex, endIndex, 0, openParameters)
+          .setOnClickListener((ClickableSpan) span)
+        );
+      } else {
+        TdApi.TextEntityType[] type = TD.toEntityType(span);
+        if (type != null && type.length > 0) {
+          List<TdApi.TextEntity> parentEntities;
+          if (type.length > 1) {
+            parentEntities = new ArrayList<>();
+            for (int i = 0; i < type.length - 1; i++) {
+              parentEntities.add(new TdApi.TextEntity(startIndex, endIndex - startIndex, type[i]));
+            }
+          } else {
+            parentEntities = null;
+          }
+          entities.add(new TextEntityMessage(
+            tdlib,
+            str,
+            startIndex, endIndex,
+            new TdApi.TextEntity(startIndex, endIndex - startIndex, type[type.length - 1]),
+            parentEntities,
+            openParameters
+          ));
+        }
+      }
     }
-    return entities;
+    return entities.isEmpty() ? null : entities.toArray(new TextEntity[0]);
   }
 
   private static int valueOf (Tdlib tdlib, String in, TdApi.TextEntity[] entities, TdlibUi.UrlOpenParameters openParameters, List<TdApi.TextEntity> parents, final int rootIndex, List<TextEntity> out) {
@@ -246,11 +311,33 @@ public abstract class TextEntity {
     return new TextEntityMessage(tdlib, in, entity, openParameters);
   }
 
+  public static TextEntity[] toEntities (CharSequence text) {
+    if (text instanceof Spanned) {
+      TextEntity[] entities = ((Spanned) text).getSpans(0, text.length(), TextEntity.class);
+      return entities != null && entities.length > 0 ? entities : null;
+    }
+    return null;
+  }
+
   public static final int COMPARE_MODE_NORMAL = 0;
   public static final int COMPARE_MODE_CLICK_HIGHLIGHT = 1;
   public static final int COMPARE_MODE_SPOILER = 2;
 
   public static boolean equals (TextEntity a, TextEntity b, int compareMode, String originalText) {
-    return (a == null && b == null) || (!(a == null || b == null) && a.getType() == b.getType() && a.equals(b, compareMode, originalText));
+    if (a == null && b == null)
+      return true;
+    if (a == null || b == null)
+      return false;
+    if (compareMode == COMPARE_MODE_CLICK_HIGHLIGHT) {
+      // FIXME: merge TextEntityCustom & TextEntityMessage into one class instead for clarity purposes.
+      ClickableSpan onClickListener = a.getOnClickListener();
+      if (onClickListener != null && onClickListener == b.getOnClickListener()) {
+        return true;
+      }
+    }
+    if (a.getType() == b.getType()) {
+      return a.equals(b, compareMode, originalText);
+    }
+    return false;
   }
 }

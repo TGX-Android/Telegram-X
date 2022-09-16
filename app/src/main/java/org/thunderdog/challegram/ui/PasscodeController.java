@@ -69,7 +69,7 @@ import org.thunderdog.challegram.util.PasscodeBuilder;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.ToggleDelegate;
 import org.thunderdog.challegram.util.Unlockable;
-import org.thunderdog.challegram.v.EditTextBase;
+import org.thunderdog.challegram.v.EditText;
 import org.thunderdog.challegram.widget.SwirlView;
 
 import me.vkryl.android.AnimatorUtils;
@@ -296,11 +296,11 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
   }
 
   private String confirmPassword;
-  private EditTextBase passwordView;
+  private EditText passwordView;
 
   private void showPasswordWrap () {
     if (passwordView == null) {
-      passwordView = (EditTextBase) Views.inflate(context(), R.layout.input_password, contentView);
+      passwordView = (EditText) Views.inflate(context(), R.layout.input_password, contentView);
       passwordView.setTypeface(Fonts.getRobotoRegular());
       passwordView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16f);
       passwordView.setUseIncognitoKeyboard(EditorInfo.IME_FLAG_NO_EXTRACT_UI);

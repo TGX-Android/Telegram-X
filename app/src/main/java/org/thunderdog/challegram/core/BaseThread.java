@@ -105,23 +105,13 @@ public class BaseThread extends Thread {
   @Override
   public void run () {
     Looper.prepare();
-    handler = new BaseThreadHandler(this);
+    handler = new Handler(Looper.myLooper(), message -> {
+      process(message);
+      return true;
+    });
     customHandler = createCustomHandler();
     syncLatch.countDown();
     Looper.loop();
-  }
-
-  private static class BaseThreadHandler extends Handler {
-    private BaseThread thread;
-
-    public BaseThreadHandler (BaseThread thread) {
-      this.thread = thread;
-    }
-
-    @Override
-    public void handleMessage (@NonNull Message msg) {
-      thread.process(msg);
-    }
   }
 
   /* Should be overridden */

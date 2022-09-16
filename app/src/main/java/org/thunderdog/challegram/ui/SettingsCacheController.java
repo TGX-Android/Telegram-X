@@ -1161,7 +1161,7 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
   }
 
   @Override
-  public void onEmojiPartLoaded () {
+  public void onEmojiUpdated (boolean isPackSwitch) {
     if (headerCell != null) {
       headerCell.invalidate();
     }

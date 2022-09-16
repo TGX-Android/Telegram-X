@@ -25,13 +25,13 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.v.EditTextBase;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.ColorUtils;
+import me.vkryl.core.lambda.Destroyable;
 
-public class MaterialEditText extends EditTextBase implements FactorAnimator.Target {
+public class MaterialEditText extends EmojiEditText implements FactorAnimator.Target, Destroyable {
   // private static final ColorChanger goodChanger = new ColorChanger(0, 0xff18A81F);
   // private static final ColorChanger errorChanger = new ColorChanger(0xff63BAF7, 0xffED5454);
   // private static final ColorChanger globalChanger = new ColorChanger(0xffe6e6e6, 0xff63baf7);

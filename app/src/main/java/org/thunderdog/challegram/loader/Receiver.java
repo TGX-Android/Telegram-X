@@ -33,6 +33,8 @@ public interface Receiver extends TooltipOverlayView.LocationProvider {
   int getTargetWidth ();
   int getTargetHeight ();
 
+  void setUpdateListener (ReceiverUpdateListener listener);
+
   int getLeft ();
   int getTop ();
   int getRight ();
@@ -73,7 +75,7 @@ public interface Receiver extends TooltipOverlayView.LocationProvider {
       final boolean translate = left != 0 || top != 0;
       final int restoreToCount;
       if (translate) {
-        restoreToCount = c.save();
+        restoreToCount = Views.save(c);
         c.translate(left, top);
       } else {
         restoreToCount = -1;

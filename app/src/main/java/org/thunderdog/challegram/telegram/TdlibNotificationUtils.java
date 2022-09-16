@@ -250,6 +250,7 @@ public class TdlibNotificationUtils {
     }
     try {
       TDLib.Tag.notifications("FirebaseApp is initializing...");
+      // TODO: support alternative push platforms
       if (FirebaseApp.initializeApp(UI.getAppContext()) != null) {
         TDLib.Tag.notifications("FirebaseApp initialization finished successfully");
         initialized = true;
@@ -274,24 +275,50 @@ public class TdlibNotificationUtils {
     return e.getClass().getSimpleName();
   }
 
-  public static void getDeviceToken (RegisterCallback callback) {
-    // TODO: support alternative push platforms
+  public static void getDeviceToken (int retryCount, RegisterCallback callback) {
+    if (retryCount > 0) {
+      getDeviceTokenImpl(retryCount, new RegisterCallback() {
+        @Override
+        public void onSuccess (@NonNull TdApi.DeviceTokenFirebaseCloudMessaging token) {
+          callback.onSuccess(token);
+        }
+
+        @Override
+        public void onError (@NonNull String errorKey, @Nullable Throwable e) {
+          UI.post(() ->
+            getDeviceToken(retryCount - 1, callback),
+            3500
+          );
+        }
+      });
+    } else {
+      getDeviceTokenImpl(0, callback);
+    }
+  }
+
+  private static void getDeviceTokenImpl (int retryCount, RegisterCallback callback) {
     if (initialize()) {
       try {
-        TDLib.Tag.notifications("FirebaseMessaging: requesting token...");
+        TDLib.Tag.notifications("FirebaseMessaging: requesting token... retryCount: %d", retryCount);
+        // TODO: support alternative push platforms
         FirebaseMessaging.getInstance().getToken().addOnSuccessListener(token -> {
           TDLib.Tag.notifications("FirebaseMessaging: successfully fetched token: \"%s\"", token);
           callback.onSuccess(new TdApi.DeviceTokenFirebaseCloudMessaging(token, true));
         }).addOnFailureListener(e -> {
-          TDLib.Tag.notifications("FirebaseMessaging: token fetch failed with remote error: %s", Log.toString(e));
-          callback.onError(extractFirebaseErrorName(e), e);
+          String errorName = extractFirebaseErrorName(e);
+          TDLib.Tag.notifications(
+            "FirebaseMessaging: token fetch failed with remote error: %s, retryCount: %d",
+            !StringUtils.isEmpty(errorName) ? errorName : Log.toString(e),
+            retryCount
+          );
+          callback.onError(errorName, e);
         });
       } catch (Throwable e) {
-        TDLib.Tag.notifications("FirebaseMessaging: token fetch failed with error: %s", Log.toString(e));
+        TDLib.Tag.notifications("FirebaseMessaging: token fetch failed with error: %s, retryCount: %d", Log.toString(e), retryCount);
         callback.onError("FIREBASE_REQUEST_ERROR", e);
       }
     } else {
-      TDLib.Tag.notifications("FirebaseMessaging: token fetch failed because FirebaseApp was not initialized");
+      TDLib.Tag.notifications("FirebaseMessaging: token fetch failed because FirebaseApp was not initialized, retryCount: %d", retryCount);
       callback.onError("FIREBASE_INITIALIZATION_ERROR", new NotificationInitializationFailedError());
     }
   }

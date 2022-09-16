@@ -29,25 +29,22 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.emoji.EmojiInfo;
 import org.thunderdog.challegram.loader.ComplexReceiver;
-import org.thunderdog.challegram.loader.DoubleImageReceiver;
-import org.thunderdog.challegram.loader.ImageReceiver;
-import org.thunderdog.challegram.loader.Receiver;
-import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.tool.Views;
 
-import me.vkryl.core.ColorUtils;
 import me.vkryl.core.BitwiseUtils;
+import me.vkryl.core.ColorUtils;
 
 public class TextPart {
   private static final int FLAG_LINE_RTL = 1;
   private static final int FLAG_LINE_RTL_FAKE = 1 << 2;
   private static final int FLAG_ANIMATED_EMOJI = 1 << 3;
 
-  private Text source;
+  private final Text source;
   private String line;
   private @Nullable TextEntity entity;
 
@@ -69,6 +66,8 @@ public class TextPart {
   }
 
   public TooltipOverlayView.TooltipBuilder newTooltipBuilder (View view) {
+    if (source.isDestroyed())
+      throw new IllegalStateException();
     return UI.getContext(view.getContext()).tooltipManager()
       .builder(view, source.getViewProvider())
       .locate((targetView, outRect) -> source.locatePart(outRect, this, TextEntity.COMPARE_MODE_NORMAL));
@@ -243,30 +242,47 @@ public class TextPart {
     return getSpoiler() != null ? entity : null;
   }
 
+  private @Nullable TextMedia media;
+  private int displayMediaKeyOffset = -1;
   private EmojiInfo emojiInfo;
 
-  public void setEmoji (EmojiInfo emoji) {
+  public void setEmoji (@Nullable EmojiInfo emoji) {
     this.emojiInfo = emoji;
   }
 
-  private int iconIndex;
-  private TextIcon icon;
-
-  public void setIcon (int iconIndex, TextIcon icon) {
-    this.icon = icon;
-    this.iconIndex = iconIndex;
+  @Nullable
+  TextMedia getMedia () {
+    return media;
   }
 
-  public boolean isEmoji () {
+  public boolean isStaticElement () { // Media cannot be trimmed
+    return isRecognizedEmoji() || isCustomEmoji() || hasMedia();
+  }
+
+  public boolean isCustomEmoji () {
+    return entity != null && entity.isCustomEmoji();
+  }
+
+  public boolean requiresTopLayer () {
+    return media != null && media.isAnimatedCustomEmoji();
+  }
+
+  public void attachToMedia (@NonNull TextMedia media) {
+    media.attachedToParts.add(this);
+    this.media = media;
+  }
+
+  public boolean isRecognizedEmoji () {
     return emojiInfo != null;
   }
 
-  public boolean isIcon () {
-    return icon != null;
+  public boolean isBuiltInEmoji () {
+    return isRecognizedEmoji() && !isCustomEmoji();
   }
 
-  void requestIcon (ComplexReceiver receiver, int iconKeyOffset) {
-    icon.requestFiles(iconKeyOffset + iconIndex, receiver);
+  public boolean hasMedia () {
+    // true for both custom emoji & RichTextIcon
+    return media != null;
   }
 
   public int makeX (int startX, int endX, int endXBottomPadding) {
@@ -301,7 +317,12 @@ public class TextPart {
   }
 
   public boolean wouldMergeWithNextPart (TextPart part) {
-    return part != null && part != this && emojiInfo == null && part.emojiInfo == null && icon == null && part.icon == null && trimmedLine == null && part.trimmedLine == null && this.y == part.y && line == part.line && end == part.start && isSameEntity(part.entity);
+    return part != null && part != this && emojiInfo == null && part.emojiInfo == null && media == null && part.media == null && trimmedLine == null && part.trimmedLine == null && this.y == part.y && line == part.line && end == part.start && isSameEntity(part.entity) && requiresTopLayer() == part.requiresTopLayer();
+  }
+
+  @NonNull
+  Text getSource () {
+    return source;
   }
 
   private TextPaint getPaint (int partIndex, float alpha, @Nullable TextColorSet defaultTheme) {
@@ -314,69 +335,85 @@ public class TextPart {
   public void drawMerged (int partIndex, Canvas c, int end, int startX, int endX, int endXBottomPadding, int startY, float alpha, @Nullable TextColorSet colorProvider) {
     int y = startY + this.y;
     int x = makeX(startX, endX, endXBottomPadding);
-    if (icon != null)
-      throw new IllegalStateException("icon != null");
-    if (emojiInfo != null)
-      throw new IllegalStateException("emojiInfo != null");
+    if (isStaticElement())
+      throw new IllegalStateException("static elements can't be merged");
     if (trimmedLine != null)
       throw new IllegalStateException("trimmedLine != null");
     TextPaint paint = getPaint(partIndex, alpha, colorProvider);
     c.drawText(line, start, end, x, y + source.getAscent() + paint.baselineShift, paint);
   }
 
-  public void draw (int partIndex, Canvas c, int startX, int endX, int endXBottomPadding, int startY, float alpha, @Nullable TextColorSet colorProvider, @Nullable ComplexReceiver receiver, int iconKeyOffset) {
-    int y = startY + this.y;
-    int x = makeX(startX, endX, endXBottomPadding);
-    TextPaint textPaint = getPaint(partIndex, alpha, colorProvider);
-    if (icon != null) {
-      y += textPaint.baselineShift;
-      if (receiver != null) {
-        Receiver content;
-        int key = iconKeyOffset + iconIndex;
-        if (icon.isImage()) {
-          ImageReceiver image = receiver.getImageReceiver(key);
-          image.setBounds(x, y, (int) (x + width), y + height);
-          image.setPaintAlpha(image.getPaintAlpha() * alpha);
-          content = image;
-        } else if (icon.isGif()) {
-          GifReceiver gif = receiver.getGifReceiver(key);
-          gif.setBounds(x, y, (int) (x + width), y + height);
-          gif.setAlpha(alpha);
-          content = gif;
+  private void drawError (Canvas c, float cx, float cy, float radius, float alpha, int color) {
+    c.drawCircle(cx, cy, radius, Paints.fillingPaint(ColorUtils.alphaColor(alpha * .45f, color)));
+  }
+
+  private void drawEmoji (Canvas c, final int x, final int y, TextPaint textPaint, float alpha) {
+    Rect rect = Paints.getRect();
+    int reduce = Emoji.instance().getReduceSize();
+    final int emojiY = y + textPaint.baselineShift - Screen.dp(1.5f);
+    rect.set(x + reduce / 2, emojiY + reduce / 2, x + (int) width - reduce / 2 - reduce % 2, emojiY + (int) width - reduce / 2 - reduce % 2);
+    Emoji.instance().draw(c, emojiInfo, rect, (int) (alpha * textPaint.getAlpha()));
+  }
+
+  public void draw (int partIndex, Canvas c, int startX, int endX, int endXBottomPadding, int startY, float alpha, @Nullable TextColorSet colorProvider, @Nullable ComplexReceiver receiver) {
+    final int y = startY + this.y;
+    final int x = makeX(startX, endX, endXBottomPadding);
+    final TextPaint textPaint = getPaint(partIndex, alpha, colorProvider);
+    final float textAlpha = textPaint.getAlpha() / 255f;
+    if (media != null) {
+      if (media.isNotFoundCustomEmoji()) {
+        if (emojiInfo != null) {
+          drawEmoji(c, x, y, textPaint, alpha);
         } else {
-          content = null;
+          drawError(c, x + height / 2f, y + height / 2f, height / 2f, alpha, 0xffff0000);
         }
-        if (content == null || content.needPlaceholder()) {
-          DoubleImageReceiver preview = receiver.getPreviewReceiver(key);
-          preview.setBounds(x, y, (int) (x + width), y + height);
-          preview.setPaintAlpha(alpha);
-          preview.draw(c);
-          preview.restorePaintAlpha();
-        }
-        if (content != null) {
-          content.draw(c);
-          if (icon.isImage()) {
-            content.restorePaintAlpha();
-          } else {
-            // ((GifReceiver) content).setAlpha(1f);
-          }
-        }
-      } else {
-        c.drawRect(x, y, x + width, y + height, Paints.fillingPaint(ColorUtils.color((int) (255f * alpha), 0xff0000)));
+        return;
       }
-    } else if (emojiInfo != null) {
-      Rect rect = Paints.getRect();
-      int reduce = Emoji.instance().getReduceSize();
-      y -= Screen.dp(1.5f);
-      y += textPaint.baselineShift;
-      rect.set(x + reduce / 2, y + reduce / 2, x + (int) width - reduce / 2 - reduce % 2, y + (int) width - reduce / 2 - reduce % 2);
-      Emoji.instance().draw(c, emojiInfo, rect, textPaint.getAlpha());
-    } else {
-      y += source.getAscent();
-      if (trimmedLine != null) {
-        c.drawText(trimmedLine, x, y + textPaint.baselineShift, textPaint);
+      final int displayMediaKey = media.getDisplayMediaKey();
+      final int iconY = y + textPaint.baselineShift - (isCustomEmoji() ? Screen.dp(1.5f) : 0);
+      final int height = this.height == -1 ? (int) width : this.height;
+      if (receiver != null && displayMediaKey != -1) {
+        final boolean needTranslate = media.attachedToParts.size() > 1;
+        final boolean isFirst = needTranslate && media.attachedToParts.get(0) == this;
+        final boolean isLast = needTranslate && media.attachedToParts.get(media.attachedToParts.size() - 1) == this;
+        int left, top, right, bottom, restoreToCount;
+        if (needTranslate) {
+          left = 0; top = 0;
+          right = (int) width;
+          bottom = height;
+          restoreToCount = Views.save(c);
+          c.translate(x, iconY);
+          if (isFirst && media.isAnimated()) {
+            receiver.getGifReceiver(displayMediaKey).beginDrawBatch();
+          }
+        } else {
+          left = x;
+          top = iconY;
+          right = (int) (x + width);
+          bottom = iconY + height;
+          restoreToCount = -1;
+        }
+        media.draw(c, receiver, left, top, right, bottom, alpha, displayMediaKey);
+        if (needTranslate) {
+          if (isLast && media.isAnimated()) {
+            receiver.getGifReceiver(displayMediaKey).finishDrawBatch();
+          }
+          Views.restore(c, restoreToCount);
+        }
       } else {
-        c.drawText(line, start, end, x, y + textPaint.baselineShift, textPaint);
+        drawError(c, x + width / 2f, iconY + height / 2f, width / 2f, textAlpha, 0xffff0000);
+        if (emojiInfo != null) {
+          drawEmoji(c, x, y, textPaint, .45f);
+        }
+      }
+    } else if (isRecognizedEmoji()) {
+      drawEmoji(c, x, y, textPaint, alpha);
+    } else {
+      final int textY = y + source.getAscent() + textPaint.baselineShift;
+      if (trimmedLine != null) {
+        c.drawText(trimmedLine, x, textY, textPaint);
+      } else {
+        c.drawText(line, start, end, x, textY, textPaint);
       }
     }
   }

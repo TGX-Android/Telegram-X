@@ -70,6 +70,7 @@ public abstract class TelegramViewController<T> extends ViewController<T> {
   private CustomRecyclerView chatSearchView;
   private SettingsAdapter chatSearchAdapter;
   private SearchManager chatSearchManager;
+  private boolean chatSearchDisallowScreenshots;
 
   /**
    * @return true, if event is consumed. False, if chat should be handled with default action (open)
@@ -143,21 +144,44 @@ public abstract class TelegramViewController<T> extends ViewController<T> {
     Views.setScrollBarPosition(chatSearchView);
     chatSearchView.addOnScrollListener(new RecyclerView.OnScrollListener() {
       @Override
-      public void onScrollStateChanged (RecyclerView recyclerView, int newState) {
+      public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {
         if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
           hideSoftwareKeyboard();
         }
       }
 
+      private int firstVisiblePosition = -1, lastVisiblePosition = -1;
+
       @Override
-      public void onScrolled (RecyclerView recyclerView, int dx, int dy) {
+      public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
         if (dy != 0) {
           /*
            * (((LinearLayoutManager) recyclerView.getLayoutManager()).findFirstVisibleItemPosition() > 0) || ((LinearLayoutManager) recyclerView.getLayoutManager()).findLastVisibleItemPosition() < recyclerView.getAdapter().getItemCount() - 1
            * */
           hideSoftwareKeyboard();
         }
+        int first = ((LinearLayoutManager) recyclerView.getLayoutManager()).findFirstVisibleItemPosition();
         int last = ((LinearLayoutManager) recyclerView.getLayoutManager()).findLastVisibleItemPosition();
+        if (this.firstVisiblePosition != first || this.lastVisiblePosition != last) {
+          this.firstVisiblePosition = first;
+          this.lastVisiblePosition = last;
+
+          boolean shouldDisallowScreenshots = false;
+          for (int i = first; i <= last; i++) {
+            ListItem item = chatSearchAdapter.getItem(i);
+            if (item != null && item.getData() instanceof TGFoundMessage) {
+              TdApi.Message message = ((TGFoundMessage) item.getData()).getMessage();
+              if (!message.canBeSaved) {
+                shouldDisallowScreenshots = true;
+                break;
+              }
+            }
+          }
+          if (chatSearchDisallowScreenshots != shouldDisallowScreenshots) {
+            chatSearchDisallowScreenshots = shouldDisallowScreenshots;
+            context().checkDisallowScreenshots();
+          }
+        }
         if (last + 5 >= chatSearchAdapter.getItems().size()) {
           chatSearchManager.loadMoreMessages();
         }
@@ -169,6 +193,8 @@ public abstract class TelegramViewController<T> extends ViewController<T> {
     if (parent != null) {
       chatSearchView.setAlpha(0f);
       chatSearchView.setScrollDisabled(true);
+    } else {
+      isSearchContentVisible = true;
     }
     chatSearchView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
@@ -366,14 +392,14 @@ public abstract class TelegramViewController<T> extends ViewController<T> {
       }
     }, this) {
       @Override
-      public void onEmojiPartLoaded () {
+      public void onEmojiUpdated (boolean isPackSwitch) {
         for (RecyclerView parentView : parentViews) {
           LinearLayoutManager manager = (LinearLayoutManager) parentView.getLayoutManager();
           final int first = manager.findFirstVisibleItemPosition();
           final int last = manager.findLastVisibleItemPosition();
           for (int i = first; i <= last; i++) {
             View view = manager.findViewByPosition(i);
-            if (view != null && view instanceof BetterChatView && ((BetterChatView) view).hasComplexText()) {
+            if (view instanceof BetterChatView) {
               view.invalidate();
             }
           }
@@ -894,12 +920,17 @@ public abstract class TelegramViewController<T> extends ViewController<T> {
     }
   }
 
+  protected final boolean isSearchAntagonistHidden () {
+    return isSearchAntagonistHidden;
+  }
+
   private boolean isSearchContentVisible;
 
   private void setSearchContentVisible (boolean isVisible) {
     if (this.isSearchContentVisible != isVisible) {
       this.isSearchContentVisible = isVisible;
       chatSearchView.setScrollDisabled(!isVisible);
+      context().checkDisallowScreenshots();
     }
   }
 
@@ -1086,6 +1117,12 @@ public abstract class TelegramViewController<T> extends ViewController<T> {
   @Override
   public int getRootColorId () {
     return (getSearchTransformFactor() != 0f && chatSearchManager != null) ? R.id.theme_color_background : super.getRootColorId();
+  }
+
+  @Override
+  @CallSuper
+  public boolean shouldDisallowScreenshots () {
+    return isSearchContentVisible && chatSearchDisallowScreenshots;
   }
 
   protected final void invalidateChatSearchResults () {

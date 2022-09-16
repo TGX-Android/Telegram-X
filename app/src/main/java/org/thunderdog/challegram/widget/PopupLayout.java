@@ -54,6 +54,7 @@ import org.thunderdog.challegram.util.SensitiveContentContainer;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.lambda.Destroyable;
 
@@ -262,13 +263,29 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
     }
   }
 
-  public static void patchPopupWindow (PopupWindow popupWindow) {
-    View container = popupWindow.getContentView().getRootView();
-    Context context = popupWindow.getContentView().getContext();
-    WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+  private static boolean patchPopupWindow (View container, boolean needFullScreen, boolean disallowScreenshots) {
     WindowManager.LayoutParams p = (WindowManager.LayoutParams) container.getLayoutParams();
-    p.flags |= WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS;
-    wm.updateViewLayout(container, p);
+    int newFlags = p.flags;
+    newFlags = BitwiseUtils.setFlag(newFlags, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, needFullScreen);
+    newFlags = BitwiseUtils.setFlag(newFlags, WindowManager.LayoutParams.FLAG_SECURE, disallowScreenshots);
+    if (p.flags != newFlags) {
+      p.flags = newFlags;
+      return true;
+    }
+    return false;
+  }
+
+  public void checkWindowFlags () {
+    if (isHidden || isDismissed || windowAnchorView == null)
+      return;
+    if (window != null) {
+      View rootView = window.getContentView().getRootView();
+      if (patchPopupWindow(rootView, needFullScreen, shouldDisallowScreenshots())) {
+        final BaseActivity context = UI.getContext(getContext());
+        // WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);?
+        context.getWindowManager().updateViewLayout(rootView, rootView.getLayoutParams());
+      }
+    }
   }
 
   private void showSystemWindow (View anchorView) {
@@ -291,14 +308,16 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
         try {
           window.showAtLocation(windowAnchorView = anchorView, Gravity.NO_GRAVITY, 0, 0);
           window.setBackgroundDrawable(new RootDrawable(UI.getContext(getContext())));
-          if (needFullScreen) {
-            patchPopupWindow(window);
-          }
-          if (Build.VERSION.SDK_INT >= 28) {
-            View view = window.getContentView().getRootView();
-            WindowManager.LayoutParams lp = (WindowManager.LayoutParams) view.getLayoutParams();
+          View rootView = window.getContentView().getRootView();
+          boolean updated = patchPopupWindow(rootView, needFullScreen, shouldDisallowScreenshots());
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            WindowManager.LayoutParams lp = (WindowManager.LayoutParams) rootView.getLayoutParams();
             lp.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
-            context.getWindowManager().updateViewLayout(view, lp);
+            updated = true;
+          }
+          if (updated) {
+            // WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);?
+            context.getWindowManager().updateViewLayout(rootView, rootView.getLayoutParams());
           }
           return;
         } catch (Throwable t) {
