@@ -2410,25 +2410,21 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     }
     boolean disallowScreenshots = false;
     disallowScreenshots = (navigation.shouldDisallowScreenshots() || Passcode.instance().shouldDisallowScreenshots());
-    if (!disallowScreenshots) {
-      for (PopupLayout popupLayout : windows) {
-        boolean shouldDisallowScreenshots = popupLayout.shouldDisallowScreenshots();
-        popupLayout.checkWindowFlags();
-        if (shouldDisallowScreenshots) {
-          disallowScreenshots = true;
-        }
+    for (PopupLayout popupLayout : windows) {
+      boolean shouldDisallowScreenshots = popupLayout.shouldDisallowScreenshots();
+      popupLayout.checkWindowFlags();
+      if (shouldDisallowScreenshots) {
+        disallowScreenshots = true;
       }
     }
-    if (!disallowScreenshots) {
-      for (int i = 0; i < forgottenWindows.size(); i++) {
-        PopupLayout popupLayout = forgottenWindows.valueAt(i);
-        if (popupLayout == null)
-          continue;
-        boolean shouldDisallowScreenshots = popupLayout.shouldDisallowScreenshots();
-        popupLayout.checkWindowFlags();
-        if (shouldDisallowScreenshots) {
-          disallowScreenshots = true;
-        }
+    for (int i = 0; i < forgottenWindows.size(); i++) {
+      PopupLayout popupLayout = forgottenWindows.valueAt(i);
+      if (popupLayout == null)
+        continue;
+      boolean shouldDisallowScreenshots = popupLayout.shouldDisallowScreenshots();
+      popupLayout.checkWindowFlags();
+      if (shouldDisallowScreenshots) {
+        disallowScreenshots = true;
       }
     }
     setDisallowScreenshots(disallowScreenshots);
