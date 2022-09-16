@@ -2,7 +2,6 @@ package org.thunderdog.challegram.ui;
 
 import android.content.Context;
 import android.graphics.Rect;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewParent;
 import android.widget.ImageView;
@@ -33,6 +32,7 @@ import org.thunderdog.challegram.widget.ReactionCheckboxSettingsView;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 
@@ -173,14 +173,18 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
       items.add(new ListItem(ListItem.TYPE_REACTION_CHECKBOX, R.id.btn_enabledReactionsCheckboxGroup, 0, reaction.reaction.reaction, false));
     }
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-    if (!needPremiumRestriction()) {
-      items.add(new ListItem(ListItem.TYPE_HEADER, R.id.reactions_premium_locked, 0, R.string.PremiumReactions));
-    } else {
-      items.add(new ListItem(ListItem.TYPE_HEADER_WITH_ACTION, R.id.reactions_premium_locked, R.drawable.baseline_lock_16, R.string.PremiumReactions));
-    }
-    items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-    for (TGReaction reaction : tdlib.getOnlyPremiumReactions()) {
-      items.add(new ListItem(ListItem.TYPE_REACTION_CHECKBOX, R.id.btn_enabledReactionsCheckboxGroup, 0, reaction.reaction.reaction, false));
+    List<TGReaction> premiumReactions = tdlib.getOnlyPremiumReactions();
+    if (!premiumReactions.isEmpty()) {
+      if (!needPremiumRestriction()) {
+        items.add(new ListItem(ListItem.TYPE_HEADER, R.id.reactions_premium_locked, 0, R.string.PremiumReactions));
+      } else {
+        items.add(new ListItem(ListItem.TYPE_HEADER_WITH_ACTION, R.id.reactions_premium_locked, R.drawable.baseline_lock_16, R.string.PremiumReactions));
+      }
+      items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+      for (TGReaction reaction : premiumReactions) {
+        items.add(new ListItem(ListItem.TYPE_REACTION_CHECKBOX, R.id.btn_enabledReactionsCheckboxGroup, 0, reaction.reaction.reaction, false));
+      }
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     }
 
     adapter.setItems(items, true);
