@@ -423,7 +423,8 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
     if (isSearchAntagonistHidden()) {
       return false;
     }
-    if (getCurrentPagerItem().shouldDisallowScreenshots()) {
+    ViewController<?> controller = getCurrentPagerItem();
+    if (controller != null && controller.shouldDisallowScreenshots()) {
       return true;
     }
     if (currentPositionOffset != 0f) {
@@ -594,6 +595,9 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
     public Object instantiateItem (@NonNull ViewGroup container, int position) {
       ViewController<?> c = prepareViewController(reversePosition(position));
       container.addView(c.get());
+      if ((position == parent.currentPosition || (parent.currentPositionOffset != 0f && position == parent.currentPosition + (parent.currentPositionOffset > 0f ? 1 : -1))) && c.shouldDisallowScreenshots()) {
+        parent.context().checkDisallowScreenshots();
+      }
       return c;
     }
 
