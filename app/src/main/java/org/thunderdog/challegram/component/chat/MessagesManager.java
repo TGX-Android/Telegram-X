@@ -1756,24 +1756,6 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
   }
 
-  public void updateMessageReactionRead (long messageId) {
-    if (closestUnreadReactions != null && !closestUnreadReactions.isEmpty()) {
-      int i = 0;
-      for (TdApi.Message message : closestUnreadReactions) {
-        if (message.id == messageId) {
-          closestUnreadReactions.remove(i);
-          break;
-        }
-        i++;
-      }
-    }
-    int index = adapter.indexOfMessageContainer(messageId);
-    if (index != -1) {
-      adapter.getItem(index).readReaction(messageId);
-      // TODO nothing?
-    }
-  }
-
   public void updateMessageUnreadReactions (long messageId, @Nullable TdApi.UnreadReaction[] unreadReactions) {
     int index = adapter.indexOfMessageContainer(messageId);
     if (index != -1 && adapter.getItem(index).setMessageUnreadReactions(messageId, unreadReactions)) {

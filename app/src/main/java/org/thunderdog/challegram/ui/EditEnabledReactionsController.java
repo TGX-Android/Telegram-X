@@ -241,6 +241,11 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
         enabledReactions.clear();
       }
 
+      ListItem item = adapter.findItemById(R.id.reactions_enabled);
+      if (item != null) {
+        item.setSelected(!enabledReactions.isEmpty());
+      }
+
       adapter.updateAllValuedSettingsById(R.id.btn_enabledReactionsCheckboxGroup);
       adapter.updateValuedSettingById(R.id.reactions_enabled);
     }

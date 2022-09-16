@@ -4157,14 +4157,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
       String[] errors = msg.getFailureMessages();
       if (errors != null) {
         if (b.length() > 0) {
-          b.append("\n");
+          // b.append("\n");
+          b.append(". ");
         }
         b.append(Lang.getString(R.string.SendFailureInfo, Strings.join(", ", (Object[]) errors)));
       }
     }
     if (!msg.canBeSaved()) {
       if (b.length() > 0) {
-        b.append("\n\n");
+        // b.append("\n\n");
+        b.append(". ");
       }
       TdApi.MessageSender senderId = msg.getMessage().senderId;
       int resId;
@@ -4182,13 +4184,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     CharSequence text = StringUtils.trim(b);
 
-    if (withReactions && msg.canBeReacted() && msg.getMessageAvailableReactions().length > 0) {
-      Options messageOptions = getOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons);
-      showMessageOptions(messageOptions, selectedMessage);
-    } else {
-      PopupLayout popupLayout = showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons);
-      patchReadReceiptsOptions(popupLayout, msg, disableViewCounter);
-    }
+    msg.checkMessageFlags(() -> {
+      msg.checkAvailableReactions(() -> {
+        if (withReactions && msg.canBeReacted() && msg.getMessageAvailableReactions().length > 0) {
+          Options messageOptions = getOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons);
+          showMessageOptions(messageOptions, selectedMessage);
+        } else {
+          PopupLayout popupLayout = showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons);
+          patchReadReceiptsOptions(popupLayout, msg, disableViewCounter);
+        }
+      });
+    });
   }
 
 
@@ -4200,13 +4206,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     showMessageOptions(null, message, reaction);
   }
 
-  public void showMessageOptions (Options options, TGMessage message, String reaction) {
-    message.checkMessageFlags(() -> {
-      message.checkAvailableReactions(() -> {
-        MessageOptionsPagerController r = new MessageOptionsPagerController(context, tdlib, options, message, reaction);
-        r.show();
-      });
-    });
+  private void showMessageOptions (Options options, TGMessage message, String reaction) {
+    MessageOptionsPagerController r = new MessageOptionsPagerController(context, tdlib, options, message, reaction);
+    r.show();
   }
 
   private void patchReadReceiptsOptions (PopupLayout layout, TGMessage message, boolean disableViewCounter) {

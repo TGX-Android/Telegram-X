@@ -28,11 +28,9 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
-import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -56,32 +54,6 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
 
   @Override
   public void checkRtl () {
-    LinearLayoutManager manager = (LinearLayoutManager) getRecyclerView().getLayoutManager();
-    if (manager.getReverseLayout() != Lang.rtl()) {
-      View view = manager.findViewByPosition(0);
-      boolean needScroll = false;
-      int scrollOffset = 0;
-      if (view != null) {
-        int parentWidth = getRecyclerView().getMeasuredWidth();
-        int viewWidth = view.getMeasuredWidth();
-        int viewOffset = view.getLeft();
-        if (viewWidth > parentWidth) {
-          int availScrollX = viewWidth - parentWidth;
-          int scrolledX;
-          if (Lang.rtl()) { // LTR -> RTL
-            scrolledX = -viewOffset;
-          } else { // RTL -> LTR
-            scrolledX = availScrollX + viewOffset;
-          }
-          scrollOffset = -scrolledX;
-          needScroll = true;
-        }
-      }
-      manager.setReverseLayout(Lang.rtl());
-      if (needScroll) {
-        manager.scrollToPositionWithOffset(0, scrollOffset);
-      }
-    }
     getTopView().checkRtl();
   }
 
@@ -137,7 +109,7 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
     adapter = new A(topView);
 
     if (needReactionSelector) {
-      reactionsSelectorRecyclerView = new ReactionsSelectorRecyclerView(context, message) {
+      reactionsSelectorRecyclerView = new ReactionsSelectorRecyclerView(context) {
         @Override
         protected void dispatchDraw (Canvas c) {
           super.dispatchDraw(c);
@@ -162,7 +134,7 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
           }
         }
       };
-      reactionsSelectorRecyclerView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? OVER_SCROLL_IF_CONTENT_SCROLLS : OVER_SCROLL_NEVER);
+      reactionsSelectorRecyclerView.setMessage(message);
       reactionsSelectorRecyclerView.setLayoutParams(FrameLayoutFix.newParams(
         ViewGroup.LayoutParams.MATCH_PARENT,
         ViewGroup.LayoutParams.MATCH_PARENT,
@@ -205,7 +177,12 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
       ViewGroup.LayoutParams.MATCH_PARENT,
       Gravity.TOP, Screen.dp(56), 0, 0, 0));
     recyclerView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? OVER_SCROLL_IF_CONTENT_SCROLLS : OVER_SCROLL_NEVER);
-    recyclerView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, Lang.rtl()) {
+    recyclerView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false) {
+      @Override
+      protected boolean isLayoutRTL () {
+        return false;
+      }
+
       @Override
       public boolean canScrollHorizontally () {
         return isScrollEnabled && super.canScrollHorizontally();
@@ -248,7 +225,6 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
     shadowPaint1.setShader(shader1);
     shadowPaint2.setShader(shader2);
     if (reactionsSelectorRecyclerView != null) {
-      reactionsSelectorRecyclerView.invalidateAll();
       reactionsSelectorRecyclerView.invalidate();
     }
     recyclerView.invalidate();
@@ -327,18 +303,14 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
 
     final int availScrollX = viewWidth - parentWidth;
     final int scrolledX;
-    if (Lang.rtl()) {
-      scrolledX = availScrollX + view.getLeft();
-    } else {
-      scrolledX = -view.getLeft();
-    }
+    scrolledX = -view.getLeft();
     int viewX = -scrolledX;
 
     if ((getParent() != null && ((View) getParent()).getMeasuredWidth() > getMeasuredWidth()) || (viewWidth - parentWidth) < lastItemWidth / 2) {
       int desiredViewLeft = (int) ((float) -(viewWidth - parentWidth) * totalFactor);
       if (viewX != desiredViewLeft) {
         recyclerView.stopScroll();
-        int diff = (desiredViewLeft - viewX) * (Lang.rtl() ? 1 : -1);
+        int diff = (desiredViewLeft - viewX) * -1;
         if (animated) {
           recyclerView.smoothScrollBy(diff, 0);
         } else {
@@ -357,7 +329,7 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
         }
         if (newViewX != viewX) {
           recyclerView.stopScroll();
-          int offset = (viewX - newViewX) * (Lang.rtl() ? -1 : 1);
+          int offset = (viewX - newViewX);
           if (animated) {
             recyclerView.smoothScrollBy(offset, 0);
           } else {

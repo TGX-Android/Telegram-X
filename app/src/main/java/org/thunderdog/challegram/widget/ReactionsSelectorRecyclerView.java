@@ -3,6 +3,7 @@ package org.thunderdog.challegram.widget;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.RectF;
+import android.os.Build;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -17,7 +18,6 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
-import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -25,27 +25,33 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.util.text.Counter;
-import org.thunderdog.challegram.v.CustomRecyclerView;
-
-import java.util.Arrays;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 
-public class ReactionsSelectorRecyclerView extends CustomRecyclerView {
-  public ReactionsSelectorRecyclerView (@NonNull Context context, TGMessage message) {
-    super(context);
+public class ReactionsSelectorRecyclerView extends RecyclerView {
 
+  public ReactionsSelectorRecyclerView (@NonNull Context context) {
+    super(context);
+  }
+
+  public void setMessage (TGMessage message) {
     String chosen = message.getMessageReactions().getChosen();
     TdApi.AvailableReaction[] reactions = message.getMessageAvailableReactions();
 
-    LinearLayoutManager linearLayoutManager = new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, Lang.rtl());
-    setHasFixedSize(true);
+    LinearLayoutManager linearLayoutManager = new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false) {
+      @Override
+      protected boolean isLayoutRTL () {
+        return false;
+      }
+    };
+
     setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? OVER_SCROLL_IF_CONTENT_SCROLLS : OVER_SCROLL_NEVER);
-    setLayoutManager(linearLayoutManager);
-    setAdapter(adapter = new ReactionsAdapter(context, message));
-    setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER_VERTICAL));
     setPadding(Screen.dp(9), Screen.dp(8), Screen.dp(9), Screen.dp(8));
     setClipToPadding(false);
+    setHasFixedSize(true);
+
+    setLayoutManager(linearLayoutManager);
+    setAdapter(adapter = new ReactionsAdapter(getContext(), message));
 
     int index = -1;
     for (int a = 0; a < reactions.length; a++) {
@@ -69,6 +75,7 @@ public class ReactionsSelectorRecyclerView extends CustomRecyclerView {
     private Counter counter;
     private boolean chosen;
     private boolean useCounter;
+    private TGStickerObj centerAnimationSicker;
     private RectF rectF;
 
     public ReactionView (Context context) {
@@ -95,16 +102,20 @@ public class ReactionsSelectorRecyclerView extends CustomRecyclerView {
     public void setReaction (TGReaction reaction, TdApi.MessageReaction messageReaction, boolean useCounter) {
       this.useCounter = useCounter;
       this.chosen = messageReaction.isChosen;
-      TGStickerObj centerAnimationSicker = reaction.newCenterAnimationSicker();
-      if (centerAnimationSicker.getPreviewAnimation() != null) {
-        centerAnimationSicker.getPreviewAnimation().setPlayOnce(true);
-        centerAnimationSicker.getPreviewAnimation().setLooped(false);
-      }
+      this.centerAnimationSicker = reaction.newCenterAnimationSicker();
+      this.playAnimation();
       stickerView.setSticker(centerAnimationSicker);
       if (useCounter) {
         counter.setCount(messageReaction.totalCount, !messageReaction.isChosen, false);
       }
       requestLayout();
+    }
+
+    public void playAnimation () {
+      if (centerAnimationSicker != null && centerAnimationSicker.getPreviewAnimation() != null) {
+        centerAnimationSicker.getPreviewAnimation().setPlayOnce(true);
+        centerAnimationSicker.getPreviewAnimation().setLooped(false);
+      }
     }
 
     @Override
@@ -203,6 +214,7 @@ public class ReactionsSelectorRecyclerView extends CustomRecyclerView {
     @Override
     public void onViewAttachedToWindow (ReactionHolder holder) {
       ((ReactionView) holder.itemView).stickerView.attach();
+      ((ReactionView) holder.itemView).playAnimation();
     }
 
     @Override
@@ -218,7 +230,6 @@ public class ReactionsSelectorRecyclerView extends CustomRecyclerView {
 
   public interface ReactionSelectDelegate {
     void onClick (View v, TGReaction reaction);
-
     void onLongClick (View v, TGReaction reaction);
   }
 }

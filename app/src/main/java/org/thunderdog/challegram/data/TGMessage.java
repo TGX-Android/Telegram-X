@@ -216,9 +216,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   // counters
 
   private final Counter viewCounter, replyCounter, shareCounter, isPinned;
-  private final Counter reactionsCounter;
-  private final Counter shrinkedReactionsCounter;     // For channels in flat mode
-  private final ReactionsCounterDrawable reactionsCounterDrawable;
+  private Counter shrinkedReactionsCounter, reactionsCounter;
+  private ReactionsCounterDrawable reactionsCounterDrawable;
 
   // forward values
 
@@ -270,6 +269,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   private TdApi.AvailableReaction[] messageAvailableReactions = new TdApi.AvailableReaction[0];
 
+  // Reaction draw mode
+
+  public static final int REACTIONS_DRAW_MODE_BUBBLE = 0;
+  public static final int REACTIONS_DRAW_MODE_FLAT = 1;
+  public static final int REACTIONS_DRAW_MODE_ONLY_ICON = 2;
+
   protected TGMessage (MessagesManager manager, TdApi.Message msg) {
     if (!initialized) {
       synchronized (TGMessage.class) {
@@ -298,24 +303,23 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         boolean needAnimation = messageReactions.sendReaction(entry.getReaction(), false, handler(v, entry, () -> {}));
         if (needAnimation) {
           scheduleSetReactionAnimation(new NextReactionAnimation(entry.getTGReaction(), NextReactionAnimation.TYPE_CLICK));
-          //startReactionBubbleAnimation(entry.getReaction());
         }
       }
 
       @Override
       public void onLongClick(View v, TGReactions.MessageReactionEntry entry) {
-        checkMessageFlags(() -> {
-          if (canGetAddedReactions()) {
-            MessagesController m = messagesController();
-            m.showMessageAddedReactions(TGMessage.this, entry.getReaction());
-          } else {
-            showReactionBubbleTooltip(v, entry, Lang.getString(R.string.ChannelReactionsAnonymous));
-          }
+        checkAvailableReactions(() -> {
+          checkMessageFlags(() -> {
+            if (canGetAddedReactions()) {
+              MessagesController m = messagesController();
+              m.showMessageAddedReactions(TGMessage.this, entry.getReaction());
+            } else {
+              showReactionBubbleTooltip(v, entry, Lang.getString(R.string.ChannelReactionsAnonymous));
+            }
+          });
         });
       }
     });
-
-
 
     TdApi.MessageSender sender = msg.senderId;
     if (tdlib.isSelfChat(msg.chatId)) {
@@ -383,29 +387,20 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       .drawable(R.drawable.baseline_share_arrow_14, 14f, 3f, Gravity.LEFT)
       .build();
     this.reactionsCounterDrawable = new ReactionsCounterDrawable(messageReactions.getReactionsAnimator());
-    if (!useReactionBubbles() && (!isChannel() || useBubbles())) {
-      Counter.Builder reactionsCounterBuilder = new Counter.Builder()
-        .noBackground()
-        .allBold(false)
-        .callback(this);
-        this.reactionsCounter = reactionsCounterBuilder
-          .textSize(useBubbles() ? 11f : 12f)
-          .colorSet(() -> messageReactions.hasChosen() ? Theme.getColor(R.id.theme_color_badge) : this.getTimePartTextColor())
-          .build();
-    } else {
-      this.reactionsCounter = null;
-    }
-    if (!useBubbles() && !useReactionBubbles()) {
-      this.shrinkedReactionsCounter = new Counter.Builder()
-        .noBackground()
-        .allBold(false)
-        .callback(this)
-        .colorSet(() -> messageReactions.hasChosen() ? Theme.getColor(R.id.theme_color_badge): Theme.getColor(R.id.theme_color_iconLight))
-        .drawable(R.drawable.baseline_favorite_14, 14f, 0f, Gravity.CENTER_HORIZONTAL)
-        .build();
-    } else {
-      this.shrinkedReactionsCounter = null;
-    }
+    this.reactionsCounter = new Counter.Builder()
+      .noBackground()
+      .allBold(false)
+      .callback(this)
+      .textSize(useBubbles() ? 11f : 12f)
+      .colorSet(() -> messageReactions.hasChosen() ? Theme.getColor(R.id.theme_color_badge) : this.getTimePartTextColor())
+      .build();
+    this.shrinkedReactionsCounter = new Counter.Builder()
+      .noBackground()
+      .allBold(false)
+      .callback(this)
+      .colorSet(() -> messageReactions.hasChosen() ? Theme.getColor(R.id.theme_color_badge): Theme.getColor(R.id.theme_color_iconLight))
+      .drawable(R.drawable.baseline_favorite_14, 14f, 0f, Gravity.CENTER_HORIZONTAL)
+      .build();
 
     updateInteractionInfo(false);
 
@@ -441,7 +436,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       startHotTimer(false);
     }
 
-    checkAvailableReactions();
     computeQuickButtons();
   }
 
@@ -1677,6 +1671,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
     final boolean useBubbles = useBubbles();
     final boolean useReactionBubbles = useReactionBubbles();
+    final int reactionsDrawMode = getReactionsDrawMode();
 
     final float selectableFactor = manager.getSelectableFactor();
 
@@ -1884,16 +1879,15 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           right -= viewCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN));
         }
       }
-      if (needMetadata || tdlib.isUserChat(getChatId())) {
-        if (reactionsCounter != null) {
-          reactionsCounter.draw(c, right, top, Gravity.RIGHT, 1f, view, getTimePartIconColorId());
-          right -= reactionsCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN));
-          right -= reactionsCounterDrawable.getMinimumWidth();
-          drawReactionsWithoutBubbles(c, right, top);
-          right -= Screen.dp(5) * reactionsCounter.getVisibility();
-        }
+
+      if (reactionsDrawMode == REACTIONS_DRAW_MODE_FLAT) {
+        reactionsCounter.draw(c, right, top, Gravity.RIGHT, 1f, view, getTimePartIconColorId());
+        right -= reactionsCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN));
+        right -= reactionsCounterDrawable.getMinimumWidth();
+        drawReactionsWithoutBubbles(c, right, top);
+        right -= Screen.dp(5) * reactionsCounter.getVisibility();
       }
-      if (shrinkedReactionsCounter != null && (reactionsCounter == null || !needMetadata) && !tdlib.isUserChat(getChatId())) {
+      if (reactionsDrawMode == REACTIONS_DRAW_MODE_ONLY_ICON) {
         shrinkedReactionsCounter.draw(c, right, top, Gravity.RIGHT, 1f, view, 0);
         setLastDrawReactionsPosition(right, top);
         right -= shrinkedReactionsCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN)) + Screen.dp(COUNTER_ADD_MARGIN);
@@ -2820,6 +2814,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   private void layoutInfo () {
+    final int reactionsDrawMode = getReactionsDrawMode();
     boolean isPsa = isPsa() && forceForwardedInfo();
 
     if (useBubbles()) {
@@ -2904,11 +2899,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       max -= shareCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN));
       max -= viewCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN));
     }
-    if (reactionsCounter != null) {
+    if (reactionsDrawMode == REACTIONS_DRAW_MODE_FLAT) {
       max -= reactionsCounterDrawable.getMinimumWidth();
       max -= reactionsCounter.getScaledWidth(Screen.dp(8));
     }
-    if (shrinkedReactionsCounter != null && (reactionsCounter == null || !BitwiseUtils.getFlag(flags, FLAG_HEADER_ENABLED)) && !tdlib.isUserChat(getChatId())) {
+    if (reactionsDrawMode == REACTIONS_DRAW_MODE_ONLY_ICON) {
       max -= shrinkedReactionsCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN));
     }
     int nameMaxWidth;
@@ -3332,6 +3327,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   protected void drawBubbleTimePart (Canvas c, MessageView view) {
     boolean isTransparent = !useBubble() || useCircleBubble();
     boolean isWhite = isTransparent || (drawBubbleTimeOverContent() && !useForward());
+    final int reactionsDrawMode = getReactionsDrawMode();
 
     final int iconColorId, backgroundColor, textColor;
     final Paint iconPaint, ticksPaint, ticksReadPaint;
@@ -3381,7 +3377,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
     int counterY = startY + Screen.dp(11.5f);
 
-    if (reactionsCounter != null) {
+    if (reactionsDrawMode == REACTIONS_DRAW_MODE_FLAT) {
       drawReactionsWithoutBubbles(c, startX, counterY);
       startX += reactionsCounterDrawable.getMinimumWidth() + Screen.dp(COUNTER_ADD_MARGIN) * messageReactions.getVisibility();
       reactionsCounter.draw(c, startX, counterY, Gravity.LEFT, 1f, view, iconColorId);
@@ -3454,6 +3450,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   protected final int computeBubbleTimePartWidth (boolean includePadding, boolean isTarget) {
+    final int reactionsDrawMode = getReactionsDrawMode();
     int width = 0;
     /*if (shouldShowTicks()) {
       width += Screen.dp(3f) + Icons.getSingleTick().getWidth() + Screen.dp(3f);
@@ -3483,7 +3480,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       width += replyCounter.getScaledOrTargetWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN), isTarget);
     }
     width += isPinned.getScaledOrTargetWidth(Screen.dp(COUNTER_ICON_MARGIN), isTarget);
-    if (reactionsCounter != null) {
+    if (reactionsDrawMode == REACTIONS_DRAW_MODE_FLAT) {
       width += reactionsCounterDrawable.getMinimumWidth() + messageReactions.getVisibility() * Screen.dp(3);
       width += reactionsCounter.getScaledOrTargetWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN), isTarget);
     }
@@ -4009,19 +4006,14 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return msg.unreadReactions != null && msg.unreadReactions.length > 0;
   }
 
-  public final void readReaction (long messageId) {
+  public final void readReactions () {
     synchronized (this) {
       if (combinedMessages != null) {
         for (TdApi.Message message : combinedMessages) {
-          if (message.id == messageId) {
-            message.unreadReactions = new TdApi.UnreadReaction[0];
-            return;
-          }
+          message.unreadReactions = new TdApi.UnreadReaction[0];
         }
       }
-      if (msg.id == messageId) {
-        msg.unreadReactions = new TdApi.UnreadReaction[0];
-      }
+      msg.unreadReactions = new TdApi.UnreadReaction[0];
     }
   }
 
@@ -4105,7 +4097,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       }
       rebuildAndUpdateContent();
     }
-    checkAvailableReactions();
     computeQuickButtons();
     return true;
   }
@@ -4147,7 +4138,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         TdApi.Message message = combinedMessages.remove(index);
         if (index == combinedMessages.size() && index > 0) {
           msg = combinedMessages.get(index - 1);
-          checkAvailableReactions();
           computeQuickButtons();
         }
         if (combinedMessages.isEmpty()) {
@@ -4489,11 +4479,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (containsUnreadReactions()) {
       if (!BitwiseUtils.getFlag(flags, FLAG_IGNORE_REACTIONS_VIEW)) {
         highlightUnreadReactions();
-        highlightUnreadReactionsIfNeeded();
         highlight(true);
         tdlib.ui().postDelayed(() -> {
           flags = BitwiseUtils.setFlag(flags, FLAG_IGNORE_REACTIONS_VIEW, false);
         }, 500L);
+        tdlib().ui().post(this::readReactions);
       }
       flags |= FLAG_IGNORE_REACTIONS_VIEW;
       result = true;
@@ -4980,7 +4970,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       // }
     }
 
-    checkAvailableReactions();
     computeQuickButtons();
     return replaceRequired ? MESSAGE_REPLACE_REQUIRED : getHeight() == oldHeight ? MESSAGE_INVALIDATED : MESSAGE_CHANGED;
   }
@@ -5140,7 +5129,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       int i = indexOfMessageInternal(messageId);
       if (i >= 0) {
         combinedMessages.get(i).unreadReactions = unreadReactions;
-        changed = i == combinedMessages.size() - 1 || i == 0;
+        changed = true; // i == combinedMessages.size() - 1 || i == 0;
       } else if (i == MESSAGE_INDEX_SELF) {
         msg.unreadReactions = unreadReactions;
         changed = true;
@@ -7312,10 +7301,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   //
 
-  public final void checkAvailableReactions () {
-    checkAvailableReactions(() -> {});
-  }
-
   public final void checkAvailableReactions (Runnable r) {
     tdlib().client().send(new TdApi.GetMessageAvailableReactions(msg.chatId, getSmallestId()), (TdApi.Object object) -> {
       if (object.getConstructor() == TdApi.AvailableReactions.CONSTRUCTOR) {
@@ -7504,24 +7489,80 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   private Point getReactionPosition (String reaction) {
-    if (useReactionBubbles()) {
+    final int reactionsDrawMode = getReactionsDrawMode();
+
+    if (reactionsDrawMode == REACTIONS_DRAW_MODE_BUBBLE) {
       int x = lastDrawReactionsX + messageReactions.getReactionBubbleX(reaction) + TGReactions.getReactionImageSize() / 2 - Screen.dp(1);
       int y = lastDrawReactionsY + messageReactions.getReactionBubbleY(reaction) + TGReactions.getReactionBubbleHeight() / 2;
       return new Point(x, y);
-    } else if (shrinkedReactionsCounter != null && (reactionsCounter == null || !BitwiseUtils.getFlag(flags, FLAG_HEADER_ENABLED)) && !tdlib.isUserChat(getChatId())) {
+    } else if (reactionsDrawMode == REACTIONS_DRAW_MODE_ONLY_ICON) {
       int x = lastDrawReactionsX - Screen.dp(7);
       int y = lastDrawReactionsY;
       return new Point(x, y);
-    } else if (reactionsCounterDrawable != null) {
+    } else if (reactionsDrawMode == REACTIONS_DRAW_MODE_FLAT) {
       int x = (int) (lastDrawReactionsX + Screen.dp(6) + Screen.dp(15) * MathUtils.clamp( messageReactions.getReactionPositionInList(reaction), 0, 2));
       int y = lastDrawReactionsY;
       return new Point(x, y);
     }
 
-    return new Point(0, 0);
+    return new Point(Screen.currentWidth(), 0);
   }
 
+  private int getReactionsDrawMode () {
+    if (useReactionBubbles()) {
+      return REACTIONS_DRAW_MODE_BUBBLE;
+    }
 
+    boolean headerEnabled = BitwiseUtils.getFlag(flags, FLAG_HEADER_ENABLED);
+    boolean isUserChat = tdlib.isUserChat(getChatId());
+
+    if (!useBubbles() && (isChannel() || (!headerEnabled && !isUserChat))) {
+      return REACTIONS_DRAW_MODE_ONLY_ICON;
+    }
+
+    return REACTIONS_DRAW_MODE_FLAT;
+  }
+
+  private Counter getReactionsOnlyIconCounter () {
+    if (shrinkedReactionsCounter != null) {
+      return shrinkedReactionsCounter;
+    }
+
+    shrinkedReactionsCounter = new Counter.Builder()
+      .noBackground()
+      .allBold(false)
+      .callback(this)
+      .colorSet(() -> messageReactions.hasChosen() ? Theme.getColor(R.id.theme_color_badge): Theme.getColor(R.id.theme_color_iconLight))
+      .drawable(R.drawable.baseline_favorite_14, 14f, 0f, Gravity.CENTER_HORIZONTAL)
+      .build();
+
+    shrinkedReactionsCounter.showHide(messageReactions.getTotalCount() > 0, false);
+    shrinkedReactionsCounter.setMuted(!messageReactions.hasChosen(), false);
+
+    return shrinkedReactionsCounter;
+  }
+
+  private Counter getReactionsCounter () {
+    if (reactionsCounter != null) {
+      return reactionsCounter;
+    }
+
+    reactionsCounter = new Counter.Builder()
+      .noBackground()
+      .allBold(false)
+      .callback(this)
+      .textSize(useBubbles() ? 11f : 12f)
+      .colorSet(() -> messageReactions.hasChosen() ? Theme.getColor(R.id.theme_color_badge) : this.getTimePartTextColor())
+      .build();
+
+    int count = messageReactions.getTotalCount();
+    if (tdlib.isUserChat(msg.chatId) && messageReactions.getReactions() != null && (count == 1 || messageReactions.getReactions().length > 1)) {
+      count = 0;
+    }
+    reactionsCounter.setCount(count, !messageReactions.hasChosen(), false);
+
+    return reactionsCounter;
+  }
 
   // Set Reaction Animations
 
@@ -7677,7 +7718,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         offsetProvider.getOffset(p);
         context().replaceReactionPreviewCords(finishX + p.x, finishY + p.y);
         context().closeStickerPreview();
-        onQuickReactionAnimationFinish();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+          onQuickReactionAnimationFinish(view.isAttachedToWindow());
+        } else {
+          onQuickReactionAnimationFinish();
+        }
       };
       final CancellableRunnable finishAnimation = new CancellableRunnable() {
         @Override
@@ -7694,7 +7739,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
             nextSetReactionAnimation.fullscreenEffectFinished = true;
             if (nextSetReactionAnimation.fullscreenEmojiFinished) {
               finishAnimation.cancel();
-              view.postDelayed(finishRunnable, 300);
+              tdlib().ui().postDelayed(finishRunnable, 300);
             }
           }
         });
@@ -7708,23 +7753,29 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
             nextSetReactionAnimation.fullscreenEmojiFinished = true;
             if (nextSetReactionAnimation.fullscreenEffectFinished) {
               finishAnimation.cancel();
-              view.postDelayed(finishRunnable, 300);
+              tdlib().ui().postDelayed(finishRunnable, 300);
             }
           }
         });
       }
-      view.postDelayed(finishAnimation, 8000);
+      tdlib().ui().postDelayed(finishAnimation, 8000);
     }
   }
 
   public void onQuickReactionAnimationFinish () {
+    onQuickReactionAnimationFinish(true);
+  }
+
+  public void onQuickReactionAnimationFinish (boolean needPlayEffectAnimation) {
     if (nextSetReactionAnimation == null) {
       clearSetReactionAnimation();
       return;
     }
 
-    vibrate();
-    startReactionBubbleAnimation(nextSetReactionAnimation.reaction.getReaction().reaction);
+    if (needPlayEffectAnimation) {
+      vibrate();
+      startReactionBubbleAnimation(nextSetReactionAnimation.reaction.getReaction().reaction);
+    }
     clearSetReactionAnimation();
   }
 
@@ -7752,10 +7803,14 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
 
-
+  private boolean readyHighlightUnreadReactions = false;
   private void highlightUnreadReactionsIfNeeded () {
-    if (needHighlightUnreadReactions) {
+    if (readyHighlightUnreadReactions) {
       highlightUnreadReactionsImpl();
+      readyHighlightUnreadReactions = false;
+    } else if (needHighlightUnreadReactions) {
+      readyHighlightUnreadReactions = true;
+      invalidate();
     }
   }
 
