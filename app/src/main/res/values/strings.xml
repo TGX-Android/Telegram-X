@@ -1008,6 +1008,12 @@
   <string name="ChatThemeDisabled">%1$s disabled the chat theme</string>
   <string name="ChatThemeDisabled_outgoing">You disabled the chat theme</string>
 
+  <string name="YouGiftedPremium_one">You gifted %1$s month of Telegram Premium for %2$s</string>
+  <string name="YouGiftedPremium_other">You gifted %1$s months Telegram Premium for %2$s</string>
+
+  <string name="GiftedPremium_one">%2$s gifted you %1$s month of Telegram Premium for %3$s</string>
+  <string name="GiftedPremium_other">%2$s gifted you %1$s months Telegram Premium for %3$s</string>
+
   <string name="YouDisabledTimer">You disabled the self-destruct timer</string>
   <string name="XDisabledTimer">%1$s disabled the self-destruct timer</string>
   <string name="YouDisabledAutoDelete">You disabled the auto-delete timer</string>
