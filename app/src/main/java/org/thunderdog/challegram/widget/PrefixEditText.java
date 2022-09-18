@@ -33,7 +33,6 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.UI;
-import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
 
 public class PrefixEditText extends EmojiEditText implements InputFilter, View.OnLongClickListener {
@@ -83,7 +82,7 @@ public class PrefixEditText extends EmojiEditText implements InputFilter, View.O
     }
     minLength = spannable.length();
     forceText(spannable);
-    Views.setSelection(this, minLength);
+    setSelection(minLength);
   }
 
   /**
@@ -96,7 +95,7 @@ public class PrefixEditText extends EmojiEditText implements InputFilter, View.O
       spannable.setSpan(new ForegroundColorSpan(Theme.textPlaceholderColor()), 0, prefix.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
     }
     forceText(spannable);
-    Views.setSelection(this, spannable.length());
+    setSelection(spannable.length());
   }
 
   public String getSuffix () {
@@ -135,7 +134,7 @@ public class PrefixEditText extends EmojiEditText implements InputFilter, View.O
   @Override
   protected void onSelectionChanged (int selStart, int selEnd) {
     if (editable && selStart < minLength && getText().length() >= minLength) {
-      Views.setSelection(this, minLength);
+      setSelection(minLength);
     } else {
       super.onSelectionChanged(selStart, selEnd);
     }

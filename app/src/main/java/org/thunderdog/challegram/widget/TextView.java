@@ -20,8 +20,13 @@ import android.util.AttributeSet;
 
 import androidx.annotation.Nullable;
 
+import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.util.TextSelection;
+
 public class TextView extends android.widget.TextView {
   private boolean scrollDisabled;
+  private TextSelection selection;
 
   public TextView (Context context) {
     super(context);
@@ -33,6 +38,21 @@ public class TextView extends android.widget.TextView {
 
   public TextView (Context context, @Nullable AttributeSet attrs, int defStyleAttr) {
     super(context, attrs, defStyleAttr);
+  }
+
+  @Nullable
+  public final TextSelection getTextSelection () {
+    if (!UI.inUiThread()) {
+      throw new IllegalStateException();
+    }
+    if (selection == null) {
+      selection = new TextSelection();
+    }
+    if (Views.getSelection(this, selection)) {
+      return selection;
+    } else {
+      return null;
+    }
   }
 
   public final void setScrollDisabled (boolean scrollDisabled) {

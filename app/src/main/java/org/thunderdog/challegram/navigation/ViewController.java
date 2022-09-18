@@ -1099,7 +1099,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       }
       searchHeaderView.setText(text);
       if (!text.isEmpty()) {
-        Views.setSelection(searchHeaderView, text.length());
+        searchHeaderView.setSelection(text.length());
       }
       updateClearSearchButton(!text.isEmpty(), false);
     }
@@ -1512,7 +1512,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     inputView.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS);
     if (!StringUtils.isEmpty(value)) {
       inputView.setText(value);
-      Views.setSelection(inputView.getEditText(), 0, value.length());
+      inputView.getEditText().setSelection(0, value.length());
     }
     inputView.getEditText().addTextChangedListener(new TextWatcher() {
       @Override

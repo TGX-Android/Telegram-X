@@ -264,7 +264,7 @@ public class CreateChannelController extends ViewController<String[]> implements
   public void setDescription (String description) {
     if (description != null) {
       descView.setText(description);
-      Views.setSelection(descView, description.length());
+      descView.setSelection(description.length());
     }
   }
 

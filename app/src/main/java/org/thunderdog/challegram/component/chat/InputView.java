@@ -99,6 +99,7 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.CharacterStyleFilter;
 import org.thunderdog.challegram.util.ExternalEmojiFilter;
 import org.thunderdog.challegram.util.FinalNewLineFilter;
+import org.thunderdog.challegram.util.TextSelection;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.widget.InputWrapperWrapper;
 import org.thunderdog.challegram.widget.NoClipEditText;
@@ -244,10 +245,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
               }
               item.setTitle(type != null ? Lang.wrap(Lang.getString(overrideResId), Lang.entityCreator(type)) : Lang.getString(overrideResId));
             }
-            final int start = getSelectionStart();
-            final int end = getSelectionEnd();
+            final TextSelection selection = getTextSelection();
             final String str = getText().toString();
-            if (Text.needFakeBoldFull(str, start, end)) {
+            if (selection != null && Text.needFakeBoldFull(str, selection.start, selection.end)) {
               menu.removeItem(R.id.btn_monospace);
             }
           } catch (Throwable ignored) { }
@@ -317,9 +317,8 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   }
 
   public boolean setSpan (int id) {
-    final int selectionStart = getSelectionStart();
-    final int selectionEnd = getSelectionEnd();
-    if (selectionStart == selectionEnd) {
+    TextSelection selection = getTextSelection();
+    if (selection == null || selection.isEmpty()) {
       return false;
     }
     TdApi.TextEntityType type;
@@ -343,16 +342,16 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         type = new TdApi.TextEntityTypeCode();
         break;
       case R.id.btn_link: {
-        URLSpan[] existingSpans = getText().getSpans(selectionStart, selectionEnd, URLSpan.class);
+        URLSpan[] existingSpans = getText().getSpans(selection.start, selection.end, URLSpan.class);
         URLSpan existingSpan = existingSpans != null && existingSpans.length > 0 ? existingSpans[0] : null;
-        createTextUrl(existingSpan, selectionStart, selectionEnd);
+        createTextUrl(existingSpan, selection.start, selection.end);
         return true;
       }
       default: {
         return false;
       }
     }
-    setSpan(selectionStart, selectionEnd, type);
+    setSpan(selection.start, selection.end, type);
     return true;
   }
 
@@ -459,7 +458,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
       getText().setSpan(span, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
     }
-    Views.setSelection(this, end);
+    setSelection(end);
     inlineContext.forceCheck();
     if (spanChangeListener != null) {
       spanChangeListener.onSpansChanged(this);
@@ -506,9 +505,8 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   public void restartTextChange () {
     CharSequence cs = getText();
     String str = cs.toString();
-    int selectionStart = getSelectionStart();
-    int selectionEnd = getSelectionEnd();
-    inlineContext.onTextChanged(cs, str, selectionStart == selectionEnd ? selectionStart : -1);
+    TextSelection selection = getTextSelection();
+    inlineContext.onTextChanged(cs, str, selection != null && selection.isEmpty() ? selection.start : -1);
   }
 
   @Override
@@ -520,9 +518,8 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   }
 
   public boolean canFormatText () {
-    int selectionStart = getSelectionStart();
-    int selectionEnd = getSelectionEnd();
-    return selectionStart >= 0 && selectionEnd > selectionStart && selectionEnd <= getText().length();
+    TextSelection selection = getTextSelection();
+    return selection != null && selection.end <= getText().length();
   }
 
   private boolean allowsAnyGravity;
@@ -540,14 +537,13 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       setTextChangedSinceChatOpened(true);
     }
 
-    int selectionStart = getSelectionStart();
-    int selectionEnd = getSelectionEnd();
+    TextSelection selection = getTextSelection();
     if (controller != null) {
-      inlineContext.onTextChanged(s, str, selectionStart == selectionEnd ? selectionStart : -1);
+      inlineContext.onTextChanged(s, str, selection != null && selection.isEmpty() ? selection.start : -1);
       controller.onInputTextChange(s, !ignoreDraft && byUserAction);
     } else if (inputListener != null) {
       if (inputListener.canSearchInline(InputView.this)) {
-        inlineContext.onTextChanged(s, str, selectionStart == selectionEnd ? selectionStart : -1);
+        inlineContext.onTextChanged(s, str, selection != null && selection.isEmpty() ? selection.start : -1);
       }
       inputListener.onInputChanged(InputView.this, str);
     }
@@ -806,16 +802,18 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   }
 
   public void onEmojiSelected (String emoji) {
-    int start = getSelectionStart();
-    int end = getSelectionEnd();
-    int after = start + emoji.length();
+    TextSelection selection = getTextSelection();
+    if (selection == null)
+      return;
+    int after = selection.start + emoji.length();
     SpannableString s = new SpannableString(emoji);
     s.setSpan(Emoji.instance().newSpan(emoji, null), 0, s.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-    if (start == end)
-      getText().insert(start, s);
-    else
-      getText().replace(start, end, s);
-    Views.setSelection(this, after);
+    if (selection.isEmpty()) {
+      getText().insert(selection.start, s);
+    } else {
+      getText().replace(selection.start, selection.end, s);
+    }
+    setSelection(after);
   }
 
   private boolean textChangedSinceChatOpened, ignoreFirstLinkPreview;
@@ -892,7 +890,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     this.settingByUserAction = byUserAction;
     setText(text);
     if (moveCursor) {
-      Views.setSelection(this, text != null ? text.length() : 0);
+      setSelection(text != null ? text.length() : 0);
     }
     this.isSettingText = false;
   }
@@ -989,7 +987,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     SpannableStringBuilder b = new SpannableStringBuilder(editable);
     CharSequence within = resultHashtag + " ";
     try { editable.replace(hashtag.getTargetStart(), hashtag.getTargetEnd(), within); } catch (Throwable ignored) {  }
-    try { setInput(hashtag.replaceInTarget(b, within), false, true); Views.setSelection(this, hashtag.getTargetStart() + within.length()); } catch (Throwable ignored) { }
+    try { setInput(hashtag.replaceInTarget(b, within), false, true); setSelection(hashtag.getTargetStart() + within.length()); } catch (Throwable ignored) { }
   }
 
   @Override
@@ -1003,7 +1001,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     SpannableStringBuilder b = new SpannableStringBuilder(editable);
     CharSequence within = editable.length() == suggestion.getTargetEnd() && suggestion.getTargetStart() == 0 ? resultEmoji : resultEmoji + " ";
     try { editable.replace(suggestion.getTargetStart(), suggestion.getTargetEnd(), within); } catch (Throwable ignored) { }
-    try { setInput(suggestion.replaceInTarget(b, within), false, true); Views.setSelection(this, suggestion.getTargetStart() + within.length()); } catch (Throwable ignored) { }
+    try { setInput(suggestion.replaceInTarget(b, within), false, true); setSelection(suggestion.getTargetStart() + within.length()); } catch (Throwable ignored) { }
   }
 
   @Override
@@ -1027,7 +1025,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     }
 
     try { editable.replace(mention.getTargetStart(), Math.min(editable.length(), mention.getTargetEnd()), within); } catch (Throwable ignored) { }
-    try { setInput(mention.replaceInTarget(b, within), false, true); Views.setSelection(this, mention.getTargetStart() + within.length()); } catch (Throwable ignored) { }
+    try { setInput(mention.replaceInTarget(b, within), false, true); setSelection(mention.getTargetStart() + within.length()); } catch (Throwable ignored) { }
   }
 
   @Override
@@ -1227,24 +1225,24 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   @Override
   public boolean onTextContextMenuItem (@IdRes int id) {
     try {
-      int selectionStart = getSelectionStart();
-      int selectionEnd = getSelectionEnd();
+      TextSelection selection = getTextSelection();
+      if (selection == null) {
+        return super.onTextContextMenuItem(id);
+      }
       Editable editable = getText();
-      int length = selectionEnd - selectionStart;
-
       switch (id) {
         case android.R.id.cut: {
-          if (length > 0) {
-            CharSequence copyText = editable.subSequence(selectionStart, selectionEnd);
-            editable.delete(selectionStart, selectionEnd);
+          if (!selection.isEmpty()) {
+            CharSequence copyText = editable.subSequence(selection.start, selection.end);
+            editable.delete(selection.start, selection.end);
             U.copyText(copyText);
             return true;
           }
           break;
         }
         case android.R.id.copy: {
-          if (length > 0) {
-            CharSequence copyText = editable.subSequence(selectionStart, selectionEnd);
+          if (!selection.isEmpty()) {
+            CharSequence copyText = editable.subSequence(selection.start, selection.end);
             U.copyText(copyText);
             return true;
           }
@@ -1253,10 +1251,10 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         case android.R.id.paste: {
           CharSequence pasteText = U.getPasteText(getContext());
           if (pasteText != null) {
-            if (length > 0) {
-              editable.replace(selectionStart, selectionEnd, pasteText);
+            if (selection.isEmpty()) {
+              editable.insert(selection.start, pasteText);
             } else {
-              editable.insert(selectionStart, pasteText);
+              editable.replace(selection.start, selection.end, pasteText);
             }
             return true;
           }

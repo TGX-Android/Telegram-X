@@ -24,15 +24,20 @@ import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
 import android.view.inputmethod.InputConnectionWrapper;
 
+import androidx.annotation.Nullable;
+
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.util.TextSelection;
 
 public class EditText extends android.widget.EditText {
   private boolean ignoreCustomStuff;
+  private TextSelection selection;
 
   public EditText (Context context) {
     super(context);
@@ -68,6 +73,21 @@ public class EditText extends android.widget.EditText {
     this.backspaceListener = listener;
   }
 
+  @Nullable
+  public final TextSelection getTextSelection () {
+    if (!UI.inUiThread()) {
+      throw new IllegalStateException();
+    }
+    if (selection == null) {
+      selection = new TextSelection();
+    }
+    if (Views.getSelection(this, selection)) {
+      return selection;
+    } else {
+      return null;
+    }
+  }
+
   @Override
   public void setSelection (int start, int stop) {
     try {
@@ -91,7 +111,13 @@ public class EditText extends android.widget.EditText {
   }
 
   protected boolean onKeyboardBackspacePress () {
-    return backspaceListener != null && backspaceListener.onBackspacePressed(this, getText(), getSelectionStart(), getSelectionEnd());
+    if (backspaceListener != null) {
+      TextSelection selection = getTextSelection();
+      if (selection != null) {
+        return backspaceListener.onBackspacePressed(this, getText(), selection.start, selection.end);
+      }
+    }
+    return false;
   }
 
   @Override
