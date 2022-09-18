@@ -3339,11 +3339,13 @@ public class TD {
   public static final int PREVIEW_FLAG_ALLOW_CAPTIONS = 1;
   public static final int PREVIEW_FLAG_FORCE_MEDIA_TYPE = 1 << 1;
 
+  @Deprecated
   private static String buildShortPreview (Tdlib tdlib, @Nullable TdApi.Message m, boolean allowCaptions, boolean multiLine, @Nullable RunnableBool translatable) {
     String str = buildShortPreviewImpl(tdlib, m, allowCaptions ? PREVIEW_FLAG_ALLOW_CAPTIONS : 0, translatable);
     return StringUtils.isEmpty(str) || multiLine ? str : Strings.translateNewLinesToSpaces(str);
   }
 
+  @Deprecated
   public static String buildShortPreview (Tdlib tdlib, @Nullable TdApi.Message m, boolean allowCaptions) {
     return buildShortPreview(tdlib, m, allowCaptions, false, null);
   }
@@ -3368,6 +3370,10 @@ public class TD {
     }
   }
 
+  /**
+   * TODO Support properly all missing cases in {@link #getContentPreview(Tdlib, long, TdApi.Message, boolean, boolean)} and remove this method.
+   */
+  @Deprecated
   private static String buildShortPreviewImpl (Tdlib tdlib, @Nullable TdApi.Message m, int flags, @Nullable RunnableBool isTranslatable) {
     if (m == null || m.content == null) {
       U.set(isTranslatable, true);
@@ -3383,6 +3389,10 @@ public class TD {
       case TdApi.MessageText.CONSTRUCTOR: {
         U.set(isTranslatable, false);
         return ((TdApi.MessageText) m.content).text.text;
+      }
+      case TdApi.MessageAnimatedEmoji.CONSTRUCTOR: {
+        U.set(isTranslatable, false);
+        return ((TdApi.MessageAnimatedEmoji) m.content).emoji;
       }
       case TdApi.MessageAnimation.CONSTRUCTOR: {
         String caption = ((TdApi.MessageAnimation) m.content).caption.text;
@@ -3779,6 +3789,20 @@ public class TD {
         TdApi.MessagePaymentSuccessful successful = (TdApi.MessagePaymentSuccessful) m.content;
         return Lang.getString(R.string.PaymentSuccessfullyPaidNoItem, CurrencyUtils.buildAmount(successful.currency, successful.totalAmount), tdlib.chatTitle(m.chatId));
       }
+      case TdApi.MessageGiftedPremium.CONSTRUCTOR: {
+        U.set(isTranslatable, true);
+        TdApi.MessageGiftedPremium giftedPremium = (TdApi.MessageGiftedPremium) m.content;
+        if (m.isOutgoing) {
+          return Lang.plural(R.string.YouGiftedPremium, giftedPremium.monthCount, CurrencyUtils.buildAmount(giftedPremium.currency, giftedPremium.amount));
+        } else {
+          return Lang.plural(R.string.GiftedPremium, giftedPremium.monthCount, tdlib.senderName(m.senderId, true), CurrencyUtils.buildAmount(giftedPremium.currency, giftedPremium.amount));
+        }
+      }
+      case TdApi.MessageWebAppDataSent.CONSTRUCTOR: {
+        U.set(isTranslatable, true);
+        TdApi.MessageWebAppDataSent webAppDataSent = (TdApi.MessageWebAppDataSent) m.content;
+        return Lang.getString(R.string.BotDataSent, webAppDataSent.buttonText);
+      }
       case TdApi.MessageCustomServiceAction.CONSTRUCTOR: {
         U.set(isTranslatable, false);
         return ((TdApi.MessageCustomServiceAction) m.content).text;
@@ -3791,9 +3815,18 @@ public class TD {
         U.set(isTranslatable, true);
         return Lang.getString(R.string.UnsupportedMessageType);
       }
+      // Unsupported in this method
+      case TdApi.MessageChatSetTheme.CONSTRUCTOR:
+      case TdApi.MessageInviteVideoChatParticipants.CONSTRUCTOR:
+      case TdApi.MessageProximityAlertTriggered.CONSTRUCTOR:
+      case TdApi.MessageVideoChatEnded.CONSTRUCTOR:
+      case TdApi.MessageVideoChatScheduled.CONSTRUCTOR:
+      case TdApi.MessageVideoChatStarted.CONSTRUCTOR:
+        break;
       // Bots only. Unused
       case TdApi.MessagePassportDataReceived.CONSTRUCTOR:
       case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
+      case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
         break;
     }
     U.set(isTranslatable, false);
