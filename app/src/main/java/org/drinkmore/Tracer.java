@@ -34,10 +34,8 @@ import java.util.Locale;
 
 @SuppressWarnings("unused")
 public class Tracer {
-  private static final String PREFIX = "Client fatal error (%d): [ 0][t 1][%d][Tracer.cpp:15][!Td]\t%s\n";
-
   static String format (String message) {
-    return String.format(Locale.US, PREFIX, Client.getClientCount(), System.currentTimeMillis(), message);
+    return String.format(Locale.US, "Client fatal error (%d): %s", Client.getClientCount(), message);
   }
 
   private static void throwError (Throwable throwable) {
@@ -45,7 +43,7 @@ public class Tracer {
     if (elements != null) {
       StackTraceElement[] newElements = new StackTraceElement[elements.length + 1];
       System.arraycopy(elements, 0, newElements, 1, elements.length);
-      newElements[0] = new StackTraceElement("org.drinkmore.Tracer", "throwError", "Tracer.java", 49);
+      newElements[0] = new StackTraceElement("org.drinkmore.Tracer", "throwError", "Tracer.java", 46);
       throwable.setStackTrace(newElements);
     }
     if (throwable instanceof ClientException)
