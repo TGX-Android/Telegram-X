@@ -347,6 +347,8 @@
   <string name="ChatContentGroupName_outgoing">Renamed the group to «%1$s»</string>
   <string name="ChatContentThemeSet">Changed the chat theme to %1$s</string>
   <string name="ChatContentThemeSet_outgoing">Changed the chat theme to %1$s</string>
+  <string name="ChatContentThemeDisabled">Disabled the chat theme</string>
+  <string name="ChatContentThemeDisabled_outgoing">Disabled the chat theme</string>
   <string name="ChatContentGroupTtlSeconds_one">Set messages to auto-delete in %1$s second</string>
   <string name="ChatContentGroupTtlSeconds_other">Set messages to auto-delete in %1$s seconds</string>
   <string name="ChatContentGroupTtlMinutes_one">Set messages to auto-delete in %1$s minute</string>
@@ -1000,6 +1002,11 @@
   <string name="QUnblockX">Unblock %1$s?</string>
   <string name="YouTookAScreenshot">You took a screenshot</string>
   <string name="XTookAScreenshot">%1$s took a screenshot</string>
+
+  <string name="ChatThemeSet">%1$s set the chat theme to %2$s</string>
+  <string name="ChatThemeSet_outgoing">You set the chat theme to %1$s</string>
+  <string name="ChatThemeDisabled">%1$s disabled the chat theme</string>
+  <string name="ChatThemeDisabled_outgoing">You disabled the chat theme</string>
 
   <string name="YouDisabledTimer">You disabled the self-destruct timer</string>
   <string name="XDisabledTimer">%1$s disabled the self-destruct timer</string>

@@ -62,6 +62,37 @@ public final class TGMessageService extends TGMessageServiceImpl {
     });
   }
 
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageChatSetTheme setTheme) {
+    super(context, msg);
+    setTextCreator(() -> {
+      if (StringUtils.isEmpty(setTheme.themeName)) {
+        if (msg.isOutgoing) {
+          return getText(
+            R.string.ChatThemeDisabled_outgoing
+          );
+        } else {
+          return getText(
+            R.string.ChatThemeDisabled,
+            new SenderArgument(sender, isUserChat())
+          );
+        }
+      } else {
+        if (msg.isOutgoing) {
+          return getText(
+            R.string.ChatThemeSet_outgoing,
+            new BoldArgument(setTheme.themeName)
+          );
+        } else {
+          return getText(
+            R.string.ChatThemeSet,
+            new SenderArgument(sender, isUserChat()),
+            new BoldArgument(setTheme.themeName)
+          );
+        }
+      }
+    });
+  }
+
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageExpiredPhoto expiredPhoto) {
     super(context, msg);
     setTextCreator(() ->

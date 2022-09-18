@@ -6466,10 +6466,17 @@ public class TD {
         else
           return new ContentPreview(EMOJI_GROUP, 0, Lang.getString(isOutgoing ? R.string.ChatContentGroupName_outgoing : R.string.ChatContentGroupName, Td.getText(formattedArgument)), true);
       case TdApi.MessageChatSetTheme.CONSTRUCTOR:
-        if (isOutgoing)
-          return new ContentPreview(EMOJI_THEME, 0, toFormattedText(Lang.getStringBold(R.string.ChatContentThemeSet_outgoing, formattedArgument.text), true));
-        else
-          return new ContentPreview(EMOJI_THEME, 0, toFormattedText(Lang.getStringBold(R.string.ChatContentThemeSet, formattedArgument.text), true));
+        if (StringUtils.isEmpty(formattedArgument.text)) {
+          if (isOutgoing)
+            return new ContentPreview(EMOJI_THEME, R.string.ChatContentThemeDisabled_outgoing);
+          else
+            return new ContentPreview(EMOJI_THEME, R.string.ChatContentThemeDisabled);
+        } else {
+          if (isOutgoing)
+            return new ContentPreview(EMOJI_THEME, 0, toFormattedText(Lang.getStringBold(R.string.ChatContentThemeSet_outgoing, formattedArgument.text), true));
+          else
+            return new ContentPreview(EMOJI_THEME, 0, toFormattedText(Lang.getStringBold(R.string.ChatContentThemeSet, formattedArgument.text), true));
+        }
       case TdApi.MessageChatSetTtl.CONSTRUCTOR: {
         if (arg1 > 0) {
           final int secondsRes, minutesRes, hoursRes, daysRes, weeksRes, monthsRes;
