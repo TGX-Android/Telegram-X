@@ -159,11 +159,14 @@ public class FirebaseListenerService extends FirebaseMessagingService {
 
     if (doze || !network || inRecoveryMode) {
       synchronized (foregroundLock) {
-        TDLib.Tag.notifications(pushId, accountId, "Starting a foreground task because we may be operating in a constrained environment, doze: %b, network: %b, recovery: %b", doze, network, inRecoveryMode);
-        state.set(STATE_VISIBLE);
-        showForegroundNotification(manager, inRecoveryMode, pushId, accountId);
-        latch.countDown();
-        shown = true;
+        TDLib.Tag.notifications(pushId, accountId, "Trying to start a foreground task because we may be operating in a constrained environment, doze: %b, network: %b, recovery: %b", doze, network, inRecoveryMode);
+        if (showForegroundNotification(manager, inRecoveryMode, pushId, accountId)) {
+          state.set(STATE_VISIBLE);
+          latch.countDown();
+          shown = true;
+        } else {
+          shown = false;
+        }
       }
     } else {
       shown = false;
@@ -200,10 +203,12 @@ public class FirebaseListenerService extends FirebaseMessagingService {
             @Override
             public void act () {
               synchronized (foregroundLock) {
-                if (state.compareAndSet(STATE_RUNNING, STATE_VISIBLE)) {
-                  TDLib.Tag.notifications(pushId, accountId, "Starting a foreground task because the job is running too long");
-                  showForegroundNotification(manager, inRecoveryMode, pushId, accountId);
-                  latch.countDown();
+                if (state.get() == STATE_RUNNING) {
+                  TDLib.Tag.notifications(pushId, accountId, "Trying to start a foreground task because the job is running too long");
+                  if (showForegroundNotification(manager, inRecoveryMode, pushId, accountId)) {
+                    state.set(STATE_VISIBLE);
+                    latch.countDown();
+                  }
                 }
               }
             }
@@ -229,14 +234,14 @@ public class FirebaseListenerService extends FirebaseMessagingService {
     }
   }
 
-  private void showForegroundNotification (TdlibManager manager, boolean inRecovery, long pushId, int accountId) {
+  private boolean showForegroundNotification (TdlibManager manager, boolean inRecovery, long pushId, int accountId) {
     String text;
     if (accountId != TdlibAccount.NO_ID && manager.isMultiUser()) {
       text = Lang.getString(R.string.RetrievingText, manager.account(accountId).getLongName());
     } else {
       text = null;
     }
-    ForegroundService.startForegroundTask(getApplicationContext(),
+    return ForegroundService.startForegroundTask(getApplicationContext(),
       Lang.getString(inRecovery ? R.string.RetrieveMessagesError : R.string.RetrievingMessages), text,
       U.getOtherNotificationChannel(),
       0,
