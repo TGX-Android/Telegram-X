@@ -1014,6 +1014,8 @@
   <string name="GiftedPremium_one">%2$s gifted you %1$s month of Telegram Premium for %3$s</string>
   <string name="GiftedPremium_other">%2$s gifted you %1$s months Telegram Premium for %3$s</string>
 
+  <string name="BotDataSent">Data from the \"%1$s\" button was transferred to the bot</string>
+
   <string name="YouDisabledTimer">You disabled the self-destruct timer</string>
   <string name="XDisabledTimer">%1$s disabled the self-destruct timer</string>
   <string name="YouDisabledAutoDelete">You disabled the auto-delete timer</string>

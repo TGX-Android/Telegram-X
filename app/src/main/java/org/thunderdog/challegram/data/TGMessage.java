@@ -7140,6 +7140,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessagePaymentSuccessful.CONSTRUCTOR: {
           return new TGMessageService(context, msg, (TdApi.MessagePaymentSuccessful) content);
         }
+        case TdApi.MessageWebAppDataSent.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageWebAppDataSent) content);
+        }
         case TdApi.MessageChatDeletePhoto.CONSTRUCTOR: {
           return new TGMessageService(context, msg, (TdApi.MessageChatDeletePhoto) content);
         }
@@ -7191,7 +7194,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         // unsupported
         case TdApi.MessageInvoice.CONSTRUCTOR:
         case TdApi.MessagePassportDataSent.CONSTRUCTOR:
-        case TdApi.MessageWebAppDataSent.CONSTRUCTOR:
           break;
         case TdApi.MessageUnsupported.CONSTRUCTOR:
           unsupportedStringRes = R.string.UnsupportedMessageType;

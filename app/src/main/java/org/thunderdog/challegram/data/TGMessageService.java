@@ -740,6 +740,16 @@ public final class TGMessageService extends TGMessageServiceImpl {
     }
   }
 
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageWebAppDataSent webAppDataSent) {
+    super(context, msg);
+    setTextCreator(() ->
+      getText(
+        R.string.BotDataSent,
+        new BoldArgument(webAppDataSent.buttonText)
+      )
+    );
+  }
+
   // Video chats
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageVideoChatStarted videoChatStarted) {
