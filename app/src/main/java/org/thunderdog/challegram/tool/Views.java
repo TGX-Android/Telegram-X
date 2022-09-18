@@ -176,7 +176,7 @@ public class Views {
   }
 
   public static boolean getSelection (android.widget.TextView editText, TextSelection selection) {
-    int start = editText.getSelectionEnd();
+    int start = editText.getSelectionStart();
     int end = editText.getSelectionEnd();
     if (end < 0) {
       end = start;
@@ -184,7 +184,7 @@ public class Views {
     if (start < 0) {
       return false;
     }
-    if (start >= end) {
+    if (start <= end) {
       selection.set(start, end);
     } else {
       // some IMEs may incorrectly set Selection.END before Selection.START

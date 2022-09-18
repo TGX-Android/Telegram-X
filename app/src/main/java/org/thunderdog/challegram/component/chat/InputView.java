@@ -519,7 +519,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
   public boolean canFormatText () {
     TextSelection selection = getTextSelection();
-    return selection != null && selection.end <= getText().length();
+    return selection != null && !selection.isEmpty() && selection.end <= getText().length();
   }
 
   private boolean allowsAnyGravity;
