@@ -118,7 +118,8 @@ public class Highlight {
       }
 
       int matchingLength = 0;
-      for (int highlightIndex = 0; highlightIndex < highlightLength && matchingLength < (end - index); ) {
+      int highlightIndex = 0;
+      while (highlightIndex < highlightLength && matchingLength < (end - index)) {
         int highlightCodePoint = highlight.codePointAt(highlightStart + highlightIndex);
         int highlightCodePointType = Character.getType(highlightCodePoint);
         boolean highlightCodePointIsSeparator =
@@ -148,7 +149,7 @@ public class Highlight {
         }
       }
       if (matchingLength > 0) {
-        parts.add(new Part(index, index + matchingLength, highlight.length() - matchingLength));
+        parts.add(new Part(index, index + matchingLength, highlightLength - highlightIndex));
         next = Math.max(next, index + matchingLength);
         maxMatchingLength = Math.max(maxMatchingLength, matchingLength);
       }
@@ -166,7 +167,7 @@ public class Highlight {
 
     for (int i = parts.size() - 1; i >= 0; i--) {
       Part part = parts.get(i);
-      if (part.length() < maxMatchingLength) {
+      if (part.length() < maxMatchingLength && !part.isExactMatch()) {
         parts.remove(i);
       }
     }
