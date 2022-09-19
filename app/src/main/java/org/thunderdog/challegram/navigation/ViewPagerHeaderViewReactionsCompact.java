@@ -113,7 +113,7 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
         @Override
         protected void dispatchDraw (Canvas c) {
           super.dispatchDraw(c);
-          if (rightOffset > 0) {
+          if (rightOffset > 0 && shadowPaint2 != null) {
             int width = getMeasuredWidth();
             float s = computeHorizontalScrollRange() - computeHorizontalScrollOffset() - computeHorizontalScrollExtent();
             int alpha = (int) (MathUtils.clamp(s / Screen.dp(20f)) * 255);
@@ -157,6 +157,9 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
       @Override
       protected void dispatchDraw (Canvas c) {
         super.dispatchDraw(c);
+        if (shadowPaint1 == null) {
+          return;
+        }
         int width = getMeasuredWidth();
         float translationX = getTranslationX();
         int alpha1 = (int) ((1f - MathUtils.clamp(translationX / (width / 2f))) * 255);
