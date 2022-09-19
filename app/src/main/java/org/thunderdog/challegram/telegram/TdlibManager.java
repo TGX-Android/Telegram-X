@@ -625,7 +625,6 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   private static final int ACTION_DISPATCH_NETWORK_STATE = 0;
   private static final int ACTION_DISPATCH_NETWORK_TYPE = 1;
   private static final int ACTION_DISPATCH_NETWORK_DATA_SAVER = 2;
-  // private static final int ACTION_DISPATCH_KNOWN_USER_ID = 3;
   private static final int ACTION_DISPATCH_ACCOUNT_PROFILE = 4;
   private static final int ACTION_DISPATCH_ACCOUNT_PROFILE_PHOTO = 5;
   private static final int ACTION_DISPATCH_TOTAL_UNREAD_COUNT = 6;
@@ -642,18 +641,6 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       case ACTION_DISPATCH_NETWORK_DATA_SAVER:
         global().notifySystemDataSaverStateChanged(msg.arg1 == 1);
         break;
-      /*case ACTION_DISPATCH_KNOWN_USER_ID: {
-        int accountId = msg.arg1;
-        int userId = msg.arg2;
-        TdlibAccount account = accounts.get(accountId);
-        if (!account.isUnauthorized() && account.setKnownUserId(userId)) {
-          saveAccount(account, ACCOUNT_USER_CHANGED);
-          if (userId != 0) {
-            account.tdlib().checkDeviceToken();
-          }
-        }
-        break;
-      }*/
       case ACTION_DISPATCH_ACCOUNT_PROFILE: {
         onAccountProfileChanged(account(msg.arg1), (TdApi.User) msg.obj, msg.arg1 == currentAccount.id, msg.arg2 == 1);
         break;
@@ -2035,21 +2022,19 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     if (account.setUnauthorized(isUnauthorized, userId)) {
       saveAccount(account, ACCOUNT_AUTHORIZATION_CHANGED);
     }
-    if (changed) {
-      if (checkAliveAccount(account)) {
-        checkPauseTimeouts(null);
-      }
-      if (isUnauthorized && accountId == preferredAccountId) {
-        runOnUiThread(() -> {
+    runOnUiThread(() -> {
+      if (changed) {
+        if (checkAliveAccount(account)) {
+          checkPauseTimeouts(null);
+        }
+        if (isUnauthorized && accountId == preferredAccountId) {
           int newAccountId = findNextAccountId(accountId);
           if (newAccountId != TdlibAccount.NO_ID) {
             changePreferredAccountId(newAccountId, SWITCH_REASON_UNAUTHORIZED);
           }
-        });
+        }
       }
-    }
-    runOnUiThread(() -> {
-      global().notifyAuthorizationStateChanged(accounts.get(accountId), authState, status);
+      global().notifyAuthorizationStateChanged(account, authState, status);
     });
   }
 
