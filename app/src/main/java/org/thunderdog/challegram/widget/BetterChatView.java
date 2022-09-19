@@ -60,6 +60,7 @@ import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.FormattedText;
 import org.thunderdog.challegram.util.text.Highlight;
 import org.thunderdog.challegram.util.text.Text;
+import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.util.text.TextColorSets;
 
 import java.util.concurrent.TimeUnit;
@@ -404,7 +405,8 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
         subtitleLeft += Screen.dp(20f);
       }
       int subtitleTop = Screen.dp(39f) + subtitleOffset;
-      displaySubtitle.draw(c, subtitleLeft, subtitleTop, null, 1f, subtitleMediaReceiver);
+      TextColorSet colorSet = BitwiseUtils.getFlag(flags, FLAG_ONLINE) ? TextColorSets.Regular.NEUTRAL : null;
+      displaySubtitle.draw(c, subtitleLeft, subtitleTop,  colorSet, 1f, subtitleMediaReceiver);
     }
     if (subtitleIcon != 0) {
       Drawables.drawRtl(c, subtitleIconDrawable, Screen.dp(72f), Screen.dp(subtitleIcon == R.drawable.baseline_call_missed_18 ? 40f : 39f) + subtitleOffset, PorterDuffPaint.get(subtitleIconColorId), width, rtl);
