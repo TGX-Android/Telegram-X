@@ -26,6 +26,8 @@ import androidx.annotation.Nullable;
 
 import com.google.firebase.FirebaseOptions;
 
+import org.drinkless.td.libcore.telegram.Client;
+import org.drinkless.td.libcore.telegram.ClientError;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.drinkmore.Tracer;
 import org.thunderdog.challegram.BuildConfig;
@@ -1190,11 +1192,14 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
       case R.id.btn_test_recovery_tdlib: {
         String text = ((ListItem) v.getTag()).getStringValue();
         if (StringUtils.isEmpty(text)) {
-          text = "some tdlib bug";
+          text = "[ 0][t 7][1663524892.910522937][StickersManager.cpp:327][#3][!Td]  Check `Unreacheable` failed";
         }
         Settings.instance().storeTestCrash(new Crash.Builder(tdlib.id(), text)
           .flags(Crash.Flags.SOURCE_TDLIB)
         );
+        ClientError clientLogicError = new Client.ClientLogicError(text, Client.getClientCount(), false)
+          .withoutPotentiallyPrivateData();
+        Log.i("Output client error", clientLogicError);
         System.exit(0);
         break;
       }
