@@ -1383,6 +1383,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
             CharSequence copyText = editable.subSequence(selection.start, selection.end);
             editable.delete(selection.start, selection.end);
             U.copyText(copyText);
+            setSelection(selection.start);
             return true;
           }
           break;
@@ -1391,6 +1392,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
           if (!selection.isEmpty()) {
             CharSequence copyText = editable.subSequence(selection.start, selection.end);
             U.copyText(copyText);
+            setSelection(selection.end);
             return true;
           }
           break;
@@ -1407,6 +1409,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
               // TODO: should this be a part of EmojiFilter?
               removeCustomEmoji(editable, selection.start, selection.start + pasteText.length());
             }
+            setSelection(selection.start + pasteText.length());
             return true;
           }
           break;
