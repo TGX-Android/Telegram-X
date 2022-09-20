@@ -140,7 +140,6 @@ import org.thunderdog.challegram.data.TGMessageSticker;
 import org.thunderdog.challegram.data.TGRecord;
 import org.thunderdog.challegram.data.TGSwitchInline;
 import org.thunderdog.challegram.data.ThreadInfo;
-import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.filegen.PhotoGenerationInfo;
 import org.thunderdog.challegram.filegen.VideoGenerationInfo;
 import org.thunderdog.challegram.helper.BotHelper;
@@ -207,9 +206,9 @@ import org.thunderdog.challegram.unsorted.Test;
 import org.thunderdog.challegram.util.CancellableResultHandler;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.OptionDelegate;
+import org.thunderdog.challegram.util.SenderPickerDelegate;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.Unlockable;
-import org.thunderdog.challegram.util.SenderPickerDelegate;
 import org.thunderdog.challegram.v.HeaderEditText;
 import org.thunderdog.challegram.v.MessagesLayoutManager;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
@@ -223,12 +222,12 @@ import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.ProgressComponentView;
 import org.thunderdog.challegram.widget.RippleRevealView;
-import org.thunderdog.challegram.widget.rtl.RtlViewPager;
 import org.thunderdog.challegram.widget.SendButton;
 import org.thunderdog.challegram.widget.SeparatorView;
 import org.thunderdog.challegram.widget.TripleAvatarView;
 import org.thunderdog.challegram.widget.ViewPager;
 import org.thunderdog.challegram.widget.WallpaperParametersView;
+import org.thunderdog.challegram.widget.rtl.RtlViewPager;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -245,6 +244,7 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.AnimatedFrameLayout;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ArrayUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
@@ -255,7 +255,6 @@ import me.vkryl.core.lambda.Future;
 import me.vkryl.core.lambda.FutureLong;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
@@ -3309,6 +3308,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
             IntList ids = new IntList(count);
             StringList strings = new StringList(count);
             IntList icons = new IntList(count);
+
+            if (inputView.canClearTextFormat()) {
+              ids.append(R.id.btn_plain);
+              strings.append(R.string.TextFormatClear);
+              icons.append(R.drawable.baseline_format_clear_24);
+            }
 
             ids.append(R.id.btn_bold);
             strings.append(R.string.TextFormatBold);

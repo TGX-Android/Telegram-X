@@ -34,6 +34,7 @@ public interface EmojiSpan {
   default void requestCustomEmoji (ComplexReceiver receiver, int mediaKey) {
     receiver.clearReceivers(mediaKey);
   }
+  EmojiSpan toBuiltInEmojiSpan ();
 
   default boolean needRefresh () {
     return false;

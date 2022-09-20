@@ -25,6 +25,7 @@ import android.os.Build;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.Layout;
+import android.text.NoCopySpan;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
@@ -33,6 +34,7 @@ import android.text.TextPaint;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.text.style.CharacterStyle;
+import android.text.style.StyleSpan;
 import android.text.style.URLSpan;
 import android.util.TypedValue;
 import android.view.ActionMode;
@@ -100,7 +102,6 @@ import org.thunderdog.challegram.util.CharacterStyleFilter;
 import org.thunderdog.challegram.util.ExternalEmojiFilter;
 import org.thunderdog.challegram.util.FinalNewLineFilter;
 import org.thunderdog.challegram.util.TextSelection;
-import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.widget.InputWrapperWrapper;
 import org.thunderdog.challegram.widget.NoClipEditText;
 
@@ -108,6 +109,7 @@ import java.io.InputStream;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
+import java.util.List;
 
 import me.vkryl.android.text.CodePointCountFilter;
 import me.vkryl.core.BitwiseUtils;
@@ -201,6 +203,11 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
               int overrideResId;
               TdApi.TextEntityType type;
               switch (item.getItemId()) {
+                case R.id.btn_plain: {
+                  overrideResId = R.string.TextFormatClear;
+                  type = null;
+                  break;
+                }
                 case R.id.btn_bold: {
                   overrideResId = R.string.TextFormatBold;
                   type = new TdApi.TextEntityTypeBold();
@@ -245,14 +252,12 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
               }
               item.setTitle(type != null ? Lang.wrap(Lang.getString(overrideResId), Lang.entityCreator(type)) : Lang.getString(overrideResId));
             }
-            final TextSelection selection = getTextSelection();
-            final String str = getText().toString();
-            if (selection != null && Text.needFakeBoldFull(str, selection.start, selection.end)) {
-              menu.removeItem(R.id.btn_monospace);
-            }
           } catch (Throwable ignored) { }
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             menu.removeItem(android.R.id.shareText);
+          }
+          if (!canClearTextFormat()) {
+            menu.removeItem(R.id.btn_plain);
           }
           return true;
         }
@@ -323,6 +328,10 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     }
     TdApi.TextEntityType type;
     switch (id) {
+      case R.id.btn_plain: {
+        clearSpans(selection.start, selection.end);
+        return true;
+      }
       case R.id.btn_bold:
         type = new TdApi.TextEntityTypeBold();
         break;
@@ -355,113 +364,251 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     return true;
   }
 
-  private void setSpan (int start, int end, TdApi.TextEntityType type) {
-    CharacterStyle span = TD.toSpan(type);
-    if (span == null)
-      return;
-    boolean canBeNested = true;
+  public boolean canClearTextFormat () {
+    TextSelection selection = getTextSelection();
+    if (selection != null && !selection.isEmpty()) {
+      Editable editable = getText();
+      CharacterStyle[] spans = editable.getSpans(selection.start, selection.end, CharacterStyle.class);
+      if (spans != null) {
+        for (CharacterStyle span : spans) {
+          if (span instanceof NoCopySpan || span instanceof EmojiSpan || isComposingSpan(editable, span) || !TD.canConvertToEntityType(span)) {
+            continue;
+          }
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  private void clearSpans (int start, int end) {
+    Editable editable = getText();
+    CharacterStyle[] spans = editable.getSpans(start, end, CharacterStyle.class);
+    boolean updated = false;
+    if (spans != null) {
+      for (CharacterStyle existingSpan : spans) {
+        if (existingSpan instanceof NoCopySpan || existingSpan instanceof EmojiSpan || isComposingSpan(editable, existingSpan) || !TD.canConvertToEntityType(existingSpan)) {
+          continue;
+        }
+        int existingSpanStart = editable.getSpanStart(existingSpan);
+        int existingSpanEnd = editable.getSpanEnd(existingSpan);
+        boolean reused = false;
+
+        editable.removeSpan(existingSpan);
+
+        boolean keepSpanBeforeStart = start > existingSpanStart;
+        boolean keepSpanAfterEnd = existingSpanEnd > end;
+
+        if (keepSpanBeforeStart && keepSpanAfterEnd) {
+          editable.setSpan(TD.cloneSpan(existingSpan), existingSpanStart, start, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+          editable.setSpan(TD.cloneSpan(existingSpan), end, existingSpanEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        } else if (keepSpanBeforeStart) {
+          editable.setSpan(existingSpan, existingSpanStart, start, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+          reused = true;
+        } else if (keepSpanAfterEnd) {
+          editable.setSpan(existingSpan, end, existingSpanEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+          reused = true;
+        }
+
+        if (existingSpan instanceof Destroyable && !reused) {
+          ((Destroyable) existingSpan).performDestroy();
+        }
+        updated = true;
+      }
+    }
+    setSelection(end);
+    if (updated) {
+      inlineContext.forceCheck();
+      if (spanChangeListener != null) {
+        spanChangeListener.onSpansChanged(this);
+      }
+    }
+  }
+
+  private static boolean canBeNested (TdApi.TextEntityType type) {
     switch (type.getConstructor()) {
       case TdApi.TextEntityTypePre.CONSTRUCTOR:
       case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
-      case TdApi.TextEntityTypeCode.CONSTRUCTOR:
-        canBeNested = false;
-        break;
+      case TdApi.TextEntityTypeCode.CONSTRUCTOR: {
+        return false;
+      }
     }
-    boolean addSpan = true;
-    CharacterStyle[] existingSpans = getText().getSpans(start, end, CharacterStyle.class);
-    if (existingSpans != null) {
-      for (CharacterStyle existingSpan : existingSpans) {
-        TdApi.TextEntityType[] existingTypes = TD.toEntityType(existingSpan);
-        if (existingTypes == null || existingTypes.length == 0)
+    return true;
+  }
+
+  private static boolean isComposingSpan (Spanned spanned, Object span) {
+    return BitwiseUtils.getFlag(spanned.getSpanFlags(span), Spanned.SPAN_COMPOSING);
+  }
+
+  private boolean setSpanImpl (int start, int end, TdApi.TextEntityType newType) {
+    if (end - start <= 0 || !TD.canConvertToSpan(newType)) {
+      return false;
+    }
+    CharacterStyle newSpan = TD.toSpan(newType);
+    Editable editable = getText();
+    CharacterStyle[] existingSpansArray = editable.getSpans(start, end, CharacterStyle.class);
+    List<CharacterStyle> existingSpans = null;
+    if (existingSpansArray != null && existingSpansArray.length > 0) {
+      for (CharacterStyle existingSpan : existingSpansArray) {
+        if (existingSpan instanceof NoCopySpan || isComposingSpan(editable, existingSpan) || !TD.canConvertToEntityType(existingSpan)) {
           continue;
-        for (TdApi.TextEntityType existingType : existingTypes) {
-          if (Td.equalsTo(existingType, type)) {
-            int existingSpanStart = getText().getSpanStart(existingSpan);
-            int existingSpanEnd = getText().getSpanEnd(existingSpan);
-            SpannableStringBuilder sb = new SpannableStringBuilder(getText());
-            sb.removeSpan(existingSpan);
-            if (existingSpan instanceof Destroyable) {
-              ((Destroyable) existingSpan).performDestroy();
-            }
-            // Check start
-            if (existingSpanStart < start) {
-              for (TdApi.TextEntityType copyType : existingTypes) {
-                sb.setSpan(TD.toSpan(copyType), existingSpanStart, start, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-              }
-            }
-
-            // Check end
-            if (existingSpanEnd > end) {
-              for (TdApi.TextEntityType copyType : existingTypes) {
-                sb.setSpan(TD.toSpan(copyType), end, existingSpanEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-              }
-            }
-
-            setText(SpannableString.valueOf(sb));
-            addSpan = false;
-            break;
+        }
+        int existingSpanStart = editable.getSpanStart(existingSpan);
+        int existingSpanEnd = editable.getSpanEnd(existingSpan);
+        TdApi.TextEntityType[] existingTypes = TD.toEntityType(existingSpan);
+        if (existingTypes == null || existingTypes.length == 0) {
+          continue;
+        }
+        boolean matchingStyleSpans = false;
+        if (newSpan instanceof StyleSpan && existingSpan instanceof StyleSpan) {
+          StyleSpan existingStyleSpan = (StyleSpan) existingSpan;
+          StyleSpan newStyleSpan = (StyleSpan) newSpan;
+          if (newStyleSpan.getStyle() == existingStyleSpan.getStyle()) {
+            matchingStyleSpans = true;
           }
+        }
+        boolean haveExactMatch = matchingStyleSpans;
+        if (!haveExactMatch) {
+          for (TdApi.TextEntityType existingType : existingTypes) {
+            if (Td.equalsTo(existingType, newType)) {
+              haveExactMatch = true;
+              break;
+            }
+          }
+        }
+        if (haveExactMatch) {
+          if (existingTypes.length == 1 || matchingStyleSpans) {
+            if (start < existingSpanStart || end > existingSpanEnd) {
+              // Medium path: extend existing span indexes if needed
+              editable.removeSpan(existingSpan);
+              editable.setSpan(
+                existingSpan,
+                Math.min(start, existingSpanStart),
+                Math.max(end, existingSpanEnd),
+                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+              );
+              return true;
+            }
+            // Easy path: do nothing, because entire selection already has the same entity
+            return false;
+          }
+          if (start >= existingSpanStart && end <= existingSpanEnd) {
+            // Easy path: do nothing, because entire selection already has the same entity
+            return false;
+          }
+          // Medium path: apply entity only to areas that do not have the exactly matching entity
+          boolean changed;
+          changed = setSpanImpl(start, existingSpanStart, newType);
+          changed = setSpanImpl(existingSpanEnd, end, newType) || changed;
+          return changed;
+        }
+        if (existingSpans == null) {
+          existingSpans = new ArrayList<>(existingSpansArray.length);
+        }
+        existingSpans.add(existingSpan);
+      }
+    }
+    if (existingSpans == null || existingSpans.isEmpty()) {
+      // Easy path: just set new span at start .. end
+      editable.setSpan(newSpan, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+      return true;
+    }
+    boolean canBeNested = canBeNested(newType);
+    for (CharacterStyle existingSpan : existingSpans) {
+      int existingSpanStart = editable.getSpanStart(existingSpan);
+      int existingSpanEnd = editable.getSpanEnd(existingSpan);
+      TdApi.TextEntityType[] existingTypes = TD.toEntityType(existingSpan);
+      if (existingTypes == null || existingTypes.length == 0) {
+        continue; // Unreachable
+      }
+      if (existingSpan instanceof EmojiSpan) {
+        if (!((EmojiSpan) existingSpan).isCustomEmoji()) {
+          throw new IllegalStateException(); // Unreachable
+        }
+        if (!canBeNested || newType.getConstructor() == TdApi.TextEntityTypeTextUrl.CONSTRUCTOR) {
+          editable.removeSpan(existingSpan);
+          if (existingSpan instanceof Destroyable) {
+            ((Destroyable) existingSpan).performDestroy();
+          }
+          parseEmoji(editable, existingSpanStart, existingSpanEnd);
+        }
+        continue;
+      }
+      boolean moveExistingEntity = !canBeNested;
+      for (TdApi.TextEntityType existingType : existingTypes) {
+        if (!canBeNested(existingType) || (existingType.getConstructor() == TdApi.TextEntityTypeTextUrl.CONSTRUCTOR && newType.getConstructor() == TdApi.TextEntityTypeTextUrl.CONSTRUCTOR)) {
+          moveExistingEntity = true;
+        }
+      }
+      if (moveExistingEntity) {
+        if (existingSpanStart < start && existingSpanEnd > end) {
+          // Existing entity range covers start .. end fully, so we need it on both edges
+          editable.removeSpan(existingSpan);
+          editable.setSpan(existingSpan, existingSpanStart, start, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+          editable.setSpan(TD.cloneSpan(existingSpan), end, existingSpanEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        } else if (existingSpanStart < start) {
+          // Existing entity starts before start, so we update its position to existingSpanStart .. start
+          editable.removeSpan(existingSpan);
+          editable.setSpan(existingSpan, existingSpanStart, start, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        } else if (existingSpanEnd > end) {
+          // Existing entity ends after ens, so we update its position to end .. existingSpanEnd
+          editable.removeSpan(existingSpan);
+          editable.setSpan(existingSpan, end, existingSpanEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        } else {
+          // Existing entity is fully inside start .. end, so we have to remove it
+          editable.removeSpan(existingSpan);
+          if (existingSpan instanceof Destroyable) {
+            ((Destroyable) existingSpan).performDestroy();
+          }
+        }
+      } else if (existingSpan instanceof StyleSpan) {
+        // Simplify work for getOutputText() if StyleSpan is located at the edges
+        if (existingSpanStart < start && existingSpanEnd < end) {
+          editable.removeSpan(existingSpan);
+          editable.setSpan(TD.cloneSpan(existingSpan), existingSpanStart, start, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+          editable.setSpan(existingSpan, start, existingSpanEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        } else if (existingSpanEnd > end && existingSpanStart > start) {
+          editable.removeSpan(existingSpan);
+          editable.setSpan(existingSpan, existingSpanStart, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+          editable.setSpan(TD.cloneSpan(existingSpan), end, existingSpanEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
       }
     }
-    if (addSpan) {
-      if (existingSpans != null && existingSpans.length > 0) {
-        SpannableStringBuilder sb = null;
+    editable.setSpan(newSpan, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+    return true;
+  }
 
-        for (CharacterStyle existingSpan : existingSpans) {
-          TdApi.TextEntityType[] existingTypes = TD.toEntityType(existingSpan);
-          if (existingTypes == null || existingTypes.length == 0)
-            continue;
-          int existingSpanStart = getText().getSpanStart(existingSpan);
-          int existingSpanEnd = getText().getSpanEnd(existingSpan);
-          boolean removeSpan = !canBeNested;
-          if (!removeSpan) {
-            for (TdApi.TextEntityType existingType : existingTypes) {
-              switch (existingType.getConstructor()) {
-                case TdApi.TextEntityTypeCode.CONSTRUCTOR:
-                case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
-                case TdApi.TextEntityTypePre.CONSTRUCTOR:
-                  removeSpan = true;
-                  break;
-                case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
-                case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
-                  removeSpan = type.getConstructor() == TdApi.TextEntityTypeTextUrl.CONSTRUCTOR;
-                  break;
-              }
-              if (removeSpan)
-                break;
-            }
-          }
-          if (removeSpan) {
-            if (sb == null)
-              sb = new SpannableStringBuilder(getText());
-            sb.removeSpan(existingSpan);
-            if (existingSpan instanceof Destroyable) {
-              ((Destroyable) existingSpan).performDestroy();
-            }
-            if (existingSpanStart < start || existingSpanEnd > end) {
-              for (TdApi.TextEntityType copyType : existingTypes) {
-                if (copyType.getConstructor() == TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR)
-                  continue;
-                if (existingSpanStart < start)
-                  sb.setSpan(TD.toSpan(copyType), existingSpanStart, start, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                if (existingSpanEnd > end)
-                  sb.setSpan(TD.toSpan(copyType), end, existingSpanEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-              }
-            }
-          }
-        }
-        if (sb != null) {
-          setText(SpannableString.valueOf(sb));
-        }
-      }
-
-      getText().setSpan(span, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+  private void setSpan (int start, int end, TdApi.TextEntityType newType) {
+    if (!TD.canConvertToSpan(newType)) {
+      return;
     }
+    boolean spansChanged = setSpanImpl(start, end, newType);
     setSelection(end);
-    inlineContext.forceCheck();
-    if (spanChangeListener != null) {
-      spanChangeListener.onSpansChanged(this);
+    if (spansChanged) {
+      inlineContext.forceCheck();
+      if (spanChangeListener != null) {
+        spanChangeListener.onSpansChanged(this);
+      }
+    }
+  }
+
+  private static void parseEmoji (Editable editable, int start, int end) {
+    CharSequence cs = Emoji.instance().replaceEmoji(editable, start, end, null);
+    if (cs != editable && cs instanceof Spanned) {
+      Spanned emojiText = (Spanned) cs;
+      EmojiSpan[] parsedEmojis = emojiText.getSpans(0, emojiText.length(), EmojiSpan.class);
+      if (parsedEmojis != null) {
+        for (EmojiSpan parsedEmoji : parsedEmojis) {
+          int emojiStart = emojiText.getSpanStart(parsedEmoji);
+          int emojiEnd = emojiText.getSpanEnd(parsedEmoji);
+          editable.setSpan(
+            parsedEmoji,
+            start + emojiStart,
+            start + emojiEnd,
+            Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+          );
+        }
+      }
     }
   }
 
@@ -1256,6 +1403,10 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
             } else {
               editable.replace(selection.start, selection.end, pasteText);
             }
+            if (pasteText instanceof Spanned) {
+              // TODO: should this be a part of EmojiFilter?
+              removeCustomEmoji(editable, selection.start, selection.start + pasteText.length());
+            }
             return true;
           }
           break;
@@ -1265,6 +1416,28 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       Log.e("onTextContextMenuItem failed for id %s", t, Lang.getResourceEntryName(id));
     }
     return super.onTextContextMenuItem(id);
+  }
+
+  private static void removeCustomEmoji (Editable editable, int start, int end) {
+    URLSpan[] urlSpans = editable.getSpans(start, end, URLSpan.class);
+    if (urlSpans != null) {
+      for (URLSpan urlSpan : urlSpans) {
+        int urlStart = editable.getSpanStart(urlSpan);
+        int urlEnd = editable.getSpanEnd(urlSpan);
+        EmojiSpan[] emojiSpans = editable.getSpans(urlStart, urlEnd, EmojiSpan.class);
+        for (EmojiSpan emojiSpan : emojiSpans) {
+          if (emojiSpan.isCustomEmoji()) {
+            int emojiStart = editable.getSpanStart(emojiSpan);
+            int emojiEnd = editable.getSpanEnd(emojiSpan);
+            editable.removeSpan(emojiSpan);
+            if (emojiSpan instanceof Destroyable) {
+              ((Destroyable) emojiSpan).performDestroy();
+            }
+            parseEmoji(editable, emojiStart, emojiEnd);
+          }
+        }
+      }
+    }
   }
 
   @Override

@@ -5157,6 +5157,38 @@ public class TD {
   private static final String SPOILER_REPLACEMENT_CHAR = "▒";
   private static final int SPOILER_BACKGROUND_COLOR = 0xffa9a9a9;
 
+  public static boolean canConvertToSpan (TdApi.TextEntityType type) {
+    if (type == null) {
+      return false;
+    }
+    switch (type.getConstructor()) {
+      case TdApi.TextEntityTypeBold.CONSTRUCTOR:
+      case TdApi.TextEntityTypeItalic.CONSTRUCTOR:
+      case TdApi.TextEntityTypeCode.CONSTRUCTOR:
+      case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
+      case TdApi.TextEntityTypePre.CONSTRUCTOR:
+      case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
+      case TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR:
+      case TdApi.TextEntityTypeUnderline.CONSTRUCTOR:
+      case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
+      case TdApi.TextEntityTypeMentionName.CONSTRUCTOR:
+      case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
+        return true;
+      // auto-detected entities
+      case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR:
+      case TdApi.TextEntityTypeBotCommand.CONSTRUCTOR:
+      case TdApi.TextEntityTypeCashtag.CONSTRUCTOR:
+      case TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR:
+      case TdApi.TextEntityTypeHashtag.CONSTRUCTOR:
+      case TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR:
+      case TdApi.TextEntityTypeMention.CONSTRUCTOR:
+      case TdApi.TextEntityTypePhoneNumber.CONSTRUCTOR:
+      case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
+        break;
+    }
+    return false;
+  }
+
   public static CharacterStyle toSpan (TdApi.TextEntityType type, boolean allowInternal) {
     if (type == null)
       return null;
@@ -5296,6 +5328,42 @@ public class TD {
       }
     }
     return false;
+  }
+
+  public static CharacterStyle cloneSpan (CharacterStyle span) {
+    if (span instanceof CustomTypefaceSpan) {
+      CustomTypefaceSpan customTypefaceSpan = (CustomTypefaceSpan) span;
+      return new CustomTypefaceSpan(customTypefaceSpan);
+    }
+    if (span instanceof URLSpan) {
+      URLSpan urlSpan = (URLSpan) span;
+      return new URLSpan(urlSpan.getURL());
+    }
+    if (span instanceof StyleSpan) {
+      StyleSpan styleSpan = (StyleSpan) span;
+      return new StyleSpan(styleSpan.getStyle());
+    }
+    if (span instanceof TypefaceSpan) {
+      TypefaceSpan typefaceSpan = (TypefaceSpan) span;
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+        Typeface typeface = typefaceSpan.getTypeface();
+        if (typeface != null) {
+          return new TypefaceSpan(typeface);
+        }
+      }
+      return new TypefaceSpan(typefaceSpan.getFamily());
+    }
+    if (span instanceof BackgroundColorSpan) {
+      BackgroundColorSpan backgroundColorSpan = (BackgroundColorSpan) span;
+      return new BackgroundColorSpan(backgroundColorSpan.getBackgroundColor());
+    }
+    if (span instanceof StrikethroughSpan) {
+      return new StrikethroughSpan();
+    }
+    if (span instanceof UnderlineSpan) {
+      return new UnderlineSpan();
+    }
+    throw new UnsupportedOperationException(span.toString());
   }
 
   public static boolean canConvertToEntityType (CharacterStyle span) {

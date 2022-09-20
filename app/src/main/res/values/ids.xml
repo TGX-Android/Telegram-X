@@ -694,6 +694,7 @@
   <item type="id" name="btn_removeChatFromListOrClearHistory" />
   <item type="id" name="btn_destroyChat" />
 
+  <item type="id" name="btn_plain" />
   <item type="id" name="btn_bold" />
   <item type="id" name="btn_italic" />
   <item type="id" name="btn_spoiler" />

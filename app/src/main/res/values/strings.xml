@@ -2373,6 +2373,7 @@
   <string name="BotDeleteHint">Remove bot from suggestions?</string>
   <string name="BotHelp">Help</string>
   <string name="BotSettings">Settings</string>
+  <string name="TextFormatClear">Plain text</string>
   <string name="TextFormatBold">Bold</string>
   <string name="TextFormatItalic">Italic</string>
   <string name="TextFormatMonospace">Monospace</string>
