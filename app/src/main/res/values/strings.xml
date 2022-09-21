@@ -663,6 +663,8 @@
   <string name="XVideoSaved_one">%1$s video saved to Gallery</string>
   <string name="XVideoSaved_other">%1$s videos saved to Gallery</string>
   <string name="ChannelSignMessages">Sign Messages</string>
+  <string name="ApproveNewMembers">Approve New Members</string>
+  <string name="ApproveNewMembersInfo">Turn this on if you want new members to join only after they are approved by an admin.</string>
   <string name="RestrictSaving">Restrict Saving Content</string>
   <string name="RestrictSavingBotInfo">Copying and forwarding is not allowed from this bot.</string>
   <string name="RestrictSavingUserInfo">Copying and forwarding of this message is restricted.</string>

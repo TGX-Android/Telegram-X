@@ -8704,9 +8704,28 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return isChannelChat(chat) && canChangeInfo(chat, false);
   }
 
-  public boolean canToggleContentProtection (long chatId) {
+  public boolean haveCreatorRights (long chatId) {
     TdApi.ChatMemberStatus status = chatStatus(chatId);
     return status != null && status.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR;
+  }
+
+  public boolean canToggleJoinByRequest (TdApi.Chat chat) {
+    if (isMultiChat(chat)) {
+      String username = chatUsername(chat);
+      if (StringUtils.isEmpty(username)) {
+        return false;
+      }
+      if (isSupergroupChat(chat)) {
+        return canRestrictMembers(chat.id);
+      } else if (chat.type.getConstructor() == TdApi.ChatTypeBasicGroup.CONSTRUCTOR) {
+        return haveCreatorRights(chat.id);
+      }
+    }
+    return false;
+  }
+
+  public boolean canToggleContentProtection (long chatId) {
+    return haveCreatorRights(chatId);
   }
 
   public boolean canToggleAllHistory (TdApi.Chat chat) {

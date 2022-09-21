@@ -58,7 +58,6 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.MediaCollectorDelegate;
 import org.thunderdog.challegram.component.base.SettingView;
-import org.thunderdog.challegram.component.user.SortedUsersAdapter;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
@@ -108,8 +107,8 @@ import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.util.CharacterStyleFilter;
 import org.thunderdog.challegram.util.DoneListener;
 import org.thunderdog.challegram.util.OptionDelegate;
-import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.SenderPickerDelegate;
+import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextWrapper;
@@ -122,11 +121,11 @@ import org.thunderdog.challegram.widget.DoneButton;
 import org.thunderdog.challegram.widget.EmptySmartView;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 import org.thunderdog.challegram.widget.ProgressComponentView;
-import org.thunderdog.challegram.widget.rtl.RtlViewPager;
 import org.thunderdog.challegram.widget.ShadowView;
 import org.thunderdog.challegram.widget.SliderWrapView;
 import org.thunderdog.challegram.widget.ViewControllerPagerAdapter;
 import org.thunderdog.challegram.widget.ViewPager;
+import org.thunderdog.challegram.widget.rtl.RtlViewPager;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -1895,6 +1894,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             view.getToggler().setRadioEnabled(chat.hasProtectedContent, isUpdate);
             break;
           }
+          case R.id.btn_toggleJoinByRequest: {
+            view.getToggler().setRadioEnabled(supergroup != null && supergroup.joinByRequest, isUpdate);
+            break;
+          }
           case R.id.btn_toggleSignatures: {
             if (mode == MODE_EDIT_CHANNEL) {
               view.getToggler().setRadioEnabled(supergroup.signMessages, isUpdate);
@@ -2769,8 +2772,44 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           }
         }
       }
+      checkCanToggleJoinByRequest();
     } else if (hasUsername) {
       updateValuedItem(R.id.btn_username);
+    }
+  }
+
+  private void checkCanToggleJoinByRequest () {
+    int existingPosition = baseAdapter.indexOfViewById(R.id.btn_toggleJoinByRequest);
+    boolean couldToggle = existingPosition != -1;
+    boolean canToggle = tdlib.canToggleJoinByRequest(chat);
+    if (couldToggle != canToggle) {
+      if (canToggle) {
+        int bestIndex = baseAdapter.indexOfViewById(R.id.btn_channelType);
+        if (bestIndex == -1) {
+          return;
+        }
+        ListItem shadowItem = null;
+        while (++bestIndex < baseAdapter.getItems().size()) {
+          ListItem item = baseAdapter.getItem(bestIndex);
+          if (item != null && item.getViewType() == ListItem.TYPE_SHADOW_BOTTOM) {
+            shadowItem = item;
+            break;
+          }
+        }
+        if (shadowItem == null) {
+          return;
+        }
+        baseAdapter.addItems(bestIndex + 1,
+          new ListItem(ListItem.TYPE_SHADOW_TOP),
+          new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleJoinByRequest, 0, R.string.ApproveNewMembers, supergroup != null && supergroup.joinByRequest),
+          new ListItem(ListItem.TYPE_SHADOW_BOTTOM),
+          new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.ApproveNewMembersInfo)
+        );
+      } else {
+        baseAdapter.removeRange(existingPosition - 1, 4);
+      }
+    } else if (canToggle) {
+      baseAdapter.updateValuedSettingByPosition(existingPosition);
     }
   }
 
@@ -3040,6 +3079,25 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     supergroup.signMessages = sign;
     tdlib.client().send(new TdApi.ToggleSupergroupSignMessages(supergroup.id, sign), tdlib.okHandler());
     baseAdapter.updateValuedSettingById(R.id.btn_toggleSignatures);
+  }
+
+  private void toggleJoinByRequests (View v) {
+    if (tdlib.canToggleJoinByRequest(chat)) {
+      boolean joinByRequest = !(supergroup != null && supergroup.joinByRequest);
+      if (supergroup != null) {
+        supergroup.joinByRequest = joinByRequest;
+        tdlib.client().send(new TdApi.ToggleSupergroupJoinByRequest(supergroup.id, joinByRequest), tdlib.okHandler());
+        baseAdapter.updateValuedSettingById(R.id.btn_toggleJoinByRequest);
+      } else if (mode == MODE_EDIT_GROUP) {
+        showConfirm(Lang.getMarkdownString(this, R.string.UpgradeChatPrompt), Lang.getString(R.string.Proceed), () ->
+          tdlib.upgradeToSupergroup(chat.id, (oldChatId, newChatId, error) -> {
+            if (newChatId != 0) {
+              tdlib.client().send(new TdApi.ToggleSupergroupJoinByRequest(ChatId.toSupergroupId(newChatId), joinByRequest), tdlib.okHandler());
+            }
+          })
+        );
+      }
+    }
   }
 
   private void toggleContentProtection (View v) {
@@ -3582,6 +3640,14 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (itemCount > 0) {
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     }
+
+    if (tdlib.canToggleJoinByRequest(chat)) {
+      items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+      items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleJoinByRequest, 0, R.string.ApproveNewMembers, supergroup != null && supergroup.joinByRequest));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.ApproveNewMembersInfo));
+    }
+
     boolean added = false;
 
     if (tdlib.canToggleSignMessages(chat)) {
@@ -3772,6 +3838,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private void processEditContentChanged (TdApi.Supergroup updatedSupergroup) {
     this.supergroup = updatedSupergroup;
+    checkCanToggleJoinByRequest();
     baseAdapter.updateValuedSettingById(R.id.btn_toggleProtection);
 
     switch (mode) {
@@ -4565,6 +4632,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       }
       case R.id.btn_toggleProtection: {
         toggleContentProtection(v);
+        break;
+      }
+      case R.id.btn_toggleJoinByRequest: {
+        toggleJoinByRequests(v);
         break;
       }
     }
