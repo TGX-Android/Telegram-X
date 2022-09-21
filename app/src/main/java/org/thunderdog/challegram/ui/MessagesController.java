@@ -4193,7 +4193,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       msg.checkAvailableReactions(() -> {
         if (withReactions && msg.canBeReacted() && msg.getMessageAvailableReactions().length > 0) {
           Options messageOptions = getOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons);
-          showMessageOptions(messageOptions, selectedMessage);
+          showMessageOptions(messageOptions, msg);
         } else {
           PopupLayout popupLayout = showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons);
           patchReadReceiptsOptions(popupLayout, msg, disableViewCounter);
