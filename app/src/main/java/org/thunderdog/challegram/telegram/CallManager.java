@@ -21,6 +21,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
+import android.os.CancellationSignal;
 import android.os.Looper;
 import android.widget.Toast;
 
@@ -75,6 +76,8 @@ public class CallManager implements GlobalCallListener {
     listeners.remove(listener);
   }
 
+  private CancellationSignal serviceCancellationSignal;
+
   private void setCurrentCall (final Tdlib tdlib, @Nullable final TdApi.Call call) {
     if (currentCall == null && call == null) {
       return;
@@ -86,11 +89,16 @@ public class CallManager implements GlobalCallListener {
       if (currentCallAcknowledged) {
         notifyCallListeners();
       }
+      if (serviceCancellationSignal != null) {
+        serviceCancellationSignal.cancel();
+        serviceCancellationSignal = null;
+      }
       if (call != null) {
         Intent intent = new Intent(UI.getAppContext(), TGCallService.class);
         intent.putExtra("account_id", tdlib.id());
         intent.putExtra("call_id", call.id);
-        UI.startService(intent, UI.getUiState() != UI.STATE_RESUMED, true);
+        serviceCancellationSignal = new CancellationSignal();
+        UI.startService(intent, UI.getUiState() != UI.STATE_RESUMED, true, serviceCancellationSignal);
 
         navigateToCallController(currentCallTdlib, currentCall);
       }

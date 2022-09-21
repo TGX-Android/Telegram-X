@@ -16,6 +16,7 @@ package org.thunderdog.challegram.player;
 
 import android.content.Intent;
 import android.os.Build;
+import android.os.CancellationSignal;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -154,11 +155,18 @@ public class AudioController extends BasePlaybackController implements TGAudio.P
     return (playFlags & TGPlayerController.PLAY_FLAG_SHUFFLE) != 0;
   }*/
 
+  private CancellationSignal serviceLaunchCancellationSignal;
+
   private void setPlaybackMode (int mode, boolean needForeground) {
     if (this.playbackMode != mode) {
       this.playbackMode = mode;
+      if (serviceLaunchCancellationSignal != null) {
+        serviceLaunchCancellationSignal.cancel();
+        serviceLaunchCancellationSignal = null;
+      }
       if (mode == PLAYBACK_MODE_EXOPLAYER_LIST) {
-        UI.startService(new Intent(UI.getAppContext(), AudioService.class), needForeground, false);
+        serviceLaunchCancellationSignal = new CancellationSignal();
+        UI.startService(new Intent(UI.getAppContext(), AudioService.class), needForeground, false, serviceLaunchCancellationSignal);
       }
     }
   }

@@ -21,6 +21,7 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.os.Build;
+import android.os.CancellationSignal;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.format.DateFormat;
@@ -153,14 +154,16 @@ public class UI {
     }
   }
 
-  public static boolean startService (Intent intent, boolean isForeground, boolean forcePermissionRequest) {
+  public static boolean startService (Intent intent, boolean isForeground, boolean forcePermissionRequest, @Nullable CancellationSignal signal) {
     if (isForeground) {
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
         BaseActivity activity = getUiContext();
         if (activity != null) {
-          activity.requestCustomPermissions(new String[] {Manifest.permission.FOREGROUND_SERVICE}, (code, granted) ->
-            startServiceImpl(activity, intent, true)
-          );
+          activity.requestCustomPermissions(new String[] {Manifest.permission.FOREGROUND_SERVICE}, (code, granted) -> {
+            if (signal == null || !signal.isCanceled()) {
+              startServiceImpl(activity, intent, true);
+            }
+          });
           return true;
         } else {
           Log.e("Cannot start foreground service, because activity not found.");
@@ -173,9 +176,11 @@ public class UI {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && forcePermissionRequest) {
       BaseActivity activity = getUiContext();
       if (activity != null) {
-        activity.requestCustomPermissions(new String[] {Manifest.permission.FOREGROUND_SERVICE}, (code, granted) ->
-          startServiceImpl(activity, intent, false)
-        );
+        activity.requestCustomPermissions(new String[] {Manifest.permission.FOREGROUND_SERVICE}, (code, granted) -> {
+          if (signal == null || !signal.isCanceled()) {
+            startServiceImpl(activity, intent, false);
+          }
+        });
         return true;
       } else {
         Log.e("Cannot request foreground service permission, because activity not found.");
@@ -188,7 +193,7 @@ public class UI {
 
   public static void startNotificationService () {
     if (Config.SERVICES_ENABLED) {
-      startService(new Intent(getAppContext(), NetworkListenerService.class), false, false);
+      startService(new Intent(getAppContext(), NetworkListenerService.class), false, false, null);
     }
   }
 
