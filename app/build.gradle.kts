@@ -205,7 +205,7 @@ dependencies {
   // ExoPlayer: https://github.com/google/ExoPlayer/blob/release-v2/RELEASENOTES.md
   implementation("com.google.android.exoplayer:exoplayer-core:2.18.1")
   // The Checker Framework: https://checkerframework.org/CHANGELOG.md
-  compileOnly("org.checkerframework:checker-qual:3.24.0")
+  compileOnly("org.checkerframework:checker-qual:3.25.0")
   // OkHttp: https://github.com/square/okhttp/blob/master/CHANGELOG.md
   implementation("com.squareup.okhttp3:okhttp:4.9.3")
   // ShortcutBadger: https://github.com/leolin310148/ShortcutBadger
@@ -213,7 +213,7 @@ dependencies {
   // ReLinker: https://github.com/KeepSafe/ReLinker/blob/master/CHANGELOG.md
   implementation("com.getkeepsafe.relinker:relinker:1.4.5")
   // Konfetti: https://github.com/DanielMartinus/Konfetti/blob/master/README.md
-  implementation("nl.dionsegijn:konfetti-xml:2.0.1")
+  implementation("nl.dionsegijn:konfetti-xml:2.0.2")
   // Transcoder: https://github.com/natario1/Transcoder/blob/master/docs/_about/changelog.md
   implementation("com.github.natario1:Transcoder:ba8f098c94")
   // https://github.com/mikereedell/sunrisesunsetlib-java
