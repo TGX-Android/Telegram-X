@@ -1797,6 +1797,8 @@
   <string name="LinkCurrent">t.me/%1$s is your current public link.</string>
   <string name="LoadingActions">Loading actions…</string>
   <string name="JoinChat">Join Chat</string>
+  <string name="RequestJoinChannel">Request to Join Channel</string>
+  <string name="RequestJoinGroup">Request to Join Chat</string>
   <string name="MemberCanJoinGroup">%1$s will be able to return to the group.</string>
   <string name="MemberCannotJoinGroup">%1$s will not be able to return to the group unless added back by admin.</string>
   <string name="MemberCanJoinChannel">%1$s will be able to return to the channel.</string>
@@ -2975,6 +2977,7 @@
   <string name="error_PHONE_NUMBER_BANNED">Sorry, this phone number is banned. Contact us at login@stel.com if you need help.</string>
   <string name="error_CHANNELS_ADMIN_LOCATED_TOO_MUCH">Sorry, you have too many location-based groups already. Please delete one of your existing ones first.</string>
   <string name="error_PREMIUM_ACCOUNT_REQUIRED">This feature requires Telegram Premium subscription.</string>
+  <string name="error_INVITE_REQUEST_SENT">Request to join this chat has been sent.</string>
   <string name="errorPrivacyAddMember">Sorry, the user restricted who can add them to chats in their privacy settings.</string>
   <string name="UserPrivacyRestricted">Sorry, the user restricted this action in their privacy settings.</string>
   <string name="NobodyLikesSpam2">Sorry, you can interact only with mutual contacts at the moment.</string> <!--PEER_FLOOD-->

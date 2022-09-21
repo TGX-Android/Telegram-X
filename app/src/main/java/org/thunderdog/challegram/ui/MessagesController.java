@@ -5470,7 +5470,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void showActionJoinChatButton () {
-    showActionButton(R.string.JoinChat, ACTION_JOIN_CHAT);
+    TdApi.Supergroup supergroup = tdlib.chatToSupergroup(getChatId());
+    if (supergroup != null && supergroup.joinByRequest && !TD.isAdmin(supergroup.status)) {
+      showActionButton(supergroup.isChannel ? R.string.RequestJoinChannel : R.string.RequestJoinGroup, ACTION_JOIN_CHAT);
+    } else {
+      showActionButton(R.string.JoinChat, ACTION_JOIN_CHAT);
+    }
   }
 
   public void showActionUnblockButton () {
@@ -5625,7 +5630,18 @@ public class MessagesController extends ViewController<MessagesController.Argume
         break;
       }
       case ACTION_JOIN_CHAT: {
-        tdlib.client().send(new TdApi.AddChatMember(chat.id, tdlib.myUserId(), 0), tdlib.okHandler());
+        tdlib.client().send(new TdApi.AddChatMember(chat.id, tdlib.myUserId(), 0), result -> {
+          if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
+            runOnUiThreadOptional(() -> {
+              if (isFocused()) {
+                context
+                  .tooltipManager()
+                  .builder(actionButton)
+                  .show(this, tdlib, R.drawable.baseline_error_24, TD.toErrorString(result));
+              }
+            });
+          }
+        });
         break;
       }
       case ACTION_UNBAN_USER: {
