@@ -165,7 +165,7 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
       case TdApi.NotificationTypeNewMessage.CONSTRUCTOR:
         return ((TdApi.NotificationTypeNewMessage) notification.type).message.content.getConstructor() == TdApi.MessagePinMessage.CONSTRUCTOR;
       case TdApi.NotificationTypeNewPushMessage.CONSTRUCTOR:
-        return TD.isPinnedMessagePushType(((TdApi.NotificationTypeNewPushMessage) notification.type).content);
+        return Td.isPinned(((TdApi.NotificationTypeNewPushMessage) notification.type).content);
       case TdApi.NotificationTypeNewCall.CONSTRUCTOR:
       case TdApi.NotificationTypeNewSecretChat.CONSTRUCTOR:
         break;
@@ -285,10 +285,12 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
 
   public String getContentText () {
     switch (notification.type.getConstructor()) {
-      case TdApi.NotificationTypeNewMessage.CONSTRUCTOR:
-        return TD.getTextFromMessage(((TdApi.NotificationTypeNewMessage) notification.type).message);
+      case TdApi.NotificationTypeNewMessage.CONSTRUCTOR: {
+        TdApi.FormattedText text = Td.textOrCaption(((TdApi.NotificationTypeNewMessage) notification.type).message.content);
+        return Td.getText(text);
+      }
       case TdApi.NotificationTypeNewPushMessage.CONSTRUCTOR:
-        return TD.getTextFromMessage(((TdApi.NotificationTypeNewPushMessage) notification.type).content);
+        return Td.getText(((TdApi.NotificationTypeNewPushMessage) notification.type).content);
       case TdApi.NotificationTypeNewCall.CONSTRUCTOR:
       case TdApi.NotificationTypeNewSecretChat.CONSTRUCTOR:
         break;

@@ -3150,6 +3150,8 @@
 
   <string name="InvoiceFor">Invoice for %1$s</string>
   <string name="Invoice">Invoice</string>
+  <string name="RecurringPayment">Recurring payment</string>
+  <string name="PaidX">You successfully paid %1$s</string>
 
   <string name="MarketUrl">https://play.google.com/store/apps/details?id=org.thunderdog.challegram</string>
 

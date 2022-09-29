@@ -4201,8 +4201,8 @@ public class TD {
   }
 
   public static boolean canCopyText (TdApi.Message msg) {
-    String copyText = getTextFromMessage(msg);
-    return copyText != null && copyText.trim().length() > 0;
+    TdApi.FormattedText text = msg != null ? Td.textOrCaption(msg.content) : null;
+    return !Td.isEmpty(Td.trim(text));
   }
 
   public static TdApi.Message removeWebPage (TdApi.Message message) {
@@ -5670,6 +5670,7 @@ public class TD {
   private static final int ARG_POLL_QUIZ = 1;
   private static final int ARG_CALL_DECLINED = -1;
   private static final int ARG_CALL_MISSED = -2;
+  private static final int ARG_RECURRING_PAYMENT = -3;
 
   @NonNull
   private static ContentPreview getContentPreview (Tdlib tdlib, long chatId, TdApi.Message message, boolean allowContent, boolean isChatList) {
@@ -6290,6 +6291,10 @@ public class TD {
 
       case TdApi.PushMessageContentChatJoinByLink.CONSTRUCTOR:
         return getNotificationPreview(TdApi.MessageChatJoinByLink.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, 0);
+      case TdApi.PushMessageContentChatJoinByRequest.CONSTRUCTOR:
+        return getNotificationPreview(TdApi.MessageChatJoinByRequest.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, 0);
+      case TdApi.PushMessageContentRecurringPayment.CONSTRUCTOR:
+        return getNotificationPreview(TdApi.MessageInvoice.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, ((TdApi.PushMessageContentRecurringPayment) push.content).amount, ARG_RECURRING_PAYMENT);
 
       case TdApi.PushMessageContentChatChangePhoto.CONSTRUCTOR:
         return getNotificationPreview(TdApi.MessageChatChangePhoto.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, null, 0); // FIXME Server: Missing isRemoved
@@ -6301,109 +6306,6 @@ public class TD {
         return getNotificationPreview(TdApi.MessageChatSetTheme.CONSTRUCTOR, tdlib, chatId, push.senderId, push.senderName, ((TdApi.PushMessageContentChatSetTheme) push.content).themeName, 0);
     }
     throw new AssertionError(push.content);
-  }
-
-  public static boolean isPinnedMessagePushType (TdApi.PushMessageContent content) {
-    //(?<= case )(PushMessageContent[^.]+).CONSTRUCTOR:(\s+)break;
-    //TdApi.$1.CONSTRUCTOR:$2return ((TdApi.$1) content).isPinned;
-    switch (content.getConstructor()) {
-      case TdApi.PushMessageContentSticker.CONSTRUCTOR:
-        return ((TdApi.PushMessageContentSticker) content).isPinned;
-      case TdApi.PushMessageContentAnimation.CONSTRUCTOR:
-        return ((TdApi.PushMessageContentAnimation) content).isPinned;
-      case TdApi.PushMessageContentAudio.CONSTRUCTOR:
-        return ((TdApi.PushMessageContentAudio) content).isPinned;
-      case TdApi.PushMessageContentContact.CONSTRUCTOR:
-        return ((TdApi.PushMessageContentContact) content).isPinned;
-      case TdApi.PushMessageContentDocument.CONSTRUCTOR:
-        return ((TdApi.PushMessageContentDocument) content).isPinned;
-      case TdApi.PushMessageContentGame.CONSTRUCTOR:
-        return ((TdApi.PushMessageContentGame) content).isPinned;
-      case TdApi.PushMessageContentGameScore.CONSTRUCTOR:
-        return ((TdApi.PushMessageContentGameScore) content).isPinned;
-      case TdApi.PushMessageContentHidden.CONSTRUCTOR:
-        return ((TdApi.PushMessageContentHidden) content).isPinned;
-      case TdApi.PushMessageContentInvoice.CONSTRUCTOR:
-        return ((TdApi.PushMessageContentInvoice) content).isPinned;
-      case TdApi.PushMessageContentLocation.CONSTRUCTOR:
-        return ((TdApi.PushMessageContentLocation) content).isPinned;
-      case TdApi.PushMessageContentPhoto.CONSTRUCTOR:
-        return ((TdApi.PushMessageContentPhoto) content).isPinned;
-      case TdApi.PushMessageContentPoll.CONSTRUCTOR:
-        return ((TdApi.PushMessageContentPoll) content).isPinned;
-      case TdApi.PushMessageContentText.CONSTRUCTOR:
-        return ((TdApi.PushMessageContentText) content).isPinned;
-      case TdApi.PushMessageContentVideo.CONSTRUCTOR:
-        return ((TdApi.PushMessageContentVideo) content).isPinned;
-      case TdApi.PushMessageContentVideoNote.CONSTRUCTOR:
-        return ((TdApi.PushMessageContentVideoNote) content).isPinned;
-      case TdApi.PushMessageContentVoiceNote.CONSTRUCTOR:
-        return ((TdApi.PushMessageContentVoiceNote) content).isPinned;
-
-      case TdApi.PushMessageContentBasicGroupChatCreate.CONSTRUCTOR:
-      case TdApi.PushMessageContentChatAddMembers.CONSTRUCTOR:
-      case TdApi.PushMessageContentChatChangePhoto.CONSTRUCTOR:
-      case TdApi.PushMessageContentChatChangeTitle.CONSTRUCTOR:
-      case TdApi.PushMessageContentChatDeleteMember.CONSTRUCTOR:
-      case TdApi.PushMessageContentChatJoinByLink.CONSTRUCTOR:
-      case TdApi.PushMessageContentContactRegistered.CONSTRUCTOR:
-      case TdApi.PushMessageContentMediaAlbum.CONSTRUCTOR:
-      case TdApi.PushMessageContentMessageForwards.CONSTRUCTOR:
-      case TdApi.PushMessageContentScreenshotTaken.CONSTRUCTOR:
-      case TdApi.PushMessageContentChatSetTheme.CONSTRUCTOR:
-        return false;
-    }
-    return false;
-  }
-
-  public static String getTextFromMessage (TdApi.PushMessageContent content) {
-    //(?<= case )(PushMessageContent[^.]+).CONSTRUCTOR:(\s+)break;
-    //TdApi.$1.CONSTRUCTOR:$2return ((TdApi.$1) content).isPinned;
-    switch (content.getConstructor()) {
-      case TdApi.PushMessageContentText.CONSTRUCTOR:
-        return ((TdApi.PushMessageContentText) content).text;
-      case TdApi.PushMessageContentAnimation.CONSTRUCTOR:
-        return ((TdApi.PushMessageContentAnimation) content).caption;
-      case TdApi.PushMessageContentPhoto.CONSTRUCTOR:
-        return ((TdApi.PushMessageContentPhoto) content).caption;
-      case TdApi.PushMessageContentVideo.CONSTRUCTOR:
-        return ((TdApi.PushMessageContentVideo) content).caption;
-      /*FIXME server
-      case TdApi.PushMessageContentVoiceNote.CONSTRUCTOR:
-        return ((TdApi.PushMessageContentVoiceNote) content).caption;
-      case TdApi.PushMessageContentAudio.CONSTRUCTOR:
-        return ((TdApi.PushMessageContentAudio) content).caption;
-      case TdApi.PushMessageContentDocument.CONSTRUCTOR:
-        return ((TdApi.PushMessageContentDocument) content).caption;*/
-      case TdApi.PushMessageContentVoiceNote.CONSTRUCTOR:
-      case TdApi.PushMessageContentAudio.CONSTRUCTOR:
-      case TdApi.PushMessageContentDocument.CONSTRUCTOR:
-        return null;
-
-      case TdApi.PushMessageContentPoll.CONSTRUCTOR:
-        // return ((TdApi.PushMessageContentPoll) content).question;
-      case TdApi.PushMessageContentContact.CONSTRUCTOR:
-      case TdApi.PushMessageContentGame.CONSTRUCTOR:
-      case TdApi.PushMessageContentGameScore.CONSTRUCTOR:
-      case TdApi.PushMessageContentHidden.CONSTRUCTOR:
-      case TdApi.PushMessageContentInvoice.CONSTRUCTOR:
-      case TdApi.PushMessageContentLocation.CONSTRUCTOR:
-      case TdApi.PushMessageContentSticker.CONSTRUCTOR:
-      case TdApi.PushMessageContentVideoNote.CONSTRUCTOR:
-      case TdApi.PushMessageContentBasicGroupChatCreate.CONSTRUCTOR:
-      case TdApi.PushMessageContentChatAddMembers.CONSTRUCTOR:
-      case TdApi.PushMessageContentChatChangePhoto.CONSTRUCTOR:
-      case TdApi.PushMessageContentChatChangeTitle.CONSTRUCTOR:
-      case TdApi.PushMessageContentChatDeleteMember.CONSTRUCTOR:
-      case TdApi.PushMessageContentChatJoinByLink.CONSTRUCTOR:
-      case TdApi.PushMessageContentContactRegistered.CONSTRUCTOR:
-      case TdApi.PushMessageContentMediaAlbum.CONSTRUCTOR:
-      case TdApi.PushMessageContentMessageForwards.CONSTRUCTOR:
-      case TdApi.PushMessageContentScreenshotTaken.CONSTRUCTOR:
-      case TdApi.PushMessageContentChatSetTheme.CONSTRUCTOR:
-        return null;
-    }
-    return null;
   }
 
   public static final class Emoji {
@@ -6537,7 +6439,11 @@ public class TD {
       case TdApi.MessageGame.CONSTRUCTOR:
         return new ContentPreview(EMOJI_GAME, 0, Lang.getString(ChatId.isMultiChat(chatId) ? (isOutgoing ? R.string.NotificationGame_group_outgoing : R.string.NotificationGame_group) : (isOutgoing ? R.string.NotificationGame_outgoing : R.string.NotificationGame), Td.getText(formattedArgument)), true);
       case TdApi.MessageInvoice.CONSTRUCTOR:
-        return new ContentPreview(EMOJI_INVOICE, R.string.Invoice, Td.isEmpty(formattedArgument) ? null : Lang.getString(R.string.InvoiceFor, Td.getText(formattedArgument)), true);
+        if (arg1 == ARG_RECURRING_PAYMENT) {
+          return new ContentPreview(EMOJI_INVOICE, R.string.RecurringPayment, Td.isEmpty(formattedArgument) ? null : Lang.getString(R.string.PaidX, Td.getText(formattedArgument)), true);
+        } else {
+          return new ContentPreview(EMOJI_INVOICE, R.string.Invoice, Td.isEmpty(formattedArgument) ? null : Lang.getString(R.string.InvoiceFor, Td.getText(formattedArgument)), true);
+        }
       case TdApi.MessageContactRegistered.CONSTRUCTOR:
         return new ContentPreview(EMOJI_USER_JOINED, 0, Lang.getString(R.string.NotificationContactJoined, getSenderName(tdlib, sender, senderName)), true);
       case TdApi.MessageSupergroupChatCreate.CONSTRUCTOR:
@@ -6660,6 +6566,7 @@ public class TD {
               return new ContentPreview(EMOJI_CALL, isOutgoing ? R.string.OutgoingCall : R.string.IncomingCall);
             }
         }
+      case TdApi.MessageGiftedPremium.CONSTRUCTOR: // TODO
       case TdApi.MessageChatAddMembers.CONSTRUCTOR:
       case TdApi.MessageChatDeleteMember.CONSTRUCTOR:
       case TdApi.MessageChatUpgradeFrom.CONSTRUCTOR:
@@ -6679,6 +6586,8 @@ public class TD {
       case TdApi.MessageVideoChatStarted.CONSTRUCTOR:
       case TdApi.MessageVideoChatEnded.CONSTRUCTOR:
       case TdApi.MessageVideoChatScheduled.CONSTRUCTOR:
+      case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
+      case TdApi.MessageWebAppDataSent.CONSTRUCTOR:
         break;
     }
     return null;
