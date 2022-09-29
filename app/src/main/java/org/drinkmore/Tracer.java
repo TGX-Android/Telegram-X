@@ -117,14 +117,11 @@ public class Tracer {
             throwUiError(error);
             break;
           case Cause.OTHER_ERROR:
-            throwError(error);
-            break;
-
-          case Cause.TEST_INDIRECT:
-            ClientException.throwTestError(error);
-            break;
           case Cause.TEST_DIRECT:
             throwError(error);
+            break;
+          case Cause.TEST_INDIRECT:
+            ClientException.throwTestError(error);
             break;
         }
       }
