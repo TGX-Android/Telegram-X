@@ -39,15 +39,16 @@ public class Tracer {
   }
 
   private static void throwError (Throwable throwable) {
-    StackTraceElement[] elements = throwable.getStackTrace();
-    if (elements != null) {
-      StackTraceElement[] newElements = new StackTraceElement[elements.length + 1];
-      System.arraycopy(elements, 0, newElements, 1, elements.length);
-      newElements[0] = new StackTraceElement("org.drinkmore.Tracer", "throwError", "Tracer.java", 46);
-      throwable.setStackTrace(newElements);
-    }
     if (throwable instanceof ClientException)
       throw (ClientException) throwable;
+    if (throwable instanceof RuntimeException) {
+      throw (RuntimeException) throwable;
+    }
+    StackTraceElement[] elements = throwable.getStackTrace();
+    StackTraceElement[] newElements = new StackTraceElement[elements.length + 1];
+    System.arraycopy(elements, 0, newElements, 1, elements.length);
+    newElements[0] = new StackTraceElement("org.drinkmore.Tracer", "throwError", "Tracer.java", 50);
+    throwable.setStackTrace(newElements);
     RuntimeException exception = new RuntimeException(format(throwable.getClass().getSimpleName() + ": " + throwable.getMessage()), throwable.getCause());
     exception.setStackTrace(throwable.getStackTrace());
     throw exception;
@@ -84,74 +85,28 @@ public class Tracer {
       TEST_DIRECT = 101;
   }
 
-  private static void onFatalError (Throwable throwable, @Cause int cause) {
-    final class ThrowError implements Runnable {
-      private final Throwable error;
-
-      private ThrowError(Throwable error) {
-        this.error = error;
-      }
-
-      @Override
-      public void run() {
-        switch (cause) {
-          case Cause.FATAL_ERROR:
-            ClientException.throwAssertionError(error);
-            break;
-          case Cause.DATABASE_ERROR:
-            throw new ClientException.DatabaseError(error.getClass().getSimpleName() + ": " + error.getMessage());
-          case Cause.LAUNCH_ERROR:
-            throwLaunchError(error);
-            break;
-          case Cause.TDLIB_LAUNCH_ERROR:
-            throw new ClientException.TdlibLaunchError(error.getMessage());
-          case Cause.TDLIB_HANDLER_ERROR:
-            throwTdlibHandlerError(error);
-            break;
-          case Cause.TDLIB_LOST_PROMISE_ERROR:
-            throw new ClientException.TdlibLostPromiseError(error.getMessage());
-          case Cause.NOTIFICATION_ERROR:
-            throwNotificationError(error);
-            break;
-          case Cause.UI_ERROR:
-            throwUiError(error);
-            break;
-          case Cause.OTHER_ERROR:
-          case Cause.TEST_DIRECT:
-            throwError(error);
-            break;
-          case Cause.TEST_INDIRECT:
-            ClientException.throwTestError(error);
-            break;
-        }
-      }
-
-      // Full trace
-
-      private void throwLaunchError (Throwable error) {
+  private static void onFatalError (Throwable error, @Cause int cause) {
+    switch (cause) {
+      case Cause.FATAL_ERROR:
+        ClientException.throwAssertionError(error);
+        break;
+      case Cause.DATABASE_ERROR:
+        throw new ClientException.DatabaseError(error.getClass().getSimpleName() + ": " + error.getMessage());
+      case Cause.TDLIB_LAUNCH_ERROR:
+        throw new ClientException.TdlibLaunchError(error.getMessage());
+      case Cause.TDLIB_LOST_PROMISE_ERROR:
+        throw new ClientException.TdlibLostPromiseError(error.getMessage());
+      case Cause.LAUNCH_ERROR:
+      case Cause.TDLIB_HANDLER_ERROR:
+      case Cause.NOTIFICATION_ERROR:
+      case Cause.UI_ERROR:
+      case Cause.OTHER_ERROR:
+      case Cause.TEST_DIRECT:
         throwError(error);
-      }
-
-      private void throwTdlibHandlerError (Throwable error) {
-        throwError(error);
-      }
-
-      private void throwNotificationError (Throwable error) {
-        throwError(error);
-      }
-
-      private void throwUiError (Throwable error) {
-        throwError(error);
-      }
-    }
-
-    new Thread(new ThrowError(throwable), "Application fatal error thread").start();
-    while (true) {
-      try {
-        Thread.sleep(1000 /* milliseconds */);
-      } catch (InterruptedException ignore) {
-        Thread.currentThread().interrupt();
-      }
+        break;
+      case Cause.TEST_INDIRECT:
+        ClientException.throwTestError(error);
+        break;
     }
   }
 
