@@ -108,6 +108,7 @@ set(EXCLUDE_LIBS
   liblz4.a
   "${SSL_LIB_PATH}"
   "${CRYPTO_LIB_PATH}"
+  libusrsctp.a
 )
 if (${USE_WEBP})
   list(APPEND EXCLUDE_LIBS
@@ -579,6 +580,7 @@ target_link_libraries(${NATIVE_LIB}
   lz4
   ssl
   crypto
+  usrsctp
 )
 if (${USE_WEBP})
   target_link_libraries(${NATIVE_LIB} webpdecoder_static)

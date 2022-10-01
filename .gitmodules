@@ -57,7 +57,7 @@
 [submodule "vkryl/core"]
 	path = vkryl/core
 	url = https://github.com/TGX-Android/X-Core.git
-  shallow = true
+	shallow = true
 [submodule "rlottie"]
 	path = app/jni/third_party/rlottie
 	url = https://github.com/TGX-Android/rlottie
@@ -65,9 +65,16 @@
 [submodule "vkryl/td"]
 	path = vkryl/td
 	url = https://github.com/TGX-Android/tdlib-utils.git
+	shallow = true
 [submodule "vkryl/android"]
 	path = vkryl/android
 	url = https://github.com/TGX-Android/X-Android.git
-[submodule "app/jni/third_party/boringssl"]
+	shallow = true
+[submodule "boringssl"]
 	path = app/jni/third_party/boringssl
 	url = https://github.com/google/boringssl
+	shallow = true
+[submodule "usrsctp"]
+	path = app/jni/third_party/usrsctp
+	url = https://github.com/sctplab/usrsctp
+	shallow = true
