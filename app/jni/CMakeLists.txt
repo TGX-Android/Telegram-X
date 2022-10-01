@@ -101,6 +101,7 @@ set(EXCLUDE_LIBS
   "${CRYPTO_LIB_PATH}"
   libusrsctp.a
   libsrtp.a
+  libopenh264.a
 )
 if (${USE_WEBP})
   list(APPEND EXCLUDE_LIBS
@@ -159,6 +160,9 @@ include("${CMAKE_HOME_DIRECTORY}/BuildUsrSCTP.cmake")
 
 # srtp
 include("${CMAKE_HOME_DIRECTORY}/BuildLibSRTP.cmake")
+
+# openh264
+include("${CMAKE_HOME_DIRECTORY}/BuildOpenH264.cmake")
 
 # yuv
 include("${CMAKE_HOME_DIRECTORY}/BuildYuv.cmake")
@@ -270,6 +274,7 @@ target_link_libraries(${NATIVE_LIB}
   crypto
   usrsctp
   srtp
+  openh264
 )
 if (${USE_WEBP})
   target_link_libraries(${NATIVE_LIB} webpdecoder_static)
