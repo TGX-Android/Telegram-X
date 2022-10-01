@@ -13,7 +13,7 @@
  * File created on 01/08/2017
  */
 
-#include <thirdparty/emoji_suggestions/emoji_suggestions.h>
+#include <emoji_suggestions/emoji_suggestions.h>
 #include <emoji.h>
 #include <log.h>
 #include <sstream>
