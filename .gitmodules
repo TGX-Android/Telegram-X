@@ -78,3 +78,7 @@
 	path = app/jni/third_party/usrsctp
 	url = https://github.com/sctplab/usrsctp
 	shallow = true
+[submodule "libsrtp"]
+	path = app/jni/third_party/libsrtp
+	url = https://github.com/cisco/libsrtp
+	shallow = true

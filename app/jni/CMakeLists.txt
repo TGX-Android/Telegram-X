@@ -9,6 +9,7 @@ include("${CMAKE_HOME_DIRECTORY}/cmake/Join.cmake")
 # == Dirs ==
 
 set(THIRDPARTY_DIR "${CMAKE_HOME_DIRECTORY}/third_party")
+set(STUB_DIR "${CMAKE_HOME_DIRECTORY}/stub")
 set(TDLIB_DIR "${CMAKE_HOME_DIRECTORY}/../../tdlib")
 set(EXO_FLAC_DIR "${CMAKE_HOME_DIRECTORY}/../../thirdparty/ExoPlayer/extensions/flac/src/main/jni")
 set(UTILS_DIR "${THIRDPARTY_DIR}/jni-utils")
@@ -109,6 +110,7 @@ set(EXCLUDE_LIBS
   "${SSL_LIB_PATH}"
   "${CRYPTO_LIB_PATH}"
   libusrsctp.a
+  libsrtp.a
 )
 if (${USE_WEBP})
   list(APPEND EXCLUDE_LIBS
@@ -581,6 +583,7 @@ target_link_libraries(${NATIVE_LIB}
   ssl
   crypto
   usrsctp
+  srtp
 )
 if (${USE_WEBP})
   target_link_libraries(${NATIVE_LIB} webpdecoder_static)
