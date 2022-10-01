@@ -23,7 +23,7 @@ for module in "${simple_modules[@]}"; do
 done
 
 echo "Patching ExoPlayer..."
-patch-exoplayer.sh
+patch-exoplayer-impl.sh
 
 remote_modules=( webp libyuv ffmpeg lz4 flac opus opusfile ogg libvpx )
 for module in "${remote_modules[@]}"; do

@@ -34,6 +34,7 @@ task<me.vkryl.task.CheckEmojiKeyboardTask>("checkEmojiKeyboard") {
 
 val isExperimentalBuild = extra["experimental"] as Boolean? ?: false
 val properties = extra["properties"] as Properties
+val projectName = extra["app_name"] as String
 
 android {
   defaultConfig {
@@ -49,7 +50,7 @@ android {
     buildConfigField("boolean", "EXPERIMENTAL", isExperimentalBuild.toString())
 
     buildConfigInt("TELEGRAM_API_ID", properties.getIntOrThrow("telegram.api_id"))
-    buildConfigString("TELEGRAM_API_HASH", properties.getProperty("telegram.api_hash"))
+    buildConfigString("TELEGRAM_API_HASH", properties.getOrThrow("telegram.api_hash"))
 
     buildConfigString("TELEGRAM_RESOURCES_CHANNEL", Telegram.RESOURCES_CHANNEL)
     buildConfigString("TELEGRAM_UPDATES_CHANNEL", Telegram.UPDATES_CHANNEL)
@@ -58,7 +59,7 @@ android {
     buildConfigString("EMOJI_BUILTIN_ID", Emoji.BUILTIN_ID)
 
     buildConfigString("LANGUAGE_PACK", Telegram.LANGUAGE_PACK)
-    buildConfigString("YOUTUBE_API_KEY", properties.getOrThrow("youtube.api_key"))
+    buildConfigString("YOUTUBE_API_KEY", properties.getProperty("youtube.api_key", ""))
 
     buildConfigString("THEME_FILE_EXTENSION", App.THEME_EXTENSION)
   }
@@ -114,7 +115,6 @@ android {
 
     val versionCodeOverride = versionCode * 1000 + abi * 10
     val versionNameOverride = "${variant.versionName}.${defaultConfig.versionCode}${if (extra.has("app_version_suffix")) extra["app_version_suffix"] else ""}-${abiVariant.displayName}${if (extra.has("app_name_suffix")) "-" + extra["app_name_suffix"] else ""}${if (variant.buildType.isDebuggable) "-debug" else ""}"
-    val projectName = properties.getProperty("app.name", "Telegram X")
     val outputFileNamePrefix = properties.getProperty("app.file", projectName.replace(" ", "-").replace("#", ""))
     val fileName = "${outputFileNamePrefix}-${versionNameOverride.replace("-universal(?=-|\$)", "")}"
 

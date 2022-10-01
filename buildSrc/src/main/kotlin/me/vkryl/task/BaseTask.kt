@@ -27,6 +27,19 @@ abstract class BaseTask : DefaultTask() {
       return _properties!!
     }
 
-  fun applicationId (): String = properties.getOrThrow("app.id")
-  fun applicationName (): String = properties.getOrThrow("app.name")
+  private var _sampleProperties: Properties? = null
+  private val sampleProperties: Properties
+    get() {
+      if (_sampleProperties == null) {
+        _sampleProperties = loadProperties("local.properties.sample")
+      }
+      return _sampleProperties!!
+    }
+
+  private fun propertyOrSample (key: String): String {
+    return properties.getProperty(key, null) ?: sampleProperties.getOrThrow(key)
+  }
+
+  fun applicationId (): String = propertyOrSample("app.id")
+  fun applicationName (): String = propertyOrSample("app.name")
 }

@@ -17,35 +17,17 @@ fi
 
 # == Setup thirdparty libraries ==
 
-# Configure libvpx
-#pushd app/jni/thirdparty/libvpx
-#configure-libvpx.sh
-#popd
-# UPD: No longer needed after switching to unified libvpx
-
 # Patch opus
-pushd app/jni/thirdparty/opus
-patch-opus.sh
-popd
-
-# Disable building webp executables
-#pushd app/jni/thirdparty/webp
-#sed -i.bak -E 's/(^include \$\(WEBP_SRC_PATH\)\/(imageio|examples)\/Android\.mk)/# \1/g' Android.mk
-#popd
-# UPD: No longer needed after switching to CMake
+patch-opus-impl.sh
 
 # Patch ExoPlayer sources
-patch-exoplayer.sh
+patch-exoplayer-impl.sh
 
 # Build and configure libvpx
-pushd app/jni/thirdparty
-build-libvpx-impl.sh
-popd
+build-vpx-impl.sh
 
 # Build and configure ffmpeg
-pushd app/jni/thirdparty
 build-ffmpeg-impl.sh
-popd
 
 # == Copy local.properties ===
 

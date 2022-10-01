@@ -89,5 +89,15 @@ export SED
 THIRDPARTY_LIBRARIES=$(pwd)/app/jni/thirdparty
 export THIRDPARTY_LIBRARIES
 
-PATH=$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$(pwd)/scripts:$PATH
+PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$(pwd)/scripts:$(pwd)/scripts/private:$PATH"
 export PATH
+
+function validate_file {
+  test -f "$1" || (echo "File not found: $1" && false)
+}
+function validate_dir {
+  test -d "$1" || (echo "Directory not found: $1" && false)
+}
+
+export -f validate_dir
+export -f validate_file

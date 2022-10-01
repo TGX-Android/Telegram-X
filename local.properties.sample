@@ -11,18 +11,19 @@ sdk.dir=
 keystore.file=
 
 ## Package name
-app.id=com.example.app
+app.id=org.example.tgx
 
 ## Project name
-app.name=Example App
+app.name=TGX Example
 
 ## Link to the app's website. If unavailable, link to the market page could be used.
-app.download_url=https://example.com/android
+app.download_url=https://telegram.org/dlx
 
 ## Obtain credentials to access Telegram API:
 # https://core.telegram.org/api/obtaining_api_id
 telegram.api_id=
 telegram.api_hash=
 
-# YouTube API key
+## Obtain credentials to access YouTube API:
+# https://developers.google.com/youtube/android/player/register
 youtube.api_key=

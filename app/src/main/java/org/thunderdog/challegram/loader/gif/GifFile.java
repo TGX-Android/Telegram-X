@@ -202,7 +202,7 @@ public class GifFile {
     return optimizationMode == OptimizationMode.EMOJI || optimizationMode == OptimizationMode.STICKER_PREVIEW;
   }
 
-  @Deprecated(forRemoval = true)
+  @Deprecated()
   public boolean hasOptimizations () {
     return optimizationMode != OptimizationMode.NONE;
   }

@@ -67,6 +67,7 @@ open class ModulePlugin : Plugin<Project> {
     }
 
     val properties = loadProperties()
+    val sampleProperties = loadProperties("local.properties.sample")
     val keystoreFilePath = properties.getProperty("keystore.file", "")
     val disableSigning = properties.getProperty("app.disable_signing", "false") == "true"
     val keystore = if (keystoreFilePath.isNotEmpty() && !disableSigning) {
@@ -74,12 +75,19 @@ open class ModulePlugin : Plugin<Project> {
     } else {
       null
     }
+    fun getOrSample (key: String): String {
+      return properties.getProperty(key, null) ?: sampleProperties.getOrThrow(key)
+    }
     val appVersionOverride = properties.getProperty("app.version", "0").toInt()
-    val appId = properties.getOrThrow("app.id")
-    val isExperimentalBuild = keystore == null || properties.getProperty("app.experimental", "false") == "true"
-    val dontObfuscate = properties.getProperty("app.dontobfuscate", "false") == "true"
+    val appId = getOrSample("app.id")
+    val appName = getOrSample("app.name")
+    val appDownloadUrl = getOrSample("app.download_url")
+    val isExampleBuild = appId.startsWith("com.example.") || appId.startsWith("org.example.")
+    val isExperimentalBuild = isExampleBuild || keystore == null || properties.getProperty("app.experimental", "false") == "true"
+    val dontObfuscate = isExampleBuild || properties.getProperty("app.dontobfuscate", "false") == "true"
 
     project.extra.set("experimental", isExperimentalBuild)
+    project.extra.set("app_name", appName)
 
     val versions = loadProperties("version.properties")
     val appVersion = if (appVersionOverride > 0) appVersionOverride else versions.getOrThrow("version.app").toInt()
@@ -145,6 +153,18 @@ open class ModulePlugin : Plugin<Project> {
           }
 
           is AppExtension -> {
+            if (properties.getProperty("telegram.api_id", "").isEmpty() || properties.getProperty("telegram.api_hash").isEmpty()) {
+              error("""
+                Telegram API credentials missing.
+                
+                Set them in your local.properties file:
+                telegram.api_id=YOUR_API_ID_HERE
+                telegram.api_hash=YOUR_API_HASH_HERE
+                
+                Obtain them at https://core.telegram.org/api/obtaining_api_id
+              """.trimIndent())
+            }
+
             var git: List<String>
             val process = ProcessBuilder("bash", "-c", "echo \"$(git rev-parse --short HEAD) $(git rev-parse HEAD) $(git show -s --format=%ct) $(git config --get remote.origin.url) $(git log -1 --pretty=format:'%an')\"").start()
             process.inputStream.reader(Charsets.UTF_8).use {
@@ -157,7 +177,7 @@ open class ModulePlugin : Plugin<Project> {
             val commitHashShort = git[0]
             val commitHashLong = git[1]
             val commitDate = git[2].toLong()
-            val commitAuthor = git[4]
+            // val commitAuthor = git[4]
             val remoteUrl = if (git[3].startsWith("git@")) {
               val index = git[3].indexOf(':', 4)
               val domain = git[3].substring(4, index)
@@ -190,10 +210,10 @@ open class ModulePlugin : Plugin<Project> {
             defaultConfig {
               applicationId = appId
 
-              buildConfigString("PROJECT_NAME", properties.getOrThrow("app.name"))
+              buildConfigString("PROJECT_NAME", appName)
               buildConfigString("MARKET_URL", "https://play.google.com/store/apps/details?id=${appId}")
 
-              buildConfigString("DOWNLOAD_URL", properties.getOrThrow("app.download_url"))
+              buildConfigString("DOWNLOAD_URL", appDownloadUrl)
 
               buildConfigString("REMOTE_URL", remoteUrl)
               buildConfigString("COMMIT_URL", commitUrl)
