@@ -13,6 +13,10 @@ set(TDLIB_DIR "${CMAKE_HOME_DIRECTORY}/../../tdlib")
 set(EXO_FLAC_DIR "${CMAKE_HOME_DIRECTORY}/../../thirdparty/ExoPlayer/extensions/flac/src/main/jni")
 set(UTILS_DIR "${THIRDPARTY_DIR}/jni-utils")
 
+set(SSL_DIR "${THIRDPARTY_DIR}/boringssl")
+set(SSL_LIB_PATH "${SSL_DIR}/build/${ANDROID_ABI}/ssl/libssl.a")
+set(CRYPTO_LIB_PATH "${SSL_DIR}/build/${ANDROID_ABI}/crypto/libcrypto.a")
+
 set(YUV_DIR "${THIRDPARTY_DIR}/libyuv")
 set(LZ4_DIR "${THIRDPARTY_DIR}/lz4/lib")
 set(RLOTTIE_DIR "${THIRDPARTY_DIR}/rlottie")
@@ -103,6 +107,8 @@ set(EXCLUDE_LIBS
   libopusfile.a
   librlottie.a
   liblz4.a
+  "${SSL_LIB_PATH}"
+  "${CRYPTO_LIB_PATH}"
 )
 if (${USE_WEBP})
   list(APPEND EXCLUDE_LIBS
@@ -136,6 +142,17 @@ if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.11.0")
     "${TDLIB_DIR}/include"
   )
 endif()
+
+# crypto
+
+add_library(crypto STATIC IMPORTED)
+set_target_properties(crypto PROPERTIES IMPORTED_LOCATION "${CRYPTO_LIB_PATH}")
+
+# ssl
+
+add_library(ssl STATIC IMPORTED)
+set_target_properties(ssl PROPERTIES IMPORTED_LOCATION "${SSL_LIB_PATH}")
+target_include_directories(ssl INTERFACE "${SSL_DIR}/include")
 
 # flac
 
@@ -925,6 +942,8 @@ target_link_libraries(${NATIVE_LIB}
   opus
   rlottie
   lz4
+  ssl
+  crypto
 )
 if (${USE_WEBP})
   target_link_libraries(${NATIVE_LIB} webpdecoder_static)

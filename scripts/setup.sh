@@ -23,6 +23,9 @@ patch-opus-impl.sh
 # Patch ExoPlayer sources
 patch-exoplayer-impl.sh
 
+# Build boringssl
+run-cmake-impl.sh "$THIRDPARTY_LIBRARIES/boringssl"
+
 # Build and configure libvpx
 build-vpx-impl.sh
 
