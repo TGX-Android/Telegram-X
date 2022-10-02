@@ -105,6 +105,7 @@ set(EXCLUDE_LIBS
   libusrsctp.a
   libsrtp.a
   libopenh264.a
+  librnnoise.a
 )
 if (${USE_WEBP})
   list(APPEND EXCLUDE_LIBS
@@ -165,6 +166,9 @@ include("${CMAKE_HOME_DIRECTORY}/BuildLibSRTP.cmake")
 
 # openh264
 include("${CMAKE_HOME_DIRECTORY}/BuildOpenH264.cmake")
+
+# rnnoise
+include("${CMAKE_HOME_DIRECTORY}/BuildRNNoise.cmake")
 
 # yuv
 include("${CMAKE_HOME_DIRECTORY}/BuildYuv.cmake")
@@ -277,6 +281,7 @@ target_link_libraries(${NATIVE_LIB}
   usrsctp
   srtp
   openh264
+  rnnoise
 )
 if (${USE_WEBP})
   target_link_libraries(${NATIVE_LIB} webpdecoder_static)
