@@ -69,16 +69,6 @@ add_library(openh264 STATIC
   "${OPENH264_DIR}/codec/processing/src/vaacalc/vaacalcfuncs.cpp"
   "${OPENH264_DIR}/codec/processing/src/vaacalc/vaacalculation.cpp"
 )
-target_compile_options(openh264 PUBLIC
-  -Wall -finline-functions -fno-strict-aliasing -O3 -frtti -Wno-unknown-pragmas -funroll-loops -fexceptions -fno-math-errno
-)
-set_target_properties(openh264 PROPERTIES
-  ANDROID_ARM_MODE arm
-)
-target_compile_definitions(openh264 PRIVATE
-)
-target_compile_definitions(openh264 PUBLIC
-)
 target_include_directories(openh264 PUBLIC
   "${OPENH264_DIR}/codec/encoder/core/inc"
   "${OPENH264_DIR}/codec/encoder/plus/inc"
