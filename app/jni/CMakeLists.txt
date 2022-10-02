@@ -34,7 +34,6 @@ else()
   error("Unknown abi: ${ANDROID_ABI}")
 endif()
 set(FFMPEG_DIR "${THIRDPARTY_DIR}/ffmpeg/build/${FFMPEG_ABI}")
-set(LIBVPX_DIR "${THIRDPARTY_DIR}/libvpx/build/${FFMPEG_ABI}")
 set(FFMPEG_LIBS
   swresample
   avformat
@@ -43,6 +42,9 @@ set(FFMPEG_LIBS
   avfilter
   avutil
 )
+
+set(VPX_DIR "${THIRDPARTY_DIR}/libvpx/build/${FFMPEG_ABI}")
+set(VPX_LIB_PATH "${VPX_DIR}/lib/libvpx.a")
 
 # == Setup ==
 
@@ -92,6 +94,7 @@ set(EXCLUDE_LIBS
   libflac.a
   libtgvoip.a
   libyuv.a
+  "${VPX_LIB_PATH}"
   libopus.a
   libogg.a
   libopusfile.a
@@ -108,7 +111,6 @@ if (${USE_WEBP})
     libwebpdecoder_static.a
   )
 endif()
-list(APPEND EXCLUDE_LIBS "${LIBVPX_DIR}/lib/libvpx.a")
 foreach(ffmpeg_lib ${FFMPEG_LIBS})
   list(APPEND EXCLUDE_LIBS
     "${FFMPEG_DIR}/lib/lib${ffmpeg_lib}.a"
@@ -169,8 +171,8 @@ include("${CMAKE_HOME_DIRECTORY}/BuildYuv.cmake")
 
 # vpx
 add_library(vpx STATIC IMPORTED)
-set_target_properties(vpx PROPERTIES IMPORTED_LOCATION "${LIBVPX_DIR}/lib/libvpx.a")
-target_include_directories(vpx INTERFACE "${LIBVPX_DIR}/include")
+set_target_properties(vpx PROPERTIES IMPORTED_LOCATION "${VPX_LIB_PATH}")
+target_include_directories(vpx INTERFACE "${VPX_DIR}/include")
 
 # opus
 include("${CMAKE_HOME_DIRECTORY}/BuildOpus.cmake")
