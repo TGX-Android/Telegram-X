@@ -4095,7 +4095,7 @@
   <string name="InviteLinkOtherAdminHint">**%1$s** can see this link and use it to invite new members to **%2$s**.</string>
   <string name="InviteLinkViewMembers">View joined members</string>
   <string name="InviteLinkViewMembersTitle">Joined members</string>
-  <string name="InviteLinkAdminApproval">Request Admin Approval</string>
+  <string name="InviteLinkAdminApproval">Approve New Members</string>
   <string name="InviteLinkAdminApprovalHint">Turn this on if you want users to join only after they are approved by an admin.</string>
   <string name="InviteLinkAdminName">Link Name (optional)</string>
   <string name="InviteLinkAdminNameHint">Only admins will see this name.</string>
