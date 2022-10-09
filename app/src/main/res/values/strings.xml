@@ -569,6 +569,16 @@
   <string name="Gallery">Gallery</string>
   <string name="ChatCamera">Camera</string>
 
+  <string name="MessageSearchFilterAll">All message types</string>
+  <string name="MessageSearchFilterText">Text messages</string>
+  <string name="MessageSearchFilterPhoto">Photos</string>
+  <string name="MessageSearchFilterVideo">Videos</string>
+  <string name="MessageSearchFilterVoice">Voice messages</string>
+  <string name="MessageSearchFilterRound">Video messages</string>
+  <string name="MessageSearchFilterFiles">Files</string>
+  <string name="MessageSearchFilterMusic">Music</string>
+  <string name="MessageSearchFilterGif">Gifs</string>
+
   <string name="VoiceChatInviteOther">You invited %1$s to the video chat</string>
   <string name="VoiceChatInviteSelf">%1$s invited you to the video chat</string>
   <string name="VoiceChatInvite">%1$s invited %2$s to the video chat</string>

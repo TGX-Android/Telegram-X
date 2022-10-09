@@ -1010,6 +1010,16 @@
   <item type="id" name="text_email" />
   <item type="id" name="text_email_email" />
 
+  <item type="id" name="btn_messageSearchFilterAll" />
+  <item type="id" name="btn_messageSearchFilterText" />
+  <item type="id" name="btn_messageSearchFilterPhoto" />
+  <item type="id" name="btn_messageSearchFilterVideo" />
+  <item type="id" name="btn_messageSearchFilterVoice" />
+  <item type="id" name="btn_messageSearchFilterRound" />
+  <item type="id" name="btn_messageSearchFilterFiles" />
+  <item type="id" name="btn_messageSearchFilterMusic" />
+  <item type="id" name="btn_messageSearchFilterGif" />
+
   <item type="id" name="btn_messageMore" />
   <item type="id" name="btn_messageCopy" />
   <item type="id" name="btn_messageCopyLink" />
