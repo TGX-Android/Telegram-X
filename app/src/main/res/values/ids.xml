@@ -411,8 +411,10 @@
   <item type="id" name="btn_search_by" />
   <item type="id" name="btn_search_next" />
   <item type="id" name="btn_search_prev" />
+  <item type="id" name="btn_search_onlyResult" />
   <item type="id" name="btn_search_counter" />
   <item type="id" name="btn_search_jump" />
+  <item type="id" name="btn_search_setTypeFilter" />
   <item type="id" name="btn_gps" />
   <item type="id" name="place" />
   <item type="id" name="liveLocation" />
