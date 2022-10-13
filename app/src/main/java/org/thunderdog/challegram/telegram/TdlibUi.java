@@ -14,6 +14,7 @@
  */
 package org.thunderdog.challegram.telegram;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -3215,273 +3216,321 @@ public class TdlibUi extends Handler {
     return false;
   }
 
-  public void openTelegramUrl (final TdlibDelegate context, final String url, @Nullable UrlOpenParameters openParameters, @Nullable RunnableBool after) {
-    if (StringUtils.isEmpty(url) || tdlib.context().inRecoveryMode()) {
+  @NonNull
+  private String preProcessTelegramUrl (@NonNull String url) {
+    try {
+      //noinspection UnsafeOptInUsageError
+      Uri uri = StringUtils.wrapHttps(url);
+      if (uri == null) {
+        return url;
+      }
+      String host = uri.getHost();
+      // convert username.t.me/path?query to t.me/username/path?query
+      int firstIndex = host.indexOf('.');
+      if (firstIndex == -1) {
+        return url;
+      }
+      String subdomain = host.substring(0, firstIndex);
+      host = host.substring(firstIndex + 1);
+      if (!tdlib.isKnownHost(host, false)) {
+        return url;
+      }
+      String path = uri.getPath();
+      String newPath = "/" + subdomain + (!StringUtils.isEmpty(path) && !path.equals("/") ? path : "");
+      Uri newUri = uri.buildUpon()
+        .authority(host)
+        .path(newPath)
+        .build();
+      return newUri.toString();
+    } catch (Throwable t) {
+      Log.i("Unable to pre process url: %s", t, url);
+    }
+    return url;
+  }
+
+  @Nullable
+  private TdApi.InternalLinkType parseTelegramUrl (String url) {
+    return null;
+  }
+
+  public void openTelegramUrl (final TdlibDelegate context, final String rawUrl, @Nullable UrlOpenParameters openParameters, @Nullable RunnableBool after) {
+    if (StringUtils.isEmpty(rawUrl) || tdlib.context().inRecoveryMode()) {
       if (after != null)
         after.runWithBool(false);
       return;
     }
+    String url = preProcessTelegramUrl(rawUrl);
     tdlib.client().send(new TdApi.GetInternalLinkType(url), result -> {
-      if (result instanceof TdApi.InternalLinkType) {
-        TdApi.InternalLinkType linkType = (TdApi.InternalLinkType) result;
-        post(() -> {
-          if (context.context().navigation().isDestroyed())
-            return;
-          boolean ok = true;
-          switch (linkType.getConstructor()) {
-            case TdApi.InternalLinkTypeStickerSet.CONSTRUCTOR: {
-              TdApi.InternalLinkTypeStickerSet stickerSet = (TdApi.InternalLinkTypeStickerSet) linkType;
-              showStickerSet(context, stickerSet.stickerSetName, openParameters);
-              break;
-            }
-            case TdApi.InternalLinkTypeAuthenticationCode.CONSTRUCTOR: {
-              TdApi.InternalLinkTypeAuthenticationCode authCode = (TdApi.InternalLinkTypeAuthenticationCode) linkType;
-              tdlib.listeners().updateAuthorizationCodeReceived(authCode.code);
-              break;
-            }
-            case TdApi.InternalLinkTypeLanguagePack.CONSTRUCTOR: {
-              TdApi.InternalLinkTypeLanguagePack languagePack = (TdApi.InternalLinkTypeLanguagePack) linkType;
-              ok = installLanguage(context, languagePack.languagePackId, openParameters);
-              break;
-            }
-            case TdApi.InternalLinkTypeChatInvite.CONSTRUCTOR: {
-              TdApi.InternalLinkTypeChatInvite chatInvite = (TdApi.InternalLinkTypeChatInvite) linkType;
-              checkInviteLink(context, chatInvite.inviteLink, openParameters);
-              break;
-            }
-            case TdApi.InternalLinkTypeMessageDraft.CONSTRUCTOR: {
-              TdApi.InternalLinkTypeMessageDraft messageDraft = (TdApi.InternalLinkTypeMessageDraft) linkType;
-              ShareController c = new ShareController(context.context(), context.tdlib());
-              c.setArguments(new ShareController.Args(messageDraft.text));
-              c.show();
-              break;
-            }
-            case TdApi.InternalLinkTypePhoneNumberConfirmation.CONSTRUCTOR: {
-              TdApi.InternalLinkTypePhoneNumberConfirmation confirmPhone = (TdApi.InternalLinkTypePhoneNumberConfirmation) linkType;
-              // TODO progress?
-              ViewController<?> currentController = context.context().navigation().getCurrentStackItem();
-              tdlib.client().send(new TdApi.SendPhoneNumberConfirmationCode(confirmPhone.hash, confirmPhone.phoneNumber, TD.defaultPhoneNumberAuthenticationSettings()), confirmationResult -> {
-                switch (confirmationResult.getConstructor()) {
-                  case TdApi.AuthenticationCodeInfo.CONSTRUCTOR: {
-                    TdApi.AuthenticationCodeInfo info = (TdApi.AuthenticationCodeInfo) confirmationResult;
-                    post(() -> {
-                      if (currentController != null && !currentController.isDestroyed()) {
-                        confirmPhone(context, info, confirmPhone.phoneNumber);
-                      }
-                    });
-                    break;
-                  }
-                  case TdApi.Error.CONSTRUCTOR: {
-                    showLinkTooltip(tdlib, R.drawable.baseline_warning_24, TD.toErrorString(confirmationResult), openParameters);
-                    break;
-                  }
-                }
-              });
-              break;
-            }
-            case TdApi.InternalLinkTypeProxy.CONSTRUCTOR: {
-              TdApi.InternalLinkTypeProxy proxy = (TdApi.InternalLinkTypeProxy) linkType;
-              openProxyAlert(context, proxy.server, proxy.port, proxy.type, newProxyDescription(proxy.server, Integer.toString(proxy.port)).toString());
-              break;
-            }
-            case TdApi.InternalLinkTypeUnsupportedProxy.CONSTRUCTOR: {
-              showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.ProxyLinkUnsupported), openParameters);
-              break;
-            }
-            case TdApi.InternalLinkTypeUserPhoneNumber.CONSTRUCTOR: {
-              final String phoneNumber = ((TdApi.InternalLinkTypeUserPhoneNumber) linkType).phoneNumber;
-              openChatProfile(context, 0, null, new TdApi.SearchUserByPhoneNumber(phoneNumber), null);
-              break;
-            }
-            case TdApi.InternalLinkTypePublicChat.CONSTRUCTOR: {
-              TdApi.InternalLinkTypePublicChat publicChat = (TdApi.InternalLinkTypePublicChat) linkType;
-              if (TdConstants.IV_PREVIEW_USERNAME.equals(publicChat.chatUsername)) {
-                openExternalUrl(context, url, new UrlOpenParameters(openParameters).forceInstantView());
-              } else {
-                openPublicChat(context, publicChat.chatUsername, openParameters);
-              }
-              break;
-            }
-            case TdApi.InternalLinkTypeVideoChat.CONSTRUCTOR: {
-              TdApi.InternalLinkTypeVideoChat voiceChatInvitation = (TdApi.InternalLinkTypeVideoChat) linkType;
-              openVideoChatOrLiveStream(context, voiceChatInvitation, openParameters);
-              break;
-            }
-            case TdApi.InternalLinkTypeMessage.CONSTRUCTOR: {
-              TdApi.InternalLinkTypeMessage messageLink = (TdApi.InternalLinkTypeMessage) linkType;
-              // TODO show progress?
-              tdlib.client().send(new TdApi.GetMessageLinkInfo(messageLink.url), messageLinkResult -> {
-                switch (messageLinkResult.getConstructor()) {
-                  case TdApi.MessageLinkInfo.CONSTRUCTOR: {
-                    TdApi.MessageLinkInfo messageLinkInfo = (TdApi.MessageLinkInfo) messageLinkResult;
-                    post(() -> {
-                      openMessage(context, messageLinkInfo, openParameters);
-                      if (after != null) {
-                        after.runWithBool(true);
-                      }
-                    });
-                    break;
-                  }
-                  case TdApi.Error.CONSTRUCTOR: {
-                    if (after != null) {
-                      post(() -> after.runWithBool(false));
-                    }
-                    break;
-                  }
-                }
-              });
-              return; // async
-            }
-            case TdApi.InternalLinkTypeBotStart.CONSTRUCTOR: {
-              TdApi.InternalLinkTypeBotStart startBot = (TdApi.InternalLinkTypeBotStart) linkType;
-              startBot(context, startBot.botUsername, startBot.startParameter, BOT_MODE_START, openParameters);
-              break;
-            }
-            case TdApi.InternalLinkTypeBotStartInGroup.CONSTRUCTOR: {
-              TdApi.InternalLinkTypeBotStartInGroup startBot = (TdApi.InternalLinkTypeBotStartInGroup) linkType;
-              startBot(context, startBot.botUsername, startBot.startParameter, BOT_MODE_START_IN_GROUP, openParameters);
-              break;
-            }
-            case TdApi.InternalLinkTypeBotAddToChannel.CONSTRUCTOR: {
-              TdApi.InternalLinkTypeBotAddToChannel addToChannel = (TdApi.InternalLinkTypeBotAddToChannel) linkType;
-              // TODO add to channel flow
-              showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.InternalUrlUnsupported), openParameters);
-              break;
-            }
-            case TdApi.InternalLinkTypeGame.CONSTRUCTOR: {
-              TdApi.InternalLinkTypeGame game = (TdApi.InternalLinkTypeGame) linkType;
-              startBot(context, game.botUsername, game.gameShortName, BOT_MODE_START_GAME, openParameters);
-              break;
-            }
-            case TdApi.InternalLinkTypeSettings.CONSTRUCTOR: {
-              SettingsController c = new SettingsController(context.context(), context.tdlib());
-              context.context().navigation().navigateTo(c);
-              break;
-            }
-            case TdApi.InternalLinkTypeLanguageSettings.CONSTRUCTOR: {
-              SettingsLanguageController c = new SettingsLanguageController(context.context(), context.tdlib());
-              context.context().navigation().navigateTo(c);
-              break;
-            }
-            case TdApi.InternalLinkTypePrivacyAndSecuritySettings.CONSTRUCTOR: {
-              SettingsPrivacyController c = new SettingsPrivacyController(context.context(), context.tdlib());
-              context.context().navigation().navigateTo(c);
-              break;
-            }
-            case TdApi.InternalLinkTypeThemeSettings.CONSTRUCTOR: {
-              SettingsThemeController c = new SettingsThemeController(context.context(), context.tdlib());
-              c.setArguments(new SettingsThemeController.Args(SettingsThemeController.MODE_THEMES));
-              context.context().navigation().navigateTo(c);
-              break;
-            }
-            case TdApi.InternalLinkTypeActiveSessions.CONSTRUCTOR: {
-              SettingsSessionsController sessions = new SettingsSessionsController(context.context(), context.tdlib());
-              SettingsWebsitesController websites = new SettingsWebsitesController(context.context(), context.tdlib());
-              ViewController<?> c = new SimpleViewPagerController(context.context(), context.tdlib(), new ViewController[] {sessions, websites}, new String[] {Lang.getString(R.string.Devices).toUpperCase(), Lang.getString(R.string.Websites).toUpperCase()}, false);
-              context.context().navigation().navigateTo(c);
-              break;
-            }
-
-            case TdApi.InternalLinkTypeAttachmentMenuBot.CONSTRUCTOR:
-            case TdApi.InternalLinkTypeInvoice.CONSTRUCTOR:
-            case TdApi.InternalLinkTypePremiumFeatures.CONSTRUCTOR:
-            case TdApi.InternalLinkTypeRestorePurchases.CONSTRUCTOR: {
-              showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.InternalUrlUnsupported), openParameters);
-              break;
-            }
-            case TdApi.InternalLinkTypeChangePhoneNumber.CONSTRUCTOR: {
-              SettingsPhoneController c = new SettingsPhoneController(context.context(), context.tdlib());
-              context.context().navigation().navigateTo(c);
-              break;
-            }
-            case TdApi.InternalLinkTypeQrCodeAuthentication.CONSTRUCTOR: {
-              showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.ScanQRLinkHint), openParameters);
-              break;
-            }
-            case TdApi.InternalLinkTypeTheme.CONSTRUCTOR: {
-              TdApi.InternalLinkTypeTheme theme = (TdApi.InternalLinkTypeTheme) linkType;
-              // TODO tdlib
-              showLinkTooltip(tdlib, R.drawable.baseline_info_24, Lang.getMarkdownString(context, R.string.NoCloudThemeSupport), openParameters);
-              break;
-            }
-            case TdApi.InternalLinkTypeBackground.CONSTRUCTOR: {
-              TdApi.InternalLinkTypeBackground background = (TdApi.InternalLinkTypeBackground) linkType;
-              // TODO show progress?
-              tdlib.client().send(new TdApi.SearchBackground(background.backgroundName), backgroundObj -> {
-                switch (backgroundObj.getConstructor()) {
-                  case TdApi.Background.CONSTRUCTOR: {
-                    TdApi.Background wallpaper = (TdApi.Background) backgroundObj;
-
-                    post(() -> {
-                      MessagesController c = new MessagesController(context.context(), context.tdlib());
-                      c.setArguments(new MessagesController.Arguments(MessagesController.PREVIEW_MODE_WALLPAPER_OBJECT, null, null).setWallpaperObject(wallpaper));
-                      context.context().navigation().navigateTo(c);
-
-                      if (after != null) {
-                        after.runWithBool(true);
-                      }
-                    });
-                    break;
-                  }
-                  case TdApi.Error.CONSTRUCTOR: {
-                    if (after != null) {
-                      post(() -> after.runWithBool(false));
-                    }
-                    break;
-                  }
-                }
-              });
-              return;
-            }
-            case TdApi.InternalLinkTypeFilterSettings.CONSTRUCTOR: {
-              // TODO show chat folders screen
-              ok = false;
-              break;
-            }
-            case TdApi.InternalLinkTypePassportDataRequest.CONSTRUCTOR: {
-              TdApi.InternalLinkTypePassportDataRequest passportData = (TdApi.InternalLinkTypePassportDataRequest) linkType;
-              // TODO ?
-              break;
-            }
-            case TdApi.InternalLinkTypeUnknownDeepLink.CONSTRUCTOR: {
-              // TODO progress
-              tdlib.client().send(new TdApi.GetDeepLinkInfo(url), deepLinkResult -> {
-                switch (deepLinkResult.getConstructor()) {
-                  case TdApi.DeepLinkInfo.CONSTRUCTOR: {
-                    TdApi.DeepLinkInfo deepLink = (TdApi.DeepLinkInfo) deepLinkResult;
-                    post(() -> {
-                      ViewController<?> c = context.context().navigation().getCurrentStackItem();
-                      if (c != null) {
-                        c.processDeepLinkInfo(deepLink);
-                      }
-                      if (after != null) {
-                        after.runWithBool(true);
-                      }
-                    });
-                    break;
-                  }
-                  case TdApi.Error.CONSTRUCTOR: {
-                    if (after != null) {
-                      post(() -> after.runWithBool(false));
-                    }
-                    break;
-                  }
-                }
-              });
-              return; // async
-            }
-            default: {
-              ok = false;
-              break;
-            }
-          }
-          if (after != null) {
-            after.runWithBool(ok);
-          }
-        });
-      } else if (after != null) {
-        post(() -> after.runWithBool(false));
+      TdApi.InternalLinkType linkType;
+      if (result instanceof TdApi.InternalLinkTypeUnknownDeepLink) {
+        TdApi.InternalLinkType parsedType = parseTelegramUrl(url);
+        linkType = parsedType != null ? parsedType : (TdApi.InternalLinkType) result;
+      } else if (result instanceof TdApi.InternalLinkType) {
+        linkType = (TdApi.InternalLinkType) result;
+      } else {
+        linkType = parseTelegramUrl(url);
       }
+      if (linkType == null) {
+        if (after != null) {
+          post(() -> after.runWithBool(false));
+        }
+        return;
+      }
+      post(() -> {
+        if (context.context().navigation().isDestroyed())
+          return;
+        boolean ok = true;
+        switch (linkType.getConstructor()) {
+          case TdApi.InternalLinkTypeStickerSet.CONSTRUCTOR: {
+            TdApi.InternalLinkTypeStickerSet stickerSet = (TdApi.InternalLinkTypeStickerSet) linkType;
+            showStickerSet(context, stickerSet.stickerSetName, openParameters);
+            break;
+          }
+          case TdApi.InternalLinkTypeAuthenticationCode.CONSTRUCTOR: {
+            TdApi.InternalLinkTypeAuthenticationCode authCode = (TdApi.InternalLinkTypeAuthenticationCode) linkType;
+            tdlib.listeners().updateAuthorizationCodeReceived(authCode.code);
+            break;
+          }
+          case TdApi.InternalLinkTypeLanguagePack.CONSTRUCTOR: {
+            TdApi.InternalLinkTypeLanguagePack languagePack = (TdApi.InternalLinkTypeLanguagePack) linkType;
+            ok = installLanguage(context, languagePack.languagePackId, openParameters);
+            break;
+          }
+          case TdApi.InternalLinkTypeChatInvite.CONSTRUCTOR: {
+            TdApi.InternalLinkTypeChatInvite chatInvite = (TdApi.InternalLinkTypeChatInvite) linkType;
+            checkInviteLink(context, chatInvite.inviteLink, openParameters);
+            break;
+          }
+          case TdApi.InternalLinkTypeMessageDraft.CONSTRUCTOR: {
+            TdApi.InternalLinkTypeMessageDraft messageDraft = (TdApi.InternalLinkTypeMessageDraft) linkType;
+            ShareController c = new ShareController(context.context(), context.tdlib());
+            c.setArguments(new ShareController.Args(messageDraft.text));
+            c.show();
+            break;
+          }
+          case TdApi.InternalLinkTypePhoneNumberConfirmation.CONSTRUCTOR: {
+            TdApi.InternalLinkTypePhoneNumberConfirmation confirmPhone = (TdApi.InternalLinkTypePhoneNumberConfirmation) linkType;
+            // TODO progress?
+            ViewController<?> currentController = context.context().navigation().getCurrentStackItem();
+            tdlib.client().send(new TdApi.SendPhoneNumberConfirmationCode(confirmPhone.hash, confirmPhone.phoneNumber, TD.defaultPhoneNumberAuthenticationSettings()), confirmationResult -> {
+              switch (confirmationResult.getConstructor()) {
+                case TdApi.AuthenticationCodeInfo.CONSTRUCTOR: {
+                  TdApi.AuthenticationCodeInfo info = (TdApi.AuthenticationCodeInfo) confirmationResult;
+                  post(() -> {
+                    if (currentController != null && !currentController.isDestroyed()) {
+                      confirmPhone(context, info, confirmPhone.phoneNumber);
+                    }
+                  });
+                  break;
+                }
+                case TdApi.Error.CONSTRUCTOR: {
+                  showLinkTooltip(tdlib, R.drawable.baseline_warning_24, TD.toErrorString(confirmationResult), openParameters);
+                  break;
+                }
+              }
+            });
+            break;
+          }
+          case TdApi.InternalLinkTypeProxy.CONSTRUCTOR: {
+            TdApi.InternalLinkTypeProxy proxy = (TdApi.InternalLinkTypeProxy) linkType;
+            openProxyAlert(context, proxy.server, proxy.port, proxy.type, newProxyDescription(proxy.server, Integer.toString(proxy.port)).toString());
+            break;
+          }
+          case TdApi.InternalLinkTypeUnsupportedProxy.CONSTRUCTOR: {
+            showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.ProxyLinkUnsupported), openParameters);
+            break;
+          }
+          case TdApi.InternalLinkTypeUserPhoneNumber.CONSTRUCTOR: {
+            final String phoneNumber = ((TdApi.InternalLinkTypeUserPhoneNumber) linkType).phoneNumber;
+            openChatProfile(context, 0, null, new TdApi.SearchUserByPhoneNumber(phoneNumber), null);
+            break;
+          }
+          case TdApi.InternalLinkTypePublicChat.CONSTRUCTOR: {
+            TdApi.InternalLinkTypePublicChat publicChat = (TdApi.InternalLinkTypePublicChat) linkType;
+            if (TdConstants.IV_PREVIEW_USERNAME.equals(publicChat.chatUsername)) {
+              openExternalUrl(context, url, new UrlOpenParameters(openParameters).forceInstantView());
+            } else {
+              openPublicChat(context, publicChat.chatUsername, openParameters);
+            }
+            break;
+          }
+          case TdApi.InternalLinkTypeVideoChat.CONSTRUCTOR: {
+            TdApi.InternalLinkTypeVideoChat voiceChatInvitation = (TdApi.InternalLinkTypeVideoChat) linkType;
+            openVideoChatOrLiveStream(context, voiceChatInvitation, openParameters);
+            break;
+          }
+          case TdApi.InternalLinkTypeMessage.CONSTRUCTOR: {
+            TdApi.InternalLinkTypeMessage messageLink = (TdApi.InternalLinkTypeMessage) linkType;
+            // TODO show progress?
+            tdlib.client().send(new TdApi.GetMessageLinkInfo(messageLink.url), messageLinkResult -> {
+              switch (messageLinkResult.getConstructor()) {
+                case TdApi.MessageLinkInfo.CONSTRUCTOR: {
+                  TdApi.MessageLinkInfo messageLinkInfo = (TdApi.MessageLinkInfo) messageLinkResult;
+                  post(() -> {
+                    openMessage(context, messageLinkInfo, openParameters);
+                    if (after != null) {
+                      after.runWithBool(true);
+                    }
+                  });
+                  break;
+                }
+                case TdApi.Error.CONSTRUCTOR: {
+                  if (after != null) {
+                    post(() -> after.runWithBool(false));
+                  }
+                  break;
+                }
+              }
+            });
+            return; // async
+          }
+          case TdApi.InternalLinkTypeBotStart.CONSTRUCTOR: {
+            TdApi.InternalLinkTypeBotStart startBot = (TdApi.InternalLinkTypeBotStart) linkType;
+            startBot(context, startBot.botUsername, startBot.startParameter, BOT_MODE_START, openParameters);
+            break;
+          }
+          case TdApi.InternalLinkTypeBotStartInGroup.CONSTRUCTOR: {
+            TdApi.InternalLinkTypeBotStartInGroup startBot = (TdApi.InternalLinkTypeBotStartInGroup) linkType;
+            startBot(context, startBot.botUsername, startBot.startParameter, BOT_MODE_START_IN_GROUP, openParameters);
+            break;
+          }
+          case TdApi.InternalLinkTypeBotAddToChannel.CONSTRUCTOR: {
+            TdApi.InternalLinkTypeBotAddToChannel addToChannel = (TdApi.InternalLinkTypeBotAddToChannel) linkType;
+            // TODO add to channel flow
+            showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.InternalUrlUnsupported), openParameters);
+            break;
+          }
+          case TdApi.InternalLinkTypeGame.CONSTRUCTOR: {
+            TdApi.InternalLinkTypeGame game = (TdApi.InternalLinkTypeGame) linkType;
+            startBot(context, game.botUsername, game.gameShortName, BOT_MODE_START_GAME, openParameters);
+            break;
+          }
+          case TdApi.InternalLinkTypeSettings.CONSTRUCTOR: {
+            SettingsController c = new SettingsController(context.context(), context.tdlib());
+            context.context().navigation().navigateTo(c);
+            break;
+          }
+          case TdApi.InternalLinkTypeLanguageSettings.CONSTRUCTOR: {
+            SettingsLanguageController c = new SettingsLanguageController(context.context(), context.tdlib());
+            context.context().navigation().navigateTo(c);
+            break;
+          }
+          case TdApi.InternalLinkTypePrivacyAndSecuritySettings.CONSTRUCTOR: {
+            SettingsPrivacyController c = new SettingsPrivacyController(context.context(), context.tdlib());
+            context.context().navigation().navigateTo(c);
+            break;
+          }
+          case TdApi.InternalLinkTypeThemeSettings.CONSTRUCTOR: {
+            SettingsThemeController c = new SettingsThemeController(context.context(), context.tdlib());
+            c.setArguments(new SettingsThemeController.Args(SettingsThemeController.MODE_THEMES));
+            context.context().navigation().navigateTo(c);
+            break;
+          }
+          case TdApi.InternalLinkTypeActiveSessions.CONSTRUCTOR: {
+            SettingsSessionsController sessions = new SettingsSessionsController(context.context(), context.tdlib());
+            SettingsWebsitesController websites = new SettingsWebsitesController(context.context(), context.tdlib());
+            ViewController<?> c = new SimpleViewPagerController(context.context(), context.tdlib(), new ViewController[] {sessions, websites}, new String[] {Lang.getString(R.string.Devices).toUpperCase(), Lang.getString(R.string.Websites).toUpperCase()}, false);
+            context.context().navigation().navigateTo(c);
+            break;
+          }
+
+          case TdApi.InternalLinkTypeAttachmentMenuBot.CONSTRUCTOR:
+          case TdApi.InternalLinkTypeInvoice.CONSTRUCTOR:
+          case TdApi.InternalLinkTypePremiumFeatures.CONSTRUCTOR:
+          case TdApi.InternalLinkTypeRestorePurchases.CONSTRUCTOR: {
+            showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.InternalUrlUnsupported), openParameters);
+            break;
+          }
+          case TdApi.InternalLinkTypeChangePhoneNumber.CONSTRUCTOR: {
+            SettingsPhoneController c = new SettingsPhoneController(context.context(), context.tdlib());
+            context.context().navigation().navigateTo(c);
+            break;
+          }
+          case TdApi.InternalLinkTypeQrCodeAuthentication.CONSTRUCTOR: {
+            showLinkTooltip(tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.ScanQRLinkHint), openParameters);
+            break;
+          }
+          case TdApi.InternalLinkTypeTheme.CONSTRUCTOR: {
+            TdApi.InternalLinkTypeTheme theme = (TdApi.InternalLinkTypeTheme) linkType;
+            // TODO tdlib
+            showLinkTooltip(tdlib, R.drawable.baseline_info_24, Lang.getMarkdownString(context, R.string.NoCloudThemeSupport), openParameters);
+            break;
+          }
+          case TdApi.InternalLinkTypeBackground.CONSTRUCTOR: {
+            TdApi.InternalLinkTypeBackground background = (TdApi.InternalLinkTypeBackground) linkType;
+            // TODO show progress?
+            tdlib.client().send(new TdApi.SearchBackground(background.backgroundName), backgroundObj -> {
+              switch (backgroundObj.getConstructor()) {
+                case TdApi.Background.CONSTRUCTOR: {
+                  TdApi.Background wallpaper = (TdApi.Background) backgroundObj;
+
+                  post(() -> {
+                    MessagesController c = new MessagesController(context.context(), context.tdlib());
+                    c.setArguments(new MessagesController.Arguments(MessagesController.PREVIEW_MODE_WALLPAPER_OBJECT, null, null).setWallpaperObject(wallpaper));
+                    context.context().navigation().navigateTo(c);
+
+                    if (after != null) {
+                      after.runWithBool(true);
+                    }
+                  });
+                  break;
+                }
+                case TdApi.Error.CONSTRUCTOR: {
+                  if (after != null) {
+                    post(() -> after.runWithBool(false));
+                  }
+                  break;
+                }
+              }
+            });
+            return;
+          }
+          case TdApi.InternalLinkTypeFilterSettings.CONSTRUCTOR: {
+            // TODO show chat folders screen
+            ok = false;
+            break;
+          }
+          case TdApi.InternalLinkTypePassportDataRequest.CONSTRUCTOR: {
+            TdApi.InternalLinkTypePassportDataRequest passportData = (TdApi.InternalLinkTypePassportDataRequest) linkType;
+            // TODO ?
+            break;
+          }
+          case TdApi.InternalLinkTypeUnknownDeepLink.CONSTRUCTOR: {
+            // TODO progress
+            tdlib.client().send(new TdApi.GetDeepLinkInfo(url), deepLinkResult -> {
+              switch (deepLinkResult.getConstructor()) {
+                case TdApi.DeepLinkInfo.CONSTRUCTOR: {
+                  TdApi.DeepLinkInfo deepLink = (TdApi.DeepLinkInfo) deepLinkResult;
+                  post(() -> {
+                    ViewController<?> c = context.context().navigation().getCurrentStackItem();
+                    if (c != null) {
+                      c.processDeepLinkInfo(deepLink);
+                    }
+                    if (after != null) {
+                      after.runWithBool(true);
+                    }
+                  });
+                  break;
+                }
+                case TdApi.Error.CONSTRUCTOR: {
+                  if (after != null) {
+                    post(() -> after.runWithBool(false));
+                  }
+                  break;
+                }
+              }
+            });
+            return; // async
+          }
+          default: {
+            ok = false;
+            break;
+          }
+        }
+        if (after != null) {
+          after.runWithBool(ok);
+        }
+      });
     });
   }
 
