@@ -738,7 +738,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     if (highlightOptionId == HIGHLIGHT_BUTTON) {
       if (useBubble() && !useForward()) {
         c.save();
-        c.clipRect(getActualLeftContentEdge(), startY, getActualRightContentEdge(), getBottomContentEdge());
+        c.clipRect(getActualLeftContentEdge(), startY, getActualRightContentEdge(), getBottomContentEdge() - getBubbleReduceHeight());
         c.drawPath(getBubblePath(), Paints.fillingPaint(Theme.getColor(getPressColorId())));
         c.restore();
       } else {

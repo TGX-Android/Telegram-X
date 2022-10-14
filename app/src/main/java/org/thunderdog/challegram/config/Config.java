@@ -26,7 +26,7 @@ import org.thunderdog.challegram.data.TD;
 public class Config {
   public static final boolean SUPPORT_SYSTEM_UNDERLINE_SPAN = true;
 
-  public static final boolean COMMENTS_SUPPORTED = false;
+  public static final boolean COMMENTS_SUPPORTED = true;
 
   public static final boolean NEED_SILENT_BROADCAST = false;
 
