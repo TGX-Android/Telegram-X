@@ -3215,15 +3215,74 @@ public class TdlibUi extends Handler {
     return false;
   }
 
-  public void openTelegramUrl (final TdlibDelegate context, final String url, @Nullable UrlOpenParameters openParameters, @Nullable RunnableBool after) {
-    if (StringUtils.isEmpty(url) || tdlib.context().inRecoveryMode()) {
+  @NonNull
+  private String preProcessTelegramUrl (@NonNull String url) {
+    try {
+      //noinspection UnsafeOptInUsageError
+      Uri uri = StringUtils.wrapHttps(url);
+      if (uri == null) {
+        return url;
+      }
+      String host = uri.getHost();
+      // convert username.t.me/path?query to t.me/username/path?query
+      int firstIndex = host.indexOf('.');
+      if (firstIndex == -1) {
+        return url;
+      }
+      String subdomain = host.substring(0, firstIndex);
+      host = host.substring(firstIndex + 1);
+      if (!tdlib.isKnownHost(host, false)) {
+        return url;
+      }
+      String path = uri.getPath();
+      String newPath = "/" + subdomain + (!StringUtils.isEmpty(path) && !path.equals("/") ? path : "");
+      Uri newUri = uri.buildUpon()
+        .authority(host)
+        .path(newPath)
+        .build();
+      return newUri.toString();
+    } catch (Throwable t) {
+      Log.i("Unable to pre process url: %s", t, url);
+    }
+    return url;
+  }
+
+  @Nullable
+  private TdApi.InternalLinkType parseTelegramUrl (String url) {
+    return null;
+  }
+
+  public void openTelegramUrl (final TdlibDelegate context, final String rawUrl, @Nullable UrlOpenParameters openParameters, @Nullable RunnableBool after) {
+    if (StringUtils.isEmpty(rawUrl) || tdlib.context().inRecoveryMode()) {
       if (after != null)
         after.runWithBool(false);
       return;
     }
-    tdlib.client().send(new TdApi.GetInternalLinkType(url), result -> {
-      if (result instanceof TdApi.InternalLinkType) {
-        TdApi.InternalLinkType linkType = (TdApi.InternalLinkType) result;
+    AtomicReference<String> url = new AtomicReference<>(preProcessTelegramUrl(rawUrl));
+    tdlib.client().send(new TdApi.GetInternalLinkType(url.get()), new Client.ResultHandler() {
+      @Override
+      public void onResult (TdApi.Object result) {
+        String currentUrl = url.get();
+        TdApi.InternalLinkType linkType;
+        if (result instanceof TdApi.InternalLinkTypeUnknownDeepLink) {
+          TdApi.InternalLinkType parsedType = parseTelegramUrl(rawUrl);
+          linkType = parsedType != null ? parsedType : (TdApi.InternalLinkType) result;
+        } else if (result instanceof TdApi.InternalLinkType) {
+          linkType = (TdApi.InternalLinkType) result;
+        } else {
+          linkType = parseTelegramUrl(rawUrl);
+        }
+        if ((linkType == null || result instanceof TdApi.InternalLinkTypeUnknownDeepLink) && !url.get().equals(rawUrl)) {
+          url.set(rawUrl);
+          tdlib.client().send(new TdApi.GetInternalLinkType(url.get()), this);
+          return;
+        }
+        if (linkType == null) {
+          if (after != null) {
+            post(() -> after.runWithBool(false));
+          }
+          return;
+        }
         post(() -> {
           if (context.context().navigation().isDestroyed())
             return;
@@ -3296,7 +3355,7 @@ public class TdlibUi extends Handler {
             case TdApi.InternalLinkTypePublicChat.CONSTRUCTOR: {
               TdApi.InternalLinkTypePublicChat publicChat = (TdApi.InternalLinkTypePublicChat) linkType;
               if (TdConstants.IV_PREVIEW_USERNAME.equals(publicChat.chatUsername)) {
-                openExternalUrl(context, url, new UrlOpenParameters(openParameters).forceInstantView());
+                openExternalUrl(context, currentUrl, new UrlOpenParameters(openParameters).forceInstantView());
               } else {
                 openPublicChat(context, publicChat.chatUsername, openParameters);
               }
@@ -3445,7 +3504,7 @@ public class TdlibUi extends Handler {
             }
             case TdApi.InternalLinkTypeUnknownDeepLink.CONSTRUCTOR: {
               // TODO progress
-              tdlib.client().send(new TdApi.GetDeepLinkInfo(url), deepLinkResult -> {
+              tdlib.client().send(new TdApi.GetDeepLinkInfo(currentUrl), deepLinkResult -> {
                 switch (deepLinkResult.getConstructor()) {
                   case TdApi.DeepLinkInfo.CONSTRUCTOR: {
                     TdApi.DeepLinkInfo deepLink = (TdApi.DeepLinkInfo) deepLinkResult;
@@ -3479,8 +3538,6 @@ public class TdlibUi extends Handler {
             after.runWithBool(ok);
           }
         });
-      } else if (after != null) {
-        post(() -> after.runWithBool(false));
       }
     });
   }
