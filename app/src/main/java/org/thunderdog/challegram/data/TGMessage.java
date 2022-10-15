@@ -293,7 +293,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     this.swipeHelper = new MessageQuickActionSwipeHelper(this);
     this.currentViews = new MultipleViewProvider();
     this.currentViews.setContentProvider(this);
-    this.commentButton = new TGCommentButton(this, currentViews, new TGCommentButton.CommentButtonDelegate() {
+    this.commentButton = new TGCommentButton(this, new TGCommentButton.CommentButtonDelegate() {
       @Override
       public void onClick (View view) {
         openMessageThread(null);
@@ -3588,6 +3588,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     currentComplexReceiver = complexReceiver;
     messageReactions.setReceiversPool(complexReceiver);
     computeQuickButtons();
+  }
+
+  public final void requestCommentButton (ComplexReceiver complexReceiver) {
+    commentButton.setReceiversPool(complexReceiver);
   }
 
   public final void requestAllTextMedia (MessageView view) {

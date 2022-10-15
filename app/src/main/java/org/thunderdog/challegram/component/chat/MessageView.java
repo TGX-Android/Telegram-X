@@ -97,6 +97,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   private final ImageReceiver avatarReceiver;
   private final GifReceiver gifReceiver;
   private final ComplexReceiver reactionsComplexReceiver, textMediaReceiver, replyTextMediaReceiver;
+  private final ComplexReceiver commentButtonReceiver;
   private final DoubleImageReceiver replyReceiver;
   private final RefreshRateLimiter refreshRateLimiter;
   private ComplexReceiver footerTextMediaReceiver;
@@ -111,6 +112,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     super(context);
     avatarReceiver = new ImageReceiver(this, Screen.dp(20.5f));
     reactionsComplexReceiver = new ComplexReceiver(this);
+    commentButtonReceiver = new ComplexReceiver(this);
     gifReceiver = new GifReceiver(this);
     this.refreshRateLimiter = new RefreshRateLimiter(this, Config.MAX_ANIMATED_EMOJI_REFRESH_RATE);
     textMediaReceiver = new ComplexReceiver()
@@ -149,6 +151,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     replyTextMediaReceiver.performDestroy();
     gifReceiver.destroy();
     reactionsComplexReceiver.performDestroy();
+    commentButtonReceiver.performDestroy();
     textMediaReceiver.performDestroy();
     if (contentReceiver != null) {
       contentReceiver.destroy();
@@ -270,6 +273,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     message.resetTransformState();
     message.requestAvatar(avatarReceiver);
     message.requestReactions(reactionsComplexReceiver);
+    message.requestCommentButton(commentButtonReceiver);
     message.requestAllTextMedia(this);
 
     if ((flags & FLAG_USE_COMMON_RECEIVER) != 0) {
@@ -427,6 +431,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       avatarReceiver.attach();
       gifReceiver.attach();
       reactionsComplexReceiver.attach();
+      commentButtonReceiver.attach();
       textMediaReceiver.attach();
       replyReceiver.attach();
       replyTextMediaReceiver.attach();
@@ -446,6 +451,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       avatarReceiver.detach();
       gifReceiver.detach();
       reactionsComplexReceiver.detach();
+      commentButtonReceiver.detach();
       textMediaReceiver.detach();
       replyReceiver.detach();
       replyTextMediaReceiver.detach();
