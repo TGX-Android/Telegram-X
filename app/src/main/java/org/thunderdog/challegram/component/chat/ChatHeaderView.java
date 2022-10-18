@@ -102,21 +102,21 @@ public class ChatHeaderView extends ComplexHeaderView {
       return;
     }
 
-    if (messageThread != null) {
-      setInnerMargins(Screen.dp(56f), Screen.dp(49f));
-      setText(Lang.plural(messageThread.areComments() ? R.string.xComments : R.string.xReplies, messageThread.getSize()), null);
-      attachChatStatus(messageThread.getChatId(), messageThread.getMessageThreadId());
-    } else {
-      setChatPhoto(chat, chat.photo);
-      setShowVerify(tdlib.chatVerified(chat));
-      setShowScam(tdlib.chatScam(chat));
-      setShowFake(tdlib.chatFake(chat));
-      setShowMute(TD.needMuteIcon(chat.notificationSettings, tdlib.scopeNotificationSettings(chat.id)));
-      setText(tdlib.chatTitle(chat), !StringUtils.isEmpty(forcedSubtitle) ? forcedSubtitle : tdlib.status().chatStatus(chat));
-      setExpandedSubtitle(tdlib.status().chatStatusExpanded(chat));
-      setUseRedHighlight(tdlib.isRedTeam(chat.id));
-      attachChatStatus(chat.id, 0);
-    }
+    TdApi.Chat chatInfo = messageThread != null
+      ? tdlib().chat(messageThread.getOpenedFromChatId())
+      : chat;
+    if (chatInfo == null) chatInfo = chat;
+    setChatPhoto(chatInfo, chatInfo.photo);
+    setShowVerify(tdlib.chatVerified(chatInfo));
+    setShowScam(tdlib.chatScam(chatInfo));
+    setShowFake(tdlib.chatFake(chatInfo));
+    setShowMute(TD.needMuteIcon(chatInfo.notificationSettings, tdlib.scopeNotificationSettings(chatInfo.id)));
+    CharSequence subtext = messageThread != null
+      ? getThreadSubtitle(tdlib, messageThread.areComments(), messageThread.getSize(), messageThread.getReplyToSender())
+      : (!StringUtils.isEmpty(forcedSubtitle) ? forcedSubtitle : tdlib.status().chatStatus(chatInfo));
+    setText(tdlib.chatTitle(chatInfo), subtext);
+    setUseRedHighlight(tdlib.isRedTeam(chatInfo.id));
+    attachChatStatus(chatInfo.id, messageThread != null ? messageThread.getMessageThreadId() : 0);
   }
 
   private void setChatPhoto (TdApi.Chat chat, @Nullable TdApi.ChatPhotoInfo photo) {
@@ -129,6 +129,17 @@ public class ChatHeaderView extends ComplexHeaderView {
     }
   }
 
+  private static String getThreadSubtitle(Tdlib tdlib, boolean areComments, int count, @Nullable TdApi.MessageSender coreMessageSender) {
+    String userName = null;
+    if (coreMessageSender != null) {
+      userName = tdlib.senderName(coreMessageSender, true);
+    }
+    int repliesStringId = userName != null ? R.string.xRepliesTo : R.string.xReplies;
+    return Lang.plural(
+      areComments ? R.string.xComments : repliesStringId, count, userName
+    );
+  }
+
   // Updates (new)
 
   public void updateChatTitle (long chatId, String title) {
@@ -138,6 +149,10 @@ public class ChatHeaderView extends ComplexHeaderView {
       setChatPhoto(chat, null);
       updateAvatar();
     }
+  }
+
+  public void updateThreadSubTitle (boolean areComments, int count, @Nullable TdApi.MessageSender coreMessageSender) {
+    setSubtitle(getThreadSubtitle(tdlib, areComments, count, coreMessageSender));
   }
 
   public void updateChatPhoto (TdApi.Chat chat, @Nullable TdApi.ChatPhotoInfo photo) {

@@ -21,10 +21,14 @@ import java.util.Objects;
 public class ThreadInfo {
   private final boolean areComments;
   private final TdApi.MessageThreadInfo threadInfo;
+  private final long openedFromChatId;
+  private final TdApi.MessageSender replyToSender;
 
   public ThreadInfo (TdApi.Message[] openedFromMessages, TdApi.MessageThreadInfo threadInfo, boolean forceComments) {
     this.areComments = openedFromMessages[0].isChannelPost || (forceComments && (threadInfo.messages[0].isChannelPost || (threadInfo.messages[0].senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR && ((TdApi.MessageSenderChat) threadInfo.messages[0].senderId).chatId != threadInfo.messages[0].chatId)));
     this.threadInfo = threadInfo;
+    this.openedFromChatId = openedFromMessages[0].chatId;
+    this.replyToSender = openedFromMessages[0].senderId;
     long messageId = threadInfo.draftMessage != null ? threadInfo.draftMessage.replyToMessageId : 0;
     if (messageId != 0) {
       for (TdApi.Message message : threadInfo.messages) {
@@ -36,8 +40,20 @@ public class ThreadInfo {
     }
   }
 
+  public void updateReplyInfo(TdApi.MessageReplyInfo replyInfo) {
+    this.threadInfo.replyInfo = replyInfo;
+  }
+
   public TdApi.Message[] getMessages () {
     return threadInfo.messages;
+  }
+
+  public long getOpenedFromChatId () {
+    return openedFromChatId;
+  }
+
+  public TdApi.MessageSender getReplyToSender () {
+    return replyToSender;
   }
 
   @Override

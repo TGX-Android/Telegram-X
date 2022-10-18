@@ -755,6 +755,7 @@
   <item type="id" name="btn_createInviteLink" />
   <item type="id" name="btn_viewInviteLinkMembers" />
   <item type="id" name="btn_openAdminInviteLinks" />
+  <item type="id" name="btn_manage" />
   <item type="id" name="btn_manageInviteLinks" />
   <item type="id" name="btn_manageJoinRequests" />
   <item type="id" name="btn_inviteLinkUserLimit" />

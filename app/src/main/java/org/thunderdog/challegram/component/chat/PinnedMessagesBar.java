@@ -102,13 +102,11 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
     recyclerView.addItemDecoration(new RecyclerView.ItemDecoration() {
       @Override
       public void onDrawOver (@NonNull Canvas c, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
-        if (messageList == null)
-          return;
 
         int viewportHeight = getRecyclerHeight();
 
         int itemHeight = SettingHolder.measureHeightForType(ListItem.TYPE_MESSAGE_PREVIEW);
-        int scrollItemCount = messageList.getTotalCount();
+        int scrollItemCount = messagesAdapter.getItemCount();
         if (scrollItemCount <= 0)
           return;
 
@@ -472,6 +470,19 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
     } else {
       messagesAdapter.setItems(new ListItem[0], false);
     }
+  }
+
+  public void setSingleMessage(TdApi.Message message) {
+    List<ListItem> items = new ArrayList<>(1);
+    collapse(false);
+    canExpand.setValue(false, false);
+    countAnimator.forceFactor(0f);
+    items.add(itemOf(message));
+    messagesAdapter.setItems(items, false);
+  }
+
+  public void setCanDismiss(boolean canDismiss) {
+    collapseButton.setVisibility(canDismiss ? VISIBLE : GONE);
   }
 
   private long maxFocusMessageId;

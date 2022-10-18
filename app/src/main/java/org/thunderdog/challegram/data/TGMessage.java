@@ -119,6 +119,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.SdkVersion;
@@ -270,7 +271,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   public static final int REACTIONS_DRAW_MODE_FLAT = 1;
   public static final int REACTIONS_DRAW_MODE_ONLY_ICON = 2;
 
-  private TGCommentButton commentButton;
+  private final TGCommentButton commentButton;
+  private TdApi.MessageThreadInfo lastThreadInfo;
 
   protected TGMessage (MessagesManager manager, TdApi.Message msg) {
     if (!initialized) {
@@ -874,17 +876,26 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (openingComments.getValue())
       return;
     openingComments.setValue(true, needAnimateChanges());
-    tdlib.client().send(highlightMessageId != null ? new TdApi.GetMessageThread(highlightMessageId.getChatId(), highlightMessageId.getMessageId()) : new TdApi.GetMessageThread(msg.chatId, getSmallestId()), result -> tdlib.ui().post(() -> {
+    getMessageThread(highlightMessageId, messageThreadInfo -> {
+      TdlibUi.ChatOpenParameters params = new TdlibUi.ChatOpenParameters().keepStack().messageThread(new ThreadInfo(getAllMessages(), messageThreadInfo, isRepliesChat())).after(chatId -> {
+        openingComments.setValue(false, needAnimateChanges());
+      });
+      if (highlightMessageId != null) {
+        params.highlightMessage(highlightMessageId).ensureHighlightAvailable();
+      }
+      tdlib.ui().openChat(this, messageThreadInfo.chatId, params);
+    });
+  }
+
+  public final void getMessageThread(@Nullable MessageId messageId, Consumer<TdApi.MessageThreadInfo> consumer) {
+    final long chatId = messageId != null ? messageId.getChatId() : getChatId();
+    final long msgId = messageId != null ? messageId.getMessageId() : getSmallestId();
+    tdlib.client().send(new TdApi.GetMessageThread(chatId, msgId), result -> tdlib.ui().post(() -> {
       switch (result.getConstructor()) {
         case TdApi.MessageThreadInfo.CONSTRUCTOR: {
           TdApi.MessageThreadInfo messageThread = (TdApi.MessageThreadInfo) result;
-          TdlibUi.ChatOpenParameters params = new TdlibUi.ChatOpenParameters().keepStack().messageThread(new ThreadInfo(getAllMessages(), messageThread, isRepliesChat())).after(chatId -> {
-            openingComments.setValue(false, needAnimateChanges());
-          });
-          if (highlightMessageId != null) {
-            params.highlightMessage(highlightMessageId).ensureHighlightAvailable();
-          }
-          tdlib.ui().openChat(this, messageThread.chatId, params);
+          lastThreadInfo = messageThread;
+          consumer.accept(messageThread);
           break;
         }
         case TdApi.Error.CONSTRUCTOR: {
@@ -894,6 +905,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         }
       }
     }));
+  }
+
+  public TdApi.MessageThreadInfo getLastThreadInfo () {
+    return lastThreadInfo;
   }
 
   private int computeBubbleHeight () {
@@ -1638,16 +1653,23 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     int textX, textY;
     TextPaint textPaint;
     if (useBubbles()) {
-      int color = getBubbleDateBackgroundColor();
+      boolean belowHeader = BitwiseUtils.getFlag(flags, MESSAGE_FLAG_BELOW_HEADER) && manager.isHeaderVisible();
+      int color = Theme.isDark() && belowHeader
+        ? Theme.getColor(R.id.theme_color_bubbleIn_background)
+        : getBubbleDateBackgroundColor();
       int textColor = getBubbleDateTextColor();
-
-      int padding = Screen.dp(8f);
-      rectF.set(centerX - pDateWidth / 2 - padding, startY + Screen.dp(5f), centerX + pDateWidth / 2 + padding, startY + Screen.dp(5f) + Screen.dp(26f));
-      int radius = Screen.dp(Theme.getBubbleDateRadius());
-      c.drawRoundRect(rectF, radius, radius, Paints.fillingPaint(ColorUtils.alphaColor(alpha, color)));
       textX = centerX - pDateWidth / 2;
       textY = startY + xDateTop - Screen.dp(3f);
       textPaint = Paints.getBoldPaint13((flags & FLAG_DATE_FAKE_BOLD) != 0, textColor);
+      if (belowHeader) {
+        rectF.set(0, startY + Screen.dp(5f), this.width, startY + Screen.dp(5f) + Screen.dp(26f));
+        c.drawRect(rectF, Paints.fillingPaint(color));
+      } else {
+        int padding = Screen.dp(8f);
+        rectF.set(centerX - pDateWidth / 2 - padding, startY + Screen.dp(5f), centerX + pDateWidth / 2 + padding, startY + Screen.dp(5f) + Screen.dp(26f));
+        int radius = Screen.dp(Theme.getBubbleDateRadius());
+        c.drawRoundRect(rectF, radius, radius, Paints.fillingPaint(ColorUtils.alphaColor(alpha, color)));
+      }
     } else {
       if (detachFactor > 0f) {
         int padding = Screen.dp(10f);
@@ -2735,8 +2757,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (part.getEntity() != null && part.getEntity().getTag() instanceof Long) {
       manager.controller().setInputInlineBot(msg.viaBotUserId, viaBotUsername);
       return true;
-    } else {
+    } else if (!isThreadHeader()) {
       return openProfile(view, text, part, openParameters, null);
+    } else {
+      return false;
     }
   }
 
@@ -3900,6 +3924,14 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return replyInfo != null ? replyInfo.replyCount : 0;
   }
 
+  public final int getThreadOwnerRepliesCount() {
+    int replyCount = 0;
+    if (lastThreadInfo != null && lastThreadInfo.replyInfo != null) {
+      replyCount = lastThreadInfo.replyInfo.replyCount;
+    }
+    return replyCount;
+  }
+
   public final int getForwardCount () {
     TdApi.MessageInteractionInfo info = msg.interactionInfo;
     return info != null ? info.forwardCount : 0;
@@ -4398,6 +4430,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public final boolean canGetViewers () {
     return msg.canGetViewers;
+  }
+
+  public final boolean canGetThread() {
+    return msg.canGetMessageThread;
   }
 
   public final boolean canGetAddedReactions () {

@@ -143,6 +143,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           controller.onInteractedWithContent();
           controller.onFirstChatScroll();
         }
+        controller.updatePinnedMessageBarPosition(recyclerView.computeVerticalScrollOffset());
         controller.context().reactionsOverlayManager().addOffset(0, -dy);
       }
     };
@@ -1770,6 +1771,11 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     int index = adapter.indexOfMessageContainer(messageId);
     if (index != -1 && adapter.getItem(index).setMessageInteractionInfo(messageId, interactionInfo)) {
       invalidateViewAt(index);
+    }
+    boolean isThreadOwnerMessage = headerMessage != null && headerMessage.getId() == messageId;
+    if (isThreadOwnerMessage && loader.getMessageThread() != null && interactionInfo != null) {
+      loader.getMessageThread().updateReplyInfo(interactionInfo.replyInfo);
+      controller.updateThreadInfo(interactionInfo.replyInfo);
     }
   }
 

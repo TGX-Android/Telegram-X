@@ -523,6 +523,14 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         return true;
       }
     }*/
+    if (!m.isThread() && msg.canGetThread() && msg.getReplyCount() == 0) {
+      msg.getMessageThread(null, messageThreadInfo -> {
+        if (!msg.isDestroyed()) {
+          onMessageClickImpl(x, y, null);
+        }
+      });
+      return true;
+    }
     return onMessageClickImpl(x, y, null);
   }
 
@@ -665,6 +673,24 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         }
       }
 
+      if (Config.COMMENTS_SUPPORTED) {
+        int repliesCount = msg.getReplyCount() > 0
+          ? msg.getReplyCount()
+          : msg.getThreadOwnerRepliesCount();
+        if (!m.isThread() && repliesCount > 0) {
+          ids.append(R.id.btn_messageReplies);
+          strings.append(Lang.plural(msg.getSender().isChannel() ? R.string.ViewXComments : R.string.ViewXReplies, repliesCount));
+          icons.append(msg.getSender().isChannel() ? R.drawable.outline_templarian_comment_multiple_24 : R.drawable.baseline_reply_all_24);
+        }
+      } else {
+        TdApi.Message messageWithThread = msg.findMessageWithThread();
+        if (messageWithThread != null && messageWithThread.isChannelPost) {
+          ids.append(R.id.btn_messageDiscuss);
+          strings.append(R.string.DiscussMessage);
+          icons.append(R.drawable.outline_templarian_comment_multiple_24);
+        }
+      }
+
       if (m.canWriteMessages() && isSent && msg.canReplyTo()) {
         if (msg.getMessage().content.getConstructor() == TdApi.MessageDice.CONSTRUCTOR && !msg.tdlib().hasRestriction(msg.getMessage().chatId, R.id.right_sendStickersAndGifs)) {
           String emoji = ((TdApi.MessageDice) msg.getMessage().content).emoji;
@@ -682,21 +708,6 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         ids.append(R.id.btn_messageReply);
         strings.append(R.string.Reply);
         icons.append(R.drawable.baseline_reply_24);
-      }
-
-      if (Config.COMMENTS_SUPPORTED) {
-        if (msg.getReplyCount() > 0) {
-          ids.append(R.id.btn_messageReplies);
-          strings.append(Lang.plural(msg.getSender().isChannel() ? R.string.ViewXComments : R.string.ViewXReplies, msg.getReplyCount()));
-          icons.append(msg.getSender().isChannel() ? R.drawable.outline_templarian_comment_multiple_24 : R.drawable.baseline_reply_all_24);
-        }
-      } else {
-        TdApi.Message messageWithThread = msg.findMessageWithThread();
-        if (messageWithThread != null && messageWithThread.isChannelPost) {
-          ids.append(R.id.btn_messageDiscuss);
-          strings.append(R.string.DiscussMessage);
-          icons.append(R.drawable.outline_templarian_comment_multiple_24);
-        }
       }
 
       if (msg.canBeForwarded() && isSent) {
