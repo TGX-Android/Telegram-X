@@ -192,7 +192,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     if (StringUtils.isEmpty(text))
       return;
     performSyncTask(context, extras.accountId, "reply", (tdlib, onDone) -> {
-      tdlib.sendMessage(extras.chatId, extras.messageThreadId, extras.needReply ? extras.messageIds[extras.messageIds.length - 1] : 0, false, true, new TdApi.InputMessageText(new TdApi.FormattedText(text.toString(), null), false, false), sendingMessage -> {
+      tdlib.sendMessage(extras.chatId, extras.messageThreadId, extras.needReply ? extras.messageIds[extras.messageIds.length - 1] : 0, Td.newSendOptions(), new TdApi.InputMessageText(new TdApi.FormattedText(text.toString(), null), false, false), sendingMessage -> {
         if (sendingMessage == null) {
           UI.showToast(R.string.NotificationReplyFailed, Toast.LENGTH_SHORT);
           if (onDone != null) {

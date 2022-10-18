@@ -36,6 +36,7 @@ public class TGStickerObj {
   private ImageFile fullImage;
   private GifFile previewAnimation, fullAnimation, premiumFullAnimation;
   private String foundByEmoji;
+  private TdApi.ReactionType reactionType;
 
   private int flags;
 
@@ -54,6 +55,14 @@ public class TGStickerObj {
 
   public TGStickerObj (Tdlib tdlib, @Nullable TdApi.Sticker sticker, TdApi.StickerType stickerType, String[] emojis) {
     set(tdlib, sticker, stickerType, emojis);
+  }
+
+  public void setReactionType (TdApi.ReactionType reactionType) {
+    this.reactionType = reactionType;
+  }
+
+  public TdApi.ReactionType getReactionType () {
+    return reactionType;
   }
 
   public boolean set (Tdlib tdlib, @Nullable TdApi.Sticker sticker, TdApi.StickerType stickerType, String[] emojis) {

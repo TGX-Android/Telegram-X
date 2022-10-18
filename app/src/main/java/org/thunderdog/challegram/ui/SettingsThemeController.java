@@ -33,6 +33,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.luckycatlabs.sunrisesunset.SunriseSunsetCalculator;
 
+import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
@@ -42,6 +43,7 @@ import org.thunderdog.challegram.component.user.RemoveHelper;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.helper.LocationHelper;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
@@ -176,7 +178,8 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
             if (reactions.length > 0) {
               final TGReaction[] tgReactions = new TGReaction[reactions.length];
               for (int a = 0; a < reactions.length; a++) {
-                final TGReaction tgReaction = tdlib.getReaction(reactions[a]);
+                TdApi.ReactionType reactionType = TD.toReactionType(reactions[a]);
+                final TGReaction tgReaction = tdlib.getReaction(reactionType);
                 tgReactions[a] = tgReaction;
                 if (tgReaction != null) {
                   if (stringBuilder.length() > 0) {

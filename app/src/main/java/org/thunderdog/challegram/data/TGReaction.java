@@ -19,7 +19,11 @@ import org.thunderdog.challegram.telegram.Tdlib;
 
 public class TGReaction {
   private final Tdlib tdlib;
-  public TdApi.Reaction reaction;
+
+  public final TdApi.ReactionType type;
+  public final String key;
+
+  public TdApi.EmojiReaction reaction;
 
   private final TGStickerObj _staticIconSicker;
   private final TGStickerObj _activateAnimationSicker;
@@ -29,9 +33,12 @@ public class TGReaction {
 
   private final TGStickerObj _staticCenterAnimationSicker;
 
-  public TGReaction (Tdlib tdlib, TdApi.Reaction reaction) {
+  public TGReaction (Tdlib tdlib, TdApi.EmojiReaction reaction) {
     this.tdlib = tdlib;
     this.reaction = reaction;
+    // TODO: custom reactions support
+    this.type = new TdApi.ReactionTypeEmoji(reaction.emoji);
+    this.key = TD.makeReactionKey(type);
 
     _staticIconSicker = newStaticIconSicker();
     _activateAnimationSicker = newActivateAnimationSicker();
@@ -46,6 +53,10 @@ public class TGReaction {
     }
 
     tdlib.ui().post(this::loadAllAnimationsAndCache);
+  }
+
+  public boolean isPremium () {
+    return type.getConstructor() == TdApi.ReactionTypeCustomEmoji.CONSTRUCTOR;
   }
 
   public TGStickerObj staticIconSicker () {
@@ -73,32 +84,32 @@ public class TGReaction {
   }
 
   private TGStickerObj newStaticIconSicker () {
-    return new TGStickerObj(tdlib, reaction.staticIcon, reaction.reaction, reaction.staticIcon.type);
+    return new TGStickerObj(tdlib, reaction.staticIcon, reaction.emoji, reaction.staticIcon.type);
   }
 
   private TGStickerObj newActivateAnimationSicker () {
-    return new TGStickerObj(tdlib, reaction.activateAnimation, reaction.reaction, reaction.activateAnimation.type);
+    return new TGStickerObj(tdlib, reaction.activateAnimation, reaction.emoji, reaction.activateAnimation.type);
   }
 
   private TGStickerObj newEffectAnimationSicker () {
-    return new TGStickerObj(tdlib, reaction.effectAnimation, reaction.reaction, reaction.effectAnimation.type);
+    return new TGStickerObj(tdlib, reaction.effectAnimation, reaction.emoji, reaction.effectAnimation.type);
   }
 
   public TGStickerObj newAroundAnimationSicker () {
     if (reaction.aroundAnimation != null) {
-      return new TGStickerObj(tdlib, reaction.aroundAnimation, reaction.reaction, reaction.aroundAnimation.type);
+      return new TGStickerObj(tdlib, reaction.aroundAnimation, reaction.emoji, reaction.aroundAnimation.type);
     }
     return newEffectAnimationSicker();
   }
 
   public TGStickerObj newCenterAnimationSicker () {
     if (reaction.centerAnimation != null) {
-      return new TGStickerObj(tdlib, reaction.centerAnimation, reaction.reaction, reaction.centerAnimation.type);
+      return new TGStickerObj(tdlib, reaction.centerAnimation, reaction.emoji, reaction.centerAnimation.type);
     }
     return newStaticIconSicker();
   }
 
-  public TdApi.Reaction getReaction () {
+  public TdApi.EmojiReaction getReaction () {
     return this.reaction;
   }
 

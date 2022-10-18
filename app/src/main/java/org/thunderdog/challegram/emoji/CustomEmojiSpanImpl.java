@@ -90,7 +90,7 @@ class CustomEmojiSpanImpl extends EmojiSpanImpl implements TdlibEmojiManager.Wat
   }
 
   @Override
-  public void onCustomEmojiLoaded (TdlibEmojiManager context, long customEmojiId, TdlibEmojiManager.Entry entry) {
+  public void onCustomEmojiLoaded (TdlibEmojiManager context, TdlibEmojiManager.Entry entry) {
     tdlib.ui().post(() -> {
       if (!isDestroyed) {
         setCustomEmoji(entry);
@@ -117,7 +117,7 @@ class CustomEmojiSpanImpl extends EmojiSpanImpl implements TdlibEmojiManager.Wat
     }
 
     //noinspection ConstantConditions
-    float scale = TextMedia.getScale(customEmoji.sticker, customEmojiSize);
+    float scale = TextMedia.getScale(customEmoji.value, customEmojiSize);
     boolean needScale = scale != 1f;
 
     int restoreToCount;
@@ -202,7 +202,7 @@ class CustomEmojiSpanImpl extends EmojiSpanImpl implements TdlibEmojiManager.Wat
         requestCustomEmoji();
       } else if (!customEmoji.isNotFound()) {
         customEmojiSize = size;
-        mediaItem = new ComplexMediaItemCustomEmoji(tdlib, customEmoji.sticker, size);
+        mediaItem = new ComplexMediaItemCustomEmoji(tdlib, customEmoji.value, size);
         attachedToMediaKey = surfaceProvider.attachToReceivers(this, mediaItem);
       }
     }

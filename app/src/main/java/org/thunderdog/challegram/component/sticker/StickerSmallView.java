@@ -241,7 +241,7 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
   }
 
   public interface StickerMovementCallback {
-    boolean onStickerClick (StickerSmallView view, View clickView, TGStickerObj sticker, boolean isMenuClick, boolean forceDisableNotification, @Nullable TdApi.MessageSchedulingState schedulingState);
+    boolean onStickerClick (StickerSmallView view, View clickView, TGStickerObj sticker, boolean isMenuClick, TdApi.MessageSendOptions sendOptions);
     long getStickerOutputChatId ();
     void setStickerPressed (StickerSmallView view, TGStickerObj sticker, boolean isPressed);
     boolean canFindChildViewUnder (StickerSmallView view, int recyclerX, int recyclerY);
@@ -282,7 +282,7 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
         closePreview(e);
         if (clicked && callback != null && sticker != null) {
           ViewUtils.onClick(this);
-          callback.onStickerClick(this, this, sticker, false, false, null);
+          callback.onStickerClick(this, this, sticker, false, null);
         }
         return true;
       }
@@ -501,8 +501,8 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     }
   }
 
-  public boolean onSendSticker (View view, TGStickerObj sticker, boolean forceDisableNotification, TdApi.MessageSchedulingState schedulingState) {
-    return callback != null && callback.onStickerClick(this, view, sticker, true, forceDisableNotification, schedulingState);
+  public boolean onSendSticker (View view, TGStickerObj sticker, TdApi.MessageSendOptions sendOptions) {
+    return callback != null && callback.onStickerClick(this, view, sticker, true, sendOptions);
   }
 
   public long getStickerOutputChatId () {

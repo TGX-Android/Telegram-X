@@ -6052,7 +6052,7 @@ public class TdlibUi extends Handler {
   }
 
   public interface SimpleSendCallback {
-    void onSendRequested (boolean forceDisableNotification, TdApi.MessageSchedulingState schedulingState, boolean disableMarkdown);
+    void onSendRequested (TdApi.MessageSendOptions sendOptions, boolean disableMarkdown);
   }
 
   public HapticMenuHelper createSimpleHapticMenu (ViewController<?> context, long chatId, @Nullable FutureBool availabilityCallback, @Nullable FutureBool canDisableMarkdownCallback, RunnableData<List<HapticMenuHelper.MenuItem>> customItemProvider, SimpleSendCallback sendCallback, @Nullable ThemeDelegate forcedTheme) {
@@ -6070,32 +6070,39 @@ public class TdlibUi extends Handler {
     }, (menuView, parentView) -> {
       switch (menuView.getId()) {
         case R.id.btn_sendScheduled:
-          if (context != null)
-            tdlib.ui().pickSchedulingState(context, schedulingState -> sendCallback.onSendRequested(false, schedulingState, false), chatId, false, false, forcedTheme);
+          if (context != null) {
+            tdlib.ui().pickSchedulingState(context, schedulingState ->
+              sendCallback.onSendRequested(Td.newSendOptions(schedulingState), false),
+              chatId, false, false, null, forcedTheme
+            );
+          }
           break;
         case R.id.btn_sendNoMarkdown:
-          sendCallback.onSendRequested(false, null, true);
+          sendCallback.onSendRequested(Td.newSendOptions(), true);
           break;
         case R.id.btn_sendNoSound:
-          sendCallback.onSendRequested(true, null, false);
+          sendCallback.onSendRequested(Td.newSendOptions(true), false);
           break;
         case R.id.btn_sendOnceOnline:
-          sendCallback.onSendRequested(false, new TdApi.MessageSchedulingStateSendWhenOnline(), false);
+          sendCallback.onSendRequested(Td.newSendOptions(new TdApi.MessageSchedulingStateSendWhenOnline()), false);
           break;
       }
     }, context != null ? context.getThemeListeners() : null, forcedTheme);
   }
 
-  public boolean showScheduleOptions (ViewController<?> context, long chatId, boolean needSendWithoutSound, SimpleSendCallback callback, @Nullable ThemeDelegate forcedTheme) {
-    return pickSchedulingState(context, schedulingState -> {
-      if (schedulingState == null)
-        callback.onSendRequested(true, null, false);
-      else
-        callback.onSendRequested(false, schedulingState, false);
-    }, chatId, tdlib.cache().userLastSeenAvailable(tdlib.chatUserId(chatId)), needSendWithoutSound, forcedTheme);
+  public boolean showScheduleOptions (ViewController<?> context, long chatId, boolean needSendWithoutSound, SimpleSendCallback callback, @Nullable TdApi.MessageSendOptions defaultSendOptions, @Nullable ThemeDelegate forcedTheme) {
+    return pickSchedulingState(context,
+      initialSendOptions ->
+        callback.onSendRequested(initialSendOptions, false),
+      chatId,
+      tdlib.cache().userLastSeenAvailable(tdlib.chatUserId(chatId)),
+      needSendWithoutSound,
+      defaultSendOptions,
+      forcedTheme
+    );
   }
 
-  public boolean pickSchedulingState (ViewController<?> context, RunnableData<TdApi.MessageSchedulingState> callback, long chatId, boolean needOnline, boolean needSendWithoutSound, @Nullable ThemeDelegate forcedTheme) {
+  public boolean pickSchedulingState (ViewController<?> context, RunnableData<TdApi.MessageSendOptions> callback, long chatId, boolean needOnline, boolean needSendWithoutSound, @Nullable TdApi.MessageSendOptions defaultSendOptions, @Nullable ThemeDelegate forcedTheme) {
     if (ChatId.isSecret(chatId)) {
       return false;
     }
@@ -6141,10 +6148,10 @@ public class TdlibUi extends Handler {
       long seconds = 0;
       switch (optionId) {
         case R.id.btn_sendNoSound:
-          callback.runWithData(null);
+          callback.runWithData(Td.newSendOptions(defaultSendOptions, true));
           return true;
         case R.id.btn_sendOnceOnline:
-          callback.runWithData(new TdApi.MessageSchedulingStateSendWhenOnline());
+          callback.runWithData(Td.newSendOptions(defaultSendOptions, new TdApi.MessageSchedulingStateSendWhenOnline()));
           return true;
         case R.id.btn_sendScheduled30Min:
           seconds = TimeUnit.MINUTES.toSeconds(30);
@@ -6170,14 +6177,14 @@ public class TdlibUi extends Handler {
           }
           context.showDateTimePicker(Lang.getString(titleRes), todayRes, tomorrowRes, futureRes, millis -> {
             int sendDate = (int) (millis / 1000l); // (int) (tdlib.toTdlibTimeMillis(millis) / 1000l);
-            callback.runWithData(new TdApi.MessageSchedulingStateSendAtDate(sendDate));
+            callback.runWithData(Td.newSendOptions(defaultSendOptions, new TdApi.MessageSchedulingStateSendAtDate(sendDate)));
           }, forcedTheme);
           return true;
         }
       }
       if (seconds > 0) {
         int sendDate = (int) (tdlib.currentTimeMillis() / 1000l + seconds);
-        callback.runWithData(new TdApi.MessageSchedulingStateSendAtDate(sendDate));
+        callback.runWithData(Td.newSendOptions(defaultSendOptions, new TdApi.MessageSchedulingStateSendAtDate(sendDate)));
       }
       return true;
     }, forcedTheme);

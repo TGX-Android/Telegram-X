@@ -186,7 +186,7 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
   }
 
   @Override
-  public boolean onStickerClick (View view, TGStickerObj sticker, boolean isMenuClick, boolean forceDisableNotification, @Nullable TdApi.MessageSchedulingState schedulingState) {
+  public boolean onStickerClick (View view, TGStickerObj sticker, boolean isMenuClick, TdApi.MessageSendOptions sendOptions) {
     NavigationController navigation = UI.getContext(getContext()).navigation();
     if (navigation != null) {
       ViewController<?> c = navigation.getCurrentStackItem();
@@ -194,7 +194,7 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
         return false;
       }
       if (c instanceof MessagesController && ((MessagesController) c).canWriteMessages()) {
-        if (((MessagesController) c).onSendSticker(view, sticker, forceDisableNotification, schedulingState)) {
+        if (((MessagesController) c).onSendSticker(view, sticker, sendOptions)) {
           popupLayout.hideWindow(true);
           return true;
         }

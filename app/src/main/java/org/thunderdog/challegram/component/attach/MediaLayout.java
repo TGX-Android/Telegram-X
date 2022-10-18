@@ -85,6 +85,7 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.lambda.Destroyable;
+import me.vkryl.td.Td;
 import me.vkryl.td.TdConstants;
 
 public class MediaLayout extends FrameLayoutFix implements
@@ -972,16 +973,16 @@ public class MediaLayout extends FrameLayoutFix implements
 
   public void pickDateOrProceed (TdlibUi.SimpleSendCallback sendCallback) {
     if (target != null && target.areScheduledOnly()) {
-      tdlib().ui().showScheduleOptions(target, getTargetChatId(), false, sendCallback, null);
+      tdlib().ui().showScheduleOptions(target, getTargetChatId(), false, sendCallback, null, null);
     } else {
-      sendCallback.onSendRequested(false, null, false);
+      sendCallback.onSendRequested(Td.newSendOptions(), false);
     }
   }
 
   public void sendContact (TGUser user) {
-    pickDateOrProceed((forceDisableNotification, schedulingState, disableMarkdown) -> {
+    pickDateOrProceed((sendOptions, disableMarkdown) -> {
       if (target != null) {
-        target.sendContact(user.getUser(), true, new TdApi.MessageSendOptions(forceDisableNotification, false, false, schedulingState));
+        target.sendContact(user.getUser(), true, sendOptions);
       }
       hide(false);
     });
@@ -1014,35 +1015,35 @@ public class MediaLayout extends FrameLayoutFix implements
     }
     if (target != null) {
       if (files != null) {
-        target.sendFiles(files, needGroupMedia, true, options.disableNotification, options.schedulingState);
+        target.sendFiles(files, needGroupMedia, true, options);
       }
       if (musicFiles != null) {
-        target.sendMusic(musicFiles, needGroupMedia, true, options.disableNotification, options.schedulingState);
+        target.sendMusic(musicFiles, needGroupMedia, true, options);
       }
     }
     hide(isMultiSend);
   }
 
   public void sendFile (String file) {
-    pickDateOrProceed((forceDisableNotification, schedulingState, disableMarkdown) -> {
+    pickDateOrProceed((sendOptions, disableMarkdown) -> {
       if (target != null) {
-        target.sendFiles(Collections.singletonList(file), needGroupMedia, true, forceDisableNotification, schedulingState);
+        target.sendFiles(Collections.singletonList(file), needGroupMedia, true, sendOptions);
       }
       hide(false);
     });
   }
 
   public void sendMusic (MediaBottomFilesController.MusicEntry musicFile) {
-    pickDateOrProceed((forceDisableNotification, schedulingState, disableMarkdown) -> {
+    pickDateOrProceed((sendOptions, disableMarkdown) -> {
       if (target != null) {
-        target.sendMusic(Collections.singletonList(musicFile), needGroupMedia, true, forceDisableNotification, schedulingState);
+        target.sendMusic(Collections.singletonList(musicFile), needGroupMedia, true, sendOptions);
       }
       hide(false);
     });
   }
 
   public void sendImage (ImageFile image, boolean isRemote) {
-    pickDateOrProceed((forceDisableNotification, schedulingState, disableMarkdown) -> {
+    pickDateOrProceed((sendOptions, disableMarkdown) -> {
       if (isRemote) {
         long queryId;
         String id;
@@ -1053,7 +1054,7 @@ public class MediaLayout extends FrameLayoutFix implements
           throw new IllegalArgumentException("image.getType() == " + image.getType());
         }
         if (target != null) {
-          target.sendInlineQueryResult(queryId, id, true, false, forceDisableNotification, schedulingState);
+          target.sendInlineQueryResult(queryId, id, true, false, sendOptions);
         }
       } else {
       /*if (target != null) {
@@ -1082,7 +1083,7 @@ public class MediaLayout extends FrameLayoutFix implements
           continue;
         }
         if (target != null) {
-          target.sendInlineQueryResult(queryId, resultId, first, false, options.disableNotification, options.schedulingState);
+          target.sendInlineQueryResult(queryId, resultId, first, false, options);
         }
         first = false;
       }
@@ -1123,9 +1124,9 @@ public class MediaLayout extends FrameLayoutFix implements
   }
 
   public void sendVenue (MediaLocationData place) {
-    pickDateOrProceed((forceDisableNotification, schedulingState, disableMarkdown) -> {
+    pickDateOrProceed((sendOptions, disableMarkdown) -> {
       if (target != null) {
-        target.send(place.convertToInputMessage(), true, forceDisableNotification, schedulingState, null);
+        target.send(place.convertToInputMessage(), true, sendOptions, null);
       }
       // TODO reveal hide animation
       hide(false);
@@ -1133,13 +1134,13 @@ public class MediaLayout extends FrameLayoutFix implements
   }
 
   public void sendLocation (double latitude, double longitude, double accuracy, int heading, int livePeriod) {
-    pickDateOrProceed((forceDisableNotification, schedulingState, disableMarkdown) -> {
+    pickDateOrProceed((sendOptions, disableMarkdown) -> {
       if (target != null) {
         TdApi.Location location = new TdApi.Location(latitude, longitude, accuracy);
         if (inSpecificMode()) {
-          target.sendPickedLocation(location, heading, forceDisableNotification, schedulingState);
+          target.sendPickedLocation(location, heading, sendOptions);
         } else {
-          target.send(new TdApi.InputMessageLocation(location, livePeriod, heading, 0), true, forceDisableNotification, schedulingState, null);
+          target.send(new TdApi.InputMessageLocation(location, livePeriod, heading, 0), true, sendOptions, null);
         }
       }
       hide(false);
@@ -1161,7 +1162,9 @@ public class MediaLayout extends FrameLayoutFix implements
   public void onClick (View v) {
     switch (v.getId()) {
       case R.id.btn_send: {
-        pickDateOrProceed((forceDisableNotification, schedulingState, disableMarkdown) -> getCurrentController().onMultiSendPress(new TdApi.MessageSendOptions(forceDisableNotification, false, false, schedulingState), false));
+        pickDateOrProceed((sendOptions, disableMarkdown) ->
+          getCurrentController().onMultiSendPress(sendOptions, false)
+        );
         break;
       }
       case R.id.btn_mosaic: {
@@ -1281,21 +1284,25 @@ public class MediaLayout extends FrameLayoutFix implements
       }, (menuItem, parentView) -> {
         switch (menuItem.getId()) {
           case R.id.btn_sendNoMarkdown:
-            pickDateOrProceed((forceDisableNotification, schedulingState, disableMarkdown) ->
-                    getCurrentController().onMultiSendPress(new TdApi.MessageSendOptions(false, false, false, schedulingState), true)
+            pickDateOrProceed((sendOptions, disableMarkdown) ->
+              getCurrentController().onMultiSendPress(sendOptions, true)
             );
             break;
           case R.id.btn_sendNoSound:
-            pickDateOrProceed((forceDisableNotification, schedulingState, disableMarkdown) ->
-                    getCurrentController().onMultiSendPress(new TdApi.MessageSendOptions(true, false, false, schedulingState), false)
+            pickDateOrProceed((sendOptions, disableMarkdown) ->
+              getCurrentController().onMultiSendPress(sendOptions, false)
             );
             break;
           case R.id.btn_sendOnceOnline:
-            getCurrentController().onMultiSendPress(new TdApi.MessageSendOptions(false, false, false, new TdApi.MessageSchedulingStateSendWhenOnline()), false);
+            getCurrentController().onMultiSendPress(Td.newSendOptions(new TdApi.MessageSchedulingStateSendWhenOnline()), false);
             break;
           case R.id.btn_sendScheduled:
             if (target != null) {
-              tdlib().ui().pickSchedulingState(target, schedule -> getCurrentController().onMultiSendPress(new TdApi.MessageSendOptions(false, false, false, schedule), false), getTargetChatId(), false, false, null);
+              tdlib().ui().pickSchedulingState(target,
+                schedule ->
+                  getCurrentController().onMultiSendPress(Td.newSendOptions(schedule), false),
+                getTargetChatId(), false, false, null, null
+              );
             }
             break;
         }

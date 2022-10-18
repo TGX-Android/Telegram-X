@@ -41,7 +41,7 @@ import me.vkryl.android.widget.FrameLayoutFix;
 
 public class StickerSuggestionAdapter extends RecyclerView.Adapter<StickerSuggestionAdapter.StickerSuggestionHolder> implements StickerSmallView.StickerMovementCallback {
   public interface Callback {
-    boolean onSendStickerSuggestion (View view, TGStickerObj sticker, boolean forceDisableNotification, @Nullable TdApi.MessageSchedulingState schedulingState);
+    boolean onSendStickerSuggestion (View view, TGStickerObj sticker, TdApi.MessageSendOptions sendOptions);
     int getStickerSuggestionsTop ();
     int getStickerSuggestionPreviewViewportHeight ();
     long getStickerSuggestionsChatId ();
@@ -142,8 +142,8 @@ public class StickerSuggestionAdapter extends RecyclerView.Adapter<StickerSugges
   }
 
   @Override
-  public boolean onStickerClick (StickerSmallView view, View clickView, TGStickerObj sticker, boolean isMenuClick, boolean forceDisableNotification, @Nullable TdApi.MessageSchedulingState schedulingState) {
-    return callback.onSendStickerSuggestion(clickView, sticker, forceDisableNotification, schedulingState);
+  public boolean onStickerClick (StickerSmallView view, View clickView, TGStickerObj sticker, boolean isMenuClick, TdApi.MessageSendOptions sendOptions) {
+    return callback.onSendStickerSuggestion(clickView, sticker, sendOptions);
   }
 
   @Override

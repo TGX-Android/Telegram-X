@@ -1694,8 +1694,14 @@
 
   <string name="Reactions">Reactions</string>
   <string name="ReactionsDisabled">Reactions disabled</string>
+  <string name="ReactionsEnabledAll">Reactions enabled</string>
   <string name="ReactionsEnabled_one">%1$s Reaction enabled</string>
   <string name="ReactionsEnabled_other">%1$s Reactions enabled</string>
+
+  <string name="ReactionsAllowAll">Enabled</string>
+  <string name="ReactionsAllowNone">Disabled</string>
+  <string name="ReactionsAllowSome_one">%1$s allowed</string>
+  <string name="ReactionsAllowSome_other">%2$s allowed</string>
 
   <string name="QuickReactionEnable">Enable Quick Reaction</string>
   <string name="QuickReactionEnableDesc">Availability of specific reactions depends on group\'s and channel\'s settings.</string>
@@ -1970,8 +1976,10 @@
   <string name="EventLogReactionsEnabled">Enabled chat reactions</string>
   <string name="EventLogReactionsDisabled">Disabled chat reactions</string>
   <string name="EventLogReactionsChanged">Changed available chat reactions</string>
-  <string name="EventLogReactionsAdded">+ Added:\n%1$s</string>
-  <string name="EventLogReactionsRemoved">– Removed:\n%1$s</string>
+  <string name="EventLogReactionsEnabledAll">Enabled all chat reactions</string>
+  <string name="EventLogReactionsLimited">Limited available chat reactions</string>
+  <string name="EventLogReactionsAdded2">+ Added:</string>
+  <string name="EventLogReactionsRemoved2">– Removed:</string>
 
   <string name="UntilX">Until %1$s</string>
   <string name="NetworkUsage">Network Usage</string>

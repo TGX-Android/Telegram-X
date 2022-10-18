@@ -67,6 +67,7 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.lambda.Destroyable;
+import me.vkryl.td.Td;
 
 public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator.Target, PopupLayout.AnimatedPopupProvider, BackListener, Destroyable, ThemeChangeListener {
   private static final OvershootInterpolator OVERSHOOT_INTERPOLATOR = new OvershootInterpolator(1f);
@@ -457,7 +458,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
           break;
         }
         case R.id.btn_send: {
-          if (controllerView != null && controllerView.onSendSticker(v, sticker, false, null)) {
+          if (controllerView != null && controllerView.onSendSticker(v, sticker, Td.newSendOptions())) {
             closePreviewIfNeeded();
           }
           break;
@@ -527,11 +528,11 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
     if (controllerView != null && controllerView.getStickerOutputChatId() != 0) {
       sendView.setOnLongClickListener(v -> {
         ViewController<?> c = findRoot();
-        return c != null && tdlib.ui().showScheduleOptions(c, controllerView.getStickerOutputChatId(), true, (forceDisableNotification, schedulingState, disableMarkdown) -> {
-          if (controllerView.onSendSticker(v, sticker, forceDisableNotification, schedulingState)) {
+        return c != null && tdlib.ui().showScheduleOptions(c, controllerView.getStickerOutputChatId(), true, (sendOptions, disableMarkdown) -> {
+          if (controllerView.onSendSticker(v, sticker, sendOptions)) {
             closePreviewIfNeeded();
           }
-        }, null);
+        }, null, null);
       });
     }
 

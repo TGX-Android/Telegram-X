@@ -267,7 +267,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   protected final MultipleViewProvider currentViews;
   protected final MultipleViewProvider overlayViews;
 
-  private TdApi.AvailableReaction[] messageAvailableReactions = new TdApi.AvailableReaction[0];
+  private TdApi.AvailableReactions messageAvailableReactions;
+  private List<TGReaction> availableReactionList;
 
   // Reaction draw mode
 
@@ -300,7 +301,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     this.messageReactions = new TGReactions(this, tdlib, msg.interactionInfo != null ? msg.interactionInfo.reactions : null, new TGReactions.MessageReactionsDelegate() {
       @Override
       public void onClick (View v, TGReactions.MessageReactionEntry entry) {
-        boolean needAnimation = messageReactions.sendReaction(entry.getReaction(), false, handler(v, entry, () -> {}));
+        boolean needAnimation = messageReactions.sendReaction(entry.getReactionType(), false, handler(v, entry, () -> {}));
         if (needAnimation) {
           scheduleSetReactionAnimation(new NextReactionAnimation(entry.getTGReaction(), NextReactionAnimation.TYPE_CLICK));
         }
@@ -312,7 +313,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           checkMessageFlags(() -> {
             if (canGetAddedReactions()) {
               MessagesController m = messagesController();
-              m.showMessageAddedReactions(TGMessage.this, entry.getReaction());
+              m.showMessageAddedReactions(TGMessage.this, entry.getReactionType());
             } else {
               showReactionBubbleTooltip(v, entry, Lang.getString(R.string.ChannelReactionsAnonymous));
             }
@@ -4415,7 +4416,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public boolean canBeReacted () {
-    return !isSponsored() && !isEventLog() && !(msg.content instanceof TdApi.MessageCall);
+    return !isSponsored() && !isEventLog() && !(msg.content instanceof TdApi.MessageCall) && !Td.isEmpty(messageAvailableReactions);
   }
 
   public boolean canBeSaved () {
@@ -7308,12 +7309,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   //
 
   public final void checkAvailableReactions (Runnable r) {
-    tdlib().client().send(new TdApi.GetMessageAvailableReactions(msg.chatId, getSmallestId()), (TdApi.Object object) -> {
+    tdlib().client().send(new TdApi.GetMessageAvailableReactions(msg.chatId, getSmallestId(), 5), (TdApi.Object object) -> {
       if (object.getConstructor() == TdApi.AvailableReactions.CONSTRUCTOR) {
         TdApi.AvailableReactions reactions = (TdApi.AvailableReactions) object;
-        messageAvailableReactions = Arrays.stream(reactions.reactions)
-          .filter(x -> (!x.needsPremium || tdlib.hasPremium()))
-          .toArray(TdApi.AvailableReaction[]::new);
+        messageAvailableReactions = reactions;
+        availableReactionList = null;
         computeQuickButtons();
         tdlib().ui().post(r);
       }
@@ -7337,7 +7337,30 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public final TdApi.AvailableReaction[] getMessageAvailableReactions () {
-    return messageAvailableReactions;
+    if (messageAvailableReactions == null)
+      return null;
+    boolean hasPremium = tdlib.hasPremium();
+    Set<String> addedReactions = new HashSet<>();
+    List<TdApi.AvailableReaction> reactions = new ArrayList<>();
+    for (TdApi.AvailableReaction reaction : messageAvailableReactions.topReactions) {
+      if ((!reaction.needsPremium || hasPremium) && addedReactions.add(TD.makeReactionKey(reaction.type))) {
+        reactions.add(reaction);
+      }
+    }
+    for (TdApi.AvailableReaction reaction : messageAvailableReactions.popularReactions) {
+      if ((!reaction.needsPremium || hasPremium) && addedReactions.add(TD.makeReactionKey(reaction.type))) {
+        reactions.add(reaction);
+      }
+    }
+    for (TdApi.AvailableReaction reaction : messageAvailableReactions.recentReactions) {
+      if ((!reaction.needsPremium || hasPremium) && addedReactions.add(TD.makeReactionKey(reaction.type))) {
+        reactions.add(reaction);
+      }
+    }
+    if (reactions.isEmpty()) {
+      return null;
+    }
+    return reactions.toArray(new TdApi.AvailableReaction[0]);
   }
 
   // Utils
@@ -7381,18 +7404,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
   }
 
-  private boolean canSendReaction (String emoji) {
-    if (!canBeReacted() || tdlib.isSelfChat(msg.chatId)) {
-      return false;
-    }
-
-    for (TdApi.AvailableReaction reaction: messageAvailableReactions) {
-      if (reaction.reaction.equals(emoji)) {
-        return true;
-      }
-    }
-
-    return false;
+  private boolean canSendReaction (TdApi.ReactionType reactionType) {
+    return canBeReacted() && !tdlib.isSelfChat(msg.chatId) && Td.isAvailable(messageAvailableReactions, reactionType);
   }
 
   private void computeQuickButtons () {
@@ -7419,15 +7432,16 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     final String[] quickReactions = Settings.instance().getQuickReactions();
     for (int a = 0; a < quickReactions.length; a++) {
       final String reactionString = quickReactions[a];
-      final boolean canReact = canSendReaction(reactionString);
-      final TGReaction reactionObj = tdlib.getReaction(reactionString);
+      TdApi.ReactionType reactionType = TD.toReactionType(reactionString);
+      final boolean canReact = canSendReaction(reactionType);
+      final TGReaction reactionObj = tdlib.getReaction(reactionType);
       if (reactionObj != null && canReact) {
         final TGReaction.ReactionDrawable reactionDrawable = new TGReaction.ReactionDrawable(reactionObj, Screen.dp(48), Screen.dp(48));
         reactionDrawable.setComplexReceiver(currentComplexReceiver);
 
         final boolean isOdd = a % 2 == 1;
         final SwipeQuickAction quickReaction = new SwipeQuickAction(reactionObj.getReaction().title, reactionDrawable, () -> {
-          if (messageReactions.sendReaction(reactionString, false, handler(findCurrentView(), null, () -> {}))) {
+          if (messageReactions.sendReaction(reactionType, false, handler(findCurrentView(), null, () -> {}))) {
             scheduleSetReactionAnimation(new NextReactionAnimation(reactionObj, NextReactionAnimation.TYPE_QUICK));
           }
         }, false, true);
@@ -7494,7 +7508,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     this.lastDrawReactionsY = lastDrawReactionsY;
   }
 
-  private Point getReactionPosition (String reaction) {
+  private Point getReactionPosition (TGReaction reaction) {
     final int reactionsDrawMode = getReactionsDrawMode();
 
     if (reactionsDrawMode == REACTIONS_DRAW_MODE_BUBBLE) {
@@ -7506,7 +7520,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       int y = lastDrawReactionsY;
       return new Point(x, y);
     } else if (reactionsDrawMode == REACTIONS_DRAW_MODE_FLAT) {
-      int x = (int) (lastDrawReactionsX + Screen.dp(6) + Screen.dp(15) * MathUtils.clamp( messageReactions.getReactionPositionInList(reaction), 0, 2));
+      int x = (int) (lastDrawReactionsX + Screen.dp(6) + Screen.dp(15) * MathUtils.clamp(messageReactions.getReactionPositionInList(reaction.type), 0, 2));
       int y = lastDrawReactionsY;
       return new Point(x, y);
     }
@@ -7636,8 +7650,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
     setReactionAnimationNowPlaying = true;
 
-    String reactionEmoji = nextSetReactionAnimation.reaction.getReaction().reaction;
-    Point reactionPosition = getReactionPosition(reactionEmoji);
+    TGReaction reaction = nextSetReactionAnimation.reaction;
+    Point reactionPosition = getReactionPosition(reaction);
 
     int[] positionCords = new int[2];
     view.getLocationOnScreen(positionCords);
@@ -7645,7 +7659,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     int finishX = positionCords[0] + reactionPosition.x;
     int finishY = positionCords[1] + reactionPosition.y;
 
-    TGReactions.MessageReactionEntry entry = messageReactions.getMessageReactionEntry(reactionEmoji);
+    TGReactions.MessageReactionEntry entry = messageReactions.getMessageReactionEntry(reaction.key);
     if (entry != null) {
       TdApi.MessageReaction messageReaction = entry.getMessageReaction();
       if (messageReaction.totalCount == 1 && messageReaction.isChosen) {
@@ -7677,6 +7691,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           startX += view.getMeasuredWidth() - Screen.dp(BUBBLE_MOVE_MAX) / 2;
         }
 
+        // FIXME: rely on dp, not on px
         if (height > 256) {
           startY = (int) (positionCords[1] + (mInitialTouchY - getHeaderPadding() + xHeaderPadding));
         }
@@ -7780,26 +7795,26 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
     if (needPlayEffectAnimation) {
       vibrate();
-      startReactionBubbleAnimation(nextSetReactionAnimation.reaction.getReaction().reaction);
+      startReactionBubbleAnimation(nextSetReactionAnimation.reaction.type);
     }
     clearSetReactionAnimation();
   }
 
-  public void startReactionBubbleAnimation (String reaction) {
+  public void startReactionBubbleAnimation (TdApi.ReactionType reactionType) {
     View view = findCurrentView();
-    TGReaction tgReaction = tdlib.getReaction(reaction);
+    TGReaction tgReaction = tdlib.getReaction(reactionType);
     if (tgReaction == null || view == null) {
       return;
     }
 
-    Point reactionPosition = getReactionPosition(reaction);
+    Point reactionPosition = getReactionPosition(tgReaction);
 
     int[] positionCords = new int[2];
     view.getLocationOnScreen(positionCords);
     int bubbleX = positionCords[0] + reactionPosition.x;
     int bubbleY = positionCords[1] + reactionPosition.y;
 
-    messageReactions.startAnimation(reaction);
+    messageReactions.startAnimation(tgReaction.key);
     context().reactionsOverlayManager().addOverlay(
       new ReactionsOverlayView.ReactionInfo(context().reactionsOverlayManager())
         .setSticker(tgReaction.newAroundAnimationSicker())
@@ -7840,15 +7855,17 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       return;
     }
 
-    ArrayList<String> reactions = new ArrayList<>();
-    for (TdApi.UnreadReaction unreadReaction: savedUnreadReactions) {
-      if (!reactions.contains(unreadReaction.reaction)) {
-        reactions.add(unreadReaction.reaction);
+    Set<String> reactionKeys = new HashSet<>();
+    ArrayList<TdApi.UnreadReaction> reactions = new ArrayList<>();
+    for (TdApi.UnreadReaction unreadReaction : savedUnreadReactions) {
+      if (reactionKeys.add(TD.makeReactionKey(unreadReaction.type))) {
+        reactions.add(unreadReaction);
       }
     }
 
-    for (String reaction: reactions) {
-      startReactionBubbleAnimation(reaction);
+    for (TdApi.UnreadReaction reaction : reactions) {
+      // TODO support reaction.isBig
+      startReactionBubbleAnimation(reaction.type);
     }
 
     needHighlightUnreadReactions = false;

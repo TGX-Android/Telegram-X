@@ -840,6 +840,23 @@ public class TD {
     throw new UnsupportedOperationException(chatList.toString());
   }
 
+  public static TdApi.ReactionType toReactionType (String key) {
+    if (key.startsWith("custom_")) {
+      return new TdApi.ReactionTypeCustomEmoji(Long.parseLong(key.substring("custom_".length())));
+    }
+    return new TdApi.ReactionTypeEmoji(key);
+  }
+
+  public static String makeReactionKey (TdApi.ReactionType reactionType) {
+    switch (reactionType.getConstructor()) {
+      case TdApi.ReactionTypeEmoji.CONSTRUCTOR:
+        return ((TdApi.ReactionTypeEmoji) reactionType).emoji;
+      case TdApi.ReactionTypeCustomEmoji.CONSTRUCTOR:
+        return "custom_" + ((TdApi.ReactionTypeCustomEmoji) reactionType).customEmojiId;
+    }
+    throw new UnsupportedOperationException(reactionType.toString());
+  }
+
   public static int getColorIndex (long selfUserId, long id) {
     if (id >= 0 && id < color_ids.length) {
       return (int) id;
@@ -1950,10 +1967,6 @@ public class TD {
     return false;
   }
 
-  public static TdApi.MessageSendOptions defaultSendOptions () {
-    return new TdApi.MessageSendOptions(false, false, false, null);
-  }
-
   public static TdApi.InputMessageAnimation toInputMessageContent (TdApi.Animation animation) {
     return new TdApi.InputMessageAnimation(new TdApi.InputFileId(animation.animation.id), null, null, animation.duration, animation.width, animation.height, null);
   }
@@ -1999,6 +2012,7 @@ public class TD {
       "",
       "",
       new TdApi.UserStatusEmpty(),
+      null,
       null,
       false,
       false,
