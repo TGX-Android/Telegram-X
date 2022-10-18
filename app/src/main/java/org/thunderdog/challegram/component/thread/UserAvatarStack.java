@@ -160,7 +160,9 @@ public class UserAvatarStack implements FactorAnimator.Target {
   private void clearTrash() {
     for (Avatar avatar : mTrash) {
       avatar.destroy();
-      complexReceiver.clearReceivers(avatar.id);
+      if (complexReceiver != null) {
+        complexReceiver.clearReceivers(avatar.id);
+      }
     }
     mTrash.clear();
   }
