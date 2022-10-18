@@ -326,6 +326,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
           Tracer.onTdlibFatalError(tdlib, TdApi.SetTdlibParameters.class, (TdApi.Error) result, stackTrace);
         }
+        onDatabaseOpened();
       });
       scheduleOptimizationCheck();
       final TdApi.Function<?> startup;
