@@ -116,7 +116,7 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
         break;
       }
       case TYPE_QUICK_REACTION: {
-        String[] quickReactions = Settings.instance().getQuickReactions();
+        String[] quickReactions = Settings.instance().getQuickReactions(tdlib);
         this.quickReactions.addAll(Arrays.asList(quickReactions));
         break;
       }
@@ -316,7 +316,7 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
 
     if (viewId == R.id.btn_quick_reaction_enabled) {
       if (quickReactions.isEmpty()) {
-        quickReactions.add("\uD83D\uDC4D");
+        quickReactions.add(tdlib.defaultEmojiReaction());
       } else {
         quickReactions.clear();
       }

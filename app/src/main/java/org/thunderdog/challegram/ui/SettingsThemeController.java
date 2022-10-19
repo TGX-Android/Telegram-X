@@ -173,22 +173,29 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
             break;
           }
           case R.id.btn_quick_reaction: {
-            final String[] reactions = Settings.instance().getQuickReactions();
+            final String[] reactions = Settings.instance().getQuickReactions(tdlib);
+            tdlib.ensureReactionsAvailable(reactions, reactionsUpdated -> {
+              if (reactionsUpdated) {
+                runOnUiThreadOptional(() -> {
+                  updateQuickReaction();
+                });
+              }
+            });
             StringBuilder stringBuilder = new StringBuilder();
             if (reactions.length > 0) {
-              final TGReaction[] tgReactions = new TGReaction[reactions.length];
-              for (int a = 0; a < reactions.length; a++) {
-                TdApi.ReactionType reactionType = TD.toReactionType(reactions[a]);
+              final List<TGReaction> tgReactions = new ArrayList<>(reactions.length);
+              for (String reactionKey : reactions) {
+                TdApi.ReactionType reactionType = TD.toReactionType(reactionKey);
                 final TGReaction tgReaction = tdlib.getReaction(reactionType);
-                tgReactions[a] = tgReaction;
                 if (tgReaction != null) {
+                  tgReactions.add(tgReaction);
                   if (stringBuilder.length() > 0) {
                     stringBuilder.append(Lang.getConcatSeparator());
                   }
                   stringBuilder.append(tgReaction.getReaction().title);
                 }
               }
-              v.setDrawModifier(new ReactionModifier(v.getComplexReceiver(), tgReactions));
+              v.setDrawModifier(new ReactionModifier(v.getComplexReceiver(), tgReactions.toArray(new TGReaction[0])));
               v.setData(stringBuilder);
             } else {
               v.setDrawModifier(null);
@@ -1154,9 +1161,14 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
         break;
       }
       case R.id.btn_quick_reaction: {
-        EditEnabledReactionsController c = new EditEnabledReactionsController(context, tdlib);
-        c.setArguments(new EditEnabledReactionsController.Args(null, EditEnabledReactionsController.TYPE_QUICK_REACTION));
-        navigateTo(c);
+        tdlib.ensureEmojiReactionsAvailable((reactionsUpdated) ->
+          executeOnUiThread(() -> {
+            EditEnabledReactionsController c = new EditEnabledReactionsController(context, tdlib);
+            c.setArguments(new EditEnabledReactionsController.Args(null, EditEnabledReactionsController.TYPE_QUICK_REACTION));
+            navigateTo(c);
+          })
+        );
+        break;
       }
       case R.id.btn_emoji: {
         SettingsCloudEmojiController c = new SettingsCloudEmojiController(context, tdlib);

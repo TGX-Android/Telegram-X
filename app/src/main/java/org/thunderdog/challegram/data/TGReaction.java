@@ -84,27 +84,27 @@ public class TGReaction {
   }
 
   private TGStickerObj newStaticIconSicker () {
-    return new TGStickerObj(tdlib, reaction.staticIcon, reaction.emoji, reaction.staticIcon.type);
+    return new TGStickerObj(tdlib, reaction.staticIcon, reaction.emoji, reaction.staticIcon.type).setReactionType(type);
   }
 
   private TGStickerObj newActivateAnimationSicker () {
-    return new TGStickerObj(tdlib, reaction.activateAnimation, reaction.emoji, reaction.activateAnimation.type);
+    return new TGStickerObj(tdlib, reaction.activateAnimation, reaction.emoji, reaction.activateAnimation.type).setReactionType(type);
   }
 
   private TGStickerObj newEffectAnimationSicker () {
-    return new TGStickerObj(tdlib, reaction.effectAnimation, reaction.emoji, reaction.effectAnimation.type);
+    return new TGStickerObj(tdlib, reaction.effectAnimation, reaction.emoji, reaction.effectAnimation.type).setReactionType(type);
   }
 
   public TGStickerObj newAroundAnimationSicker () {
     if (reaction.aroundAnimation != null) {
-      return new TGStickerObj(tdlib, reaction.aroundAnimation, reaction.emoji, reaction.aroundAnimation.type);
+      return new TGStickerObj(tdlib, reaction.aroundAnimation, reaction.emoji, reaction.aroundAnimation.type).setReactionType(type);
     }
     return newEffectAnimationSicker();
   }
 
   public TGStickerObj newCenterAnimationSicker () {
     if (reaction.centerAnimation != null) {
-      return new TGStickerObj(tdlib, reaction.centerAnimation, reaction.emoji, reaction.centerAnimation.type);
+      return new TGStickerObj(tdlib, reaction.centerAnimation, reaction.emoji, reaction.centerAnimation.type).setReactionType(type);
     }
     return newStaticIconSicker();
   }

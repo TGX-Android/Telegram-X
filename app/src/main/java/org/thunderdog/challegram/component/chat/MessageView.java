@@ -534,9 +534,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     StringList strings = new StringList(6);
     Object tag = fillMessageOptions(m, msg, sender, ids, icons, strings, false);
     if (!ids.isEmpty()) {
-      // FIXME do not rely on chat.availableReactions
-      boolean withReactions = msg.tdlib().chatReactionsEnabled(msg.getChatId());
-      m.showMessageOptions(msg, ids.get(), strings.get(), icons.get(), tag, sender, false, withReactions);
+      m.showMessageOptions(msg, ids.get(), strings.get(), icons.get(), tag, sender, false);
       return true;
     }
     return false;

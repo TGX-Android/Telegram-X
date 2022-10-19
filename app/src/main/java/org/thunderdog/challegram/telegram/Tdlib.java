@@ -465,7 +465,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private boolean youtubePipDisabled, qrLoginCamera, dialogFiltersTooltip, dialogFiltersEnabled;
   private String qrLoginCode;
   private String[] diceEmoji, activeEmojiReactions;
-  private TdApi.ReactionType activeReactionType;
+  private TdApi.ReactionType defaultReactionType;
   private final Map<String, TGReaction> cachedReactions = new HashMap<>();
   private boolean callsEnabled = true, expectBlocking, isLocationVisible;
   private boolean canIgnoreSensitiveContentRestrictions, ignoreSensitiveContentRestrictions;
@@ -3635,8 +3635,152 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
-  @Nullable
+  @NonNull
+  public String defaultEmojiReaction () {
+    synchronized (dataLock) {
+      if (defaultReactionType != null && defaultReactionType.getConstructor() == TdApi.ReactionTypeEmoji.CONSTRUCTOR) {
+        return ((TdApi.ReactionTypeEmoji) defaultReactionType).emoji;
+      }
+    }
+    return "\uD83D\uDC4D"; // Thumbs up
+  }
+
+  public void ensureEmojiReactionsAvailable (@Nullable RunnableBool after) {
+    ensureReactionsAvailable(new TdApi.ChatAvailableReactionsAll(), after);
+  }
+
+  public void ensureReactionsAvailable (String[] reactionKeys, @Nullable RunnableBool after) {
+    Set<String> uniqueReactionKeys = new HashSet<>(reactionKeys.length);
+    Collections.addAll(uniqueReactionKeys, reactionKeys);
+    TdApi.ReactionType[] reactionTypes = new TdApi.ReactionType[uniqueReactionKeys.size()];
+    int index = 0;
+    for (String reactionKey : uniqueReactionKeys) {
+      reactionTypes[index] = TD.toReactionType(reactionKey);
+      index++;
+    }
+    ensureReactionsAvailable(new TdApi.ChatAvailableReactionsSome(reactionTypes), after);
+  }
+
+  public void ensureReactionsAvailable (@NonNull TdApi.AvailableReactions reactions, @Nullable RunnableBool after) {
+    List<TdApi.ReactionType> reactionTypes = new ArrayList<>(
+      reactions.recentReactions.length +
+      reactions.topReactions.length +
+      reactions.popularReactions.length
+    );
+    for (TdApi.AvailableReaction availableReaction : reactions.recentReactions) {
+      reactionTypes.add(availableReaction.type);
+    }
+    for (TdApi.AvailableReaction availableReaction : reactions.topReactions) {
+      reactionTypes.add(availableReaction.type);
+    }
+    for (TdApi.AvailableReaction availableReaction : reactions.popularReactions) {
+      reactionTypes.add(availableReaction.type);
+    }
+    ensureReactionsAvailable(new TdApi.ChatAvailableReactionsSome(reactionTypes.toArray(new TdApi.ReactionType[0])), after);
+  }
+
+  public void ensureReactionsAvailable (@NonNull TdApi.ChatAvailableReactions reactions, @Nullable RunnableBool after) {
+    final AtomicInteger remaining = new AtomicInteger();
+    TdlibEmojiReactionManager.Watcher emojiReactionWatcher = (context, entry) -> {
+      if (remaining.decrementAndGet() == 0) {
+        if (after != null) {
+          after.runWithBool(true);
+        }
+      }
+    };
+    TdlibEmojiManager.Watcher customReactionWatcher = (context, entry) -> {
+      if (remaining.decrementAndGet() == 0) {
+        if (after != null) {
+          after.runWithBool(true);
+        }
+      }
+    };
+    switch (reactions.getConstructor()) {
+      case TdApi.ChatAvailableReactionsAll.CONSTRUCTOR: {
+        String[] activeEmojiReactions = getActiveEmojiReactions();
+        if (activeEmojiReactions == null || activeEmojiReactions.length == 0) {
+          if (after != null) {
+            after.runWithBool(false);
+          }
+          return;
+        }
+        int requestedCount = 0;
+        remaining.set(activeEmojiReactions.length);
+        for (String activeEmojiReaction : activeEmojiReactions) {
+          TdlibEmojiReactionManager.Entry entry = reaction().findOrPostponeRequest(activeEmojiReaction, emojiReactionWatcher, true);
+          if (entry != null) {
+            remaining.decrementAndGet();
+          } else {
+            requestedCount++;
+          }
+        }
+        if (requestedCount == 0) {
+          if (after != null) {
+            after.runWithBool(false);
+          }
+        } else {
+          reaction().performPostponedRequests();
+        }
+        break;
+      }
+      case TdApi.ChatAvailableReactionsSome.CONSTRUCTOR: {
+        TdApi.ChatAvailableReactionsSome some = (TdApi.ChatAvailableReactionsSome) reactions;
+        if (some.reactions.length == 0) {
+          if (after != null) {
+            after.runWithBool(false);
+          }
+          return;
+        }
+        remaining.set(some.reactions.length);
+        int requestedEmojiReactionCount = 0;
+        int requestedCustomReactionCount = 0;
+        for (TdApi.ReactionType reactionType : some.reactions) {
+          switch (reactionType.getConstructor()) {
+            case TdApi.ReactionTypeEmoji.CONSTRUCTOR: {
+              TdApi.ReactionTypeEmoji emoji = (TdApi.ReactionTypeEmoji) reactionType;
+              TdlibEmojiReactionManager.Entry entry = reaction().findOrPostponeRequest(emoji.emoji, emojiReactionWatcher, true);
+              if (entry != null) {
+                remaining.decrementAndGet();
+              } else {
+                requestedEmojiReactionCount++;
+              }
+              break;
+            }
+            case TdApi.ReactionTypeCustomEmoji.CONSTRUCTOR: {
+              TdApi.ReactionTypeCustomEmoji customEmoji = (TdApi.ReactionTypeCustomEmoji) reactionType;
+              TdlibEmojiManager.Entry entry = emoji().findOrPostponeRequest(customEmoji.customEmojiId, customReactionWatcher, true);
+              if (entry != null) {
+                remaining.decrementAndGet();
+              } else {
+                requestedCustomReactionCount++;
+              }
+              break;
+            }
+          }
+        }
+        if (requestedEmojiReactionCount == 0 && requestedCustomReactionCount == 0) {
+          if (after != null) {
+            after.runWithBool(false);
+          }
+        } else {
+          if (requestedEmojiReactionCount > 0) {
+            reaction().performPostponedRequests();
+          }
+          if (requestedCustomReactionCount > 0) {
+            emoji().performPostponedRequests();
+          }
+        }
+        break;
+      }
+    }
+  }
+
   public TGReaction getReaction (@Nullable TdApi.ReactionType reactionType) {
+    return getReaction(reactionType, true);
+  }
+
+  @Nullable
+  public TGReaction getReaction (@Nullable TdApi.ReactionType reactionType, boolean allowRequest) {
     if (reactionType == null) {
       return null;
     }
@@ -3647,30 +3791,52 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         return reaction;
       }
     }
+    if (!allowRequest) {
+      return null;
+    }
     switch (reactionType.getConstructor()) {
       case TdApi.ReactionTypeEmoji.CONSTRUCTOR: {
         TdApi.ReactionTypeEmoji emoji = (TdApi.ReactionTypeEmoji) reactionType;
-        TdlibEmojiReactionManager.Entry entry = reaction().findOrRequest(emoji.emoji, /*TODO*/ null);
+        RunnableData<TdlibEmojiReactionManager.Entry> emojiReactionWatcher = (newEntry) -> {
+          if (newEntry.value != null) {
+            synchronized (dataLock) {
+              cachedReactions.put(key, new TGReaction(this, newEntry.value));
+            }
+            // TODO invoke update so reaction would display properly where getReaction was called
+          }
+        };
+        TdlibEmojiReactionManager.Entry entry = reaction().findOrRequest(emoji.emoji, emojiReactionWatcher);
         if (entry != null) {
+          if (entry.value == null) {
+            return null;
+          }
           TGReaction reaction = new TGReaction(this, entry.value);
           synchronized (dataLock) {
             cachedReactions.put(key, reaction);
           }
           return reaction;
-        } else {
-          // TODO wait for Watcher to be called, create TGReaction there,
-          //      invoke local update so reaction would display properly where it was requested
         }
         break;
       }
       case TdApi.ReactionTypeCustomEmoji.CONSTRUCTOR: {
         TdApi.ReactionTypeCustomEmoji customEmoji = (TdApi.ReactionTypeCustomEmoji) reactionType;
-        TdlibEmojiManager.Entry entry = emoji().findOrRequest(customEmoji.customEmojiId, /*TODO*/ null);
+        RunnableData<TdlibEmojiManager.Entry> customReactionWatcher = (newEntry) -> {
+          if (newEntry.value != null) {
+            synchronized (dataLock) {
+              // TODO put TGReaction to cache
+            }
+            // TODO invoke update so reaction would display properly where getReaction was called
+          }
+        };
+        TdlibEmojiManager.Entry entry = emoji().findOrRequest(customEmoji.customEmojiId, customReactionWatcher);
         if (entry != null) {
-          // TODO create TGReaction in place
-        } else {
-          // TODO wait for Watcher to be called, create TGReaction there,
-          //      invoke local update so reaction would display properly where it was requested
+          if (entry.value == null) {
+            return null;
+          }
+          synchronized (dataLock) {
+            // TODO put TGReaction to cache
+          }
+          // TODO return newly created TGReaction
         }
         break;
       }
@@ -7738,7 +7904,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   @TdlibThread
   private void updateDefaultReactionType (TdApi.UpdateDefaultReactionType update) {
-    // TODO
+    synchronized (dataLock) {
+      this.defaultReactionType = update.reactionType;
+    }
   }
 
   /*private void updateReactions (TdApi.UpdateReactions update) {

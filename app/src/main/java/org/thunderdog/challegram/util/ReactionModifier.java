@@ -5,12 +5,18 @@ import android.view.View;
 
 import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.loader.ComplexReceiver;
+import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
+import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Views;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class ReactionModifier implements DrawModifier {
   private final ImageReceiver[] previewReceivers;
@@ -36,12 +42,15 @@ public class ReactionModifier implements DrawModifier {
     gifReceivers = new GifReceiver[reactions.length];
 
     for (int a = 0; a < reactions.length; a++) {
-      ImageFile previewImage = reactions[a].staticCenterAnimationSicker().getImage();
-      GifFile gifFile = reactions[a].staticCenterAnimationSicker().getPreviewAnimation();
       previewReceivers[a] = complexReceiver.getImageReceiver(a * 2L + 1);
       gifReceivers[a] = complexReceiver.getGifReceiver(a * 2L);
-      previewReceivers[a].requestFile(previewImage);
-      gifReceivers[a].requestFile(gifFile);
+      TGReaction reaction = reactions[a];
+      if (reaction != null) {
+        ImageFile previewImage = reaction.staticCenterAnimationSicker().getImage();
+        GifFile gifFile = reaction.staticCenterAnimationSicker().getPreviewAnimation();
+        previewReceivers[a].requestFile(previewImage);
+        gifReceivers[a].requestFile(gifFile);
+      }
     }
   }
 
@@ -50,7 +59,7 @@ public class ReactionModifier implements DrawModifier {
     int sx = 0;
     int sy = 0;
 
-    c.save();
+    final int saveCount = Views.save(c);
     c.translate(view.getMeasuredWidth() - Screen.dp(offset) - totalWidth, view.getMeasuredHeight() / 2f - totalHeight / 2f);
     if (gifReceivers.length > 0) {
       DrawAlgorithms.drawReceiver(c, previewReceivers[0], gifReceivers[0], false, true,
@@ -75,10 +84,11 @@ public class ReactionModifier implements DrawModifier {
         sx + padding, sy + padding, size + sx- padding, size + sy - padding);
     }
 
-    c.restore();
+    Views.restore(c, saveCount);
   }
 
-  @Override public int getWidth () {
+  @Override
+  public int getWidth () {
     return Screen.dp(48);
   }
 }

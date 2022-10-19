@@ -268,7 +268,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   protected final MultipleViewProvider overlayViews;
 
   private TdApi.AvailableReactions messageAvailableReactions;
-  private List<TGReaction> availableReactionList;
 
   // Reaction draw mode
 
@@ -5036,7 +5035,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     dst.canGetAddedReactions = src.canGetAddedReactions;
     dst.canGetStatistics = src.canGetStatistics;
     dst.canGetViewers = src.canGetViewers;
-    dst.canGetAddedReactions = src.canGetAddedReactions;
+    dst.canReportReactions = src.canReportReactions;
     dst.canGetMediaTimestampLinks = src.canGetMediaTimestampLinks;
     dst.hasTimestampedMedia = src.hasTimestampedMedia;
 
@@ -7308,14 +7307,22 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   //
 
-  public final void checkAvailableReactions (Runnable r) {
-    tdlib().client().send(new TdApi.GetMessageAvailableReactions(msg.chatId, getSmallestId(), 5), (TdApi.Object object) -> {
-      if (object.getConstructor() == TdApi.AvailableReactions.CONSTRUCTOR) {
-        TdApi.AvailableReactions reactions = (TdApi.AvailableReactions) object;
-        messageAvailableReactions = reactions;
-        availableReactionList = null;
-        computeQuickButtons();
-        tdlib().ui().post(r);
+  public final void checkAvailableReactions (Runnable after) {
+    tdlib().client().send(new TdApi.GetMessageAvailableReactions(msg.chatId, getSmallestId(), 5), result -> {
+      switch (result.getConstructor()) {
+        case TdApi.AvailableReactions.CONSTRUCTOR: {
+          TdApi.AvailableReactions availableReactions = (TdApi.AvailableReactions) result;
+          tdlib.ensureReactionsAvailable(availableReactions, reactionsUpdated -> {
+            messageAvailableReactions = availableReactions;
+            computeQuickButtons();
+            runOnUiThreadOptional(after);
+          });
+          break;
+        }
+        case TdApi.Error.CONSTRUCTOR: {
+          runOnUiThreadOptional(after);
+          break;
+        }
       }
     });
   }
@@ -7455,7 +7462,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       rightActions.add(replyButton);
     }
 
-    final String[] quickReactions = Settings.instance().getQuickReactions();
+    final String[] quickReactions = Settings.instance().getQuickReactions(tdlib);
     for (int a = 0; a < quickReactions.length; a++) {
       final String reactionString = quickReactions[a];
       TdApi.ReactionType reactionType = TD.toReactionType(reactionString);

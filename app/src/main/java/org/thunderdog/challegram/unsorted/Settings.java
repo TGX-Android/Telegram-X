@@ -6085,19 +6085,21 @@ public class Settings {
   }
 
   private String[] quickReactions;
+
   public void setQuickReactions (String reactions[]) {
     pmc.putStringArray(KEY_QUICK_REACTIONS, reactions);
     quickReactions = reactions;
   }
 
-  public String[] getQuickReactions () {
+  public String[] getQuickReactions (Tdlib tdlib) {
     if (quickReactions == null) {
       quickReactions = pmc.getStringArray(KEY_QUICK_REACTIONS);
       if (quickReactions == null) {
-        quickReactions = new String[]{ "\uD83D\uDC4D" };
+        quickReactions = new String[] {
+          tdlib.defaultEmojiReaction()
+        };
       }
     }
-
     return quickReactions;
   }
 

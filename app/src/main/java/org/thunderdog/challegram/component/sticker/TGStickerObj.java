@@ -57,8 +57,9 @@ public class TGStickerObj {
     set(tdlib, sticker, stickerType, emojis);
   }
 
-  public void setReactionType (TdApi.ReactionType reactionType) {
+  public TGStickerObj setReactionType (TdApi.ReactionType reactionType) {
     this.reactionType = reactionType;
+    return this;
   }
 
   public TdApi.ReactionType getReactionType () {

@@ -28,6 +28,8 @@ public final class TdlibEmojiReactionManager extends TdlibDataManager<String, Td
     }
   }
 
+  public interface Watcher extends TdlibDataManager.Watcher<String, TdApi.EmojiReaction, TdlibEmojiReactionManager.Entry> { }
+
   public TdlibEmojiReactionManager (Tdlib tdlib) {
     super(tdlib);
   }

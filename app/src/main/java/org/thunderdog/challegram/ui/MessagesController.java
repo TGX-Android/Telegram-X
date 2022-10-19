@@ -4104,11 +4104,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Deprecated
   public void showMessageOptions (TGMessage msg, int[] ids, String[] options, int[] icons, Object selectedMessageTag, TdApi.ChatMember selectedMessageSender, boolean disableViewCounter) {
-    showMessageOptions(msg, ids, options, icons, selectedMessageTag, selectedMessageSender, disableViewCounter, false);
-  }
-
-  @Deprecated
-  public void showMessageOptions (TGMessage msg, int[] ids, String[] options, int[] icons, Object selectedMessageTag, TdApi.ChatMember selectedMessageSender, boolean disableViewCounter, boolean withReactions) {
     // TODO rework into proper style
     this.selectedMessage = msg;
     this.selectedMessageTag = selectedMessageTag;
@@ -4188,7 +4183,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     msg.checkMessageFlags(() -> {
       msg.checkAvailableReactions(() -> {
-        if (withReactions && msg.canBeReacted() && msg.getMessageAvailableReactions().length > 0) {
+        if (msg.canBeReacted()) {
           Options messageOptions = getOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons);
           showMessageOptions(messageOptions, msg);
         } else {
@@ -8019,7 +8014,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Override
   public boolean onSendSticker (View view, TGStickerObj sticker, TdApi.MessageSendOptions sendOptions) {
     if (lastJunkTime == 0l || SystemClock.uptimeMillis() - lastJunkTime >= JUNK_MINIMUM_DELAY) {
-      if (sendSticker(view, sticker.getSticker(), sticker.getFoundByEmoji(), true, sendOptions)) {
+      if (sendSticker(view, sticker.getSticker(), sticker.getFoundByEmoji(), true, Td.newSendOptions(sendOptions, false, true))) {
         lastJunkTime = SystemClock.uptimeMillis();
         return true;
       }
