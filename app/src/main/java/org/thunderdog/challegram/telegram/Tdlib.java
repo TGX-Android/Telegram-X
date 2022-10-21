@@ -3682,6 +3682,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   public void ensureReactionsAvailable (@NonNull TdApi.ChatAvailableReactions reactions, @Nullable RunnableBool after) {
     final AtomicInteger remaining = new AtomicInteger();
     TdlibEmojiReactionManager.Watcher emojiReactionWatcher = (context, entry) -> {
+      /*if (entry.value != null) {
+        synchronized (dataLock) {
+          cachedReactions.put(entry.key, new TGReaction(this, entry.value));
+        }
+      }*/
       if (remaining.decrementAndGet() == 0) {
         if (after != null) {
           after.runWithBool(true);
@@ -3791,9 +3796,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         return reaction;
       }
     }
-    if (!allowRequest) {
-      return null;
-    }
     switch (reactionType.getConstructor()) {
       case TdApi.ReactionTypeEmoji.CONSTRUCTOR: {
         TdApi.ReactionTypeEmoji emoji = (TdApi.ReactionTypeEmoji) reactionType;
@@ -3805,7 +3807,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
             // TODO invoke update so reaction would display properly where getReaction was called
           }
         };
-        TdlibEmojiReactionManager.Entry entry = reaction().findOrRequest(emoji.emoji, emojiReactionWatcher);
+        TdlibEmojiReactionManager.Entry entry;
+        if (allowRequest) {
+          entry = reaction().findOrRequest(emoji.emoji, emojiReactionWatcher);
+        } else {
+          entry = reaction().find(emoji.emoji);
+        }
         if (entry != null) {
           if (entry.value == null) {
             return null;
@@ -3828,7 +3835,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
             // TODO invoke update so reaction would display properly where getReaction was called
           }
         };
-        TdlibEmojiManager.Entry entry = emoji().findOrRequest(customEmoji.customEmojiId, customReactionWatcher);
+        TdlibEmojiManager.Entry entry;
+        if (allowRequest) {
+          entry = emoji().findOrRequest(customEmoji.customEmojiId, customReactionWatcher);
+        } else {
+          entry = emoji().find(customEmoji.customEmojiId);
+        }
         if (entry != null) {
           if (entry.value == null) {
             return null;

@@ -186,7 +186,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
               final List<TGReaction> tgReactions = new ArrayList<>(reactions.length);
               for (String reactionKey : reactions) {
                 TdApi.ReactionType reactionType = TD.toReactionType(reactionKey);
-                final TGReaction tgReaction = tdlib.getReaction(reactionType);
+                final TGReaction tgReaction = tdlib.getReaction(reactionType, false);
                 if (tgReaction != null) {
                   tgReactions.add(tgReaction);
                   if (stringBuilder.length() > 0) {
@@ -196,7 +196,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
                 }
               }
               v.setDrawModifier(new ReactionModifier(v.getComplexReceiver(), tgReactions.toArray(new TGReaction[0])));
-              v.setData(stringBuilder);
+              v.setData(stringBuilder.toString());
             } else {
               v.setDrawModifier(null);
               v.setData(R.string.QuickReactionDisabled);
