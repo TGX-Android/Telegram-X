@@ -1694,7 +1694,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Override
   public boolean needAsynchronousAnimation () {
-    return manager != null && !manager.isTotallyEmpty() && manager.getAdapter().getMessageCount() == 0;
+    return manager != null && !manager.isTotallyEmpty() && (manager.getAdapter() == null || manager.getAdapter().getMessageCount() == 0);
   }
 
   private void openLinkedChat () {
@@ -10534,7 +10534,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Override
   public void onPrepareForceTouchContext (ForceTouchView.ForceTouchContext context) {
     context.setIsMatchParent(true);
-    context.setBoundChatId(getChatId(), getMessageThreadId());
+    if (getThreadMode() == THREAD_MODE_COMMENTS && getMessageThread() != null) {
+      context.setBoundThread(getMessageThread());
+    } else {
+      context.setBoundChatId(getChatId(), getMessageThreadId());
+    }
     context.setAllowFullscreen(true);
   }
 

@@ -44,6 +44,7 @@ import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.data.ThreadInfo;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.navigation.ComplexHeaderView;
 import org.thunderdog.challegram.navigation.DoubleHeaderView;
@@ -296,6 +297,8 @@ public class ForceTouchView extends FrameLayoutFix implements
           setupChat(context.boundDataId, context.boundArg1, headerView);
         } else if (context.boundDataType == TYPE_USER && context.boundDataId != 0) {
           setupUser((int) context.boundDataId, headerView);
+        } else if (context.boundDataType == TYPE_COMMENTS) {
+          setupComments(context.boundDataId, context.boundArg1, context.subtitle, headerView);
         } else {
           if (context.avatarFile != null) {
             headerView.setAvatar(context.avatarFile);
@@ -822,6 +825,7 @@ public class ForceTouchView extends FrameLayoutFix implements
   private static final int TYPE_NONE = 0;
   private static final int TYPE_CHAT = 1;
   private static final int TYPE_USER = 2;
+  private static final int TYPE_COMMENTS = 3;
 
   // Context
 
@@ -960,6 +964,17 @@ public class ForceTouchView extends FrameLayoutFix implements
       this.boundArg1 = messageThreadId;
     }
 
+    public void setBoundThread(ThreadInfo threadInfo) {
+      this.needHeader = true;
+      this.needHeaderAvatar = true;
+      this.boundDataType = TYPE_COMMENTS;
+      this.boundDataId = threadInfo.getOpenedFromChatId();
+      this.boundArg1 = threadInfo.getMessageThreadId();
+      this.subtitle = ThreadInfo.getThreadSubtitle(
+        this.tdlib, true, threadInfo.getSize(), null
+      );
+    }
+
     public void setBoundUserId (long userId) {
       this.needHeader = userId != 0;
       this.needHeaderAvatar = true;
@@ -1049,6 +1064,11 @@ public class ForceTouchView extends FrameLayoutFix implements
     headerView.setShowMute(tdlib.chatNeedsMuteIcon(chat.id));
     headerView.setText(tdlib.chatTitle(chat), tdlib.status().chatStatus(chat));
     setChatAvatar();
+  }
+
+  private void setupComments(long chatId, long messageThreadId, String subtitle, ComplexHeaderView headerView) {
+    setupChat(chatId, messageThreadId, headerView);
+    headerView.setSubtitle(subtitle);
   }
 
   private void setChatAvatar () {

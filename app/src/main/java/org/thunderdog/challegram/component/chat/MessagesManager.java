@@ -545,7 +545,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   public boolean isTotallyEmpty () {
-    return !loader.canLoadBottom() && !loader.canLoadTop() && !loader.isLoading() && (adapter.getMessageCount() == 0); // FIXME bot startMessage
+    return !loader.canLoadBottom() && !loader.canLoadTop() && !loader.isLoading() && (adapter != null && adapter.getMessageCount() == 0); // FIXME bot startMessage
   }
 
   private boolean hasScrolled;

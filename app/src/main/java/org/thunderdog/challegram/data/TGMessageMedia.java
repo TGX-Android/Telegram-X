@@ -785,6 +785,7 @@ public class TGMessageMedia extends TGMessage {
 
   @Override
   public boolean allowLongPress (float x, float y) {
+    if(!super.allowLongPress(x, y)) return false;
     int cellLeft = getContentX();
     int cellTop = getContentY();
     int cellRight = cellLeft + mosaicWrapper.getWidth();

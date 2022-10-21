@@ -112,7 +112,7 @@ public class ChatHeaderView extends ComplexHeaderView {
     setShowFake(tdlib.chatFake(chatInfo));
     setShowMute(TD.needMuteIcon(chatInfo.notificationSettings, tdlib.scopeNotificationSettings(chatInfo.id)));
     CharSequence subtext = messageThread != null
-      ? getThreadSubtitle(tdlib, messageThread.areComments(), messageThread.getSize(), messageThread.getReplyToSender())
+      ? ThreadInfo.getThreadSubtitle(tdlib, messageThread.areComments(), messageThread.getSize(), messageThread.getReplyToSender())
       : (!StringUtils.isEmpty(forcedSubtitle) ? forcedSubtitle : tdlib.status().chatStatus(chatInfo));
     setText(tdlib.chatTitle(chatInfo), subtext);
     setUseRedHighlight(tdlib.isRedTeam(chatInfo.id));
@@ -129,17 +129,6 @@ public class ChatHeaderView extends ComplexHeaderView {
     }
   }
 
-  private static String getThreadSubtitle(Tdlib tdlib, boolean areComments, int count, @Nullable TdApi.MessageSender coreMessageSender) {
-    String userName = null;
-    if (coreMessageSender != null) {
-      userName = tdlib.senderName(coreMessageSender, true);
-    }
-    int repliesStringId = userName != null ? R.string.xRepliesTo : R.string.xReplies;
-    return Lang.plural(
-      areComments ? R.string.xComments : repliesStringId, count, userName
-    );
-  }
-
   // Updates (new)
 
   public void updateChatTitle (long chatId, String title) {
@@ -152,7 +141,7 @@ public class ChatHeaderView extends ComplexHeaderView {
   }
 
   public void updateThreadSubTitle (boolean areComments, int count, @Nullable TdApi.MessageSender coreMessageSender) {
-    setSubtitle(getThreadSubtitle(tdlib, areComments, count, coreMessageSender));
+    setSubtitle(ThreadInfo.getThreadSubtitle(tdlib, areComments, count, coreMessageSender));
   }
 
   public void updateChatPhoto (TdApi.Chat chat, @Nullable TdApi.ChatPhotoInfo photo) {

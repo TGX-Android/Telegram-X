@@ -295,17 +295,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     this.swipeHelper = new MessageQuickActionSwipeHelper(this);
     this.currentViews = new MultipleViewProvider();
     this.currentViews.setContentProvider(this);
-    this.commentButton = new TGCommentButton(this, new TGCommentButton.CommentButtonDelegate() {
-      @Override
-      public void onClick (View view) {
-        openMessageThread(null);
-      }
-
-      @Override
-      public void onLongClick (View view) {
-        android.util.Log.e("Message", "open comment preview");
-      }
-    });
+    this.commentButton = new TGCommentButton(this);
     this.msg = msg;
     this.messageReactions = new TGReactions(this, tdlib, msg.interactionInfo != null ? msg.interactionInfo.reactions : null, new TGReactions.MessageReactionsDelegate() {
       @Override
@@ -885,6 +875,16 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       }
       tdlib.ui().openChat(this, messageThreadInfo.chatId, params);
     });
+  }
+
+  public final MessagesController getMessageThreadPreviewController() {
+    final MessagesController controller = new MessagesController(context(), tdlib);
+    final ThreadInfo threadInfo = new ThreadInfo(getAllMessages(), getLastThreadInfo(), isRepliesChat());
+    final MessagesController.Arguments arguments = new MessagesController.Arguments(
+      tdlib, null, tdlib.chat(getLastThreadInfo().chatId), threadInfo, null
+    );
+    controller.setArguments(arguments);
+    return controller;
   }
 
   public final void getMessageThread(@Nullable MessageId messageId, Consumer<TdApi.MessageThreadInfo> consumer) {
@@ -2474,6 +2474,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   // Touch
 
   public boolean allowLongPress (float x, float y) {
+    if (needCommentButton() && commentButton.needLongPress(x, y)) {
+      return false;
+    }
     return true;
   }
 
@@ -2489,9 +2492,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (messageReactions.getTotalCount() > 0 && useReactionBubbles()) {
       result = messageReactions.performLongPress(view);
     }
-    if (needCommentButton()) {
-      result = commentButton.performLongPress(view);
-    }
+
     if (hasFooter()) {
       result = footerText.performLongPress(view) || result;
     }
@@ -3614,8 +3615,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     computeQuickButtons();
   }
 
-  public final void requestCommentButton (ComplexReceiver complexReceiver) {
+  public final void requestCommentButton (MessageView messageView, ComplexReceiver complexReceiver) {
     commentButton.setReceiversPool(complexReceiver);
+    commentButton.setupForceTouch(messageView, tdlib);
   }
 
   public final void requestAllTextMedia (MessageView view) {
@@ -5048,7 +5050,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (interactionInfo != null && interactionInfo.replyInfo != null) {
       commentButton.update(new TGCommentButton.Info(
         interactionInfo.replyInfo.replyCount,
-        interactionInfo.replyInfo.recentReplierIds
+        interactionInfo.replyInfo.recentReplierIds,
+        Td.hasUnread(interactionInfo.replyInfo)
       ), animated);
       commentButton.setForceDisplayEndIcon(!useBubbles());
       commentButton.setNeedBackground(useBubbles() && commentMode == COMMENT_MODE_DETACHED_BUTTON);

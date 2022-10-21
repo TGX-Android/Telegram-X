@@ -15,8 +15,13 @@ package org.thunderdog.challegram.data;
 import android.os.Bundle;
 
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.telegram.Tdlib;
 
 import java.util.Objects;
+
+import androidx.annotation.Nullable;
 
 public class ThreadInfo {
   private final boolean areComments;
@@ -118,5 +123,16 @@ public class ThreadInfo {
 
   public static ThreadInfo restoreFrom (Bundle outState, String prefix) {
     return null;
+  }
+
+  public static String getThreadSubtitle(Tdlib tdlib, boolean areComments, int count, @Nullable TdApi.MessageSender coreMessageSender) {
+    String userName = null;
+    if (coreMessageSender != null) {
+      userName = tdlib.senderName(coreMessageSender, true);
+    }
+    int repliesStringId = userName != null ? R.string.xRepliesTo : R.string.xReplies;
+    return Lang.plural(
+      areComments ? R.string.xComments : repliesStringId, count, userName
+    );
   }
 }

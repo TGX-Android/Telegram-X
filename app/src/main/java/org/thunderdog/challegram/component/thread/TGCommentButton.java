@@ -1,6 +1,5 @@
 package org.thunderdog.challegram.component.thread;
 
-import android.annotation.SuppressLint;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -10,60 +9,69 @@ import android.graphics.Region;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
+import org.thunderdog.challegram.helper.ForceTouchPreviewDelegate;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
+import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.ui.MessagesController;
+import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
+import org.thunderdog.challegram.widget.ForceTouchView;
 
 import java.util.HashMap;
 import java.util.Map;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import me.vkryl.android.AnimatorUtils;
-import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.CounterAnimator;
 import me.vkryl.android.animator.FactorAnimator;
+import me.vkryl.android.util.ClickHelper;
 import me.vkryl.core.ColorUtils;
+import me.vkryl.core.collection.IntList;
 
-
-@SuppressLint("ViewConstructor")
-public class TGCommentButton implements CounterAnimator.Callback<Text>, TextColorSet, FactorAnimator.Target {
+public class TGCommentButton extends ForceTouchPreviewDelegate implements
+  CounterAnimator.Callback<Text>, TextColorSet, FactorAnimator.Target,
+  ForceTouchPreviewDelegate.CustomControllerProvider,
+  ForceTouchPreviewDelegate.ActionListProvider {
 
   public static final int DEFAULT_PADDING = Screen.dp(8);
   private static final int SELECTION_ANIMATOR = 0;
   private static final int FADE_ANIMATOR = 1;
-  private static final long ANIMATION_DURATION = 250L;
+  private static final long ANIMATION_DURATION = 180L;
   private static final int sTextSizeDp = 14;
   private static final int sSmallTextSizeDp = 12;
+  private static final int sUnreadSize = Screen.dp(6);
   private static final boolean DEBUG = false;
-  private static final int FLAG_ACTIVE = 0x01;
-  private static final int FLAG_CAUGHT = 0x02;
-  private static final int FLAG_BLOCKED = 0x04;
 
   private final CounterAnimator<Text> mCounterAnimator;
   private final UserAvatarStack mUserAvatarStack;
   private final TGMessage mParent;
   private final RectF mBounds;
-  private final CommentButtonDelegate mDelegate;
   private final Region mBackgroundClipRegion;
   private final Region mBottomBubbleRegion;
+  private final ClickHelper mClickHelper;
   private Drawable mStartIconDrawable;
   private Drawable mEndIconDrawable;
   private int width, height;
@@ -84,25 +92,24 @@ public class TGCommentButton implements CounterAnimator.Callback<Text>, TextColo
   private int flags;
   private int mTextSize;
   private Path mBackgroundPath;
+  private boolean mPendingFade = false;
 
   public static class Info {
     private final int count;
     private final TdApi.MessageSender[] senders;
+    private final boolean hasUnread;
 
-    public Info (int count, TdApi.MessageSender[] senders) {
+    public Info (int count, TdApi.MessageSender[] senders, boolean hasUnread) {
       this.count = count;
       this.senders = senders;
+      this.hasUnread = hasUnread;
     }
   }
 
-  public interface CommentButtonDelegate {
-    default void onClick (View view) {}
-    default void onLongClick (View view) {}
-  }
-
-  public TGCommentButton (TGMessage parent, CommentButtonDelegate delegate) {
+  public TGCommentButton (TGMessage parent) {
+    super(parent.tdlib());
     mParent = parent;
-    mDelegate = delegate;
+    mClickHelper = new ClickHelper(this);
     mCounterAnimator = new CounterAnimator<>(this);
     mStartIconDrawable = Drawables.get(R.drawable.baseline_forum_24);
     mEndIconDrawable = Drawables.get(R.drawable.round_keyboard_arrow_right_24);
@@ -112,6 +119,14 @@ public class TGCommentButton implements CounterAnimator.Callback<Text>, TextColo
     mBackgroundClipRegion = new Region();
     mBottomBubbleRegion = new Region();
     setNeedBackground(false);
+    this.setCustomControllerProvider(this);
+    this.setPreviewActionListProvider(this);
+  }
+
+  public void setupForceTouch(View view, Tdlib tdlib) {
+    this.setMaximizeListener((target, animateToWhenReady, arg) ->
+      MessagesController.maximizeFrom(tdlib, view.getContext(), target, animateToWhenReady, arg)
+    );
   }
 
   public void setReceiversPool (ComplexReceiver complexReceiver) {
@@ -205,7 +220,9 @@ public class TGCommentButton implements CounterAnimator.Callback<Text>, TextColo
 
   @Override
   public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
-    if (id == FADE_ANIMATOR && finalFactor == 1f) {
+    if (id == SELECTION_ANIMATOR && finalFactor == 1f && mPendingFade) {
+      cancelSelection();
+    } else if (id == FADE_ANIMATOR && finalFactor == 1f) {
       forceResetSelection();
     }
   }
@@ -257,67 +274,124 @@ public class TGCommentButton implements CounterAnimator.Callback<Text>, TextColo
     setupCounter(width < getPreferredMinWidth());
   }
 
-  public boolean onTouchEvent (View view, MotionEvent e) {
-    if (!handleTouch((int) e.getX(), (int) e.getY())) return false;
-    int x = (int) e.getX();
-    int y = (int) e.getY();
-    switch (e.getAction()) {
-      case MotionEvent.ACTION_DOWN: {
-        flags |= FLAG_CAUGHT;
-        touchX = x;
-        touchY = y;
-        if (!isActive() && !isBlocked()) {
-          animateSelectionFactor(1f);
-        }
-        return true;
-      }
-      case MotionEvent.ACTION_MOVE: {
-        touchX = x;
-        touchY = y;
-        return true;
-      }
-      case MotionEvent.ACTION_CANCEL: {
-        if (isCaught()) {
-          flags &= ~FLAG_CAUGHT;
-          if (!isActive() && !isBlocked()) {
-            cancelSelection();
-          }
-        }
-        return true;
-      }
-      case MotionEvent.ACTION_UP: {
-        touchX = x;
-        touchY = y;
-        if (isCaught()) {
-          flags &= ~FLAG_CAUGHT;
-          ViewUtils.onClick(view);
-          performClick(view);
-          return true;
-        }
-        return false;
-      }
+  public boolean onTouchEvent (View view, @NonNull MotionEvent e) {
+    if (!mClickHelper.inLongPress() && !handleTouch((int) e.getX(), (int) e.getY())) {
+      mClickHelper.cancel(view, e.getX(), e.getY());
+      return false;
     }
-    return true;
+    return mClickHelper.onTouchEvent(view, e);
   }
 
-  public boolean performLongPress (View view) {
-    if ((flags & FLAG_CAUGHT) != 0) {
-      flags &= ~FLAG_CAUGHT;
-      if (!isActive()) {
-        cancelSelection();
-        view.post(() -> mDelegate.onLongClick(view));
-      }
-    }
-    return true;
+  @Override
+  public boolean needsForceTouch (View v, float x, float y) {
+    return mInfo != null && mInfo.count > 0 && mBounds.contains(x, y);
   }
 
-  public void performClick (View view) {
-    if (!isBlocked()) {
-      view.post(() -> mDelegate.onClick(view));
-      if (!isActive()) {
-        cancelSelection();
-      }
+  @Override
+  public boolean onSlideOff (View v, float x, float y, @Nullable ViewController<?> openPreview) {
+    return false;
+  }
+
+  @Override
+  public ViewController<?> createForceTouchPreview (View v, float x, float y) {
+    return mParent.getMessageThreadPreviewController();
+  }
+
+  @Override
+  public boolean needClickAt (View view, float x, float y) {
+    return mBounds.contains(x, y);
+  }
+
+  @Override
+  public void onClickAt (View view, float x, float y) {
+    mParent.openMessageThread(null);
+  }
+
+  @Override
+  public boolean needLongPress (float x, float y) {
+    return mBounds.contains(x, y);
+  }
+
+  @Override
+  public void onClickTouchDown (View view, float x, float y) {
+    super.onClickTouchDown(view, x, y);
+    this.touchX = (int) x;
+    this.touchY = (int) y;
+    animateSelectionFactor(1f);
+  }
+
+  @Override
+  public void onClickTouchUp (View view, float x, float y) {
+    super.onClickTouchUp(view, x, y);
+    cancelSelection();
+  }
+
+  @Override
+  public void onLongPress (View view, float x, float y) {
+    performLongPress(view, x, y);
+  }
+
+  @Override
+  public boolean onLongPressRequestedAt (View view, float x, float y) {
+   if (mInfo.count == 0) {
+      onLongPress(view, x, y);
+      return false;
+    }else if (mParent.getLastThreadInfo() != null) {
+      return super.onLongPressRequestedAt(view, x, y);
+    } else {
+      mParent.getMessageThread(null, messageThreadInfo -> {
+        super.onLongPressRequestedAt(view, x, y);
+      });
+      return false;
     }
+  }
+
+  @Override
+  public void onLongPressCancelled (View view, float x, float y) {
+    super.onLongPressCancelled(view, x, y);
+    cancelSelection();
+  }
+
+  @Override
+  public void onLongPressFinish (View view, float x, float y) {
+    super.onLongPressFinish(view, x, y);
+    cancelSelection();
+  }
+
+
+  @Override
+  public ForceTouchView.ActionListener onCreateActions (View v, ForceTouchView.ForceTouchContext context, IntList ids, IntList icons, StringList strings, ViewController<?> target) {
+    TdApi.MessageThreadInfo threadInfo = mParent.getLastThreadInfo();
+    boolean canRead = false;
+    if (threadInfo != null) {
+      TdApi.Chat chat = mParent.tdlib().chat(threadInfo.chatId);
+      canRead = mParent.tdlib().canMarkAsRead(chat);
+    }
+    ids.append(canRead ? R.id.btn_markChatAsRead : R.id.btn_markChatAsUnread);
+    strings.append(canRead ? R.string.MarkAsRead : R.string.MarkAsUnread);
+    icons.append(canRead ? Config.ICON_MARK_AS_READ : Config.ICON_MARK_AS_UNREAD);
+    return new ForceTouchView.ActionListener() {
+      @Override
+      public void onForceTouchAction (ForceTouchView.ForceTouchContext context, int actionId, Object arg) {
+        if (threadInfo == null) return;
+        if (actionId == R.id.btn_markChatAsRead) {
+          mParent.tdlib().markChatAsRead(threadInfo.chatId, threadInfo.messageThreadId, null);
+        } else if ( actionId == R.id.btn_markChatAsUnread) {
+          mParent.tdlib().markChatAsUnread(mParent.tdlib().chat(threadInfo.chatId), null);
+        }
+      }
+
+      @Override
+      public void onAfterForceTouchAction (ForceTouchView.ForceTouchContext context, int actionId, Object arg) {
+
+      }
+    };
+  }
+
+  public boolean performLongPress (View view, float x, float y) {
+    cancelSelection();
+    mClickHelper.onLongPress(view, x, y);
+    return true;
   }
 
   public boolean handleTouch (int touchX, int touchY) {
@@ -337,16 +411,15 @@ public class TGCommentButton implements CounterAnimator.Callback<Text>, TextColo
   }
 
   public void draw (Canvas canvas, int x, int y) {
-    Log.e("CommentButton", "start draw message id at x = " + x + " y = " + y);
     resetBounds(x, y);
     drawDebug(canvas);
     drawBackground(canvas);
     drawStartIcon(canvas);
     drawCounter(canvas);
+    drawUnread(canvas);
     drawAvatarStack(canvas);
     drawEndIcon(canvas);
     drawSelection(canvas);
-    Log.e("CommentButton", "end draw message at x = " + x + " y = " + y);
   }
 
   private void drawDebug (Canvas canvas) {
@@ -357,7 +430,6 @@ public class TGCommentButton implements CounterAnimator.Callback<Text>, TextColo
   private void drawStartIcon (Canvas canvas) {
     int dX = mX + paddingStart;
     int dY = (int) (mY + (height - mStartIconDrawable.getIntrinsicHeight()) / 2f);
-    Log.e("CommentButton", "draw start icon at x = " + dX + "; y = " + dY);
     Drawables.draw(
       canvas,
       mStartIconDrawable,
@@ -402,7 +474,6 @@ public class TGCommentButton implements CounterAnimator.Callback<Text>, TextColo
     if (!shouldDisplayEndIcon()) return;
     int dX = mX + width - mEndIconDrawable.getIntrinsicWidth() - paddingEnd;
     int dY = (int) (mY + (height - mEndIconDrawable.getIntrinsicHeight()) / 2f);
-    Log.e("CommentButton", "draw end icon at x = " + dX + "; y = " + dY);
     Drawables.draw(
       canvas,
       mEndIconDrawable,
@@ -423,6 +494,20 @@ public class TGCommentButton implements CounterAnimator.Callback<Text>, TextColo
         canvas.drawRect(mBounds, paint);
       }
     }
+  }
+
+  private void drawUnread(Canvas canvas) {
+    if (mInfo == null || !mInfo.hasUnread) return;
+    int endIconOffset = shouldDisplayEndIcon()
+      ? mEndIconDrawable.getIntrinsicWidth() + endIconPadding
+      : 0;
+    float radius = sUnreadSize / 2f;
+    canvas.drawCircle(
+      mX + width - endIconOffset - paddingEnd - mUserAvatarStack.getCurrentWidth() - endIconPadding - radius,
+      mBounds.centerY(),
+      radius,
+      Paints.fillingPaint(defaultTextColor())
+    );
   }
 
   private void drawSelection (Canvas canvas) {
@@ -516,6 +601,7 @@ public class TGCommentButton implements CounterAnimator.Callback<Text>, TextColo
       endIconPadding +
       paddingEnd +
       mUserAvatarStack.getCurrentWidth() +
+      (mInfo != null && mInfo.hasUnread ? sUnreadSize : 0) +
       (shouldDisplayEndIcon() ? mEndIconDrawable.getIntrinsicWidth() : 0));
   }
 
@@ -527,40 +613,27 @@ public class TGCommentButton implements CounterAnimator.Callback<Text>, TextColo
   }
 
   private void animateFadeFactor (float toFactor) {
-    if (toFactor == 1f) {
-      flags &= ~FLAG_ACTIVE;
-    }
     if (fadeAnimator == null) {
       fadeAnimator = new FactorAnimator(FADE_ANIMATOR, this, AnimatorUtils.DECELERATE_INTERPOLATOR, ANIMATION_DURATION);
+      fadeAnimator.setStartDelay(ANIMATION_DURATION);
     }
-    flags |= FLAG_BLOCKED;
     fadeAnimator.animateTo(toFactor);
   }
 
   private void cancelSelection () {
-    animateFadeFactor(1f);
+    mPendingFade = selectionAnimator.isAnimating();
+    if (!mPendingFade) {
+      animateFadeFactor(1f);
+    }
   }
 
   private void forceResetSelection () {
     if (fadeAnimator != null) {
       fadeAnimator.forceFactor(this.fadeFactor = 0f);
-      flags &= ~FLAG_BLOCKED;
     }
     if (selectionAnimator != null) {
       selectionAnimator.forceFactor(this.selectionFactor = 0f);
     }
-  }
-
-  private boolean isActive () {
-    return (flags & FLAG_ACTIVE) != 0;
-  }
-
-  private boolean isCaught () {
-    return (flags & FLAG_CAUGHT) != 0;
-  }
-
-  private boolean isBlocked () {
-    return (flags & FLAG_BLOCKED) != 0;
   }
 
   private Map<Long, UserAvatarStack.AvatarInfo> getAvatars (TdApi.MessageSender[] senders) {
