@@ -63,6 +63,7 @@ import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessageViewGroup;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.component.chat.ReplyComponent;
+import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.core.Lang;
@@ -7473,7 +7474,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         reactionDrawable.setComplexReceiver(currentComplexReceiver);
 
         final boolean isOdd = a % 2 == 1;
-        final SwipeQuickAction quickReaction = new SwipeQuickAction(reactionObj.getReaction().title, reactionDrawable, () -> {
+        final SwipeQuickAction quickReaction = new SwipeQuickAction(reactionObj.getTitle(), reactionDrawable, () -> {
           if (messageReactions.sendReaction(reactionType, false, handler(findCurrentView(), null, () -> {}))) {
             scheduleSetReactionAnimation(new NextReactionAnimation(reactionObj, NextReactionAnimation.TYPE_QUICK));
           }
@@ -7785,10 +7786,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         }
       };
 
-      if (nextSetReactionAnimation.reaction.effectAnimationSicker().getFullAnimation() != null) {
-        nextSetReactionAnimation.reaction.effectAnimationSicker().getFullAnimation().setPlayOnce(true);
-        nextSetReactionAnimation.reaction.effectAnimationSicker().getFullAnimation().setLooped(false);
-        nextSetReactionAnimation.reaction.effectAnimationSicker().getFullAnimation().addLoopListener(() -> {
+      TGStickerObj effectAnimation = nextSetReactionAnimation.reaction.effectAnimationSicker();
+      if (effectAnimation.getFullAnimation() != null) {
+        if (!effectAnimation.isCustomReaction()) {
+          effectAnimation.getFullAnimation().setPlayOnce(true);
+          effectAnimation.getFullAnimation().setLooped(false);
+        }
+        effectAnimation.getFullAnimation().addLoopListener(() -> {
           if (nextSetReactionAnimation != null) {
             nextSetReactionAnimation.fullscreenEffectFinished = true;
             if (nextSetReactionAnimation.fullscreenEmojiFinished) {
@@ -7799,10 +7803,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         });
       }
 
-      if (nextSetReactionAnimation.reaction.activateAnimationSicker().getFullAnimation() != null) {
-        nextSetReactionAnimation.reaction.activateAnimationSicker().getFullAnimation().setPlayOnce(true);
-        nextSetReactionAnimation.reaction.activateAnimationSicker().getFullAnimation().setLooped(false);
-        nextSetReactionAnimation.reaction.activateAnimationSicker().getFullAnimation().addLoopListener(() -> {
+      TGStickerObj activateAnimation = nextSetReactionAnimation.reaction.activateAnimationSicker();
+      if (activateAnimation.getFullAnimation() != null) {
+        if (!activateAnimation.isCustomReaction()) {
+          activateAnimation.getFullAnimation().setPlayOnce(true);
+          activateAnimation.getFullAnimation().setLooped(false);
+        }
+        activateAnimation.getFullAnimation().addLoopListener(() -> {
           if (nextSetReactionAnimation != null) {
             nextSetReactionAnimation.fullscreenEmojiFinished = true;
             if (nextSetReactionAnimation.fullscreenEffectFinished) {
@@ -7848,6 +7855,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     int bubbleY = positionCords[1] + reactionPosition.y;
 
     messageReactions.startAnimation(tgReaction.key);
+    TGStickerObj overlaySticker = tgReaction.newAroundAnimationSicker();
+    if (overlaySticker == null) {
+      // TODO generic animation
+    }
+    if (overlaySticker == null) {
+      return;
+    }
     context().reactionsOverlayManager().addOverlay(
       new ReactionsOverlayView.ReactionInfo(context().reactionsOverlayManager())
         .setSticker(tgReaction.newAroundAnimationSicker())

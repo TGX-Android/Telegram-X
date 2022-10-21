@@ -4,8 +4,6 @@ import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
-import android.util.Log;
-import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -17,46 +15,71 @@ import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
 
+import me.vkryl.td.Td;
+
 public class TGReaction {
   private final Tdlib tdlib;
 
   public final TdApi.ReactionType type;
   public final String key;
 
-  public TdApi.EmojiReaction reaction;
+  private final TdApi.EmojiReaction emojiReaction;
+  private final TdApi.Sticker customReaction;
 
-  private final TGStickerObj _staticIconSicker;
-  private final TGStickerObj _activateAnimationSicker;
-  private final TGStickerObj _effectAnimationSicker;
-  private final TGStickerObj _aroundAnimationSicker;
-  private final TGStickerObj _centerAnimationSicker;
+  private TGStickerObj _staticIconSicker;
+  private TGStickerObj _activateAnimationSicker;
+  private TGStickerObj _effectAnimationSicker;
+  private TGStickerObj _aroundAnimationSicker;
+  private TGStickerObj _centerAnimationSicker;
+  private TGStickerObj _staticCenterAnimationSicker;
 
-  private final TGStickerObj _staticCenterAnimationSicker;
-
-  public TGReaction (Tdlib tdlib, TdApi.EmojiReaction reaction) {
+  public TGReaction (@NonNull Tdlib tdlib, @NonNull TdApi.EmojiReaction reaction) {
     this.tdlib = tdlib;
-    this.reaction = reaction;
-    // TODO: custom reactions support
+    this.emojiReaction = reaction;
     this.type = new TdApi.ReactionTypeEmoji(reaction.emoji);
     this.key = TD.makeReactionKey(type);
+    this.customReaction = null;
 
+    initialize();
+  }
+
+  public TGReaction (@NonNull Tdlib tdlib, @NonNull TdApi.Sticker customReaction) {
+    this.tdlib = tdlib;
+    this.customReaction = customReaction;
+    this.type = new TdApi.ReactionTypeCustomEmoji(customReaction.customEmojiId);
+    this.key = TD.makeReactionKey(type);
+    this.emojiReaction = null;
+
+    initialize();
+  }
+
+  private void initialize () {
     _staticIconSicker = newStaticIconSicker();
     _activateAnimationSicker = newActivateAnimationSicker();
+
     _effectAnimationSicker = newEffectAnimationSicker();
     _aroundAnimationSicker = newAroundAnimationSicker();
     _centerAnimationSicker = newCenterAnimationSicker();
 
     _staticCenterAnimationSicker = newCenterAnimationSicker();
-    if (_staticCenterAnimationSicker.getPreviewAnimation() != null) {
+    if (_staticCenterAnimationSicker.getPreviewAnimation() != null && !_staticCenterAnimationSicker.isCustomReaction()) {
       _staticCenterAnimationSicker.getPreviewAnimation().setPlayOnce(true);
       _staticCenterAnimationSicker.getPreviewAnimation().setLooped(true);
     }
 
-    tdlib.ui().post(this::loadAllAnimationsAndCache);
+    loadAllAnimationsAndCache();
   }
 
   public boolean isPremium () {
+    return isCustom();
+  }
+
+  public boolean isCustom () {
     return type.getConstructor() == TdApi.ReactionTypeCustomEmoji.CONSTRUCTOR;
+  }
+
+  public String getTitle () {
+    return emojiReaction != null ? emojiReaction.title : "";
   }
 
   public TGStickerObj staticIconSicker () {
@@ -83,47 +106,21 @@ public class TGReaction {
     return _staticCenterAnimationSicker;
   }
 
-  private TGStickerObj newStaticIconSicker () {
-    return new TGStickerObj(tdlib, reaction.staticIcon, reaction.emoji, reaction.staticIcon.type).setReactionType(type);
-  }
-
-  private TGStickerObj newActivateAnimationSicker () {
-    return new TGStickerObj(tdlib, reaction.activateAnimation, reaction.emoji, reaction.activateAnimation.type).setReactionType(type);
-  }
-
-  private TGStickerObj newEffectAnimationSicker () {
-    return new TGStickerObj(tdlib, reaction.effectAnimation, reaction.emoji, reaction.effectAnimation.type).setReactionType(type);
-  }
-
-  public TGStickerObj newAroundAnimationSicker () {
-    if (reaction.aroundAnimation != null) {
-      return new TGStickerObj(tdlib, reaction.aroundAnimation, reaction.emoji, reaction.aroundAnimation.type).setReactionType(type);
-    }
-    return newEffectAnimationSicker();
-  }
-
-  public TGStickerObj newCenterAnimationSicker () {
-    if (reaction.centerAnimation != null) {
-      return new TGStickerObj(tdlib, reaction.centerAnimation, reaction.emoji, reaction.centerAnimation.type).setReactionType(type);
-    }
-    return newStaticIconSicker();
-  }
-
-  public TdApi.EmojiReaction getReaction () {
-    return this.reaction;
-  }
-
   public void loadAllAnimationsAndCache () {
-    loadAnimationAndCache(reaction.staticIcon.sticker);
-    loadAnimationAndCache(reaction.effectAnimation.sticker);
-    loadAnimationAndCache(reaction.activateAnimation.sticker);
+    if (emojiReaction != null) {
+      loadAnimationAndCache(emojiReaction.staticIcon.sticker);
+      loadAnimationAndCache(emojiReaction.effectAnimation.sticker);
+      loadAnimationAndCache(emojiReaction.activateAnimation.sticker);
 
-    if (reaction.aroundAnimation != null) {
-      loadAnimationAndCache(reaction.aroundAnimation.sticker);
-    }
+      if (emojiReaction.aroundAnimation != null) {
+        loadAnimationAndCache(emojiReaction.aroundAnimation.sticker);
+      }
 
-    if (reaction.centerAnimation != null) {
-      loadAnimationAndCache(reaction.centerAnimation.sticker);
+      if (emojiReaction.centerAnimation != null) {
+        loadAnimationAndCache(emojiReaction.centerAnimation.sticker);
+      }
+    } else if (customReaction != null) {
+
     }
   }
 
@@ -135,6 +132,44 @@ public class TGReaction {
 
   public int getId () {
     return _staticIconSicker.getId();
+  }
+
+  private TGStickerObj newStaticIconSicker () {
+    if (emojiReaction != null) {
+      return new TGStickerObj(tdlib, emojiReaction.staticIcon, emojiReaction.emoji, emojiReaction.staticIcon.type).setReactionType(type);
+    } else {
+      return new TGStickerObj(tdlib, customReaction, null, customReaction.type).setReactionType(type);
+    }
+  }
+
+  private TGStickerObj newActivateAnimationSicker () {
+    if (emojiReaction != null) {
+      return new TGStickerObj(tdlib, emojiReaction.activateAnimation, emojiReaction.emoji, emojiReaction.activateAnimation.type).setReactionType(type);
+    } else {
+      return newStaticIconSicker();
+    }
+  }
+
+  private TGStickerObj newEffectAnimationSicker () {
+    if (emojiReaction != null) {
+      return new TGStickerObj(tdlib, emojiReaction.effectAnimation, emojiReaction.emoji, emojiReaction.effectAnimation.type).setReactionType(type);
+    } else {
+      return null;
+    }
+  }
+
+  public TGStickerObj newAroundAnimationSicker () {
+    if (emojiReaction != null && emojiReaction.aroundAnimation != null) {
+      return new TGStickerObj(tdlib, emojiReaction.aroundAnimation, emojiReaction.emoji, emojiReaction.aroundAnimation.type).setReactionType(type);
+    }
+    return newEffectAnimationSicker();
+  }
+
+  public TGStickerObj newCenterAnimationSicker () {
+    if (emojiReaction != null && emojiReaction.centerAnimation != null) {
+      return new TGStickerObj(tdlib, emojiReaction.centerAnimation, emojiReaction.emoji, emojiReaction.centerAnimation.type).setReactionType(type);
+    }
+    return newStaticIconSicker();
   }
 
   public static class ReactionDrawable extends Drawable {
@@ -189,9 +224,7 @@ public class TGReaction {
     }
 
     @Override
-    public void setColorFilter (@Nullable ColorFilter colorFilter) {
-
-    }
+    public void setColorFilter (@Nullable ColorFilter colorFilter) { }
 
     @Override
     public int getOpacity () {

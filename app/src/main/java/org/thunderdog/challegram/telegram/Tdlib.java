@@ -3801,8 +3801,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         TdApi.ReactionTypeEmoji emoji = (TdApi.ReactionTypeEmoji) reactionType;
         RunnableData<TdlibEmojiReactionManager.Entry> emojiReactionWatcher = (newEntry) -> {
           if (newEntry.value != null) {
+            TGReaction reaction = new TGReaction(this, newEntry.value);
             synchronized (dataLock) {
-              cachedReactions.put(key, new TGReaction(this, newEntry.value));
+              cachedReactions.put(key, reaction);
             }
             // TODO invoke update so reaction would display properly where getReaction was called
           }
@@ -3829,8 +3830,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         TdApi.ReactionTypeCustomEmoji customEmoji = (TdApi.ReactionTypeCustomEmoji) reactionType;
         RunnableData<TdlibEmojiManager.Entry> customReactionWatcher = (newEntry) -> {
           if (newEntry.value != null) {
+            TGReaction reaction = new TGReaction(this, newEntry.value);
             synchronized (dataLock) {
-              // TODO put TGReaction to cache
+              cachedReactions.put(key, reaction);
             }
             // TODO invoke update so reaction would display properly where getReaction was called
           }
@@ -3845,10 +3847,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           if (entry.value == null) {
             return null;
           }
+          TGReaction reaction = new TGReaction(this, entry.value);
           synchronized (dataLock) {
-            // TODO put TGReaction to cache
+            cachedReactions.put(key, reaction);
           }
-          // TODO return newly created TGReaction
+          return reaction;
         }
         break;
       }

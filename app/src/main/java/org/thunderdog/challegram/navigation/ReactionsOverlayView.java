@@ -168,7 +168,7 @@ public class ReactionsOverlayView extends ViewGroup {
       ImageFile imageFile = sticker.getImage();
       animation = sticker.getPreviewAnimation();
       if (animation != null) {
-        if (animated) {
+        if (animated && !sticker.isCustomReaction()) {
           animation.setPlayOnce(true);
           animation.setLooped(false);
         }

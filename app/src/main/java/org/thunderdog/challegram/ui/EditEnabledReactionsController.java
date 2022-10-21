@@ -361,6 +361,13 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
 
         if (checked) {
           TGStickerObj stickerObj = tgReaction.newAroundAnimationSicker();
+          if (stickerObj == null) {
+            // TODO generic animation
+          }
+
+          if (stickerObj == null) {
+            return;
+          }
 
           int[] positionCords = new int[2];
           v.getLocationOnScreen(positionCords);

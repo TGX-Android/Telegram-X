@@ -192,7 +192,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
                   if (stringBuilder.length() > 0) {
                     stringBuilder.append(Lang.getConcatSeparator());
                   }
-                  stringBuilder.append(tgReaction.getReaction().title);
+                  stringBuilder.append(tgReaction.getTitle());
                 }
               }
               v.setDrawModifier(new ReactionModifier(v.getComplexReceiver(), tgReactions.toArray(new TGReaction[0])));

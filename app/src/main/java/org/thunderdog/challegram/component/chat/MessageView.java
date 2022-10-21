@@ -109,10 +109,11 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
   public MessageView (Context context) {
     super(context);
-    avatarReceiver = new ImageReceiver(this, Screen.dp(20.5f));
-    reactionsComplexReceiver = new ComplexReceiver(this);
-    gifReceiver = new GifReceiver(this);
     this.refreshRateLimiter = new RefreshRateLimiter(this, Config.MAX_ANIMATED_EMOJI_REFRESH_RATE);
+    avatarReceiver = new ImageReceiver(this, Screen.dp(20.5f));
+    gifReceiver = new GifReceiver(this); // TODO use refreshRateLimiter?
+    reactionsComplexReceiver = new ComplexReceiver()
+      .setUpdateListener(refreshRateLimiter);
     textMediaReceiver = new ComplexReceiver()
       .setUpdateListener(refreshRateLimiter);
     replyTextMediaReceiver = new ComplexReceiver()

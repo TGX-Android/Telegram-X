@@ -53,6 +53,10 @@ public class TGStickerObj {
     }
   }
 
+  public boolean isCustomReaction () {
+    return reactionType != null && reactionType.getConstructor() == TdApi.ReactionTypeCustomEmoji.CONSTRUCTOR;
+  }
+
   public TGStickerObj (Tdlib tdlib, @Nullable TdApi.Sticker sticker, TdApi.StickerType stickerType, String[] emojis) {
     set(tdlib, sticker, stickerType, emojis);
   }
@@ -173,7 +177,7 @@ public class TGStickerObj {
       this.previewAnimation = new GifFile(tdlib, sticker);
       this.previewAnimation.setPlayOnce();
       this.previewAnimation.setScaleType(ImageFile.FIT_CENTER);
-      this.previewAnimation.setOptimizationMode(GifFile.OptimizationMode.STICKER_PREVIEW);
+      this.previewAnimation.setOptimizationMode(isCustomReaction() ? GifFile.OptimizationMode.EMOJI : GifFile.OptimizationMode.STICKER_PREVIEW);
     }
     return previewAnimation;
   }

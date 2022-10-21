@@ -12,9 +12,14 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.MessageView;
+import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.loader.ComplexReceiver;
+import org.thunderdog.challegram.loader.ImageFile;
+import org.thunderdog.challegram.loader.ImageReceiver;
+import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.support.ViewSupport;
@@ -82,6 +87,8 @@ public class TGReactions {
   }
 
   public void setReceiversPool (ComplexReceiver complexReceiver) {
+    // FIXME: single TGMessage may be displayed in multiple MessageView at once.
+    //        This class wrongly relies that it cannot.
     this.complexReceiver = complexReceiver;
     for (Map.Entry<String, MessageReactionEntry> pair : reactionsMapEntry.entrySet()) {
       MessageReactionEntry entry = pair.getValue();
@@ -278,7 +285,6 @@ public class TGReactions {
   public static int getReactionImageSize () {
     return Screen.dp((TGMessage.reactionsTextStyleProvider().getTextSizeInDp() + 1) * 1.25f + 17);
   }
-
 
   // target values
 
@@ -497,10 +503,11 @@ public class TGReactions {
     private final TGReaction reactionObj;
     private final TGMessage message;
 
-    @Nullable private GifReceiver staticCenterAnimationReceiver;
+    @Nullable private Receiver staticCenterAnimationReceiver;
     @Nullable private GifReceiver centerAnimationReceiver;
     @Nullable private final GifFile animation;
     private final GifFile staticAnimationFile;
+    private final ImageFile staticImageFile;
 
     private final MessageReactionsDelegate delegate;
 
@@ -521,9 +528,11 @@ public class TGReactions {
 
       this.counter = counter.colorSet(this).build();
 
-      animation = reactionObj.newCenterAnimationSicker().getFullAnimation();
+      TGStickerObj stickerObj = reactionObj.newCenterAnimationSicker();
+      animation = stickerObj.getFullAnimation();
       staticAnimationFile = reactionObj.staticCenterAnimationSicker().getPreviewAnimation();
-      if (animation != null) {
+      staticImageFile = staticAnimationFile == null ? reactionObj.staticCenterAnimationSicker().getImage() : null;
+      if (animation != null && !stickerObj.isCustomReaction()) {
         animation.setPlayOnce(true);
         animation.setLooped(true);
       }
@@ -539,10 +548,15 @@ public class TGReactions {
       }
 
       centerAnimationReceiver = complexReceiver.getGifReceiver(reactionObj.getId());
-      staticCenterAnimationReceiver = complexReceiver.getGifReceiver(((long) reactionObj.getId()) << 32);
-
-      if (staticCenterAnimationReceiver != null) {
-        staticCenterAnimationReceiver.requestFile(staticAnimationFile);
+      long staticId = ((long) reactionObj.getId()) << 32;
+      if (staticAnimationFile != null) {
+        GifReceiver receiver = complexReceiver.getGifReceiver(staticId);
+        receiver.requestFile(staticAnimationFile);
+        staticCenterAnimationReceiver = receiver;
+      } else if (staticImageFile != null) {
+        ImageReceiver receiver = complexReceiver.getImageReceiver(staticId);
+        receiver.requestFile(staticImageFile);
+        staticCenterAnimationReceiver = receiver;
       }
       if (centerAnimationReceiver != null && inAnimation) {
         centerAnimationReceiver.requestFile(animation);
@@ -779,7 +793,7 @@ public class TGReactions {
     private boolean inAnimation;
 
     private void drawReceiver (Canvas c, int l, int t, int r, int b, float alpha) {
-      GifReceiver receiver = inAnimation ? centerAnimationReceiver : staticCenterAnimationReceiver;
+      Receiver receiver = inAnimation ? centerAnimationReceiver : staticCenterAnimationReceiver;
       if (receiver != null) {
         receiver.setBounds(l, t, r, b);
         receiver.setAlpha(alpha);
