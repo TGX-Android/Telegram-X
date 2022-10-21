@@ -322,7 +322,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
 
     ViewController<?> unauthorizedController = generateUnauthorizedController(account.tdlib());
     if (unauthorizedController != null) {
-      if (current == null || current.getId() != unauthorizedController.getId()) {
+      if (current == null || current.getId() != unauthorizedController.getId() || (current instanceof PasswordController && ((PasswordController) current).getMode() != ((PasswordController) unauthorizedController).getMode())) {
         navigation.navigateTo(unauthorizedController);
       }
       return;
@@ -496,6 +496,18 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
         TdApi.AuthorizationStateWaitCode state = (TdApi.AuthorizationStateWaitCode) authState;
         PasswordController c = new PasswordController(this, tdlib);
         c.setArguments(new PasswordController.Args(PasswordController.MODE_CODE, state, tdlib.authPhoneNumberFormatted()));
+        return c;
+      }
+      case TdApi.AuthorizationStateWaitEmailAddress.CONSTRUCTOR: {
+        TdApi.AuthorizationStateWaitEmailAddress state = (TdApi.AuthorizationStateWaitEmailAddress) authState;
+        PasswordController c = new PasswordController(this, tdlib);
+        c.setArguments(new PasswordController.Args(PasswordController.MODE_EMAIL_LOGIN, state));
+        return c;
+      }
+      case TdApi.AuthorizationStateWaitEmailCode.CONSTRUCTOR: {
+        TdApi.AuthorizationStateWaitEmailCode state = (TdApi.AuthorizationStateWaitEmailCode) authState;
+        PasswordController c = new PasswordController(this, tdlib);
+        c.setArguments(new PasswordController.Args(PasswordController.MODE_CODE_EMAIL, state));
         return c;
       }
       case TdApi.AuthorizationStateWaitRegistration.CONSTRUCTOR: {

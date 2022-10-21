@@ -269,6 +269,8 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
 
   private final ArrayList<TdlibAccount> accounts = new ArrayList<>();
 
+  private final Object counterLock = new Object();
+
   private int preferredAccountId = TdlibAccount.NO_ID;
   private TdlibAccount currentAccount;
 
@@ -528,8 +530,8 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
 
   // Counters
 
-  public void incrementBadgeCounters(@NonNull TdApi.ChatList chatList, int unreadCountDelta, int unreadUnmutedCountDelta, boolean areChats) {
-    synchronized (this) {
+  public void incrementBadgeCounters (@NonNull TdApi.ChatList chatList, int unreadCountDelta, int unreadUnmutedCountDelta, boolean areChats) {
+    synchronized (counterLock) {
       /*if (areChats) {
         this.totalCounter.chatCount += unreadCountDelta;
         this.totalCounter.chatUnmutedCount += unreadUnmutedCountDelta;
@@ -576,7 +578,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   }
 
   public void resetBadge () {
-    synchronized (this) {
+    synchronized (counterLock) {
       updateBadgeInternal(true, false);
       dispatchUnreadCount(true);
     }
