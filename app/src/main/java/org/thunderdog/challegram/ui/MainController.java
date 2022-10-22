@@ -1125,6 +1125,14 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   public void onMenuItemPressed (int id, View view) {
     switch (id) {
       case R.id.menu_btn_search: {
+        tdlib.getTesterLevel(testerLevel -> {
+          if (BuildConfig.DEBUG || BuildConfig.EXPERIMENTAL || testerLevel > Tdlib.TESTER_LEVEL_READER) {
+            runOnUiThreadOptional(() -> {
+              // Force ANR to cause system report
+              tdlib.clientExecute(new TdApi.SetAlarm(0), 0);
+            });
+          }
+        }, true);
         openSearchMode();
         break;
       }

@@ -4213,6 +4213,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public void getTesterLevel (@NonNull RunnableInt callback) {
+    getTesterLevel(callback, false);
+  }
+
+  public void getTesterLevel (@NonNull RunnableInt callback, boolean onlyLocal) {
     if (inRecoveryMode() || isDebugInstance()) {
       callback.runWithInt(TESTER_LEVEL_TESTER);
       return;
@@ -4222,6 +4226,23 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       callback.runWithInt(TESTER_LEVEL_CREATOR);
     } else if (myUserId == TDLIB_CREATOR_USER_ID) {
       callback.runWithInt(TESTER_LEVEL_DEVELOPER);
+    } else if (onlyLocal) {
+      TdApi.Chat tgxAdminChat = chat(ADMIN_CHAT_ID);
+      if (tgxAdminChat != null && TD.isMember(chatStatus(ADMIN_CHAT_ID))) {
+        callback.runWithInt(TESTER_LEVEL_ADMIN);
+        return;
+      }
+      TdApi.Chat tgxTestersChat = chat(TESTER_CHAT_ID);
+      if (tgxTestersChat != null && TD.isMember(chatStatus(TESTER_CHAT_ID))) {
+        callback.runWithInt(TESTER_LEVEL_TESTER);
+        return;
+      }
+      TdApi.Chat tgxReadersChat = chat(READER_CHAT_ID);
+      if (tgxReadersChat != null && TD.isMember(chatStatus(READER_CHAT_ID))) {
+        callback.runWithInt(TESTER_LEVEL_READER);
+        return;
+      }
+      callback.runWithInt(TESTER_LEVEL_NONE);
     } else {
       chat(ADMIN_CHAT_ID, tgxAdminChat -> {
         if (tgxAdminChat != null && TD.isMember(chatStatus(ADMIN_CHAT_ID))) {
