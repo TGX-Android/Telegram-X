@@ -1631,6 +1631,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return clientHolder();
   }
 
+  public void checkDeadlocks () {
+    if (!Config.PROFILE_DEADLOCKS)
+      return;
+    // Force ANR to cause system report
+    clientExecute(new TdApi.SetAlarm(0), 0);
+  }
+
   public Client client () { // TODO migrate all tdlib.client().send(..) to tdlib.send(..)
     return clientHolder().client;
   }

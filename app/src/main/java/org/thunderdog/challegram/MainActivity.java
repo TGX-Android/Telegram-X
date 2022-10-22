@@ -277,6 +277,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
 
       return;
     }
+    newAccount.tdlib().checkDeadlocks();
     MainController c = new MainController(this, newAccount.tdlib());
     if (navigation.isEmpty()) {
       navigation.setController(c);

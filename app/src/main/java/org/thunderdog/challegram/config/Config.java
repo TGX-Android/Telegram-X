@@ -281,4 +281,6 @@ public class Config {
   public static final boolean LOOP_BIG_CUSTOM_EMOJI = false;
 
   public static final String FILE_PROVIDER_AUTHORITY = BuildConfig.APPLICATION_ID + ".provider";
+
+  public static final boolean PROFILE_DEADLOCKS = true;
 }
