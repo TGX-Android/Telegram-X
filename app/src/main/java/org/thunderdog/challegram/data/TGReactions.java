@@ -45,6 +45,7 @@ import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
+import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.Td;
 
 public class TGReactions {
@@ -60,7 +61,6 @@ public class TGReactions {
 
   private final MessageReactionsDelegate delegate;
   private int totalCount;
-  private int hasReactionCount;
   private final Set<String> chosenReactions;
 
   private final ReactionsListAnimator reactionsAnimator;
@@ -77,7 +77,6 @@ public class TGReactions {
     this.tdReactionsMap = new HashMap<>();
 
     this.totalCount = 0;
-    this.hasReactionCount = 0;
     this.chosenReactions = new LinkedHashSet<>();
     this.tdlib = tdlib;
     this.reactionsAnimator = new ReactionsListAnimator((a) -> parent.invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, MessagesRecyclerView.ITEM_ANIMATOR_DURATION + 50L);
@@ -100,7 +99,6 @@ public class TGReactions {
     this.reactionsListEntry.clear();
     this.tdReactionsMap.clear();
     this.reactions = reactions;
-    this.hasReactionCount = 0;
     this.chosenReactions.clear();
     this.totalCount = 0;
 
@@ -113,7 +111,6 @@ public class TGReactions {
       tdReactionsMap.put(reactionKey, reaction);
       totalCount += reaction.totalCount;
       if (reaction.isChosen) {
-        hasReactionCount++;
         chosenReactions.add(reactionKey);
       }
 
@@ -129,7 +126,6 @@ public class TGReactions {
 
   public void setReactions (ArrayList<TdApi.Message> combinedMessages) {
     this.reactionsListEntry.clear();
-    this.hasReactionCount = 0;
     this.chosenReactions.clear();
     this.totalCount = 0;
 
@@ -154,7 +150,6 @@ public class TGReactions {
         fakeReaction.isChosen = reaction.isChosen;
         totalCount += reaction.totalCount;
         if (reaction.isChosen) {
-          hasReactionCount++;
           chosenReactions.add(reactionKey);
         }
       }
