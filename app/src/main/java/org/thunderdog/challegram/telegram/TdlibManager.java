@@ -47,6 +47,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.AppBuildInfo;
 import org.thunderdog.challegram.util.Crash;
+import org.thunderdog.challegram.util.TokenRetriever;
 
 import java.io.File;
 import java.io.IOException;
@@ -1608,14 +1609,14 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     return tokenFullError;
   }
 
-  private String token;
+  private TdApi.DeviceToken token;
 
-  public String getToken () {
+  public TdApi.DeviceToken getToken () {
     return token;
   }
 
-  public synchronized void setDeviceToken (String token) {
-    if (!StringUtils.equalsOrBothEmpty(this.token, token)) {
+  public synchronized void setDeviceToken (TdApi.DeviceToken token) {
+    if (!Td.equalsTo(this.token, token)) {
       Settings.instance().setDeviceToken(token);
       this.token = token;
       setTokenState(TokenState.OK);
@@ -1648,11 +1649,10 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       return;
     }
     setTokenState(TokenState.INITIALIZING);
-    TdlibNotificationUtils.getDeviceToken(retryCount, new TdlibNotificationUtils.RegisterCallback() {
+    TdlibNotificationUtils.getDeviceToken(retryCount, new TokenRetriever.RegisterCallback() {
       @Override
-      public void onSuccess (@NonNull TdApi.DeviceTokenFirebaseCloudMessaging token) {
-        // TODO: use TdApi.DeviceToken instead of taking token's String value directly
-        setDeviceToken(token.token);
+      public void onSuccess (@NonNull TdApi.DeviceToken token) {
+        setDeviceToken(token);
         if (after != null) {
           after.runWithBool(true);
         }
@@ -1669,7 +1669,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     });
   }
 
-  private void dispatchDeviceToken (String token) {
+  private void dispatchDeviceToken (TdApi.DeviceToken token) {
     long[] debugUserIds = null, productionUserIds = null;
     boolean hasNonRegistered = false;
     for (TdlibAccount account : this) {

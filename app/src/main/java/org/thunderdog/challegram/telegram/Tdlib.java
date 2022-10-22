@@ -669,8 +669,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   synchronized void checkDeviceTokenImpl (@Nullable Runnable onDone) {
-    final String deviceToken = context.getToken();
-    if (StringUtils.isEmpty(deviceToken) || authorizationStatus() != STATUS_READY)
+    final TdApi.DeviceToken deviceToken = context.getToken();
+    if (deviceToken == null || authorizationStatus() != STATUS_READY)
       return;
     long myUserId = myUserId();
     if (myUserId == 0)
@@ -685,9 +685,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
     Log.i(Log.TAG_FCM, "Registering device token... accountId:%d", accountId);
     context.setDeviceRegistered(accountId, false);
-    TdApi.DeviceTokenFirebaseCloudMessaging token = new TdApi.DeviceTokenFirebaseCloudMessaging(deviceToken, true);
     incrementReferenceCount(REFERENCE_TYPE_JOB);
-    client().send(new TdApi.RegisterDevice(token, otherUserIds), result -> {
+    client().send(new TdApi.RegisterDevice(deviceToken, otherUserIds), result -> {
       switch (result.getConstructor()) {
         case TdApi.PushReceiverId.CONSTRUCTOR:
           Log.i(Log.TAG_FCM, "Successfully registered device token:%s, accountId:%d, otherUserIdsCount:%d", deviceToken, accountId, otherUserIds.length);
@@ -5099,9 +5098,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     checkConnectionParams(client(), false);
   }
 
-  private String getRegisteredDeviceToken () {
-    String deviceToken = context.getToken();
-    return StringUtils.isEmpty(deviceToken) ? Settings.instance().getDeviceToken() : deviceToken;
+  private TdApi.DeviceToken getRegisteredDeviceToken () {
+    TdApi.DeviceToken deviceToken = context.getToken();
+    return deviceToken == null ? Settings.instance().getDeviceToken() : deviceToken;
   }
 
   private void checkConnectionParams (Client client, boolean force) {
@@ -5110,8 +5109,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       params.put("device_token", "HIDDEN");
     } else {
       int state = context().getTokenState();
-      final String deviceToken = getRegisteredDeviceToken();
-      if (!StringUtils.isEmpty(deviceToken) && (state == TdlibManager.TokenState.NONE || state == TdlibManager.TokenState.INITIALIZING)) {
+      final TdApi.DeviceToken deviceToken = getRegisteredDeviceToken();
+      if (deviceToken != null && (state == TdlibManager.TokenState.NONE || state == TdlibManager.TokenState.INITIALIZING)) {
         state = TdlibManager.TokenState.OK;
       }
       String error = context().getTokenError();
@@ -5128,7 +5127,17 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           break;
         }
         case TdlibManager.TokenState.OK: {
-          params.put("device_token", deviceToken);
+          switch (deviceToken.getConstructor()) {
+            // TODO more push services
+            case TdApi.DeviceTokenFirebaseCloudMessaging.CONSTRUCTOR: {
+              String token = ((TdApi.DeviceTokenFirebaseCloudMessaging) deviceToken).token;
+              params.put("device_token", token);
+              break;
+            }
+            default: {
+              throw new UnsupportedOperationException(deviceToken.toString());
+            }
+          }
           break;
         }
         case TdlibManager.TokenState.NONE:

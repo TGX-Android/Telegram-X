@@ -10,32 +10,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
- * File created on 19/11/2016
+ * File created on 22/10/2022
  */
 package org.thunderdog.challegram.service;
 
 import android.content.Context;
-import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.Build;
-import android.os.Bundle;
 import android.os.PowerManager;
 import android.os.SystemClock;
 
 import androidx.annotation.IntDef;
-import androidx.annotation.NonNull;
-
-import com.google.firebase.messaging.FirebaseMessagingService;
-import com.google.firebase.messaging.RemoteMessage;
 
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.thunderdog.challegram.BuildConfig;
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.TDLib;
 import org.thunderdog.challegram.U;
@@ -45,14 +34,10 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.sync.SyncTask;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibManager;
-import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -61,34 +46,15 @@ import java.util.concurrent.atomic.AtomicReference;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
 
-public class FirebaseListenerService extends FirebaseMessagingService {
-  @Override
-  public void onNewToken (@NonNull String newToken) {
-    UI.initApp(getApplicationContext());
-    TDLib.Tag.notifications("onNewToken %s, sending to all accounts", newToken);
-    TdlibManager.instance().runWithWakeLock(manager -> {
-      manager.setDeviceToken(newToken);
-    });
+public class PushProcessor {
+  private final Context context;
+
+  public PushProcessor (Context context) {
+    this.context = context;
   }
 
-  @Override
-  public void onDeletedMessages () {
-    UI.initApp(getApplicationContext());
-    TDLib.Tag.notifications("onDeletedMessages: performing sync for all accounts");
-    TdlibManager.makeSync(getApplicationContext(), TdlibAccount.NO_ID, TdlibManager.SYNC_CAUSE_DELETED_MESSAGES, 0, !TdlibManager.inUiThread(), 0);
-  }
-
-  @Override
-  public void onMessageReceived (@NonNull RemoteMessage remoteMessage) {
-    if (BuildConfig.EXPERIMENTAL) {
-      return;
-    }
-
-    final String payload = makePayload(remoteMessage);
-    final long sentTime = remoteMessage.getSentTime();
-    UI.initApp(getApplicationContext());
-    Settings.instance().trackPushMessageReceived(sentTime, System.currentTimeMillis(), remoteMessage.getTtl());
-    final long pushId = Settings.instance().newPushId();
+  public void processPush (long pushId, String payload, long sentTime, int ttl) {
+    Settings.instance().trackPushMessageReceived(sentTime, System.currentTimeMillis(), ttl);
 
     // Trying to find accountId for the push
     TdApi.Object result = Client.execute(new TdApi.GetPushReceiverId(payload));
@@ -115,7 +81,7 @@ public class FirebaseListenerService extends FirebaseMessagingService {
   }
 
   private boolean hasActiveNetwork () {
-    ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+    ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
     NetworkInfo netInfo;
     try {
       netInfo = cm.getActiveNetworkInfo();
@@ -127,7 +93,7 @@ public class FirebaseListenerService extends FirebaseMessagingService {
 
   private boolean inIdleMode () {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+      PowerManager powerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
       return powerManager.isDeviceIdleMode();
     }
     return false;
@@ -136,7 +102,7 @@ public class FirebaseListenerService extends FirebaseMessagingService {
   private static BaseThread queue;
   private static BaseThread queue () {
     if (queue == null)
-      queue = new BaseThread("FcmForegroundServiceTimer");
+      queue = new BaseThread("PushProcessorTimer");
     return queue;
   }
 
@@ -207,7 +173,7 @@ public class FirebaseListenerService extends FirebaseMessagingService {
       synchronized (foregroundLock) {
         if (state.compareAndSet(State.VISIBLE, State.FINISHED)) {
           TDLib.Tag.notifications(pushId, accountId, "Stopping a foreground task");
-          ForegroundService.stopForegroundTask(getApplicationContext(), pushId, accountId);
+          ForegroundService.stopForegroundTask(context, pushId, accountId);
           SyncTask.cancel(accountId);
         } else {
           int currentState = state.get();
@@ -295,93 +261,12 @@ public class FirebaseListenerService extends FirebaseMessagingService {
     } else {
       text = null;
     }
-    return ForegroundService.startForegroundTask(getApplicationContext(),
+    return ForegroundService.startForegroundTask(context,
       Lang.getString(inRecovery ? R.string.RetrieveMessagesError : R.string.RetrievingMessages), text,
       U.getOtherNotificationChannel(),
       0,
       pushId,
       accountId
     );
-  }
-
-  // Utils
-
-  private static void put (JSONObject obj, String key, Object value) {
-    try {
-      obj.put(key, wrap(value));
-    } catch (JSONException e) {
-      Log.e(Log.TAG_FCM, "Cannot set JSON value %s: %s", key, value);
-    }
-  }
-  public static Object wrap (Object o) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-      return JSONObject.wrap(o);
-    } else {
-      if (o == null) {
-        return JSONObject.NULL;
-      }
-      if (o instanceof JSONArray || o instanceof JSONObject) {
-        return o;
-      }
-      if (o.equals(JSONObject.NULL)) {
-        return o;
-      }
-      try {
-        if (o instanceof Collection) {
-          return new JSONArray((Collection<?>) o);
-        } else if (o.getClass().isArray()) {
-          return new JSONArray(Arrays.asList((Object[]) o));
-        }
-        if (o instanceof Map) {
-          return new JSONObject((Map<?, ?>) o);
-        }
-        if (o instanceof Boolean ||
-          o instanceof Byte ||
-          o instanceof Character ||
-          o instanceof Double ||
-          o instanceof Float ||
-          o instanceof Integer ||
-          o instanceof Long ||
-          o instanceof Short ||
-          o instanceof String) {
-          return o;
-        }
-        if (o.getClass().getPackage().getName().startsWith("java.")) {
-          return o.toString();
-        }
-      } catch (Exception ignored) {
-      }
-      return null;
-    }
-  }
-
-  private static String makePayload (final RemoteMessage remoteMessage) {
-    JSONObject json = new JSONObject();
-
-    put(json, "google.sent_time", remoteMessage.getSentTime());
-
-    RemoteMessage.Notification notification = remoteMessage.getNotification();
-    if (notification != null) {
-      put(json, "google.notification.sound", notification.getSound());
-    } else {
-      Intent intent = remoteMessage.toIntent();
-      Bundle extras = intent.getExtras();
-      if (extras != null) {
-        if (extras.containsKey("gcm.n.sound2")) {
-          put(json, "google.notification.sound", extras.getString("gcm.n.sound2"));
-        } else if (extras.containsKey("gcm.n.sound")) {
-          put(json, "google.notification.sound", extras.getString("gcm.n.sound"));
-        }
-      }
-    }
-
-    Map<String, String> data = remoteMessage.getData();
-    if (data != null) {
-      for (Map.Entry<String, String> entry : data.entrySet()) {
-        put(json, entry.getKey(), entry.getValue());
-      }
-    }
-
-    return json.toString();
   }
 }

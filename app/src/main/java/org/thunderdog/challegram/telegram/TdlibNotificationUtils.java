@@ -28,13 +28,11 @@ import android.text.TextPaint;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.google.firebase.FirebaseApp;
-import com.google.firebase.messaging.FirebaseMessaging;
-
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.TDLib;
+import org.thunderdog.challegram.TokenRetrieverFactory;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.config.Device;
@@ -50,12 +48,9 @@ import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.util.DeviceTokenType;
+import org.thunderdog.challegram.util.TokenRetriever;
 import org.thunderdog.challegram.util.text.Letters;
-
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import me.vkryl.core.StringUtils;
 
 public class TdlibNotificationUtils {
   private static TextPaint lettersPaint;
@@ -230,56 +225,42 @@ public class TdlibNotificationUtils {
     return forLocalChatId != 0 ? Intents.valueOfLocalChatId(accountId, forLocalChatId, specificMessageId) : Intents.valueOfMain(accountId);
   }
 
-  public interface RegisterCallback {
-    // TODO: change type to TdApi.DeviceToken and support more push platforms
-    void onSuccess (@NonNull TdApi.DeviceTokenFirebaseCloudMessaging token);
-    void onError (@NonNull String errorKey, @Nullable Throwable e);
-  }
-
   public static class NotificationInitializationFailedError extends RuntimeException {
     public NotificationInitializationFailedError () {
       super("Notifications not initialized");
     }
   }
 
-  private static boolean initialized;
+  private static TokenRetriever tokenRetriever;
 
   public static synchronized boolean initialize () {
-    if (initialized) {
-      return true;
-    }
-    try {
-      TDLib.Tag.notifications("FirebaseApp is initializing...");
-      // TODO: support alternative push platforms
-      if (FirebaseApp.initializeApp(UI.getAppContext()) != null) {
-        TDLib.Tag.notifications("FirebaseApp initialization finished successfully");
-        initialized = true;
-        return true;
-      } else {
-        TDLib.Tag.notifications("FirebaseApp initialization failed");
+    if (tokenRetriever == null) {
+      TokenRetriever retriever = TokenRetrieverFactory.newRetriever(UI.getAppContext());
+      //noinspection ConstantConditions
+      if (retriever == null) {
+        return false;
       }
-    } catch (Throwable e) {
-      TDLib.Tag.notifications("FirebaseApp initialization failed with error: %s", Log.toString(e));
+      tokenRetriever = retriever;
     }
-    return false;
+    return tokenRetriever.initialize(UI.getAppContext());
   }
 
-  private static String extractFirebaseErrorName (Throwable e) {
-    String message = e.getMessage();
-    if (!StringUtils.isEmpty(message)) {
-      Matcher matcher = Pattern.compile("(?<=: )[A-Z_]+$").matcher(message);
-      if (matcher.find()) {
-        return matcher.group();
-      }
+  @DeviceTokenType
+  public static int getDeviceTokenType (TdApi.DeviceToken deviceToken) {
+    switch (deviceToken.getConstructor()) {
+      // TODO more push services
+      case TdApi.DeviceTokenFirebaseCloudMessaging.CONSTRUCTOR:
+        return DeviceTokenType.FIREBASE_CLOUD_MESSAGING;
+      default:
+        throw new UnsupportedOperationException(deviceToken.toString());
     }
-    return e.getClass().getSimpleName();
   }
 
-  public static void getDeviceToken (int retryCount, RegisterCallback callback) {
+  public static void getDeviceToken (int retryCount, TokenRetriever.RegisterCallback callback) {
     if (retryCount > 0) {
-      getDeviceTokenImpl(retryCount, new RegisterCallback() {
+      getDeviceTokenImpl(retryCount, new TokenRetriever.RegisterCallback() {
         @Override
-        public void onSuccess (@NonNull TdApi.DeviceTokenFirebaseCloudMessaging token) {
+        public void onSuccess (@NonNull TdApi.DeviceToken token) {
           callback.onSuccess(token);
         }
 
@@ -296,30 +277,12 @@ public class TdlibNotificationUtils {
     }
   }
 
-  private static void getDeviceTokenImpl (int retryCount, RegisterCallback callback) {
+  private static void getDeviceTokenImpl (int retryCount, TokenRetriever.RegisterCallback callback) {
     if (initialize()) {
-      try {
-        TDLib.Tag.notifications("FirebaseMessaging: requesting token... retryCount: %d", retryCount);
-        // TODO: support alternative push platforms
-        FirebaseMessaging.getInstance().getToken().addOnSuccessListener(token -> {
-          TDLib.Tag.notifications("FirebaseMessaging: successfully fetched token: \"%s\"", token);
-          callback.onSuccess(new TdApi.DeviceTokenFirebaseCloudMessaging(token, true));
-        }).addOnFailureListener(e -> {
-          String errorName = extractFirebaseErrorName(e);
-          TDLib.Tag.notifications(
-            "FirebaseMessaging: token fetch failed with remote error: %s, retryCount: %d",
-            !StringUtils.isEmpty(errorName) ? errorName : Log.toString(e),
-            retryCount
-          );
-          callback.onError(errorName, e);
-        });
-      } catch (Throwable e) {
-        TDLib.Tag.notifications("FirebaseMessaging: token fetch failed with error: %s, retryCount: %d", Log.toString(e), retryCount);
-        callback.onError("FIREBASE_REQUEST_ERROR", e);
-      }
+      tokenRetriever.retrieveDeviceToken(retryCount, callback);
     } else {
-      TDLib.Tag.notifications("FirebaseMessaging: token fetch failed because FirebaseApp was not initialized, retryCount: %d", retryCount);
-      callback.onError("FIREBASE_INITIALIZATION_ERROR", new NotificationInitializationFailedError());
+      TDLib.Tag.notifications("Token fetch failed because TokenRetriever was not initialized, retryCount: %d", retryCount);
+      callback.onError("INITIALIZATION_ERROR", new NotificationInitializationFailedError());
     }
   }
 }
