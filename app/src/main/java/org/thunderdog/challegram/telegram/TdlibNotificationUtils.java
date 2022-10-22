@@ -141,7 +141,7 @@ public class TdlibNotificationUtils {
       tdlib.files().syncFile(rawFile, null, 500);
       boolean fileLoaded = TD.isFileLoadedAndExists(rawFile);
       if (!fileLoaded && allowSyncDownload && allowDownload) {
-        tdlib.files().downloadFileSync(rawFile, 1000, null, null);
+        tdlib.files().downloadFileSync(rawFile, 1000, null, null, null);
         fileLoaded = TD.isFileLoadedAndExists(rawFile);
       }
       if (fileLoaded) {

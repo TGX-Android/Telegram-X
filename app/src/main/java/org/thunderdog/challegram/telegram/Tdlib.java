@@ -5704,6 +5704,20 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
+  public boolean notifyPushProcessingTakesTooLong (long pushId) { // Called from Firebase thread
+    TdApi.AuthorizationState authorizationState = this.authorizationState;
+    if (authorizationState != null) {
+      switch (authorizationState.getConstructor()) {
+        case TdApi.AuthorizationStateLoggingOut.CONSTRUCTOR:
+        case TdApi.AuthorizationStateClosing.CONSTRUCTOR:
+          // Make sure action finishes even if it causes ANR.
+          return false;
+      }
+    }
+    notifications().notifyPushProcessingTakesTooLong();
+    return true;
+  }
+
   void processPushOrSync (long pushId, String payload, @Nullable Runnable after) {
     TDLib.Tag.notifications(pushId, accountId, "Started processing push notification, hasAfter:%b", after != null);
     incrementNotificationReferenceCount();

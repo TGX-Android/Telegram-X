@@ -1504,6 +1504,22 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     }, limit, null, after);
   }
 
+  public boolean notifyPushProcessingTakesTooLong (int accountId, long pushId) {
+    TDLib.Tag.notifications(pushId, accountId, "Trying to speed up notification displaying by aborting some of operations");
+    if (accountId != TdlibAccount.NO_ID) {
+      Tdlib tdlib = account(accountId).activeTdlib();
+      return tdlib == null || tdlib.notifyPushProcessingTakesTooLong(pushId);
+    }
+    int failureCount = 0;
+    for (TdlibAccount account : this) {
+      Tdlib tdlib = account.activeTdlib();
+      if (tdlib != null && !tdlib.notifyPushProcessingTakesTooLong(pushId)) {
+        failureCount++;
+      }
+    }
+    return failureCount == 0;
+  }
+
   public void processPushOrSync (long pushId, int accountId, String payload, @Nullable Runnable after) {
     performTdlibTask(pushId, accountId, (account, onDone) -> account.tdlib().processPushOrSync(pushId, payload, onDone), Config.MAX_RUNNING_TDLIBS, null, after);
   }

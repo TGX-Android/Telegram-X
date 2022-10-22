@@ -23,6 +23,7 @@ import android.os.Bundle;
 import android.os.PowerManager;
 import android.os.SystemClock;
 
+import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 
 import com.google.firebase.messaging.FirebaseMessagingService;
@@ -47,6 +48,8 @@ import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
@@ -137,20 +140,47 @@ public class FirebaseListenerService extends FirebaseMessagingService {
     return queue;
   }
 
-  private static final int STATE_RUNNING = 0;
-  private static final int STATE_VISIBLE = 1;
-  private static final int STATE_FINISHED = 2;
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    State.RUNNING,
+    State.VISIBLE,
+    State.FINISHED,
+    State.DEADLINE_REACHED
+  })
+  public @interface State {
+    int
+      RUNNING = 0,
+      VISIBLE = 1,
+      FINISHED = 2,
+      DEADLINE_REACHED = 3;
+  }
+
+  private static String stateToString (@State int state) {
+    switch (state) {
+      case State.RUNNING:
+        return "running";
+      case State.VISIBLE:
+        return "visible";
+      case State.FINISHED:
+        return "finished";
+      case State.DEADLINE_REACHED:
+        return "deadline_reached";
+    }
+    return "state_" + state;
+  }
 
   private final Object foregroundLock = new Object();
 
   private void processPush (final TdlibManager manager, final long pushId, final String payload, final int accountId) {
+    TDLib.trackPushState(pushId, true);
+
     // Checking current environment
     final boolean doze = inIdleMode();
     final boolean network = hasActiveNetwork();
 
     final long startTimeMs = SystemClock.uptimeMillis();
 
-    final AtomicInteger state = new AtomicInteger(STATE_RUNNING);
+    final AtomicInteger state = new AtomicInteger(State.RUNNING);
     final CountDownLatch latch = new CountDownLatch(1);
     final AtomicReference<CancellableRunnable> timeout = new AtomicReference<>();
 
@@ -161,7 +191,7 @@ public class FirebaseListenerService extends FirebaseMessagingService {
       synchronized (foregroundLock) {
         TDLib.Tag.notifications(pushId, accountId, "Trying to start a foreground task because we may be operating in a constrained environment, doze: %b, network: %b, recovery: %b", doze, network, inRecoveryMode);
         if (showForegroundNotification(manager, inRecoveryMode, pushId, accountId)) {
-          state.set(STATE_VISIBLE);
+          state.set(State.VISIBLE);
           latch.countDown();
           shown = true;
         } else {
@@ -175,21 +205,20 @@ public class FirebaseListenerService extends FirebaseMessagingService {
     manager.processPushOrSync(pushId, accountId, payload, () -> {
       TDLib.Tag.notifications(pushId, accountId, "processPushOrSync finished in %dms", SystemClock.uptimeMillis() - startTimeMs);
       synchronized (foregroundLock) {
-        if (state.compareAndSet(STATE_VISIBLE, STATE_FINISHED)) {
+        if (state.compareAndSet(State.VISIBLE, State.FINISHED)) {
           TDLib.Tag.notifications(pushId, accountId, "Stopping a foreground task");
           ForegroundService.stopForegroundTask(getApplicationContext(), pushId, accountId);
           SyncTask.cancel(accountId);
         } else {
           int currentState = state.get();
-          TDLib.Tag.notifications(pushId, accountId, "Finishing without a foreground task, state: %s", currentState == STATE_RUNNING ? "running" : currentState == STATE_VISIBLE ? "visible" : currentState == STATE_FINISHED ? "finished" : Integer.toString(currentState));
-          state.set(STATE_FINISHED);
+          TDLib.Tag.notifications(pushId, accountId, "Finishing without a foreground task, state: %s", stateToString(currentState));
+          state.set(State.FINISHED);
           latch.countDown();
-          if (shown) {
-            CancellableRunnable act = timeout.get();
-            if (act != null) {
-              act.cancel();
-              queue().cancel(act);
-            }
+
+          CancellableRunnable act = timeout.get();
+          if (act != null) {
+            act.cancel();
+            queue().cancel(act);
           }
         }
       }
@@ -198,17 +227,41 @@ public class FirebaseListenerService extends FirebaseMessagingService {
 
     if (!shown) {
       synchronized (foregroundLock) {
-        if (state.get() != STATE_FINISHED) {
+        if (state.get() != State.FINISHED) {
           CancellableRunnable act = new CancellableRunnable() {
             @Override
             public void act () {
+              boolean releaseLoaders = false;
               synchronized (foregroundLock) {
-                if (state.get() == STATE_RUNNING) {
-                  TDLib.Tag.notifications(pushId, accountId, "Trying to start a foreground task because the job is running too long");
+                if (timeout.compareAndSet(this, null) && state.get() == State.RUNNING) {
+                  String lastPushState = TDLib.lastPushState(pushId);
+                  TDLib.Tag.notifications(pushId, accountId, "Trying to start a foreground task because the job is running too long: %dms, lastPushState: %s", SystemClock.uptimeMillis() - startTimeMs, lastPushState);
                   if (showForegroundNotification(manager, inRecoveryMode, pushId, accountId)) {
-                    state.set(STATE_VISIBLE);
+                    state.set(State.VISIBLE);
                     latch.countDown();
+                  } else {
+                    releaseLoaders = true;
+                    state.set(State.DEADLINE_REACHED);
                   }
+                }
+              }
+              if (releaseLoaders) {
+                if (manager.notifyPushProcessingTakesTooLong(accountId, pushId)) {
+                  // Allow final 100ms to show notification, if it was stuck because of some media download
+                  queue().post(() -> {
+                    synchronized (foregroundLock) {
+                      int currentState = state.get();
+                      if (currentState != State.FINISHED) {
+                        TDLib.Tag.notifications(pushId, accountId, "Releasing push processing to avoid ANR. Notification may be missing (intentionally).");
+                        // TODO show some generic "You may have a new message" notification?
+                      } else {
+                        TDLib.Tag.notifications(pushId, accountId, "Push was processed by canceling some of operations");
+                      }
+                    }
+                    latch.countDown();
+                  }, 100);
+                } else {
+                  TDLib.Tag.notifications(pushId, accountId, "Allowing ANR because one of Tdlib instances is in critical state");
                 }
               }
             }
@@ -226,9 +279,10 @@ public class FirebaseListenerService extends FirebaseMessagingService {
     }
 
     synchronized (foregroundLock) {
+      String lastPushState = TDLib.trackPushState(pushId, false);
       int currentState = state.get();
-      TDLib.Tag.notifications(pushId, accountId, "Quitting processPush() with state: %s", currentState == STATE_RUNNING ? "running" : currentState == STATE_VISIBLE ? "visible" : currentState == STATE_FINISHED ? "finished" : Integer.toString(currentState));
-      if (currentState != STATE_FINISHED) {
+      TDLib.Tag.notifications(pushId, accountId, "Quitting processPush() with state: %s, lastPushState: %s", stateToString(currentState), currentState == State.FINISHED ? "finished" : lastPushState);
+      if (currentState != State.FINISHED) {
         SyncTask.schedule(pushId, accountId);
       }
     }
