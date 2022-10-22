@@ -280,6 +280,8 @@
   <string name="CommentAnonymously">Comment anonymously</string>
   <string name="Comment">Comment</string>
   <string name="CommentAsX">Comment as %1$s</string>
+  <string name="AnyAsX">as %1$s</string>
+  <string name="AnonymousAdmin">Anonymous Admin</string>
   <string name="DeletedMessage">Deleted message</string>
   <string name="UnsupportedMessage">Unsupported message</string>
   <string name="UnsupportedMessageType">Unsupported message</string>
@@ -1562,6 +1564,8 @@
   <string name="ChatHintsDelete">Remove %1$s from suggestions?</string>
   <string name="DeleteXFromRecents">Remove %1$s from recently found chats?</string>
   <string name="SendTo">Send to</string>
+  <string name="SendAs">Send as</string>
+  <string name="YourAccount">Your account</string>
   <string name="SelectChats">Select Chats</string>
   <string name="AddComment">Add a comment…</string>
   <string name="SendSticker">Send sticker</string>
