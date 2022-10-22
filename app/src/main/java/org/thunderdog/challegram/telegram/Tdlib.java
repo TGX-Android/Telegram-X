@@ -3811,7 +3811,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
             synchronized (dataLock) {
               cachedReactions.put(key, reaction);
             }
-            // TODO invoke update so reaction would display properly where getReaction was called
+            listeners().notifyReactionLoaded(key);
           }
         };
         TdlibEmojiReactionManager.Entry entry;
@@ -3840,7 +3840,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
             synchronized (dataLock) {
               cachedReactions.put(key, reaction);
             }
-            // TODO invoke update so reaction would display properly where getReaction was called
+            listeners().notifyReactionLoaded(key);
           }
         };
         TdlibEmojiManager.Entry entry;

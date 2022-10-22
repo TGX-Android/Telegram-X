@@ -202,7 +202,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   protected TGSource forwardInfo;
   protected ReplyComponent replyData;
   protected TGInlineKeyboard inlineKeyboard;
-  protected TGReactions messageReactions;
+  protected final TGReactions messageReactions;
   protected MessageQuickActionSwipeHelper swipeHelper;
 
   // header values
@@ -318,6 +318,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
               showReactionBubbleTooltip(v, entry, Lang.getString(R.string.ChannelReactionsAnonymous));
             }
           });
+        });
+      }
+
+      @Override
+      public void onRebuildRequested () {
+        runOnUiThreadOptional(() -> {
+          updateInteractionInfo(true);
         });
       }
     });
@@ -5359,7 +5366,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       forwardInfo.destroy();
     if (replyData != null)
       replyData.performDestroy();
-    //messageReactions.performDestroy();
+    messageReactions.performDestroy();
     setViewAttached(false);
     onMessageContainerDestroyed();
   }

@@ -12,7 +12,6 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
-import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
@@ -23,6 +22,7 @@ import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.telegram.ReactionLoadListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
@@ -35,7 +35,6 @@ import org.thunderdog.challegram.v.MessagesRecyclerView;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -48,7 +47,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.Td;
 
-public class TGReactions {
+public class TGReactions implements Destroyable, ReactionLoadListener {
   private final Tdlib tdlib;
   private TdApi.MessageReaction[] reactions;
   private ComplexReceiver complexReceiver;
@@ -62,6 +61,7 @@ public class TGReactions {
   private final MessageReactionsDelegate delegate;
   private int totalCount;
   private final Set<String> chosenReactions;
+  private Set<String> awaitingReactions;
 
   private final ReactionsListAnimator reactionsAnimator;
   private int width = 0;
@@ -102,7 +102,7 @@ public class TGReactions {
     this.chosenReactions.clear();
     this.totalCount = 0;
 
-    if (reactions == null) {
+    if (reactions == null || isDestroyed) {
       return;
     }
 
@@ -116,11 +116,20 @@ public class TGReactions {
 
       TGReaction reactionObj = tdlib.getReaction(reaction.type);
       if (reactionObj == null) {
+        if (awaitingReactions == null) {
+          awaitingReactions = new LinkedHashSet<>();
+        }
+        if (awaitingReactions.add(reactionKey)) {
+          tdlib.listeners().addReactionLoadListener(reactionKey, this);
+        }
         continue;
       }
       MessageReactionEntry entry = getMessageReactionEntry(reactionObj);
       entry.setMessageReaction(reaction);
       reactionsListEntry.add(entry);
+      if (awaitingReactions != null && awaitingReactions.remove(reactionKey)) {
+        tdlib.listeners().removeReactionLoadListener(reactionKey, this);
+      }
     }
   }
 
@@ -944,5 +953,26 @@ public class TGReactions {
   public interface MessageReactionsDelegate {
     default void onClick (View v, MessageReactionEntry entry) {}
     default void onLongClick (View v, MessageReactionEntry entry) {}
+    default void onRebuildRequested () {}
+  }
+
+  private boolean isDestroyed;
+
+  @Override
+  public void performDestroy () {
+    this.isDestroyed = true;
+    if (awaitingReactions != null) {
+      for (String reactionKey : awaitingReactions) {
+        tdlib.listeners().removeReactionLoadListener(reactionKey, this);
+      }
+      awaitingReactions.clear();
+    }
+  }
+
+  @Override
+  public void onReactionLoaded (String reactionKey) {
+    if (awaitingReactions != null && awaitingReactions.remove(reactionKey)) {
+      delegate.onRebuildRequested();
+    }
   }
 }
