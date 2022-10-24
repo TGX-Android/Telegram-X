@@ -285,4 +285,5 @@ public class Config {
   public static final boolean PROFILE_DEADLOCKS = true;
 
   public static final boolean DEBUG_REACTIONS_ANIMATIONS = false;
+  public static final boolean TEST_STATIC_REACTIONS = false;
 }

@@ -27,6 +27,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.ReactionsListAnimator;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.TextColorSet;
@@ -510,8 +511,11 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
     @Nullable private Receiver staticCenterAnimationReceiver;
     @Nullable private GifReceiver centerAnimationReceiver;
     @Nullable private final GifFile animation;
+    private final float animationScale;
     private final GifFile staticAnimationFile;
+    private final float staticAnimationFileScale;
     private final ImageFile staticImageFile;
+    private final float staticImageFileScale;
 
     private final MessageReactionsDelegate delegate;
 
@@ -534,11 +538,23 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
 
       TGStickerObj stickerObj = reactionObj.newCenterAnimationSicker();
       animation = stickerObj.getFullAnimation();
-      staticAnimationFile = reactionObj.staticCenterAnimationSicker().getPreviewAnimation();
-      staticImageFile = staticAnimationFile == null ? reactionObj.staticCenterAnimationSicker().getImage() : null;
+      animationScale = stickerObj.getDisplayScale();
       if (animation != null && !stickerObj.isCustomReaction()) {
         animation.setPlayOnce(true);
         animation.setLooped(true);
+      }
+
+      TGStickerObj staticFile = reactionObj.staticCenterAnimationSicker();
+      staticAnimationFile = staticFile.getPreviewAnimation();
+      staticAnimationFileScale = staticFile.getDisplayScale();
+
+      if (staticAnimationFile == null) {
+        staticFile = reactionObj.staticCenterAnimationSicker();
+        staticImageFile = staticFile.getImage();
+        staticImageFileScale = staticFile.getDisplayScale();
+      } else {
+        staticImageFile = null;
+        staticImageFileScale = 0f;
       }
     }
 
@@ -798,10 +814,12 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
 
     private void drawReceiver (Canvas c, int l, int t, int r, int b, float alpha) {
       Receiver receiver = inAnimation ? centerAnimationReceiver : staticCenterAnimationReceiver;
+      float scale = inAnimation ? animationScale : staticAnimationFile != null ? staticAnimationFileScale : staticImageFileScale;
       if (receiver != null) {
+        // TODO contour placeholder
         receiver.setBounds(l, t, r, b);
         receiver.setAlpha(alpha);
-        receiver.draw(c);
+        receiver.drawScaled(c, scale);
       }
     }
 

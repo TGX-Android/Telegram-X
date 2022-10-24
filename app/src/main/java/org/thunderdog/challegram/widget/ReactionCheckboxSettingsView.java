@@ -153,9 +153,6 @@ public class ReactionCheckboxSettingsView extends LinearLayout implements ThemeI
       if (!activateAnimationSticker.isCustomReaction()) {
         activateAnimationSticker.getPreviewAnimation().setPlayOnce(true);
       }
-      stickerSmallView.setPadding(0);
-    } else {
-      stickerSmallView.setPadding(Screen.dp(12));
     }
     stickerSmallView.setSticker(activateAnimationSticker);
     setCaptionText(reaction.getTitle());

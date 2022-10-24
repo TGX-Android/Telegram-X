@@ -170,12 +170,11 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
                   break;
                 }
                 case TdApi.ChatAvailableReactionsSome.CONSTRUCTOR: {
-
+                  userView.setChecked(enabledReactions.contains(reactionKey), isUpdate);
                   break;
                 }
               }
             }
-            userView.setChecked(enabledReactions.contains(reactionKey), isUpdate);
           } else if (type == TYPE_QUICK_REACTION) {
             int index = quickReactions.indexOf(reactionKey);
             userView.setNumber(index >= 0 ? index + 1 : index, isUpdate);

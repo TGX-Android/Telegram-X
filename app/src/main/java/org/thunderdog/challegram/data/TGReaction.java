@@ -10,12 +10,11 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
-
-import me.vkryl.td.Td;
 
 public class TGReaction {
   private final Tdlib tdlib;
@@ -136,14 +135,14 @@ public class TGReaction {
 
   private TGStickerObj newStaticIconSicker () {
     if (emojiReaction != null) {
-      return new TGStickerObj(tdlib, emojiReaction.staticIcon, emojiReaction.emoji, emojiReaction.staticIcon.type).setReactionType(type);
+      return new TGStickerObj(tdlib, emojiReaction.staticIcon, emojiReaction.emoji, emojiReaction.staticIcon.type).setReactionType(type).setDisplayScale(.5f);
     } else {
-      return new TGStickerObj(tdlib, customReaction, null, customReaction.type).setReactionType(type);
+      return new TGStickerObj(tdlib, customReaction, null, customReaction.type).setReactionType(type).setDisplayScale(.5f);
     }
   }
 
   private TGStickerObj newActivateAnimationSicker () {
-    if (emojiReaction != null) {
+    if (emojiReaction != null && !Config.TEST_STATIC_REACTIONS) {
       return new TGStickerObj(tdlib, emojiReaction.activateAnimation, emojiReaction.emoji, emojiReaction.activateAnimation.type).setReactionType(type);
     } else {
       return newStaticIconSicker();
@@ -166,7 +165,7 @@ public class TGReaction {
   }
 
   public TGStickerObj newCenterAnimationSicker () {
-    if (emojiReaction != null && emojiReaction.centerAnimation != null) {
+    if (emojiReaction != null && emojiReaction.centerAnimation != null && !Config.TEST_STATIC_REACTIONS) {
       return new TGStickerObj(tdlib, emojiReaction.centerAnimation, emojiReaction.emoji, emojiReaction.centerAnimation.type).setReactionType(type);
     }
     return newStaticIconSicker();
@@ -177,7 +176,8 @@ public class TGReaction {
     private final int width;
     private final int height;
 
-    @Nullable private ImageFile imageFile;
+    @Nullable private final ImageFile imageFile;
+    private final float displayScale;
     @Nullable private ImageReceiver imageReceiver;
 
     public ReactionDrawable (TGReaction reaction, int width, int height) {
@@ -185,7 +185,9 @@ public class TGReaction {
       this.height = height;
       this.reaction = reaction;
 
-      imageFile = reaction.staticCenterAnimationSicker().getImage();
+      TGStickerObj stickerObj = reaction.staticCenterAnimationSicker();
+      imageFile = stickerObj.getImage();
+      displayScale = stickerObj.getDisplayScale();
     }
 
     public void setComplexReceiver (ComplexReceiver complexReceiver) {
@@ -202,7 +204,7 @@ public class TGReaction {
     @Override
     public void draw (@NonNull Canvas c) {
       if (imageReceiver != null) {
-        imageReceiver.draw(c);
+        imageReceiver.drawScaled(c, displayScale);
       }
     }
 

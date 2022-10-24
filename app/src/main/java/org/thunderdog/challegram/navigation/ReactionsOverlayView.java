@@ -29,6 +29,7 @@ import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.tool.Views;
 
 import java.util.ArrayList;
 
@@ -129,6 +130,7 @@ public class ReactionsOverlayView extends ViewGroup {
     private final ImageReceiver imageReceiver;
     private final GifReceiver gifReceiver;
     private GifFile animation;
+    private float displayScale;
     private Runnable removeRunnable;
 
     // animation
@@ -165,6 +167,7 @@ public class ReactionsOverlayView extends ViewGroup {
     public ReactionInfo setSticker (TGStickerObj sticker, boolean animated) {
       ImageFile imageFile = sticker.getImage();
       animation = sticker.getPreviewAnimation();
+      displayScale = sticker.getDisplayScale();
       if (animation != null) {
         if (animated && !sticker.isCustomReaction()) {
           animation.setPlayOnce(true);
@@ -253,8 +256,11 @@ public class ReactionsOverlayView extends ViewGroup {
         animatedPositionOffsetProvider.getOffset(animationOffsetPoint);
       }
 
-      canvas.save();
+      int saveCount = Views.save(canvas);
       canvas.translate(scrollOffsetX + controllerTranslationX + animationOffsetPoint.x, scrollOffsetY + animationOffsetPoint.y);
+      if (displayScale != 1f) {
+        canvas.scale(displayScale, displayScale, gifReceiver.centerX(), gifReceiver.centerY());
+      }
       if (Config.DEBUG_REACTIONS_ANIMATIONS) {
         canvas.drawRect(gifReceiver.getLeft(), gifReceiver.getTop(), gifReceiver.getRight(), gifReceiver.getBottom(), Paints.fillingPaint(0xaaff0000));
       }
@@ -263,7 +269,7 @@ public class ReactionsOverlayView extends ViewGroup {
       }
       gifReceiver.draw(canvas);
       //canvas.drawRect(position, Paints.strokeBigPaint(Color.RED));
-      canvas.restore();
+      Views.restore(canvas, saveCount);
     }
 
     public void attach () {

@@ -39,6 +39,7 @@ public class TGStickerObj {
   private TdApi.ReactionType reactionType;
 
   private int flags;
+  private float displayScale = 1f;
 
   private static final int FLAG_RECENT = 1 << 1;
   private static final int FLAG_TRENDING = 1 << 2;
@@ -51,6 +52,15 @@ public class TGStickerObj {
     if (preview != null) {
       preview.setNeedCancellation(true);
     }
+  }
+
+  public TGStickerObj setDisplayScale (float scale) {
+    this.displayScale = scale;
+    return this;
+  }
+
+  public float getDisplayScale () {
+    return displayScale;
   }
 
   public boolean isCustomReaction () {
@@ -177,6 +187,7 @@ public class TGStickerObj {
       this.previewAnimation = new GifFile(tdlib, sticker);
       this.previewAnimation.setPlayOnce();
       this.previewAnimation.setScaleType(ImageFile.FIT_CENTER);
+      // TODO: 60 FPS for reactions
       this.previewAnimation.setOptimizationMode(isCustomReaction() ? GifFile.OptimizationMode.EMOJI : GifFile.OptimizationMode.STICKER_PREVIEW);
     }
     return previewAnimation;

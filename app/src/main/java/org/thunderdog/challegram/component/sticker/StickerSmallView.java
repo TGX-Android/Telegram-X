@@ -182,10 +182,11 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
 
   @Override
   protected void onDraw (Canvas c) {
-    boolean saved = factor != 0f;
+    float originalScale = sticker != null ? sticker.getDisplayScale() : 1f;
+    boolean saved = originalScale != 1f || factor != 0f;
     if (saved) {
       c.save();
-      float scale = MIN_SCALE + (1f - MIN_SCALE) * (1f - factor);
+      float scale = originalScale * (MIN_SCALE + (1f - MIN_SCALE) * (1f - factor));
       int cx = getMeasuredWidth() / 2;
       int cy = getPaddingTop() + (getMeasuredHeight() - getPaddingBottom() - getPaddingBottom()) / 2;
       c.scale(scale, scale, cx, cy);

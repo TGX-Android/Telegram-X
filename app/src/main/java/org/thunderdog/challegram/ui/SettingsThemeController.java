@@ -553,6 +553,8 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
           items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
           items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_icon, 0, R.string.Icons).setDrawModifier(new DrawableModifier(R.drawable.baseline_star_20, R.drawable.baseline_account_balance_wallet_20, R.drawable.baseline_location_on_20, R.drawable.baseline_favorite_20)));
         }
+      }
+      if (!tdlib.account().isDebug() || BuildConfig.DEBUG) {
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
         items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_quick_reaction, 0, R.string.QuickReaction));
       }
