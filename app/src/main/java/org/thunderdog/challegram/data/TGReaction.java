@@ -16,6 +16,7 @@ import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.util.text.TextMedia;
 
 public class TGReaction {
   private final Tdlib tdlib;
@@ -138,7 +139,8 @@ public class TGReaction {
     if (emojiReaction != null) {
       return new TGStickerObj(tdlib, emojiReaction.staticIcon, emojiReaction.emoji, emojiReaction.staticIcon.type).setReactionType(type).setDisplayScale(.5f);
     } else {
-      return new TGStickerObj(tdlib, customReaction, null, customReaction.type).setReactionType(type).setDisplayScale(.5f).setPreviewOptimizationMode(GifFile.OptimizationMode.EMOJI);
+      float displayScale = TextMedia.getScale(customReaction, 0) * .5f;
+      return new TGStickerObj(tdlib, customReaction, null, customReaction.type).setReactionType(type).setDisplayScale(displayScale).setPreviewOptimizationMode(GifFile.OptimizationMode.EMOJI);
     }
   }
 
