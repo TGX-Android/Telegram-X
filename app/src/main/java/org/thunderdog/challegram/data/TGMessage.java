@@ -2445,7 +2445,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       result = inlineKeyboard.performLongPress(view);
     }
     if (messageReactions.getTotalCount() > 0 && useReactionBubbles()) {
-      result = messageReactions.performLongPress(view);
+      result = messageReactions.performLongPress(view) || result;
     }
     if (hasFooter()) {
       result = footerText.performLongPress(view) || result;
