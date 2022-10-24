@@ -286,5 +286,5 @@ public class Config {
 
   public static final boolean DEBUG_REACTIONS_ANIMATIONS = false;
   public static final boolean TEST_STATIC_REACTIONS = false;
-  public static final boolean TEST_GENERIC_REACTION_EFFECTS = BuildConfig.DEBUG;
+  public static final boolean TEST_GENERIC_REACTION_EFFECTS = false;
 }

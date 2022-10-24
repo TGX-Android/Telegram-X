@@ -18,6 +18,8 @@ import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.util.text.TextMedia;
 
+import me.vkryl.core.lambda.RunnableData;
+
 public class TGReaction {
   private final Tdlib tdlib;
 
@@ -91,8 +93,29 @@ public class TGReaction {
     return _activateAnimationSicker;
   }
 
+  @Nullable
   public TGStickerObj effectAnimationSicker () {
     return _effectAnimationSicker;
+  }
+
+  public void withEffectAnimation (RunnableData<TGStickerObj> after) {
+    if (_effectAnimationSicker != null) {
+      after.runWithData(_effectAnimationSicker);
+    } else {
+      tdlib.pickRandomGenericOverlaySticker(sticker -> {
+        if (sticker != null) {
+          TGStickerObj effectAnimation = new TGStickerObj(tdlib, sticker, null, sticker.type)
+            .setReactionType(type);
+          tdlib.ui().execute(() ->
+            after.runWithData(effectAnimation)
+          );
+        } else {
+          tdlib.ui().execute(() ->
+            after.runWithData(null)
+          );
+        }
+      });
+    }
   }
 
   public TGStickerObj aroundAnimationSicker () {

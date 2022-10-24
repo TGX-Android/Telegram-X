@@ -180,6 +180,14 @@ public class TdlibUi extends Handler {
     this.tdlib = tdlib;
   }
 
+  public void execute (Runnable runnable) {
+    if (UI.inUiThread()) {
+      runnable.run();
+    } else {
+      post(runnable);
+    }
+  }
+
   public static int[] getAvailablePriorityOrImportanceList () {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       return new int[] {

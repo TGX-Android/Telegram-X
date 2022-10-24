@@ -458,7 +458,10 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     if (callback != null) {
       TGReaction reaction = callback.getReactionForPreview(this);
       if (reaction != null) {
-        ((BaseActivity) getContext()).openReactionPreview(tdlib, this, reaction, left + width / 2, top + height / 2 + (callback != null ? callback.getStickersListTop() : 0), Math.min(width, height) - Screen.dp(PADDING) * 2, callback.getViewportHeight(), isSuggestion || emojiDisabled);
+        boolean disableEmoji = isSuggestion || emojiDisabled;
+        reaction.withEffectAnimation(effectAnimation -> {
+          ((BaseActivity) getContext()).openReactionPreview(tdlib, this, reaction, effectAnimation, left + width / 2, top + height / 2 + (callback != null ? callback.getStickersListTop() : 0), Math.min(width, height) - Screen.dp(PADDING) * 2, callback.getViewportHeight(), disableEmoji);
+        });
         return;
       }
     }

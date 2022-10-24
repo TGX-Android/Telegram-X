@@ -1833,7 +1833,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
   // ReactionPreview
 
-  public void openReactionPreview (Tdlib tdlib, StickerSmallView stickerView, TGReaction reaction, int cx, int cy, int maxWidth, int viewportHeight, boolean disableEmojis) {
+  public void openReactionPreview (Tdlib tdlib, StickerSmallView stickerView, TGReaction reaction, @Nullable TGStickerObj effectAnimation, int cx, int cy, int maxWidth, int viewportHeight, boolean disableEmojis) {
     if (stickerPreview != null) {
       return;
     }
@@ -1842,7 +1842,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
     stickerPreview = new StickerPreviewView(this);
     stickerPreview.setControllerView(stickerPreviewControllerView);
-    stickerPreview.setReaction(tdlib, reaction, cx, cy, maxWidth, viewportHeight, disableEmojis);
+    stickerPreview.setReaction(tdlib, reaction, effectAnimation, cx, cy, maxWidth, viewportHeight, disableEmojis);
 
     stickerPreviewWindow = new PopupLayout(this);
     stickerPreviewWindow.setBackListener(stickerPreview);
