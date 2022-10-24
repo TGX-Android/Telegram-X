@@ -249,15 +249,17 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
     });
   }
 
+  private ListItem toggleItem;
+
   private void buildCells () {
     ArrayList<ListItem> items = new ArrayList<>();
     if (type == TYPE_ENABLED_REACTIONS) {
-      items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.reactions_enabled, 0, R.string.ReactionsDisabled, R.id.reactions_enabled, !enabledReactions.isEmpty() || availableReactions.getConstructor() == TdApi.ChatAvailableReactionsAll.CONSTRUCTOR));
+      items.add(toggleItem = new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.reactions_enabled, 0, R.string.ReactionsDisabled, R.id.reactions_enabled, isToggleSelected()));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getMarkdownString(this, R.string.ReactionsDisabledDesc), false));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     } else if (type == TYPE_QUICK_REACTION) {
-      items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_quick_reaction_enabled, 0, R.string.QuickReactionEnable));
+      items.add(toggleItem = new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_quick_reaction_enabled, 0, R.string.QuickReactionEnable, isToggleSelected()));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getMarkdownString(this, R.string.QuickReactionEnableDesc), false));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
@@ -319,6 +321,16 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
     return new TdApi.ChatAvailableReactionsSome(availableReactions);
   }
 
+  private boolean isToggleSelected () {
+    switch (type) {
+      case TYPE_ENABLED_REACTIONS:
+        return !enabledReactions.isEmpty() || availableReactions.getConstructor() == TdApi.ChatAvailableReactionsAll.CONSTRUCTOR;
+      case TYPE_QUICK_REACTION:
+        return !quickReactions.isEmpty();
+    }
+    return false;
+  }
+
   @Override
   public void onClick (View v) {
     final int viewId = v.getId();
@@ -342,11 +354,7 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
         }
       }
 
-      ListItem item = adapter.findItemById(R.id.reactions_enabled);
-      if (item != null) {
-        item.setSelected(!enabledReactions.isEmpty());
-      }
-
+      toggleItem.setSelected(isToggleSelected());
       adapter.updateAllValuedSettingsById(R.id.btn_enabledReactionsCheckboxGroup);
       adapter.updateValuedSettingById(R.id.reactions_enabled);
     }
@@ -357,6 +365,7 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
       } else {
         quickReactions.clear();
       }
+      toggleItem.setSelected(isToggleSelected());
       updateQuickReactionsSettings();
       adapter.updateAllValuedSettingsById(R.id.btn_enabledReactionsCheckboxGroup);
       adapter.updateValuedSettingById(R.id.btn_quick_reaction_enabled);
@@ -369,32 +378,40 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
       TGReaction tgReaction = tdlib.getReaction(reactionType);
       if (tgReaction != null) {
         boolean checked = false;
-        if (type == TYPE_ENABLED_REACTIONS) {
-          if (!enabledReactions.remove(tgReaction.key)) {
-            checked = true;
-            enabledReactions.add(tgReaction.key);
-          }
-          availableReactions = buildAvailableReactions();
-
-          adapter.updateAllValuedSettingsById(R.id.btn_enabledReactionsCheckboxGroup);
-          adapter.updateValuedSettingById(R.id.reactions_enabled);
-        }
-        if (type == TYPE_QUICK_REACTION) {
-          if (!quickReactions.remove(tgReaction.key)) {
-            if (!needPremiumRestriction()|| !tgReaction.isPremium()) {
-              if (quickReactions.size() < 4) {
-                checked = true;
-                quickReactions.add(tgReaction.key);
-              } else {
-                showQuickReactionsLimit(v);
-              }
-            } else {
-              showPremiumLockTooltip(v);
+        switch (type) {
+          case TYPE_ENABLED_REACTIONS: {
+            if (!enabledReactions.remove(tgReaction.key)) {
+              checked = true;
+              enabledReactions.add(tgReaction.key);
             }
+            availableReactions = buildAvailableReactions();
+
+            toggleItem.setSelected(isToggleSelected());
+            adapter.updateAllValuedSettingsById(R.id.btn_enabledReactionsCheckboxGroup);
+            adapter.updateValuedSettingById(R.id.reactions_enabled);
+            break;
           }
-          updateQuickReactionsSettings();
-          adapter.updateAllValuedSettingsById(R.id.btn_enabledReactionsCheckboxGroup);
-          adapter.updateValuedSettingById(R.id.btn_quick_reaction_enabled);
+          case TYPE_QUICK_REACTION: {
+            if (!quickReactions.remove(tgReaction.key)) {
+              if (!needPremiumRestriction()|| !tgReaction.isPremium()) {
+                if (quickReactions.size() < 4) {
+                  checked = true;
+                  quickReactions.add(tgReaction.key);
+                } else {
+                  showQuickReactionsLimit(v);
+                }
+              } else {
+                showPremiumLockTooltip(v);
+              }
+            }
+            updateQuickReactionsSettings();
+
+            toggleItem.setSelected(isToggleSelected());
+
+            adapter.updateAllValuedSettingsById(R.id.btn_enabledReactionsCheckboxGroup);
+            adapter.updateValuedSettingById(R.id.btn_quick_reaction_enabled);
+            break;
+          }
         }
 
         if (checked) {
