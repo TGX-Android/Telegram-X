@@ -949,7 +949,7 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
     int startX = positionCords[0] + v.getMeasuredWidth() / 2;
     int startY = positionCords[1] + v.getMeasuredHeight() / 2;
 
-    if (message.getMessageReactions().sendReaction(reaction.type, false, handler(v, () -> {}))) {
+    if (message.getMessageReactions().toggleReaction(reaction.type, false, handler(v, () -> {}))) {
       message.scheduleSetReactionAnimationFromBottomSheet(reaction, new Point(startX, startY));
     }
     popupLayout.hideWindow(true);
@@ -963,8 +963,9 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
     int startX = positionCords[0] + v.getMeasuredWidth() / 2;
     int startY = positionCords[1] + v.getMeasuredHeight() / 2;
 
-    message.getMessageReactions().sendReaction(reaction.type, true, handler(v, () -> {}));
-    message.scheduleSetReactionAnimationFullscreenFromBottomSheet(reaction, new Point(startX, startY));
+    if (message.getMessageReactions().toggleReaction(reaction.type, true, handler(v, () -> {}))) {
+      message.scheduleSetReactionAnimationFullscreenFromBottomSheet(reaction, new Point(startX, startY));
+    }
     popupLayout.hideWindow(true);
   }
 
