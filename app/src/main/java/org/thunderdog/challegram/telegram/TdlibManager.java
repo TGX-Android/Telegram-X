@@ -16,6 +16,7 @@ package org.thunderdog.challegram.telegram;
 
 import android.content.Context;
 import android.os.Build;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -2258,10 +2259,24 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     File file = allowExternal ? UI.getAppContext().getExternalFilesDir(null) : null;
     if (file != null) {
       try {
+        File externalStorageDirectory = Environment.getExternalStorageDirectory();
+        if (externalStorageDirectory != null && file.getAbsolutePath().startsWith(externalStorageDirectory.getAbsolutePath())) {
+          String state = Environment.getExternalStorageState();
+          if (!Environment.MEDIA_MOUNTED.equals(state)) {
+            file = null;
+          }
+        }
+      } catch (Throwable t) {
+        t.printStackTrace();
+      }
+    }
+    if (file != null) {
+      try {
         if (!(file.exists() ? file.isDirectory() : file.mkdir()) || !file.canWrite()) {
           file = null;
         }
-      } catch (SecurityException ignored) {
+      } catch (SecurityException e) {
+        e.printStackTrace();
         file = null;
       }
     }
