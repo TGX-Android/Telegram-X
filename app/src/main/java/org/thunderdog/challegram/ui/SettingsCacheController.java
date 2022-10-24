@@ -138,9 +138,9 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
             break;
           }
           case R.id.btn_storagePath: {
-            TdApi.TdlibParameters parameters = tdlib.clientParameters();
-            view.setData(parameters != null ? parameters.filesDirectory : "Unavailable");
-            view.setEnabled(parameters != null && item.getBoolValue());
+            TdApi.SetTdlibParameters parametersRequest = tdlib.clientParameters();
+            view.setData(parametersRequest != null ? parametersRequest.filesDirectory : "Unavailable");
+            view.setEnabled(parametersRequest != null && item.getBoolValue());
             break;
           }
           case R.id.btn_localDatabase:

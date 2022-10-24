@@ -929,6 +929,7 @@
   <string name="ReEnterAPassword">Re-enter a password</string>
   <string name="EnterANewPassword">Enter a new password</string>
   <string name="EnterANewEmail">Enter a new email address</string>
+  <string name="EnterEmail">Enter a email address</string>
   <string name="ForgotPassword">Forgot password?</string>
   <string name="RestorePasswordNoEmailTitle">Sorry</string>
   <string name="SinceNotProvided">Since you didn\'t provide a recovery email when setting up your password, your remaining options are either to remember your password or to reset your account.</string>
@@ -942,6 +943,7 @@
   <string name="EnterPassword">Enter Password</string>
   <string name="YourEmail">Your Email</string>
   <string name="YourEmailInfo">Please add your valid email. It is the only way to recover a forgotten password.</string>
+  <string name="LoginEmailInfo">Please enter your valid email address.</string>
   <string name="Skip">Skip</string>
   <string name="Warning">Warning</string>
   <string name="YourEmailSkipWarningText">No, seriously.\n\nIf you forget your password, you will lose access to your Telegram account. There will be no way to restore it.</string>
@@ -956,6 +958,7 @@
   <string name="PasswordMatchesOldOne">Password hasn\'t changed.</string>
   <string name="format_PasscodeTooManyAttempts">Too many attempts. %1$s</string>
   <string name="EmailMatchesOldOne">Email address hasn\'t changed.</string>
+  <string name="EmailInvalid">Invalid email format.</string>
   <string name="Hint">Hint: %1$s</string>
   <string name="PrivateChats">Private Chats</string>
   <string name="PrivateChatsMentions">Private Chats and Mentions</string>
@@ -1210,6 +1213,7 @@
   <string name="ConfirmationCode">Confirmation Code</string>
   <string name="SentSmsCode">We\'ve sent an SMS with an activation code to your phone **%1$s**.</string>
   <string name="SentAppCode">We\'ve sent the code to the **Telegram** app on your other device.</string>
+  <string name="SentEmailCode">We\'ve sent the code to your email **%1$s**.</string>
   <string name="SentCallOnly">We\'ve sent an activation call to your phone **%1$s**.\n\nDon\'t accept the call, Telegram will process everything automatically.</string>
   <string name="SentCallCode">Calling your phone **%1$s** to dictate the code.</string>
   <string name="SentMissedCall">Within next few seconds you should receive a short call from a phone number which starts with **%1$s**.</string>
@@ -1694,8 +1698,14 @@
 
   <string name="Reactions">Reactions</string>
   <string name="ReactionsDisabled">Reactions disabled</string>
+  <string name="ReactionsEnabledAll">Reactions enabled</string>
   <string name="ReactionsEnabled_one">%1$s Reaction enabled</string>
   <string name="ReactionsEnabled_other">%1$s Reactions enabled</string>
+
+  <string name="ReactionsAllowAll">Enabled</string>
+  <string name="ReactionsAllowNone">Disabled</string>
+  <string name="ReactionsAllowSome_one">%1$s allowed</string>
+  <string name="ReactionsAllowSome_other">%2$s allowed</string>
 
   <string name="QuickReactionEnable">Enable Quick Reaction</string>
   <string name="QuickReactionEnableDesc">Availability of specific reactions depends on group\'s and channel\'s settings.</string>
@@ -1970,8 +1980,10 @@
   <string name="EventLogReactionsEnabled">Enabled chat reactions</string>
   <string name="EventLogReactionsDisabled">Disabled chat reactions</string>
   <string name="EventLogReactionsChanged">Changed available chat reactions</string>
-  <string name="EventLogReactionsAdded">+ Added:\n%1$s</string>
-  <string name="EventLogReactionsRemoved">– Removed:\n%1$s</string>
+  <string name="EventLogReactionsEnabledAll">Enabled all chat reactions</string>
+  <string name="EventLogReactionsLimited">Limited available chat reactions</string>
+  <string name="EventLogReactionsAdded2">+ Added:</string>
+  <string name="EventLogReactionsRemoved2">– Removed:</string>
 
   <string name="UntilX">Until %1$s</string>
   <string name="NetworkUsage">Network Usage</string>

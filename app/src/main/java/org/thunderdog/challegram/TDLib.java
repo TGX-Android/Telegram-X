@@ -20,8 +20,12 @@ import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.unsorted.Settings;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IllegalFormatException;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 public final class TDLib {
   private static String format (String format, Object... formatArgs) {
@@ -64,6 +68,22 @@ public final class TDLib {
     log(Settings.instance().getTdlibLogSettings().getVerbosity(module), format, formatArgs);
   }
 
+  private static final Set<Long> trackingStates = new HashSet<>();
+  private static final Map<Long, String> lastMessage = new HashMap<>();
+
+  public static String trackPushState (long pushId, boolean needTrack) {
+    if (needTrack) {
+      trackingStates.add(pushId);
+      return null;
+    } else {
+      trackingStates.remove(pushId);
+      return lastMessage.remove(pushId);
+    }
+  }
+
+  public static String lastPushState (long pushId) {
+    return lastMessage.get(pushId);
+  }
 
   public static final class Tag {
     public static void td_init (String format, Object... formatArgs) {
@@ -75,15 +95,19 @@ public final class TDLib {
     }
 
     public static void notifications (long pushId, int accountId, String format, Object... formatArgs) {
+      String message = format(format, formatArgs);
       StringBuilder prefix = new StringBuilder("[fcm");
       if (pushId != 0) {
         prefix.append(":").append(pushId);
+        if (trackingStates.contains(pushId)) {
+          lastMessage.put(pushId, message);
+        }
       }
       if (accountId != TdlibAccount.NO_ID) {
         prefix.append(",account:").append(accountId);
       }
       prefix.append("]: ");
-      logModule("notifications", prefix.toString() + format, formatArgs);
+      logModule("notifications", prefix + message);
     }
   }
 }

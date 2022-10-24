@@ -182,10 +182,11 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
 
   @Override
   protected void onDraw (Canvas c) {
-    boolean saved = factor != 0f;
+    float originalScale = sticker != null ? sticker.getDisplayScale() : 1f;
+    boolean saved = originalScale != 1f || factor != 0f;
     if (saved) {
       c.save();
-      float scale = MIN_SCALE + (1f - MIN_SCALE) * (1f - factor);
+      float scale = originalScale * (MIN_SCALE + (1f - MIN_SCALE) * (1f - factor));
       int cx = getMeasuredWidth() / 2;
       int cy = getPaddingTop() + (getMeasuredHeight() - getPaddingBottom() - getPaddingBottom()) / 2;
       c.scale(scale, scale, cx, cy);
@@ -241,7 +242,7 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
   }
 
   public interface StickerMovementCallback {
-    boolean onStickerClick (StickerSmallView view, View clickView, TGStickerObj sticker, boolean isMenuClick, boolean forceDisableNotification, @Nullable TdApi.MessageSchedulingState schedulingState);
+    boolean onStickerClick (StickerSmallView view, View clickView, TGStickerObj sticker, boolean isMenuClick, TdApi.MessageSendOptions sendOptions);
     long getStickerOutputChatId ();
     void setStickerPressed (StickerSmallView view, TGStickerObj sticker, boolean isPressed);
     boolean canFindChildViewUnder (StickerSmallView view, int recyclerX, int recyclerY);
@@ -282,7 +283,7 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
         closePreview(e);
         if (clicked && callback != null && sticker != null) {
           ViewUtils.onClick(this);
-          callback.onStickerClick(this, this, sticker, false, false, null);
+          callback.onStickerClick(this, this, sticker, false, null);
         }
         return true;
       }
@@ -501,8 +502,8 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     }
   }
 
-  public boolean onSendSticker (View view, TGStickerObj sticker, boolean forceDisableNotification, TdApi.MessageSchedulingState schedulingState) {
-    return callback != null && callback.onStickerClick(this, view, sticker, true, forceDisableNotification, schedulingState);
+  public boolean onSendSticker (View view, TGStickerObj sticker, TdApi.MessageSendOptions sendOptions) {
+    return callback != null && callback.onStickerClick(this, view, sticker, true, sendOptions);
   }
 
   public long getStickerOutputChatId () {

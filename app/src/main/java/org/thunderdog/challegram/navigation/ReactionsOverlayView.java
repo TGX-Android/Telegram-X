@@ -14,23 +14,22 @@ package org.thunderdog.challegram.navigation;
 
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.RectF;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
-import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.tool.Views;
 
 import java.util.ArrayList;
 
@@ -95,11 +94,6 @@ public class ReactionsOverlayView extends ViewGroup {
     }
   }
 
-  public void addOverlay (TGStickerObj stickerObj, Rect position) {
-    ReactionInfo info = new ReactionInfo(this).setSticker(stickerObj).setPosition(position);
-    addOverlay(info);
-  }
-
   public void addOverlay (ReactionInfo info) {
     info.setRemoveListener(() -> this.removeOverlay(info));
     activePopups.add(info);
@@ -131,7 +125,9 @@ public class ReactionsOverlayView extends ViewGroup {
     private final ImageReceiver imageReceiver;
     private final GifReceiver gifReceiver;
     private GifFile animation;
+    private float displayScale;
     private Runnable removeRunnable;
+    private boolean useDefaultSprayAnimation;
 
     // animation
     private static final int POSITION_ANIMATOR = 0;
@@ -164,11 +160,17 @@ public class ReactionsOverlayView extends ViewGroup {
       return setSticker(sticker, true);
     }
 
+    public ReactionInfo setUseDefaultSprayAnimation (boolean useDefaultSprayAnimation) {
+      this.useDefaultSprayAnimation = useDefaultSprayAnimation;
+      return this;
+    }
+
     public ReactionInfo setSticker (TGStickerObj sticker, boolean animated) {
       ImageFile imageFile = sticker.getImage();
       animation = sticker.getPreviewAnimation();
+      displayScale = sticker.getDisplayScale();
       if (animation != null) {
-        if (animated) {
+        if (animated && !sticker.isCustomReaction()) {
           animation.setPlayOnce(true);
           animation.setLooped(false);
         }
@@ -218,6 +220,7 @@ public class ReactionsOverlayView extends ViewGroup {
     public ReactionInfo setPosition (Rect rect) {
       position = rect;
       gifReceiver.setBounds(rect.left, rect.top, rect.right, rect.bottom);
+      imageReceiver.setBounds(rect.left, rect.top, rect.right, rect.bottom);
       return this;
     }
 
@@ -254,11 +257,20 @@ public class ReactionsOverlayView extends ViewGroup {
         animatedPositionOffsetProvider.getOffset(animationOffsetPoint);
       }
 
-      canvas.save();
+      int saveCount = Views.save(canvas);
       canvas.translate(scrollOffsetX + controllerTranslationX + animationOffsetPoint.x, scrollOffsetY + animationOffsetPoint.y);
+      if (displayScale != 1f) {
+        canvas.scale(displayScale, displayScale, gifReceiver.centerX(), gifReceiver.centerY());
+      }
+      if (Config.DEBUG_REACTIONS_ANIMATIONS) {
+        canvas.drawRect(gifReceiver.getLeft(), gifReceiver.getTop(), gifReceiver.getRight(), gifReceiver.getBottom(), Paints.fillingPaint(0xaaff0000));
+      }
+      if (gifReceiver.needPlaceholder() || Config.DEBUG_REACTIONS_ANIMATIONS) {
+        imageReceiver.draw(canvas);
+      }
       gifReceiver.draw(canvas);
       //canvas.drawRect(position, Paints.strokeBigPaint(Color.RED));
-      canvas.restore();
+      Views.restore(canvas, saveCount);
     }
 
     public void attach () {

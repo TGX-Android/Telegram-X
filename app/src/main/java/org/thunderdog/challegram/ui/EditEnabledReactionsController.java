@@ -1,3 +1,15 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014-2022 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ */
 package org.thunderdog.challegram.ui;
 
 import android.content.Context;
@@ -7,7 +19,6 @@ import android.view.ViewParent;
 import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -18,8 +29,11 @@ import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.base.TogglerView;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGReaction;
+import org.thunderdog.challegram.navigation.ReactionsOverlayView;
 import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
@@ -31,10 +45,12 @@ import org.thunderdog.challegram.widget.ReactionCheckboxSettingsView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.lambda.RunnableData;
 
 public class EditEnabledReactionsController extends EditBaseController<EditEnabledReactionsController.Args> implements View.OnClickListener, StickerSmallView.StickerMovementCallback, ChatListener {
 
@@ -55,8 +71,9 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
   private TdApi.Chat chat;
   private int type;
 
-  private final HashMap<String, TdApi.Reaction> enabledReactions = new HashMap<>();
-  private final ArrayList<String> quickReactionsList = new ArrayList<>();
+  private TdApi.ChatAvailableReactions availableReactions;
+  private final Set<String> enabledReactions = new HashSet<>();
+  private final List<String> quickReactions = new ArrayList<>();
 
   public EditEnabledReactionsController (Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -74,21 +91,34 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
     return R.id.controller_enabledReactions;
   }
 
-  @Override
-  protected void onCreateView (Context context, FrameLayoutFix contentView, RecyclerView recyclerView) {
-    enabledReactions.clear();
-    quickReactionsList.clear();
-    if (chat != null && type == TYPE_ENABLED_REACTIONS) {
-      for (int a = 0; a < chat.availableReactions.length; a++) {
-        TGReaction reaction = tdlib.getReaction(chat.availableReactions[a]);
-        if (reaction != null) {
-          enabledReactions.put(reaction.reaction.reaction, reaction.reaction);
+  private void updateAvailableReactions (@NonNull TdApi.ChatAvailableReactions availableReactions) {
+    this.availableReactions = availableReactions;
+    this.enabledReactions.clear();
+    switch (availableReactions.getConstructor()) {
+      case TdApi.ChatAvailableReactionsAll.CONSTRUCTOR:
+        break;
+      case TdApi.ChatAvailableReactionsSome.CONSTRUCTOR: {
+        TdApi.ChatAvailableReactionsSome some = (TdApi.ChatAvailableReactionsSome) availableReactions;
+        for (TdApi.ReactionType reactionType : some.reactions) {
+          this.enabledReactions.add(TD.makeReactionKey(reactionType));
         }
+        break;
       }
     }
+  }
 
-    if (type == TYPE_QUICK_REACTION) {
-      quickReactionsList.addAll(Arrays.asList(Settings.instance().getQuickReactions()));
+  @Override
+  protected void onCreateView (Context context, FrameLayoutFix contentView, RecyclerView recyclerView) {
+    switch (type) {
+      case TYPE_ENABLED_REACTIONS: {
+        updateAvailableReactions(chat.availableReactions);
+        break;
+      }
+      case TYPE_QUICK_REACTION: {
+        String[] quickReactions = Settings.instance().getQuickReactions(tdlib);
+        this.quickReactions.addAll(Arrays.asList(quickReactions));
+        break;
+      }
     }
 
     adapter = new SettingsAdapter(this) {
@@ -99,37 +129,54 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
         if (viewId == R.id.reactions_enabled) {
           CheckBoxView view = v.findCheckBox();
           if (view != null) {
-            if (enabledReactions.isEmpty()) {
+            int enabledCount = availableReactions == null ? 0 : availableReactions.getConstructor() == TdApi.ChatAvailableReactionsSome.CONSTRUCTOR ? ((TdApi.ChatAvailableReactionsSome) availableReactions).reactions.length : Integer.MAX_VALUE;
+            if (enabledCount == 0) {
               v.setName(R.string.ReactionsDisabled);
               view.setChecked(false, isUpdate);
+            } else if (enabledCount == Integer.MAX_VALUE) {
+              v.setName(R.string.ReactionsEnabledAll);
+              view.setChecked(false, isUpdate);
             } else {
-              v.setName(Lang.plural(R.string.ReactionsEnabled, enabledReactions.size()));
-              view.setPartially(enabledReactions.size() != tdlib.getTotalActiveReactionsCount(), isUpdate);
+              v.setName(Lang.pluralBold(R.string.ReactionsEnabled, enabledCount));
               view.setChecked(true, isUpdate);
             }
+            view.setPartially(enabledCount != 0 && enabledCount != Integer.MAX_VALUE, isUpdate);
           }
-        }
-        if (viewId == R.id.btn_quick_reaction_enabled) {
+        } else if (viewId == R.id.btn_quick_reaction_enabled) {
           TogglerView view = v.getToggler();
           if (view != null) {
-            view.setRadioEnabled(quickReactionsList.size() > 0, isUpdate);
+            view.setRadioEnabled(!quickReactions.isEmpty(), isUpdate);
           }
         }
       }
 
       @Override
       protected void setReaction (ListItem item, int position, ReactionCheckboxSettingsView userView, boolean isUpdate) {
-        final String reaction = String.valueOf(item.getString());
-        final TGReaction reactionsObj = tdlib.getReaction(reaction);
+        final String reactionKey = String.valueOf(item.getString());
+        final TdApi.ReactionType reactionType = TD.toReactionType(reactionKey);
+        final TGReaction reactionsObj = tdlib.getReaction(reactionType);
         userView.getStickerSmallView().setStickerMovementCallback(EditEnabledReactionsController.this);
         userView.getStickerSmallView().setTag(reactionsObj);
         if (reactionsObj != null) {
           userView.setReaction(reactionsObj);
           if (type == TYPE_ENABLED_REACTIONS) {
-            userView.setChecked(enabledReactions.containsKey(reactionsObj.getReaction().reaction), isUpdate);
+            if (availableReactions == null) {
+              userView.setChecked(false, isUpdate);
+            } else {
+              switch (availableReactions.getConstructor()) {
+                case TdApi.ChatAvailableReactionsAll.CONSTRUCTOR: {
+                  userView.setChecked(true, isUpdate);
+                  break;
+                }
+                case TdApi.ChatAvailableReactionsSome.CONSTRUCTOR: {
+                  userView.setChecked(enabledReactions.contains(reactionKey), isUpdate);
+                  break;
+                }
+              }
+            }
           } else if (type == TYPE_QUICK_REACTION) {
-            int index = quickReactionsList.indexOf(reaction);
-            userView.setNumber(index >= 0 ? index + 1: index, isUpdate);
+            int index = quickReactions.indexOf(reactionKey);
+            userView.setNumber(index >= 0 ? index + 1 : index, isUpdate);
           }
         }
       }
@@ -169,10 +216,18 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     }
 
-    for (TGReaction reaction : tdlib.getNotPremiumReactions()) {
-      items.add(new ListItem(ListItem.TYPE_REACTION_CHECKBOX, R.id.btn_enabledReactionsCheckboxGroup, 0, reaction.reaction.reaction, false));
+    String[] activeEmojiReactions = tdlib.getActiveEmojiReactions();
+    if (activeEmojiReactions != null) {
+      for (String activeEmojiReaction : activeEmojiReactions) {
+        TGReaction reaction = tdlib.getReaction(new TdApi.ReactionTypeEmoji(activeEmojiReaction));
+        if (reaction != null) {
+          items.add(new ListItem(ListItem.TYPE_REACTION_CHECKBOX, R.id.btn_enabledReactionsCheckboxGroup, 0, reaction.key, false));
+        }
+      }
     }
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+
+    /* TODO: custom reactions
     List<TGReaction> premiumReactions = tdlib.getOnlyPremiumReactions();
     if (!premiumReactions.isEmpty()) {
       if (!needPremiumRestriction()) {
@@ -185,7 +240,7 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
         items.add(new ListItem(ListItem.TYPE_REACTION_CHECKBOX, R.id.btn_enabledReactionsCheckboxGroup, 0, reaction.reaction.reaction, false));
       }
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-    }
+    }*/
 
     adapter.setItems(items, true);
 
@@ -234,15 +289,18 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
     }
 
     if (viewId == R.id.reactions_enabled) {
-      if (enabledReactions.isEmpty()) {
-        for (TGReaction tgReaction : tdlib.getNotPremiumReactions()) {
-          enabledReactions.put(tgReaction.reaction.reaction, tgReaction.reaction);
+      enabledReactions.clear();
+      switch (availableReactions.getConstructor()) {
+        case TdApi.ChatAvailableReactionsAll.CONSTRUCTOR: {
+          // Disable all reactions
+          availableReactions = new TdApi.ChatAvailableReactionsSome(new TdApi.ReactionType[0]);
+          break;
         }
-        for (TGReaction tgReaction : tdlib.getOnlyPremiumReactions()) {
-          enabledReactions.put(tgReaction.reaction.reaction, tgReaction.reaction);
+        case TdApi.ChatAvailableReactionsSome.CONSTRUCTOR: {
+          // Enable all reactions
+          availableReactions = new TdApi.ChatAvailableReactionsAll();
+          break;
         }
-      } else {
-        enabledReactions.clear();
       }
 
       ListItem item = adapter.findItemById(R.id.reactions_enabled);
@@ -255,10 +313,10 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
     }
 
     if (viewId == R.id.btn_quick_reaction_enabled) {
-      if (quickReactionsList.size() == 0) {
-        quickReactionsList.add("\uD83D\uDC4D");
+      if (quickReactions.isEmpty()) {
+        quickReactions.add(tdlib.defaultEmojiReaction());
       } else {
-        quickReactionsList.clear();
+        quickReactions.clear();
       }
       updateQuickReactionsSettings();
       adapter.updateAllValuedSettingsById(R.id.btn_enabledReactionsCheckboxGroup);
@@ -268,56 +326,66 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
     if (v instanceof ReactionCheckboxSettingsView) {
       ReactionCheckboxSettingsView reactionView = (ReactionCheckboxSettingsView) v;
       TGStickerObj sticker = reactionView.getSticker();
-      if (sticker != null) {
-        String emoji = sticker.getFoundByEmoji();
-        TGReaction tgReaction = tdlib.getReaction(emoji);
-        if (tgReaction != null) {
-          boolean checked = false;
-          if (type == TYPE_ENABLED_REACTIONS) {
-            if (enabledReactions.containsKey(emoji)) {
-              enabledReactions.remove(emoji);
-            } else {
-              checked = true;
-              enabledReactions.put(emoji, tgReaction.getReaction());
-            }
-
-            adapter.updateAllValuedSettingsById(R.id.btn_enabledReactionsCheckboxGroup);
-            adapter.updateValuedSettingById(R.id.reactions_enabled);
+      TdApi.ReactionType reactionType = sticker != null ? sticker.getReactionType() : null;
+      TGReaction tgReaction = tdlib.getReaction(reactionType);
+      if (tgReaction != null) {
+        boolean checked = false;
+        if (type == TYPE_ENABLED_REACTIONS) {
+          if (!enabledReactions.remove(tgReaction.key)) {
+            checked = true;
+            enabledReactions.add(tgReaction.key);
           }
-          if (type == TYPE_QUICK_REACTION) {
-            if (quickReactionsList.contains(emoji)) {
-              quickReactionsList.remove(emoji);
-            } else {
-              if (!needPremiumRestriction()|| !tgReaction.reaction.isPremium) {
-                if (quickReactionsList.size() < 4) {
-                  checked = true;
-                  quickReactionsList.add(emoji);
-                } else {
-                  showQuickReactionsLimit(v);
-                }
+
+          adapter.updateAllValuedSettingsById(R.id.btn_enabledReactionsCheckboxGroup);
+          adapter.updateValuedSettingById(R.id.reactions_enabled);
+        }
+        if (type == TYPE_QUICK_REACTION) {
+          if (!quickReactions.remove(tgReaction.key)) {
+            if (!needPremiumRestriction()|| !tgReaction.isPremium()) {
+              if (quickReactions.size() < 4) {
+                checked = true;
+                quickReactions.add(tgReaction.key);
               } else {
-                showPremiumLockTooltip(v);
+                showQuickReactionsLimit(v);
               }
+            } else {
+              showPremiumLockTooltip(v);
             }
-            updateQuickReactionsSettings();
-            adapter.updateAllValuedSettingsById(R.id.btn_enabledReactionsCheckboxGroup);
-            adapter.updateValuedSettingById(R.id.btn_quick_reaction_enabled);
           }
+          updateQuickReactionsSettings();
+          adapter.updateAllValuedSettingsById(R.id.btn_enabledReactionsCheckboxGroup);
+          adapter.updateValuedSettingById(R.id.btn_quick_reaction_enabled);
+        }
 
-          if (checked) {
-            TGStickerObj stickerObj = tgReaction.newAroundAnimationSicker();
-
+        if (checked) {
+          RunnableData<TGStickerObj> act = (overlaySticker) -> {
             int[] positionCords = new int[2];
             v.getLocationOnScreen(positionCords);
             positionCords[0] += v.getMeasuredWidth() / 2;
             positionCords[1] += Screen.dp(40);
-
-            context().reactionsOverlayManager().addOverlay(stickerObj, new Rect(
+            context().reactionsOverlayManager().addOverlay(new ReactionsOverlayView.ReactionInfo(context().reactionsOverlayManager())
+              .setSticker(overlaySticker)
+              .setUseDefaultSprayAnimation(overlaySticker.isCustomReaction())
+              .setPosition(new Rect(
               positionCords[0] - Screen.dp(50),
               positionCords[1] - Screen.dp(50),
               positionCords[0] + Screen.dp(50),
               positionCords[1] + Screen.dp(50)
-            ));
+            )));
+          };
+          TGStickerObj overlaySticker = tgReaction.newAroundAnimationSicker();
+          if (overlaySticker != null && !Config.TEST_GENERIC_REACTION_EFFECTS) {
+            act.runWithData(overlaySticker);
+          } else {
+            tdlib.pickRandomGenericOverlaySticker(genericOverlayEffectSticker -> {
+              if (genericOverlayEffectSticker != null) {
+                TGStickerObj stickerObj = new TGStickerObj(tdlib, genericOverlayEffectSticker, null, genericOverlayEffectSticker.type)
+                  .setReactionType(tgReaction.type);
+                executeOnUiThreadOptional(() ->
+                  act.runWithData(stickerObj)
+                );
+              }
+            });
           }
         }
       }
@@ -325,19 +393,11 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
   }
 
   private void updateEnabledReactions () {
-    tdlib.client().send(new TdApi.SetChatAvailableReactions(chat.id, enabledReactions.keySet().toArray(new String[0])), tdlib.okHandler());
+    tdlib.client().send(new TdApi.SetChatAvailableReactions(chat.id, availableReactions), tdlib.okHandler());
   }
 
-  private void checkEnabledReactions (String[] availableReactions) {
-    enabledReactions.clear();
-    if (availableReactions != null) {
-      for (int a = 0; a < availableReactions.length; a++) {
-        TGReaction reaction = tdlib.getReaction(availableReactions[a]);
-        if (reaction != null) {
-          enabledReactions.put(reaction.reaction.reaction, reaction.reaction);
-        }
-      }
-    }
+  private void checkEnabledReactions (TdApi.ChatAvailableReactions availableReactions) {
+    updateAvailableReactions(availableReactions);
     adapter.updateAllValuedSettingsById(R.id.btn_enabledReactionsCheckboxGroup);
     adapter.updateValuedSettingById(R.id.reactions_enabled);
   }
@@ -356,7 +416,7 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
   }
 
   @Override
-  public void onChatAvailableReactionsUpdated (long chatId, String[] availableReactions) {
+  public void onChatAvailableReactionsUpdated (long chatId, TdApi.ChatAvailableReactions availableReactions) {
     tdlib.ui().post(() -> {
       if (chat.id == chatId) {
         checkEnabledReactions(availableReactions);
@@ -391,7 +451,7 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
   }
 
   private void updateQuickReactionsSettings () {
-    Settings.instance().setQuickReactions(quickReactionsList.toArray(new String[0]));
+    Settings.instance().setQuickReactions(quickReactions.toArray(new String[0]));
   }
 
   // StickerView Callback
@@ -407,7 +467,7 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
   }
 
   @Override
-  public boolean onStickerClick (StickerSmallView view, View clickView, TGStickerObj sticker, boolean isMenuClick, boolean forceDisableNotification, @Nullable TdApi.MessageSchedulingState schedulingState) {
+  public boolean onStickerClick (StickerSmallView view, View clickView, TGStickerObj sticker, boolean isMenuClick, TdApi.MessageSendOptions sendOptions) {
     onClick(((View) view.getParent()));
     return false;
   }

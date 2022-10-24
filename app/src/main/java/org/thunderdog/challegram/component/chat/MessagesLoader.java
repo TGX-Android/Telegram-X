@@ -938,7 +938,7 @@ public class MessagesLoader implements Client.ResultHandler {
         if (isLast) {
           msg.interactionInfo = new TdApi.MessageInteractionInfo();
           msg.interactionInfo.reactions = new TdApi.MessageReaction[]{
-            new TdApi.MessageReaction("\uD83D\uDC4D", 5, true, new TdApi.MessageSender[0])
+            new TdApi.MessageReaction(new TdApi.ReactionTypeEmoji("\uD83D\uDC4D"), 5, true, new TdApi.MessageSender[0])
           };
         }
         out.add(msg);
@@ -1123,7 +1123,7 @@ public class MessagesLoader implements Client.ResultHandler {
       false, false,
       false, false, false,
       false, false, false,
-      false, false,
+      false, false, false,
       isChannel,
       false,
       event.date, 0,
