@@ -2257,6 +2257,15 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   public static String getTdlibDirectory (int accountId, boolean allowExternal, boolean createIfNotFound) {
     File file = allowExternal ? UI.getAppContext().getExternalFilesDir(null) : null;
     if (file != null) {
+      try {
+        if (!(file.exists() ? file.isDirectory() : file.mkdir()) || !file.canWrite()) {
+          file = null;
+        }
+      } catch (SecurityException ignored) {
+        file = null;
+      }
+    }
+    if (file != null) {
       if (accountId != 0) {
         file = new File(file, "x_account" + accountId);
         if (!file.exists()) {
@@ -2269,7 +2278,6 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
         }
       }
       // FIXME maybe move somewhere better for accountId == 0?
-      return TD.normalizePath(file.getPath());
     } else {
       if (allowExternal && !createIfNotFound)
         return null;
@@ -2282,8 +2290,8 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
           return null;
         }
       }
-      return TD.normalizePath(file.getPath());
     }
+    return TD.normalizePath(file.getPath());
   }
 
   public static File getTgvoipDirectory () {
