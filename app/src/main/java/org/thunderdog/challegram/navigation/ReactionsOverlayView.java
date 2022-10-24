@@ -14,18 +14,16 @@ package org.thunderdog.challegram.navigation;
 
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.RectF;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
-import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
@@ -218,6 +216,7 @@ public class ReactionsOverlayView extends ViewGroup {
     public ReactionInfo setPosition (Rect rect) {
       position = rect;
       gifReceiver.setBounds(rect.left, rect.top, rect.right, rect.bottom);
+      imageReceiver.setBounds(rect.left, rect.top, rect.right, rect.bottom);
       return this;
     }
 
@@ -256,6 +255,12 @@ public class ReactionsOverlayView extends ViewGroup {
 
       canvas.save();
       canvas.translate(scrollOffsetX + controllerTranslationX + animationOffsetPoint.x, scrollOffsetY + animationOffsetPoint.y);
+      if (Config.DEBUG_REACTIONS_ANIMATIONS) {
+        canvas.drawRect(gifReceiver.getLeft(), gifReceiver.getTop(), gifReceiver.getRight(), gifReceiver.getBottom(), Paints.fillingPaint(0xaaff0000));
+      }
+      if (gifReceiver.needPlaceholder() || Config.DEBUG_REACTIONS_ANIMATIONS) {
+        imageReceiver.draw(canvas);
+      }
       gifReceiver.draw(canvas);
       //canvas.drawRect(position, Paints.strokeBigPaint(Color.RED));
       canvas.restore();
