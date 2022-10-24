@@ -554,6 +554,16 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     }
   }
 
+  protected final void executeOnUiThreadOptional (@NonNull Runnable runnable) {
+    if (UI.inUiThread()) {
+      if (!isDestroyed()) {
+        runnable.run();
+      }
+    } else {
+      runOnUiThreadOptional(runnable);
+    }
+  }
+
   protected final void runOnUiThread (@NonNull Runnable runnable, long delay) {
     UI.post(runnable, delay);
   }

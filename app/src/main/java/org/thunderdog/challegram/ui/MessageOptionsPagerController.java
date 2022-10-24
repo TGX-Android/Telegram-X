@@ -71,6 +71,7 @@ import java.util.concurrent.TimeUnit;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.StringUtils;
+import me.vkryl.td.Td;
 
 public class MessageOptionsPagerController extends ViewPagerController<Void> implements
   FactorAnimator.Target, PopupLayout.PopupHeightProvider,
@@ -89,7 +90,7 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
   private int baseCountersWidth;
   private int startPage = 0;
 
-  public MessageOptionsPagerController (Context context, Tdlib tdlib, Options options, TGMessage message, String defaultReaction) {
+  public MessageOptionsPagerController (Context context, Tdlib tdlib, Options options, TGMessage message, TdApi.ReactionType defaultReactionType) {
     super(context, tdlib);
     this.options = options;
     this.message = message;
@@ -141,12 +142,12 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
     if (needShowReactions) {
       REACTED_START_POSITION = i;
       for (TdApi.MessageReaction reaction : reactions) {
-        TGReaction tgReaction = tdlib.getReaction(reaction.reaction);
+        TGReaction tgReaction = tdlib.getReaction(reaction.type);
         counters[i] = new ViewPagerTopView.Item(tgReaction, new Counter.Builder()
           .noBackground().allBold(true).textSize(13f).colorSet(this).callback(this)
           .build(), this, Screen.dp(9));
         counters[i].counter.setCount(reaction.totalCount, false);
-        if (reaction.reaction.equals(defaultReaction)) {
+        if (Td.equalsTo(reaction.type, defaultReactionType)) {
           startPage = i;
         }
         i += 1;
@@ -597,7 +598,7 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
     }
 
     if (position == ALL_REACTED_POSITION) {
-      MessageOptionsReactedController c = new MessageOptionsReactedController(context, this.tdlib, popupLayout, message, "");
+      MessageOptionsReactedController c = new MessageOptionsReactedController(context, this.tdlib, popupLayout, message, null);
       c.get();
       setRecyclerView(c.getRecyclerView(), c, position);
       return c;
@@ -611,7 +612,7 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
     }
 
     if (position >= REACTED_START_POSITION && REACTED_START_POSITION != -1) {
-      MessageOptionsReactedController c = new MessageOptionsReactedController(context, this.tdlib, popupLayout, message, reactions[position - REACTED_START_POSITION].reaction);
+      MessageOptionsReactedController c = new MessageOptionsReactedController(context, this.tdlib, popupLayout, message, reactions[position - REACTED_START_POSITION].type);
       c.get();
       if (isFirstCreation && !needShowOptions) {
         setHeaderPosition(getContentOffset() + HeaderView.getTopOffset());
@@ -948,8 +949,7 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
     int startX = positionCords[0] + v.getMeasuredWidth() / 2;
     int startY = positionCords[1] + v.getMeasuredHeight() / 2;
 
-    final String emoji = reaction.reaction.reaction;
-    if (message.getMessageReactions().sendReaction(emoji, false, handler(v, () -> {}))) {
+    if (message.getMessageReactions().sendReaction(reaction.type, false, handler(v, () -> {}))) {
       message.scheduleSetReactionAnimationFromBottomSheet(reaction, new Point(startX, startY));
     }
     popupLayout.hideWindow(true);
@@ -963,8 +963,7 @@ public class MessageOptionsPagerController extends ViewPagerController<Void> imp
     int startX = positionCords[0] + v.getMeasuredWidth() / 2;
     int startY = positionCords[1] + v.getMeasuredHeight() / 2;
 
-    final String emoji = reaction.reaction.reaction;
-    message.getMessageReactions().sendReaction(emoji, true, handler(v, () -> {}));
+    message.getMessageReactions().sendReaction(reaction.type, true, handler(v, () -> {}));
     message.scheduleSetReactionAnimationFullscreenFromBottomSheet(reaction, new Point(startX, startY));
     popupLayout.hideWindow(true);
   }

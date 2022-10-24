@@ -16,6 +16,7 @@ package org.thunderdog.challegram.telegram;
 
 import android.content.Context;
 import android.os.Build;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -47,6 +48,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.AppBuildInfo;
 import org.thunderdog.challegram.util.Crash;
+import org.thunderdog.challegram.util.TokenRetriever;
 
 import java.io.File;
 import java.io.IOException;
@@ -192,7 +194,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     if (StringUtils.isEmpty(text))
       return;
     performSyncTask(context, extras.accountId, "reply", (tdlib, onDone) -> {
-      tdlib.sendMessage(extras.chatId, extras.messageThreadId, extras.needReply ? extras.messageIds[extras.messageIds.length - 1] : 0, false, true, new TdApi.InputMessageText(new TdApi.FormattedText(text.toString(), null), false, false), sendingMessage -> {
+      tdlib.sendMessage(extras.chatId, extras.messageThreadId, extras.needReply ? extras.messageIds[extras.messageIds.length - 1] : 0, Td.newSendOptions(), new TdApi.InputMessageText(new TdApi.FormattedText(text.toString(), null), false, false), sendingMessage -> {
         if (sendingMessage == null) {
           UI.showToast(R.string.NotificationReplyFailed, Toast.LENGTH_SHORT);
           if (onDone != null) {
@@ -268,6 +270,8 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   // Impl
 
   private final ArrayList<TdlibAccount> accounts = new ArrayList<>();
+
+  private final Object counterLock = new Object();
 
   private int preferredAccountId = TdlibAccount.NO_ID;
   private TdlibAccount currentAccount;
@@ -528,8 +532,8 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
 
   // Counters
 
-  public void incrementBadgeCounters(@NonNull TdApi.ChatList chatList, int unreadCountDelta, int unreadUnmutedCountDelta, boolean areChats) {
-    synchronized (this) {
+  public void incrementBadgeCounters (@NonNull TdApi.ChatList chatList, int unreadCountDelta, int unreadUnmutedCountDelta, boolean areChats) {
+    synchronized (counterLock) {
       /*if (areChats) {
         this.totalCounter.chatCount += unreadCountDelta;
         this.totalCounter.chatUnmutedCount += unreadUnmutedCountDelta;
@@ -576,7 +580,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   }
 
   public void resetBadge () {
-    synchronized (this) {
+    synchronized (counterLock) {
       updateBadgeInternal(true, false);
       dispatchUnreadCount(true);
     }
@@ -1502,6 +1506,22 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     }, limit, null, after);
   }
 
+  public boolean notifyPushProcessingTakesTooLong (int accountId, long pushId) {
+    TDLib.Tag.notifications(pushId, accountId, "Trying to speed up notification displaying by aborting some of operations");
+    if (accountId != TdlibAccount.NO_ID) {
+      Tdlib tdlib = account(accountId).activeTdlib();
+      return tdlib == null || tdlib.notifyPushProcessingTakesTooLong(pushId);
+    }
+    int failureCount = 0;
+    for (TdlibAccount account : this) {
+      Tdlib tdlib = account.activeTdlib();
+      if (tdlib != null && !tdlib.notifyPushProcessingTakesTooLong(pushId)) {
+        failureCount++;
+      }
+    }
+    return failureCount == 0;
+  }
+
   public void processPushOrSync (long pushId, int accountId, String payload, @Nullable Runnable after) {
     performTdlibTask(pushId, accountId, (account, onDone) -> account.tdlib().processPushOrSync(pushId, payload, onDone), Config.MAX_RUNNING_TDLIBS, null, after);
   }
@@ -1590,14 +1610,14 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     return tokenFullError;
   }
 
-  private String token;
+  private TdApi.DeviceToken token;
 
-  public String getToken () {
+  public TdApi.DeviceToken getToken () {
     return token;
   }
 
-  public synchronized void setDeviceToken (String token) {
-    if (!StringUtils.equalsOrBothEmpty(this.token, token)) {
+  public synchronized void setDeviceToken (TdApi.DeviceToken token) {
+    if (!Td.equalsTo(this.token, token)) {
       Settings.instance().setDeviceToken(token);
       this.token = token;
       setTokenState(TokenState.OK);
@@ -1630,11 +1650,10 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       return;
     }
     setTokenState(TokenState.INITIALIZING);
-    TdlibNotificationUtils.getDeviceToken(retryCount, new TdlibNotificationUtils.RegisterCallback() {
+    TdlibNotificationUtils.getDeviceToken(retryCount, new TokenRetriever.RegisterCallback() {
       @Override
-      public void onSuccess (@NonNull TdApi.DeviceTokenFirebaseCloudMessaging token) {
-        // TODO: use TdApi.DeviceToken instead of taking token's String value directly
-        setDeviceToken(token.token);
+      public void onSuccess (@NonNull TdApi.DeviceToken token) {
+        setDeviceToken(token);
         if (after != null) {
           after.runWithBool(true);
         }
@@ -1651,7 +1670,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     });
   }
 
-  private void dispatchDeviceToken (String token) {
+  private void dispatchDeviceToken (TdApi.DeviceToken token) {
     long[] debugUserIds = null, productionUserIds = null;
     boolean hasNonRegistered = false;
     for (TdlibAccount account : this) {
@@ -2239,6 +2258,29 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   public static String getTdlibDirectory (int accountId, boolean allowExternal, boolean createIfNotFound) {
     File file = allowExternal ? UI.getAppContext().getExternalFilesDir(null) : null;
     if (file != null) {
+      try {
+        File externalStorageDirectory = Environment.getExternalStorageDirectory();
+        if (externalStorageDirectory != null && file.getAbsolutePath().startsWith(externalStorageDirectory.getAbsolutePath())) {
+          String state = Environment.getExternalStorageState();
+          if (!Environment.MEDIA_MOUNTED.equals(state)) {
+            file = null;
+          }
+        }
+      } catch (Throwable t) {
+        t.printStackTrace();
+      }
+    }
+    if (file != null) {
+      try {
+        if (!(file.exists() ? file.isDirectory() : file.mkdir()) || !file.canWrite()) {
+          file = null;
+        }
+      } catch (SecurityException e) {
+        e.printStackTrace();
+        file = null;
+      }
+    }
+    if (file != null) {
       if (accountId != 0) {
         file = new File(file, "x_account" + accountId);
         if (!file.exists()) {
@@ -2251,7 +2293,6 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
         }
       }
       // FIXME maybe move somewhere better for accountId == 0?
-      return TD.normalizePath(file.getPath());
     } else {
       if (allowExternal && !createIfNotFound)
         return null;
@@ -2264,8 +2305,8 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
           return null;
         }
       }
-      return TD.normalizePath(file.getPath());
     }
+    return TD.normalizePath(file.getPath());
   }
 
   public static File getTgvoipDirectory () {

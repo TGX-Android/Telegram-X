@@ -710,12 +710,14 @@ public final class TGMessageService extends TGMessageServiceImpl {
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessagePaymentSuccessful paymentSuccessful) {
     super(context, msg); // TODO: recurring payment strings
+    // TODO click to view receipt
     String amount = CurrencyUtils.buildAmount(paymentSuccessful.currency, paymentSuccessful.totalAmount);
+    TdlibSender targetSender = new TdlibSender(tdlib, msg.chatId, tdlib.sender(msg.chatId));
     setTextCreator(() ->
       getText(
         R.string.PaymentSuccessfullyPaidNoItem,
         new BoldArgument(amount),
-        new SenderArgument(sender)
+        new SenderArgument(targetSender)
       )
     );
     if (paymentSuccessful.invoiceChatId != 0 && paymentSuccessful.invoiceMessageId != 0) {
@@ -730,7 +732,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
             getText(
               R.string.PaymentSuccessfullyPaid,
               new BoldArgument(amount),
-              new SenderArgument(sender),
+              new SenderArgument(targetSender),
               new InvoiceArgument(message)
             )
           );

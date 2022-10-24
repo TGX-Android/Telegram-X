@@ -460,6 +460,13 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     // tdlib.context().global().addAccountListener(this);
   }
 
+  /**
+   * Called from {@link org.thunderdog.challegram.service.FirebaseListenerService} when push processing takes too long.
+   * */
+  public void notifyPushProcessingTakesTooLong () {
+    notification.abortCancelableOperations();
+  }
+
   public Tdlib tdlib () {
     return tdlib;
   }

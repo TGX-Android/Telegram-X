@@ -4,48 +4,82 @@ import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
-import android.util.Log;
-import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
+import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.telegram.Tdlib;
 
 public class TGReaction {
   private final Tdlib tdlib;
-  public TdApi.Reaction reaction;
 
-  private final TGStickerObj _staticIconSicker;
-  private final TGStickerObj _activateAnimationSicker;
-  private final TGStickerObj _effectAnimationSicker;
-  private final TGStickerObj _aroundAnimationSicker;
-  private final TGStickerObj _centerAnimationSicker;
+  public final TdApi.ReactionType type;
+  public final String key;
 
-  private final TGStickerObj _staticCenterAnimationSicker;
+  private final TdApi.EmojiReaction emojiReaction;
+  private final TdApi.Sticker customReaction;
 
-  public TGReaction (Tdlib tdlib, TdApi.Reaction reaction) {
+  private TGStickerObj _staticIconSicker;
+  private TGStickerObj _activateAnimationSicker;
+  private TGStickerObj _effectAnimationSicker;
+  private TGStickerObj _aroundAnimationSicker;
+  private TGStickerObj _centerAnimationSicker;
+  private TGStickerObj _staticCenterAnimationSicker;
+
+  public TGReaction (@NonNull Tdlib tdlib, @NonNull TdApi.EmojiReaction reaction) {
     this.tdlib = tdlib;
-    this.reaction = reaction;
+    this.emojiReaction = reaction;
+    this.type = new TdApi.ReactionTypeEmoji(reaction.emoji);
+    this.key = TD.makeReactionKey(type);
+    this.customReaction = null;
 
+    initialize();
+  }
+
+  public TGReaction (@NonNull Tdlib tdlib, @NonNull TdApi.Sticker customReaction) {
+    this.tdlib = tdlib;
+    this.customReaction = customReaction;
+    this.type = new TdApi.ReactionTypeCustomEmoji(customReaction.customEmojiId);
+    this.key = TD.makeReactionKey(type);
+    this.emojiReaction = null;
+
+    initialize();
+  }
+
+  private void initialize () {
     _staticIconSicker = newStaticIconSicker();
     _activateAnimationSicker = newActivateAnimationSicker();
+
     _effectAnimationSicker = newEffectAnimationSicker();
     _aroundAnimationSicker = newAroundAnimationSicker();
     _centerAnimationSicker = newCenterAnimationSicker();
 
     _staticCenterAnimationSicker = newCenterAnimationSicker();
-    if (_staticCenterAnimationSicker.getPreviewAnimation() != null) {
+    if (_staticCenterAnimationSicker.getPreviewAnimation() != null && !_staticCenterAnimationSicker.isCustomReaction()) {
       _staticCenterAnimationSicker.getPreviewAnimation().setPlayOnce(true);
       _staticCenterAnimationSicker.getPreviewAnimation().setLooped(true);
     }
 
-    tdlib.ui().post(this::loadAllAnimationsAndCache);
+    loadAllAnimationsAndCache();
+  }
+
+  public boolean isPremium () {
+    return isCustom();
+  }
+
+  public boolean isCustom () {
+    return type.getConstructor() == TdApi.ReactionTypeCustomEmoji.CONSTRUCTOR;
+  }
+
+  public String getTitle () {
+    return emojiReaction != null ? emojiReaction.title : "";
   }
 
   public TGStickerObj staticIconSicker () {
@@ -72,47 +106,21 @@ public class TGReaction {
     return _staticCenterAnimationSicker;
   }
 
-  private TGStickerObj newStaticIconSicker () {
-    return new TGStickerObj(tdlib, reaction.staticIcon, reaction.reaction, reaction.staticIcon.type);
-  }
-
-  private TGStickerObj newActivateAnimationSicker () {
-    return new TGStickerObj(tdlib, reaction.activateAnimation, reaction.reaction, reaction.activateAnimation.type);
-  }
-
-  private TGStickerObj newEffectAnimationSicker () {
-    return new TGStickerObj(tdlib, reaction.effectAnimation, reaction.reaction, reaction.effectAnimation.type);
-  }
-
-  public TGStickerObj newAroundAnimationSicker () {
-    if (reaction.aroundAnimation != null) {
-      return new TGStickerObj(tdlib, reaction.aroundAnimation, reaction.reaction, reaction.aroundAnimation.type);
-    }
-    return newEffectAnimationSicker();
-  }
-
-  public TGStickerObj newCenterAnimationSicker () {
-    if (reaction.centerAnimation != null) {
-      return new TGStickerObj(tdlib, reaction.centerAnimation, reaction.reaction, reaction.centerAnimation.type);
-    }
-    return newStaticIconSicker();
-  }
-
-  public TdApi.Reaction getReaction () {
-    return this.reaction;
-  }
-
   public void loadAllAnimationsAndCache () {
-    loadAnimationAndCache(reaction.staticIcon.sticker);
-    loadAnimationAndCache(reaction.effectAnimation.sticker);
-    loadAnimationAndCache(reaction.activateAnimation.sticker);
+    if (emojiReaction != null) {
+      loadAnimationAndCache(emojiReaction.staticIcon.sticker);
+      loadAnimationAndCache(emojiReaction.effectAnimation.sticker);
+      loadAnimationAndCache(emojiReaction.activateAnimation.sticker);
 
-    if (reaction.aroundAnimation != null) {
-      loadAnimationAndCache(reaction.aroundAnimation.sticker);
-    }
+      if (emojiReaction.aroundAnimation != null) {
+        loadAnimationAndCache(emojiReaction.aroundAnimation.sticker);
+      }
 
-    if (reaction.centerAnimation != null) {
-      loadAnimationAndCache(reaction.centerAnimation.sticker);
+      if (emojiReaction.centerAnimation != null) {
+        loadAnimationAndCache(emojiReaction.centerAnimation.sticker);
+      }
+    } else if (customReaction != null) {
+
     }
   }
 
@@ -126,12 +134,51 @@ public class TGReaction {
     return _staticIconSicker.getId();
   }
 
+  private TGStickerObj newStaticIconSicker () {
+    if (emojiReaction != null) {
+      return new TGStickerObj(tdlib, emojiReaction.staticIcon, emojiReaction.emoji, emojiReaction.staticIcon.type).setReactionType(type).setDisplayScale(.5f);
+    } else {
+      return new TGStickerObj(tdlib, customReaction, null, customReaction.type).setReactionType(type).setDisplayScale(.5f).setPreviewOptimizationMode(GifFile.OptimizationMode.EMOJI);
+    }
+  }
+
+  private TGStickerObj newActivateAnimationSicker () {
+    if (emojiReaction != null && !Config.TEST_STATIC_REACTIONS) {
+      return new TGStickerObj(tdlib, emojiReaction.activateAnimation, emojiReaction.emoji, emojiReaction.activateAnimation.type).setReactionType(type);
+    } else {
+      return newStaticIconSicker();
+    }
+  }
+
+  private TGStickerObj newEffectAnimationSicker () {
+    if (emojiReaction != null) {
+      return new TGStickerObj(tdlib, emojiReaction.effectAnimation, emojiReaction.emoji, emojiReaction.effectAnimation.type).setReactionType(type);
+    } else {
+      return null;
+    }
+  }
+
+  public TGStickerObj newAroundAnimationSicker () {
+    if (emojiReaction != null && emojiReaction.aroundAnimation != null) {
+      return new TGStickerObj(tdlib, emojiReaction.aroundAnimation, emojiReaction.emoji, emojiReaction.aroundAnimation.type).setReactionType(type);
+    }
+    return newEffectAnimationSicker();
+  }
+
+  public TGStickerObj newCenterAnimationSicker () {
+    if (emojiReaction != null && emojiReaction.centerAnimation != null && !Config.TEST_STATIC_REACTIONS) {
+      return new TGStickerObj(tdlib, emojiReaction.centerAnimation, emojiReaction.emoji, emojiReaction.centerAnimation.type).setReactionType(type);
+    }
+    return newStaticIconSicker();
+  }
+
   public static class ReactionDrawable extends Drawable {
     private final TGReaction reaction;
     private final int width;
     private final int height;
 
-    @Nullable private ImageFile imageFile;
+    @Nullable private final ImageFile imageFile;
+    private final float displayScale;
     @Nullable private ImageReceiver imageReceiver;
 
     public ReactionDrawable (TGReaction reaction, int width, int height) {
@@ -139,7 +186,9 @@ public class TGReaction {
       this.height = height;
       this.reaction = reaction;
 
-      imageFile = reaction.staticCenterAnimationSicker().getImage();
+      TGStickerObj stickerObj = reaction.staticCenterAnimationSicker();
+      imageFile = stickerObj.getImage();
+      displayScale = stickerObj.getDisplayScale();
     }
 
     public void setComplexReceiver (ComplexReceiver complexReceiver) {
@@ -156,7 +205,7 @@ public class TGReaction {
     @Override
     public void draw (@NonNull Canvas c) {
       if (imageReceiver != null) {
-        imageReceiver.draw(c);
+        imageReceiver.drawScaled(c, displayScale);
       }
     }
 
@@ -178,9 +227,7 @@ public class TGReaction {
     }
 
     @Override
-    public void setColorFilter (@Nullable ColorFilter colorFilter) {
-
-    }
+    public void setColorFilter (@Nullable ColorFilter colorFilter) { }
 
     @Override
     public int getOpacity () {

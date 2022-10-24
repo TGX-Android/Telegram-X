@@ -58,7 +58,6 @@ import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Passcode;
 import org.thunderdog.challegram.unsorted.Settings;
-import org.thunderdog.challegram.util.AppBuildInfo;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.UserProvider;
 import org.thunderdog.challegram.util.WrapperProvider;
@@ -156,7 +155,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private final Object handlerLock = new Object();
   private TdlibUi _handler;
 
-  private final TdApi.TdlibParameters parameters;
+  private final TdApi.SetTdlibParameters parameters;
   private final Client.ResultHandler okHandler = object -> {
     switch (object.getConstructor()) {
       case TdApi.Ok.CONSTRUCTOR:
@@ -319,20 +318,15 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       if (initializationTime != 0)
         return;
       initializationTime = SystemClock.uptimeMillis();
+      long time = SystemClock.uptimeMillis();
       StackTraceElement[] stackTrace = new RuntimeException().getStackTrace();
-      client.send(new TdApi.SetTdlibParameters(tdlib.parameters), result -> {
+      client.send(tdlib.parameters, result -> {
+        long elapsed = SystemClock.uptimeMillis() - time;
+        TDLib.Tag.td_init("SetTdlibParameters response in %dms, accountId:%d, ok:%b", elapsed, tdlib.accountId, result.getConstructor() == TdApi.Ok.CONSTRUCTOR);
         if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
           Tracer.onTdlibFatalError(tdlib, TdApi.SetTdlibParameters.class, (TdApi.Error) result, stackTrace);
         }
-      });
-      long time = SystemClock.uptimeMillis();
-      client.send(new TdApi.CheckDatabaseEncryptionKey(), result -> {
-        long elapsed = SystemClock.uptimeMillis() - time;
-        TDLib.Tag.td_init("CheckDatabaseEncryptionKey response in %dms, accountId:%d", elapsed, tdlib.accountId);
         onDatabaseOpened();
-        if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
-          Tracer.onTdlibFatalError(tdlib, TdApi.CheckDatabaseEncryptionKey.class, (TdApi.Error) result, stackTrace);
-        }
       });
       scheduleOptimizationCheck();
       final TdApi.Function<?> startup;
@@ -443,6 +437,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private final HashMap<Long, Integer> chatOnlineMemberCount = new HashMap<>();
   private final TdlibCache cache;
   private final TdlibEmojiManager emoji;
+  private final TdlibEmojiReactionsManager reactions;
+  private final TdlibSingleton<TdApi.Stickers> genericReactionEffects;
   private final TdlibListeners listeners;
   private final TdlibFilesManager filesManager;
   private final TdlibStatusManager statusManager;
@@ -469,10 +465,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private double emojiesAnimatedZoom = .75f;
   private boolean youtubePipDisabled, qrLoginCamera, dialogFiltersTooltip, dialogFiltersEnabled;
   private String qrLoginCode;
-  private String[] diceEmoji;
-  private ArrayList<TGReaction> notPremiumReactions = new ArrayList<>();
-  private ArrayList<TGReaction> onlyPremiumReactions = new ArrayList<>();
-  private HashMap<String, TGReaction> supportedTGReactionsMap = new HashMap<>();
+  private String[] diceEmoji, activeEmojiReactions;
+  private TdApi.ReactionType defaultReactionType;
+  private final Map<String, TGReaction> cachedReactions = new HashMap<>();
   private boolean callsEnabled = true, expectBlocking, isLocationVisible;
   private boolean canIgnoreSensitiveContentRestrictions, ignoreSensitiveContentRestrictions;
   private boolean canArchiveAndMuteNewChatsFromUnknownUsers, archiveAndMuteNewChatsFromUnknownUsers;
@@ -541,8 +536,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     this.isLoggingOut = account.isLoggingOut();
 
     if (mode == Mode.SERVICE) {
-      this.parameters = new TdApi.TdlibParameters(
-        false, null, null, // updateParameters
+      this.parameters = new TdApi.SetTdlibParameters(
+        false,
+        null, null, null, // updateParameters
         false,
         false,
         false,
@@ -555,8 +551,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         false
       );
     } else {
-      this.parameters = new TdApi.TdlibParameters(
-        false, null, null, // updateParameters
+      this.parameters = new TdApi.SetTdlibParameters(
+        false,
+        null, null, null, // updateParameters
         true,
         true,
         true,
@@ -585,6 +582,16 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     this.emoji = new TdlibEmojiManager(this);
     if (needMeasure) {
       Log.v("INITIALIZATION: Tdlib.emoji -> %dms", SystemClock.uptimeMillis() - ms);
+      ms = SystemClock.uptimeMillis();
+    }
+    this.reactions = new TdlibEmojiReactionsManager(this);
+    if (needMeasure) {
+      Log.v("INITIALIZATION: Tdlib.reaction -> %dms", SystemClock.uptimeMillis() - ms);
+      ms = SystemClock.uptimeMillis();
+    }
+    this.genericReactionEffects = new TdlibSingleton<>(this, () -> new TdApi.GetCustomEmojiReactionAnimations());
+    if (needMeasure) {
+      Log.v("INITIALIZATION: Tdlib.genericReactionEffects -> %dms", SystemClock.uptimeMillis() - ms);
       ms = SystemClock.uptimeMillis();
     }
     this.filesManager = new TdlibFilesManager(this);
@@ -668,8 +675,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   synchronized void checkDeviceTokenImpl (@Nullable Runnable onDone) {
-    final String deviceToken = context.getToken();
-    if (StringUtils.isEmpty(deviceToken) || authorizationStatus() != STATUS_READY)
+    final TdApi.DeviceToken deviceToken = context.getToken();
+    if (deviceToken == null || authorizationStatus() != STATUS_READY)
       return;
     long myUserId = myUserId();
     if (myUserId == 0)
@@ -684,9 +691,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
     Log.i(Log.TAG_FCM, "Registering device token... accountId:%d", accountId);
     context.setDeviceRegistered(accountId, false);
-    TdApi.DeviceTokenFirebaseCloudMessaging token = new TdApi.DeviceTokenFirebaseCloudMessaging(deviceToken, true);
     incrementReferenceCount(REFERENCE_TYPE_JOB);
-    client().send(new TdApi.RegisterDevice(token, otherUserIds), result -> {
+    client().send(new TdApi.RegisterDevice(deviceToken, otherUserIds), result -> {
       switch (result.getConstructor()) {
         case TdApi.PushReceiverId.CONSTRUCTOR:
           Log.i(Log.TAG_FCM, "Successfully registered device token:%s, accountId:%d, otherUserIdsCount:%d", deviceToken, accountId, otherUserIds.length);
@@ -1159,8 +1165,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     if (authorizationState != null) {
       switch (authorizationState.getConstructor()) {
         case TdApi.AuthorizationStateWaitPhoneNumber.CONSTRUCTOR:
+        case TdApi.AuthorizationStateWaitEmailAddress.CONSTRUCTOR:
         case TdApi.AuthorizationStateWaitCode.CONSTRUCTOR:
+        case TdApi.AuthorizationStateWaitEmailCode.CONSTRUCTOR:
         case TdApi.AuthorizationStateWaitPassword.CONSTRUCTOR:
+        case TdApi.AuthorizationStateWaitOtherDeviceConfirmation.CONSTRUCTOR:
         case TdApi.AuthorizationStateLoggingOut.CONSTRUCTOR:
         case TdApi.AuthorizationStateWaitRegistration.CONSTRUCTOR:
           return true;
@@ -1168,7 +1177,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           return false;
         case TdApi.AuthorizationStateClosed.CONSTRUCTOR:
         case TdApi.AuthorizationStateClosing.CONSTRUCTOR:
-        case TdApi.AuthorizationStateWaitEncryptionKey.CONSTRUCTOR:
         case TdApi.AuthorizationStateWaitTdlibParameters.CONSTRUCTOR:
           break; // because we cannot know for sure
         default:
@@ -1318,6 +1326,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private static TdApi.FormattedText makeUpdateText (String version, String changeLog) {
     String text = Lang.getStringSecure(R.string.ChangeLogText, version, changeLog);
     TdApi.FormattedText formattedText = new TdApi.FormattedText(text, null);
+    //noinspection UnsafeOptInUsageError
     Td.parseMarkdown(formattedText);
     return formattedText;
   }
@@ -1359,12 +1368,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       return STATUS_UNKNOWN;
     switch (state.getConstructor()) {
       case TdApi.AuthorizationStateWaitTdlibParameters.CONSTRUCTOR:
-      case TdApi.AuthorizationStateWaitEncryptionKey.CONSTRUCTOR:
       case TdApi.AuthorizationStateClosing.CONSTRUCTOR:
       case TdApi.AuthorizationStateClosed.CONSTRUCTOR:
         return STATUS_UNKNOWN;
       case TdApi.AuthorizationStateWaitPhoneNumber.CONSTRUCTOR:
+      case TdApi.AuthorizationStateWaitEmailAddress.CONSTRUCTOR:
       case TdApi.AuthorizationStateWaitCode.CONSTRUCTOR:
+      case TdApi.AuthorizationStateWaitEmailCode.CONSTRUCTOR:
       case TdApi.AuthorizationStateWaitRegistration.CONSTRUCTOR:
       case TdApi.AuthorizationStateWaitPassword.CONSTRUCTOR:
       case TdApi.AuthorizationStateLoggingOut.CONSTRUCTOR:
@@ -1421,6 +1431,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       if (checkVersion(prevVersion, APP_RELEASE_VERSION_2022_JUNE, test)) {
         makeUpdateText(0, 24, 9, APP_RELEASE_VERSION_2022_JUNE, "https://telegra.ph/Telegram-X-06-11", functions, updates, true);
       }
+      if (checkVersion(prevVersion, APP_RELEASE_VERSION_2022_OCTOBER, test)) {
+        makeUpdateText(0, 25, 1, APP_RELEASE_VERSION_2022_OCTOBER, "https://telegra.ph/Telegram-X-10-06", functions, updates, true);
+      }
       if (!updates.isEmpty()) {
         incrementReferenceCount(REFERENCE_TYPE_JOB); // starting task
         functions.add(new TdApi.CreatePrivateChat(TdConstants.TELEGRAM_ACCOUNT_ID, false));
@@ -1472,6 +1485,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private static final int APP_RELEASE_VERSION_2021_NOVEMBER = 1470; // 12 November, 2021: https://telegra.ph/Telegram-X-11-08
 
   private static final int APP_RELEASE_VERSION_2022_JUNE = 1530; // Going open source. 16 June, 2022: https://telegra.ph/Telegram-X-06-11
+
+  private static final int APP_RELEASE_VERSION_2022_OCTOBER = 1560; // Reactions. 7 October, 2022: https://telegra.ph/Telegram-X-10-06
 
   // Startup
 
@@ -1620,6 +1635,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       U.awaitLatch(latch);
     }
     return clientHolder();
+  }
+
+  public void checkDeadlocks () {
+    if (!Config.PROFILE_DEADLOCKS)
+      return;
+    // Force ANR to cause system report
+    clientExecute(new TdApi.SetAlarm(0), 0);
   }
 
   public Client client () { // TODO migrate all tdlib.client().send(..) to tdlib.send(..)
@@ -2052,7 +2074,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return result instanceof TdApi.File ? (TdApi.File) result : null;
   }
 
-  public TdApi.TdlibParameters clientParameters () {
+  public TdApi.SetTdlibParameters clientParameters () {
     return parameters;
   }
 
@@ -2062,6 +2084,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public TdlibEmojiManager emoji () {
     return emoji;
+  }
+
+  public TdlibEmojiReactionsManager reactions () {
+    return reactions;
+  }
+
+  public TdlibSingleton<TdApi.Stickers> genericAnimationEffects () {
+    return genericReactionEffects;
   }
 
   public TdlibListeners listeners () {
@@ -3552,6 +3582,18 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return false;
   }
 
+  public boolean chatReactionsEnabled (long chatId) {
+    TdApi.Chat chat = chat(chatId);
+    if (chat == null)
+      return false;
+    TdApi.ChatAvailableReactions availableReactions = chat.availableReactions;
+    if (availableReactions == null)
+      return false;
+    if (availableReactions.getConstructor() == TdApi.ChatAvailableReactionsSome.CONSTRUCTOR)
+      return ((TdApi.ChatAvailableReactionsSome) availableReactions).reactions.length > 0;
+    return true;
+  }
+
   public boolean chatHasScheduled (long chatId) {
     TdApi.Chat chat = chat(chatId);
     return chat != null && chat.hasScheduledMessages;
@@ -3563,6 +3605,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   @Nullable
   public String getDiceEmoji (TdApi.FormattedText text) {
+    //noinspection UnsafeOptInUsageError
     if (!Td.isEmpty(text) && (text.entities == null || text.entities.length == 0)) {
       String trimmed = text.text.trim();
       if (isDiceEmoji(trimmed)) {
@@ -3572,7 +3615,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return null;
   }
 
-  public ArrayList<TGReaction> getNotPremiumReactions () {
+  /*public ArrayList<TGReaction> getNotPremiumReactions () {
     synchronized (dataLock) {
       return notPremiumReactions;
     }
@@ -3588,13 +3631,259 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     synchronized (dataLock) {
       return notPremiumReactions.size() + onlyPremiumReactions.size();
     }
+  }*/
+
+  public boolean isActiveEmojiReaction (String emoji) {
+    if (StringUtils.isEmpty(emoji)) {
+      return false;
+    }
+    synchronized (dataLock) {
+      if (activeEmojiReactions != null) {
+        return ArrayUtils.contains(activeEmojiReactions, emoji);
+      }
+    }
+    return false;
+  }
+
+  public String[] getActiveEmojiReactions () {
+    synchronized (dataLock) {
+      return activeEmojiReactions;
+    }
+  }
+
+  @NonNull
+  public String defaultEmojiReaction () {
+    synchronized (dataLock) {
+      if (defaultReactionType != null && defaultReactionType.getConstructor() == TdApi.ReactionTypeEmoji.CONSTRUCTOR) {
+        return ((TdApi.ReactionTypeEmoji) defaultReactionType).emoji;
+      }
+    }
+    return "\uD83D\uDC4D"; // Thumbs up
+  }
+
+  public void ensureEmojiReactionsAvailable (@Nullable RunnableBool after) {
+    ensureReactionsAvailable(new TdApi.ChatAvailableReactionsAll(), after);
+  }
+
+  public void ensureReactionsAvailable (String[] reactionKeys, @Nullable RunnableBool after) {
+    Set<String> uniqueReactionKeys = new HashSet<>(reactionKeys.length);
+    Collections.addAll(uniqueReactionKeys, reactionKeys);
+    TdApi.ReactionType[] reactionTypes = new TdApi.ReactionType[uniqueReactionKeys.size()];
+    int index = 0;
+    for (String reactionKey : uniqueReactionKeys) {
+      reactionTypes[index] = TD.toReactionType(reactionKey);
+      index++;
+    }
+    ensureReactionsAvailable(new TdApi.ChatAvailableReactionsSome(reactionTypes), after);
+  }
+
+  public void ensureReactionsAvailable (@NonNull TdApi.AvailableReactions reactions, @Nullable RunnableBool after) {
+    List<TdApi.ReactionType> reactionTypes = new ArrayList<>(
+      reactions.recentReactions.length +
+      reactions.topReactions.length +
+      reactions.popularReactions.length
+    );
+    for (TdApi.AvailableReaction availableReaction : reactions.recentReactions) {
+      reactionTypes.add(availableReaction.type);
+    }
+    for (TdApi.AvailableReaction availableReaction : reactions.topReactions) {
+      reactionTypes.add(availableReaction.type);
+    }
+    for (TdApi.AvailableReaction availableReaction : reactions.popularReactions) {
+      reactionTypes.add(availableReaction.type);
+    }
+    ensureReactionsAvailable(new TdApi.ChatAvailableReactionsSome(reactionTypes.toArray(new TdApi.ReactionType[0])), after);
+  }
+
+  public void ensureReactionsAvailable (@NonNull TdApi.ChatAvailableReactions reactions, @Nullable RunnableBool after) {
+    final AtomicInteger remaining = new AtomicInteger();
+    TdlibEmojiReactionsManager.Watcher emojiReactionWatcher = (context, entry) -> {
+      /*if (entry.value != null) {
+        synchronized (dataLock) {
+          cachedReactions.put(entry.key, new TGReaction(this, entry.value));
+        }
+      }*/
+      if (remaining.decrementAndGet() == 0) {
+        if (after != null) {
+          after.runWithBool(true);
+        }
+      }
+    };
+    TdlibEmojiManager.Watcher customReactionWatcher = (context, entry) -> {
+      if (remaining.decrementAndGet() == 0) {
+        if (after != null) {
+          after.runWithBool(true);
+        }
+      }
+    };
+    switch (reactions.getConstructor()) {
+      case TdApi.ChatAvailableReactionsAll.CONSTRUCTOR: {
+        String[] activeEmojiReactions = getActiveEmojiReactions();
+        if (activeEmojiReactions == null || activeEmojiReactions.length == 0) {
+          if (after != null) {
+            after.runWithBool(false);
+          }
+          return;
+        }
+        int requestedCount = 0;
+        remaining.set(activeEmojiReactions.length);
+        for (String activeEmojiReaction : activeEmojiReactions) {
+          TdlibEmojiReactionsManager.Entry entry = reactions().findOrPostponeRequest(activeEmojiReaction, emojiReactionWatcher, true);
+          if (entry != null) {
+            remaining.decrementAndGet();
+          } else {
+            requestedCount++;
+          }
+        }
+        if (requestedCount == 0) {
+          if (after != null) {
+            after.runWithBool(false);
+          }
+        } else {
+          reactions().performPostponedRequests();
+        }
+        break;
+      }
+      case TdApi.ChatAvailableReactionsSome.CONSTRUCTOR: {
+        TdApi.ChatAvailableReactionsSome some = (TdApi.ChatAvailableReactionsSome) reactions;
+        if (some.reactions.length == 0) {
+          if (after != null) {
+            after.runWithBool(false);
+          }
+          return;
+        }
+        remaining.set(some.reactions.length);
+        int requestedEmojiReactionCount = 0;
+        int requestedCustomReactionCount = 0;
+        for (TdApi.ReactionType reactionType : some.reactions) {
+          switch (reactionType.getConstructor()) {
+            case TdApi.ReactionTypeEmoji.CONSTRUCTOR: {
+              TdApi.ReactionTypeEmoji emoji = (TdApi.ReactionTypeEmoji) reactionType;
+              TdlibEmojiReactionsManager.Entry entry = reactions().findOrPostponeRequest(emoji.emoji, emojiReactionWatcher, true);
+              if (entry != null) {
+                remaining.decrementAndGet();
+              } else {
+                requestedEmojiReactionCount++;
+              }
+              break;
+            }
+            case TdApi.ReactionTypeCustomEmoji.CONSTRUCTOR: {
+              TdApi.ReactionTypeCustomEmoji customEmoji = (TdApi.ReactionTypeCustomEmoji) reactionType;
+              TdlibEmojiManager.Entry entry = emoji().findOrPostponeRequest(customEmoji.customEmojiId, customReactionWatcher, true);
+              if (entry != null) {
+                remaining.decrementAndGet();
+              } else {
+                requestedCustomReactionCount++;
+              }
+              break;
+            }
+          }
+        }
+        if (requestedEmojiReactionCount == 0 && requestedCustomReactionCount == 0) {
+          if (after != null) {
+            after.runWithBool(false);
+          }
+        } else {
+          if (requestedEmojiReactionCount > 0) {
+            reactions().performPostponedRequests();
+          }
+          if (requestedCustomReactionCount > 0) {
+            emoji().performPostponedRequests();
+          }
+        }
+        break;
+      }
+    }
+  }
+
+  public void pickRandomGenericOverlaySticker (RunnableData<TdApi.Sticker> after) {
+    genericReactionEffects.get(stickers -> {
+      if (stickers != null && stickers.stickers.length > 0) {
+        TdApi.Sticker sticker = stickers.stickers[MathUtils.random(0, stickers.stickers.length - 1)];
+        after.runWithData(sticker);
+      } else {
+        after.runWithData(null);
+      }
+    });
+  }
+
+  public TGReaction getReaction (@Nullable TdApi.ReactionType reactionType) {
+    return getReaction(reactionType, true);
   }
 
   @Nullable
-  public TGReaction getReaction (String reaction) {
-    synchronized (dataLock) {
-      return supportedTGReactionsMap.get(reaction);
+  public TGReaction getReaction (@Nullable TdApi.ReactionType reactionType, boolean allowRequest) {
+    if (reactionType == null) {
+      return null;
     }
+    String key = TD.makeReactionKey(reactionType);
+    synchronized (dataLock) {
+      TGReaction reaction = cachedReactions.get(key);
+      if (reaction != null) {
+        return reaction;
+      }
+    }
+    switch (reactionType.getConstructor()) {
+      case TdApi.ReactionTypeEmoji.CONSTRUCTOR: {
+        TdApi.ReactionTypeEmoji emoji = (TdApi.ReactionTypeEmoji) reactionType;
+        RunnableData<TdlibEmojiReactionsManager.Entry> emojiReactionWatcher = (newEntry) -> {
+          if (newEntry.value != null) {
+            TGReaction reaction = new TGReaction(this, newEntry.value);
+            synchronized (dataLock) {
+              cachedReactions.put(key, reaction);
+            }
+            listeners().notifyReactionLoaded(key);
+          }
+        };
+        TdlibEmojiReactionsManager.Entry entry;
+        if (allowRequest) {
+          entry = reactions().findOrRequest(emoji.emoji, emojiReactionWatcher);
+        } else {
+          entry = reactions().find(emoji.emoji);
+        }
+        if (entry != null) {
+          if (entry.value == null) {
+            return null;
+          }
+          TGReaction reaction = new TGReaction(this, entry.value);
+          synchronized (dataLock) {
+            cachedReactions.put(key, reaction);
+          }
+          return reaction;
+        }
+        break;
+      }
+      case TdApi.ReactionTypeCustomEmoji.CONSTRUCTOR: {
+        TdApi.ReactionTypeCustomEmoji customEmoji = (TdApi.ReactionTypeCustomEmoji) reactionType;
+        RunnableData<TdlibEmojiManager.Entry> customReactionWatcher = (newEntry) -> {
+          if (newEntry.value != null) {
+            TGReaction reaction = new TGReaction(this, newEntry.value);
+            synchronized (dataLock) {
+              cachedReactions.put(key, reaction);
+            }
+            listeners().notifyReactionLoaded(key);
+          }
+        };
+        TdlibEmojiManager.Entry entry;
+        if (allowRequest) {
+          entry = emoji().findOrRequest(customEmoji.customEmojiId, customReactionWatcher);
+        } else {
+          entry = emoji().find(customEmoji.customEmojiId);
+        }
+        if (entry != null) {
+          if (entry.value == null) {
+            return null;
+          }
+          TGReaction reaction = new TGReaction(this, entry.value);
+          synchronized (dataLock) {
+            cachedReactions.put(key, reaction);
+          }
+          return reaction;
+        }
+        break;
+      }
+    }
+    return null;
   }
 
   public boolean shouldSendAsDice (TdApi.FormattedText text) {
@@ -3606,10 +3895,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       return false;
     synchronized (dataLock) {
       if (diceEmoji != null) {
-        for (String emoji : diceEmoji) {
-          if (text.equals(emoji))
-            return true;
-        }
+        return ArrayUtils.contains(diceEmoji, emoji);
       }
     }
     return false;
@@ -3753,27 +4039,23 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     client().send(new TdApi.SendChatScreenshotTakenNotification(chatId), messageHandler());
   }
 
-  public void sendMessage (long chatId, long messageThreadId, long replyToMessageId, boolean disableNotification, boolean fromBackground, TdApi.Animation animation) {
+  public void sendMessage (long chatId, long messageThreadId, long replyToMessageId, TdApi.MessageSendOptions options, TdApi.Animation animation) {
     TdApi.InputMessageContent inputMessageContent = new TdApi.InputMessageAnimation(new TdApi.InputFileId(animation.animation.id), null, null, animation.duration, animation.width, animation.height, null);
-    sendMessage(chatId, messageThreadId, replyToMessageId, disableNotification, fromBackground, inputMessageContent);
+    sendMessage(chatId, messageThreadId, replyToMessageId, options, inputMessageContent);
   }
 
-  public void sendMessage (long chatId, long messageThreadId, long replyToMessageId, boolean disableNotification, boolean fromBackground, TdApi.Audio audio) {
+  public void sendMessage (long chatId, long messageThreadId, long replyToMessageId, TdApi.MessageSendOptions options, TdApi.Audio audio) {
     TdApi.InputMessageContent inputMessageContent = new TdApi.InputMessageAudio(new TdApi.InputFileId(audio.audio.id), null, audio.duration, audio.title, audio.performer, null);
-    sendMessage(chatId, messageThreadId, replyToMessageId, disableNotification, fromBackground, inputMessageContent);
+    sendMessage(chatId, messageThreadId, replyToMessageId, options, inputMessageContent);
   }
 
-  public void sendMessage (long chatId, long messageThreadId, long replyToMessageId, boolean disableNotification, boolean fromBackground, TdApi.Sticker sticker, @Nullable String emoji) {
+  public void sendMessage (long chatId, long messageThreadId, long replyToMessageId, TdApi.MessageSendOptions options, TdApi.Sticker sticker, @Nullable String emoji) {
     TdApi.InputMessageContent inputMessageContent = new TdApi.InputMessageSticker(new TdApi.InputFileId(sticker.sticker.id), null, 0, 0, emoji);
-    sendMessage(chatId, messageThreadId, replyToMessageId, disableNotification, fromBackground, inputMessageContent);
+    sendMessage(chatId, messageThreadId, replyToMessageId, options, inputMessageContent);
   }
 
-  public void sendMessage (long chatId, long messageThreadId, long replyToMessageId, boolean disableNotification, boolean fromBackground, TdApi.InputMessageContent inputMessageContent) {
-    sendMessage(chatId, messageThreadId, replyToMessageId, disableNotification, fromBackground, inputMessageContent, null);
-  }
-
-  public void sendMessage (long chatId, long messageThreadId, long replyToMessageId, boolean disableNotification, boolean fromBackground, TdApi.InputMessageContent inputMessageContent, @Nullable RunnableData<TdApi.Message> after) {
-    sendMessage(chatId, messageThreadId, replyToMessageId, new TdApi.MessageSendOptions(disableNotification, fromBackground, false, null), inputMessageContent, after);
+  public void sendMessage (long chatId, long messageThreadId, long replyToMessageId, TdApi.MessageSendOptions options, TdApi.InputMessageContent inputMessageContent) {
+    sendMessage(chatId, messageThreadId, replyToMessageId, options, inputMessageContent, null);
   }
 
   public void sendMessage (long chatId, long messageThreadId, long replyToMessageId, TdApi.MessageSendOptions options, TdApi.InputMessageContent inputMessageContent, @Nullable RunnableData<TdApi.Message> after) {
@@ -3822,7 +4104,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     if (customEmojiId != 0) {
       emoji().findOrRequest(customEmojiId, entry -> {
         if (entry != null && !entry.isNotFound()) {
-          TdApi.MessageAnimatedEmoji animatedEmoji = new TdApi.MessageAnimatedEmoji(new TdApi.AnimatedEmoji(entry.sticker, 0, null), content.text.text);
+          TdApi.Sticker customEmojiSticker = entry.value;
+          TdApi.MessageAnimatedEmoji animatedEmoji = new TdApi.MessageAnimatedEmoji(new TdApi.AnimatedEmoji(customEmojiSticker, customEmojiSticker.width, customEmojiSticker.height, 0, null), content.text.text);
           performEdit(chatId, messageId, animatedEmoji, new TdApi.EditMessageText(chatId, messageId, null, content), pendingMessageTexts);
         } else {
           animatedEmojiFallback.run();
@@ -3957,6 +4240,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public void getTesterLevel (@NonNull RunnableInt callback) {
+    getTesterLevel(callback, false);
+  }
+
+  public void getTesterLevel (@NonNull RunnableInt callback, boolean onlyLocal) {
     if (inRecoveryMode() || isDebugInstance()) {
       callback.runWithInt(TESTER_LEVEL_TESTER);
       return;
@@ -3966,6 +4253,23 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       callback.runWithInt(TESTER_LEVEL_CREATOR);
     } else if (myUserId == TDLIB_CREATOR_USER_ID) {
       callback.runWithInt(TESTER_LEVEL_DEVELOPER);
+    } else if (onlyLocal) {
+      TdApi.Chat tgxAdminChat = chat(ADMIN_CHAT_ID);
+      if (tgxAdminChat != null && TD.isMember(chatStatus(ADMIN_CHAT_ID))) {
+        callback.runWithInt(TESTER_LEVEL_ADMIN);
+        return;
+      }
+      TdApi.Chat tgxTestersChat = chat(TESTER_CHAT_ID);
+      if (tgxTestersChat != null && TD.isMember(chatStatus(TESTER_CHAT_ID))) {
+        callback.runWithInt(TESTER_LEVEL_TESTER);
+        return;
+      }
+      TdApi.Chat tgxReadersChat = chat(READER_CHAT_ID);
+      if (tgxReadersChat != null && TD.isMember(chatStatus(READER_CHAT_ID))) {
+        callback.runWithInt(TESTER_LEVEL_READER);
+        return;
+      }
+      callback.runWithInt(TESTER_LEVEL_NONE);
     } else {
       chat(ADMIN_CHAT_ID, tgxAdminChat -> {
         if (tgxAdminChat != null && TD.isMember(chatStatus(ADMIN_CHAT_ID))) {
@@ -3989,8 +4293,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
-  public void forwardMessage (long chatId, long fromChatId, long messageId, boolean disableNotification, boolean fromBackground) {
-    client().send(new TdApi.ForwardMessages(chatId, fromChatId, new long[] {messageId}, new TdApi.MessageSendOptions(disableNotification, fromBackground, false, null), false, false, false), messageHandler());
+  public void forwardMessage (long chatId, long fromChatId, long messageId, TdApi.MessageSendOptions options) {
+    client().send(new TdApi.ForwardMessages(chatId, fromChatId, new long[] {messageId}, options, false, false, false), messageHandler());
   }
 
   public void sendInlineQueryResult (long chatId, long messageThreadId, long replyToMessageId, TdApi.MessageSendOptions options, long queryId, String resultId) {
@@ -4822,9 +5126,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     checkConnectionParams(client(), false);
   }
 
-  private String getRegisteredDeviceToken () {
-    String deviceToken = context.getToken();
-    return StringUtils.isEmpty(deviceToken) ? Settings.instance().getDeviceToken() : deviceToken;
+  private TdApi.DeviceToken getRegisteredDeviceToken () {
+    TdApi.DeviceToken deviceToken = context.getToken();
+    return deviceToken == null ? Settings.instance().getDeviceToken() : deviceToken;
   }
 
   private void checkConnectionParams (Client client, boolean force) {
@@ -4833,8 +5137,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       params.put("device_token", "HIDDEN");
     } else {
       int state = context().getTokenState();
-      final String deviceToken = getRegisteredDeviceToken();
-      if (!StringUtils.isEmpty(deviceToken) && (state == TdlibManager.TokenState.NONE || state == TdlibManager.TokenState.INITIALIZING)) {
+      final TdApi.DeviceToken deviceToken = getRegisteredDeviceToken();
+      if (deviceToken != null && (state == TdlibManager.TokenState.NONE || state == TdlibManager.TokenState.INITIALIZING)) {
         state = TdlibManager.TokenState.OK;
       }
       String error = context().getTokenError();
@@ -4851,7 +5155,17 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           break;
         }
         case TdlibManager.TokenState.OK: {
-          params.put("device_token", deviceToken);
+          switch (deviceToken.getConstructor()) {
+            // TODO more push services
+            case TdApi.DeviceTokenFirebaseCloudMessaging.CONSTRUCTOR: {
+              String token = ((TdApi.DeviceTokenFirebaseCloudMessaging) deviceToken).token;
+              params.put("device_token", token);
+              break;
+            }
+            default: {
+              throw new UnsupportedOperationException(deviceToken.toString());
+            }
+          }
           break;
         }
         case TdlibManager.TokenState.NONE:
@@ -5448,6 +5762,20 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
+  public boolean notifyPushProcessingTakesTooLong (long pushId) { // Called from Firebase thread
+    TdApi.AuthorizationState authorizationState = this.authorizationState;
+    if (authorizationState != null) {
+      switch (authorizationState.getConstructor()) {
+        case TdApi.AuthorizationStateLoggingOut.CONSTRUCTOR:
+        case TdApi.AuthorizationStateClosing.CONSTRUCTOR:
+          // Make sure action finishes even if it causes ANR.
+          return false;
+      }
+    }
+    notifications().notifyPushProcessingTakesTooLong();
+    return true;
+  }
+
   void processPushOrSync (long pushId, String payload, @Nullable Runnable after) {
     TDLib.Tag.notifications(pushId, accountId, "Started processing push notification, hasAfter:%b", after != null);
     incrementNotificationReferenceCount();
@@ -5968,6 +6296,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     repliesBotChatId = TdConstants.TELEGRAM_REPLIES_BOT_ACCOUNT_ID;
     sessionsInfo = null;
     animatedTgxEmoji.clear();
+    cachedReactions.clear();
+    activeEmojiReactions = null;
   }
 
   public static class RtcServer {
@@ -7652,7 +7982,21 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
-  private void updateReactions (TdApi.UpdateReactions update) {
+  @TdlibThread
+  private void updateActiveEmojiReactions (TdApi.UpdateActiveEmojiReactions update) {
+    synchronized (dataLock) {
+      this.activeEmojiReactions = update.emojis;
+    }
+  }
+
+  @TdlibThread
+  private void updateDefaultReactionType (TdApi.UpdateDefaultReactionType update) {
+    synchronized (dataLock) {
+      this.defaultReactionType = update.reactionType;
+    }
+  }
+
+  /*private void updateReactions (TdApi.UpdateReactions update) {
     synchronized (dataLock) {
       HashMap<String, TGReaction> supportedTGReactionsMap = new HashMap<>();
       ArrayList<TGReaction> notPremiumReactions = new ArrayList<>();
@@ -7675,7 +8019,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       this.notPremiumReactions = notPremiumReactions;
       this.onlyPremiumReactions = onlyPremiumReactions;
     }
-  }
+  }*/
 
   private void updateStickerSet (TdApi.StickerSet stickerSet) {
     animatedTgxEmoji.update(this, stickerSet);
@@ -7814,6 +8158,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       case TdApi.UpdateNotification.CONSTRUCTOR:
         onUpdateNotification((TdApi.UpdateNotification) update);
         break;
+      case TdApi.UpdateSavedNotificationSounds.CONSTRUCTOR:
+        onUpdateSavedNotificationSounds((TdApi.UpdateSavedNotificationSounds) update);
+        break;
 
       // Messages
       case TdApi.UpdateNewMessage.CONSTRUCTOR: {
@@ -7882,8 +8229,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
 
       // Reactions
-      case TdApi.UpdateReactions.CONSTRUCTOR: {
-        updateReactions((TdApi.UpdateReactions) update);
+      case TdApi.UpdateActiveEmojiReactions.CONSTRUCTOR: {
+        updateActiveEmojiReactions((TdApi.UpdateActiveEmojiReactions) update);
+        break;
+      }
+      case TdApi.UpdateDefaultReactionType.CONSTRUCTOR: {
+        updateDefaultReactionType((TdApi.UpdateDefaultReactionType) update);
         break;
       }
       case TdApi.UpdateMessageUnreadReactions.CONSTRUCTOR: {
@@ -8471,6 +8822,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
             }
           }
         }
+        //noinspection UnsafeOptInUsageError
         if (!Td.isEmpty(caption)) {
           Pattern pattern = Pattern.compile("(?<=Commit:)\\s*([a-zA-Z0-9]+)", Pattern.CASE_INSENSITIVE);
           Matcher matcher = pattern.matcher(caption.text);
@@ -8939,7 +9291,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           return getMediaRestrictionText(chat);
         case TdApi.InputMessageVideoNote.CONSTRUCTOR:
         case TdApi.InputMessageVoiceNote.CONSTRUCTOR:
-          return getVoiceVideoRestricitonText(chat, message.getConstructor() == TdApi.MessageVideoNote.CONSTRUCTOR);
+          return getVoiceVideoRestricitonText(chat, message.getConstructor() == TdApi.InputMessageVideoNote.CONSTRUCTOR);
       }
     }
     return getMessageRestrictionText(chat);

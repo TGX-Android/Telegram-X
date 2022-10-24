@@ -23,6 +23,7 @@ import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.collection.SparseArrayCompat;
+import androidx.core.os.CancellationSignal;
 
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -47,6 +48,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.reference.ReferenceIntMap;
@@ -154,20 +156,36 @@ public class TdlibFilesManager implements GlobalConnectionListener {
     }
   }
 
-  public Runnable downloadFileSync (@NonNull final TdApi.File file, final long timeoutMs, final @Nullable RunnableData<TdApi.File> after, final @Nullable RunnableData<TdApi.File> fileUpdateListener) {
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    DownloadState.PENDING,
+    DownloadState.DOWNLOADED,
+    DownloadState.TIMEOUT,
+    DownloadState.CANCELED
+  })
+  public @interface DownloadState {
+    int
+      PENDING = 0,
+      DOWNLOADED = 1,
+      TIMEOUT = 2,
+      CANCELED = 3;
+  }
+
+  public Runnable downloadFileSync (@NonNull final TdApi.File file, final long timeoutMs, final @Nullable RunnableData<TdApi.File> after, final @Nullable RunnableData<TdApi.File> fileUpdateListener, @Nullable CancellationSignal cancellationSignal) {
     if (TD.isFileLoaded(file)) {
       return null;
     }
     final CountDownLatch latch = timeoutMs >= 0 ? new CountDownLatch(1) : null;
-    final int[] signal = new int[1]; // 1 = done, 2 = timeout, 3 = cancelled
+    final AtomicInteger state = new AtomicInteger(DownloadState.PENDING);
     final FileUpdateListener listener = new FileUpdateListener() {
       @Override
       public void onUpdateFile (TdApi.UpdateFile updateFile) {
-        synchronized (signal) {
-          if (signal[0] == 3) {
+        synchronized (state) {
+          int currentState = state.get();
+          if (currentState == DownloadState.CANCELED) {
             return;
           }
-          if (signal[0] == 2) {
+          if (currentState == DownloadState.TIMEOUT) {
             if (after != null && updateFile.file.local.isDownloadingCompleted) {
               after.runWithData(updateFile.file);
             } else if (fileUpdateListener != null) {
@@ -177,7 +195,7 @@ public class TdlibFilesManager implements GlobalConnectionListener {
           }
           Td.copyTo(updateFile.file, file);
           if (updateFile.file.local.isDownloadingCompleted) {
-            signal[0] = 1;
+            state.set(DownloadState.DOWNLOADED);
             if (latch != null) {
               latch.countDown();
             }
@@ -194,6 +212,17 @@ public class TdlibFilesManager implements GlobalConnectionListener {
     };
     tdlib.listeners().addFileListener(file.id, listener);
     addCloudReference(file, listener, false);
+    Runnable onCancel =  () -> {
+      synchronized (state) {
+        if (state.compareAndSet(DownloadState.PENDING, DownloadState.CANCELED)) {
+          removeCloudReference(file, listener);
+          tdlib.listeners().removeFileListener(file.id, listener);
+        }
+      }
+    };
+    if (cancellationSignal != null) {
+      cancellationSignal.setOnCancelListener(onCancel::run);
+    }
     if (latch != null) {
       try {
         if (timeoutMs > 0) {
@@ -204,28 +233,17 @@ public class TdlibFilesManager implements GlobalConnectionListener {
       } catch (InterruptedException e) {
         Log.i(e);
       }
-      synchronized (signal) {
-        if (signal[0] == 0) {
+      synchronized (state) {
+        if (state.compareAndSet(DownloadState.PENDING, after != null ? DownloadState.TIMEOUT : DownloadState.CANCELED)) {
           if (after == null) {
-            signal[0] = 3; // canceled, because nothing left to do
             removeCloudReference(file, listener);
             tdlib.listeners().removeFileListener(file.id, listener);
-          } else {
-            signal[0] = 2; // timeout
           }
         }
       }
       return null;
     } else {
-      return () -> {
-        synchronized (signal) {
-          if (signal[0] == 0) {
-            signal[0] = 3; // canceled, because nothing left to do
-            removeCloudReference(file, listener);
-            tdlib.listeners().removeFileListener(file.id, listener);
-          }
-        }
-      };
+      return onCancel;
     }
   }
 
