@@ -79,6 +79,18 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
     super(context, tdlib);
   }
 
+  private boolean reactionsFetched;
+
+  @Override
+  public boolean needAsynchronousAnimation () {
+    return !reactionsFetched;
+  }
+
+  @Override
+  public long getAsynchronousAnimationTimeout (boolean fastAnimation) {
+    return 500l;
+  }
+
   @Override
   public void setArguments (EditEnabledReactionsController.Args args) {
     super.setArguments(args);
@@ -135,7 +147,7 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
               view.setChecked(false, isUpdate);
             } else if (enabledCount == Integer.MAX_VALUE) {
               v.setName(R.string.ReactionsEnabledAll);
-              view.setChecked(false, isUpdate);
+              view.setChecked(true, isUpdate);
             } else {
               v.setName(Lang.pluralBold(R.string.ReactionsEnabled, enabledCount));
               view.setChecked(true, isUpdate);
@@ -203,9 +215,44 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
       }
     });
 
+    GridSpacingItemDecoration decoration = new GridSpacingItemDecoration(4, Screen.dp(3f), true, true, true);
+    decoration.setNeedDraw(true, ListItem.TYPE_REACTION_CHECKBOX);
+    decoration.setDrawColorId(R.id.theme_color_filling);
+    decoration.setSpanSizeLookup(manager.getSpanSizeLookup());
+    recyclerView.addItemDecoration(decoration);
+    recyclerView.setItemAnimator(null);
+    recyclerView.setLayoutManager(manager);
+    recyclerView.setAdapter(adapter);
+    addThemeInvalidateListener(recyclerView);
+    recyclerView.setOnScrollListener(new RecyclerView.OnScrollListener() {
+      @Override
+      public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
+        context().reactionsOverlayManager().addOffset(0, -dy);
+      }
+    });
+
+    context().reactionsOverlayManager();
+
+    tdlib.ensureEmojiReactionsAvailable(emojiReactionsFetched -> {
+      Runnable after = () -> {
+        this.reactionsFetched = true;
+        buildCells();
+        executeScheduledAnimation();
+      };
+      if (type == TYPE_ENABLED_REACTIONS) {
+        tdlib.ensureReactionsAvailable(chat.availableReactions, customReactionsFetched ->
+          executeOnUiThreadOptional(after)
+        );
+      } else {
+        executeOnUiThreadOptional(after);
+      }
+    });
+  }
+
+  private void buildCells () {
     ArrayList<ListItem> items = new ArrayList<>();
     if (type == TYPE_ENABLED_REACTIONS) {
-      items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.reactions_enabled, 0, R.string.ReactionsDisabled, R.id.reactions_enabled, !enabledReactions.isEmpty()));
+      items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.reactions_enabled, 0, R.string.ReactionsDisabled, R.id.reactions_enabled, !enabledReactions.isEmpty() || availableReactions.getConstructor() == TdApi.ChatAvailableReactionsAll.CONSTRUCTOR));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getMarkdownString(this, R.string.ReactionsDisabledDesc), false));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
@@ -243,24 +290,6 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
     }*/
 
     adapter.setItems(items, true);
-
-    GridSpacingItemDecoration decoration = new GridSpacingItemDecoration(4, Screen.dp(3f), true, true, true);
-    decoration.setNeedDraw(true, ListItem.TYPE_REACTION_CHECKBOX);
-    decoration.setDrawColorId(R.id.theme_color_filling);
-    decoration.setSpanSizeLookup(manager.getSpanSizeLookup());
-    recyclerView.addItemDecoration(decoration);
-    recyclerView.setItemAnimator(null);
-    recyclerView.setLayoutManager(manager);
-    recyclerView.setAdapter(adapter);
-    addThemeInvalidateListener(recyclerView);
-    recyclerView.setOnScrollListener(new RecyclerView.OnScrollListener() {
-      @Override
-      public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
-        context().reactionsOverlayManager().addOffset(0, -dy);
-      }
-    });
-
-    context().reactionsOverlayManager();
   }
 
   private boolean needPremiumRestriction () {
@@ -278,6 +307,16 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
   @Override
   protected void onTranslationChanged (float newTranslationX) {
     context().reactionsOverlayManager().setControllerTranslationX((int) newTranslationX);
+  }
+
+  private TdApi.ChatAvailableReactions buildAvailableReactions () {
+    TdApi.ReactionType[] availableReactions = new TdApi.ReactionType[enabledReactions.size()];
+    int index = 0;
+    for (String enabledReaction : enabledReactions) {
+      availableReactions[index] = TD.toReactionType(enabledReaction);
+      index++;
+    }
+    return new TdApi.ChatAvailableReactionsSome(availableReactions);
   }
 
   @Override
@@ -335,6 +374,7 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
             checked = true;
             enabledReactions.add(tgReaction.key);
           }
+          availableReactions = buildAvailableReactions();
 
           adapter.updateAllValuedSettingsById(R.id.btn_enabledReactionsCheckboxGroup);
           adapter.updateValuedSettingById(R.id.reactions_enabled);
