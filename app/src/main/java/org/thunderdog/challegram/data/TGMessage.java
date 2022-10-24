@@ -297,7 +297,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     this.messageReactions = new TGReactions(this, tdlib, msg.interactionInfo != null ? msg.interactionInfo.reactions : null, new TGReactions.MessageReactionsDelegate() {
       @Override
       public void onClick (View v, TGReactions.MessageReactionEntry entry) {
-        boolean needAnimation = messageReactions.toggleReaction(entry.getReactionType(), false, handler(v, entry, () -> {}));
+        boolean needAnimation = messageReactions.toggleReaction(entry.getReactionType(), false, false, handler(v, entry, () -> {}));
         if (needAnimation) {
           scheduleSetReactionAnimation(new NextReactionAnimation(entry.getTGReaction(), NextReactionAnimation.TYPE_CLICK));
         }
@@ -7488,7 +7488,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
         final boolean isOdd = a % 2 == 1;
         final SwipeQuickAction quickReaction = new SwipeQuickAction(reactionObj.getTitle(), reactionDrawable, () -> {
-          if (messageReactions.toggleReaction(reactionType, false, handler(findCurrentView(), null, () -> {}))) {
+          if (messageReactions.toggleReaction(reactionType, false, false, handler(findCurrentView(), null, () -> {}))) {
             scheduleSetReactionAnimation(new NextReactionAnimation(reactionObj, NextReactionAnimation.TYPE_QUICK));
           }
         }, false, true);
