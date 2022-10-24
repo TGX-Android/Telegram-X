@@ -260,8 +260,8 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
       int cx = getStickerCenterX();
       int cy = getStickerCenterY();
 
-      stickerWidth = currentSticker.getWidth();
-      stickerHeight = currentSticker.getHeight();
+      stickerWidth = (int) Math.floor(currentSticker.getWidth() * currentSticker.getDisplayScale());
+      stickerHeight = (int) Math.floor(currentSticker.getHeight() * currentSticker.getDisplayScale());
 
       stickerMaxWidth = Math.min(Screen.dp(190f), Screen.smallestSide() - Screen.dp(86f));
       if (Math.max(stickerWidth, stickerHeight) != stickerMaxWidth) {

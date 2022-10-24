@@ -85,6 +85,13 @@ abstract class TdlibDataManager<Key, Value extends TdApi.Object, Result extends 
   // Impl
 
   @UiThread
+  public final Result find (Key key) {
+    synchronized (dataLock) {
+      return entries.get(key);
+    }
+  }
+
+  @UiThread
   public final Result findOrRequest (Key key, @Nullable RunnableData<Result> callback) {
     Watcher<Key, Value, Result> watcher;
     if (callback != null) {

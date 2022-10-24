@@ -334,6 +334,12 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
     }
   }
 
+  public Tdlib activeTdlib () {
+    synchronized (sync) {
+      return tdlib != null && !tdlib.isPaused() ? tdlib : null;
+    }
+  }
+
   public void closeTdlib (Runnable after) {
     synchronized (sync) {
       if (tdlib != null && !tdlib.isPaused()) {

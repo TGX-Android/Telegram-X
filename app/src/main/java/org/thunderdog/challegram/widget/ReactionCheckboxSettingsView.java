@@ -150,13 +150,12 @@ public class ReactionCheckboxSettingsView extends LinearLayout implements ThemeI
     this.reaction = reaction;
     activateAnimationSticker = reaction.centerAnimationSicker();
     if (activateAnimationSticker.getPreviewAnimation() != null) {
-      activateAnimationSticker.getPreviewAnimation().setPlayOnce(true);
-      stickerSmallView.setPadding(0);
-    } else {
-      stickerSmallView.setPadding(Screen.dp(12));
+      if (!activateAnimationSticker.isCustomReaction()) {
+        activateAnimationSticker.getPreviewAnimation().setPlayOnce(true);
+      }
     }
     stickerSmallView.setSticker(activateAnimationSticker);
-    setCaptionText(reaction.reaction.title);
+    setCaptionText(reaction.getTitle());
   }
 
   public void setChecked (boolean checked, boolean animated) {

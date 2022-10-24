@@ -186,17 +186,17 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
               final List<TGReaction> tgReactions = new ArrayList<>(reactions.length);
               for (String reactionKey : reactions) {
                 TdApi.ReactionType reactionType = TD.toReactionType(reactionKey);
-                final TGReaction tgReaction = tdlib.getReaction(reactionType);
+                final TGReaction tgReaction = tdlib.getReaction(reactionType, false);
                 if (tgReaction != null) {
                   tgReactions.add(tgReaction);
                   if (stringBuilder.length() > 0) {
                     stringBuilder.append(Lang.getConcatSeparator());
                   }
-                  stringBuilder.append(tgReaction.getReaction().title);
+                  stringBuilder.append(tgReaction.getTitle());
                 }
               }
               v.setDrawModifier(new ReactionModifier(v.getComplexReceiver(), tgReactions.toArray(new TGReaction[0])));
-              v.setData(stringBuilder);
+              v.setData(stringBuilder.toString());
             } else {
               v.setDrawModifier(null);
               v.setData(R.string.QuickReactionDisabled);
@@ -553,6 +553,8 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
           items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
           items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_icon, 0, R.string.Icons).setDrawModifier(new DrawableModifier(R.drawable.baseline_star_20, R.drawable.baseline_account_balance_wallet_20, R.drawable.baseline_location_on_20, R.drawable.baseline_favorite_20)));
         }
+      }
+      if (!tdlib.account().isDebug() || BuildConfig.DEBUG) {
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
         items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_quick_reaction, 0, R.string.QuickReaction));
       }

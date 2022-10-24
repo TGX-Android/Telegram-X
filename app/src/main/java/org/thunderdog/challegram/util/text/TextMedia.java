@@ -200,7 +200,7 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
     // upd: turns out all of the webm emoji fit entire space
     if (Td.isAnimated(sticker.format) &&
         sticker.format.getConstructor() != TdApi.StickerFormatWebm.CONSTRUCTOR) {
-      return 120.0f / 100.0f - (Screen.dp(1f) * 2 / (float) size);
+      return 120.0f / 100.0f - (size != 0 ? Screen.dp(1f) * 2 / (float) size : 0);
     }
     return 1f;
   }

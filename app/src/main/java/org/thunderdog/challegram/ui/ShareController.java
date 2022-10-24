@@ -601,7 +601,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     }
     for (int i = 0; i < downloadingFiles.size(); i++) {
       FileEntry file = downloadingFiles.valueAt(i);
-      file.onTimeout = tdlib.files().downloadFileSync(file.file, -1, downloadedFile -> tdlib.ui().post(() -> onFileLoaded(file)), updatedFile -> tdlib.ui().post(this::dispatchDownloadProgress));
+      file.onTimeout = tdlib.files().downloadFileSync(file.file, -1, downloadedFile -> tdlib.ui().post(() -> onFileLoaded(file)), updatedFile -> tdlib.ui().post(this::dispatchDownloadProgress), null);
     }
   }
 

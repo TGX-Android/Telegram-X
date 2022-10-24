@@ -44,6 +44,7 @@ import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.MainActivity;
+import org.thunderdog.challegram.ui.MapControllerFactory;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.base.SettingView;
@@ -102,7 +103,6 @@ import org.thunderdog.challegram.ui.InstantViewController;
 import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.MainController;
 import org.thunderdog.challegram.ui.MapController;
-import org.thunderdog.challegram.ui.MapGoogleController;
 import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.ui.PasscodeController;
 import org.thunderdog.challegram.ui.PasscodeSetupController;
@@ -2852,6 +2852,7 @@ public class TdlibUi extends Handler {
       }
     }
 
+    final String externalUrl = options == null || StringUtils.isEmpty(options.instantViewFallbackUrl) ? url : options.instantViewFallbackUrl;
     final Uri uriFinal = uri;
     if (instantViewMode == INSTANT_VIEW_DISABLED && embedViewMode == EMBED_VIEW_DISABLED) {
       UI.openUrl(url);
@@ -2900,7 +2901,7 @@ public class TdlibUi extends Handler {
                     } catch (Throwable t) {
                       Log.e("Unable to open instantView, url:%s", t, url);
                       UI.showToast(R.string.InstantViewUnsupported, Toast.LENGTH_SHORT);
-                      UI.openUrl(url);
+                      UI.openUrl(externalUrl);
                     }
                   }
                 });
@@ -2924,6 +2925,10 @@ public class TdlibUi extends Handler {
       @Override
       public void act () {
         if (!signal.getAndSet(true)) {
+          if (options != null && !StringUtils.isEmpty(options.instantViewFallbackUrl) && !options.instantViewFallbackUrl.equals(url)) {
+            openUrl(context, options.instantViewFallbackUrl, new UrlOpenParameters(options).instantViewMode(INSTANT_VIEW_UNSPECIFIED));
+            return;
+          }
           if (tdlib.isKnownHost(uriFinal.getHost(), false)) {
             List<String> segments = uriFinal.getPathSegments();
             if (segments != null && segments.size() == 1 && "iv".equals(segments.get(0))) {
@@ -2940,7 +2945,11 @@ public class TdlibUi extends Handler {
               return;
             }
           }
-          UI.openUrl(url);
+          if (!externalUrl.equals(url)) {
+            openUrl(context, externalUrl, new UrlOpenParameters(options).instantViewMode(INSTANT_VIEW_UNSPECIFIED));
+          } else {
+            UI.openUrl(externalUrl);
+          }
         }
       }
     };
@@ -3433,6 +3442,11 @@ public class TdlibUi extends Handler {
               context.context().navigation().navigateTo(c);
               break;
             }
+            case TdApi.InternalLinkTypeInstantView.CONSTRUCTOR: {
+              TdApi.InternalLinkTypeInstantView instantView = (TdApi.InternalLinkTypeInstantView) linkType;
+              openExternalUrl(context, instantView.url, new UrlOpenParameters(openParameters).forceInstantView().instantViewFallbackUrl(instantView.fallbackUrl));
+              break;
+            }
             case TdApi.InternalLinkTypeActiveSessions.CONSTRUCTOR: {
               SettingsSessionsController sessions = new SettingsSessionsController(context.context(), context.tdlib());
               SettingsWebsitesController websites = new SettingsWebsitesController(context.context(), context.tdlib());
@@ -3662,7 +3676,7 @@ public class TdlibUi extends Handler {
     if (!U.isGooglePlayServicesAvailable(context.context())) {
       return Intents.openMap(args.latitude, args.longitude, args.title, args.address);
     }
-    MapGoogleController c = new MapGoogleController(context.context(), context.tdlib());
+    MapController<?,?> c = MapControllerFactory.newMapController(context.context(), context.tdlib());
     c.setArguments(args);
     context.context().navigation().navigateTo(c);
     return true;

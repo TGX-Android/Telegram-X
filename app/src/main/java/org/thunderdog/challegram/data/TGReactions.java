@@ -14,14 +14,20 @@ import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.MessageView;
+import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.loader.ComplexReceiver;
+import org.thunderdog.challegram.loader.ImageFile;
+import org.thunderdog.challegram.loader.ImageReceiver;
+import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.telegram.ReactionLoadListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.ReactionsListAnimator;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.TextColorSet;
@@ -30,7 +36,6 @@ import org.thunderdog.challegram.v.MessagesRecyclerView;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -40,9 +45,10 @@ import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
+import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.Td;
 
-public class TGReactions {
+public class TGReactions implements Destroyable, ReactionLoadListener {
   private final Tdlib tdlib;
   private TdApi.MessageReaction[] reactions;
   private ComplexReceiver complexReceiver;
@@ -55,8 +61,8 @@ public class TGReactions {
 
   private final MessageReactionsDelegate delegate;
   private int totalCount;
-  private int hasReactionCount;
   private final Set<String> chosenReactions;
+  private Set<String> awaitingReactions;
 
   private final ReactionsListAnimator reactionsAnimator;
   private int width = 0;
@@ -72,7 +78,6 @@ public class TGReactions {
     this.tdReactionsMap = new HashMap<>();
 
     this.totalCount = 0;
-    this.hasReactionCount = 0;
     this.chosenReactions = new LinkedHashSet<>();
     this.tdlib = tdlib;
     this.reactionsAnimator = new ReactionsListAnimator((a) -> parent.invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, MessagesRecyclerView.ITEM_ANIMATOR_DURATION + 50L);
@@ -82,6 +87,8 @@ public class TGReactions {
   }
 
   public void setReceiversPool (ComplexReceiver complexReceiver) {
+    // FIXME: single TGMessage may be displayed in multiple MessageView at once.
+    //        This class wrongly relies that it cannot.
     this.complexReceiver = complexReceiver;
     for (Map.Entry<String, MessageReactionEntry> pair : reactionsMapEntry.entrySet()) {
       MessageReactionEntry entry = pair.getValue();
@@ -93,11 +100,10 @@ public class TGReactions {
     this.reactionsListEntry.clear();
     this.tdReactionsMap.clear();
     this.reactions = reactions;
-    this.hasReactionCount = 0;
     this.chosenReactions.clear();
     this.totalCount = 0;
 
-    if (reactions == null) {
+    if (reactions == null || isDestroyed) {
       return;
     }
 
@@ -106,23 +112,30 @@ public class TGReactions {
       tdReactionsMap.put(reactionKey, reaction);
       totalCount += reaction.totalCount;
       if (reaction.isChosen) {
-        hasReactionCount++;
         chosenReactions.add(reactionKey);
       }
 
       TGReaction reactionObj = tdlib.getReaction(reaction.type);
       if (reactionObj == null) {
+        if (awaitingReactions == null) {
+          awaitingReactions = new LinkedHashSet<>();
+        }
+        if (awaitingReactions.add(reactionKey)) {
+          tdlib.listeners().addReactionLoadListener(reactionKey, this);
+        }
         continue;
       }
       MessageReactionEntry entry = getMessageReactionEntry(reactionObj);
       entry.setMessageReaction(reaction);
       reactionsListEntry.add(entry);
+      if (awaitingReactions != null && awaitingReactions.remove(reactionKey)) {
+        tdlib.listeners().removeReactionLoadListener(reactionKey, this);
+      }
     }
   }
 
   public void setReactions (ArrayList<TdApi.Message> combinedMessages) {
     this.reactionsListEntry.clear();
-    this.hasReactionCount = 0;
     this.chosenReactions.clear();
     this.totalCount = 0;
 
@@ -147,7 +160,6 @@ public class TGReactions {
         fakeReaction.isChosen = reaction.isChosen;
         totalCount += reaction.totalCount;
         if (reaction.isChosen) {
-          hasReactionCount++;
           chosenReactions.add(reactionKey);
         }
       }
@@ -278,7 +290,6 @@ public class TGReactions {
   public static int getReactionImageSize () {
     return Screen.dp((TGMessage.reactionsTextStyleProvider().getTextSizeInDp() + 1) * 1.25f + 17);
   }
-
 
   // target values
 
@@ -497,10 +508,14 @@ public class TGReactions {
     private final TGReaction reactionObj;
     private final TGMessage message;
 
-    @Nullable private GifReceiver staticCenterAnimationReceiver;
+    @Nullable private Receiver staticCenterAnimationReceiver;
     @Nullable private GifReceiver centerAnimationReceiver;
     @Nullable private final GifFile animation;
+    private final float animationScale;
     private final GifFile staticAnimationFile;
+    private final float staticAnimationFileScale;
+    private final ImageFile staticImageFile;
+    private final float staticImageFileScale;
 
     private final MessageReactionsDelegate delegate;
 
@@ -521,11 +536,25 @@ public class TGReactions {
 
       this.counter = counter.colorSet(this).build();
 
-      animation = reactionObj.newCenterAnimationSicker().getFullAnimation();
-      staticAnimationFile = reactionObj.staticCenterAnimationSicker().getPreviewAnimation();
-      if (animation != null) {
+      TGStickerObj stickerObj = reactionObj.newCenterAnimationSicker();
+      animation = stickerObj.getFullAnimation();
+      animationScale = stickerObj.getDisplayScale();
+      if (animation != null && !stickerObj.isCustomReaction()) {
         animation.setPlayOnce(true);
         animation.setLooped(true);
+      }
+
+      TGStickerObj staticFile = reactionObj.staticCenterAnimationSicker();
+      staticAnimationFile = staticFile.getPreviewAnimation();
+      staticAnimationFileScale = staticFile.getDisplayScale();
+
+      if (staticAnimationFile == null) {
+        staticFile = reactionObj.staticCenterAnimationSicker();
+        staticImageFile = staticFile.getImage();
+        staticImageFileScale = staticFile.getDisplayScale();
+      } else {
+        staticImageFile = null;
+        staticImageFileScale = 0f;
       }
     }
 
@@ -539,10 +568,15 @@ public class TGReactions {
       }
 
       centerAnimationReceiver = complexReceiver.getGifReceiver(reactionObj.getId());
-      staticCenterAnimationReceiver = complexReceiver.getGifReceiver(((long) reactionObj.getId()) << 32);
-
-      if (staticCenterAnimationReceiver != null) {
-        staticCenterAnimationReceiver.requestFile(staticAnimationFile);
+      long staticId = ((long) reactionObj.getId()) << 32;
+      if (staticAnimationFile != null) {
+        GifReceiver receiver = complexReceiver.getGifReceiver(staticId);
+        receiver.requestFile(staticAnimationFile);
+        staticCenterAnimationReceiver = receiver;
+      } else if (staticImageFile != null) {
+        ImageReceiver receiver = complexReceiver.getImageReceiver(staticId);
+        receiver.requestFile(staticImageFile);
+        staticCenterAnimationReceiver = receiver;
       }
       if (centerAnimationReceiver != null && inAnimation) {
         centerAnimationReceiver.requestFile(animation);
@@ -779,11 +813,13 @@ public class TGReactions {
     private boolean inAnimation;
 
     private void drawReceiver (Canvas c, int l, int t, int r, int b, float alpha) {
-      GifReceiver receiver = inAnimation ? centerAnimationReceiver : staticCenterAnimationReceiver;
+      Receiver receiver = inAnimation ? centerAnimationReceiver : staticCenterAnimationReceiver;
+      float scale = inAnimation ? animationScale : staticAnimationFile != null ? staticAnimationFileScale : staticImageFileScale;
       if (receiver != null) {
+        // TODO contour placeholder
         receiver.setBounds(l, t, r, b);
         receiver.setAlpha(alpha);
-        receiver.draw(c);
+        receiver.drawScaled(c, scale);
       }
     }
 
@@ -935,5 +971,26 @@ public class TGReactions {
   public interface MessageReactionsDelegate {
     default void onClick (View v, MessageReactionEntry entry) {}
     default void onLongClick (View v, MessageReactionEntry entry) {}
+    default void onRebuildRequested () {}
+  }
+
+  private boolean isDestroyed;
+
+  @Override
+  public void performDestroy () {
+    this.isDestroyed = true;
+    if (awaitingReactions != null) {
+      for (String reactionKey : awaitingReactions) {
+        tdlib.listeners().removeReactionLoadListener(reactionKey, this);
+      }
+      awaitingReactions.clear();
+    }
+  }
+
+  @Override
+  public void onReactionLoaded (String reactionKey) {
+    if (awaitingReactions != null && awaitingReactions.remove(reactionKey)) {
+      delegate.onRebuildRequested();
+    }
   }
 }

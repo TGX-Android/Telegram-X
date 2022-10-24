@@ -30,11 +30,8 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.TextUtils;
-import android.text.style.CharacterStyle;
-import android.text.style.ClickableSpan;
 import android.util.SparseIntArray;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -63,6 +60,7 @@ import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessageViewGroup;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.component.chat.ReplyComponent;
+import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.core.Lang;
@@ -99,7 +97,6 @@ import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.ReactionsCounterDrawable;
 import org.thunderdog.challegram.util.text.Counter;
-import org.thunderdog.challegram.util.text.FormattedText;
 import org.thunderdog.challegram.util.text.Letters;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
@@ -201,7 +198,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   protected TGSource forwardInfo;
   protected ReplyComponent replyData;
   protected TGInlineKeyboard inlineKeyboard;
-  protected TGReactions messageReactions;
+  protected final TGReactions messageReactions;
   protected MessageQuickActionSwipeHelper swipeHelper;
 
   // header values
@@ -317,6 +314,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
               showReactionBubbleTooltip(v, entry, Lang.getString(R.string.ChannelReactionsAnonymous));
             }
           });
+        });
+      }
+
+      @Override
+      public void onRebuildRequested () {
+        runOnUiThreadOptional(() -> {
+          updateInteractionInfo(true);
         });
       }
     });
@@ -2437,7 +2441,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       result = inlineKeyboard.performLongPress(view);
     }
     if (messageReactions.getTotalCount() > 0 && useReactionBubbles()) {
-      result = messageReactions.performLongPress(view);
+      result = messageReactions.performLongPress(view) || result;
     }
     if (hasFooter()) {
       result = footerText.performLongPress(view) || result;
@@ -5358,7 +5362,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       forwardInfo.destroy();
     if (replyData != null)
       replyData.performDestroy();
-    //messageReactions.performDestroy();
+    messageReactions.performDestroy();
     setViewAttached(false);
     onMessageContainerDestroyed();
   }
@@ -7410,6 +7414,16 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     });
   }
 
+  public void executeOnUiThreadOptional (Runnable act) {
+    if (UI.inUiThread()) {
+      if (!isDestroyed()) {
+        act.run();
+      }
+    } else {
+      runOnUiThreadOptional(act);
+    }
+  }
+
   // quick action
 
   private final ArrayList<SwipeQuickAction> leftActions = new ArrayList<>();
@@ -7473,7 +7487,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         reactionDrawable.setComplexReceiver(currentComplexReceiver);
 
         final boolean isOdd = a % 2 == 1;
-        final SwipeQuickAction quickReaction = new SwipeQuickAction(reactionObj.getReaction().title, reactionDrawable, () -> {
+        final SwipeQuickAction quickReaction = new SwipeQuickAction(reactionObj.getTitle(), reactionDrawable, () -> {
           if (messageReactions.sendReaction(reactionType, false, handler(findCurrentView(), null, () -> {}))) {
             scheduleSetReactionAnimation(new NextReactionAnimation(reactionObj, NextReactionAnimation.TYPE_QUICK));
           }
@@ -7785,10 +7799,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         }
       };
 
-      if (nextSetReactionAnimation.reaction.effectAnimationSicker().getFullAnimation() != null) {
-        nextSetReactionAnimation.reaction.effectAnimationSicker().getFullAnimation().setPlayOnce(true);
-        nextSetReactionAnimation.reaction.effectAnimationSicker().getFullAnimation().setLooped(false);
-        nextSetReactionAnimation.reaction.effectAnimationSicker().getFullAnimation().addLoopListener(() -> {
+      TGStickerObj effectAnimation = nextSetReactionAnimation.reaction.effectAnimationSicker();
+      if (effectAnimation.getFullAnimation() != null) {
+        if (!effectAnimation.isCustomReaction()) {
+          effectAnimation.getFullAnimation().setPlayOnce(true);
+          effectAnimation.getFullAnimation().setLooped(false);
+        }
+        effectAnimation.getFullAnimation().addLoopListener(() -> {
           if (nextSetReactionAnimation != null) {
             nextSetReactionAnimation.fullscreenEffectFinished = true;
             if (nextSetReactionAnimation.fullscreenEmojiFinished) {
@@ -7799,10 +7816,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         });
       }
 
-      if (nextSetReactionAnimation.reaction.activateAnimationSicker().getFullAnimation() != null) {
-        nextSetReactionAnimation.reaction.activateAnimationSicker().getFullAnimation().setPlayOnce(true);
-        nextSetReactionAnimation.reaction.activateAnimationSicker().getFullAnimation().setLooped(false);
-        nextSetReactionAnimation.reaction.activateAnimationSicker().getFullAnimation().addLoopListener(() -> {
+      TGStickerObj activateAnimation = nextSetReactionAnimation.reaction.activateAnimationSicker();
+      if (activateAnimation.getFullAnimation() != null) {
+        if (!activateAnimation.isCustomReaction()) {
+          activateAnimation.getFullAnimation().setPlayOnce(true);
+          activateAnimation.getFullAnimation().setLooped(false);
+        }
+        activateAnimation.getFullAnimation().addLoopListener(() -> {
           if (nextSetReactionAnimation != null) {
             nextSetReactionAnimation.fullscreenEmojiFinished = true;
             if (nextSetReactionAnimation.fullscreenEffectFinished) {
@@ -7848,12 +7868,29 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     int bubbleY = positionCords[1] + reactionPosition.y;
 
     messageReactions.startAnimation(tgReaction.key);
-    context().reactionsOverlayManager().addOverlay(
-      new ReactionsOverlayView.ReactionInfo(context().reactionsOverlayManager())
-        .setSticker(tgReaction.newAroundAnimationSicker())
-        .setPosition(new Point(bubbleX, bubbleY), Screen.dp(90))
-        .setAnimatedPositionOffsetProvider(new QuickReactionAnimatedPositionOffsetProvider())
-    );
+    RunnableData<TGStickerObj> act = overlaySticker -> {
+      context().reactionsOverlayManager().addOverlay(
+        new ReactionsOverlayView.ReactionInfo(context().reactionsOverlayManager())
+          .setSticker(overlaySticker)
+          .setUseDefaultSprayAnimation(tgReaction.isCustom())
+          .setPosition(new Point(bubbleX, bubbleY), Screen.dp(90))
+          .setAnimatedPositionOffsetProvider(new QuickReactionAnimatedPositionOffsetProvider())
+      );
+    };
+    TGStickerObj overlaySticker = tgReaction.newAroundAnimationSicker();
+    if (overlaySticker != null && !Config.TEST_GENERIC_REACTION_EFFECTS) {
+      act.runWithData(overlaySticker);
+    } else {
+      tdlib.pickRandomGenericOverlaySticker(sticker -> {
+        if (sticker != null) {
+          TGStickerObj genericOverlaySticker = new TGStickerObj(tdlib, sticker, null, sticker.type)
+            .setReactionType(tgReaction.type);
+          executeOnUiThreadOptional(() ->
+            act.runWithData(genericOverlaySticker)
+          );
+        }
+      });
+    }
   }
 
 

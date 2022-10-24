@@ -2072,11 +2072,15 @@ public class TD {
   }
 
   public static int getCodeLength (TdApi.AuthorizationState state) {
-    if (state != null && state.getConstructor() == TdApi.AuthorizationStateWaitCode.CONSTRUCTOR) {
-      return getCodeLength(((TdApi.AuthorizationStateWaitCode) state).codeInfo.type);
-    } else {
-      return TdConstants.DEFAULT_CODE_LENGTH;
+    if (state != null) {
+      switch (state.getConstructor()) {
+        case TdApi.AuthorizationStateWaitCode.CONSTRUCTOR:
+          return getCodeLength(((TdApi.AuthorizationStateWaitCode) state).codeInfo.type);
+        case TdApi.AuthorizationStateWaitEmailCode.CONSTRUCTOR:
+          return getCodeLength(((TdApi.AuthorizationStateWaitEmailCode) state).codeInfo);
+      }
     }
+    return TdConstants.DEFAULT_CODE_LENGTH;
   }
 
   public static int getCodeLength (TdApi.EmailAddressAuthenticationCodeInfo info) {
@@ -2258,6 +2262,7 @@ public class TD {
       case "USERS_TOO_MUCH": res = R.string.GroupIsFull; break;
       case "USERS_TOO_FEW": res = R.string.ErrorUsersTooFew; break;
       case "PHONE_NUMBER_INVALID": res = R.string.login_InvalidPhone; break;
+      case "PHONE_CODE_INVALID": case "EMAIL_CODE_INVALID": res = R.string.InvalidCode; break;
       case "FRESH_RESET_AUTHORISATION_FORBIDDEN": res = R.string.TerminateSessionFreshError; break;
       case "PHONE_NUMBER_OCCUPIED": res = R.string.PhoneNumberInUse; break;
       case "PHONE_NUMBER_BANNED": res = R.string.login_PHONE_NUMBER_BANNED; break;

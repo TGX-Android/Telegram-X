@@ -3,6 +3,7 @@ package org.thunderdog.challegram.util;
 import android.graphics.Canvas;
 import android.view.View;
 
+import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
@@ -18,7 +19,10 @@ import org.thunderdog.challegram.tool.Views;
 import java.util.ArrayList;
 import java.util.List;
 
+import me.vkryl.core.lambda.Destroyable;
+
 public class ReactionModifier implements DrawModifier {
+  private final float[] previewScales, gifScales;
   private final ImageReceiver[] previewReceivers;
   private final GifReceiver[] gifReceivers;
   private final int offset;
@@ -40,14 +44,20 @@ public class ReactionModifier implements DrawModifier {
 
     previewReceivers = new ImageReceiver[reactions.length];
     gifReceivers = new GifReceiver[reactions.length];
+    previewScales = new float[reactions.length];
+    gifScales = new float[reactions.length];
 
     for (int a = 0; a < reactions.length; a++) {
       previewReceivers[a] = complexReceiver.getImageReceiver(a * 2L + 1);
       gifReceivers[a] = complexReceiver.getGifReceiver(a * 2L);
       TGReaction reaction = reactions[a];
       if (reaction != null) {
-        ImageFile previewImage = reaction.staticCenterAnimationSicker().getImage();
-        GifFile gifFile = reaction.staticCenterAnimationSicker().getPreviewAnimation();
+        TGStickerObj centerAnimation = reaction.staticCenterAnimationSicker();
+        TGStickerObj staticSticker = reaction.staticCenterAnimationSicker();
+        previewScales[a] = centerAnimation.getDisplayScale();
+        gifScales[a] = staticSticker.getDisplayScale();
+        ImageFile previewImage = centerAnimation.getImage();
+        GifFile gifFile = staticSticker.getPreviewAnimation();
         previewReceivers[a].requestFile(previewImage);
         gifReceivers[a].requestFile(gifFile);
       }
@@ -63,25 +73,33 @@ public class ReactionModifier implements DrawModifier {
     c.translate(view.getMeasuredWidth() - Screen.dp(offset) - totalWidth, view.getMeasuredHeight() / 2f - totalHeight / 2f);
     if (gifReceivers.length > 0) {
       DrawAlgorithms.drawReceiver(c, previewReceivers[0], gifReceivers[0], false, true,
-        padding, padding, size - padding, size - padding);
+        padding, padding, size - padding, size - padding,
+        previewScales[0], gifScales[0]
+      );
       sx += size;
     }
 
     if (gifReceivers.length > 1) {
       DrawAlgorithms.drawReceiver(c, previewReceivers[1], gifReceivers[1], false, true,
-        sx + padding, sy + padding, size + sx - padding, size + sy- padding);
+        sx + padding, sy + padding, size + sx - padding, size + sy - padding,
+        previewScales[1], gifScales[1]
+      );
       sx = gifReceivers.length == 4 ? 0 : size / 2 ; sy += size;
     }
 
     if (gifReceivers.length > 2) {
       DrawAlgorithms.drawReceiver(c, previewReceivers[2], gifReceivers[2], false, true,
-        sx + padding, sy + padding, size + sx - padding, size + sy- padding);
+        sx + padding, sy + padding, size + sx - padding, size + sy - padding,
+        previewScales[2], gifScales[2]
+      );
       sx += size;
     }
 
     if (gifReceivers.length > 3) {
       DrawAlgorithms.drawReceiver(c, previewReceivers[3], gifReceivers[3], false, true,
-        sx + padding, sy + padding, size + sx- padding, size + sy - padding);
+        sx + padding, sy + padding, size + sx- padding, size + sy - padding,
+        previewScales[3], gifScales[3]
+      );
     }
 
     Views.restore(c, saveCount);
