@@ -5968,7 +5968,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public String tMeUrl () {
-    return StringUtils.isEmpty(tMeUrl) ? "https://" + TD.getTelegramHost() + "/" : tMeUrl;
+    return StringUtils.isEmpty(tMeUrl) ? "https://" + TD.getTelegramMeHost() + "/" : tMeUrl;
   }
 
   public String tMeMessageUrl (String username, long messageId) {
@@ -6108,29 +6108,52 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
+  public boolean isTrustedHost (String host, boolean allowSubdomains) {
+    // No prompt when pressing links from these hosts.
+    if (StringUtils.isEmpty(host)) {
+      return false;
+    }
+    Uri uri = Strings.wrapHttps(host);
+    if (uri == null) {
+      return false;
+    }
+    host = uri.getHost().toLowerCase();
+    for (String knownHost : TdConstants.TELEGRAM_HOSTS) {
+      if (StringUtils.equalsOrBothEmpty(host, knownHost) || (allowSubdomains && host.endsWith("." + knownHost))) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   public boolean isKnownHost (String host, boolean allowTelegraph) {
     if (StringUtils.isEmpty(host)) {
       return false;
     }
-    host = StringUtils.urlWithoutProtocol(host.toLowerCase());
-    int i = host.indexOf('/');
-    if (i != -1) {
-      host = host.substring(0, i);
+    Uri uri = Strings.wrapHttps(host);
+    if (uri == null) {
+      return false;
     }
+    host = uri.getHost().toLowerCase();
     if (!StringUtils.isEmpty(tMeUrl)) {
       String tMeHost = StringUtils.urlWithoutProtocol(tMeUrl);
-      if (StringUtils.equalsOrBothEmpty(host, tMeHost)) {
+      if (StringUtils.equalsOrBothEmpty(host, tMeHost) || host.endsWith("." + tMeHost)) {
         return true;
       }
     }
-    for (String knownHost : TdConstants.TELEGRAM_HOSTS) {
-      if (StringUtils.equalsOrBothEmpty(host, knownHost)) {
+    for (String knownHost : TdConstants.TME_HOSTS) {
+      if (StringUtils.equalsOrBothEmpty(host, knownHost) || host.endsWith("." + knownHost)) {
         return true;
       }
     }
     if (allowTelegraph) {
+      for (String knownHost : TdConstants.TELEGRAM_HOSTS) {
+        if (StringUtils.equalsOrBothEmpty(host, knownHost) || host.endsWith("." + knownHost)) {
+          return true;
+        }
+      }
       for (String knownHost : TdConstants.TELEGRAPH_HOSTS) {
-        if (StringUtils.equalsOrBothEmpty(host, knownHost)) {
+        if (StringUtils.equalsOrBothEmpty(host, knownHost) || host.endsWith("." + knownHost)) {
           return true;
         }
       }

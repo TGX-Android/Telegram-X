@@ -2707,8 +2707,8 @@ public class TD {
     return RESTRICT_MODE_NONE;
   }
 
-  public static String getTelegramHost () {
-    return TdConstants.TELEGRAM_HOSTS[0];
+  public static String getTelegramMeHost () {
+    return TdConstants.TME_HOSTS[0];
   }
 
   public static byte[] newRandomWaveform () {
@@ -2974,10 +2974,10 @@ public class TD {
     return StringUtils.isEmpty(path) || path.charAt(path.length() - 1) == '/' ? path : path + '/';
   }
 
-  public static boolean isKnownHost (Uri uri) {
+  public static boolean isTelegramMeHost (Uri uri) {
     String host = uri.getHost();
     if (host != null) {
-      for (String knownHost : TdConstants.TELEGRAM_HOSTS) {
+      for (String knownHost : TdConstants.TME_HOSTS) {
         if (StringUtils.equalsOrBothEmpty(knownHost, host)) {
           return true;
         }
@@ -3208,23 +3208,23 @@ public class TD {
   }
 
   public static String getLink (TdApi.Supergroup supergroup) {
-    return "https://" + getTelegramHost() + "/" + supergroup.username;
+    return "https://" + getTelegramMeHost() + "/" + supergroup.username;
   }
 
   public static String getStickerPackLink (String name) {
-    return "https://" + getTelegramHost() + "/addstickers/" + name;
+    return "https://" + getTelegramMeHost() + "/addstickers/" + name;
   }
 
   public static String getLink (TdApi.User user) {
-    return "https://" + getTelegramHost() + "/" + user.username;
+    return "https://" + getTelegramMeHost() + "/" + user.username;
   }
 
   public static String getLink (String username) {
-    return "https://" + getTelegramHost() + "/" + username;
+    return "https://" + getTelegramMeHost() + "/" + username;
   }
 
   public static String getLink (TdApi.LanguagePackInfo languagePackInfo) {
-    return "https://" + getTelegramHost() + "/setlanguage/" + languagePackInfo.id;
+    return "https://" + getTelegramMeHost() + "/setlanguage/" + languagePackInfo.id;
   }
 
   public static String getRoleName (@Nullable TdApi.User user, int role) {

@@ -2801,7 +2801,9 @@ public class TdlibUi extends Handler {
       return;
     }
 
-    if (options != null && options.requireOpenPrompt) {
+    Uri uri = Strings.wrapHttps(url);
+
+    if (options != null && options.requireOpenPrompt && (uri == null || !tdlib.isTrustedHost(url, true))) {
       ViewController<?> c = context instanceof ViewController<?> ? (ViewController<?>) context : context.context().navigation().getCurrentStackItem();
       if (c != null && !c.isDestroyed()) {
         AlertDialog.Builder b = new AlertDialog.Builder(context.context(), Theme.dialogTheme());
@@ -2817,7 +2819,6 @@ public class TdlibUi extends Handler {
       return;
     }
 
-    Uri uri = Strings.wrapHttps(url);
     if (uri == null) {
       UI.openUrl(url);
       return;
