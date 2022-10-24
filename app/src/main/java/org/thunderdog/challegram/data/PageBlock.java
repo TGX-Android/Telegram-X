@@ -42,7 +42,6 @@ import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextStyleProvider;
 
-import java.io.IOException;
 import java.util.ArrayList;
 
 import me.vkryl.android.util.MultipleViewProvider;
