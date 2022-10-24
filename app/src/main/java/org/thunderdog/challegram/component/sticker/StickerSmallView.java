@@ -41,6 +41,7 @@ import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.Destroyable;
+import me.vkryl.td.Td;
 
 public class StickerSmallView extends View implements FactorAnimator.Target, Destroyable {
   public static final float PADDING = 8f;
@@ -283,7 +284,7 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
         closePreview(e);
         if (clicked && callback != null && sticker != null) {
           ViewUtils.onClick(this);
-          callback.onStickerClick(this, this, sticker, false, null);
+          callback.onStickerClick(this, this, sticker, false, Td.newSendOptions());
         }
         return true;
       }
