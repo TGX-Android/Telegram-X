@@ -94,11 +94,6 @@ public class ReactionsOverlayView extends ViewGroup {
     }
   }
 
-  public void addOverlay (TGStickerObj stickerObj, Rect position) {
-    ReactionInfo info = new ReactionInfo(this).setSticker(stickerObj).setPosition(position);
-    addOverlay(info);
-  }
-
   public void addOverlay (ReactionInfo info) {
     info.setRemoveListener(() -> this.removeOverlay(info));
     activePopups.add(info);
@@ -132,6 +127,7 @@ public class ReactionsOverlayView extends ViewGroup {
     private GifFile animation;
     private float displayScale;
     private Runnable removeRunnable;
+    private boolean useDefaultSprayAnimation;
 
     // animation
     private static final int POSITION_ANIMATOR = 0;
@@ -162,6 +158,11 @@ public class ReactionsOverlayView extends ViewGroup {
 
     public ReactionInfo setSticker (TGStickerObj sticker) {
       return setSticker(sticker, true);
+    }
+
+    public ReactionInfo setUseDefaultSprayAnimation (boolean useDefaultSprayAnimation) {
+      this.useDefaultSprayAnimation = useDefaultSprayAnimation;
+      return this;
     }
 
     public ReactionInfo setSticker (TGStickerObj sticker, boolean animated) {

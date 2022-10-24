@@ -30,11 +30,8 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.text.Spanned;
 import android.text.TextPaint;
 import android.text.TextUtils;
-import android.text.style.CharacterStyle;
-import android.text.style.ClickableSpan;
 import android.util.SparseIntArray;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -100,7 +97,6 @@ import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.ReactionsCounterDrawable;
 import org.thunderdog.challegram.util.text.Counter;
-import org.thunderdog.challegram.util.text.FormattedText;
 import org.thunderdog.challegram.util.text.Letters;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
@@ -7418,6 +7414,16 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     });
   }
 
+  public void executeOnUiThreadOptional (Runnable act) {
+    if (UI.inUiThread()) {
+      if (!isDestroyed()) {
+        act.run();
+      }
+    } else {
+      runOnUiThreadOptional(act);
+    }
+  }
+
   // quick action
 
   private final ArrayList<SwipeQuickAction> leftActions = new ArrayList<>();
@@ -7862,19 +7868,29 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     int bubbleY = positionCords[1] + reactionPosition.y;
 
     messageReactions.startAnimation(tgReaction.key);
+    RunnableData<TGStickerObj> act = overlaySticker -> {
+      context().reactionsOverlayManager().addOverlay(
+        new ReactionsOverlayView.ReactionInfo(context().reactionsOverlayManager())
+          .setSticker(overlaySticker)
+          .setUseDefaultSprayAnimation(tgReaction.isCustom())
+          .setPosition(new Point(bubbleX, bubbleY), Screen.dp(90))
+          .setAnimatedPositionOffsetProvider(new QuickReactionAnimatedPositionOffsetProvider())
+      );
+    };
     TGStickerObj overlaySticker = tgReaction.newAroundAnimationSicker();
-    if (overlaySticker == null) {
-      // TODO generic animation
+    if (overlaySticker != null && !Config.TEST_GENERIC_REACTION_EFFECTS) {
+      act.runWithData(overlaySticker);
+    } else {
+      tdlib.pickRandomGenericOverlaySticker(sticker -> {
+        if (sticker != null) {
+          TGStickerObj genericOverlaySticker = new TGStickerObj(tdlib, sticker, null, sticker.type)
+            .setReactionType(tgReaction.type);
+          executeOnUiThreadOptional(() ->
+            act.runWithData(genericOverlaySticker)
+          );
+        }
+      });
     }
-    if (overlaySticker == null) {
-      return;
-    }
-    context().reactionsOverlayManager().addOverlay(
-      new ReactionsOverlayView.ReactionInfo(context().reactionsOverlayManager())
-        .setSticker(tgReaction.newAroundAnimationSicker())
-        .setPosition(new Point(bubbleX, bubbleY), Screen.dp(90))
-        .setAnimatedPositionOffsetProvider(new QuickReactionAnimatedPositionOffsetProvider())
-    );
   }
 
 

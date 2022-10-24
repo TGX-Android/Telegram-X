@@ -19,7 +19,6 @@ import android.view.ViewParent;
 import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -30,10 +29,11 @@ import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.base.TogglerView;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGReaction;
-import org.thunderdog.challegram.data.TGReactions;
+import org.thunderdog.challegram.navigation.ReactionsOverlayView;
 import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
@@ -45,13 +45,12 @@ import org.thunderdog.challegram.widget.ReactionCheckboxSettingsView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import me.vkryl.android.widget.FrameLayoutFix;
-import me.vkryl.td.Td;
+import me.vkryl.core.lambda.RunnableData;
 
 public class EditEnabledReactionsController extends EditBaseController<EditEnabledReactionsController.Args> implements View.OnClickListener, StickerSmallView.StickerMovementCallback, ChatListener {
 
@@ -359,26 +358,35 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
         }
 
         if (checked) {
-          TGStickerObj stickerObj = tgReaction.newAroundAnimationSicker();
-          if (stickerObj == null) {
-            // TODO generic animation
+          RunnableData<TGStickerObj> act = (overlaySticker) -> {
+            int[] positionCords = new int[2];
+            v.getLocationOnScreen(positionCords);
+            positionCords[0] += v.getMeasuredWidth() / 2;
+            positionCords[1] += Screen.dp(40);
+            context().reactionsOverlayManager().addOverlay(new ReactionsOverlayView.ReactionInfo(context().reactionsOverlayManager())
+              .setSticker(overlaySticker)
+              .setUseDefaultSprayAnimation(overlaySticker.isCustomReaction())
+              .setPosition(new Rect(
+              positionCords[0] - Screen.dp(50),
+              positionCords[1] - Screen.dp(50),
+              positionCords[0] + Screen.dp(50),
+              positionCords[1] + Screen.dp(50)
+            )));
+          };
+          TGStickerObj overlaySticker = tgReaction.newAroundAnimationSicker();
+          if (overlaySticker != null && !Config.TEST_GENERIC_REACTION_EFFECTS) {
+            act.runWithData(overlaySticker);
+          } else {
+            tdlib.pickRandomGenericOverlaySticker(genericOverlayEffectSticker -> {
+              if (genericOverlayEffectSticker != null) {
+                TGStickerObj stickerObj = new TGStickerObj(tdlib, genericOverlayEffectSticker, null, genericOverlayEffectSticker.type)
+                  .setReactionType(tgReaction.type);
+                executeOnUiThreadOptional(() ->
+                  act.runWithData(stickerObj)
+                );
+              }
+            });
           }
-
-          if (stickerObj == null) {
-            return;
-          }
-
-          int[] positionCords = new int[2];
-          v.getLocationOnScreen(positionCords);
-          positionCords[0] += v.getMeasuredWidth() / 2;
-          positionCords[1] += Screen.dp(40);
-
-          context().reactionsOverlayManager().addOverlay(stickerObj, new Rect(
-            positionCords[0] - Screen.dp(50),
-            positionCords[1] - Screen.dp(50),
-            positionCords[0] + Screen.dp(50),
-            positionCords[1] + Screen.dp(50)
-          ));
         }
       }
     }

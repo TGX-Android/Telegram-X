@@ -67,6 +67,10 @@ public class TGStickerObj {
     return reactionType != null && reactionType.getConstructor() == TdApi.ReactionTypeCustomEmoji.CONSTRUCTOR;
   }
 
+  public boolean needGenericAnimation () {
+    return isCustomReaction();
+  }
+
   public TGStickerObj (Tdlib tdlib, @Nullable TdApi.Sticker sticker, TdApi.StickerType stickerType, String[] emojis) {
     set(tdlib, sticker, stickerType, emojis);
   }
@@ -182,13 +186,20 @@ public class TGStickerObj {
     return fullImage;
   }
 
+  @GifFile.OptimizationMode
+  private int previewOptimizationMode = GifFile.OptimizationMode.STICKER_PREVIEW;
+
+  public TGStickerObj setPreviewOptimizationMode (@GifFile.OptimizationMode int mode) {
+    this.previewOptimizationMode = mode;
+    return this;
+  }
+
   public GifFile getPreviewAnimation () {
     if (previewAnimation == null && sticker != null && Td.isAnimated(sticker.format) && tdlib != null) {
       this.previewAnimation = new GifFile(tdlib, sticker);
       this.previewAnimation.setPlayOnce();
       this.previewAnimation.setScaleType(ImageFile.FIT_CENTER);
-      // TODO: 60 FPS for reactions
-      this.previewAnimation.setOptimizationMode(isCustomReaction() ? GifFile.OptimizationMode.EMOJI : GifFile.OptimizationMode.STICKER_PREVIEW);
+      this.previewAnimation.setOptimizationMode(previewOptimizationMode);
     }
     return previewAnimation;
   }

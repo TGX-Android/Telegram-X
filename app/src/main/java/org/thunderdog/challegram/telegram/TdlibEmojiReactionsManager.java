@@ -21,16 +21,16 @@ import org.drinkless.td.libcore.telegram.TdApi;
 
 import java.util.Collection;
 
-public final class TdlibEmojiReactionManager extends TdlibDataManager<String, TdApi.EmojiReaction, TdlibEmojiReactionManager.Entry> {
+public final class TdlibEmojiReactionsManager extends TdlibDataManager<String, TdApi.EmojiReaction, TdlibEmojiReactionsManager.Entry> {
   public static class Entry extends AbstractEntry<String, TdApi.EmojiReaction> {
     public Entry (@NonNull String key, @Nullable TdApi.EmojiReaction value, @Nullable TdApi.Error error) {
       super(key, value, error);
     }
   }
 
-  public interface Watcher extends TdlibDataManager.Watcher<String, TdApi.EmojiReaction, TdlibEmojiReactionManager.Entry> { }
+  public interface Watcher extends TdlibDataManager.Watcher<String, TdApi.EmojiReaction, TdlibEmojiReactionsManager.Entry> { }
 
-  public TdlibEmojiReactionManager (Tdlib tdlib) {
+  public TdlibEmojiReactionsManager (Tdlib tdlib) {
     super(tdlib);
   }
 

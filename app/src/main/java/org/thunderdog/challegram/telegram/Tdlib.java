@@ -437,7 +437,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private final HashMap<Long, Integer> chatOnlineMemberCount = new HashMap<>();
   private final TdlibCache cache;
   private final TdlibEmojiManager emoji;
-  private final TdlibEmojiReactionManager reaction;
+  private final TdlibEmojiReactionsManager reactions;
+  private final TdlibSingleton<TdApi.Stickers> genericReactionEffects;
   private final TdlibListeners listeners;
   private final TdlibFilesManager filesManager;
   private final TdlibStatusManager statusManager;
@@ -583,9 +584,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       Log.v("INITIALIZATION: Tdlib.emoji -> %dms", SystemClock.uptimeMillis() - ms);
       ms = SystemClock.uptimeMillis();
     }
-    this.reaction = new TdlibEmojiReactionManager(this);
+    this.reactions = new TdlibEmojiReactionsManager(this);
     if (needMeasure) {
       Log.v("INITIALIZATION: Tdlib.reaction -> %dms", SystemClock.uptimeMillis() - ms);
+      ms = SystemClock.uptimeMillis();
+    }
+    this.genericReactionEffects = new TdlibSingleton<>(this, () -> new TdApi.GetCustomEmojiReactionAnimations());
+    if (needMeasure) {
+      Log.v("INITIALIZATION: Tdlib.genericReactionEffects -> %dms", SystemClock.uptimeMillis() - ms);
       ms = SystemClock.uptimeMillis();
     }
     this.filesManager = new TdlibFilesManager(this);
@@ -2080,8 +2086,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return emoji;
   }
 
-  public TdlibEmojiReactionManager reaction () {
-    return reaction;
+  public TdlibEmojiReactionsManager reactions () {
+    return reactions;
+  }
+
+  public TdlibSingleton<TdApi.Stickers> genericAnimationEffects () {
+    return genericReactionEffects;
   }
 
   public TdlibListeners listeners () {
@@ -3687,7 +3697,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public void ensureReactionsAvailable (@NonNull TdApi.ChatAvailableReactions reactions, @Nullable RunnableBool after) {
     final AtomicInteger remaining = new AtomicInteger();
-    TdlibEmojiReactionManager.Watcher emojiReactionWatcher = (context, entry) -> {
+    TdlibEmojiReactionsManager.Watcher emojiReactionWatcher = (context, entry) -> {
       /*if (entry.value != null) {
         synchronized (dataLock) {
           cachedReactions.put(entry.key, new TGReaction(this, entry.value));
@@ -3718,7 +3728,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         int requestedCount = 0;
         remaining.set(activeEmojiReactions.length);
         for (String activeEmojiReaction : activeEmojiReactions) {
-          TdlibEmojiReactionManager.Entry entry = reaction().findOrPostponeRequest(activeEmojiReaction, emojiReactionWatcher, true);
+          TdlibEmojiReactionsManager.Entry entry = reactions().findOrPostponeRequest(activeEmojiReaction, emojiReactionWatcher, true);
           if (entry != null) {
             remaining.decrementAndGet();
           } else {
@@ -3730,7 +3740,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
             after.runWithBool(false);
           }
         } else {
-          reaction().performPostponedRequests();
+          reactions().performPostponedRequests();
         }
         break;
       }
@@ -3749,7 +3759,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           switch (reactionType.getConstructor()) {
             case TdApi.ReactionTypeEmoji.CONSTRUCTOR: {
               TdApi.ReactionTypeEmoji emoji = (TdApi.ReactionTypeEmoji) reactionType;
-              TdlibEmojiReactionManager.Entry entry = reaction().findOrPostponeRequest(emoji.emoji, emojiReactionWatcher, true);
+              TdlibEmojiReactionsManager.Entry entry = reactions().findOrPostponeRequest(emoji.emoji, emojiReactionWatcher, true);
               if (entry != null) {
                 remaining.decrementAndGet();
               } else {
@@ -3775,7 +3785,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           }
         } else {
           if (requestedEmojiReactionCount > 0) {
-            reaction().performPostponedRequests();
+            reactions().performPostponedRequests();
           }
           if (requestedCustomReactionCount > 0) {
             emoji().performPostponedRequests();
@@ -3784,6 +3794,17 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         break;
       }
     }
+  }
+
+  public void pickRandomGenericOverlaySticker (RunnableData<TdApi.Sticker> after) {
+    genericReactionEffects.get(stickers -> {
+      if (stickers != null && stickers.stickers.length > 0) {
+        TdApi.Sticker sticker = stickers.stickers[MathUtils.random(0, stickers.stickers.length - 1)];
+        after.runWithData(sticker);
+      } else {
+        after.runWithData(null);
+      }
+    });
   }
 
   public TGReaction getReaction (@Nullable TdApi.ReactionType reactionType) {
@@ -3805,7 +3826,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     switch (reactionType.getConstructor()) {
       case TdApi.ReactionTypeEmoji.CONSTRUCTOR: {
         TdApi.ReactionTypeEmoji emoji = (TdApi.ReactionTypeEmoji) reactionType;
-        RunnableData<TdlibEmojiReactionManager.Entry> emojiReactionWatcher = (newEntry) -> {
+        RunnableData<TdlibEmojiReactionsManager.Entry> emojiReactionWatcher = (newEntry) -> {
           if (newEntry.value != null) {
             TGReaction reaction = new TGReaction(this, newEntry.value);
             synchronized (dataLock) {
@@ -3814,11 +3835,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
             listeners().notifyReactionLoaded(key);
           }
         };
-        TdlibEmojiReactionManager.Entry entry;
+        TdlibEmojiReactionsManager.Entry entry;
         if (allowRequest) {
-          entry = reaction().findOrRequest(emoji.emoji, emojiReactionWatcher);
+          entry = reactions().findOrRequest(emoji.emoji, emojiReactionWatcher);
         } else {
-          entry = reaction().find(emoji.emoji);
+          entry = reactions().find(emoji.emoji);
         }
         if (entry != null) {
           if (entry.value == null) {
