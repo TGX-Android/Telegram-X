@@ -6205,7 +6205,7 @@ public class TdlibUi extends Handler {
         }
       }
       if (seconds > 0) {
-        int sendDate = (int) (tdlib.currentTimeMillis() / 1000l + seconds);
+        int sendDate = (int) (tdlib.currentTime(TimeUnit.SECONDS) + seconds);
         callback.runWithData(Td.newSendOptions(defaultSendOptions, new TdApi.MessageSchedulingStateSendAtDate(sendDate)));
       }
       return true;
