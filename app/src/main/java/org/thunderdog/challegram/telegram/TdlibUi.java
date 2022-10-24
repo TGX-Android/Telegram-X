@@ -2901,7 +2901,7 @@ public class TdlibUi extends Handler {
                     } catch (Throwable t) {
                       Log.e("Unable to open instantView, url:%s", t, url);
                       UI.showToast(R.string.InstantViewUnsupported, Toast.LENGTH_SHORT);
-                      openUrl(context, externalUrl, new UrlOpenParameters(options).disableInstantView());
+                      UI.openUrl(externalUrl);
                     }
                   }
                 });
@@ -2925,7 +2925,7 @@ public class TdlibUi extends Handler {
       @Override
       public void act () {
         if (!signal.getAndSet(true)) {
-          if (options != null && !StringUtils.isEmpty(options.instantViewFallbackUrl)) {
+          if (options != null && !StringUtils.isEmpty(options.instantViewFallbackUrl) && !options.instantViewFallbackUrl.equals(url)) {
             openUrl(context, options.instantViewFallbackUrl, new UrlOpenParameters(options).instantViewMode(INSTANT_VIEW_UNSPECIFIED));
             return;
           }
@@ -2945,7 +2945,11 @@ public class TdlibUi extends Handler {
               return;
             }
           }
-          openUrl(context, externalUrl, new UrlOpenParameters(options).disableInstantView());
+          if (!externalUrl.equals(url)) {
+            openUrl(context, externalUrl, new UrlOpenParameters(options).instantViewMode(INSTANT_VIEW_UNSPECIFIED));
+          } else {
+            UI.openUrl(externalUrl);
+          }
         }
       }
     };
