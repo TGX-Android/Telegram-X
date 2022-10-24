@@ -2852,6 +2852,7 @@ public class TdlibUi extends Handler {
       }
     }
 
+    final String externalUrl = options == null || StringUtils.isEmpty(options.instantViewFallbackUrl) ? url : options.instantViewFallbackUrl;
     final Uri uriFinal = uri;
     if (instantViewMode == INSTANT_VIEW_DISABLED && embedViewMode == EMBED_VIEW_DISABLED) {
       UI.openUrl(url);
@@ -2900,7 +2901,7 @@ public class TdlibUi extends Handler {
                     } catch (Throwable t) {
                       Log.e("Unable to open instantView, url:%s", t, url);
                       UI.showToast(R.string.InstantViewUnsupported, Toast.LENGTH_SHORT);
-                      UI.openUrl(url);
+                      openUrl(context, externalUrl, new UrlOpenParameters(options).disableInstantView());
                     }
                   }
                 });
@@ -2924,6 +2925,10 @@ public class TdlibUi extends Handler {
       @Override
       public void act () {
         if (!signal.getAndSet(true)) {
+          if (options != null && !StringUtils.isEmpty(options.instantViewFallbackUrl)) {
+            openUrl(context, options.instantViewFallbackUrl, new UrlOpenParameters(options).instantViewMode(INSTANT_VIEW_UNSPECIFIED));
+            return;
+          }
           if (tdlib.isKnownHost(uriFinal.getHost(), false)) {
             List<String> segments = uriFinal.getPathSegments();
             if (segments != null && segments.size() == 1 && "iv".equals(segments.get(0))) {
@@ -2940,7 +2945,7 @@ public class TdlibUi extends Handler {
               return;
             }
           }
-          UI.openUrl(url);
+          openUrl(context, externalUrl, new UrlOpenParameters(options).disableInstantView());
         }
       }
     };
@@ -3431,6 +3436,11 @@ public class TdlibUi extends Handler {
               SettingsThemeController c = new SettingsThemeController(context.context(), context.tdlib());
               c.setArguments(new SettingsThemeController.Args(SettingsThemeController.MODE_THEMES));
               context.context().navigation().navigateTo(c);
+              break;
+            }
+            case TdApi.InternalLinkTypeInstantView.CONSTRUCTOR: {
+              TdApi.InternalLinkTypeInstantView instantView = (TdApi.InternalLinkTypeInstantView) linkType;
+              openExternalUrl(context, instantView.url, new UrlOpenParameters(openParameters).forceInstantView().instantViewFallbackUrl(instantView.fallbackUrl));
               break;
             }
             case TdApi.InternalLinkTypeActiveSessions.CONSTRUCTOR: {
