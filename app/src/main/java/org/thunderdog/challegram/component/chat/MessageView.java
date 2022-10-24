@@ -113,7 +113,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     avatarReceiver = new ImageReceiver(this, Screen.dp(20.5f));
     gifReceiver = new GifReceiver(this); // TODO use refreshRateLimiter?
     reactionsComplexReceiver = new ComplexReceiver()
-      .setUpdateListener(refreshRateLimiter);
+      .setUpdateListener(new RefreshRateLimiter(this, 60.0f)); // Limit by 60fps
     textMediaReceiver = new ComplexReceiver()
       .setUpdateListener(refreshRateLimiter);
     replyTextMediaReceiver = new ComplexReceiver()
