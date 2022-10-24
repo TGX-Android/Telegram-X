@@ -1705,7 +1705,7 @@
   <string name="ReactionsAllowAll">Enabled</string>
   <string name="ReactionsAllowNone">Disabled</string>
   <string name="ReactionsAllowSome_one">%1$s allowed</string>
-  <string name="ReactionsAllowSome_other">%2$s allowed</string>
+  <string name="ReactionsAllowSome_other">%1$s allowed</string>
 
   <string name="QuickReactionEnable">Enable Quick Reaction</string>
   <string name="QuickReactionEnableDesc">Availability of specific reactions depends on group\'s and channel\'s settings.</string>
