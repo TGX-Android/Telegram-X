@@ -117,7 +117,7 @@ public class ReactionsSelectorRecyclerView extends RecyclerView {
     }
 
     public void playAnimation () {
-      if (centerAnimationSicker != null && centerAnimationSicker.getPreviewAnimation() != null) {
+      if (centerAnimationSicker != null && centerAnimationSicker.getPreviewAnimation() != null && !centerAnimationSicker.isCustomReaction()) {
         centerAnimationSicker.getPreviewAnimation().setPlayOnce(true);
         centerAnimationSicker.getPreviewAnimation().setLooped(false);
       }

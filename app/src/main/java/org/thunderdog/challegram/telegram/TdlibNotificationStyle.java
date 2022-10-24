@@ -37,6 +37,7 @@ import androidx.core.app.RemoteInput;
 import androidx.core.content.pm.ShortcutInfoCompat;
 import androidx.core.content.pm.ShortcutManagerCompat;
 import androidx.core.graphics.drawable.IconCompat;
+import androidx.core.os.CancellationSignal;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BuildConfig;
@@ -69,7 +70,9 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -433,7 +436,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
         }
         textBuilder.append(messageText);
         conversationBuilder.addMessage(messageText != null ? messageText.toString() : null);
-        addMessage(messagingStyle, messageText, person, tdlib, chat, notification, isSummary ? SUMMARY_MEDIA_LOAD_TIMEOUT : MEDIA_LOAD_TIMEOUT, isRebuild, !onlyScheduled && notification.isScheduled(), !onlySilent && notification.isVisuallySilent(), onlyPinned);
+        addMessage(messagingStyle, messageText, person, chat, notification, isSummary ? SUMMARY_MEDIA_LOAD_TIMEOUT : MEDIA_LOAD_TIMEOUT, isRebuild, !onlyScheduled && notification.isScheduled(), !onlySilent && notification.isVisuallySilent(), onlyPinned);
       } else {
         final CharSequence messageText;
         boolean isScheduled = true;
@@ -472,7 +475,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
 
       if (photoFile != null) {
         if (!isRebuild) {
-          tdlib.files().downloadFileSync(photoFile, TdlibNotificationStyle.MEDIA_LOAD_TIMEOUT, null, null);
+          downloadFile(photoFile, TdlibNotificationStyle.MEDIA_LOAD_TIMEOUT);
         }
         if (TD.isFileLoaded(photoFile)) {
           Bitmap result = null;
@@ -865,7 +868,24 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     style.addMessage(new NotificationCompat.MessagingStyle.Message(Lang.getSilentNotificationTitle(messageText, false, tdlib.isSelfChat(chat), tdlib.isMultiChat(chat), tdlib.isChannelChat(chat), isExclusivelyScheduled, isExclusivelySilent), TimeUnit.SECONDS.toMillis(notification.getDate()), person));
   }
 
-  private static void addMessage (NotificationCompat.MessagingStyle style, CharSequence messageText, Person person, Tdlib tdlib, TdApi.Chat chat, TdlibNotification notification, long loadTimeout, boolean isRebuild, boolean isExclusivelyScheduled, boolean isExclusivelySilent, boolean isOnlyPinned) {
+  private final Queue<CancellationSignal> pendingDownloadOperations = new LinkedBlockingDeque<>();
+
+  @Override
+  public void cancelPendingMediaPreviewDownloads (@NonNull Context context, @NonNull TdlibNotificationHelper helper) {
+    CancellationSignal cancellationSignal;
+    while ((cancellationSignal = pendingDownloadOperations.poll()) != null) {
+      cancellationSignal.cancel();
+    }
+  }
+
+  private void downloadFile (TdApi.File file, long timeout) {
+    CancellationSignal cancellationSignal = new CancellationSignal();
+    pendingDownloadOperations.offer(cancellationSignal);
+    tdlib.files().downloadFileSync(file, timeout, null, null, cancellationSignal);
+    pendingDownloadOperations.remove(cancellationSignal);
+  }
+
+  private void addMessage (NotificationCompat.MessagingStyle style, CharSequence messageText, Person person, TdApi.Chat chat, TdlibNotification notification, long loadTimeout, boolean isRebuild, boolean isExclusivelyScheduled, boolean isExclusivelySilent, boolean isOnlyPinned) {
     long chatId = chat.id;
     boolean isMention = notification.group().isMention();
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && tdlib.notifications().needContentPreview(chatId, isMention)) {
@@ -873,7 +893,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
       TdlibNotificationMediaFile file = TdlibNotificationMediaFile.newFile(tdlib, chat, notification.getNotificationContent());
       if (file != null) {
         if (!isRebuild) {
-          tdlib.files().downloadFileSync(file.file, loadTimeout, null, null);
+          downloadFile(file.file, loadTimeout);
         }
         if (TD.isFileLoaded(file.file)) {
           Uri uri = null;
@@ -969,7 +989,6 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
   }
 
   private NotificationCompat.Builder buildCommonNotification (Context context, @NonNull TdlibNotificationHelper helper, int badgeCount, boolean allowPreview, @Nullable TdlibNotificationSettings settings, final List<TdlibNotification> notifications, final int category, boolean isRebuild) {
-    Tdlib tdlib = helper.tdlib();
     TdlibNotification lastNotification = notifications.get(notifications.size() - 1);
     long singleChatId = helper.findSingleChatId();
     long singleTargetMessageId = singleChatId != 0 ? helper.findSingleMessageId(singleChatId) : 0;
@@ -1083,7 +1102,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
             } else {
               preview = Lang.getString(R.string.YouHaveNewMessage);
             }
-            addMessage(style, preview, buildPerson(tdlib.notifications(), chat, notification, onlyScheduled, onlySilent, !isRebuild), tdlib, chat, notification, MEDIA_LOAD_TIMEOUT, isRebuild, !onlyScheduled && notification.isScheduled(), !onlySilent && notification.isVisuallySilent(), onlyPinned);
+            addMessage(style, preview, buildPerson(tdlib.notifications(), chat, notification, onlyScheduled, onlySilent, !isRebuild), chat, notification, MEDIA_LOAD_TIMEOUT, isRebuild, !onlyScheduled && notification.isScheduled(), !onlySilent && notification.isVisuallySilent(), onlyPinned);
           }
           b.setStyle(style);
         } else {

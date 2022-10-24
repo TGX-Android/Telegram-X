@@ -437,7 +437,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private final HashMap<Long, Integer> chatOnlineMemberCount = new HashMap<>();
   private final TdlibCache cache;
   private final TdlibEmojiManager emoji;
-  private final TdlibEmojiReactionManager reaction;
+  private final TdlibEmojiReactionsManager reactions;
+  private final TdlibSingleton<TdApi.Stickers> genericReactionEffects;
   private final TdlibListeners listeners;
   private final TdlibFilesManager filesManager;
   private final TdlibStatusManager statusManager;
@@ -583,9 +584,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       Log.v("INITIALIZATION: Tdlib.emoji -> %dms", SystemClock.uptimeMillis() - ms);
       ms = SystemClock.uptimeMillis();
     }
-    this.reaction = new TdlibEmojiReactionManager(this);
+    this.reactions = new TdlibEmojiReactionsManager(this);
     if (needMeasure) {
       Log.v("INITIALIZATION: Tdlib.reaction -> %dms", SystemClock.uptimeMillis() - ms);
+      ms = SystemClock.uptimeMillis();
+    }
+    this.genericReactionEffects = new TdlibSingleton<>(this, () -> new TdApi.GetCustomEmojiReactionAnimations());
+    if (needMeasure) {
+      Log.v("INITIALIZATION: Tdlib.genericReactionEffects -> %dms", SystemClock.uptimeMillis() - ms);
       ms = SystemClock.uptimeMillis();
     }
     this.filesManager = new TdlibFilesManager(this);
@@ -669,8 +675,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   synchronized void checkDeviceTokenImpl (@Nullable Runnable onDone) {
-    final String deviceToken = context.getToken();
-    if (StringUtils.isEmpty(deviceToken) || authorizationStatus() != STATUS_READY)
+    final TdApi.DeviceToken deviceToken = context.getToken();
+    if (deviceToken == null || authorizationStatus() != STATUS_READY)
       return;
     long myUserId = myUserId();
     if (myUserId == 0)
@@ -685,9 +691,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
     Log.i(Log.TAG_FCM, "Registering device token... accountId:%d", accountId);
     context.setDeviceRegistered(accountId, false);
-    TdApi.DeviceTokenFirebaseCloudMessaging token = new TdApi.DeviceTokenFirebaseCloudMessaging(deviceToken, true);
     incrementReferenceCount(REFERENCE_TYPE_JOB);
-    client().send(new TdApi.RegisterDevice(token, otherUserIds), result -> {
+    client().send(new TdApi.RegisterDevice(deviceToken, otherUserIds), result -> {
       switch (result.getConstructor()) {
         case TdApi.PushReceiverId.CONSTRUCTOR:
           Log.i(Log.TAG_FCM, "Successfully registered device token:%s, accountId:%d, otherUserIdsCount:%d", deviceToken, accountId, otherUserIds.length);
@@ -1632,6 +1637,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return clientHolder();
   }
 
+  public void checkDeadlocks () {
+    if (!Config.PROFILE_DEADLOCKS)
+      return;
+    // Force ANR to cause system report
+    clientExecute(new TdApi.SetAlarm(0), 0);
+  }
+
   public Client client () { // TODO migrate all tdlib.client().send(..) to tdlib.send(..)
     return clientHolder().client;
   }
@@ -2074,8 +2086,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return emoji;
   }
 
-  public TdlibEmojiReactionManager reaction () {
-    return reaction;
+  public TdlibEmojiReactionsManager reactions () {
+    return reactions;
+  }
+
+  public TdlibSingleton<TdApi.Stickers> genericAnimationEffects () {
+    return genericReactionEffects;
   }
 
   public TdlibListeners listeners () {
@@ -3681,7 +3697,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public void ensureReactionsAvailable (@NonNull TdApi.ChatAvailableReactions reactions, @Nullable RunnableBool after) {
     final AtomicInteger remaining = new AtomicInteger();
-    TdlibEmojiReactionManager.Watcher emojiReactionWatcher = (context, entry) -> {
+    TdlibEmojiReactionsManager.Watcher emojiReactionWatcher = (context, entry) -> {
+      /*if (entry.value != null) {
+        synchronized (dataLock) {
+          cachedReactions.put(entry.key, new TGReaction(this, entry.value));
+        }
+      }*/
       if (remaining.decrementAndGet() == 0) {
         if (after != null) {
           after.runWithBool(true);
@@ -3707,7 +3728,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         int requestedCount = 0;
         remaining.set(activeEmojiReactions.length);
         for (String activeEmojiReaction : activeEmojiReactions) {
-          TdlibEmojiReactionManager.Entry entry = reaction().findOrPostponeRequest(activeEmojiReaction, emojiReactionWatcher, true);
+          TdlibEmojiReactionsManager.Entry entry = reactions().findOrPostponeRequest(activeEmojiReaction, emojiReactionWatcher, true);
           if (entry != null) {
             remaining.decrementAndGet();
           } else {
@@ -3719,7 +3740,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
             after.runWithBool(false);
           }
         } else {
-          reaction().performPostponedRequests();
+          reactions().performPostponedRequests();
         }
         break;
       }
@@ -3738,7 +3759,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           switch (reactionType.getConstructor()) {
             case TdApi.ReactionTypeEmoji.CONSTRUCTOR: {
               TdApi.ReactionTypeEmoji emoji = (TdApi.ReactionTypeEmoji) reactionType;
-              TdlibEmojiReactionManager.Entry entry = reaction().findOrPostponeRequest(emoji.emoji, emojiReactionWatcher, true);
+              TdlibEmojiReactionsManager.Entry entry = reactions().findOrPostponeRequest(emoji.emoji, emojiReactionWatcher, true);
               if (entry != null) {
                 remaining.decrementAndGet();
               } else {
@@ -3764,7 +3785,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           }
         } else {
           if (requestedEmojiReactionCount > 0) {
-            reaction().performPostponedRequests();
+            reactions().performPostponedRequests();
           }
           if (requestedCustomReactionCount > 0) {
             emoji().performPostponedRequests();
@@ -3773,6 +3794,17 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         break;
       }
     }
+  }
+
+  public void pickRandomGenericOverlaySticker (RunnableData<TdApi.Sticker> after) {
+    genericReactionEffects.get(stickers -> {
+      if (stickers != null && stickers.stickers.length > 0) {
+        TdApi.Sticker sticker = stickers.stickers[MathUtils.random(0, stickers.stickers.length - 1)];
+        after.runWithData(sticker);
+      } else {
+        after.runWithData(null);
+      }
+    });
   }
 
   public TGReaction getReaction (@Nullable TdApi.ReactionType reactionType) {
@@ -3791,21 +3823,24 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         return reaction;
       }
     }
-    if (!allowRequest) {
-      return null;
-    }
     switch (reactionType.getConstructor()) {
       case TdApi.ReactionTypeEmoji.CONSTRUCTOR: {
         TdApi.ReactionTypeEmoji emoji = (TdApi.ReactionTypeEmoji) reactionType;
-        RunnableData<TdlibEmojiReactionManager.Entry> emojiReactionWatcher = (newEntry) -> {
+        RunnableData<TdlibEmojiReactionsManager.Entry> emojiReactionWatcher = (newEntry) -> {
           if (newEntry.value != null) {
+            TGReaction reaction = new TGReaction(this, newEntry.value);
             synchronized (dataLock) {
-              cachedReactions.put(key, new TGReaction(this, newEntry.value));
+              cachedReactions.put(key, reaction);
             }
-            // TODO invoke update so reaction would display properly where getReaction was called
+            listeners().notifyReactionLoaded(key);
           }
         };
-        TdlibEmojiReactionManager.Entry entry = reaction().findOrRequest(emoji.emoji, emojiReactionWatcher);
+        TdlibEmojiReactionsManager.Entry entry;
+        if (allowRequest) {
+          entry = reactions().findOrRequest(emoji.emoji, emojiReactionWatcher);
+        } else {
+          entry = reactions().find(emoji.emoji);
+        }
         if (entry != null) {
           if (entry.value == null) {
             return null;
@@ -3822,21 +3857,28 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         TdApi.ReactionTypeCustomEmoji customEmoji = (TdApi.ReactionTypeCustomEmoji) reactionType;
         RunnableData<TdlibEmojiManager.Entry> customReactionWatcher = (newEntry) -> {
           if (newEntry.value != null) {
+            TGReaction reaction = new TGReaction(this, newEntry.value);
             synchronized (dataLock) {
-              // TODO put TGReaction to cache
+              cachedReactions.put(key, reaction);
             }
-            // TODO invoke update so reaction would display properly where getReaction was called
+            listeners().notifyReactionLoaded(key);
           }
         };
-        TdlibEmojiManager.Entry entry = emoji().findOrRequest(customEmoji.customEmojiId, customReactionWatcher);
+        TdlibEmojiManager.Entry entry;
+        if (allowRequest) {
+          entry = emoji().findOrRequest(customEmoji.customEmojiId, customReactionWatcher);
+        } else {
+          entry = emoji().find(customEmoji.customEmojiId);
+        }
         if (entry != null) {
           if (entry.value == null) {
             return null;
           }
+          TGReaction reaction = new TGReaction(this, entry.value);
           synchronized (dataLock) {
-            // TODO put TGReaction to cache
+            cachedReactions.put(key, reaction);
           }
-          // TODO return newly created TGReaction
+          return reaction;
         }
         break;
       }
@@ -4198,6 +4240,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public void getTesterLevel (@NonNull RunnableInt callback) {
+    getTesterLevel(callback, false);
+  }
+
+  public void getTesterLevel (@NonNull RunnableInt callback, boolean onlyLocal) {
     if (inRecoveryMode() || isDebugInstance()) {
       callback.runWithInt(TESTER_LEVEL_TESTER);
       return;
@@ -4207,6 +4253,23 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       callback.runWithInt(TESTER_LEVEL_CREATOR);
     } else if (myUserId == TDLIB_CREATOR_USER_ID) {
       callback.runWithInt(TESTER_LEVEL_DEVELOPER);
+    } else if (onlyLocal) {
+      TdApi.Chat tgxAdminChat = chat(ADMIN_CHAT_ID);
+      if (tgxAdminChat != null && TD.isMember(chatStatus(ADMIN_CHAT_ID))) {
+        callback.runWithInt(TESTER_LEVEL_ADMIN);
+        return;
+      }
+      TdApi.Chat tgxTestersChat = chat(TESTER_CHAT_ID);
+      if (tgxTestersChat != null && TD.isMember(chatStatus(TESTER_CHAT_ID))) {
+        callback.runWithInt(TESTER_LEVEL_TESTER);
+        return;
+      }
+      TdApi.Chat tgxReadersChat = chat(READER_CHAT_ID);
+      if (tgxReadersChat != null && TD.isMember(chatStatus(READER_CHAT_ID))) {
+        callback.runWithInt(TESTER_LEVEL_READER);
+        return;
+      }
+      callback.runWithInt(TESTER_LEVEL_NONE);
     } else {
       chat(ADMIN_CHAT_ID, tgxAdminChat -> {
         if (tgxAdminChat != null && TD.isMember(chatStatus(ADMIN_CHAT_ID))) {
@@ -5063,9 +5126,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     checkConnectionParams(client(), false);
   }
 
-  private String getRegisteredDeviceToken () {
-    String deviceToken = context.getToken();
-    return StringUtils.isEmpty(deviceToken) ? Settings.instance().getDeviceToken() : deviceToken;
+  private TdApi.DeviceToken getRegisteredDeviceToken () {
+    TdApi.DeviceToken deviceToken = context.getToken();
+    return deviceToken == null ? Settings.instance().getDeviceToken() : deviceToken;
   }
 
   private void checkConnectionParams (Client client, boolean force) {
@@ -5074,8 +5137,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       params.put("device_token", "HIDDEN");
     } else {
       int state = context().getTokenState();
-      final String deviceToken = getRegisteredDeviceToken();
-      if (!StringUtils.isEmpty(deviceToken) && (state == TdlibManager.TokenState.NONE || state == TdlibManager.TokenState.INITIALIZING)) {
+      final TdApi.DeviceToken deviceToken = getRegisteredDeviceToken();
+      if (deviceToken != null && (state == TdlibManager.TokenState.NONE || state == TdlibManager.TokenState.INITIALIZING)) {
         state = TdlibManager.TokenState.OK;
       }
       String error = context().getTokenError();
@@ -5092,7 +5155,17 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           break;
         }
         case TdlibManager.TokenState.OK: {
-          params.put("device_token", deviceToken);
+          switch (deviceToken.getConstructor()) {
+            // TODO more push services
+            case TdApi.DeviceTokenFirebaseCloudMessaging.CONSTRUCTOR: {
+              String token = ((TdApi.DeviceTokenFirebaseCloudMessaging) deviceToken).token;
+              params.put("device_token", token);
+              break;
+            }
+            default: {
+              throw new UnsupportedOperationException(deviceToken.toString());
+            }
+          }
           break;
         }
         case TdlibManager.TokenState.NONE:
@@ -5687,6 +5760,20 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     } else {
       awaitConnection(onDone);
     }
+  }
+
+  public boolean notifyPushProcessingTakesTooLong (long pushId) { // Called from Firebase thread
+    TdApi.AuthorizationState authorizationState = this.authorizationState;
+    if (authorizationState != null) {
+      switch (authorizationState.getConstructor()) {
+        case TdApi.AuthorizationStateLoggingOut.CONSTRUCTOR:
+        case TdApi.AuthorizationStateClosing.CONSTRUCTOR:
+          // Make sure action finishes even if it causes ANR.
+          return false;
+      }
+    }
+    notifications().notifyPushProcessingTakesTooLong();
+    return true;
   }
 
   void processPushOrSync (long pushId, String payload, @Nullable Runnable after) {

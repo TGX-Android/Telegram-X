@@ -55,6 +55,7 @@ import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibFilesManager;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibNotificationManager;
+import org.thunderdog.challegram.telegram.TdlibNotificationUtils;
 import org.thunderdog.challegram.telegram.TdlibProvider;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
@@ -76,6 +77,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.AppBuildInfo;
 import org.thunderdog.challegram.util.Crash;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
+import org.thunderdog.challegram.util.DeviceTokenType;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -283,6 +285,7 @@ public class Settings {
   private static final String KEY_SCROLL_CHAT_TOP_END = "_top";
   private static final @Deprecated String KEY_PUSH_USER_IDS = "push_user_ids";
   private static final @Deprecated String KEY_PUSH_USER_ID = "push_user_id";
+  private static final String KEY_PUSH_DEVICE_TOKEN_TYPE = "push_device_token_type";
   private static final String KEY_PUSH_DEVICE_TOKEN = "push_device_token";
   private static final String KEY_PUSH_STATS_TOTAL_COUNT = "push_stats_total";
   private static final String KEY_PUSH_STATS_CURRENT_APP_VERSION_COUNT = "push_stats_app";
@@ -5847,17 +5850,45 @@ public class Settings {
 
   // Push token
 
-  public void setDeviceToken (String token) {
-    if (StringUtils.isEmpty(token)) {
-      pmc.remove(KEY_PUSH_DEVICE_TOKEN);
-    } else if (!token.equals(getDeviceToken())) {
+  public void setDeviceToken (TdApi.DeviceToken token) {
+    if (token == null) {
+      pmc.edit()
+        .remove(KEY_PUSH_DEVICE_TOKEN_TYPE)
+        .remove(KEY_PUSH_DEVICE_TOKEN)
+        .apply();
+    } else if (!Td.equalsTo(token, getDeviceToken())) {
       resetTokenPushMessageCount();
-      pmc.putString(KEY_PUSH_DEVICE_TOKEN, token);
+      int tokenType = TdlibNotificationUtils.getDeviceTokenType(token);
+      switch (token.getConstructor()) {
+        case TdApi.DeviceTokenFirebaseCloudMessaging.CONSTRUCTOR: {
+          TdApi.DeviceTokenFirebaseCloudMessaging fcmToken = (TdApi.DeviceTokenFirebaseCloudMessaging) token;
+          pmc.edit()
+            .putInt(KEY_PUSH_DEVICE_TOKEN_TYPE, tokenType)
+            .putString(KEY_PUSH_DEVICE_TOKEN, fcmToken.token)
+            .apply();
+          break;
+        }
+        default: {
+          throw new UnsupportedOperationException(token.toString());
+        }
+      }
     }
   }
 
-  public String getDeviceToken () {
-    return pmc.getString(KEY_PUSH_DEVICE_TOKEN, null);
+  @Nullable
+  public TdApi.DeviceToken getDeviceToken () {
+    @DeviceTokenType int tokenType = pmc.getInt(KEY_PUSH_DEVICE_TOKEN_TYPE, DeviceTokenType.FIREBASE_CLOUD_MESSAGING);
+    switch (tokenType) {
+      case DeviceTokenType.FIREBASE_CLOUD_MESSAGING:
+      default: {
+        String token = pmc.getString(KEY_PUSH_DEVICE_TOKEN, null);
+        if (!StringUtils.isEmpty(token)) {
+          return new TdApi.DeviceTokenFirebaseCloudMessaging(token, true);
+        }
+        break;
+      }
+    }
+    return null;
   }
 
   // Device ID used to anonymously identify crashes from the same client

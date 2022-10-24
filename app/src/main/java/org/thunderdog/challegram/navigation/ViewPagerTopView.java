@@ -32,6 +32,7 @@ import androidx.annotation.NonNull;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.loader.ComplexReceiver;
@@ -63,6 +64,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     public final @DrawableRes int iconRes;
     public ImageReceiver imageReceiver;
     public int imageReceiverSize = 0;
+    public float imageReceiverScale = 0f;
     public TGReaction reaction;
     public final Counter counter;
     public final DrawableProvider provider;
@@ -431,8 +433,10 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     for (Item item : items) {
       if (item.reaction != null) {
         TGReaction reaction = item.reaction;
+        TGStickerObj stickerObj = reaction.centerAnimationSicker();
         item.imageReceiver = complexReceiver.getImageReceiver(reaction.getId());
-        item.imageReceiver.requestFile(reaction.centerAnimationSicker().getImage());
+        item.imageReceiver.requestFile(stickerObj.getImage());
+        item.imageReceiverScale = stickerObj.getDisplayScale();
         item.imageReceiverSize = Screen.dp(34);
       }
     }
@@ -725,7 +729,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
               int imgY = (viewHeight - size) / 2;
               item.imageReceiver.setAlpha(imageAlpha);
               item.imageReceiver.setBounds(cx, imgY, cx + size, imgY + size);
-              item.imageReceiver.draw(c);
+              item.imageReceiver.drawScaled(c, item.imageReceiverScale);
               item.counter.draw(c, cx + size, viewHeight / 2f, Gravity.LEFT, counterAlpha, item.provider, 0);
             } else {
               item.counter.draw(c, cx + itemWidth / 2f, viewHeight / 2f, Gravity.CENTER, counterAlpha, imageAlpha, item.provider, 0);
