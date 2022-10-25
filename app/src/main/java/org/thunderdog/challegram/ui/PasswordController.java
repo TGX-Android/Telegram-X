@@ -76,6 +76,8 @@ public class PasswordController extends ViewController<PasswordController.Args> 
   public static final int MODE_CODE_PHONE_CONFIRM = 9;
   public static final int MODE_TRANSFER_OWNERSHIP_CONFIRM = 10;
   public static final int MODE_CONFIRM = 11;
+  public static final int MODE_CODE_EMAIL = 12;
+  public static final int MODE_EMAIL_LOGIN = 13;
 
   private final Handler handler = new Handler(this);
 
@@ -102,6 +104,20 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       this.state = null;
       this.authState = state;
       this.phoneNumber = phoneNumber;
+    }
+
+    public Args (int mode, TdApi.AuthorizationStateWaitEmailCode state) {
+      this.mode = mode;
+      this.state = null;
+      this.authState = state;
+      setEmail(state.codeInfo.emailAddressPattern);
+      setCodeLength(state.codeInfo.length);
+    }
+
+    public Args (int mode, TdApi.AuthorizationStateWaitEmailAddress state) {
+      this.mode = mode;
+      this.state = null;
+      this.authState = state;
     }
 
     public Args (int mode, TdApi.AuthenticationCodeInfo codeInfo, @NonNull String phoneNumber) {
@@ -163,6 +179,8 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       case MODE_LOGIN_EMAIL_RECOVERY:
       case MODE_LOGIN:
       case MODE_CODE:
+      case MODE_CODE_EMAIL:
+      case MODE_EMAIL_LOGIN:
         return true;
     }
     return false;
@@ -186,6 +204,9 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       case MODE_NEW: {
         return Lang.getString(R.string.YourPassword);
       }
+      case MODE_EMAIL_LOGIN: {
+        return Lang.getString(R.string.YourEmail);
+      }
       case MODE_CONFIRM:
       case MODE_UNLOCK_EDIT: {
         return Lang.getString(R.string.EnterPassword);
@@ -201,7 +222,8 @@ public class PasswordController extends ViewController<PasswordController.Args> 
         return Lang.getString(R.string.PasswordRecovery);
       }
       case MODE_CODE:
-      case MODE_CODE_CHANGE: {
+      case MODE_CODE_CHANGE:
+      case MODE_CODE_EMAIL: {
         return Lang.getString(R.string.ConfirmationCode);
       }
       case MODE_CODE_PHONE_CONFIRM: {
@@ -221,7 +243,18 @@ public class PasswordController extends ViewController<PasswordController.Args> 
 
   @Override
   public int getId () {
-    return mode == MODE_CODE || mode == MODE_CODE_CHANGE || mode == MODE_CODE_PHONE_CONFIRM ? R.id.controller_code : mode == MODE_EMAIL_RECOVERY ? R.id.controller_passwordRecovery : mode == MODE_LOGIN_EMAIL_RECOVERY ? R.id.controller_loginPassword : R.id.controller_password;
+    switch (mode) {
+      case MODE_CODE:
+      case MODE_CODE_CHANGE:
+      case MODE_CODE_PHONE_CONFIRM:
+      case MODE_CODE_EMAIL:
+        return R.id.controller_code;
+      case MODE_EMAIL_RECOVERY:
+        return R.id.controller_passwordRecovery;
+      case MODE_LOGIN_EMAIL_RECOVERY:
+        return R.id.controller_loginPassword;
+    }
+    return R.id.controller_password;
   }
 
   private MaterialEditTextGroup editText;
@@ -231,6 +264,10 @@ public class PasswordController extends ViewController<PasswordController.Args> 
   private TextView resetWaitView;
   private @Nullable ProgressComponentView progressView;
   private TextView hintView;
+
+  public int getMode () {
+    return mode;
+  }
 
   private int getDoneIcon () {
     switch (mode) {
@@ -265,7 +302,8 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     editText.setEmptyListener(this);
     editText.setTextListener(this);
     switch (mode) {
-      case MODE_EMAIL_CHANGE: {
+      case MODE_EMAIL_CHANGE:
+      case MODE_EMAIL_LOGIN: {
         editText.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
         break;
       }
@@ -273,7 +311,8 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       case MODE_LOGIN_EMAIL_RECOVERY:
       case MODE_CODE:
       case MODE_CODE_CHANGE:
-      case MODE_CODE_PHONE_CONFIRM: {
+      case MODE_CODE_PHONE_CONFIRM:
+      case MODE_CODE_EMAIL: {
         editText.getEditText().setInputType(InputType.TYPE_CLASS_NUMBER);
         break;
       }
@@ -294,12 +333,17 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       }
       case MODE_CODE:
       case MODE_CODE_CHANGE:
-      case MODE_CODE_PHONE_CONFIRM: {
+      case MODE_CODE_PHONE_CONFIRM:
+      case MODE_CODE_EMAIL: {
         editText.setHint(R.string.login_Code);
         break;
       }
       case MODE_EDIT: {
         editText.setHint(R.string.EnterANewPassword);
+        break;
+      }
+      case MODE_EMAIL_LOGIN: {
+        editText.setHint(R.string.EnterEmail);
         break;
       }
       case MODE_EMAIL_CHANGE: {
@@ -409,13 +453,21 @@ public class PasswordController extends ViewController<PasswordController.Args> 
         hint = getCodeHint(((TdApi.AuthorizationStateWaitCode) authState).codeInfo.type, formattedPhone);
         break;
       }
+      case MODE_CODE_EMAIL: {
+        hint = Lang.getStringBold(R.string.SentEmailCode, ((TdApi.AuthorizationStateWaitEmailCode) authState).codeInfo.emailAddressPattern);
+        break;
+      }
+      case MODE_EMAIL_LOGIN: {
+        hint = Lang.getString(R.string.LoginEmailInfo);
+        break;
+      }
       case MODE_EMAIL_CHANGE: {
         hint = Lang.getString(R.string.YourEmailInfo);
         break;
       }
     }
 
-    if (mode == MODE_TRANSFER_OWNERSHIP_CONFIRM || mode == MODE_UNLOCK_EDIT || mode == MODE_CONFIRM || mode == MODE_LOGIN || mode == MODE_CODE || mode == MODE_CODE_CHANGE || mode == MODE_CODE_PHONE_CONFIRM) {
+    if (mode == MODE_TRANSFER_OWNERSHIP_CONFIRM || mode == MODE_UNLOCK_EDIT || mode == MODE_CONFIRM || mode == MODE_LOGIN || mode == MODE_CODE || mode == MODE_CODE_CHANGE || mode == MODE_CODE_PHONE_CONFIRM || mode == MODE_CODE_EMAIL) {
       RelativeLayout forgotWrap = new RelativeLayout(context);
       forgotWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM));
 
@@ -480,6 +532,8 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       case MODE_LOGIN_EMAIL_RECOVERY:
       case MODE_CODE:
       // FIXME? case MODE_CODE_CHANGE:
+      case MODE_CODE_EMAIL:
+      case MODE_EMAIL_LOGIN:
       case MODE_LOGIN: {
         tdlib.listeners().addAuthorizationChangeListener(this);
         break;
@@ -502,6 +556,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     switch (mode) {
       case MODE_CODE:
       case MODE_LOGIN:
+      case MODE_CODE_EMAIL:
         editText.setText(code);
         proceed();
         break;
@@ -548,7 +603,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       setIsInputOK(Strings.isValidEmail(text));
     } else if (mode == MODE_EMAIL_RECOVERY || mode == MODE_LOGIN_EMAIL_RECOVERY) {
       setIsInputOK(Strings.getNumber(text).length() >= 6);
-    } else if ((mode == MODE_CODE || mode == MODE_CODE_CHANGE || mode == MODE_CODE_PHONE_CONFIRM) && Strings.getNumberLength(text) >= TD.getCodeLength(authState)) {
+    } else if ((mode == MODE_CODE || mode == MODE_CODE_CHANGE || mode == MODE_CODE_PHONE_CONFIRM || mode == MODE_CODE_EMAIL) && Strings.getNumberLength(text) >= TD.getCodeLength(authState)) {
       proceed();
     } else if ((mode == MODE_NEW || mode == MODE_EDIT) && step == STEP_PASSWORD_HINT) {
       passwordHint = text;
@@ -1255,6 +1310,10 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     }
   }
 
+  private boolean needStackLocking () {
+    return mode == MODE_CODE || mode == MODE_CODE_EMAIL;
+  }
+
   private void sendCode (String code) {
     if (inProgress) {
       return;
@@ -1266,7 +1325,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     }
 
     setInProgress(true);
-    if (mode == MODE_CODE) {
+    if (needStackLocking()) {
       setStackLocked(true);
     }
 
@@ -1278,6 +1337,10 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       case MODE_CODE_CHANGE:
         function = new TdApi.CheckChangePhoneNumberCode(code);
         break;
+      case MODE_CODE_EMAIL:
+        // TODO sign in with Google (+ Apple ID?)
+        function = new TdApi.CheckAuthenticationEmailCode(new TdApi.EmailAddressAuthenticationCode(code));
+        break;
       default:
         function = new TdApi.CheckAuthenticationCode(code);
         break;
@@ -1286,7 +1349,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     tdlib.client().send(function, object -> tdlib.ui().post(() -> {
       if (!isDestroyed()) {
         setInProgress(false);
-        if (mode == MODE_CODE) {
+        if (needStackLocking()) {
           setStackLocked(false);
         }
         switch (object.getConstructor()) {
@@ -1311,12 +1374,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
             break;
           }
           case TdApi.Error.CONSTRUCTOR: {
-            TdApi.Error error = (TdApi.Error) object;
-            if ("PHONE_CODE_INVALID".equals(error.message)) {
-              setHintText(R.string.InvalidCode, true);
-            } else {
-              setHintText(TD.toErrorString(error), true);
-            }
+            setHintText(TD.toErrorString(object), true);
             break;
           }
         }
@@ -1368,7 +1426,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     }));
   }
 
-  private void login (String password) {
+  private void login (TdApi.Function<?> function) {
     if (inProgress) {
       return;
     }
@@ -1381,7 +1439,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     setInProgress(true);
     setStackLocked(true);
 
-    tdlib.client().send(new TdApi.CheckAuthenticationPassword(password), object -> tdlib.ui().post(() -> {
+    tdlib.client().send(function, object -> tdlib.ui().post(() -> {
       if (!isDestroyed()) {
         setInProgress(false);
         setStackLocked(false);
@@ -1419,7 +1477,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       }
       case MODE_LOGIN: {
         if (!input.isEmpty()) {
-          login(input);
+          login(new TdApi.CheckAuthenticationPassword(input));
         }
         break;
       }
@@ -1441,9 +1499,18 @@ public class PasswordController extends ViewController<PasswordController.Args> 
         }
         break;
       }
+      case MODE_EMAIL_LOGIN: {
+        if (Strings.isValidEmail(input)) {
+          login(new TdApi.SetAuthenticationEmailAddress(input));
+        } else {
+          setHintText(R.string.EmailInvalid, true);
+        }
+        break;
+      }
       case MODE_CODE:
       case MODE_CODE_CHANGE:
-      case MODE_CODE_PHONE_CONFIRM: {
+      case MODE_CODE_PHONE_CONFIRM:
+      case MODE_CODE_EMAIL: {
         String number = Strings.getNumber(input);
         sendCode(number);
         break;
@@ -1472,7 +1539,8 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       }
       case MODE_CODE:
       case MODE_CODE_CHANGE:
-      case MODE_CODE_PHONE_CONFIRM: {
+      case MODE_CODE_PHONE_CONFIRM:
+      case MODE_CODE_EMAIL: {
         requestNextCodeType();
         break;
       }

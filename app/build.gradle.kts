@@ -68,6 +68,7 @@ android {
   // defaultConfig.vectorDrawables.useSupportLibrary = true
 
   sourceSets.getByName("main") {
+    java.srcDirs("./src/google/java") // TODO: Huawei & FOSS editions
     Config.EXOPLAYER_EXTENSIONS.forEach { module ->
       java.srcDirs("../thirdparty/ExoPlayer/extensions/${module}/src/main/java")
     }
@@ -180,7 +181,7 @@ dependencies {
   implementation("androidx.viewpager:viewpager:1.0.0")
   implementation("androidx.work:work-runtime:2.7.1")
   implementation("androidx.browser:browser:1.4.0")
-  implementation("androidx.exifinterface:exifinterface:1.3.3")
+  implementation("androidx.exifinterface:exifinterface:1.3.4")
   implementation("androidx.collection:collection:1.2.0")
   implementation("androidx.interpolator:interpolator:1.0.0")
   implementation("androidx.gridlayout:gridlayout:1.0.0")

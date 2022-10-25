@@ -589,8 +589,12 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
         int ret = N.getVideoFrame(nativePtr, free.bitmap, metadata);
         free.no = metadata[3];
         success = true;
-        if (ret == 2 && isPlayOnce) {
-          file.setLooped(true);
+        if (ret == 2) {
+          if (isPlayOnce) {
+            file.setLooped(true);
+          } else {
+            file.onLoop();
+          }
         }
       }
       if (!async) {

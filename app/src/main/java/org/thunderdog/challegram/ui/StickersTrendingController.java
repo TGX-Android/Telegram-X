@@ -390,11 +390,12 @@ public class StickersTrendingController extends ViewController<Void> implements 
   }
 
   @Override
-  public boolean onStickerClick (StickerSmallView view, View clickView, TGStickerObj sticker, boolean isMenuClick, boolean forceDisableNotification, @Nullable TdApi.MessageSchedulingState schedulingState) {
+  public boolean onStickerClick (StickerSmallView view, View clickView, TGStickerObj sticker, boolean isMenuClick, TdApi.MessageSendOptions sendOptions) {
     int i = indexOfTrendingStickerSetById(sticker.getStickerSetId());
     if (i != -1 && stickerSets != null) {
       if (isMenuClick) {
         ShareController c = new ShareController(context, tdlib);
+        // TODO pass sendOptions
         c.setArguments(new ShareController.Args(sticker.getSticker()));
         c.show();
       } else {
