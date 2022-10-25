@@ -99,7 +99,7 @@ public class AvatarPlaceholder {
     }
     this.metadata = metadata;
     this.radius = radius;
-    this.letters = StringUtils.isEmpty(metadata.letters) ? null : new Text.Builder(metadata.letters, Screen.dp(radius) * 3, Paints.robotoStyleProvider((int) (radius * .75f)), TextColorSets.Regular.AVATAR_CONTENT).allBold().singleLine().build();
+    this.letters = StringUtils.isEmpty(metadata.letters) ? null : new Text.Builder(metadata.letters, Screen.dp(radius) * 3, Paints.robotoStyleProvider((int) (radius * .75f)), TextColorSets.Regular.AVATAR_CONTENT).allBold().singleLine().noSpacing().build();
     if (provider != null) {
       this.drawable = provider.getSparseDrawable(metadata.drawableRes, R.id.theme_color_avatar_content);
     } else {
