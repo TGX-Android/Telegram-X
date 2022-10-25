@@ -102,7 +102,7 @@ import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.lambda.RunnableInt;
 import me.vkryl.core.lambda.RunnableLong;
 import me.vkryl.core.BitwiseUtils;
-import me.vkryl.core.util.JobList;
+import me.vkryl.core.util.ConditionalExecutor;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.ChatPosition;
 import me.vkryl.td.JSON;
@@ -730,6 +730,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private static final int REFERENCE_TYPE_CALL = 6;
   private static final int REFERENCE_TYPE_REQUEST_EXECUTION = 7;
   private static final int REFERENCE_TYPE_MESSAGE = 8;
+  private static final int REFERENCE_TYPE_TASK = 9;
+  private static final int REFERENCE_TYPE_TASK_EXECUTION = 10;
 
   public void changeLocationReferenceCount (int deltaCount) {
     if (deltaCount > 0) {
@@ -1200,7 +1202,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
     final int newStatus = authorizationStatus();
 
-    closeListeners.trigger(true);
+    closeListeners.notifyConditionChanged(true);
 
     if (prevStatus == STATUS_UNKNOWN && newStatus != STATUS_UNKNOWN) {
       synchronized (dataLock) {
@@ -6495,7 +6497,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       checkKeepAlive();
     }
     if (!update.haveUnreceivedNotifications) {
-      this.notificationConsistencyListeners.trigger(true);
+      this.notificationConsistencyListeners.notifyConditionChanged(true);
     }
     incrementNotificationReferenceCount();
     // notificationManager.onUpdateHavePendingNotifications(update);
@@ -8668,58 +8670,58 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   // Events
 
-  private void onJobAdded () {
-    incrementReferenceCount(REFERENCE_TYPE_JOB);
+  private void onJobAdded (boolean isAboutToExecute) {
+    incrementReferenceCount(isAboutToExecute ? REFERENCE_TYPE_TASK_EXECUTION : REFERENCE_TYPE_TASK);
   }
 
-  private void onJobRemoved () {
-    decrementReferenceCount(REFERENCE_TYPE_JOB);
+  private void onJobRemoved (boolean justFinishedExecution) {
+    decrementReferenceCount(justFinishedExecution ? REFERENCE_TYPE_TASK_EXECUTION : REFERENCE_TYPE_TASK);
   }
 
-  private final JobList
-    initializationListeners = new JobList(() -> authorizationStatus() != STATUS_UNKNOWN).onAddRemove(this::onJobAdded, this::onJobRemoved), // Executed once received authorization state
-    connectionListeners = new JobList(() -> authorizationStatus() != STATUS_UNKNOWN && connectionState == STATE_CONNECTED).onAddRemove(this::onJobAdded, this::onJobRemoved), // Executed once connected
-    notificationInitListeners = new JobList(() -> {
+  private final ConditionalExecutor
+    initializationListeners = new ConditionalExecutor(() -> authorizationStatus() != STATUS_UNKNOWN).onAddRemove(this::onJobAdded, this::onJobRemoved), // Executed once received authorization state
+    connectionListeners = new ConditionalExecutor(() -> authorizationStatus() != STATUS_UNKNOWN && connectionState == STATE_CONNECTED).onAddRemove(this::onJobAdded, this::onJobRemoved), // Executed once connected
+    notificationInitListeners = new ConditionalExecutor(() -> {
       final int status = authorizationStatus();
       return status == STATUS_UNAUTHORIZED || (status == STATUS_READY && haveInitializedNotifications);
     }).onAddRemove(this::onJobAdded, this::onJobRemoved),
-    notificationListeners = new JobList(() -> !havePendingNotifications).onAddRemove(this::onJobAdded, this::onJobRemoved),
-    notificationConsistencyListeners = new JobList(() -> false),
-    closeListeners = new JobList(() -> authorizationState != null && authorizationState.getConstructor() == TdApi.AuthorizationStateClosed.CONSTRUCTOR); // Executed once no pending notifications remaining
+    notificationListeners = new ConditionalExecutor(() -> !havePendingNotifications).onAddRemove(this::onJobAdded, this::onJobRemoved),
+    notificationConsistencyListeners = new ConditionalExecutor(() -> false),
+    closeListeners = new ConditionalExecutor(() -> authorizationState != null && authorizationState.getConstructor() == TdApi.AuthorizationStateClosed.CONSTRUCTOR); // Executed once no pending notifications remaining
 
   @AnyThread
   public void awaitInitialization (@NonNull Runnable after) {
-    initializationListeners.add(after);
+    initializationListeners.executeOrPostponeTask(after);
   }
 
   @AnyThread
   public void awaitNotificationInitialization (@NonNull Runnable after) {
-    notificationInitListeners.add(after);
+    notificationInitListeners.executeOrPostponeTask(after);
   }
 
   public void awaitClose (@NonNull Runnable after, boolean force) {
     if (force || (authorizationState != null && authorizationState.getConstructor() == TdApi.AuthorizationStateLoggingOut.CONSTRUCTOR)) {
-      closeListeners.add(after);
+      closeListeners.executeOrPostponeTask(after);
     } else {
       after.run();
     }
   }
 
   public void awaitNotifications (@NonNull Runnable after) {
-    notificationListeners.add(after);
+    notificationListeners.executeOrPostponeTask(after);
   }
 
   public void awaitConnection (@NonNull Runnable after) {
-    connectionListeners.add(after);
+    connectionListeners.executeOrPostponeTask(after);
   }
 
   // Events
 
   @TdlibThread
   private void onInitialized () {
-    initializationListeners.trigger();
-    notificationInitListeners.trigger();
-    connectionListeners.trigger();
+    initializationListeners.notifyConditionChanged(true);
+    notificationInitListeners.notifyConditionChanged();
+    connectionListeners.notifyConditionChanged();
   }
 
   @TdlibThread
@@ -8733,11 +8735,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   private void onConnected () {
     setHasUnprocessedPushes(false);
-    connectionListeners.trigger();
+    connectionListeners.notifyConditionChanged();
   }
 
   private void onNotificationsInitialized () {
-    notificationInitListeners.trigger();
+    notificationInitListeners.notifyConditionChanged();
   }
 
   public void dispatchNotificationsInitialized () {
@@ -8750,7 +8752,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   private void onNotificationsReceived () {
-    notificationListeners.trigger();
+    notificationListeners.notifyConditionChanged();
   }
 
   // Emoji
