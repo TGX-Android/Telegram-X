@@ -6500,8 +6500,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       this.notificationConsistencyListeners.notifyConditionChanged(true);
     }
     incrementNotificationReferenceCount();
-    // notificationManager.onUpdateHavePendingNotifications(update);
-    notificationManager.releaseTdlibReference(havePendingNotifications ? null : this::onNotificationsReceived);
+    notificationManager.releaseTdlibReference(() ->
+      notificationListeners.notifyConditionChanged(!havePendingNotifications)
+    );
   }
 
   private long receivedActiveNotificationsTime;
@@ -8739,7 +8740,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   private void onNotificationsInitialized () {
-    notificationInitListeners.notifyConditionChanged();
+    notificationInitListeners.notifyConditionChanged(true);
   }
 
   public void dispatchNotificationsInitialized () {
@@ -8749,10 +8750,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         onNotificationsInitialized();
       }
     });
-  }
-
-  private void onNotificationsReceived () {
-    notificationListeners.notifyConditionChanged();
   }
 
   // Emoji
