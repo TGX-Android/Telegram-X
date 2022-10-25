@@ -155,6 +155,7 @@ public class ListItem {
   public static final int TYPE_REACTION_CHECKBOX = 140;
 
   public static final int TYPE_USER_SMALL = 141;
+  public static final int TYPE_CHAT_SENDER_CHECKBOX = 142;
 
   private static final int FLAG_SELECTED = 1;
   private static final int FLAG_BOOL_VALUE = 1 << 1;

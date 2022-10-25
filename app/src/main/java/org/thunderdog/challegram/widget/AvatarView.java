@@ -32,27 +32,30 @@ import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibCache;
+import org.thunderdog.challegram.telegram.TdlibSender;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 
-import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.BitwiseUtils;
+import me.vkryl.core.lambda.Destroyable;
 
 public class AvatarView extends View implements Destroyable, TdlibCache.UserDataChangeListener, ChatListener, AttachDelegate {
-  private static final int FLAG_NO_PLACEHOLDERS = 0x01;
-  private static final int FLAG_NEED_FULL = 0x02;
-  private static final int FLAG_NO_ROUND = 0x04;
-  private static final int FLAG_NEED_OVERLAY = 0x08;
-  private static final int FLAG_CUSTOM_WINDOW_MANAGEMENT = 0x10;
+  private static final int FLAG_NO_PLACEHOLDERS = 1 << 1;
+  private static final int FLAG_NEED_FULL = 1 << 2;
+  private static final int FLAG_NO_ROUND = 1 << 3;
+  private static final int FLAG_NEED_OVERLAY = 1 << 4;
+  private static final int FLAG_CUSTOM_WINDOW_MANAGEMENT = 1 << 5;
+  private static final int FLAG_CUSTOM_ICON = 1 << 6;
 
   private int flags;
 
   private final ImageReceiver receiver;
   private ImageReceiver preview;
   private Drawable overlayIcon;
+  private Drawable customIcon;
 
   public AvatarView (Context context) {
     super(context);
@@ -175,9 +178,14 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
     return chat != null ? chat.id : 0;
   }
 
+  public long getSenderId () {
+    return tdlibSender != null ? tdlibSender.getSenderId() : 0;
+  }
+
   private TdlibAccount account;
   private TdApi.User user;
   private TdApi.Chat chat;
+  private TdlibSender tdlibSender;
   private Tdlib tdlib;
   private boolean hasPhoto, allowSavedMessages;
   private AvatarPlaceholder.Metadata avatarPlaceholderMetadata;
@@ -241,6 +249,37 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
     }
   }
 
+  public void setMessageSender (Tdlib tdlib, TdlibSender tdlibSender, boolean allowCustomIcon) {
+    long newSenderId = tdlibSender.getSenderId();
+    long oldSenderId = getSenderId();
+    if (oldSenderId != newSenderId) {
+      this.tdlibSender = tdlibSender;
+      if (tdlibSender.isChat()) {
+        if (allowCustomIcon && tdlibSender.isAnonymousGroupAdmin()) {
+          flags = BitwiseUtils.setFlag(flags, FLAG_CUSTOM_ICON, true);
+          customIcon = Drawables.get(getResources(), R.drawable.baseline_sender_anonymus_24);
+          receiver.clear();
+          invalidate();
+        } else {
+          flags = BitwiseUtils.setFlag(flags, FLAG_CUSTOM_ICON, false);
+          customIcon = null;
+          setChat(tdlib, tdlibSender.getChat());
+        }
+      } else if (tdlibSender.isUser()) {
+        if (allowCustomIcon && tdlibSender.isSelf()) {
+          flags = BitwiseUtils.setFlag(flags, FLAG_CUSTOM_ICON, true);
+          customIcon = Drawables.get(getResources(), R.drawable.baseline_sender_account_24);
+          receiver.clear();
+          invalidate();
+        } else {
+          flags = BitwiseUtils.setFlag(flags, FLAG_CUSTOM_ICON, false);
+          customIcon = null;
+          setUser(tdlib, tdlibSender.getUser(), false);
+        }
+      }
+    }
+  }
+
   private static final int BLURRED_SIZE = 160;
 
   private boolean needFull () {
@@ -270,6 +309,7 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
       setPhotoImpl(tdlib, chat.photo.small, chat.photo.big);
     } else {
       avatarPlaceholderMetadata = tdlib.chatPlaceholderMetadata(chat, true);
+      avatarPlaceholder = null;
       receiver.clear();
     }
     invalidate();
@@ -281,6 +321,7 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
       setPhotoImpl(tdlib, user.profilePhoto.small, user.profilePhoto.big);
     } else {
       avatarPlaceholderMetadata = tdlib.cache().userPlaceholderMetadata(user, allowSavedMessages);
+      avatarPlaceholder = null;
       receiver.clear();
     }
     invalidate();
@@ -342,7 +383,9 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
 
   @Override
   protected void onDraw (Canvas c) {
-    if (account != null || getUserId() != 0 || getChatId() != 0) {
+    if (BitwiseUtils.getFlag(flags, FLAG_CUSTOM_ICON) && getSenderId() != 0 && customIcon != null) {
+      Drawables.draw(c, customIcon, receiver.centerX() - customIcon.getMinimumWidth() / 2f, receiver.centerY() - customIcon.getMinimumHeight() / 2f, Paints.getPorterDuffPaint(Theme.getColor(R.id.theme_color_icon)));
+    } else if (account != null || getUserId() != 0 || getChatId() != 0) {
       if (hasPhoto) {
         if (receiver.needPlaceholder() && (preview == null || preview.needPlaceholder())) {
           drawPlaceholder(c, R.id.theme_color_placeholder);
@@ -355,7 +398,7 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
         if ((flags & FLAG_NEED_OVERLAY) == 0) {
           if (avatarPlaceholderMetadata != null) {
             if (avatarPlaceholder == null)
-              avatarPlaceholder = new AvatarPlaceholder(Screen.px(receiver.getWidth() / 2), avatarPlaceholderMetadata, null);
+              avatarPlaceholder = new AvatarPlaceholder(Screen.px(receiver.getWidth() / 2f), avatarPlaceholderMetadata, null);
             avatarPlaceholder.draw(c, receiver.centerX(), receiver.centerY());
           }
         } else {
@@ -368,7 +411,7 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
         drawPlaceholder(c, R.id.theme_color_statusBar);
       }
       if (overlayIcon != null)
-        Drawables.draw(c, overlayIcon, receiver.centerX() - overlayIcon.getMinimumWidth() / 2, receiver.centerY() - overlayIcon.getMinimumHeight() / 2, Paints.getPorterDuffPaint(0xffffffff));
+        Drawables.draw(c, overlayIcon, receiver.centerX() - overlayIcon.getMinimumWidth() / 2f, receiver.centerY() - overlayIcon.getMinimumHeight() / 2f, Paints.getPorterDuffPaint(0xffffffff));
     }
   }
 }

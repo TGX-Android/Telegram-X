@@ -1152,7 +1152,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
         items.add(new HapticMenuHelper.MenuItem(R.id.btn_settings, Lang.getString(R.string.MoreForwardOptions), R.drawable.baseline_more_horiz_24).bindTutorialFlag(Settings.TUTORIAL_FORWARD_COPY));
       }
       return items;
-    }, (view, parentView) -> {
+    }, (view, parentView, item) -> {
       if (selectedChats == null || selectedChats.size() == 0)
         return;
       boolean needHideKeyboard = parentView.getId() == R.id.btn_done;

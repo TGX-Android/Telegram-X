@@ -129,6 +129,7 @@
   <item type="id" name="controller_memberRights" />
   <item type="id" name="controller_linkChat" />
   <item type="id" name="controller_enabledReactions"/>
+  <item type="id" name="controller_changeSender"/>
 
   <item type="id" name="controller_messageOptionsPager" />
   <item type="id" name="controller_messageOptions" />
@@ -319,6 +320,8 @@
   <item type="id" name="btn_bio" />
   <item type="id" name="btn_logout" />
   <item type="id" name="btn_camera" />
+  <item type="id" name="btn_chatSender" />
+  <item type="id" name="btn_showMoreSenders" />
   <item type="id" name="btn_viewScheduled" />
   <item type="id" name="btn_takePhoto" />
   <item type="id" name="btn_takeVideo" />
@@ -683,6 +686,8 @@
   <item type="id" name="btn_sendToast" />
   <item type="id" name="btn_sendNoSound" />
   <item type="id" name="btn_sendAsFile" />
+  <item type="id" name="btn_changeSender" />
+  <item type="id" name="btn_cameraGallery" />
 
   <item type="id" name="btn_ledDisabled" />
 
@@ -1004,6 +1009,8 @@
 
   <item type="id" name="btn_enabledReactionsCheckboxGroup" />
   <item type="id" name="btn_quick_reaction_enabled" />
+
+  <item type="id" name="btn_sender_enabled" />
 
   <item type="id" name="icon_additionalPassword" />
   <item type="id" name="icon_email" />

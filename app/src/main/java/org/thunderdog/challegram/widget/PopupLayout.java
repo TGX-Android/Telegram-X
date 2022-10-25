@@ -512,12 +512,20 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
     }
 
     final boolean anchorRight = menuWrap.getAnchorMode() == MenuMoreWrap.ANCHOR_MODE_RIGHT;
+    final boolean anchorBottom = menuWrap.getAnchorMode() == MenuMoreWrap.ANCHOR_MODE_BOTTOM;
     final int padding = Screen.dp(8f);
     final int itemsWidth = menuWrap.getItemsWidth();
-    int cx = anchorRight != Lang.rtl() ? itemsWidth - padding : Screen.dp(17f);
+    int cx;
+    if (anchorBottom) {
+      cx = itemsWidth / 2 + padding;
+    } else if (anchorRight != Lang.rtl()) {
+      cx = itemsWidth - padding;
+    } else {
+      cx = Screen.dp(17f);
+    }
     int cy = menuWrap.shouldPivotBottom() ? menuWrap.getItemsHeight() - padding : padding;
 
-    if (Config.REVEAL_ANIMATION_AVAILABLE && anchorRight) {
+    if (Config.REVEAL_ANIMATION_AVAILABLE && (anchorRight || anchorBottom)) {
       animationType = ANIMATION_TYPE_MORE_REVEAL;
       menuWrap.setAlpha(0f);
       menuWrap.setScaleX(1f);
@@ -552,7 +560,8 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
 
     Animator menuAnimator = null;
 
-    if (Config.REVEAL_ANIMATION_AVAILABLE && menuWrap.getAnchorMode() == MenuMoreWrap.ANCHOR_MODE_RIGHT) {
+    int anchorMode = menuWrap.getAnchorMode();
+    if (Config.REVEAL_ANIMATION_AVAILABLE && (anchorMode == MenuMoreWrap.ANCHOR_MODE_RIGHT || anchorMode == MenuMoreWrap.ANCHOR_MODE_BOTTOM)) {
       try {
         menuAnimator = android.view.ViewAnimationUtils.createCircularReveal(menuWrap, (int) menuWrap.getPivotX(), (int) menuWrap.getPivotY(), menuWrap.getRevealRadius(), 0);
         menuAnimator.setInterpolator(MenuMoreWrap.REVEAL_INTERPOLATOR);
@@ -685,7 +694,12 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
 
           if (animationType == ANIMATION_TYPE_MORE_REVEAL && Config.REVEAL_ANIMATION_AVAILABLE) {
             try {
-              int newCx = Lang.rtl() ? (int) ((float) Screen.dp(49f) * .5f) : itemsWidth - (int) ((float) Screen.dp(49f) * .5f);
+              int newCx;
+              if (menuWrap.getAnchorMode() == MenuMoreWrap.ANCHOR_MODE_BOTTOM) {
+                newCx = itemsWidth / 2 + padding;
+              } else {
+                newCx = Lang.rtl() ? (int) ((float) Screen.dp(49f) * .5f) : itemsWidth - (int) ((float) Screen.dp(49f) * .5f);
+              }
               int newCy = Size.getHeaderPortraitSize() / 2;
               if (menuWrap.shouldPivotBottom()) {
                 newCy = menuWrap.getItemsHeight() - newCy;

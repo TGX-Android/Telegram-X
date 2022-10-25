@@ -77,6 +77,7 @@ import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.AvatarView;
 import org.thunderdog.challegram.widget.BetterChatView;
 import org.thunderdog.challegram.widget.ChartLayout;
+import org.thunderdog.challegram.widget.ChatSenderView;
 import org.thunderdog.challegram.widget.CheckBoxView;
 import org.thunderdog.challegram.widget.CustomTextView;
 import org.thunderdog.challegram.widget.DoubleTextView;
@@ -402,6 +403,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
     // Override
   }
 
+  protected void setChatSender (ListItem item, int position, ChatSenderView userView, boolean isUpdate) {
+    // Override
+  }
+
   protected void setChatHeader (ListItem item, int position, DetachedChatHeaderView headerView) {
     // Override
   }
@@ -700,6 +705,12 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
               case ListItem.TYPE_REACTION_CHECKBOX: {
                 if (ok = view instanceof ReactionCheckboxSettingsView) {
                   setReaction(item, position, ((ReactionCheckboxSettingsView) view), true);
+                }
+                break;
+              }
+              case ListItem.TYPE_CHAT_SENDER_CHECKBOX: {
+                if (ok = view instanceof ChatSenderView) {
+                  setChatSender(item, position, ((ChatSenderView) view), true);
                 }
                 break;
               }
@@ -1088,6 +1099,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       case ListItem.TYPE_DRAWER_ITEM_WITH_RADIO_SEPARATED:
       case ListItem.TYPE_DRAWER_ITEM_WITH_AVATAR:
       case ListItem.TYPE_REACTION_CHECKBOX:
+      case ListItem.TYPE_CHAT_SENDER_CHECKBOX:
         return true;
     }
     return false;
@@ -1492,6 +1504,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       }
       case ListItem.TYPE_REACTION_CHECKBOX: {
         setReaction(item, position, (ReactionCheckboxSettingsView) holder.itemView, false);
+        break;
+      }
+      case ListItem.TYPE_CHAT_SENDER_CHECKBOX: {
+        setChatSender(item, position, (ChatSenderView) holder.itemView, false);
         break;
       }
       case ListItem.TYPE_EMBED_STICKER: {

@@ -17,6 +17,10 @@ import org.thunderdog.challegram.component.attach.MediaBottomBaseController;
 import org.thunderdog.challegram.component.attach.MediaLayout;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.telegram.TdlibSender;
+import org.thunderdog.challegram.ui.ChatChangeSenderController;
+
+import java.util.ArrayList;
 
 public class ModernActionedLayout extends MediaLayout {
   private MediaBottomBaseController<?> curController;
@@ -31,6 +35,10 @@ public class ModernActionedLayout extends MediaLayout {
 
   public static void showJoinDialog (ViewController<?> context, TdApi.ChatInviteLinkInfo inviteLinkInfo, Runnable onJoinClicked) {
     showMal(context, (mal) -> new JoinDialogController(mal, inviteLinkInfo, onJoinClicked));
+  }
+
+  public static void showChatSenders (ViewController<?> context, long chatId, ArrayList<TdlibSender> availableSenders) {
+    showMal(context, MediaLayout.HEADER_MODE_DYNAMIC, (mal) -> new ChatChangeSenderController(mal, chatId, availableSenders));
   }
 
   public ModernActionedLayout (ViewController<?> context) {
@@ -57,6 +65,13 @@ public class ModernActionedLayout extends MediaLayout {
     ModernActionedLayout mal = new ModernActionedLayout(context);
     mal.setController(provider.provide(mal));
     mal.initCustom();
+    mal.show();
+  }
+
+  private static void showMal (ViewController<?> context, int headerMode, MalDataProvider<?> provider) {
+    ModernActionedLayout mal = new ModernActionedLayout(context);
+    mal.setController(provider.provide(mal));
+    mal.initCustom(headerMode);
     mal.show();
   }
 

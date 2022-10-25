@@ -15,7 +15,9 @@ package org.thunderdog.challegram.telegram;
 import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.MessagesManager;
+import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageFile;
@@ -33,6 +35,11 @@ public class TdlibSender {
   private static final int FLAG_SCAM = 1 << 2;
   private static final int FLAG_FAKE = 1 << 3;
 
+  public static final int ICON_TYPE_NONE = 0;
+  public static final int ICON_TYPE_PROFILE = 1;
+  public static final int ICON_TYPE_ANONYMOUS_ADMIN = 2;
+  public static final int ICON_TYPE_LOCK = 3;
+
   private final Tdlib tdlib;
   private final long inChatId;
   private final TdApi.MessageSender sender;
@@ -42,6 +49,8 @@ public class TdlibSender {
   private final Letters letters;
   private final AvatarPlaceholder.Metadata placeholderMetadata;
   private final int flags;
+  private final TdApi.User user;
+  private final TdApi.Chat chat;
 
   public TdlibSender (Tdlib tdlib, long inChatId, TdApi.MessageSender sender) {
     this(tdlib, inChatId, sender, null, false);
@@ -55,11 +64,13 @@ public class TdlibSender {
     int flags = 0;
     switch (sender.getConstructor()) {
       case TdApi.MessageSenderChat.CONSTRUCTOR: {
+        user = null;
+
         final long chatId = ((TdApi.MessageSenderChat) sender).chatId;
-        TdApi.Chat chat = tdlib.chat(chatId);
+        chat = tdlib.chat(chatId);
 
         this.name = tdlib.chatTitle(chat, false);
-        this.nameShort = tdlib.chatTitle(chat, false, true);
+        this.nameShort = chat != null ? tdlib.chatTitle(chat, false, true) : "";
         this.username = tdlib.chatUsername(chat);
         this.photo = chat != null ? chat.photo : null;
         this.letters = tdlib.chatLetters(chat);
@@ -73,8 +84,10 @@ public class TdlibSender {
         break;
       }
       case TdApi.MessageSenderUser.CONSTRUCTOR: {
+        chat = null;
+
         final long userId = ((TdApi.MessageSenderUser) sender).userId;
-        TdApi.User user = isDemo && manager != null ? manager.demoParticipant(userId) : tdlib.cache().user(userId);
+        user = isDemo && manager != null ? manager.demoParticipant(userId) : tdlib.cache().user(userId);
         TdApi.ProfilePhoto profilePhoto = user != null ? user.profilePhoto : null;
 
         this.name = TD.getUserName(userId, user);
@@ -122,12 +135,36 @@ public class TdlibSender {
     return isChat() && tdlib.isChannel(getChatId());
   }
 
+  @Nullable
+  public TdApi.User getUser () {
+    return user;
+  }
+
+  @Nullable
+  public TdApi.Chat getChat () {
+    return chat;
+  }
+
+  public TdApi.MessageSender getSender () {
+    return sender;
+  }
+
   public long getUserId () {
     return isUser() ? ((TdApi.MessageSenderUser) sender).userId : 0;
   }
 
   public long getChatId () {
     return isChat() ? ((TdApi.MessageSenderChat) sender).chatId : 0;
+  }
+
+  public long getSenderId () {
+    if (isUser()) {
+      return getUserId();
+    } else if (isChat()) {
+      return getChatId();
+    } else {
+      return 0;
+    }
   }
 
   public String getName () {
@@ -140,6 +177,30 @@ public class TdlibSender {
 
   public String getUsername () {
     return username;
+  }
+
+  public String getDescription () {
+    if (isSelf()) {
+      return Lang.getString(R.string.YourAccount);
+    } else if (isAnonymousGroupAdmin()) {
+      return Lang.getString(R.string.AnonymousAdmin);
+    } else {
+      return getFullUsername();
+    }
+  }
+
+  public String getFullUsername () {
+    return "@" + username;
+  }
+
+  public int getIconType () {
+    if (isSelf()) {
+      return ICON_TYPE_PROFILE;
+    } else if (isAnonymousGroupAdmin()) {
+      return ICON_TYPE_ANONYMOUS_ADMIN;
+    } else {
+      return ICON_TYPE_NONE;
+    }
   }
 
   public TdApi.ChatPhotoInfo getPhoto () {
@@ -170,6 +231,22 @@ public class TdlibSender {
         return tdlib.cache().userAvatar(((TdApi.MessageSenderUser) sender).userId);
     }
     throw new AssertionError();
+  }
+
+  public boolean isSelectedSender() {
+    TdApi.Chat inChat = tdlib.chat(inChatId);
+    if (inChat == null || inChat.messageSenderId == null) {
+      return false;
+    } else {
+      TdApi.MessageSender messageSender = inChat.messageSenderId;
+      switch (messageSender.getConstructor()) {
+        case TdApi.MessageSenderChat.CONSTRUCTOR:
+          return ((TdApi.MessageSenderChat) messageSender).chatId == getChatId();
+        case TdApi.MessageSenderUser.CONSTRUCTOR:
+          return ((TdApi.MessageSenderUser) messageSender).userId == getUserId();
+      }
+    }
+    return false;
   }
 
   // flags

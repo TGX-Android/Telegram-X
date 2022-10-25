@@ -107,7 +107,11 @@ public class MediaLayout extends FrameLayoutFix implements
   public static final int MODE_GALLERY = 2;
   public static final int MODE_CUSTOM_POPUP = 3;
 
+  public static final int HEADER_MODE_TOP = 0;
+  public static final int HEADER_MODE_DYNAMIC = 1;
+
   private int mode;
+  public int headerMode;
   private @Nullable MediaCallback callback;
 
   // Data
@@ -243,6 +247,11 @@ public class MediaLayout extends FrameLayoutFix implements
   }
 
   public void initCustom () {
+   initCustom(HEADER_MODE_TOP);
+  }
+
+  public void initCustom (int headerMode) {
+    this.headerMode = headerMode;
     mode = MODE_CUSTOM_POPUP;
     controllers = new MediaBottomBaseController[1];
     currentController = getControllerForIndex(0);
@@ -255,6 +264,9 @@ public class MediaLayout extends FrameLayoutFix implements
       themeListeners.addThemeInvalidateListener(customBottomBar);
       customBottomBar.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
       customBottomBar.measure(MeasureSpec.UNSPECIFIED, MeasureSpec.EXACTLY);
+    }
+    if (headerMode == HEADER_MODE_DYNAMIC) {
+      prepareHeader();
     }
 
     setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -785,6 +797,7 @@ public class MediaLayout extends FrameLayoutFix implements
     }
     setBottomBarFactor(factor);
     currentController.get().setTranslationY(currentStartHeight - (int) ((float) currentStartHeight * factor));
+    setHeaderOffset(MediaBottomBaseController.getMaxHeight() - (int) ((float) currentStartHeight * factor));
   }
 
   public void onContentHeightChanged () {
@@ -856,6 +869,7 @@ public class MediaLayout extends FrameLayoutFix implements
       }
       updateBarPosition();
       setHeaderFactor(fromHeadFactor + headFactorDiff * factor);
+      setHeaderOffset(MediaBottomBaseController.getMaxHeight() - getCurrentController().getCurrentHeight());
       getCurrentController().onBottomBarAnimationFraction(factor);
       pendingPopup.setRevealFactor(1f - factor);
     });
@@ -1278,7 +1292,7 @@ public class MediaLayout extends FrameLayoutFix implements
           items = new ArrayList<>();
         getCurrentController().addCustomItems(items);
         return !items.isEmpty() ? items : null;
-      }, (menuItem, parentView) -> {
+      }, (menuItem, parentView, item) -> {
         switch (menuItem.getId()) {
           case R.id.btn_sendNoMarkdown:
             pickDateOrProceed((forceDisableNotification, schedulingState, disableMarkdown) ->
@@ -1565,15 +1579,20 @@ public class MediaLayout extends FrameLayoutFix implements
           return true;
         }
       };
-      headerView.initWithSingleController(getCurrentController(), true);
-      headerView.setAlpha(0f);
-      headerView.setTranslationY(-HeaderView.getSize(false) - headerView.getFilling().getExtraHeight());
+      if (headerMode == HEADER_MODE_TOP) {
+        headerView.initWithSingleController(c, true);
+        headerView.setAlpha(0f);
+        headerView.setTranslationY(-HeaderView.getSize(false) - headerView.getFilling().getExtraHeight());
+      }
+      if (headerMode == HEADER_MODE_DYNAMIC) {
+        headerView.initWithSingleController(c, false);
+      }
       addView(headerView);
       lastHeaderIndex = index;
     }
 
     if (lastHeaderIndex != index) {
-      headerView.setTitle(getCurrentController());
+      headerView.setTitle(c);
       lastHeaderIndex = index;
     }
   }
@@ -1581,11 +1600,17 @@ public class MediaLayout extends FrameLayoutFix implements
   public void setHeaderFactor (float factor) {
     if (this.headerFactor != factor) {
       this.headerFactor = factor;
-      if (headerView != null && !ignoreHeaderStyles) {
+      if (headerView != null && !ignoreHeaderStyles && headerMode == HEADER_MODE_TOP) {
         headerView.setAlpha(factor);
         int offsetY = HeaderView.getSize(false) + headerView.getFilling().getExtraHeight();
         headerView.setTranslationY(-offsetY + (int) ((float) offsetY * factor));
       }
+    }
+  }
+
+  public void setHeaderOffset (float offset) {
+    if (headerView != null && headerMode == HEADER_MODE_DYNAMIC) {
+      headerView.setTranslationY(offset + HeaderView.getTopOffset());
     }
   }
 

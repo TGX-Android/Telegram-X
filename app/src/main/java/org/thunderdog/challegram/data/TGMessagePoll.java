@@ -1427,14 +1427,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
       } else if (clickOptionId == HIGHLIGHT_BUTTON) {
         if (button.singleton() != null) {
           if (isScheduled()) {
-            showContentHint(view, (targetView, outRect) -> {
-              int startY = questionText.getHeight() + Screen.dp(5f);
-              startY += Screen.dp(18f);
-              for (OptionEntry options : options) {
-                startY += Math.max(Screen.dp(46f), options.text.getHeight()) + Screen.separatorSize();
-              }
-              outRect.set(0, startY, getContentWidth(), getContentHeight());
-            }, R.string.ErrorScheduled);
+            showContentHint(view, getButtonLocationProvider(), R.string.ErrorScheduled);
           } else {
             switch (button.singleton().item.id) {
               case R.id.btn_vote: {
@@ -1455,7 +1448,9 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
                 if (Arrays.equals(selectedOptionIds, currentOptionIds)) {
                   tdlib.client().send(new TdApi.SetPollAnswer(msg.chatId, msg.id, null), tdlib.okHandler());
                 } else {
-                  tdlib.client().send(new TdApi.SetPollAnswer(msg.chatId, msg.id, selectedOptionIds), tdlib.okHandler());
+                  if (getPoll().isAnonymous || !showRevealPersonalAccountHint(view, ID_PERSONAL_ACCOUNT_PROTECTION_POOL_MULTIPLE, true, getButtonLocationProvider())) {
+                    tdlib.client().send(new TdApi.SetPollAnswer(msg.chatId, msg.id, selectedOptionIds), tdlib.okHandler());
+                  }
                 }
                 break;
               }
@@ -1509,7 +1504,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
       } else if (isMultiChoicePoll()) {
         selectUnselect(clickOptionId);
       } else {
-        chooseOption(clickOptionId);
+        chooseOption(view, clickOptionId);
       }
       clickOptionId = HIGHLIGHT_NONE;
     }
@@ -1519,12 +1514,44 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     return Math.max(Screen.dp(46f), Math.max(Screen.dp(8f), (Screen.dp(46f) / 2 - text.getLineHeight() / 2)) + text.getHeight() + Screen.dp(12f)) + Screen.separatorSize();
   }
 
-  private void chooseOption (final int optionId) {
+  private void chooseOption (View view, final int optionId) {
     if (getPoll().options[optionId].isBeingChosen) {
       tdlib.client().send(new TdApi.SetPollAnswer(msg.chatId, msg.id, null), tdlib.okHandler());
     } else {
-      tdlib.client().send(new TdApi.SetPollAnswer(msg.chatId, msg.id, new int[] {optionId}), tdlib.okHandler());
+      if (getPoll().isAnonymous || !showRevealPersonalAccountHint(view, ID_PERSONAL_ACCOUNT_PROTECTION_POOL_SINGLE, true, getOptionLocationProvider(optionId))) {
+        tdlib.client().send(new TdApi.SetPollAnswer(msg.chatId, msg.id, new int[] {optionId}), tdlib.okHandler());
+      }
     }
+  }
+
+  private TooltipOverlayView.LocationProvider getOptionLocationProvider (int optionId) {
+    return (targetView, outRect) -> {
+      int startY = questionText.getHeight() + Screen.dp(5f);
+      startY += Screen.dp(18f);
+      int id = 0;
+      for (OptionEntry option : options) {
+        int optionHeight = getOptionHeight(option.text);
+        if (id == optionId) {
+          startY += Screen.dp(15f);
+          outRect.set(Screen.dp(34f), startY, Screen.dp(34f) + option.text.getLineWidth(0), startY + option.text.getLineHeight());
+          return;
+        }
+        startY += optionHeight;
+        id++;
+      }
+      outRect.set(0, 0, 0, 0);
+    };
+  }
+
+  public TooltipOverlayView.LocationProvider getButtonLocationProvider () {
+    return (targetView, outRect) -> {
+      int startY = questionText.getHeight() + Screen.dp(5f);
+      startY += Screen.dp(18f);
+      for (OptionEntry options : options) {
+        startY += Math.max(Screen.dp(46f), options.text.getHeight()) + Screen.separatorSize();
+      }
+      outRect.set(0, startY, getContentWidth(), getContentHeight());
+    };
   }
 
   private void selectUnselect (final int optionId) {

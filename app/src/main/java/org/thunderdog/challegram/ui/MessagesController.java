@@ -161,6 +161,7 @@ import org.thunderdog.challegram.navigation.DoubleHeaderView;
 import org.thunderdog.challegram.navigation.HeaderButton;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.Menu;
+import org.thunderdog.challegram.navigation.MenuMoreWrap;
 import org.thunderdog.challegram.navigation.MoreDelegate;
 import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.NavigationStack;
@@ -186,6 +187,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.telegram.TdlibManager;
+import org.thunderdog.challegram.telegram.TdlibSender;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.TGBackground;
@@ -212,6 +214,7 @@ import org.thunderdog.challegram.util.Unlockable;
 import org.thunderdog.challegram.v.HeaderEditText;
 import org.thunderdog.challegram.v.MessagesLayoutManager;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
+import org.thunderdog.challegram.widget.AvatarView;
 import org.thunderdog.challegram.widget.CheckBoxView;
 import org.thunderdog.challegram.widget.CircleButton;
 import org.thunderdog.challegram.widget.CollapseListView;
@@ -294,6 +297,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private @Nullable TdApi.Chat chat;
   private @Nullable TdApi.ChatList openedFromChatList;
+  private @Nullable TdlibSender tdlibSender;
 
   private ChatHeaderView headerCell;
   private DoubleHeaderView headerDoubleCell;
@@ -315,7 +319,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private VoiceVideoButtonView recordButton;
   private SendButton sendButton;
   private HapticMenuHelper sendMenu;
+  private HapticMenuHelper senderMenu;
   private InvisibleImageView cameraButton, scheduleButton;
+  private AvatarView senderAvatarView;
   private InvisibleImageView commandButton;
   private @Nullable SilentButton silentButton;
 
@@ -338,9 +344,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
     TdApi.FormattedText currentText = null;
     boolean canSendWithoutMarkdown = inputView != null && !Td.equalsTo(inputView.getOutputText(true), currentText = inputView.getOutputText(false), true);
     List<HapticMenuHelper.MenuItem> items = tdlib.ui().fillDefaultHapticMenu(getChatId(), isEditingMessage(), canSendWithoutMarkdown, true);
+    if (items == null)
+      items = new ArrayList<>();
+    if (chat != null && chat.messageSenderId != null) {
+      TdlibSender sender = new TdlibSender(tdlib, getChatId(), chat.messageSenderId);
+      items.add(0, new HapticMenuHelper.MenuItem(R.id.btn_changeSender, "Send as...", sender.getDescription(), tdlib, sender));
+    }
     if (!canSendWithoutMarkdown && tdlib.shouldSendAsDice(currentText) && !isEditingMessage()) {
-      if (items == null)
-        items = new ArrayList<>();
       if (TD.EMOJI_DART.textRepresentation.equals(currentText.text)) {
         items.add(new HapticMenuHelper.MenuItem(R.id.btn_sendNoMarkdown, Lang.getString(R.string.SendDiceAsEmoji), R.drawable.baseline_gps_fixed_24));
       } else if (TD.EMOJI_DICE.textRepresentation.equals(currentText.text)) {
@@ -356,7 +366,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   @Override
-  public void onHapticMenuItemClick (View view, View parentView) {
+  public void onHapticMenuItemClick (View view, View parentView, HapticMenuHelper.MenuItem item) {
     switch (view.getId()) {
       case R.id.btn_sendOnceOnline: {
         if (!sendShowingVoice(false, new TdApi.MessageSchedulingStateSendWhenOnline())) {
@@ -394,7 +404,34 @@ public class MessagesController extends ViewController<MessagesController.Argume
         });
         break;
       }
+      case R.id.btn_changeSender: {
+        openChatChangeSenderController();
+        break;
+      }
     }
+  }
+
+  private void openChatChangeSenderController () {
+    hideAllKeyboards();
+    if (inputView != null) {
+      inputView.clearFocus();
+    }
+    ModernActionedLayout.showChatSenders(this, getChatId(), (ArrayList<TdlibSender>) availableSenders);
+  }
+
+  private ArrayList<HapticMenuHelper.MenuItem> provideSendersItems(List<TdlibSender> senders) {
+    int max = 5;
+    ArrayList<HapticMenuHelper.MenuItem> items = new ArrayList<>(Math.min(max, senders.size()));
+      for (int i = 0; i < Math.min(senders.size(), max); i++) {
+        TdlibSender sender = senders.get(i);
+        if (sender.getSenderId() != tdlibSender.getSenderId()) {
+          items.add(new HapticMenuHelper.MenuItem(-1, sender.getName(), sender.getFullUsername(), tdlib, sender));
+        }
+      }
+      if (senders.size() >= max + 1) {
+        items.add(0, new HapticMenuHelper.MenuItem(R.id.btn_showMoreSenders, Lang.getString(R.string.MoreSenders), R.drawable.baseline_more_horiz_24));
+      }
+      return items;
   }
 
   public void pickDateOrProceed (boolean forceDisableNotification, TdApi.MessageSchedulingState schedulingState, TdlibUi.SimpleSendCallback sendCallback) {
@@ -658,6 +695,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (inPreviewMode) {
         inputView.setEnabled(false);
         inputView.setInputPlaceholder(R.string.Message);
+        inputView.clearInputPlaceholderSecondary();
+        inputView.invalidatePlaceholder();
       }
     }
 
@@ -971,6 +1010,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
     mediaButton.setOnClickListener(this);
     mediaButton.setLayoutParams(lp);
 
+    lp = new LinearLayout.LayoutParams(Screen.dp(ATTACH_BUTTONS_WIDTH), Screen.dp(49f));
+    int senderAvatarPadding = Screen.dp(10);
+    senderAvatarView = new AvatarView(context);
+    senderAvatarView.setId(R.id.btn_chatSender);
+    addThemeFilterListener(senderAvatarView, R.id.theme_color_icon);
+    senderAvatarView.setOnClickListener(this);
+    senderAvatarView.setLayoutParams(lp);
+    senderAvatarView.setPadding(senderAvatarPadding, senderAvatarPadding, senderAvatarPadding, senderAvatarPadding);
+    senderAvatarView.setVisibility(View.INVISIBLE);
+    Views.setClickable(senderAvatarView);
 
     lp = new LinearLayout.LayoutParams(Screen.dp(ATTACH_BUTTONS_WIDTH), Screen.dp(49f));
     cameraButton = new CameraAccessImageView(context, this);
@@ -1034,6 +1083,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (scheduleButton != null) {
       attachButtons.addView(scheduleButton);
     }
+    if (senderAvatarView != null) {
+      attachButtons.addView(senderAvatarView);
+    }
     if (cameraButton != null) {
       attachButtons.addView(cameraButton);
     }
@@ -1058,6 +1110,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
     sendButton.setLayoutParams(params);
 
     sendMenu = new HapticMenuHelper(this, this, getThemeListeners(), null).attachToView(sendButton);
+
+    senderMenu = new HapticMenuHelper(sendersProvider, sendersClickListener, getThemeListeners(), null, HapticMenuHelper.FLAG_OPEN_BY_LONG_CLICK | HapticMenuHelper.FLAG_OPEN_BY_SWIPE).setAnchorMode(MenuMoreWrap.ANCHOR_MODE_BOTTOM).attachToView(senderAvatarView);
 
     if (inPreviewMode) {
       switch (previewMode) {
@@ -1574,6 +1628,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return chat;
   }
 
+  @Nullable
+  public TdlibSender getSender () {
+    return tdlibSender;
+  }
+
   public long getActiveChatId () {
     return isFocused() && !isPaused() && manager.isFocused() ? getChatId() : 0l;
   }
@@ -1830,6 +1889,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
       case R.id.msg_attach: {
         hideBottomHint();
         openMediaView(false);
+        break;
+      }
+      case R.id.btn_chatSender: {
+        if (senderMenu != null) {
+          senderMenu.openMenu(v);
+        }
         break;
       }
       case R.id.msg_send: {
@@ -2504,6 +2569,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private CancellableResultHandler adminsHandler;
+  private CancellableResultHandler sendersHandler;
 
   private static final int BOT_CMD_RES = R.drawable.deproko_baseline_bots_command_26;
   private static final int BOT_KB_RES = R.drawable.deproko_baseline_bots_keyboard_26;
@@ -2567,6 +2633,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return;
     }
 
+    if (chat.messageSenderId != null) {
+      updateSender(chat.messageSenderId);
+    } else {
+      tdlibSender = null;
+    }
+
     if (inputView != null) {
       // inputView.setIgnoreAnyChanges(true);
       boolean enabled = !isInputLess();
@@ -2592,7 +2664,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       checkJoinRequests(chat.pendingJoinRequests);
     }
     if (inputView != null) {
-      inputView.setChat(chat, messageThread, silentButton != null && silentButton.getIsSilent());
+      inputView.setChat(chat, tdlibSender, messageThread, silentButton != null && silentButton.getIsSilent());
     }
     ignoreDraftLoad = false;
     updateBottomBar(false);
@@ -2604,6 +2676,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (scheduleButton != null && scheduleButton.setVisible(tdlib.chatHasScheduled(chat.id))) {
       commandButton.setTranslationX(scheduleButton.isVisible() ? 0 : scheduleButton.getLayoutParams().width);
       attachButtons.updatePivot();
+    }
+
+    if (tdlibSender != null) {
+      cameraButton.setVisibility(View.GONE);
+      senderAvatarView.setVisibility(View.VISIBLE);
+    } else {
+      cameraButton.setVisibility(View.VISIBLE);
+      senderAvatarView.setVisibility(View.GONE);
     }
 
     // Preloading data so profile will not jump when opening
@@ -2676,6 +2756,27 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
     });
 
+    tdlib.client().send(new TdApi.GetChatAvailableMessageSenders(chatId), sendersHandler = new CancellableResultHandler() {
+      @Override
+      public void processResult (TdApi.Object object) {
+        if (object.getConstructor() == TdApi.MessageSenders.CONSTRUCTOR) {
+          tdlib.ui().post(() -> {
+            if (!isCancelled()) {
+              if (getChatId() == chatId) {
+                TdApi.MessageSenders messageSenders = (TdApi.MessageSenders) object;
+                ArrayList<TdlibSender> tdlibSenders = new ArrayList<>(messageSenders.totalCount);
+                for (int i = 0; i < messageSenders.totalCount; i++) {
+                  TdApi.MessageSender messageSender = messageSenders.senders[i];
+                  tdlibSenders.add(new TdlibSender(tdlib, getChatId(), messageSender));
+                }
+                availableSenders = tdlibSenders;
+              }
+            }
+          });
+        }
+      }
+    });
+
     updateCounters(false);
     checkRestriction();
     checkLinkedChat();
@@ -2691,6 +2792,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (adminsHandler != null) {
       adminsHandler.cancel();
       adminsHandler = null;
+    }
+  }
+
+  private void cancelSendersRequest () {
+    if (sendersHandler != null) {
+      sendersHandler.cancel();
+      sendersHandler = null;
     }
   }
 
@@ -2830,14 +2938,24 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void onChatDefaultMessageSenderIdChanged (long chatId, TdApi.MessageSender senderId) {
     runOnUiThreadOptional(() -> {
       if (getChatId() == chatId) {
+        updateSender(senderId);
         updateInputHint();
       }
     });
   }
 
+  private void updateSender (TdApi.MessageSender senderId) {
+    if (chat != null) {
+      tdlibSender = new TdlibSender(tdlib, getChatId(), senderId);
+      if (senderAvatarView != null) {
+        senderAvatarView.setMessageSender(tdlib, tdlibSender, true);
+      }
+    }
+  }
+
   public void updateInputHint () {
     if (inputView != null) {
-      inputView.updateMessageHint(chat, messageThread, Config.NEED_SILENT_BROADCAST && silentButton != null ? silentButton.getIsSilent() : tdlib.chatDefaultDisableNotifications(getChatId()));
+      inputView.updateMessageHint(chat, tdlibSender, messageThread, Config.NEED_SILENT_BROADCAST && silentButton != null ? silentButton.getIsSilent() : tdlib.chatDefaultDisableNotifications(getChatId()));
     }
   }
 
@@ -3892,6 +4010,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     cancelJumpToDate();
     cancelAdminsRequest();
+    cancelSendersRequest();
     resetSearhControls();
     triggerOneShot = true;
 
@@ -3926,6 +4045,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     botStartArgument = null;
     sponsoredMessageLoaded = false;
 
+    tdlibSender = null;
+    availableSenders = null;
+
     // switch pm state
     clearSwitchPmButton();
 
@@ -3941,6 +4063,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         updateSendButton("", false);
       } else {
         inputView.setText("");
+        inputView.invalidatePlaceholder();
       }
     }
 
@@ -8051,6 +8174,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (sendMenu != null) {
       sendMenu.hideMenu();
     }
+    if (senderMenu != null) {
+      senderMenu.hideMenu();
+    }
     if (emojiLayout != null) {
       emojiLayout.onTextChanged(charSequence);
     }
@@ -8171,6 +8297,69 @@ public class MessagesController extends ViewController<MessagesController.Argume
       restrictedUntilRes = R.string.ChatRestrictedStickersUntil;
     }
     sendContent(view, R.id.right_sendStickersAndGifs, disabledRes, restrictedRes, restrictedUntilRes, () -> messageId, false, null, () -> new TdApi.InputMessageDice(emoji, false));
+  }
+
+  // Senders
+  private List<TdlibSender> availableSenders;
+  private RunnableData<List<TdlibSender>> pendingAvailableSendersCallback;
+
+  private final HapticMenuHelper.Provider sendersProvider = view -> {
+    if (availableSenders != null) {
+      return provideSendersItems(availableSenders);
+    } else {
+      loadAvailableSenders(new RunnableData<>() {
+        @Override
+        public void runWithData (List<TdlibSender> arg) {
+          senderMenu.openMenu(senderAvatarView, provideSendersItems(arg));
+        }
+      });
+    }
+    return null;
+  };
+
+  private final HapticMenuHelper.OnItemClickListener sendersClickListener = (view, parentView, item) -> {
+    if (view.getId() == R.id.btn_showMoreSenders) {
+      openChatChangeSenderController();
+    } else if (item.tdlibSender != null) {
+      TdlibSender sender = item.tdlibSender;
+      tdlib.client().send(new TdApi.SetChatMessageSender(getChatId(), sender.getSender()), tdlib.okHandler());
+    }
+  };
+
+  private void loadAvailableSenders (RunnableData<List<TdlibSender>> after) {
+    if (availableSenders != null) {
+      after.runWithData(availableSenders);
+      return;
+    }
+
+    if (pendingAvailableSendersCallback != null) {
+      pendingAvailableSendersCallback = after;
+      return;
+    }
+    pendingAvailableSendersCallback = after;
+
+    tdlib.client().send(new TdApi.GetChatAvailableMessageSenders(getChatId()), object -> {
+      switch (object.getConstructor()) {
+        case TdApi.MessageSenders.CONSTRUCTOR: {
+          if (!isDestroyed()) {
+            TdApi.MessageSenders messageSenders = (TdApi.MessageSenders) object;
+            ArrayList<TdlibSender> tdlibSenders = new ArrayList<>(messageSenders.totalCount);
+            for (int i = 0; i < messageSenders.totalCount; i++) {
+              TdApi.MessageSender messageSender = messageSenders.senders[i];
+              tdlibSenders.add(new TdlibSender(tdlib, getChatId(), messageSender));
+            }
+            availableSenders = tdlibSenders;
+            pendingAvailableSendersCallback.runWithData(availableSenders);
+            pendingAvailableSendersCallback = null;
+          }
+          break;
+        }
+        case TdApi.Error.CONSTRUCTOR: {
+          UI.showError(object);
+          break;
+        }
+      }
+    });
   }
 
   // Event log

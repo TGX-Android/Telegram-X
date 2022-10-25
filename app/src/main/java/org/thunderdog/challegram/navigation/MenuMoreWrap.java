@@ -25,6 +25,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Interpolator;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -34,6 +35,8 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibSender;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.theme.ThemeListenerList;
@@ -42,6 +45,7 @@ import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.widget.AvatarView;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 
 import me.vkryl.android.AnimatorUtils;
@@ -57,6 +61,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
 
   public static final int ANCHOR_MODE_RIGHT = 0;
   public static final int ANCHOR_MODE_HEADER = 1;
+  public static final int ANCHOR_MODE_BOTTOM = 2;
 
   // private int currentWidth;
   private int anchorMode;
@@ -116,6 +121,10 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
           setTranslationX(Lang.rtl() ? -Screen.dp(46f) : Screen.dp(46f));
           break;
         }
+        case ANCHOR_MODE_BOTTOM: {
+          params.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+          break;
+        }
       }
     }
   }
@@ -153,7 +162,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     menuItem.setTag(menuItem.getMeasuredWidth());
   }
 
-  public TextView addItem (int id, CharSequence title, int iconRes, Drawable icon, OnClickListener listener) {
+  public TextView addTextWithIconItem (int id, CharSequence title, int iconRes, Drawable icon, OnClickListener listener) {
     TextView menuItem = new NoScrollTextView(getContext());
     menuItem.setId(id);
     menuItem.setTypeface(Fonts.getRobotoRegular());
@@ -171,7 +180,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     menuItem.setSingleLine(true);
     menuItem.setEllipsize(TextUtils.TruncateAt.END);
     menuItem.setOnClickListener(listener);
-    menuItem.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(48f)));
+    menuItem.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(50f)));
     menuItem.setPadding(Screen.dp(17f), 0, Screen.dp(17f), 0);
     menuItem.setCompoundDrawablePadding(Screen.dp(18f));
     icon = iconRes != 0 ? Drawables.get(getResources(), iconRes) : icon;
@@ -193,6 +202,66 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
         menuItem.setCompoundDrawablesWithIntrinsicBounds(icon, null, null, null);
       }
     }
+    Views.setClickable(menuItem);
+    RippleSupport.setTransparentSelector(menuItem);
+    addView(menuItem);
+    menuItem.measure(MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
+    menuItem.setTag(menuItem.getMeasuredWidth());
+    return menuItem;
+  }
+
+  public FrameLayoutFix addSendAsItem (int id, Tdlib tdlib, TdlibSender sender, CharSequence title, CharSequence subtitle, OnClickListener listener) {
+    FrameLayoutFix menuItem = new FrameLayoutFix(getContext());
+    if (id != -1) {
+      menuItem.setId(id);
+    }
+    AvatarView avatarView = new AvatarView(getContext());
+    FrameLayout.LayoutParams flp = new FrameLayout.LayoutParams(Screen.dp(24), Screen.dp(24), Lang.gravity(Gravity.CENTER_VERTICAL));
+    avatarView.setMessageSender(tdlib, sender, true);
+    menuItem.addView(avatarView, flp);
+
+    LinearLayout linearLayout = new LinearLayout(getContext());
+    linearLayout.setOrientation(LinearLayout.VERTICAL);
+    linearLayout.setGravity(Gravity.CENTER);
+    LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+    lp.setMargins(Lang.rtl() ? 0 : Screen.dp(42f), 0, Lang.rtl() ? Screen.dp(42f) : 0, 0);
+    linearLayout.setLayoutParams(lp);
+
+    TextView titleView = new NoScrollTextView(getContext());
+    titleView.setTypeface(Fonts.getRobotoRegular());
+    titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16f);
+    if (forcedTheme != null) {
+      titleView.setTextColor(forcedTheme.getColor(R.id.theme_color_text));
+    } else {
+      titleView.setTextColor(Theme.textAccentColor());
+      if (themeListeners != null) {
+        themeListeners.addThemeTextAccentColorListener(titleView);
+      }
+    }
+    titleView.setText(title);
+    titleView.setSingleLine(true);
+    titleView.setEllipsize(TextUtils.TruncateAt.END);
+    linearLayout.addView(titleView);
+
+    TextView subtitleView = new NoScrollTextView(getContext());
+    subtitleView.setTypeface(Fonts.getRobotoRegular());
+    subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11f);
+    if (forcedTheme != null) {
+      subtitleView.setTextColor(forcedTheme.getColor(R.id.theme_color_textLight));
+    } else {
+      subtitleView.setTextColor(Theme.textDecentColor());
+      if (themeListeners != null) {
+        themeListeners.addThemeTextDecentColorListener(menuItem);
+      }
+    }
+    subtitleView.setText(subtitle);
+    subtitleView.setSingleLine(true);
+    subtitleView.setEllipsize(TextUtils.TruncateAt.END);
+    linearLayout.addView(subtitleView);
+    menuItem.addView(linearLayout);
+    menuItem.setOnClickListener(listener);
+    menuItem.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(50f)));
+    menuItem.setPadding(Screen.dp(17f), 0, Screen.dp(17f), 0);
     Views.setClickable(menuItem);
     RippleSupport.setTransparentSelector(menuItem);
     addView(menuItem);
@@ -230,7 +299,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
   }
 
   public int getItemsHeight () {
-    int itemHeight = Screen.dp(48f);
+    int itemHeight = Screen.dp(50f);
     int padding = Screen.dp(8f);
     int total = 0;
     int childCount = getChildCount();

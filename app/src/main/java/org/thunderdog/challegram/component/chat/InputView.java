@@ -90,6 +90,7 @@ import org.thunderdog.challegram.navigation.RtlCheckListener;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.receiver.RefreshRateLimiter;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibSender;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Screen;
@@ -121,6 +122,7 @@ import me.vkryl.td.Td;
 public class InputView extends NoClipEditText implements InlineSearchContext.Callback, InlineResultsWrap.PickListener, RtlCheckListener, FinalNewLineFilter.Callback, CustomEmojiSurfaceProvider, Destroyable {
   public static final boolean USE_ANDROID_SELECTION_FIX = true;
   private final TextPaint paint;
+  private final TextPaint paintSecondary;
 
   // TODO: get rid of chat-related logic inside of InputView
   private @Nullable MessagesController controller;
@@ -158,6 +160,10 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     this.paint.setColor(Theme.textPlaceholderColor());
     this.paint.setTypeface(Fonts.getRobotoRegular());
     this.paint.setTextSize(Screen.sp(18f));
+    this.paintSecondary = new TextPaint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
+    this.paintSecondary.setColor(Theme.textPlaceholderColor());
+    this.paintSecondary.setTypeface(Fonts.getRobotoRegular());
+    this.paintSecondary.setTextSize(Screen.sp(11f));
     setGravity(Lang.gravity() | Gravity.TOP);
     setTypeface(Fonts.getRobotoRegular());
     setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f);
@@ -715,6 +721,13 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   private CharSequence rawPlaceholder;
   private float rawPlaceholderWidth;
   private int lastPlaceholderAvailWidth;
+  private Layout placeholderPrimaryLayout;
+
+  private int lastPlaceholderSecondaryRes;
+  private Object[] lastPlaceholderSecondaryArgs;
+  private CharSequence rawPlaceholderSecondary;
+  private float rawPlaceholderSecondaryWidth;
+  private Layout placeholderSecondaryLayout;
 
   public void setInputPlaceholder (@StringRes int resId, Object... args) {
     String placeholder = Lang.getString(resId, args);
@@ -724,27 +737,56 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       return;
     }
     this.rawPlaceholder = placeholder;
-    if (controller == null) {
-      setHint(placeholder);
-    } else {
+    if (controller != null) {
       this.rawPlaceholderWidth = U.measureText(rawPlaceholder, getPaint());
       this.lastPlaceholderAvailWidth = 0;
       checkPlaceholderWidth();
+      createPlaceholderPrimaryLayout();
+    }
+  }
+
+  public void setInputPlaceholderSecondary(@StringRes int resId, Object... args) {
+    CharSequence placeholder = Lang.getStringBold(resId, args);
+    this.lastPlaceholderSecondaryRes = resId;
+    this.lastPlaceholderSecondaryArgs = args;
+    if (StringUtils.equalsOrBothEmpty(placeholder, this.rawPlaceholderSecondary)) {
+      return;
+    }
+    this.rawPlaceholderSecondary = placeholder;
+    if (controller != null) {
+      this.rawPlaceholderSecondaryWidth = U.measureText(rawPlaceholderSecondary, paintSecondary);
+      this.lastPlaceholderAvailWidth = 0;
+      checkPlaceholderWidth();
+      createPlaceholderSecondaryLayout();
+    }
+  }
+
+  public void clearInputPlaceholderSecondary () {
+    lastPlaceholderSecondaryRes = 0;
+    lastPlaceholderSecondaryArgs = null;
+    rawPlaceholderSecondary = null;
+    rawPlaceholderSecondaryWidth = 0;
+    placeholderSecondaryLayout = null;
+  }
+
+  public void invalidatePlaceholder () {
+    if (getText().length() == 0) {
+      invalidate();
     }
   }
 
   public void checkPlaceholderWidth () {
     if (lastPlaceholderRes != 0 && controller != null) {
-      int availWidth = Math.max(0, getMeasuredWidth() - controller.getHorizontalInputPadding() - getPaddingLeft());
+      int availWidth = getAvailablePlaceholderWidth();
       if (this.lastPlaceholderAvailWidth != availWidth) {
         this.lastPlaceholderAvailWidth = availWidth;
-        if (rawPlaceholderWidth <= availWidth) {
-          setHint(rawPlaceholder);
-        } else {
-          setHint(TextUtils.ellipsize(rawPlaceholder, getPaint(), availWidth, TextUtils.TruncateAt.END));
-        }
       }
     }
+  }
+
+  private void recreatePlaceholderLayouts () {
+    createPlaceholderPrimaryLayout();
+    createPlaceholderSecondaryLayout();
   }
 
   private boolean needSendByEnter () {
@@ -939,6 +981,12 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         if (lastPlaceholderRes != 0) {
           setInputPlaceholder(lastPlaceholderRes, lastPlaceholderArgs);
         }
+        if (lastPlaceholderSecondaryRes != 0) {
+          setInputPlaceholderSecondary(lastPlaceholderSecondaryRes, lastPlaceholderSecondaryArgs);
+        }
+        if (lastPlaceholderRes != 0 || lastPlaceholderSecondaryRes != 0) {
+          invalidatePlaceholder();
+        }
       }
 
       @Override
@@ -965,9 +1013,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
   private boolean textChangedSinceChatOpened, ignoreFirstLinkPreview;
 
-  public void setChat (TdApi.Chat chat, @Nullable ThreadInfo messageThread, boolean isSilent) {
+  public void setChat (TdApi.Chat chat, @Nullable TdlibSender tdlibSender, @Nullable ThreadInfo messageThread, boolean isSilent) {
     textChangedSinceChatOpened = false;
-    updateMessageHint(chat, messageThread, isSilent);
+    updateMessageHint(chat, tdlibSender, messageThread, isSilent);
     setDraft(!tdlib.hasWritePermission(chat) ? null :
       messageThread != null ? messageThread.getDraftContent() :
       chat.draftMessage != null ? chat.draftMessage.inputMessageText : null
@@ -988,9 +1036,11 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     }
   }
 
-  public void updateMessageHint (TdApi.Chat chat, @Nullable ThreadInfo messageThread, boolean isSilent) {
+  public void updateMessageHint (TdApi.Chat chat, @Nullable TdlibSender tdlibSender, @Nullable ThreadInfo messageThread, boolean isSilent) {
     if (chat == null) {
       setInputPlaceholder(R.string.Message);
+      clearInputPlaceholderSecondary();
+      invalidatePlaceholder();
       return;
     }
     int resource;
@@ -999,14 +1049,27 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     if (tdlib.isChannel(chat.id)) {
       resource = isSilent ? R.string.ChannelSilentBroadcast : R.string.ChannelBroadcast;
     } else if (tdlib.isMultiChat(chat) && Td.isAnonymous(status)) {
-      resource = messageThread != null ? (messageThread.areComments() ? R.string.CommentAnonymously : R.string.MessageReplyAnonymously) :  R.string.MessageAnonymously;
+      resource = messageThread != null ? (messageThread.areComments() ? R.string.CommentAnonymously : R.string.MessageReplyAnonymously) :  R.string.Message;
     } else if (chat.messageSenderId != null && !tdlib.isSelfSender(chat.messageSenderId)) {
-      resource = messageThread != null ? (messageThread.areComments() ? R.string.CommentAsX : R.string.MessageReplyAsX) : R.string.MessageAsX;
+      resource = messageThread != null ? (messageThread.areComments() ? R.string.CommentAsX : R.string.MessageReplyAsX) : R.string.Message;
       args = new Object[] { tdlib.senderName(chat.messageSenderId) };
     } else {
       resource = messageThread != null ? (messageThread.areComments() ? R.string.Comment : R.string.MessageReply) : R.string.Message;
     }
     setInputPlaceholder(resource, args);
+
+    if (tdlibSender != null && tdlib.isMultiChat(chat.id) && !tdlibSender.isSelf()) {
+      resource = R.string.SendAsSender;
+      if (tdlibSender.isAnonymousGroupAdmin()) {
+        args = new Object[] {Lang.getString(R.string.AnonymousAdmin)};
+      } else {
+        args = new Object[] {tdlibSender.getName()};
+      }
+      setInputPlaceholderSecondary(resource, args);
+    } else {
+      clearInputPlaceholderSecondary();
+    }
+    invalidatePlaceholder();
   }
 
   public void setDraft (@Nullable TdApi.InputMessageContent draftContent) {
@@ -1071,6 +1134,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
     super.onMeasure(widthMeasureSpec, heightMeasureSpec);
     checkPlaceholderWidth();
+    recreatePlaceholderLayouts();
     layoutSuffix();
   }
 
@@ -1104,6 +1168,67 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         checkPrefix(text);
         c.drawText(displaySuffix, getPaddingLeft() + prefixWidth, getBaseline(), paint);
       }
+    }
+    if (getText().length() == 0) {
+      if (rawPlaceholder != null && rawPlaceholder.length() > 0) {
+        float dy;
+        if (placeholderPrimaryLayout == null) {
+          createPlaceholderPrimaryLayout();
+        }
+        if (placeholderSecondaryLayout == null) {
+          createPlaceholderSecondaryLayout();
+        }
+
+        if (placeholderSecondaryLayout != null) {
+          int fullHeight = placeholderPrimaryLayout.getHeight() + placeholderSecondaryLayout.getHeight();
+          dy = getMeasuredHeight() / 2f - fullHeight / 2f;
+        } else {
+          dy = getMeasuredHeight() / 2f - placeholderPrimaryLayout.getHeight() / 2f;
+        }
+
+        c.save();
+        c.translate(getPaddingLeft(), dy);
+        placeholderPrimaryLayout.draw(c);
+        c.restore();
+
+        if (rawPlaceholderSecondary != null && rawPlaceholderSecondary.length() > 0) {
+          dy += placeholderPrimaryLayout.getHeight();
+          c.save();
+          c.translate(getPaddingLeft(), dy);
+          placeholderSecondaryLayout.draw(c);
+          c.restore();
+        }
+      }
+    }
+  }
+
+  private void createPlaceholderPrimaryLayout () {
+    if (controller != null && rawPlaceholder != null && rawPlaceholder.length() > 0) {
+      int availWidth = getAvailablePlaceholderWidth();
+      if (rawPlaceholderWidth <= availWidth) {
+        placeholderPrimaryLayout = U.createLayout(rawPlaceholder, lastPlaceholderAvailWidth, paint);
+      } else {
+        placeholderPrimaryLayout = U.createLayout(TextUtils.ellipsize(rawPlaceholder, getPaint(), availWidth, TextUtils.TruncateAt.END), lastPlaceholderAvailWidth, paint);
+      }
+    }
+  }
+
+  private void createPlaceholderSecondaryLayout () {
+    if (controller != null && rawPlaceholderSecondary != null && rawPlaceholderSecondary.length() > 0) {
+      int availWidth = getAvailablePlaceholderWidth();
+      if (rawPlaceholderSecondaryWidth <= availWidth) {
+        placeholderSecondaryLayout = U.createLayout(rawPlaceholderSecondary, lastPlaceholderAvailWidth, paintSecondary);
+      } else {
+        placeholderSecondaryLayout = U.createLayout(TextUtils.ellipsize(rawPlaceholderSecondary, paintSecondary, availWidth, TextUtils.TruncateAt.END), lastPlaceholderAvailWidth, paintSecondary);
+      }
+    }
+  }
+
+  private int getAvailablePlaceholderWidth () {
+    if (controller != null) {
+      return Math.max(0, getMeasuredWidth() - controller.getHorizontalInputPadding() - getPaddingLeft());
+    } else {
+      return 0;
     }
   }
 

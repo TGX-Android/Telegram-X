@@ -61,6 +61,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.v.RtlGridLayoutManager;
+import org.thunderdog.challegram.widget.CircleButton;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -203,6 +204,8 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
     return currentBucket != null ? currentBucket.getName() : Lang.getString(R.string.AllMedia);
   }
 
+  private CircleButton buttonCamera;
+
   @Override
   protected View onCreateView (Context context) {
     buildContentView(false);
@@ -232,6 +235,23 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
       loadGalleryPhotos(null);
     }
 
+    final int padding = Screen.dp(16);
+    FrameLayout.LayoutParams fparams = FrameLayoutFix.newParams(Screen.dp(24f) * 2 + padding * 2, Screen.dp(24f) * 2 + padding * 2, Gravity.RIGHT | Gravity.BOTTOM);
+    fparams.setMargins(0, 0, 0, Screen.dp(56));
+
+    buttonCamera = new CircleButton(context);
+    buttonCamera.setId(R.id.btn_cameraGallery);
+
+    buttonCamera.setOnClickListener(v -> {
+      buttonCamera.setIsHidden(true, true);
+      onCameraRequested();
+    });
+    addThemeInvalidateListener(buttonCamera);
+    buttonCamera.init(R.drawable.deproko_baseline_camera_26, 48f, 16f, R.id.theme_color_circleButtonChat, R.id.theme_color_circleButtonChatIcon);
+    buttonCamera.setLayoutParams(fparams);
+    buttonCamera.setIsHidden(true, false);
+    contentView.addView(buttonCamera);
+
     return contentView;
   }
 
@@ -260,6 +280,13 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
       decoration.setSpanCount(spanCount);
       recyclerView.invalidateItemDecorations();
       ((GridLayoutManager) getLayoutManager()).setSpanCount(spanCount);
+    }
+  }
+
+  @Override
+  protected void onHeightChanged (int height) {
+    if (buttonCamera != null) {
+      updateButtonCamera();
     }
   }
 
@@ -401,6 +428,7 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   @Override
   protected void onCompleteShow (boolean isPopup) {
     if (isPopup) {
+      updateButtonCamera();
       adapter.setAnimationsEnabled(true, (LinearLayoutManager) getLayoutManager());
     }
   }
@@ -426,7 +454,18 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   @Override
   public void onPhotoOrVideoSelected (int selectedCount, ImageFile image, int selectionIndex) {
     hideSoftwareKeyboard();
+    updateButtonCamera(selectedCount);
     mediaLayout.setCounter(selectedCount);
+  }
+
+  private void updateButtonCamera () {
+    updateButtonCamera(getSelectedMediaCount());
+  }
+
+  private void updateButtonCamera (int selectedCount) {
+    if (buttonCamera != null) {
+      buttonCamera.setIsHidden(selectedCount != 0 || getCurrentHeight() != getStartHeight(), true);
+    }
   }
 
   @Override
@@ -498,6 +537,7 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
 
   @Override
   protected void onCancelMultiSelection () {
+    updateButtonCamera(0);
     adapter.clearSelectedImages((GridLayoutManager) getLayoutManager());
   }
 
@@ -728,6 +768,9 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   @Override
   public void destroy () {
     super.destroy();
+    if (buttonCamera != null) {
+      buttonCamera.destroy();
+    }
     if (sectionsView != null) {
       Views.destroyRecyclerView(sectionsView);
     }

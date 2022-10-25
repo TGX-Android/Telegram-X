@@ -1054,7 +1054,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     }
     if (size > moreWrap.getChildCount()) {
       for (; i < size; i++) {
-        moreWrap.addItem(ids == null ? i : ids[i], titles[i], icons != null ? icons[i] : 0, null, onItemClick);
+        moreWrap.addTextWithIconItem(ids == null ? i : ids[i], titles[i], icons != null ? icons[i] : 0, null, onItemClick);
       }
     }
     PopupLayout popupLayout = new PopupLayout(getContext());

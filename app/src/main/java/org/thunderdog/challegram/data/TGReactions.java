@@ -3,6 +3,7 @@ package org.thunderdog.challegram.data;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Path;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -17,6 +18,7 @@ import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
+import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
@@ -37,6 +39,8 @@ import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
+
+import static org.thunderdog.challegram.data.TGMessage.ID_PERSONAL_ACCOUNT_PROTECTION_REACTION;
 
 public class TGReactions {
   private final Tdlib tdlib;
@@ -474,6 +478,10 @@ public class TGReactions {
     boolean needUnset = reaction.equals(chosenReaction) && !isBig;
     tdlib.client().send(new TdApi.SetMessageReaction(parent.getChatId(), message.id, needUnset ? "" : reaction, isBig), handler);
     return !needUnset;
+  }
+
+  public boolean isChosen (String reaction) {
+    return reaction.equals(chosenReaction);
   }
 
   public static class MessageReactionEntry implements TextColorSet, FactorAnimator.Target {

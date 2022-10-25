@@ -280,6 +280,7 @@
   <string name="CommentAnonymously">Comment anonymously</string>
   <string name="Comment">Comment</string>
   <string name="CommentAsX">Comment as %1$s</string>
+  <string name="SendAsSender">as %1$s</string>
   <string name="DeletedMessage">Deleted message</string>
   <string name="UnsupportedMessage">Unsupported message</string>
   <string name="UnsupportedMessageType">Unsupported message</string>
@@ -1563,6 +1564,9 @@
   <string name="DeleteXFromRecents">Remove %1$s from recently found chats?</string>
   <string name="SendTo">Send to</string>
   <string name="SelectChats">Select Chats</string>
+  <string name="SendAs">Send As</string>
+  <string name="AnonymousAdmin">Anonymous Admin</string>
+  <string name="YourAccount">your account</string>
   <string name="AddComment">Add a comment…</string>
   <string name="SendSticker">Send sticker</string>
   <string name="ViewPackPreview">View Pack</string>
@@ -1648,6 +1652,8 @@
   <string name="MessageLifetimeVideo">If you set a timer, the video will self-destruct after it is viewed.</string>
   <string name="NoMembersToShow">No members to show</string>
   <string name="NoMembersToShowDesc">Try changing your search query.\nFound members will be shown here.</string>
+  <string name="NoChatSendersToShow">No results to show</string>
+  <string name="NoChatSendersToShowDesc">Try changing your search query.</string>
   <string name="ManageChannel">Manage Channel</string>
   <string name="ManageGroup">Manage Group</string>
   <string name="RoleOwner">chat owner</string>
@@ -2445,6 +2451,7 @@
   <string name="TabMessages">Messages</string>
   <string name="MoreMessageOptions">More</string>
   <string name="MoreChatOptions">More</string>
+  <string name="MoreSenders">More</string>
   <string name="MoreForwardOptions">More options…</string>
   <string name="MessagePin">Pin</string>
   <string name="MessagePinAlbum">Pin album</string>
@@ -4399,6 +4406,8 @@
 
   <string name="XRestrictedVoiceMessages">%1$s doesn\'t accept voice messages.</string>
   <string name="XRestrictedVideoMessages">%1$s doesn\'t accept video messages.</string>
+  
+  <string name="TapToRevealPersonalAccount">This action requires revealing your personal account. Tap again to confirm.</string>
 
   <string name="format_PRMadeBy">%1$s by %2$s</string>
 </resources>

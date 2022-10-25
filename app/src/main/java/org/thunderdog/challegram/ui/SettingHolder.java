@@ -77,6 +77,7 @@ import org.thunderdog.challegram.widget.AttachDelegate;
 import org.thunderdog.challegram.widget.AvatarView;
 import org.thunderdog.challegram.widget.BetterChatView;
 import org.thunderdog.challegram.widget.ChartLayout;
+import org.thunderdog.challegram.widget.ChatSenderView;
 import org.thunderdog.challegram.widget.CheckBoxView;
 import org.thunderdog.challegram.widget.CustomTextView;
 import org.thunderdog.challegram.widget.DoubleTextView;
@@ -248,6 +249,9 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_REACTION_CHECKBOX: {
         return Screen.dp(60f);
       }
+      case ListItem.TYPE_CHAT_SENDER_CHECKBOX: {
+        return Screen.dp(63f);
+      }
       case ListItem.TYPE_EMBED_STICKER: {
         return Screen.dp(96f);
       }
@@ -306,6 +310,10 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       }
       case ListItem.TYPE_REACTION_CHECKBOX: {
         ((ReactionCheckboxSettingsView) itemView).attach();
+        break;
+      }
+      case ListItem.TYPE_CHAT_SENDER_CHECKBOX: {
+        ((ChatSenderView) itemView).attach();
         break;
       }
       case ListItem.TYPE_EMBED_STICKER: {
@@ -396,6 +404,10 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         ((ReactionCheckboxSettingsView) itemView).detach();
         break;
       }
+      case ListItem.TYPE_CHAT_SENDER_CHECKBOX: {
+        ((ChatSenderView) itemView).detach();
+        break;
+      }
       case ListItem.TYPE_EMBED_STICKER: {
         ((EmbeddableStickerView) itemView).detach();
         break;
@@ -478,6 +490,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_CHECKBOX_OPTION_DOUBLE_LINE:
       case ListItem.TYPE_CHECKBOX_OPTION_MULTILINE:
       case ListItem.TYPE_REACTION_CHECKBOX:
+      case ListItem.TYPE_CHAT_SENDER_CHECKBOX:
       case ListItem.TYPE_RADIO_OPTION:
       case ListItem.TYPE_RADIO_OPTION_LEFT:
       case ListItem.TYPE_RADIO_OPTION_WITH_AVATAR:
@@ -1158,6 +1171,16 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         view.init(tdlib);
         view.setOnClickListener(onClickListener);
         view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(104)));
+        if (themeProvider != null) {
+          themeProvider.addThemeInvalidateListener(view);
+        }
+        return new SettingHolder(view);
+      }
+      case ListItem.TYPE_CHAT_SENDER_CHECKBOX: {
+        ChatSenderView view = new ChatSenderView(context);
+        view.init(tdlib);
+        view.setOnClickListener(onClickListener);
+        view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(63)));
         if (themeProvider != null) {
           themeProvider.addThemeInvalidateListener(view);
         }

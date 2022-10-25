@@ -500,7 +500,13 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
           mediaLayout.setHeaderFactor(1f - barFactor);
         }
       }
+      mediaLayout.setHeaderOffset(getMaxHeight() - currentHeight);
+      onHeightChanged(currentHeight);
     }
+  }
+
+  protected void onHeightChanged(int height) {
+
   }
 
   private boolean animatingHeight;

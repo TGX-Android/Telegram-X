@@ -74,6 +74,8 @@ import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.td.Td;
 
+import static org.thunderdog.challegram.data.TGMessage.ID_PERSONAL_ACCOUNT_PROTECTION_GAME;
+
 public class TGInlineKeyboard {
   private static final float CURRENCY_TEXT_SIZE_DP = 10f;
   private static final float BUTTON_TEXT_SIZE_DP = 14f;
@@ -1149,6 +1151,10 @@ public class TGInlineKeyboard {
             break;
           }
 
+          boolean isRevealHintDisplayed = parent.showRevealPersonalAccountHint(view, ID_PERSONAL_ACCOUNT_PROTECTION_GAME, false, (targetView, outRect) -> {outRect.set(dirtyRect);});
+          if (isRevealHintDisplayed) {
+            break;
+          }
           makeActive();
           showProgressDelayed();
 

@@ -49,6 +49,7 @@ public class EmptySmartView extends View {
   public static final int MODE_EMPTY_PHOTO = 12;
   public static final int MODE_EMPTY_VIDEO = 13;
   public static final int MODE_EMPTY_RESTRICTED = 14;
+  public static final int MODE_EMPTY_CHAT_SENDERS = 15;
 
   private Letters title, description;
   private Drawable icon;
@@ -145,6 +146,12 @@ public class EmptySmartView extends View {
           else
             description = null;
           iconRes = R.drawable.baseline_block_96;
+          break;
+        }
+        case MODE_EMPTY_CHAT_SENDERS: {
+          titleRes = R.string.NoChatSendersToShow;
+          descRes = R.string.NoChatSendersToShowDesc;
+          iconRes = R.drawable.baseline_search_96;
           break;
         }
         default: {
