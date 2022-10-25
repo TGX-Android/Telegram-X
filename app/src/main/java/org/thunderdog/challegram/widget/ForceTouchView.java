@@ -20,6 +20,7 @@ import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Path;
 import android.graphics.PixelFormat;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -134,31 +135,28 @@ public class ForceTouchView extends FrameLayoutFix implements
 
     params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
 
-    final RectF rectF = new RectF();
-
     contentWrap = new RelativeLayout(context) {
       private final @Nullable Path path = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT ? new Path() : null;
+      private RectF rectF;
 
       @Override
       protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-        checkPath();
+        checkPath(false);
       }
 
       private int lastWidth, lastHeight;
 
-      private void checkPath () {
+      private void checkPath (boolean force) {
         int viewWidth = getMeasuredWidth();
         int viewHeight = getMeasuredHeight();
 
-        if (lastWidth != viewWidth || lastHeight != viewHeight) {
+        if (force || lastWidth != viewWidth || lastHeight != viewHeight) {
           lastWidth = viewWidth;
           lastHeight = viewHeight;
-
-          rectF.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
-
+          rectF = getRevealClipRect(contentWrap);
           if (path != null) {
-            path.reset();
+            path.rewind();
             path.addRoundRect(rectF, Screen.dp(4f), Screen.dp(4f), Path.Direction.CW);
           }
         }
@@ -167,22 +165,35 @@ public class ForceTouchView extends FrameLayoutFix implements
       @Override
       public void draw (Canvas c) {
         final boolean needClip = !forceTouchContext.needHeader;
-        final int saveCount = needClip ? ViewSupport.clipPath(c, path) : Integer.MIN_VALUE;
+        if (revealAnimator.isAnimating()) checkPath(true);
+        final int saveCount;
+        if (needClip) {
+          saveCount = ViewSupport.clipPath(c, path);
+        } else if (!isMaximizing) {
+          saveCount = c.save();
+          c.clipRect(rectF);
+        } else {
+          saveCount = Integer.MIN_VALUE;
+        }
         super.draw(c);
         if (needClip) {
           ViewSupport.restoreClipPath(c, saveCount);
+        } else if (saveCount != Integer.MIN_VALUE) {
+          c.restoreToCount(saveCount);
         }
         if (path == null) {
-          c.drawRect(0, 0, getMeasuredWidth(), getMeasuredHeight(), Paints.strokeBigPaint(ColorUtils.alphaColor(.2f, Theme.textAccentColor())));
+          c.drawRect(rectF, Paints.strokeBigPaint(ColorUtils.alphaColor(.2f, Theme.textAccentColor())));
         }
       }
     };
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       contentWrap.setOutlineProvider(new android.view.ViewOutlineProvider() {
+        private final Rect outlineRect = new Rect();
         @Override
         @TargetApi(Build.VERSION_CODES.LOLLIPOP)
         public void getOutline (View view, android.graphics.Outline outline) {
-          outline.setRoundRect(0, 0, view.getMeasuredWidth(), view.getMeasuredHeight(), Screen.dp(4f));
+          getRevealClipRect(view).round(outlineRect);
+          outline.setRoundRect(outlineRect, Screen.dp(4f));
         }
       });
       contentWrap.setElevation(Screen.dp(1f));
@@ -191,7 +202,7 @@ public class ForceTouchView extends FrameLayoutFix implements
     ViewUtils.setBackground(contentWrap, new Drawable() {
       @Override
       public void draw (@NonNull Canvas c) {
-        c.drawRoundRect(rectF, Screen.dp(4f), Screen.dp(4f), Paints.fillingPaint(Theme.fillingColor()));
+        c.drawRoundRect(getRevealClipRect(contentWrap), Screen.dp(4f), Screen.dp(4f), Paints.fillingPaint(Theme.fillingColor()));
       }
 
       @Override
@@ -240,6 +251,7 @@ public class ForceTouchView extends FrameLayoutFix implements
 
   private @Nullable StateListener listener;
   private ComplexHeaderView headerView;
+  private View targetHeaderView;
 
   private LinearLayout buttonsList;
   private Tdlib tdlib;
@@ -286,7 +298,6 @@ public class ForceTouchView extends FrameLayoutFix implements
       params.addRule(RelativeLayout.ALIGN_RIGHT, R.id.forceTouch_content);
       contentParams.addRule(RelativeLayout.BELOW, R.id.forceTouch_header);
 
-      View targetHeaderView;
       if (context.needHeaderAvatar) {
         headerView = new ComplexHeaderView(getContext(), tdlib, null);
         headerView.setId(R.id.forceTouch_header);
@@ -318,6 +329,7 @@ public class ForceTouchView extends FrameLayoutFix implements
         headerView.setLayoutParams(params);
         contentWrap.addView(targetHeaderView = headerView);
       }
+      targetHeaderView.setBackgroundColor(Theme.fillingColor());
       themeListenerList.addThemeDoubleTextColorListener(targetHeaderView, R.id.theme_color_text, R.id.theme_color_textLight);
 
       params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, Screen.dp(7f));
@@ -409,7 +421,7 @@ public class ForceTouchView extends FrameLayoutFix implements
         offsetView.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f));
         buttonsList.addView(offsetView);
       }
-
+      buttonsList.setBackgroundColor(Theme.fillingColor());
       contentWrap.addView(buttonsList);
       contentWrap.addView(popupWrapView);
 
@@ -535,8 +547,9 @@ public class ForceTouchView extends FrameLayoutFix implements
 
   // Reveal animation
 
-  private static final float REVEAL_FACTOR = .7f;
+  private static final float REVEAL_FACTOR = .2f;
   private float revealFactor;
+  private RectF clipRect;
 
   public void setBeforeMaximizeFactor (float factor) {
     if (revealFactor >= 1f) {
@@ -551,9 +564,19 @@ public class ForceTouchView extends FrameLayoutFix implements
     if (this.revealFactor != factor) {
       this.revealFactor = factor;
       final float scale = REVEAL_FACTOR + (1f - REVEAL_FACTOR) * factor;
-      contentWrap.setScaleX(scale);
-      contentWrap.setScaleY(scale);
-
+      if (revealFactor >= 1f) {
+        contentWrap.setScaleX(scale);
+        contentWrap.setScaleY(scale);
+      }
+      if (!isMaximizing) {
+        int pivotY = (int) getRevealPivot();
+        updateHeaderTranslation(pivotY, scale);
+        updateFooterTranslation(pivotY, scale);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+          contentWrap.invalidateOutline();
+        }
+        contentWrap.invalidate();
+      }
 
       if (isMaximizing) {
         float progressFactor = MathUtils.clamp((factor - maximizingFromFactor) / (MAXIMIZE_FACTOR - maximizingFromFactor));
@@ -565,8 +588,37 @@ public class ForceTouchView extends FrameLayoutFix implements
         contentWrap.setAlpha(alpha);
         backgroundView.setAlpha(alpha);
       }
-
     }
+  }
+
+  private void updateHeaderTranslation(int pivot, float factor) {
+    if (forceTouchContext.hasHeader()) {
+      targetHeaderView.setTranslationY(pivot * Math.max(0, 1 - factor));
+    }
+  }
+
+  private void updateFooterTranslation(int pivot, float factor) {
+    if (forceTouchContext.hasFooter()) {
+      int footerTranslation = pivot - contentWrap.getMeasuredHeight();
+      buttonsList.setTranslationY(footerTranslation * Math.max(0, 1 - factor));
+    }
+  }
+
+  private RectF getRevealClipRect(View view) {
+    final float factor = Math.max(0, 1 - (REVEAL_FACTOR + (1f - REVEAL_FACTOR) * revealFactor));
+    float pivotY = getRevealPivot();
+    int top = (int) (pivotY * factor);
+    int bottom = (int) (view.getMeasuredHeight() - (view.getMeasuredHeight() - pivotY) * factor);
+    if (clipRect == null) {
+      clipRect = new RectF();
+    }
+    clipRect.set(0, top, view.getMeasuredWidth(), bottom);
+    return clipRect;
+  }
+
+  private float getRevealPivot() {
+    float touchY = forceTouchContext.touchY + forceTouchContext.getAddY(this);
+    return Math.max(0, Math.min(contentWrap.getMeasuredHeight(), touchY - contentWrap.getTop()));
   }
 
   // Animator
@@ -749,9 +801,9 @@ public class ForceTouchView extends FrameLayoutFix implements
   @Override
   public void prepareShowAnimation () {
     if (Device.NEED_REDUCE_BOUNCE || Settings.instance().needReduceMotion()) {
-      revealAnimator = new FactorAnimator(REVEAL_ANIMATOR, this, new DecelerateInterpolator(1.46f), 140l);
+      revealAnimator = new FactorAnimator(REVEAL_ANIMATOR, this, new DecelerateInterpolator(1.46f), 200l);
     } else {
-      revealAnimator = new FactorAnimator(REVEAL_ANIMATOR, this, overshootInterpolator, 260l);
+      revealAnimator = new FactorAnimator(REVEAL_ANIMATOR, this, overshootInterpolator, 350l);
     }
   }
 
@@ -861,6 +913,7 @@ public class ForceTouchView extends FrameLayoutFix implements
     private int[] buttonIcons;
     private String[] buttonHints;
     private boolean excludeHeader;
+    private float touchX, touchY;
 
     public View getSourceView () {
       return sourceView;
@@ -888,6 +941,11 @@ public class ForceTouchView extends FrameLayoutFix implements
     public ForceTouchContext setExcludeHeader (boolean excludeHeader) {
       this.excludeHeader = excludeHeader;
       return this;
+    }
+
+    public void setTouch(float x, float y) {
+      this.touchX = x;
+      this.touchY = y;
     }
 
     public float getAddX (ForceTouchView target) {

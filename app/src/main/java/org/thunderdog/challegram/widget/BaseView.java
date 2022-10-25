@@ -508,6 +508,7 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
     }
     ForceTouchView.ForceTouchContext context = new ForceTouchView.ForceTouchContext(tdlib, this, controller.get(), controller);
     context.setStateListener(controller);
+    context.setTouch(x, y);
 
     if (controller instanceof ForceTouchView.PreviewDelegate) {
       ((ForceTouchView.PreviewDelegate) controller).onPrepareForceTouchContext(context);

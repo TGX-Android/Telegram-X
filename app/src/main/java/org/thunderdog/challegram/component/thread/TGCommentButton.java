@@ -488,7 +488,6 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
       Paint paint = Paints.fillingPaint(Theme.getColor(R.id.theme_color_bubble_button));
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
         Path path = getBackgroundPath();
-        path.addRoundRect(mBounds, height / 2f, height / 2f, Path.Direction.CW);
         canvas.drawPath(path, paint);
       } else {
         canvas.drawRect(mBounds, paint);

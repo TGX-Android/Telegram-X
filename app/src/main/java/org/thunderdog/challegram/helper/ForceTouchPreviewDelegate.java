@@ -172,6 +172,7 @@ public abstract class ForceTouchPreviewDelegate implements ClickHelper.Delegate 
     }
     ForceTouchView.ForceTouchContext context = new ForceTouchView.ForceTouchContext(tdlib, view, controller.get(), controller);
     context.setStateListener(controller);
+    context.setTouch(x, y);
 
     if (controller instanceof ForceTouchView.PreviewDelegate) {
       ((ForceTouchView.PreviewDelegate) controller).onPrepareForceTouchContext(context);
