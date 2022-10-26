@@ -733,13 +733,14 @@ public class Settings {
 
   private Settings () {
     File pmcDir = new File(UI.getAppContext().getFilesDir(), "pmc");
-    boolean ok = false;
+    boolean fatalError;
     try {
-      ok = !pmcDir.exists() && !FileUtils.mkdirs(pmcDir);
+      fatalError = !pmcDir.exists() && !FileUtils.mkdirs(pmcDir);
     } catch (SecurityException e) {
       e.printStackTrace();
+      fatalError = true;
     }
-    if (!ok) {
+    if (fatalError) {
       throw new DeviceStorageError("Unable to create working directory");
     }
     long ms = SystemClock.uptimeMillis();
