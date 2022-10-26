@@ -1029,7 +1029,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     buildFooter();
     buildReactions(false);
     buildBubble(true);
-    buildCommentButton();
 
     if (useBubbles()) {
       pContentY = topContentEdge + getBubblePaddingTop();
@@ -1050,6 +1049,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     buildMarkup();
 
     height = computeHeight();
+    buildCommentButton();
 
     flags |= FLAG_LAYOUT_BUILT;
   }
@@ -1789,26 +1789,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       drawBubble(c, Paints.fillingPaint(bubbleColor), false, 0);
     }
 
-    if (needCommentButton()) {
-      int bottom = this.bottomContentEdge;
-      if ((useStickerBubbleReactions() || !useBubble())) {
-        bottom = findBottomEdge();
-      }
-      float commentButton = hasCommentButton.getFloatValue();
-      if (commentButton > 0f) {
-        int y = bottom - getBubbleReduceHeight();
-        if (useBubble()) c.drawLine(leftContentEdge, y, rightContentEdge, y, Paints.strokeSeparatorPaint(ColorUtils.alphaColor(commentButton, getSeparatorColor())));
-        if (commentButton != 1f) {
-          c.save();
-          c.clipRect(leftContentEdge, y, rightContentEdge, bottom);
-        }
-        drawCommentButton(view, c, leftContentEdge, rightContentEdge, y, commentButton);
-        if (commentButton != 1f) {
-          c.restore();
-        }
-      }
-    }
-
     // Content universal
     if (needComplexReceiver()) {
       drawContent(view, c, pContentX, pContentY, pContentMaxWidth, complexReceiver);
@@ -1825,6 +1805,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       drawCornerFixes(c, this, 1f,
         bubblePathRect.left + padding, bubblePathRect.top + padding, bubblePathRect.right - padding, bubblePathRect.bottom - padding,
         topLeftRadius, topRightRadius, bottomRightRadius, bottomLeftRadius);
+    }
+
+    //Comment button
+    if (needCommentButton()) {
+      drawCommentButton(c);
     }
 
     if (hasFooter()) {
@@ -3283,6 +3268,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
             mr /= 1.5;
             DrawAlgorithms.buildPath(bubbleClipPath, bubbleClipPathRect, mergeTop && !alignContentRight ? mr : dr, mergeTop && alignContentRight ? mr : dr, mergeBottom && alignContentRight ? mr : dr, mergeBottom && !alignContentRight ? mr : dr);
           }
+        }
+
+        if (needCommentButton()) {
+          commentButton.updateWidth(measureCommentButtonWidth());
         }
       }
 
@@ -6429,7 +6418,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   protected final int getCommentButtonHeight () {
-    return Screen.dp(40f);
+    return commentButton.getHeight();
   }
 
   protected final int getBubbleReduceHeight () {
@@ -6616,8 +6605,24 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return Theme.getColor(isOutgoingBubble() ? R.id.theme_color_bubbleOut_messageAuthorPsa : R.id.theme_color_messageAuthorPsa);
   }
 
-  private void drawCommentButton (MessageView view, Canvas c, int startX, int endX, int y, float alpha) {
-    commentButton.draw(c, startX, y);
+  private void drawCommentButton (Canvas c) {
+    int bottom = this.bottomContentEdge;
+    if ((useStickerBubbleReactions() || !useBubble())) {
+      bottom = findBottomEdge();
+    }
+    float hasCommentFactor = hasCommentButton.getFloatValue();
+    if (hasCommentFactor > 0f) {
+      int y = bottom - getBubbleReduceHeight();
+      if (useBubble()) c.drawLine(leftContentEdge, y, rightContentEdge, y, Paints.strokeSeparatorPaint(ColorUtils.alphaColor(hasCommentFactor, getSeparatorColor())));
+      if (hasCommentFactor != 1f) {
+        c.save();
+        c.clipRect(leftContentEdge, y, rightContentEdge, bottom);
+      }
+      commentButton.draw(c);
+      if (hasCommentFactor != 1f) {
+        c.restore();
+      }
+    }
   }
 
   private void drawFooter (MessageView view, Canvas c) {
@@ -8031,18 +8036,27 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     };
   }
 
-  private void buildCommentButton() {
+  protected int measureCommentButtonWidth() {
     int paddings = getBubblePaddingLeft() + getBubblePaddingRight();
-    int maxWidth;
+    int width;
     if (useBubbles()) {
       if (useStickerBubbleReactions() && !useCircleBubble()) {
-        maxWidth = Math.max(getContentWidth() + paddings, (int)(getEstimatedContentMaxWidth() * 0.75f));
+        width = Math.max(getContentWidth() + paddings, (int)(getEstimatedContentMaxWidth() * 0.75f));
       } else {
-        maxWidth = computeBubbleWidth() + paddings;
+        width = (int) (bubblePathRect.width());
       }
     } else {
-      maxWidth = this.width;
+      width = this.width;
     }
+    return width;
+  }
+
+  private void buildCommentButton() {
+    int bottom = this.bottomContentEdge;
+    if ((useStickerBubbleReactions() || !useBubble())) {
+      bottom = findBottomEdge();
+    }
+    commentButton.setBounds(measureCommentButtonWidth(), leftContentEdge, bottom - getBubbleReduceHeight());
     if (!useBubbles()) {
       int paddingStart = (xContentLeft - commentButton.getStartIconDrawable().getIntrinsicWidth()) / 2;
       commentButton.setHorizontalPaddings(paddingStart, TGCommentButton.DEFAULT_PADDING);
@@ -8052,9 +8066,5 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       commentButton.setHorizontalPaddings(padding, padding);
       commentButton.setStartDrawablePadding(padding);
     }
-    commentButton.onMeasure(
-      maxWidth,
-      getCommentButtonHeight()
-    );
   }
 }

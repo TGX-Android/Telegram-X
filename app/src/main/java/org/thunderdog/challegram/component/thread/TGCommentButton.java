@@ -38,8 +38,10 @@ import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.widget.ForceTouchView;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -57,6 +59,7 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
   ForceTouchPreviewDelegate.ActionListProvider {
 
   public static final int DEFAULT_PADDING = Screen.dp(8);
+  public static final int DEFAULT_HEIGHT = Screen.dp(40);
   private static final int SELECTION_ANIMATOR = 0;
   private static final int FADE_ANIMATOR = 1;
   private static final long ANIMATION_DURATION = 180L;
@@ -97,12 +100,27 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
   public static class Info {
     private final int count;
     private final TdApi.MessageSender[] senders;
-    private final boolean hasUnread;
+    private boolean hasUnread;
 
     public Info (int count, TdApi.MessageSender[] senders, boolean hasUnread) {
       this.count = count;
       this.senders = senders;
       this.hasUnread = hasUnread;
+    }
+
+    @Override
+    public boolean equals (Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      Info info = (Info) o;
+      return count == info.count && hasUnread == info.hasUnread && Arrays.equals(senders, info.senders);
+    }
+
+    @Override
+    public int hashCode () {
+      int result = Objects.hash(count, hasUnread);
+      result = 31 * result + Arrays.hashCode(senders);
+      return result;
     }
   }
 
@@ -118,6 +136,7 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
     mBackgroundPath = new Path();
     mBackgroundClipRegion = new Region();
     mBottomBubbleRegion = new Region();
+    this.height = DEFAULT_HEIGHT;
     setNeedBackground(false);
     this.setCustomControllerProvider(this);
     this.setPreviewActionListProvider(this);
@@ -140,6 +159,14 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
   public void setHorizontalPaddings (int paddingStart, int paddingEnd) {
     this.paddingStart = paddingStart;
     this.paddingEnd = paddingEnd;
+  }
+
+  public void updateWidth(int width) {
+    resetBounds(mX, mY, width, this.height);
+  }
+
+  public void setBounds(int width, int startX, int startY) {
+    resetBounds(startX, startY, width, this.height);
   }
 
   public void setStartDrawablePadding (int padding) {
@@ -174,6 +201,7 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
   }
 
   public void update (Info info, boolean animated) {
+    if (mInfo != null && mInfo.equals(info)) return;
     this.mInfo = info;
     mAnimated = animated;
     displayEndIcon = info.count == 0;
@@ -185,6 +213,7 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
     }
     if (animated) {
       setupCounter(width < getPreferredMinWidth());
+      invalidate();
     }
   }
 
@@ -266,12 +295,6 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
   @Override
   public int backgroundColorId (boolean isPressed) {
     return 0;
-  }
-
-  public void onMeasure (int width, int height) {
-    this.width = width;
-    this.height = height;
-    setupCounter(width < getPreferredMinWidth());
   }
 
   public boolean onTouchEvent (View view, @NonNull MotionEvent e) {
@@ -375,9 +398,15 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
       public void onForceTouchAction (ForceTouchView.ForceTouchContext context, int actionId, Object arg) {
         if (threadInfo == null) return;
         if (actionId == R.id.btn_markChatAsRead) {
-          mParent.tdlib().markChatAsRead(threadInfo.chatId, threadInfo.messageThreadId, null);
+          mParent.tdlib().markChatAsRead(threadInfo.chatId, threadInfo.messageThreadId, () -> {
+            mInfo.hasUnread = false;
+            invalidate();
+          });
         } else if ( actionId == R.id.btn_markChatAsUnread) {
-          mParent.tdlib().markChatAsUnread(mParent.tdlib().chat(threadInfo.chatId), null);
+          mParent.tdlib().markChatAsUnread(mParent.tdlib().chat(threadInfo.chatId), () -> {
+            mInfo.hasUnread = true;
+            invalidate();
+          });
         }
       }
 
@@ -402,6 +431,7 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
   }
 
   public void invalidate () {
+    if (mParent.isDestroyed()) return;
     mParent.invalidate(
       (int) mBounds.left,
       (int) mBounds.top,
@@ -410,8 +440,7 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
     );
   }
 
-  public void draw (Canvas canvas, int x, int y) {
-    resetBounds(x, y);
+  public void draw (Canvas canvas) {
     drawDebug(canvas);
     drawBackground(canvas);
     drawStartIcon(canvas);
@@ -486,12 +515,8 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
   private void drawBackground (Canvas canvas) {
     if (mNeedBackground) {
       Paint paint = Paints.fillingPaint(Theme.getColor(R.id.theme_color_bubble_button));
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-        Path path = getBackgroundPath();
-        canvas.drawPath(path, paint);
-      } else {
-        canvas.drawRect(mBounds, paint);
-      }
+      Path path = getBackgroundPath();
+      canvas.drawPath(path, paint);
     }
   }
 
@@ -517,23 +542,27 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
       selectionColor = ColorUtils.color((int) ((float) Color.alpha(selectionColor) * (1f - fadeFactor)), selectionColor);
     }
     Paint paint = Paints.fillingPaint(selectionColor);
-    if (selectionFactor != 0f) {
-      int anchorX = Math.max(Math.min(this.touchX - mX, width), 0);
-      int anchorY = Math.max(Math.min(this.touchY - mY, height), 0);
-      float selectionRadius = (float) Math.sqrt(width * width + height * height) * .5f * selectionFactor;
-      float centerX = mBounds.centerX();
-      float centerY = mBounds.centerY();
-      float diffX = centerX - anchorX;
-      float diffY = centerY - anchorY;
-      float selectionX = anchorX + diffX * selectionFactor;
-      float selectionY = anchorY + diffY * selectionFactor;
-
-      final int saveCount;
-      if ((saveCount = ViewSupport.clipPath(canvas, getBackgroundPath())) != Integer.MIN_VALUE) {
-        canvas.drawCircle(selectionX, selectionY, selectionRadius, paint);
-      }
-      ViewSupport.restoreClipPath(canvas, saveCount);
+    if (selectionFactor == 0f) return;
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
+      selectionColor = ColorUtils.color((int) ((float) Color.alpha(selectionColor) * selectionFactor), selectionColor);
+      canvas.drawPath(getBackgroundPath(), Paints.fillingPaint(selectionColor));
+      return;
     }
+    int anchorX = Math.max(Math.min(this.touchX - mX, width), 0);
+    int anchorY = Math.max(Math.min(this.touchY - mY, height), 0);
+    float selectionRadius = (float) Math.sqrt(width * width + height * height) * .5f * selectionFactor;
+    float centerX = mBounds.centerX();
+    float centerY = mBounds.centerY();
+    float diffX = centerX - anchorX;
+    float diffY = centerY - anchorY;
+    float selectionX = anchorX + diffX * selectionFactor;
+    float selectionY = anchorY + diffY * selectionFactor;
+
+    final int saveCount;
+    if ((saveCount = ViewSupport.clipPath(canvas, getBackgroundPath())) != Integer.MIN_VALUE) {
+      canvas.drawCircle(selectionX, selectionY, selectionRadius, paint);
+    }
+    ViewSupport.restoreClipPath(canvas, saveCount);
   }
 
   private Path getBackgroundPath () {
@@ -544,7 +573,7 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
     mBackgroundPath.reset();
     if (mNeedBackground) {
       mBackgroundPath.addRoundRect(mBounds, height / 2f, height / 2f, Path.Direction.CW);
-    } else if (mParent.useBubbles()) {
+    } else if (mParent.useBubbles() && mParent.getBubblePath() != null) {
       mBackgroundClipRegion.set(
         (int) mBounds.left,
         (int) mBounds.top,
@@ -552,18 +581,26 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
         (int) mBounds.bottom
       );
       mBottomBubbleRegion.setPath(mParent.getBubblePath(), mBackgroundClipRegion);
-      mBackgroundPath = mBottomBubbleRegion.getBoundaryPath();
+      mBottomBubbleRegion.getBoundaryPath(mBackgroundPath);
+      mBackgroundPath.close();
     } else {
       mBackgroundPath.addRect(mBounds, Path.Direction.CW);
     }
   }
 
-  private void resetBounds (int x, int y) {
-    if (mX != x || mY != y) {
+  private void resetBounds (int x, int y, int width, int height) {
+    boolean positionChanged = mX != x || mY != y;
+    boolean sizeChanged = this.width != width || this.height != height;
+    if (positionChanged || sizeChanged) {
       mX = x;
       mY = y;
+      this.width = width;
+      this.height = height;
       mBounds.set(x, y, x + width, y + height);
       resetBackgroundPath();
+      if (sizeChanged) {
+        setupCounter(width < getPreferredMinWidth());
+      }
     }
   }
 
@@ -572,7 +609,6 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
   }
 
   private void setupCounter (boolean ellipsize) {
-    if (mInfo == null) return;
     String counterText = mText;
     if (ellipsize) {
       counterText = TextUtils.ellipsize(
@@ -583,7 +619,7 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
       ).toString();
     }
     mCounterAnimator.setCounter(
-      mInfo.count > 0 ? mInfo.count : -1,
+      mInfo != null && mInfo.count > 0 ? mInfo.count : -1,
       counterText,
       mAnimated
     );
