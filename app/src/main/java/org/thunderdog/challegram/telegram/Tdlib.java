@@ -29,6 +29,7 @@ import androidx.annotation.StringRes;
 import androidx.annotation.UiThread;
 import androidx.collection.LongSparseArray;
 import androidx.collection.SparseArrayCompat;
+import androidx.core.os.CancellationSignal;
 
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -281,37 +282,15 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
 
     public void runOnTdlibThread (Runnable after, double timeout) {
-      client.send(new TdApi.SetAlarm(timeout), ignored -> after.run());
+      runOnTdlibThread(after, timeout, null);
     }
 
-    private final AtomicBoolean databaseOpened = new AtomicBoolean(false);
-    private Runnable openTakesTooLong;
-
-    private void scheduleOptimizationCheck () {
-      synchronized (databaseOpened) {
-        if (!databaseOpened.get() && openTakesTooLong == null) {
-          openTakesTooLong = () -> {
-            synchronized (databaseOpened) {
-              if (!databaseOpened.get()) {
-                tdlib.setIsOptimizing(true);
-              }
-            }
-          };
-          tdlib.ui().postDelayed(openTakesTooLong, 1000);
+    public void runOnTdlibThread (Runnable after, double timeout, @Nullable CancellationSignal cancellationSignal) {
+      client.send(new TdApi.SetAlarm(timeout), ignored -> {
+        if (cancellationSignal == null || !cancellationSignal.isCanceled()) {
+          after.run();
         }
-      }
-    }
-
-    private void onDatabaseOpened () {
-      synchronized (databaseOpened) {
-        if (!databaseOpened.getAndSet(true)) {
-          if (openTakesTooLong != null) {
-            tdlib.ui().removeCallbacks(openTakesTooLong);
-            openTakesTooLong = null;
-          }
-          tdlib.setIsOptimizing(false);
-        }
-      }
+      });
     }
 
     public void init () {
@@ -320,15 +299,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       initializationTime = SystemClock.uptimeMillis();
       long time = SystemClock.uptimeMillis();
       StackTraceElement[] stackTrace = new RuntimeException().getStackTrace();
+      final CancellationSignal openTimeoutSignal = new CancellationSignal();
       client.send(tdlib.parameters, result -> {
         long elapsed = SystemClock.uptimeMillis() - time;
         TDLib.Tag.td_init("SetTdlibParameters response in %dms, accountId:%d, ok:%b", elapsed, tdlib.accountId, result.getConstructor() == TdApi.Ok.CONSTRUCTOR);
         if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
           Tracer.onTdlibFatalError(tdlib, TdApi.SetTdlibParameters.class, (TdApi.Error) result, stackTrace);
         }
-        onDatabaseOpened();
+        openTimeoutSignal.cancel();
+        tdlib.setIsOptimizing(false);
       });
-      scheduleOptimizationCheck();
+      runOnTdlibThread(() ->
+        tdlib.setIsOptimizing(true)
+      , 1.0, openTimeoutSignal);
       final TdApi.Function<?> startup;
       if (tdlib.accountId == 0 && Settings.instance().needProxyLegacyMigrateCheck()) {
         startup = new TdApi.GetProxies();
@@ -1351,14 +1334,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private boolean isOptimizing;
 
   public boolean isOptimizing () {
-    return isOptimizing;
+    synchronized (dataLock) {
+      return isOptimizing;
+    }
   }
 
+  @TdlibThread
   private void setIsOptimizing (boolean isOptimizing) {
-    if (this.isOptimizing != isOptimizing) {
+    synchronized (dataLock) {
+      if (this.isOptimizing == isOptimizing)
+        return;
       this.isOptimizing = isOptimizing;
-      context().global().notifyOptimizing(this, isOptimizing);
     }
+    context().global().notifyOptimizing(this, isOptimizing);
   }
 
   private static boolean checkVersion (int version, int checkVersion, boolean isTest) {
@@ -1727,13 +1715,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public void runOnTdlibThread (@NonNull Runnable runnable) {
-    runOnTdlibThread(runnable, 0);
+    runOnTdlibThread(runnable, 0, null);
   }
 
   public void runOnTdlibThread (@NonNull Runnable runnable, double timeout) {
+    runOnTdlibThread(runnable, timeout, null);
+  }
+
+  public void runOnTdlibThread (@NonNull Runnable runnable, double timeout, @Nullable CancellationSignal cancellationSignal) {
     incrementReferenceCount(REFERENCE_TYPE_JOB);
     clientHolder().runOnTdlibThread(() -> {
-      runnable.run();
+      if (cancellationSignal == null || !cancellationSignal.isCanceled()) {
+        runnable.run();
+      }
       decrementReferenceCount(REFERENCE_TYPE_JOB);
     }, timeout);
   }
