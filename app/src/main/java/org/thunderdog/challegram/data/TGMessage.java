@@ -1049,7 +1049,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     buildMarkup();
 
     height = computeHeight();
-    buildCommentButton();
+    if (!useBubbles()) buildCommentButton();
 
     flags |= FLAG_LAYOUT_BUILT;
   }
@@ -3075,6 +3075,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (useBubbles()) {
       buildBubble(false);
     }
+    if (needCommentButton()) {
+      buildCommentButton();
+    }
+
 
     if (!useBubbles() || useMediaBubbleReactions() || useStickerBubbleReactions()) {
       notifyBubbleChanged();  // не костыль ?
@@ -3268,10 +3272,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
             mr /= 1.5;
             DrawAlgorithms.buildPath(bubbleClipPath, bubbleClipPathRect, mergeTop && !alignContentRight ? mr : dr, mergeTop && alignContentRight ? mr : dr, mergeBottom && alignContentRight ? mr : dr, mergeBottom && !alignContentRight ? mr : dr);
           }
-        }
-
-        if (needCommentButton()) {
-          commentButton.updateWidth(measureCommentButtonWidth());
         }
       }
 
@@ -3605,6 +3605,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public final void requestCommentButton (MessageView messageView, ComplexReceiver complexReceiver) {
+    if (!needCommentButton()) return;
     commentButton.setReceiversPool(complexReceiver);
     commentButton.setupForceTouch(messageView, tdlib);
   }
@@ -5036,7 +5037,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     hasCommentButton.setValue(commentMode != COMMENT_MODE_NONE, animated);
     shareCounter.setCount(interactionInfo != null ? interactionInfo.forwardCount : 0, animated);
     isPinned.showHide(isPinned(), animated);
-    if (interactionInfo != null && interactionInfo.replyInfo != null) {
+    if (interactionInfo != null && interactionInfo.replyInfo != null && needCommentButton()) {
       commentButton.update(new TGCommentButton.Info(
         interactionInfo.replyInfo.replyCount,
         interactionInfo.replyInfo.recentReplierIds,
@@ -5052,8 +5053,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
     messageReactions.updateCounterAnimators(animated);
     if (allowAnimation) {
-      buildCommentButton();
       buildReactions(animated);
+      buildCommentButton();
     }
     if (reactionsCounter != null) {
       int count = messageReactions.getTotalCount();
@@ -6613,7 +6614,16 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     float hasCommentFactor = hasCommentButton.getFloatValue();
     if (hasCommentFactor > 0f) {
       int y = bottom - getBubbleReduceHeight();
-      if (useBubble()) c.drawLine(leftContentEdge, y, rightContentEdge, y, Paints.strokeSeparatorPaint(ColorUtils.alphaColor(hasCommentFactor, getSeparatorColor())));
+      if (needCommentButtonSeparator()) {
+        int linePadding = Screen.dp(7);
+        c.drawLine(
+          leftContentEdge + linePadding,
+          y,
+          rightContentEdge - linePadding,
+          y,
+          Paints.strokeSeparatorPaint(ColorUtils.alphaColor(hasCommentFactor, getSeparatorColor()))
+        );
+      }
       if (hasCommentFactor != 1f) {
         c.save();
         c.clipRect(leftContentEdge, y, rightContentEdge, bottom);
@@ -8036,11 +8046,15 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     };
   }
 
+  protected boolean needCommentButtonSeparator() {
+    return useBubbles();
+  }
+
   protected int measureCommentButtonWidth() {
     int paddings = getBubblePaddingLeft() + getBubblePaddingRight();
     int width;
     if (useBubbles()) {
-      if (useStickerBubbleReactions() && !useCircleBubble()) {
+      if (useStickerBubbleReactions()) {// && !useCircleBubble()) {
         width = Math.max(getContentWidth() + paddings, (int)(getEstimatedContentMaxWidth() * 0.75f));
       } else {
         width = (int) (bubblePathRect.width());
@@ -8052,6 +8066,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   private void buildCommentButton() {
+    if (!needCommentButton()) return;
     int bottom = this.bottomContentEdge;
     if ((useStickerBubbleReactions() || !useBubble())) {
       bottom = findBottomEdge();

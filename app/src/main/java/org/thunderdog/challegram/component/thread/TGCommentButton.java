@@ -58,7 +58,7 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
   ForceTouchPreviewDelegate.CustomControllerProvider,
   ForceTouchPreviewDelegate.ActionListProvider {
 
-  public static final int DEFAULT_PADDING = Screen.dp(8);
+  public static final int DEFAULT_PADDING = Screen.dp(16);
   public static final int DEFAULT_HEIGHT = Screen.dp(40);
   private static final int SELECTION_ANIMATOR = 0;
   private static final int FADE_ANIMATOR = 1;
@@ -274,7 +274,7 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
 
   @Override
   public int defaultTextColor () {
-    return Theme.getColor(mNeedBackground ? R.id.theme_color_white : R.id.theme_color_textLink);
+    return Theme.getColor(mNeedBackground ? R.id.theme_color_white : R.id.theme_color_inlineText);
   }
 
   @Override
@@ -464,7 +464,7 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
       mStartIconDrawable,
       dX,
       dY,
-      PorterDuffPaint.get(mNeedBackground ? R.id.theme_color_white : R.id.theme_color_iconActive)
+      PorterDuffPaint.get(mNeedBackground ? R.id.theme_color_white : R.id.theme_color_inlineIcon)
     );
   }
 
@@ -514,7 +514,7 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
 
   private void drawBackground (Canvas canvas) {
     if (mNeedBackground) {
-      Paint paint = Paints.fillingPaint(Theme.getColor(R.id.theme_color_bubble_button));
+      Paint paint = Paints.fillingPaint(mParent.getBubbleButtonBackgroundColor());
       Path path = getBackgroundPath();
       canvas.drawPath(path, paint);
     }

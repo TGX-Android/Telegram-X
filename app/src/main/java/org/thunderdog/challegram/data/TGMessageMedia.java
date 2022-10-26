@@ -133,6 +133,11 @@ public class TGMessageMedia extends TGMessage {
   }
 
   @Override
+  protected boolean needCommentButtonSeparator () {
+    return super.needCommentButtonSeparator() && this.caption != null;
+  }
+
+  @Override
   protected int onMessagePendingContentChanged (long chatId, long messageId, int oldHeight) {
     if (checkCommonCaption()) {
       rebuildContent();

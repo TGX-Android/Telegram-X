@@ -188,6 +188,11 @@ public class TGMessageLocation extends TGMessage implements LiveLocationManager.
     return false;
   }
 
+  @Override
+  protected boolean needCommentButtonSeparator () {
+    return false;
+  }
+
   /*@Override
   protected boolean replaceTimeWithEditTime () {
     return msg.editDate > msg.date;
