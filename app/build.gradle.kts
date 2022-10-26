@@ -68,6 +68,7 @@ android {
   // defaultConfig.vectorDrawables.useSupportLibrary = true
 
   sourceSets.getByName("main") {
+    java.srcDirs("./src/google/java") // TODO: Huawei & FOSS editions
     Config.EXOPLAYER_EXTENSIONS.forEach { module ->
       java.srcDirs("../thirdparty/ExoPlayer/extensions/${module}/src/main/java")
     }

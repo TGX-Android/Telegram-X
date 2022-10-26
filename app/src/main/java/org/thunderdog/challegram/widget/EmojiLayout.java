@@ -74,7 +74,7 @@ import me.vkryl.core.lambda.Destroyable;
 public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPreDrawListener, ViewPager.OnPageChangeListener, FactorAnimator.Target, View.OnClickListener, View.OnLongClickListener, Lang.Listener {
   public interface Listener {
     void onEnterEmoji (String emoji);
-    default boolean onSendSticker (@Nullable View view, TGStickerObj sticker, boolean forceDisableNotification, @Nullable TdApi.MessageSchedulingState schedulingState) {
+    default boolean onSendSticker (@Nullable View view, TGStickerObj sticker, TdApi.MessageSendOptions sendOptions) {
       return false;
     }
     default boolean onSendGIF (@Nullable View view, TdApi.Animation animation) {
@@ -1291,8 +1291,8 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     }
   }
 
-  public boolean sendSticker (View view, TGStickerObj sticker, boolean forceDisableNotification, @Nullable TdApi.MessageSchedulingState schedulingState) {
-    return listener != null && listener.onSendSticker(view, sticker, forceDisableNotification, schedulingState);
+  public boolean sendSticker (View view, TGStickerObj sticker, TdApi.MessageSendOptions sendOptions) {
+    return listener != null && listener.onSendSticker(view, sticker, sendOptions);
   }
 
   public long findOutputChatId () {

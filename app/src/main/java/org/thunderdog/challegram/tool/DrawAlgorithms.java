@@ -86,17 +86,42 @@ public class DrawAlgorithms {
   }
 
   public static void drawReceiver (Canvas c, Receiver preview, Receiver receiver, boolean clearPreview, boolean needPlaceholder, int left, int top, int right, int bottom) {
-    if (receiver.needPlaceholder()) {
-      preview.setBounds(left, top, right, bottom);
-      if (needPlaceholder && preview.needPlaceholder()) {
-        preview.drawPlaceholder(c);
+    drawReceiver(c, preview, receiver, clearPreview, needPlaceholder, left, top, right, bottom, 1f, 1f);
+  }
+
+  public static void drawReceiver (Canvas c, Receiver preview, Receiver receiver, boolean clearPreview, boolean needPlaceholder, int left, int top, int right, int bottom, float previewScale, float scale) {
+    if (preview != null) {
+      if (receiver == null || receiver.needPlaceholder()) {
+        boolean needScale = previewScale != 1f;
+        int saveCount = needScale ? Views.save(c) : -1;
+        if (needScale) {
+          c.scale(previewScale, previewScale, left + (right - left) / 2f, top + (bottom - top) / 2f);
+        }
+
+        preview.setBounds(left, top, right, bottom);
+        if (needPlaceholder && preview.needPlaceholder()) {
+          preview.drawPlaceholder(c);
+        }
+        preview.draw(c);
+        if (needScale) {
+          Views.restore(c, saveCount);
+        }
+      } else if (clearPreview) {
+        preview.clear();
       }
-      preview.draw(c);
-    } else if (clearPreview) {
-      preview.clear();
     }
-    receiver.setBounds(left, top, right, bottom);
-    receiver.draw(c);
+    if (receiver != null) {
+      boolean needScale = scale != 1f;
+      int saveCount = needScale ? Views.save(c) : -1;
+      if (needScale) {
+        c.scale(scale, scale, left + (right - left) / 2f, top + (bottom - top) / 2f);
+      }
+      receiver.setBounds(left, top, right, bottom);
+      receiver.draw(c);
+      if (needScale) {
+        Views.restore(c, saveCount);
+      }
+    }
   }
 
   public static void drawCross (Canvas c, float cx, float cy, float factor, @ColorInt int iconColor, @ColorInt int backgroundColor) {

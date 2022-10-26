@@ -128,7 +128,7 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
   }
 
   private void buildCustomEmoji (@NonNull TdlibEmojiManager.Entry customEmoji) {
-    TdApi.Sticker sticker = customEmoji.sticker;
+    TdApi.Sticker sticker = customEmoji.value;
     if (sticker == null)
       return;
 
@@ -161,7 +161,7 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
 
   @TdlibThread
   @Override
-  public void onCustomEmojiLoaded (TdlibEmojiManager context, long customEmojiId, TdlibEmojiManager.Entry entry) {
+  public void onCustomEmojiLoaded (TdlibEmojiManager context, TdlibEmojiManager.Entry entry) {
     this.customEmoji = entry;
     if (!entry.isNotFound()) {
       buildCustomEmoji(entry);
@@ -190,7 +190,7 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
   }
 
   public boolean isAnimatedCustomEmoji () {
-    return customEmoji != null && customEmoji.sticker != null && Td.isAnimated(customEmoji.sticker.format);
+    return customEmoji != null && customEmoji.value != null && Td.isAnimated(customEmoji.value.format);
   }
 
   public static float getScale (TdApi.Sticker sticker, int size) {
@@ -200,7 +200,7 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
     // upd: turns out all of the webm emoji fit entire space
     if (Td.isAnimated(sticker.format) &&
         sticker.format.getConstructor() != TdApi.StickerFormatWebm.CONSTRUCTOR) {
-      return 120.0f / 100.0f - (Screen.dp(1f) * 2 / (float) size);
+      return 120.0f / 100.0f - (size != 0 ? Screen.dp(1f) * 2 / (float) size : 0);
     }
     return 1f;
   }
@@ -256,7 +256,7 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
       return;
     }
     //noinspection ConstantConditions
-    float scale = customEmoji != null && !customEmoji.isNotFound() ? getScale(customEmoji.sticker, (right - left)) : 1f;
+    float scale = customEmoji != null && !customEmoji.isNotFound() ? getScale(customEmoji.value, (right - left)) : 1f;
     boolean needScaleUp = scale != 1f;
     int restoreToCount;
     if (needScaleUp) {

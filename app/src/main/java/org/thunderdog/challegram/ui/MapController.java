@@ -37,6 +37,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.attach.MediaLocationPlaceView;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessageLocation;
@@ -790,7 +791,7 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
             Args args = getArgumentsStrict();
             inShareProgress = true;
             adapter.updateValuedSettingById(R.id.liveLocationSelf);
-            tdlib.sendMessage(args.chatId, args.messageThreadId, 0, tdlib.chatDefaultDisableNotifications(args.chatId), false, new TdApi.InputMessageLocation(new TdApi.Location(myLocation.latitude, myLocation.longitude, myLocation.accuracy), arg1, myLocation.heading, 0));
+            tdlib.sendMessage(args.chatId, args.messageThreadId, 0, Td.newSendOptions(tdlib.chatDefaultDisableNotifications(args.chatId)), new TdApi.InputMessageLocation(new TdApi.Location(myLocation.latitude, myLocation.longitude, myLocation.accuracy), arg1, myLocation.heading, 0));
           }
         });
         break;
