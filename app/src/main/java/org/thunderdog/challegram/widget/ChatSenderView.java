@@ -140,29 +140,25 @@ public class ChatSenderView extends FrameLayoutFix implements FactorAnimator.Tar
         setTag(sender.getSenderId());
 
         int iconRes = 0;
-        int iconColor = -1;
         int iconPadding = 0;
         switch (sender.getIconType()) {
           case TdlibSender.ICON_TYPE_PROFILE: {
             iconRes = R.drawable.baseline_sender_account_24;
-            iconColor = Theme.textDecentColor();
             break;
           }
           case TdlibSender.ICON_TYPE_ANONYMOUS_ADMIN: {
             iconRes = R.drawable.baseline_sender_anonymus_24;
-            iconColor = Theme.textDecentColor();
             break;
           }
           case TdlibSender.ICON_TYPE_LOCK: {
             iconRes = R.drawable.baseline_lock_16;
-            iconColor = getColor(R.id.theme_color_themeBlackWhite);
             iconPadding = Screen.dp(4);
             break;
           }
         }
         Drawable icon = Drawables.get(getContext().getResources(), iconRes);
         if (icon != null) {
-          icon.setColorFilter(Paints.getColorFilter(iconColor));
+          imageView.setColorFilter(Paints.getColorFilter(getIconColor()));
           imageView.setVisibility(View.VISIBLE);
           imageView.setImageDrawable(icon);
           imageView.setPadding(iconPadding, iconPadding, iconPadding, iconPadding);
@@ -173,6 +169,14 @@ public class ChatSenderView extends FrameLayoutFix implements FactorAnimator.Tar
         titleView.setText("");
         subtitleView.setText("");
       }
+    }
+  }
+
+  private int getIconColor() {
+    if (sender.getIconType() == TdlibSender.ICON_TYPE_LOCK) {
+      return getColor(R.id.theme_color_themeBlackWhite);
+    } else {
+      return Theme.iconColor();
     }
   }
 
@@ -220,6 +224,9 @@ public class ChatSenderView extends FrameLayoutFix implements FactorAnimator.Tar
   private void recolor () {
     titleView.setTextColor(Theme.textAccentColor());
     subtitleView.setTextColor(Theme.textDecentColor());
+    if (imageView.getDrawable() != null) {
+      imageView.setColorFilter(Paints.getColorFilter(getIconColor()));
+    }
   }
 
   @Override

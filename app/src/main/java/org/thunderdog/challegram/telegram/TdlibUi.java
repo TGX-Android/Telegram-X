@@ -6110,6 +6110,7 @@ public class TdlibUi extends Handler {
           sendCallback.onSendRequested(Td.newSendOptions(new TdApi.MessageSchedulingStateSendWhenOnline()), false);
           break;
       }
+      return true;
     }, context != null ? context.getThemeListeners() : null, forcedTheme);
   }
 
@@ -6348,12 +6349,14 @@ public class TdlibUi extends Handler {
   @Retention(RetentionPolicy.SOURCE)
   @IntDef({
     PremiumFeature.STICKER,
-    PremiumFeature.RESTRICT_VOICE_AND_VIDEO_MESSAGES
+    PremiumFeature.RESTRICT_VOICE_AND_VIDEO_MESSAGES,
+    PremiumFeature.SEND_AS_CHANNEL
   })
   public @interface PremiumFeature {
     int
       STICKER = 1,
-      RESTRICT_VOICE_AND_VIDEO_MESSAGES = 2;
+      RESTRICT_VOICE_AND_VIDEO_MESSAGES = 2,
+      SEND_AS_CHANNEL = 3;
   }
 
   public boolean showPremiumAlert (ViewController<?> context, View view, @PremiumFeature int premiumFeature) {
@@ -6366,6 +6369,9 @@ public class TdlibUi extends Handler {
         break;
       case PremiumFeature.RESTRICT_VOICE_AND_VIDEO_MESSAGES:
         stringRes = R.string.PremiumRequiredVoiceVideo;
+        break;
+      case PremiumFeature.SEND_AS_CHANNEL:
+        stringRes = R.string.PremiumRequiredSendAs;
         break;
       default:
         throw new IllegalStateException();

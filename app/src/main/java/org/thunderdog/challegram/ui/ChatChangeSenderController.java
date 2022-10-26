@@ -18,9 +18,12 @@ import org.thunderdog.challegram.component.attach.MediaLayout;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.Menu;
+import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.telegram.TdlibSender;
+import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.widget.ChatSenderView;
 
 import java.util.ArrayList;
@@ -58,7 +61,7 @@ public class ChatChangeSenderController extends MediaBottomBaseController<Void> 
     settingsAdapter = new SettingsAdapter(this, v -> {
       if (v.getId() == R.id.btn_sender_enabled) {
         ChatSenderView chatSenderView = (ChatSenderView) v;
-        onChatSenderSelected(chatSenderView.sender);
+        onChatSenderSelected(chatSenderView.sender, v);
       }
     }, this) {
       @Override
@@ -81,7 +84,7 @@ public class ChatChangeSenderController extends MediaBottomBaseController<Void> 
   private void setSenders () {
     ArrayList<ListItem> items = new ArrayList<>();
     boolean first = true;
-    for (TdlibSender sender: senders) {
+    for (TdlibSender sender : senders) {
       if (first) {
         first = false;
       } else {
@@ -115,8 +118,8 @@ public class ChatChangeSenderController extends MediaBottomBaseController<Void> 
     }
   }
 
-  private TdlibSender getSender(long id) {
-    for (TdlibSender sender: senders) {
+  private TdlibSender getSender (long id) {
+    for (TdlibSender sender : senders) {
       if (sender.getSenderId() == id) {
         return sender;
       }
@@ -146,7 +149,12 @@ public class ChatChangeSenderController extends MediaBottomBaseController<Void> 
     return R.id.controller_changeSender;
   }
 
-  private void onChatSenderSelected (TdlibSender sender) {
+  private void onChatSenderSelected (TdlibSender sender, View v) {
+    NavigationController navigation = UI.getContext(context).navigation();
+    if (sender.isNeedsPremium() && navigation != null && tdlib.ui().showPremiumAlert(navigation.getCurrentStackItem(), v, TdlibUi.PremiumFeature.SEND_AS_CHANNEL)) {
+      return;
+    }
+
     long newSelectedSenderId = sender.getSenderId();
     if (currentSelectedSenderId == newSelectedSenderId) {
       return;
@@ -222,6 +230,7 @@ public class ChatChangeSenderController extends MediaBottomBaseController<Void> 
   }
 
   private String lastQuery;
+
   @Override
   protected void onSearchInputChanged (String query) {
     super.onSearchInputChanged(query);

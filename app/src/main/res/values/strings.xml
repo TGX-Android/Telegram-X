@@ -4414,6 +4414,7 @@
 
   <string name="PremiumRequiredSticker">Sending this sticker requires **Telegram Premium** subscription.</string>
   <string name="PremiumRequiredVoiceVideo">This setting requires **Telegram Premium** subscription.</string>
+  <string name="PremiumRequiredSendAs">Using this channel requires **Telegram Premium** subscription.</string>
   <string name="PremiumRequired">This feature requires **Telegram Premium** subscription.</string>
 
   <string name="XRestrictedVoiceMessages">%1$s doesn\'t accept voice messages.</string>

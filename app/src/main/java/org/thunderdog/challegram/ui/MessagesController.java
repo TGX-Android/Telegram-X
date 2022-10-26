@@ -366,7 +366,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   @Override
-  public void onHapticMenuItemClick (View view, View parentView, HapticMenuHelper.MenuItem item) {
+  public boolean onHapticMenuItemClick (View view, View parentView, HapticMenuHelper.MenuItem item) {
     switch (view.getId()) {
       case R.id.btn_sendOnceOnline: {
         TdApi.MessageSendOptions sendOptions = Td.newSendOptions(new TdApi.MessageSchedulingStateSendWhenOnline());
@@ -410,6 +410,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         break;
       }
     }
+    return true;
   }
 
   private void openChatChangeSenderController () {
@@ -417,7 +418,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (inputView != null) {
       inputView.clearFocus();
     }
-    ModernActionedLayout.showChatSenders(this, getChatId(), (ArrayList<TdlibSender>) availableSenders);
+    if (availableSenders != null) {
+      ModernActionedLayout.showChatSenders(this, getChatId(), (ArrayList<TdlibSender>) availableSenders);
+    } else {
+      loadAvailableSenders(arg -> ModernActionedLayout.showChatSenders(context().getCurrentlyOpenWindowedViewController(), getChatId(), (ArrayList<TdlibSender>) availableSenders));
+    }
   }
 
   private ArrayList<HapticMenuHelper.MenuItem> provideSendersItems(List<TdlibSender> senders) {
@@ -2756,15 +2761,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
     tdlib.client().send(new TdApi.GetChatAvailableMessageSenders(chatId), sendersHandler = new CancellableResultHandler() {
       @Override
       public void processResult (TdApi.Object object) {
-        if (object.getConstructor() == TdApi.MessageSenders.CONSTRUCTOR) {
+        if (object.getConstructor() == TdApi.ChatMessageSenders.CONSTRUCTOR) {
           tdlib.ui().post(() -> {
             if (!isCancelled()) {
               if (getChatId() == chatId) {
-                TdApi.MessageSenders messageSenders = (TdApi.MessageSenders) object;
-                ArrayList<TdlibSender> tdlibSenders = new ArrayList<>(messageSenders.totalCount);
-                for (int i = 0; i < messageSenders.totalCount; i++) {
-                  TdApi.MessageSender messageSender = messageSenders.senders[i];
-                  tdlibSenders.add(new TdlibSender(tdlib, getChatId(), messageSender));
+                TdApi.ChatMessageSenders chatMessageSenders = (TdApi.ChatMessageSenders) object;
+                ArrayList<TdlibSender> tdlibSenders = new ArrayList<>(chatMessageSenders.senders.length);
+                for (int i = 0; i < chatMessageSenders.senders.length; i++) {
+                  TdApi.ChatMessageSender chatMessageSender = chatMessageSenders.senders[i];
+                  tdlibSenders.add(new TdlibSender(tdlib, getChatId(), chatMessageSender));
                 }
                 availableSenders = tdlibSenders;
               }
@@ -8320,8 +8325,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
       openChatChangeSenderController();
     } else if (item.tdlibSender != null) {
       TdlibSender sender = item.tdlibSender;
+      if (sender.isNeedsPremium() &&  tdlib.ui().showPremiumAlert(this, view, TdlibUi.PremiumFeature.SEND_AS_CHANNEL)) {
+        return false;
+      }
       tdlib.client().send(new TdApi.SetChatMessageSender(getChatId(), sender.getSender()), tdlib.okHandler());
     }
+    return true;
   };
 
   private void loadAvailableSenders (RunnableData<List<TdlibSender>> after) {
@@ -8338,13 +8347,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     tdlib.client().send(new TdApi.GetChatAvailableMessageSenders(getChatId()), object -> {
       switch (object.getConstructor()) {
-        case TdApi.MessageSenders.CONSTRUCTOR: {
+        case TdApi.ChatMessageSenders.CONSTRUCTOR: {
           if (!isDestroyed()) {
-            TdApi.MessageSenders messageSenders = (TdApi.MessageSenders) object;
-            ArrayList<TdlibSender> tdlibSenders = new ArrayList<>(messageSenders.totalCount);
-            for (int i = 0; i < messageSenders.totalCount; i++) {
-              TdApi.MessageSender messageSender = messageSenders.senders[i];
-              tdlibSenders.add(new TdlibSender(tdlib, getChatId(), messageSender));
+            TdApi.ChatMessageSenders chatMessageSenders = (TdApi.ChatMessageSenders) object;
+            ArrayList<TdlibSender> tdlibSenders = new ArrayList<>(chatMessageSenders.senders.length);
+            for (int i = 0; i < chatMessageSenders.senders.length; i++) {
+              TdApi.ChatMessageSender chatMessageSender = chatMessageSenders.senders[i];
+              tdlibSenders.add(new TdlibSender(tdlib, getChatId(), chatMessageSender));
             }
             availableSenders = tdlibSenders;
             pendingAvailableSendersCallback.runWithData(availableSenders);

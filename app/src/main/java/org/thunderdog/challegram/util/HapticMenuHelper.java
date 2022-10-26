@@ -43,7 +43,7 @@ public class HapticMenuHelper implements View.OnTouchListener, View.OnLongClickL
   }
 
   public interface OnItemClickListener {
-    void onHapticMenuItemClick (View view, View parentView, MenuItem item);
+    boolean onHapticMenuItemClick (View view, View parentView, MenuItem item);
   }
 
   public static class MenuItem implements Destroyable {
@@ -337,11 +337,24 @@ public class HapticMenuHelper implements View.OnTouchListener, View.OnLongClickL
 
   private void onMenuItemClick (MenuItem item, View view, View parentView) {
     if (hapticMenu != null && !hapticMenu.isWindowHidden()) {
-      onItemClickListener.onHapticMenuItemClick(view, parentView, item);
+      removeHoverStateFromAll();
+      boolean isClickHandled = onItemClickListener.onHapticMenuItemClick(view, parentView, item);
       if (item.onClickListener != null) {
         item.onClickListener.onClick(view);
       }
-      hideMenu();
+      if (isClickHandled) {
+        hideMenu();
+      }
+    }
+  }
+
+  private void removeHoverStateFromAll () {
+    View child = hapticMenu.getBoundView();
+    if (child instanceof MenuMoreWrap) {
+      MenuMoreWrap menuMoreWrap = (MenuMoreWrap) child;
+      for (int i = 0; i < menuMoreWrap.getChildCount(); i++) {
+        menuMoreWrap.getChildAt(i).setHovered(false);
+      }
     }
   }
 }

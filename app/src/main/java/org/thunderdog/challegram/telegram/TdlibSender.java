@@ -51,15 +51,21 @@ public class TdlibSender {
   private final int flags;
   private final TdApi.User user;
   private final TdApi.Chat chat;
+  private final boolean needsPremium;
 
   public TdlibSender (Tdlib tdlib, long inChatId, TdApi.MessageSender sender) {
-    this(tdlib, inChatId, sender, null, false);
+    this(tdlib, inChatId, sender, null, false, false);
   }
 
-  public TdlibSender (Tdlib tdlib, long inChatId, TdApi.MessageSender sender, @Nullable MessagesManager manager, boolean isDemo) {
+  public TdlibSender (Tdlib tdlib, long inChatId, TdApi.ChatMessageSender sender) {
+    this(tdlib, inChatId, sender.sender, null, false, sender.needsPremium);
+  }
+
+  public TdlibSender (Tdlib tdlib, long inChatId, TdApi.MessageSender sender, @Nullable MessagesManager manager, boolean isDemo, boolean needsPremium) {
     this.tdlib = tdlib;
     this.inChatId = inChatId;
     this.sender = sender;
+    this.needsPremium = needsPremium;
 
     int flags = 0;
     switch (sender.getConstructor()) {
@@ -145,6 +151,10 @@ public class TdlibSender {
     return chat;
   }
 
+  public boolean isNeedsPremium () {
+    return needsPremium;
+  }
+
   public TdApi.MessageSender getSender () {
     return sender;
   }
@@ -198,6 +208,8 @@ public class TdlibSender {
       return ICON_TYPE_PROFILE;
     } else if (isAnonymousGroupAdmin()) {
       return ICON_TYPE_ANONYMOUS_ADMIN;
+    } else if (isNeedsPremium()) {
+      return ICON_TYPE_LOCK;
     } else {
       return ICON_TYPE_NONE;
     }

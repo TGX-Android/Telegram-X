@@ -1320,6 +1320,7 @@ public class MediaLayout extends FrameLayoutFix implements
             }
             break;
         }
+        return true;
       }, themeListeners, null).attachToView(sendButton);
 
       params = FrameLayoutFix.newParams(Screen.dp(55f), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.RIGHT);

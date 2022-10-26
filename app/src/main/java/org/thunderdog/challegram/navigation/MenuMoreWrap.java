@@ -26,6 +26,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Interpolator;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -52,6 +53,8 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.Animated;
 import me.vkryl.android.widget.FrameLayoutFix;
+
+import static org.thunderdog.challegram.theme.Theme.getColor;
 
 public class MenuMoreWrap extends LinearLayout implements Animated {
   public static final float START_SCALE = .56f;
@@ -220,11 +223,13 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     avatarView.setMessageSender(tdlib, sender, true);
     menuItem.addView(avatarView, flp);
 
+    int leftMargin = Screen.dp(42);
+    int rightMargin = sender.isNeedsPremium() ? Screen.dp(42) : 0;
     LinearLayout linearLayout = new LinearLayout(getContext());
     linearLayout.setOrientation(LinearLayout.VERTICAL);
     linearLayout.setGravity(Gravity.CENTER);
     LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-    lp.setMargins(Lang.rtl() ? 0 : Screen.dp(42f), 0, Lang.rtl() ? Screen.dp(42f) : 0, 0);
+    lp.setMargins(Lang.rtl() ? rightMargin : leftMargin, 0, Lang.rtl() ? leftMargin : rightMargin, 0);
     linearLayout.setLayoutParams(lp);
 
     TextView titleView = new NoScrollTextView(getContext());
@@ -259,6 +264,25 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     subtitleView.setEllipsize(TextUtils.TruncateAt.END);
     linearLayout.addView(subtitleView);
     menuItem.addView(linearLayout);
+
+    if (sender.isNeedsPremium() && !sender.isSelf() && !sender.isAnonymousGroupAdmin()) {
+      flp = new FrameLayout.LayoutParams(Screen.dp(16), Screen.dp(16), (Lang.rtl() ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL);
+      ImageView premiumNeedsImage = new ImageView(getContext());
+      Drawable icon = Drawables.get(getContext().getResources(), R.drawable.baseline_lock_16);
+      if (icon != null) {
+        if (forcedTheme != null) {
+          icon.setColorFilter(Paints.getColorFilter(forcedTheme.getColor(R.id.theme_color_themeBlackWhite)));
+        } else {
+          icon.setColorFilter(Paints.getColorFilter(getColor(R.id.theme_color_themeBlackWhite)));
+          if (themeListeners != null) {
+            themeListeners.addThemeFilterListener(icon, R.id.theme_color_themeBlackWhite);
+          }
+        }
+        premiumNeedsImage.setImageDrawable(icon);
+        menuItem.addView(premiumNeedsImage, flp);
+      }
+    }
+
     menuItem.setOnClickListener(listener);
     menuItem.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(50f)));
     menuItem.setPadding(Screen.dp(17f), 0, Screen.dp(17f), 0);
@@ -285,6 +309,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
         maxWidth = Math.max(maxWidth, (Integer) v.getTag());
       }
     }
+    maxWidth = Math.min(maxWidth, (int) (Screen.currentWidth() * .75f));
     return Math.max(getMinimumWidth(), maxWidth + padding + padding);
   }
 

@@ -354,7 +354,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         }
       }
     }
-    this.sender = new TdlibSender(tdlib, msg.chatId, sender, manager, !msg.isOutgoing && isDemoChat());
+    this.sender = new TdlibSender(tdlib, msg.chatId, sender, manager, !msg.isOutgoing && isDemoChat(), false);
 
     this.isPinned = new Counter.Builder()
       .noBackground()
