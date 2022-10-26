@@ -71,6 +71,7 @@ import me.vkryl.android.util.SingleViewProvider;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
+import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 
 public class SettingView extends FrameLayoutFix implements FactorAnimator.Target, TGLegacyManager.EmojiLoadListener, AttachDelegate, Destroyable, RemoveHelper.RemoveDelegate, TextColorSet, TooltipOverlayView.LocationProvider {
@@ -337,8 +338,8 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
 
   public void setName (CharSequence name) {
     if (this.itemName == null || !this.itemName.equals(name)) {
-      boolean rebuild = this.itemName != null;
-      this.itemName = name == null || name.length() == 0 ? null : name;
+      boolean rebuild = lastMeasuredWidth > 0;
+      this.itemName = !StringUtils.isEmpty(name) ? name : null;
       if (rebuild) {
         buildLayout();
         invalidate();
@@ -383,9 +384,9 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
   }
 
   public void setData (CharSequence data) {
-    if (this.itemData == null || data == null || !this.itemData.equals(data)) {
-      boolean rebuild = this.itemData != null;
-      this.itemData = data == null || data.length() == 0 ? null : data;
+    if (this.itemData == null || data == null || !StringUtils.equalsOrBothEmpty(this.itemData, data)) {
+      boolean rebuild = lastMeasuredWidth > 0;
+      this.itemData = !StringUtils.isEmpty(data) ? data : null;
       if (rebuild) {
         buildLayout();
         invalidate();

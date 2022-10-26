@@ -72,6 +72,7 @@ import java.util.concurrent.TimeUnit;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.RunnableData;
+import me.vkryl.td.Td;
 
 public class MediaBottomFilesController extends MediaBottomBaseController<Void> implements View.OnClickListener, Menu, View.OnLongClickListener, Comparator<File>, TGPlayerController.PlayListBuilder {
   public MediaBottomFilesController (MediaLayout context) {
@@ -118,8 +119,8 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
             files.add(uri.toString());
           }
         }
-        mediaLayout.pickDateOrProceed((forceDisableNotification, schedulingState, disableMarkdown) ->
-          mediaLayout.sendFilesMixed(files, null, new TdApi.MessageSendOptions(forceDisableNotification, false, false, schedulingState), false)
+        mediaLayout.pickDateOrProceed((sendOptions, disableMarkdown) ->
+          mediaLayout.sendFilesMixed(files, null, sendOptions, false)
         );
       }
     };

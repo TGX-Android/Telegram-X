@@ -939,13 +939,13 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
   }
 
   @Override
-  public boolean onStickerClick (StickerSmallView view, View clickView, TGStickerObj sticker, boolean isMenuClick, boolean forceDisableNotification, @Nullable TdApi.MessageSchedulingState schedulingState) {
+  public boolean onStickerClick (StickerSmallView view, View clickView, TGStickerObj sticker, boolean isMenuClick, TdApi.MessageSendOptions sendOptions) {
     Object tag = view.getTag();
     if (tag instanceof InlineResult) {
       InlineResult<?> result = (InlineResult<?>) tag;
       MessagesController c = findMessagesController();
       if (c != null) {
-        c.sendInlineQueryResult(result.getQueryId(), result.getId(), true, true, forceDisableNotification, schedulingState);
+        c.sendInlineQueryResult(result.getQueryId(), result.getId(), true, true, sendOptions);
       }
     }
     return false;

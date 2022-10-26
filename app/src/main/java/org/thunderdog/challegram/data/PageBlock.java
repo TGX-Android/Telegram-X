@@ -438,7 +438,7 @@ public abstract class PageBlock {
     }
   }
 
-  public static ArrayList<PageBlock> parse (ViewController<?> parent, String url, @NonNull TdApi.WebPageInstantView instantView, @Nullable PageBlock detailsBlock, TGPlayerController.PlayListBuilder playListBuilder, @Nullable TdlibUi.UrlOpenParameters urlOpenParameters) {
+  public static ArrayList<PageBlock> parse (ViewController<?> parent, String url, @NonNull TdApi.WebPageInstantView instantView, @Nullable PageBlock detailsBlock, TGPlayerController.PlayListBuilder playListBuilder, @Nullable TdlibUi.UrlOpenParameters urlOpenParameters) throws UnsupportedPageBlockException {
     PageBlock.ParseContext context = new PageBlock.ParseContext(url, instantView, playListBuilder);
     context.detailsBlock = context.lastBlock = detailsBlock;
     TdApi.PageBlock[] pageBlocks = detailsBlock != null ? ((TdApi.PageBlockDetails) detailsBlock.getOriginalBlock()).pageBlocks : instantView.pageBlocks;
@@ -463,7 +463,9 @@ public abstract class PageBlock {
     return out;
   }
 
-  private static void parse (ViewController<?> parent, ArrayList<PageBlock> out, ParseContext context, TdApi.PageBlock block, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public static class UnsupportedPageBlockException extends Exception { }
+
+  private static void parse (ViewController<?> parent, ArrayList<PageBlock> out, ParseContext context, TdApi.PageBlock block, @Nullable TdlibUi.UrlOpenParameters openParameters) throws UnsupportedPageBlockException {
     switch (block.getConstructor()) {
       // Page cover
       case TdApi.PageBlockCover.CONSTRUCTOR: {

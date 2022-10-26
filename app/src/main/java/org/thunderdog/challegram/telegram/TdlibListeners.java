@@ -65,6 +65,8 @@ public class TdlibListeners {
   final ReferenceIntMap<FileUpdateListener> fileUpdateListeners;
   final ReferenceLongMap<PollListener> pollListeners;
 
+  final ReferenceMap<String, ReactionLoadListener> reactionLoadListeners;
+
   final Map<String, List<TdApi.Message>> pendingMessages = new HashMap<>();
 
   public TdlibListeners (Tdlib tdlib) {
@@ -90,6 +92,8 @@ public class TdlibListeners {
     this.downloadsListListener = new ReferenceList<>(true);
 
     this.animatedEmojiListeners = new ReferenceList<>(true);
+
+    this.reactionLoadListeners = new ReferenceMap<>(true);
 
     this.messageChatListeners = new ReferenceLongMap<>();
     this.messageEditChatListeners = new ReferenceLongMap<>();
@@ -382,6 +386,16 @@ public class TdlibListeners {
   @AnyThread
   public void unsubscribeFromChatListUpdates (@NonNull TdApi.ChatList chatList, ChatListListener listener) {
     chatListListeners.remove(TD.makeChatListKey(chatList), listener);
+  }
+
+  @AnyThread
+  public void addReactionLoadListener (String reactionKey, ReactionLoadListener listener) {
+    reactionLoadListeners.add(reactionKey, listener);
+  }
+
+  @AnyThread
+  public void removeReactionLoadListener (String reactionKey, ReactionLoadListener listener) {
+    reactionLoadListeners.remove(reactionKey, listener);
   }
 
   @AnyThread
@@ -742,6 +756,17 @@ public class TdlibListeners {
   public void notifyAnimatedEmojiListeners (int type) {
     for (AnimatedEmojiListener listener : animatedEmojiListeners) {
       listener.onAnimatedEmojiChanged(type);
+    }
+  }
+
+  // getEmojiReaction + getCustomReaction
+
+  public void notifyReactionLoaded (String reactionKey) {
+    ReferenceList<ReactionLoadListener> list = reactionLoadListeners.removeAll(reactionKey);
+    if (list != null) {
+      for (ReactionLoadListener loadListener : list) {
+        loadListener.onReactionLoaded(reactionKey);
+      }
     }
   }
 

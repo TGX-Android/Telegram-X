@@ -3,6 +3,7 @@ package org.thunderdog.challegram.ui;
 import android.content.Context;
 import android.view.View;
 
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -10,6 +11,7 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.data.TGUser;
@@ -23,22 +25,25 @@ import org.thunderdog.challegram.widget.PopupLayout;
 
 import java.util.List;
 
+import me.vkryl.core.StringUtils;
+
 public class MessageOptionsReactedController extends MessageOptionsPagerController.MessageBottomSheetBaseController<Void> implements View.OnClickListener {
   private SettingsAdapter adapter;
   private PopupLayout popupLayout;
   private TGMessage message;
-  private String reaction;
+  @Nullable
+  private TdApi.ReactionType reactionType;
   private String offset = "";
 
   private boolean canLoadMore = true;
   private boolean isLoadingMore = false;
   private int totalCount = 0;
 
-  public MessageOptionsReactedController (Context context, Tdlib tdlib, PopupLayout popupLayout, TGMessage message, String reaction) {
+  public MessageOptionsReactedController (Context context, Tdlib tdlib, PopupLayout popupLayout, TGMessage message, @Nullable TdApi.ReactionType reactionType) {
     super(context, tdlib);
     this.popupLayout = popupLayout;
     this.message = message;
-    this.reaction = reaction;
+    this.reactionType = reactionType;
   }
 
 
@@ -47,9 +52,9 @@ public class MessageOptionsReactedController extends MessageOptionsPagerControll
     adapter = new SettingsAdapter(this) {
       @Override
       protected void setUser (ListItem item, int position, UserView userView, boolean isUpdate) {
-        final TGReaction reactionObj = tdlib.getReaction(item.getStringValue());
+        final TGReaction reactionObj = tdlib.getReaction(TD.toReactionType(item.getStringValue()));
         userView.setUser(new TGUser(tdlib, tdlib.chatUser(item.getLongId())));
-        if (item.getStringValue().length() > 0 && reactionObj != null && reaction.length() == 0) {
+        if (item.getStringValue().length() > 0 && reactionObj != null && reactionType == null) {
           userView.setDrawModifier(new ReactionModifier(userView.getComplexReceiver(), 8, reactionObj));
         } else {
           userView.setDrawModifier(null);
@@ -83,7 +88,7 @@ public class MessageOptionsReactedController extends MessageOptionsPagerControll
       return;
     }
     isLoadingMore = true;
-    tdlib.client().send(new TdApi.GetMessageAddedReactions(message.getChatId(), message.getSmallestId(), reaction, offset, 50), (obj) -> {
+    tdlib.client().send(new TdApi.GetMessageAddedReactions(message.getChatId(), message.getSmallestId(), reactionType, offset, 50), (obj) -> {
       if (obj.getConstructor() != TdApi.AddedReactions.CONSTRUCTOR) return;
       runOnUiThreadOptional(() -> {
         TdApi.AddedReactions reactions = (TdApi.AddedReactions) obj;
@@ -106,7 +111,7 @@ public class MessageOptionsReactedController extends MessageOptionsPagerControll
       }
       ListItem item = new ListItem(ListItem.TYPE_USER_SMALL, R.id.user)
         .setLongId(((TdApi.MessageSenderUser) reaction.senderId).userId)
-        .setStringValue(reaction.reaction);
+        .setStringValue(TD.makeReactionKey(reaction.type));
       items.add(item);
     }
 
