@@ -39,6 +39,7 @@ import org.thunderdog.challegram.TDLib;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
+import org.thunderdog.challegram.core.BaseThread;
 import org.thunderdog.challegram.core.WatchDog;
 import org.thunderdog.challegram.core.WatchDogContext;
 import org.thunderdog.challegram.data.TD;
@@ -589,25 +590,29 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   }
 
   private boolean logged;
+  private BaseThread badgeUpdaterThread;
 
   private void updateBadgeInternal (boolean force, boolean counterChanged) {
-    try {
-      TdlibBadgeCounter badge = getTotalUnreadBadgeCounter();
-      ShortcutBadger.applyCountOrThrow(UI.getAppContext(), badge.getCount());
-      logged = false;
-    } catch (Throwable t) {
-      if (!logged) {
-        logged = true;
-        Log.v("Could not update app badge", t);
-      }
-    }
-    /*if (Device.IS_XIAOMI && (force || counterChanged) && (totalUnreadCount > 0 || totalUnreadUnmutedCount > 0)) {
-      for (TdlibAccount account : this) {
-        if (account.tdlib != null) {
-          account.tdlib.notifications().updateNotification();
+    if (badgeUpdaterThread == null) {
+      badgeUpdaterThread = new BaseThread("ShortcutBadgerThread") {
+        @Override
+        protected void process (Message msg) {
+          int count = msg.arg1;
+          try {
+            ShortcutBadger.applyCountOrThrow(UI.getAppContext(), count);
+            logged = false;
+          } catch (Throwable t) {
+            if (!logged) {
+              logged = true;
+              Log.v("Could not update app badge", t);
+            }
+          }
         }
-      }
-    }*/
+      };
+    }
+    TdlibBadgeCounter badge = getTotalUnreadBadgeCounter();
+    final int count = badge.getCount();
+    badgeUpdaterThread.sendMessage(Message.obtain(badgeUpdaterThread.getHandler(), 0, count, 0), 0);
   }
 
   public void onUpdateAllNotifications () {
