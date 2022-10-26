@@ -840,6 +840,23 @@ public class TD {
     throw new UnsupportedOperationException(chatList.toString());
   }
 
+  public static TdApi.ReactionType toReactionType (String key) {
+    if (key.startsWith("custom_")) {
+      return new TdApi.ReactionTypeCustomEmoji(Long.parseLong(key.substring("custom_".length())));
+    }
+    return new TdApi.ReactionTypeEmoji(key);
+  }
+
+  public static String makeReactionKey (TdApi.ReactionType reactionType) {
+    switch (reactionType.getConstructor()) {
+      case TdApi.ReactionTypeEmoji.CONSTRUCTOR:
+        return ((TdApi.ReactionTypeEmoji) reactionType).emoji;
+      case TdApi.ReactionTypeCustomEmoji.CONSTRUCTOR:
+        return "custom_" + ((TdApi.ReactionTypeCustomEmoji) reactionType).customEmojiId;
+    }
+    throw new UnsupportedOperationException(reactionType.toString());
+  }
+
   public static int getColorIndex (long selfUserId, long id) {
     if (id >= 0 && id < color_ids.length) {
       return (int) id;
@@ -1950,10 +1967,6 @@ public class TD {
     return false;
   }
 
-  public static TdApi.MessageSendOptions defaultSendOptions () {
-    return new TdApi.MessageSendOptions(false, false, false, null);
-  }
-
   public static TdApi.InputMessageAnimation toInputMessageContent (TdApi.Animation animation) {
     return new TdApi.InputMessageAnimation(new TdApi.InputFileId(animation.animation.id), null, null, animation.duration, animation.width, animation.height, null);
   }
@@ -1999,6 +2012,7 @@ public class TD {
       "",
       "",
       new TdApi.UserStatusEmpty(),
+      null,
       null,
       false,
       false,
@@ -2058,11 +2072,15 @@ public class TD {
   }
 
   public static int getCodeLength (TdApi.AuthorizationState state) {
-    if (state != null && state.getConstructor() == TdApi.AuthorizationStateWaitCode.CONSTRUCTOR) {
-      return getCodeLength(((TdApi.AuthorizationStateWaitCode) state).codeInfo.type);
-    } else {
-      return TdConstants.DEFAULT_CODE_LENGTH;
+    if (state != null) {
+      switch (state.getConstructor()) {
+        case TdApi.AuthorizationStateWaitCode.CONSTRUCTOR:
+          return getCodeLength(((TdApi.AuthorizationStateWaitCode) state).codeInfo.type);
+        case TdApi.AuthorizationStateWaitEmailCode.CONSTRUCTOR:
+          return getCodeLength(((TdApi.AuthorizationStateWaitEmailCode) state).codeInfo);
+      }
     }
+    return TdConstants.DEFAULT_CODE_LENGTH;
   }
 
   public static int getCodeLength (TdApi.EmailAddressAuthenticationCodeInfo info) {
@@ -2244,6 +2262,7 @@ public class TD {
       case "USERS_TOO_MUCH": res = R.string.GroupIsFull; break;
       case "USERS_TOO_FEW": res = R.string.ErrorUsersTooFew; break;
       case "PHONE_NUMBER_INVALID": res = R.string.login_InvalidPhone; break;
+      case "PHONE_CODE_INVALID": case "EMAIL_CODE_INVALID": res = R.string.InvalidCode; break;
       case "FRESH_RESET_AUTHORISATION_FORBIDDEN": res = R.string.TerminateSessionFreshError; break;
       case "PHONE_NUMBER_OCCUPIED": res = R.string.PhoneNumberInUse; break;
       case "PHONE_NUMBER_BANNED": res = R.string.login_PHONE_NUMBER_BANNED; break;
@@ -2688,8 +2707,8 @@ public class TD {
     return RESTRICT_MODE_NONE;
   }
 
-  public static String getTelegramHost () {
-    return TdConstants.TELEGRAM_HOSTS[0];
+  public static String getTelegramMeHost () {
+    return TdConstants.TME_HOSTS[0];
   }
 
   public static byte[] newRandomWaveform () {
@@ -2955,10 +2974,10 @@ public class TD {
     return StringUtils.isEmpty(path) || path.charAt(path.length() - 1) == '/' ? path : path + '/';
   }
 
-  public static boolean isKnownHost (Uri uri) {
+  public static boolean isTelegramMeHost (Uri uri) {
     String host = uri.getHost();
     if (host != null) {
-      for (String knownHost : TdConstants.TELEGRAM_HOSTS) {
+      for (String knownHost : TdConstants.TME_HOSTS) {
         if (StringUtils.equalsOrBothEmpty(knownHost, host)) {
           return true;
         }
@@ -3189,23 +3208,23 @@ public class TD {
   }
 
   public static String getLink (TdApi.Supergroup supergroup) {
-    return "https://" + getTelegramHost() + "/" + supergroup.username;
+    return "https://" + getTelegramMeHost() + "/" + supergroup.username;
   }
 
   public static String getStickerPackLink (String name) {
-    return "https://" + getTelegramHost() + "/addstickers/" + name;
+    return "https://" + getTelegramMeHost() + "/addstickers/" + name;
   }
 
   public static String getLink (TdApi.User user) {
-    return "https://" + getTelegramHost() + "/" + user.username;
+    return "https://" + getTelegramMeHost() + "/" + user.username;
   }
 
   public static String getLink (String username) {
-    return "https://" + getTelegramHost() + "/" + username;
+    return "https://" + getTelegramMeHost() + "/" + username;
   }
 
   public static String getLink (TdApi.LanguagePackInfo languagePackInfo) {
-    return "https://" + getTelegramHost() + "/setlanguage/" + languagePackInfo.id;
+    return "https://" + getTelegramMeHost() + "/setlanguage/" + languagePackInfo.id;
   }
 
   public static String getRoleName (@Nullable TdApi.User user, int role) {

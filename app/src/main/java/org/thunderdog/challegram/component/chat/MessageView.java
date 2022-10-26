@@ -109,10 +109,11 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
   public MessageView (Context context) {
     super(context);
-    avatarReceiver = new ImageReceiver(this, Screen.dp(20.5f));
-    reactionsComplexReceiver = new ComplexReceiver(this);
-    gifReceiver = new GifReceiver(this);
     this.refreshRateLimiter = new RefreshRateLimiter(this, Config.MAX_ANIMATED_EMOJI_REFRESH_RATE);
+    avatarReceiver = new ImageReceiver(this, Screen.dp(20.5f));
+    gifReceiver = new GifReceiver(this); // TODO use refreshRateLimiter?
+    reactionsComplexReceiver = new ComplexReceiver()
+      .setUpdateListener(new RefreshRateLimiter(this, 60.0f)); // Limit by 60fps
     textMediaReceiver = new ComplexReceiver()
       .setUpdateListener(refreshRateLimiter);
     replyTextMediaReceiver = new ComplexReceiver()
@@ -534,17 +535,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     StringList strings = new StringList(6);
     Object tag = fillMessageOptions(m, msg, sender, ids, icons, strings, false);
     if (!ids.isEmpty()) {
-      boolean withReactions = false;
-      TdApi.Chat chat = msg.getChat();
-      if (chat != null) {
-        if (chat.availableReactions != null) {
-          if (chat.availableReactions.length > 0) {
-            withReactions = true;
-          }
-        }
-      }
-
-      m.showMessageOptions(msg, ids.get(), strings.get(), icons.get(), tag, sender, false, withReactions);
+      m.showMessageOptions(msg, ids.get(), strings.get(), icons.get(), tag, sender, false);
       return true;
     }
     return false;

@@ -353,6 +353,13 @@ public class InstantViewController extends ViewController<InstantViewController.
 
   @Override
   protected View onCreateView (Context context) {
+    ArrayList<PageBlock> pageBlocks;
+    try {
+      pageBlocks = parsePageBlocks(getArgumentsStrict().instantView);
+    } catch (PageBlock.UnsupportedPageBlockException e) {
+      throw new UnsupportedOperationException();
+    }
+
     FrameLayout contentView = new FrameLayout(context);
     contentView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     ViewSupport.setThemedBackground(contentView, R.id.theme_color_background, this);
@@ -422,7 +429,7 @@ public class InstantViewController extends ViewController<InstantViewController.
     });
 
     adapter = new SettingsAdapter(this);
-    buildCells(false);
+    buildCells(pageBlocks, false);
 
     recyclerView.setAdapter(adapter);
 
@@ -457,7 +464,11 @@ public class InstantViewController extends ViewController<InstantViewController.
     }
   }
 
-  private void buildCells (boolean isReplace) {
+  private ArrayList<PageBlock> parsePageBlocks (TdApi.WebPageInstantView instantView) throws PageBlock.UnsupportedPageBlockException {
+    return PageBlock.parse(this, getUrl(), instantView, null, this, null);
+  }
+
+  private void buildCells (ArrayList<PageBlock> blocks, boolean isReplace) {
     Args args = getArgumentsStrict();
     final TdApi.WebPageInstantView instantView = args.instantView;
 
@@ -466,15 +477,16 @@ public class InstantViewController extends ViewController<InstantViewController.
       return;
     }
 
-    final ArrayList<PageBlock> blocks = PageBlock.parse(this, getUrl(), instantView, null, this, null);
     ArrayList<ListItem> items = new ArrayList<>(blocks.size());
-    this.mediaBlocks = new ArrayList<>();
+    ArrayList<PageBlockMedia> mediaBlocks = new ArrayList<>();
     for (PageBlock block : blocks) {
       if (block instanceof PageBlockMedia && ((PageBlockMedia) block).bindToList(this, getDisplayUrl(), mediaBlocks)) {
         mediaBlocks.add((PageBlockMedia) block);
       }
       items.add(new ListItem(block.getRelatedViewType()).setData(block));
     }
+
+    this.mediaBlocks = mediaBlocks;
     // recyclerView.setItemAnimator(null);
     adapter.setItems(items, false);
     recyclerView.invalidateItemDecorations();
@@ -507,8 +519,14 @@ public class InstantViewController extends ViewController<InstantViewController.
               UI.showToast(R.string.InstantViewUnsupported, Toast.LENGTH_SHORT);
               UI.openUrl(getUrl());
             } else {
+              ArrayList<PageBlock> pageBlocks;
+              try {
+                pageBlocks = parsePageBlocks(instantView);
+              } catch (PageBlock.UnsupportedPageBlockException ignored) {
+                return;
+              }
               getArgumentsStrict().instantView = instantView;
-              buildCells(true);
+              buildCells(pageBlocks, true);
             }
           }
         });

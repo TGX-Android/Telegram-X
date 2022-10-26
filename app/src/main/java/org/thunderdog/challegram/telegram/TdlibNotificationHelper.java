@@ -143,6 +143,11 @@ public class TdlibNotificationHelper implements Iterable<TdlibNotificationGroup>
     }
   }
 
+  public void abortCancelableOperations () {
+    Context context = UI.getAppContext();
+    style.cancelPendingMediaPreviewDownloads(context, this);
+  }
+
   public void restoreState (TdApi.UpdateActiveNotifications update) {
     this.notifications.clear();
     this.groups.clear();
