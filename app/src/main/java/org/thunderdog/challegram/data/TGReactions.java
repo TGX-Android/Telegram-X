@@ -502,7 +502,7 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
   }
 
   public boolean isChosen (String reaction) {
-    return reaction.equals(chosenReaction);
+    return chosenReactions.contains(reaction);
   }
 
   public static class MessageReactionEntry implements TextColorSet, FactorAnimator.Target {
