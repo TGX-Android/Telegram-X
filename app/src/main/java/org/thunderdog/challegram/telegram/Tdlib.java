@@ -2041,7 +2041,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       throw new IllegalStateException("Cannot call from TDLib thread: " + function);
     final CountDownLatch latch = new CountDownLatch(1);
     final AtomicReference<TdApi.Object> response = new AtomicReference<>();
-    awaitInitialization(() -> {
+    Runnable act = () -> {
       incrementReferenceCount(REFERENCE_TYPE_REQUEST_EXECUTION);
       client().send(function, object -> {
         synchronized (response) {
@@ -2050,7 +2050,21 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         }
         decrementReferenceCount(REFERENCE_TYPE_REQUEST_EXECUTION);
       });
-    });
+    };
+    //noinspection SwitchIntDef
+    switch (function.getConstructor()) {
+      // Methods that can be called before initialization
+      case TdApi.SetAlarm.CONSTRUCTOR:
+      case TdApi.Close.CONSTRUCTOR:
+      case TdApi.GetAuthorizationState.CONSTRUCTOR:
+      case TdApi.GetCurrentState.CONSTRUCTOR:
+        act.run();
+        break;
+      // Require TDLib initialization in case of all other methods
+      default:
+        awaitInitialization(act);
+        break;
+    }
     try {
       if (timeoutMs > 0) {
         latch.await(timeoutMs, TimeUnit.MILLISECONDS);
