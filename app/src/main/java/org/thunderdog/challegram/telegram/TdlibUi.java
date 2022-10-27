@@ -180,6 +180,14 @@ public class TdlibUi extends Handler {
     this.tdlib = tdlib;
   }
 
+  public void execute (Runnable runnable) {
+    if (UI.inUiThread()) {
+      runnable.run();
+    } else {
+      post(runnable);
+    }
+  }
+
   public static int[] getAvailablePriorityOrImportanceList () {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       return new int[] {
@@ -2793,7 +2801,9 @@ public class TdlibUi extends Handler {
       return;
     }
 
-    if (options != null && options.requireOpenPrompt) {
+    Uri uri = Strings.wrapHttps(url);
+
+    if (options != null && options.requireOpenPrompt && (uri == null || !tdlib.isTrustedHost(url, true))) {
       ViewController<?> c = context instanceof ViewController<?> ? (ViewController<?>) context : context.context().navigation().getCurrentStackItem();
       if (c != null && !c.isDestroyed()) {
         AlertDialog.Builder b = new AlertDialog.Builder(context.context(), Theme.dialogTheme());
@@ -2809,7 +2819,6 @@ public class TdlibUi extends Handler {
       return;
     }
 
-    Uri uri = Strings.wrapHttps(url);
     if (uri == null) {
       UI.openUrl(url);
       return;
@@ -6197,7 +6206,7 @@ public class TdlibUi extends Handler {
         }
       }
       if (seconds > 0) {
-        int sendDate = (int) (tdlib.currentTimeMillis() / 1000l + seconds);
+        int sendDate = (int) (tdlib.currentTime(TimeUnit.SECONDS) + seconds);
         callback.runWithData(Td.newSendOptions(defaultSendOptions, new TdApi.MessageSchedulingStateSendAtDate(sendDate)));
       }
       return true;

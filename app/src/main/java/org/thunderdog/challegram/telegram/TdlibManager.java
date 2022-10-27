@@ -39,6 +39,7 @@ import org.thunderdog.challegram.TDLib;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
+import org.thunderdog.challegram.core.BaseThread;
 import org.thunderdog.challegram.core.WatchDog;
 import org.thunderdog.challegram.core.WatchDogContext;
 import org.thunderdog.challegram.data.TD;
@@ -48,6 +49,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.AppBuildInfo;
 import org.thunderdog.challegram.util.Crash;
+import org.thunderdog.challegram.util.DeviceStorageError;
 import org.thunderdog.challegram.util.TokenRetriever;
 
 import java.io.File;
@@ -77,6 +79,7 @@ import me.leolin.shortcutbadger.ShortcutBadger;
 import me.vkryl.android.LocaleUtils;
 import me.vkryl.android.SdkVersion;
 import me.vkryl.core.ArrayUtils;
+import me.vkryl.core.FileUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Filter;
 import me.vkryl.core.lambda.RunnableBool;
@@ -587,25 +590,29 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   }
 
   private boolean logged;
+  private BaseThread badgeUpdaterThread;
 
   private void updateBadgeInternal (boolean force, boolean counterChanged) {
-    try {
-      TdlibBadgeCounter badge = getTotalUnreadBadgeCounter();
-      ShortcutBadger.applyCountOrThrow(UI.getAppContext(), badge.getCount());
-      logged = false;
-    } catch (Throwable t) {
-      if (!logged) {
-        logged = true;
-        Log.v("Could not update app badge", t);
-      }
-    }
-    /*if (Device.IS_XIAOMI && (force || counterChanged) && (totalUnreadCount > 0 || totalUnreadUnmutedCount > 0)) {
-      for (TdlibAccount account : this) {
-        if (account.tdlib != null) {
-          account.tdlib.notifications().updateNotification();
+    if (badgeUpdaterThread == null) {
+      badgeUpdaterThread = new BaseThread("ShortcutBadgerThread") {
+        @Override
+        protected void process (Message msg) {
+          int count = msg.arg1;
+          try {
+            ShortcutBadger.applyCountOrThrow(UI.getAppContext(), count);
+            logged = false;
+          } catch (Throwable t) {
+            if (!logged) {
+              logged = true;
+              Log.v("Could not update app badge", t);
+            }
+          }
         }
-      }
-    }*/
+      };
+    }
+    TdlibBadgeCounter badge = getTotalUnreadBadgeCounter();
+    final int count = badge.getCount();
+    badgeUpdaterThread.sendMessage(Message.obtain(badgeUpdaterThread.getHandler(), 0, count, 0), 0);
   }
 
   public void onUpdateAllNotifications () {
@@ -1093,7 +1100,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
           break;
         }
         default:
-          throw new IllegalArgumentException("mode == ");
+          throw new IllegalArgumentException(Integer.toString(mode));
       }
       return saveCount;
     }
@@ -1128,9 +1135,9 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     File file = getAccountConfigFile();
     try {
       if (!file.exists() && !file.createNewFile())
-        throw new RuntimeException("Cannot save config file");
+        throw new DeviceStorageError("Cannot save config file");
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw new DeviceStorageError(e);
     }
 
     int accountNum;
@@ -1138,13 +1145,13 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       accountNum = writeAccountConfig(r, mode, accountId);
     } catch (IOException e) {
       Tracer.onLaunchError(e);
-      throw new RuntimeException(e);
+      throw new DeviceStorageError(e);
     }
     try (RandomAccessFile ignored = new RandomAccessFile(file, MODE_RW)) {
       Log.i(Log.TAG_ACCOUNTS, "Saved %d accounts in %dms, mode:%d", accountNum, SystemClock.uptimeMillis() - ms, mode);
     } catch (IOException e) {
       Tracer.onLaunchError(e);
-      throw new RuntimeException(e);
+      throw new DeviceStorageError(e);
     }
   }
 
@@ -2272,7 +2279,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     }
     if (file != null) {
       try {
-        if (!(file.exists() ? file.isDirectory() : file.mkdir()) || !file.canWrite()) {
+        if (!(file.exists() ? file.isDirectory() : FileUtils.mkdirs(file)) || !file.canWrite()) {
           file = null;
         }
       } catch (SecurityException e) {
@@ -2285,8 +2292,8 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
         file = new File(file, "x_account" + accountId);
         if (!file.exists()) {
           if (createIfNotFound) {
-            if (!file.mkdir())
-              throw new IllegalStateException("Could not create external working directory: " + file.getPath());
+            if (!FileUtils.mkdirs(file))
+              throw new DeviceStorageError("Could not create external working directory: " + file.getPath());
           } else {
             return null;
           }
@@ -2299,8 +2306,8 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       file = new File(UI.getContext().getFilesDir(), accountId != 0 ? "tdlib" + accountId : "tdlib");
       if (!file.exists()) {
         if (createIfNotFound) {
-          if (!file.mkdir())
-            throw new IllegalStateException("Cannot create working directory: " + file.getPath());
+          if (!FileUtils.mkdirs(file))
+            throw new DeviceStorageError("Cannot create working directory: " + file.getPath());
         } else {
           return null;
         }

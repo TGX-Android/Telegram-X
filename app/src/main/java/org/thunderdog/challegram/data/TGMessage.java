@@ -297,7 +297,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     this.messageReactions = new TGReactions(this, tdlib, msg.interactionInfo != null ? msg.interactionInfo.reactions : null, new TGReactions.MessageReactionsDelegate() {
       @Override
       public void onClick (View v, TGReactions.MessageReactionEntry entry) {
-        boolean needAnimation = messageReactions.sendReaction(entry.getReactionType(), false, handler(v, entry, () -> {}));
+        boolean needAnimation = messageReactions.toggleReaction(entry.getReactionType(), false, false, handler(v, entry, () -> {}));
         if (needAnimation) {
           scheduleSetReactionAnimation(new NextReactionAnimation(entry.getTGReaction(), NextReactionAnimation.TYPE_CLICK));
         }
@@ -7488,7 +7488,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
         final boolean isOdd = a % 2 == 1;
         final SwipeQuickAction quickReaction = new SwipeQuickAction(reactionObj.getTitle(), reactionDrawable, () -> {
-          if (messageReactions.sendReaction(reactionType, false, handler(findCurrentView(), null, () -> {}))) {
+          if (messageReactions.toggleReaction(reactionType, false, false, handler(findCurrentView(), null, () -> {}))) {
             scheduleSetReactionAnimation(new NextReactionAnimation(reactionObj, NextReactionAnimation.TYPE_QUICK));
           }
         }, false, true);
@@ -7778,61 +7778,65 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     } else if (nextSetReactionAnimation.type == NextReactionAnimation.TYPE_BOTTOM_SHEET_FULLSCREEN && nextSetReactionAnimation.startPosition != null) {
       int startX = nextSetReactionAnimation.startPosition.x;
       int startY = nextSetReactionAnimation.startPosition.y;
-      context().openReactionPreview(tdlib, null, nextSetReactionAnimation.reaction, startX, startY, Screen.dp(30), -1, true);
 
-      final QuickReactionAnimatedPositionOffsetProvider offsetProvider = new QuickReactionAnimatedPositionOffsetProvider();
-      final Runnable finishRunnable = () -> {
-        Point p = new Point();
-        offsetProvider.getOffset(p);
-        context().replaceReactionPreviewCords(finishX + p.x, finishY + p.y);
-        context().closeStickerPreview();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-          onQuickReactionAnimationFinish(view.isAttachedToWindow());
-        } else {
-          onQuickReactionAnimationFinish();
-        }
-      };
-      final CancellableRunnable finishAnimation = new CancellableRunnable() {
-        @Override
-        public void act () {
-          finishRunnable.run();
-        }
-      };
+      reaction.withEffectAnimation(effectAnimation -> {
+        final QuickReactionAnimatedPositionOffsetProvider offsetProvider = new QuickReactionAnimatedPositionOffsetProvider();
+        final Runnable finishRunnable = () -> {
+          Point p = new Point();
+          offsetProvider.getOffset(p);
+          context().replaceReactionPreviewCords(finishX + p.x, finishY + p.y);
+          context().closeStickerPreview();
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            onQuickReactionAnimationFinish(view.isAttachedToWindow());
+          } else {
+            onQuickReactionAnimationFinish();
+          }
+        };
+        final CancellableRunnable finishAnimation = new CancellableRunnable() {
+          @Override
+          public void act () {
+            finishRunnable.run();
+          }
+        };
 
-      TGStickerObj effectAnimation = nextSetReactionAnimation.reaction.effectAnimationSicker();
-      if (effectAnimation.getFullAnimation() != null) {
-        if (!effectAnimation.isCustomReaction()) {
+        if (effectAnimation != null && effectAnimation.getFullAnimation() != null) {
           effectAnimation.getFullAnimation().setPlayOnce(true);
           effectAnimation.getFullAnimation().setLooped(false);
-        }
-        effectAnimation.getFullAnimation().addLoopListener(() -> {
-          if (nextSetReactionAnimation != null) {
-            nextSetReactionAnimation.fullscreenEffectFinished = true;
-            if (nextSetReactionAnimation.fullscreenEmojiFinished) {
-              finishAnimation.cancel();
-              tdlib().ui().postDelayed(finishRunnable, 300);
+          effectAnimation.getFullAnimation().addLoopListener(() -> {
+            if (nextSetReactionAnimation != null) {
+              nextSetReactionAnimation.fullscreenEffectFinished = true;
+              if (nextSetReactionAnimation.fullscreenEmojiFinished) {
+                finishAnimation.cancel();
+                tdlib().ui().postDelayed(finishRunnable, 180l);
+              }
             }
-          }
-        });
-      }
+          });
+        } else {
+          nextSetReactionAnimation.fullscreenEffectFinished = true;
+        }
 
-      TGStickerObj activateAnimation = nextSetReactionAnimation.reaction.activateAnimationSicker();
-      if (activateAnimation.getFullAnimation() != null) {
-        if (!activateAnimation.isCustomReaction()) {
-          activateAnimation.getFullAnimation().setPlayOnce(true);
-          activateAnimation.getFullAnimation().setLooped(false);
-        }
-        activateAnimation.getFullAnimation().addLoopListener(() -> {
-          if (nextSetReactionAnimation != null) {
-            nextSetReactionAnimation.fullscreenEmojiFinished = true;
-            if (nextSetReactionAnimation.fullscreenEffectFinished) {
-              finishAnimation.cancel();
-              tdlib().ui().postDelayed(finishRunnable, 300);
-            }
+        TGStickerObj activateAnimation = nextSetReactionAnimation.reaction.activateAnimationSicker();
+        if (activateAnimation.getFullAnimation() != null) {
+          if (!activateAnimation.isCustomReaction()) {
+            activateAnimation.getFullAnimation().setPlayOnce(true);
+            activateAnimation.getFullAnimation().setLooped(false);
           }
-        });
-      }
-      tdlib().ui().postDelayed(finishAnimation, 8000);
+          activateAnimation.getFullAnimation().addLoopListener(() -> {
+            if (nextSetReactionAnimation != null) {
+              nextSetReactionAnimation.fullscreenEmojiFinished = true;
+              if (nextSetReactionAnimation.fullscreenEffectFinished) {
+                finishAnimation.cancel();
+                tdlib().ui().postDelayed(finishRunnable, 180l);
+              }
+            }
+          });
+        } else {
+          nextSetReactionAnimation.fullscreenEmojiFinished = true;
+        }
+
+        context().openReactionPreview(tdlib, null, reaction, effectAnimation, startX, startY, Screen.dp(30), -1, true);
+        tdlib().ui().postDelayed(finishAnimation, 7500l);
+      });
     }
   }
 

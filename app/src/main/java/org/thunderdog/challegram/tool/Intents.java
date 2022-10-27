@@ -696,7 +696,7 @@ public class Intents {
         builder.setActionButton(Drawables.getBitmap(R.drawable.baseline_share_24), Lang.getString(R.string.Share), PendingIntent.getBroadcast(UI.getContext(), 0, share, Intents.mutabilityFlags(true)), true);
         CustomTabsIntent intent = builder.build();
         intent.intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        if (TD.isKnownHost(uri)) {
+        if (TD.isTelegramMeHost(uri)) {
           List<ResolveInfo> packages = getCustomTabsPackages(context);
           if (!packages.isEmpty()) {
             intent.intent.setPackage(packages.get(0).activityInfo.packageName);

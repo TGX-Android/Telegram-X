@@ -29,6 +29,7 @@ import androidx.annotation.StringRes;
 import androidx.annotation.UiThread;
 import androidx.collection.LongSparseArray;
 import androidx.collection.SparseArrayCompat;
+import androidx.core.os.CancellationSignal;
 
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -102,7 +103,7 @@ import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.lambda.RunnableInt;
 import me.vkryl.core.lambda.RunnableLong;
 import me.vkryl.core.BitwiseUtils;
-import me.vkryl.core.util.JobList;
+import me.vkryl.core.util.ConditionalExecutor;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.ChatPosition;
 import me.vkryl.td.JSON;
@@ -281,37 +282,15 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
 
     public void runOnTdlibThread (Runnable after, double timeout) {
-      client.send(new TdApi.SetAlarm(timeout), ignored -> after.run());
+      runOnTdlibThread(after, timeout, null);
     }
 
-    private final AtomicBoolean databaseOpened = new AtomicBoolean(false);
-    private Runnable openTakesTooLong;
-
-    private void scheduleOptimizationCheck () {
-      synchronized (databaseOpened) {
-        if (!databaseOpened.get() && openTakesTooLong == null) {
-          openTakesTooLong = () -> {
-            synchronized (databaseOpened) {
-              if (!databaseOpened.get()) {
-                tdlib.setIsOptimizing(true);
-              }
-            }
-          };
-          tdlib.ui().postDelayed(openTakesTooLong, 1000);
+    public void runOnTdlibThread (Runnable after, double timeout, @Nullable CancellationSignal cancellationSignal) {
+      client.send(new TdApi.SetAlarm(timeout), ignored -> {
+        if (cancellationSignal == null || !cancellationSignal.isCanceled()) {
+          after.run();
         }
-      }
-    }
-
-    private void onDatabaseOpened () {
-      synchronized (databaseOpened) {
-        if (!databaseOpened.getAndSet(true)) {
-          if (openTakesTooLong != null) {
-            tdlib.ui().removeCallbacks(openTakesTooLong);
-            openTakesTooLong = null;
-          }
-          tdlib.setIsOptimizing(false);
-        }
-      }
+      });
     }
 
     public void init () {
@@ -320,15 +299,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       initializationTime = SystemClock.uptimeMillis();
       long time = SystemClock.uptimeMillis();
       StackTraceElement[] stackTrace = new RuntimeException().getStackTrace();
+      final CancellationSignal openTimeoutSignal = new CancellationSignal();
       client.send(tdlib.parameters, result -> {
         long elapsed = SystemClock.uptimeMillis() - time;
         TDLib.Tag.td_init("SetTdlibParameters response in %dms, accountId:%d, ok:%b", elapsed, tdlib.accountId, result.getConstructor() == TdApi.Ok.CONSTRUCTOR);
         if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
           Tracer.onTdlibFatalError(tdlib, TdApi.SetTdlibParameters.class, (TdApi.Error) result, stackTrace);
         }
-        onDatabaseOpened();
+        openTimeoutSignal.cancel();
+        tdlib.setIsOptimizing(false);
       });
-      scheduleOptimizationCheck();
+      runOnTdlibThread(() ->
+        tdlib.setIsOptimizing(true)
+      , 1.0, openTimeoutSignal);
       final TdApi.Function<?> startup;
       if (tdlib.accountId == 0 && Settings.instance().needProxyLegacyMigrateCheck()) {
         startup = new TdApi.GetProxies();
@@ -462,6 +445,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private int groupMaxSize = 200;
   private int pinnedChatsMaxCount = 5, pinnedArchivedChatsMaxCount = 100;
   private int favoriteStickersMaxCount = 5;
+  private long themedEmojiStatusesStickerSetId;
   private double emojiesAnimatedZoom = .75f;
   private boolean youtubePipDisabled, qrLoginCamera, dialogFiltersTooltip, dialogFiltersEnabled;
   private String qrLoginCode;
@@ -730,6 +714,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private static final int REFERENCE_TYPE_CALL = 6;
   private static final int REFERENCE_TYPE_REQUEST_EXECUTION = 7;
   private static final int REFERENCE_TYPE_MESSAGE = 8;
+  private static final int REFERENCE_TYPE_TASK = 9;
+  private static final int REFERENCE_TYPE_TASK_EXECUTION = 10;
 
   public void changeLocationReferenceCount (int deltaCount) {
     if (deltaCount > 0) {
@@ -1200,7 +1186,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
     final int newStatus = authorizationStatus();
 
-    closeListeners.trigger(true);
+    closeListeners.notifyConditionChanged(true);
 
     if (prevStatus == STATUS_UNKNOWN && newStatus != STATUS_UNKNOWN) {
       synchronized (dataLock) {
@@ -1349,14 +1335,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private boolean isOptimizing;
 
   public boolean isOptimizing () {
-    return isOptimizing;
+    synchronized (dataLock) {
+      return isOptimizing;
+    }
   }
 
+  @TdlibThread
   private void setIsOptimizing (boolean isOptimizing) {
-    if (this.isOptimizing != isOptimizing) {
+    synchronized (dataLock) {
+      if (this.isOptimizing == isOptimizing)
+        return;
       this.isOptimizing = isOptimizing;
-      context().global().notifyOptimizing(this, isOptimizing);
     }
+    context().global().notifyOptimizing(this, isOptimizing);
   }
 
   private static boolean checkVersion (int version, int checkVersion, boolean isTest) {
@@ -1725,13 +1716,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public void runOnTdlibThread (@NonNull Runnable runnable) {
-    runOnTdlibThread(runnable, 0);
+    runOnTdlibThread(runnable, 0, null);
   }
 
   public void runOnTdlibThread (@NonNull Runnable runnable, double timeout) {
+    runOnTdlibThread(runnable, timeout, null);
+  }
+
+  public void runOnTdlibThread (@NonNull Runnable runnable, double timeout, @Nullable CancellationSignal cancellationSignal) {
     incrementReferenceCount(REFERENCE_TYPE_JOB);
     clientHolder().runOnTdlibThread(() -> {
-      runnable.run();
+      if (cancellationSignal == null || !cancellationSignal.isCanceled()) {
+        runnable.run();
+      }
       decrementReferenceCount(REFERENCE_TYPE_JOB);
     }, timeout);
   }
@@ -2045,7 +2042,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       throw new IllegalStateException("Cannot call from TDLib thread: " + function);
     final CountDownLatch latch = new CountDownLatch(1);
     final AtomicReference<TdApi.Object> response = new AtomicReference<>();
-    awaitInitialization(() -> {
+    Runnable act = () -> {
       incrementReferenceCount(REFERENCE_TYPE_REQUEST_EXECUTION);
       client().send(function, object -> {
         synchronized (response) {
@@ -2054,7 +2051,21 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         }
         decrementReferenceCount(REFERENCE_TYPE_REQUEST_EXECUTION);
       });
-    });
+    };
+    //noinspection SwitchIntDef
+    switch (function.getConstructor()) {
+      // Methods that can be called before initialization
+      case TdApi.SetAlarm.CONSTRUCTOR:
+      case TdApi.Close.CONSTRUCTOR:
+      case TdApi.GetAuthorizationState.CONSTRUCTOR:
+      case TdApi.GetCurrentState.CONSTRUCTOR:
+        act.run();
+        break;
+      // Require TDLib initialization in case of all other methods
+      default:
+        awaitInitialization(act);
+        break;
+    }
     try {
       if (timeoutMs > 0) {
         latch.await(timeoutMs, TimeUnit.MILLISECONDS);
@@ -5951,6 +5962,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return favoriteStickersMaxCount;
   }
 
+  public boolean isThemedEmojiStatusesStickerSet (long stickerSetId) {
+    return stickerSetId != 0 && this.themedEmojiStatusesStickerSetId == stickerSetId;
+  }
+
   public double emojiesAnimatedZoom () {
     return emojiesAnimatedZoom;
   }
@@ -5968,7 +5983,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public String tMeUrl () {
-    return StringUtils.isEmpty(tMeUrl) ? "https://" + TD.getTelegramHost() + "/" : tMeUrl;
+    return StringUtils.isEmpty(tMeUrl) ? "https://" + TD.getTelegramMeHost() + "/" : tMeUrl;
   }
 
   public String tMeMessageUrl (String username, long messageId) {
@@ -6108,29 +6123,52 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
+  public boolean isTrustedHost (String host, boolean allowSubdomains) {
+    // No prompt when pressing links from these hosts.
+    if (StringUtils.isEmpty(host)) {
+      return false;
+    }
+    Uri uri = Strings.wrapHttps(host);
+    if (uri == null) {
+      return false;
+    }
+    host = uri.getHost().toLowerCase();
+    for (String knownHost : TdConstants.TELEGRAM_HOSTS) {
+      if (StringUtils.equalsOrBothEmpty(host, knownHost) || (allowSubdomains && host.endsWith("." + knownHost))) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   public boolean isKnownHost (String host, boolean allowTelegraph) {
     if (StringUtils.isEmpty(host)) {
       return false;
     }
-    host = StringUtils.urlWithoutProtocol(host.toLowerCase());
-    int i = host.indexOf('/');
-    if (i != -1) {
-      host = host.substring(0, i);
+    Uri uri = Strings.wrapHttps(host);
+    if (uri == null) {
+      return false;
     }
+    host = uri.getHost().toLowerCase();
     if (!StringUtils.isEmpty(tMeUrl)) {
       String tMeHost = StringUtils.urlWithoutProtocol(tMeUrl);
-      if (StringUtils.equalsOrBothEmpty(host, tMeHost)) {
+      if (StringUtils.equalsOrBothEmpty(host, tMeHost) || host.endsWith("." + tMeHost)) {
         return true;
       }
     }
-    for (String knownHost : TdConstants.TELEGRAM_HOSTS) {
-      if (StringUtils.equalsOrBothEmpty(host, knownHost)) {
+    for (String knownHost : TdConstants.TME_HOSTS) {
+      if (StringUtils.equalsOrBothEmpty(host, knownHost) || host.endsWith("." + knownHost)) {
         return true;
       }
     }
     if (allowTelegraph) {
+      for (String knownHost : TdConstants.TELEGRAM_HOSTS) {
+        if (StringUtils.equalsOrBothEmpty(host, knownHost) || host.endsWith("." + knownHost)) {
+          return true;
+        }
+      }
       for (String knownHost : TdConstants.TELEGRAPH_HOSTS) {
-        if (StringUtils.equalsOrBothEmpty(host, knownHost)) {
+        if (StringUtils.equalsOrBothEmpty(host, knownHost) || host.endsWith("." + knownHost)) {
           return true;
         }
       }
@@ -6472,11 +6510,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       checkKeepAlive();
     }
     if (!update.haveUnreceivedNotifications) {
-      this.notificationConsistencyListeners.trigger(true);
+      this.notificationConsistencyListeners.notifyConditionChanged(true);
     }
     incrementNotificationReferenceCount();
-    // notificationManager.onUpdateHavePendingNotifications(update);
-    notificationManager.releaseTdlibReference(havePendingNotifications ? null : this::onNotificationsReceived);
+    notificationManager.releaseTdlibReference(() ->
+      notificationListeners.notifyConditionChanged(!havePendingNotifications)
+    );
   }
 
   private long receivedActiveNotificationsTime;
@@ -7791,6 +7830,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           case "favorite_stickers_limit":
             this.favoriteStickersMaxCount = (int) longValue;
             break;
+          case "themed_emoji_statuses_sticker_set_id":
+            this.themedEmojiStatusesStickerSetId = longValue;
+            break;
         }
 
         break;
@@ -8645,58 +8687,58 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   // Events
 
-  private void onJobAdded () {
-    incrementReferenceCount(REFERENCE_TYPE_JOB);
+  private void onJobAdded (boolean isAboutToExecute) {
+    incrementReferenceCount(isAboutToExecute ? REFERENCE_TYPE_TASK_EXECUTION : REFERENCE_TYPE_TASK);
   }
 
-  private void onJobRemoved () {
-    decrementReferenceCount(REFERENCE_TYPE_JOB);
+  private void onJobRemoved (boolean justFinishedExecution) {
+    decrementReferenceCount(justFinishedExecution ? REFERENCE_TYPE_TASK_EXECUTION : REFERENCE_TYPE_TASK);
   }
 
-  private final JobList
-    initializationListeners = new JobList(() -> authorizationStatus() != STATUS_UNKNOWN).onAddRemove(this::onJobAdded, this::onJobRemoved), // Executed once received authorization state
-    connectionListeners = new JobList(() -> authorizationStatus() != STATUS_UNKNOWN && connectionState == STATE_CONNECTED).onAddRemove(this::onJobAdded, this::onJobRemoved), // Executed once connected
-    notificationInitListeners = new JobList(() -> {
+  private final ConditionalExecutor
+    initializationListeners = new ConditionalExecutor(() -> authorizationStatus() != STATUS_UNKNOWN).onAddRemove(this::onJobAdded, this::onJobRemoved), // Executed once received authorization state
+    connectionListeners = new ConditionalExecutor(() -> authorizationStatus() != STATUS_UNKNOWN && connectionState == STATE_CONNECTED).onAddRemove(this::onJobAdded, this::onJobRemoved), // Executed once connected
+    notificationInitListeners = new ConditionalExecutor(() -> {
       final int status = authorizationStatus();
       return status == STATUS_UNAUTHORIZED || (status == STATUS_READY && haveInitializedNotifications);
     }).onAddRemove(this::onJobAdded, this::onJobRemoved),
-    notificationListeners = new JobList(() -> !havePendingNotifications).onAddRemove(this::onJobAdded, this::onJobRemoved),
-    notificationConsistencyListeners = new JobList(() -> false),
-    closeListeners = new JobList(() -> authorizationState != null && authorizationState.getConstructor() == TdApi.AuthorizationStateClosed.CONSTRUCTOR); // Executed once no pending notifications remaining
+    notificationListeners = new ConditionalExecutor(() -> !havePendingNotifications).onAddRemove(this::onJobAdded, this::onJobRemoved),
+    notificationConsistencyListeners = new ConditionalExecutor(() -> false),
+    closeListeners = new ConditionalExecutor(() -> authorizationState != null && authorizationState.getConstructor() == TdApi.AuthorizationStateClosed.CONSTRUCTOR); // Executed once no pending notifications remaining
 
   @AnyThread
   public void awaitInitialization (@NonNull Runnable after) {
-    initializationListeners.add(after);
+    initializationListeners.executeOrPostponeTask(after);
   }
 
   @AnyThread
   public void awaitNotificationInitialization (@NonNull Runnable after) {
-    notificationInitListeners.add(after);
+    notificationInitListeners.executeOrPostponeTask(after);
   }
 
   public void awaitClose (@NonNull Runnable after, boolean force) {
     if (force || (authorizationState != null && authorizationState.getConstructor() == TdApi.AuthorizationStateLoggingOut.CONSTRUCTOR)) {
-      closeListeners.add(after);
+      closeListeners.executeOrPostponeTask(after);
     } else {
       after.run();
     }
   }
 
   public void awaitNotifications (@NonNull Runnable after) {
-    notificationListeners.add(after);
+    notificationListeners.executeOrPostponeTask(after);
   }
 
   public void awaitConnection (@NonNull Runnable after) {
-    connectionListeners.add(after);
+    connectionListeners.executeOrPostponeTask(after);
   }
 
   // Events
 
   @TdlibThread
   private void onInitialized () {
-    initializationListeners.trigger();
-    notificationInitListeners.trigger();
-    connectionListeners.trigger();
+    initializationListeners.notifyConditionChanged(true);
+    notificationInitListeners.notifyConditionChanged();
+    connectionListeners.notifyConditionChanged();
   }
 
   @TdlibThread
@@ -8710,11 +8752,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   private void onConnected () {
     setHasUnprocessedPushes(false);
-    connectionListeners.trigger();
+    connectionListeners.notifyConditionChanged();
   }
 
   private void onNotificationsInitialized () {
-    notificationInitListeners.trigger();
+    notificationInitListeners.notifyConditionChanged(true);
   }
 
   public void dispatchNotificationsInitialized () {
@@ -8724,10 +8766,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         onNotificationsInitialized();
       }
     });
-  }
-
-  private void onNotificationsReceived () {
-    notificationListeners.trigger();
   }
 
   // Emoji

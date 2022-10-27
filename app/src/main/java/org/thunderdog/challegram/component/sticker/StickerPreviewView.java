@@ -357,14 +357,14 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
     setSticker(sticker, false);
   }
 
-  public void setReaction (Tdlib tdlib, TGReaction reaction, int cx, int cy, int width, int viewportHeight, boolean disableEmojis) {
+  public void setReaction (Tdlib tdlib, TGReaction reaction, @Nullable TGStickerObj effectAnimation, int cx, int cy, int width, int viewportHeight, boolean disableEmojis) {
     this.tdlib = tdlib;
     this.disableEmojis = disableEmojis;
     this.fromCx = cx;
     this.fromCy = cy;
     this.fromWidth = width;
     this.viewportHeight = viewportHeight;
-    setSticker(reaction.activateAnimationSicker(), reaction.effectAnimationSicker(), false);
+    setSticker(reaction.activateAnimationSicker(), effectAnimation != null ? effectAnimation : reaction.effectAnimationSicker(), false);
   }
 
   private LinearLayout menu;
