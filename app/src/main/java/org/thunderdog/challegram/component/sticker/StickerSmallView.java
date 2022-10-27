@@ -34,6 +34,7 @@ import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 
@@ -188,8 +189,8 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     if (saved) {
       c.save();
       float scale = originalScale * (MIN_SCALE + (1f - MIN_SCALE) * (1f - factor));
-      int cx = getMeasuredWidth() / 2;
-      int cy = getPaddingTop() + (getMeasuredHeight() - getPaddingBottom() - getPaddingBottom()) / 2;
+      int cx = imageReceiver.centerX();
+      int cy = imageReceiver.centerY();
       c.scale(scale, scale, cx, cy);
     }
     if (isAnimation) {

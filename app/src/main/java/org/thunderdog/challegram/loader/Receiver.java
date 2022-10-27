@@ -70,8 +70,9 @@ public interface Receiver extends TooltipOverlayView.LocationProvider {
 
   default void drawPlaceholderContour (Canvas c, Path path, float alpha) {
     if (path != null) {
-      int left = getLeft();
-      int top = getTop();
+      int size = Math.min(getWidth(), getHeight());
+      int left = centerX() - size / 2;
+      int top = centerY() - size / 2;
       final boolean translate = left != 0 || top != 0;
       final int restoreToCount;
       if (translate) {
