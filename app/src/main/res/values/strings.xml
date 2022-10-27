@@ -1978,10 +1978,10 @@
   <string name="EventLogNoLongerCreator">is no longer an owner</string>
 
   <string name="EventLogReactionsEnabled">Enabled chat reactions</string>
-  <string name="EventLogReactionsDisabled">Disabled chat reactions</string>
-  <string name="EventLogReactionsChanged">Changed available chat reactions</string>
+  <string name="EventLogReactionsDisabled">Disabled all chat reactions</string>
+  <string name="EventLogReactionsChanged">Changed available chat reactions:</string>
   <string name="EventLogReactionsEnabledAll">Enabled all chat reactions</string>
-  <string name="EventLogReactionsLimited">Limited available chat reactions</string>
+  <string name="EventLogReactionsLimited">Limited available chat reactions to:</string>
   <string name="EventLogReactionsAdded2">+ Added:</string>
   <string name="EventLogReactionsRemoved2">– Removed:</string>
 
