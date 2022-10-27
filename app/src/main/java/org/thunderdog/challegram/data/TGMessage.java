@@ -612,6 +612,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
     setIsBottom(true);
 
+    flags = BitwiseUtils.setFlag(flags, FLAG_IS_SENDER_ICON, StringUtils.isEmpty(msg.authorSignature) && msg.chatId != 0 && tdlib.isMultiChat(msg.chatId) && sender.isChannel());
+
     if (top == null || top.isThreadHeader() != isThreadHeader() || !(isEventLog() ? needHideEventDate() || (DateUtils.isSameHour(top.getComparingDate(), getComparingDate()) /*|| !(msg.content instanceof TdApiExt.MessageChatEvent)*/) : DateUtils.isSameDay(top.getComparingDate(), getComparingDate()))) {
       if (top != null) {
         top.setIsBottom(true);
@@ -627,12 +629,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
 
     flags &= ~FLAG_SHOW_DATE;
-
-    if (sender.isChannel()) {
-      flags |= FLAG_IS_SENDER_ICON;
-    } else {
-      flags &= ~FLAG_IS_SENDER_ICON;
-    }
 
     boolean useBubbles = useBubbles();
     boolean isChannel = isChannel();
