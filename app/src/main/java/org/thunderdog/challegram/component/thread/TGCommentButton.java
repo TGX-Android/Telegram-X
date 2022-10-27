@@ -182,11 +182,9 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
     this.mNeedBackground = needBackground;
     if (mNeedBackground) {
       mStartIconDrawable = Drawables.get(R.drawable.baseline_forum_16);
-      mUserAvatarStack.setStrokeColor(Theme.getColor(R.id.theme_color_bubble_button));
       mTextSize = sSmallTextSizeDp;
     } else {
       mStartIconDrawable = Drawables.get(R.drawable.baseline_forum_18);
-      mUserAvatarStack.setStrokeColor(Theme.getColor(R.id.theme_color_bubbleIn_background));
       mTextSize = sTextSizeDp;
     }
   }
@@ -493,14 +491,7 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
   }
 
   private void drawAvatarStack (Canvas canvas) {
-    int endIconOffset = shouldDisplayEndIcon()
-      ? mEndIconDrawable.getIntrinsicWidth() + endIconPadding
-      : 0;
-    mUserAvatarStack.draw(
-      canvas,
-      mX + width - endIconOffset - paddingEnd,
-      mY + (height - mUserAvatarStack.getCurrentHeight()) / 2
-    );
+    mUserAvatarStack.draw(canvas);
   }
 
   private void drawEndIcon (Canvas canvas) {
@@ -611,6 +602,13 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
       this.width = width;
       this.height = height;
       mBounds.set(x, y, x + width, y + height);
+      int endIconOffset = shouldDisplayEndIcon()
+        ? mEndIconDrawable.getIntrinsicWidth() + endIconPadding
+        : 0;
+      mUserAvatarStack.setEndEdge(
+        mX + width - endIconOffset - paddingEnd,
+        mY + (height - mUserAvatarStack.getCurrentHeight()) / 2
+      );
       resetBackgroundPath();
       if (sizeChanged) {
         setupCounter(width < getPreferredMinWidth());

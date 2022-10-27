@@ -2,8 +2,9 @@ package org.thunderdog.challegram.component.thread;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Path;
 import android.graphics.Rect;
-import android.util.Log;
+import android.graphics.Region;
 import android.view.animation.LinearInterpolator;
 
 import androidx.annotation.Nullable;
@@ -43,11 +44,9 @@ public class UserAvatarStack implements FactorAnimator.Target {
   private final ReceiverUpdateListener receiverUpdateListener = new ReceiverUpdateListener() {
     @Override
     public void onRequestInvalidate (Receiver receiver) {
-      Log.e("Avatars", "invalidate by receiver " + receiver);
       if (mParent != null) mParent.invalidate();
     }
   };
-  private int mStrokeColor;
   private ComplexReceiver complexReceiver;
   private int currentWidth, currentHeight;
   private float animatedFactor = 1f;
@@ -80,14 +79,9 @@ public class UserAvatarStack implements FactorAnimator.Target {
   public void setReceiversPool (ComplexReceiver complexReceiver) {
     this.complexReceiver = complexReceiver;
     forEachAvatar((pos, avatar) -> {
-      Log.e("Avatars", "setReceiversPool");
       avatar.setReceiver(this.complexReceiver, this.receiverUpdateListener);
     });
     mParent.invalidate();
-  }
-
-  public void setStrokeColor(int color) {
-    mStrokeColor = color;
   }
 
   public void update(Map<Long, AvatarInfo> avatarInfo, boolean animated) {
@@ -96,10 +90,8 @@ public class UserAvatarStack implements FactorAnimator.Target {
     measure();
     if (animated && changed) {
       animatedFactor = 0f;
-      Log.e("Avatars", "animate changes " + mAnimator.getFactor());
       mAnimator.animateTo(1f);
     } else {
-      Log.e("Avatars", "update changes");
       animatedFactor = 1f;
       clearTrash();
       mParent.invalidate();
@@ -114,20 +106,25 @@ public class UserAvatarStack implements FactorAnimator.Target {
     return currentHeight;
   }
 
-  public void draw(Canvas canvas, int endX, int endY) {
-    mBounds.set(
-      endX - currentWidth,
-      endY,
-      endX,
-      endY + currentHeight
-    );
+  public void setEndEdge (int endX, int endY) {
+    if (mBounds.right != endX || mBounds.top != endY) {
+      mBounds.set(
+        endX - currentWidth,
+        endY,
+        endX,
+        endY + currentHeight
+      );
+    }
+  }
+
+  public void draw(Canvas canvas) {
     if (DEBUG) {
       canvas.drawRect(mBounds, Paints.strokeSmallPaint(Color.RED));
     }
     for (Avatar avatar : mTrash) {
       avatar.scale = 1 - animatedFactor;
-      avatar.positionY = mOldBounds.top;
-      avatar.strokeColor = mStrokeColor;
+      avatar.updatePosition(avatar.positionX, mOldBounds.top);
+      avatar.shouldClip = true;
       avatar.draw(canvas);
     }
     final int lastPosition = mAvatars.size() - 1;
@@ -138,9 +135,8 @@ public class UserAvatarStack implements FactorAnimator.Target {
       }
       int startPosX = mBounds.right - sAvatarSizeDp;
       int animatedOffset = (int) (sOffset * (lastPosition - pos) * animatedFactor);
-      avatar.positionX = startPosX - animatedOffset;
-      avatar.positionY = mBounds.top;
-      avatar.strokeColor = mStrokeColor;
+      avatar.updatePosition(startPosX - animatedOffset, mBounds.top);
+      avatar.shouldClip = pos != lastPosition;
       avatar.draw(canvas);
     });
   }
@@ -182,7 +178,6 @@ public class UserAvatarStack implements FactorAnimator.Target {
       if (!mAvatars.containsKey(userId) && info != null) {
         Avatar avatar = new Avatar(info);
         if (complexReceiver != null) {
-          Log.e("Avatars", "updateInfo set receiver for new");
           avatar.setReceiver(complexReceiver, receiverUpdateListener);
         }
         changed = true;
@@ -194,7 +189,6 @@ public class UserAvatarStack implements FactorAnimator.Target {
       Map.Entry<Long, Avatar> entry = iterator.next();
       Avatar avatar = entry.getValue();
       if (complexReceiver != null && avatar.imageReceiver == null) {
-        Log.e("Avatars", "updateInfo set receiver for trash");
         avatar.setReceiver(complexReceiver, receiverUpdateListener);
       }
       if (!newInfo.containsKey(entry.getKey())) {
@@ -215,6 +209,7 @@ public class UserAvatarStack implements FactorAnimator.Target {
       mBounds.right,
       mBounds.bottom
     );
+    setEndEdge(mBounds.right, mBounds.top);
   }
 
   private static final class Avatar {
@@ -227,23 +222,33 @@ public class UserAvatarStack implements FactorAnimator.Target {
     private int positionX = 0;
     private int positionY = 0;
     private float scale = 0f;
-    private int strokeColor = 0;
+    private final Path clipPath;
+    private boolean shouldClip = false;
 
     Avatar (AvatarInfo avatarInfo) {
       this.id = avatarInfo.userId;
       this.imageFile = avatarInfo.imageFile;
       this.placeholder = avatarInfo.placeholder;
+      this.clipPath = new Path();
     }
 
     void setReceiver(ComplexReceiver receiver, ReceiverUpdateListener receiverUpdateListener) {
       imageReceiver = receiver.getImageReceiver(this.id);
       imageReceiver.setRadius(sAvatarSizeDp / 2);
       imageReceiver.setUpdateListener(receiverUpdateListener);
-      Log.e("Avatars", "setReceiver " + imageReceiver);
-      Log.e("Avatars", "setReceiver isSameFile " + (imageReceiver.getCurrentFile() == imageFile));
       if (imageFile != null) {
         imageFile.setSize(sAvatarSizeDp);
         imageReceiver.requestFile(imageFile);
+      }
+    }
+
+    void updatePosition(int x, int y) {
+      if (positionX != x || positionY != y) {
+        positionX = x;
+        positionY = y;
+        clipPath.reset();
+        clipPath.addCircle(sOffset, 0, height / 2f + Screen.dp(2), Path.Direction.CW);
+        clipPath.close();
       }
     }
 
@@ -253,8 +258,10 @@ public class UserAvatarStack implements FactorAnimator.Target {
       final int saveCount = canvas.save();
       canvas.translate(positionX + center, positionY + center);
       canvas.scale(scale, scale);
+      if (needBorder()) {
+        canvas.clipPath(clipPath, Region.Op.DIFFERENCE);
+      }
       if (imageReceiver != null && imageFile != null) {
-        Log.e("Avatars", "draw receiver " + imageReceiver);
         imageReceiver.setBounds(-center, -center, width - center, height - center);
         if (imageReceiver.needPlaceholder()) {
           imageReceiver.drawPlaceholderRounded(canvas, radius);
@@ -263,12 +270,11 @@ public class UserAvatarStack implements FactorAnimator.Target {
       } else if (placeholder != null) {
         placeholder.draw(canvas, 0, 0, 1f, radius);
       }
-      if (needBorder()) canvas.drawCircle(0, 0, radius, Paints.strokeSmallPaint(strokeColor));
       canvas.restoreToCount(saveCount);
     }
 
     boolean needBorder() {
-      return (imageReceiver != null && imageFile != null) || placeholder != null;
+      return shouldClip && ((imageReceiver != null && imageFile != null) || placeholder != null);
     }
 
     void destroy() {
