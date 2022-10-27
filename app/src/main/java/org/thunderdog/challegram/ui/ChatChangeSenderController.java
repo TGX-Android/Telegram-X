@@ -162,6 +162,7 @@ public class ChatChangeSenderController extends MediaBottomBaseController<Void> 
     tdlib.client().send(new TdApi.SetChatMessageSender(chatId, sender.getSender()), tdlib.okHandler(() -> {
       this.currentSelectedSenderId = newSelectedSenderId;
       settingsAdapter.updateAllValuedSettingsById(R.id.btn_sender_enabled);
+      mediaLayout.hide(false);
     }));
   }
 
