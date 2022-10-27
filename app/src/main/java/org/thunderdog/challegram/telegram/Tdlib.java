@@ -445,6 +445,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private int groupMaxSize = 200;
   private int pinnedChatsMaxCount = 5, pinnedArchivedChatsMaxCount = 100;
   private int favoriteStickersMaxCount = 5;
+  private long themedEmojiStatusesStickerSetId;
   private double emojiesAnimatedZoom = .75f;
   private boolean youtubePipDisabled, qrLoginCamera, dialogFiltersTooltip, dialogFiltersEnabled;
   private String qrLoginCode;
@@ -5961,6 +5962,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return favoriteStickersMaxCount;
   }
 
+  public boolean isThemedEmojiStatusesStickerSet (long stickerSetId) {
+    return stickerSetId != 0 && this.themedEmojiStatusesStickerSetId == stickerSetId;
+  }
+
   public double emojiesAnimatedZoom () {
     return emojiesAnimatedZoom;
   }
@@ -7824,6 +7829,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
             break;
           case "favorite_stickers_limit":
             this.favoriteStickersMaxCount = (int) longValue;
+            break;
+          case "themed_emoji_statuses_sticker_set_id":
+            this.themedEmojiStatusesStickerSetId = longValue;
             break;
         }
 
