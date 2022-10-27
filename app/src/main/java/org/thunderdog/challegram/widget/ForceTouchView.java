@@ -795,7 +795,7 @@ public class ForceTouchView extends FrameLayoutFix implements
 
   // Animation
 
-  private static final OvershootInterpolator overshootInterpolator = new OvershootInterpolator(1.24f); // 1.78f
+  private static final Interpolator quadraticEaseOutInterpolator = input -> 1 - (1 - input) * (1 - input); // 1.78f
   private FactorAnimator revealAnimator;
 
   @Override
@@ -803,7 +803,7 @@ public class ForceTouchView extends FrameLayoutFix implements
     if (Device.NEED_REDUCE_BOUNCE || Settings.instance().needReduceMotion()) {
       revealAnimator = new FactorAnimator(REVEAL_ANIMATOR, this, new DecelerateInterpolator(1.46f), 200l);
     } else {
-      revealAnimator = new FactorAnimator(REVEAL_ANIMATOR, this, overshootInterpolator, 350l);
+      revealAnimator = new FactorAnimator(REVEAL_ANIMATOR, this, quadraticEaseOutInterpolator, 250l);
     }
   }
 
