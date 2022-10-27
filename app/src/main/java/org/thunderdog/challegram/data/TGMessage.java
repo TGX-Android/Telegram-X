@@ -838,12 +838,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
   }
 
-  protected final boolean needCommentButton () {
-    if (!Config.COMMENTS_SUPPORTED || !msg.isChannelPost || isScheduled() || !allowInteraction() || isSponsored()) {
-      return false;
-    }
+  protected boolean needCommentButton () {
+    return Config.COMMENTS_SUPPORTED && msg.isChannelPost && !isSponsored() && allowInteraction() && !isScheduled();
+  }
+
+  protected boolean isCommentButtonEnabled() {
+    if (!needCommentButton()) return false;
     TdApi.Message msg = this.msg;
-    boolean isSending = isSending();
     synchronized (this) {
       if (combinedMessages != null && !combinedMessages.isEmpty()) {
         for (TdApi.Message message : combinedMessages) {
@@ -855,7 +856,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         }
       }
     }
-    return (msg.canGetMessageThread || isSending) && TD.getReplyInfo(msg.interactionInfo) != null;
+    return msg.canGetMessageThread;
   }
 
   public final void openMessageThread (MessageId highlightMessageId) {
@@ -5037,12 +5038,18 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     hasCommentButton.setValue(commentMode != COMMENT_MODE_NONE, animated);
     shareCounter.setCount(interactionInfo != null ? interactionInfo.forwardCount : 0, animated);
     isPinned.showHide(isPinned(), animated);
-    if (interactionInfo != null && interactionInfo.replyInfo != null && needCommentButton()) {
+    if (needCommentButton()) {
+      int replyCount = interactionInfo != null && interactionInfo.replyInfo != null
+        ? interactionInfo.replyInfo.replyCount
+        : 0;
+      TdApi.MessageSender[] senders = interactionInfo != null && interactionInfo.replyInfo != null
+        ? interactionInfo.replyInfo.recentReplierIds
+        : null;
       commentButton.update(new TGCommentButton.Info(
-        interactionInfo.replyInfo.replyCount,
-        interactionInfo.replyInfo.recentReplierIds,
-        Td.hasUnread(interactionInfo.replyInfo)
-      ), animated);
+        replyCount,
+        senders,
+        Td.hasUnread(interactionInfo != null ? interactionInfo.replyInfo : null)
+      ), isCommentButtonEnabled(), animated);
       commentButton.setForceDisplayEndIcon(!useBubbles());
       commentButton.setNeedBackground(useBubbles() && commentMode == COMMENT_MODE_DETACHED_BUTTON);
     }
@@ -6612,27 +6619,18 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       bottom = findBottomEdge();
     }
     float hasCommentFactor = hasCommentButton.getFloatValue();
-    if (hasCommentFactor > 0f) {
-      int y = bottom - getBubbleReduceHeight();
-      if (needCommentButtonSeparator()) {
-        int linePadding = Screen.dp(7);
-        c.drawLine(
-          leftContentEdge + linePadding,
-          y,
-          rightContentEdge - linePadding,
-          y,
-          Paints.strokeSeparatorPaint(ColorUtils.alphaColor(hasCommentFactor, getSeparatorColor()))
-        );
-      }
-      if (hasCommentFactor != 1f) {
-        c.save();
-        c.clipRect(leftContentEdge, y, rightContentEdge, bottom);
-      }
-      commentButton.draw(c);
-      if (hasCommentFactor != 1f) {
-        c.restore();
-      }
+    int y = bottom - getBubbleReduceHeight();
+    if (needCommentButtonSeparator()) {
+      int linePadding = Screen.dp(7);
+      c.drawLine(
+        leftContentEdge + linePadding,
+        y,
+        rightContentEdge - linePadding,
+        y,
+        Paints.strokeSeparatorPaint(ColorUtils.alphaColor(hasCommentFactor, getSeparatorColor()))
+      );
     }
+    commentButton.draw(c);
   }
 
   private void drawFooter (MessageView view, Canvas c) {
@@ -8071,15 +8069,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if ((useStickerBubbleReactions() || !useBubble())) {
       bottom = findBottomEdge();
     }
-    commentButton.setBounds(measureCommentButtonWidth(), leftContentEdge, bottom - getBubbleReduceHeight());
+    int w = measureCommentButtonWidth();
+    commentButton.setBounds(w, leftContentEdge, bottom - getBubbleReduceHeight());
+    commentButton.setEnabled(isCommentButtonEnabled());
     if (!useBubbles()) {
       int paddingStart = (xContentLeft - commentButton.getStartIconDrawable().getIntrinsicWidth()) / 2;
       commentButton.setHorizontalPaddings(paddingStart, TGCommentButton.DEFAULT_PADDING);
       commentButton.setStartDrawablePadding(paddingStart);
-    } else if (!useStickerBubbleReactions()) {
-      int padding = Screen.dp(12);
-      commentButton.setHorizontalPaddings(padding, padding);
-      commentButton.setStartDrawablePadding(padding);
     }
   }
 }

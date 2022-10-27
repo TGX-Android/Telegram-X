@@ -1487,6 +1487,11 @@ public final class TGMessageService extends TGMessageServiceImpl {
     });
   }
 
+  @Override
+  protected boolean needCommentButton () {
+    return false;
+  }
+
   // Pre-impl: utilities used by constructors
 
   @Override

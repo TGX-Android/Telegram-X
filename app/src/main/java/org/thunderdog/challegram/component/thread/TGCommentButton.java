@@ -82,7 +82,7 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
   private String mText;
   private boolean mAnimated = false;
   private int paddingStart = DEFAULT_PADDING, paddingEnd = DEFAULT_PADDING;
-  private int startIconPadding = DEFAULT_PADDING;
+  private int startIconPadding = Screen.dp(12);
   private int endIconPadding = DEFAULT_PADDING;
   private int mX, mY;
   private boolean mNeedBackground = false;
@@ -96,6 +96,7 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
   private int mTextSize;
   private Path mBackgroundPath;
   private boolean mPendingFade = false;
+  private boolean isEnabled = false;
 
   public static class Info {
     private final int count;
@@ -129,8 +130,8 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
     mParent = parent;
     mClickHelper = new ClickHelper(this);
     mCounterAnimator = new CounterAnimator<>(this);
-    mStartIconDrawable = Drawables.get(R.drawable.baseline_forum_24);
-    mEndIconDrawable = Drawables.get(R.drawable.round_keyboard_arrow_right_24);
+    mStartIconDrawable = Drawables.get(R.drawable.baseline_forum_18);
+    mEndIconDrawable = Drawables.get(R.drawable.round_keyboard_arrow_right_18);
     mUserAvatarStack = new UserAvatarStack(this);
     mBounds = new RectF();
     mBackgroundPath = new Path();
@@ -181,15 +182,17 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
     this.mNeedBackground = needBackground;
     if (mNeedBackground) {
       mStartIconDrawable = Drawables.get(R.drawable.baseline_forum_16);
-      mEndIconDrawable = Drawables.get(R.drawable.round_keyboard_arrow_right_18);
       mUserAvatarStack.setStrokeColor(Theme.getColor(R.id.theme_color_bubble_button));
       mTextSize = sSmallTextSizeDp;
     } else {
-      mStartIconDrawable = Drawables.get(R.drawable.baseline_forum_24);
-      mEndIconDrawable = Drawables.get(R.drawable.round_keyboard_arrow_right_24);
+      mStartIconDrawable = Drawables.get(R.drawable.baseline_forum_18);
       mUserAvatarStack.setStrokeColor(Theme.getColor(R.id.theme_color_bubbleIn_background));
       mTextSize = sTextSizeDp;
     }
+  }
+
+  public void setEnabled(boolean enabled) {
+    this.isEnabled = enabled;
   }
 
   public int getWidth () {
@@ -200,7 +203,7 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
     return height;
   }
 
-  public void update (Info info, boolean animated) {
+  public void update (Info info, boolean isEnabled, boolean animated) {
     if (mInfo != null && mInfo.equals(info)) return;
     this.mInfo = info;
     mAnimated = animated;
@@ -211,8 +214,9 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
     } else {
       mText = Lang.plural(R.string.xComments, mInfo.count);
     }
+    setupCounter(width < getPreferredMinWidth());
+    this.isEnabled = isEnabled;
     if (animated) {
-      setupCounter(width < getPreferredMinWidth());
       invalidate();
     }
   }
@@ -268,7 +272,7 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
       this
     )
       .noSpacing()
-      .allBold(true)
+      .allBold(false)
       .build();
   }
 
@@ -424,7 +428,7 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
   }
 
   public boolean handleTouch (int touchX, int touchY) {
-    return touchX >= mBounds.left
+    return isEnabled && touchX >= mBounds.left
       && touchX < mBounds.right
       && touchY >= mBounds.top
       && touchY < mBounds.bottom;
@@ -464,7 +468,7 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
       mStartIconDrawable,
       dX,
       dY,
-      PorterDuffPaint.get(mNeedBackground ? R.id.theme_color_white : R.id.theme_color_inlineIcon)
+      PorterDuffPaint.get(mNeedBackground ? R.id.theme_color_white : R.id.theme_color_inlineIcon, getEnabledAlpha())
     );
   }
 
@@ -482,8 +486,8 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
       0,
       0,
       0,
-      1f,
-      0f,
+      getEnabledAlpha(),
+      getEnabledAlpha(),
       1f
     );
   }
@@ -508,13 +512,18 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
       mEndIconDrawable,
       dX,
       dY,
-      PorterDuffPaint.get(mNeedBackground ? R.id.theme_color_white : R.id.theme_color_iconLight)
+      PorterDuffPaint.get(mNeedBackground ? R.id.theme_color_white : R.id.theme_color_iconLight, getEnabledAlpha())
     );
   }
 
   private void drawBackground (Canvas canvas) {
     if (mNeedBackground) {
-      Paint paint = Paints.fillingPaint(mParent.getBubbleButtonBackgroundColor());
+      Paint paint = Paints.fillingPaint(
+        ColorUtils.alphaColor(
+          getEnabledAlpha(),
+          mParent.getBubbleButtonBackgroundColor()
+        )
+      );
       Path path = getBackgroundPath();
       canvas.drawPath(path, paint);
     }
@@ -530,7 +539,12 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
       mX + width - endIconOffset - paddingEnd - mUserAvatarStack.getCurrentWidth() - endIconPadding - radius,
       mBounds.centerY(),
       radius,
-      Paints.fillingPaint(defaultTextColor())
+      Paints.fillingPaint(
+        ColorUtils.alphaColor(
+          getEnabledAlpha(),
+          defaultTextColor()
+        )
+      )
     );
   }
 
@@ -669,6 +683,10 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
     if (selectionAnimator != null) {
       selectionAnimator.forceFactor(this.selectionFactor = 0f);
     }
+  }
+
+  private float getEnabledAlpha() {
+    return isEnabled ? 1f : 0.7f;
   }
 
   private Map<Long, UserAvatarStack.AvatarInfo> getAvatars (TdApi.MessageSender[] senders) {
