@@ -839,7 +839,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   protected boolean needCommentButton () {
-    return Config.COMMENTS_SUPPORTED && msg.isChannelPost && !isSponsored() && allowInteraction() && !isScheduled();
+    return Config.COMMENTS_SUPPORTED && msg.isChannelPost && !isSponsored() && allowInteraction() && !isScheduled() && TD.getReplyInfo(msg.interactionInfo) != null;
   }
 
   protected boolean isCommentButtonEnabled() {
