@@ -24,6 +24,8 @@ import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 import android.view.View;
 
+import androidx.annotation.Nullable;
+
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
@@ -44,6 +46,7 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
 
   private static Paint strokePaint;
   private final Drawable sendIcon;
+  private @Nullable Drawable overlayIcon;
 
   public SendButton (Context context, int sendIconRes) {
     super(context);
@@ -70,6 +73,11 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
   @Override
   public boolean onTouchEvent (MotionEvent event) {
     return Views.onTouchEvent(this, event) && super.onTouchEvent(event);
+  }
+
+  public void setOverlayIcon (@Nullable Drawable overlayIcon) {
+    this.overlayIcon = overlayIcon;
+    invalidate();
   }
 
   private boolean inlineProgress;
@@ -122,6 +130,13 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
           c.scale(-1f, 1f, cx, cy);
         }
         Drawables.draw(c, sendIcon, cx - sendIcon.getMinimumWidth() / 2, cy - sendIcon.getMinimumHeight() / 2, paint);
+        if (overlayIcon != null) {
+          double radians = Math.toRadians(Lang.rtl() ? 315f : 40f);
+          float ocx = cx + (float) ((double) Screen.dp(15f) * Math.sin(radians));
+          float ocy = cy + (float) ((double) Screen.dp(15f) * Math.cos(radians));
+          c.drawCircle(ocx, ocy, Screen.dp(9.5f), Paints.getOuterCheckPaint(Theme.fillingColor()));
+          Drawables.drawCentered(c, overlayIcon, ocx, ocy, Paints.getPorterDuffPaint(Theme.getColor(R.id.theme_color_badgeMuted)));
+        }
         if (saved) {
           paint.setAlpha(sourceAlpha);
           c.restore();

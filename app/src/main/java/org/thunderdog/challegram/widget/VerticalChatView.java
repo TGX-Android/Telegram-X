@@ -16,6 +16,7 @@ package org.thunderdog.challegram.widget;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.text.TextPaint;
@@ -41,6 +42,7 @@ import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
+import org.thunderdog.challegram.telegram.TdlibUtils;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeListenerEntry;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
@@ -50,6 +52,7 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.text.Counter;
+import org.thunderdog.challegram.util.text.Letters;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
 
@@ -73,6 +76,7 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
     RippleSupport.setTransparentSelector(this);
 
     receiver = new ImageReceiver(this, Screen.dp(25f));
+    sendAsReceiver = new ImageReceiver(this, Screen.dp(10f));
     counter = new Counter.Builder().callback(this).outlineColor(R.id.theme_color_filling).build();
   }
 
@@ -102,10 +106,15 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
   @Override
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
     super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-    final int radius = Screen.dp(25f);
-    final int centerX = getMeasuredWidth() / 2;
-    final int centerY = getMeasuredHeight() / 2 - Screen.dp(11f);
+    int radius = Screen.dp(25f);
+    int centerX = getMeasuredWidth() / 2;
+    int centerY = getMeasuredHeight() / 2 - Screen.dp(11f);
     receiver.setBounds(centerX - radius, centerY - radius, centerX + radius, centerY + radius);
+    radius = Screen.dp(10f);
+    double radians = Math.toRadians(Lang.rtl() ? 135f : 225f);
+    centerX = receiver.getCenterX() + (int) ((double) (receiver.getWidth() / 2) * Math.sin(radians));
+    centerY = receiver.getCenterY() + (int) ((double) (receiver.getHeight() / 2) * Math.cos(radians));
+    sendAsReceiver.setBounds(centerX - radius, centerY - radius, centerX + radius, centerY + radius);
     buildTrimmedTitle();
   }
 
@@ -140,6 +149,32 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
     } else {
       this.avatarPlaceholder = null;
     }
+    invalidate();
+  }
+
+  private boolean hasSendAs;
+  private boolean hasSendAsPhoto;
+  private ImageReceiver sendAsReceiver;
+  private AvatarPlaceholder sendAsPlaceholder;
+  private Drawable sendAsIcon;
+
+  private void setSendAsAvatar (ImageFile imageFile) {
+    this.hasSendAsPhoto = imageFile != null;
+    sendAsReceiver.requestFile(imageFile);
+    invalidate();
+  }
+
+  private void setSendAsPlaceholder (AvatarPlaceholder.Metadata avatarPlaceholderMetadata) {
+    if (avatarPlaceholderMetadata != null) {
+      this.sendAsPlaceholder = new AvatarPlaceholder(10f, avatarPlaceholderMetadata, null);
+    } else {
+      this.sendAsPlaceholder = null;
+    }
+    invalidate();
+  }
+
+  private void setSendAsIcon (int resId) {
+    this.sendAsIcon = resId != 0 ? Drawables.get(resId) : null;
     invalidate();
   }
 
@@ -233,6 +268,44 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
     setAvatarPlaceholder(chat.getAvatarPlaceholderMetadata());
     setAvatar(chat.getAvatar());
     setTitle(chat.getSingleLineTitle().toString());
+    if (chat.getChat() != null && chat.getChat().messageSenderId != null) {
+      hasSendAs = true;
+
+      TGFoundChat sendAsChat = null;
+      if (chat.getChat().messageSenderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR) {
+        var sendAsChatId = ((TdApi.MessageSenderChat) chat.getChat().messageSenderId).chatId;
+        if (sendAsChatId != chat.getChatId()) {
+          sendAsChat = new TGFoundChat(tdlib(), null, sendAsChatId, true);
+        } else {
+          // anonymous admin
+          setSendAsIcon(R.drawable.dot_baseline_acc_anon_24);
+          setSendAsPlaceholder(null);
+          setSendAsAvatar(null);
+        }
+      } else if (chat.getChat().messageSenderId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR) {
+        var sendAsUserId = ((TdApi.MessageSenderUser) chat.getChat().messageSenderId).userId;
+        if (!tdlib().isSelfUserId(sendAsUserId)) {
+          sendAsChat = new TGFoundChat(tdlib(), tdlib.cache().user(sendAsUserId), "", false);
+        } else {
+          // private user
+          hasSendAs = false;
+          setSendAsIcon(0);
+          setSendAsPlaceholder(null);
+          setSendAsAvatar(null);
+        }
+      }
+
+      if (sendAsChat != null) {
+        setSendAsIcon(0);
+        setSendAsPlaceholder(sendAsChat.getAvatarPlaceholderMetadata());
+        setSendAsAvatar(sendAsChat.getAvatar());
+      }
+    } else {
+      hasSendAs = false;
+      setSendAsIcon(0);
+      setSendAsPlaceholder(null);
+      setSendAsAvatar(null);
+    }
     counter.setCount(chat.getUnreadCount(), !chat.notificationsEnabled(), isUpdate && isParentVisible());
   }
 
@@ -265,6 +338,11 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
 
   @Override
   public void onChatMarkedAsUnread (long chatId, boolean isMarkedAsUnread) {
+    updateChat(chatId);
+  }
+
+  @Override
+  public void onChatDefaultMessageSenderIdChanged (long chatId, TdApi.MessageSender senderId) {
     updateChat(chatId);
   }
 
@@ -402,6 +480,19 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
     DrawAlgorithms.drawOnline(c, receiver, onlineFactor * (1f - checkFactor));
     if (checkFactor > 0f) {
       DrawAlgorithms.drawSimplestCheckBox(c, receiver, checkFactor);
+    }
+    if (hasSendAs) {
+      c.drawCircle(sendAsReceiver.centerX(), sendAsReceiver.centerY(), Screen.dp(11.5f), Paints.getOuterCheckPaint(Theme.fillingColor()));
+      if (hasSendAsPhoto) {
+        if (sendAsReceiver.needPlaceholder()) {
+          sendAsReceiver.drawPlaceholderRounded(c, Screen.dp(10f));
+        }
+        sendAsReceiver.draw(c);
+      } else if (sendAsPlaceholder != null) {
+        sendAsPlaceholder.draw(c, sendAsReceiver.centerX(), sendAsReceiver.centerY());
+      } else if (sendAsIcon != null) {
+        Drawables.drawCentered(c, sendAsIcon, sendAsReceiver.centerX(), sendAsReceiver.centerY(), Paints.fillingPaint(R.id.theme_color_badgeMutedText));
+      }
     }
 
     if (trimmedTitle != null) {

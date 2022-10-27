@@ -4685,7 +4685,7 @@ public class TdlibUi extends Handler {
     }
   }
 
-  public final ForceTouchView.ActionListener createSimpleChatActions (final ViewController<?> context, final TdApi.ChatList chatList, final long chatId, final @Nullable ThreadInfo messageThread, IntList ids, IntList icons, StringList strings, final boolean allowInteractions, final boolean canSelect, final boolean isSelected, @Nullable Runnable onSelect) {
+  public final ForceTouchView.ActionListener createSimpleChatActions (final ViewController<?> context, final TdApi.ChatList chatList, final long chatId, final @Nullable ThreadInfo messageThread, IntList ids, IntList iconsRes, StringList strings, final boolean allowInteractions, final boolean canSelect, final boolean isSelected, @Nullable Runnable onSelect) {
     final TdApi.Chat chat = tdlib.chat(chatId);
     if (chat == null) {
       return null;
@@ -4700,49 +4700,49 @@ public class TdlibUi extends Handler {
             if (Config.CALL_FROM_PREVIEW && tdlib.cache().userGeneral(userId)) {
               ids.append(R.id.btn_phone_call);
               strings.append(R.string.Call);
-              icons.append(R.drawable.baseline_call_24);
+              iconsRes.append(R.drawable.baseline_call_24);
             }
           }
           final boolean hasNotifications = tdlib.chatNotificationsEnabled(chat.id);
           ids.append(R.id.btn_notifications);
           strings.append(hasNotifications ? R.string.Mute : R.string.Unmute);
-          icons.append(hasNotifications ? R.drawable.baseline_notifications_off_24 : R.drawable.baseline_notifications_24);
+          iconsRes.append(hasNotifications ? R.drawable.baseline_notifications_off_24 : R.drawable.baseline_notifications_24);
         }
 
         if (!hasSelect && position != null) {
           ids.append(R.id.btn_pinUnpinChat);
           strings.append(position.isPinned ? R.string.Unpin : R.string.Pin);
-          icons.append(position.isPinned ? R.drawable.deproko_baseline_pin_undo_24 : R.drawable.deproko_baseline_pin_24);
+          iconsRes.append(position.isPinned ? R.drawable.deproko_baseline_pin_undo_24 : R.drawable.deproko_baseline_pin_24);
         }
 
         boolean canRead = tdlib.canMarkAsRead(chat);
         ids.append(canRead ? R.id.btn_markChatAsRead : R.id.btn_markChatAsUnread);
         strings.append(canRead ? R.string.MarkAsRead : R.string.MarkAsUnread);
-        icons.append(canRead ? Config.ICON_MARK_AS_READ : Config.ICON_MARK_AS_UNREAD);
+        iconsRes.append(canRead ? Config.ICON_MARK_AS_READ : Config.ICON_MARK_AS_UNREAD);
 
         if (tdlib.canArchiveChat(chatList, chat)) {
           ids.append(R.id.btn_archiveUnarchiveChat);
           strings.append(chatList instanceof TdApi.ChatListArchive ? R.string.Unarchive : R.string.Archive);
-          icons.append(chatList instanceof TdApi.ChatListArchive ? R.drawable.baseline_unarchive_24 : R.drawable.baseline_archive_24);
+          iconsRes.append(chatList instanceof TdApi.ChatListArchive ? R.drawable.baseline_unarchive_24 : R.drawable.baseline_archive_24);
         }
 
         ids.append(R.id.btn_removeChatFromListOrClearHistory);
         strings.append(R.string.Delete);
-        icons.append(R.drawable.baseline_delete_24);
+        iconsRes.append(R.drawable.baseline_delete_24);
       } else if (position != null && position.source instanceof TdApi.ChatSourcePublicServiceAnnouncement) {
         ids.append(R.id.btn_removePsaChatFromList);
         strings.append(R.string.PsaHide);
-        icons.append(R.drawable.baseline_delete_sweep_24);
+        iconsRes.append(R.drawable.baseline_delete_sweep_24);
       }
     }
     if (hasSelect) {
       ids.append(R.id.btn_selectChat);
       if (ids.size() > 1) {
         strings.append(R.string.MoreChatOptions);
-        icons.append(R.drawable.baseline_more_horiz_24);
+        iconsRes.append(R.drawable.baseline_more_horiz_24);
       } else {
         strings.append(isSelected ? R.string.Unselect : R.string.Select);
-        icons.append(R.drawable.baseline_playlist_add_check_24);
+        iconsRes.append(R.drawable.baseline_playlist_add_check_24);
       }
     }
 
@@ -6076,6 +6076,7 @@ public class TdlibUi extends Handler {
 
   public interface SimpleSendCallback {
     void onSendRequested (TdApi.MessageSendOptions sendOptions, boolean disableMarkdown);
+    default void onCustomRequested (int id) {};
   }
 
   public HapticMenuHelper createSimpleHapticMenu (ViewController<?> context, long chatId, @Nullable FutureBool availabilityCallback, @Nullable FutureBool canDisableMarkdownCallback, RunnableData<List<HapticMenuHelper.MenuItem>> customItemProvider, SimpleSendCallback sendCallback, @Nullable ThemeDelegate forcedTheme) {
@@ -6109,6 +6110,8 @@ public class TdlibUi extends Handler {
         case R.id.btn_sendOnceOnline:
           sendCallback.onSendRequested(Td.newSendOptions(new TdApi.MessageSchedulingStateSendWhenOnline()), false);
           break;
+        default:
+          sendCallback.onCustomRequested(menuView.getId());
       }
     }, context != null ? context.getThemeListeners() : null, forcedTheme);
   }

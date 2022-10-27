@@ -17,12 +17,14 @@ package org.thunderdog.challegram.widget;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.ColorFilter;
 import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.util.SparseArray;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -67,6 +69,9 @@ import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.SensitiveContentContainer;
 import org.thunderdog.challegram.util.text.Text;
+
+import java.util.ArrayList;
+import java.util.Map;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.ViewUtils;
@@ -374,7 +379,7 @@ public class ForceTouchView extends FrameLayoutFix implements
         int i = rtl ? remaining - 1 : context.buttonIds.length - remaining;
         int buttonId = context.buttonIds[i];
         ImageView view;
-        if (Drawables.needMirror(context.buttonIcons[i])) {
+        if (context.buttonIconsRes[i] != 0 && Drawables.needMirror(context.buttonIconsRes[i])) {
           view = new ImageView(getContext()) {
             @Override
             protected void onDraw (Canvas c) {
@@ -393,7 +398,11 @@ public class ForceTouchView extends FrameLayoutFix implements
         view.setScaleType(ImageView.ScaleType.CENTER);
         view.setColorFilter(Theme.iconColor());
         themeListenerList.addThemeFilterListener(view, R.id.theme_color_icon);
-        view.setImageResource(context.buttonIcons[i]);
+        if (context.buttonIconsRes[i] != 0) {
+          view.setImageResource(context.buttonIconsRes[i]);
+        } else {
+          view.setImageDrawable(context.buttonIcons.get(i));
+        }
         view.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 2f));
 
         buttonsList.addView(view);
@@ -854,7 +863,8 @@ public class ForceTouchView extends FrameLayoutFix implements
     private MaximizeListener maximizeListener;
     private Object listenerArg;
     private int[] buttonIds;
-    private int[] buttonIcons;
+    private int[] buttonIconsRes;
+    private SparseArray<Drawable> buttonIcons;
     private String[] buttonHints;
     private boolean excludeHeader;
 
@@ -927,12 +937,13 @@ public class ForceTouchView extends FrameLayoutFix implements
       return hasFooter() ? (buttonIds.length > 1 ? buttonIds.length + 1 : buttonIds.length) * Screen.dp(48f) : 0;
     }
 
-    public void setButtons (ActionListener listener, Object listenerArg, int[] ids, int[] icons, String[] hints) {
+    public void setButtons (ActionListener listener, Object listenerArg, int[] ids, int[] iconsRes, SparseArray<Drawable> icons, String[] hints) {
       this.actionListener = listener;
       if (this.listenerArg == null) { // FIXME code design
         this.listenerArg = listenerArg;
       }
       this.buttonIds = ids;
+      this.buttonIconsRes = iconsRes;
       this.buttonIcons = icons;
       this.buttonHints = hints;
     }

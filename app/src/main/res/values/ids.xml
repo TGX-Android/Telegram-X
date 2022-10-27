@@ -228,6 +228,8 @@
   <item type="id" name="controller_chatLinkMembers" />
   <item type="id" name="controller_sponsoredMessagesInfo" />
 
+  <item type="id" name="controller_identitySelect" />
+
   <item type="id" name="separator" />
 
   <item type="id" name="msg_input" />
@@ -318,6 +320,9 @@
   <item type="id" name="btn_contactsUnregistered" />
   <item type="id" name="btn_bio" />
   <item type="id" name="btn_logout" />
+  <item type="id" name="btn_sendAsSelect" />
+  <item type="id" name="btn_sendAsQuickSelect" />
+  <item type="id" name="tag_haptic_menu_extra" />
   <item type="id" name="btn_camera" />
   <item type="id" name="btn_viewScheduled" />
   <item type="id" name="btn_takePhoto" />

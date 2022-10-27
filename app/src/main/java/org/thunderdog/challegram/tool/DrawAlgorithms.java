@@ -346,6 +346,20 @@ public class DrawAlgorithms {
     }
   }
 
+  public static void drawSimplestCheckBox (Canvas c, int centerX, int centerY, int width, int height, float checkFactor, int contentReplaceColor) {
+    if (checkFactor > 0f) {
+      boolean rtl = Lang.rtl();
+      final double radians = Math.toRadians(rtl ? 315f : 45f);
+      final int x = centerX + (int) ((float) width / 2 * Math.sin(radians));
+      final int y = centerY + (int) ((float) height / 2 * Math.cos(radians));
+      SimplestCheckBox.draw(c, x, y, checkFactor, null);
+      RectF rectF = Paints.getRectF();
+      int radius = Screen.dp(11f);
+      rectF.set(x - radius, y - radius, x + radius, y + radius);
+      c.drawArc(rectF, rtl ? 225f + 170f * (1f - checkFactor) : 135f, 170f * checkFactor, false, Paints.getOuterCheckPaint(contentReplaceColor));
+    }
+  }
+
   public static float getCounterWidth (float textSize, boolean needBackground, CounterAnimator<?> counter, int drawableWidth) {
     return getCounterWidth(textSize, needBackground, counter.getWidth(), drawableWidth);
   }

@@ -16,7 +16,9 @@ package org.thunderdog.challegram.ui;
 
 import android.content.Context;
 import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.util.SparseArray;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -418,18 +420,19 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
     cellView.setMedia(mediaItem);
 
     IntList ids = new IntList(2);
-    IntList icons = new IntList(2);
+    IntList iconsRes = new IntList(2);
+    SparseArray<Drawable> icons = new SparseArray<>(2);
     StringList strings = new StringList(2);
 
     ids.append(R.id.btn_deleteGif);
-    icons.append(R.drawable.baseline_delete_24);
+    iconsRes.append(R.drawable.baseline_delete_24);
     strings.append(R.string.Delete);
 
     ids.append(R.id.btn_send);
-    icons.append(R.drawable.deproko_baseline_send_24);
+    iconsRes.append(R.drawable.deproko_baseline_send_24);
     strings.append(R.string.Send);
 
-    context.setButtons(this, animation, ids.get(), icons.get(), strings.get());
+    context.setButtons(this, animation, ids.get(), iconsRes.get(), icons, strings.get());
 
     if (context().openForceTouch(context)) {
       gifsView.requestDisallowInterceptTouchEvent(true);

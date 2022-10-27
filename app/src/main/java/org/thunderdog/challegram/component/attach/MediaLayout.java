@@ -21,6 +21,8 @@ import android.animation.ValueAnimator;
 import android.annotation.TargetApi;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Canvas;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -54,6 +56,7 @@ import org.thunderdog.challegram.navigation.CounterHeaderView;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.component.sendas.AvatarDrawable;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
@@ -62,12 +65,15 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeChangeListener;
 import org.thunderdog.challegram.theme.ThemeListenerList;
 import org.thunderdog.challegram.theme.ThemeManager;
+import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Intents;
+import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.CreatePollController;
+import org.thunderdog.challegram.ui.IdentitySelectController;
 import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.HapticMenuHelper;
@@ -114,6 +120,8 @@ public class MediaLayout extends FrameLayoutFix implements
   // Data
   private boolean noMediaAccess;
   private @Nullable MessagesController target;
+  // updated in callback from IdentitySelectController
+  private @Nullable TdApi.MessageSender messageSenderId;
 
   // Children
   private MediaBottomBaseController<?>[] controllers;
@@ -145,6 +153,7 @@ public class MediaLayout extends FrameLayoutFix implements
   public void init (int mode, MessagesController target) {
     this.mode = mode;
     this.target = target;
+    this.messageSenderId = (target != null && target.getChat() != null) ? target.getChat().messageSenderId : null;
     this.rtl = Lang.rtl();
     this.needVote = false;
     final MediaBottomBar.BarItem[] items;
@@ -367,7 +376,7 @@ public class MediaLayout extends FrameLayoutFix implements
         return new MediaBottomLocationController(this);
       }
       case MODE_GALLERY: {
-        return new MediaBottomGalleryController(this);
+        return new MediaBottomGalleryController(this, false/*messageSenderId != null*/);
       }
     }
     if (rtl) {
@@ -376,7 +385,7 @@ public class MediaLayout extends FrameLayoutFix implements
     switch (index) {
       case 0: return new MediaBottomContactsController(this);
       case 1: return new MediaBottomFilesController(this);
-      case 2: return new MediaBottomGalleryController(this);
+      case 2: return new MediaBottomGalleryController(this, messageSenderId != null);
       case 3: return new MediaBottomLocationController(this);
       case 4: return new MediaBottomInlineBotsController(this);
       default: throw new IllegalArgumentException("Unknown index passed: " + index);
@@ -1189,6 +1198,7 @@ public class MediaLayout extends FrameLayoutFix implements
 
   private CounterHeaderView counterView;
   private ImageView sendButton;
+  private Drawable sendButtonOverlayIcon;
   private HapticMenuHelper sendMenu;
   private BackHeaderButton closeButton;
   private TextView counterHintView;
@@ -1264,6 +1274,22 @@ public class MediaLayout extends FrameLayoutFix implements
         public boolean onTouchEvent (MotionEvent e) {
           return isEnabled() && Views.isValid(this) && super.onTouchEvent(e);
         }
+
+        @Override
+        protected void onDraw (Canvas canvas) {
+          super.onDraw(canvas);
+
+          if (sendButtonOverlayIcon != null) {
+            final int cx = getMeasuredWidth() / 2;
+            final int cy = getMeasuredHeight() / 2;
+
+            double radians = Math.toRadians(Lang.rtl() ? 315f : 40f);
+            float ocx = cx + (float) ((double) Screen.dp(15f) * Math.sin(radians));
+            float ocy = cy + (float) ((double) Screen.dp(15f) * Math.cos(radians));
+            canvas.drawCircle(ocx, ocy, Screen.dp(9.5f), Paints.getOuterCheckPaint(Theme.fillingColor()));
+            Drawables.drawCentered(canvas, sendButtonOverlayIcon, ocx, ocy, Paints.getPorterDuffPaint(Theme.getColor(R.id.theme_color_badgeMuted)));
+          }
+        }
       };
       sendButton.setId(R.id.btn_send);
       sendButton.setScaleType(ImageView.ScaleType.CENTER);
@@ -1275,10 +1301,25 @@ public class MediaLayout extends FrameLayoutFix implements
       sendButton.setOnClickListener(this);
       bottomBar.addView(sendButton);
 
+      updateSendButtonOverlayIcon();
+
       sendMenu = new HapticMenuHelper(list -> {
         List<HapticMenuHelper.MenuItem> items = tdlib().ui().fillDefaultHapticMenu(getTargetChatId(), false, getCurrentController().canRemoveMarkdown(), true);
         if (items == null)
           items = new ArrayList<>();
+        if (messageSenderId != null) {
+          var sender = IdentitySelectController.parseSender(tdlib(), messageSenderId, null);
+          int senderAvatarRes = 0;
+          AvatarDrawable senderAvatar = null;
+          if (tdlib().isSelfUserId(Td.getSenderId(messageSenderId))) {
+            senderAvatarRes = R.drawable.dot_baseline_acc_personal_24;
+          } else if (getTargetChatId() == Td.getSenderId(messageSenderId)) {
+            senderAvatarRes = R.drawable.dot_baseline_acc_anon_24;
+          } else {
+            senderAvatar = new AvatarDrawable(list, 12f, sender.getAvatar(), sender.getAvatarPlaceholderMetadata());
+          }
+          items.add(0, new HapticMenuHelper.MenuItem(R.id.btn_sendAsSelect, "Send as...", sender.getName(), senderAvatarRes, senderAvatar, 0));
+        }
         getCurrentController().addCustomItems(items);
         return !items.isEmpty() ? items : null;
       }, (menuItem, parentView) -> {
@@ -1305,8 +1346,20 @@ public class MediaLayout extends FrameLayoutFix implements
               );
             }
             break;
+          case R.id.btn_sendAsSelect: {
+            var c = new IdentitySelectController(getTarget().context(), tdlib());
+            c.setArguments(new IdentitySelectController.Args(
+              getTargetChatId(),
+              messageSenderId,
+              messageSenderId -> UI.post(() -> {
+                MediaLayout.this.messageSenderId = messageSenderId;
+                updateSendButtonOverlayIcon();
+              })
+            ));
+            c.show();
+          }
         }
-      }, themeListeners, null).attachToView(sendButton);
+      }, themeListeners, null).attachToView(sendButton, false);
 
       params = FrameLayoutFix.newParams(Screen.dp(55f), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.RIGHT);
       params.rightMargin = Screen.dp(55f);
@@ -1354,6 +1407,26 @@ public class MediaLayout extends FrameLayoutFix implements
       checkSuffix(false);
       // setNeedGroupMedia(TGSettingsManager.instance().needGroupMedia(), false);
     }
+  }
+
+  private void updateSendButtonOverlayIcon () {
+    if (messageSenderId != null) {
+      if (tdlib().isSelfChat(Td.getSenderId(messageSenderId))) {
+        sendButtonOverlayIcon = null;
+      } else if (getTargetChatId() == Td.getSenderId(messageSenderId)) {
+        sendButtonOverlayIcon = Drawables.get(R.drawable.dot_baseline_acc_anon_24);
+        sendButtonOverlayIcon.setBounds(0, 0, Screen.dp(15f), Screen.dp(15f));
+      } else {
+        var sender = IdentitySelectController.parseSender(tdlib(), messageSenderId, null);
+
+        sendButtonOverlayIcon = new AvatarDrawable(null, 7.5f, sender.getAvatar(), sender.getAvatarPlaceholderMetadata());
+        sendButtonOverlayIcon.setBounds(0, 0, Screen.dp(15f), Screen.dp(15f));
+      }
+    } else {
+      sendButtonOverlayIcon = null;
+    }
+
+    sendButton.invalidate();
   }
 
   private void checkSuffix (boolean animate) {

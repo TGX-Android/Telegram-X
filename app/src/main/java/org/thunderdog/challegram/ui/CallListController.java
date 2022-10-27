@@ -15,6 +15,8 @@
 package org.thunderdog.challegram.ui;
 
 import android.content.Context;
+import android.graphics.drawable.Drawable;
+import android.util.SparseArray;
 import android.view.View;
 import android.widget.TextView;
 
@@ -572,7 +574,7 @@ public class CallListController extends RecyclerViewController<Void> implements
   }
 
   @Override
-  public ForceTouchView.ActionListener onCreateActions (View v, ForceTouchView.ForceTouchContext context, IntList ids, IntList icons, StringList strings, ViewController<?> target) {
+  public ForceTouchView.ActionListener onCreateActions (View v, ForceTouchView.ForceTouchContext context, IntList ids, IntList iconsRes, SparseArray<Drawable> icons, StringList strings, ViewController<?> target) {
     final ListItem item = (ListItem) v.getTag();
     if (item == null) {
       return null;
@@ -604,12 +606,12 @@ public class CallListController extends RecyclerViewController<Void> implements
     if (tdlib.cache().userGeneral(userId)) {
       ids.append(R.id.btn_phone_call);
       strings.append(R.string.Call);
-      icons.append(R.drawable.baseline_call_24);
+      iconsRes.append(R.drawable.baseline_call_24);
     }
 
     ids.append(R.id.btn_delete);
     strings.append(R.string.RemoveCall);
-    icons.append(R.drawable.baseline_delete_sweep_24);
+    iconsRes.append(R.drawable.baseline_delete_sweep_24);
 
     return new ForceTouchView.ActionListener() {
       @Override

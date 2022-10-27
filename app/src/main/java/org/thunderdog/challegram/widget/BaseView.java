@@ -15,6 +15,8 @@
 package org.thunderdog.challegram.widget;
 
 import android.content.Context;
+import android.graphics.drawable.Drawable;
+import android.util.SparseArray;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
@@ -34,6 +36,7 @@ import org.thunderdog.challegram.data.ThreadInfo;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
+import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.ChatsController;
 import org.thunderdog.challegram.ui.MainController;
@@ -52,7 +55,7 @@ import me.vkryl.td.MessageId;
 
 public class BaseView extends SparseDrawableView implements ClickHelper.Delegate, View.OnClickListener, TdlibDelegate {
   public interface ActionListProvider {
-    ForceTouchView.ActionListener onCreateActions (View v, ForceTouchView.ForceTouchContext context, IntList ids, IntList icons, StringList strings, ViewController<?> target);
+    ForceTouchView.ActionListener onCreateActions (View v, ForceTouchView.ForceTouchContext context, IntList ids, IntList iconsRes, SparseArray<Drawable> icons, StringList strings, ViewController<?> target);
   }
 
   public interface CustomControllerProvider {
@@ -520,17 +523,18 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
     }
 
     IntList ids = new IntList(5);
-    IntList icons = new IntList(5);
+    IntList iconsRes = new IntList(5);
+    SparseArray<Drawable> icons = new SparseArray<>(5);
     StringList strings = new StringList(5);
     ForceTouchView.ActionListener listener = null;
 
     if (actionListProvider != null) {
-      listener = actionListProvider.onCreateActions(this, context, ids, icons, strings, controller);
+      listener = actionListProvider.onCreateActions(this, context, ids, iconsRes, icons, strings, controller);
     } else if (controller instanceof MessagesController && ancestor != null) {
       // TODO move MessagesController-related stuff somewhere out of BaseView
       if (getPreviewFilter() instanceof TdApi.SearchMessagesFilterPinned && getPreviewHighlightMessageId() != null && tdlib.canPinMessages(tdlib.chat(chatId))) {
         ids.append(R.id.btn_messageUnpin);
-        icons.append(R.drawable.deproko_baseline_pin_undo_24);
+        iconsRes.append(R.drawable.deproko_baseline_pin_undo_24);
         strings.append(R.string.Unpin);
         MessageId messageId = getPreviewHighlightMessageId();
         listener = new ForceTouchView.ActionListener() {
@@ -550,11 +554,11 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
           public void onAfterForceTouchAction (ForceTouchView.ForceTouchContext context, int actionId, Object arg) { }
         };
       } else {
-        listener = ancestor.tdlib().ui().createSimpleChatActions(ancestor, getPreviewChatList(), getPreviewChatId(), ((MessagesController) controller).getMessageThread(), ids, icons, strings, ancestor instanceof MainController || ancestor instanceof ChatsController, false, false, null);
+        listener = ancestor.tdlib().ui().createSimpleChatActions(ancestor, getPreviewChatList(), getPreviewChatId(), ((MessagesController) controller).getMessageThread(), ids, iconsRes, strings, ancestor instanceof MainController || ancestor instanceof ChatsController, false, false, null);
       }
     }
     if (listener != null) {
-      context.setButtons(listener, controller, ids.get(), icons.get(), strings.get());
+      context.setButtons(listener, controller, ids.get(), iconsRes.get(), icons, strings.get());
     }
 
     if (UI.getContext(getContext()).openForceTouch(context)) {

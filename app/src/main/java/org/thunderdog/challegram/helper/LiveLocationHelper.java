@@ -22,6 +22,7 @@ import android.os.Message;
 import android.os.SystemClock;
 import android.text.TextPaint;
 import android.text.TextUtils;
+import android.util.SparseArray;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -672,7 +673,7 @@ public class LiveLocationHelper implements LiveLocationManager.Listener, FactorA
   }
 
   @Override
-  public ForceTouchView.ActionListener onCreateActions (View v, ForceTouchView.ForceTouchContext context, IntList ids, IntList icons, StringList strings, ViewController<?> target) {
+  public ForceTouchView.ActionListener onCreateActions (View v, ForceTouchView.ForceTouchContext context, IntList ids, IntList iconsRes, SparseArray<Drawable> icons, StringList strings, ViewController<?> target) {
     context.setAllowFullscreen(true);
     final ForceTouchView.MaximizeListener maximizeListener = context.getMaximizeListener();
     context.setMaximizeListener((target1, animateToWhenReady, arg) -> {
@@ -684,7 +685,7 @@ public class LiveLocationHelper implements LiveLocationManager.Listener, FactorA
     });
     ids.append(R.id.btn_messageLiveStop);
     strings.append(R.string.StopLiveLocationShort);
-    icons.append(R.drawable.baseline_remove_circle_24);
+    iconsRes.append(R.drawable.baseline_remove_circle_24);
     return this;
   }
 

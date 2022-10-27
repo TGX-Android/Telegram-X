@@ -28,9 +28,11 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationManager;
 import android.media.MediaMetadataRetriever;
@@ -122,6 +124,8 @@ import org.thunderdog.challegram.component.chat.WallpaperRecyclerView;
 import org.thunderdog.challegram.component.chat.WallpaperView;
 import org.thunderdog.challegram.component.popups.MessageSeenController;
 import org.thunderdog.challegram.component.popups.ModernActionedLayout;
+import org.thunderdog.challegram.component.sendas.AnimatedAvatarView;
+import org.thunderdog.challegram.component.sendas.AnimatedTextView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
@@ -175,6 +179,7 @@ import org.thunderdog.challegram.navigation.ViewPagerHeaderViewCompact;
 import org.thunderdog.challegram.navigation.ViewPagerTopView;
 import org.thunderdog.challegram.player.RecordAudioVideoController;
 import org.thunderdog.challegram.player.RoundVideoController;
+import org.thunderdog.challegram.component.sendas.AvatarDrawable;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.ChatListener;
@@ -309,12 +314,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private SeparatorView bottomShadowView;
   private boolean enableOnResume;
 
+  private AnimatedTextView sendAsCaption;
+
   private EmojiLayout emojiLayout;
   private AttachLinearLayout attachButtons;
   private ImageView emojiButton;
   private VoiceVideoButtonView recordButton;
   private SendButton sendButton;
   private HapticMenuHelper sendMenu;
+  private AnimatedAvatarView sendAsButton;
+  private HapticMenuHelper sendAsMenu;
   private InvisibleImageView cameraButton, scheduleButton;
   private InvisibleImageView commandButton;
   private @Nullable SilentButton silentButton;
@@ -338,6 +347,21 @@ public class MessagesController extends ViewController<MessagesController.Argume
     TdApi.FormattedText currentText = null;
     boolean canSendWithoutMarkdown = inputView != null && !Td.equalsTo(inputView.getOutputText(true), currentText = inputView.getOutputText(false), true);
     List<HapticMenuHelper.MenuItem> items = tdlib.ui().fillDefaultHapticMenu(getChatId(), isEditingMessage(), canSendWithoutMarkdown, true);
+    if (!isEditingMessage() && chat != null && chat.messageSenderId != null) {
+      if (items == null)
+        items = new ArrayList<>();
+      var sender = IdentitySelectController.parseSender(tdlib(), chat.messageSenderId, null);
+      int senderAvatarRes = 0;
+      AvatarDrawable senderAvatar = null;
+      if (tdlib().isSelfUserId(Td.getSenderId(chat.messageSenderId))) {
+        senderAvatarRes = R.drawable.dot_baseline_acc_personal_24;
+      } else if (chat.id == Td.getSenderId(chat.messageSenderId)) {
+        senderAvatarRes = R.drawable.dot_baseline_acc_anon_24;
+      } else {
+        senderAvatar = new AvatarDrawable(view, 12f, sender.getAvatar(), sender.getAvatarPlaceholderMetadata());
+      }
+      items.add(0, new HapticMenuHelper.MenuItem(R.id.btn_sendAsSelect, "Send as...", sender.getName(), senderAvatarRes, senderAvatar, 0));
+    }
     if (!canSendWithoutMarkdown && tdlib.shouldSendAsDice(currentText) && !isEditingMessage()) {
       if (items == null)
         items = new ArrayList<>();
@@ -393,6 +417,42 @@ public class MessagesController extends ViewController<MessagesController.Argume
             sendText(true, modifiedSendOptions);
           }
         });
+        break;
+      }
+      case R.id.btn_sendAsSelect: {
+        var c = new IdentitySelectController(context(), tdlib());
+        c.setArguments(new IdentitySelectController.Args(chat.id, chat.messageSenderId, null));
+        c.show();
+        break;
+      }
+      case R.id.btn_sendAsQuickSelect: {
+        var newMessageSenderChatId = (long) view.getTag(R.id.tag_haptic_menu_extra);
+        TdApi.MessageSender newMessageSenderId;
+        if (newMessageSenderChatId > 0) {
+          newMessageSenderId = new TdApi.MessageSenderUser(newMessageSenderChatId);
+        } else {
+          newMessageSenderId = new TdApi.MessageSenderChat(newMessageSenderChatId);
+        }
+
+        if (!tdlib().hasPremium()) {
+          var futureSender = Arrays.stream(messageSenders.senders)
+            .filter(it -> Td.getSenderId(it.sender) == newMessageSenderChatId)
+            .findFirst().orElse(null);
+          if (futureSender != null && futureSender.needsPremium) {
+            UI.showToast("Premium required", Toast.LENGTH_LONG);
+            return;
+          }
+        }
+
+        tdlib().client().send(
+          new TdApi.SetChatMessageSender(chat.id, newMessageSenderId),
+          result -> tdlib().ui().post(() -> {
+            //android.util.Log.i("MC", String.format("SetChatMessageSender result %s", result.toString()));
+            if (result instanceof TdApi.Error) {
+              UI.showToast(result.toString(), Toast.LENGTH_LONG);
+            }
+          })
+        );
         break;
       }
     }
@@ -502,6 +562,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
     }
   }
+
+  private TdApi.ChatMessageSenders messageSenders;
 
   @Override
   protected View onCreateView (final Context context) {
@@ -951,6 +1013,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         if (inputView != null && getMeasuredWidth() > 0) {
           inputView.checkPlaceholderWidth();
+
+          //int availWidth = Math.max(0, contentView.getMeasuredWidth() - getHorizontalInputPadding() - sendAsCaption.getPaddingLeft());
+          //sendAsCaption.getLayoutParams().width = availWidth;
         }
       }
     };
@@ -970,6 +1035,52 @@ public class MessagesController extends ViewController<MessagesController.Argume
     mediaButton.setOnClickListener(this);
     mediaButton.setLayoutParams(lp);
 
+    lp = new LinearLayout.LayoutParams(Screen.dp(ATTACH_BUTTONS_WIDTH), Screen.dp(49f));
+    sendAsButton = new AnimatedAvatarView(context);
+    sendAsButton.setId(R.id.btn_sendAsSelect);
+    //sendAsButton.setScaleType(ImageView.ScaleType.CENTER);
+    sendAsButton.setColorFilter(Theme.iconColor());
+    addThemeFilterListener(sendAsButton, R.id.theme_color_icon);
+    sendAsButton.setOnClickListener(this);
+    sendAsButton.setLayoutParams(lp);
+    //Views.setClickable(sendAsButton);
+    //RippleSupport.setTransparentSelector(sendAsButton);
+
+    sendAsMenu = new HapticMenuHelper(view -> {
+      final int MAX_QUICK_SENDERS = 4;
+      var items = new ArrayList<HapticMenuHelper.MenuItem>(MAX_QUICK_SENDERS + 1);
+      Arrays.stream(messageSenders.senders)
+        .map(it -> IdentitySelectController.parseSender(tdlib(), it.sender, null))
+        .filter(it -> it.getChatId() != Td.getSenderId(chat.messageSenderId))
+        .limit(MAX_QUICK_SENDERS)
+        .forEach(it -> {
+          String username;
+          int avatarRes = 0;
+          AvatarDrawable avatar = null;
+          int premiumLockRes = 0;
+          if (tdlib().isSelfUserId(it.getChatId())) {
+            username = "your account";
+            avatarRes = R.drawable.dot_baseline_acc_personal_24;
+          } else if (it.getChatId() == chat.id) {
+            username = "Anonymous Admin";
+            avatarRes = R.drawable.dot_baseline_acc_anon_24;
+          } else {
+            username = "@" + tdlib().chatUsername(it.getChatId());
+            avatar = new AvatarDrawable(view, 12f, it.getAvatar(), it.getAvatarPlaceholderMetadata());
+            if (!tdlib().hasPremium()) {
+              var info = tdlib().cache().supergroupFull(ChatId.toSupergroupId(chat.id));
+              if (info == null || it.getChatId() != info.linkedChatId) {
+                premiumLockRes = R.drawable.baseline_lock_24;
+              }
+            }
+          }
+          items.add(0, new HapticMenuHelper.MenuItem(R.id.btn_sendAsQuickSelect, it.getName(), username, avatarRes, avatar, premiumLockRes).setExtraTag(it.getChatId()));
+        });
+      if (messageSenders.senders.length > 5) {
+        items.add(0, new HapticMenuHelper.MenuItem(R.id.btn_sendAsSelect, "More", R.drawable.baseline_more_horiz_24));
+      }
+      return items;
+    }, this, getThemeListeners(), null).attachToView(sendAsButton, true);
 
     lp = new LinearLayout.LayoutParams(Screen.dp(ATTACH_BUTTONS_WIDTH), Screen.dp(49f));
     cameraButton = new CameraAccessImageView(context, this);
@@ -1033,6 +1144,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (scheduleButton != null) {
       attachButtons.addView(scheduleButton);
     }
+    attachButtons.addView(sendAsButton);
     if (cameraButton != null) {
       attachButtons.addView(cameraButton);
     }
@@ -1056,7 +1168,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     sendButton.setAlpha(0f);
     sendButton.setLayoutParams(params);
 
-    sendMenu = new HapticMenuHelper(this, this, getThemeListeners(), null).attachToView(sendButton);
+    sendMenu = new HapticMenuHelper(this, this, getThemeListeners(), null).attachToView(sendButton, false);
 
     if (inPreviewMode) {
       switch (previewMode) {
@@ -1240,6 +1352,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
       bottomShadowView.setVisibility(View.GONE);
     }
 
+    // TODO: set width based on the width of visible attachButtons
+    params = new RelativeLayout.LayoutParams(Screen.dp(150f), Screen.dp(19f));
+    params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+    params.leftMargin = inputView != null ? inputView.getPaddingLeft() : 0;
+
+    sendAsCaption = new AnimatedTextView(context());
+    sendAsCaption.setPrefix("as ");
+    sendAsCaption.setLayoutParams(params);
+
     // Setup
 
     contentView.addView(wallpaperView);
@@ -1261,6 +1382,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     if (previewMode == PREVIEW_MODE_NONE) {
       contentView.addView(emojiButton);
+      contentView.addView(sendAsCaption);
       contentView.addView(attachButtons);
       contentView.addView(sendButton);
 
@@ -1740,6 +1862,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
     }
     switch (v.getId()) {
+      case R.id.btn_sendAsSelect: {
+        var c = new IdentitySelectController(context(), tdlib());
+        c.setArguments(new IdentitySelectController.Args(chat.id, chat.messageSenderId, null));
+        c.show();
+        break;
+      }
       case R.id.btn_camera: {
         if (!showRestriction(v, R.id.right_sendMedia, R.string.ChatDisabledMedia, R.string.ChatRestrictedMedia, R.string.ChatRestrictedMediaUntil)) {
           openInAppCamera(new CameraOpenOptions().anchor(v).noTrace(isSecretChat()));
@@ -2537,6 +2665,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     headerCell.setChat(tdlib, chat, messageThread);
 
+    if (chat != null && chat.messageSenderId != null) {
+      sendAsButton.setVisibility(View.VISIBLE);
+      cameraButton.setVisibility(View.GONE);
+    } else {
+      sendAsButton.setVisibility(View.GONE);
+      cameraButton.setVisibility(View.VISIBLE);
+    }
+
     if (inPreviewMode) {
       switch (previewMode) {
         case PREVIEW_MODE_EVENT_LOG:
@@ -2619,6 +2755,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
         break;
       }
     }
+
+    //
+    updateSendAs(false);
+
+    checkAvailableMessageSenders();
 
     // Loading bot information after the messages to display them faster
 
@@ -2828,6 +2969,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     runOnUiThreadOptional(() -> {
       if (getChatId() == chatId) {
         updateInputHint();
+        updateSendAs(inputView != null && inputView.isEmpty());
       }
     });
   }
@@ -2835,6 +2977,95 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void updateInputHint () {
     if (inputView != null) {
       inputView.updateMessageHint(chat, messageThread, Config.NEED_SILENT_BROADCAST && silentButton != null ? silentButton.getIsSilent() : tdlib.chatDefaultDisableNotifications(getChatId()));
+    }
+  }
+
+  private boolean hasSendAsCaption;
+
+  private void updateSendAs (boolean animated) {
+    if (chat == null || inputView == null) {
+      return;
+    }
+
+    Drawable avatar = null;
+    String title = null;
+
+    if (chat.messageSenderId != null) {
+      if (tdlib().isSelfChat(Td.getSenderId(chat.messageSenderId))) {
+        avatar = Drawables.get(R.drawable.dot_baseline_acc_personal_24);
+
+        sendButton.setOverlayIcon(null);
+      } else if (chat.id == Td.getSenderId(chat.messageSenderId)) {
+        avatar = Drawables.get(R.drawable.dot_baseline_acc_anon_24);
+
+        var sendButtonOverlay = Drawables.get(R.drawable.dot_baseline_acc_anon_24);
+        sendButtonOverlay.setBounds(0, 0, Screen.dp(15f), Screen.dp(15f));
+        sendButton.setOverlayIcon(sendButtonOverlay);
+
+        title = "Anonymous Admin";
+      } else {
+        var sender = IdentitySelectController.parseSender(tdlib(), chat.messageSenderId, null);
+        avatar = new AvatarDrawable(null, 12f, sender.getAvatar(), sender.getAvatarPlaceholderMetadata());
+
+        var sendButtonOverlay = new AvatarDrawable(null, 7.5f, sender.getAvatar(), sender.getAvatarPlaceholderMetadata());
+        sendButtonOverlay.setBounds(0, 0, Screen.dp(15f), Screen.dp(15f));
+        sendButton.setOverlayIcon(sendButtonOverlay);
+
+        title = sender.getName();
+      }
+    } else {
+      sendButton.setOverlayIcon(null);
+    }
+
+    final int verticalPadding = Screen.dp(12f);
+    final var up = title != null;
+    final var wholeText = !hasSendAsCaption || title == null;
+
+    hasSendAsCaption = title != null;
+
+    if (animated) {
+      sendAsCaption.setNewText(title);
+      sendAsButton.setNewAvatar(avatar, up);
+
+      final var animator = new FactorAnimator(1, new FactorAnimator.Target() {
+        @Override
+        public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
+          if (wholeText) {
+            final var d = Screen.dp(7f * (up ? factor : 1f - factor));
+            inputView.setPadding(inputView.getPaddingLeft(), verticalPadding - d, inputView.getPaddingRight(), verticalPadding + d);
+          }
+
+          sendAsCaption.setFactor(factor);
+
+          sendAsButton.setFactor(factor);
+        }
+
+        @Override
+        public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
+          if (!hasSendAsCaption) {
+            hideSendAsCaption();
+          }
+        }
+      }, AnimatorUtils.DECELERATE_INTERPOLATOR, 150L);
+
+      animator.animateTo(1f);
+    } else {
+      if (inputView.isEmpty()) {
+        final var d = Screen.dp(up ? 7f : 0f);
+        inputView.setPadding(inputView.getPaddingLeft(), verticalPadding - d, inputView.getPaddingRight(), verticalPadding + d);
+      }
+
+      sendAsCaption.setText(title, false);
+      if (!hasSendAsCaption) {
+        hideSendAsCaption();
+      }
+
+      sendAsButton.setAvatar(avatar, false, up);
+    }
+
+    if (inputView.isEmpty() && hasSendAsCaption) {
+      sendAsCaption.setAlpha(1f);  // restoring after possible setSendFactor without hasSendAsCaption
+      displaySendAsCaption();
     }
   }
 
@@ -2965,9 +3196,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
       replyView.setVisibility(View.VISIBLE);
       emojiButton.setVisibility(View.VISIBLE);
       if (notEmpty) {
+        sendAsCaption.setVisibility(View.INVISIBLE);
         attachButtons.setVisibility(View.INVISIBLE);
         sendButton.setVisibility(View.VISIBLE);
       } else {
+        sendAsCaption.setVisibility(View.VISIBLE);
         attachButtons.setVisibility(View.VISIBLE);
         sendButton.setVisibility(View.INVISIBLE);
       }
@@ -2977,6 +3210,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       replyView.setVisibility(View.GONE);
       bottomShadowView.setVisibility(View.GONE);
       emojiButton.setVisibility(View.GONE);
+      sendAsCaption.setVisibility(View.GONE);
       attachButtons.setVisibility(View.GONE);
       sendButton.setVisibility(View.GONE);
     }
@@ -3830,6 +4064,20 @@ public class MessagesController extends ViewController<MessagesController.Argume
         setScrollToBottomVisible(false, isFocused());
       }
     }
+  }
+
+  private void checkAvailableMessageSenders () {
+    if (chat == null || chat.messageSenderId == null) {
+      return;
+    }
+
+    tdlib().client().send(new TdApi.GetChatAvailableMessageSenders(chat.id), result -> {
+      if (result instanceof TdApi.ChatMessageSenders) {
+        messageSenders = (TdApi.ChatMessageSenders) result;
+      } else {
+        messageSenders = new TdApi.ChatMessageSenders(new TdApi.ChatMessageSender[] {});
+      }
+    });
   }
 
   private void checkLinkedChat () {
@@ -5558,6 +5806,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       inputView.setInput("", false, false);
     }
 
+    hideSendAsCaption();
     hideAttachButtons();
     hideSendButton();
     hideEmojiButton();
@@ -8556,6 +8805,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
     sendButton.setVisibility(View.INVISIBLE);
   }
 
+  private void displaySendAsCaption () {
+    sendAsCaption.setVisibility(hasSendAsCaption ? View.VISIBLE : View.INVISIBLE);
+  }
+
+  private void hideSendAsCaption () {
+    sendAsCaption.setVisibility(View.INVISIBLE);
+  }
+
   private void displayAttachButtons () {
     attachButtons.setVisibility(View.VISIBLE);
   }
@@ -8583,6 +8840,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private void setSendFactor (float factor) {
     if (this.sendFactor != factor) {
       this.sendFactor = factor;
+
+      if (inputView != null && hasSendAsCaption) {
+        final var padding = Screen.dp((1 - factor) * 7);
+        final var verticalPadding = Screen.dp(12f);
+        inputView.setPadding(inputView.getPaddingLeft(), verticalPadding - padding, inputView.getPaddingRight(), verticalPadding + padding);
+
+        final var alpha = 1 - factor;
+        sendAsCaption.setAlpha(alpha);
+      }
 
       float scale = .5f * factor;
 
@@ -8612,8 +8878,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (!sendShown.isAnimating()) {
         if (isVisible) {
           displaySendButton();
+          hideSendAsCaption();
         } else {
           displayAttachButtons();
+          displaySendAsCaption();
         }
       }
       sendShown.setValue(isVisible, animated && isFocused());
@@ -9668,6 +9936,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     tdlib.ui().post(() -> {
       if (ChatId.toSupergroupId(getChatId()) == supergroup.id) {
         updateBottomBar(true);
+        checkAvailableMessageSenders();
       }
     });
   }

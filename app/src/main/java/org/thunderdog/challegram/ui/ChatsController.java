@@ -21,8 +21,10 @@ import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Shader;
+import android.graphics.drawable.Drawable;
 import android.os.SystemClock;
 import android.text.SpannableStringBuilder;
+import android.util.SparseArray;
 import android.util.SparseIntArray;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -2018,24 +2020,24 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   }
 
   @Override
-  public ForceTouchView.ActionListener onCreateActions (View v, ForceTouchView.ForceTouchContext context, IntList ids, IntList icons, StringList strings, ViewController<?> target) {
+  public ForceTouchView.ActionListener onCreateActions (View v, ForceTouchView.ForceTouchContext context, IntList ids, IntList iconsRes, SparseArray<Drawable> icons, StringList strings, ViewController<?> target) {
     TGChat chat = v instanceof ChatView ? ((ChatView) v).getChat() : null;
 
     if (chat != null && chat.isArchive()) {
       if (tdlib.hasUnreadChats(ChatPosition.CHAT_LIST_ARCHIVE)) {
         ids.append(R.id.btn_markChatAsRead);
         strings.append(R.string.ArchiveRead);
-        icons.append(Config.ICON_MARK_AS_READ);
+        iconsRes.append(Config.ICON_MARK_AS_READ);
       }
 
       final boolean needHide = tdlib.settings().needHideArchive();
 
       ids.append(R.id.btn_pinUnpinChat);
       if (needHide) {
-        icons.append(R.drawable.deproko_baseline_pin_24);
+        iconsRes.append(R.drawable.deproko_baseline_pin_24);
         strings.append(R.string.ArchivePin);
       } else {
-        icons.append(R.drawable.baseline_arrow_upward_24);
+        iconsRes.append(R.drawable.baseline_arrow_upward_24);
         strings.append(R.string.ArchiveHide);
       }
 
@@ -2074,7 +2076,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       };
     }
 
-    return tdlib.ui().createSimpleChatActions(this, ((BaseView) v).getPreviewChatList(), ((BaseView) v).getPreviewChatId(), null, ids, icons, strings, getSelectedChatCount() == 0, canSelectChat(chat), isChatSelected(chat), () -> selectUnselectChat(chat, true));
+    return tdlib.ui().createSimpleChatActions(this, ((BaseView) v).getPreviewChatList(), ((BaseView) v).getPreviewChatId(), null, ids, iconsRes, strings, getSelectedChatCount() == 0, canSelectChat(chat), isChatSelected(chat), () -> selectUnselectChat(chat, true));
   }
 
   @Override

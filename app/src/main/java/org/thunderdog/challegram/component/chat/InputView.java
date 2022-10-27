@@ -1000,10 +1000,10 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       resource = isSilent ? R.string.ChannelSilentBroadcast : R.string.ChannelBroadcast;
     } else if (tdlib.isMultiChat(chat) && Td.isAnonymous(status)) {
       resource = messageThread != null ? (messageThread.areComments() ? R.string.CommentAnonymously : R.string.MessageReplyAnonymously) :  R.string.MessageAnonymously;
-    } else if (chat.messageSenderId != null && !tdlib.isSelfSender(chat.messageSenderId)) {
+    }/* else if (chat.messageSenderId != null && !tdlib.isSelfSender(chat.messageSenderId)) {
       resource = messageThread != null ? (messageThread.areComments() ? R.string.CommentAsX : R.string.MessageReplyAsX) : R.string.MessageAsX;
       args = new Object[] { tdlib.senderName(chat.messageSenderId) };
-    } else {
+    }*/ else {
       resource = messageThread != null ? (messageThread.areComments() ? R.string.Comment : R.string.MessageReply) : R.string.Message;
     }
     setInputPlaceholder(resource, args);

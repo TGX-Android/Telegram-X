@@ -270,6 +270,7 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
       setPhotoImpl(tdlib, chat.photo.small, chat.photo.big);
     } else {
       avatarPlaceholderMetadata = tdlib.chatPlaceholderMetadata(chat, true);
+      avatarPlaceholder = null;
       receiver.clear();
     }
     invalidate();
@@ -281,6 +282,7 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
       setPhotoImpl(tdlib, user.profilePhoto.small, user.profilePhoto.big);
     } else {
       avatarPlaceholderMetadata = tdlib.cache().userPlaceholderMetadata(user, allowSavedMessages);
+      avatarPlaceholder = null;
       receiver.clear();
     }
     invalidate();

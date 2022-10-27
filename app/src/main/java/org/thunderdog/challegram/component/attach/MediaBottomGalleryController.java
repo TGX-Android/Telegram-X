@@ -61,6 +61,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.v.RtlGridLayoutManager;
+import org.thunderdog.challegram.widget.DoneButton;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -79,8 +80,9 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
     }
   }
 
-  public MediaBottomGalleryController (MediaLayout context) {
+  public MediaBottomGalleryController (MediaLayout context, boolean allowCamera) {
     super(context, R.string.Gallery);
+    this.allowCamera = allowCamera;
   }
 
   @Override
@@ -105,6 +107,14 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
         header.addClearButton(menu, this);
         break;
       }
+    }
+  }
+
+  @Override
+  public void onRecyclerFirstMovement () {
+    if (cameraButton != null && !cameraButtonHasBeenHidden) {
+      cameraButton.setIsVisible(false, true);
+      cameraButtonHasBeenHidden = true;
     }
   }
 
@@ -191,6 +201,10 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   private GridSpacingItemDecoration decoration;
   private int spanCount;
 
+  private boolean allowCamera;
+  private DoneButton cameraButton;
+  private boolean cameraButtonHasBeenHidden;
+
   private @Nullable ToggleHeaderView headerCell;
 
   private void updateHeaderText () {
@@ -221,6 +235,26 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
     setLayoutManager(manager);
     setAdapter(adapter);
     addItemDecoration(decoration);
+
+    if (allowCamera) {
+      int padding = Screen.dp(2f);
+      var params = FrameLayoutFix.newParams(Screen.dp(48f) + padding * 2, Screen.dp(48f) + padding * 2, (Lang.rtl() ? Gravity.LEFT : Gravity.RIGHT) | Gravity.BOTTOM);
+      params.rightMargin = params.leftMargin = Screen.dp(16f) - padding;
+      params.bottomMargin = MediaBottomBar.getBarHeight() + Screen.dp(16f) - padding;
+
+      cameraButton = new DoneButton(context);
+      cameraButton.init(R.drawable.deproko_baseline_camera_26, 48f, 2f, R.id.theme_color_circleButtonOverlay, R.id.theme_color_circleButtonOverlayIcon);
+      cameraButton.setId(R.id.btn_camera);
+      addThemeInvalidateListener(cameraButton);
+      cameraButton.setOnClickListener(v -> {
+        onCameraRequested();
+      });
+      cameraButton.setLayoutParams(params);
+      cameraButton.setIsVisible(true, false);
+      contentView.addView(cameraButton);
+
+      cameraButtonHasBeenHidden = false;
+    }
 
     if (galleryLoaded) {
       if (gallery == null/* && !U.deviceHasAnyCamera(context)*/) {
@@ -427,6 +461,10 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   public void onPhotoOrVideoSelected (int selectedCount, ImageFile image, int selectionIndex) {
     hideSoftwareKeyboard();
     mediaLayout.setCounter(selectedCount);
+    if (cameraButton != null && !cameraButtonHasBeenHidden) {
+      cameraButton.setIsVisible(selectedCount == 0, true);
+      cameraButtonHasBeenHidden = selectedCount != 0;
+    }
   }
 
   @Override
@@ -707,7 +745,11 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
       closeSections();
       return true;
     }
-    return super.onBackPressed(fromTop);
+    var r = super.onBackPressed(fromTop);
+    if (!r && cameraButton != null) {
+      cameraButton.setIsVisible(false, false);
+    }
+    return r;
   }
 
   private @Nullable Media.GalleryBucket currentBucket;

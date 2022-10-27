@@ -109,13 +109,13 @@ public class ChatLinkMembersController extends RecyclerViewController<ChatLinkMe
         } else {
           TGUser user = senders.get(position);
           userView.setPreviewChatId(new TdApi.ChatListMain(), user.getChatId(), null);
-          userView.setPreviewActionListProvider((v, forceTouchContext, ids, icons, strings, target) -> {
+          userView.setPreviewActionListProvider((v, forceTouchContext, ids, iconsRes, icons, strings, target) -> {
             ids.append(R.id.btn_openChat);
-            icons.append(R.drawable.baseline_forum_24);
+            iconsRes.append(R.drawable.baseline_forum_24);
             strings.append(R.string.OpenChat);
 
             ids.append(R.id.btn_restrictMember);
-            icons.append(R.drawable.baseline_remove_circle_24);
+            iconsRes.append(R.drawable.baseline_remove_circle_24);
             strings.append(R.string.RestrictUser);
 
             forceTouchContext.setExcludeHeader(true);

@@ -15,6 +15,8 @@
 package org.thunderdog.challegram.ui;
 
 import android.content.Context;
+import android.graphics.drawable.Drawable;
+import android.util.SparseArray;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
@@ -542,32 +544,34 @@ public class SharedMediaController extends SharedBaseController<MediaItem> imple
       // cellView.autoplayIfNeeded();
 
       IntList ids = new IntList(3);
-      IntList icons = new IntList(3);
+      IntList iconsRes = new IntList(3);
+      SparseArray<Drawable> icons = new SparseArray<>(3);
+
       StringList strings = new StringList(3);
 
       if (message.canBeDeletedOnlyForSelf || message.canBeDeletedForAllUsers) {
         ids.append(R.id.btn_messageDelete);
-        icons.append(R.drawable.baseline_delete_24);
+        iconsRes.append(R.drawable.baseline_delete_24);
         strings.append(R.string.Delete);
       }
 
       if (alternateParent == null || !alternateParent.inSearchMode()) {
         ids.append(R.id.btn_messageSelect);
-        icons.append(R.drawable.baseline_playlist_add_check_24);
+        iconsRes.append(R.drawable.baseline_playlist_add_check_24);
         strings.append(R.string.Select);
       }
 
       if (message.canBeForwarded) {
         ids.append(R.id.btn_messageShare);
-        icons.append(R.drawable.baseline_forward_24);
+        iconsRes.append(R.drawable.baseline_forward_24);
         strings.append(R.string.Share);
       }
 
       ids.append(R.id.btn_showInChat);
-      icons.append(R.drawable.baseline_visibility_24);
+      iconsRes.append(R.drawable.baseline_visibility_24);
       strings.append(R.string.ShowInChat);
 
-      context.setButtons(this, item, ids.get(), icons.get(), strings.get());
+      context.setButtons(this, item, ids.get(), iconsRes.get(), icons, strings.get());
 
       if (tdlib.isMultiChat(chatId)) {
         TdlibSender sender = new TdlibSender(tdlib, message.chatId, message.senderId);

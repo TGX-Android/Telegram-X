@@ -23,7 +23,9 @@ import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.Shader;
+import android.graphics.drawable.Drawable;
 import android.os.SystemClock;
+import android.util.SparseArray;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -587,11 +589,11 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
   }
 
   @Override
-  public ForceTouchView.ActionListener onCreateActions (View v, ForceTouchView.ForceTouchContext context, IntList ids, IntList icons, StringList strings, ViewController<?> target) {
+  public ForceTouchView.ActionListener onCreateActions (View v, ForceTouchView.ForceTouchContext context, IntList ids, IntList iconsRes, SparseArray<Drawable> icons, StringList strings, ViewController<?> target) {
     TdlibAccount account = (TdlibAccount) ((ListItem) v.getTag()).getData();
 
     ids.append(R.id.btn_removeAccount);
-    icons.append(R.drawable.baseline_delete_forever_24);
+    iconsRes.append(R.drawable.baseline_delete_forever_24);
     strings.append(R.string.LogOut);
     context.setStateListenerArgument(account);
 

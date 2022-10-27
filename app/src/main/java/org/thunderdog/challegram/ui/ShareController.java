@@ -24,6 +24,7 @@ import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.text.TextPaint;
+import android.util.SparseArray;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -71,6 +72,7 @@ import org.thunderdog.challegram.navigation.Menu;
 import org.thunderdog.challegram.navigation.TelegramViewController;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.component.sendas.AvatarDrawable;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.ChatListListener;
@@ -1183,7 +1185,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
           performSend(needHideKeyboard, Td.newSendOptions(defaultSendOptions), true);
           break;
       }
-    }, getThemeListeners(), null).attachToView(sendButton.getChildAt(0));
+    }, getThemeListeners(), null).attachToView(sendButton.getChildAt(0), false);
 
     // Bottom wrap
     params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -1304,7 +1306,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     okButton.setOnClickListener(this);
     okButton.setLayoutParams(params);
     contentView.addView(okButton);
-    sendMenu.attachToView(okButton);
+    sendMenu.attachToView(okButton, false);
 
     params = new RelativeLayout.LayoutParams(Screen.dp(60f), Screen.dp(48f));
     params.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
@@ -1441,7 +1443,9 @@ public class ShareController extends TelegramViewController<ShareController.Args
   private TGFoundChat newChat (TdApi.Chat rawChat) {
     TGFoundChat chat = new TGFoundChat(tdlib, chatList, rawChat, false, null);
     chat.setNoUnread();
-    chat.setNoSubscription();
+    if (rawChat.messageSenderId == null) {
+      chat.setNoSubscription();
+    }
     return chat;
   }
 
@@ -1456,22 +1460,46 @@ public class ShareController extends TelegramViewController<ShareController.Args
   }
 
   @Override
-  public ForceTouchView.ActionListener onCreateActions (final View v, ForceTouchView.ForceTouchContext context, IntList ids, IntList icons, StringList strings, ViewController<?> target) {
+  public ForceTouchView.ActionListener onCreateActions (final View v, ForceTouchView.ForceTouchContext context, IntList ids, IntList iconsRes, SparseArray<Drawable> icons, StringList strings, ViewController<?> target) {
     final ListItem item = (ListItem) v.getTag();
     final TGFoundChat chat = (TGFoundChat) item.getData();
 
     context.setExcludeHeader(true);
 
+    if (chat.getChat() != null && chat.getChat().messageSenderId != null){
+      ids.append(R.id.btn_sendAsSelect);
+      strings.append("Send as...");
+      if (tdlib().isSelfUserId(Td.getSenderId(chat.getChat().messageSenderId))) {
+        iconsRes.append(R.drawable.dot_baseline_acc_personal_24);
+      } else if (chat.getChatId() == Td.getSenderId(chat.getChat().messageSenderId)) {
+        iconsRes.append(R.drawable.dot_baseline_acc_anon_24);
+      } else {
+        var sender = IdentitySelectController.parseSender(tdlib(), chat.getChat().messageSenderId, null);
+        var senderAvatar = new AvatarDrawable(v, 12f, sender.getAvatar(), sender.getAvatarPlaceholderMetadata());
+        iconsRes.append(0);
+        icons.put(iconsRes.size() - 1, senderAvatar);
+      }
+    }
+
     ids.append(R.id.btn_selectChat);
     strings.append(isChecked(chat.getAnyId()) ? R.string.Unselect : R.string.Select);
-    icons.append(R.drawable.baseline_playlist_add_check_24);
+    iconsRes.append(R.drawable.baseline_playlist_add_check_24);
 
     return new ForceTouchView.ActionListener() {
       @Override
       public void onForceTouchAction (ForceTouchView.ForceTouchContext context, int actionId, Object arg) {
-        toggleChecked(v, chat, isChecked ->
-          ((VerticalChatView) v).setIsChecked(isChecked, true)
-        );
+        switch (actionId) {
+          case R.id.btn_selectChat:
+            toggleChecked(v, chat, isChecked ->
+              ((VerticalChatView) v).setIsChecked(isChecked, true)
+            );
+            break;
+          case R.id.btn_sendAsSelect:
+            var c = new IdentitySelectController(context(), tdlib());
+            c.setArguments(new IdentitySelectController.Args(chat.getChatId(), chat.getChat().messageSenderId, null));
+            c.show();
+            break;
+        }
       }
 
       @Override

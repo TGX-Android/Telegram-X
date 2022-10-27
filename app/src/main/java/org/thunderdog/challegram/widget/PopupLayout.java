@@ -514,7 +514,7 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
     final boolean anchorRight = menuWrap.getAnchorMode() == MenuMoreWrap.ANCHOR_MODE_RIGHT;
     final int padding = Screen.dp(8f);
     final int itemsWidth = menuWrap.getItemsWidth();
-    int cx = anchorRight != Lang.rtl() ? itemsWidth - padding : Screen.dp(17f);
+    int cx = menuWrap.getAnchorMode() == MenuMoreWrap.ANCHOR_MODE_CENTER ? itemsWidth / 2 : anchorRight != Lang.rtl() ? itemsWidth - padding : Screen.dp(17f);
     int cy = menuWrap.shouldPivotBottom() ? menuWrap.getItemsHeight() - padding : padding;
 
     if (Config.REVEAL_ANIMATION_AVAILABLE && anchorRight) {
@@ -525,8 +525,9 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
     } else {
       animationType = ANIMATION_TYPE_MORE_SCALE;
       menuWrap.setAlpha(0f);
-      menuWrap.setScaleX(MenuMoreWrap.START_SCALE);
-      menuWrap.setScaleY(MenuMoreWrap.START_SCALE);
+      // starting with MenuMoreWrap.START_SCALE later in launchRevealAnimation, otherwise position got messed up
+      menuWrap.setScaleX(1f);
+      menuWrap.setScaleY(1f);
     }
 
     menuWrap.setPivotX(cx);
@@ -673,6 +674,8 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
           }
 
           if (animationType == ANIMATION_TYPE_MORE_SCALE) {
+            menuWrap.setScaleX(MenuMoreWrap.START_SCALE);
+            menuWrap.setScaleY(MenuMoreWrap.START_SCALE);
             menuWrap.scaleIn(listener);
             return;
           }
@@ -680,6 +683,7 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
           final boolean anchorRight = menuWrap.getAnchorMode() == MenuMoreWrap.ANCHOR_MODE_RIGHT;
           final int padding = Screen.dp(8f);
           final int itemsWidth = menuWrap.getItemsWidth();
+          // never get here with MenuMoreWrap.ANCHOR_MODE_CENTER
           int cx = anchorRight != Lang.rtl() ? itemsWidth - padding : Screen.dp(17f);
           int cy = menuWrap.shouldPivotBottom() ? menuWrap.getItemsHeight() - padding : padding;
 

@@ -4723,7 +4723,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
             }
           }, (sendOptions, disableMarkdown) -> {
             send(sendOptions, disableMarkdown, false);
-          }, getForcedTheme()).attachToView(sendButton);
+          }, getForcedTheme()).attachToView(sendButton, false);
         }
 
         editButtons = new LinearLayout(context);

@@ -16,7 +16,6 @@ package org.thunderdog.challegram.ui;
 
 import android.content.Context;
 import android.graphics.Rect;
-import android.text.Editable;
 import android.text.InputFilter;
 import android.text.InputType;
 import android.view.View;
@@ -37,14 +36,15 @@ import org.thunderdog.challegram.data.ThreadInfo;
 import org.thunderdog.challegram.emoji.EmojiFilter;
 import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.NavigationStack;
+import org.thunderdog.challegram.component.sendas.AvatarDrawable;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.CharacterStyleFilter;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.v.CustomRecyclerView;
-import org.thunderdog.challegram.v.EditText;
 import org.thunderdog.challegram.widget.FillingDecoration;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 import org.thunderdog.challegram.widget.RadioView;
@@ -292,8 +292,40 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
       currentMenu = tdlib.ui().createSimpleHapticMenu(this, getArgumentsStrict().chatId, this::canSendPoll, () -> {
         TdApi.FormattedText explanation = getExplanation(false);
         return explanation != null && explanation.text.trim().length() <= TdConstants.MAX_QUIZ_EXPLANATION_LENGTH && Td.parseMarkdown(explanation);
-      }, null, this::send, null)
-              .attachToView(getDoneButton());
+      }, items -> {
+        var chat = tdlib().chatStrict(getArgumentsStrict().chatId);
+        if (chat.messageSenderId != null) {
+          var sender = IdentitySelectController.parseSender(tdlib(), chat.messageSenderId, null);
+          int senderAvatarRes = 0;
+          AvatarDrawable senderAvatar = null;
+          if (tdlib().isSelfUserId(Td.getSenderId(chat.messageSenderId))) {
+            senderAvatarRes = R.drawable.dot_baseline_acc_personal_24;
+          } else if (chat.id == Td.getSenderId(chat.messageSenderId)) {
+            senderAvatarRes = R.drawable.dot_baseline_acc_anon_24;
+          } else {
+            senderAvatar = new AvatarDrawable(null, 12f, sender.getAvatar(), sender.getAvatarPlaceholderMetadata());
+          }
+          items.add(0, new HapticMenuHelper.MenuItem(R.id.btn_sendAsSelect, "Send as...", sender.getName(), senderAvatarRes, senderAvatar, 0));
+        }
+      }, new TdlibUi.SimpleSendCallback() {
+        @Override
+        public void onSendRequested (TdApi.MessageSendOptions sendOptions, boolean disableMarkdown) {
+          send(sendOptions, disableMarkdown);
+        }
+
+        @Override
+        public void onCustomRequested (int id) {
+          switch (id) {
+            case R.id.btn_sendAsSelect: {
+              var chat = tdlib().chatStrict(getArgumentsStrict().chatId);
+              var c = new IdentitySelectController(context(), tdlib());
+              c.setArguments(new IdentitySelectController.Args(chat.id, chat.messageSenderId, null));
+              c.show();
+              break;
+            }
+          }
+        }
+      }, null).attachToView(getDoneButton(), false);
     }
   }
 

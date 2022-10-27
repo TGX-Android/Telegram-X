@@ -238,13 +238,13 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
 
             return true;
           });
-          chatView.setPreviewActionListProvider((v, forceTouchContext, ids, icons, strings, target) -> {
+          chatView.setPreviewActionListProvider((v, forceTouchContext, ids, iconsRes, icons, strings, target) -> {
             ids.append(R.id.btn_openChat);
-            icons.append(R.drawable.baseline_forum_24);
+            iconsRes.append(R.drawable.baseline_forum_24);
             strings.append(R.string.OpenChat);
 
             ids.append(R.id.btn_editRights);
-            icons.append(R.drawable.baseline_stars_24);
+            iconsRes.append(R.drawable.baseline_stars_24);
             strings.append(R.string.EditAdminRights);
 
             forceTouchContext.setExcludeHeader(true);

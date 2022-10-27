@@ -16,19 +16,27 @@ package org.thunderdog.challegram.navigation;
 
 import android.animation.Animator;
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Interpolator;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.common.base.Strings;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
@@ -42,6 +50,7 @@ import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.widget.DoubleTextView;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 
 import me.vkryl.android.AnimatorUtils;
@@ -57,6 +66,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
 
   public static final int ANCHOR_MODE_RIGHT = 0;
   public static final int ANCHOR_MODE_HEADER = 1;
+  public static final int ANCHOR_MODE_CENTER = 2;
 
   // private int currentWidth;
   private int anchorMode;
@@ -107,7 +117,8 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
       this.anchorMode = anchorMode;
       FrameLayoutFix.LayoutParams params = (FrameLayoutFix.LayoutParams) getLayoutParams();
       switch (anchorMode) {
-        case ANCHOR_MODE_RIGHT: {
+        case ANCHOR_MODE_RIGHT:
+        case ANCHOR_MODE_CENTER: {
           params.gravity = Gravity.TOP | (Lang.rtl() ? Gravity.LEFT : Gravity.RIGHT);
           break;
         }
@@ -133,10 +144,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     menuItem.setGravity(Gravity.CENTER_VERTICAL | Lang.gravity());
     menuItem.setVisibility(View.VISIBLE);
     if (drawable != null) {
-      drawable.setColorFilter(Paints.getColorFilter(Theme.getColor(R.id.theme_color_icon)));
-      if (themeProvider != null) {
-        themeProvider.addThemeFilterListener(drawable, R.id.theme_color_icon);
-      }
+      applyIconColor(drawable, themeProvider, null);
       if (Drawables.needMirror(icon)) {
         // TODO
       }
@@ -176,17 +184,12 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     menuItem.setCompoundDrawablePadding(Screen.dp(18f));
     icon = iconRes != 0 ? Drawables.get(getResources(), iconRes) : icon;
     if (icon != null) {
-      if (forcedTheme != null) {
-        icon.setColorFilter(Paints.getColorFilter(forcedTheme.getColor(R.id.theme_color_icon)));
-      } else {
-        icon.setColorFilter(Paints.getColorFilter(Theme.getColor(R.id.theme_color_icon)));
-        if (themeListeners != null) {
-          themeListeners.addThemeFilterListener(icon, R.id.theme_color_icon);
-        }
-      }
+      applyIconColor(icon, themeListeners, forcedTheme);
       if (Drawables.needMirror(iconRes)) {
         // TODO
       }
+    }
+    if (icon != null) {
       if (Lang.rtl()) {
         menuItem.setCompoundDrawablesWithIntrinsicBounds(null, null, icon, null);
       } else {
@@ -199,6 +202,41 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     menuItem.measure(MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
     menuItem.setTag(menuItem.getMeasuredWidth());
     return menuItem;
+  }
+
+  public View addItem2 (int id, CharSequence title, @Nullable CharSequence subtitle, int iconRes, Drawable icon, int rightIconRes, boolean preserveRightIconSpace, OnClickListener listener) {
+    var menuItem = new SenderIdentityView(getContext());
+    menuItem.setId(id);
+    /*if (forcedTheme != null) {
+      menuItem.setTextColor(forcedTheme.getColor(R.id.theme_color_text));
+    } else {
+      menuItem.setTextColor(Theme.textAccentColor());
+      if (themeListeners != null) {
+        themeListeners.addThemeTextAccentColorListener(menuItem);
+      }
+    }*/
+    menuItem.setSenderIdentity(iconRes, icon, title, subtitle, rightIconRes, null, preserveRightIconSpace);
+    //menuItem.setGravity(Gravity.CENTER_VERTICAL | Lang.gravity());
+    menuItem.setOnClickListener(listener);
+    menuItem.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(48f)));
+    menuItem.setPadding(Screen.dp(17f), 0, Screen.dp(17f), 0);
+    Views.setClickable(menuItem);
+    RippleSupport.setTransparentSelector(menuItem);
+    addView(menuItem);
+    menuItem.measure(MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
+    menuItem.setTag(menuItem.getMeasuredWidth());
+    return menuItem;
+  }
+
+  private static void applyIconColor(@NonNull Drawable icon, @Nullable ThemeListenerList themeProvider, @Nullable ThemeDelegate forcedTheme) {
+    if (forcedTheme != null) {
+      icon.setColorFilter(Paints.getColorFilter(forcedTheme.getColor(R.id.theme_color_icon)));
+    } else {
+      icon.setColorFilter(Paints.getColorFilter(Theme.getColor(R.id.theme_color_icon)));
+      if (themeProvider != null) {
+        themeProvider.addThemeFilterListener(icon, R.id.theme_color_icon);
+      }
+    }
   }
 
   @Override
@@ -268,6 +306,103 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     if (pendingAction != null) {
       pendingAction.run();
       pendingAction = null;
+    }
+  }
+
+  private class SenderIdentityView extends LinearLayout {
+
+    private final ImageView avatar;
+    private final TextView title;
+    private final TextView subtitle;
+    private final ImageView extra;
+
+    public SenderIdentityView (Context context) {
+      super(context);
+
+      //setLayoutParams(new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(50f)));
+      setGravity(Gravity.CENTER_VERTICAL);
+
+      avatar = new ImageView(context);
+      avatar.setColorFilter(Paints.getColorFilter(Theme.getColor(R.id.theme_color_icon)));
+
+      title = new TextView(context);
+      title.setTypeface(Fonts.getRobotoRegular());
+      title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16f);
+      title.setTextColor(Theme.textAccentColor());
+      title.setSingleLine(true);
+      title.setEllipsize(TextUtils.TruncateAt.END);
+      title.setMaxWidth(Screen.dp(200f));
+
+      subtitle = new TextView(context);
+      subtitle.setTypeface(Fonts.getRobotoRegular());
+      subtitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11f);
+      subtitle.setTranslationY(-Screen.dp(3f));
+      subtitle.setTextColor(Theme.textDecentColor());
+      subtitle.setSingleLine(true);
+      subtitle.setEllipsize(TextUtils.TruncateAt.END);
+      subtitle.setMaxWidth(Screen.dp(200f));
+
+      extra = new ImageView(context);
+      extra.setColorFilter(Paints.getColorFilter(Theme.getColor(R.id.theme_color_text)));
+
+      var titlesLayout = new LinearLayout(context);
+      titlesLayout.setOrientation(VERTICAL);
+      titlesLayout.addView(title);
+      titlesLayout.addView(subtitle);
+
+      var lp = new LayoutParams(Screen.dp(24f), ViewGroup.LayoutParams.WRAP_CONTENT);
+      avatar.setLayoutParams(lp);
+
+      lp = new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+      lp.leftMargin = Screen.dp(18f);
+      lp.weight = 1f;
+      titlesLayout.setLayoutParams(lp);
+
+      lp = new LayoutParams(Screen.dp(16f), ViewGroup.LayoutParams.WRAP_CONTENT);
+      lp.leftMargin = Screen.dp(18f);
+      extra.setLayoutParams(lp);
+
+      addView(avatar);
+      addView(titlesLayout);
+      addView(extra);
+    }
+
+    @Override
+    protected void onDraw (Canvas canvas) {
+      avatar.invalidate();
+      //extra.invalidate();
+
+      super.onDraw(canvas);
+    }
+
+    public void setSenderIdentity (int avatarRes, Drawable avatar, CharSequence title, CharSequence subtitle, int extraRes, Drawable extra, boolean preserveExtraIconSpace) {
+      if (avatarRes != 0) {
+        this.avatar.setImageResource(avatarRes);
+      } else if (avatar != null) {
+        this.avatar.setImageDrawable(avatar);
+      } else {
+        this.avatar.setImageResource(0);
+        //this.avatar.setVisibility(INVISIBLE);
+      }
+
+      this.title.setText(title);
+
+      if (subtitle != null) {
+        this.subtitle.setText(subtitle);
+        this.subtitle.setVisibility(VISIBLE);
+      } else {
+        this.subtitle.setVisibility(GONE);
+      }
+
+      if (extraRes != 0) {
+        this.extra.setImageResource(extraRes);
+        this.extra.setVisibility(VISIBLE);
+      } else if (extra != null) {
+        this.extra.setImageDrawable(extra);
+        this.extra.setVisibility(VISIBLE);
+      } else {
+        this.extra.setVisibility(preserveExtraIconSpace ? INVISIBLE : GONE);
+      }
     }
   }
 }

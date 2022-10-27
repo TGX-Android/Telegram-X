@@ -198,7 +198,7 @@ public abstract class TelegramViewController<T> extends ViewController<T> {
     }
     chatSearchView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-    final BaseView.ActionListProvider previewProvider = (v, context, ids, icons, strings, target) -> {
+    final BaseView.ActionListProvider previewProvider = (v, context, ids, iconsRes, icons, strings, target) -> {
       final ListItem item = (ListItem) v.getTag();
 
       final Object data = item.getData();
@@ -219,42 +219,42 @@ public abstract class TelegramViewController<T> extends ViewController<T> {
           if (Config.CALL_FROM_PREVIEW && canInteractWithFoundChat && tdlib.cache().userGeneral(chat.getUserId())) {
             ids.append(R.id.btn_phone_call);
             strings.append(R.string.Call);
-            icons.append(R.drawable.baseline_call_24);
+            iconsRes.append(R.drawable.baseline_call_24);
           }
           boolean chatAvailable = tdlib.chatAvailable(chat.getChat());
           if (chatAvailable) {
             ids.append(R.id.btn_notifications);
             boolean hasNotifications = tdlib.chatNotificationsEnabled(chat.getId());
             strings.append(hasNotifications ? R.string.Mute : R.string.Unmute);
-            icons.append(hasNotifications ? R.drawable.baseline_notifications_off_24 : R.drawable.baseline_notifications_24);
+            iconsRes.append(hasNotifications ? R.drawable.baseline_notifications_off_24 : R.drawable.baseline_notifications_24);
             if (canInteractWithFoundChat) {
               if (chat.getList() != null) {
                 boolean isPinned = tdlib.chatPinned(chat.getList(), chat.getId());
                 ids.append(R.id.btn_pinUnpinChat);
                 strings.append(isPinned ? R.string.Unpin : R.string.Pin);
-                icons.append(isPinned ? R.drawable.deproko_baseline_pin_undo_24 : R.drawable.deproko_baseline_pin_24);
+                iconsRes.append(isPinned ? R.drawable.deproko_baseline_pin_undo_24 : R.drawable.deproko_baseline_pin_24);
                 if (tdlib.canArchiveChat(chat.getList(), chat.getChat())) {
                   boolean isArchived = tdlib.chatArchived(chat.getId());
                   ids.append(R.id.btn_archiveUnarchiveChat);
                   strings.append(isArchived ? R.string.Unarchive : R.string.Archive);
-                  icons.append(isArchived ? R.drawable.baseline_unarchive_24 : R.drawable.baseline_archive_24);
+                  iconsRes.append(isArchived ? R.drawable.baseline_unarchive_24 : R.drawable.baseline_archive_24);
                 }
               }
               boolean canRead = tdlib.canMarkAsRead(chat.getChat());
               ids.append(canRead ? R.id.btn_markChatAsRead : R.id.btn_markChatAsUnread);
               strings.append(canRead ? R.string.MarkAsRead : R.string.MarkAsUnread);
-              icons.append(canRead ? Config.ICON_MARK_AS_READ : Config.ICON_MARK_AS_UNREAD);
+              iconsRes.append(canRead ? Config.ICON_MARK_AS_READ : Config.ICON_MARK_AS_UNREAD);
               if (chat.hasHighlight()) {
                 ids.append(R.id.btn_removeChatFromListOrClearHistory);
                 strings.append(R.string.Delete);
-                icons.append(R.drawable.baseline_delete_24);
+                iconsRes.append(R.drawable.baseline_delete_24);
               }
             }
           }
           if (!chat.hasHighlight()) {
             ids.append(R.id.btn_delete);
             strings.append(R.string.Remove);
-            icons.append(R.drawable.baseline_delete_sweep_24);
+            iconsRes.append(R.drawable.baseline_delete_sweep_24);
           }
           break;
         }
@@ -267,7 +267,7 @@ public abstract class TelegramViewController<T> extends ViewController<T> {
       if (canSelectFoundChat(chat)) {
         ids.append(R.id.btn_selectChat);
         strings.append(R.string.Select);
-        icons.append(R.drawable.baseline_playlist_add_check_24);
+        iconsRes.append(R.drawable.baseline_playlist_add_check_24);
       }
 
       return new ForceTouchView.ActionListener() {
