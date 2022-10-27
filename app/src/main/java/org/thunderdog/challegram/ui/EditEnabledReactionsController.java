@@ -438,7 +438,7 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
             positionCords[0] += v.getMeasuredWidth() / 2;
             positionCords[1] += Screen.dp(40);
             context().reactionsOverlayManager().addOverlay(new ReactionsOverlayView.ReactionInfo(context().reactionsOverlayManager())
-              .setSticker(overlaySticker)
+              .setSticker(overlaySticker, true)
               .setUseDefaultSprayAnimation(overlaySticker.isCustomReaction())
               .setPosition(new Rect(
               positionCords[0] - Screen.dp(50),
