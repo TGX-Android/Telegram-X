@@ -146,7 +146,7 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
               v.setName(R.string.ReactionsDisabled);
               view.setChecked(false, isUpdate);
             } else if (enabledCount == Integer.MAX_VALUE) {
-              v.setName(R.string.ReactionsEnabledAll);
+              v.setName(Lang.getMarkdownString(EditEnabledReactionsController.this, R.string.ReactionsEnabledAll));
               view.setChecked(true, isUpdate);
             } else {
               v.setName(Lang.pluralBold(R.string.ReactionsEnabled, enabledCount));
@@ -380,9 +380,26 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
         boolean checked = false;
         switch (type) {
           case TYPE_ENABLED_REACTIONS: {
-            if (!enabledReactions.remove(tgReaction.key)) {
-              checked = true;
-              enabledReactions.add(tgReaction.key);
+            switch (availableReactions.getConstructor()) {
+              case TdApi.ChatAvailableReactionsAll.CONSTRUCTOR: {
+                enabledReactions.clear();
+                for (ListItem item : adapter.getItems()) {
+                  if (item.getId() == R.id.btn_enabledReactionsCheckboxGroup) {
+                    String reactionKey = item.getString().toString();
+                    if (!tgReaction.key.equals(reactionKey)) {
+                      enabledReactions.add(reactionKey);
+                    }
+                  }
+                }
+                break;
+              }
+              case TdApi.ChatAvailableReactionsSome.CONSTRUCTOR: {
+                if (!enabledReactions.remove(tgReaction.key)) {
+                  checked = true;
+                  enabledReactions.add(tgReaction.key);
+                }
+                break;
+              }
             }
             availableReactions = buildAvailableReactions();
 
