@@ -170,7 +170,8 @@ public class Settings {
   private static final int VERSION_38 = 38; // int32 -> int64
   private static final int VERSION_39 = 39; // drop all previously stored crashes
   private static final int VERSION_40 = 40; // drop legacy crash management ids
-  private static final int VERSION = VERSION_40;
+  private static final int VERSION_41 = 41; // clear all application log files
+  private static final int VERSION = VERSION_41;
 
   private static final AtomicBoolean hasInstance = new AtomicBoolean(false);
   private static volatile Settings instance;
@@ -1834,6 +1835,10 @@ public class Settings {
           .remove("crash_id_reported_release");
         break;
       }
+      case VERSION_41: {
+        deleteAllLogs(false, null);
+        break;
+      }
     }
   }
 
@@ -3167,10 +3172,12 @@ public class Settings {
     Log.setLogLevel(Log.LEVEL_ASSERT);
   }
 
-  public void deleteAllLogs (Runnable after) {
+  public void deleteAllLogs (boolean withTdlibLogs, Runnable after) {
     Background.instance().post(() -> {
       Log.deleteAll(Log.getLogFiles(), futureLogs -> {
-        TdlibManager.deleteAllLogFiles();
+        if (withTdlibLogs) {
+          TdlibManager.deleteAllLogFiles();
+        }
         if (after != null)
           after.run();
       }, null);
