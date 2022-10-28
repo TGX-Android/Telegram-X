@@ -587,6 +587,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     flags = BitwiseUtils.setFlag(flags, MESSAGE_FLAG_FORCE_AVATAR, value);
   }
 
+  public boolean needDrawDateOverContent() {
+    return BitwiseUtils.getFlag(flags, MESSAGE_FLAG_BELOW_HEADER) && manager.isHeaderVisible();
+  }
+
   public final boolean mergeWith (@Nullable TGMessage top, boolean isBottom) {
     if (top != null) {
       top.setNeedExtraPadding(false);
@@ -868,7 +872,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       return;
     openingComments.setValue(true, needAnimateChanges());
     getMessageThread(highlightMessageId, messageThreadInfo -> {
-      TdlibUi.ChatOpenParameters params = new TdlibUi.ChatOpenParameters().keepStack().messageThread(new ThreadInfo(getAllMessages(), messageThreadInfo, isRepliesChat())).after(chatId -> {
+      TdlibUi.ChatOpenParameters params = new TdlibUi.ChatOpenParameters().keepStack().messageThread(new ThreadInfo(getAllMessages(), messageThreadInfo, isRepliesChat() || getSender().isChannel())).after(chatId -> {
         openingComments.setValue(false, needAnimateChanges());
       });
       if (highlightMessageId != null) {
@@ -4947,7 +4951,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public boolean canReplyTo () {
-    return TD.canReplyTo(msg) && allowInteraction();
+    return TD.canReplyTo(msg) && !isEventLog();
   }
 
   public boolean isScheduled () {

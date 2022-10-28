@@ -342,27 +342,38 @@ public class MessagesRecyclerView extends RecyclerView implements FactorAnimator
     protected TGMessage lastMessage;
     protected int lastTop;
     protected float lastAlpha;
+    private int topOffset;
+    private int centerX;
+    private int lastIndex;
+    private boolean hasDrawn;
+    private int dateHeight;
 
     @Override
-    public void onDrawOver (Canvas c, RecyclerView parent, State state) {
+    public void onDraw (@NonNull Canvas c, @NonNull RecyclerView parent, @NonNull State state) {
+      reset(parent);
+      if (lastIndex == -1) return;
+      drawDecorations(c, parent, state, false);
+    }
+
+    @Override
+    public void onDrawOver (@NonNull Canvas c, @NonNull RecyclerView parent, @NonNull State state) {
+      reset(parent);
+      if (lastIndex == -1) return;
+      drawDecorations(c, parent, state, true);
+    }
+
+    private void reset(RecyclerView parent) {
+      this.dateHeight = TGMessage.getDateHeight(manager.useBubbles());
       this.lastMessage = null;
       this.lastTop = 0;
       this.lastAlpha = 0f;
+      this.topOffset = getTopOffset();
+      this.hasDrawn = false;
+      this.centerX =  parent.getMeasuredWidth() / 2;
+      this.lastIndex = getLastIndex(parent);
+    }
 
-      MessagesAdapter adapter = (MessagesAdapter) parent.getAdapter();
-      if (adapter.getMessageCount() == 0) {
-        return;
-      }
-
-      final int centerX = parent.getMeasuredWidth() / 2;
-
-      // int lastTop = 0;
-      boolean hasDrawn = false;
-
-      int dateHeight = TGMessage.getDateHeight(manager.useBubbles());
-      int topOffset = getTopOffset();
-      // TGMessage lastMessage = null;
-
+    private int getLastIndex(RecyclerView parent) {
       int lastIndex = parent.getChildCount() - 1;
       while (lastIndex >= 0) {
         View lastView = parent.getChildAt(lastIndex);
@@ -371,7 +382,14 @@ public class MessagesRecyclerView extends RecyclerView implements FactorAnimator
         }
         lastIndex--;
       }
+      return lastIndex;
+    }
 
+    private void drawDecorations(Canvas c, RecyclerView parent, State state, boolean drawOver) {
+      MessagesAdapter adapter = (MessagesAdapter) parent.getAdapter();
+      if (adapter == null || adapter.getMessageCount() == 0) {
+        return;
+      }
       // this will iterate over every visible view
       for (int i = 0; i <= lastIndex; i++) {
         // get the view
@@ -384,63 +402,91 @@ public class MessagesRecyclerView extends RecyclerView implements FactorAnimator
         // and finally draw the separator
         if (position < state.getItemCount()) {
           final TGMessage msg = adapter.getMessage(position);
-          if (msg != null) {
-            int viewTop = view.getTop();
-            if (msg.hasDate()) {
-              viewTop += msg.getDrawDateY();
-            }
-            int top = viewTop;
-            if (top < topOffset) {
-              if (hasDrawn) {
-                int maxY = lastTop - dateHeight;
-                if (lastMessage != null) {
-                  maxY -= lastMessage.getDrawDateY();
-                }
-                top = Math.min(maxY, topOffset);
-              } else {
-                top = topOffset;
-              }
-            }
-            boolean isLast = i == lastIndex;
-            int checkTop = viewTop - topOffset;
-            float detachFactor = !isLast || checkTop >= 0 ? 0f : MathUtils.clamp((float) -checkTop / (float) dateHeight);
-            float alpha = isLast ? scrollFactor : 1f;
-            float drawAlpha = detachFactor == 1f ? alpha : 1f;
-            if (msg.drawDate(c, centerX, top, detachFactor, drawAlpha)) {
-              hasDrawn = true;
-              lastTop = top;
-              lastMessage = msg;
-              lastAlpha = drawAlpha;
-              continue;
-            }
-            if (isLast) {
-              Object tag = msg.getTag();
-              if (tag != null) {
-                TGMessage tagMsg = (TGMessage) tag;
-                if (!tagMsg.isDestroyed() && tagMsg.drawDate(c, centerX, top, 1f, alpha)) {
-                  hasDrawn = true;
-                  lastTop = top;
-                  lastMessage = tagMsg;
-                  lastAlpha = alpha;
-                  continue;
-                }
-                msg.setTag(null);
-              }
-              for (int j = position + 1; j < adapter.getMessageCount(); j++) {
-                TGMessage olderMessage = adapter.getMessage(j);
-                if (olderMessage != null && olderMessage.drawDate(c, centerX, top, 1f, alpha)) {
-                  msg.setTag(olderMessage);
-                  hasDrawn = true;
-                  lastTop = top;
-                  lastMessage = msg;
-                  lastAlpha = alpha;
-                  break;
-                }
-              }
-            }
+          if (!drawOver && !msg.needDrawDateOverContent()) continue;
+          if (drawOver && msg.needDrawDateOverContent()) continue;
+          boolean isLast = i == lastIndex;
+          int viewTop = getViewTop(view, msg);
+          int top = getDrawTop(viewTop);
+          if (drawDecoration(c, msg, isLast, viewTop, top)) {
+            continue;
+          }
+          if (isLast) {
+            if (drawLast(c, msg, top)) continue;
+            drawOlderMessages(c, msg, position, adapter, top);
           }
         }
       }
+    }
+
+    private boolean drawDecoration(Canvas c, TGMessage msg, boolean isLast, int viewTop, int top) {
+      if (msg != null) {
+        int checkTop = viewTop - topOffset;
+        float detachFactor = !isLast || checkTop >= 0 ? 0f : MathUtils.clamp((float) -checkTop / (float) dateHeight);
+        float alpha = isLast ? scrollFactor : 1f;
+        float drawAlpha = detachFactor == 1f ? alpha : 1f;
+        if (msg.drawDate(c, centerX, top, detachFactor, drawAlpha)) {
+          hasDrawn = true;
+          lastTop = top;
+          lastMessage = msg;
+          lastAlpha = drawAlpha;
+          return true;
+        }
+      }
+      return false;
+    }
+
+    private boolean drawLast(Canvas c, TGMessage msg, int top) {
+      Object tag = msg.getTag();
+      if (tag != null) {
+        TGMessage tagMsg = (TGMessage) tag;
+        if (!tagMsg.isDestroyed() && tagMsg.drawDate(c, centerX, top, 1f, scrollFactor)) {
+          hasDrawn = true;
+          lastTop = top;
+          lastMessage = tagMsg;
+          lastAlpha = scrollFactor;
+          return true;
+        }
+        msg.setTag(null);
+      }
+      return false;
+    }
+
+    private void drawOlderMessages(Canvas c, TGMessage msg, int position, MessagesAdapter adapter, int top) {
+      for (int j = position + 1; j < adapter.getMessageCount(); j++) {
+        TGMessage olderMessage = adapter.getMessage(j);
+        if (olderMessage != null && olderMessage.drawDate(c, centerX, top, 1f, scrollFactor)) {
+          msg.setTag(olderMessage);
+          hasDrawn = true;
+          lastTop = top;
+          lastMessage = msg;
+          lastAlpha = scrollFactor;
+          break;
+        }
+      }
+    }
+
+    private int getDrawTop(int viewTop) {
+      int top = viewTop;
+      if (top < topOffset) {
+        if (hasDrawn) {
+          int maxY = lastTop - dateHeight;
+          if (lastMessage != null) {
+            maxY -= lastMessage.getDrawDateY();
+          }
+          top = Math.min(maxY, topOffset);
+        } else {
+          top = topOffset;
+        }
+      }
+      return top;
+    }
+
+    private int getViewTop(View view, TGMessage msg) {
+      int viewTop = view.getTop();
+      if (msg.hasDate()) {
+        viewTop += msg.getDrawDateY();
+      }
+      return viewTop;
     }
   }
 }
