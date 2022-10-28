@@ -44,6 +44,8 @@ import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.loader.AvatarReceiver;
+import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.navigation.ComplexHeaderView;
 import org.thunderdog.challegram.navigation.DoubleHeaderView;
@@ -68,6 +70,8 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.SensitiveContentContainer;
 import org.thunderdog.challegram.util.text.Text;
 
+import java.util.ArrayList;
+
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.FactorAnimator;
@@ -83,6 +87,7 @@ public class ForceTouchView extends FrameLayoutFix implements
   private ForceTouchContext forceTouchContext;
   private final RelativeLayout contentWrap;
   private final View backgroundView;
+  private final ComplexReceiver complexAvatarReceiver;
 
   public interface StateListener {
     void onPrepareToExitForceTouch (ForceTouchContext context);
@@ -212,6 +217,7 @@ public class ForceTouchView extends FrameLayoutFix implements
     addView(contentWrap);
 
     themeListenerList.addThemeInvalidateListener(contentWrap);
+    complexAvatarReceiver = new ComplexReceiver(this);
   }
 
   @Override
@@ -348,9 +354,11 @@ public class ForceTouchView extends FrameLayoutFix implements
 
       View offsetView;
 
-      if (context.buttonIds.length > 1) {
+      final int offsetWeight = context.actionItems.size() > 2 ? 1: 4;
+
+      if (context.actionItems.size() > 1) {
         offsetView = new View(getContext());
-        offsetView.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f));
+        offsetView.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, offsetWeight));
         buttonsList.addView(offsetView);
       }
 
@@ -367,33 +375,51 @@ public class ForceTouchView extends FrameLayoutFix implements
       popupWrapView.setLayoutParams(params);
       // popupWrapView.setBackgroundColor(0x1cff0000);
 
-      PopupContext[] popupContexts = new PopupContext[context.buttonIds.length];
+      PopupContext[] popupContexts = new PopupContext[context.actionItems.size()];
       boolean rtl = Lang.rtl();
-      int remaining = context.buttonIds.length;
+      int remaining = context.actionItems.size();
       while (remaining > 0) {
-        int i = rtl ? remaining - 1 : context.buttonIds.length - remaining;
-        int buttonId = context.buttonIds[i];
+        int i = rtl ? remaining - 1 : context.actionItems.size() - remaining;
+        final BaseView.ActionItem actionItem = context.actionItems.get(i);
+        int buttonId = actionItem.id;
         ImageView view;
-        if (Drawables.needMirror(context.buttonIcons[i])) {
+        if (actionItem.iconRes != 0 && Drawables.needMirror(actionItem.iconRes)) {
           view = new ImageView(getContext()) {
             @Override
             protected void onDraw (Canvas c) {
               c.save();
-              c.scale(-1f, 1f, getMeasuredWidth() / 2, getMeasuredHeight() / 2);
+              c.scale(-1f, 1f, getMeasuredWidth() / 2f, getMeasuredHeight() / 2f);
               super.onDraw(c);
               c.restore();
             }
           };
+        } else if (actionItem.messageSender != null && actionItem.iconRes == 0) {
+          AvatarReceiver receiver = complexAvatarReceiver.getAvatarReceiver(tdlib, actionItem.messageSender);
+          receiver.setBounds(0, 0, Screen.dp(24), Screen.dp(24));
+          receiver.setRadius(Screen.dp(12));
+          view = new ImageView(getContext()) {
+            @Override
+            protected void onDraw (Canvas c) {
+              super.onDraw(c);
+              c.save();
+              c.translate((getMeasuredWidth() - receiver.getWidth()) / 2f, (getMeasuredHeight() - receiver.getHeight()) / 2f);
+              receiver.draw(c);
+              c.restore();
+            }
+          };
+          receiver.setUpdateListener(r -> view.invalidate());
         } else {
           view = new ImageView(getContext());
         }
         view.setId(buttonId);
-        PopupContext popupContext = new PopupContext(popupWrapView, view, context.buttonHints[i]);
+        PopupContext popupContext = new PopupContext(popupWrapView, view, actionItem.title);
         view.setTag(popupContexts[i] = popupContext);
         view.setScaleType(ImageView.ScaleType.CENTER);
-        view.setColorFilter(Theme.iconColor());
         themeListenerList.addThemeFilterListener(view, R.id.theme_color_icon);
-        view.setImageResource(context.buttonIcons[i]);
+        if (actionItem.iconRes != 0) {
+          view.setImageResource(actionItem.iconRes);
+          view.setColorFilter(Theme.iconColor());
+        }
         view.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 2f));
 
         buttonsList.addView(view);
@@ -401,9 +427,9 @@ public class ForceTouchView extends FrameLayoutFix implements
       }
       popupWrapView.setItems(popupContexts);
 
-      if (context.buttonHints.length > 1) {
+      if (context.actionItems.size() > 1) {
         offsetView = new View(getContext());
-        offsetView.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f));
+        offsetView.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, offsetWeight));
         buttonsList.addView(offsetView);
       }
 
@@ -518,7 +544,7 @@ public class ForceTouchView extends FrameLayoutFix implements
     }
 
     final int childCount = buttonsList.getChildCount();
-    final int offsetCount = forceTouchContext.buttonIds.length == 1 ? 0 : 1;
+    final int offsetCount = forceTouchContext.actionItems.size() == 1 ? 0 : 1;
 
     for (int i = offsetCount; i < childCount - offsetCount; i++) {
       View view = buttonsList.getChildAt(i);
@@ -853,9 +879,7 @@ public class ForceTouchView extends FrameLayoutFix implements
     private ActionListener actionListener;
     private MaximizeListener maximizeListener;
     private Object listenerArg;
-    private int[] buttonIds;
-    private int[] buttonIcons;
-    private String[] buttonHints;
+    private ArrayList<BaseView.ActionItem> actionItems;
     private boolean excludeHeader;
 
     public View getSourceView () {
@@ -916,7 +940,7 @@ public class ForceTouchView extends FrameLayoutFix implements
     }
 
     public boolean hasFooter () {
-      return buttonIds != null && buttonIds.length > 0;
+      return actionItems != null && actionItems.size() > 0;
     }
 
     public boolean hasHeader () {
@@ -924,17 +948,23 @@ public class ForceTouchView extends FrameLayoutFix implements
     }
 
     public int getMinimumWidth () {
-      return hasFooter() ? (buttonIds.length > 1 ? buttonIds.length + 1 : buttonIds.length) * Screen.dp(48f) : 0;
+      return hasFooter() ? (actionItems.size() > 1 ? actionItems.size() + 1 : actionItems.size()) * Screen.dp(48f) : 0;
     }
 
-    public void setButtons (ActionListener listener, Object listenerArg, int[] ids, int[] icons, String[] hints) {
+    public void setButtons (ActionListener listener, Object listenerArg, ArrayList<BaseView.ActionItem> items) {
       this.actionListener = listener;
       if (this.listenerArg == null) { // FIXME code design
         this.listenerArg = listenerArg;
       }
-      this.buttonIds = ids;
-      this.buttonIcons = icons;
-      this.buttonHints = hints;
+      this.actionItems = items;
+    }
+
+    public void setButtons (ActionListener listener, Object listenerArg, int[] ids, int[] icons, String[] hints) {
+      ArrayList<BaseView.ActionItem> items = new ArrayList<>(ids.length);
+      for (int i = 0; i < ids.length; i++) {
+        items.add(new BaseView.ActionItem(ids[i], icons[i], hints[i]));
+      }
+      setButtons(listener, listenerArg, items);
     }
 
     public MaximizeListener getMaximizeListener () {

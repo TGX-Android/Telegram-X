@@ -15,6 +15,7 @@
 package org.thunderdog.challegram.widget;
 
 import android.content.Context;
+import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
@@ -52,7 +53,40 @@ import me.vkryl.td.MessageId;
 
 public class BaseView extends SparseDrawableView implements ClickHelper.Delegate, View.OnClickListener, TdlibDelegate {
   public interface ActionListProvider {
+    @Deprecated
     ForceTouchView.ActionListener onCreateActions (View v, ForceTouchView.ForceTouchContext context, IntList ids, IntList icons, StringList strings, ViewController<?> target);
+
+    default ForceTouchView.ActionListener onCreateActions (View v, ForceTouchView.ForceTouchContext context, ArrayList<ActionItem> items, ViewController<?> target) {
+      IntList ids = new IntList(5);
+      IntList icons = new IntList(5);
+      StringList strings = new StringList(5);
+      ForceTouchView.ActionListener result = onCreateActions(v, context, ids, icons, strings, target);
+      for (int i = 0; i < ids.size(); i++) {
+        items.add(new ActionItem(ids.get(i), icons.get(i), strings.get()[i]));
+      }
+      return result;
+    };
+  }
+
+  public static class ActionItem {
+    public final int id;
+    public final int iconRes;
+    public final String title;
+    public final TdApi.MessageSender messageSender;
+
+    public ActionItem (int id, int iconRes, String title) {
+      this.id = id;
+      this.iconRes = iconRes;
+      this.title = title;
+      this.messageSender = null;
+    }
+
+    public ActionItem (int id, String title, TdApi.MessageSender messageSender) {
+      this.id = id;
+      this.iconRes = 0;
+      this.title = title;
+      this.messageSender = messageSender;
+    }
   }
 
   public interface CustomControllerProvider {
@@ -519,19 +553,15 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
       context.setMaximizeListener((target, animateToWhenReady, arg) -> MessagesController.maximizeFrom(tdlib, getContext(), target, animateToWhenReady, arg));
     }
 
-    IntList ids = new IntList(5);
-    IntList icons = new IntList(5);
-    StringList strings = new StringList(5);
+    ArrayList<ActionItem> actions = new ArrayList<>(5);
     ForceTouchView.ActionListener listener = null;
 
     if (actionListProvider != null) {
-      listener = actionListProvider.onCreateActions(this, context, ids, icons, strings, controller);
+      listener = actionListProvider.onCreateActions(this, context, actions, controller);
     } else if (controller instanceof MessagesController && ancestor != null) {
       // TODO move MessagesController-related stuff somewhere out of BaseView
       if (getPreviewFilter() instanceof TdApi.SearchMessagesFilterPinned && getPreviewHighlightMessageId() != null && tdlib.canPinMessages(tdlib.chat(chatId))) {
-        ids.append(R.id.btn_messageUnpin);
-        icons.append(R.drawable.deproko_baseline_pin_undo_24);
-        strings.append(R.string.Unpin);
+        actions.add(new ActionItem(R.id.btn_messageUnpin, R.drawable.deproko_baseline_pin_undo_24, Lang.getString(R.string.Unpin)));
         MessageId messageId = getPreviewHighlightMessageId();
         listener = new ForceTouchView.ActionListener() {
           @Override
@@ -550,11 +580,17 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
           public void onAfterForceTouchAction (ForceTouchView.ForceTouchContext context, int actionId, Object arg) { }
         };
       } else {
+        IntList ids = new IntList(5);
+        IntList icons = new IntList(5);
+        StringList strings = new StringList(5);
         listener = ancestor.tdlib().ui().createSimpleChatActions(ancestor, getPreviewChatList(), getPreviewChatId(), ((MessagesController) controller).getMessageThread(), ids, icons, strings, ancestor instanceof MainController || ancestor instanceof ChatsController, false, false, null);
+        for (int i = 0; i < ids.size(); i++) {
+          actions.add(new ActionItem(ids.get(i), icons.get(i), strings.get()[i]));
+        }
       }
     }
     if (listener != null) {
-      context.setButtons(listener, controller, ids.get(), icons.get(), strings.get());
+      context.setButtons(listener, controller, actions);
     }
 
     if (UI.getContext(getContext()).openForceTouch(context)) {

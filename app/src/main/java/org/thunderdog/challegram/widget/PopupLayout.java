@@ -511,6 +511,7 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
       ((ViewGroup) menuWrap.getParent()).removeView(menuWrap);
     }
 
+    final boolean anchorCenter = menuWrap.getAnchorMode() == MenuMoreWrap.ANCHOR_MODE_CENTER;
     final boolean anchorRight = menuWrap.getAnchorMode() == MenuMoreWrap.ANCHOR_MODE_RIGHT;
     final int padding = Screen.dp(8f);
     final int itemsWidth = menuWrap.getItemsWidth();
@@ -673,6 +674,10 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
           }
 
           if (animationType == ANIMATION_TYPE_MORE_SCALE) {
+            if (menuWrap.getAnchorMode() == MenuMoreWrap.ANCHOR_MODE_CENTER) {
+              final int itemsWidth = menuWrap.getItemsWidth();
+              menuWrap.setPivotX(itemsWidth / 2f);
+            }
             menuWrap.scaleIn(listener);
             return;
           }

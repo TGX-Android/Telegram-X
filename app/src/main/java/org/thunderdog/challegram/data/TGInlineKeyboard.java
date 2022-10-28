@@ -1149,10 +1149,15 @@ public class TGInlineKeyboard {
             break;
           }
 
+          TdApi.MessageGame game = ((TdApi.MessageGame) parent.getMessage().content);
+          final String data = game.game.shortName;
+          if (!context.context.messagesController().callNonAnonymousProtection(context.context.getId() + game.game.id, context.context, (targetView, outRect) -> outRect.set(dirtyRect))) {
+            break;
+          }
+
           makeActive();
           showProgressDelayed();
 
-          final String data = ((TdApi.MessageGame) parent.getMessage().content).game.shortName;
           context.context.tdlib().client().send(new TdApi.GetCallbackQueryAnswer(parent.getChatId(), context.messageId, new TdApi.CallbackQueryPayloadGame(data)), getAnswerCallback(currentContextId, view, true));
           break;
         }
