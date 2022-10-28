@@ -83,7 +83,7 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
   private boolean mAnimated = false;
   private int paddingStart = DEFAULT_PADDING, paddingEnd = DEFAULT_PADDING;
   private int startIconPadding = Screen.dp(12);
-  private int endIconPadding = DEFAULT_PADDING;
+  private int endIconPadding = Screen.dp(12);
   private int mX, mY;
   private boolean mNeedBackground = false;
   private boolean forceDisplayEndIcon = false, displayEndIcon = true;
@@ -533,7 +533,7 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
       Paints.fillingPaint(
         ColorUtils.alphaColor(
           getEnabledAlpha(),
-          defaultTextColor()
+          Theme.getColor(R.id.theme_color_inlineIcon)
         )
       )
     );

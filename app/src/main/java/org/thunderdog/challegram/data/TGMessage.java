@@ -843,7 +843,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   protected boolean needCommentButton () {
-    return Config.COMMENTS_SUPPORTED && msg.isChannelPost && !isSponsored() && allowInteraction() && !isScheduled() && TD.getReplyInfo(msg.interactionInfo) != null;
+    if (!Config.COMMENTS_SUPPORTED || !msg.isChannelPost || isSponsored() || !allowInteraction() || isScheduled()) return false;
+    return getReplyInfo() != null;
   }
 
   protected boolean isCommentButtonEnabled() {
@@ -861,6 +862,21 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       }
     }
     return msg.canGetMessageThread;
+  }
+
+  public final TdApi.MessageReplyInfo getReplyInfo() {
+    TdApi.Message msg = this.msg;
+    synchronized (this) {
+      if (combinedMessages != null && !combinedMessages.isEmpty()) {
+        for (TdApi.Message message : combinedMessages) {
+          TdApi.MessageReplyInfo combinedReplyInfo = TD.getReplyInfo(message.interactionInfo);
+          if (combinedReplyInfo != null) {
+            return combinedReplyInfo;
+          }
+        }
+      }
+    }
+    return TD.getReplyInfo(msg.interactionInfo);
   }
 
   public final void openMessageThread (MessageId highlightMessageId) {
@@ -4430,7 +4446,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public final boolean canGetThread() {
-    return msg.canGetMessageThread;
+    return isCommentButtonEnabled();
   }
 
   public final boolean canGetAddedReactions () {
@@ -5042,21 +5058,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     hasCommentButton.setValue(commentMode != COMMENT_MODE_NONE, animated);
     shareCounter.setCount(interactionInfo != null ? interactionInfo.forwardCount : 0, animated);
     isPinned.showHide(isPinned(), animated);
-    if (needCommentButton()) {
-      int replyCount = interactionInfo != null && interactionInfo.replyInfo != null
-        ? interactionInfo.replyInfo.replyCount
-        : 0;
-      TdApi.MessageSender[] senders = interactionInfo != null && interactionInfo.replyInfo != null
-        ? interactionInfo.replyInfo.recentReplierIds
-        : null;
-      commentButton.update(new TGCommentButton.Info(
-        replyCount,
-        senders,
-        Td.hasUnread(interactionInfo != null ? interactionInfo.replyInfo : null)
-      ), isCommentButtonEnabled(), animated);
-      commentButton.setForceDisplayEndIcon(!useBubbles());
-      commentButton.setNeedBackground(useBubbles() && commentMode == COMMENT_MODE_DETACHED_BUTTON);
-    }
+    updateCommentButtonInfo(allowAnimation);
     if (combinedMessages != null) {
       messageReactions.setReactions(combinedMessages);
     } else {
@@ -5086,6 +5088,21 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (allowAnimation) {
       notifyBubbleChanged();
       layoutInfo();
+    }
+  }
+
+  private void updateCommentButtonInfo(boolean animated) {
+    if (needCommentButton()) {
+      TdApi.MessageReplyInfo replyInfo = getReplyInfo();
+      int replyCount = replyInfo != null ? replyInfo.replyCount : 0;
+      TdApi.MessageSender[] senders = replyInfo != null ? replyInfo.recentReplierIds : null;
+      commentButton.update(new TGCommentButton.Info(
+        replyCount,
+        senders,
+        Td.hasUnread(replyInfo)
+      ), isCommentButtonEnabled(), animated);
+      commentButton.setForceDisplayEndIcon(!useBubbles());
+      commentButton.setNeedBackground(useBubbles() && getCommentMode() == COMMENT_MODE_DETACHED_BUTTON);
     }
   }
 
