@@ -67,6 +67,14 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
     }
   }
 
+  public void checkAllMessages () {
+    if (items != null) {
+      for (TGMessage message : items) {
+        message.checkHighlightedText();
+      }
+    }
+  }
+
   public void setChatType (@Nullable TdApi.ChatType info) {
     this.chatType = info;
   }

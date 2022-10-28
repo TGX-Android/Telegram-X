@@ -333,6 +333,16 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
     buildSubtitle();
   }
 
+  private boolean adminSignVisible = true;
+
+  public void setAdminSignVisible (boolean adminSignVisible, boolean isUpdate) {
+    this.adminSignVisible = adminSignVisible;
+    if (isUpdate) {
+      buildTitle();
+      currentViews.invalidate();
+    }
+  }
+
   private void buildTitle () {
     int availWidth = currentWidth - horizontalPadding;
 
@@ -350,7 +360,7 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
         }
       }
     }
-    if (!StringUtils.isEmpty(adminSign)) {
+    if (!StringUtils.isEmpty(adminSign) && adminSignVisible) {
       this.adminSign = new Text.Builder(adminSign, availWidth, Paints.robotoStyleProvider(13), TextColorSets.Regular.LIGHT).singleLine().build();
       availWidth -= this.adminSign.getWidth() + Screen.dp(4f);
     } else {

@@ -66,9 +66,18 @@ public class Highlight {
   }
 
   public final List<Part> parts = new ArrayList<>();
+  private TextColorSet customColorSet = null;
 
   public Highlight (String text, String highlight) {
     this(text, 0, text.length(), highlight, 0, highlight.length());
+  }
+
+  public TextColorSet getColorSet () {
+    return customColorSet != null ? customColorSet : TextColorSets.Regular.SEARCH_HIGHLIGHT;
+  }
+
+  public void setCustomColorSet (TextColorSet customColorSet) {
+    this.customColorSet = customColorSet;
   }
 
   private static int indexOfWeakCodePoint (String in, int startIndex, int endIndex) {
@@ -179,6 +188,11 @@ public class Highlight {
 
   @Nullable
   public static Highlight valueOf (String text, String highlight) {
+    return valueOf(text, highlight, null);
+  }
+
+  @Nullable
+  public static Highlight valueOf (String text, String highlight, TextColorSet customColorSet) {
     if (StringUtils.isEmpty(text) || StringUtils.isEmpty(highlight)) {
       return null;
     }
@@ -253,6 +267,7 @@ public class Highlight {
     if (result.isEmpty()) {
       return null;
     }
+    result.setCustomColorSet(customColorSet);
     return result;
   }
 

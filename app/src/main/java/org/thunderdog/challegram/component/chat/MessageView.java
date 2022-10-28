@@ -423,6 +423,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   private boolean isAttached = true;
 
   public void onAttachedToRecyclerView () {
+    getMessage().checkHighlightedText();
     if (!isAttached) {
       isAttached = true;
       avatarReceiver.attach();

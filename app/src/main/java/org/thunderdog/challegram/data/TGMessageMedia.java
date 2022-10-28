@@ -197,6 +197,10 @@ public class TGMessageMedia extends TGMessage {
   private boolean isBeingEdited;
 
   private boolean checkCommonCaption () {
+    return checkCommonCaption(false);
+  }
+
+  private boolean checkCommonCaption (boolean force) {
     TdApi.FormattedText caption = null;
     long captionMessageId = 0;
     boolean hasEditedText = false;
@@ -224,7 +228,7 @@ public class TGMessageMedia extends TGMessage {
       }
     }
     this.isBeingEdited = hasEditedText;
-    return setCaption(caption, captionMessageId);
+    return setCaption(caption, captionMessageId, force);
   }
 
   @Override
@@ -252,8 +256,20 @@ public class TGMessageMedia extends TGMessage {
   }
 
   private boolean setCaption (TdApi.FormattedText caption, long messageId) {
+    return setCaption(caption, messageId, false);
+  }
+
+  @Override
+  protected void onUpdateHighlightedText () {
+    if (mosaicWrapper != null) {
+      checkCommonCaption(true);
+      rebuildContent();
+    }
+  }
+
+  private boolean setCaption (TdApi.FormattedText caption, long messageId, boolean force) {
     this.captionMessageId = messageId;
-    if (!Td.equalsTo(this.caption, caption)) {
+    if (!Td.equalsTo(this.caption, caption) || force) {
       this.caption = caption;
       if (this.wrapper != null) {
         this.wrapper.performDestroy();
@@ -265,6 +281,7 @@ public class TGMessageMedia extends TGMessage {
               invalidateTextMediaReceiver(text, specificMedia);
             }
           })
+          .setHighlightText(getHighlightedText(caption.text))
           .addTextFlags(Text.FLAG_BIG_EMOJI)
           .setClickCallback(clickCallback());
         this.wrapper.setViewProvider(currentViews);

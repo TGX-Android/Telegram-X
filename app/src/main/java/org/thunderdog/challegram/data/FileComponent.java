@@ -332,7 +332,7 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
   }
 
   private void buildTitles (int maxWidth) {
-    trimmedTitle = title != null ? new Text.Builder(title, maxWidth, Paints.getTitleStyleProvider(), context.getTextColorSet()).textFlags(doc != null ? Text.FLAG_ELLIPSIZE_MIDDLE : 0).singleLine().allBold().build() : null;
+    trimmedTitle = title != null ? new Text.Builder(title, maxWidth, Paints.getTitleStyleProvider(), context.getTextColorSet()).textFlags(doc != null ? Text.FLAG_ELLIPSIZE_MIDDLE : 0).singleLine().allBold().highlight(context.getHighlightedText(title)).build() : null;
 
     float oldWidth = sizeWidth;
     trimSubtitle(maxWidth);
@@ -368,9 +368,9 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
   }
 
   private void trimSubtitle (int maxWidth) {
-    trimmedSubtitle = !StringUtils.isEmpty(subtitle) ? new Text.Builder(subtitle, maxWidth, Paints.getSubtitleStyleProvider(), context.getDecentColorSet()).singleLine().build() : null;
+    trimmedSubtitle = !StringUtils.isEmpty(subtitle) ? new Text.Builder(subtitle, maxWidth, Paints.getSubtitleStyleProvider(), context.getDecentColorSet()).singleLine().highlight(context.getHighlightedText(subtitle)).build() : null;
     if (!StringUtils.isEmpty(subtitleMeasure)) {
-      Text trimmedBigSubtitle = new Text.Builder(subtitleMeasure, maxWidth, Paints.getSubtitleStyleProvider(), context.getDecentColorSet()).singleLine().build();
+      Text trimmedBigSubtitle = new Text.Builder(subtitleMeasure, maxWidth, Paints.getSubtitleStyleProvider(), context.getDecentColorSet()).singleLine().highlight(context.getHighlightedText(subtitleMeasure)).build();
       sizeWidth = Math.max(Math.max(sizeWidth, getSubtitleWidth()), trimmedBigSubtitle.getWidth());
     } else {
       sizeWidth = Math.max(sizeWidth, getSubtitleWidth());

@@ -110,8 +110,12 @@ public class TGMessageFile extends TGMessage {
     }
 
     private boolean updateCaption (boolean animated) {
+      return updateCaption(animated, false);
+    }
+
+    private boolean updateCaption (boolean animated, boolean force) {
       TdApi.FormattedText caption = this.pendingCaption != null ? this.pendingCaption : this.serverCaption;
-      if (!Td.equalsTo(this.effectiveCaption, caption)) {
+      if (!Td.equalsTo(this.effectiveCaption, caption) || force) {
         this.effectiveCaption = Td.isEmpty(caption) ? null : caption;
         if (this.captionWrapper != null) {
           this.captionMediaKeyOffset += this.captionWrapper.getMaxMediaCount();
@@ -124,6 +128,7 @@ public class TGMessageFile extends TGMessage {
                 invalidateTextMediaReceiver(text, specificMedia);
               }
             })
+            .setHighlightText(getHighlightedText(caption.text))
             .addTextFlags(Text.FLAG_BIG_EMOJI)
             .setClickCallback(clickCallback());
           wrapper.setViewProvider(currentViews);
@@ -386,6 +391,15 @@ public class TGMessageFile extends TGMessage {
       return true;
     }
     return filesChanged;
+  }
+
+  @Override
+  protected void onUpdateHighlightedText () {
+    if (filesList == null) return;
+    for (CaptionedFile file : filesList) {
+      file.updateCaption(needAnimateChanges(), true);
+    }
+    rebuildContent();
   }
 
   @Override

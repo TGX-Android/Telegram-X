@@ -122,14 +122,14 @@ public class FormattedText {
       TextEntity[] entities = new TextEntity[highlight.parts.size()];
       for (int i = 0; i < entities.length; i++) {
         Highlight.Part part = highlight.parts.get(i);
-        entities[i] = TextEntity.valueOf(text, part, TextColorSets.Regular.SEARCH_HIGHLIGHT);
+        entities[i] = TextEntity.valueOf(text, part, highlight.getColorSet());
       }
       return new FormattedText(text, entities);
     }
     List<TextEntity> newEntities = new ArrayList<>();
     Collections.addAll(newEntities, entities);
     for (Highlight.Part part : highlight.parts) {
-      addHighlight(newEntities, part, TextColorSets.Regular.SEARCH_HIGHLIGHT);
+      addHighlight(newEntities, part, highlight.getColorSet());
     }
     return new FormattedText(text, newEntities.toArray(new TextEntity[0]));
   }

@@ -97,6 +97,7 @@ import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.ReactionsCounterDrawable;
 import org.thunderdog.challegram.util.text.Counter;
+import org.thunderdog.challegram.util.text.Highlight;
 import org.thunderdog.challegram.util.text.Letters;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
@@ -441,6 +442,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
 
     computeQuickButtons();
+    checkHighlightedText();
   }
 
   private static @NonNull <T> T nonNull (@Nullable T value) {
@@ -5827,6 +5829,37 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
   }
 
+  private @Nullable String highlightedText = null;
+
+  private void setHighlightedText (@Nullable String text) {
+    if (!StringUtils.equalsOrBothEmpty(text, highlightedText)) {
+      this.highlightedText = text;
+      onUpdateHighlightedText();
+      invalidate();
+    }
+  }
+
+  protected final @Nullable Highlight getHighlightedText (String in) {
+    Highlight highlight = Highlight.valueOf(in, highlightedText);
+    if (highlight == null) return null;
+
+    highlight.setCustomColorSet(getSearchHighlightColorSet());
+    return highlight;
+  }
+
+  public void checkHighlightedText () {
+    if (messagesController().isMessageFound(getMessage(getSmallestId()))) {
+      setHighlightedText(manager.controller().getLastMessageSearchQuery());
+    } else {
+      setHighlightedText(null);
+    }
+  }
+
+  // Override
+  protected void onUpdateHighlightedText () {
+
+  }
+
   private FactorAnimator revokeAnimator;
   private static final int ANIMATOR_REVOKE = -1;
 
@@ -6429,6 +6462,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public final TextColorSet getChatAuthorPsaColorSet () {
     return pick(TextColorSets.Regular.MESSAGE_AUTHOR_PSA, TextColorSets.BubbleOut.MESSAGE_AUTHOR_PSA, TextColorSets.BubbleIn.MESSAGE_AUTHOR_PSA);
+  }
+
+  public final TextColorSet getSearchHighlightColorSet () {
+    return pick(TextColorSets.Regular.MESSAGE_SEARCH_HIGHLIGHT, TextColorSets.BubbleOut.MESSAGE_SEARCH_HIGHLIGHT, TextColorSets.BubbleIn.MESSAGE_SEARCH_HIGHLIGHT);
   }
 
   // Colors
