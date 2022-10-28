@@ -4421,4 +4421,6 @@
   <string name="XRestrictedVideoMessages">%1$s doesn\'t accept video messages.</string>
 
   <string name="format_PRMadeBy">%1$s by %2$s</string>
+
+  <string name="AnonWarning">This action requires revealing your personal account. Tap again to confirm.</string>
 </resources>
