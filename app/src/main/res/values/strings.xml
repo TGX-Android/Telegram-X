@@ -1698,9 +1698,9 @@
 
   <string name="Reactions">Reactions</string>
   <string name="ReactionsDisabled">Reactions disabled</string>
-  <string name="ReactionsEnabledAll">Reactions enabled</string>
-  <string name="ReactionsEnabled_one">%1$s Reaction enabled</string>
-  <string name="ReactionsEnabled_other">%1$s Reactions enabled</string>
+  <string name="ReactionsEnabledAll">**All** reactions enabled</string>
+  <string name="ReactionsEnabled_one">%1$s reaction enabled</string>
+  <string name="ReactionsEnabled_other">%1$s reactions enabled</string>
 
   <string name="ReactionsAllowAll">Enabled</string>
   <string name="ReactionsAllowNone">Disabled</string>
@@ -1978,10 +1978,10 @@
   <string name="EventLogNoLongerCreator">is no longer an owner</string>
 
   <string name="EventLogReactionsEnabled">Enabled chat reactions</string>
-  <string name="EventLogReactionsDisabled">Disabled chat reactions</string>
-  <string name="EventLogReactionsChanged">Changed available chat reactions</string>
+  <string name="EventLogReactionsDisabled">Disabled all chat reactions</string>
+  <string name="EventLogReactionsChanged">Changed available chat reactions:</string>
   <string name="EventLogReactionsEnabledAll">Enabled all chat reactions</string>
-  <string name="EventLogReactionsLimited">Limited available chat reactions</string>
+  <string name="EventLogReactionsLimited">Limited available chat reactions to:</string>
   <string name="EventLogReactionsAdded2">+ Added:</string>
   <string name="EventLogReactionsRemoved2">– Removed:</string>
 

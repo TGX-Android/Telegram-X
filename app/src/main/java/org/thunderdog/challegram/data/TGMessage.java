@@ -7875,7 +7875,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     RunnableData<TGStickerObj> act = overlaySticker -> {
       context().reactionsOverlayManager().addOverlay(
         new ReactionsOverlayView.ReactionInfo(context().reactionsOverlayManager())
-          .setSticker(overlaySticker)
+          .setSticker(overlaySticker, true)
           .setUseDefaultSprayAnimation(tgReaction.isCustom())
           .setPosition(new Point(bubbleX, bubbleY), Screen.dp(90))
           .setAnimatedPositionOffsetProvider(new QuickReactionAnimatedPositionOffsetProvider())

@@ -32,6 +32,7 @@ import org.thunderdog.challegram.util.text.Text;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -642,9 +643,6 @@ public class ChatEventUtil {
         boolean hasAll = false;
         Set<String> newReactions = new LinkedHashSet<>();
 
-        boolean hadAll = false;
-        Set<String> oldReactions = new LinkedHashSet<>();
-
         switch (e.newAvailableReactions.getConstructor()) {
           case TdApi.ChatAvailableReactionsAll.CONSTRUCTOR:
             hasAll = true;
@@ -658,9 +656,13 @@ public class ChatEventUtil {
           default:
             throw new UnsupportedOperationException(e.newAvailableReactions.toString());
         }
+
+        boolean hadAll = false;
+        Set<String> oldReactions = new LinkedHashSet<>();
         switch (e.oldAvailableReactions.getConstructor()) {
           case TdApi.ChatAvailableReactionsAll.CONSTRUCTOR:
             hadAll = true;
+            break;
           case TdApi.ChatAvailableReactionsSome.CONSTRUCTOR:
             TdApi.ChatAvailableReactionsSome some = (TdApi.ChatAvailableReactionsSome) e.oldAvailableReactions;
             for (TdApi.ReactionType type : some.reactions) {
@@ -671,30 +673,6 @@ public class ChatEventUtil {
 
         List<TdApi.TextEntity> entities = new ArrayList<>();
         StringBuilder text = new StringBuilder();
-
-        boolean needRemoved = false;
-        boolean needAdded = false;
-
-        if (!hadAll && oldReactions.isEmpty()) {
-          // Enabled reactions
-          text.append(Lang.getString(hasAll ? R.string.EventLogReactionsEnabledAll : R.string.EventLogReactionsEnabled));
-          needAdded = !hasAll;
-        } else if (!hasAll && newReactions.isEmpty()) {
-          // Disabled reactions
-          text.append(Lang.getString(R.string.EventLogReactionsDisabled));
-          needRemoved = !hadAll;
-        } else if (hasAll) {
-          text.append(Lang.getString(R.string.EventLogReactionsEnabledAll));
-          needRemoved = !hadAll;
-        } else if (hadAll) {
-          text.append(Lang.getString(R.string.EventLogReactionsLimited));
-          needAdded = true;
-        } else {
-          // Changed available reactions
-          text.append(Lang.getString(R.string.EventLogReactionsChanged));
-          needRemoved = true;
-          needAdded = true;
-        }
         RunnableData<Set<String>> emojiAdder = set -> {
           boolean first = true;
           for (String reactionKey : set) {
@@ -716,28 +694,57 @@ public class ChatEventUtil {
             first = false;
           }
         };
-        entities.add(new TdApi.TextEntity(0, text.length(), new TdApi.TextEntityTypeItalic()));
 
-        if (!hasAll && !newReactions.isEmpty()) {
-          text.append("\n");
+        int headerLength = 0;
+
+        if (hasAll == hadAll && !hasAll) {
+          Set<String> addedReactions = new LinkedHashSet<>(newReactions);
+          addedReactions.removeAll(oldReactions);
+
+          Set<String> removedReactions = new LinkedHashSet<>(oldReactions);
+          removedReactions.removeAll(newReactions);
+          removedReactions.removeAll(addedReactions);
+
+          text.append(Lang.getString(
+            newReactions.isEmpty() ? R.string.EventLogReactionsDisabled :
+            oldReactions.isEmpty() ? R.string.EventLogReactionsEnabled :
+            R.string.EventLogReactionsChanged
+          ));
+          headerLength = text.length();
+
+          if (!newReactions.isEmpty() && !oldReactions.isEmpty()) {
+            emojiAdder.runWithData(newReactions);
+          }
+
+          if (!addedReactions.isEmpty()) {
+            text.append("\n\n");
+            text.append(Lang.getString(R.string.EventLogReactionsAdded2));
+            emojiAdder.runWithData(addedReactions);
+          }
+          if (!removedReactions.isEmpty()) {
+            text.append("\n\n");
+            text.append(Lang.getString(R.string.EventLogReactionsRemoved2));
+            emojiAdder.runWithData(removedReactions);
+          }
+        } else if (hasAll) {
+          text.append(Lang.getString(R.string.EventLogReactionsEnabledAll));
+          headerLength = text.length();
+        } else if (newReactions.isEmpty()) {
+          text.append(Lang.getString(R.string.EventLogReactionsDisabled));
+          headerLength = text.length();
+          if (!oldReactions.isEmpty()) {
+            text.append("\n\n");
+            text.append(Lang.getString(R.string.EventLogReactionsRemoved2));
+            emojiAdder.runWithData(oldReactions);
+          }
+        } else {
+          text.append(Lang.getString(hadAll ? R.string.EventLogReactionsLimited : R.string.EventLogReactionsChanged));
+          headerLength = text.length();
           emojiAdder.runWithData(newReactions);
         }
 
-
-        Set<String> addedReactions = new HashSet<>(newReactions);
-        addedReactions.removeAll(oldReactions);
-        if (needAdded && !addedReactions.isEmpty()) {
-          text.append("\n\n");
-          text.append(Lang.getString(R.string.EventLogReactionsAdded2));
-          emojiAdder.runWithData(newReactions);
-        }
-
-        Set<String> removedReactions = new HashSet<>(oldReactions);
-        removedReactions.removeAll(newReactions);
-        if (needRemoved && !removedReactions.isEmpty()) {
-          text.append("\n\n");
-          text.append(Lang.getString(R.string.EventLogReactionsRemoved2));
-          emojiAdder.runWithData(oldReactions);
+        if (headerLength > 0) {
+          entities.add(0, new TdApi.TextEntity(0, headerLength, new TdApi.TextEntityTypeItalic()));
         }
 
         TdApi.FormattedText formattedText = new TdApi.FormattedText(text.toString(), entities.toArray(new TdApi.TextEntity[0]));
