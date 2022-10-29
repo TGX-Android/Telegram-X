@@ -26,4 +26,5 @@ public interface TdlibNotificationStyleDelegate {
   void rebuildNotificationsSilently (@NonNull Context context, @NonNull TdlibNotificationHelper helper, int badgeCount, boolean allowPreview, TdApi.NotificationSettingsScope scope, long specificChatId, int specificGroupId);
   void hideNotificationGroup (@NonNull Context context, @NonNull TdlibNotificationHelper helper, int badgeCount, boolean allowPreview, @NonNull TdlibNotificationGroup group);
   void hideAllNotifications (@NonNull Context context, @NonNull TdlibNotificationHelper helper, int badgeCount);
+  void cancelPendingMediaPreviewDownloads (@NonNull Context context, @NonNull TdlibNotificationHelper helper);
 }

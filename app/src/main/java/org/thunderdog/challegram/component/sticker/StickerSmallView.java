@@ -34,6 +34,7 @@ import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 
@@ -41,6 +42,7 @@ import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.Destroyable;
+import me.vkryl.td.Td;
 
 public class StickerSmallView extends View implements FactorAnimator.Target, Destroyable {
   public static final float PADDING = 8f;
@@ -182,12 +184,13 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
 
   @Override
   protected void onDraw (Canvas c) {
-    boolean saved = factor != 0f;
+    float originalScale = sticker != null ? sticker.getDisplayScale() : 1f;
+    boolean saved = originalScale != 1f || factor != 0f;
     if (saved) {
       c.save();
-      float scale = MIN_SCALE + (1f - MIN_SCALE) * (1f - factor);
-      int cx = getMeasuredWidth() / 2;
-      int cy = getPaddingTop() + (getMeasuredHeight() - getPaddingBottom() - getPaddingBottom()) / 2;
+      float scale = originalScale * (MIN_SCALE + (1f - MIN_SCALE) * (1f - factor));
+      int cx = imageReceiver.centerX();
+      int cy = imageReceiver.centerY();
       c.scale(scale, scale, cx, cy);
     }
     if (isAnimation) {
@@ -241,7 +244,7 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
   }
 
   public interface StickerMovementCallback {
-    boolean onStickerClick (StickerSmallView view, View clickView, TGStickerObj sticker, boolean isMenuClick, boolean forceDisableNotification, @Nullable TdApi.MessageSchedulingState schedulingState);
+    boolean onStickerClick (StickerSmallView view, View clickView, TGStickerObj sticker, boolean isMenuClick, TdApi.MessageSendOptions sendOptions);
     long getStickerOutputChatId ();
     void setStickerPressed (StickerSmallView view, TGStickerObj sticker, boolean isPressed);
     boolean canFindChildViewUnder (StickerSmallView view, int recyclerX, int recyclerY);
@@ -282,7 +285,7 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
         closePreview(e);
         if (clicked && callback != null && sticker != null) {
           ViewUtils.onClick(this);
-          callback.onStickerClick(this, this, sticker, false, false, null);
+          callback.onStickerClick(this, this, sticker, false, Td.newSendOptions());
         }
         return true;
       }
@@ -456,7 +459,10 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     if (callback != null) {
       TGReaction reaction = callback.getReactionForPreview(this);
       if (reaction != null) {
-        ((BaseActivity) getContext()).openReactionPreview(tdlib, this, reaction, left + width / 2, top + height / 2 + (callback != null ? callback.getStickersListTop() : 0), Math.min(width, height) - Screen.dp(PADDING) * 2, callback.getViewportHeight(), isSuggestion || emojiDisabled);
+        boolean disableEmoji = isSuggestion || emojiDisabled;
+        reaction.withEffectAnimation(effectAnimation -> {
+          ((BaseActivity) getContext()).openReactionPreview(tdlib, this, reaction, effectAnimation, left + width / 2, top + height / 2 + (callback != null ? callback.getStickersListTop() : 0), Math.min(width, height) - Screen.dp(PADDING) * 2, callback.getViewportHeight(), disableEmoji);
+        });
         return;
       }
     }
@@ -501,8 +507,8 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     }
   }
 
-  public boolean onSendSticker (View view, TGStickerObj sticker, boolean forceDisableNotification, TdApi.MessageSchedulingState schedulingState) {
-    return callback != null && callback.onStickerClick(this, view, sticker, true, forceDisableNotification, schedulingState);
+  public boolean onSendSticker (View view, TGStickerObj sticker, TdApi.MessageSendOptions sendOptions) {
+    return callback != null && callback.onStickerClick(this, view, sticker, true, sendOptions);
   }
 
   public long getStickerOutputChatId () {

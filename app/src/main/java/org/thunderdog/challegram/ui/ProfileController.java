@@ -1887,7 +1887,21 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             break;
           }
           case R.id.btn_enabledReactions: {
-            view.setData(Lang.plural(R.string.xPermissions, chat.availableReactions.length, tdlib.getTotalActiveReactionsCount()));
+            TdApi.ChatAvailableReactions availableReactions = chat.availableReactions;
+            switch (availableReactions.getConstructor()) {
+              case TdApi.ChatAvailableReactionsAll.CONSTRUCTOR:
+                view.setData(R.string.ReactionsAllowAll);
+                break;
+              case TdApi.ChatAvailableReactionsSome.CONSTRUCTOR: {
+                int count = ((TdApi.ChatAvailableReactionsSome) availableReactions).reactions.length;
+                if (count > 0) {
+                  view.setData(Lang.pluralBold(R.string.ReactionsAllowSome, count));
+                } else {
+                  view.setData(R.string.ReactionsAllowNone);
+                }
+                break;
+              }
+            }
             break;
           }
           case R.id.btn_toggleProtection: {
@@ -6140,7 +6154,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   // Chat updated
 
   @Override
-  public void onChatAvailableReactionsUpdated (long chatId, String[] availableReactions) {
+  public void onChatAvailableReactionsUpdated (long chatId, TdApi.ChatAvailableReactions availableReactions) {
     runOnUiThreadOptional(() -> {
       if (chat.id == chatId) {
         updateAvailableReactions();

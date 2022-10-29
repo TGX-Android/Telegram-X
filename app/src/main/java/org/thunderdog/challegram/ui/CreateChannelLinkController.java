@@ -329,7 +329,7 @@ public class CreateChannelLinkController extends ViewController<CreateChannelLin
     switch (object.getConstructor()) {
       case TdApi.ChatInviteLink.CONSTRUCTOR: {
         inviteLink = StringUtils.urlWithoutProtocol(((TdApi.ChatInviteLink) object).inviteLink);
-        for (String host : TdConstants.TELEGRAM_HOSTS) {
+        for (String host : TdConstants.TME_HOSTS) {
           if (inviteLink.startsWith(host)) {
             inviteLink = inviteLink.substring(host.length() + 1);
             break;

@@ -844,7 +844,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
   }
 
   @Override
-  public boolean onStickerClick (StickerSmallView view, View clickView, TGStickerObj sticker, boolean isMenuClick, boolean forceDisableNotification, @Nullable TdApi.MessageSchedulingState schedulingState) {
+  public boolean onStickerClick (StickerSmallView view, View clickView, TGStickerObj sticker, boolean isMenuClick, TdApi.MessageSendOptions sendOptions) {
     if (sticker.isTrending() && !isMenuClick) {
       int i = indexOfTrendingStickerSetById(sticker.getStickerSetId());
       if (i != -1) {
@@ -855,7 +855,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
     }
 
     if (getArguments() != null) {
-      if (getArguments().sendSticker(clickView, sticker, forceDisableNotification, schedulingState)) {
+      if (getArguments().sendSticker(clickView, sticker, sendOptions)) {
         return true;
       }
     }
