@@ -443,12 +443,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       loadReply();
     }
 
-/*
-    if (msg.replyToMessageId != 0 && msg.canGetMessageThread) {
-      loadMessageThread();
-    }
-*/
-
     if (isHot() && needHotTimer() && msg.ttlExpiresIn < msg.ttl) {
       startHotTimer(false);
     }
@@ -3031,6 +3025,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     replyData = new ReplyComponent(this);
     replyData.setViewProvider(currentViews);
     replyData.load();
+    if (msg.messageThreadId != 0) {
+      replyData.loadThreadHeader();
+    }
   }
 
   public final void replaceReplyContent (long messageId, TdApi.MessageContent newContent) {
@@ -3918,6 +3915,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
     TdApi.MessageReplyInfo replyInfo = getReplyInfo();
     return replyInfo != null ? replyInfo.replyCount : 0;
+  }
+
+  public final int getThreadReplyCount () {
+    return replyData != null ? replyData.getThreadReplyCount(): 0;
   }
 
   public final boolean hasUnreadComments () {

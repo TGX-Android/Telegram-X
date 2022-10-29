@@ -668,19 +668,18 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
           strings.append(R.string.ShowSourceMessage);
           icons.append(R.drawable.baseline_forum_24);
         } else if (!msg.tdlib().isChannel(msg.getChatId())) {
-          if (msg.getReplyCount() > 0) {
-            ids.append(R.id.btn_messageReplies);
-            strings.append(Lang.plural(R.string.ViewXReplies, msg.getReplyCount()));
-            icons.append(R.drawable.baseline_forum_24);
-          } else if (msg.canGetMessageThread()) {
-            TGMessage tgMessage = msg.manager().getAdapter().findMessageById(msg.getMessageThreadId());
-            if (tgMessage != null) {
-              strings.append(Lang.plural(R.string.ViewXReplies, tgMessage.getReplyCount()));
-            } else {
-              strings.append(R.string.ViewReplies);
-            }
-            ids.append(R.id.btn_messageReplies);
-            icons.append(R.drawable.baseline_forum_24);
+          int count = msg.getReplyCount();
+          TGMessage tgMessage = msg.manager().getAdapter().findMessageById(msg.getMessageThreadId());
+          if (count == 0 && tgMessage != null) {
+            count = tgMessage.getReplyCount();
+          }
+          count = Math.max(count, msg.getThreadReplyCount());
+          ids.append(R.id.btn_messageReplies);
+          icons.append(R.drawable.baseline_forum_24);
+          if (count > 0) {
+            strings.append(Lang.plural(R.string.ViewXReplies, count));
+          } else {
+            strings.append(R.string.ViewReplies);
           }
         }
       }

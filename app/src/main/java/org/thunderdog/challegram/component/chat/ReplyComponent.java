@@ -505,6 +505,57 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
 
   private TdApi.Function<?> retryFunction;
 
+
+  public void loadThreadHeader () {
+    if (parent != null) {
+      TdApi.Message foundMessage = parent.manager().getAdapter().tryFindMessage(chatId, parent.getMessageThreadId());
+      if (foundMessage != null) {
+        setMessageThreadHeader(foundMessage);
+        return;
+      }
+
+      tdlib.client().send(new TdApi.GetMessage(chatId, parent.getMessageThreadId()), this::onThreadHeaderResult);
+    }
+  }
+
+  private TdApi.Message currentThreadHeader;
+
+  private void setMessageThreadHeader (TdApi.Message msg) {
+    currentThreadHeader = msg;
+  }
+
+  private void onThreadHeaderResult (TdApi.Object object) {
+    if (isDestroyed)
+      return;
+    switch (object.getConstructor()) {
+      case TdApi.Message.CONSTRUCTOR: {
+        currentThreadHeader = (TdApi.Message) object;
+        break;
+      }
+      case TdApi.Error.CONSTRUCTOR: {
+        currentThreadHeader = null;
+        break;
+      }
+      default: {
+        Log.unexpectedTdlibResponse(object, TdApi.GetMessage.class, TdApi.Message.class);
+        break;
+      }
+    }
+  }
+
+  public int getThreadReplyCount () {
+    if (currentThreadHeader == null) {
+      return 0;
+    }
+
+    TdApi.MessageReplyInfo replyInfo = TD.getReplyInfo(currentThreadHeader.interactionInfo);
+    if (replyInfo != null) {
+      return replyInfo.replyCount;
+    }
+
+    return 0;
+  }
+
   public void load () {
     if (parent != null) {
       TdApi.Message foundMessage = parent.manager().getAdapter().tryFindMessage(chatId, messageId);
