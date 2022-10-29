@@ -86,6 +86,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     super(context);
     setWillNotDraw(false);
     complexAvatarReceiver = new ComplexReceiver(this);
+    factorAnimator.forceFactor(-1);
   }
 
   public void updateDirection () {
@@ -406,8 +407,8 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     int innerX = sourceX - location[0];
     int innerY = sourceY - location[1];
 
-    int index = MathUtils.clamp(Math.floorDiv(innerY - Screen.dp(PADDING), Screen.dp(ITEM_HEIGHT)), 0, getChildCount() - 1);
-    setSelectedIndex(index);
+    int index = Math.floorDiv(innerY - Screen.dp(PADDING), Screen.dp(ITEM_HEIGHT));
+    setSelectedIndex(index == MathUtils.clamp(index, 0, getChildCount() - 1) ? index: -1);
 
     Log.i("HAPTIC INNER", String.format("INDEX %d", index));
   }
@@ -427,6 +428,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
       factorAnimator.animateTo(index);
     }
     lastSelectedIndex = index;
+    invalidate();
   }
 
   private int bubbleTailX = -1;
