@@ -860,19 +860,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   protected boolean isCommentButtonEnabled() {
     if (!needCommentButton()) return false;
-    TdApi.Message msg = this.msg;
-    synchronized (this) {
-      if (combinedMessages != null && !combinedMessages.isEmpty()) {
-        for (TdApi.Message message : combinedMessages) {
-          TdApi.MessageReplyInfo combinedReplyInfo = TD.getReplyInfo(message.interactionInfo);
-          if (message.canGetMessageThread || (!msg.canGetMessageThread && combinedReplyInfo != null)) {
-            msg = message;
-            break;
-          }
-        }
-      }
-    }
-    return msg.canGetMessageThread;
+    return canGetThread();
   }
 
   public final TdApi.MessageReplyInfo getReplyInfo() {
@@ -4457,7 +4445,17 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public final boolean canGetThread() {
-    return isCommentButtonEnabled();
+    TdApi.Message msg = this.msg;
+    if (combinedMessages != null && !combinedMessages.isEmpty()) {
+      for (TdApi.Message message : combinedMessages) {
+        TdApi.MessageReplyInfo combinedReplyInfo = TD.getReplyInfo(message.interactionInfo);
+        if (message.canGetMessageThread || (!msg.canGetMessageThread && combinedReplyInfo != null)) {
+          msg = message;
+          break;
+        }
+      }
+    }
+    return msg.canGetMessageThread;
   }
 
   public final boolean canGetAddedReactions () {
