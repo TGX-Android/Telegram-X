@@ -33,6 +33,7 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.ui.MessagesController;
+import org.thunderdog.challegram.util.CustomizableCounterAnimator;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
@@ -49,12 +50,14 @@ import androidx.annotation.Nullable;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.CounterAnimator;
 import me.vkryl.android.animator.FactorAnimator;
+import me.vkryl.android.animator.VariableFloat;
 import me.vkryl.android.util.ClickHelper;
 import me.vkryl.core.ColorUtils;
+import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 
 public class TGCommentButton extends ForceTouchPreviewDelegate implements
-  CounterAnimator.Callback<Text>, TextColorSet, FactorAnimator.Target,
+  CustomizableCounterAnimator.Callback<Text>, TextColorSet, FactorAnimator.Target,
   ForceTouchPreviewDelegate.CustomControllerProvider,
   ForceTouchPreviewDelegate.ActionListProvider {
 
@@ -62,39 +65,40 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
   public static final int DEFAULT_HEIGHT = Screen.dp(40);
   private static final int SELECTION_ANIMATOR = 0;
   private static final int FADE_ANIMATOR = 1;
+  private static final int SIZE_ANIMATOR = 2;
   private static final long ANIMATION_DURATION = 180L;
   private static final int sTextSizeDp = 14;
   private static final int sSmallTextSizeDp = 12;
   private static final int sUnreadSize = Screen.dp(6);
   private static final boolean DEBUG = false;
 
-  private final CounterAnimator<Text> mCounterAnimator;
+  private final CustomizableCounterAnimator<Text> mCounterAnimator;
   private final UserAvatarStack mUserAvatarStack;
   private final TGMessage mParent;
   private final RectF mBounds;
   private final Region mBackgroundClipRegion;
   private final Region mBottomBubbleRegion;
   private final ClickHelper mClickHelper;
+  private final Path mBackgroundPath;
+  private final Drawable mEndIconDrawable;
+  private final VariableFloat sizeExpand = new VariableFloat(0f);
   private Drawable mStartIconDrawable;
-  private Drawable mEndIconDrawable;
   private int width, height;
   private Info mInfo;
   private String mText;
-  private boolean mAnimated = false;
   private int paddingStart = DEFAULT_PADDING, paddingEnd = DEFAULT_PADDING;
   private int startIconPadding = Screen.dp(12);
   private int endIconPadding = Screen.dp(12);
   private int mX, mY;
   private boolean mNeedBackground = false;
-  private boolean forceDisplayEndIcon = false, displayEndIcon = true;
+  private boolean forceDisplayEndIcon = false;
   private float selectionFactor;
   private float fadeFactor;
   private FactorAnimator selectionAnimator;
   private FactorAnimator fadeAnimator;
+  private FactorAnimator sizeAnimator;
   private int touchX, touchY;
-  private int flags;
   private int mTextSize;
-  private Path mBackgroundPath;
   private boolean mPendingFade = false;
   private boolean isEnabled = false;
 
@@ -129,7 +133,7 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
     super(parent.tdlib());
     mParent = parent;
     mClickHelper = new ClickHelper(this);
-    mCounterAnimator = new CounterAnimator<>(this);
+    mCounterAnimator = new CustomizableCounterAnimator(this);
     mStartIconDrawable = Drawables.get(R.drawable.baseline_forum_18);
     mEndIconDrawable = Drawables.get(R.drawable.round_keyboard_arrow_right_18);
     mUserAvatarStack = new UserAvatarStack(this);
@@ -141,6 +145,25 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
     setNeedBackground(false);
     this.setCustomControllerProvider(this);
     this.setPreviewActionListProvider(this);
+    this.mCounterAnimator.setResetCallback(new CustomizableCounterAnimator.CustomResetCallback<>() {
+      @Override
+      public void onItemAdded (CustomizableCounterAnimator.Part<Text> item, boolean isReturned, long count, long oldCount) {
+        if (!StringUtils.isNumeric(item.text.getText()) && oldCount != -1 && count != -1) {
+          item.setPosition(CounterAnimator.Part.POSITION_NORMAL);
+        } else {
+          super.onItemAdded(item, isReturned, count, oldCount);
+        }
+      }
+
+      @Override
+      public void onItemRemoved (CustomizableCounterAnimator.Part<Text> item, long count, long oldCount) {
+        if (!StringUtils.isNumeric(item.text.getText()) && oldCount != -1 && count != -1) {
+          item.setPosition(CounterAnimator.Part.POSITION_NORMAL);
+        } else {
+          super.onItemRemoved(item, count, oldCount);
+        }
+      }
+    });
   }
 
   public void setupForceTouch(View view, Tdlib tdlib) {
@@ -162,12 +185,8 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
     this.paddingEnd = paddingEnd;
   }
 
-  public void updateWidth(int width) {
-    resetBounds(mX, mY, width, this.height);
-  }
-
-  public void setBounds(int width, int startX, int startY) {
-    resetBounds(startX, startY, width, this.height);
+  public void setBounds(int width, int startX, int startY, boolean animated) {
+    resetBounds(startX, startY, width, this.height, animated);
   }
 
   public void setStartDrawablePadding (int padding) {
@@ -203,23 +222,40 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
 
   public void update (Info info, boolean isEnabled, boolean animated) {
     if (mInfo != null && mInfo.equals(info)) return;
+    if (animated) cancelSizeAnimation();
+    sizeExpand.setFrom(calculatePreferredMinWidth());
     this.mInfo = info;
-    mAnimated = animated;
-    displayEndIcon = info.count == 0;
-    mUserAvatarStack.update(getAvatars(info.senders), animated);
-    if (mInfo.count == 0) {
-      mText = Lang.getString(R.string.LeaveComment);
-    } else {
-      mText = Lang.plural(R.string.xComments, mInfo.count);
-    }
-    setupCounter(width < getPreferredMinWidth());
+    updateAvatarStackIfNeed(animated);
+    mText = mInfo.count == 0
+      ? Lang.getString(R.string.LeaveComment)
+      : Lang.plural(R.string.xComments, mInfo.count);
     this.isEnabled = isEnabled;
+    int minWidth = calculatePreferredMinWidth();
+    setupCounter(width < minWidth, animated);
+    sizeExpand.setTo(minWidth);
     if (animated) {
-      invalidate();
+      animateSizeFactor();
+    } else {
+      sizeExpand.finishAnimation(true);
+    }
+  }
+
+  private void updateAvatarStackIfNeed(boolean animated) {
+    if (mInfo != null && (mInfo.count == 0 || mInfo.senders != null && mInfo.senders.length != 0)) {
+      mUserAvatarStack.update(getAvatars(mInfo.senders), animated);
+      mUserAvatarStack.setEndEdge(
+        mX + width - getEndIconOffset() - paddingEnd,
+        mY + (height - mUserAvatarStack.getCurrentHeight()) / 2,
+        animated
+      );
     }
   }
 
   public int getPreferredMinWidth () {
+    return (int) sizeExpand.get();
+  }
+
+  private int calculatePreferredMinWidth () {
     float measuredText = mText != null
       ? Paints.getBoldTextPaint(mTextSize).measureText(mText)
       : 0f;
@@ -245,6 +281,8 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
       selectionFactor = factor;
     } else if (id == FADE_ANIMATOR) {
       fadeFactor = factor;
+    } else if (id == SIZE_ANIMATOR) {
+      sizeExpand.applyAnimation(factor);
     }
     invalidate();
   }
@@ -255,11 +293,13 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
       cancelSelection();
     } else if (id == FADE_ANIMATOR && finalFactor == 1f) {
       forceResetSelection();
+    } else if (id == SIZE_ANIMATOR) {
+      sizeExpand.finishAnimation(true);
     }
   }
 
   @Override
-  public void onItemsChanged (CounterAnimator<?> animator) {}
+  public void onItemsChanged (CustomizableCounterAnimator<?> animator) {}
 
   @Override
   public Text onCreateTextDrawable (String text) {
@@ -521,13 +561,10 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
   }
 
   private void drawUnread(Canvas canvas) {
-    if (mInfo == null || !mInfo.hasUnread) return;
-    int endIconOffset = shouldDisplayEndIcon()
-      ? mEndIconDrawable.getIntrinsicWidth() + endIconPadding
-      : 0;
+    if (mInfo == null || mInfo.count == 0 || !mInfo.hasUnread) return;
     float radius = sUnreadSize / 2f;
     canvas.drawCircle(
-      mX + width - endIconOffset - paddingEnd - mUserAvatarStack.getCurrentWidth() - endIconPadding - radius,
+      mX + width - getEndIconOffset() - paddingEnd - mUserAvatarStack.getCurrentWidth() - endIconPadding - radius,
       mBounds.centerY(),
       radius,
       Paints.fillingPaint(
@@ -593,7 +630,7 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
     }
   }
 
-  private void resetBounds (int x, int y, int width, int height) {
+  private void resetBounds (int x, int y, int width, int height, boolean animated) {
     boolean positionChanged = mX != x || mY != y;
     boolean sizeChanged = this.width != width || this.height != height;
     if (positionChanged || sizeChanged) {
@@ -602,25 +639,23 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
       this.width = width;
       this.height = height;
       mBounds.set(x, y, x + width, y + height);
-      int endIconOffset = shouldDisplayEndIcon()
-        ? mEndIconDrawable.getIntrinsicWidth() + endIconPadding
-        : 0;
       mUserAvatarStack.setEndEdge(
-        mX + width - endIconOffset - paddingEnd,
-        mY + (height - mUserAvatarStack.getCurrentHeight()) / 2
+        mX + width - getEndIconOffset() - paddingEnd,
+        mY + (height - mUserAvatarStack.getCurrentHeight()) / 2,
+        animated
       );
       resetBackgroundPath();
       if (sizeChanged) {
-        setupCounter(width < getPreferredMinWidth());
+        setupCounter(width < getPreferredMinWidth(), animated);
       }
     }
   }
 
   private boolean shouldDisplayEndIcon () {
-    return forceDisplayEndIcon || displayEndIcon;
+    return forceDisplayEndIcon || mInfo == null || mInfo.count == 0;
   }
 
-  private void setupCounter (boolean ellipsize) {
+  private void setupCounter (boolean ellipsize, boolean animated) {
     String counterText = mText;
     if (ellipsize) {
       counterText = TextUtils.ellipsize(
@@ -633,23 +668,27 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
     mCounterAnimator.setCounter(
       mInfo != null && mInfo.count > 0 ? mInfo.count : -1,
       counterText,
-      mAnimated
+      animated
     );
   }
 
   private int getAvailableTextWidth () {
-    return width - getWidthWithoutText();
+    return width - getWidthWithoutText() - (mInfo != null && mInfo.hasUnread ? sUnreadSize : 0);
   }
 
   private int getWidthWithoutText () {
     return (int) (paddingStart +
       mStartIconDrawable.getIntrinsicWidth() +
       startIconPadding +
-      endIconPadding +
       paddingEnd +
       mUserAvatarStack.getCurrentWidth() +
-      (mInfo != null && mInfo.hasUnread ? sUnreadSize : 0) +
-      (shouldDisplayEndIcon() ? mEndIconDrawable.getIntrinsicWidth() : 0));
+      getEndIconOffset());
+  }
+
+  private int getEndIconOffset() {
+    return shouldDisplayEndIcon()
+      ? mEndIconDrawable.getIntrinsicWidth() + endIconPadding
+      : 0;
   }
 
   private void animateSelectionFactor (float toFactor) {
@@ -657,6 +696,21 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
       selectionAnimator = new FactorAnimator(SELECTION_ANIMATOR, this, AnimatorUtils.DECELERATE_INTERPOLATOR, ANIMATION_DURATION);
     }
     selectionAnimator.animateTo(toFactor);
+  }
+
+  private void animateSizeFactor () {
+    if (sizeAnimator == null) {
+      sizeAnimator = new FactorAnimator(SIZE_ANIMATOR, this, AnimatorUtils.DECELERATE_INTERPOLATOR, ANIMATION_DURATION);
+    }
+    cancelSizeAnimation();
+    sizeAnimator.forceFactor(0f);
+    sizeAnimator.animateTo(1f);
+  }
+
+  private void cancelSizeAnimation() {
+    if (sizeAnimator != null && sizeAnimator.isAnimating()) {
+      sizeAnimator.cancel();
+    }
   }
 
   private void animateFadeFactor (float toFactor) {

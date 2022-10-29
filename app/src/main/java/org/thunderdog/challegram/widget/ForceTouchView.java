@@ -548,6 +548,7 @@ public class ForceTouchView extends FrameLayoutFix implements
   // Reveal animation
 
   private static final float REVEAL_FACTOR = .2f;
+  private static final float ALPHA_SPEED_MULTIPLIER = 3f;
   private float revealFactor;
   private RectF clipRect;
 
@@ -584,7 +585,7 @@ public class ForceTouchView extends FrameLayoutFix implements
         contentWrap.setAlpha(alpha);
         backgroundView.setAlpha(alpha);
       } else {
-        float alpha = MathUtils.clamp(factor);
+        float alpha = MathUtils.clamp(factor * ALPHA_SPEED_MULTIPLIER);
         contentWrap.setAlpha(alpha);
         backgroundView.setAlpha(alpha);
       }

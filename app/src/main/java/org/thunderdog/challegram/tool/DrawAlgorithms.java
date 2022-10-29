@@ -46,6 +46,7 @@ import org.thunderdog.challegram.mediaview.paint.PaintState;
 import org.thunderdog.challegram.telegram.TdlibStatusManager;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.util.CustomizableCounterAnimator;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
@@ -331,6 +332,98 @@ public class DrawAlgorithms {
       return Math.max(Screen.dp(textSize - 2f) * 2, contentWidth + Screen.dp(3f) * 2);
     } else {
       return contentWidth;
+    }
+  }
+
+  public static void drawCounter (Canvas c, float cx, float cy, int gravity, CustomizableCounterAnimator<Text> counter, float textSize, boolean needBackground, TextColorSet colorSet, Drawable drawable, int drawableGravity, int drawableColorId, int drawableMargin, float alpha, float drawableAlpha, float scale) {
+    scale = .6f + .4f * scale;
+    final boolean needScale = scale != 1f;
+
+    final float radius, addRadius;
+    if (needBackground) {
+      radius = Screen.dp(textSize - 2f);
+      addRadius = Screen.dp(1.5f);
+    } else {
+      radius = addRadius = 0f;
+    }
+    final float contentWidth = counter.getWidth() + (drawable != null ? drawable.getMinimumWidth() + drawableMargin : 0);
+    final float width = getCounterWidth(textSize, needBackground, counter.getWidth(), drawable != null ? drawable.getMinimumWidth() + drawableMargin : 0);
+
+    final int backgroundColor = colorSet.backgroundColor(false);
+    final int outlineColor = colorSet.outlineColor(false);
+
+    RectF rectF = Paints.getRectF();
+    switch (gravity) {
+      case Gravity.LEFT:
+        rectF.set(cx - radius, cy - radius, cx - radius + width, cy + radius);
+        break;
+      case Gravity.RIGHT:
+        rectF.set(cx - width + radius, cy - radius, cx + radius, cy + radius);
+        break;
+      case Gravity.CENTER:
+      case Gravity.CENTER_HORIZONTAL:
+      default:
+        rectF.set(cx - width / 2f, cy - radius, cx + width / 2f, cy + radius);
+        break;
+    }
+
+    if (needScale) {
+      c.save();
+      c.scale(scale, scale, rectF.centerX(), rectF.centerY());
+    }
+
+    if (needBackground) {
+      boolean needOutline = Color.alpha(outlineColor) > 0 && addRadius > 0;
+      if (rectF.width() == rectF.height()) {
+        if (needOutline) {
+          c.drawCircle(cx, cy, radius + addRadius, Paints.fillingPaint(ColorUtils.alphaColor(alpha, outlineColor)));
+        }
+        c.drawCircle(cx, cy, radius, Paints.fillingPaint(ColorUtils.alphaColor(alpha, backgroundColor)));
+      } else {
+        if (needOutline) {
+          rectF.left -= addRadius;
+          rectF.top -= addRadius;
+          rectF.right += addRadius;
+          rectF.bottom += addRadius;
+          c.drawRoundRect(rectF, radius + addRadius, radius + addRadius, Paints.fillingPaint(ColorUtils.alphaColor(alpha, outlineColor)));
+          rectF.left += addRadius;
+          rectF.top += addRadius;
+          rectF.right -= addRadius;
+          rectF.bottom -= addRadius;
+        }
+        c.drawRoundRect(rectF, radius, radius, Paints.fillingPaint(ColorUtils.alphaColor(alpha, backgroundColor)));
+      }
+    }
+
+    float startX = rectF.centerX() - contentWidth / 2f;
+    if (drawable != null) {
+      Paint paint = drawableColorId != 0 ?
+        PorterDuffPaint.get(drawableColorId, drawableAlpha):
+        Paints.getPorterDuffPaint(ColorUtils.alphaColor(drawableAlpha, colorSet.iconColor()));
+      float iconY = cy - drawable.getMinimumHeight() / 2f;
+      switch (drawableGravity) {
+        case Gravity.RIGHT:
+          Drawables.draw(c, drawable, startX + counter.getWidth() + drawableMargin,  iconY, paint);
+          break;
+        case Gravity.CENTER_HORIZONTAL:
+        case Gravity.CENTER:
+        case Gravity.LEFT:
+        default:
+          Drawables.draw(c, drawable, startX, iconY, paint);
+          startX += drawable.getMinimumWidth() + drawableMargin;
+          break;
+      }
+    }
+
+    for (ListAnimator.Entry<CustomizableCounterAnimator.Part<Text>> entry : counter) {
+      int textStartX = Math.round(startX + entry.getRectF().left);
+      int textEndX = textStartX + entry.item.getWidth();
+      int startY = Math.round(cy - entry.item.getHeight() / 2f + entry.item.getHeight() * .8f * entry.item.getVerticalPosition());
+      entry.item.text.draw(c, textStartX, textEndX, 0, startY, colorSet, alpha * entry.getVisibility() * (1f - Math.abs(entry.item.getVerticalPosition())));
+    }
+
+    if (needScale) {
+      c.restore();
     }
   }
 

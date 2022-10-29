@@ -23,9 +23,9 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
 
 import me.vkryl.android.animator.FactorAnimator;
+import me.vkryl.core.MathUtils;
 
 public class UserAvatarStack implements FactorAnimator.Target {
   private static final long ANIMATION_DURATION = 250L;
@@ -40,7 +40,6 @@ public class UserAvatarStack implements FactorAnimator.Target {
   private final TGCommentButton mParent;
   private final FactorAnimator mAnimator;
   private final Rect mBounds;
-  private final Rect mOldBounds;
   private final ReceiverUpdateListener receiverUpdateListener = new ReceiverUpdateListener() {
     @Override
     public void onRequestInvalidate (Receiver receiver) {
@@ -72,22 +71,22 @@ public class UserAvatarStack implements FactorAnimator.Target {
     mTrash = new ArrayList<>();
     mAvatars = new LinkedHashMap<>();
     mBounds = new Rect();
-    mOldBounds = new Rect();
     mAnimator = new FactorAnimator(ADD_ANIMATOR, this, LINEAR_INTERPOLATOR, ANIMATION_DURATION);
   }
 
   public void setReceiversPool (ComplexReceiver complexReceiver) {
     this.complexReceiver = complexReceiver;
-    forEachAvatar((pos, avatar) -> {
-      avatar.setReceiver(this.complexReceiver, this.receiverUpdateListener);
-    });
+    for (Long key : mAvatars.keySet()) {
+      Avatar avatar = mAvatars.get(key);
+      if (avatar != null) avatar.setReceiver(this.complexReceiver, this.receiverUpdateListener);
+    }
     mParent.invalidate();
   }
 
   public void update(Map<Long, AvatarInfo> avatarInfo, boolean animated) {
     clearTrash();
     boolean changed = updateInfo(avatarInfo);
-    measure();
+    measure(animated);
     if (animated && changed) {
       animatedFactor = 0f;
       mAnimator.animateTo(1f);
@@ -106,39 +105,22 @@ public class UserAvatarStack implements FactorAnimator.Target {
     return currentHeight;
   }
 
-  public void setEndEdge (int endX, int endY) {
-    if (mBounds.right != endX || mBounds.top != endY) {
+  public void setEndEdge (int endX, int endY, boolean invalidate) {
       mBounds.set(
         endX - currentWidth,
         endY,
         endX,
         endY + currentHeight
       );
-    }
+      if (invalidate) mParent.invalidate();
   }
 
   public void draw(Canvas canvas) {
     if (DEBUG) {
       canvas.drawRect(mBounds, Paints.strokeSmallPaint(Color.RED));
     }
-    for (Avatar avatar : mTrash) {
-      avatar.scale = 1 - animatedFactor;
-      avatar.updatePosition(avatar.positionX, mOldBounds.top);
-      avatar.shouldClip = true;
-      avatar.draw(canvas);
-    }
-    final int lastPosition = mAvatars.size() - 1;
-    forEachAvatar((pos, avatar) -> {
-      if (avatar == null) return;
-      if (avatar.scale != 1f) {
-        avatar.scale = animatedFactor;
-      }
-      int startPosX = mBounds.right - sAvatarSizeDp;
-      int animatedOffset = (int) (sOffset * (lastPosition - pos) * animatedFactor);
-      avatar.updatePosition(startPosX - animatedOffset, mBounds.top);
-      avatar.shouldClip = pos != lastPosition;
-      avatar.draw(canvas);
-    });
+    drawTrash(canvas);
+    drawAvatars(canvas);
   }
 
   @Override
@@ -163,11 +145,40 @@ public class UserAvatarStack implements FactorAnimator.Target {
     mTrash.clear();
   }
 
-  private void forEachAvatar(BiConsumer<Integer, Avatar> consumer) {
+  private void drawAvatars(Canvas canvas) {
+    // At first, we need to calculate avatars positions and their clip bounds
+    final int lastPosition = mAvatars.size() - 1;
     int position = 0;
+    Avatar prev = null;
     for (Long key : mAvatars.keySet()) {
       Avatar avatar = mAvatars.get(key);
-      consumer.accept(position++, avatar);
+      if (avatar == null) continue;
+      if (avatar.scale != 1f) {
+        avatar.scale = animatedFactor;
+      }
+      int startPosX = avatar.positionX != -1 ? avatar.positionX : mBounds.right - sAvatarSizeDp;
+      int endPosX =  mBounds.right - sAvatarSizeDp - sOffset * (lastPosition - position);
+      avatar.updatePosition(MathUtils.fromTo(startPosX, endPosX, animatedFactor), mBounds.top);
+      avatar.shouldClip = position != lastPosition;
+      if (prev != null) {
+        prev.updateClip(avatar.scale, avatar.positionX, avatar.positionY);
+      }
+      prev = avatar;
+      position++;
+    }
+    // Then we can draw them
+    for (Long key : mAvatars.keySet()) {
+      Avatar avatar = mAvatars.get(key);
+      if (avatar == null) continue;
+      avatar.draw(canvas);
+    }
+  }
+
+  private void drawTrash(Canvas canvas) {
+    for (Avatar avatar : mTrash) {
+      avatar.scale = 1 - animatedFactor;
+      avatar.shouldClip = false;
+      avatar.draw(canvas);
     }
   }
 
@@ -200,16 +211,10 @@ public class UserAvatarStack implements FactorAnimator.Target {
     return changed;
   }
 
-  private void measure() {
+  private void measure(boolean animated) {
     currentWidth = !mAvatars.isEmpty() ? sAvatarSizeDp + (mAvatars.size() - 1) * sOffset : 0;
     currentHeight = sAvatarSizeDp;
-    mOldBounds.set(
-      mBounds.left,
-      mBounds.top,
-      mBounds.right,
-      mBounds.bottom
-    );
-    setEndEdge(mBounds.right, mBounds.top);
+    setEndEdge(mBounds.right, mBounds.top, animated);
   }
 
   private static final class Avatar {
@@ -219,11 +224,13 @@ public class UserAvatarStack implements FactorAnimator.Target {
     private final int height = sAvatarSizeDp;
     private final int width = sAvatarSizeDp;
     private ImageReceiver imageReceiver;
-    private int positionX = 0;
-    private int positionY = 0;
+    private int positionX = -1;
+    private int positionY = -1;
     private float scale = 0f;
     private final Path clipPath;
-    private boolean shouldClip = false;
+    private boolean shouldClip;
+    private float clipScale;
+    private int clipX, clipY;
 
     Avatar (AvatarInfo avatarInfo) {
       this.id = avatarInfo.userId;
@@ -243,12 +250,16 @@ public class UserAvatarStack implements FactorAnimator.Target {
     }
 
     void updatePosition(int x, int y) {
-      if (positionX != x || positionY != y) {
-        positionX = x;
-        positionY = y;
-        clipPath.reset();
-        clipPath.addCircle(sOffset, 0, height / 2f + Screen.dp(2), Path.Direction.CW);
-        clipPath.close();
+      positionX = x;
+      positionY = y;
+    }
+
+    void updateClip(float clipScale, int clipX, int clipY) {
+      if (this.shouldClip && (this.clipScale != clipScale || this.clipX != clipX || this.clipY != clipY)) {
+        this.clipScale = clipScale;
+        this.clipX = clipX;
+        this.clipY = clipY;
+        resetClipPath();
       }
     }
 
@@ -256,11 +267,11 @@ public class UserAvatarStack implements FactorAnimator.Target {
       int center = height / 2;
       int radius = height / 2;
       final int saveCount = canvas.save();
-      canvas.translate(positionX + center, positionY + center);
-      canvas.scale(scale, scale);
-      if (needBorder()) {
+      if (shouldClip) {
         canvas.clipPath(clipPath, Region.Op.DIFFERENCE);
       }
+      canvas.translate(positionX + center, positionY + center);
+      canvas.scale(scale, scale);
       if (imageReceiver != null && imageFile != null) {
         imageReceiver.setBounds(-center, -center, width - center, height - center);
         if (imageReceiver.needPlaceholder()) {
@@ -273,12 +284,15 @@ public class UserAvatarStack implements FactorAnimator.Target {
       canvas.restoreToCount(saveCount);
     }
 
-    boolean needBorder() {
-      return shouldClip && ((imageReceiver != null && imageFile != null) || placeholder != null);
-    }
-
     void destroy() {
       imageReceiver = null;
+    }
+
+    private void resetClipPath() {
+      final int center = height / 2;
+      clipPath.rewind();
+      clipPath.addCircle(clipX + center, clipY + center, (center + Screen.dp(2)) * clipScale, Path.Direction.CW);
+      clipPath.close();
     }
   }
 }
