@@ -988,6 +988,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     attachButtons.setOrientation(LinearLayout.HORIZONTAL);
     attachButtons.setLayoutParams(params);
 
+    params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(49f));
+    params.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+
     messageSenderButton = new MessageSenderButton(context, this);
     messageSenderButton.setLayoutParams(params);
     messageSenderButton.setDelegate(new MessageSenderButton.Delegate() {
