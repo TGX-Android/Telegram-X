@@ -6311,7 +6311,7 @@ public class Settings {
     AppBuildInfo buildInfo = new AppBuildInfo(installationId);
     pmc.edit()
       .putLong(KEY_APP_INSTALLATION_ID, installationId)
-      .putLong(KEY_APP_COMMIT_DATE, buildInfo.getCommitDate());
+      .putLong(KEY_APP_COMMIT_DATE, buildInfo.maxCommitDate());
     buildInfo.saveTo(pmc, KEY_APP_INSTALLATION_PREFIX + installationId);
     pmc.apply();
     this.currentBuildInformation = buildInfo;
