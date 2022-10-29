@@ -1217,7 +1217,7 @@ public class MediaLayout extends FrameLayoutFix implements
   private BackHeaderButton closeButton;
   private TextView counterHintView;
   private ImageView groupMediaView;
-  private SenderSendIcon senderSendIcon;
+  private @Nullable SenderSendIcon senderSendIcon;
 
   private float groupMediaFactor;
   private boolean needGroupMedia;
@@ -1383,7 +1383,9 @@ public class MediaLayout extends FrameLayoutFix implements
 
       counterView.setAlpha(0f);
       sendButton.setAlpha(0f);
-      senderSendIcon.setAlpha(0f);
+      if (senderSendIcon != null) {
+        senderSendIcon.setAlpha(0f);
+      }
       closeButton.setAlpha(0f);
       counterHintView.setAlpha(0f);
       groupMediaView.setAlpha(0f);
@@ -1521,8 +1523,10 @@ public class MediaLayout extends FrameLayoutFix implements
     if (counterView != null) {
       counterView.setAlpha(factor);
       sendButton.setAlpha(factor);
-      senderSendIcon.setAlpha(factor);
       closeButton.setAlpha(factor);
+      if (senderSendIcon != null) {
+        senderSendIcon.setAlpha(factor);
+      }
       checkCounterHint();
     }
     setCounterEnabled(factor != 0f);
@@ -1737,6 +1741,9 @@ public class MediaLayout extends FrameLayoutFix implements
   }
 
   private HapticMenuHelper.MenuItem createHapticSenderItem () {
+    if (senderSendIcon == null) {
+      return null;
+    }
     TdApi.Chat chat = getTargetChat();
     if (senderSendIcon.isAnonymous()) {
       return new HapticMenuHelper.MenuItem(R.id.btn_openSendersMenu, Lang.getString(R.string.SendAs), chat != null ? tdlib().getMessageSenderTitle(chat.messageSenderId): null, R.drawable.dot_baseline_acc_anon_24);
@@ -1767,7 +1774,9 @@ public class MediaLayout extends FrameLayoutFix implements
     tdlib().send(new TdApi.SetChatMessageSender(getTargetChatId(), sender.sender), o -> {
       UI.post(() -> {
         TdApi.Chat chat = getTargetChat();
-        senderSendIcon.update(chat != null ? chat.messageSenderId: null);
+        if (senderSendIcon != null) {
+          senderSendIcon.update(chat != null ? chat.messageSenderId : null);
+        }
       });
     });
   }
