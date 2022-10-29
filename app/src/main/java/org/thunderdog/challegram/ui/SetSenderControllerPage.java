@@ -2,6 +2,7 @@ package org.thunderdog.challegram.ui;
 
 import android.animation.ValueAnimator;
 import android.content.Context;
+import android.graphics.Rect;
 import android.view.View;
 import android.widget.LinearLayout;
 
@@ -20,6 +21,7 @@ import org.thunderdog.challegram.navigation.Menu;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.text.Highlight;
@@ -74,11 +76,26 @@ public class SetSenderControllerPage extends BottomSheetViewController.BottomShe
     recyclerView.setItemAnimator(null);
     recyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
     recyclerView.setLayoutManager(new LinearLayoutManager(context, RecyclerView.VERTICAL, false));
+    recyclerView.addItemDecoration(new RecyclerView.ItemDecoration() {
+      @Override
+      public void getItemOffsets (@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
+        super.getItemOffsets(outRect, view, parent, state);
+        int bottom = view instanceof EmptySmartView && getKeyboardState() ? -Keyboard.getSize(Keyboard.getSize()): 0;
+        outRect.set(0, bottom, 0, 0);
+      }
+    });
 
     adapter = new SettingsAdapter(this, this::onItemClickListener, this);
     adapter.setNoEmptyProgress();
     recyclerView.setAdapter(adapter);
     buildCells();
+  }
+
+  @Override
+  public boolean onKeyboardStateChanged (boolean visible) {
+    boolean result = super.onKeyboardStateChanged(visible);
+    recyclerView.invalidateItemDecorations();
+    return result;
   }
 
   private void onItemClickListener (View view) {
