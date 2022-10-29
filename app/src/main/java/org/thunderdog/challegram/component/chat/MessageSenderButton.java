@@ -227,7 +227,7 @@ public class MessageSenderButton extends FrameLayout implements ReplaceAnimator.
     for (ListAnimator.Entry<ButtonView> entry : replaceAnimator) {
       entry.item.setAlpha(entry.getVisibility());
 
-      final int offset2 = (int) ((entry.isJunk() ?
+      final int offset2 = (int) ((!entry.isAffectingList() ?
         ((entry.getVisibility() - 1f) * Screen.dp(32)):
         ((1f - entry.getVisibility()) * Screen.dp(32))));
 

@@ -1150,7 +1150,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         placeholderTitle.draw(c, getPaddingLeft(), getBaseline() - Screen.dp(17) - offset, null, alpha);
       }
       for (ListAnimator.Entry<Text> entry : subtitleReplaceAnimator) {
-        final int offset2 = (int) ((entry.isJunk() ?
+        final int offset2 = (int) ((!entry.isAffectingList() ?
           ((entry.getVisibility() - 1f) * Screen.dp(14)):
           ((1f - entry.getVisibility()) * Screen.dp(14))));
         entry.item.draw(c, getPaddingLeft(), getBaseline() + Screen.dp(4) - offset + offset2, null, Math.min(alpha, entry.getVisibility()));
