@@ -48,17 +48,26 @@ public class MessageListManager extends ListManager<TdApi.Message> implements Me
                              @Nullable String query,
                              @Nullable TdApi.MessageSender sender,
                              @Nullable TdApi.SearchMessagesFilter filter,
-                             long messageThreadId) {
+                             @Nullable ThreadInfo threadInfo) {
     super(tdlib, initialLoadCount, loadCount, startFromMessageId != 0, listener);
     this.chatId = chatId;
     this.startFromMessageId = startFromMessageId;
-    this.query = query;
-    this.sender = sender;
-    this.filter = filter;
-    this.messageThreadId = messageThreadId;
+    this.messageThreadId = threadInfo != null ? threadInfo.getMessageThreadId(): 0;
+    this.query = messageThreadId == 0 ? query: null;
+    this.sender = messageThreadId == 0 ? sender: null;
+    this.filter = messageThreadId == 0 ? filter: null;
     subscribeToUpdates();
-    loadTotalCount(null);
     addChangeListener(maxMessageIdListener);
+    if (threadInfo == null) {
+      loadTotalCount(null);
+    } else {
+      TdApi.Message message = threadInfo.getMessages().length > 0 ? threadInfo.getMessages()[0]: null;
+      setStateFull();
+      setTotalCount(0);
+      if (message != null) {
+        addMessage(message, true);
+      }
+    }
   }
 
   @Override
@@ -101,9 +110,9 @@ public class MessageListManager extends ListManager<TdApi.Message> implements Me
   }
 
   private boolean matchesFilter (TdApi.Message message) {
-    return message.chatId == chatId && (!hasFilter() || (
+    return message.chatId == chatId && (messageThreadId == 0) && (!hasFilter() || (
       StringUtils.isEmpty(query) && // unsupported
-      (messageThreadId == 0 || message.messageThreadId == messageThreadId) &&
+      // (messageThreadId == 0 || message.messageThreadId == messageThreadId) &&
       (sender == null || Td.equalsTo(message.senderId, sender)) &&
       (filter == null || Td.matchesFilter(message, filter))
     ));
@@ -273,7 +282,11 @@ public class MessageListManager extends ListManager<TdApi.Message> implements Me
   }
 
   private int addMessage (TdApi.Message message) {
-    if (matchesFilter(message)) {
+    return addMessage(message, false);
+  }
+
+  private int addMessage (TdApi.Message message, boolean force) {
+    if (matchesFilter(message) || force) {
       int newIndex = Collections.binarySearch(this.items, message, this);
       if (newIndex >= 0)
         return -1;

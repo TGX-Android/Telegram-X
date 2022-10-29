@@ -194,10 +194,11 @@ public class DrawAlgorithms {
   }
 
   public static void drawDirection (Canvas c, float cx, float cy, @ColorInt int lineColor, int gravity) {
-    c.save();
+    drawDirection(c, cx, cy, lineColor, gravity, Screen.dp(2f), Screen.dp(9f), 1f);
+  }
 
-    int lineWidth = Screen.dp(2f);
-    int lineHeight = Screen.dp(9f);
+  public static void drawDirection (Canvas c, float cx, float cy, @ColorInt int lineColor, int gravity, int lineWidth, int lineHeight, float alpha) {
+    c.save();
 
     int rotation = 45;
     switch (gravity) {
@@ -215,8 +216,8 @@ public class DrawAlgorithms {
         break;
     }
     c.rotate(rotation, cx, cy);
-    c.drawRect(cx, cy - lineHeight, cx + lineWidth, cy, Paints.fillingPaint(lineColor));
-    c.drawRect(cx + lineWidth, cy - lineWidth, cx + lineHeight, cy, Paints.fillingPaint(lineColor));
+    c.drawRect(cx, cy - lineHeight, cx + lineWidth, cy, Paints.fillingPaint(ColorUtils.alphaColor(alpha, lineColor)));
+    c.drawRect(cx + lineWidth, cy - lineWidth, cx + lineHeight, cy, Paints.fillingPaint(ColorUtils.alphaColor(alpha, lineColor)));
 
     c.restore();
   }

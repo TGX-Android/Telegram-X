@@ -110,6 +110,7 @@ public class ForceTouchView extends FrameLayoutFix implements
   // private static TextPaint hintTextPaint;
 
   private final ThemeListenerList themeListenerList;
+  private final @Nullable Path path = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT ? new Path() : null;
 
   public ForceTouchView (Context context) {
     super(context);
@@ -136,26 +137,26 @@ public class ForceTouchView extends FrameLayoutFix implements
     final RectF rectF = new RectF();
 
     contentWrap = new RelativeLayout(context) {
-      private final @Nullable Path path = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT ? new Path() : null;
-
       @Override
       protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         checkPath();
       }
 
-      private int lastWidth, lastHeight;
+      private int lastWidth, lastHeight, lastFooterOffset, lastHeaderOffset;
 
       private void checkPath () {
         int viewWidth = getMeasuredWidth();
         int viewHeight = getMeasuredHeight();
 
-        if (lastWidth != viewWidth || lastHeight != viewHeight) {
+        int headerOffset = getHeaderTranslation();
+        int footerOffset = getFooterTranslation();
+        if (lastWidth != viewWidth || lastHeight != viewHeight || lastHeaderOffset != headerOffset || lastFooterOffset != footerOffset ) {
           lastWidth = viewWidth;
           lastHeight = viewHeight;
-
-          rectF.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
-
+          lastHeaderOffset = headerOffset;
+          lastFooterOffset = footerOffset;
+          rectF.set(0, headerOffset, getMeasuredWidth(), getMeasuredHeight() + footerOffset);
           if (path != null) {
             path.reset();
             path.addRoundRect(rectF, Screen.dp(4f), Screen.dp(4f), Path.Direction.CW);
@@ -164,13 +165,27 @@ public class ForceTouchView extends FrameLayoutFix implements
       }
 
       @Override
-      public void draw (Canvas c) {
-        final boolean needClip = !forceTouchContext.needHeader;
-        final int saveCount = needClip ? ViewSupport.clipPath(c, path) : Integer.MIN_VALUE;
-        super.draw(c);
-        if (needClip) {
-          ViewSupport.restoreClipPath(c, saveCount);
+      protected boolean drawChild (Canvas canvas, View child, long drawingTime) {
+        boolean isContent = child.getId() == R.id.forceTouch_content;
+        if (isContent) {
+          canvas.save();
+          canvas.clipRect(0, getHeaderTranslation() + (headerView != null ? Screen.dp(HEADER_HEIGHT): 0),
+            getMeasuredWidth(), getMeasuredHeight() + getFooterTranslation() - (buttonsList != null ? Screen.dp(FOOTER_HEIGHT): 0));
         }
+        final boolean result = super.drawChild(canvas, child, drawingTime);
+        if (isContent) {
+          canvas.restore();
+        }
+
+        return result;
+      }
+
+      @Override
+      public void draw (Canvas c) {
+        checkPath();
+        final int saveCount = ViewSupport.clipPath(c, path);
+        super.draw(c);
+        ViewSupport.restoreClipPath(c, saveCount);
         if (path == null) {
           c.drawRect(0, 0, getMeasuredWidth(), getMeasuredHeight(), Paints.strokeBigPaint(ColorUtils.alphaColor(.2f, Theme.textAccentColor())));
         }
@@ -181,7 +196,7 @@ public class ForceTouchView extends FrameLayoutFix implements
         @Override
         @TargetApi(Build.VERSION_CODES.LOLLIPOP)
         public void getOutline (View view, android.graphics.Outline outline) {
-          outline.setRoundRect(0, 0, view.getMeasuredWidth(), view.getMeasuredHeight(), Screen.dp(4f));
+          outline.setRoundRect(0, getHeaderTranslation(), view.getMeasuredWidth(), view.getMeasuredHeight() + getFooterTranslation(), Screen.dp(4f));
         }
       });
       contentWrap.setElevation(Screen.dp(1f));
@@ -242,11 +257,13 @@ public class ForceTouchView extends FrameLayoutFix implements
 
   private LinearLayout buttonsList;
   private Tdlib tdlib;
+  private float expandFactor;
 
   public void initWithContext (ForceTouchContext context) {
     this.tdlib = context.tdlib;
     this.forceTouchContext = context;
     this.listener = context.stateListener;
+    this.expandFactor = context.getExpandFactor();
 
     if (context.backgroundColor != 0) {
       backgroundView.setBackgroundColor(context.backgroundColor);
@@ -532,7 +549,7 @@ public class ForceTouchView extends FrameLayoutFix implements
 
   // Reveal animation
 
-  private static final float REVEAL_FACTOR = .7f;
+  private static final float REVEAL_FACTOR = .8f;
   private float revealFactor;
 
   public void setBeforeMaximizeFactor (float factor) {
@@ -544,6 +561,31 @@ public class ForceTouchView extends FrameLayoutFix implements
     }
   }
 
+  private int headerTranslation = 0;
+  private int footerTranslation = 0;
+
+  private void setHeaderTranslation (int headerTranslation) {
+    this.headerTranslation = headerTranslation;
+    if (headerView != null) {
+      headerView.setTranslationY(headerTranslation);
+    }
+  }
+
+  private void setFooterTranslation (int footerTranslation) {
+    this.footerTranslation = footerTranslation;
+    if (buttonsList != null) {
+      buttonsList.setTranslationY(footerTranslation);
+    }
+  }
+
+  private int getHeaderTranslation () {
+    return headerTranslation;
+  }
+
+  private int getFooterTranslation () {
+    return footerTranslation;
+  }
+
   private void setRevealFactor (float factor) {
     if (this.revealFactor != factor) {
       this.revealFactor = factor;
@@ -551,6 +593,12 @@ public class ForceTouchView extends FrameLayoutFix implements
       contentWrap.setScaleX(scale);
       contentWrap.setScaleY(scale);
 
+      setHeaderTranslation((int) (Math.max((contentWrap.getMeasuredHeight() * expandFactor) - Screen.dp(HEADER_HEIGHT), 0) * MathUtils.clamp(1f - factor)));
+      setFooterTranslation((int) (Math.max((contentWrap.getMeasuredHeight() * (1f - expandFactor)) - Screen.dp(FOOTER_HEIGHT), 0) * -MathUtils.clamp(1f - factor)));
+      contentWrap.invalidate();
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        contentWrap.invalidateOutline();
+      }
 
       if (isMaximizing) {
         float progressFactor = MathUtils.clamp((factor - maximizingFromFactor) / (MAXIMIZE_FACTOR - maximizingFromFactor));
@@ -558,11 +606,10 @@ public class ForceTouchView extends FrameLayoutFix implements
         contentWrap.setAlpha(alpha);
         backgroundView.setAlpha(alpha);
       } else {
-        float alpha = MathUtils.clamp(factor);
+        float alpha = (float) Math.sqrt(MathUtils.clamp(factor));
         contentWrap.setAlpha(alpha);
         backgroundView.setAlpha(alpha);
       }
-
     }
   }
 
@@ -748,7 +795,7 @@ public class ForceTouchView extends FrameLayoutFix implements
     if (Device.NEED_REDUCE_BOUNCE || Settings.instance().needReduceMotion()) {
       revealAnimator = new FactorAnimator(REVEAL_ANIMATOR, this, new DecelerateInterpolator(1.46f), 140l);
     } else {
-      revealAnimator = new FactorAnimator(REVEAL_ANIMATOR, this, overshootInterpolator, 260l);
+      revealAnimator = new FactorAnimator(REVEAL_ANIMATOR, this, overshootInterpolator, 300l);
     }
   }
 
@@ -1000,6 +1047,36 @@ public class ForceTouchView extends FrameLayoutFix implements
 
     public boolean needHideKeyboard () {
       return !allowFullscreen && (boundController == null || boundController.wouldHideKeyboardInForceTouchMode());
+    }
+
+    private float expandFactor = 0.5f;
+
+    public void setExpandFactor (View v, float y) {
+      int[] cords = Views.getLocationInWindow(v);
+      int top, bottom;
+      if (isMatchParent) {
+        if (Device.NEED_LESS_PREVIEW_MARGINS) {
+          top = HeaderView.getTopOffset() + Screen.dp(20f);
+          bottom = HeaderView.getTopOffset() + Screen.dp(16f);
+        } else {
+          top = bottom = HeaderView.getTopOffset() + Screen.dp(20f);
+        }
+      } else {
+        top = bottom = HeaderView.getTopOffset() + Screen.dp(12f);
+      }
+
+      int height = Screen.currentHeight() - top - bottom;
+      int windowY = (int) (cords[1] + y) - top;
+
+      setExpandFactor(MathUtils.clamp(((float) windowY) / height));
+    }
+
+    private void setExpandFactor (float expandFactor) {
+      this.expandFactor = expandFactor;
+    }
+
+    public float getExpandFactor () {
+      return expandFactor;
     }
   }
 

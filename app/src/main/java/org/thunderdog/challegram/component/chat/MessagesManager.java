@@ -143,6 +143,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           controller.onInteractedWithContent();
           controller.onFirstChatScroll();
         }
+        setPinnedMessagesAvailable(!wasDismissPinnedLocal && pinnedMessages != null && pinnedMessages.isAvailable() && (!isHeaderVisible || controller.getMessagesView().computeVerticalScrollOffset() > 0));
         controller.context().reactionsOverlayManager().addOffset(0, -dy);
       }
     };
@@ -449,7 +450,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     controller.context().removePasscodeListener(this);
   }
 
+  private boolean wasDismissPinnedLocal;
+
   public void dismissPinnedMessage () {
+    wasDismissPinnedLocal = true;
     if (tdlib.isSelfChat(loader.getChatId()))
       return;
     long maxMessageId = maxPinnedMessageId();
@@ -505,6 +509,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     lastViewedMention = 0;
     lastViewedReaction = 0;
     chatAdmins = null;
+    wasDismissPinnedLocal = false;
     if (pinnedMessages != null) {
       pinnedMessages.performDestroy();
       pinnedMessages = null;
@@ -556,11 +561,12 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   // Search
 
   public void openSearch (TdApi.Chat chat, String query, TdApi.MessageSender sender, TdApi.SearchMessagesFilter filter) {
+    wasDismissPinnedLocal = false;
     loader.setChat(chat, null, MessagesLoader.SPECIAL_MODE_SEARCH, filter);
     loader.setSearchParameters(query, sender, filter);
     adapter.setChatType(chat.type);
     if (filter != null && filter.getConstructor() == TdApi.SearchMessagesFilterPinned.CONSTRUCTOR) {
-      initPinned(chat.id, 1, 1);
+      initPinned(chat.id, 1, 1, null);
     }
     if (highlightMessageId != null) {
       loadFromMessage(highlightMessageId, highlightMode, true);
@@ -649,8 +655,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
   }
 
-  private void initPinned (long chatId, int initialLoadCount, int loadCount) {
-    this.pinnedMessages = new MessageListManager(tdlib, initialLoadCount, loadCount, pinnedMessageListener, chatId, 0, null, null, new TdApi.SearchMessagesFilterPinned(), 0);
+  private void initPinned (long chatId, int initialLoadCount, int loadCount, @Nullable ThreadInfo threadInfo) {
+    this.pinnedMessages = new MessageListManager(tdlib, initialLoadCount, loadCount, pinnedMessageListener, chatId, 0, null, null, new TdApi.SearchMessagesFilterPinned(), threadInfo);
     this.pinnedMessages.addMaxMessageIdListener(pinnedMessageAvailabilityChangeListener);
     this.pinnedMessages.addChangeListener(new MessageListManager.ChangeListener() {
       @Override
@@ -674,8 +680,13 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       tdlib.openChat(chat.id, context);
       // readOneShot = true;
     }
-    if (chat.id != 0 && messageThread == null && !areScheduled && needPinnedMessages) {
-      initPinned(chat.id, 10, 50);
+    wasDismissPinnedLocal = false;
+    if (chat.id != 0 && !areScheduled && needPinnedMessages) {
+      initPinned(chat.id, messageThread != null ? 1: 10, messageThread != null ? 1: 50, messageThread);
+      if (messageThread != null) {
+        pinnedMessagesAvailable = false;
+        setPinnedMessagesAvailable(true);
+      }
     } else {
       this.pinnedMessages = null;
     }
@@ -704,7 +715,13 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   public void resetByMessage (MessageId highlightMessageId, int highlightMode) {
-    clearHeaderMessage();
+    resetByMessage(highlightMessageId, highlightMode, true);
+  }
+
+  public void resetByMessage (MessageId highlightMessageId, int highlightMode, boolean needClearHeaderMessage) {
+    if (needClearHeaderMessage) {
+      clearHeaderMessage();
+    }
     this.highlightMessageId = highlightMessageId;
     this.highlightMode = highlightMode;
     loadFromMessage(highlightMessageId, highlightMode, false);
@@ -1139,7 +1156,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           adapter.addMessages(items, true);
         }
         if (scrollMessage == null) {
-          if (scrollMessageId != null && scrollMessageId.isHistoryStart() && !items.isEmpty()) {
+          /*if (headerMessage != null && scrollMessageId != null && headerMessage.toMessageId().compareTo(scrollMessageId)) {
+            //manager.scrollToPositionWithOffset(0, 0);
+            UI.post(() -> highlightMessage(highlightMessageId, highlightMode, returnToMessageIds, true));
+          } else*/ if (scrollMessageId != null && scrollMessageId.isHistoryStart() && !items.isEmpty()) {
             manager.scrollToPositionWithOffset(items.size() - 1, -items.get(items.size() - 1).getHeight());
           } else if (scrollPosition == 0) {
             manager.scrollToPositionWithOffset(0, 0);
@@ -1198,6 +1218,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       adapter.addMessage(this.headerMessage, true, false);
       checkBotStart();
     }
+  }
+
+  public TGMessage getHeaderMessage () {
+    return headerMessage;
   }
 
   public void onTopEndLoaded () {
@@ -1384,6 +1408,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     final int recyclerHeight = getRecyclerHeight();
     final View view = findMessageView(chatId, messageId);
     if (view == null) {
+      return;
+    }
+    if (controller.isStackFromEndLayout()) {
       return;
     }
 
@@ -2119,7 +2146,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         message.updateDate();
         controller.getMessagesView().invalidate();
       }
-      // TODO show/hide pinned message
+      setPinnedMessagesAvailable(!wasDismissPinnedLocal && pinnedMessages != null && pinnedMessages.isAvailable() && (!isHeaderVisible || controller.getMessagesView().computeVerticalScrollOffset() > 0));
     }
   }
 
@@ -2650,7 +2677,11 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
     int index = adapter.indexOfMessageContainer(messageId);
     if (index == -1) {
-      resetByMessage(messageId, highlightMode);
+      if (headerMessage != null && messageId.compareTo(headerMessage.toMessageId())) {
+        resetByMessage(new MessageId(messageId.getChatId(), MessageId.MIN_VALID_ID), highlightMode, false);
+      } else {
+        resetByMessage(messageId, highlightMode, headerMessage == null /* || !messageId.compareTo(headerMessage.toMessageId())*/);
+      }
     } else {
       if ((highlightMode == HIGHLIGHT_MODE_UNREAD_NEXT || highlightMode == HIGHLIGHT_MODE_NORMAL_NEXT) && index > 0) {
         index--;
@@ -2828,6 +2859,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   @Override
   public void onNewMessage (final TdApi.Message message) {
+    if (controller.isMessageThread()) {
+      controller.updateMessageThread();
+    }
     if ((message.schedulingState != null) == areScheduled()) {
       if (indexOfSentMessage(message.chatId, message.id) != -1)
         return;

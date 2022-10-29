@@ -96,7 +96,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
   private final ImageReceiver avatarReceiver;
   private final GifReceiver gifReceiver;
-  private final ComplexReceiver reactionsComplexReceiver, textMediaReceiver, replyTextMediaReceiver;
+  private final ComplexReceiver reactionsComplexReceiver, commentAvatarsReceiver, textMediaReceiver, replyTextMediaReceiver;
   private final DoubleImageReceiver replyReceiver;
   private final RefreshRateLimiter refreshRateLimiter;
   private ComplexReceiver footerTextMediaReceiver;
@@ -117,6 +117,8 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     textMediaReceiver = new ComplexReceiver()
       .setUpdateListener(refreshRateLimiter);
     replyTextMediaReceiver = new ComplexReceiver()
+      .setUpdateListener(refreshRateLimiter);
+    commentAvatarsReceiver = new ComplexReceiver()
       .setUpdateListener(refreshRateLimiter);
     //noinspection ContantConditions
     replyReceiver = new DoubleImageReceiver(this, Config.USE_SCALED_ROUNDINGS ? Screen.dp(Theme.getImageRadius()) : 0);
@@ -151,6 +153,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     gifReceiver.destroy();
     reactionsComplexReceiver.performDestroy();
     textMediaReceiver.performDestroy();
+    commentAvatarsReceiver.performDestroy();
     if (contentReceiver != null) {
       contentReceiver.destroy();
     }
@@ -226,6 +229,12 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     }
   }
 
+  public void invalidateCommentAvatarReceiver (long chatId, long messageId) {
+    if (msg != null && msg.getChatId() == chatId && msg.getId() == messageId) {
+      msg.requestCommentAvatars(commentAvatarsReceiver);
+    }
+  }
+
   private void checkLegacyComponents (MessageView view) {
     if (msg != null) {
       msg.layoutAvatar(view, avatarReceiver);
@@ -271,6 +280,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     message.resetTransformState();
     message.requestAvatar(avatarReceiver);
     message.requestReactions(reactionsComplexReceiver);
+    message.requestCommentAvatars(commentAvatarsReceiver);
     message.requestAllTextMedia(this);
 
     if ((flags & FLAG_USE_COMMON_RECEIVER) != 0) {
@@ -307,6 +317,11 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   @NonNull
   public ComplexReceiver getTextMediaReceiver () {
     return textMediaReceiver;
+  }
+
+  @NonNull
+  public ComplexReceiver getCommentAvatarsReceiver () {
+    return commentAvatarsReceiver;
   }
 
   public void invalidateContentReceiver (long chatId, long messageId, int arg) {
@@ -429,6 +444,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       gifReceiver.attach();
       reactionsComplexReceiver.attach();
       textMediaReceiver.attach();
+      commentAvatarsReceiver.attach();
       replyReceiver.attach();
       replyTextMediaReceiver.attach();
       if ((flags & FLAG_USE_COMMON_RECEIVER) != 0) {
@@ -448,6 +464,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       gifReceiver.detach();
       reactionsComplexReceiver.detach();
       textMediaReceiver.detach();
+      commentAvatarsReceiver.detach();
       replyReceiver.detach();
       replyTextMediaReceiver.detach();
       if ((flags & FLAG_USE_COMMON_RECEIVER) != 0) {
@@ -576,11 +593,6 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         strings.append(R.string.Resend);
         icons.append(R.drawable.baseline_repeat_24);
       }
-      if (msg.needMessageButton()) {
-        ids.append(R.id.btn_messageShowSource);
-        strings.append(R.string.ShowSourceMessage);
-        icons.append(R.drawable.baseline_forum_24);
-      }
 
       switch (content.getConstructor()) {
         case TdApi.MessagePoll.CONSTRUCTOR: {
@@ -650,6 +662,29 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         }
       }
 
+      if (!msg.messagesController().isMessageThread()) {
+        if (msg.needCommentButton() && msg.tdlib().isChannel(msg.getChatId())) {
+          ids.append(R.id.btn_messageDiscuss);
+          strings.append(R.string.ShowSourceMessage);
+          icons.append(R.drawable.baseline_forum_24);
+        } else if (!msg.tdlib().isChannel(msg.getChatId())) {
+          if (msg.getReplyCount() > 0) {
+            ids.append(R.id.btn_messageReplies);
+            strings.append(Lang.plural(R.string.ViewXReplies, msg.getReplyCount()));
+            icons.append(R.drawable.baseline_forum_24);
+          } else if (msg.canGetMessageThread()) {
+            TGMessage tgMessage = msg.manager().getAdapter().findMessageById(msg.getMessageThreadId());
+            if (tgMessage != null) {
+              strings.append(Lang.plural(R.string.ViewXReplies, tgMessage.getReplyCount()));
+            } else {
+              strings.append(R.string.ViewReplies);
+            }
+            ids.append(R.id.btn_messageReplies);
+            icons.append(R.drawable.baseline_forum_24);
+          }
+        }
+      }
+
       if (m.canWriteMessages() && isSent && msg.canReplyTo()) {
         if (msg.getMessage().content.getConstructor() == TdApi.MessageDice.CONSTRUCTOR && !msg.tdlib().hasRestriction(msg.getMessage().chatId, R.id.right_sendStickersAndGifs)) {
           String emoji = ((TdApi.MessageDice) msg.getMessage().content).emoji;
@@ -667,21 +702,6 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         ids.append(R.id.btn_messageReply);
         strings.append(R.string.Reply);
         icons.append(R.drawable.baseline_reply_24);
-      }
-
-      if (Config.COMMENTS_SUPPORTED) {
-        if (msg.getReplyCount() > 0) {
-          ids.append(R.id.btn_messageReplies);
-          strings.append(Lang.plural(msg.getSender().isChannel() ? R.string.ViewXComments : R.string.ViewXReplies, msg.getReplyCount()));
-          icons.append(msg.getSender().isChannel() ? R.drawable.outline_templarian_comment_multiple_24 : R.drawable.baseline_reply_all_24);
-        }
-      } else {
-        TdApi.Message messageWithThread = msg.findMessageWithThread();
-        if (messageWithThread != null && messageWithThread.isChannelPost) {
-          ids.append(R.id.btn_messageDiscuss);
-          strings.append(R.string.DiscussMessage);
-          icons.append(R.drawable.outline_templarian_comment_multiple_24);
-        }
       }
 
       if (msg.canBeForwarded() && isSent) {
@@ -1259,7 +1279,9 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         setLongPressed(true);
       }
     } else if ((flags & FLAG_CAUGHT_MESSAGE_TOUCH) != 0) {
-      flags &= ~FLAG_CAUGHT_MESSAGE_TOUCH;
+      if (!msg.needCaughtLongPress(this, touchX, touchY)) {
+        flags &= ~FLAG_CAUGHT_MESSAGE_TOUCH;
+      }
       if (msg.performLongPress(this, touchX, touchY) || performLongPress()) {
         setLongPressed(true);
       }

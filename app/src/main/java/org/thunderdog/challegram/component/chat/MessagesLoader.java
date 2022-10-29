@@ -192,7 +192,7 @@ public class MessagesLoader implements Client.ResultHandler {
   private TdApi.Message[] mergeChunk;
   private int mergeMode;
 
-  private Client.ResultHandler newHandler (final boolean allowMoreTop, final boolean allowMoreBottom, boolean needFindUnrad) {
+  private Client.ResultHandler newHandler (final TdApi.Function<?> function, final boolean allowMoreTop, final boolean allowMoreBottom, boolean needFindUnrad) {
     final long currentContextId = contextId;
     if (lastHandler != null) {
       throw new IllegalStateException("lastHandler != null");
@@ -465,7 +465,7 @@ public class MessagesLoader implements Client.ResultHandler {
           lastHandler = null;
         }
 
-        processMessages(currentContextId, messages, knownTotalCount, nextSecretSearchOffset, needFindUnrad && object.getConstructor() == TdApi.Messages.CONSTRUCTOR, missingAlbums);
+        processMessages(currentContextId, function, messages, knownTotalCount, nextSecretSearchOffset, needFindUnrad && object.getConstructor() == TdApi.Messages.CONSTRUCTOR, missingAlbums);
       }
     };
   }
@@ -516,7 +516,7 @@ public class MessagesLoader implements Client.ResultHandler {
 
       TdApi.Message[] messagesArray = new TdApi.Message[messages.size()];
       messages.toArray(messagesArray);
-      processMessages(contextId, messagesArray, 0, null, true, null);
+      processMessages(contextId, null, messagesArray, 0, null, true, null);
     });
   }
 
@@ -1068,7 +1068,7 @@ public class MessagesLoader implements Client.ResultHandler {
         Log.i(Log.TAG_MESSAGES_LOADER, "allowMoreTop:%b, allowMoreBottom:%b. Invoking %s, onlyLocal:%b", allowMoreTop, allowMoreBottom, function, loadingLocal);
       }
 
-      tdlib.client().send(function, newHandler(allowMoreTop, allowMoreBottom, (mode != MODE_MORE_TOP && mode != MODE_MORE_BOTTOM) || !foundUnreadAtLeastOnce));
+      tdlib.client().send(function, newHandler(function, allowMoreTop, allowMoreBottom, (mode != MODE_MORE_TOP && mode != MODE_MORE_BOTTOM) || !foundUnreadAtLeastOnce));
     }
   }
 
@@ -1200,7 +1200,7 @@ public class MessagesLoader implements Client.ResultHandler {
     stepsCount = 0;
   }
 
-  private void processMessages (final long currentContextId, TdApi.Message[] messages, int knownTotalMessageCount, String nextSecretSearchId, boolean needFindUnread, @Nullable List<List<TdApi.Message>> missingAlbums) {
+  private void processMessages (final long currentContextId, TdApi.Function<?> function, TdApi.Message[] messages, int knownTotalMessageCount, String nextSecretSearchId, boolean needFindUnread, @Nullable List<List<TdApi.Message>> missingAlbums) {
     if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
       Log.v(Log.TAG_MESSAGES_LOADER, "Processing %d messages...", messages.length);
     }
@@ -1511,6 +1511,17 @@ public class MessagesLoader implements Client.ResultHandler {
       }
     }
 
+
+    boolean callOnTopLoaded = false;
+    if (function instanceof TdApi.SearchChatMessages) {
+      TdApi.SearchChatMessages q = (TdApi.SearchChatMessages) function;
+      if (q.fromMessageId == MessageId.MIN_VALID_ID) {
+        callOnTopLoaded = true;
+        canLoadTop = false;
+      }
+    }
+    final boolean callOnTopLoadedFinal = callOnTopLoaded;
+
     final int scrollPosition = scrollItemIndex == -1 ? 0 : scrollItemIndex;
     final MessageId scrollMessageId = unreadBadged != null ? new MessageId(unreadBadged.getChatId(), unreadBadged.getSmallestId()) : this.scrollMessageId;
     final int scrollItemIndexFinal = scrollItemIndex;
@@ -1564,7 +1575,7 @@ public class MessagesLoader implements Client.ResultHandler {
         }
       }
 
-      if (canLoadTop != couldLoadTop && !canLoadTop) {
+      if ((canLoadTop != couldLoadTop || callOnTopLoadedFinal) && !canLoadTop) {
         manager.onTopEndLoaded();
       }
       if (canLoadBottom != couldLoadBottom && !canLoadBottom) {

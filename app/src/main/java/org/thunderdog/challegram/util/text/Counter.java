@@ -274,6 +274,10 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
     isVisible.setValue(hasCounter, animated);
     isVisibleTarget = hasCounter;
   }
+  public void setCount (int count, String text, boolean animated) {
+    isVisible.setValue(true, animated);
+    counter.setCounter(count, text, animated);
+  }
 
   public void invalidate (boolean sizeChanged) {
     if (callback != null)

@@ -21,9 +21,16 @@ import java.util.Objects;
 public class ThreadInfo {
   private final boolean areComments;
   private final TdApi.MessageThreadInfo threadInfo;
+  private final TdApi.Chat sourceChat;
 
-  public ThreadInfo (TdApi.Message[] openedFromMessages, TdApi.MessageThreadInfo threadInfo, boolean forceComments) {
+  private final TdApi.MessageSender threadAuthor;
+  private final TdApi.Message[] openedFromMessages;
+
+  public ThreadInfo (TdApi.Message[] openedFromMessages, TdApi.Chat sourceChat, TdApi.MessageThreadInfo threadInfo, boolean forceComments) {
     this.areComments = openedFromMessages[0].isChannelPost || (forceComments && (threadInfo.messages[0].isChannelPost || (threadInfo.messages[0].senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR && ((TdApi.MessageSenderChat) threadInfo.messages[0].senderId).chatId != threadInfo.messages[0].chatId)));
+    this.sourceChat = sourceChat;
+    this.threadAuthor = threadInfo.messages[0].senderId;
+    this.openedFromMessages = openedFromMessages;
     this.threadInfo = threadInfo;
     long messageId = threadInfo.draftMessage != null ? threadInfo.draftMessage.replyToMessageId : 0;
     if (messageId != 0) {
@@ -36,8 +43,24 @@ public class ThreadInfo {
     }
   }
 
+  public TdApi.Chat getSourceChat () {
+    return sourceChat;
+  }
+
+  public TdApi.Message[] getOpenedFromMessages () {
+    return openedFromMessages;
+  }
+
   public TdApi.Message[] getMessages () {
     return threadInfo.messages;
+  }
+
+  public TdApi.MessageSender getThreadAuthor () {
+    return threadAuthor;
+  }
+
+  public TdApi.Message startMessageInThread () {
+    return openedFromMessages[0];
   }
 
   @Override

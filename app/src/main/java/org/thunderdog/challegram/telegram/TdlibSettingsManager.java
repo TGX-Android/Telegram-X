@@ -62,6 +62,8 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   @SuppressWarnings("DeprecatedIsStillUsed")
   public static final String __PEER_TO_PEER_KEY = "settings_peer_to_peer";
 
+  public static final String THREAD_OPEN_PREFIX = "thread_open_";
+
   private static final String DISMISS_MESSAGE_PREFIX = "dismiss_pinned_";
   private static final String DISMISS_REQUESTS_PREFIX = "dismiss_requests_";
 
@@ -1024,5 +1026,15 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
 
   public boolean hasNotificationProblems () {
     return getNotificationProblemCount() > 0;
+  }
+
+  public boolean threadWasOpened (long messageThreadId) {
+    return Settings.instance().getBoolean(key(THREAD_OPEN_PREFIX, tdlib.id()) + messageThreadId, false);
+  }
+
+  public boolean openThread (long messageThreadId) {
+    boolean wasOpened = threadWasOpened(messageThreadId);
+    Settings.instance().putBoolean(key(THREAD_OPEN_PREFIX, tdlib.id()) + messageThreadId, true);
+    return wasOpened;
   }
 }

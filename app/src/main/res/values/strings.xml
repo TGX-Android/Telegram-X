@@ -561,6 +561,7 @@
   <string name="Reply">Reply</string>
   <string name="ViewXReplies_one">View %1$s reply</string>
   <string name="ViewXReplies_other">View %1$s replies</string>
+  <string name="ViewReplies">View replies</string>
   <string name="Select">Select</string>
   <string name="Open">Open</string>
   <string name="OpenInExternalApp">Open in…</string>
@@ -3975,7 +3976,7 @@
   <string name="xReplies_one">%1$s reply</string>
   <string name="xReplies_other">%1$s replies</string>
   <string name="xRepliesTo_one">%1$s reply to %2$s</string>
-  <string name="xRepliesTo_other">%1$s replies %2$s</string>
+  <string name="xRepliesTo_other">%1$s replies to %2$s</string>
   <string name="ViewXComments_one">View %1$s comment</string>
   <string name="ViewXComments_other">View %1$s comments</string>
   <string name="DiscussionStart">Discussion started</string>

@@ -34,6 +34,7 @@ import org.thunderdog.challegram.data.ThreadInfo;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
+import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.ChatsController;
 import org.thunderdog.challegram.ui.MainController;
@@ -290,7 +291,7 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
                     TdApi.MessageThreadInfo threadInfo = (TdApi.MessageThreadInfo) result;
                     tdlib.ui().post(() -> {
                       if (pendingTask == null && pendingController == null) {
-                        openChatPreviewAsync(chatList, chat, new ThreadInfo(threadMessages, threadInfo, false), filter, x, y);
+                        openChatPreviewAsync(chatList, chat, new ThreadInfo(threadMessages, chat, threadInfo, false), filter, x, y);
                       }
                     });
                     break;
@@ -556,6 +557,8 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
     if (listener != null) {
       context.setButtons(listener, controller, ids.get(), icons.get(), strings.get());
     }
+
+    context.setExpandFactor(this, y);
 
     if (UI.getContext(getContext()).openForceTouch(context)) {
       currentOpenPreview = controller;

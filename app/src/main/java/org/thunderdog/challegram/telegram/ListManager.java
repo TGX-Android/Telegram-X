@@ -219,6 +219,10 @@ public abstract class ListManager<T> implements Destroyable, Iterable<T> {
     }
   }
 
+  protected void setStateFull () {
+    state = STATE_FULL;
+  }
+
   @Override
   @UiThread
   public void performDestroy () {

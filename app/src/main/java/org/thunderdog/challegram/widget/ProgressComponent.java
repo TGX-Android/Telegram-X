@@ -89,6 +89,15 @@ public class ProgressComponent implements Runnable, FactorAnimator.Target, Destr
     this.uiResumed = context.getActivityState() == UI.STATE_RESUMED;*/
   }
 
+  public ProgressComponent (BaseActivity context, int radius, MultipleViewProvider viewProvider) {
+    this.radius = radius;
+    this.drawingRect = new Rect();
+    this.arcRect = new RectF();
+    this.currentViews = viewProvider;
+    this.viewProvider = currentViews;
+    this.context = context;
+  }
+
   @Override
   public void onActivityStateChanged (BaseActivity activity, int newState, int prevState) {
     setUiResumed(newState == UI.STATE_RESUMED);
