@@ -30,6 +30,7 @@ import androidx.annotation.UiThread;
 import androidx.collection.LongSparseArray;
 import androidx.collection.SparseArrayCompat;
 import androidx.core.os.CancellationSignal;
+import androidx.core.util.Consumer;
 
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -43,6 +44,7 @@ import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
+import org.thunderdog.challegram.data.Identity;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGReaction;
@@ -59,6 +61,7 @@ import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Passcode;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.AppBuildInfo;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.UserProvider;
 import org.thunderdog.challegram.util.WrapperProvider;
@@ -104,6 +107,7 @@ import me.vkryl.core.lambda.RunnableInt;
 import me.vkryl.core.lambda.RunnableLong;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.util.ConditionalExecutor;
+import me.vkryl.core.util.JobList;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.ChatPosition;
 import me.vkryl.td.JSON;
@@ -157,6 +161,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private TdlibUi _handler;
 
   private final TdApi.SetTdlibParameters parameters;
+
   private final Client.ResultHandler okHandler = object -> {
     switch (object.getConstructor()) {
       case TdApi.Ok.CONSTRUCTOR:
@@ -2882,6 +2887,15 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return sender != null && isSelfUserId(Td.getSenderUserId(sender));
   }
 
+  public boolean isAnonymousSender (TdApi.Chat chat, TdApi.MessageSender sender) {
+    if (!isMultiChat(chat)) {
+      return false;
+    }
+    boolean chatAllowsAnonymous = Td.isAnonymous(chatStatus(chat.id));
+    boolean senderIsChat = sender.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR;
+    boolean senderIsTheSameChat = senderIsChat && ((TdApi.MessageSenderChat) sender).chatId == chat.id;
+    return chatAllowsAnonymous && senderIsTheSameChat;
+  }
   public boolean isSelfSender (TdApi.Message message) {
     return message != null && (message.isOutgoing || isSelfSender(message.senderId));
   }
@@ -9484,6 +9498,194 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         }
       }
       return suggestedAction;
+    }
+  }
+
+  public void getAvailableSenders (
+    TdApi.Chat chat,
+    Consumer<List<Identity>> onSuccess,
+    Consumer<TdApi.Error> onFailure
+  ) {
+    Client.ResultHandler handler = result -> {
+      switch (result.getConstructor()) {
+        case TdApi.MessageSenders.CONSTRUCTOR: {
+          TdApi.MessageSenders messageSenders = (TdApi.MessageSenders) result;
+          parseSendersToIdentities(chat, Arrays.asList(messageSenders.senders), onSuccess, onFailure);
+          break;
+        }
+        case TdApi.Error.CONSTRUCTOR: {
+          onFailure.accept((TdApi.Error) result);
+          break;
+        }
+        default: {
+          throw new UnsupportedOperationException(result.toString());
+        }
+      }
+    };
+    client().send(new TdApi.GetChatAvailableMessageSenders(chat.id), handler);
+  }
+
+  public void parseSendersToIdentities(
+    TdApi.Chat currentChat,
+    List<TdApi.MessageSender> messageSenders,
+    Consumer<List<Identity>> onSuccess,
+    Consumer<TdApi.Error> onFailure
+  ) {
+    List<Identity> identities = new ArrayList<>();
+    Client.ResultHandler handler = result -> {
+      switch (result.getConstructor()) {
+        case TdApi.User.CONSTRUCTOR: {
+          TdApi.User user = (TdApi.User) result;
+          identities.add(createIdentity(user));
+          boolean finishedParsing = identities.size() == messageSenders.size();
+          if (finishedParsing) {
+            onSuccess.accept(identities);
+          }
+          break;
+        }
+        case TdApi.Chat.CONSTRUCTOR: {
+          TdApi.Chat chat = (TdApi.Chat) result;
+          identities.add(createIdentity(currentChat, chat));
+          boolean finishedParsing = identities.size() == messageSenders.size();
+          if (finishedParsing) {
+            onSuccess.accept(identities);
+          }
+          break;
+        }
+        case TdApi.Error.CONSTRUCTOR: {
+          onFailure.accept((TdApi.Error) result);
+          break;
+        }
+        default: {
+          throw new UnsupportedOperationException(result.toString());
+        }
+      }
+    };
+    for (TdApi.MessageSender messageSender: messageSenders) {
+      if (messageSender.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR) {
+        TdApi.MessageSenderUser messageSenderUser = (TdApi.MessageSenderUser) messageSender;
+        client().send(new TdApi.GetUser(messageSenderUser.userId), handler);
+      } else if (messageSender.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR) {
+        TdApi.MessageSenderChat messageSenderChat = (TdApi.MessageSenderChat) messageSender;
+        client().send(new TdApi.GetChat(messageSenderChat.chatId), handler);
+      } else {
+        throw new IllegalArgumentException("Can't parse this type of sender");
+      }
+    }
+  }
+
+  public Identity createIdentity (TdApi.Chat currentChat, TdApi.Chat identityChat) {
+    ImageFile avatar = null;
+    if (identityChat.photo != null) {
+      avatar = new ImageFile(this, identityChat.photo.small);
+    }
+    boolean isLinkedChannel = false;
+    TdApi.SupergroupFullInfo fullInfo = cache().supergroupFull(ChatId.toSupergroupId(identityChat.id));
+    if (fullInfo != null && fullInfo.linkedChatId == currentChat.id) {
+      isLinkedChannel = true;
+    }
+    Identity.Type type = identityChat.id == currentChat.id ? Identity.Type.ANONYMOUS : Identity.Type.CHAT;
+    boolean isLocked = !hasPremium() && type == Identity.Type.CHAT && !isLinkedChannel;
+    Identity identity = new Identity(
+      identityChat.id,
+      type,
+      isLocked,
+      identityChat.title,
+      chatUsername(identityChat.id),
+      avatar,
+      chatPlaceholderMetadata(identityChat, true)
+    );
+    return identity;
+  }
+
+  public Identity createIdentity (TdApi.User user) {
+    ImageFile avatar = null;
+    if (user.profilePhoto != null) {
+      avatar = new ImageFile(this, user.profilePhoto.small);
+    }
+    Identity identity = new Identity(
+      user.id,
+      Identity.Type.USER,
+      false,
+      user.firstName + " " + user.lastName,
+      user.username,
+      avatar,
+      cache().userPlaceholderMetadata(user, true)
+    );
+    return identity;
+  }
+
+  public void switchIdentity (
+    long chatId,
+    Identity identity,
+    Runnable onSuccess,
+    Consumer<TdApi.Error> onFailure
+  ) {
+    if (identity == null) return;
+
+    Client.ResultHandler handler = result -> {
+      switch(result.getConstructor()) {
+        case TdApi.Ok.CONSTRUCTOR: {
+          onSuccess.run();
+          break;
+        }
+        case TdApi.Error.CONSTRUCTOR: {
+          onFailure.accept((TdApi.Error) result);
+          break;
+        }
+        default: {
+          throw new UnsupportedOperationException(result.toString());
+        }
+      }
+    };
+
+    TdApi.MessageSender messageSender;
+    Identity.Type identityType = identity.getType();
+    if (identityType == Identity.Type.USER) {
+      messageSender = new TdApi.MessageSenderUser(identity.getId());
+    } else if (identityType == Identity.Type.CHAT || identityType == Identity.Type.ANONYMOUS) {
+      messageSender = new TdApi.MessageSenderChat(identity.getId());
+    } else {
+      throw new IllegalArgumentException("Can't handle this type of identity");
+    }
+    client().send(new TdApi.SetChatMessageSender(chatId, messageSender), handler);
+  }
+
+  public void getIdentity (
+    TdApi.Chat currentChat,
+    TdApi.MessageSender messageSender,
+    Consumer<Identity> onResult,
+    Consumer<TdApi.Error> onFailure
+  ) {
+    Client.ResultHandler handler = result -> {
+      switch (result.getConstructor()) {
+        case TdApi.User.CONSTRUCTOR: {
+          TdApi.User user = (TdApi.User) result;
+          onResult.accept(createIdentity(user));
+          break;
+        }
+        case TdApi.Chat.CONSTRUCTOR: {
+          TdApi.Chat chat = (TdApi.Chat) result;
+          onResult.accept(createIdentity(currentChat, chat));
+          break;
+        }
+        case TdApi.Error.CONSTRUCTOR: {
+          onFailure.accept((TdApi.Error) result);
+          break;
+        }
+        default: {
+          throw new UnsupportedOperationException(result.toString());
+        }
+      }
+    };
+    if (messageSender.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR) {
+      TdApi.MessageSenderUser messageSenderUser = (TdApi.MessageSenderUser) messageSender;
+      client().send(new TdApi.GetUser(messageSenderUser.userId), handler);
+    } else if (messageSender.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR) {
+      TdApi.MessageSenderChat messageSenderChat = (TdApi.MessageSenderChat) messageSender;
+      client().send(new TdApi.GetChat(messageSenderChat.chatId), handler);
+    } else {
+      throw new IllegalArgumentException("Can't parse this type of sender");
     }
   }
 }

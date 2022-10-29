@@ -43,6 +43,8 @@ import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
+import org.thunderdog.challegram.component.chat.IdentityIconView;
+import org.thunderdog.challegram.data.Identity;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.navigation.ComplexHeaderView;
@@ -348,7 +350,7 @@ public class ForceTouchView extends FrameLayoutFix implements
 
       View offsetView;
 
-      if (context.buttonIds.length > 1) {
+      if (context.getFooterItemsLength() > 1) {
         offsetView = new View(getContext());
         offsetView.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f));
         buttonsList.addView(offsetView);
@@ -367,14 +369,32 @@ public class ForceTouchView extends FrameLayoutFix implements
       popupWrapView.setLayoutParams(params);
       // popupWrapView.setBackgroundColor(0x1cff0000);
 
-      PopupContext[] popupContexts = new PopupContext[context.buttonIds.length];
+      int popupContextsLength = context.getFooterItemsLength();
+      PopupContext[] popupContexts = new PopupContext[popupContextsLength];
       boolean rtl = Lang.rtl();
-      int remaining = context.buttonIds.length;
-      while (remaining > 0) {
-        int i = rtl ? remaining - 1 : context.buttonIds.length - remaining;
-        int buttonId = context.buttonIds[i];
+      int remainingButtons = context.buttonIds.length;
+      int remainingContexts = popupContextsLength;
+
+      if (context.needFooterIdentityIcon) {
+        IdentityIconView footerIdentityIcon = new IdentityIconView(getContext(), tdlib);
+        footerIdentityIcon.init(12f, true, false);
+        footerIdentityIcon.setIdentity(context.footerIdentityData);
+        footerIdentityIcon.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 2f));
+        footerIdentityIcon.setPadding(0, 0, Screen.dp(24f), 0);
+        footerIdentityIcon.setId(context.identityIconId);
+        PopupContext popupContext = new PopupContext(popupWrapView, footerIdentityIcon, context.identityIconHint);
+        footerIdentityIcon.setTag(popupContexts[rtl ? remainingContexts - 1 : 0] = popupContext);
+        buttonsList.addView(footerIdentityIcon);
+
+        remainingContexts--;
+      }
+
+      while (remainingButtons > 0) {
+        int buttonIndex = rtl ? remainingButtons - 1 : context.buttonIds.length - remainingButtons;
+        int contextIndex = rtl ? remainingContexts - 1 : popupContextsLength - remainingContexts;
+        int buttonId = context.buttonIds[buttonIndex];
         ImageView view;
-        if (Drawables.needMirror(context.buttonIcons[i])) {
+        if (Drawables.needMirror(context.buttonIcons[buttonIndex])) {
           view = new ImageView(getContext()) {
             @Override
             protected void onDraw (Canvas c) {
@@ -388,20 +408,23 @@ public class ForceTouchView extends FrameLayoutFix implements
           view = new ImageView(getContext());
         }
         view.setId(buttonId);
-        PopupContext popupContext = new PopupContext(popupWrapView, view, context.buttonHints[i]);
-        view.setTag(popupContexts[i] = popupContext);
+        PopupContext popupContext = new PopupContext(popupWrapView, view, context.buttonHints[buttonIndex]);
+        view.setTag(popupContexts[contextIndex] = popupContext);
         view.setScaleType(ImageView.ScaleType.CENTER);
         view.setColorFilter(Theme.iconColor());
         themeListenerList.addThemeFilterListener(view, R.id.theme_color_icon);
-        view.setImageResource(context.buttonIcons[i]);
+        view.setImageResource(context.buttonIcons[buttonIndex]);
         view.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 2f));
 
         buttonsList.addView(view);
-        remaining--;
+
+
+        remainingButtons--;
+        remainingContexts--;
       }
       popupWrapView.setItems(popupContexts);
 
-      if (context.buttonHints.length > 1) {
+      if (context.getFooterItemsLength() > 1) {
         offsetView = new View(getContext());
         offsetView.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f));
         buttonsList.addView(offsetView);
@@ -481,15 +504,15 @@ public class ForceTouchView extends FrameLayoutFix implements
     this.lastX = x;
     this.lastY = y;
 
-    ImageView foundView = findActionViewByPosition(x, y);
+    View foundView = findActionViewByPosition(x, y);
     setActionView(foundView);
   }
 
-  private ImageView lastActionView;
+  private View lastActionView;
   private int lastActionId;
 
-  private void setActionView (ImageView imageView) {
-    if (lastActionView == imageView) {
+  private void setActionView (View view) {
+    if (lastActionView == view) {
       return;
     }
 
@@ -497,15 +520,15 @@ public class ForceTouchView extends FrameLayoutFix implements
       ((PopupContext) lastActionView.getTag()).setIsVisible(false);
     }
 
-    lastActionView = imageView;
-    lastActionId = imageView != null ? imageView.getId() : 0;
+    lastActionView = view;
+    lastActionId = view != null ? view.getId() : 0;
 
-    if (imageView != null) {
-      ((PopupContext) imageView.getTag()).setIsVisible(true);
+    if (view != null) {
+      ((PopupContext) view.getTag()).setIsVisible(true);
     }
   }
 
-  private ImageView findActionViewByPosition (int x, int y) {
+  private View findActionViewByPosition (int x, int y) {
     final int contentBottom = contentWrap.getBottom();
 
     if (y > contentBottom || y < contentBottom - Screen.dp(FOOTER_HEIGHT) || buttonsList == null) {
@@ -518,12 +541,12 @@ public class ForceTouchView extends FrameLayoutFix implements
     }
 
     final int childCount = buttonsList.getChildCount();
-    final int offsetCount = forceTouchContext.buttonIds.length == 1 ? 0 : 1;
+    final int offsetCount = forceTouchContext.getFooterItemsLength() == 1 ? 0 : 1;
 
     for (int i = offsetCount; i < childCount - offsetCount; i++) {
       View view = buttonsList.getChildAt(i);
       if (view != null && x >= view.getLeft() && x <= view.getRight()) {
-        return (ImageView) view;
+        return view;
       }
     }
 
@@ -830,7 +853,7 @@ public class ForceTouchView extends FrameLayoutFix implements
     private final View contentView;
 
     private boolean allowFullscreen;
-    private boolean needHeader, needHeaderAvatar;
+    private boolean needHeader, needHeaderAvatar, needFooterIdentityIcon;
     private boolean isMatchParent;
 
     private int backgroundColor;
@@ -857,6 +880,10 @@ public class ForceTouchView extends FrameLayoutFix implements
     private int[] buttonIcons;
     private String[] buttonHints;
     private boolean excludeHeader;
+
+    private Identity footerIdentityData;
+    private int identityIconId;
+    private String identityIconHint;
 
     public View getSourceView () {
       return sourceView;
@@ -916,7 +943,7 @@ public class ForceTouchView extends FrameLayoutFix implements
     }
 
     public boolean hasFooter () {
-      return buttonIds != null && buttonIds.length > 0;
+      return buttonIds != null && buttonIds.length > 0 || needFooterIdentityIcon;
     }
 
     public boolean hasHeader () {
@@ -924,7 +951,15 @@ public class ForceTouchView extends FrameLayoutFix implements
     }
 
     public int getMinimumWidth () {
-      return hasFooter() ? (buttonIds.length > 1 ? buttonIds.length + 1 : buttonIds.length) * Screen.dp(48f) : 0;
+      return hasFooter() ? (getFooterItemsLength() > 1 ? getFooterItemsLength() + 1 : getFooterItemsLength()) * Screen.dp(48f) : 0;
+    }
+
+    private int getFooterItemsLength () {
+      int popupContextsLength = buttonIds.length;
+      if (needFooterIdentityIcon) {
+        popupContextsLength++;
+      }
+      return popupContextsLength;
     }
 
     public void setButtons (ActionListener listener, Object listenerArg, int[] ids, int[] icons, String[] hints) {
@@ -935,6 +970,17 @@ public class ForceTouchView extends FrameLayoutFix implements
       this.buttonIds = ids;
       this.buttonIcons = icons;
       this.buttonHints = hints;
+    }
+
+    public void setFooterIdentityData (Identity footerIdentityData, int id, String hint) {
+      if (footerIdentityData == null) {
+        this.needFooterIdentityIcon = false;
+      } else {
+        this.needFooterIdentityIcon = true;
+      }
+      this.footerIdentityData = footerIdentityData;
+      this.identityIconId = id;
+      this.identityIconHint = hint;
     }
 
     public MaximizeListener getMaximizeListener () {

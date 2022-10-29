@@ -32,6 +32,8 @@ import android.util.StateSet;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.Nullable;
 import androidx.core.content.res.ResourcesCompat;
+import androidx.core.graphics.drawable.RoundedBitmapDrawable;
+import androidx.core.graphics.drawable.RoundedBitmapDrawableFactory;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
@@ -256,5 +258,13 @@ public class Drawables {
         return "YouTube";
     }
     return null;
+  }
+
+  public static Drawable getRoundDrawable (String drawablePath, int iconSize, Resources res) {
+    Bitmap src = BitmapFactory.decodeFile(drawablePath);
+    Bitmap scaledSrc = Bitmap.createScaledBitmap(src, iconSize, iconSize, true);
+    RoundedBitmapDrawable icon = RoundedBitmapDrawableFactory.create(res, scaledSrc);
+    icon.setCircular(true);
+    return icon;
   }
 }

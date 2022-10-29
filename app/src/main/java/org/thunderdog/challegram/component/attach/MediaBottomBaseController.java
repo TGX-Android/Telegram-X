@@ -490,13 +490,16 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
       if (updateMediaLayout) {
         if (currentHeight == startHeight) {
           mediaLayout.setBottomBarFactor(1f);
+          onBottomBarTranslationChange(1f);
           mediaLayout.setHeaderFactor(0f);
         } else if (currentHeight < startHeight) {
           mediaLayout.setBottomBarFactor((float) currentHeight / (float) startHeight);
+          onBottomBarTranslationChange((float) currentHeight / (float) startHeight);
           mediaLayout.setHeaderFactor(0f);
         } else {
           float barFactor = (float) (getMaxHeight() - currentHeight) / (float) (maxHeight - startHeight);
           mediaLayout.setBottomBarFactor(barFactor);
+          onBottomBarTranslationChange(barFactor);
           mediaLayout.setHeaderFactor(1f - barFactor);
         }
       }
@@ -576,6 +579,8 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
       setCurrentHeight(barChangeFromHeight + (int) ((float) barChangeHeightDiff * factor), false);
     }
   }
+
+  public void onBottomBarTranslationChange (float factor) {}
 
   public void onBottomBarAnimationComplete () {
     useBottomBarChange = false;

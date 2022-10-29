@@ -1064,7 +1064,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     /*if (!isLayered) {
       popupLayout.setNeedRootInsets();
     }*/
-    popupLayout.showMoreView(moreWrap);
+    popupLayout.showMoreMenuWrap(moreWrap);
   }
 
   // Filling getter

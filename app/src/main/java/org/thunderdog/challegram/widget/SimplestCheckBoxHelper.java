@@ -22,6 +22,8 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 
 public class SimplestCheckBoxHelper implements FactorAnimator.Target {
+  public static final long CHECK_ANIMATION_DURATION = 180l;
+
   private final View target;
   private final ImageReceiver receiver;
 
@@ -52,7 +54,7 @@ public class SimplestCheckBoxHelper implements FactorAnimator.Target {
       final float toFactor = isChecked ? 1f : 0f;
       if (isAnimated) {
         if (animator == null) {
-          animator = new FactorAnimator(0, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l, factor);
+          animator = new FactorAnimator(0, this, AnimatorUtils.DECELERATE_INTERPOLATOR, CHECK_ANIMATION_DURATION, factor);
         }
         animator.animateTo(toFactor);
       } else {

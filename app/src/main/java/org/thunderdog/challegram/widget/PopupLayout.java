@@ -38,7 +38,7 @@ import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.navigation.ActivityResultHandler;
 import org.thunderdog.challegram.navigation.BackListener;
 import org.thunderdog.challegram.navigation.HeaderView;
-import org.thunderdog.challegram.navigation.MenuMoreWrap;
+import org.thunderdog.challegram.navigation.MenuWrap;
 import org.thunderdog.challegram.navigation.OptionsLayout;
 import org.thunderdog.challegram.navigation.RootDrawable;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -502,7 +502,7 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
     return boundView;
   }
 
-  public void showMoreView (MenuMoreWrap menuWrap) {
+  public void showMoreMenuWrap (MenuWrap menuWrap) {
     if (menuWrap == null) {
       throw new IllegalArgumentException();
     }
@@ -511,7 +511,7 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
       ((ViewGroup) menuWrap.getParent()).removeView(menuWrap);
     }
 
-    final boolean anchorRight = menuWrap.getAnchorMode() == MenuMoreWrap.ANCHOR_MODE_RIGHT;
+    final boolean anchorRight = menuWrap.getAnchorMode() == MenuWrap.ANCHOR_MODE_RIGHT;
     final int padding = Screen.dp(8f);
     final int itemsWidth = menuWrap.getItemsWidth();
     int cx = anchorRight != Lang.rtl() ? itemsWidth - padding : Screen.dp(17f);
@@ -525,8 +525,8 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
     } else {
       animationType = ANIMATION_TYPE_MORE_SCALE;
       menuWrap.setAlpha(0f);
-      menuWrap.setScaleX(MenuMoreWrap.START_SCALE);
-      menuWrap.setScaleY(MenuMoreWrap.START_SCALE);
+      menuWrap.setScaleX(MenuWrap.START_SCALE);
+      menuWrap.setScaleY(MenuWrap.START_SCALE);
     }
 
     menuWrap.setPivotX(cx);
@@ -536,8 +536,34 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
     ((BaseActivity) getContext()).showPopupWindow(this);
   }
 
-  private void hideMoreWrap () {
-    MenuMoreWrap menuWrap = (MenuMoreWrap) getContentChild();
+  public void showIdentityMenuWrap (MenuWrap menuWrap) {
+    if (menuWrap == null) {
+      throw new IllegalArgumentException();
+    }
+
+    if (menuWrap.getParent() != null) {
+      ((ViewGroup) menuWrap.getParent()).removeView(menuWrap);
+    }
+
+    final int padding = Screen.dp(8f);
+    final int itemsWidth = menuWrap.getItemsWidth();
+    int cx = itemsWidth / 2;
+    int cy = menuWrap.shouldPivotBottom() ? menuWrap.getItemsHeight() - padding : padding;
+
+    animationType = ANIMATION_TYPE_IDENTITY_REVEAL;
+    menuWrap.setAlpha(0f);
+    menuWrap.setScaleX(MenuWrap.START_SCALE);
+    menuWrap.setScaleY(MenuWrap.START_SCALE);
+
+    menuWrap.setPivotX(cx);
+    menuWrap.setPivotY(cy);
+
+    addView(boundView = menuWrap);
+    ((BaseActivity) getContext()).showPopupWindow(this);
+  }
+
+  private void hideWrap () {
+    MenuWrap menuWrap = (MenuWrap) getContentChild();
 
     if (menuWrap == null) {
       return;
@@ -552,11 +578,11 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
 
     Animator menuAnimator = null;
 
-    if (Config.REVEAL_ANIMATION_AVAILABLE && menuWrap.getAnchorMode() == MenuMoreWrap.ANCHOR_MODE_RIGHT) {
+    if (Config.REVEAL_ANIMATION_AVAILABLE && menuWrap.getAnchorMode() == MenuWrap.ANCHOR_MODE_RIGHT) {
       try {
         menuAnimator = android.view.ViewAnimationUtils.createCircularReveal(menuWrap, (int) menuWrap.getPivotX(), (int) menuWrap.getPivotY(), menuWrap.getRevealRadius(), 0);
-        menuAnimator.setInterpolator(MenuMoreWrap.REVEAL_INTERPOLATOR);
-        menuAnimator.setDuration(MenuMoreWrap.REVEAL_DURATION);
+        menuAnimator.setInterpolator(MenuWrap.REVEAL_INTERPOLATOR);
+        menuAnimator.setDuration(MenuWrap.REVEAL_DURATION);
       } catch (Throwable t) {
         Log.w("Cannot create circular reveal", t);
         menuAnimator = null;
@@ -637,6 +663,7 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
   private static final int ANIMATION_TYPE_CUSTOM = 1;
   private static final int ANIMATION_TYPE_MORE_SCALE = 2;
   private static final int ANIMATION_TYPE_MORE_REVEAL = 3;
+  private static final int ANIMATION_TYPE_IDENTITY_REVEAL = 4;
 
   private int animationType;
   private boolean revealAnimationLaunched, hideAnimationLaunched;
@@ -666,7 +693,7 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
             }
           };
 
-          MenuMoreWrap menuWrap = (MenuMoreWrap) getContentChild();
+          MenuWrap menuWrap = (MenuWrap) getContentChild();
 
           if (menuWrap == null) {
             return;
@@ -677,7 +704,7 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
             return;
           }
 
-          final boolean anchorRight = menuWrap.getAnchorMode() == MenuMoreWrap.ANCHOR_MODE_RIGHT;
+          final boolean anchorRight = menuWrap.getAnchorMode() == MenuWrap.ANCHOR_MODE_RIGHT;
           final int padding = Screen.dp(8f);
           final int itemsWidth = menuWrap.getItemsWidth();
           int cx = anchorRight != Lang.rtl() ? itemsWidth - padding : Screen.dp(17f);
@@ -692,8 +719,8 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
               }
               Animator animator = android.view.ViewAnimationUtils.createCircularReveal(menuWrap, newCx, newCy, 0, menuWrap.getRevealRadius());
               animator.addListener(listener);
-              animator.setInterpolator(MenuMoreWrap.REVEAL_INTERPOLATOR);
-              animator.setDuration(MenuMoreWrap.REVEAL_DURATION);
+              animator.setInterpolator(MenuWrap.REVEAL_INTERPOLATOR);
+              animator.setDuration(MenuWrap.REVEAL_DURATION);
               animationType = ANIMATION_TYPE_MORE_REVEAL;
               cx = newCx;
               cy = newCy;
@@ -710,8 +737,8 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
           }
 
           menuWrap.setAlpha(0f);
-          menuWrap.setScaleX(MenuMoreWrap.START_SCALE);
-          menuWrap.setScaleY(MenuMoreWrap.START_SCALE);
+          menuWrap.setScaleX(MenuWrap.START_SCALE);
+          menuWrap.setScaleY(MenuWrap.START_SCALE);
 
           menuWrap.setPivotX(cx);
           menuWrap.setPivotY(cy);
@@ -720,6 +747,34 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
           menuWrap.scaleIn(listener);
 
 
+          break;
+        }
+        case ANIMATION_TYPE_IDENTITY_REVEAL: {
+          Animator.AnimatorListener listener = new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd (Animator animation) {
+              factor = 1f;
+              onCustomShowComplete();
+            }
+          };
+
+          MenuWrap menuWrap = (MenuWrap) getContentChild();
+
+          if (menuWrap == null) {
+            return;
+          }
+          final int padding = Screen.dp(8f);
+          int cx = menuWrap.getItemsHeight() / 2;
+          int cy = menuWrap.shouldPivotBottom() ? menuWrap.getItemsHeight() - padding : padding;
+
+          menuWrap.setAlpha(0f);
+          menuWrap.setScaleX(MenuWrap.START_SCALE);
+          menuWrap.setScaleY(MenuWrap.START_SCALE);
+
+          menuWrap.setPivotX(cx);
+          menuWrap.setPivotY(cy);
+
+          menuWrap.scaleIn(listener);
           break;
         }
       }
@@ -780,7 +835,24 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
         }
         case ANIMATION_TYPE_MORE_REVEAL:
         case ANIMATION_TYPE_MORE_SCALE: {
-          hideMoreWrap();
+          hideWrap();
+          break;
+        }
+        case ANIMATION_TYPE_IDENTITY_REVEAL: {
+          MenuWrap menuWrap = (MenuWrap) getContentChild();
+
+          if (menuWrap == null) {
+            return;
+          }
+
+          final AnimatorListenerAdapter listener = new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationEnd (Animator animation) {
+              dismissWindow();
+            }
+          };
+
+          menuWrap.scaleOut(listener);
           break;
         }
       }
@@ -795,7 +867,7 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
       animator = new FactorAnimator(REVEAL_ANIMATOR, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l, factor);
     }
     if (toFactor == 1f && needRevealStartDelay) {
-      animator.setStartDelay(MenuMoreWrap.REVEAL_DURATION);
+      animator.setStartDelay(MenuWrap.REVEAL_DURATION);
     } else {
       animator.setStartDelay(0);
     }

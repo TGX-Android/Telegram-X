@@ -720,6 +720,10 @@ public class Theme {
     return transparentSelector(RIPPLE_COLOR);
   }
 
+  public static Drawable transparentCircleSelector (final float size) {
+    return transparentCircleSelector(RIPPLE_COLOR, size);
+  }
+
   public static Drawable transparentWhiteSelector () {
     return transparentSelector(0x30ffffff);
   }
@@ -736,12 +740,30 @@ public class Theme {
     }
   }
 
+  private static Drawable transparentCircleSelector (final int color, final float size) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+      return transparentCircleRippleSelector(color, size);
+    } else {
+      return transparentSimpleSelector(color);
+    }
+  }
+
   @TargetApi(Build.VERSION_CODES.LOLLIPOP)
   private static Drawable transparentRippleSelector (final int color) {
     return new android.graphics.drawable.RippleDrawable(
       new ColorStateList(new int[][] {StateSet.WILD_CARD}, new int[] {color}),
       null,
       new ColorDrawable(0xffffffff)
+    );
+  }
+
+  @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+  private static Drawable transparentCircleRippleSelector (final int color, final float size) {
+    Drawable mask = new CircleDrawable(R.id.theme_color_white, size, false);
+    return new android.graphics.drawable.RippleDrawable(
+      new ColorStateList(new int[][] {StateSet.WILD_CARD}, new int[] {color}),
+      null,
+      mask
     );
   }
 

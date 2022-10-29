@@ -466,6 +466,7 @@ public abstract class PageBlock {
   public static class UnsupportedPageBlockException extends Exception { }
 
   private static void parse (ViewController<?> parent, ArrayList<PageBlock> out, ParseContext context, TdApi.PageBlock block, @Nullable TdlibUi.UrlOpenParameters openParameters) throws UnsupportedPageBlockException {
+
     switch (block.getConstructor()) {
       // Page cover
       case TdApi.PageBlockCover.CONSTRUCTOR: {

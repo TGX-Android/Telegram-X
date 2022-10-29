@@ -940,6 +940,7 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
 
   @Override
   public boolean onStickerClick (StickerSmallView view, View clickView, TGStickerObj sticker, boolean isMenuClick, TdApi.MessageSendOptions sendOptions) {
+
     Object tag = view.getTag();
     if (tag instanceof InlineResult) {
       InlineResult<?> result = (InlineResult<?>) tag;

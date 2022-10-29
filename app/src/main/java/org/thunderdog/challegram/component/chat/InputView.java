@@ -92,6 +92,7 @@ import org.thunderdog.challegram.receiver.RefreshRateLimiter;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
+import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
@@ -111,6 +112,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.List;
 
+import me.vkryl.android.AnimatorUtils;
+import me.vkryl.android.animator.BoolAnimator;
+import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.text.CodePointCountFilter;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
@@ -120,7 +124,13 @@ import me.vkryl.td.Td;
 
 public class InputView extends NoClipEditText implements InlineSearchContext.Callback, InlineResultsWrap.PickListener, RtlCheckListener, FinalNewLineFilter.Callback, CustomEmojiSurfaceProvider, Destroyable {
   public static final boolean USE_ANDROID_SELECTION_FIX = true;
+
   private final TextPaint paint;
+  private final float defaultTextHeight;
+  private final TextPaint identityTextPaint;
+  private final float identityTextHeight;
+  private float identityNameFactor = 0f;
+  private float identityPrefixFactor = 0f;
 
   // TODO: get rid of chat-related logic inside of InputView
   private @Nullable MessagesController controller;
@@ -145,6 +155,42 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   private InputListener inputListener;
   private final RefreshRateLimiter refreshRateLimiter;
 
+  private final BoolAnimator showIdentityHintName = new BoolAnimator(0,
+    new FactorAnimator.Target() {
+      @Override
+      public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
+        identityNameFactor = factor;
+        invalidate();
+      }
+      @Override
+      public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
+        if (finalFactor == 1f) {
+          oldIdentityHintName = newIdentityHintName;
+        }
+      }
+    },
+    AnimatorUtils.DECELERATE_INTERPOLATOR,
+    MessagesController.IDENTITY_SWITCH_DURATION
+  );
+
+  private final BoolAnimator showIdentityHintPrefix = new BoolAnimator(0,
+    new FactorAnimator.Target() {
+      @Override
+      public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
+        identityPrefixFactor = factor;
+        invalidate();
+      }
+      @Override
+      public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
+        if (finalFactor == 1f || newIdentityHintPrefix == null) {
+          oldIdentityHintPrefix = newIdentityHintPrefix;
+        }
+      }
+    },
+    AnimatorUtils.DECELERATE_INTERPOLATOR,
+    MessagesController.IDENTITY_SWITCH_DURATION
+  );
+
   public InputView (Context context, Tdlib tdlib) {
     super(context);
     this.tdlib = tdlib;
@@ -154,10 +200,22 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       refreshRateLimiter.invalidate()
     );
     this.inlineContext = new InlineSearchContext(UI.getContext(context), tdlib, this);
+
     this.paint = new TextPaint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
     this.paint.setColor(Theme.textPlaceholderColor());
     this.paint.setTypeface(Fonts.getRobotoRegular());
     this.paint.setTextSize(Screen.sp(18f));
+
+    this.identityTextPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
+    this.identityTextPaint.setColor(Theme.textPlaceholderColor());
+    this.identityTextPaint.setTypeface(Fonts.getRobotoRegular());
+    this.identityTextPaint.setTextSize(Screen.sp(11f));
+
+    Paint.FontMetrics fm = this.paint.getFontMetrics();
+    defaultTextHeight = fm.descent - fm.ascent;
+    fm = this.identityTextPaint.getFontMetrics();
+    identityTextHeight = fm.descent - fm.ascent;
+
     setGravity(Lang.gravity() | Gravity.TOP);
     setTypeface(Fonts.getRobotoRegular());
     setTextSize(TypedValue.COMPLEX_UNIT_SP, 18f);
@@ -278,6 +336,16 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         }
       });
     }
+
+    setOnFocusChangeListener((View view, boolean hasFocus) -> {
+      UI.post(() -> {
+        if (hasFocus) {
+          hideIdentityHint(true);
+        } else {
+          showIdentityHint(true);
+        }
+      });
+    });
   }
 
   @Override
@@ -711,40 +779,29 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   // ETc
 
   private int lastPlaceholderRes;
-  private Object[] lastPlaceholderArgs;
   private CharSequence rawPlaceholder;
-  private float rawPlaceholderWidth;
   private int lastPlaceholderAvailWidth;
 
-  public void setInputPlaceholder (@StringRes int resId, Object... args) {
-    String placeholder = Lang.getString(resId, args);
+  private String oldIdentityHintPrefix;
+  private String newIdentityHintPrefix;
+  private float newIdentityHintPrefixWidth;
+  private float oldIdentityHintPrefixWidth;
+  private String oldIdentityHintName;
+  private String newIdentityHintName;
+  private float oldIdentityNameAvailWidth;
+  private float newIdentityNameAvailWidth;
+
+  public void setInputPlaceholder (@StringRes int resId) {
+    String placeholder = Lang.getString(resId);
     this.lastPlaceholderRes = resId;
-    this.lastPlaceholderArgs = args;
-    if (StringUtils.equalsOrBothEmpty(placeholder, this.rawPlaceholder)) {
-      return;
-    }
     this.rawPlaceholder = placeholder;
-    if (controller == null) {
-      setHint(placeholder);
-    } else {
-      this.rawPlaceholderWidth = U.measureText(rawPlaceholder, getPaint());
-      this.lastPlaceholderAvailWidth = 0;
-      checkPlaceholderWidth();
-    }
+    checkPlaceholdersWidth();
   }
 
-  public void checkPlaceholderWidth () {
-    if (lastPlaceholderRes != 0 && controller != null) {
-      int availWidth = Math.max(0, getMeasuredWidth() - controller.getHorizontalInputPadding() - getPaddingLeft());
-      if (this.lastPlaceholderAvailWidth != availWidth) {
-        this.lastPlaceholderAvailWidth = availWidth;
-        if (rawPlaceholderWidth <= availWidth) {
-          setHint(rawPlaceholder);
-        } else {
-          setHint(TextUtils.ellipsize(rawPlaceholder, getPaint(), availWidth, TextUtils.TruncateAt.END));
-        }
-      }
-    }
+  public void setIdentityHint (String name) {
+    newIdentityHintName = name;
+    newIdentityHintPrefix = name == null ? null : Lang.getString(R.string.As);
+    checkPlaceholdersWidth();
   }
 
   private boolean needSendByEnter () {
@@ -937,7 +994,8 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       @Override
       public void onLocaleChange (int arg1) {
         if (lastPlaceholderRes != 0) {
-          setInputPlaceholder(lastPlaceholderRes, lastPlaceholderArgs);
+          setInputPlaceholder(lastPlaceholderRes);
+          setIdentityHint(oldIdentityHintName);
         }
       }
 
@@ -967,7 +1025,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
   public void setChat (TdApi.Chat chat, @Nullable ThreadInfo messageThread, boolean isSilent) {
     textChangedSinceChatOpened = false;
-    updateMessageHint(chat, messageThread, isSilent);
+    updateMessageHint(chat, messageThread, isSilent, false);
     setDraft(!tdlib.hasWritePermission(chat) ? null :
       messageThread != null ? messageThread.getDraftContent() :
       chat.draftMessage != null ? chat.draftMessage.inputMessageText : null
@@ -988,25 +1046,60 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     }
   }
 
-  public void updateMessageHint (TdApi.Chat chat, @Nullable ThreadInfo messageThread, boolean isSilent) {
+
+  public void updateMessageHint (TdApi.Chat chat, @Nullable ThreadInfo messageThread, boolean isSilent, boolean animated) {
     if (chat == null) {
       setInputPlaceholder(R.string.Message);
       return;
     }
     int resource;
-    Object[] args = null;
+    String identityName = null;
     TdApi.ChatMemberStatus status = tdlib.chatStatus(chat.id);
     if (tdlib.isChannel(chat.id)) {
       resource = isSilent ? R.string.ChannelSilentBroadcast : R.string.ChannelBroadcast;
-    } else if (tdlib.isMultiChat(chat) && Td.isAnonymous(status)) {
-      resource = messageThread != null ? (messageThread.areComments() ? R.string.CommentAnonymously : R.string.MessageReplyAnonymously) :  R.string.MessageAnonymously;
+      animateNewIdentityHint(null, animated);
     } else if (chat.messageSenderId != null && !tdlib.isSelfSender(chat.messageSenderId)) {
-      resource = messageThread != null ? (messageThread.areComments() ? R.string.CommentAsX : R.string.MessageReplyAsX) : R.string.MessageAsX;
-      args = new Object[] { tdlib.senderName(chat.messageSenderId) };
+      resource = messageThread != null ? (messageThread.areComments() ? R.string.Comment : R.string.MessageReply) : R.string.Message;
+      identityName = tdlib.senderName(chat.messageSenderId);
+      animateNewIdentityHint(identityName, animated);
     } else {
       resource = messageThread != null ? (messageThread.areComments() ? R.string.Comment : R.string.MessageReply) : R.string.Message;
+      animateNewIdentityHint(null, animated);
     }
-    setInputPlaceholder(resource, args);
+    setInputPlaceholder(resource);
+  }
+
+  private void showIdentityHint (boolean animated) {
+    if (controller != null && controller.getChat() != null) {
+      TdApi.MessageSender messageSenderId = controller.getChat().messageSenderId;
+      String senderName = messageSenderId == null ? null : tdlib.senderName(messageSenderId);
+      setIdentityHint(senderName);
+      oldIdentityHintPrefix = null;
+      oldIdentityHintName = null;
+      animateNewIdentityHint(newIdentityHintName, animated);
+    }
+  }
+
+  private void hideIdentityHint (boolean animated) {
+    animateNewIdentityHint(null, animated);
+  }
+
+  private void animateNewIdentityHint (String newIdentityHintName, boolean animated) {
+    if (hasFocus()) {
+      newIdentityHintName = null;
+    }
+    setIdentityHint(newIdentityHintName);
+    if (newIdentityHintName != null) {
+      if (oldIdentityHintName == null) {
+        showIdentityHintPrefix.setValue(false, false);
+        showIdentityHintPrefix.setValue(true, animated);
+      }
+      showIdentityHintName.setValue(false, false);
+      showIdentityHintName.setValue(true, animated);
+    } else {
+      showIdentityHintPrefix.setValue(false, animated);
+      showIdentityHintName.setValue(false, animated);
+    }
   }
 
   public void setDraft (@Nullable TdApi.InputMessageContent draftContent) {
@@ -1070,8 +1163,30 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   @Override
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
     super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-    checkPlaceholderWidth();
+    checkPlaceholdersWidth();
     layoutSuffix();
+  }
+
+  public void checkPlaceholdersWidth () {
+    if (newIdentityHintPrefix != null) {
+      this.newIdentityHintPrefixWidth = identityTextPaint.measureText(newIdentityHintPrefix + " ");
+    } else {
+      this.newIdentityHintPrefixWidth = 0;
+    }
+    if (oldIdentityHintPrefix != null) {
+      this.oldIdentityHintPrefixWidth = identityTextPaint.measureText(oldIdentityHintPrefix + " ");
+    } else {
+      this.oldIdentityHintPrefixWidth = 0;
+    }
+    if (controller != null) {
+      this.lastPlaceholderAvailWidth = Math.max(0, getMeasuredWidth() - controller.getHorizontalInputPadding() - getPaddingLeft());
+      this.newIdentityNameAvailWidth = Math.max(0, getMeasuredWidth() - controller.getHorizontalInputPadding() - getPaddingLeft() - newIdentityHintPrefixWidth);
+      this.oldIdentityNameAvailWidth = Math.max(0, getMeasuredWidth() - controller.getHorizontalInputPadding() - getPaddingLeft() - oldIdentityHintPrefixWidth);
+    } else {
+      this.lastPlaceholderAvailWidth = 0;
+      this.newIdentityNameAvailWidth = 0;
+      this.oldIdentityNameAvailWidth = 0;
+    }
   }
 
   private void layoutSuffix () {
@@ -1096,7 +1211,6 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
   @Override
   protected void onDraw (Canvas c) {
-    super.onDraw(c);
     drawEmojiOverlay(c);
     if (this.displaySuffix.length() > 0 && this.prefix.length() > 0 && getLineCount() == 1) {
       String text = getText().toString();
@@ -1105,6 +1219,80 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         c.drawText(displaySuffix, getPaddingLeft() + prefixWidth, getBaseline(), paint);
       }
     }
+
+    if (getText().toString().isEmpty()) {
+      float padding = 2;
+      float defaultBaseline = getBaseline();
+      float identityBaseline = defaultTextHeight + identityTextHeight + padding;
+      float baselineAboveIdentity = identityBaseline - identityTextHeight - padding;
+      float baseline = (1f - identityPrefixFactor) * defaultBaseline + identityPrefixFactor * baselineAboveIdentity;
+
+      if (newIdentityHintName != null) {
+        String oldIdentityName = oldIdentityHintName == null ? "" : oldIdentityHintName;
+        String newIdentityName = newIdentityHintName == null ? "" : newIdentityHintName;
+        String oldIdentityPrefix = oldIdentityHintPrefix == null ? "" : oldIdentityHintPrefix;
+        String newIdentityPrefix = newIdentityHintPrefix == null ? "" : newIdentityHintPrefix;
+
+        if (identityNameFactor < 1f) {
+          c.drawText(
+            oldIdentityPrefix,
+            getPaddingLeft(),
+            identityBaseline - (identityTextHeight + padding) *  identityPrefixFactor,
+            identityTextPaint
+          );
+          c.drawText(
+            TextUtils.ellipsize(oldIdentityName, identityTextPaint, oldIdentityNameAvailWidth, TextUtils.TruncateAt.END).toString(),
+            getPaddingLeft() + oldIdentityHintPrefixWidth,
+            identityBaseline - (identityTextHeight + padding) *  identityNameFactor,
+            identityTextPaint
+          );
+        }
+
+        c.drawText(
+          newIdentityPrefix,
+          getPaddingLeft(),
+          identityBaseline * identityPrefixFactor + (getMeasuredHeight() + identityTextHeight) * (1f - identityPrefixFactor),
+          identityTextPaint
+        );
+        c.drawText(
+          TextUtils.ellipsize(newIdentityName, identityTextPaint, newIdentityNameAvailWidth, TextUtils.TruncateAt.END).toString(),
+          getPaddingLeft() + newIdentityHintPrefixWidth,
+          identityBaseline * identityNameFactor + (getMeasuredHeight() + identityTextHeight) * (1f - identityNameFactor),
+          identityTextPaint
+        );
+      } else {
+        String oldIdentityName = oldIdentityHintName == null ? "" : oldIdentityHintName;
+        String oldIdentityPrefix = oldIdentityHintPrefix == null ? "" : oldIdentityHintPrefix;
+
+        c.drawText(
+          oldIdentityPrefix,
+          getPaddingLeft(),
+          identityBaseline * identityPrefixFactor + (getMeasuredHeight() + identityTextHeight) * (1f - identityPrefixFactor),
+          identityTextPaint
+        );
+        c.drawText(
+          TextUtils.ellipsize(oldIdentityName, identityTextPaint, oldIdentityNameAvailWidth, TextUtils.TruncateAt.END).toString(),
+          getPaddingLeft() + oldIdentityHintPrefixWidth,
+          identityBaseline * identityNameFactor + (getMeasuredHeight() + identityTextHeight) * (1f - identityNameFactor),
+          identityTextPaint
+        );
+      }
+
+      c.drawRect(
+        getPaddingLeft(),
+        baseline - defaultTextHeight,
+        getPaddingLeft() + oldIdentityHintPrefixWidth + oldIdentityNameAvailWidth,
+        identityBaseline - identityTextHeight,
+        Paints.fillingPaint(Theme.fillingColor())
+      );
+
+      if (rawPlaceholder != null) {
+        CharSequence placeholder = TextUtils.ellipsize(rawPlaceholder, getPaint(), lastPlaceholderAvailWidth, TextUtils.TruncateAt.END);
+        c.drawText(placeholder.toString(), getPaddingLeft(), baseline, paint);
+      }
+    }
+
+    super.onDraw(c);
   }
 
   // Inline query

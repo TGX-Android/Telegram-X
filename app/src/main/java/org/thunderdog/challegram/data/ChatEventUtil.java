@@ -26,20 +26,16 @@ import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Strings;
-import org.thunderdog.challegram.util.CustomStateListDrawable;
 import org.thunderdog.challegram.util.text.Text;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.RunnableData;

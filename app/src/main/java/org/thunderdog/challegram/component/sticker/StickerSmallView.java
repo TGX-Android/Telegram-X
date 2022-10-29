@@ -34,7 +34,6 @@ import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 

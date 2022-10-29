@@ -44,6 +44,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.PollResultsController;
+import org.thunderdog.challegram.util.RevealIdentityConfirmationHelper;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.util.text.TextWrapper;
@@ -1455,7 +1456,13 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
                 if (Arrays.equals(selectedOptionIds, currentOptionIds)) {
                   tdlib.client().send(new TdApi.SetPollAnswer(msg.chatId, msg.id, null), tdlib.okHandler());
                 } else {
-                  tdlib.client().send(new TdApi.SetPollAnswer(msg.chatId, msg.id, selectedOptionIds), tdlib.okHandler());
+                  if (getPoll().isAnonymous) {
+                    tdlib.client().send(new TdApi.SetPollAnswer(msg.chatId, msg.id, selectedOptionIds), tdlib.okHandler());
+                  } else {
+                    RevealIdentityConfirmationHelper.showIfNecessary(tdlib, messagesController(), context(), () -> {
+                      tdlib.client().send(new TdApi.SetPollAnswer(msg.chatId, msg.id, selectedOptionIds), tdlib.okHandler());
+                    });
+                  }
                 }
                 break;
               }
@@ -1523,7 +1530,13 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     if (getPoll().options[optionId].isBeingChosen) {
       tdlib.client().send(new TdApi.SetPollAnswer(msg.chatId, msg.id, null), tdlib.okHandler());
     } else {
-      tdlib.client().send(new TdApi.SetPollAnswer(msg.chatId, msg.id, new int[] {optionId}), tdlib.okHandler());
+      if (getPoll().isAnonymous) {
+        tdlib.client().send(new TdApi.SetPollAnswer(msg.chatId, msg.id, new int[] {optionId}), tdlib.okHandler());
+      } else {
+        RevealIdentityConfirmationHelper.showIfNecessary(tdlib, messagesController(), context(), () -> {
+          tdlib.client().send(new TdApi.SetPollAnswer(msg.chatId, msg.id, new int[] {optionId}), tdlib.okHandler());
+        });
+      }
     }
   }
 

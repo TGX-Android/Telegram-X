@@ -45,6 +45,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.collection.LongSparseArray;
 import androidx.collection.SparseArrayCompat;
+import androidx.core.util.Consumer;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -74,6 +75,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.ChatListListener;
+import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibChatList;
@@ -130,7 +132,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
   FactorAnimator.Target, Runnable, PopupLayout.PopupHeightProvider,
   View.OnClickListener, Menu, PopupLayout.TouchSectionProvider,
   EmojiLayout.Listener, BaseView.ActionListProvider, EmojiToneHelper.Delegate,
-  ChatListListener, Filter<TdApi.Chat> {
+  ChatListListener, Filter<TdApi.Chat>, ChatListener {
   private static final int MODE_MESSAGES = 0;
   private static final int MODE_TEXT = 1;
   private static final int MODE_GAME = 2;
@@ -179,6 +181,8 @@ public class ShareController extends TelegramViewController<ShareController.Args
     private Runnable after;
 
     private TdApi.MessageSendOptions defaultSendOptions;
+
+    private Consumer<TdApi.Chat> openIdentitySwitch;
 
     public Args (TdApi.Message message) {
       this(new TdApi.Message[]{message});
@@ -292,6 +296,11 @@ public class ShareController extends TelegramViewController<ShareController.Args
 
     public Args setMessageThreadId (long messageThreadId) {
       this.messageThreadId = messageThreadId;
+      return this;
+    }
+
+    public Args setOpenIdentitySwitch (Consumer<TdApi.Chat> openIdentitySwitch) {
+      this.openIdentitySwitch = openIdentitySwitch;
       return this;
     }
   }
@@ -1466,12 +1475,25 @@ public class ShareController extends TelegramViewController<ShareController.Args
     strings.append(isChecked(chat.getAnyId()) ? R.string.Unselect : R.string.Select);
     icons.append(R.drawable.baseline_playlist_add_check_24);
 
+    context.setFooterIdentityData(((VerticalChatView) v).getIdentity(), R.id.btn_switchIdentity, Lang.getString(R.string.SendAs));
+
     return new ForceTouchView.ActionListener() {
       @Override
       public void onForceTouchAction (ForceTouchView.ForceTouchContext context, int actionId, Object arg) {
-        toggleChecked(v, chat, isChecked ->
-          ((VerticalChatView) v).setIsChecked(isChecked, true)
-        );
+        switch (actionId) {
+          case R.id.btn_selectChat: {
+            toggleChecked(v, chat, isChecked ->
+              ((VerticalChatView) v).setIsChecked(isChecked, true)
+            );
+            break;
+          }
+          case R.id.btn_switchIdentity: {
+            if (getArguments() != null) {
+              getArguments().openIdentitySwitch.accept(chat.getChat());
+            }
+            break;
+          }
+        }
       }
 
       @Override
@@ -2213,6 +2235,10 @@ public class ShareController extends TelegramViewController<ShareController.Args
     } else {
       ArrayUtils.ensureCapacity(displayingChats, displayingChats.size() + chats.size());
       displayingChats.addAll(chats);
+    }
+
+    for (TGFoundChat foundChat: displayingChats) {
+      tdlib().listeners().subscribeToChatUpdates(foundChat.getChatId(), this);
     }
 
     // if (!inSearchMode()) {
@@ -3218,6 +3244,29 @@ public class ShareController extends TelegramViewController<ShareController.Args
     if (popupLayout != null) {
       popupLayout.hideWindow(true);
     }
+  }
+
+  @Override
+  public void onChatDefaultMessageSenderIdChanged (long chatId, TdApi.MessageSender senderId) {
+    TdApi.Chat changedChat = null;
+    for (TGFoundChat chat: displayingChats) {
+      if (chat.getChatId() == chatId) {
+        changedChat = chat.getChat();
+      }
+    }
+    if (changedChat == null) return;
+    tdlib().getIdentity(
+      changedChat,
+      senderId,
+      identity -> {
+        UI.post(() -> {
+          adapter.notifyDataSetChanged();
+        });
+      },
+      error -> {
+        tdlib().ui().post(() -> UI.showError(error));
+      }
+    );
   }
 
   @Override

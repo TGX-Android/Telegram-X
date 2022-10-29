@@ -56,6 +56,10 @@ public class RippleSupport {
     ViewUtils.setBackground(view, Theme.transparentSelector());
   }
 
+  public static void setTransparentCircleSelector (View view, float size) {
+    ViewUtils.setBackground(view, Theme.transparentCircleSelector(size));
+  }
+
   public static void setTransparentBlackSelector (View view) {
     ViewUtils.setBackground(view, Theme.transparentBlackSelector());
   }

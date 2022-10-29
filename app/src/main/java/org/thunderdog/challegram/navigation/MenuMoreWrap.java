@@ -49,79 +49,10 @@ import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.Animated;
 import me.vkryl.android.widget.FrameLayoutFix;
 
-public class MenuMoreWrap extends LinearLayout implements Animated {
-  public static final float START_SCALE = .56f;
-
-  public static final long REVEAL_DURATION = 258l;
-  public static final Interpolator REVEAL_INTERPOLATOR = AnimatorUtils.DECELERATE_INTERPOLATOR;
-
-  public static final int ANCHOR_MODE_RIGHT = 0;
-  public static final int ANCHOR_MODE_HEADER = 1;
-
-  // private int currentWidth;
-  private int anchorMode;
-
-  private @Nullable ThemeListenerList themeListeners;
-  private @Nullable ThemeDelegate forcedTheme;
-
+public class MenuMoreWrap extends MenuWrap {
 
   public MenuMoreWrap (Context context) {
     super(context);
-  }
-
-  public void updateDirection () {
-    if (Views.setGravity(this, Gravity.TOP | (Lang.rtl() ? Gravity.LEFT : Gravity.RIGHT)))
-      Views.updateLayoutParams(this);
-  }
-
-
-  public void init (@Nullable ThemeListenerList themeProvider, ThemeDelegate forcedTheme) {
-    this.themeListeners = themeProvider;
-    this.forcedTheme = forcedTheme;
-
-    setMinimumWidth(Screen.dp(196f));
-    Drawable drawable;
-    if (forcedTheme != null) {
-      drawable = ViewSupport.getDrawableFilter(getContext(), R.drawable.bg_popup_fixed, new PorterDuffColorFilter(forcedTheme.getColor(R.id.theme_color_overlayFilling), PorterDuff.Mode.MULTIPLY));
-    } else {
-      drawable = ViewSupport.getDrawableFilter(getContext(), R.drawable.bg_popup_fixed, new PorterDuffColorFilter(Theme.headerFloatBackgroundColor(), PorterDuff.Mode.MULTIPLY));
-    }
-    ViewUtils.setBackground(this, drawable);
-
-    if (themeProvider != null && forcedTheme == null) {
-      themeProvider.addThemeSpecialFilterListener(drawable, R.id.theme_color_overlayFilling);
-      themeProvider.addThemeInvalidateListener(this);
-    }
-
-    setOrientation(VERTICAL);
-    setLayerType(LAYER_TYPE_HARDWARE, Views.getLayerPaint());
-    setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | (Lang.rtl() ? Gravity.LEFT : Gravity.RIGHT)));
-  }
-
-  public void setRightNumber (int number) {
-    setTranslationX(-Screen.dp(49f) * number);
-  }
-
-  public void setAnchorMode (int anchorMode) {
-    if (this.anchorMode != anchorMode) {
-      this.anchorMode = anchorMode;
-      FrameLayoutFix.LayoutParams params = (FrameLayoutFix.LayoutParams) getLayoutParams();
-      switch (anchorMode) {
-        case ANCHOR_MODE_RIGHT: {
-          params.gravity = Gravity.TOP | (Lang.rtl() ? Gravity.LEFT : Gravity.RIGHT);
-          break;
-        }
-        case ANCHOR_MODE_HEADER: {
-          params.gravity = Gravity.TOP | (Lang.rtl() ? Gravity.RIGHT : Gravity.LEFT);
-          setTranslationX(Lang.rtl() ? -Screen.dp(46f) : Screen.dp(46f));
-          break;
-        }
-      }
-    }
-  }
-
-  public int getAnchorMode () {
-    return anchorMode;
   }
 
   public void updateItem (int index, int id, CharSequence title, int icon, OnClickListener listener, @Nullable ThemeListenerList themeProvider) {
@@ -154,6 +85,10 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
   }
 
   public TextView addItem (int id, CharSequence title, int iconRes, Drawable icon, OnClickListener listener) {
+    return addItem(id, title, iconRes, icon, true, listener);
+  }
+
+  public TextView addItem (int id, CharSequence title, int iconRes, Drawable icon, boolean useColorFilter, OnClickListener listener) {
     TextView menuItem = new NoScrollTextView(getContext());
     menuItem.setId(id);
     menuItem.setTypeface(Fonts.getRobotoRegular());
@@ -176,12 +111,14 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     menuItem.setCompoundDrawablePadding(Screen.dp(18f));
     icon = iconRes != 0 ? Drawables.get(getResources(), iconRes) : icon;
     if (icon != null) {
-      if (forcedTheme != null) {
-        icon.setColorFilter(Paints.getColorFilter(forcedTheme.getColor(R.id.theme_color_icon)));
-      } else {
-        icon.setColorFilter(Paints.getColorFilter(Theme.getColor(R.id.theme_color_icon)));
-        if (themeListeners != null) {
-          themeListeners.addThemeFilterListener(icon, R.id.theme_color_icon);
+      if (useColorFilter) {
+        if (forcedTheme != null) {
+          icon.setColorFilter(Paints.getColorFilter(forcedTheme.getColor(R.id.theme_color_icon)));
+        } else {
+          icon.setColorFilter(Paints.getColorFilter(Theme.getColor(R.id.theme_color_icon)));
+          if (themeListeners != null) {
+            themeListeners.addThemeFilterListener(icon, R.id.theme_color_icon);
+          }
         }
       }
       if (Drawables.needMirror(iconRes)) {
@@ -200,6 +137,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     menuItem.setTag(menuItem.getMeasuredWidth());
     return menuItem;
   }
+<<<<<<< HEAD
 
   @Override
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {

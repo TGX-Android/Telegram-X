@@ -18,6 +18,7 @@ import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.DatePickerDialog;
@@ -31,6 +32,12 @@ import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
+import android.graphics.Color;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
+import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.RippleDrawable;
 import android.location.Location;
 import android.location.LocationManager;
 import android.media.MediaMetadataRetriever;
@@ -44,11 +51,13 @@ import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
 import android.util.SparseIntArray;
 import android.util.TypedValue;
+import android.view.GestureDetector;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -63,6 +72,7 @@ import androidx.annotation.StringRes;
 import androidx.annotation.UiThread;
 import androidx.collection.LongSparseArray;
 import androidx.collection.SparseArrayCompat;
+import androidx.core.util.Consumer;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.PagerAdapter;
@@ -99,6 +109,10 @@ import org.thunderdog.challegram.component.chat.ChatHeaderView;
 import org.thunderdog.challegram.component.chat.CommandKeyboardLayout;
 import org.thunderdog.challegram.component.chat.CounterBadgeView;
 import org.thunderdog.challegram.component.chat.EmojiToneHelper;
+import org.thunderdog.challegram.component.chat.IdentityHeaderView;
+import org.thunderdog.challegram.component.chat.IdentityIconView;
+import org.thunderdog.challegram.component.chat.IdentityItemView;
+import org.thunderdog.challegram.component.chat.IdentityLayout;
 import org.thunderdog.challegram.component.chat.InlineResultsWrap;
 import org.thunderdog.challegram.component.chat.InputView;
 import org.thunderdog.challegram.component.chat.InvisibleImageView;
@@ -127,6 +141,7 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.core.Media;
+import org.thunderdog.challegram.data.Identity;
 import org.thunderdog.challegram.data.InlineResultButton;
 import org.thunderdog.challegram.data.InlineResultCommand;
 import org.thunderdog.challegram.data.MessageListManager;
@@ -145,6 +160,7 @@ import org.thunderdog.challegram.filegen.VideoGenerationInfo;
 import org.thunderdog.challegram.helper.BotHelper;
 import org.thunderdog.challegram.helper.LiveLocationHelper;
 import org.thunderdog.challegram.helper.Recorder;
+import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
 import org.thunderdog.challegram.loader.ImageReader;
 import org.thunderdog.challegram.loader.ImageStrictCache;
@@ -206,6 +222,9 @@ import org.thunderdog.challegram.unsorted.Test;
 import org.thunderdog.challegram.util.CancellableResultHandler;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.OptionDelegate;
+import org.thunderdog.challegram.util.IdentityMenuHelper;
+import org.thunderdog.challegram.util.OptionDelegate;
+import org.thunderdog.challegram.util.RevealIdentityConfirmationHelper;
 import org.thunderdog.challegram.util.SenderPickerDelegate;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.Unlockable;
@@ -276,8 +295,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
   Settings.VideoModePreferenceListener,
   RecordAudioVideoController.RecordStateListeners,
   ViewPager.OnPageChangeListener, ViewPagerTopView.OnItemClickListener,
-  TGMessage.SelectableDelegate, GlobalAccountListener, EmojiToneHelper.Delegate, ComplexHeaderView.Callback, LiveLocationHelper.Callback, CreatePollController.Callback,
-  HapticMenuHelper.Provider, HapticMenuHelper.OnItemClickListener, TdlibSettingsManager.DismissRequestsListener {
+  TGMessage.SelectableDelegate, GlobalAccountListener, EmojiToneHelper.Delegate, ComplexHeaderView.Callback,
+  LiveLocationHelper.Callback, CreatePollController.Callback,
+  HapticMenuHelper.Provider, HapticMenuHelper.OnItemClickListener,
+  IdentityMenuHelper.OnItemClickListener, IdentityMenuHelper.OnShowMoreListener, IdentityMenuHelper.Provider,
+  TdlibSettingsManager.DismissRequestsListener {
   private boolean reuseEnabled;
   private boolean destroyInstance;
 
@@ -295,6 +317,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private @Nullable TdApi.Chat chat;
   private @Nullable TdApi.ChatList openedFromChatList;
 
+  private List<Identity> availableIdentities = new ArrayList<>();
+  private Identity selectedIdentity;
+
   private ChatHeaderView headerCell;
   private DoubleHeaderView headerDoubleCell;
 
@@ -311,13 +336,18 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private EmojiLayout emojiLayout;
   private AttachLinearLayout attachButtons;
-  private ImageView emojiButton;
+  private ImageView emojiButton, mediaButton;
   private VoiceVideoButtonView recordButton;
   private SendButton sendButton;
   private HapticMenuHelper sendMenu;
+  private IdentityMenuHelper identitiesMenu;
   private InvisibleImageView cameraButton, scheduleButton;
   private InvisibleImageView commandButton;
   private @Nullable SilentButton silentButton;
+
+
+  private IdentityIconView switchIdentityButton, oldIdentityIcon, newIdentityIcon, sendIdentityIcon;
+  private FrameLayoutFix identityButtonWrapper;
 
   private WallpaperView wallpaperViewBlurPreview;
   private WallpaperParametersView backgroundParamsView;
@@ -356,12 +386,22 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   @Override
+  public View onCreateHapticMenuHeader (View view) {
+    IdentityHeaderView header = new IdentityHeaderView(context, tdlib);
+    header.setIdentity(selectedIdentity);
+    RippleSupport.setTransparentSelector(header);
+    header.setOnClickListener(v -> {
+      openFullScreenIdentitySwitch(chat);
+    });
+    return header;
+  }
+
+  @Override
   public void onHapticMenuItemClick (View view, View parentView) {
     switch (view.getId()) {
       case R.id.btn_sendOnceOnline: {
-        TdApi.MessageSendOptions sendOptions = Td.newSendOptions(new TdApi.MessageSchedulingStateSendWhenOnline());
-        if (!sendShowingVoice(sendOptions)) {
-          sendText(true, sendOptions);
+        if (!sendShowingVoice(false, new TdApi.MessageSchedulingStateSendWhenOnline())) {
+          sendText(true, false, new TdApi.MessageSchedulingStateSendWhenOnline());
         }
         break;
       }
@@ -503,8 +543,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
-  @Override
+  @SuppressLint("ClickableViewAccessibility") @Override
   protected View onCreateView (final Context context) {
+    isLoading = true;
+
     if (!isInForceTouchMode()) {
       UI.setSoftInputMode(UI.getContext(context), Config.DEFAULT_WINDOW_PARAMS);
     }
@@ -950,7 +992,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         if (inputView != null && getMeasuredWidth() > 0) {
-          inputView.checkPlaceholderWidth();
+          inputView.checkPlaceholdersWidth();
         }
       }
     };
@@ -961,7 +1003,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(Screen.dp(ATTACH_BUTTONS_WIDTH), Screen.dp(49f));
 
-    ImageView mediaButton = new CameraAccessImageView(context, this);
+    mediaButton = new CameraAccessImageView(context, this);
     mediaButton.setId(R.id.msg_attach);
     mediaButton.setScaleType(ImageView.ScaleType.CENTER);
     mediaButton.setImageResource(R.drawable.deproko_baseline_attach_26);
@@ -970,6 +1012,87 @@ public class MessagesController extends ViewController<MessagesController.Argume
     mediaButton.setOnClickListener(this);
     mediaButton.setLayoutParams(lp);
 
+    params = new RelativeLayout.LayoutParams(Screen.dp(ATTACH_BUTTONS_WIDTH) + 2 * Screen.dp(10f), Screen.dp(49f));
+    params.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+    if (Lang.rtl()) {
+      params.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
+    } else {
+      params.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+    }
+    identityButtonWrapper = new FrameLayoutFix(context);
+    identityButtonWrapper.setLayoutParams(params);
+    identityButtonWrapper.setTranslationX(-Screen.dp(ATTACH_BUTTONS_WIDTH) * 2 + Screen.dp(10f));
+    identityButtonWrapper.setPadding(Screen.dp(10f), 0, Screen.dp(10f), 0);
+    RippleSupport.setTransparentCircleSelector(identityButtonWrapper, 60f);
+    identityButtonWrapper.setVisibility(View.INVISIBLE);
+
+    ViewGroup.LayoutParams identityButtonParams = new ViewGroup.LayoutParams(
+      Screen.dp(ATTACH_BUTTONS_WIDTH), Screen.dp(49f)
+    );
+    switchIdentityButton = IdentityIconView.createNormalView(context, tdlib);
+    switchIdentityButton.setId(R.id.btn_switchIdentity);
+    switchIdentityButton.setLayoutParams(identityButtonParams);
+    addThemeInvalidateListener(switchIdentityButton);
+    switchIdentityButton.setOnClickListener(this);
+    final GestureDetector identityGestureDetector = new GestureDetector(context, new GestureDetector.SimpleOnGestureListener() {
+      @Override
+      public boolean onSingleTapUp(MotionEvent e) {
+        openFullScreenIdentitySwitch(chat);
+        return true;
+      }
+      @Override
+      public void onLongPress(MotionEvent e) {
+        openIdentitySwitch(chat);
+      }
+    });
+    switchIdentityButton.setOnTouchListener((view, event) -> {
+      boolean detected = identityGestureDetector.onTouchEvent(event);
+
+      boolean needRipple = true;
+      if (event.getAction() == MotionEvent.ACTION_UP) {
+        needRipple = false;
+      }
+      boolean touchIsInButtonBoundsX = event.getX() >= 0 && event.getX() <= view.getMeasuredWidth();
+      boolean touchIsInButtonBoundsY = event.getY() >= 0 && event.getY() <= view.getMeasuredHeight();
+      boolean touchIsInButtonBounds = touchIsInButtonBoundsX && touchIsInButtonBoundsY;
+      if (!touchIsInButtonBounds) {
+        needRipple = false;
+      }
+
+      Drawable background = identityButtonWrapper.getBackground();
+      if (Build.VERSION.SDK_INT >= 21 && background instanceof RippleDrawable) {
+        RippleDrawable rippleDrawable = (RippleDrawable) background;
+        if (needRipple) {
+          rippleDrawable.setState(new int[] { android.R.attr.state_pressed, android.R.attr.state_enabled });
+        } else {
+          rippleDrawable.setState(new int[] {});
+        }
+      } else {
+        if (needRipple) {
+          view.setBackgroundColor(Theme.pressedFillingColor());
+        } else {
+          view.setBackgroundColor(Color.TRANSPARENT);
+        }
+      }
+
+      if (!detected) {
+        identitiesMenu.processTouchEvent(event);
+      }
+      return true;
+    });
+    identityButtonWrapper.addView(switchIdentityButton);
+
+    oldIdentityIcon = IdentityIconView.createNormalView(context, tdlib);
+    oldIdentityIcon.setLayoutParams(identityButtonParams);
+    oldIdentityIcon.setVisibility(View.INVISIBLE);
+    identityButtonWrapper.addView(oldIdentityIcon);
+    newIdentityIcon = IdentityIconView.createNormalView(context, tdlib);
+    newIdentityIcon.setLayoutParams(identityButtonParams);
+    newIdentityIcon.setVisibility(View.INVISIBLE);
+    identityButtonWrapper.addView(newIdentityIcon);
+
+    sendIdentityIcon = IdentityIconView.createNormalView(context, tdlib, true, true);
+    hideIdentityIcon();
 
     lp = new LinearLayout.LayoutParams(Screen.dp(ATTACH_BUTTONS_WIDTH), Screen.dp(49f));
     cameraButton = new CameraAccessImageView(context, this);
@@ -1026,19 +1149,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
     addThemeInvalidateListener(recordButton);
     recordButton.setLayoutParams(lp);
 
-    attachButtons.addView(commandButton);
-    if (silentButton != null) {
-      attachButtons.addView(silentButton);
-    }
-    if (scheduleButton != null) {
-      attachButtons.addView(scheduleButton);
-    }
-    if (cameraButton != null) {
-      attachButtons.addView(cameraButton);
-    }
-    attachButtons.addView(mediaButton);
-    attachButtons.addView(recordButton);
-    attachButtons.updatePivot();
 
     params = new RelativeLayout.LayoutParams(Screen.dp(55f), Screen.dp(49f));
     params.addRule(RelativeLayout.ALIGN_PARENT_TOP);
@@ -1055,8 +1165,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
     sendButton.setVisibility(View.INVISIBLE);
     sendButton.setAlpha(0f);
     sendButton.setLayoutParams(params);
+    sendButton.getViewTreeObserver().addOnGlobalLayoutListener(() -> setSendIdentityIconFactor(1f));
 
     sendMenu = new HapticMenuHelper(this, this, getThemeListeners(), null).attachToView(sendButton);
+    identitiesMenu = new IdentityMenuHelper(tdlib,this, this, this, getThemeListeners(), null);
 
     if (inPreviewMode) {
       switch (previewMode) {
@@ -1262,6 +1374,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (previewMode == PREVIEW_MODE_NONE) {
       contentView.addView(emojiButton);
       contentView.addView(attachButtons);
+      contentView.addView(identityButtonWrapper);
       contentView.addView(sendButton);
 
       initSearchControls();
@@ -1273,6 +1386,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (backgroundParamsView != null) {
       contentView.addView(backgroundParamsView, 2);
     }
+
+    contentView.addView(sendIdentityIcon);
 
     updateView();
 
@@ -1377,6 +1492,42 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (found) {
       sliderView.setValue((float) index / (float) (Settings.CHAT_FONT_SIZES.length - 1));
     }
+  }
+
+  @Override
+  public void onIdentityMenuItemSelected (View view) {
+    IdentityItemView identityView = (IdentityItemView) view;
+    Identity identity = identityView.getIdentity();
+    tdlib.switchIdentity(
+      chat.id,
+      identity,
+      () -> {
+        setIdentity(identity, true);
+      },
+      error -> {
+        tdlib.ui().post(() -> {
+          if (isFocused()) {
+            showBottomHint(TD.toErrorString(error), true);
+          } else {
+            UI.showError(error);
+          }
+        });
+      }
+    );
+  }
+
+  @Override
+  public List<IdentityMenuHelper.MenuItem> onCreateIdentityMenu (View view) {
+    List<IdentityMenuHelper.MenuItem> items = new ArrayList<>();
+    for (Identity identity: availableIdentities) {
+      items.add(new IdentityMenuHelper.MenuItem(R.id.btn_chatIdentity, identity));
+    }
+    return items;
+  }
+
+  @Override
+  public void onShowMoreSelected () {
+    openFullScreenIdentitySwitch(chat);
   }
 
   // SELF-CHAT
@@ -1813,7 +1964,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           Views.getPosition(bottomWrap, pos);
           UI.showCustomToast(silentButton.getIsSilent() ? R.string.ChannelNotifyMembersInfoOff : R.string.ChannelNotifyMembersInfoOn, Toast.LENGTH_SHORT, pos[1] <= Screen.currentHeight() / 2 + Screen.dp(60f) ? -(contentView.getMeasuredHeight() - bottomWrap.getTop() + Screen.dp(14f)) : 0);
           if (inputView != null) {
-            updateInputHint();
+            updateInputHint(false);
           }
         }
         break;
@@ -2466,7 +2617,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       TGBotStart start = (TGBotStart) item;
 
       if (start.isGame()) {
-        tdlib.sendMessage(chat.id, getMessageThreadId(), 0, Td.newSendOptions(obtainSilentMode()), new TdApi.InputMessageGame(start.getUserId(), start.getArgument()));
+        RevealIdentityConfirmationHelper.showIfNecessary(tdlib, this, context, () -> {
+          tdlib.sendMessage(chat.id, getMessageThreadId(), 0, Td.newSendOptions(obtainSilentMode()), new TdApi.InputMessageGame(start.getUserId(), start.getArgument()));
+        });
       } else if (start.useDeepLinking()) {
         if (ChatId.isUserChat(chat.id)) {
           showActionBotButton(start.getArgument());
@@ -2509,6 +2662,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public static final int BOT_CLOSE_RES = R.drawable.baseline_direction_arrow_down_24; //R.drawable.ic_arrow_down;
 
   private void updateView () {
+
     if (selectedMessageIds != null) {
       clearSelectedMessageIds();
     }
@@ -2673,9 +2827,38 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
     });
 
+    updateAttachButtons();
+    updateIdentity();
     updateCounters(false);
     checkRestriction();
     checkLinkedChat();
+  }
+
+  private void updateAttachButtons () {
+    attachButtons.removeAllViews();
+    attachButtons.addView(commandButton);
+    if (silentButton != null) {
+      attachButtons.addView(silentButton);
+    }
+    if (scheduleButton != null) {
+      attachButtons.addView(scheduleButton);
+    }
+    attachButtons.addView(cameraButton);
+    attachButtons.addView(mediaButton);
+    attachButtons.addView(recordButton);
+    attachButtons.updatePivot();
+  }
+
+  private void updateIdentity () {
+    if (chat == null || chat.messageSenderId == null) {
+      selectedIdentity = null;
+      identityButtonWrapper.setVisibility(View.INVISIBLE);
+      cameraButton.setVisibility(View.VISIBLE);
+    } else {
+      cameraButton.setVisibility(View.INVISIBLE);
+      identityButtonWrapper.setVisibility(View.VISIBLE);
+      setIdentity(chat.messageSenderId);
+    }
   }
 
   public void updateShadowColor () {
@@ -2827,20 +3010,36 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void onChatDefaultMessageSenderIdChanged (long chatId, TdApi.MessageSender senderId) {
     runOnUiThreadOptional(() -> {
       if (getChatId() == chatId) {
-        updateInputHint();
+        updateInputHint(true);
       }
     });
+    tdlib.getIdentity(
+      chat,
+      senderId,
+      identity -> {
+        setIdentity(identity, true);
+      },
+      error -> {
+        tdlib.ui().post(() -> {
+          if (isFocused()) {
+            showBottomHint(TD.toErrorString(error), true);
+          } else {
+            UI.showError(error);
+          }
+        });
+      }
+    );
   }
 
-  public void updateInputHint () {
+  public void updateInputHint (boolean animated) {
     if (inputView != null) {
-      inputView.updateMessageHint(chat, messageThread, Config.NEED_SILENT_BROADCAST && silentButton != null ? silentButton.getIsSilent() : tdlib.chatDefaultDisableNotifications(getChatId()));
+      inputView.updateMessageHint(chat, messageThread, Config.NEED_SILENT_BROADCAST && silentButton != null ? silentButton.getIsSilent() : tdlib.chatDefaultDisableNotifications(getChatId()), animated);
     }
   }
 
   private void updateBottomBar (boolean isUpdate) {
     if (isUpdate) {
-      updateInputHint();
+      updateInputHint(false);
     }
     if (isInForceTouchMode()) {
       setInputVisible(false, false);
@@ -2966,9 +3165,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
       emojiButton.setVisibility(View.VISIBLE);
       if (notEmpty) {
         attachButtons.setVisibility(View.INVISIBLE);
+        identityButtonWrapper.setVisibility(View.INVISIBLE);
         sendButton.setVisibility(View.VISIBLE);
       } else {
         attachButtons.setVisibility(View.VISIBLE);
+        identityButtonWrapper.setVisibility(View.VISIBLE);
         sendButton.setVisibility(View.INVISIBLE);
       }
     } else {
@@ -2978,6 +3179,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       bottomShadowView.setVisibility(View.GONE);
       emojiButton.setVisibility(View.GONE);
       attachButtons.setVisibility(View.GONE);
+      identityButtonWrapper.setVisibility(View.GONE);
       sendButton.setVisibility(View.GONE);
     }
   }
@@ -3072,6 +3274,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
 
     int baseY = Views.getLocationInWindow(navigationController.get())[1];
+
+    if (switchIdentityButton != null && switchIdentityButton.getVisibility() == View.VISIBLE) {
+      int[] out = Views.getLocationInWindow(switchIdentityButton);
+      int identityButtonX = out[0];
+      int identityButtonY = out[1] - baseY;
+      if (y >= identityButtonY && y < identityButtonY + switchIdentityButton.getMeasuredHeight()) {
+        if (x >= identityButtonX && x <= identityButtonX + switchIdentityButton.getMeasuredWidth()) {
+          return false;
+        }
+      }
+    }
 
     if (areStickersVisible) {
       int locationY = Views.getLocationInWindow(stickerSuggestionsWrap)[1];
@@ -4103,7 +4316,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private Object selectedMessageTag;
 
   @Deprecated
-  public void showMessageOptions (TGMessage msg, int[] ids, String[] options, int[] icons, Object selectedMessageTag, TdApi.ChatMember selectedMessageSender, boolean disableMessageMetadata) {
+  public void showMessageOptions (TGMessage msg, int[] ids, String[] options, int[] icons, Object selectedMessageTag, TdApi.ChatMember selectedMessageSender, boolean disableViewCounter) {
+    showMessageOptions(msg, ids, options, icons, selectedMessageTag, selectedMessageSender, disableViewCounter, false);
+  }
+
+  @Deprecated
+  public void showMessageOptions (TGMessage msg, int[] ids, String[] options, int[] icons, Object selectedMessageTag, TdApi.ChatMember selectedMessageSender, boolean disableViewCounter, boolean withReactions) {
     // TODO rework into proper style
     this.selectedMessage = msg;
     this.selectedMessageTag = selectedMessageTag;
@@ -6392,7 +6610,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
     hideAllKeyboards();
     final ShareController c = new ShareController(context, tdlib);
-    c.setArguments(new ShareController.Args(messages).setAfter(() -> finishSelectMode(-1)));
+    c.setArguments(
+      new ShareController.Args(messages).setAfter(() -> finishSelectMode(-1)).setOpenIdentitySwitch(chat -> {
+        openFullScreenIdentitySwitch(chat);
+      })
+    );
     c.show();
   }
 
@@ -6573,6 +6795,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     sendButton.setTranslationY(y);
     emojiButton.setTranslationY(y);
     attachButtons.setTranslationY(y);
+    identityButtonWrapper.setTranslationY(y);
 
     if (prevButtonsY != y) {
       prevButtonsY = y;
@@ -7472,6 +7695,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
         checkScrollButtonOffsets();
         break;
       }
+      case ANIMATOR_SWITCH_IDENTITY: {
+        setIdentitySwitchFactor(factor);
+        break;
+      }
     }
   }
 
@@ -7502,6 +7729,18 @@ public class MessagesController extends ViewController<MessagesController.Argume
       case ANIMATOR_STICKERS: {
         if (finalFactor == 0f) {
           onStickersDisappeared();
+        }
+        break;
+      }
+      case ANIMATOR_SEND: {
+        if (finalFactor == 0) {
+          hideIdentityIcon();
+        }
+        break;
+      }
+      case ANIMATOR_SWITCH_IDENTITY: {
+        if (finalFactor == 1f) {
+          finishSwitchIdentityAnim();
         }
         break;
       }
@@ -8048,6 +8287,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void onInputTextChange (CharSequence charSequence, boolean byUserAction) {
     if (sendMenu != null) {
       sendMenu.hideMenu();
+    }
+    if (identitiesMenu != null) {
+      identitiesMenu.hideMenu();
     }
     if (emojiLayout != null) {
       emojiLayout.onTextChanged(charSequence);
@@ -8596,10 +8838,25 @@ public class MessagesController extends ViewController<MessagesController.Argume
       attachButtons.setScaleX(scale2);
       attachButtons.setScaleY(scale2);
 
+      setSendIdentityIconFactor(factor);
+
       if (tooltipInfo != null && tooltipInfo.isVisible()) {
         tooltipInfo.reposition();
       }
     }
+  }
+
+  private void setSendIdentityIconFactor (float factor) {
+    float reverseFactor = 1f - factor;
+    float identityButtonX = identityButtonWrapper.getX() + switchIdentityButton.getX();
+    float identityButtonY = identityButtonWrapper.getY() + switchIdentityButton.getY();
+    float sendButtonWidth = Screen.px(sendButton.getMeasuredWidth());
+    float sendButtonHeight = Screen.px(sendButton.getMeasuredHeight());
+    float sendButtonX = sendButton.getX() + sendButtonWidth / 2 + 4f;
+    float sendButtonY = sendButton.getY() + sendButtonHeight / 2 + 4f;
+    sendIdentityIcon.setX(reverseFactor * identityButtonX + factor * sendButtonX);
+    sendIdentityIcon.setY(reverseFactor * identityButtonY + factor * sendButtonY);
+    sendIdentityIcon.scaleFromLittleToNormal(reverseFactor);
   }
 
   private static final int ANIMATOR_SEND = 9;
@@ -8615,6 +8872,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
         } else {
           displayAttachButtons();
         }
+      }
+      if (isVisible && chat != null && chat.messageSenderId != null) {
+        showIdentityIcon();
       }
       sendShown.setValue(isVisible, animated && isFocused());
       showMessageMenuTutorial();
@@ -9589,7 +9849,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     tdlib.ui().post(() -> {
       if (Config.NEED_SILENT_BROADCAST && silentButton != null && getChatId() == chatId) {
         silentButton.setValue(defaultDisableNotifications);
-        updateInputHint();
+        updateInputHint(false);
       }
     });
   }
@@ -10470,5 +10730,156 @@ public class MessagesController extends ViewController<MessagesController.Argume
     c.postOnAnimationReady(() -> target.animateTo(animateToWhenReady));
     UI.getContext(context).navigation().navigateTo(c);
     return true;
+  }
+
+  // Identity switch
+
+  private static final int ANIMATOR_SWITCH_IDENTITY = 16;
+  public static final long IDENTITY_SWITCH_DURATION = 150l;
+
+  private final BoolAnimator identitySwitchAnimator = new BoolAnimator(ANIMATOR_SWITCH_IDENTITY, this, AnimatorUtils.DECELERATE_INTERPOLATOR, IDENTITY_SWITCH_DURATION);
+
+  private void setIdentitySwitchFactor (float factor) {
+    float reverseFactor = 1f - factor;
+    oldIdentityIcon.setTranslationY(-factor * Screen.dp(49f));
+    newIdentityIcon.setTranslationY(reverseFactor * Screen.dp(49f));
+  }
+
+  public void openIdentitySwitch (TdApi.Chat chat) {
+    tdlib.getAvailableSenders(
+      chat,
+      identities -> {
+        this.availableIdentities = identities;
+        showIdentitySwitch();
+      },
+      error -> {
+        tdlib.ui().post(() -> {
+          if (isFocused()) {
+            showBottomHint(TD.toErrorString(error), true);
+          } else {
+            UI.showError(error);
+          }
+        });
+      });
+  }
+
+  public void openFullScreenIdentitySwitch (TdApi.Chat chat) {
+    tdlib.getAvailableSenders(
+      chat,
+      identities -> {
+        if (this.chat.id == chat.id) {
+          this.availableIdentities = identities;
+        }
+        tdlib.getIdentity(
+          chat,
+          chat.messageSenderId,
+          identity -> {
+            Identity selectedIdentity = identity;
+            showFullScreenIdentitySwitch(chat, identities, selectedIdentity);
+          },
+          error -> {
+            tdlib.ui().post(() -> {
+              if (isFocused()) {
+                showBottomHint(TD.toErrorString(error), true);
+              } else {
+                UI.showError(error);
+              }
+            });
+          }
+        );
+      },
+      error -> {
+        tdlib.ui().post(() -> {
+          if (isFocused()) {
+            showBottomHint(TD.toErrorString(error), true);
+          } else {
+            UI.showError(error);
+          }
+        });
+      });
+  }
+
+  public void showIdentitySwitch () {
+    runOnUiThread(() -> {
+      identitiesMenu.openMenu(switchIdentityButton);
+    });
+  }
+
+  public void showFullScreenIdentitySwitch (TdApi.Chat chat, List<Identity> availableIdentities, Identity selectedIdentity) {
+    runOnUiThread(() -> {
+      IdentityLayout identityLayout = new IdentityLayout(context, tdlib, this, chat);
+      identityLayout.init(availableIdentities, selectedIdentity);
+      identityLayout.show();
+    });
+  }
+
+  public Identity getSelectedIdentity () {
+    return selectedIdentity;
+  }
+
+  public void setIdentity (TdApi.MessageSender messageSender) {
+    if (messageSender == null) return;
+    tdlib.getIdentity(
+      chat,
+      messageSender,
+      identity -> setIdentity(identity, false),
+      error -> {
+        tdlib.ui().post(() -> {
+          if (isFocused()) {
+            showBottomHint(TD.toErrorString(error), true);
+          } else {
+            UI.showError(error);
+          }
+        });
+      });
+  }
+
+  private void setIdentity (Identity identity, boolean animate) {
+    if (identity != null && selectedIdentity != null && identity.getId() == selectedIdentity.getId()) {
+      return;
+    }
+
+    oldIdentityIcon.setIdentity(selectedIdentity);
+    newIdentityIcon.setIdentity(identity);
+
+    selectedIdentity = identity;
+
+    runOnUiThread(() -> {
+      if (animate) {
+        prepareForSwitchIdentityAnim();
+        identitySwitchAnimator.setValue(false, false);
+        identitySwitchAnimator.setValue(true, true);
+      } else {
+        finishSwitchIdentityAnim();
+      }
+    });
+  }
+
+  private void prepareForSwitchIdentityAnim () {
+    switchIdentityButton.setVisibility(View.INVISIBLE);
+    oldIdentityIcon.setTranslationY(0f);
+    oldIdentityIcon.setVisibility(View.VISIBLE);
+    newIdentityIcon.setTranslationY(Screen.dp(49f));
+    newIdentityIcon.setVisibility(View.VISIBLE);
+  }
+
+  private void finishSwitchIdentityAnim () {
+    sendIdentityIcon.setIdentity(selectedIdentity);
+    switchIdentityButton.setIdentity(selectedIdentity);
+    if (sendIdentityIcon.getVisibility() == View.INVISIBLE) {
+      switchIdentityButton.setVisibility(View.VISIBLE);
+    }
+    oldIdentityIcon.setVisibility(View.INVISIBLE);
+    newIdentityIcon.setVisibility(View.INVISIBLE);
+  }
+
+  private void showIdentityIcon () {
+    sendIdentityIcon.setVisibility(View.VISIBLE);
+    switchIdentityButton.setVisibility(View.INVISIBLE);
+  }
+
+  private void hideIdentityIcon () {
+    sendIdentityIcon.setVisibility(View.INVISIBLE);
+    switchIdentityButton.setVisibility(View.VISIBLE);
   }
 }

@@ -26,6 +26,8 @@ import java.util.IllegalFormatException;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.IllegalFormatException;
+import java.util.Locale;
 
 public final class TDLib {
   private static String format (String format, Object... formatArgs) {

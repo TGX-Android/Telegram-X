@@ -56,6 +56,7 @@ import org.thunderdog.challegram.navigation.Menu;
 import org.thunderdog.challegram.navigation.MenuMoreWrap;
 import org.thunderdog.challegram.navigation.ToggleHeaderView;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.navigation.OverlayButtonWrap;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
@@ -66,6 +67,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import me.vkryl.android.AnimatorUtils;
+import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.td.Td;
@@ -73,9 +75,11 @@ import me.vkryl.td.Td;
 public class MediaBottomGalleryController extends MediaBottomBaseController<MediaBottomGalleryController.Arguments> implements Media.GalleryCallback, MediaGalleryAdapter.Callback, Menu, View.OnClickListener, MediaBottomGalleryBucketAdapter.Callback, MediaViewDelegate, MediaSelectDelegate, MediaSendDelegate {
   public static class Arguments {
     public boolean allowVideos;
+    public boolean useCameraButton;
 
-    public Arguments (boolean allowVideos) {
+    public Arguments (boolean allowVideos, boolean useCameraButton) {
       this.allowVideos = allowVideos;
+      this.useCameraButton = useCameraButton;
     }
   }
 
@@ -190,9 +194,19 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   private Media.Gallery gallery;
   private GridSpacingItemDecoration decoration;
   private int spanCount;
+  private OverlayButtonWrap cameraButton;
+  private boolean bottomBarIsHidden = false;
+  private boolean hasSelectedItems = false;
 
   private @Nullable ToggleHeaderView headerCell;
 
+  private BoolAnimator cameraButtonAnimatorVisibility = new BoolAnimator(0,
+    (id, factor, fraction, callee) -> {
+      setCameraButtonFactor(factor);
+    },
+    AnimatorUtils.LINEAR_INTERPOLATOR,
+    220l
+  );
   private void updateHeaderText () {
     if (headerCell != null) {
       headerCell.setText(getCurrentBucketName());
@@ -232,6 +246,30 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
       loadGalleryPhotos(null);
     }
 
+    cameraButton = new OverlayButtonWrap(context);
+    cameraButton.setId(R.id.btn_camera);
+    cameraButton.initWithList(
+      this,
+      R.id.theme_color_filling,
+      R.id.theme_color_icon,
+      new int[]{ R.id.btn_camera },
+      new int[]{ R.drawable.deproko_baseline_camera_26 },
+      new int[]{ R.id.theme_color_filling },
+      new int[]{ R.id.theme_color_icon },
+      new int[]{ R.string.Camera },
+      false
+      );
+    cameraButton.setCallback((id, view) -> {
+      mediaLayout.openInAppCamera(view);
+      return true;
+    });
+    boolean hasButtonVisible = getArguments() != null && getArguments().useCameraButton;
+    if (hasButtonVisible) {
+      contentView.addView(cameraButton);
+      cameraButton.setTranslationY(-mediaLayout.getCurrentBottomBarHeight());
+      cameraButtonAnimatorVisibility.setValue(true, false);
+    }
+
     return contentView;
   }
 
@@ -249,6 +287,18 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
     } else {
       return minWidth == 0 ? 3 : width / minWidth;
     }
+  }
+
+  @Override
+  public void onBottomBarTranslationChange (float factor) {
+    bottomBarIsHidden = factor < 1f;
+    if (getArguments() != null && getArguments().useCameraButton) {
+      cameraButtonAnimatorVisibility.setValue(!hasSelectedItems && !bottomBarIsHidden, true);
+    }
+  }
+
+  private void setCameraButtonFactor (float factor) {
+    cameraButton.setTranslationX(Screen.dp(100f) * (1f - factor));
   }
 
   @Override
@@ -427,6 +477,10 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   public void onPhotoOrVideoSelected (int selectedCount, ImageFile image, int selectionIndex) {
     hideSoftwareKeyboard();
     mediaLayout.setCounter(selectedCount);
+    hasSelectedItems = selectedCount > 0;
+    if (getArguments() != null && getArguments().useCameraButton) {
+      cameraButtonAnimatorVisibility.setValue(!bottomBarIsHidden && !hasSelectedItems, true);
+    }
   }
 
   @Override

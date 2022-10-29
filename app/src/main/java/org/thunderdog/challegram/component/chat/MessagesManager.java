@@ -2433,7 +2433,6 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
 
-
   // Search
 
   public boolean isReadyToSearch () {

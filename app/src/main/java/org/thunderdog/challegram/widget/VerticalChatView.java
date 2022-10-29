@@ -16,6 +16,7 @@ package org.thunderdog.challegram.widget;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.text.TextPaint;
@@ -26,10 +27,12 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 
+import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
+import org.thunderdog.challegram.data.Identity;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGFoundChat;
 import org.thunderdog.challegram.loader.ImageFile;
@@ -48,6 +51,7 @@ import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Icons;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.Text;
@@ -62,9 +66,11 @@ import me.vkryl.td.Td;
 
 public class VerticalChatView extends BaseView implements Destroyable, ChatListener, FactorAnimator.Target, TdlibCache.UserDataChangeListener, TdlibCache.UserStatusChangeListener, NotificationSettingsListener, AttachDelegate, SimplestCheckBoxHelper.Listener, TextColorSet, TooltipOverlayView.LocationProvider {
   private final ImageReceiver receiver;
+  private final ImageReceiver identityReceiver;
   private final Counter counter;
 
   private SimplestCheckBoxHelper checkBoxHelper;
+  private Paint identityStrokePaint = Paints.getOuterCheckPaint(Theme.fillingColor());
 
   public VerticalChatView (@NonNull Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -73,6 +79,7 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
     RippleSupport.setTransparentSelector(this);
 
     receiver = new ImageReceiver(this, Screen.dp(25f));
+    identityReceiver = new ImageReceiver(this, Screen.dp(8f));
     counter = new Counter.Builder().callback(this).outlineColor(R.id.theme_color_filling).build();
   }
 
@@ -103,25 +110,35 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
     super.onMeasure(widthMeasureSpec, heightMeasureSpec);
     final int radius = Screen.dp(25f);
+    final int identityRadius = Screen.dp(8f);
     final int centerX = getMeasuredWidth() / 2;
     final int centerY = getMeasuredHeight() / 2 - Screen.dp(11f);
     receiver.setBounds(centerX - radius, centerY - radius, centerX + radius, centerY + radius);
+    identityReceiver.setBounds(
+      centerX - radius,
+      centerY - radius,
+      centerX - radius + 2 * identityRadius,
+      centerY - radius + 2 * identityRadius
+    );
     buildTrimmedTitle();
   }
 
   @Override
   public void attach () {
     receiver.attach();
+    identityReceiver.attach();
   }
 
   @Override
   public void detach () {
     receiver.detach();
+    identityReceiver.detach();
   }
 
   @Override
   public void performDestroy () {
     receiver.destroy();
+    identityReceiver.destroy();
     setChat(null);
   }
 
@@ -134,6 +151,18 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
     invalidate();
   }
 
+  private ImageFile identityFile;
+  private AvatarPlaceholder identityPlaceholder;
+  private Drawable anonymousPlaceholder;
+
+  private void setIdentityIcon (ImageFile imageFile) {
+    this.identityFile = imageFile;
+    if (imageFile != null) {
+      identityReceiver.requestFile(imageFile);
+    }
+    invalidate();
+  }
+
   private void setAvatarPlaceholder (AvatarPlaceholder.Metadata avatarPlaceholderMetadata) {
     if (avatarPlaceholderMetadata != null) {
       this.avatarPlaceholder = new AvatarPlaceholder(25f, avatarPlaceholderMetadata, null);
@@ -143,9 +172,24 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
     invalidate();
   }
 
+  private void setIdentityPlaceholder (AvatarPlaceholder.Metadata identityPlaceholderMetadata) {
+    if (identityPlaceholderMetadata != null) {
+      this.identityPlaceholder = new AvatarPlaceholder(8f, identityPlaceholderMetadata, null);
+    } else {
+      this.identityPlaceholder = null;
+    }
+    invalidate();
+  }
+
+  private void setAnonymousPlaceholder (boolean isAnonymous) {
+    anonymousPlaceholder = isAnonymous ? Drawables.get(R.drawable.baseline_acc_anon_24) : null;
+    invalidate();
+  }
+
   // Data
 
   private TGFoundChat chat;
+  private Identity identity;
 
   public long getChatId () {
     return chat != null ? chat.getId() : 0;
@@ -153,6 +197,10 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
 
   public long getUserId () {
     return chat != null && !chat.isSelfChat() ? chat.getUserId() : 0;
+  }
+
+  public Identity getIdentity () {
+    return identity;
   }
 
   private ThemeListenerEntry themeEntry;
@@ -204,6 +252,87 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
     }
   }
 
+  private void setIdentity (TdApi.MessageSender messageSender) {
+    if (messageSender == null) {
+      setIdentityIcon(null);
+      setIdentityPlaceholder(null);
+      setAnonymousPlaceholder(false);
+      return;
+    }
+    Client.ResultHandler handler = result -> {
+      switch (result.getConstructor()) {
+        case TdApi.User.CONSTRUCTOR: {
+          TdApi.User user = (TdApi.User) result;
+          ImageFile avatar = null;
+          if (user.profilePhoto != null) {
+            avatar = new ImageFile(tdlib, user.profilePhoto.small);
+          }
+          this.identity = new Identity(
+            user.id,
+            Identity.Type.USER,
+            false,
+            user.firstName + " " + user.lastName,
+            user.username,
+            avatar,
+            tdlib.cache().userPlaceholderMetadata(user, true)
+          );
+          break;
+        }
+        case TdApi.Chat.CONSTRUCTOR: {
+          TdApi.Chat chat = (TdApi.Chat) result;
+          ImageFile avatar = null;
+          if (chat.photo != null) {
+            avatar = new ImageFile(tdlib, chat.photo.small);
+          }
+          Identity.Type type = chat.id == this.chat.getChatId() ? Identity.Type.ANONYMOUS : Identity.Type.CHAT;
+          this.identity = new Identity(
+            chat.id,
+            type,
+            false,
+            chat.title,
+            tdlib.chatUsername(chat.id),
+            avatar,
+            tdlib.chatPlaceholderMetadata(chat, true)
+          );
+          if (chat.id != this.getChatId()) {
+            setAnonymousPlaceholder(false);
+            ;
+            if (chat.photo != null) {
+              setIdentityIcon(new ImageFile(tdlib, chat.photo.small));
+              setIdentityPlaceholder(null);
+            } else {
+              setIdentityIcon(null);
+              setIdentityPlaceholder(tdlib.chatPlaceholderMetadata(chat, true));
+            }
+          } else {
+            setIdentityIcon(null);
+            setIdentityPlaceholder(null);
+            setAnonymousPlaceholder(true);
+          }
+          break;
+        }
+        case TdApi.Error.CONSTRUCTOR: {
+          tdlib.ui().post(() -> {
+            UI.showError(result);
+          });
+          break;
+        }
+        default: {
+          throw new UnsupportedOperationException(result.toString());
+        }
+      }
+    };
+    if (messageSender.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR) {
+      TdApi.MessageSenderUser messageSenderUser = (TdApi.MessageSenderUser) messageSender;
+      tdlib.client().send(new TdApi.GetUser(messageSenderUser.userId), handler);
+    } else if (messageSender.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR) {
+      TdApi.MessageSenderChat messageSenderChat = (TdApi.MessageSenderChat) messageSender;
+      tdlib.client().send(new TdApi.GetChat(messageSenderChat.chatId), handler);
+    } else {
+      throw new IllegalArgumentException("Can't parse this type of sender");
+    }
+  }
+
   private String title;
   private Text trimmedTitle;
 
@@ -232,6 +361,11 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
     chat.updateChat();
     setAvatarPlaceholder(chat.getAvatarPlaceholderMetadata());
     setAvatar(chat.getAvatar());
+    if (chat.getChat() != null) {
+      setIdentity(chat.getChat().messageSenderId);
+    } else {
+      setIdentity(null);
+    }
     setTitle(chat.getSingleLineTitle().toString());
     counter.setCount(chat.getUnreadCount(), !chat.notificationsEnabled(), isUpdate && isParentVisible());
   }
@@ -392,6 +526,34 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
       receiver.draw(c);
     } else if (avatarPlaceholder != null) {
       avatarPlaceholder.draw(c, receiver.centerX(), receiver.centerY());
+    }
+    if (identityFile != null || identityPlaceholder != null || anonymousPlaceholder != null) {
+      identityStrokePaint.setStyle(Paint.Style.FILL);
+      c.drawCircle(
+        identityReceiver.getCenterX(),
+        identityReceiver.getCenterY(),
+        Screen.dp(10f),
+        identityStrokePaint
+      );
+      identityStrokePaint.setStyle(Paint.Style.STROKE);
+    }
+    if (identityFile != null) {
+      if (identityReceiver.needPlaceholder()) {
+        identityReceiver.drawPlaceholderRounded(c, Screen.dp(8f));
+      } else {
+        identityReceiver.draw(c);
+      }
+    } else if (identityPlaceholder != null) {
+      identityPlaceholder.draw(c, identityReceiver.centerX(), identityReceiver.centerY());
+    } else if (anonymousPlaceholder != null) {
+      anonymousPlaceholder.setBounds(
+        identityReceiver.getCenterX() - Screen.dp(8f),
+        identityReceiver.getCenterY() - Screen.dp(8f),
+        identityReceiver.getCenterX() + Screen.dp(8f),
+        identityReceiver.getCenterY() + Screen.dp(8f)
+      );
+      anonymousPlaceholder.setColorFilter(Paints.getIconGrayPorterDuffPaint().getColorFilter());
+      anonymousPlaceholder.draw(c);
     }
     final float checkFactor = checkBoxHelper != null ? checkBoxHelper.getCheckFactor() : 0f;
     double radians = Math.toRadians(Lang.rtl() ? 225f : 135f);

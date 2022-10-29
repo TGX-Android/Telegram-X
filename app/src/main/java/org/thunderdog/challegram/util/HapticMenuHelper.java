@@ -17,6 +17,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
+import android.widget.LinearLayout;
 
 import androidx.annotation.Nullable;
 
@@ -26,6 +27,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.theme.ThemeListenerList;
+import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.widget.PopupLayout;
@@ -37,6 +39,9 @@ import me.vkryl.core.lambda.Destroyable;
 public class HapticMenuHelper implements View.OnTouchListener, View.OnLongClickListener {
   public interface Provider {
     List<MenuItem> onCreateHapticMenu (View view);
+    default View onCreateHapticMenuHeader (View view) {
+      return null;
+    }
   }
 
   public interface OnItemClickListener {
@@ -219,8 +224,15 @@ public class HapticMenuHelper implements View.OnTouchListener, View.OnLongClickL
       v.setTranslationY(resultCenterY - centerY);
     });
     moreWrap.init(themeListeners, forcedTheme);
+    View menuHeader = provider.onCreateHapticMenuHeader(view);
+    if (menuHeader != null) {
+      menuHeader.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(48f)));
+      menuHeader.setPadding(Screen.dp(21f), Screen.dp(0f), Screen.dp(21f), 0);
+      moreWrap.addView(menuHeader, 0);
+    }
     for (MenuItem item : items) {
-      item.boundView = moreWrap.addItem(item.id, item.title, item.iconResId, item.icon, itemView -> onMenuItemClick(item, itemView, view));
+      boolean useColorFilter = item.icon == null;
+      item.boundView = moreWrap.addItem(item.id, item.title, item.iconResId, item.icon, useColorFilter, itemView -> onMenuItemClick(item, itemView, view));
       item.boundView.setVisibility(item.isVisible() ? View.VISIBLE : View.GONE);
       if (item.tutorialFlag != 0) {
         Settings.instance().markTutorialAsComplete(item.tutorialFlag);
@@ -242,7 +254,7 @@ public class HapticMenuHelper implements View.OnTouchListener, View.OnLongClickL
         this.hapticMenu = null;
       }
     });
-    hapticMenu.showMoreView(moreWrap);
+    hapticMenu.showMoreMenuWrap(moreWrap);
   }
 
   public void hideMenu () {

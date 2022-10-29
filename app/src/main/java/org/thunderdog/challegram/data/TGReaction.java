@@ -59,7 +59,6 @@ public class TGReaction {
   private void initialize () {
     _staticIconSicker = newStaticIconSicker();
     _activateAnimationSicker = newActivateAnimationSicker();
-
     _effectAnimationSicker = newEffectAnimationSicker();
     _aroundAnimationSicker = newAroundAnimationSicker();
     _centerAnimationSicker = newCenterAnimationSicker();
@@ -144,7 +143,6 @@ public class TGReaction {
         loadAnimationAndCache(emojiReaction.centerAnimation.sticker);
       }
     } else if (customReaction != null) {
-
     }
   }
 

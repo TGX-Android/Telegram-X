@@ -165,6 +165,7 @@
   <item type="id" name="controller_settings" />
   <item type="id" name="controller_storageSettings" />
   <item type="id" name="controller_messages" />
+  <item type="id" name="controller_identities" />
   <item type="id" name="controller_wallpaper" />
   <item type="id" name="controller_wallpaper_preview" />
   <item type="id" name="controller_eventLog" />
@@ -240,6 +241,8 @@
   <item type="id" name="msg_list" />
   <item type="id" name="msg_bottomShadow" />
   <item type="id" name="msg_bottomReply" />
+
+  <item type="id" name="msg_sendAs" />
 
   <item type="id" name="emoji" />
   <item type="id" name="emoji_recent" />
@@ -683,6 +686,12 @@
   <item type="id" name="btn_sendToast" />
   <item type="id" name="btn_sendNoSound" />
   <item type="id" name="btn_sendAsFile" />
+
+  <item type="id" name="btn_chatIdentity" />
+  <item type="id" name="btn_switchIdentity" />
+  <item type="id" name="sendIdentityIcon" />
+  <item type="id" name="edit_searchIdentity" />
+  <item type="id" name="btn_clear" />
 
   <item type="id" name="btn_ledDisabled" />
 

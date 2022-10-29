@@ -42,8 +42,11 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
+<<<<<<< HEAD
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.component.chat.IdentityHeaderView;
+import org.thunderdog.challegram.component.chat.IdentityIconView;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
@@ -92,6 +95,7 @@ public class MediaLayout extends FrameLayoutFix implements
   MediaBottomBar.Callback, BaseActivity.PopupAnimatorOverride,
   View.OnClickListener, BaseActivity.ActivityListener, ActivityResultHandler, /*ActivityResultCancelHandler,*/ BackListener,
   PopupLayout.AnimatedPopupProvider, PopupLayout.DismissListener, FactorAnimator.Target, ThemeChangeListener, Lang.Listener, Destroyable, PopupLayout.TouchDownInterceptor {
+
 
   private interface MediaCallback { }
 
@@ -271,6 +275,21 @@ public class MediaLayout extends FrameLayoutFix implements
   }
 
   @Override
+  public void onChatDefaultMessageSenderIdChanged (long chatId, TdApi.MessageSender senderId) {
+    if (target == null) return;
+    tdlib().getIdentity(
+      target.getChat(),
+      senderId,
+      identity -> {
+        UI.post(() -> sendIdentityIcon.setIdentity(identity));
+      },
+      error -> {
+        tdlib().ui().post(() -> UI.showError(error));
+      }
+    );
+  }
+
+  @Override
   public boolean needsTempUpdates () {
     return true;
   }
@@ -376,7 +395,14 @@ public class MediaLayout extends FrameLayoutFix implements
     switch (index) {
       case 0: return new MediaBottomContactsController(this);
       case 1: return new MediaBottomFilesController(this);
-      case 2: return new MediaBottomGalleryController(this);
+      case 2: {
+        MediaBottomGalleryController c = new MediaBottomGalleryController(this);
+        if (target != null) {
+          TdApi.MessageSender senderId = target.getChat() == null ? null : target.getChat().messageSenderId;
+          c.setArguments(new MediaBottomGalleryController.Arguments(true, senderId != null));
+        }
+        return c;
+      }
       case 3: return new MediaBottomLocationController(this);
       case 4: return new MediaBottomInlineBotsController(this);
       default: throw new IllegalArgumentException("Unknown index passed: " + index);
@@ -1153,6 +1179,11 @@ public class MediaLayout extends FrameLayoutFix implements
     UI.openCameraDelayed(getContext());
   }
 
+  public void openInAppCamera (View anchorView) {
+    forceHide();
+    target.openInAppCamera(new ViewController.CameraOpenOptions().anchor(anchorView).noTrace(target.isSecretChat()));
+  }
+
   public void openGallery (boolean sendAsFile) {
     hide(false);
     UI.openGalleryDelayed(sendAsFile);
@@ -1189,6 +1220,7 @@ public class MediaLayout extends FrameLayoutFix implements
 
   private CounterHeaderView counterView;
   private ImageView sendButton;
+  private IdentityIconView sendIdentityIcon;
   private HapticMenuHelper sendMenu;
   private BackHeaderButton closeButton;
   private TextView counterHintView;
@@ -1259,6 +1291,17 @@ public class MediaLayout extends FrameLayoutFix implements
       groupMediaFactor = needGroupMedia ? 1f : 0f;
       bottomBar.addView(counterHintView);
 
+      if (target != null) {
+        sendIdentityIcon = IdentityIconView.createLittleView(getContext(), tdlib());
+        if (target.getSelectedIdentity() != null) {
+          sendIdentityIcon.setIdentity(target.getSelectedIdentity());
+          sendIdentityIcon.setVisibility(VISIBLE);
+        } else {
+          sendIdentityIcon.setVisibility(INVISIBLE);
+        }
+        tdlib().listeners().subscribeToChatUpdates(getTargetChatId(), this);
+      }
+
       sendButton = new ImageView(getContext()) {
         @Override
         public boolean onTouchEvent (MotionEvent e) {
@@ -1275,12 +1318,38 @@ public class MediaLayout extends FrameLayoutFix implements
       sendButton.setOnClickListener(this);
       bottomBar.addView(sendButton);
 
-      sendMenu = new HapticMenuHelper(list -> {
-        List<HapticMenuHelper.MenuItem> items = tdlib().ui().fillDefaultHapticMenu(getTargetChatId(), false, getCurrentController().canRemoveMarkdown(), true);
-        if (items == null)
-          items = new ArrayList<>();
-        getCurrentController().addCustomItems(items);
-        return !items.isEmpty() ? items : null;
+      if (sendIdentityIcon != null) {
+        sendButton.getViewTreeObserver().addOnGlobalLayoutListener(() -> {
+          float sendButtonWidth = Screen.px(sendButton.getMeasuredWidth());
+          float sendButtonHeight = Screen.px(sendButton.getMeasuredHeight());
+          float sendButtonX = sendButton.getX() + sendButtonWidth / 2 + 4f;
+          float sendButtonY = sendButton.getY() + sendButtonHeight / 2 + 10f;
+          sendIdentityIcon.setX(sendButtonX);
+          sendIdentityIcon.setY(sendButtonY);
+          sendIdentityIcon.scaleFromLittleToNormal(0f);
+        });
+        bottomBar.addView(sendIdentityIcon);
+      }
+
+      sendMenu = new HapticMenuHelper(new HapticMenuHelper.Provider() {
+        @Override
+        public List<HapticMenuHelper.MenuItem> onCreateHapticMenu (View view) {
+          List<HapticMenuHelper.MenuItem> items = tdlib().ui().fillDefaultHapticMenu(getTargetChatId(), false, getCurrentController().canRemoveMarkdown(), true);
+          if (items == null)
+            items = new ArrayList<>();
+          getCurrentController().addCustomItems(items);
+          return !items.isEmpty() ? items : null;
+        }
+        @Override
+        public View onCreateHapticMenuHeader (View view) {
+          IdentityHeaderView header = new IdentityHeaderView(getContext(), tdlib());
+          header.setIdentity(target.getSelectedIdentity());
+          RippleSupport.setTransparentSelector(header);
+          header.setOnClickListener(v -> {
+            target.openFullScreenIdentitySwitch(target.getChat());
+          });
+          return header;
+        }
       }, (menuItem, parentView) -> {
         switch (menuItem.getId()) {
           case R.id.btn_sendNoMarkdown:
@@ -1343,6 +1412,7 @@ public class MediaLayout extends FrameLayoutFix implements
 
       counterView.setAlpha(0f);
       sendButton.setAlpha(0f);
+      sendIdentityIcon.setAlpha(0f);
       closeButton.setAlpha(0f);
       counterHintView.setAlpha(0f);
       groupMediaView.setAlpha(0f);
@@ -1471,6 +1541,7 @@ public class MediaLayout extends FrameLayoutFix implements
     if (counterView != null) {
       counterView.setAlpha(factor);
       sendButton.setAlpha(factor);
+      sendIdentityIcon.setAlpha(factor);
       closeButton.setAlpha(factor);
       checkCounterHint();
     }

@@ -97,6 +97,7 @@ import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.ReactionsCounterDrawable;
 import org.thunderdog.challegram.util.text.Counter;
+import org.thunderdog.challegram.util.Icon;
 import org.thunderdog.challegram.util.text.Letters;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
@@ -204,8 +205,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   // header values
 
   private String date;
-  private @Nullable Text hAuthorNameT, hPsaTextT, hAuthorChatMark;
-  private @Nullable Text hAdminNameT;
+
+  private @Nullable Text hAuthorNameT, hPsaTextT, hAuthorChatMark, hAdminNameT;
+  private @Nullable Icon hChannelIcon;
   private ImageFile hAvatar;
   private AvatarPlaceholder hAvatarPlaceholder;
   private Letters uBadge;
@@ -316,7 +318,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           });
         });
       }
-
       @Override
       public void onRebuildRequested () {
         runOnUiThreadOptional(() -> {
@@ -514,7 +515,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       }
       b.append(", ");
     }
-    if (!useBubbles() && needAdminSign()) {
+    if (!useBubbles() && needAdminSign() && !tdlib.isChannel(msg.senderId)) {
       b.append(getAdministratorSign()).append(" ");
     }
     if (msg.forwardInfo != null && msg.forwardInfo.origin.getConstructor() == TdApi.MessageForwardOriginMessageImport.CONSTRUCTOR) {
@@ -650,7 +651,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
 
     if (!(useBubbles && isChannel && msg.forwardInfo != null && msg.forwardInfo.origin.getConstructor() == TdApi.MessageForwardOriginUser.CONSTRUCTOR) &&
-      msg.date - top.getMergeTime() < maxTimeDiff && top.getMergeIndex() < maxIndex) {
+      msg.date - top.getMergeTime() < maxTimeDiff && top.getMergeIndex() < maxIndex && sender.isSameSender(top.sender)) {
       flags &= ~FLAG_HEADER_ENABLED;
       mergeTime = top.getMergeTime();
       mergeIndex = top.getMergeIndex() + 1;
@@ -748,8 +749,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       }
       if (needName(true) && (flags & FLAG_HEADER_ENABLED) != 0) {
         int nameWidth = getAuthorWidth();
-        if (needAdminSign() && hAdminNameT != null) {
-          nameWidth += hAdminNameT.getWidth();
+
+        if (needAdminSign() && (hAdminNameT != null || hChannelIcon != null)) {
+          if (hAdminNameT != null) {
+            nameWidth += hAdminNameT.getWidth();
+          } else {
+            nameWidth += hChannelIcon.getWidth() + hChannelIcon.getPaddingLeft() + hChannelIcon.getPaddingRight();
+          }
         }
         width = Math.max(width, nameWidth);
       }
@@ -1261,6 +1267,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (isPsa() && forceForwardedInfo())
       return true;
     if (isOutgoing() && sender.isAnonymousGroupAdmin())
+      return true;
+    if (isOutgoing() && sender.isChannel())
       return true;
     if (chat != null) {
       switch (chat.type.getConstructor()) {
@@ -1825,7 +1833,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
             hAuthorChatMark.draw(c, cmLeft, cmLeft + hAuthorChatMark.getWidth(), 0, newTop + ((hAuthorNameT.getLineHeight(false) - hAuthorChatMark.getLineHeight(false)) / 2));
           }
         }
-        if (useBubbles && needAdminSign() && hAdminNameT != null) {
+        if (useBubbles && needAdminSign() && hChannelIcon != null) {
+          int x = getActualRightContentEdge() - xBubblePadding - xBubblePaddingSmall - hChannelIcon.getWidth();
+          int y = top - Screen.dp(12f);
+          hChannelIcon.setPos(x, y);
+          hChannelIcon.draw(c);
+        } else if (useBubbles && needAdminSign() && hAdminNameT != null) {
           int x = getActualRightContentEdge() - xBubblePadding - xBubblePaddingSmall - hAdminNameT.getWidth();
           int y = top - Screen.dp(1.5f);
           hAdminNameT.draw(c, x, top - Screen.dp(12f));
@@ -1838,6 +1851,14 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
       boolean needMetadata = BitwiseUtils.getFlag(flags, FLAG_HEADER_ENABLED);
       int top = getHeaderPadding() + xViewsOffset + Screen.dp(7f);
+
+      // Channel icon
+      if (needAdminSign() && hChannelIcon != null) {
+        int x = pTimeLeft - Screen.dp(12f) - hChannelIcon.getPaddingRight();
+        int y = xTimeTop + getHeaderPadding() - Screen.dp(12f) + Screen.dp(1f);
+        hChannelIcon.setPos(x, y);
+        hChannelIcon.draw(c);
+      }
 
       // Time
       if (needMetadata) {
@@ -2536,6 +2557,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       if (hPsaTextT != null && hPsaTextT.onTouchEvent(view, e))
         return true;
     }
+
+    if (hasHeader() && needAdminSign()) {
+      if (hChannelIcon != null && hChannelIcon.onTouchEvent(view, e))
+        return true;
+      if (hAdminNameT != null && hAdminNameT.onTouchEvent(view, e))
+        return true;
+    }
     if (useForward()) {
       if (fPsaTextT != null && fPsaTextT.onTouchEvent(view, e))
         return true;
@@ -2608,6 +2636,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if ((flags & FLAG_HEADER_ENABLED) != 0) {
       pClockLeft = pTimeLeft - Screen.dp(6f);
       pTicksLeft = pTimeLeft - Screen.dp(3f);
+
+      if (hChannelIcon != null) {
+        pTicksLeft = pTicksLeft - hChannelIcon.getWidth() - hChannelIcon.getPaddingLeft() - hChannelIcon.getPaddingRight();
+      }
     } else {
       pClockLeft = currentWidth - Screen.dp(17f);
       pTicksLeft = currentWidth - Screen.dp(15f);
@@ -2828,10 +2860,23 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       // header part
       int maxWidth = (allowMessageHorizontalExtend() ? pRealContentMaxWidth : getContentWidth()) + getBubblePaddingRight() + getBubblePaddingRight() - (xBubblePadding + xBubblePaddingSmall) * 2;
 
-      if (needAdminSign()) {
+
+      if (needAdminSign() && tdlib.isChannel(msg.senderId)) {
+        hAdminNameT = null;
+        hChannelIcon = new Icon(Drawables.get(R.drawable.baseline_bullhorn_24), Screen.dp(12f), Screen.dp(12f));
+        hChannelIcon.setPadding(Screen.dp(10f), 0, 0, 0);
+        hChannelIcon.setAdditionalClickHandleSpace(Screen.dp(10f), Screen.dp(10f));
+        hChannelIcon.setTint(getDecentColor());
+        hChannelIcon.setOnClick(() -> {
+          tdlib.ui().openChat(this, msg.senderId, null);
+        });
+        maxWidth -= hChannelIcon.getWidth() - hChannelIcon.getPaddingLeft() - hChannelIcon.getPaddingRight();
+      } else if (needAdminSign()) {
+        hChannelIcon = null;
         hAdminNameT = new Text.Builder(getAdministratorSign(), maxWidth, getTimeTextStyleProvider(), getDecentColorSet()).singleLine().build();
         maxWidth -= hAdminNameT.getWidth();
       } else {
+        hChannelIcon = null;
         hAdminNameT = null;
       }
 
@@ -2909,6 +2954,19 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
     if (reactionsDrawMode == REACTIONS_DRAW_MODE_ONLY_ICON) {
       max -= shrinkedReactionsCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN));
+    }
+
+    if (needAdminSign() && tdlib.isChannel(msg.senderId)) {
+      hChannelIcon = new Icon(Drawables.get(R.drawable.baseline_bullhorn_24), Screen.dp(12f), Screen.dp(12f));
+      hChannelIcon.setPadding(Screen.dp(2f), 0, Screen.dp(5f), 0);
+      hChannelIcon.setAdditionalClickHandleSpace(Screen.dp(10f), Screen.dp(10f));
+      hChannelIcon.setTint(Theme.getColor(R.id.theme_color_textLight));
+      hChannelIcon.setOnClick(() -> {
+        tdlib.ui().openChat(this, msg.senderId, null);
+      });
+      max -= hChannelIcon.getWidth() - hChannelIcon.getPaddingLeft() - hChannelIcon.getPaddingRight();
+    } else {
+      hChannelIcon = null;
     }
     int nameMaxWidth;
     if (isPsa) {
