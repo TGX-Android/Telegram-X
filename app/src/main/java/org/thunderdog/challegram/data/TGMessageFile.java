@@ -616,6 +616,26 @@ public class TGMessageFile extends TGMessage {
     }
   }
 
+  @Override
+  public void highlightText (String text) {
+    for (CaptionedFile file : filesList) {
+      if (file != null && file.captionWrapper != null) {
+        file.captionWrapper.setHighlightPart(text, getSearchHighlightColorSet());
+      }
+    }
+    rebuildAndUpdateContent();
+  }
+
+  @Override
+  public void clearHighlight () {
+    for (CaptionedFile file : filesList) {
+      if (file != null && file.captionWrapper != null) {
+        file.captionWrapper.setHighlightPart(null, null);
+      }
+    }
+    rebuildAndUpdateContent();
+  }
+
   // Touch
 
   @Override

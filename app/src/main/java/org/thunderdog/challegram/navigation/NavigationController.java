@@ -535,8 +535,10 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
       if (c != null && c.closeSearchModeByBackPress(fromTop)) {
         return true;
       }
-      headerView.closeSearchMode(true, null); // delayed: (c != null && c.inChatSearchMode())
-      return true;
+      if (c != null && !c.isBackFromSearchModeAllowed()) {
+        headerView.closeSearchMode(true, null); // delayed: (c != null && c.inChatSearchMode())
+        return true;
+      }
     }
     /*if (headerView.inCustomMode()) {
       headerView.closeCustomMode();

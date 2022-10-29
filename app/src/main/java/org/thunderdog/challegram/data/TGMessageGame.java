@@ -195,6 +195,28 @@ public class TGMessageGame extends TGMessage implements MediaWrapper.OnClickList
   }
 
   @Override
+  public void highlightText (String text) {
+    if (title != null) {
+      title.setHighlightPart(text, getSearchHighlightColorSet());
+    }
+    if (this.text != null) {
+      this.text.setHighlightPart(text, getSearchHighlightColorSet());
+    }
+    rebuildContent();
+  }
+
+  @Override
+  public void clearHighlight () {
+    if (this.title != null && this.title.isHighlighted(getSearchHighlightColorSet())) {
+      this.title.setHighlightPart(null, null);
+    }
+    if (this.text != null && this.text.isHighlighted(getSearchHighlightColorSet())) {
+      this.text.setHighlightPart(null, null);
+    }
+    rebuildContent();
+  }
+
+  @Override
   protected int getContentWidth () {
     return getImagePaddingLeft() + Math.max(text != null ? text.getWidth() : 0, mediaWrapper.getCellWidth());
   }

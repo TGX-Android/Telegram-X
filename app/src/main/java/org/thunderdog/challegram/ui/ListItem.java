@@ -88,7 +88,8 @@ public class ListItem {
   public static final int TYPE_HEADER_WITH_ACTION = 61;
   public static final int TYPE_EDITTEXT_COUNTERED = 62;
   public static final int TYPE_CHAT_SMALL = 63;
-  public static final int TYPE_CHAT_SMALL_SELECTABLE = 64;
+  public static final int TYPE_CHAT_SMALL_CHECKBOX = 64;
+  public static final int TYPE_CHAT_SMALL_PICKER = 142;
   public static final int TYPE_EDITTEXT_WITH_PHOTO = 65;
   public static final int TYPE_EDITTEXT_WITH_PHOTO_SMALLER = 66;
   public static final int TYPE_RADIO_SETTING_WITH_NEGATIVE_STATE = 67;

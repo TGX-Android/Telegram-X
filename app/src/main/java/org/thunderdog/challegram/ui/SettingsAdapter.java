@@ -834,7 +834,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
     for (SettingItem item : items) {
       switch (item.getViewType()) {
         case SettingItem.TYPE_CHAT_SMALL:
-        case SettingItem.TYPE_CHAT_SMALL_SELECTABLE:
+        case SettingItem.TYPE_CHAT_SMALL_CHECKBOX:
           if (((DoubleTextWrapper) item.getData()).getUserId() == userId) {
             return i;
           }
@@ -860,7 +860,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
         if (view != null) {
           SettingItem item = items.get(position);
           switch (item.getViewType()) {
-            case SettingItem.TYPE_CHAT_SMALL_SELECTABLE:
+            case SettingItem.TYPE_CHAT_SMALL_CHECKBOX:
               if (view instanceof FrameLayoutFix) {
                 View child1 = ((ViewGroup) view).getChildAt(0);
                 View child2 = ((ViewGroup) view).getChildAt(1);
@@ -1088,6 +1088,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       case ListItem.TYPE_DRAWER_ITEM_WITH_RADIO_SEPARATED:
       case ListItem.TYPE_DRAWER_ITEM_WITH_AVATAR:
       case ListItem.TYPE_REACTION_CHECKBOX:
+      case ListItem.TYPE_CHAT_SMALL_PICKER:
         return true;
     }
     return false;
@@ -1235,6 +1236,8 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
           if (view != null) {
             if (view instanceof MediaSmallView) {
               ((MediaSmallView) view).setSelectableFactor(factor);
+            } else if (view instanceof SmallChatView) {
+              ((SmallChatView) view).setSelectableFactor(factor);
             }
           }
         }
@@ -1406,10 +1409,12 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
         modifyChatView(item, (SmallChatView) holder.itemView, null, false);
         break;
       }
-      case ListItem.TYPE_CHAT_SMALL_SELECTABLE: {
+      case ListItem.TYPE_CHAT_SMALL_CHECKBOX:
+      case ListItem.TYPE_CHAT_SMALL_PICKER: {
         FrameLayoutFix wrapView = (FrameLayoutFix) holder.itemView;
         ((SmallChatView) wrapView.getChildAt(0)).setChat((DoubleTextWrapper) item.getData());
-        modifyChatView(item, ((SmallChatView) wrapView.getChildAt(0)), ((CheckBoxView) wrapView.getChildAt(1)), false);
+        ((SmallChatView) wrapView.getChildAt(0)).setSelectionFactor(inSelectMode ? 1f : 0f, item.isSelected() ? 1f : 0f);
+        modifyChatView(item, ((SmallChatView) wrapView.getChildAt(0)), wrapView.getChildAt(1) instanceof CheckBoxView ? ((CheckBoxView) wrapView.getChildAt(1)) : null, false);
         break;
       }
       case ListItem.TYPE_PAGE_BLOCK_EMBEDDED:

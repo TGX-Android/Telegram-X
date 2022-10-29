@@ -242,6 +242,11 @@ public class TGMessageMedia extends TGMessage {
     updateRounds();
   }
 
+  @Override
+  protected TextWrapper provideWrapper () {
+    return wrapper;
+  }
+
   // Caption
 
   private TdApi.FormattedText caption;

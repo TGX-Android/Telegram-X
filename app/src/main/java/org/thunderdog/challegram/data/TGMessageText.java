@@ -298,6 +298,11 @@ public class TGMessageText extends TGMessage {
     }
   }
 
+  @Override
+  protected TextWrapper provideWrapper () {
+    return wrapper;
+  }
+
   private int getWebY () {
     if (Td.isEmpty(text)) {
       return getContentY();

@@ -328,6 +328,36 @@ public class TextWrapper implements ListAnimator.Measurable, Destroyable, Text.T
     return this;
   }
 
+  public void setHighlightPart (String part, TextColorSet color) {
+    int index = isPortrait ? PORTRAIT_INDEX : LANDSCAPE_INDEX;
+    final Text oldText = texts[index];
+    Text.Builder b = new Text.Builder(this.text, getWidth(), textStyleProvider, colorTheme)
+      .maxLineCount(maxLines)
+      .entities(entities, this)
+      .lineWidthProvider(lineWidthProvider)
+      .textFlags(BitwiseUtils.setFlag(textFlags, Text.FLAG_BIG_EMOJI, false));
+    if (part != null && !part.isEmpty() && color != null) {
+      b.highlight(Highlight.valueOf(this.text, part, color));
+    }
+    texts[index] = b.build();
+    if (oldText != null) {
+      oldText.performDestroy();
+    }
+  }
+
+  public boolean isHighlighted (TextColorSet currentHighlightColor) {
+    int index = isPortrait ? PORTRAIT_INDEX : LANDSCAPE_INDEX;
+    final Text currentText = texts[index];
+    if (currentText.getEntities() != null) {
+      for (TextEntity entity : currentText.getEntities()) {
+        if (entity.customColorSet == currentHighlightColor) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   public void attachToView (View view) {
     if (currentViews == null) {
       currentViews = new MultipleViewProvider();

@@ -1896,6 +1896,10 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
   // Search mode
 
   public void openSearchMode () {
+    openSearchMode(true);
+  }
+
+  public void openSearchMode (boolean animated) {
     final ViewController<?> controller = stack.getCurrent();
 
     if (isAnimating || controller == null || controller.inTransformMode() || Color.alpha(overlayColor) > 0) {
@@ -1906,7 +1910,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     controller.enterSearchMode();
     translationFactor = 1f;
 
-    transform(controller, TRANSFORM_MODE_SEARCH, 0, true, true, null);
+    transform(controller, TRANSFORM_MODE_SEARCH, 0, true, animated, null);
   }
 
   public void closeSearchMode (boolean animated, Runnable after) {
@@ -1930,6 +1934,11 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
   public boolean inCustomMode () {
     ViewController<?> c = stack.getCurrent();
     return c != null && c.inCustomMode();
+  }
+
+  public boolean isBackFromSearchModeAllowed () {
+    ViewController<?> c = stack.getCurrent();
+    return c != null && c.isBackFromSearchModeAllowed();
   }
 
   // back button color changer

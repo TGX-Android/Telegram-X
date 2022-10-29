@@ -238,6 +238,7 @@
   <item type="id" name="msg_send" />
   <item type="id" name="msg_bottom" />
   <item type="id" name="msg_list" />
+  <item type="id" name="msg_searchLayout" />
   <item type="id" name="msg_bottomShadow" />
   <item type="id" name="msg_bottomReply" />
 
@@ -409,10 +410,23 @@
   <item type="id" name="btn_selectMuted" />
   <item type="id" name="btn_search" />
   <item type="id" name="btn_search_by" />
+  <item type="id" name="btn_search_type" />
+
+  <item type="id" name="btn_search_type_all" />
+  <item type="id" name="btn_search_type_text" />
+  <item type="id" name="btn_search_type_photos" />
+  <item type="id" name="btn_search_type_videos" />
+  <item type="id" name="btn_search_type_voice_messages" />
+  <item type="id" name="btn_search_type_video_messages" />
+  <item type="id" name="btn_search_type_files" />
+  <item type="id" name="btn_search_type_music" />
+  <item type="id" name="btn_search_type_gifs" />
+
   <item type="id" name="btn_search_next" />
   <item type="id" name="btn_search_prev" />
   <item type="id" name="btn_search_counter" />
   <item type="id" name="btn_search_jump" />
+  <item type="id" name="btn_search_only_sender" />
   <item type="id" name="btn_gps" />
   <item type="id" name="place" />
   <item type="id" name="liveLocation" />
@@ -474,6 +488,7 @@
   <item type="id" name="btn_chatFontSizeReset" />
   <item type="id" name="btn_encryptionKey" />
   <item type="id" name="btn_cancel" />
+  <item type="id" name="btn_clear" />
   <item type="id" name="btn_removeProxy" />
   <item type="id" name="btn_save" />
   <item type="id" name="btn_blockedSenders" />

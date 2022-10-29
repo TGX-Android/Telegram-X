@@ -70,6 +70,7 @@ public abstract class TelegramViewController<T> extends ViewController<T> {
   private CustomRecyclerView chatSearchView;
   private SettingsAdapter chatSearchAdapter;
   private SearchManager chatSearchManager;
+  private String lastChatSearchQuery;
   private boolean chatSearchDisallowScreenshots;
 
   /**
@@ -386,7 +387,9 @@ public abstract class TelegramViewController<T> extends ViewController<T> {
           TGFoundMessage message = (TGFoundMessage) listItem.getData();
           TdApi.Message rawMessage = message.getMessage();
           preventLeavingSearchMode();
-          tdlib.ui().openChat(TelegramViewController.this, rawMessage.chatId, new TdlibUi.ChatOpenParameters().highlightMessage(rawMessage).keepStack());
+          tdlib.ui().openChat(TelegramViewController.this, rawMessage.chatId, new TdlibUi.ChatOpenParameters().highlightMessage(rawMessage).keepStack().searchQuery(lastChatSearchQuery).searchQueryListener(query -> {
+            getSearchHeaderView(headerView).setText(query);
+          }));
           break;
         }
       }
@@ -1147,6 +1150,7 @@ public abstract class TelegramViewController<T> extends ViewController<T> {
     if (chatSearchManager != null) {
       chatSearchManager.onQueryChanged(getChatMessagesSearchChatList(), input);
     }
+    lastChatSearchQuery = input;
   }
 
   @Override
@@ -1162,6 +1166,7 @@ public abstract class TelegramViewController<T> extends ViewController<T> {
       chatSearchManager.onClose(getChatMessagesSearchChatList());
       clearSearchInput();
     }
+    lastChatSearchQuery = null;
   }
 
   @Override

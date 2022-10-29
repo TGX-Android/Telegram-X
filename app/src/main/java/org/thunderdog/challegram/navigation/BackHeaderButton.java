@@ -113,8 +113,12 @@ public class BackHeaderButton extends HeaderButton implements View.OnClickListen
         parentHeader.closeSelectMode(true, true);
         return;
       }
-      if (parentHeader.inSearchMode()) {
+      if (parentHeader.inSearchMode() && !parentHeader.isBackFromSearchModeAllowed()) {
         parentHeader.closeSearchMode(true, null);
+        return;
+      }
+      if (parentHeader.inCustomMode()) {
+        parentHeader.closeCustomMode();
         return;
       }
     }

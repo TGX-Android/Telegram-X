@@ -15,7 +15,12 @@
 package org.thunderdog.challegram.ui;
 
 import android.content.Context;
+import android.util.TypedValue;
+import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
@@ -25,13 +30,20 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.DoubleTextWrapper;
 import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.navigation.NavigationController;
+import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.MediaRecyclerView;
 import org.thunderdog.challegram.widget.CheckBoxView;
 import org.thunderdog.challegram.widget.EmptySmartView;
+import org.thunderdog.challegram.widget.NoScrollTextView;
+import org.thunderdog.challegram.widget.SeparatorView;
 import org.thunderdog.challegram.widget.SmallChatView;
 
 import java.util.ArrayList;
@@ -39,6 +51,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
+import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.td.ChatId;
@@ -88,6 +101,9 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
           res = R.string.xUsers;
           break;
       }
+    }
+    if (isMemberPickerMode) {
+      return "";
     }
     return Lang.pluralBold(res, data.size());
   }
@@ -157,6 +173,15 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
   }
 
   private long groupId;
+  private TdApi.MessageSender selectedMember;
+  private OnMemberPickerListener pickerListener;
+
+  @Override
+  public void setArguments (Args args) {
+    super.setArguments(args);
+    this.selectedMember = args.selectedMember;
+    this.pickerListener = args.pickerListener;
+  }
 
   @Override
   protected void onCreateView (Context context, MediaRecyclerView recyclerView, SettingsAdapter adapter) {
@@ -167,6 +192,104 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
     }
     tdlib.cache().addGlobalUsersListener(this);
     tdlib.cache().addGlobalChatMemberStatusListener(this);
+  }
+
+  @Override
+  protected void onCreateParentContainer (ViewGroup parent) {
+    super.onCreateParentContainer(parent);
+    final View.OnClickListener onClickListener = v -> {
+      switch (v.getId()) {
+        case R.id.btn_cancel: {
+          navigateBack();
+          break;
+        }
+        case R.id.btn_clear: {
+          if (pickerListener != null) {
+            pickerListener.onMemberPicked(null);
+            navigateBack();
+            return;
+          }
+          break;
+        }
+      }
+    };
+
+    FrameLayoutFix footerView = new FrameLayoutFix(context) {
+      @Override
+      public boolean onTouchEvent (MotionEvent event) {
+        super.onTouchEvent(event);
+        return true;
+      }
+    };
+    ViewSupport.setThemedBackground(footerView, R.id.theme_color_filling, this);
+    footerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(56f), Gravity.BOTTOM));
+
+    for (int i = 0; i < 2; i++) {
+      TextView button = new NoScrollTextView(context);
+
+      int colorId = R.id.theme_color_textNeutral;
+      button.setTextColor(Theme.getColor(colorId));
+      addThemeTextColorListener(button, colorId);
+      button.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16f);
+      button.setOnClickListener(onClickListener);
+      button.setBackgroundResource(R.drawable.bg_btn_header);
+      button.setGravity(Gravity.CENTER);
+      button.setPadding(Screen.dp(16f), 0, Screen.dp(16f), 0);
+
+      CharSequence text;
+      if (i == 0) {
+        button.setId(R.id.btn_cancel);
+        button.setText(text = Lang.getString(R.string.Cancel).toUpperCase());
+        button.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, Screen.dp(55f), (Lang.rtl() ? Gravity.RIGHT : Gravity.LEFT) | Gravity.BOTTOM));
+      } else {
+        button.setId(R.id.btn_clear);
+        button.setText(text = Lang.getString(R.string.Clear).toUpperCase());
+        button.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, Screen.dp(55f), (Lang.rtl() ? Gravity.LEFT : Gravity.RIGHT) | Gravity.BOTTOM));
+      }
+      Views.updateMediumTypeface(button, text);
+
+      Views.setClickable(button);
+      footerView.addView(button);
+    }
+    FrameLayoutFix.LayoutParams params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.TOP);
+    params.bottomMargin = Screen.dp(56f);
+
+    recyclerView.setLayoutParams(params);
+    parent.addView(footerView);
+
+    params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(1f), Gravity.BOTTOM);
+    params.bottomMargin = Screen.dp(56f);
+    SeparatorView shadowView = SeparatorView.simpleSeparator(context, params, true);
+    shadowView.setAlignBottom();
+    addThemeInvalidateListener(shadowView);
+    parent.addView(shadowView);
+  }
+
+  @Override
+  protected void attachNavigationController (NavigationController navigationController) {
+    super.attachNavigationController(navigationController);
+    openSearchMode(false);
+    adapter.setInSelectMode(true, false, null);
+  }
+
+  @Override
+  protected boolean isBackFromSearchModeAllowed () {
+    return true;
+  }
+
+  @Override
+  protected boolean useGraySearchHeader () {
+    return true;
+  }
+
+  @Override
+  protected void onSearchInputChanged (String query) {
+    search(query);
+  }
+
+  @Override
+  protected boolean isNeedShadowTop () {
+    return !isMemberPickerMode;
   }
 
   @Override
@@ -185,7 +308,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
       case TdApi.ChatMember.CONSTRUCTOR: {
         if (groupId != 0 && specificFilter != null && !TD.matchesFilter(specificFilter, ((TdApi.ChatMember) object).status))
           return null;
-        return DoubleTextWrapper.valueOf(tdlib, (TdApi.ChatMember) object, needFullMemberDescription(), needAdminSign());
+        return DoubleTextWrapper.valueOf(tdlib, (TdApi.ChatMember) object, needFullMemberDescription(), needAdminSign((TdApi.ChatMember) object));
       }
       case TdApi.User.CONSTRUCTOR: {
         return new DoubleTextWrapper(tdlib, ((TdApi.User) object).id, true);
@@ -194,8 +317,12 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
     return null;
   }
 
-  private boolean needAdminSign () {
-    return specificFilter == null || specificFilter.getConstructor() != TdApi.SupergroupMembersFilterAdministrators.CONSTRUCTOR;
+  private boolean needAdminSign (TdApi.ChatMember member) {
+    if (isMemberPickerMode && member != null && member.memberId instanceof TdApi.MessageSenderUser && selectedMember instanceof TdApi.MessageSenderUser) {
+      return ((TdApi.MessageSenderUser) selectedMember).userId != ((TdApi.MessageSenderUser) member.memberId).userId;
+    } else {
+      return specificFilter == null || specificFilter.getConstructor() != TdApi.SupergroupMembersFilterAdministrators.CONSTRUCTOR;
+    }
   }
 
   private boolean needFullMemberDescription () {
@@ -204,7 +331,11 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
 
   @Override
   protected int provideViewType () {
-    return ListItem.TYPE_CHAT_SMALL;
+    if (isMemberPickerMode) {
+      return ListItem.TYPE_CHAT_SMALL_PICKER;
+    } else {
+      return ListItem.TYPE_CHAT_SMALL;
+    }
   }
 
   @Override
@@ -216,21 +347,27 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
     TdApi.ChatMember member = user.getMember();
     boolean isCreator = TD.isCreator(member.status);
 
-    if (specificFilter == null || parent == null) {
+    //if (specificFilter == null || parent == null) {
       /*if (item.getViewType() == SettingItem.TYPE_CHAT_SMALL) {
         chatView.setEnabled(tdlib.myUserId() != user.getUserId());
       }*/
-      return;
-    }
+      //return;
+    //}
 
     switch (item.getViewType()) {
-      case ListItem.TYPE_CHAT_SMALL_SELECTABLE: {
+      case ListItem.TYPE_CHAT_SMALL_CHECKBOX: {
         ((View) chatView.getParent()).setEnabled(!isCreator/* && !parent.group.everyoneIsAdministrator*/);
         if (checkBox != null) {
           checkBox.setDisabled(isCreator, isUpdate);
           // checkBox.setHidden(parent.group.everyoneIsAdministrator, isUpdate);
           checkBox.setChecked(isCreator || member.status.getConstructor() == TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR, isUpdate);
         }
+        break;
+      }
+      case ListItem.TYPE_CHAT_SMALL_PICKER: {
+        long selectedMemberId = selectedMember != null ? ((TdApi.MessageSenderUser) selectedMember).userId : 0;
+        boolean isSelectedMember = ((TdApi.MessageSenderUser) member.memberId).userId == selectedMemberId;
+        chatView.setIsItemSelected(isSelectedMember, 0);
         break;
       }
       case ListItem.TYPE_CHAT_SMALL: {
@@ -394,8 +531,8 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
       showOptions(result, ids.get(), strings.get(), colors.get(), icons.get(), (itemView, id) -> {
         switch (id) {
           case R.id.btn_messageViewList:
-            HashtagChatController c = new HashtagChatController(context, tdlib);
-            c.setArguments(new HashtagChatController.Arguments(null, chatId, null, new TdApi.MessageSenderUser(content.getUserId()), false));
+            MessagesController c = new MessagesController(context(), tdlib);
+            c.setArguments(new MessagesController.Arguments(null, tdlib.chatStrict(chatId), null, new TdApi.MessageSenderUser(content.getUserId()), null));
             if (parent != null) {
               parent.navigateTo(c);
             } else {
@@ -487,6 +624,12 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
     }
 
     DoubleTextWrapper content = (DoubleTextWrapper) item.getData();
+    if (pickerListener != null) {
+      selectedMember = content.getMember().memberId;
+      pickerListener.onMemberPicked(selectedMember);
+      navigateBack();
+      return;
+    }
 
     if (parent == null) {
       return;
@@ -606,6 +749,9 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
         case TdApi.SupergroupMembersFilterBanned.CONSTRUCTOR:
           return Lang.getString(isChannel() ? R.string.MembersDetailBannedChannel : R.string.MembersDetailBannedGroup);
       }
+    }
+    if (isMemberPickerMode) {
+      return "";
     }
     return Lang.getString(R.string.Recent);
   }
@@ -783,7 +929,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
     int i = indexOfMember(array, member.memberId);
     if (i != -1) {
       DoubleTextWrapper wrapper = array.get(i);
-      wrapper.setMember(member, needFullMemberDescription(), needAdminSign());
+      wrapper.setMember(member, needFullMemberDescription(), needAdminSign(member));
       return;
     }
     if (addIfNotPresent) {

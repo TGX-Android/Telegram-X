@@ -26,10 +26,13 @@ import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.util.SelectableItemDelegate;
 
+import me.vkryl.android.AnimatorUtils;
+import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.util.InvalidateContentProvider;
 
-public class SmallChatView extends BaseView implements AttachDelegate, TooltipOverlayView.LocationProvider, InvalidateContentProvider {
+public class SmallChatView extends BaseView implements AttachDelegate, TooltipOverlayView.LocationProvider, InvalidateContentProvider, FactorAnimator.Target, SelectableItemDelegate {
   private final ImageReceiver receiver;
 
   private DoubleTextWrapper chat;
@@ -125,11 +128,75 @@ public class SmallChatView extends BaseView implements AttachDelegate, TooltipOv
     }
   }
 
+  private float selectableFactor;
+
+  public void setSelectionFactor (float selectableFactor, float selectionFactor) {
+    if (this.selectableFactor != selectableFactor) {
+      this.selectableFactor = selectableFactor;
+      forceSelectionFactor(selectionFactor);
+      invalidate();
+    } else {
+      forceSelectionFactor(selectionFactor);
+    }
+  }
+
+  public void setSelectableFactor (float factor) {
+    if (this.selectableFactor != factor) {
+      this.selectableFactor = factor;
+      invalidate();
+    }
+  }
+
+  private float selectionFactor;
+  private FactorAnimator animator;
+
+  public void forceSelectionFactor (float factor) {
+    if (animator != null) {
+      animator.forceFactor(factor);
+    }
+    setSelectionFactor(factor);
+  }
+
+  public void animateFactor (float factor) {
+    if (animator == null) {
+      animator = new FactorAnimator(0, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l, selectionFactor);
+    }
+    animator.animateTo(factor);
+  }
+
+  @Override
+  public void setIsItemSelected (boolean isSelected, int selectionIndex) {
+    animateFactor(isSelected ? 1f : 0f);
+  }
+
+  private void setSelectionFactor (float factor) {
+    if (this.selectionFactor != factor) {
+      this.selectionFactor = factor;
+      invalidate();
+    }
+  }
+
+  @Override
+  public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
+    if (id == 1) {
+      invalidate();
+    } else {
+      setSelectionFactor(factor);
+    }
+  }
+
+  @Override
+  public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) { }
+
   @Override
   protected void onDraw (Canvas c) {
     if (chat == null) {
       return;
     }
+    int viewWidth = getMeasuredWidth();
+    int viewHeight = getMeasuredHeight();
+
+    final float selectionFactor = this.selectionFactor * this.selectableFactor;
 
     layoutReceiver();
 
@@ -143,5 +210,14 @@ public class SmallChatView extends BaseView implements AttachDelegate, TooltipOv
     }
 
     chat.draw(this, receiver, c);
+
+    if (this.selectableFactor != 0f) {
+      final int centerX = viewWidth - Screen.dp(16f) - Screen.dp(10f);
+      final int centerY = viewHeight / 2;
+
+      if (selectionFactor != 0f) {
+        SimplestCheckBox.draw(c, centerX, centerY, selectionFactor, null);
+      }
+    }
   }
 }

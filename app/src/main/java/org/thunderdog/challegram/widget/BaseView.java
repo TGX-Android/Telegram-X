@@ -432,7 +432,7 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
 
   public final MessagesController.Arguments createChatPreviewArguments (TdApi.ChatList chatList, TdApi.Chat chat, @Nullable ThreadInfo messageThread, TdApi.SearchMessagesFilter filter) {
     if (filter != null) {
-      return new MessagesController.Arguments(chatList, chat, null, null, filter, highlightMessageId, highlightMode);
+      return new MessagesController.Arguments(chatList, chat, null, null, filter, highlightMessageId, highlightMode, null);
     } else if (highlightMode != MessagesManager.HIGHLIGHT_MODE_NONE) {
       return new MessagesController.Arguments(chatList, chat, messageThread, highlightMessageId, highlightMode, filter);
     } else {

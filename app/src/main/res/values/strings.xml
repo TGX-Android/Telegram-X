@@ -4413,4 +4413,14 @@
   <string name="XRestrictedVideoMessages">%1$s doesn\'t accept video messages.</string>
 
   <string name="format_PRMadeBy">%1$s by %2$s</string>
+
+  <string name="SearchTypeAll">All message types</string>
+  <string name="SearchTypeText">Text messages</string>
+  <string name="SearchTypePhotos">Photos</string>
+  <string name="SearchTypeVideos">Videos</string>
+  <string name="SearchTypeVoiceMessages">Voice messages</string>
+  <string name="SearchTypeVideoMessages">Video messages</string>
+  <string name="SearchTypeFiles">Files</string>
+  <string name="SearchTypeMusic">Music</string>
+  <string name="SearchTypeGifs">GIFs</string>
 </resources>

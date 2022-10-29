@@ -5804,6 +5804,28 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     // override
   }
 
+  // Highlight search
+
+  protected TextWrapper provideWrapper () {
+    return footerText;
+  }
+
+  public void highlightText (String text) {
+    TextWrapper wrapper = provideWrapper();
+    if (wrapper != null) {
+      wrapper.setHighlightPart(text, getSearchHighlightColorSet());
+      rebuildAndUpdateContent();
+    }
+  }
+
+  public void clearHighlight () {
+    TextWrapper wrapper = provideWrapper();
+    if (wrapper != null && wrapper.isHighlighted(getSearchHighlightColorSet())) {
+      wrapper.setHighlightPart(null, null);
+      rebuildAndUpdateContent();
+    }
+  }
+
   // Highlight
 
   public void drawHighlight (View view, Canvas c) {
@@ -6429,6 +6451,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public final TextColorSet getChatAuthorPsaColorSet () {
     return pick(TextColorSets.Regular.MESSAGE_AUTHOR_PSA, TextColorSets.BubbleOut.MESSAGE_AUTHOR_PSA, TextColorSets.BubbleIn.MESSAGE_AUTHOR_PSA);
+  }
+
+  public final TextColorSet getSearchHighlightColorSet () {
+    return pick(TextColorSets.Regular.MSG_SEARCH_HIGHLIGHT, TextColorSets.BubbleOut.MSG_SEARCH_HIGHLIGHT, TextColorSets.BubbleIn.MSG_SEARCH_HIGHLIGHT);
   }
 
   // Colors

@@ -1741,6 +1741,8 @@ public class TdlibUi extends Handler {
     public @Nullable UrlOpenParameters urlOpenParameters;
 
     public TdApi.ChatList chatList;
+    public String searchQuery;
+    public MessagesController.OnSearchQueryChanged queryListener;
     public String inviteLink;
     public TdApi.ChatInviteLinkInfo inviteLinkInfo;
     public ThreadInfo threadInfo;
@@ -1771,6 +1773,8 @@ public class TdlibUi extends Handler {
         threadInfo.saveTo(outState, keyPrefix + "cp_messageThread");
       if (filter != null)
         TD.saveFilter(outState, keyPrefix + "cp_filter", filter);
+      if (searchQuery != null)
+        outState.putString(keyPrefix + "cp_searchQuery", searchQuery);
       return true;
     }
 
@@ -1783,6 +1787,7 @@ public class TdlibUi extends Handler {
       params.chatList = TD.chatListFromKey(in.getString(keyPrefix + "cp_chatList", null));
       params.threadInfo = ThreadInfo.restoreFrom(in, keyPrefix + "cp_messageThread");
       params.filter = TD.restoreFilter(in, keyPrefix + "cp_filter");
+      params.searchQuery = in.getString(keyPrefix + "cp_searchQuery");
       return params;
     }
 
@@ -1801,6 +1806,16 @@ public class TdlibUi extends Handler {
     public ChatOpenParameters inviteLink (String inviteLink, TdApi.ChatInviteLinkInfo inviteLinkInfo) {
       this.inviteLink = inviteLink;
       this.inviteLinkInfo = inviteLinkInfo;
+      return this;
+    }
+
+    public ChatOpenParameters searchQuery (String query) {
+      this.searchQuery = query;
+      return this;
+    }
+
+    public ChatOpenParameters searchQueryListener (MessagesController.OnSearchQueryChanged queryListener) {
+      this.queryListener = queryListener;
       return this;
     }
 
@@ -2085,6 +2100,8 @@ public class TdlibUi extends Handler {
     final ThreadInfo messageThread = params != null ? params.threadInfo : null;
     final TdApi.SearchMessagesFilter filter = params != null ? params.filter : null;
     final MessagesController.Referrer referrer = params != null && !StringUtils.isEmpty(params.inviteLink) ? new MessagesController.Referrer(params.inviteLink) : null;
+    final String query = params != null ? params.searchQuery : null;
+    final MessagesController.OnSearchQueryChanged queryListener = params != null ? params.queryListener : null;
 
     if ((options & CHAT_OPTION_NEED_PRIVATE_PROFILE) != 0 && TD.isPrivateChat(chat.type)) {
       openChatProfile(context, chat, messageThread, urlOpenParameters);
@@ -2203,7 +2220,11 @@ public class TdlibUi extends Handler {
 
     final MessagesController.Arguments arguments;
     if (highlightMessageId != null) {
-      arguments = new MessagesController.Arguments(chatList, chat, messageThread, highlightMessageId, highlightMode, filter);
+      if (query != null && !query.isEmpty()) {
+        arguments = new MessagesController.Arguments(chatList, chat, query, null, filter, highlightMessageId, highlightMode, queryListener);
+      } else {
+        arguments = new MessagesController.Arguments(chatList, chat, messageThread, highlightMessageId, highlightMode, filter);
+      }
     } else {
       arguments = new MessagesController.Arguments(tdlib, chatList, chat, messageThread, filter);
     }

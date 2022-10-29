@@ -1033,6 +1033,11 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     return true;
   }
 
+  @Override
+  protected TextWrapper provideWrapper () {
+    return questionText;
+  }
+
   // Texts
 
   private CharSequence getCounter (TdApi.Poll poll, int count) {

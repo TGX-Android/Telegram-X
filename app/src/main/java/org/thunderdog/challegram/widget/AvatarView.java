@@ -20,6 +20,7 @@ import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 import android.view.View;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -47,12 +48,14 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
   private static final int FLAG_NO_ROUND = 0x04;
   private static final int FLAG_NEED_OVERLAY = 0x08;
   private static final int FLAG_CUSTOM_WINDOW_MANAGEMENT = 0x10;
+  private static final int FLAG_CUSTOM_PLACEHOLDER = 0x40;
 
   private int flags;
 
   private final ImageReceiver receiver;
   private ImageReceiver preview;
   private Drawable overlayIcon;
+  private Drawable placeholderIcon;
 
   public AvatarView (Context context) {
     super(context);
@@ -64,6 +67,16 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
     flags |= FLAG_NEED_OVERLAY;
     if (overlayIcon == null) {
       overlayIcon = Drawables.get(getResources(), R.drawable.baseline_camera_alt_24);
+    }
+  }
+
+  public void setNeedCustomPlaceholderIcon (@DrawableRes int placeholderIconRes) {
+    // TODO impl tint color
+    flags |= FLAG_CUSTOM_PLACEHOLDER;
+    if (placeholderIconRes == 0) {
+      placeholderIcon = Drawables.get(getResources(), R.drawable.baseline_person_24);
+    } else {
+      placeholderIcon = Drawables.get(getResources(), placeholderIconRes);
     }
   }
 
@@ -361,6 +374,10 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
         } else {
           drawPlaceholder(c, avatarPlaceholderMetadata != null ? avatarPlaceholderMetadata.colorId : R.id.theme_color_placeholder);
         }
+      }
+    } else if ((flags & FLAG_CUSTOM_PLACEHOLDER) != 0) {
+      if (placeholderIcon != null) {
+        Drawables.draw(c, placeholderIcon, receiver.centerX() - placeholderIcon.getMinimumWidth() / 2, receiver.centerY() - placeholderIcon.getMinimumHeight() / 2, Paints.getIconGrayPorterDuffPaint());
       }
     }
     if ((flags & FLAG_NEED_OVERLAY) != 0) {

@@ -298,7 +298,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   private int lastCheckedCount;
 
   private boolean viewDisplayedMessages (int first, int last) {
-    if (first == -1 || last == -1 || inSpecialMode() || !isFocused) {
+    if (first == -1 || last == -1 || !isFocused) {
       return false;
     }
 
@@ -354,6 +354,12 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           }
           msg.getIds(list);
         }
+        if (searchManager != null && msg.getIds().length > 0) {
+          long msgId = searchManager.getPrefetchedMessageId();
+          if (msgId != -1 && ArrayUtils.contains(msg.getIds(), msgId)) {
+            searchManager.loadNext(false);
+          }
+        }
         if (msg.needRefreshViewCount()) {
           if (refreshMap == null) {
             refreshMap = new LongSparseArray<>();
@@ -394,6 +400,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
     if (list != null) {
       viewMessagesInternal(loader.getChatId(), loader.getMessageThreadId(), list, true);
+      if (searchManager != null && searchManager.getCurrentInput() != null && !searchManager.getCurrentInput().isEmpty()) {
+        searchManager.processLoadedMessages(list);
+      }
     }
 
     return true;
@@ -438,7 +447,12 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   public void checkScrollToBottomButton () {
-    controller.setScrollToBottomVisible(getActiveMessageCount() > 0 && (lastScrollToBottomVisible || loader.canLoadBottom() || hasReturnMessage()), isReturnAbove());
+    checkScrollToBottomButton(true);
+  }
+
+  public void checkScrollToBottomButton (boolean withSearchModeCheck) {
+    boolean searchModeCheckResult = !withSearchModeCheck || !controller.inSearchMode();
+    controller.setScrollToBottomVisible(getActiveMessageCount() > 0 && searchModeCheckResult && (lastScrollToBottomVisible || loader.canLoadBottom() || hasReturnMessage()), isReturnAbove(), withSearchModeCheck);
   }
 
   public void onCanLoadMoreBottomChanged () {
@@ -556,21 +570,35 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   // Search
 
   public void openSearch (TdApi.Chat chat, String query, TdApi.MessageSender sender, TdApi.SearchMessagesFilter filter) {
+    if (sender != null && filter != null) {
+      filter = null;
+    }
     loader.setChat(chat, null, MessagesLoader.SPECIAL_MODE_SEARCH, filter);
     loader.setSearchParameters(query, sender, filter);
-    adapter.setChatType(chat.type);
-    if (filter != null && filter.getConstructor() == TdApi.SearchMessagesFilterPinned.CONSTRUCTOR) {
-      initPinned(chat.id, 1, 1);
-    }
+      adapter.setChatType(chat.type);
+      if (filter != null && filter.getConstructor() == TdApi.SearchMessagesFilterPinned.CONSTRUCTOR) {
+        initPinned(chat.id, 1, 1);
+      }
+      if (highlightMessageId != null) {
+        loadFromMessage(highlightMessageId, highlightMode, true);
+      } else {
+        loadFromStart();
+      }
+      subscribeForUpdates();
+  }
+
+  public void closeSpecialSearchMode (TdApi.Chat chat, String query, TdApi.MessageSender sender, TdApi.SearchMessagesFilter filter) {
+    loader.setChat(chat, null, MessagesLoader.SPECIAL_MODE_NONE, filter);
+    loader.setSearchParameters(query, sender, filter);
+
     if (highlightMessageId != null) {
       loadFromMessage(highlightMessageId, highlightMode, true);
     } else {
       loadFromStart();
     }
-    subscribeForUpdates();
   }
 
-  private boolean inSpecialMode () {
+  public boolean inSpecialMode () {
     return loader.getSpecialMode() != MessagesLoader.SPECIAL_MODE_NONE;
   }
 
@@ -906,11 +934,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       return true;
     }
 
-    if (!loader.isChannel() && Settings.instance().getBigReactionsInChats()) {
-      return true;
-    }
-
-    return false;
+    return !loader.isChannel() && Settings.instance().getBigReactionsInChats();
   }
 
   public boolean useReactionBubbles () {
@@ -1108,6 +1132,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   public void displayMessages (ArrayList<TGMessage> items, int mode, int scrollPosition, TGMessage scrollMessage, MessageId scrollMessageId, int highlightMode, boolean willRepeat) {
+    if (searchManager != null && controller.inFoundedMessagesOnly()) {
+      items = searchManager.filterMessagesByTypeAndSender(items);
+    }
     int size = items.size();
     if (size == 0 && mode != MessagesLoader.MODE_INITIAL && mode != MessagesLoader.MODE_REPEAT_INITIAL) {
       if (!willRepeat) {
@@ -1168,6 +1195,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         manager.scrollToPositionWithOffset(firstIndex + items.size(), currentOffset);
         break;
       }
+    }
+    if (searchManager != null) {
+      searchManager.processLoadedMessages(items);
     }
   }
 
@@ -1417,8 +1447,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   private static class OnGlobalLayoutListener implements ViewTreeObserver.OnGlobalLayoutListener {
-    private MessagesRecyclerView recyclerView;
-    private ViewTreeObserver observer;
+    private final MessagesRecyclerView recyclerView;
+    private final ViewTreeObserver observer;
     private int offset;
 
     OnGlobalLayoutListener (MessagesRecyclerView r, View v, int offset) {
@@ -2449,12 +2479,20 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     searchManager.onPrepare();
   }
 
-  public void search (long chatId, @Nullable ThreadInfo messageThread, TdApi.MessageSender sender, boolean isSecret, String input) {
+  public void search (long chatId, @Nullable ThreadInfo messageThread, TdApi.MessageSender sender, TdApi.SearchMessagesFilter filter, boolean isSecret, String input, boolean needHighlight) {
     if (isEventLog()) {
       applyEventLogFilters(eventLogFilters, input, eventLogUserIds);
     } else {
-      searchManager.search(messageThread != null ? messageThread.getChatId() : chatId, messageThread != null ? messageThread.getMessageThreadId() : 0, sender, isSecret, input);
+      searchManager.search(messageThread != null ? messageThread.getChatId() : chatId, messageThread != null ? messageThread.getMessageThreadId() : 0, sender, filter, isSecret, input, needHighlight);
     }
+  }
+
+  public void setSearchSender (TdApi.MessageSender messageSender) {
+    searchManager.setSearchSender(messageSender);
+  }
+
+  public void setSearchFilterType (TdApi.SearchMessagesFilter filter) {
+    searchManager.setSearchFilterType(filter);
   }
 
   public void onDestroySearch () {
@@ -2462,6 +2500,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     if (isEventLog()) {
       applyEventLogFilters(eventLogFilters, "", eventLogUserIds);
     }
+    clearHighlightedSearchResult();
   }
 
   public void moveToNextResult (boolean next) {
@@ -2662,6 +2701,16 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   @Override
+  public void availableSearchTypes (List<TdApi.MessageContent> types) {
+    controller.updateAvailableSearchMessagesTypes(types);
+  }
+
+  @Override
+  public void availableSearchSenders (List<Long> senders) {
+    controller.updateAvailableSearchSenders(senders);
+  }
+
+  @Override
   public void showSearchResult (int index, int totalCount, MessageId messageId) {
     switch (index) {
       case MessagesSearchManager.STATE_LOADING: {
@@ -2674,12 +2723,53 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       }
       case MessagesSearchManager.STATE_NO_RESULTS: {
         controller.onChatSearchFinished(Lang.getXofY(0, 0), 0, 0);
+        controller.setSearchOnlyFoundedVisible(false, true);
         break;
       }
       default: {
         controller.onChatSearchFinished(Lang.getXofY(index + 1, totalCount), index, totalCount);
-        highlightMessage(messageId, HIGHLIGHT_MODE_NORMAL, null, true);
+        if (messageId != null) {
+          highlightMessage(messageId, HIGHLIGHT_MODE_NORMAL, null, true);
+        }
         break;
+      }
+    }
+  }
+
+  private LongSet highlightedMessages;
+
+  @Override
+  public void highlightSearchResult (List<Long> messagesId, String query) {
+    if (controller.inSearchMode()) {
+      if (highlightedMessages == null) {
+        highlightedMessages = new LongSet();
+      }
+      for (long messageId : messagesId) {
+        int msgIndex = adapter.indexOfMessageContainer(messageId);
+        if (msgIndex != -1) {
+          TGMessage msg = adapter.getMessage(msgIndex);
+          if (msg != null) {
+            highlightedMessages.add(messageId);
+            msg.highlightText(query);
+          }
+        }
+      }
+    }
+  }
+
+  @Override
+  public void clearHighlightedSearchResult () {
+    if (highlightedMessages != null) {
+      clearHighlightMessages(highlightedMessages);
+      highlightedMessages = null;
+    }
+  }
+  private void clearHighlightMessages (Iterable<Long> clearHighlightMessages) {
+    for (long messageId : clearHighlightMessages) {
+      int index = adapter.indexOfMessageContainer(messageId);
+      TGMessage msg = adapter.getMessage(index);
+      if (msg != null) {
+        msg.clearHighlight();
       }
     }
   }

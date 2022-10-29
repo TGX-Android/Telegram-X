@@ -623,6 +623,10 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
   }
 
+  protected boolean isBackFromSearchModeAllowed () {
+    return false;
+  }
+
   protected @CallSuper void updateSearchMode (boolean inSearch) {
     if (inSearch) {
       cachedLockFocusView = lockFocusView;
@@ -671,8 +675,12 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   protected final void openSearchMode () {
+    openSearchMode(true);
+  }
+
+  protected final void openSearchMode (boolean animated) {
     if (headerView != null) {
-      headerView.openSearchMode();
+      headerView.openSearchMode(animated);
     }
   }
 
@@ -897,7 +905,6 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   protected @ThemeColorId int getSearchHeaderIconColorId () {
     return useGraySearchHeader() ? R.id.theme_color_icon : getHeaderIconColorId();
   }
-
   protected int getSearchTextColorId () {
     return useGraySearchHeader() ? R.id.theme_color_text : getHeaderTextColorId();
   }
@@ -2191,6 +2198,10 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     });
   }
 
+  public final PopupLayout showOptions (int[] ids, String[] titles, int[] colors, int[] icons, final OptionDelegate delegate) {
+    return showOptions(null, ids, titles, colors, icons, delegate, null);
+  }
+
   public final PopupLayout showOptions (CharSequence info, int[] ids, String[] titles, int[] colors, int[] icons, final OptionDelegate delegate) {
     return showOptions(info, ids, titles, colors, icons, delegate, null);
   }
@@ -2303,6 +2314,19 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       items[i] = new OptionItem(ids != null ? ids[i] : i, titles[i], colors != null ? colors[i] : OPTION_COLOR_NORMAL, icons != null ? icons[i] : 0);
     }
     return new Options(info, items);
+  }
+
+  public final Options getOptions (int[] ids, String[] titles, int[] icons, int selectedId, int selectedColorId) {
+    OptionItem[] items = new OptionItem[ids.length];
+    for (int i = 0; i < ids.length; i++) {
+      int optionId = ids != null ? ids[i] : i;
+      int resultColor = OPTION_COLOR_NORMAL;
+      if (optionId == selectedId) {
+        resultColor = selectedColorId;
+      }
+      items[i] = new OptionItem(optionId, titles[i], resultColor, icons != null ? icons[i] : 0);
+    }
+    return new Options(null, items);
   }
 
   public final PopupLayout showOptions (Options options, final OptionDelegate delegate) {

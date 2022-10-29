@@ -607,6 +607,10 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     return entities != null ? entities.length : 0;
   }
 
+  public TextEntity[] getEntities () {
+    return entities;
+  }
+
   public int findAnchorLineIndex (String anchor) {
     if (entities != null && parts != null) {
       for (TextEntity entity : entities) {

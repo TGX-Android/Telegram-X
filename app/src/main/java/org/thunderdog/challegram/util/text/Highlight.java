@@ -65,6 +65,7 @@ public class Highlight {
     }
   }
 
+  private TextColorSet color;
   public final List<Part> parts = new ArrayList<>();
 
   public Highlight (String text, String highlight) {
@@ -173,12 +174,25 @@ public class Highlight {
     }
   }
 
+  public void setColor (TextColorSet color) {
+    this.color = color;
+  }
+
+  public TextColorSet getColor () {
+    return color;
+  }
+
   public boolean isEmpty () {
     return parts.isEmpty();
   }
 
   @Nullable
   public static Highlight valueOf (String text, String highlight) {
+    return valueOf(text, highlight, TextColorSets.Regular.SEARCH_HIGHLIGHT);
+  }
+
+  @Nullable
+  public static Highlight valueOf (String text, String highlight, TextColorSet color) {
     if (StringUtils.isEmpty(text) || StringUtils.isEmpty(highlight)) {
       return null;
     }
@@ -252,6 +266,8 @@ public class Highlight {
     }
     if (result.isEmpty()) {
       return null;
+    } else {
+      result.setColor(color);
     }
     return result;
   }

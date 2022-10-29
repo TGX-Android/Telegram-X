@@ -71,11 +71,28 @@ import me.vkryl.td.Td;
 public abstract class SharedBaseController <T extends MessageSourceProvider> extends ViewController<SharedBaseController.Args> implements View.OnClickListener, View.OnLongClickListener, FactorAnimator.Target, MessageListener {
   public static class Args {
     public long chatId, messageThreadId;
+    public boolean isMemberPickerMode;
+    public TdApi.MessageSender selectedMember;
+    public OnMemberPickerListener pickerListener;
 
     public Args (long chatId, long messageThreadId) {
       this.chatId = chatId;
       this.messageThreadId = messageThreadId;
+      this.selectedMember = null;
+      this.isMemberPickerMode = false;
     }
+
+    public Args (long chatId, long messageThreadId, TdApi.MessageSender selectedMember, boolean isMemberPickerMode, OnMemberPickerListener pickerListener) {
+      this.chatId = chatId;
+      this.messageThreadId = messageThreadId;
+      this.selectedMember = selectedMember;
+      this.isMemberPickerMode = isMemberPickerMode;
+      this.pickerListener = pickerListener;
+    }
+  }
+
+  interface OnMemberPickerListener {
+    void onMemberPicked(@Nullable TdApi.MessageSender member);
   }
 
   public SharedBaseController (Context context, Tdlib tdlib) {
@@ -109,12 +126,14 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
   }
 
   protected long chatId, messageThreadId;
+  protected boolean isMemberPickerMode;
 
   @Override
   public void setArguments (Args args) {
     super.setArguments(args);
     chatId = args.chatId;
     messageThreadId = args.messageThreadId;
+    isMemberPickerMode = args.isMemberPickerMode;
   }
 
   private boolean isPrepared;
@@ -201,11 +220,21 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
         }
       }
     });
+    FrameLayoutFix frameLayout = null;
+    if (isMemberPickerMode) {
+      frameLayout = new FrameLayoutFix(context);
+      frameLayout.addView(recyclerView);
+      onCreateParentContainer(frameLayout);
+    }
     onCreateView(context, recyclerView, adapter);
     buildCells();
     recyclerView.setAdapter(adapter);
     loadInitialChunk();
-    return recyclerView;
+    if (isMemberPickerMode) {
+      return frameLayout;
+    } else {
+      return recyclerView;
+    }
   }
 
   public RecyclerView getRecyclerView () {
@@ -253,6 +282,10 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
         }
       }
     }
+  }
+
+  protected void onCreateParentContainer (ViewGroup parent) {
+
   }
 
   protected void onCreateView (Context context, MediaRecyclerView recyclerView, SettingsAdapter adapter) {
@@ -406,7 +439,9 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
           if (!StringUtils.isEmpty(explainedTitle)) {
             reuse.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, explainedTitle, false));
           }
-          reuse.add(new ListItem(ListItem.TYPE_SHADOW_TOP, R.id.shadowTop));
+          if (controller.isNeedShadowTop()) {
+            reuse.add(new ListItem(ListItem.TYPE_SHADOW_TOP, R.id.shadowTop));
+          }
         } else {
           reuse.add(new ListItem(ListItem.TYPE_SEPARATOR));
         }
@@ -1371,6 +1406,10 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
 
   protected String getExplainedTitle () {
     throw new RuntimeException("Stub!");
+  }
+
+  protected boolean isNeedShadowTop () {
+    return true;
   }
 
   protected abstract boolean supportsMessageContent ();

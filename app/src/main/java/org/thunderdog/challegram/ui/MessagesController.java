@@ -31,6 +31,7 @@ import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
 import android.location.Location;
 import android.location.LocationManager;
 import android.media.MediaMetadataRetriever;
@@ -112,6 +113,7 @@ import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.component.chat.PinnedMessagesBar;
 import org.thunderdog.challegram.component.chat.RaiseHelper;
 import org.thunderdog.challegram.component.chat.ReplyView;
+import org.thunderdog.challegram.component.chat.SearchMessagesFilterText;
 import org.thunderdog.challegram.component.chat.SilentButton;
 import org.thunderdog.challegram.component.chat.StickerSuggestionAdapter;
 import org.thunderdog.challegram.component.chat.TopBarView;
@@ -212,6 +214,7 @@ import org.thunderdog.challegram.util.Unlockable;
 import org.thunderdog.challegram.v.HeaderEditText;
 import org.thunderdog.challegram.v.MessagesLayoutManager;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
+import org.thunderdog.challegram.widget.AvatarView;
 import org.thunderdog.challegram.widget.CheckBoxView;
 import org.thunderdog.challegram.widget.CircleButton;
 import org.thunderdog.challegram.widget.CollapseListView;
@@ -245,6 +248,7 @@ import me.vkryl.android.widget.AnimatedFrameLayout;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.BitwiseUtils;
+import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
@@ -277,7 +281,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
   RecordAudioVideoController.RecordStateListeners,
   ViewPager.OnPageChangeListener, ViewPagerTopView.OnItemClickListener,
   TGMessage.SelectableDelegate, GlobalAccountListener, EmojiToneHelper.Delegate, ComplexHeaderView.Callback, LiveLocationHelper.Callback, CreatePollController.Callback,
-  HapticMenuHelper.Provider, HapticMenuHelper.OnItemClickListener, TdlibSettingsManager.DismissRequestsListener {
+  HapticMenuHelper.Provider, HapticMenuHelper.OnItemClickListener, TdlibSettingsManager.DismissRequestsListener,
+  SharedBaseController.OnMemberPickerListener {
   private boolean reuseEnabled;
   private boolean destroyInstance;
 
@@ -322,8 +327,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private WallpaperView wallpaperViewBlurPreview;
   private WallpaperParametersView backgroundParamsView;
 
-  private FrameLayoutFix scrollToBottomButtonWrap, mentionButtonWrap, reactionsButtonWrap;
-  private CircleButton scrollToBottomButton, mentionButton, reactionsButton;
+  private FrameLayoutFix scrollToBottomButtonWrap, mentionButtonWrap, reactionsButtonWrap, searchNextButtonWrap, searchPrevButtonWrap;
+  private CircleButton scrollToBottomButton, mentionButton, reactionsButton, searchNextButton, searchPrevButton;
   private CounterBadgeView unreadCountView, mentionCountView, reactionsCountView;
 
   public boolean sponsoredMessageLoaded = false;
@@ -579,7 +584,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     addThemeInvalidateListener(wallpaperView);
 
     params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-    params.addRule(RelativeLayout.ABOVE, R.id.msg_bottom);
+    params.addRule(RelativeLayout.ABOVE, inPreviewSearchMode() ? R.id.msg_searchLayout : R.id.msg_bottom);
 
     MessagesLayoutManager messagesManager;
 
@@ -830,6 +835,68 @@ public class MessagesController extends ViewController<MessagesController.Argume
     addThemeInvalidateListener(mentionCountView);
     mentionButtonWrap.addView(mentionCountView);
     mentionButton.setTag(mentionCountView);
+
+    // Search buttons
+
+    params = new RelativeLayout.LayoutParams(Screen.dp(118f), Screen.dp(74f));
+    params.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+    params.addRule(RelativeLayout.ABOVE, R.id.msg_bottom);
+
+    searchNextButtonWrap = new FrameLayoutFix(context) {
+      @Override
+      public boolean onInterceptTouchEvent (MotionEvent ev) {
+        return getSearchTransformFactor() == 0f || super.onInterceptTouchEvent(ev);
+      }
+
+      @Override
+      public boolean onTouchEvent (MotionEvent event) {
+        return getSearchTransformFactor() > 0f;
+      }
+    };
+    searchNextButtonWrap.setLayoutParams(params);
+    searchNextButtonWrap.setAlpha(0f);
+
+    fparams = FrameLayoutFix.newParams(Screen.dp(24f) * 2 + padding * 2, Screen.dp(24f) * 2 + padding * 2, Gravity.RIGHT | Gravity.BOTTOM);
+    params.rightMargin = params.bottomMargin = Screen.dp(16f) - padding;
+
+    searchNextButton = new CircleButton(context());
+    searchNextButton.setId(R.id.btn_search_prev);
+    searchNextButton.setOnClickListener(this);
+    addThemeInvalidateListener(searchNextButton);
+    searchNextButton.init(R.drawable.baseline_keyboard_arrow_down_24, 48f, 4f, R.id.theme_color_circleButtonChat, R.id.theme_color_circleButtonChatIcon);
+    searchNextButton.setLayoutParams(fparams);
+    searchNextButtonWrap.addView(searchNextButton);
+
+
+    params = new RelativeLayout.LayoutParams(Screen.dp(118f), Screen.dp(74f));
+    params.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+    params.addRule(RelativeLayout.ABOVE, R.id.msg_bottom);
+
+    searchPrevButtonWrap = new FrameLayoutFix(context) {
+      @Override
+      public boolean onInterceptTouchEvent (MotionEvent ev) {
+        return getSearchTransformFactor() == 0f || super.onInterceptTouchEvent(ev);
+      }
+
+      @Override
+      public boolean onTouchEvent (MotionEvent event) {
+        return getSearchTransformFactor() > 0f;
+      }
+    };
+    searchPrevButtonWrap.setLayoutParams(params);
+    searchPrevButtonWrap.setAlpha(0f);
+
+    fparams = FrameLayoutFix.newParams(Screen.dp(24f) * 2 + padding * 2, Screen.dp(24f) * 2 + padding * 2, Gravity.RIGHT | Gravity.BOTTOM);
+    params.rightMargin = Screen.dp(16f) - padding;
+    params.bottomMargin = Screen.dp(16f) - padding;//Screen.dp(16f) - padding + Screen.dp(74f) - Screen.dp(10f);
+
+    searchPrevButton = new CircleButton(context());
+    searchPrevButton.setId(R.id.btn_search_next);
+    searchPrevButton.setOnClickListener(this);
+    addThemeInvalidateListener(searchPrevButton);
+    searchPrevButton.init(R.drawable.baseline_keyboard_arrow_up_24, 48f, 4f, R.id.theme_color_circleButtonChat, R.id.theme_color_circleButtonChatIcon);
+    searchPrevButton.setLayoutParams(fparams);
+    searchPrevButtonWrap.addView(searchPrevButton);
 
     // Scroll button
 
@@ -1258,16 +1325,20 @@ public class MessagesController extends ViewController<MessagesController.Argume
     contentView.addView(reactionsButtonWrap);
     contentView.addView(mentionButtonWrap);
     contentView.addView(scrollToBottomButtonWrap);
+    contentView.addView(searchNextButtonWrap);
+    contentView.addView(searchPrevButtonWrap);
 
     if (previewMode == PREVIEW_MODE_NONE) {
       contentView.addView(emojiButton);
       contentView.addView(attachButtons);
       contentView.addView(sendButton);
 
+      addStaticListeners();
+    }
+
+    if (inPreviewSearchMode() || previewMode == PREVIEW_MODE_NONE) {
       initSearchControls();
       contentView.addView(searchControlsLayout);
-
-      addStaticListeners();
     }
 
     if (backgroundParamsView != null) {
@@ -1735,6 +1806,18 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         case R.id.btn_scroll: {
           scrollToUnreadOrStartMessage();
+          break;
+        }
+      }
+    }
+    if (inSearchMode()) {
+      switch (v.getId()) {
+        case R.id.btn_search_prev: {
+          manager.moveToNextResult(false);
+          break;
+        }
+        case R.id.btn_search_next: {
+          manager.moveToNextResult(true);
           break;
         }
       }
@@ -2208,7 +2291,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         int highlightMode = in.getInt(keyPrefix + "mode", 0);
         long highlightMessageId = in.getLong(keyPrefix + "message_id", 0);
         long highlightMessageChatId = in.getLong(keyPrefix + "message_chat_id", 0);
-        args = new Arguments(chatList, chat, query, sender, filter, highlightMessageId != 0 ? new MessageId(highlightMessageChatId, highlightMessageId) : null, highlightMode);
+        args = new Arguments(chatList, chat, query, sender, filter, highlightMessageId != 0 ? new MessageId(highlightMessageChatId, highlightMessageId) : null, highlightMode, queryListener);
         break;
       }
     }
@@ -2246,6 +2329,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
     public long eventLogUserId;
 
     public @Nullable TdApi.Background wallpaperObject;
+
+    public MessagesController.OnSearchQueryChanged queryListener;
 
     public Arguments (Tdlib tdlib, TdApi.ChatList chatList, TdApi.Chat chat, @Nullable ThreadInfo messageThread, TdApi.SearchMessagesFilter filter) {
       this.constructor = 0;
@@ -2298,7 +2383,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       this.highlightMessageId = null;
     }
 
-    public Arguments (TdApi.ChatList chatList, TdApi.Chat chat, @Nullable String query, @Nullable TdApi.MessageSender sender, @Nullable TdApi.SearchMessagesFilter filter,  MessageId highlightMessageId, int highlightMode) {
+    public Arguments (TdApi.ChatList chatList, TdApi.Chat chat, @Nullable String query, @Nullable TdApi.MessageSender sender, @Nullable TdApi.SearchMessagesFilter filter,  MessageId highlightMessageId, int highlightMode, MessagesController.OnSearchQueryChanged queryListener) {
       this.constructor = 4;
       this.chat = chat;
       this.chatList = chatList;
@@ -2310,6 +2395,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       this.previewMode = PREVIEW_MODE_SEARCH;
       this.highlightMessageId = highlightMessageId;
       this.highlightMode = highlightMode;
+      this.queryListener = queryListener;
     }
 
     public Arguments referrer (Referrer referrer) {
@@ -2351,6 +2437,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
+  public interface OnSearchQueryChanged {
+    void onChanged (String query);
+  }
+
   public boolean areScheduledOnly () {
     return areScheduled;
   }
@@ -2365,6 +2455,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private Referrer referrer;
   private TdApi.InternalLinkTypeVideoChat voiceChatInvitation;
   private boolean openKeyboard;
+  private OnSearchQueryChanged queryListener;
 
   public boolean inWallpaperMode () {
     return inPreviewMode && (previewMode == PREVIEW_MODE_WALLPAPER || previewMode == PREVIEW_MODE_WALLPAPER_OBJECT);
@@ -2401,6 +2492,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     this.inPreviewMode = args.inPreviewMode;
     this.previewMode = args.previewMode;
     this.openKeyboard = args.openKeyboard;
+    this.queryListener = args.queryListener;
 
     if (contentView != null) {
       updateView();
@@ -2547,10 +2639,19 @@ public class MessagesController extends ViewController<MessagesController.Argume
             manager.applyEventLogFilters(new TdApi.ChatEventLogFilters(true, true, true, true, true, true, true, true, true, true, true, true), new long[] { getArgumentsStrict().eventLogUserId });
           }
           break;
-        case PREVIEW_MODE_SEARCH:
-          manager.openSearch(chat, previewSearchQuery, previewSearchSender, previewSearchFilter);
+        case PREVIEW_MODE_SEARCH: {
+          RelativeLayout.LayoutParams params = ((RelativeLayout.LayoutParams) messagesView.getLayoutParams());
+          params.addRule(RelativeLayout.ABOVE, inPreviewSearchMode() ? R.id.msg_searchLayout : R.id.msg_bottom);
+          messagesView.setLayoutParams(params);
+          selectedSearchMessageSender = previewSearchSender;
+          selectedSearchMessageFilter = previewSearchFilter;
+          lastSearchQuery = previewSearchQuery != null ? previewSearchQuery : "";
+          manager.onPrepareToSearch();
+          manager.openSearch(chat, previewSearchQuery, selectedSearchMessageSender, selectedSearchMessageFilter);
+          manager.search(chat.id, messageThread, selectedSearchMessageSender, selectedSearchMessageFilter, chat.type.getConstructor() == TdApi.ChatTypeSecret.CONSTRUCTOR, lastSearchQuery, false);
           updateBottomBar(false);
           break;
+        }
         default:
           manager.loadPreview();
           break;
@@ -2703,6 +2804,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (bottomButtonAction == BOTTOM_ACTION_TOGGLE_MUTE) {
         showBottomButton(bottomButtonAction, 0, animated);
       }
+    }
+  }
+
+  private void clearCounters () {
+    if (chat != null) {
+      setUnreadCountBadge(0, true);
+      setMentionCountBadge(0);
+      setReactionCountBadge(0);
+      hideActionButton();
+      bottomBarVisible.setValue(false, false);
     }
   }
 
@@ -2944,6 +3055,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
     RelativeLayout.LayoutParams params1 = (RelativeLayout.LayoutParams) scrollToBottomButtonWrap.getLayoutParams();
     RelativeLayout.LayoutParams params2 = (RelativeLayout.LayoutParams) mentionButtonWrap.getLayoutParams();
     RelativeLayout.LayoutParams params3 = (RelativeLayout.LayoutParams) reactionsButtonWrap.getLayoutParams();
+    RelativeLayout.LayoutParams params4 = (RelativeLayout.LayoutParams) searchNextButtonWrap.getLayoutParams();
+    RelativeLayout.LayoutParams params5 = (RelativeLayout.LayoutParams) searchPrevButtonWrap.getLayoutParams();
     if (visible) {
       params1.addRule(RelativeLayout.ABOVE, R.id.msg_bottom);
       params1.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, 0);
@@ -2951,6 +3064,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       params2.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, 0);
       params3.addRule(RelativeLayout.ABOVE, R.id.msg_bottom);
       params3.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, 0);
+      params4.addRule(RelativeLayout.ABOVE, R.id.msg_bottom);
+      params4.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, 0);
+      params5.addRule(RelativeLayout.ABOVE, R.id.msg_bottom);
+      params5.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, 0);
     } else {
       params1.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
       params1.addRule(RelativeLayout.ABOVE, 0);
@@ -2958,6 +3075,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       params2.addRule(RelativeLayout.ABOVE, 0);
       params3.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
       params3.addRule(RelativeLayout.ABOVE, 0);
+      params4.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+      params4.addRule(RelativeLayout.ABOVE, 0);
+      params5.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+      params5.addRule(RelativeLayout.ABOVE, 0);
     }
     if (visible) {
       bottomWrap.setVisibility(View.VISIBLE);
@@ -3120,9 +3241,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return 0;
     switch (previewMode) {
       case PREVIEW_MODE_EVENT_LOG:
-        return R.id.menu_search;
       case PREVIEW_MODE_SEARCH:
-        return 0;
+        return R.id.menu_search;
       case PREVIEW_MODE_WALLPAPER_OBJECT:
       case PREVIEW_MODE_FONT_SIZE:
         return R.id.menu_more;
@@ -3154,6 +3274,31 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Override
   public View getCustomHeaderCell () {
     return inWallpaperPreviewMode() ? headerDoubleCell : needTabs() ? pagerHeaderView : getChatId() != 0 ? headerCell : null;
+  }
+
+  @Override
+  protected void attachNavigationController (NavigationController navigationController) {
+    super.attachNavigationController(navigationController);
+    if (previewSearchQuery != null && !previewSearchQuery.isEmpty()) {
+      openSearchMode(false);
+      setSearchTransformFactor(1f, true);
+      UI.post(() -> {
+        if (inputView != null) {
+          inputView.clearFocus();
+        }
+        getSearchHeaderView(headerView).requestFocus();
+      }, 500);
+    }
+  }
+
+  @Override
+  protected String getSearchStartQuery () {
+    return previewSearchQuery != null ? previewSearchQuery : super.getSearchStartQuery();
+  }
+
+  @Override
+  protected boolean isBackFromSearchModeAllowed () {
+    return previewSearchQuery != null;
   }
 
   @Override
@@ -5681,7 +5826,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void setUnreadCountBadge (int unreadCount, boolean isUpdate) {
-    if (unreadCount != 0 && (inPreviewMode || isInForceTouchMode())) {
+    if (unreadCount != 0 && (inPreviewMode || isInForceTouchMode() || inSearchMode())) {
       return;
     }
     boolean animated = isUpdate && scrollToBottomVisible.getFloatValue() > 0f && isFocused();
@@ -5713,7 +5858,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void setMentionCountBadge (int mentionCount) {
-    if (mentionCount > 0 && (inPreviewMode || isInForceTouchMode() || areScheduledOnly())) {
+    if (mentionCount > 0 && (inPreviewMode || isInForceTouchMode() || areScheduledOnly() || inSearchMode())) {
       return;
     }
     if (mentionCountBadge != mentionCount) {
@@ -5761,7 +5906,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void setReactionCountBadge (int reactionCount) {
-    if (reactionCount > 0 && (inPreviewMode || isInForceTouchMode() || areScheduledOnly())) {
+    if (reactionCount > 0 && (inPreviewMode || isInForceTouchMode() || areScheduledOnly() || inSearchMode())) {
       return;
     }
     if (reactionCountBadge != reactionCount) {
@@ -5782,7 +5927,31 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
+  // Search buttons
 
+  private static final int ANIMATOR_SEARCH_NAVIGATION = 14;
+  private final BoolAnimator searchNavigationVisible = new BoolAnimator(ANIMATOR_SEARCH_NAVIGATION, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
+
+  public void setSearchNavigationVisible (boolean isVisible) {
+    setSearchNavigationVisible(isVisible, isFocused() || getParentOrSelf().isFocused());
+  }
+
+  public void setSearchNavigationVisible (boolean isVisible, boolean animated) {
+    searchNavigationVisible.setValue(isVisible, animated);
+  }
+
+  // Search only founded messages
+
+  private static final int ANIMATOR_SEARCH_ONLY_FOUNDED = 16;
+  private final BoolAnimator searchOnlyFoundedVisible = new BoolAnimator(ANIMATOR_SEARCH_ONLY_FOUNDED, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
+
+  public void setSearchOnlyFoundedVisible (boolean isVisible) {
+    setSearchOnlyFoundedVisible(isVisible, isFocused() || getParentOrSelf().isFocused());
+  }
+
+  public void setSearchOnlyFoundedVisible (boolean isVisible, boolean animated) {
+    searchOnlyFoundedVisible.setValue(isVisible, animated);
+  }
 
   // Etc
 
@@ -6111,6 +6280,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return y;
   }
 
+  private float getSearchNextButtonY () {
+    int moveY = Screen.dp(74f) - Screen.dp(16f);
+    float y = -getButtonsOffset() - moveY * searchNavigationVisible.getFloatValue();
+    if (isInForceTouchMode()) {
+      y += -Screen.dp(16f) + Screen.dp(4f);
+    }
+    return y;
+  }
+
   public void setReplyFactor (float factor) {
     if (this.replyFactor != factor) {
       this.replyFactor = factor;
@@ -6129,9 +6307,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (mentionButtonWrap != null) {
       mentionButtonWrap.setTranslationY(getMentionButtonY());
     }
-
     if (reactionsButtonWrap != null) {
       reactionsButtonWrap.setTranslationY(getReactionButtonY());
+    }
+    if (searchNextButtonWrap != null) {
+      searchNextButtonWrap.setTranslationY(offsetY);
+    }
+    if (searchPrevButtonWrap != null) {
+      searchPrevButtonWrap.setTranslationY(getSearchNextButtonY());
     }
     updateBottomBarStyle();
   }
@@ -7472,6 +7655,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
         checkScrollButtonOffsets();
         break;
       }
+      case ANIMATOR_SEARCH_NAVIGATION: {
+        searchNextButtonWrap.setAlpha(MathUtils.clamp(factor));
+        searchPrevButtonWrap.setAlpha(MathUtils.clamp(factor));
+        checkScrollButtonOffsets();
+        break;
+      }
+      case ANIMATOR_SEARCH_ONLY_FOUNDED: {
+        searchOnlySenderButton.setAlpha(MathUtils.clamp(factor));
+      }
     }
   }
 
@@ -7500,7 +7692,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         break;
       }
       case ANIMATOR_STICKERS: {
-        if (finalFactor == 0f) {
+        if (finalFactor == 0f && !inSearchMode()) {
           onStickersDisappeared();
         }
         break;
@@ -7832,7 +8024,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       bottomWrap.setVisibility(visible ? View.INVISIBLE : View.VISIBLE);
       bottomShadowView.setVisibility(visible ? View.INVISIBLE : View.VISIBLE);
       RelativeLayout.LayoutParams params = ((RelativeLayout.LayoutParams) messagesView.getLayoutParams());
-      params.addRule(RelativeLayout.ABOVE, visible ? 0 : R.id.msg_bottom);
+      params.addRule(RelativeLayout.ABOVE, visible ? 0 : inPreviewSearchMode() ? R.id.msg_searchLayout : R.id.msg_bottom);
       messagesView.setLayoutParams(params);
 
       params = ((RelativeLayout.LayoutParams) scrollToBottomButtonWrap.getLayoutParams());
@@ -9892,14 +10084,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private FrameLayoutFix searchControlsLayout;
   private RippleRevealView searchControlsReveal;
-  private ImageView searchByButton;
+  private AvatarView searchByButton;
+  private ImageView searchByTypeButton;
   private ImageView searchJumpToDateButton;
-  private ImageView searchNextButton, searchPrevButton;
+  private ImageView searchOnlySenderButton;
   private TextView searchCounterView;
   private ProgressComponentView searchProgressView;
 
   private boolean canSearchByUserId () {
-    return Config.SEARCH_BY_AVAILABLE && !isEventLog() && tdlib.isMultiChat(chat.id);
+    boolean isMultiChat = chat != null && tdlib.isMultiChat(chat.id);
+    return Config.SEARCH_BY_AVAILABLE && !isEventLog() && isMultiChat;
   }
 
   private boolean searchByVisible;
@@ -9908,7 +10102,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private static final int ANIMATOR_SEARCH_BY = 10;
 
   private void checkSearchByVisible () {
-    setSearchByVisible(canSearchByUserId() && StringUtils.isEmpty(getLastSearchInput()), isFocused() && getSearchTransformFactor() > 0f);
+    setSearchByVisible(canSearchByUserId(), isFocused() && getSearchTransformFactor() > 0f);
   }
 
   private void setSearchByVisible (boolean isVisible, boolean animated) {
@@ -9933,9 +10127,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (this.searchByVisibility != factor) {
       this.searchByVisibility = factor;
       searchByButton.setAlpha(factor * searchControlsFactor);
+      searchByTypeButton.setAlpha(factor * searchControlsFactor);
       float scale = .6f + .4f * factor;
       searchByButton.setScaleX(scale);
       searchByButton.setScaleY(scale);
+      searchByTypeButton.setScaleX(scale);
+      searchByTypeButton.setScaleY(scale);
     }
   }
 
@@ -10077,6 +10274,41 @@ public class MessagesController extends ViewController<MessagesController.Argume
     });
   }
 
+  private int selectedSearchMessageTypeId;
+  private TdApi.MessageSender selectedSearchMessageSender;
+  private TdApi.SearchMessagesFilter selectedSearchMessageFilter;
+  private boolean inFoundedMessagesOnly;
+
+  private void setInFoundedMessagesOnly (boolean inFoundedMessagesOnly) {
+    if (this.inFoundedMessagesOnly != inFoundedMessagesOnly) {
+      this.inFoundedMessagesOnly = inFoundedMessagesOnly;
+      if (inPreviewSearchMode()) {
+        if (inFoundedMessagesOnly) {
+          manager.openSearch(chat, lastSearchQuery, selectedSearchMessageSender, selectedSearchMessageFilter);
+        } else {
+          manager.openSearch(chat, null, selectedSearchMessageSender, selectedSearchMessageFilter);
+        }
+      } else {
+        if (inFoundedMessagesOnly) {
+          manager.openSearch(chat, lastSearchQuery, selectedSearchMessageSender, selectedSearchMessageFilter);
+        } else {
+          manager.closeSpecialSearchMode(chat, lastSearchQuery, selectedSearchMessageSender, null);
+        }
+      }
+      int colorId = inFoundedMessagesOnly ? R.id.theme_color_iconActive : R.id.theme_color_icon;
+      searchOnlySenderButton.setColorFilter(Theme.getColor(colorId));
+    }
+  }
+
+  public boolean inFoundedMessagesOnly () {
+    return inFoundedMessagesOnly;
+  }
+
+  @Override
+  public void onMemberPicked (@Nullable TdApi.MessageSender member) {
+    setSearchMember(member);
+  }
+
   private void initSearchControls () {
     if (searchControlsLayout != null) {
       return;
@@ -10086,6 +10318,33 @@ public class MessagesController extends ViewController<MessagesController.Argume
       switch (v.getId()) {
         case R.id.btn_search_by: {
           // TODO From: input
+          SharedMembersController c = new SharedMembersController(context, tdlib);
+          c.setArguments(new SharedBaseController.Args(chat.id, messageThread != null ? messageThread.getMessageThreadId() : 0, selectedSearchMessageSender, true, this));
+          c.setParent(this);
+          navigateTo(c);
+          break;
+        }
+        case R.id.btn_search_type: {
+          showOptions(getOptions(new int[]{R.id.btn_search_type_all, R.id.btn_search_type_text, R.id.btn_search_type_photos, R.id.btn_search_type_videos, R.id.btn_search_type_voice_messages, R.id.btn_search_type_video_messages, R.id.btn_search_type_files, R.id.btn_search_type_music, R.id.btn_search_type_gifs},
+              new String[]{Lang.getString(R.string.SearchTypeAll), Lang.getString(R.string.SearchTypeText), Lang.getString(R.string.SearchTypePhotos), Lang.getString(R.string.SearchTypeVideos), Lang.getString(R.string.SearchTypeVoiceMessages), Lang.getString(R.string.SearchTypeVideoMessages), Lang.getString(R.string.SearchTypeFiles), Lang.getString(R.string.SearchTypeMusic), Lang.getString(R.string.SearchTypeGifs)},
+              new int[]{R.drawable.baseline_filter_remove_24, R.drawable.baseline_text_24, R.drawable.baseline_image_24, R.drawable.baseline_videocam_24, R.drawable.baseline_mic_24, R.drawable.deproko_baseline_msg_video_24, R.drawable.baseline_insert_drive_file_24, R.drawable.baseline_music_note_24, R.drawable.deproko_baseline_gif_filled_24},
+              selectedSearchMessageTypeId,
+              OPTION_COLOR_BLUE),
+            (view, optionId) -> {
+              selectedSearchMessageTypeId = optionId;
+              setSearchFilterType(getSearchFilter(optionId));
+              if (optionId == R.id.btn_search_type_all) {
+                searchByTypeButton.setImageResource(R.drawable.baseline_filter_24);
+                searchByTypeButton.setColorFilter(Theme.getColor(R.id.theme_color_icon));
+              } else {
+                Drawable[] compoundDrawables = ((TextView) view).getCompoundDrawables();
+                if (compoundDrawables != null && compoundDrawables.length > 0) {
+                  searchByTypeButton.setImageDrawable(compoundDrawables[0]);
+                  searchByTypeButton.setColorFilter(Theme.getColor(R.id.theme_color_iconActive));
+                }
+              }
+              return true;
+            });
           break;
         }
         case R.id.btn_search_counter: {
@@ -10096,12 +10355,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
           jumpToDate();
           break;
         }
-        case R.id.btn_search_prev: {
-          manager.moveToNextResult(false);
-          break;
-        }
-        case R.id.btn_search_next: {
-          manager.moveToNextResult(true);
+        case R.id.btn_search_only_sender: {
+          setInFoundedMessagesOnly(!inFoundedMessagesOnly);
           break;
         }
       }
@@ -10133,20 +10388,39 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }*/
     };
     searchControlsLayout.setMinimumHeight(Screen.dp(49f));
+    searchControlsLayout.setId(R.id.msg_searchLayout);
     searchControlsLayout.setLayoutParams(rp);
+    if (inPreviewSearchMode()) {
+      searchControlsLayout.setVisibility(View.GONE);
+    }
 
     searchControlsReveal = new RippleRevealView(context);
     searchControlsReveal.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     searchControlsLayout.addView(searchControlsReveal);
     addThemeInvalidateListener(searchControlsReveal);
 
-    fp = FrameLayoutFix.newParams(Screen.dp(52f), Screen.dp(49f), Gravity.LEFT | Gravity.CENTER_VERTICAL);
-    fp.leftMargin = Screen.dp(52f);
-    searchByButton = Views.newImageButton(context, R.drawable.baseline_person_24, R.id.theme_color_icon, this);
+    selectedSearchMessageTypeId = R.id.btn_search_type_all;
+
+    fp = FrameLayoutFix.newParams(Screen.dp(24f), Screen.dp(24f), Gravity.LEFT | Gravity.CENTER_VERTICAL);
+    fp.leftMargin = Screen.dp(60f);
+    searchByButton = new AvatarView(context);
     searchByButton.setId(R.id.btn_search_by);
     searchByButton.setOnClickListener(onClickListener);
     searchByButton.setLayoutParams(fp);
+    searchByButton.setNeedCustomPlaceholderIcon(R.drawable.baseline_person_24);
     searchControlsLayout.addView(searchByButton);
+    if (inPreviewSearchMode()) {
+      searchByButton.setEnabled(false);
+      setSearchMember(previewSearchSender);
+    }
+
+    fp = FrameLayoutFix.newParams(Screen.dp(52f), Screen.dp(49f), Gravity.LEFT | Gravity.CENTER_VERTICAL);
+    fp.leftMargin = Screen.dp(84f);
+    searchByTypeButton = Views.newImageButton(context, R.drawable.baseline_filter_24, R.id.theme_color_icon, this);
+    searchByTypeButton.setId(R.id.btn_search_type);
+    searchByTypeButton.setOnClickListener(onClickListener);
+    searchByTypeButton.setLayoutParams(fp);
+    searchControlsLayout.addView(searchByTypeButton);
 
     fp = FrameLayoutFix.newParams(Screen.dp(52f), Screen.dp(49f), Gravity.LEFT | Gravity.CENTER_VERTICAL);
     searchJumpToDateButton = Views.newImageButton(context, R.drawable.baseline_date_range_24, R.id.theme_color_icon, this);
@@ -10156,26 +10430,19 @@ public class MessagesController extends ViewController<MessagesController.Argume
     searchControlsLayout.addView(searchJumpToDateButton);
 
     fp = FrameLayoutFix.newParams(Screen.dp(52f), Screen.dp(49f), Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-    fp.rightMargin = Screen.dp(52f);
-    searchNextButton = Views.newImageButton(context, R.drawable.baseline_keyboard_arrow_up_24, R.id.theme_color_icon, this);
-    searchNextButton.setId(R.id.btn_search_next);
-    searchNextButton.setOnClickListener(onClickListener);
-    searchNextButton.setLayoutParams(fp);
-    searchNextButton.setEnabled(false);
-    searchControlsLayout.addView(searchNextButton);
+    int colorId = inFoundedMessagesOnly ? R.id.theme_color_iconActive : R.id.theme_color_icon;
+    searchOnlySenderButton = Views.newImageButton(context, R.drawable.baseline_manage_search, colorId, this);
+    searchOnlySenderButton.setId(R.id.btn_search_only_sender);
+    searchOnlySenderButton.setOnClickListener(onClickListener);
+    searchOnlySenderButton.setPadding(0, 0, Screen.dp(12f), 0);
+    searchOnlySenderButton.setLayoutParams(fp);
+    searchOnlySenderButton.setAlpha(0f);
+    searchControlsLayout.addView(searchOnlySenderButton);
+    inFoundedMessagesOnly = false;
 
-    fp = FrameLayoutFix.newParams(Screen.dp(52f), Screen.dp(49f), Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-    searchPrevButton = Views.newImageButton(context, R.drawable.baseline_keyboard_arrow_down_24, R.id.theme_color_icon, this);
-    searchPrevButton.setId(R.id.btn_search_prev);
-    searchPrevButton.setOnClickListener(onClickListener);
-    searchPrevButton.setPadding(0, 0, Screen.dp(12f), 0);
-    searchPrevButton.setLayoutParams(fp);
-    searchPrevButton.setEnabled(false);
-    searchControlsLayout.addView(searchPrevButton);
-
-    final int padding = Screen.dp(22f);
+    final int padding = Screen.dp(16f);
     fp = FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-    fp.rightMargin = Screen.dp(52) * 2 + padding;
+    fp.rightMargin = Screen.dp(52) + padding;
     fp.leftMargin = Screen.dp(5f) + padding;
     searchCounterView = new NoScrollTextView(context) {
       @Override
@@ -10197,7 +10464,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     searchControlsLayout.addView(searchCounterView);
 
     fp = FrameLayoutFix.newParams(Screen.dp(49f), Screen.dp(49f), Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-    fp.rightMargin = Screen.dp(52f) * 2 + padding;
+    fp.rightMargin = Screen.dp(52f) + padding;
     searchProgressView = new ProgressComponentView(context);
     searchProgressView.initCustom(4.5f, 0f, 10f);
     searchProgressView.setLayoutParams(fp);
@@ -10209,7 +10476,66 @@ public class MessagesController extends ViewController<MessagesController.Argume
     setSearchControlsFactor(0f);
   }
 
+  private void setSearchMember (@Nullable TdApi.MessageSender member) {
+    selectedSearchMessageSender = member;
+    if (inPreviewSearchMode()) {
+      manager.onPrepareToSearch();
+    }
+    manager.setSearchSender(member);
+    searchByButton.setUser(tdlib(), member != null ? ((TdApi.MessageSenderUser) member).userId : 0, false);
+    if (manager.inSpecialMode()) {
+      manager.openSearch(chat, lastSearchQuery, selectedSearchMessageSender, selectedSearchMessageFilter);
+    }
+    if (inFoundedMessagesOnly) {
+      manager.openSearch(chat, lastSearchQuery, selectedSearchMessageSender, selectedSearchMessageFilter);
+    }
+  }
+
+  private void setSearchFilterType (TdApi.SearchMessagesFilter filter) {
+    selectedSearchMessageFilter = filter;
+    if (inPreviewSearchMode()) {
+      manager.onPrepareToSearch();
+    }
+    manager.setSearchFilterType(filter);
+    if (inFoundedMessagesOnly) {
+      manager.openSearch(chat, lastSearchQuery, selectedSearchMessageSender, selectedSearchMessageFilter);
+    }
+  }
+
+  private TdApi.SearchMessagesFilter getSearchFilter (int id) {
+    switch (id) {
+      case R.id.btn_search_type_text: {
+        return new SearchMessagesFilterText();
+      }
+      case R.id.btn_search_type_photos: {
+        return new TdApi.SearchMessagesFilterPhoto();
+      }
+      case R.id.btn_search_type_videos: {
+        return new TdApi.SearchMessagesFilterVideo();
+      }
+      case R.id.btn_search_type_voice_messages: {
+        return new TdApi.SearchMessagesFilterVoiceNote();
+      }
+      case R.id.btn_search_type_video_messages: {
+        return new TdApi.SearchMessagesFilterVideoNote();
+      }
+      case R.id.btn_search_type_files: {
+        return new TdApi.SearchMessagesFilterDocument();
+      }
+      case R.id.btn_search_type_music: {
+        return new TdApi.SearchMessagesFilterAudio();
+      }
+      case R.id.btn_search_type_gifs: {
+        return new TdApi.SearchMessagesFilterAnimation();
+      }
+      default: {
+        return new TdApi.SearchMessagesFilterEmpty();
+      }
+    }
+  }
+
   private boolean searchControlsForChannel;
+  private boolean inPreviewSearchMode;
 
   private void resetSearhControls () {
     if (searchControlsLayout != null) {
@@ -10219,14 +10545,20 @@ public class MessagesController extends ViewController<MessagesController.Argume
       setSearchInProgress(false, false);
       checkSearchByVisible();
       setSearchControlsFactor(0f);
+      setSearchTransformFactor(0f, false);
+      setSearchOnlyFoundedVisible(false, false);
+      setSearchNavigationVisible(false, false);
       updateSearchNavigation();
+      clearSearchTypes();
 
       boolean isChannel = tdlib.isChannelChat(chat);
-      if (searchControlsForChannel != isChannel) {
+      boolean isSearchMode = inPreviewSearchMode();
+      if (searchControlsForChannel != isChannel || inPreviewSearchMode != isSearchMode) {
         searchControlsForChannel = isChannel;
+        inPreviewSearchMode = isSearchMode;
 
         RelativeLayout.LayoutParams rp = (RelativeLayout.LayoutParams) searchControlsLayout.getLayoutParams();
-        if (isChannel) {
+        if (isSearchMode || isChannel) {
           rp.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
           rp.addRule(RelativeLayout.ALIGN_BOTTOM, 0);
           rp.addRule(RelativeLayout.ALIGN_TOP, 0);
@@ -10237,9 +10569,26 @@ public class MessagesController extends ViewController<MessagesController.Argume
           rp.addRule(RelativeLayout.ALIGN_TOP, R.id.msg_bottom);
           rp.height = ViewGroup.LayoutParams.MATCH_PARENT;
         }
-
         searchControlsLayout.setLayoutParams(rp);
       }
+    }
+  }
+
+  private void clearSearchTypes () {
+    selectedSearchMessageTypeId = R.id.btn_search_type_all;
+    selectedSearchMessageFilter = null;
+    selectedSearchMessageSender = null;
+    if (searchByTypeButton != null) {
+      searchByTypeButton.setImageResource(R.drawable.baseline_filter_24);
+      searchByTypeButton.setColorFilter(Theme.getColor(R.id.theme_color_icon));
+    }
+    if (searchByButton != null && previewSearchSender == null) {
+      searchByButton.setUser(tdlib(), 0, false);
+      searchByButton.invalidate();
+    }
+    if (inFoundedMessagesOnly) {
+      setInFoundedMessagesOnly(false);
+      setSearchOnlyFoundedVisible(false, true);
     }
   }
 
@@ -10280,9 +10629,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private void updateSearchNavigation () {
     if (searchControlsLayout != null) {
       float maxAlpha = searchControlsFactor;
-      float alpha = DISABLED_BUTTON_ALPHA + (1f - DISABLED_BUTTON_ALPHA) * (1f - searchInProgressFactor);
-      searchNextButton.setAlpha(maxAlpha * (searchNextButton.isEnabled() ? alpha : DISABLED_BUTTON_ALPHA));
-      searchPrevButton.setAlpha(maxAlpha * (searchPrevButton.isEnabled() ? alpha : DISABLED_BUTTON_ALPHA));
+      if (searchNextButton.isEnabled()) {
+        searchNextButton.setIconColorId(R.id.theme_color_circleButtonChatIcon);
+      } else {
+        searchNextButton.setCustomIconColor(ColorUtils.alphaColor(maxAlpha * DISABLED_BUTTON_ALPHA, R.id.theme_color_circleButtonChatIcon));
+      }
+      if (searchPrevButton.isEnabled()) {
+        searchPrevButton.setIconColorId(R.id.theme_color_circleButtonChatIcon);
+      } else {
+        searchPrevButton.setCustomIconColor(ColorUtils.alphaColor(maxAlpha * DISABLED_BUTTON_ALPHA, R.id.theme_color_circleButtonChatIcon));
+      }
 
       float counterAlpha = maxAlpha * (1f - searchInProgressFactor);
       float counterScale = .6f + .4f * (1f - searchInProgressFactor);
@@ -10307,6 +10663,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         searchControlsFactor = factor;
         searchJumpToDateButton.setAlpha(factor);
         searchByButton.setAlpha(factor * searchByVisibility);
+        searchByTypeButton.setAlpha(factor * searchByVisibility);
         updateSearchNavigation();
       }
       boolean translate = needSearchControlsTranslate();
@@ -10319,7 +10676,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private boolean needSearchControlsTranslate () {
-    return tdlib.isChannelChat(chat) && !hasWritePermission();
+    return (tdlib.isChannelChat(chat) && !hasWritePermission()) || inPreviewSearchMode();
   }
 
   private float getSearchControlsOffset () {
@@ -10336,6 +10693,21 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return true;
   }
 
+  @Override
+  protected int getHeaderColorId () {
+    return inPreviewSearchMode() ? R.id.theme_color_filling : super.getHeaderColorId();
+  }
+
+  @Override
+  protected int getHeaderIconColorId () {
+    return inPreviewSearchMode() ? R.id.theme_color_headerLightIcon : super.getHeaderIconColorId();
+  }
+
+  @Override
+  protected int getHeaderTextColorId () {
+    return inPreviewSearchMode() ? R.id.theme_color_text : super.getHeaderTextColorId();
+  }
+
   private static final float DISABLED_BUTTON_ALPHA = .6f;
 
   @Override
@@ -10343,29 +10715,84 @@ public class MessagesController extends ViewController<MessagesController.Argume
     super.applySearchTransformFactor(factor, isOpening);
     topBar.setGlobalVisibility(1f - factor, false);
     updateReplyView();
+    updateCounters(false);
     setSearchControlsFactor(factor);
+    if (!isOpening) {
+      manager.checkScrollToBottomButton(false);
+    }
     // checkBottomOffsetFactor();
   }
 
   @Override
   protected void onEnterSearchMode () {
     super.onEnterSearchMode();
-    manager.onPrepareToSearch();
+    startSearchMode();
   }
 
   @Override
   protected void onLeaveSearchMode () {
     manager.onDestroySearch();
+    searchCounterView.setText("");
+    setSearchNavigationVisible(false, true);
+    setSearchOnlyFoundedVisible(false, true);
     searchMedia(null);
+    if (inPreviewSearchMode()) {
+      searchControlsLayout.setVisibility(View.GONE);
+    }
+  }
+
+  @Override
+  protected void onAfterLeaveSearchMode () {
+    super.onAfterLeaveSearchMode();
+    updateCounters(true);
+    updateBottomBar(false);
+    if (stickerSuggestionsWrap != null) {
+      setStickersVisible(true);
+    }
+    context.setInlineResultsHidden(this, false);
+    clearSearchTypes();
   }
 
   private void moveSearchSelection (boolean next) {
     manager.moveToNextResult(next);
   }
 
+  private void startSearchMode () {
+    if (inPreviewSearchMode()) {
+      searchControlsLayout.setVisibility(View.VISIBLE);
+    }
+    clearCounters();
+    if (stickerSuggestionsWrap != null) {
+      setStickersVisible(false);
+    }
+    context.setInlineResultsHidden(this, true);
+    manager.onPrepareToSearch();
+  }
+
+  private String lastSearchQuery = "";
+
   @Override
   protected void onSearchInputChanged (String query) {
-    searchChatMessages(query);
+    lastSearchQuery = query;
+    if (!query.isEmpty()) {
+      searchChatMessages(query);
+    } else {
+      if (manager.isSearchPreview()) {
+        manager.openSearch(chat, query, selectedSearchMessageSender, selectedSearchMessageFilter);
+      }
+      clearSearchMessagesControls();
+    }
+    if (queryListener != null) {
+      queryListener.onChanged(query);
+    }
+  }
+
+  public void updateAvailableSearchMessagesTypes (List<TdApi.MessageContent> availableMessagesContents) {
+    // availableSearchMessagesTypes = availableMessagesContents;
+  }
+
+  public void updateAvailableSearchSenders (List<Long> senders) {
+    // availableSearchMessagesSenders = senders;
   }
 
   // Search counter
@@ -10380,19 +10807,31 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void onChatSearchFinished (String counter, int index, int totalCount) {
-    lastSearchIndex = index;
     lastSearchTotalCount = totalCount;
-    searchNextButton.setEnabled(index < totalCount);
-    searchPrevButton.setEnabled(index > 0);
+    lastSearchIndex = index;
+    searchNextButton.setEnabled(index > 0);
+    searchPrevButton.setEnabled(index + 1 < totalCount);
     searchCounterView.setText(counter);
     setSearchInProgress(false, true);
+    if (totalCount == 1 && !getLastSearchInput().isEmpty()) {
+      setSearchNavigationVisible(false, true);
+      setSearchOnlyFoundedVisible(true, true);
+    } else if (totalCount > 1 && !getLastSearchInput().isEmpty()) {
+      setSearchNavigationVisible(true, true);
+      setSearchOnlyFoundedVisible(true, true);
+    } else {
+      clearSearchMessagesControls();
+    }
     updateSearchNavigation();
   }
 
   private void searchChatMessages (String query) {
     // TODO pick fromUserId
     checkSearchByVisible();
-    manager.search(chat.id, messageThread, null, chat.type.getConstructor() == TdApi.ChatTypeSecret.CONSTRUCTOR, query);
+    if (inFoundedMessagesOnly) {
+      manager.openSearch(chat, lastSearchQuery, selectedSearchMessageSender, selectedSearchMessageFilter);
+    }
+    manager.search(chat.id, messageThread, selectedSearchMessageSender, selectedSearchMessageFilter, chat.type.getConstructor() == TdApi.ChatTypeSecret.CONSTRUCTOR, query, true);
     searchMedia(query);
   }
 
@@ -10414,6 +10853,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private void clearChatSearchInput () {
     clearSearchInput();
     // TODO clear input on first tap, clear "From: " on second tap
+  }
+
+  private void clearSearchMessagesControls () {
+    searchCounterView.setText("");
+    setSearchNavigationVisible(false, true);
+    setSearchOnlyFoundedVisible(false, true);
+    manager.clearHighlightedSearchResult();
   }
 
   private boolean triggerOneShot;

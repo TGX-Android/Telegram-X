@@ -239,7 +239,8 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         return Screen.dp(4f);
       }
       case ListItem.TYPE_CHAT_SMALL:
-      case ListItem.TYPE_CHAT_SMALL_SELECTABLE: {
+      case ListItem.TYPE_CHAT_SMALL_CHECKBOX:
+      case ListItem.TYPE_CHAT_SMALL_PICKER: {
         return Screen.dp(62f);
       }
       case ListItem.TYPE_EDITTEXT_WITH_PHOTO: {
@@ -478,6 +479,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_CHECKBOX_OPTION_DOUBLE_LINE:
       case ListItem.TYPE_CHECKBOX_OPTION_MULTILINE:
       case ListItem.TYPE_REACTION_CHECKBOX:
+      case ListItem.TYPE_CHAT_SMALL_PICKER:
       case ListItem.TYPE_RADIO_OPTION:
       case ListItem.TYPE_RADIO_OPTION_LEFT:
       case ListItem.TYPE_RADIO_OPTION_WITH_AVATAR:
@@ -2035,15 +2037,18 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         return new SettingHolder(chatView);
       }
       case ListItem.TYPE_CHAT_SMALL:
-      case ListItem.TYPE_CHAT_SMALL_SELECTABLE: {
+      case ListItem.TYPE_CHAT_SMALL_CHECKBOX:
+      case ListItem.TYPE_CHAT_SMALL_PICKER: {
         SmallChatView chatView = new SmallChatView(context, tdlib);
-        if (viewType == ListItem.TYPE_CHAT_SMALL_SELECTABLE) {
+        if (viewType == ListItem.TYPE_CHAT_SMALL_CHECKBOX || viewType == ListItem.TYPE_CHAT_SMALL_PICKER) {
           chatView.setPadding(0, 0, Screen.dp(18f) + Screen.dp(19f), 0);
           chatView.setEnabled(false);
           FrameLayoutFix wrapView = new FrameLayoutFix(context);
           wrapView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(62f)));
           wrapView.addView(chatView);
-          wrapView.addView(CheckBoxView.simpleCheckBox(context, Lang.rtl()));
+          if (viewType == ListItem.TYPE_CHAT_SMALL_CHECKBOX) {
+            wrapView.addView(CheckBoxView.simpleCheckBox(context, Lang.rtl()));
+          }
           wrapView.setOnClickListener(onClickListener);
           wrapView.setOnLongClickListener(onLongClickListener);
           Views.setClickable(wrapView);

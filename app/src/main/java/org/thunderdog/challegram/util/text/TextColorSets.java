@@ -13,6 +13,7 @@
 package org.thunderdog.challegram.util.text;
 
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 
 public final class TextColorSets {
@@ -156,6 +157,16 @@ public final class TextColorSets {
           return R.id.theme_color_iconLight;
         }
       },
+      MSG_SEARCH_HIGHLIGHT = new Regular() {
+        @Override
+        public int backgroundColor (boolean isPressed) {
+          return Theme.getColor(R.id.theme_color_textLinkPressHighlight);
+        }
+        @Override
+        public int backgroundColorId (boolean isPressed) {
+          return R.id.theme_color_textLinkPressHighlight;
+        }
+      },
       SEARCH_HIGHLIGHT = new Regular() {
         @Override
         public int defaultTextColorId () {
@@ -247,6 +258,22 @@ public final class TextColorSets {
       NORMAL = () -> R.id.theme_color_bubbleOut_text,
       LIGHT = () -> R.id.theme_color_bubbleOut_time,
       LINK = () -> R.id.theme_color_bubbleOut_textLink,
+      MSG_SEARCH_HIGHLIGHT = new BubbleOut() {
+        @Override
+        public int defaultTextColorId () {
+          return R.id.theme_color_bubbleOut_text;
+        }
+
+        @Override
+        public int backgroundColor (boolean isPressed) {
+          return Theme.getColor(R.id.theme_color_bubbleOut_textLinkPressHighlight);
+        }
+
+        @Override
+        public int backgroundColorId (boolean isPressed) {
+          return R.id.theme_color_bubbleOut_textLinkPressHighlight;
+        }
+      },
       MESSAGE_AUTHOR = new BubbleOut() {
         @Override
         public int defaultTextColorId () {
@@ -291,6 +318,22 @@ public final class TextColorSets {
       NORMAL = () -> R.id.theme_color_bubbleIn_text,
       LIGHT = () -> R.id.theme_color_bubbleIn_time,
       LINK = () -> R.id.theme_color_bubbleIn_textLink,
+      MSG_SEARCH_HIGHLIGHT = new BubbleIn() {
+        @Override
+        public int defaultTextColorId () {
+          return R.id.theme_color_bubbleIn_text;
+        }
+
+        @Override
+        public int backgroundColor (boolean isPressed) {
+          return Theme.getColor(R.id.theme_color_bubbleIn_textLinkPressHighlight);
+        }
+
+        @Override
+        public int backgroundColorId (boolean isPressed) {
+          return R.id.theme_color_bubbleIn_textLinkPressHighlight;
+        }
+      },
       MESSAGE_AUTHOR = new BubbleIn() {
         @Override
         public int defaultTextColorId () {
