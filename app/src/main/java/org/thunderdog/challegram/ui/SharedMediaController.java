@@ -568,6 +568,7 @@ public class SharedMediaController extends SharedBaseController<MediaItem> imple
       strings.append(R.string.ShowInChat);
 
       context.setButtons(this, item, ids.get(), icons.get(), strings.get());
+      context.setTouch(x, y);
 
       if (tdlib.isMultiChat(chatId)) {
         TdlibSender sender = new TdlibSender(tdlib, message.chatId, message.senderId);

@@ -673,16 +673,17 @@ public class TGCommentButton extends ForceTouchPreviewDelegate implements
   }
 
   private int getAvailableTextWidth () {
-    return width - getWidthWithoutText() - (mInfo != null && mInfo.hasUnread ? sUnreadSize : 0);
+    return width - getWidthWithoutText();
   }
 
   private int getWidthWithoutText () {
-    return (int) (paddingStart +
+    return paddingStart +
       mStartIconDrawable.getIntrinsicWidth() +
       startIconPadding +
       paddingEnd +
       mUserAvatarStack.getCurrentWidth() +
-      getEndIconOffset());
+      sUnreadSize +
+      getEndIconOffset();
   }
 
   private int getEndIconOffset() {

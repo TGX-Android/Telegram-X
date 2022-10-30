@@ -165,7 +165,7 @@ public class ForceTouchView extends FrameLayoutFix implements
       @Override
       public void draw (Canvas c) {
         final boolean needClip = !forceTouchContext.needHeader;
-        if (revealAnimator.isAnimating()) checkPath(true);
+        if (revealFactor <= 1f) checkPath(true);
         final int saveCount;
         if (needClip) {
           saveCount = ViewSupport.clipPath(c, path);
@@ -565,7 +565,7 @@ public class ForceTouchView extends FrameLayoutFix implements
     if (this.revealFactor != factor) {
       this.revealFactor = factor;
       final float scale = REVEAL_FACTOR + (1f - REVEAL_FACTOR) * factor;
-      if (revealFactor >= 1f) {
+      if (revealFactor > 1f) {
         contentWrap.setScaleX(scale);
         contentWrap.setScaleY(scale);
       }

@@ -430,6 +430,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
     strings.append(R.string.Send);
 
     context.setButtons(this, animation, ids.get(), icons.get(), strings.get());
+    context.setTouch(x, y);
 
     if (context().openForceTouch(context)) {
       gifsView.requestDisallowInterceptTouchEvent(true);
