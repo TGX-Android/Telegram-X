@@ -164,9 +164,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       }
       @Override
       public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
-        if (finalFactor == 1f) {
-          oldIdentityHintName = newIdentityHintName;
-        }
+        oldIdentityHintName = newIdentityHintName;
       }
     },
     AnimatorUtils.DECELERATE_INTERPOLATOR,
@@ -182,9 +180,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       }
       @Override
       public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
-        if (finalFactor == 1f || newIdentityHintPrefix == null) {
-          oldIdentityHintPrefix = newIdentityHintPrefix;
-        }
+        oldIdentityHintPrefix = newIdentityHintPrefix;
       }
     },
     AnimatorUtils.DECELERATE_INTERPOLATOR,
@@ -1090,8 +1086,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     }
     setIdentityHint(newIdentityHintName);
     if (newIdentityHintName != null) {
-      if (oldIdentityHintName == null) {
-        showIdentityHintPrefix.setValue(false, false);
+      if (!showIdentityHintPrefix.getValue()) {
         showIdentityHintPrefix.setValue(true, animated);
       }
       showIdentityHintName.setValue(false, false);

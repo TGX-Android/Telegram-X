@@ -10730,7 +10730,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   // Identity switch
 
   private static final int ANIMATOR_SWITCH_IDENTITY = 16;
-  public static final long IDENTITY_SWITCH_DURATION = 1500l;
+  public static final long IDENTITY_SWITCH_DURATION = 150l;
 
   private final BoolAnimator identitySwitchAnimator = new BoolAnimator(ANIMATOR_SWITCH_IDENTITY, this, AnimatorUtils.DECELERATE_INTERPOLATOR, IDENTITY_SWITCH_DURATION);
 
