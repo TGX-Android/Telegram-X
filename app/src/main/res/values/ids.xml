@@ -409,6 +409,10 @@
   <item type="id" name="btn_selectMuted" />
   <item type="id" name="btn_search" />
   <item type="id" name="btn_search_by" />
+  <item type="id" name="btn_filter_list" />
+  <item type="id" name="btn_filter_list_remove" />
+  <item type="id" name="btn_filter_variant" />
+  <item type="id" name="btn_text_messages" />
   <item type="id" name="btn_search_next" />
   <item type="id" name="btn_search_prev" />
   <item type="id" name="btn_search_counter" />
