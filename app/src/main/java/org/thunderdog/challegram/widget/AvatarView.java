@@ -19,6 +19,7 @@ import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.ImageView;
 
 import androidx.annotation.Nullable;
 
@@ -41,7 +42,7 @@ import org.thunderdog.challegram.tool.Screen;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.BitwiseUtils;
 
-public class AvatarView extends View implements Destroyable, TdlibCache.UserDataChangeListener, ChatListener, AttachDelegate {
+public class AvatarView extends ImageView implements Destroyable, TdlibCache.UserDataChangeListener, ChatListener, AttachDelegate {
   private static final int FLAG_NO_PLACEHOLDERS = 0x01;
   private static final int FLAG_NEED_FULL = 0x02;
   private static final int FLAG_NO_ROUND = 0x04;
@@ -53,11 +54,19 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
   private final ImageReceiver receiver;
   private ImageReceiver preview;
   private Drawable overlayIcon;
+  private boolean hasIcon = false;
+
 
   public AvatarView (Context context) {
     super(context);
     this.receiver = new ImageReceiver(this, 1);
     this.receiver.setRadius(0);
+  }
+
+  public AvatarView (Context context, int radius) {
+    super(context);
+    this.receiver = new ImageReceiver(this, radius);
+    this.receiver.setRadius(radius);
   }
 
   public void setNeedOverlay () {
@@ -174,7 +183,6 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
   public long getChatId () {
     return chat != null ? chat.id : 0;
   }
-
   private TdlibAccount account;
   private TdApi.User user;
   private TdApi.Chat chat;
@@ -182,6 +190,7 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
   private boolean hasPhoto, allowSavedMessages;
   private AvatarPlaceholder.Metadata avatarPlaceholderMetadata;
   private AvatarPlaceholder avatarPlaceholder;
+
 
   public void setUser (TdlibAccount account) {
     this.account = account;
@@ -198,6 +207,7 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
       receiver.clear();
       hasPhoto = false;
     }
+    hasIcon = false;
     invalidate();
   }
 
@@ -221,6 +231,7 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
         receiver.clear();
       }
     }
+    hasIcon = false;
   }
 
   public void setChat (Tdlib tdlib, @Nullable TdApi.Chat chat) {
@@ -239,15 +250,33 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
         receiver.clear();
       }
     }
+    hasIcon = false;
   }
 
+  public void setMessageSender(Tdlib tdlib, TdApi.MessageSender messageSender) {
+    if (messageSender == null) return;
+    if (messageSender.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR) {
+      TdApi.MessageSenderChat senderChat = (TdApi.MessageSenderChat) messageSender;
+      TdApi.Chat chat = tdlib.chat(senderChat.chatId);
+      if (chat != null) {
+        setChat(tdlib, chat);
+      }
+    } else if (messageSender.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR) {
+      TdApi.MessageSenderUser senderUser = (TdApi.MessageSenderUser) messageSender;
+      TdApi.User user = tdlib.cache().user(senderUser.userId);
+      if (user != null) {
+        setUser(tdlib, user, true);
+      }
+    }
+  }
   private static final int BLURRED_SIZE = 160;
+
 
   private boolean needFull () {
     return (flags & FLAG_NEED_FULL) != 0;
   }
-
   private float alpha;
+
 
   public void setMainAlpha (float alpha) {
     if (this.alpha != alpha) {
@@ -258,8 +287,8 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
       }
     }
   }
-
   private float lettersSizeDp = 17f;
+
 
   public void setLettersSizeDp (float dp) {
     this.lettersSizeDp = dp;
@@ -370,5 +399,15 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
       if (overlayIcon != null)
         Drawables.draw(c, overlayIcon, receiver.centerX() - overlayIcon.getMinimumWidth() / 2, receiver.centerY() - overlayIcon.getMinimumHeight() / 2, Paints.getPorterDuffPaint(0xffffffff));
     }
+
+    if (hasIcon) {
+      super.onDraw(c);
+    }
   }
+  @Override
+  public void setImageResource (int resId) {
+    super.setImageResource(resId);
+    hasIcon = true;
+  }
+
 }

@@ -92,6 +92,7 @@ import org.thunderdog.challegram.receiver.RefreshRateLimiter;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
+import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
@@ -102,6 +103,7 @@ import org.thunderdog.challegram.util.CharacterStyleFilter;
 import org.thunderdog.challegram.util.ExternalEmojiFilter;
 import org.thunderdog.challegram.util.FinalNewLineFilter;
 import org.thunderdog.challegram.util.TextSelection;
+import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.widget.InputWrapperWrapper;
 import org.thunderdog.challegram.widget.NoClipEditText;
 
@@ -111,6 +113,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.List;
 
+import me.vkryl.android.AnimatorUtils;
+import me.vkryl.android.animator.BoolAnimator;
+import me.vkryl.android.animator.ReplaceAnimator;
 import me.vkryl.android.text.CodePointCountFilter;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
@@ -278,6 +283,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         }
       });
     }
+    needShowPlaceholderAnimator.setValue(true, false);
   }
 
   @Override
@@ -684,6 +690,8 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       setTextChangedSinceChatOpened(true);
     }
 
+    needShowPlaceholderAnimator.setValue(str.length() == 0, false);
+
     TextSelection selection = getTextSelection();
     if (controller != null) {
       inlineContext.onTextChanged(s, str, selection != null && selection.isEmpty() ? selection.start : -1);
@@ -712,37 +720,59 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
   private int lastPlaceholderRes;
   private Object[] lastPlaceholderArgs;
-  private CharSequence rawPlaceholder;
+  private CharSequence mainPlaceholder;
+  private CharSequence subPlaceholder;
   private float rawPlaceholderWidth;
   private int lastPlaceholderAvailWidth;
+
+  private Text mainPlaceholderText;
+  private Text subPlaceholderText;
+
+  private final ReplaceAnimator<Text> subAnimator = new ReplaceAnimator<>(animator -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
+  private final BoolAnimator needShowPlaceholderAnimator = new BoolAnimator(0, (a, b, c, d) -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
 
   public void setInputPlaceholder (@StringRes int resId, Object... args) {
     String placeholder = Lang.getString(resId, args);
     this.lastPlaceholderRes = resId;
     this.lastPlaceholderArgs = args;
-    if (StringUtils.equalsOrBothEmpty(placeholder, this.rawPlaceholder)) {
+    if (StringUtils.equalsOrBothEmpty(placeholder, this.mainPlaceholder)) {
       return;
     }
-    this.rawPlaceholder = placeholder;
+    this.mainPlaceholder = placeholder;
     if (controller == null) {
       setHint(placeholder);
     } else {
-      this.rawPlaceholderWidth = U.measureText(rawPlaceholder, getPaint());
+      this.rawPlaceholderWidth = U.measureText(mainPlaceholder, getPaint());
+      this.lastPlaceholderAvailWidth = 0;
+      checkPlaceholderWidth();
+    }
+  }
+
+  public void setInputPlaceholder (String placeholder, String subPlaceholder) {
+    if (StringUtils.equalsOrBothEmpty(placeholder, this.mainPlaceholder)
+      && StringUtils.equalsOrBothEmpty(subPlaceholder, this.subPlaceholder)) {
+      return;
+    }
+    this.mainPlaceholder = placeholder;
+    this.subPlaceholder = subPlaceholder;
+    if (controller != null) {
+      this.lastPlaceholderAvailWidth = 0;
+      checkPlaceholderWidth();
+    } else {
+      this.rawPlaceholderWidth = U.measureText(mainPlaceholder, getPaint());
       this.lastPlaceholderAvailWidth = 0;
       checkPlaceholderWidth();
     }
   }
 
   public void checkPlaceholderWidth () {
-    if (lastPlaceholderRes != 0 && controller != null) {
+    if ((lastPlaceholderRes != 0 || !StringUtils.isEmptyOrBlank(mainPlaceholder)) &&  controller != null) {
       int availWidth = Math.max(0, getMeasuredWidth() - controller.getHorizontalInputPadding() - getPaddingLeft());
       if (this.lastPlaceholderAvailWidth != availWidth) {
         this.lastPlaceholderAvailWidth = availWidth;
-        if (rawPlaceholderWidth <= availWidth) {
-          setHint(rawPlaceholder);
-        } else {
-          setHint(TextUtils.ellipsize(rawPlaceholder, getPaint(), availWidth, TextUtils.TruncateAt.END));
-        }
+        mainPlaceholderText = new Text.Builder(tdlib, mainPlaceholder, null, availWidth, Paints.robotoStyleProvider(16), Theme::textPlaceholderColor, null).build();
+        Text subText = new Text.Builder(tdlib, subPlaceholder == null ? "" : subPlaceholder, null, availWidth, Paints.robotoStyleProvider(12), Theme::textPlaceholderColor, null).build();
+        subAnimator.replace(subText, UI.inUiThread());
       }
     }
   }
@@ -970,7 +1000,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     updateMessageHint(chat, messageThread, isSilent);
     setDraft(!tdlib.hasWritePermission(chat) ? null :
       messageThread != null ? messageThread.getDraftContent() :
-      chat.draftMessage != null ? chat.draftMessage.inputMessageText : null
+        chat.draftMessage != null ? chat.draftMessage.inputMessageText : null
     );
   }
 
@@ -993,20 +1023,23 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       setInputPlaceholder(R.string.Message);
       return;
     }
-    int resource;
-    Object[] args = null;
-    TdApi.ChatMemberStatus status = tdlib.chatStatus(chat.id);
+    String mainPlaceholder = null;
+    String subPlaceholder = null;
+
     if (tdlib.isChannel(chat.id)) {
-      resource = isSilent ? R.string.ChannelSilentBroadcast : R.string.ChannelBroadcast;
-    } else if (tdlib.isMultiChat(chat) && Td.isAnonymous(status)) {
-      resource = messageThread != null ? (messageThread.areComments() ? R.string.CommentAnonymously : R.string.MessageReplyAnonymously) :  R.string.MessageAnonymously;
-    } else if (chat.messageSenderId != null && !tdlib.isSelfSender(chat.messageSenderId)) {
-      resource = messageThread != null ? (messageThread.areComments() ? R.string.CommentAsX : R.string.MessageReplyAsX) : R.string.MessageAsX;
-      args = new Object[] { tdlib.senderName(chat.messageSenderId) };
+      mainPlaceholder = Lang.getString(isSilent ? R.string.ChannelSilentBroadcast : R.string.ChannelBroadcast);
     } else {
-      resource = messageThread != null ? (messageThread.areComments() ? R.string.Comment : R.string.MessageReply) : R.string.Message;
+      mainPlaceholder = Lang.getString(messageThread != null ? (messageThread.areComments() ? R.string.Comment : R.string.MessageReply) : R.string.Message);
     }
-    setInputPlaceholder(resource, args);
+
+    if (!tdlib.isChannel(chat.id)) {
+      if (tdlib.isMultiChat(chat) && Td.isAnonymous(tdlib.chatStatus(chat.id)) && !tdlib.isChannel(chat.messageSenderId)) {
+        subPlaceholder = Lang.getString(R.string.JustAsX, Lang.getString(R.string.AnonymousAdmin));
+      } else if (chat.messageSenderId != null && !tdlib.isSelfSender(chat.messageSenderId)) {
+        subPlaceholder = Lang.getString(R.string.JustAsX, tdlib.senderName(chat.messageSenderId));
+      }
+    }
+    setInputPlaceholder(mainPlaceholder, subPlaceholder);
   }
 
   public void setDraft (@Nullable TdApi.InputMessageContent draftContent) {
@@ -1096,6 +1129,14 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
   @Override
   protected void onDraw (Canvas c) {
+    if (needShowPlaceholderAnimator.getFloatValue() > 0) {
+      int verticalOffset = !StringUtils.isEmptyOrBlank(subPlaceholder) ? Screen.dp(23f) : Screen.dp(15f);
+      mainPlaceholderText.draw(c, getPaddingLeft(), getBaseline() - verticalOffset, null, needShowPlaceholderAnimator.getFloatValue());
+      subAnimator.iterator().forEachRemaining(entry -> {
+        entry.item.draw(c, getPaddingLeft(), getBaseline() - Screen.dp(3f), null, entry.getVisibility());
+      });
+    }
+
     super.onDraw(c);
     drawEmojiOverlay(c);
     if (this.displaySuffix.length() > 0 && this.prefix.length() > 0 && getLineCount() == 1) {

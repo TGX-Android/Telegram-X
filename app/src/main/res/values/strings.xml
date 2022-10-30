@@ -4413,4 +4413,6 @@
   <string name="XRestrictedVideoMessages">%1$s doesn\'t accept video messages.</string>
 
   <string name="format_PRMadeBy">%1$s by %2$s</string>
+  <string name="JustAsX">as %1$s</string>
+  <string name="AnonymousAdmin">Anonymous Admin</string>
 </resources>

@@ -6619,4 +6619,23 @@ public class TD {
     }
     return false;
   }
+
+  public static boolean equalSenders(TdApi.MessageSender first, TdApi.MessageSender second) {
+    if (first == null || second == null) return false;
+    if (first.getConstructor() != second.getConstructor()) return false;
+
+    if (first.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR) {
+      TdApi.MessageSenderChat firstChat = (TdApi.MessageSenderChat) first;
+      TdApi.MessageSenderChat secondChat = (TdApi.MessageSenderChat) second;
+      return firstChat.chatId == secondChat.chatId;
+    }
+
+    if (first.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR) {
+      TdApi.MessageSenderUser firstUser = (TdApi.MessageSenderUser) first;
+      TdApi.MessageSenderUser secondUser = (TdApi.MessageSenderUser) second;
+      return firstUser.userId == secondUser.userId;
+    }
+
+    return false;
+  }
 }

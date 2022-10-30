@@ -79,6 +79,7 @@ import com.google.android.gms.location.LocationSettingsStatusCodes;
 
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.jetbrains.annotations.NotNull;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
@@ -147,6 +148,7 @@ import org.thunderdog.challegram.helper.LiveLocationHelper;
 import org.thunderdog.challegram.helper.Recorder;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
 import org.thunderdog.challegram.loader.ImageReader;
+import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.ImageStrictCache;
 import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.mediaview.MediaViewDelegate;
@@ -206,12 +208,14 @@ import org.thunderdog.challegram.unsorted.Test;
 import org.thunderdog.challegram.util.CancellableResultHandler;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.OptionDelegate;
+import org.thunderdog.challegram.util.SendAsMenuHelper;
 import org.thunderdog.challegram.util.SenderPickerDelegate;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.Unlockable;
 import org.thunderdog.challegram.v.HeaderEditText;
 import org.thunderdog.challegram.v.MessagesLayoutManager;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
+import org.thunderdog.challegram.widget.AvatarView;
 import org.thunderdog.challegram.widget.CheckBoxView;
 import org.thunderdog.challegram.widget.CircleButton;
 import org.thunderdog.challegram.widget.CollapseListView;
@@ -237,6 +241,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
@@ -278,6 +283,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   ViewPager.OnPageChangeListener, ViewPagerTopView.OnItemClickListener,
   TGMessage.SelectableDelegate, GlobalAccountListener, EmojiToneHelper.Delegate, ComplexHeaderView.Callback, LiveLocationHelper.Callback, CreatePollController.Callback,
   HapticMenuHelper.Provider, HapticMenuHelper.OnItemClickListener, TdlibSettingsManager.DismissRequestsListener {
+  public static final float ATTACH_BUTTONS_WIDTH = 47f;
   private boolean reuseEnabled;
   private boolean destroyInstance;
 
@@ -316,6 +322,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private SendButton sendButton;
   private HapticMenuHelper sendMenu;
   private InvisibleImageView cameraButton, scheduleButton;
+
+  private AvatarView sendAsButton;
   private InvisibleImageView commandButton;
   private @Nullable SilentButton silentButton;
 
@@ -327,6 +335,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private CounterBadgeView unreadCountView, mentionCountView, reactionsCountView;
 
   public boolean sponsoredMessageLoaded = false;
+
+  private List<SendAsMenuHelper.MenuItem> sendAsItems = new ArrayList<>();
+  private SendAsMenuHelper sendAsMenu;
 
   public MessagesController (Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -957,8 +968,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
     attachButtons.setOrientation(LinearLayout.HORIZONTAL);
     attachButtons.setLayoutParams(params);
 
-    final float ATTACH_BUTTONS_WIDTH = 47f;
-
     LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(Screen.dp(ATTACH_BUTTONS_WIDTH), Screen.dp(49f));
 
     ImageView mediaButton = new CameraAccessImageView(context, this);
@@ -970,6 +979,18 @@ public class MessagesController extends ViewController<MessagesController.Argume
     mediaButton.setOnClickListener(this);
     mediaButton.setLayoutParams(lp);
 
+    lp = new LinearLayout.LayoutParams(Screen.dp(22f), Screen.dp(22f));
+    lp.gravity = Gravity.CENTER;
+    sendAsButton = new AvatarView(context, Screen.dp(11f));
+    sendAsButton.setId(R.id.msg_send_as);
+
+    sendAsButton.setScaleType(ImageView.ScaleType.CENTER);
+    sendAsButton.setImageResource(R.drawable.dot_baseline_acc_personal_24);
+    sendAsButton.setColorFilter(Theme.iconColor());
+    addThemeFilterListener(sendAsButton, R.id.theme_color_icon);
+    sendAsButton.setVisibility(View.INVISIBLE);
+    sendAsButton.setOnClickListener(this);
+    sendAsButton.setLayoutParams(lp);
 
     lp = new LinearLayout.LayoutParams(Screen.dp(ATTACH_BUTTONS_WIDTH), Screen.dp(49f));
     cameraButton = new CameraAccessImageView(context, this);
@@ -978,6 +999,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     cameraButton.setImageResource(R.drawable.deproko_baseline_camera_26);
     cameraButton.setColorFilter(Theme.iconColor());
     addThemeFilterListener(cameraButton, R.id.theme_color_icon);
+    cameraButton.setVisibility(View.INVISIBLE);
     cameraButton.setOnClickListener(this);
     cameraButton.setLayoutParams(lp);
 
@@ -1036,6 +1058,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (cameraButton != null) {
       attachButtons.addView(cameraButton);
     }
+    if (sendAsButton != null) {
+      attachButtons.addView(sendAsButton);
+    }
     attachButtons.addView(mediaButton);
     attachButtons.addView(recordButton);
     attachButtons.updatePivot();
@@ -1057,6 +1082,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
     sendButton.setLayoutParams(params);
 
     sendMenu = new HapticMenuHelper(this, this, getThemeListeners(), null).attachToView(sendButton);
+    sendAsMenu = new SendAsMenuHelper(view -> sendAsItems, new SendAsMenuHelper.OnItemClickListener() {
+      @Override
+      public void onHapticMenuItemClick (View view, View parentView) {
+
+      }
+    }, getThemeListeners(), null).attachToView(sendAsButton);
 
     if (inPreviewMode) {
       switch (previewMode) {
@@ -1790,9 +1821,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
 
         tdlib().client().send(new TdApi.SetBackground(
-                new TdApi.InputBackgroundRemote(getArgumentsStrict().wallpaperObject.id),
-                newBackgroundType,
-                Theme.isDark()
+          new TdApi.InputBackgroundRemote(getArgumentsStrict().wallpaperObject.id),
+          newBackgroundType,
+          Theme.isDark()
         ), result -> {
           if (result.getConstructor() == TdApi.Background.CONSTRUCTOR) {
             runOnUiThread(() -> {
@@ -1868,6 +1899,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
             break;
           }
         }
+        break;
+      }
+      case R.id.msg_send_as: {
+        sendAsMenu.openMenu(v);
         break;
       }
     }
@@ -2564,6 +2599,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return;
     }
 
+    if (chat.messageSenderId != null) {
+      TdApi.User user = tdlib.myUser();
+      if (chat.messageSenderId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR
+        && (Td.getSenderId(chat.messageSenderId) == user.id)) {
+        sendAsButton.setImageResource(R.drawable.dot_baseline_acc_personal_24);
+      } else {
+        sendAsButton.setMessageSender(tdlib, chat.messageSenderId);
+      }
+    }
+
     if (inputView != null) {
       // inputView.setIgnoreAnyChanges(true);
       boolean enabled = !isInputLess();
@@ -2665,7 +2710,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
           tdlib.ui().post(() -> {
             if (!isCancelled()) {
               if (getChatId() == chatId) {
-                manager.setChatAdmins((TdApi.ChatAdministrators) object);
+                TdApi.ChatAdministrators chatAdministrators = (TdApi.ChatAdministrators) object;
+                manager.setChatAdmins(chatAdministrators);
+                updateSendAs(chatAdministrators);
               }
             }
           });
@@ -2676,6 +2723,112 @@ public class MessagesController extends ViewController<MessagesController.Argume
     updateCounters(false);
     checkRestriction();
     checkLinkedChat();
+  }
+
+  private void updateSendAs (TdApi.ChatAdministrators chatAdministrators) {
+    boolean showSendAs = false;
+    boolean supergroup = TD.isSupergroup(chat.type);
+
+    showSendAs = /*isAdmin ||*/ supergroup;
+
+    sendAsButton.setVisibility(showSendAs ? View.VISIBLE : View.INVISIBLE);
+    cameraButton.setVisible(!showSendAs);
+    cameraButton.setTranslationX(sendAsButton.getLayoutParams().width);
+    attachButtons.updatePivot();
+
+    if (showSendAs) {
+      initSendAsItems(chat, chatAdministrators);
+    }
+  }
+
+  private void initSendAsItems (@NonNull TdApi.Chat chat, TdApi.ChatAdministrators chatAdministrators) {
+    tdlib.send(new TdApi.GetChatAvailableMessageSenders(chat.id), new Client.ResultHandler() {
+      @Override
+      public void onResult (TdApi.Object object) {
+        sendAsItems.clear();
+
+        boolean selfChat = tdlib.isSelfChat(chat);
+        TdApi.User currentUser = tdlib.myUser();
+        boolean isPremium = currentUser.isPremium;
+        if (selfChat) {
+          TdApi.MessageSenderUser selfUserSender = new TdApi.MessageSenderUser(currentUser.id);
+          SendAsMenuHelper.MenuItem currentUserItem = new SendAsMenuHelper.MenuItem(-1, currentUser.firstName + " " + currentUser.lastName, currentUser.username, selfUserSender, false, tdlib);
+          sendAsItems.add(currentUserItem);
+        }
+
+        if (object.getConstructor() == TdApi.ChatMessageSenders.CONSTRUCTOR) {
+          TdApi.ChatMessageSenders senders = (TdApi.ChatMessageSenders) object;
+          if (senders.senders != null && senders.senders.length > 0) {
+
+            int maxCountToShow = 5;
+            boolean needShowMoreButton = senders.senders.length > maxCountToShow;
+            int countToShow = Math.min(senders.senders.length, maxCountToShow - 1);
+
+            for (int i = 0; i < countToShow; i++) {
+              TdApi.ChatMessageSender sender = senders.senders[i];
+              TdApi.MessageSender messageSender = sender.sender;
+
+              SendAsMenuHelper.MenuItem item = null;
+              if (messageSender.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR) {
+                TdApi.MessageSenderChat messageSenderChat = (TdApi.MessageSenderChat) messageSender;
+                TdApi.Chat sendAsChat = tdlib.chat(messageSenderChat.chatId);
+                if (sendAsChat == null) continue;
+                String chatTitle = sendAsChat.title;
+
+                item = new SendAsMenuHelper.MenuItem(i, chatTitle, "@username", messageSender, sender.needsPremium && !isPremium, tdlib);
+              } else {
+                TdApi.MessageSenderUser senderUser = (TdApi.MessageSenderUser) messageSender;
+                TdApi.User user = tdlib.cache().user(senderUser.userId);
+                if (user == null) continue;
+
+                item = new SendAsMenuHelper.MenuItem(i, user.firstName + " " + user.lastName, "@" + user.username, messageSender, sender.needsPremium && !isPremium, tdlib);
+              }
+
+              sendAsItems.add(item);
+            }
+
+            if (needShowMoreButton) {
+              SendAsMenuHelper.MenuItem item = new SendAsMenuHelper.MenuItem(R.id.msg_send_as_more, Lang.getString(R.string.MoreMessageOptions), R.drawable.baseline_more_horiz_24);
+              sendAsItems.add(0, item);
+            }
+          }
+        }
+
+        for (final SendAsMenuHelper.MenuItem sendAsItem : sendAsItems) {
+          sendAsItem.setOnClickListener(v -> {
+
+            switch (sendAsItem.id) {
+              case R.id.msg_send_as_more:
+                //todo: show account selector sheet
+                break;
+              default: {
+                TdApi.MessageSender messageSender = sendAsItem.sender;
+                if (messageSender != null) {
+
+                  if (sendAsItem.needPremium) {
+                    runOnUiThreadOptional(() -> {
+                      UI.showToast(Lang.getString(R.string.error_PREMIUM_ACCOUNT_REQUIRED), Toast.LENGTH_SHORT);
+                      sendAsMenu.hideMenu();
+                    });
+                    return;
+                  }
+                  tdlib.send(new TdApi.SetChatMessageSender(chat.id, messageSender), new Client.ResultHandler() {
+                    @Override
+                    public void onResult (TdApi.Object object) {
+                      if (object.getConstructor() == TdApi.Ok.CONSTRUCTOR) {
+                        sendAsButton.setMessageSender(tdlib, messageSender);
+                      } else {
+                        runOnUiThreadOptional(() -> UI.showError(object));
+                      }
+                    }
+                  });
+                }
+              }
+            }
+          });
+        }
+      }
+    });
   }
 
   public void updateShadowColor () {
@@ -3241,10 +3394,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
           .setVisibility((value = canEditSelectedMessages()) ? View.VISIBLE : View.GONE);
         if (value) totalButtonsCount++;
         header.addButton(menu, R.id.menu_btn_clearCache, R.drawable.templarian_baseline_broom_24, iconColorId, this, Screen.dp(52f))
-        .setVisibility((value = canClearCacheSelectedMessages()) ? View.VISIBLE : View.GONE);
+          .setVisibility((value = canClearCacheSelectedMessages()) ? View.VISIBLE : View.GONE);
         if (value) totalButtonsCount++;
         header.addButton(menu, R.id.menu_btn_unpinAll, R.drawable.deproko_baseline_pin_undo_24, iconColorId, this, Screen.dp(52f))
-        .setVisibility((value = canUnpinSelectedMessages()) ? View.VISIBLE : View.GONE);
+          .setVisibility((value = canUnpinSelectedMessages()) ? View.VISIBLE : View.GONE);
         if (value) totalButtonsCount++;
         header.addRetryButton(menu, this, iconColorId)
           .setVisibility((value = canResendSelectedMessages()) ? View.VISIBLE : View.GONE);
@@ -6807,7 +6960,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           try {
             location = LocationServices.FusedLocationApi.getLastLocation(client);
           } catch (SecurityException ignored) { }
-            catch (Throwable t) {
+          catch (Throwable t) {
             Log.w("getLastLocation error", t);
           }
           if (location == null && USE_LAST_KNOWN_LOCATION) {
@@ -6848,7 +7001,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           try {
             manager.removeUpdates(this);
           } catch (SecurityException ignored) { }
-            catch (Throwable t) {
+          catch (Throwable t) {
             Log.w("removeUpdates failed. Probable resource leak", t);
           }
           if (!sent[0]) {
@@ -6982,7 +7135,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         boolean onlyForSelf = isUserChat && !checkbox;
         tdlib.client().send(new TdApi.PinChatMessage(chatId, m.getSmallestId(), disableNotification, onlyForSelf), tdlib.okHandler());
       })
-    .setRawItems(new ListItem[] {item}).setSaveStr(R.string.Pin));
+      .setRawItems(new ListItem[] {item}).setSaveStr(R.string.Pin));
   }
 
   public void showHidePinnedMessages (boolean show, MessageListManager messageList) {
@@ -7007,21 +7160,21 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return;
     }
     showOptions(new Options.Builder()
-      .info(pinnedCount > 1 ? Lang.pluralBold(R.string.UnpinXMessages, pinnedCount) : null)
-      .item(canPinAnyMessage(false) ? new OptionItem.Builder()
-        .id(R.id.btn_unpinMessage)
-        .name(Lang.getString(pinnedCount == 1 ? R.string.UnpinMessage : R.string.UnpinMessagesConfirm))
-        .color(OPTION_COLOR_RED)
-        .icon(R.drawable.deproko_baseline_pin_undo_24)
-        .build() : null
-      )
-      .item(!isSelfChat() ? new OptionItem.Builder()
-        .id(R.id.btn_dismissForSelf)
-        .name(R.string.HideForYourself)
-        .icon(R.drawable.baseline_close_24)
-        .build() : null)
-      .cancelItem()
-      .build(),
+        .info(pinnedCount > 1 ? Lang.pluralBold(R.string.UnpinXMessages, pinnedCount) : null)
+        .item(canPinAnyMessage(false) ? new OptionItem.Builder()
+          .id(R.id.btn_unpinMessage)
+          .name(Lang.getString(pinnedCount == 1 ? R.string.UnpinMessage : R.string.UnpinMessagesConfirm))
+          .color(OPTION_COLOR_RED)
+          .icon(R.drawable.deproko_baseline_pin_undo_24)
+          .build() : null
+        )
+        .item(!isSelfChat() ? new OptionItem.Builder()
+          .id(R.id.btn_dismissForSelf)
+          .name(R.string.HideForYourself)
+          .icon(R.drawable.baseline_close_24)
+          .build() : null)
+        .cancelItem()
+        .build(),
       (itemView, id) -> {
         switch (id) {
           case R.id.btn_unpinMessage: {
@@ -8245,295 +8398,295 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private void openEventLogSettings () {
     loadChannelAdmins(result -> {
-        if (!isFocused()) {
-          return;
-        }
+      if (!isFocused()) {
+        return;
+      }
 
-        TdApi.ChatEventLogFilters filters = manager.getEventLogFilters();
-        long[] userIds = manager.getEventLogUserIds();
+      TdApi.ChatEventLogFilters filters = manager.getEventLogFilters();
+      long[] userIds = manager.getEventLogUserIds();
 
-        ArrayList<ListItem> items = new ArrayList<>();
+      ArrayList<ListItem> items = new ArrayList<>();
 
-        final int[] ids;
-        final String[] strings;
+      final int[] ids;
+      final String[] strings;
 
-        final boolean isChannel = tdlib.isChannel(chat.id);
+      final boolean isChannel = tdlib.isChannel(chat.id);
 
-        if (isChannel) {
-          ids = new int[] {
-            R.id.btn_filterAll,
-            R.id.btn_filterAdmins,
-            R.id.btn_filterMembers,
-            R.id.btn_filterInviteLinks,
-            R.id.btn_filterInfo,
-            R.id.btn_filterSettings,
-            R.id.btn_filterDeletedMessages,
-            R.id.btn_filterEditedMessages,
-            R.id.btn_filterPinnedMessages,
-            R.id.btn_filterLeavingMembers,
-            R.id.btn_filterVideoChats
-          };
-          strings = new String[] {
-            Lang.getString(R.string.EventLogFilterAll),
-            Lang.getString(R.string.EventLogFilterNewAdmins),
-            Lang.getString(R.string.EventLogFilterNewMembers),
-            Lang.getString(R.string.EventLogFilterInviteLinks),
-            Lang.getString(R.string.EventLogFilterChannelInfo),
-            Lang.getString(R.string.EventLogFilterChannelSettings),
-            Lang.getString(R.string.EventLogFilterDeletedMessages),
-            Lang.getString(R.string.EventLogFilterEditedMessages),
-            Lang.getString(R.string.EventLogFilterPinnedMessages),
-            Lang.getString(R.string.EventLogFilterLeavingMembers),
-            Lang.getString(R.string.EventLogFilterLiveStreams)
-          };
+      if (isChannel) {
+        ids = new int[] {
+          R.id.btn_filterAll,
+          R.id.btn_filterAdmins,
+          R.id.btn_filterMembers,
+          R.id.btn_filterInviteLinks,
+          R.id.btn_filterInfo,
+          R.id.btn_filterSettings,
+          R.id.btn_filterDeletedMessages,
+          R.id.btn_filterEditedMessages,
+          R.id.btn_filterPinnedMessages,
+          R.id.btn_filterLeavingMembers,
+          R.id.btn_filterVideoChats
+        };
+        strings = new String[] {
+          Lang.getString(R.string.EventLogFilterAll),
+          Lang.getString(R.string.EventLogFilterNewAdmins),
+          Lang.getString(R.string.EventLogFilterNewMembers),
+          Lang.getString(R.string.EventLogFilterInviteLinks),
+          Lang.getString(R.string.EventLogFilterChannelInfo),
+          Lang.getString(R.string.EventLogFilterChannelSettings),
+          Lang.getString(R.string.EventLogFilterDeletedMessages),
+          Lang.getString(R.string.EventLogFilterEditedMessages),
+          Lang.getString(R.string.EventLogFilterPinnedMessages),
+          Lang.getString(R.string.EventLogFilterLeavingMembers),
+          Lang.getString(R.string.EventLogFilterLiveStreams)
+        };
+      } else {
+        ids = new int[] {
+          R.id.btn_filterAll,
+          R.id.btn_filterRestrictions,
+          R.id.btn_filterAdmins,
+          R.id.btn_filterMembers,
+          R.id.btn_filterInviteLinks,
+          R.id.btn_filterInfo,
+          R.id.btn_filterSettings,
+          R.id.btn_filterDeletedMessages,
+          R.id.btn_filterEditedMessages,
+          R.id.btn_filterPinnedMessages,
+          R.id.btn_filterLeavingMembers,
+          R.id.btn_filterVideoChats
+        };
+        strings = new String[] {
+          Lang.getString(R.string.EventLogFilterAll),
+          Lang.getString(R.string.EventLogFilterNewRestrictions),
+          Lang.getString(R.string.EventLogFilterNewAdmins),
+          Lang.getString(R.string.EventLogFilterNewMembers),
+          Lang.getString(R.string.EventLogFilterInviteLinks),
+          Lang.getString(R.string.EventLogFilterGroupInfo),
+          Lang.getString(R.string.EventLogFilterGroupSettings),
+          Lang.getString(R.string.EventLogFilterDeletedMessages),
+          Lang.getString(R.string.EventLogFilterEditedMessages),
+          Lang.getString(R.string.EventLogFilterPinnedMessages),
+          Lang.getString(R.string.EventLogFilterLeavingMembers),
+          Lang.getString(R.string.EventLogFilterVoiceChats)
+        };
+      }
+
+      boolean isFirst = true;
+      int i = 0;
+
+      for (int id : ids) {
+        if (isFirst) {
+          isFirst = false;
         } else {
-          ids = new int[] {
-            R.id.btn_filterAll,
-            R.id.btn_filterRestrictions,
-            R.id.btn_filterAdmins,
-            R.id.btn_filterMembers,
-            R.id.btn_filterInviteLinks,
-            R.id.btn_filterInfo,
-            R.id.btn_filterSettings,
-            R.id.btn_filterDeletedMessages,
-            R.id.btn_filterEditedMessages,
-            R.id.btn_filterPinnedMessages,
-            R.id.btn_filterLeavingMembers,
-            R.id.btn_filterVideoChats
-          };
-          strings = new String[] {
-            Lang.getString(R.string.EventLogFilterAll),
-            Lang.getString(R.string.EventLogFilterNewRestrictions),
-            Lang.getString(R.string.EventLogFilterNewAdmins),
-            Lang.getString(R.string.EventLogFilterNewMembers),
-            Lang.getString(R.string.EventLogFilterInviteLinks),
-            Lang.getString(R.string.EventLogFilterGroupInfo),
-            Lang.getString(R.string.EventLogFilterGroupSettings),
-            Lang.getString(R.string.EventLogFilterDeletedMessages),
-            Lang.getString(R.string.EventLogFilterEditedMessages),
-            Lang.getString(R.string.EventLogFilterPinnedMessages),
-            Lang.getString(R.string.EventLogFilterLeavingMembers),
-            Lang.getString(R.string.EventLogFilterVoiceChats)
-          };
-        }
-
-        boolean isFirst = true;
-        int i = 0;
-
-        for (int id : ids) {
-          if (isFirst) {
-            isFirst = false;
-          } else {
-            items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-          }
-          items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, id == R.id.btn_filterAll ? id : R.id.btn_filter, 0, strings[i], id, checkFilter(id, filters)).setData(filters));
-          i++;
-        }
-        items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM).setTextColorId(R.id.theme_color_background));
-
-        items.add(new ListItem(ListItem.TYPE_SHADOW_TOP).setTextColorId(R.id.theme_color_background));
-
-        items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_members, 0, R.string.EventLogAllAdmins, userIds == null));
-
-        for (TdApi.ChatAdministrator admin : chatAdmins.administrators) {
           items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-          items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR, R.id.user, 0, tdlib.cache().userName(admin.userId), userIds == null || ArrayUtils.indexOf(userIds, admin.userId) != -1).setLongId(admin.userId).setLongValue(admin.userId));
         }
+        items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, id == R.id.btn_filterAll ? id : R.id.btn_filter, 0, strings[i], id, checkFilter(id, filters)).setData(filters));
+        i++;
+      }
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM).setTextColorId(R.id.theme_color_background));
+
+      items.add(new ListItem(ListItem.TYPE_SHADOW_TOP).setTextColorId(R.id.theme_color_background));
+
+      items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_members, 0, R.string.EventLogAllAdmins, userIds == null));
+
+      for (TdApi.ChatAdministrator admin : chatAdmins.administrators) {
+        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+        items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR, R.id.user, 0, tdlib.cache().userName(admin.userId), userIds == null || ArrayUtils.indexOf(userIds, admin.userId) != -1).setLongId(admin.userId).setLongValue(admin.userId));
+      }
 
 
-        ListItem[] array = new ListItem[items.size()];
-        items.toArray(array);
+      ListItem[] array = new ListItem[items.size()];
+      items.toArray(array);
 
-        final SettingsWrapBuilder b = new SettingsWrapBuilder(R.id.btn_filter);
-        showSettings(b
-          .setNeedSeparators(false)
-          .setNeedRootInsets(true)
-          .setRawItems(array)
-          .setSaveStr(R.string.Apply)
-          .setAllowResize(true)
-          .setDisableToggles(true)
-          .setOnActionButtonClick((wrap, view, isCancel) -> {
-            if (isCancel) {
-              return false;
-            }
-
-            final TdApi.ChatEventLogFilters filter = new TdApi.ChatEventLogFilters(
-              true,
-              true,
-              true,
-              true,
-              true,
-              true,
-              true,
-              true,
-              true,
-              true,
-              true,
-              true
-            );
-            final LongList userIds1;
-
-
-            int i12 = wrap.adapter.indexOfViewById(R.id.btn_members);
-            if (i12 != -1 && wrap.adapter.getItems().get(i12).isSelected()) {
-              userIds1 = null;
-            } else {
-              userIds1 = new LongList(chatAdmins != null ? chatAdmins.administrators.length : 10);
-            }
-
-            int filterCount = 0;
-
-            final List<ListItem> listItems = wrap.adapter.getItems();
-            final int totalCount = listItems.size();
-            for (i12 = 0; i12 < totalCount; i12++) {
-              ListItem item = listItems.get(i12);
-
-              switch (item.getId()) {
-                case R.id.btn_filter: {
-                  boolean isSelected = item.isSelected();
-                  if (isSelected) {
-                    filterCount++;
-                  }
-                  switch (item.getCheckId()) {
-                    case R.id.btn_filterRestrictions:
-                      filter.memberRestrictions = isSelected;
-                      break;
-                    case R.id.btn_filterAdmins:
-                      filter.memberPromotions = isSelected;
-                      break;
-                    case R.id.btn_filterMembers:
-                      filter.memberJoins = filter.memberInvites = isSelected;
-                      break;
-                    case R.id.btn_filterInviteLinks:
-                      filter.inviteLinkChanges = isSelected;
-                      break;
-                    case R.id.btn_filterInfo:
-                      filter.infoChanges = isSelected;
-                      break;
-                    case R.id.btn_filterDeletedMessages:
-                      filter.messageDeletions = isSelected;
-                      break;
-                    case R.id.btn_filterSettings:
-                      filter.settingChanges = isSelected;
-                      break;
-                    case R.id.btn_filterEditedMessages:
-                      filter.messageEdits = isSelected;
-                      break;
-                    case R.id.btn_filterPinnedMessages:
-                      filter.messagePins = isSelected;
-                      break;
-                    case R.id.btn_filterLeavingMembers:
-                      filter.memberLeaves = isSelected;
-                      break;
-                    case R.id.btn_filterVideoChats:
-                      filter.videoChatChanges = isSelected;
-                      break;
-                  }
-                  break;
-                }
-
-                case R.id.user: {
-                  if (item.isSelected() && userIds1 != null) {
-                    userIds1.append(item.getLongValue());
-                  }
-                  break;
-                }
-              }
-            }
-
-            if (filterCount == 0 || (userIds1 != null && userIds1.size() == 0)) {
-              context.tooltipManager().builder(view).show(null, tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.EventLogEmptyFilter));
-              return true;
-            }
-
-            manager.applyEventLogFilters(filter, userIds1 != null ? userIds1.get() : null);
-
+      final SettingsWrapBuilder b = new SettingsWrapBuilder(R.id.btn_filter);
+      showSettings(b
+        .setNeedSeparators(false)
+        .setNeedRootInsets(true)
+        .setRawItems(array)
+        .setSaveStr(R.string.Apply)
+        .setAllowResize(true)
+        .setDisableToggles(true)
+        .setOnActionButtonClick((wrap, view, isCancel) -> {
+          if (isCancel) {
             return false;
-          })
-          .setSettingProcessor((item, view, isUpdate) -> {
-            switch (item.getViewType()) {
-              case ListItem.TYPE_CHECKBOX_OPTION:
-              case ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR:
-                ((CheckBoxView) view.getChildAt(0)).setChecked(item.isSelected(), isUpdate);
-                break;
-            }
-          })
-          .setOnSettingItemClick((view, settingsId, item, doneButton, settingsAdapter) -> {
-            switch (item.getViewType()) {
-              case ListItem.TYPE_CHECKBOX_OPTION:
-              case ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR:
-                break;
-              default:
-                return;
-            }
-            final boolean isSelect = ((CheckBoxView) ((SettingView) view).getChildAt(0)).toggle();
-            item.setSelected(isSelect);
+          }
 
-            final List<ListItem> allItems = settingsAdapter.getItems();
-            final int size = allItems.size();
+          final TdApi.ChatEventLogFilters filter = new TdApi.ChatEventLogFilters(
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+            true
+          );
+          final LongList userIds1;
+
+
+          int i12 = wrap.adapter.indexOfViewById(R.id.btn_members);
+          if (i12 != -1 && wrap.adapter.getItems().get(i12).isSelected()) {
+            userIds1 = null;
+          } else {
+            userIds1 = new LongList(chatAdmins != null ? chatAdmins.administrators.length : 10);
+          }
+
+          int filterCount = 0;
+
+          final List<ListItem> listItems = wrap.adapter.getItems();
+          final int totalCount = listItems.size();
+          for (i12 = 0; i12 < totalCount; i12++) {
+            ListItem item = listItems.get(i12);
 
             switch (item.getId()) {
-              // Select/unselect all admins
-              case R.id.btn_members: {
-                for (int i1 = 0; i1 < size; i1++) {
-                  ListItem userItem = allItems.get(i1);
-                  if (userItem.getId() == R.id.user && userItem.isSelected() != isSelect) {
-                    userItem.setSelected(isSelect);
-                    settingsAdapter.updateValuedSettingByPosition(i1);
-                  }
-                }
-                break;
-              }
-              // Select/unselect user, unselect "All admins"
-              case R.id.user: {
-                int i1 = settingsAdapter.indexOfViewById(R.id.btn_members);
-                if (i1 != -1) {
-                  ListItem allItem = allItems.get(i1);
-                  if (allItem.isSelected()) {
-                    allItem.setSelected(false);
-                    settingsAdapter.updateValuedSettingByPosition(i1);
-                  }
-                }
-                break;
-              }
-
-              // Select/Unselect all filters
-              case R.id.btn_filterAll: {
-                for (int i1 = 0; i1 < size; i1++) {
-                  ListItem filterItem = allItems.get(i1);
-                  if (filterItem.getId() == R.id.btn_filter && filterItem.isSelected() != isSelect) {
-                    filterItem.setSelected(isSelect);
-                    settingsAdapter.updateValuedSettingByPosition(i1);
-                  }
-                }
-                break;
-              }
-
               case R.id.btn_filter: {
-                int selectedFilters = 0;
-                for (int i1 = 0; i1 < size; i1++) {
-                  ListItem filterItem = allItems.get(i1);
-                  if (filterItem.getId() == R.id.btn_filter && filterItem.isSelected()) {
-                    selectedFilters++;
-                  }
+                boolean isSelected = item.isSelected();
+                if (isSelected) {
+                  filterCount++;
                 }
-
-                boolean allSelected = selectedFilters == ids.length - 1;
-
-                int i1 = settingsAdapter.indexOfViewById(R.id.btn_filterAll);
-                if (i1 != -1) {
-                  ListItem allItem = allItems.get(i1);
-                  if (allItem.isSelected() != allSelected) {
-                    allItem.setSelected(allSelected);
-                    settingsAdapter.updateValuedSettingByPosition(i1);
-                  }
+                switch (item.getCheckId()) {
+                  case R.id.btn_filterRestrictions:
+                    filter.memberRestrictions = isSelected;
+                    break;
+                  case R.id.btn_filterAdmins:
+                    filter.memberPromotions = isSelected;
+                    break;
+                  case R.id.btn_filterMembers:
+                    filter.memberJoins = filter.memberInvites = isSelected;
+                    break;
+                  case R.id.btn_filterInviteLinks:
+                    filter.inviteLinkChanges = isSelected;
+                    break;
+                  case R.id.btn_filterInfo:
+                    filter.infoChanges = isSelected;
+                    break;
+                  case R.id.btn_filterDeletedMessages:
+                    filter.messageDeletions = isSelected;
+                    break;
+                  case R.id.btn_filterSettings:
+                    filter.settingChanges = isSelected;
+                    break;
+                  case R.id.btn_filterEditedMessages:
+                    filter.messageEdits = isSelected;
+                    break;
+                  case R.id.btn_filterPinnedMessages:
+                    filter.messagePins = isSelected;
+                    break;
+                  case R.id.btn_filterLeavingMembers:
+                    filter.memberLeaves = isSelected;
+                    break;
+                  case R.id.btn_filterVideoChats:
+                    filter.videoChatChanges = isSelected;
+                    break;
                 }
+                break;
+              }
 
+              case R.id.user: {
+                if (item.isSelected() && userIds1 != null) {
+                  userIds1.append(item.getLongValue());
+                }
                 break;
               }
             }
-          })
-        );
+          }
+
+          if (filterCount == 0 || (userIds1 != null && userIds1.size() == 0)) {
+            context.tooltipManager().builder(view).show(null, tdlib, R.drawable.baseline_warning_24, Lang.getString(R.string.EventLogEmptyFilter));
+            return true;
+          }
+
+          manager.applyEventLogFilters(filter, userIds1 != null ? userIds1.get() : null);
+
+          return false;
+        })
+        .setSettingProcessor((item, view, isUpdate) -> {
+          switch (item.getViewType()) {
+            case ListItem.TYPE_CHECKBOX_OPTION:
+            case ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR:
+              ((CheckBoxView) view.getChildAt(0)).setChecked(item.isSelected(), isUpdate);
+              break;
+          }
+        })
+        .setOnSettingItemClick((view, settingsId, item, doneButton, settingsAdapter) -> {
+          switch (item.getViewType()) {
+            case ListItem.TYPE_CHECKBOX_OPTION:
+            case ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR:
+              break;
+            default:
+              return;
+          }
+          final boolean isSelect = ((CheckBoxView) ((SettingView) view).getChildAt(0)).toggle();
+          item.setSelected(isSelect);
+
+          final List<ListItem> allItems = settingsAdapter.getItems();
+          final int size = allItems.size();
+
+          switch (item.getId()) {
+            // Select/unselect all admins
+            case R.id.btn_members: {
+              for (int i1 = 0; i1 < size; i1++) {
+                ListItem userItem = allItems.get(i1);
+                if (userItem.getId() == R.id.user && userItem.isSelected() != isSelect) {
+                  userItem.setSelected(isSelect);
+                  settingsAdapter.updateValuedSettingByPosition(i1);
+                }
+              }
+              break;
+            }
+            // Select/unselect user, unselect "All admins"
+            case R.id.user: {
+              int i1 = settingsAdapter.indexOfViewById(R.id.btn_members);
+              if (i1 != -1) {
+                ListItem allItem = allItems.get(i1);
+                if (allItem.isSelected()) {
+                  allItem.setSelected(false);
+                  settingsAdapter.updateValuedSettingByPosition(i1);
+                }
+              }
+              break;
+            }
+
+            // Select/Unselect all filters
+            case R.id.btn_filterAll: {
+              for (int i1 = 0; i1 < size; i1++) {
+                ListItem filterItem = allItems.get(i1);
+                if (filterItem.getId() == R.id.btn_filter && filterItem.isSelected() != isSelect) {
+                  filterItem.setSelected(isSelect);
+                  settingsAdapter.updateValuedSettingByPosition(i1);
+                }
+              }
+              break;
+            }
+
+            case R.id.btn_filter: {
+              int selectedFilters = 0;
+              for (int i1 = 0; i1 < size; i1++) {
+                ListItem filterItem = allItems.get(i1);
+                if (filterItem.getId() == R.id.btn_filter && filterItem.isSelected()) {
+                  selectedFilters++;
+                }
+              }
+
+              boolean allSelected = selectedFilters == ids.length - 1;
+
+              int i1 = settingsAdapter.indexOfViewById(R.id.btn_filterAll);
+              if (i1 != -1) {
+                ListItem allItem = allItems.get(i1);
+                if (allItem.isSelected() != allSelected) {
+                  allItem.setSelected(allSelected);
+                  settingsAdapter.updateValuedSettingByPosition(i1);
+                }
+              }
+
+              break;
+            }
+          }
+        })
+      );
     });
   }
 

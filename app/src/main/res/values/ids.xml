@@ -236,10 +236,12 @@
   <item type="id" name="msg_attach" />
   <item type="id" name="msg_command" />
   <item type="id" name="msg_send" />
+  <item type="id" name="msg_send_as" />
   <item type="id" name="msg_bottom" />
   <item type="id" name="msg_list" />
   <item type="id" name="msg_bottomShadow" />
   <item type="id" name="msg_bottomReply" />
+  <item type="id" name="msg_send_as_more" />
 
   <item type="id" name="emoji" />
   <item type="id" name="emoji_recent" />

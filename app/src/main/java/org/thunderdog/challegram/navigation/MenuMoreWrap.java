@@ -16,6 +16,7 @@ package org.thunderdog.challegram.navigation;
 
 import android.animation.Animator;
 import android.content.Context;
+import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
@@ -25,6 +26,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Interpolator;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -32,6 +34,9 @@ import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.AvatarPlaceholder;
+import org.thunderdog.challegram.loader.ComplexReceiver;
+import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.theme.Theme;
@@ -42,6 +47,7 @@ import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.util.SendAsMenuHelper;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 
 import me.vkryl.android.AnimatorUtils;
@@ -58,15 +64,17 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
   public static final int ANCHOR_MODE_RIGHT = 0;
   public static final int ANCHOR_MODE_HEADER = 1;
 
-  // private int currentWidth;
   private int anchorMode;
 
   private @Nullable ThemeListenerList themeListeners;
   private @Nullable ThemeDelegate forcedTheme;
 
+  private final ComplexReceiver complexReceiver;
+
 
   public MenuMoreWrap (Context context) {
     super(context);
+    complexReceiver = new ComplexReceiver();
   }
 
   public void updateDirection () {
@@ -151,6 +159,95 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
 
     menuItem.measure(MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
     menuItem.setTag(menuItem.getMeasuredWidth());
+  }
+
+  public View addItem (SendAsMenuHelper.MenuItem senderMenuItem, OnClickListener listener) {
+    final FrameLayout frameLayout = new FrameLayout(getContext()) {
+      @Override
+      protected void onDraw (Canvas canvas) {
+        super.onDraw(canvas);
+        if (senderMenuItem.senderAvatarInfo != null) {
+          int left = Screen.dp(20f);
+          int top = this.getTop() - (Screen.dp(43f) + (Screen.dp(50f)) * (senderMenuItem.id - 1));
+          int bottom = this.getTop() - (Screen.dp(23f) + Screen.dp(50f) * (senderMenuItem.id - 1));
+          if (senderMenuItem.senderAvatarInfo.hasAvatar()) {
+            ImageReceiver imageReceiver = complexReceiver.getImageReceiver(senderMenuItem.id);
+            imageReceiver.setBounds(left, top, left + 2 * Screen.dp(10f), bottom);
+            imageReceiver.setRadius(Screen.dp(10f));
+            imageReceiver.draw(canvas);
+          } else {
+            AvatarPlaceholder avatarPlaceholder = new AvatarPlaceholder(Screen.dp(20f), senderMenuItem.senderAvatarInfo.getAvatarMetadata(), null);
+            avatarPlaceholder.draw(canvas, left + Screen.dp(10f), this.getTop() + Screen.dp(15f), 1f, Screen.dp(10f));
+          }
+        }
+
+        if (senderMenuItem.needPremium) {
+          Drawable icon = Drawables.get(getResources(), R.drawable.baseline_lock_16);
+          float x = getMeasuredWidth() - Screen.dp(18 + 16);
+          float y = (getMeasuredHeight() - icon.getMinimumHeight()) / 2f;
+          Drawables.draw(canvas, icon, x, y, Paints.getPorterDuffPaint(Theme.getColor(R.id.theme_color_text)));
+        }
+      }
+    };
+
+    final int maxWidth = Screen.dp(senderMenuItem.needPremium ? 250: 200);
+    final int rightOffset = Screen.dp(senderMenuItem.needPremium ? 48: 18);
+    FrameLayout.LayoutParams lp = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(50), Gravity.LEFT);
+
+    frameLayout.setLayoutParams(lp);
+    TextView titleText = new NoScrollTextView(getContext());
+    titleText.setId(senderMenuItem.id);
+    titleText.setTypeface(Fonts.getRobotoRegular());
+    titleText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16f);
+    titleText.setText(senderMenuItem.title);
+    titleText.setGravity(Gravity.TOP | Lang.gravity());
+    titleText.setSingleLine(true);
+    titleText.setEllipsize(TextUtils.TruncateAt.END);
+    titleText.setOnClickListener(listener);
+    titleText.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(48f)));
+    titleText.setPadding(Screen.dp(57f), Screen.dp(5), rightOffset, 0);
+    titleText.setCompoundDrawablePadding(Screen.dp(18f));
+    titleText.setMaxWidth(maxWidth);
+
+    TextView usernameText = new NoScrollTextView(getContext());
+    usernameText.setId(senderMenuItem.id);
+    usernameText.setTypeface(Fonts.getRobotoRegular());
+    usernameText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 10f);
+    usernameText.setText(senderMenuItem.username);
+    usernameText.setGravity(Gravity.BOTTOM | Lang.gravity());
+    usernameText.setSingleLine(true);
+    usernameText.setEllipsize(TextUtils.TruncateAt.END);
+    usernameText.setOnClickListener(listener);
+    usernameText.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(48f)));
+    usernameText.setPadding(Screen.dp(57f), 0, rightOffset, Screen.dp(9f));
+    usernameText.setCompoundDrawablePadding(Screen.dp(18f));
+    usernameText.setMaxWidth(maxWidth);
+
+    if (forcedTheme != null) {
+      titleText.setTextColor(forcedTheme.getColor(R.id.theme_color_text));
+      usernameText.setTextColor(forcedTheme.getColor(R.id.theme_color_textLight));
+    } else {
+      titleText.setTextColor(Theme.textAccentColor());
+      usernameText.setTextColor(Theme.getColor(R.id.theme_color_textLight));
+      if (themeListeners != null) {
+        themeListeners.addThemeTextAccentColorListener(titleText);
+        themeListeners.addThemeTextAccentColorListener(usernameText);
+      }
+    }
+
+    if (senderMenuItem.senderAvatarInfo.hasAvatar()) {
+      complexReceiver.getImageReceiver(senderMenuItem.id).requestFile(senderMenuItem.senderAvatarInfo.getImageFile());
+    }
+
+    frameLayout.addView(titleText);
+    frameLayout.addView(usernameText);
+
+    Views.setClickable(frameLayout);
+    RippleSupport.setTransparentSelector(frameLayout);
+    addView(frameLayout);
+    frameLayout.measure(MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
+    frameLayout.setTag(frameLayout.getMeasuredWidth());
+    return frameLayout;
   }
 
   public TextView addItem (int id, CharSequence title, int iconRes, Drawable icon, OnClickListener listener) {
@@ -269,5 +366,17 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
       pendingAction.run();
       pendingAction = null;
     }
+  }
+
+  @Override
+  protected void onAttachedToWindow () {
+    super.onAttachedToWindow();
+    complexReceiver.attach();
+  }
+
+  @Override
+  protected void onDetachedFromWindow () {
+    super.onDetachedFromWindow();
+    complexReceiver.detach();
   }
 }
