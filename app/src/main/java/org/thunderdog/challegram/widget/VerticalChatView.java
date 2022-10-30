@@ -254,6 +254,7 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
 
   private void setIdentity (TdApi.MessageSender messageSender) {
     if (messageSender == null) {
+      identity = null;
       setIdentityIcon(null);
       setIdentityPlaceholder(null);
       setAnonymousPlaceholder(false);
