@@ -273,7 +273,7 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
   public void setChatMessageSender (TdApi.ChatMessageSender sender) {
     this.chatMessageSender = sender;
     this.isPremiumLocked = !tdlib.hasPremium() && sender.needsPremium;
-    this.drawAnonymousIcon = !tdlib.isChannel(Td.getSenderId(sender.sender));
+    this.drawAnonymousIcon = !tdlib.isSelfSender(sender.sender) && !tdlib.isChannel(Td.getSenderId(sender.sender));
 
     buildTitle();
   }
