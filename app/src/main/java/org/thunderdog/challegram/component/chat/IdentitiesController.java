@@ -203,6 +203,10 @@ public class IdentitiesController extends ViewController<IdentitiesController.Ar
     recycler.setLayoutParams(params);
     recycler.setBackgroundColor(Theme.fillingColor());
 
+    params = new ViewGroup.LayoutParams(
+      LinearLayout.LayoutParams.MATCH_PARENT,
+      LinearLayout.LayoutParams.MATCH_PARENT
+    );
     noResultsBanner = new LinearLayout(context);
     noResultsBanner.setLayoutParams(params);
     noResultsBanner.setOrientation(LinearLayout.VERTICAL);
