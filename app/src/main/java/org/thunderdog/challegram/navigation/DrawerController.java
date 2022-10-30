@@ -70,6 +70,7 @@ import org.thunderdog.challegram.ui.SettingsAdapter;
 import org.thunderdog.challegram.ui.SettingsController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Test;
+import org.thunderdog.challegram.util.ForceTouchEntityList;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.widget.BaseView;
 import org.thunderdog.challegram.widget.ForceTouchView;
@@ -587,7 +588,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
   }
 
   @Override
-  public ForceTouchView.ActionListener onCreateActions (View v, ForceTouchView.ForceTouchContext context, IntList ids, IntList icons, StringList strings, ViewController<?> target) {
+  public ForceTouchView.ActionListener onCreateActions (View v, ForceTouchView.ForceTouchContext context, IntList ids, IntList icons, StringList strings, ForceTouchEntityList entities, ViewController<?> target) {
     TdlibAccount account = (TdlibAccount) ((ListItem) v.getTag()).getData();
 
     ids.append(R.id.btn_removeAccount);

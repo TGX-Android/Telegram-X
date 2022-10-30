@@ -183,8 +183,10 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
     long newChatId = (chat != null ? chat.getChatOrUserId() : 0);
 
     if (oldChatId != newChatId) {
-      if (oldChatId != 0 && !this.chat.noSubscription()) {
+      if (oldChatId != 0 && (!this.chat.noSubscription() || (this.chat.getChat() != null && this.chat.getChat().messageSenderId != null))) {
         tdlib.listeners().unsubscribeFromChatUpdates(oldChatId, this);
+      }
+      if (oldChatId != 0 && !this.chat.noSubscription()) {
         tdlib.listeners().unsubscribeFromSettingsUpdates(oldChatId, this);
       }
       long oldUserId = getUserId();
@@ -199,8 +201,10 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
         updateChat(false);
         long newUserId = getUserId();
         setIsOnline(!chat.isSelfChat() && newUserId != 0 && tdlib.cache().isOnline(newUserId), false);
-        if (!chat.noSubscription()) {
+        if (!chat.noSubscription() || (chat.getChat() != null && chat.getChat().messageSenderId != null)) {
           tdlib.listeners().subscribeToChatUpdates(newChatId, this);
+        }
+        if (!chat.noSubscription()) {
           tdlib.listeners().subscribeToSettingsUpdates(newChatId, this);
         }
         if (newUserId != 0) {
@@ -264,6 +268,22 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
           updateChat(true);
         }
       });
+    }
+  }
+
+  @Override
+  public void onChatDefaultMessageSenderIdChanged (long chatId, TdApi.MessageSender senderId) {
+    if (chat.getChatId() == chatId) {
+      TdlibSender sender = new TdlibSender(tdlib, chatId, senderId);
+      if (!sender.isSelf()) {
+        this.chatSenderEntity = new ChatSendersView.ChatSenderEntity(context(), sender, 12);
+        this.chatSenderEntity.setBackgroundColor(Theme.getColor(R.id.theme_color_filling));
+        this.chatSenderEntity.setOutlineFactor(1f);
+        this.senderReceiver.requestFile(chatSenderEntity.getAvatarFile());
+      } else {
+        this.chatSenderEntity = null;
+      }
+      invalidate();
     }
   }
 

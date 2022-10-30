@@ -51,6 +51,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.MapController;
 import org.thunderdog.challegram.ui.MessagesController;
+import org.thunderdog.challegram.util.ForceTouchEntityList;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.text.Letters;
 import org.thunderdog.challegram.widget.BaseView;
@@ -672,7 +673,7 @@ public class LiveLocationHelper implements LiveLocationManager.Listener, FactorA
   }
 
   @Override
-  public ForceTouchView.ActionListener onCreateActions (View v, ForceTouchView.ForceTouchContext context, IntList ids, IntList icons, StringList strings, ViewController<?> target) {
+  public ForceTouchView.ActionListener onCreateActions (View v, ForceTouchView.ForceTouchContext context, IntList ids, IntList icons, StringList strings, ForceTouchEntityList entities, ViewController<?> target) {
     context.setAllowFullscreen(true);
     final ForceTouchView.MaximizeListener maximizeListener = context.getMaximizeListener();
     context.setMaximizeListener((target1, animateToWhenReady, arg) -> {

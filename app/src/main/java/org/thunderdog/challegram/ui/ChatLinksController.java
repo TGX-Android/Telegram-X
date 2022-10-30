@@ -238,7 +238,7 @@ public class ChatLinksController extends RecyclerViewController<ChatLinksControl
 
             return true;
           });
-          chatView.setPreviewActionListProvider((v, forceTouchContext, ids, icons, strings, target) -> {
+          chatView.setPreviewActionListProvider((v, forceTouchContext, ids, icons, strings, entities, target) -> {
             ids.append(R.id.btn_openChat);
             icons.append(R.drawable.baseline_forum_24);
             strings.append(R.string.OpenChat);

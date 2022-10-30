@@ -38,6 +38,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Device;
@@ -54,6 +55,7 @@ import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
+import org.thunderdog.challegram.telegram.TdlibSender;
 import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeChangeListener;
@@ -348,7 +350,7 @@ public class ForceTouchView extends FrameLayoutFix implements
 
       View offsetView;
 
-      if (context.buttonIds.length > 1) {
+      if (context.entities.length > 1) {
         offsetView = new View(getContext());
         offsetView.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f));
         buttonsList.addView(offsetView);
@@ -367,41 +369,56 @@ public class ForceTouchView extends FrameLayoutFix implements
       popupWrapView.setLayoutParams(params);
       // popupWrapView.setBackgroundColor(0x1cff0000);
 
-      PopupContext[] popupContexts = new PopupContext[context.buttonIds.length];
+      PopupContext[] popupContexts = new PopupContext[context.entities.length];
       boolean rtl = Lang.rtl();
-      int remaining = context.buttonIds.length;
+      int remaining = context.entities.length;
       while (remaining > 0) {
-        int i = rtl ? remaining - 1 : context.buttonIds.length - remaining;
-        int buttonId = context.buttonIds[i];
-        ImageView view;
-        if (Drawables.needMirror(context.buttonIcons[i])) {
-          view = new ImageView(getContext()) {
-            @Override
-            protected void onDraw (Canvas c) {
-              c.save();
-              c.scale(-1f, 1f, getMeasuredWidth() / 2, getMeasuredHeight() / 2);
-              super.onDraw(c);
-              c.restore();
-            }
-          };
-        } else {
-          view = new ImageView(getContext());
-        }
-        view.setId(buttonId);
-        PopupContext popupContext = new PopupContext(popupWrapView, view, context.buttonHints[i]);
-        view.setTag(popupContexts[i] = popupContext);
-        view.setScaleType(ImageView.ScaleType.CENTER);
-        view.setColorFilter(Theme.iconColor());
-        themeListenerList.addThemeFilterListener(view, R.id.theme_color_icon);
-        view.setImageResource(context.buttonIcons[i]);
-        view.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 2f));
+        int i = rtl ? remaining - 1 : context.entities.length - remaining;
+        int buttonId = context.entities[i].buttonId;
+        if (context.entities[i].iconId != 0) {
+          ImageView view;
+          if (Drawables.needMirror(context.entities[i].iconId)) {
+            view = new ImageView(getContext()) {
+              @Override
+              protected void onDraw (Canvas c) {
+                c.save();
+                c.scale(-1f, 1f, getMeasuredWidth() / 2, getMeasuredHeight() / 2);
+                super.onDraw(c);
+                c.restore();
+              }
+            };
+          } else {
+            view = new ImageView(getContext());
+          }
+          view.setId(buttonId);
+          PopupContext popupContext = new PopupContext(popupWrapView, view, context.entities[i].hint);
+          view.setTag(popupContexts[i] = popupContext);
+          view.setScaleType(ImageView.ScaleType.CENTER);
+          view.setColorFilter(Theme.iconColor());
+          themeListenerList.addThemeFilterListener(view, R.id.theme_color_icon);
+          view.setImageResource(context.entities[i].iconId);
+          view.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 2f));
 
-        buttonsList.addView(view);
+          buttonsList.addView(view);
+        } else if (context.entities[i].sender != null) {
+          FrameLayoutFix frameLayoutFix = new FrameLayoutFix(getContext());
+          frameLayoutFix.setId(buttonId);
+          PopupContext popupContext = new PopupContext(popupWrapView, frameLayoutFix, context.entities[i].hint);
+          frameLayoutFix.setTag(popupContexts[i] = popupContext);
+          frameLayoutFix.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 2f));
+
+          AvatarView view = new AvatarView(getContext());
+          view.setMessageSender(tdlib, context.entities[i].sender, true);
+          themeListenerList.addThemeFilterListener(view, R.id.theme_color_icon);
+          frameLayoutFix.addView(view, new FrameLayoutFix.LayoutParams(Screen.dp(24), Screen.dp(24), Gravity.CENTER));
+
+          buttonsList.addView(frameLayoutFix);
+        }
         remaining--;
       }
       popupWrapView.setItems(popupContexts);
 
-      if (context.buttonHints.length > 1) {
+      if (context.entities.length > 1) {
         offsetView = new View(getContext());
         offsetView.setLayoutParams(new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1f));
         buttonsList.addView(offsetView);
@@ -481,15 +498,15 @@ public class ForceTouchView extends FrameLayoutFix implements
     this.lastX = x;
     this.lastY = y;
 
-    ImageView foundView = findActionViewByPosition(x, y);
+    View foundView = findActionViewByPosition(x, y);
     setActionView(foundView);
   }
 
-  private ImageView lastActionView;
+  private View lastActionView;
   private int lastActionId;
 
-  private void setActionView (ImageView imageView) {
-    if (lastActionView == imageView) {
+  private void setActionView (View actionView) {
+    if (lastActionView == actionView) {
       return;
     }
 
@@ -497,15 +514,15 @@ public class ForceTouchView extends FrameLayoutFix implements
       ((PopupContext) lastActionView.getTag()).setIsVisible(false);
     }
 
-    lastActionView = imageView;
-    lastActionId = imageView != null ? imageView.getId() : 0;
+    lastActionView = actionView;
+    lastActionId = actionView != null ? actionView.getId() : 0;
 
-    if (imageView != null) {
-      ((PopupContext) imageView.getTag()).setIsVisible(true);
+    if (actionView != null) {
+      ((PopupContext) actionView.getTag()).setIsVisible(true);
     }
   }
 
-  private ImageView findActionViewByPosition (int x, int y) {
+  private View findActionViewByPosition (int x, int y) {
     final int contentBottom = contentWrap.getBottom();
 
     if (y > contentBottom || y < contentBottom - Screen.dp(FOOTER_HEIGHT) || buttonsList == null) {
@@ -518,12 +535,12 @@ public class ForceTouchView extends FrameLayoutFix implements
     }
 
     final int childCount = buttonsList.getChildCount();
-    final int offsetCount = forceTouchContext.buttonIds.length == 1 ? 0 : 1;
+    final int offsetCount = forceTouchContext.entities.length == 1 ? 0 : 1;
 
     for (int i = offsetCount; i < childCount - offsetCount; i++) {
       View view = buttonsList.getChildAt(i);
       if (view != null && x >= view.getLeft() && x <= view.getRight()) {
-        return (ImageView) view;
+        return view;
       }
     }
 
@@ -853,9 +870,7 @@ public class ForceTouchView extends FrameLayoutFix implements
     private ActionListener actionListener;
     private MaximizeListener maximizeListener;
     private Object listenerArg;
-    private int[] buttonIds;
-    private int[] buttonIcons;
-    private String[] buttonHints;
+    private ForceTouchEntity[] entities;
     private boolean excludeHeader;
 
     public View getSourceView () {
@@ -916,7 +931,7 @@ public class ForceTouchView extends FrameLayoutFix implements
     }
 
     public boolean hasFooter () {
-      return buttonIds != null && buttonIds.length > 0;
+      return entities != null && entities.length > 0;
     }
 
     public boolean hasHeader () {
@@ -924,7 +939,7 @@ public class ForceTouchView extends FrameLayoutFix implements
     }
 
     public int getMinimumWidth () {
-      return hasFooter() ? (buttonIds.length > 1 ? buttonIds.length + 1 : buttonIds.length) * Screen.dp(48f) : 0;
+      return hasFooter() ? (entities.length > 1 ? entities.length + 1 : entities.length) * Screen.dp(48f) : 0;
     }
 
     public void setButtons (ActionListener listener, Object listenerArg, int[] ids, int[] icons, String[] hints) {
@@ -932,9 +947,19 @@ public class ForceTouchView extends FrameLayoutFix implements
       if (this.listenerArg == null) { // FIXME code design
         this.listenerArg = listenerArg;
       }
-      this.buttonIds = ids;
-      this.buttonIcons = icons;
-      this.buttonHints = hints;
+      entities = new ForceTouchEntity[ids.length];
+      for (int i = 0; i < ids.length; i++) {
+        ForceTouchEntity entity = new ForceTouchEntity(ids[i], icons[i], hints[i]);
+        entities[i] = entity;
+      }
+    }
+
+    public void setButtons (ActionListener listener, Object listenerArg, ForceTouchEntity[] entities) {
+      this.actionListener = listener;
+      if (this.listenerArg == null) { // FIXME code design
+        this.listenerArg = listenerArg;
+      }
+      this.entities = entities;
     }
 
     public MaximizeListener getMaximizeListener () {
@@ -1000,6 +1025,27 @@ public class ForceTouchView extends FrameLayoutFix implements
 
     public boolean needHideKeyboard () {
       return !allowFullscreen && (boundController == null || boundController.wouldHideKeyboardInForceTouchMode());
+    }
+  }
+
+  public static class ForceTouchEntity {
+    private final int buttonId;
+    private final int iconId;
+    private final String hint;
+    private final TdlibSender sender;
+
+    public ForceTouchEntity(int buttonId, int iconId, String hint) {
+      this.buttonId = buttonId;
+      this.iconId = iconId;
+      this.hint = hint;
+      this.sender = null;
+    }
+
+    public ForceTouchEntity(int buttonId, TdlibSender sender, String hint) {
+      this.buttonId = buttonId;
+      this.iconId = 0;
+      this.hint = hint;
+      this.sender = sender;
     }
   }
 

@@ -39,6 +39,7 @@ import org.thunderdog.challegram.ui.ChatsController;
 import org.thunderdog.challegram.ui.MainController;
 import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.ForceTouchEntityList;
 import org.thunderdog.challegram.util.StringList;
 
 import java.util.ArrayList;
@@ -52,7 +53,7 @@ import me.vkryl.td.MessageId;
 
 public class BaseView extends SparseDrawableView implements ClickHelper.Delegate, View.OnClickListener, TdlibDelegate {
   public interface ActionListProvider {
-    ForceTouchView.ActionListener onCreateActions (View v, ForceTouchView.ForceTouchContext context, IntList ids, IntList icons, StringList strings, ViewController<?> target);
+    ForceTouchView.ActionListener onCreateActions (View v, ForceTouchView.ForceTouchContext context, IntList ids, IntList icons, StringList strings, ForceTouchEntityList entities, ViewController<?> target);
   }
 
   public interface CustomControllerProvider {
@@ -519,13 +520,15 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
       context.setMaximizeListener((target, animateToWhenReady, arg) -> MessagesController.maximizeFrom(tdlib, getContext(), target, animateToWhenReady, arg));
     }
 
-    IntList ids = new IntList(5);
-    IntList icons = new IntList(5);
-    StringList strings = new StringList(5);
+    int initialCapacity = 5;
+    IntList ids = new IntList(initialCapacity);
+    IntList icons = new IntList(initialCapacity);
+    StringList strings = new StringList(initialCapacity);
+    ForceTouchEntityList entities = new ForceTouchEntityList(initialCapacity);
     ForceTouchView.ActionListener listener = null;
 
     if (actionListProvider != null) {
-      listener = actionListProvider.onCreateActions(this, context, ids, icons, strings, controller);
+      listener = actionListProvider.onCreateActions(this, context, ids, icons, strings, entities, controller);
     } else if (controller instanceof MessagesController && ancestor != null) {
       // TODO move MessagesController-related stuff somewhere out of BaseView
       if (getPreviewFilter() instanceof TdApi.SearchMessagesFilterPinned && getPreviewHighlightMessageId() != null && tdlib.canPinMessages(tdlib.chat(chatId))) {
@@ -554,7 +557,11 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
       }
     }
     if (listener != null) {
-      context.setButtons(listener, controller, ids.get(), icons.get(), strings.get());
+      if (entities.isEmpty()) {
+        context.setButtons(listener, controller, ids.get(), icons.get(), strings.get());
+      } else {
+        context.setButtons(listener, controller, entities.get());
+      }
     }
 
     if (UI.getContext(getContext()).openForceTouch(context)) {

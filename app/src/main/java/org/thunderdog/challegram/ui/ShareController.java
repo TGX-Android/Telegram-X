@@ -57,6 +57,7 @@ import org.thunderdog.challegram.component.attach.GridSpacingItemDecoration;
 import org.thunderdog.challegram.component.chat.EmojiToneHelper;
 import org.thunderdog.challegram.component.chat.InputView;
 import org.thunderdog.challegram.component.dialogs.SearchManager;
+import org.thunderdog.challegram.component.popups.ModernActionedLayout;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.InlineResult;
@@ -78,6 +79,7 @@ import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibChatList;
 import org.thunderdog.challegram.telegram.TdlibChatListSlice;
+import org.thunderdog.challegram.telegram.TdlibSender;
 import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
@@ -90,6 +92,7 @@ import org.thunderdog.challegram.tool.TGMimeType;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.ForceTouchEntityList;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.text.Text;
@@ -1457,29 +1460,60 @@ public class ShareController extends TelegramViewController<ShareController.Args
   }
 
   @Override
-  public ForceTouchView.ActionListener onCreateActions (final View v, ForceTouchView.ForceTouchContext context, IntList ids, IntList icons, StringList strings, ViewController<?> target) {
+  public ForceTouchView.ActionListener onCreateActions (final View v, ForceTouchView.ForceTouchContext context, IntList ids, IntList icons, StringList strings, ForceTouchEntityList entities, ViewController<?> target) {
     final ListItem item = (ListItem) v.getTag();
     final TGFoundChat chat = (TGFoundChat) item.getData();
 
     context.setExcludeHeader(true);
 
-    ids.append(R.id.btn_selectChat);
-    strings.append(isChecked(chat.getAnyId()) ? R.string.Unselect : R.string.Select);
-    icons.append(R.drawable.baseline_playlist_add_check_24);
+    if (chat.getChat() != null && chat.getChat().messageSenderId != null) {
+      TdlibSender sender = new TdlibSender(tdlib, chat.getChatId(), chat.getChat().messageSenderId);
+      if (!sender.isSelf()) {
+        entities.append(new ForceTouchView.ForceTouchEntity(R.id.btn_changeSender, sender, Lang.getString(R.string.ChangeSender)));
+      }
+    }
+    entities.append(new ForceTouchView.ForceTouchEntity(R.id.btn_selectChat, R.drawable.baseline_playlist_add_check_24, Lang.getString(isChecked(chat.getAnyId()) ? R.string.Unselect : R.string.Select)));
 
     return new ForceTouchView.ActionListener() {
       @Override
       public void onForceTouchAction (ForceTouchView.ForceTouchContext context, int actionId, Object arg) {
-        toggleChecked(v, chat, isChecked ->
-          ((VerticalChatView) v).setIsChecked(isChecked, true)
-        );
+        if (actionId == R.id.btn_selectChat) {
+          toggleChecked(v, chat, isChecked ->
+            ((VerticalChatView) v).setIsChecked(isChecked, true)
+          );
+        }
       }
 
       @Override
       public void onAfterForceTouchAction (ForceTouchView.ForceTouchContext context, int actionId, Object arg) {
-
+        if (actionId == R.id.btn_changeSender) {
+          openChatChangeSenderController(chat.getChatId());
+        }
       }
     };
+  }
+
+  private void openChatChangeSenderController (long chatId) {
+    tdlib.client().send(new TdApi.GetChatAvailableMessageSenders(chatId), object -> {
+      switch (object.getConstructor()) {
+        case TdApi.ChatMessageSenders.CONSTRUCTOR: {
+          if (!isDestroyed()) {
+            TdApi.ChatMessageSenders chatMessageSenders = (TdApi.ChatMessageSenders) object;
+            ArrayList<TdlibSender> tdlibSenders = new ArrayList<>(chatMessageSenders.senders.length);
+            for (int i = 0; i < chatMessageSenders.senders.length; i++) {
+              TdApi.ChatMessageSender chatMessageSender = chatMessageSenders.senders[i];
+              tdlibSenders.add(new TdlibSender(tdlib, chatId, chatMessageSender));
+            }
+            executeOnUiThread(() -> ModernActionedLayout.showChatSenders(this, chatId, tdlibSenders));
+          }
+          break;
+        }
+        case TdApi.Error.CONSTRUCTOR: {
+          UI.showError(object);
+          break;
+        }
+      }
+    });
   }
 
   @Override

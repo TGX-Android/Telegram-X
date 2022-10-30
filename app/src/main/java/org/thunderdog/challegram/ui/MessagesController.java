@@ -3105,6 +3105,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
         attachButtons.setVisibility(View.VISIBLE);
         sendButton.setVisibility(View.INVISIBLE);
       }
+      if (tdlibSender != null) {
+        senderAvatarView.setVisibility(View.VISIBLE);
+      }
     } else {
       hideActionButton();
       bottomWrap.setVisibility(View.GONE);
@@ -3113,6 +3116,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       emojiButton.setVisibility(View.GONE);
       attachButtons.setVisibility(View.GONE);
       sendButton.setVisibility(View.GONE);
+      senderAvatarView.setVisibility(View.GONE);
     }
   }
 

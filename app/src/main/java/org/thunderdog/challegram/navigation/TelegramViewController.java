@@ -198,7 +198,7 @@ public abstract class TelegramViewController<T> extends ViewController<T> {
     }
     chatSearchView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-    final BaseView.ActionListProvider previewProvider = (v, context, ids, icons, strings, target) -> {
+    final BaseView.ActionListProvider previewProvider = (v, context, ids, icons, strings, entities, target) -> {
       final ListItem item = (ListItem) v.getTag();
 
       final Object data = item.getData();

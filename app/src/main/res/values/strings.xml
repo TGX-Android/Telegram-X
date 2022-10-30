@@ -281,6 +281,7 @@
   <string name="Comment">Comment</string>
   <string name="CommentAsX">Comment as %1$s</string>
   <string name="SendAsSender">as %1$s</string>
+  <string name="ChangeSender">Change sender</string>
   <string name="DeletedMessage">Deleted message</string>
   <string name="UnsupportedMessage">Unsupported message</string>
   <string name="UnsupportedMessageType">Unsupported message</string>

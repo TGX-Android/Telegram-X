@@ -94,6 +94,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Test;
+import org.thunderdog.challegram.util.ForceTouchEntityList;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.ChatsRecyclerView;
 import org.thunderdog.challegram.widget.BaseView;
@@ -2018,7 +2019,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   }
 
   @Override
-  public ForceTouchView.ActionListener onCreateActions (View v, ForceTouchView.ForceTouchContext context, IntList ids, IntList icons, StringList strings, ViewController<?> target) {
+  public ForceTouchView.ActionListener onCreateActions (View v, ForceTouchView.ForceTouchContext context, IntList ids, IntList icons, StringList strings, ForceTouchEntityList entities, ViewController<?> target) {
     TGChat chat = v instanceof ChatView ? ((ChatView) v).getChat() : null;
 
     if (chat != null && chat.isArchive()) {
