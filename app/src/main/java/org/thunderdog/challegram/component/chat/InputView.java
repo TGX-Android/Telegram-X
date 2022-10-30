@@ -1068,7 +1068,10 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   private void showIdentityHint (boolean animated) {
     if (controller != null && controller.getChat() != null) {
       TdApi.MessageSender messageSenderId = controller.getChat().messageSenderId;
-      String senderName = messageSenderId == null ? null : tdlib.senderName(messageSenderId);
+      String senderName = null;
+      if (messageSenderId != null && !tdlib.isUser(messageSenderId)) {
+        senderName = tdlib.senderName(messageSenderId);
+      }
       setIdentityHint(senderName);
       oldIdentityHintPrefix = null;
       oldIdentityHintName = null;
