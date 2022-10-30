@@ -851,12 +851,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
     final boolean wasOpened = tdlib().settings().openThread(threadInfo.getMessageThreadId());
     if (highlightMessageId == null) {
-      if (wasOpened) {
-        highlightMessageId = new MessageId(threadInfo.getChatId(), threadInfo.hasUnreadMessages() ? threadInfo.getLastReadMessageId(): threadInfo.getLastMessageId());
-      } else {
+      // highlightMessageId = new MessageId(threadInfo.getChatId(), threadInfo.hasUnreadMessages() ? threadInfo.getLastReadMessageId(): threadInfo.getLastMessageId());
+      if (!wasOpened) {
         highlightMessageId = new MessageId(threadInfo.getChatId(), MessageId.MIN_VALID_ID);
+        params.highlightMessage(MessagesManager.HIGHLIGHT_MODE_NONE, highlightMessageId);
       }
-      params.highlightMessage(MessagesManager.HIGHLIGHT_MODE_NONE, highlightMessageId);
     } else {
       params.highlightMessage(highlightMessageId).ensureHighlightAvailable();
     }

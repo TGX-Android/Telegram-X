@@ -669,7 +669,7 @@ public class MessageCommentButton implements FactorAnimator.Target, ClickHelper.
     setLoading(false, parent.needAnimateChanges());
 
     MessagesController controller = new MessagesController(parent.context(), tdlib);
-    controller.setArguments(new MessagesController.Arguments(null, tdlib.chat(threadInfo.getChatId()), threadInfo, new MessageId(threadInfo.getChatId(), MessageId.MIN_VALID_ID), 0, null));
+    controller.setArguments(new MessagesController.Arguments(null, tdlib.chat(threadInfo.getChatId()), threadInfo, /*new MessageId(threadInfo.getChatId(), MessageId.MIN_VALID_ID)*/ null, 0, null));
     controller.setInForceTouchMode(true);
     openPreview(controller, x, y);
   }
