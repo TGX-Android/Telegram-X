@@ -102,6 +102,7 @@ import org.thunderdog.challegram.widget.BaseView;
 import org.thunderdog.challegram.widget.CustomImageView;
 import org.thunderdog.challegram.widget.EmojiLayout;
 import org.thunderdog.challegram.widget.ForceTouchView;
+import org.thunderdog.challegram.widget.LickView;
 import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.SeparatorView;
 import org.thunderdog.challegram.widget.VerticalChatView;
@@ -854,30 +855,6 @@ public class ShareController extends TelegramViewController<ShareController.Args
   private LickView lickView;
   private InputView inputView;
   private View fixView;
-
-  private static class LickView extends View {
-    public LickView (Context context) {
-      super(context);
-    }
-
-    private float factor;
-
-    public void setFactor (float factor) {
-      if (this.factor != factor) {
-        this.factor = factor;
-        invalidate();
-      }
-    }
-
-    @Override
-    protected void onDraw (Canvas c) {
-      if (factor > 0f) {
-        int bottom = getMeasuredHeight();
-        int top = bottom - (int) ((float) bottom * factor);
-        c.drawRect(0, top, getMeasuredWidth(), bottom, Paints.fillingPaint(Theme.fillingColor()));
-      }
-    }
-  }
 
   private DoubleHeaderView headerCell;
 
@@ -2234,7 +2211,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
 
   @Override
   public int getCurrentPopupHeight () {
-    return (getTargetHeight() - detectTopRecyclerEdge() - (int) ((float) HeaderView.getTopOffset() * (1f - (lickView != null ? lickView.factor : 0f))));
+    return (getTargetHeight() - detectTopRecyclerEdge() - (int) ((float) HeaderView.getTopOffset() * (1f - (lickView != null ? lickView.getFactor() : 0f))));
   }
 
   // Data loading

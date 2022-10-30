@@ -26,14 +26,18 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.v.HeaderEditText;
 import org.thunderdog.challegram.widget.ChatSenderView;
+import org.thunderdog.challegram.widget.LickView;
 
 import java.util.ArrayList;
 import java.util.Objects;
+
+import me.vkryl.android.widget.FrameLayoutFix;
 
 public class ChatChangeSenderController extends MediaBottomBaseController<Void> implements Menu {
 
   private final long chatId;
   private SettingsAdapter settingsAdapter;
+  private LickView lickView;
 
   private long currentSelectedSenderId = 0;
   private final ArrayList<TdlibSender> senders;
@@ -51,6 +55,12 @@ public class ChatChangeSenderController extends MediaBottomBaseController<Void> 
     recyclerView.setBackgroundColor(Theme.backgroundColor());
     addThemeBackgroundColorListener(recyclerView, R.id.theme_color_background);
     setLayoutManager(new LinearLayoutManager(context(), RecyclerView.VERTICAL, false));
+    if (HeaderView.getTopOffset() > 0) {
+      lickView = new LickView(context);
+      addThemeInvalidateListener(lickView);
+      lickView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, HeaderView.getTopOffset()));
+      contentView.addView(lickView);
+    }
 
     for (int i = 0; i < senders.size(); i++) {
       TdlibSender tdlibSender = senders.get(i);
@@ -80,6 +90,19 @@ public class ChatChangeSenderController extends MediaBottomBaseController<Void> 
     initMetrics();
     setAdapter(settingsAdapter);
     return contentView;
+  }
+
+  @Override
+  protected void onHeightChanged (int height) {
+    super.onHeightChanged(height);
+
+    if (lickView != null) {
+      final int topOffset = HeaderView.getTopOffset();
+      float top = recyclerView.getTranslationY() - topOffset;
+      float factor = top > topOffset ? 0f : 1f - (top / (float) topOffset);
+      lickView.setTranslationY(top);
+      lickView.setFactor(factor);
+    }
   }
 
   private void setSenders () {
