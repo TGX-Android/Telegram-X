@@ -26,6 +26,7 @@ import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
+import androidx.core.graphics.drawable.DrawableCompat;
 
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -549,7 +550,7 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
       identityPlaceholder.draw(c, identityReceiver.centerX(), identityReceiver.centerY());
     } else if (anonymousPlaceholder != null) {
       anonBackgroundPaint.setStyle(Paint.Style.FILL);
-      anonBackgroundPaint.setColor(Theme.iconColor());
+      anonBackgroundPaint.setColor(Theme.textDecentColor());
       c.drawCircle(
         identityReceiver.getCenterX(),
         identityReceiver.getCenterY(),
@@ -563,6 +564,7 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
         identityReceiver.getCenterX() + Screen.dp(5f),
         identityReceiver.getCenterY() + Screen.dp(5f)
       );
+      DrawableCompat.setTint(anonymousPlaceholder, Theme.fillingColor());
       anonymousPlaceholder.draw(c);
     }
     final float checkFactor = checkBoxHelper != null ? checkBoxHelper.getCheckFactor() : 0f;
