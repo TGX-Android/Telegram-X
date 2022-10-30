@@ -194,10 +194,14 @@ public class DrawAlgorithms {
   }
 
   public static void drawDirection (Canvas c, float cx, float cy, @ColorInt int lineColor, int gravity) {
+    drawDirection(c, cx, cy, lineColor, gravity, 2f, 9f);
+  }
+
+  public static void drawDirection (Canvas c, float cx, float cy, @ColorInt int lineColor, int gravity, float width, float height) {
     c.save();
 
-    int lineWidth = Screen.dp(2f);
-    int lineHeight = Screen.dp(9f);
+    int lineWidth = Screen.dp(width);
+    int lineHeight = Screen.dp(height);
 
     int rotation = 45;
     switch (gravity) {
