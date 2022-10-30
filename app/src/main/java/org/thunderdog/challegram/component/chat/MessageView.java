@@ -675,7 +675,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
           }
           count = Math.max(count, msg.getThreadReplyCount());
           ids.append(R.id.btn_messageReplies);
-          icons.append(R.drawable.baseline_forum_24);
+          icons.append(R.drawable.dot_threads_outline_24);
           if (count > 0) {
             strings.append(Lang.plural(R.string.ViewXReplies, count));
           } else {
