@@ -507,6 +507,21 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
+  public String getThreadSubtitle () {
+    if (messageThread == null) return null;
+    int knownMessageCount = messageThread.getSize();
+
+    if (messageThread.areComments()) {
+      if (knownMessageCount > 0) {
+        return Lang.plural(R.string.xComments, knownMessageCount);
+      } else {
+        return Lang.getString(R.string.NoComments);
+      }
+    } else {
+      return Lang.plural(R.string.xRepliesTo, knownMessageCount, tdlib.senderName(messageThread.getThreadAuthor(), true));
+    }
+  }
+
   private void updateThreadSubtitle (int knownMessageCount) {
     if (messageThread == null) return;
 

@@ -74,6 +74,7 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
+import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.ChatId;
 
@@ -320,6 +321,9 @@ public class ForceTouchView extends FrameLayoutFix implements
             headerView.setAvatarPlaceholder(context.avatarPlaceholder);
           }
           headerView.setText(context.title, context.subtitle);
+        }
+        if (context.hasForceSubtitle) {
+          headerView.setSubtitle(context.subtitle);
         }
         headerView.setLayoutParams(params);
         contentWrap.addView(targetHeaderView = headerView);
@@ -996,6 +1000,13 @@ public class ForceTouchView extends FrameLayoutFix implements
     public void setHeader (String title, String subtitle) {
       this.needHeader = true;
       this.title = title;
+      this.subtitle = subtitle;
+    }
+
+    private boolean hasForceSubtitle;
+
+    public void setForceSubtitle (String subtitle) {
+      this.hasForceSubtitle = !StringUtils.isEmpty(subtitle);
       this.subtitle = subtitle;
     }
 

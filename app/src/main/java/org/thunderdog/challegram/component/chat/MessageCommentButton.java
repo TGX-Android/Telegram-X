@@ -725,6 +725,7 @@ public class MessageCommentButton implements FactorAnimator.Target, ClickHelper.
     };
     context.setButtons(listener, controller, ids.get(), icons.get(), strings.get());
     context.setExpandFactor(view, y);
+    context.setForceSubtitle(controller.getThreadSubtitle());
 
     if (UI.getContext(parent.context()).openForceTouch(context)) {
       currentOpenPreview = controller;
