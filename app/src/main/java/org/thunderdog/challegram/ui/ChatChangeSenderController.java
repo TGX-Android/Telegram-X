@@ -100,7 +100,7 @@ public class ChatChangeSenderController extends MediaBottomBaseController<Void> 
     ArrayList<ListItem> items = new ArrayList<>();
     boolean first = true;
     for (TdlibSender sender : senders) {
-      if ((sender.getName() != null && sender.getName().contains(query)) || sender.getUsername().contains(query)) {
+      if ((sender.getName() != null && sender.getName().toLowerCase().contains(query)) || sender.getUsername().toLowerCase().contains(query)) {
         if (first) {
           first = false;
         } else {
@@ -240,7 +240,7 @@ public class ChatChangeSenderController extends MediaBottomBaseController<Void> 
         if (query.isEmpty()) {
           setSenders();
         } else {
-          setSenders(query.trim());
+          setSenders(query.trim().toLowerCase());
         }
       }
       this.lastQuery = query;
