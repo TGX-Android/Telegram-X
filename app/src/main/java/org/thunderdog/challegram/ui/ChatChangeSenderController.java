@@ -24,6 +24,7 @@ import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.v.HeaderEditText;
 import org.thunderdog.challegram.widget.ChatSenderView;
 
 import java.util.ArrayList;
@@ -150,6 +151,12 @@ public class ChatChangeSenderController extends MediaBottomBaseController<Void> 
   }
 
   private void onChatSenderSelected (TdlibSender sender, View v) {
+    if (inSearchMode()) {
+      HeaderEditText searchEditText = getSearchHeaderView(headerView);
+      if (searchEditText != null) {
+        searchEditText.clearFocus();
+      }
+    }
     NavigationController navigation = UI.getContext(context).navigation();
     if (sender.isNeedsPremium() && navigation != null && tdlib.ui().showPremiumAlert(navigation.getCurrentStackItem(), v, TdlibUi.PremiumFeature.SEND_AS_CHANNEL)) {
       return;
