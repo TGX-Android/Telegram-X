@@ -26,17 +26,23 @@ import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Strings;
+import org.thunderdog.challegram.util.CustomStateListDrawable;
 import org.thunderdog.challegram.util.text.Text;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.td.Td;
 
 public class ChatEventUtil {
@@ -280,6 +286,7 @@ public class ChatEventUtil {
             footerRes = R.string.EventLogOriginalCaption;
             break;
         }
+        //noinspection UnsafeOptInUsageError
         String text = Td.isEmpty(originalText) ? Lang.getString(R.string.EventLogOriginalCaptionEmpty) : originalText.text;
         fullMessage.setFooter(Lang.getString(footerRes), text, originalText != null ? originalText.entities : null);
         break;
@@ -633,49 +640,111 @@ public class ChatEventUtil {
       case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR: {
         TdApi.ChatEventAvailableReactionsChanged e = (TdApi.ChatEventAvailableReactionsChanged) event.action;
 
-        final List<String> addedReactions = new ArrayList<>();
-        final List<String> removedReactions = new ArrayList<>();
+        boolean hasAll = false;
+        Set<String> newReactions = new LinkedHashSet<>();
 
-        for (String newAvailableReaction : e.newAvailableReactions) {
-          if (ArrayUtils.indexOf(e.oldAvailableReactions, newAvailableReaction) == -1) {
-            addedReactions.add(newAvailableReaction);
-          }
+        switch (e.newAvailableReactions.getConstructor()) {
+          case TdApi.ChatAvailableReactionsAll.CONSTRUCTOR:
+            hasAll = true;
+            break;
+          case TdApi.ChatAvailableReactionsSome.CONSTRUCTOR:
+            TdApi.ChatAvailableReactionsSome some = (TdApi.ChatAvailableReactionsSome) e.newAvailableReactions;
+            for (TdApi.ReactionType type : some.reactions) {
+              newReactions.add(TD.makeReactionKey(type));
+            }
+            break;
+          default:
+            throw new UnsupportedOperationException(e.newAvailableReactions.toString());
         }
 
-        for (String oldAvailableReaction : e.oldAvailableReactions) {
-          if (ArrayUtils.indexOf(e.newAvailableReactions, oldAvailableReaction) == -1) {
-            removedReactions.add(oldAvailableReaction);
-          }
+        boolean hadAll = false;
+        Set<String> oldReactions = new LinkedHashSet<>();
+        switch (e.oldAvailableReactions.getConstructor()) {
+          case TdApi.ChatAvailableReactionsAll.CONSTRUCTOR:
+            hadAll = true;
+            break;
+          case TdApi.ChatAvailableReactionsSome.CONSTRUCTOR:
+            TdApi.ChatAvailableReactionsSome some = (TdApi.ChatAvailableReactionsSome) e.oldAvailableReactions;
+            for (TdApi.ReactionType type : some.reactions) {
+              oldReactions.add(TD.makeReactionKey(type));
+            }
+            break;
         }
 
         List<TdApi.TextEntity> entities = new ArrayList<>();
         StringBuilder text = new StringBuilder();
+        RunnableData<Set<String>> emojiAdder = set -> {
+          boolean first = true;
+          for (String reactionKey : set) {
+            text.append(first ? "\n" : " ");
+            TdApi.ReactionType reactionType = TD.toReactionType(reactionKey);
+            switch (reactionType.getConstructor()) {
+              case TdApi.ReactionTypeEmoji.CONSTRUCTOR:
+                text.append(((TdApi.ReactionTypeEmoji) reactionType).emoji);
+                break;
+              case TdApi.ReactionTypeCustomEmoji.CONSTRUCTOR: {
+                long customEmojiId = ((TdApi.ReactionTypeCustomEmoji) reactionType).customEmojiId;
+                String emoji = "⁉️";
+                int offset = text.length();
+                text.append(emoji);
+                entities.add(new TdApi.TextEntity(offset, emoji.length(), new TdApi.TextEntityTypeCustomEmoji(customEmojiId)));
+                break;
+              }
+            }
+            first = false;
+          }
+        };
 
-        if (e.oldAvailableReactions.length == 0) {
-          // Enabled reactions
-          text.append(Lang.getString(R.string.EventLogReactionsEnabled));
-        } else if (e.newAvailableReactions.length == 0) {
-          // Disabled reactions
+        int headerLength = 0;
+
+        if (hasAll == hadAll && !hasAll) {
+          Set<String> addedReactions = new LinkedHashSet<>(newReactions);
+          addedReactions.removeAll(oldReactions);
+
+          Set<String> removedReactions = new LinkedHashSet<>(oldReactions);
+          removedReactions.removeAll(newReactions);
+          removedReactions.removeAll(addedReactions);
+
+          text.append(Lang.getString(
+            newReactions.isEmpty() ? R.string.EventLogReactionsDisabled :
+            oldReactions.isEmpty() ? R.string.EventLogReactionsEnabled :
+            R.string.EventLogReactionsChanged
+          ));
+          headerLength = text.length();
+
+          if (!newReactions.isEmpty() && !oldReactions.isEmpty()) {
+            emojiAdder.runWithData(newReactions);
+          }
+
+          if (!addedReactions.isEmpty()) {
+            text.append("\n\n");
+            text.append(Lang.getString(R.string.EventLogReactionsAdded2));
+            emojiAdder.runWithData(addedReactions);
+          }
+          if (!removedReactions.isEmpty()) {
+            text.append("\n\n");
+            text.append(Lang.getString(R.string.EventLogReactionsRemoved2));
+            emojiAdder.runWithData(removedReactions);
+          }
+        } else if (hasAll) {
+          text.append(Lang.getString(R.string.EventLogReactionsEnabledAll));
+          headerLength = text.length();
+        } else if (newReactions.isEmpty()) {
           text.append(Lang.getString(R.string.EventLogReactionsDisabled));
+          headerLength = text.length();
+          if (!oldReactions.isEmpty()) {
+            text.append("\n\n");
+            text.append(Lang.getString(R.string.EventLogReactionsRemoved2));
+            emojiAdder.runWithData(oldReactions);
+          }
         } else {
-          // Changed available reactions
-          text.append(Lang.getString(R.string.EventLogReactionsChanged));
-        }
-        entities.add(new TdApi.TextEntity(0, text.length(), new TdApi.TextEntityTypeItalic()));
-        if (e.newAvailableReactions.length > 0) {
-          text.append("\n").append(TextUtils.join(" ", e.newAvailableReactions));
+          text.append(Lang.getString(hadAll ? R.string.EventLogReactionsLimited : R.string.EventLogReactionsChanged));
+          headerLength = text.length();
+          emojiAdder.runWithData(newReactions);
         }
 
-        if (!addedReactions.isEmpty() && e.oldAvailableReactions.length > 0) {
-          // + Added:
-          text.append("\n\n");
-          text.append(Lang.getString(R.string.EventLogReactionsAdded, TextUtils.join(" ", addedReactions)));
-        }
-
-        if (!removedReactions.isEmpty()) {
-          // – Removed:
-          text.append("\n\n");
-          text.append(Lang.getString(R.string.EventLogReactionsRemoved, TextUtils.join(" ", removedReactions)));
+        if (headerLength > 0) {
+          entities.add(0, new TdApi.TextEntity(0, headerLength, new TdApi.TextEntityTypeItalic()));
         }
 
         TdApi.FormattedText formattedText = new TdApi.FormattedText(text.toString(), entities.toArray(new TdApi.TextEntity[0]));

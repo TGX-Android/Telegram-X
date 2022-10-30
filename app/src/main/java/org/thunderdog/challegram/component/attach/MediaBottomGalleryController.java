@@ -451,8 +451,8 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
       int count = files != null ? files.size() : 0;
       hapticItems.add(new HapticMenuHelper.MenuItem(R.id.btn_sendAsFile, count <= 1 ? Lang.getString(allVideo ? R.string.SendOriginal : R.string.SendAsFile) : Lang.plural(allVideo ? R.string.SendXOriginals : R.string.SendAsXFiles, count), R.drawable.baseline_insert_drive_file_24).setOnClickListener(v -> {
         if (v.getId() == R.id.btn_sendAsFile) {
-          mediaLayout.pickDateOrProceed((forceDisableNotification, schedulingState, disableMarkdown) ->
-            mediaLayout.sendPhotosOrVideos(adapter.getSelectedPhotosAndVideosAsList(true), showingFoundImages, new TdApi.MessageSendOptions(forceDisableNotification, false, false, schedulingState), disableMarkdown, true)
+          mediaLayout.pickDateOrProceed((sendOptions, disableMarkdown) ->
+            mediaLayout.sendPhotosOrVideos(adapter.getSelectedPhotosAndVideosAsList(true), showingFoundImages, sendOptions, disableMarkdown, true)
           );
         }
       }));

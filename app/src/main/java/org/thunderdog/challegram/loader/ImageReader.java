@@ -519,7 +519,11 @@ public class ImageReader {
         }
       }
       if (!U.isValidBitmap(bitmap)) {
-        bitmap = MediaStore.Video.Thumbnails.getThumbnail(UI.getAppContext().getContentResolver(), imageId, MediaStore.Images.Thumbnails.MINI_KIND, opts);
+        try {
+          bitmap = MediaStore.Video.Thumbnails.getThumbnail(UI.getAppContext().getContentResolver(), imageId, MediaStore.Images.Thumbnails.MINI_KIND, opts);
+        } catch (Throwable t) {
+          t.printStackTrace();
+        }
       }
     } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
       Uri uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, imageId);
@@ -565,10 +569,16 @@ public class ImageReader {
         }
       }
     } else {
-      bitmap = MediaStore.Images.Thumbnails.getThumbnail(UI.getAppContext().getContentResolver(), imageId, MediaStore.Images.Thumbnails.MINI_KIND, opts);
+      try {
+        bitmap = MediaStore.Images.Thumbnails.getThumbnail(UI.getAppContext().getContentResolver(), imageId, MediaStore.Images.Thumbnails.MINI_KIND, opts);
+      } catch (Throwable t) {
+        t.printStackTrace();
+        bitmap = null;
+      }
     }
-    if (bitmap == null)
+    if (!U.isValidBitmap(bitmap) && !file.isVideo()) {
       bitmap = decodeFile(file.getFilePath(), opts);
+    }
 
     if (bitmap != null) {
       if (!file.isWebp() && file.shouldUseBlur() && file.needBlur()) {

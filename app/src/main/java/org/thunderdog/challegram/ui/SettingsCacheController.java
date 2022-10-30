@@ -138,9 +138,9 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
             break;
           }
           case R.id.btn_storagePath: {
-            TdApi.TdlibParameters parameters = tdlib.clientParameters();
-            view.setData(parameters != null ? parameters.filesDirectory : "Unavailable");
-            view.setEnabled(parameters != null && item.getBoolValue());
+            TdApi.SetTdlibParameters parametersRequest = tdlib.clientParameters();
+            view.setData(parametersRequest != null ? parametersRequest.filesDirectory : "Unavailable");
+            view.setEnabled(parametersRequest != null && item.getBoolValue());
             break;
           }
           case R.id.btn_localDatabase:
@@ -508,12 +508,12 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
             if (reset) {
               Settings.instance().disableAllLogs();
             }
-            Settings.instance().deleteAllLogs(this::reloadFastStats);
+            Settings.instance().deleteAllLogs(true, this::reloadFastStats);
           }));
         } else {
           showOptions(Lang.getString(R.string.AppLogsClear), new int[] {R.id.btn_deleteFile, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearX, Strings.buildSize(fastStats.getLogsSize())), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
             if (id == R.id.btn_deleteFile) {
-              Settings.instance().deleteAllLogs(this::reloadFastStats);
+              Settings.instance().deleteAllLogs(true, this::reloadFastStats);
             }
             return true;
           });

@@ -753,7 +753,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
   private void sendByEnter () {
     if (controller != null && needSendByEnter()) {
-      controller.pickDateOrProceed(false, null, (forceDisableNotification, schedulingState, disableMarkdown) -> controller.sendText(true, forceDisableNotification, schedulingState));
+      controller.pickDateOrProceed(Td.newSendOptions(), (sendOptions, disableMarkdown) -> controller.sendText(true, sendOptions));
     }
   }
 
@@ -1178,7 +1178,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   @Override
   public void onInlineQueryResultPick (InlineResult<?> result) {
     if (controller != null) {
-      controller.sendInlineQueryResult(result.getQueryId(), result.getId(), true, true, false, null);
+      controller.sendInlineQueryResult(result.getQueryId(), result.getId(), true, true, Td.newSendOptions());
     }
   }
 
@@ -1292,10 +1292,17 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
           }
           if (needMenu) {
             tdlib.ui().post(() -> {
-              tdlib.ui().showScheduleOptions(controller, chatId, false, (forceDisableNotification, schedulingState, disableMarkdown) -> tdlib.sendMessage(chatId, messageThreadId, replyToMessageId, new TdApi.MessageSendOptions(forceDisableNotification || silent, false, false, schedulingState), content, null), null);
+              tdlib.ui().showScheduleOptions(controller, chatId, false,
+                (sendOptions, disableMarkdown) ->
+                  tdlib.sendMessage(chatId, messageThreadId, replyToMessageId,
+                    Td.newSendOptions(sendOptions, silent),
+                    content,
+                    null
+                  ),
+                null, null);
             });
           } else {
-            tdlib.sendMessage(chatId, messageThreadId, replyToMessageId, silent, false, content);
+            tdlib.sendMessage(chatId, messageThreadId, replyToMessageId, Td.newSendOptions(silent), content);
           }
         });
         // read and display inputContentInfo asynchronously.
@@ -1362,6 +1369,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     BaseInputConnection.removeComposingSpans(text);
     TdApi.FormattedText result = new TdApi.FormattedText(text.toString(), TD.toEntities(text, false));
     if (applyMarkdown) {
+      //noinspection UnsafeOptInUsageError
       Td.parseMarkdown(result);
     }
     return result;

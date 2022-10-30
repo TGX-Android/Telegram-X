@@ -70,8 +70,9 @@ public interface Receiver extends TooltipOverlayView.LocationProvider {
 
   default void drawPlaceholderContour (Canvas c, Path path, float alpha) {
     if (path != null) {
-      int left = getLeft();
-      int top = getTop();
+      int size = Math.min(getWidth(), getHeight());
+      int left = centerX() - size / 2;
+      int top = centerY() - size / 2;
       final boolean translate = left != 0 || top != 0;
       final int restoreToCount;
       if (translate) {
@@ -115,6 +116,22 @@ public interface Receiver extends TooltipOverlayView.LocationProvider {
   float getAlpha ();
   void setAnimationDisabled (boolean disabled);
   boolean setBounds (int left, int top, int right, int bottom);
+  default boolean setBoundsScaled (int left, int top, int right, int bottom, float scale) {
+    if (scale == 1f) {
+      return setBounds(left, top, right, bottom);
+    } else {
+      int width = right - left;
+      int height = bottom - top;
+      int centerX = left + width / 2;
+      int centerY = top + height / 2;
+      return setBounds(
+        centerX - width / 2,
+        centerY - height / 2,
+        centerX + width / 2 + width % 2,
+        centerY + height / 2 + height % 2
+      );
+    }
+  }
   void forceBoundsLayout ();
 
   boolean isInsideContent (float x, float y, int emptyWidth, int emptyHeight);
@@ -124,6 +141,18 @@ public interface Receiver extends TooltipOverlayView.LocationProvider {
   }
 
   void draw (Canvas c);
+
+  default void drawScaled (Canvas c, float scale) {
+    // Note: make sure placeholder is scaled as well when using this method
+    if (scale == 1f) {
+      draw(c);
+    } else {
+      int saveCount = Views.save(c);
+      c.scale(scale, scale, centerX(), centerY());
+      draw(c);
+      Views.restore(c, saveCount);
+    }
+  }
 
   void invalidate ();
 
