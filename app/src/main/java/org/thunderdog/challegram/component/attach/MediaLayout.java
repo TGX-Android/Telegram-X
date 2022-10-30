@@ -1301,7 +1301,12 @@ public class MediaLayout extends FrameLayoutFix implements
       sendButton.setOnClickListener(this);
       bottomBar.addView(sendButton);
 
-      chatSendersView = new ChatSendersView(getContext(), tdlib(), ChatSendersView.RADIUS_SMALL);
+      chatSendersView = new ChatSendersView(getContext(), tdlib(), ChatSendersView.RADIUS_SMALL) {
+        @Override
+        public boolean dispatchTouchEvent (MotionEvent event) {
+          return false;
+        }
+      };
       chatSendersView.setOutlineFactor(1f);
       int avatarSize = Screen.dp(17);
       FrameLayout.LayoutParams fp = FrameLayoutFix.newParams(avatarSize, avatarSize, Gravity.RIGHT);

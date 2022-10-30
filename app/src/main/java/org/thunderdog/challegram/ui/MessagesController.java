@@ -1021,6 +1021,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     } else {
       params.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
     }
+
     senderAvatarView = new ChatSendersView(context, tdlib, ChatSendersView.RADIUS_DEFAULT) {
       @Override
       public boolean dispatchTouchEvent (MotionEvent event) {
