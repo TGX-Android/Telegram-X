@@ -70,7 +70,8 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
   private final Counter counter;
 
   private SimplestCheckBoxHelper checkBoxHelper;
-  private Paint identityStrokePaint = Paints.getOuterCheckPaint(Theme.fillingColor());
+  private final Paint identityStrokePaint = Paints.getOuterCheckPaint(Theme.fillingColor());
+  private final Paint anonBackgroundPaint = new Paint();
 
   public VerticalChatView (@NonNull Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -182,7 +183,7 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
   }
 
   private void setAnonymousPlaceholder (boolean isAnonymous) {
-    anonymousPlaceholder = isAnonymous ? Drawables.get(R.drawable.baseline_acc_anon_24) : null;
+    anonymousPlaceholder = isAnonymous ? Drawables.get(R.drawable.baseline_acc_anon_little_24) : null;
     invalidate();
   }
 
@@ -547,13 +548,21 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
     } else if (identityPlaceholder != null) {
       identityPlaceholder.draw(c, identityReceiver.centerX(), identityReceiver.centerY());
     } else if (anonymousPlaceholder != null) {
-      anonymousPlaceholder.setBounds(
-        identityReceiver.getCenterX() - Screen.dp(8f),
-        identityReceiver.getCenterY() - Screen.dp(8f),
-        identityReceiver.getCenterX() + Screen.dp(8f),
-        identityReceiver.getCenterY() + Screen.dp(8f)
+      anonBackgroundPaint.setStyle(Paint.Style.FILL);
+      anonBackgroundPaint.setColor(Theme.iconColor());
+      c.drawCircle(
+        identityReceiver.getCenterX(),
+        identityReceiver.getCenterY(),
+        Screen.dp(8f),
+        anonBackgroundPaint
       );
-      anonymousPlaceholder.setColorFilter(Paints.getIconGrayPorterDuffPaint().getColorFilter());
+      anonBackgroundPaint.setStyle(Paint.Style.STROKE);
+      anonymousPlaceholder.setBounds(
+        identityReceiver.getCenterX() - Screen.dp(5f),
+        identityReceiver.getCenterY() - Screen.dp(5f),
+        identityReceiver.getCenterX() + Screen.dp(5f),
+        identityReceiver.getCenterY() + Screen.dp(5f)
+      );
       anonymousPlaceholder.draw(c);
     }
     final float checkFactor = checkBoxHelper != null ? checkBoxHelper.getCheckFactor() : 0f;
