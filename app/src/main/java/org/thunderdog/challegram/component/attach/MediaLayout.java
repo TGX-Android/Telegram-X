@@ -1693,7 +1693,12 @@ public class MediaLayout extends FrameLayoutFix implements
   private void updateSender (TdApi.MessageSender senderId) {
     TdlibSender tdlibSender = new TdlibSender(tdlib(), getTargetChatId(), senderId);
     if (chatSendersView != null) {
-      chatSendersView.setNewSender(tdlibSender);
+      if (tdlibSender.isSelf()) {
+        chatSendersView.setVisibility(View.GONE);
+      } else {
+        chatSendersView.setVisibility(View.VISIBLE);
+        chatSendersView.setNewSender(tdlibSender.isSelf() ? null : tdlibSender);
+      }
     }
   }
 }
