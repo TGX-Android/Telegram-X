@@ -162,10 +162,10 @@ public class ChatChangeSenderController extends MediaBottomBaseController<Void> 
       mediaLayout.getHeaderView().closeSearchMode(true, null);
       headerView = mediaLayout.getHeaderView();
       setSenders();
-      return true;
+    } else {
+      mediaLayout.hide(false);
     }
-    mediaLayout.hide(false);
-    return false;
+    return true;
   }
 
   @Override
