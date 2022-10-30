@@ -108,6 +108,31 @@ public class TGMessageBotInfo extends TGMessage {
   }
 
   @Override
+  protected Text[] getSearchableText () {
+    if (titleWrapper == null && textWrapper == null) {
+      return null;
+    }
+
+    Text[] texts = new Text[2];
+
+    if (titleWrapper != null) {
+      Text text = titleWrapper.getCurrent();
+      if (text != null) {
+        texts[0] = text;
+      }
+    }
+
+    if (textWrapper != null) {
+      Text text = textWrapper.getCurrent();
+      if (text != null) {
+        texts[1] = text;
+      }
+    }
+
+    return texts;
+  }
+
+  @Override
   protected int getContentHeight () {
     return textWrapper.getHeight() + (titleWrapper != null ? titleWrapper.getHeight() + Screen.dp(3f) : 0);
   }

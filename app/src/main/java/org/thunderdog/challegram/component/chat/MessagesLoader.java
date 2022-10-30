@@ -42,6 +42,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.ui.SearchFiltersController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.CancellableResultHandler;
 
@@ -162,6 +163,12 @@ public class MessagesLoader implements Client.ResultHandler {
   }
 
   public void setSearchParameters (String query, TdApi.MessageSender sender, TdApi.SearchMessagesFilter filter) {
+    this.specialMode = SPECIAL_MODE_SEARCH;
+
+    if(query == null && sender == null && filter == null) {
+      this.specialMode = SPECIAL_MODE_NONE ;
+    }
+
     this.searchQuery = query;
     this.searchSender = sender;
     this.searchFilter = filter;
@@ -192,7 +199,11 @@ public class MessagesLoader implements Client.ResultHandler {
   private TdApi.Message[] mergeChunk;
   private int mergeMode;
 
-  private Client.ResultHandler newHandler (final boolean allowMoreTop, final boolean allowMoreBottom, boolean needFindUnrad) {
+  private Client.ResultHandler newHandler (final boolean allowMoreTop, final boolean allowMoreBottom, boolean needFindUnrad){
+    return newHandler(allowMoreTop,allowMoreBottom,needFindUnrad,false);
+  }
+
+  private Client.ResultHandler newHandler (final boolean allowMoreTop, final boolean allowMoreBottom, boolean needFindUnrad,boolean needFilterResult) {
     final long currentContextId = contextId;
     if (lastHandler != null) {
       throw new IllegalStateException("lastHandler != null");
@@ -221,7 +232,7 @@ public class MessagesLoader implements Client.ResultHandler {
             if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
               Log.i(Log.TAG_MESSAGES_LOADER, "Received %d messages in %dms", ((TdApi.Messages) object).messages.length, ms);
             }
-            TdApi.Messages result = (TdApi.Messages) object;
+            TdApi.Messages result = needFilterResult? applyFilter((TdApi.Messages) object, searchFilter):(TdApi.Messages) object;
             messages = result.messages;
             knownTotalCount = result.totalCount;
             nextSecretSearchOffset = null;
@@ -231,7 +242,7 @@ public class MessagesLoader implements Client.ResultHandler {
             if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
               Log.i(Log.TAG_MESSAGES_LOADER, "Received %d secret messages in %dms", ((TdApi.FoundMessages) object).messages.length, ms);
             }
-            TdApi.FoundMessages foundMessages = (TdApi.FoundMessages) object;
+            TdApi.FoundMessages foundMessages = needFilterResult? applyFilter((TdApi.FoundMessages) object, searchFilter):(TdApi.FoundMessages) object;
             messages = foundMessages.messages;
             nextSecretSearchOffset = foundMessages.nextOffset;
             knownTotalCount = foundMessages.totalCount;
@@ -468,6 +479,78 @@ public class MessagesLoader implements Client.ResultHandler {
         processMessages(currentContextId, messages, knownTotalCount, nextSecretSearchOffset, needFindUnrad && object.getConstructor() == TdApi.Messages.CONSTRUCTOR, missingAlbums);
       }
     };
+  }
+
+  public static TdApi.FoundMessages applyFilter (TdApi.FoundMessages messages, TdApi.SearchMessagesFilter filter) {
+    var filteredMessages = applyFilter(messages.messages, filter);
+    return new TdApi.FoundMessages(filteredMessages.length, filteredMessages, messages.nextOffset);
+  }
+  public static TdApi.Messages applyFilter(TdApi.Messages messages,TdApi.SearchMessagesFilter filter ){
+    var filteredMessages = applyFilter(messages.messages, filter);
+    return new TdApi.Messages(filteredMessages.length, filteredMessages);
+  }
+  public static TdApi.Message[]  applyFilter(TdApi.Message[] messages, TdApi.SearchMessagesFilter filter ){
+    int searchedConstructor = -1;
+    switch (filter.getConstructor()){
+      case SearchFiltersController.SearchMessagesFilterText.CONSTRUCTOR:
+        searchedConstructor = -2;
+        break;
+      case TdApi.SearchMessagesFilterPhoto.CONSTRUCTOR:
+        searchedConstructor = TdApi.MessagePhoto.CONSTRUCTOR;
+        break;
+      case TdApi.SearchMessagesFilterVideo.CONSTRUCTOR:
+        searchedConstructor = TdApi.MessageVideo.CONSTRUCTOR;
+        break;
+      case TdApi.SearchMessagesFilterVoiceNote.CONSTRUCTOR:
+        searchedConstructor = TdApi.MessageVoiceNote.CONSTRUCTOR;
+        break;
+      case TdApi.SearchMessagesFilterVideoNote.CONSTRUCTOR:
+        searchedConstructor = TdApi.MessageVideoNote.CONSTRUCTOR;
+        break;
+      case TdApi.SearchMessagesFilterDocument.CONSTRUCTOR:
+        searchedConstructor = TdApi.MessageDocument.CONSTRUCTOR;
+        break;
+      case TdApi.SearchMessagesFilterAudio.CONSTRUCTOR:
+        searchedConstructor = TdApi.MessageAudio.CONSTRUCTOR;
+        break;
+      case TdApi.SearchMessagesFilterAnimation.CONSTRUCTOR:
+        searchedConstructor = TdApi.MessageAnimation.CONSTRUCTOR;
+        break;
+    }
+
+    if(searchedConstructor == -1){
+      return messages;
+    }
+
+    List<TdApi.Message> filteredMessages = new ArrayList<>(messages.length);
+    if (searchedConstructor == -2) {
+      for (TdApi.Message msg : messages) {
+        boolean isText = true;
+        switch (msg.content.getConstructor()) {
+          case TdApi.MessagePhoto.CONSTRUCTOR:
+          case TdApi.MessageVideo.CONSTRUCTOR:
+          case TdApi.MessageVoiceNote.CONSTRUCTOR:
+          case TdApi.MessageVideoNote.CONSTRUCTOR:
+          case TdApi.MessageDocument.CONSTRUCTOR:
+          case TdApi.MessageAudio.CONSTRUCTOR:
+          case TdApi.MessageAnimation.CONSTRUCTOR:
+            isText = false;
+            break;
+        }
+
+        if (isText) {
+          filteredMessages.add(msg);
+        }
+      }
+    } else {
+      for (TdApi.Message msg : messages) {
+        if (msg.content.getConstructor() == searchedConstructor) {
+          filteredMessages.add(msg);
+        }
+      }
+    }
+
+    return filteredMessages.toArray(new TdApi.Message[0]);
   }
 
   public void reuse () {
@@ -1035,17 +1118,28 @@ public class MessagesLoader implements Client.ResultHandler {
       loadingAllowMoreBottom = allowMoreBottom;
 
       TdApi.Function<?> function;
-
+      boolean needFilterResult = false;
       switch (specialMode) {
         case SPECIAL_MODE_EVENT_LOG:
           function = new TdApi.GetChatEventLog(sourceChatId, manager.getEventLogQuery(), (lastFromMessageId = fromMessageId).getMessageId(), lastLimit = limit, manager.getEventLogFilters(), manager.getEventLogUserIds());
           break;
         case SPECIAL_MODE_SEARCH: {
           long chatId = getChatId();
-          if (ChatId.isSecret(chatId)) {
-            function = new TdApi.SearchSecretMessages(sourceChatId, searchQuery, lastSecretSearchOffset, limit, null);
+          if (ChatId.isSecret(chatId) &&  searchQuery != null && !searchQuery.isEmpty()) {
+            if (searchFilter != null && searchFilter.getConstructor() == SearchFiltersController.SearchMessagesFilterText.CONSTRUCTOR) {
+              function = new TdApi.SearchSecretMessages(sourceChatId, searchQuery, lastSecretSearchOffset, limit, null);
+              needFilterResult = true;
+            } else {
+              function = new TdApi.SearchSecretMessages(sourceChatId, searchQuery, lastSecretSearchOffset, limit, searchFilter);
+            }
           } else {
-            function = new TdApi.SearchChatMessages(sourceChatId, searchQuery, searchSender, (lastFromMessageId = fromMessageId).getMessageId(), lastOffset = offset, lastLimit = limit, searchFilter, messageThread != null ? messageThread.getMessageThreadId() : 0);
+            if ((searchSender != null && searchFilter != null && searchFilter.getConstructor() != TdApi.SearchMessagesFilterEmpty.CONSTRUCTOR) ||
+              (searchFilter != null && searchFilter.getConstructor() == SearchFiltersController.SearchMessagesFilterText.CONSTRUCTOR)) {
+              function = new TdApi.SearchChatMessages(sourceChatId, searchQuery, searchSender, (lastFromMessageId = fromMessageId).getMessageId(), lastOffset = offset, lastLimit = limit, null, messageThread != null ? messageThread.getMessageThreadId() : 0);
+              needFilterResult = true;
+            } else {
+              function = new TdApi.SearchChatMessages(sourceChatId, searchQuery, searchSender, (lastFromMessageId = fromMessageId).getMessageId(), lastOffset = offset, lastLimit = limit, searchFilter, messageThread != null ? messageThread.getMessageThreadId() : 0);
+            }
           }
           break;
         }
@@ -1056,7 +1150,12 @@ public class MessagesLoader implements Client.ResultHandler {
         default:
           if (hasSearchFilter()) {
             loadingLocal = false;
-            function = new TdApi.SearchChatMessages(sourceChatId, null, null, (lastFromMessageId = fromMessageId).getMessageId(), lastOffset = offset, lastLimit = limit, searchFilter, messageThread != null ? messageThread.getMessageThreadId() : 0);
+            if (searchSender != null || (searchFilter != null && searchFilter.getConstructor() != TdApi.SearchMessagesFilterEmpty.CONSTRUCTOR)) {
+              function = new TdApi.SearchChatMessages(sourceChatId, searchQuery, searchSender, (lastFromMessageId = fromMessageId).getMessageId(), lastOffset = offset, lastLimit = limit, null, messageThread != null ? messageThread.getMessageThreadId() : 0);
+              needFilterResult = true;
+            } else {
+              function = new TdApi.SearchChatMessages(sourceChatId, searchQuery, searchSender, (lastFromMessageId = fromMessageId).getMessageId(), lastOffset = offset, lastLimit = limit, searchFilter, messageThread != null ? messageThread.getMessageThreadId() : 0);
+            }
           } else {
             function = new TdApi.GetChatHistory(sourceChatId, (lastFromMessageId = fromMessageId).getMessageId(), lastOffset = offset, lastLimit = limit, loadingLocal);
           }
@@ -1068,7 +1167,7 @@ public class MessagesLoader implements Client.ResultHandler {
         Log.i(Log.TAG_MESSAGES_LOADER, "allowMoreTop:%b, allowMoreBottom:%b. Invoking %s, onlyLocal:%b", allowMoreTop, allowMoreBottom, function, loadingLocal);
       }
 
-      tdlib.client().send(function, newHandler(allowMoreTop, allowMoreBottom, (mode != MODE_MORE_TOP && mode != MODE_MORE_BOTTOM) || !foundUnreadAtLeastOnce));
+      tdlib.client().send(function, newHandler(allowMoreTop, allowMoreBottom, (mode != MODE_MORE_TOP && mode != MODE_MORE_BOTTOM) || !foundUnreadAtLeastOnce, needFilterResult));
     }
   }
 

@@ -409,8 +409,10 @@
   <item type="id" name="btn_selectMuted" />
   <item type="id" name="btn_search" />
   <item type="id" name="btn_search_by" />
+  <item type="id" name="btn_search_by_filter" />
   <item type="id" name="btn_search_next" />
   <item type="id" name="btn_search_prev" />
+  <item type="id" name="btn_search_display_found_only" />
   <item type="id" name="btn_search_counter" />
   <item type="id" name="btn_search_jump" />
   <item type="id" name="btn_gps" />
@@ -541,6 +543,7 @@
   <item type="id" name="btn_showAdvanced" />
   <item type="id" name="btn_autoplayGIFs" />
   <item type="id" name="btn_stickerSuggestions" />
+  <item type="id" name="btn_inChatSearchBtnsSuggestions" />
   <item type="id" name="btn_stickerSuggestionsAll" />
   <item type="id" name="btn_stickerSuggestionsInstalled" />
   <item type="id" name="btn_stickerSuggestionsNone" />

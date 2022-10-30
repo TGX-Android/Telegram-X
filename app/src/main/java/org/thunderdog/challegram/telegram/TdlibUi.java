@@ -1728,6 +1728,7 @@ public class TdlibUi extends Handler {
 
     public boolean highlightSet;
     public int highlightMode;
+    public String searchQuery;
     public MessageId highlightMessageId;
 
     public @Nullable UrlOpenParameters urlOpenParameters;
@@ -1838,6 +1839,11 @@ public class TdlibUi extends Handler {
 
     public ChatOpenParameters openProfileInCaseOfPrivateChat () {
       this.options |= CHAT_OPTION_NEED_PRIVATE_PROFILE;
+      return this;
+    }
+
+    public ChatOpenParameters searchQuery (String searchQuery) {
+      this.searchQuery = searchQuery;
       return this;
     }
 
@@ -2196,6 +2202,9 @@ public class TdlibUi extends Handler {
     final MessagesController.Arguments arguments;
     if (highlightMessageId != null) {
       arguments = new MessagesController.Arguments(chatList, chat, messageThread, highlightMessageId, highlightMode, filter);
+      if (params != null && params.searchQuery != null && !params.searchQuery.isEmpty()) {
+        arguments.searchQueryForceOpen = params.searchQuery;
+      }
     } else {
       arguments = new MessagesController.Arguments(tdlib, chatList, chat, messageThread, filter);
     }

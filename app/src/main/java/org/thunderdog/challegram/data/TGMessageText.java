@@ -193,6 +193,23 @@ public class TGMessageText extends TGMessage {
     return pendingMessageText != null;
   }
 
+  @Override
+  protected Text[] getSearchableText () {
+    if (wrapper == null) {
+      return null;
+    }
+
+    Text text = wrapper.getCurrent();
+    if (text == null) {
+      return null;
+    }
+
+    if (webPage != null) {
+      return new Text[] {text, webPage.getSiteName(), webPage.getTitle(), webPage.getDescription()};
+    }
+    return new Text[] {text};
+  }
+
   private boolean setText (TdApi.FormattedText text, boolean parseEntities) {
     if (this.text == null || !Td.equalsTo(this.text, text)) {
       this.text = text;

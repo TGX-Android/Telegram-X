@@ -389,6 +389,27 @@ public class TGMessageFile extends TGMessage {
   }
 
   @Override
+  protected Text[] getSearchableText () {
+    List<Text> texts = new ArrayList<>(filesList.size());
+
+    for (CaptionedFile file : filesList) {
+      if (file.captionWrapper != null) {
+        Text text = file.captionWrapper.getCurrent();
+        if (text != null) {
+          texts.add(text);
+        }
+      }
+    }
+
+    if (texts.size() > 0) {
+      Text[] arr = new Text[texts.size()];
+      texts.toArray(arr);
+      return arr;
+    }
+    return null;
+  }
+
+  @Override
   public void autoDownloadContent (TdApi.ChatType type) {
     for (CaptionedFile file : filesList) {
       file.component.getFileProgress().downloadAutomatically(type);

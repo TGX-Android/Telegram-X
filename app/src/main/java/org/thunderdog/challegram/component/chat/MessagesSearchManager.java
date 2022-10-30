@@ -14,10 +14,13 @@
  */
 package org.thunderdog.challegram.component.chat;
 
+import androidx.annotation.Nullable;
+
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.ui.SearchFiltersController;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -45,8 +48,29 @@ public class MessagesSearchManager {
   private String currentSecretOffset;
   private ArrayList<TdApi.Message> currentSearchResults;
 
+  private MessageId navigateTo;
+
+  public MessageId getCurrentMessage () {
+    if (currentSearchResults == null || currentIndex < 0 || currentIndex >= currentSearchResults.size()) {
+      return null;
+    }
+
+    TdApi.Message m = currentSearchResults.get(currentIndex);
+    if (m == null) {
+      return null;
+    }
+
+    return new MessageId(m.chatId, m.id);
+  }
+
+  public void setSearchInput (String input) {
+    currentInput = input;
+  }
+
   public interface Delegate {
     void showSearchResult (int index, int totalCount, MessageId messageId);
+    void highlightSearchesText (ArrayList<TdApi.Message> messages, String searchText);
+    void highlightSearchText (TdApi.Message messages, String searchText);
     void onAwaitNext ();
     void onTryToLoadPrevious ();
     void onTryToLoadNext ();
@@ -61,6 +85,17 @@ public class MessagesSearchManager {
     // reset();
   }
 
+  public String getCurrentInput () {
+    return currentInput;
+  }
+
+  public void setCurrentInput (String query) {
+    currentInput = query;
+  }
+
+  public TdApi.MessageSender getCurrentSender () {
+    return currentFromSender;
+  }
   public void onDismiss () {
     reset(0l, 0l, "");
   }
@@ -71,6 +106,9 @@ public class MessagesSearchManager {
     currentInput = input;
     flags = currentIndex = currentTotalCount = 0;
     if (currentSearchResults != null) {
+      if (delegate != null) {
+        delegate.highlightSearchesText(currentSearchResults, null);
+      }
       currentSearchResults.clear();
     }
     return ++contextId;
@@ -83,10 +121,18 @@ public class MessagesSearchManager {
   private CancellableRunnable searchRunnable;
 
   // Typing the search
+  public void searchAndJumpTo (long chatId, boolean isSecret, String input, MessageId navigateTo) {
+    this.navigateTo = navigateTo;
+    search(chatId, 0, null, isSecret, input);
+  }
+
   public void search (final long chatId, final long messageThreadId, final TdApi.MessageSender fromSender, final boolean isSecret, final String input) {
+    search(chatId, messageThreadId, fromSender, isSecret, input, null);
+  }
+  public void search (final long chatId, final long messageThreadId, final TdApi.MessageSender fromSender, final boolean isSecret, final String input,@Nullable TdApi.SearchMessagesFilter filter) {
     final int contextId = reset(chatId, messageThreadId, input);
 
-    if (input.length() == 0 && fromSender == null) {
+    if (input.length() == 0 && fromSender == null && (filter == null || filter.getConstructor() == TdApi.SearchMessagesFilterEmpty.CONSTRUCTOR)) {
       delegate.showSearchResult(STATE_NO_INPUT, 0, null);
       return;
     }
@@ -105,7 +151,7 @@ public class MessagesSearchManager {
     searchRunnable = new CancellableRunnable() {
       @Override
       public void act () {
-        searchInternal(contextId, chatId, messageThreadId, fromSender, isSecret, input, 0, null);
+        searchInternal(contextId, chatId, messageThreadId, fromSender, isSecret, input, 0, null, filter);
       }
     };
     UI.post(searchRunnable, isSecret ? 0 : SEARCH_DELAY);
@@ -117,24 +163,49 @@ public class MessagesSearchManager {
     }
   }
 
-  private void searchInternal (final int contextId, final long chatId, final long messageThreadId, final TdApi.MessageSender fromSender, final boolean isSecret, final String input, final long fromMessageId, final String nextSearchOffset) {
+  private void searchInternal (final int contextId, final long chatId, final long messageThreadId,
+                               final TdApi.MessageSender fromSender, final boolean isSecret, final String input, final long fromMessageId, final String nextSearchOffset) {
+    searchInternal(contextId, chatId, messageThreadId,
+      fromSender, isSecret, input, fromMessageId, nextSearchOffset, null);
+  }
+
+  private void searchInternal (final int contextId, final long chatId, final long messageThreadId,
+                               final TdApi.MessageSender fromSender, final boolean isSecret, final String input,
+                               final long fromMessageId, final String nextSearchOffset, @Nullable TdApi.SearchMessagesFilter filter) {
+
     if (this.contextId != contextId) {
       return;
     }
+
+    boolean needFilterLocally = false;
     TdApi.Function<?> function;
-    if (isSecret) {
-      function = new TdApi.SearchSecretMessages(chatId, input, nextSearchOffset, SEARCH_LOAD_LIMIT, new TdApi.SearchMessagesFilterEmpty());
+    if (isSecret && input != null && !input.isEmpty()) {
+      if ((filter != null && filter.getConstructor() == SearchFiltersController.SearchMessagesFilterText.CONSTRUCTOR)) {
+        function = new TdApi.SearchSecretMessages(chatId, input, nextSearchOffset, SEARCH_LOAD_LIMIT, null);
+        needFilterLocally = true;
+      } else {
+        function = new TdApi.SearchSecretMessages(chatId, input, nextSearchOffset, SEARCH_LOAD_LIMIT, filter );
+      }
     } else {
-      function = new TdApi.SearchChatMessages(chatId, input, fromSender, fromMessageId, 0, SEARCH_LOAD_LIMIT, new TdApi.SearchMessagesFilterEmpty(), messageThreadId);
+      if ((fromSender != null && filter != null && filter.getConstructor() != TdApi.SearchMessagesFilterEmpty.CONSTRUCTOR) ||
+        (filter != null && filter.getConstructor() == SearchFiltersController.SearchMessagesFilterText.CONSTRUCTOR)) {
+
+        function = new TdApi.SearchChatMessages(chatId, input, fromSender, fromMessageId, 0, SEARCH_LOAD_LIMIT, null, messageThreadId);
+        needFilterLocally = true;
+      } else {
+        function = new TdApi.SearchChatMessages(chatId, input, fromSender, fromMessageId, 0, SEARCH_LOAD_LIMIT, filter == null ? new TdApi.SearchMessagesFilterEmpty() : filter, messageThreadId);
+      }
     }
+    boolean finalNeedFilterLocally = needFilterLocally;
+
     tdlib.client().send(function, object -> {
       switch (object.getConstructor()) {
         case TdApi.Messages.CONSTRUCTOR: {
-          dispatchMessages(contextId, fromMessageId != 0, (TdApi.Messages) object);
+          dispatchMessages(contextId, fromMessageId != 0, finalNeedFilterLocally ? MessagesLoader.applyFilter((TdApi.Messages) object, filter) : (TdApi.Messages) object);
           break;
         }
         case TdApi.FoundMessages.CONSTRUCTOR: {
-          dispatchSecretMessages(contextId, fromMessageId != 0, (TdApi.FoundMessages) object);
+          dispatchSecretMessages(contextId, fromMessageId != 0,finalNeedFilterLocally ? MessagesLoader.applyFilter((TdApi.FoundMessages) object, filter) :(TdApi.FoundMessages) object);
           break;
         }
         case TdApi.Error.CONSTRUCTOR: {
@@ -182,12 +253,23 @@ public class MessagesSearchManager {
     if (currentSearchResults == null) {
       currentSearchResults = new ArrayList<>(messages.messages.length);
     } else {
+      if (delegate != null) {
+        delegate.highlightSearchesText(currentSearchResults, null);
+      }
       currentSearchResults.clear();
       currentSearchResults.ensureCapacity(messages.messages.length);
     }
     Collections.addAll(currentSearchResults, messages.messages);
     flags |= FLAG_CAN_LOAD_MORE;
+    //Global search doesn't work for secret.
+    delegate.highlightSearchesText(currentSearchResults, currentInput);
     delegate.showSearchResult(currentIndex = 0, currentTotalCount = currentSearchResults.size(), new MessageId(messages.messages[0].chatId, messages.messages[0].id));
+  }
+
+  public void updateHighlights () {
+    if (currentInput != null && currentSearchResults != null && currentSearchResults.size() > 0) {
+      delegate.highlightSearchesText(currentSearchResults, currentInput);
+    }
   }
 
   private void parseMessages (final int contextId, final boolean isMore, final TdApi.Messages messages) {
@@ -211,13 +293,35 @@ public class MessagesSearchManager {
     if (currentSearchResults == null) {
       currentSearchResults = new ArrayList<>();
     } else {
+      delegate.highlightSearchesText(currentSearchResults, null);
       currentSearchResults.clear();
     }
     Collections.addAll(currentSearchResults, messages.messages);
     if (currentSearchResults.size() < messages.totalCount) {
       flags |= FLAG_CAN_LOAD_MORE;
     }
-    delegate.showSearchResult(currentIndex = 0, currentTotalCount = messages.totalCount, new MessageId(messages.messages[0].chatId, messages.messages[0].id));
+
+    int index = getMessageIndex(messages.messages, navigateTo);
+    currentIndex = 0;
+    if (index != -1) {
+      currentIndex = index;
+    }
+    delegate.highlightSearchesText(currentSearchResults, currentInput);
+    delegate.showSearchResult(currentIndex, currentTotalCount = messages.totalCount, new MessageId(messages.messages[currentIndex].chatId, messages.messages[currentIndex].id));
+    navigateTo = null;
+  }
+
+  private int getMessageIndex (final TdApi.Message[] messages, MessageId id) {
+    if (id == null) {
+      return -1;
+    }
+    for (int i = 0; i < messages.length; ++i) {
+      TdApi.Message msg = messages[i];
+      if (id.getMessageId() == msg.id) {
+        return i;
+      }
+    }
+    return -1;
   }
 
   public void moveToNext (boolean next) {
@@ -238,6 +342,7 @@ public class MessagesSearchManager {
     }
     if (nextIndex < currentSearchResults.size()) {
       TdApi.Message message = currentSearchResults.get(nextIndex);
+      delegate.highlightSearchText(message, currentInput);
       delegate.showSearchResult(currentIndex = nextIndex, currentTotalCount, new MessageId(message.chatId, message.id));
     } else if ((flags & FLAG_CAN_LOAD_MORE) != 0) {
       flags |= FLAG_LOADING;

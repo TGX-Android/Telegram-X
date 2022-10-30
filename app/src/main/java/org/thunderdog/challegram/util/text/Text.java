@@ -41,6 +41,7 @@ import androidx.collection.SparseArrayCompat;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
+import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.DiffMatchPatch;
 import org.thunderdog.challegram.core.Lang;
@@ -50,6 +51,7 @@ import org.thunderdog.challegram.emoji.EmojiInfo;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -148,6 +150,8 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   private final @NonNull TextColorSet defaultTextColorSet;
   private final String suffix;
   private final int suffixWidth;
+
+  private String searchHighlight;
 
   private static class Background {
     public final Path path;
@@ -263,6 +267,10 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
 
   private TextPart lastPart;
   private int maxPartHeight;
+
+  public void addSearchHighlight (String highlight) {
+    this.searchHighlight = highlight;
+  }
 
   private boolean needRevealSpoiler (TextPart part) {
     Spoiler spoiler = findSpoiler(part.getSpoiler());
@@ -2462,6 +2470,53 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       }
     }
     drawPressHighlight(c, startX, endX, endXBottomPadding, startY, center, pressHighlight, alpha, defaultTheme);
+
+
+    // Search highlight
+    if (searchHighlight != null) {
+      boolean _saved = false;
+      int spoiler_count = 0;
+
+      for (int i = 0; i < parts.size(); ++i) {
+        TextPart part = parts.get(i);
+        Highlight highlight = Highlight.valueOf(part.getLinePart(), searchHighlight);
+
+        if (highlight != null) {
+          for (int j = 0; j < highlight.parts.size(); ++j) {
+            Highlight.Part highlightPart = highlight.parts.get(j);
+            if (!highlightPart.isExactMatch()) {
+              continue;
+            }
+
+            TextPart textPart = new TextPart(this, part.getLine(), part.getStart() + highlightPart.start,
+              part.getY() + highlightPart.end, part.getLineIndex(), part.getParagraphIndex());
+
+            final Paint paint = getTextPaint(part.getEntity());
+            float fullWidth = U.measureText(part.getLinePart().substring(highlightPart.start, highlightPart.end), paint);
+            int offsetX = (int) U.measureText(part.getLinePart().substring(0, highlightPart.start), paint);
+            textPart.setWidth(fullWidth);
+            textPart.setXY(part.getX() + offsetX, part.getY());
+
+            Spoiler spoiler = new Spoiler(spoiler_count++);
+            spoiler.addPart(textPart, startX, endX, endXBottomPadding, center);
+            spoiler.build();
+            if (spoiler.willDraw()) {
+              if (!_saved) {
+                _saved = true;
+                c.save();
+                c.translate(0, startY);
+              }
+              spoiler.draw(c, Theme.getColor(R.id.theme_color_textLinkPressHighlight));
+            }
+          }
+        }
+      }
+
+      if (_saved) {
+        c.restore();
+      }
+    }
+    // Search highlight end
 
     if ((textFlags & FLAG_HAS_SPOILERS) != 0) {
       if (spoilers == null) {

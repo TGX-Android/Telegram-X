@@ -237,6 +237,9 @@ public class SearchManager {
   }
 
   // Public API
+  public String getLastQuery () {
+    return lastQuery;
+  }
 
   public boolean isOpen () {
     return isOpen;

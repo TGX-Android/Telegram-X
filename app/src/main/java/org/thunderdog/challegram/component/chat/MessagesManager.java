@@ -102,6 +102,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   private boolean isScrolling;
   private boolean wasScrollByUser;
+  private boolean showOnlyFound;
 
   public MessagesManager (final MessagesController controller) {
     this.controller = controller;
@@ -516,6 +517,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     reactionsHandler = null;
     closestMentions = null;
     closestUnreadReactions = null;
+    showOnlyFound = false;
     final long chatId = loader.getChatId();
     if (chatId != 0) {
       if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
@@ -524,6 +526,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       tdlib.closeChat(chatId, context, true);
     }
     loader.reuse();
+    onDestroySearch();
     adapter.clear(true);
     clearHeaderMessage();
     lastCheckedBottomId = lastCheckedTopId = 0;
@@ -1168,6 +1171,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         manager.scrollToPositionWithOffset(firstIndex + items.size(), currentOffset);
         break;
       }
+    }
+
+    if(searchManager != null) {
+      searchManager.updateHighlights();
     }
   }
 
@@ -2259,6 +2266,11 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       }
     }
     if (!isEventLog()) {
+      String query = getSearchInput();
+      if (query != null && !query.isEmpty()) {
+        view.setText(Lang.getString(isLoaded ? R.string.MessagesNotFound : R.string.LoadingMessages));
+        return;
+      }
       view.setText(Lang.getString(isLoaded ? R.string.NoMessages : R.string.LoadingMessages));
       return;
     }
@@ -2435,6 +2447,27 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
 
   // Search
+  public void setSearchInput (String input) {
+    if (searchManager == null) {
+      return;
+    }
+    searchManager.setSearchInput(input);
+  }
+
+  public String getSearchInput () {
+    if (searchManager == null) {
+      return "";
+    }
+    String input = searchManager.getCurrentInput();
+    return input == null ? "" : input;
+  }
+
+  public TdApi.MessageSender getSearchSender () {
+    if (searchManager == null) {
+      return null;
+    }
+    return searchManager.getCurrentSender();
+  }
 
   public boolean isReadyToSearch () {
     return !adapter.isEmpty();
@@ -2450,15 +2483,58 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   public void search (long chatId, @Nullable ThreadInfo messageThread, TdApi.MessageSender sender, boolean isSecret, String input) {
+    search(chatId, messageThread, sender, isSecret, input, null);
+  }
+
+  public void search (long chatId, @Nullable ThreadInfo messageThread, TdApi.MessageSender sender, boolean isSecret, String input, TdApi.SearchMessagesFilter filter) {
     if (isEventLog()) {
       applyEventLogFilters(eventLogFilters, input, eventLogUserIds);
     } else {
-      searchManager.search(messageThread != null ? messageThread.getChatId() : chatId, messageThread != null ? messageThread.getMessageThreadId() : 0, sender, isSecret, input);
+      searchManager.search(messageThread != null ? messageThread.getChatId() : chatId, messageThread != null ? messageThread.getMessageThreadId() : 0, sender, isSecret, input, filter);
+    }
+  }
+
+  public void reset () {
+    this.showOnlyFound = false;
+    loader.setSearchParameters(null, null, null);
+  }
+
+  public void showOnlyFoundMessages (TdApi.MessageSender sender, TdApi.SearchMessagesFilter filter, boolean showOnlyFound) {
+    this.showOnlyFound = showOnlyFound;
+
+    if (showOnlyFound) {
+      loader.setSearchParameters(getSearchInput(), sender, filter);
+    } else {
+      loader.setSearchParameters(null, null, null);
+    }
+
+    //TODO keep focus on currently visiable position. Implement once...
+    MessageId msgId = null;// searchManager.getCurrentMessage();
+
+    if (msgId != null) {
+      loadFromStart(msgId, null);
+    } else {
+      loadFromStart();
+    }
+  }
+
+  public boolean showOnlyFound () {
+    return this.showOnlyFound;
+  }
+
+  public void searchAndJumpTo (long chatId, boolean isSecret, String input, MessageId navigateTo) {
+    if (isEventLog()) {
+      applyEventLogFilters(eventLogFilters, input, eventLogUserIds);
+    } else {
+      searchManager.searchAndJumpTo(chatId, isSecret, input, navigateTo);
     }
   }
 
   public void onDestroySearch () {
-    searchManager.onDismiss();
+    if (searchManager != null) {
+      searchManager.onDismiss();
+    }
+    reset();
     if (isEventLog()) {
       applyEventLogFilters(eventLogFilters, "", eventLogUserIds);
     }
@@ -2658,6 +2734,26 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       TGMessage msg = adapter.getMessage(index);
       msg.highlight(true);
       scrollToMessage(index, msg, highlightMode, allowSmooth, false);
+    }
+  }
+
+  @Override
+  public void highlightSearchText (TdApi.Message message, String searchText) {
+    int index = adapter.indexOfMessageContainer(message.id);
+    if (index != -1) {
+      TGMessage msg = adapter.getMessage(index);
+      if (msg != null) {
+        msg.setSearchHighlight(searchText);
+      }
+    }
+  }
+
+  @Override
+  public void highlightSearchesText (ArrayList<TdApi.Message> messages, String searchText) {
+    for (TdApi.Message message : messages) {
+      if (message != null) {
+        highlightSearchText(message, searchText);
+      }
     }
   }
 

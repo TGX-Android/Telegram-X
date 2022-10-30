@@ -1606,6 +1606,23 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return manager.getColor(0, R.id.theme_color_bubble_overlayText, R.id.theme_color_bubble_overlayText_noWallpaper, ThemeProperty.WALLPAPER_OVERRIDE_OVERLAY);
   }
 
+  protected Text[] getSearchableText (){
+    return null;
+  }
+
+  public void setSearchHighlight (String highlight) {
+    Text[] texts = getSearchableText();
+
+    if (texts != null) {
+      for (Text text : texts) {
+        if (text != null) {
+          text.addSearchHighlight(highlight);
+          invalidateParentOrSelf(false);
+        }
+      }
+    }
+  }
+
   public boolean drawDate (Canvas c, int centerX, int startY, float detachFactor, float alpha) {
     if (!hasDate()) {
       return false;

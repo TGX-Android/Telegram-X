@@ -1024,6 +1024,10 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
   private HeaderEditText searchHeaderView;
 
+  protected HeaderEditText getSearchHeaderView () {
+    return searchHeaderView;
+  }
+
   protected void modifySearchHeaderView (HeaderEditText headerEditText) {
     // called only once
   }

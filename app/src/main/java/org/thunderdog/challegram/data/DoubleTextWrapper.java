@@ -14,7 +14,9 @@
  */
 package org.thunderdog.challegram.data;
 
+import static org.thunderdog.challegram.tool.UI.getResources;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
@@ -72,10 +74,12 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
   private AvatarPlaceholder avatarPlaceholder;
 
   private ImageFile avatarFile;
+  Drawable checkboxDrawable;
 
   private final MultipleViewProvider currentViews = new MultipleViewProvider();
   private final BounceAnimator isAnonymous = new BounceAnimator(currentViews);
   private final int horizontalPadding;
+  private boolean checked;
 
   public DoubleTextWrapper (Tdlib tdlib, TdApi.Chat chat) {
     this.tdlib = tdlib;
@@ -163,6 +167,13 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
       if (isOnline) {
         setOnline(false);
       }
+    }
+  }
+
+  public void setChecked(boolean checked){
+    this.checked = checked;
+    if(checked && checkboxDrawable == null){
+      checkboxDrawable = getResources().getDrawable( R.drawable.baseline_check_circle_24);
     }
   }
 
@@ -400,6 +411,28 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
     int left = Screen.dp(72f);
     boolean rtl = Lang.rtl();
     int viewWidth = view.getMeasuredWidth();
+    int checkSize = Screen.dp(20);
+    int checkSizeIcon = Screen.dp(16);
+    int rightMargin = Screen.dp(16f);
+    int checkOffset = 0;
+
+    if(checked){
+      final int saveCount = c.save();
+      try {
+        checkOffset =   checkSize + rightMargin;
+        c.translate(viewWidth - checkOffset,  receiver.centerY()-checkSize/2f);
+
+        float center = checkSize/2f;
+        c.drawCircle(center,center,checkSize/2f,Paints.getTicksReadPaint());
+
+        c.drawCircle(center,center,checkSizeIcon/2f ,Paints.getPorterDuffPaint(Color.WHITE));
+        Drawables.drawCentered(c, checkboxDrawable, center,center, Paints.getTicksReadPaint());
+      }catch (Exception ignored){
+      }
+      finally {
+        c.restoreToCount(saveCount);
+      }
+    }
 
     final float anonymousFactor = isAnonymous.getFloatValue();
     if (anonymousFactor > 0f) {
@@ -423,7 +456,7 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
     }
 
     if (adminSign != null) {
-      adminSign.draw(c, viewWidth - Screen.dp(14f) - adminSign.getWidth(), view.getMeasuredHeight() / 2 - adminSign.getHeight() / 2, memberInfo != null && TD.isCreator(memberInfo.status) ? TextColorSets.Regular.NEUTRAL : null);
+      adminSign.draw(c, viewWidth - adminSign.getWidth()- rightMargin - checkOffset, view.getMeasuredHeight() / 2 - adminSign.getHeight() / 2, memberInfo != null && TD.isCreator(memberInfo.status) ? TextColorSets.Regular.NEUTRAL : null);
     }
 
     if (trimmedSubtitle != null) {

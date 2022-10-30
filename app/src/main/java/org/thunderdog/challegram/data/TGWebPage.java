@@ -511,6 +511,18 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
 
   private Text siteName, title, description;
 
+  public Text getSiteName () {
+    return siteName;
+  }
+
+  public Text getTitle () {
+    return title;
+  }
+
+  public Text getDescription () {
+    return description;
+  }
+
   private void setSmallPhoto (TdApi.Photo photo) {
     TdApi.PhotoSize small = Td.findSmallest(photo);
 

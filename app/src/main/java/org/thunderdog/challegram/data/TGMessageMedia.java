@@ -128,6 +128,20 @@ public class TGMessageMedia extends TGMessage {
   }
 
   @Override
+  protected Text[] getSearchableText () {
+    if (wrapper == null) {
+      return null;
+    }
+
+    Text text = wrapper.getCurrent();
+    if (text == null) {
+      return null;
+    }
+
+    return new Text[] {text};
+  }
+
+  @Override
   protected boolean isBeingEdited () {
     return this.isBeingEdited;
   }

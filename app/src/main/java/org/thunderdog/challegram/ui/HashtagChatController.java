@@ -20,6 +20,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -138,6 +139,48 @@ public class HashtagChatController extends ViewPagerController<HashtagChatContro
       imageView.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(24f), Size.getHeaderPortraitSize(), Gravity.LEFT, Screen.dp(68f) - Screen.dp(12f), 0, 0, 0));
       headerCell.addView(imageView);
     }
+  }
+
+  @Override
+  protected void onSearchInputChanged (String input) {
+    super.onSearchInputChanged(input);
+    getMessagesController().onSearchInputChanged(input);
+  }
+
+  @Override
+  public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
+    getMessagesController().fillMenuItems(id,header,menu);
+  }
+
+  @Override
+  protected int getMenuId () {
+    return R.id.menu_search;
+  }
+
+  @Override
+  protected void onEnterSearchMode () {
+    super.onEnterSearchMode();
+    getMessagesController().onEnterSearchMode();
+  }
+
+
+  @Override
+  public void onMenuItemPressed (int id, View view) {
+    if(id == R.id.menu_btn_clear){
+      clearSearchInput();
+    }
+
+    getMessagesController().onMenuItemPressed(id,view);
+  }
+
+  @Override
+  protected int getSearchMenuId () {
+    return  getMessagesController().getSearchMenuId();
+  }
+
+
+  private MessagesController getMessagesController(){
+    return (MessagesController) getPreparedControllerForPosition(0);
   }
 
   @Override

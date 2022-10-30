@@ -60,6 +60,31 @@ public class TGMessageGame extends TGMessage implements MediaWrapper.OnClickList
   }
 
   @Override
+  protected Text[] getSearchableText () {
+    if (title == null && text == null) {
+      return null;
+    }
+
+    Text[] texts = new Text[2];
+
+    if (title != null) {
+      Text t = title.getCurrent();
+      if (t != null) {
+        texts[0] = t;
+      }
+    }
+
+    if (text != null) {
+      Text t = text.getCurrent();
+      if (t != null) {
+        texts[1] = t;
+      }
+    }
+
+    return texts;
+  }
+
+  @Override
   protected int getBubbleContentPadding () {
     return xBubblePadding + xBubblePaddingSmall;
   }

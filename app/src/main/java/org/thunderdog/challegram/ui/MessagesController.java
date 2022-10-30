@@ -218,6 +218,7 @@ import org.thunderdog.challegram.widget.CollapseListView;
 import org.thunderdog.challegram.widget.CustomTextView;
 import org.thunderdog.challegram.widget.EmojiLayout;
 import org.thunderdog.challegram.widget.ForceTouchView;
+import org.thunderdog.challegram.widget.MemberPickView;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.ProgressComponentView;
@@ -280,6 +281,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   HapticMenuHelper.Provider, HapticMenuHelper.OnItemClickListener, TdlibSettingsManager.DismissRequestsListener {
   private boolean reuseEnabled;
   private boolean destroyInstance;
+  private MessageId searchFoundMessageId;
 
   public void setReuseEnabled (boolean enabled) {
     this.reuseEnabled = enabled;
@@ -322,11 +324,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private WallpaperView wallpaperViewBlurPreview;
   private WallpaperParametersView backgroundParamsView;
 
-  private FrameLayoutFix scrollToBottomButtonWrap, mentionButtonWrap, reactionsButtonWrap;
-  private CircleButton scrollToBottomButton, mentionButton, reactionsButton;
+  private FrameLayoutFix scrollToBottomButtonWrap, mentionButtonWrap, reactionsButtonWrap, floatFilterButtonWrap ;
+  private CircleButton scrollToBottomButton, mentionButton, reactionsButton, floatFilterButton;
   private CounterBadgeView unreadCountView, mentionCountView, reactionsCountView;
+  SearchFiltersController searchFilterController;
 
   public boolean sponsoredMessageLoaded = false;
+  private boolean hideBottomBarWhileSearch;
 
   public MessagesController (Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -860,6 +864,33 @@ public class MessagesController extends ViewController<MessagesController.Argume
     scrollToBottomButton.setLayoutParams(fparams);
     scrollToBottomButtonWrap.addView(scrollToBottomButton);
 
+    //floatFilterButtonWrap
+    params = new RelativeLayout.LayoutParams(Screen.dp(118f), Screen.dp(74f));
+    params.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+    params.addRule(RelativeLayout.ABOVE, R.id.msg_bottom);
+
+    floatFilterButtonWrap = new FrameLayoutFix(context);
+    floatFilterButtonWrap.setLayoutParams(params);
+    floatFilterButtonWrap.setVisibility(inPreviewSearchMode ()? View.VISIBLE : View.GONE);
+    if (isInForceTouchMode()) {
+      floatFilterButtonWrap.setTranslationY(-Screen.dp(16f) + Screen.dp(4f));
+    }
+
+    fparams = FrameLayoutFix.newParams(Screen.dp(24f) * 2 + padding * 2, Screen.dp(24f) * 2 + padding * 2, Gravity.RIGHT | Gravity.BOTTOM);
+    params.rightMargin = params.bottomMargin = Screen.dp(16f) - padding;
+
+    floatFilterButton = new CircleButton(context());
+    floatFilterButton.setId(R.id.btn_search_by_filter);
+    floatFilterButton.setOnClickListener(v->{
+     getSearchFilterController().showFiltersPopup(manager.getSearchInput());
+    });
+
+    addThemeInvalidateListener(floatFilterButton);
+    floatFilterButton.init(R.drawable.ic_baseline_filter_list_24, 48f, 4f, R.id.theme_color_circleButtonChat, R.id.theme_color_circleButtonChatIcon);
+    floatFilterButton.setLayoutParams(fparams);
+    floatFilterButtonWrap.addView(floatFilterButton);
+    //floatFilterButtonWrap end
+
     fparams = FrameLayoutFix.newParams(buttonPadding + fparams.width, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.RIGHT | Gravity.BOTTOM);
     fparams.bottomMargin = Screen.dp(24f) * 2 - Screen.dp(28f) / 2;
 
@@ -1259,6 +1290,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     contentView.addView(reactionsButtonWrap);
     contentView.addView(mentionButtonWrap);
     contentView.addView(scrollToBottomButtonWrap);
+    contentView.addView(floatFilterButtonWrap);
 
     if (previewMode == PREVIEW_MODE_NONE) {
       contentView.addView(emojiButton);
@@ -2233,6 +2265,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     public final boolean inPreviewMode;
     public final int previewMode;
 
+    public @Nullable String searchQueryForceOpen;
     public @Nullable String searchQuery;
     public TdApi.MessageSender searchSender;
     public TdApi.SearchMessagesFilter searchFilter;
@@ -2359,6 +2392,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private boolean inPreviewMode;
   private int previewMode;
   private @Nullable String previewSearchQuery;
+  private @Nullable String searchQueryForceOpen;
   private TdApi.MessageSender previewSearchSender;
   private TdApi.SearchMessagesFilter previewSearchFilter;
   private ThreadInfo messageThread;
@@ -2396,6 +2430,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
     this.referrer = args.referrer;
     this.voiceChatInvitation = args.videoChatOrLiveStreamInvitation;
     this.previewSearchQuery = args.searchQuery;
+    this.searchQueryForceOpen = args.searchQueryForceOpen;
+    this.searchFoundMessageId = args.highlightMessageId;
     this.previewSearchSender = args.searchSender;
     this.previewSearchFilter = args.searchFilter;
     this.manager.setHighlightMessageId(args.highlightMessageId, args.highlightMode);
@@ -2947,6 +2983,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
     RelativeLayout.LayoutParams params1 = (RelativeLayout.LayoutParams) scrollToBottomButtonWrap.getLayoutParams();
     RelativeLayout.LayoutParams params2 = (RelativeLayout.LayoutParams) mentionButtonWrap.getLayoutParams();
     RelativeLayout.LayoutParams params3 = (RelativeLayout.LayoutParams) reactionsButtonWrap.getLayoutParams();
+    RelativeLayout.LayoutParams params4 = searchFloatWrap == null ? null:(RelativeLayout.LayoutParams) searchFloatWrap.getLayoutParams();
+    RelativeLayout.LayoutParams params5 = floatFilterButtonWrap == null ? null:(RelativeLayout.LayoutParams) floatFilterButtonWrap.getLayoutParams();
     if (visible) {
       params1.addRule(RelativeLayout.ABOVE, R.id.msg_bottom);
       params1.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, 0);
@@ -2954,6 +2992,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
       params2.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, 0);
       params3.addRule(RelativeLayout.ABOVE, R.id.msg_bottom);
       params3.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, 0);
+      if(params4 != null) {
+        params4.addRule(RelativeLayout.ABOVE, R.id.msg_bottom);
+        params4.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, 0);
+      }
+      if(params5 != null) {
+        params5.addRule(RelativeLayout.ABOVE, R.id.msg_bottom);
+        params5.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, 0);
+      }
     } else {
       params1.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
       params1.addRule(RelativeLayout.ABOVE, 0);
@@ -2961,6 +3007,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
       params2.addRule(RelativeLayout.ABOVE, 0);
       params3.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
       params3.addRule(RelativeLayout.ABOVE, 0);
+      if(params4 != null) {
+        params4.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        params4.addRule(RelativeLayout.ABOVE, 0);
+      }
+      if(params5 != null) {
+        params5.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+        params5.addRule(RelativeLayout.ABOVE, 0);
+      }
     }
     if (visible) {
       bottomWrap.setVisibility(View.VISIBLE);
@@ -3208,6 +3262,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
         break;
       }
       case R.id.menu_search: {
+        if(inPreviewSearchMode()){
+          headerView = header;
+         manager.onPrepareToSearch();
+        }
         header.addSearchButton(menu, this);
         break;
       }
@@ -3363,7 +3421,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         break;
       }
       case R.id.menu_btn_search: {
-        if (manager.isReadyToSearch()) {
+        if (manager.isReadyToSearch() || inPreviewSearchMode()) {
           hideBottomHint();
           openSearchMode();
         }
@@ -3718,6 +3776,21 @@ public class MessagesController extends ViewController<MessagesController.Argume
         destroyStackItemAt(stackSize() - 2);
       }
     }
+
+    if (searchQueryForceOpen != null && !searchQueryForceOpen.isEmpty()) {
+      manager.onPrepareToSearch();
+      openSearchMode();
+
+      HeaderEditText searchHeaderView = getSearchHeaderView();
+      if (searchHeaderView != null) {
+        searchHeaderView.setText(searchQueryForceOpen);
+        searchHeaderView.setSelection(searchQueryForceOpen.length());
+      }
+      manager.searchAndJumpTo(chat.id, chat.type.getConstructor() == TdApi.ChatTypeSecret.CONSTRUCTOR, searchQueryForceOpen, searchFoundMessageId);
+      searchQueryForceOpen = null;
+      searchFoundMessageId = null;
+    }
+
     resetOnFocus();
     if (openKeyboard) {
       openKeyboard = false;
@@ -5413,6 +5486,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     bottomBar.setTranslationY(bottomButtonFactor == 1f && detachFactor == 0f ? fromY : fromY + (toY - fromY) * detachFactor);
     bottomBar.setTranslationX(dx);
     int desiredVisibility = bottomButtonFactor > 0f ? View.VISIBLE : View.GONE;
+    desiredVisibility = hideBottomBarWhileSearch ? View.GONE : desiredVisibility;
     if (bottomBar.getVisibility() != desiredVisibility) {
       bottomBar.setVisibility(desiredVisibility);
     }
@@ -6130,6 +6204,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return;
     }
     float offsetY = -getButtonsOffset();
+
+    if (searchFloatWrap != null) {
+      searchFloatWrap.setTranslationY(offsetY);
+    }
+    if (floatFilterButtonWrap != null) {
+      floatFilterButtonWrap.setTranslationY(getReactionButtonY());
+    }
+
     if (scrollToBottomButtonWrap != null) {
       scrollToBottomButtonWrap.setTranslationY(offsetY);
     }
@@ -9917,11 +9999,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   // Messages search
 
-  private FrameLayoutFix searchControlsLayout;
+  private FrameLayoutFix searchControlsLayout, searchFloatWrap;
   private RippleRevealView searchControlsReveal;
-  private ImageView searchByButton;
+  private ImageView searchFilterButton;
+  private MemberPickView searchByButton;
   private ImageView searchJumpToDateButton;
-  private ImageView searchNextButton, searchPrevButton;
+  private ImageView displayOnlyFoundMessagesButton;
+  private CircleButton searchNextButton, searchPrevButton;
   private TextView searchCounterView;
   private ProgressComponentView searchProgressView;
 
@@ -10033,6 +10117,107 @@ public class MessagesController extends ViewController<MessagesController.Argume
     ViewSupport.showDatePicker(datePickerDialog);
   }
 
+  private SearchFiltersController createSearchFilterController () {
+    searchFilterController = SearchFiltersController.create(context, tdlib, getChatId(), getMessageThreadId(), isSecretChat(), (member, filter) -> {
+      if (searchFilterButton != null) {
+        if (filter == null || filter.filter.getConstructor() == TdApi.SearchMessagesFilterEmpty.CONSTRUCTOR) {
+          resetFilterButton();
+        } else {
+          searchFilterButton.setImageResource(filter.resourceId);
+          searchFilterButton.setColorFilter(Theme.getColor(R.id.theme_color_iconActive));
+
+        }
+      }
+      if (searchByButton != null) {
+        searchByButton.setContent(member);
+      }
+
+      if (floatFilterButton != null) {
+        if (filter == null || filter.filter.getConstructor() == TdApi.SearchMessagesFilterEmpty.CONSTRUCTOR) {
+          resetFilterButton();
+        } else {
+          floatFilterButton.setIcon(filter.resourceId);
+          floatFilterButton.setIconColorId(R.id.theme_color_iconActive);
+        }
+      }
+
+      TdApi.MessageSender _sender = member != null ? member.getSenderId() : null;
+      TdApi.SearchMessagesFilter _filter = filter != null ? filter.filter : null;
+
+      if (manager.showOnlyFound()) {
+        manager.showOnlyFoundMessages(_sender, _filter, true);
+      }
+
+      checkoutDisplayOnlyReset();
+      searchChatMessages(manager.getSearchInput(), _sender, _filter);
+    });
+
+    return searchFilterController;
+  }
+
+  private boolean isLocalFilterApplyed(){
+    getSearchFilterController();
+    TdApi.MessageSender _sender = searchFilterController.getSelectedMember() != null ? searchFilterController.getSelectedMember().getSenderId() : null;
+    TdApi.SearchMessagesFilter _filter = searchFilterController.getSelectedFilter() != null ? searchFilterController.getSelectedFilter().filter : null;
+
+    return (_sender != null && _filter != null && _filter.getConstructor() != TdApi.SearchMessagesFilterEmpty.CONSTRUCTOR) ||
+      (_filter != null && _filter.getConstructor() == SearchFiltersController.SearchMessagesFilterText.CONSTRUCTOR);
+  }
+
+  private void  checkoutDisplayOnlyReset(){
+    getSearchFilterController();
+    TdApi.MessageSender _sender = searchFilterController.getSelectedMember() != null ? searchFilterController.getSelectedMember().getSenderId() : null;
+    TdApi.SearchMessagesFilter _filter = searchFilterController.getSelectedFilter() != null ? searchFilterController.getSelectedFilter().filter : null;
+
+    if(manager.showOnlyFound() && _sender == null &&
+      (manager.getSearchInput() == null || manager.getSearchInput().isEmpty()) &&
+      (_filter == null || _filter.getConstructor() == TdApi.SearchMessagesFilterEmpty.CONSTRUCTOR)){
+      if (displayOnlyFoundMessagesButton != null) {
+        displayOnlyFoundMessagesButton.setColorFilter(Theme.getColor(R.id.theme_color_icon));
+      }
+
+      manager.showOnlyFoundMessages(null, null, false);
+    }
+  }
+
+
+
+  private void displayOnlyFoundMessages () {
+    if (getSearchFilterController() != null) {
+      TdApi.MessageSender _sender = searchFilterController.getSelectedMember() != null ? searchFilterController.getSelectedMember().getSenderId() : null;
+      TdApi.SearchMessagesFilter _filter = searchFilterController.getSelectedFilter() != null ? searchFilterController.getSelectedFilter().filter : null;
+
+      if(!manager.showOnlyFound() && _sender == null &&
+        (manager.getSearchInput() == null || manager.getSearchInput().isEmpty()) &&
+        (_filter == null || _filter.getConstructor() == TdApi.SearchMessagesFilterEmpty.CONSTRUCTOR)){
+        return;
+      }
+
+      boolean showOnlyFound = !manager.showOnlyFound();
+
+      if (displayOnlyFoundMessagesButton != null) {
+        displayOnlyFoundMessagesButton.setColorFilter(showOnlyFound ? Theme.getColor(R.id.theme_color_iconActive) : Theme.getColor(R.id.theme_color_icon));
+      }
+
+      manager.showOnlyFoundMessages(_sender, _filter, showOnlyFound);
+    }
+  }
+
+  private SearchFiltersController getSearchFilterController () {
+    if (searchFilterController == null || searchFilterController.getChatId() != getChatId()) {
+      createSearchFilterController();
+    }
+    return searchFilterController;
+  }
+
+  private void showSearchByFilter () {
+    getSearchFilterController().showFiltersPopup(manager.getSearchInput());
+  }
+
+  private void showSearchByMember () {
+    getSearchFilterController().showMemberPopup();
+  }
+
   @Override
   protected void handleLanguageDirectionChange () {
     super.handleLanguageDirectionChange();
@@ -10113,6 +10298,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
       switch (v.getId()) {
         case R.id.btn_search_by: {
           // TODO From: input
+          showSearchByMember();
+          break;
+        }
+        case R.id.btn_search_by_filter: {
+          showSearchByFilter();
+          break;
+        }
+        case R.id.btn_search_display_found_only: {
+          displayOnlyFoundMessages();
           break;
         }
         case R.id.btn_search_counter: {
@@ -10168,8 +10362,21 @@ public class MessagesController extends ViewController<MessagesController.Argume
     addThemeInvalidateListener(searchControlsReveal);
 
     fp = FrameLayoutFix.newParams(Screen.dp(52f), Screen.dp(49f), Gravity.LEFT | Gravity.CENTER_VERTICAL);
+    fp.leftMargin = Screen.dp(104f);
+    searchFilterButton = Views.newImageButton(context, R.drawable.ic_baseline_filter_list_24, R.id.theme_color_icon, this);
+    searchFilterButton.setId(R.id.btn_search_by_filter);
+    searchFilterButton.setOnClickListener(onClickListener);
+    searchFilterButton.setLayoutParams(fp);
+    searchControlsLayout.addView(searchFilterButton);
+
+    fp = FrameLayoutFix.newParams(Screen.dp(52f), Screen.dp(49f), Gravity.LEFT | Gravity.CENTER_VERTICAL);
     fp.leftMargin = Screen.dp(52f);
-    searchByButton = Views.newImageButton(context, R.drawable.baseline_person_24, R.id.theme_color_icon, this);
+    searchByButton = new MemberPickView(context);
+    searchByButton.setScaleType(ImageView.ScaleType.CENTER);
+    searchByButton.setImageResource(R.drawable.baseline_person_24);
+    searchByButton.setColorFilter(Theme.getColor(R.id.theme_color_icon));
+    Views.setClickable(searchByButton);
+    addThemeFilterListener(searchByButton, R.id.theme_color_icon);
     searchByButton.setId(R.id.btn_search_by);
     searchByButton.setOnClickListener(onClickListener);
     searchByButton.setLayoutParams(fp);
@@ -10182,27 +10389,47 @@ public class MessagesController extends ViewController<MessagesController.Argume
     searchJumpToDateButton.setLayoutParams(fp);
     searchControlsLayout.addView(searchJumpToDateButton);
 
-    fp = FrameLayoutFix.newParams(Screen.dp(52f), Screen.dp(49f), Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-    fp.rightMargin = Screen.dp(52f);
-    searchNextButton = Views.newImageButton(context, R.drawable.baseline_keyboard_arrow_up_24, R.id.theme_color_icon, this);
+    RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(Screen.dp(118f), Screen.dp(48 + 48 + 10));
+    params.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+    params.addRule(RelativeLayout.ABOVE, R.id.msg_bottom);
+    params.rightMargin = params.bottomMargin = Screen.dp(16f);
+
+    searchFloatWrap = new FrameLayoutFix(context);
+    searchFloatWrap.setLayoutParams(params);
+
+    fp = FrameLayoutFix.newParams(Screen.dp(48f), Screen.dp(48f), Gravity.RIGHT | Gravity.TOP);
+
+    searchNextButton = new CircleButton(context());
     searchNextButton.setId(R.id.btn_search_next);
     searchNextButton.setOnClickListener(onClickListener);
+    addThemeInvalidateListener(searchNextButton);
+    searchNextButton.init(R.drawable.baseline_keyboard_arrow_up_24, 48f, 0, R.id.theme_color_circleButtonChat, R.id.theme_color_circleButtonChatIcon);
     searchNextButton.setLayoutParams(fp);
-    searchNextButton.setEnabled(false);
-    searchControlsLayout.addView(searchNextButton);
+    searchFloatWrap.addView(searchNextButton);
 
-    fp = FrameLayoutFix.newParams(Screen.dp(52f), Screen.dp(49f), Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-    searchPrevButton = Views.newImageButton(context, R.drawable.baseline_keyboard_arrow_down_24, R.id.theme_color_icon, this);
+    fp = FrameLayoutFix.newParams(Screen.dp(48f) , Screen.dp(48f), Gravity.RIGHT | Gravity.BOTTOM);
+
+    searchPrevButton = new CircleButton(context());
     searchPrevButton.setId(R.id.btn_search_prev);
     searchPrevButton.setOnClickListener(onClickListener);
-    searchPrevButton.setPadding(0, 0, Screen.dp(12f), 0);
+    addThemeInvalidateListener(searchPrevButton);
+    searchPrevButton.init(R.drawable.baseline_keyboard_arrow_down_24, 48f, 0, R.id.theme_color_circleButtonChat, R.id.theme_color_circleButtonChatIcon);
     searchPrevButton.setLayoutParams(fp);
-    searchPrevButton.setEnabled(false);
-    searchControlsLayout.addView(searchPrevButton);
+    searchFloatWrap.addView(searchPrevButton);
+    contentView.addView(searchFloatWrap);
+
+    fp = FrameLayoutFix.newParams(Screen.dp(52f), Screen.dp(49f), Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+    displayOnlyFoundMessagesButton = Views.newImageButton(context, R.drawable.ic_baseline_manage_search_24, R.id.theme_color_icon, this);
+    displayOnlyFoundMessagesButton.setId(R.id.btn_search_display_found_only);
+    displayOnlyFoundMessagesButton.setOnClickListener(onClickListener);
+    displayOnlyFoundMessagesButton.setPadding(0, 0, Screen.dp(12f), 0);
+    displayOnlyFoundMessagesButton.setLayoutParams(fp);
+    searchControlsLayout.addView(displayOnlyFoundMessagesButton);
+
 
     final int padding = Screen.dp(22f);
     fp = FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-    fp.rightMargin = Screen.dp(52) * 2 + padding;
+    fp.rightMargin = Screen.dp(52f) +  padding;
     fp.leftMargin = Screen.dp(5f) + padding;
     searchCounterView = new NoScrollTextView(context) {
       @Override
@@ -10224,7 +10451,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
     searchControlsLayout.addView(searchCounterView);
 
     fp = FrameLayoutFix.newParams(Screen.dp(49f), Screen.dp(49f), Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-    fp.rightMargin = Screen.dp(52f) * 2 + padding;
+    fp.rightMargin = padding;
+    fp.rightMargin = Screen.dp(52f) + padding;
     searchProgressView = new ProgressComponentView(context);
     searchProgressView.initCustom(4.5f, 0f, 10f);
     searchProgressView.setLayoutParams(fp);
@@ -10241,12 +10469,20 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private void resetSearhControls () {
     if (searchControlsLayout != null) {
       searchCounterView.setText("");
+      displayOnlyFoundMessagesButton.setColorFilter(Theme.getColor(R.id.theme_color_icon));
+      displayOnlyFoundMessagesButton.setEnabled(false);
       searchPrevButton.setEnabled(false);
       searchNextButton.setEnabled(false);
       setSearchInProgress(false, false);
       checkSearchByVisible();
       setSearchControlsFactor(0f);
       updateSearchNavigation();
+      resetFilterButton();
+      searchByButton.reset();
+      if (searchFilterController != null) {
+        searchFilterController.reset();
+      }
+
 
       boolean isChannel = tdlib.isChannelChat(chat);
       if (searchControlsForChannel != isChannel) {
@@ -10308,14 +10544,21 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (searchControlsLayout != null) {
       float maxAlpha = searchControlsFactor;
       float alpha = DISABLED_BUTTON_ALPHA + (1f - DISABLED_BUTTON_ALPHA) * (1f - searchInProgressFactor);
-      searchNextButton.setAlpha(maxAlpha * (searchNextButton.isEnabled() ? alpha : DISABLED_BUTTON_ALPHA));
-      searchPrevButton.setAlpha(maxAlpha * (searchPrevButton.isEnabled() ? alpha : DISABLED_BUTTON_ALPHA));
+
+      if (!searchNextButton.isEnabled() && !searchPrevButton.isEnabled()) {
+        searchNextButton.setAlpha(0);
+        searchPrevButton.setAlpha(0);
+      } else {
+        searchNextButton.setAlpha(lastSearchTotalCount > 0 ? 1 : 0);
+        searchPrevButton.setAlpha(lastSearchTotalCount > 0 ? 1 : 0);
+      }
 
       float counterAlpha = maxAlpha * (1f - searchInProgressFactor);
       float counterScale = .6f + .4f * (1f - searchInProgressFactor);
       float progressAlpha = maxAlpha * searchInProgressFactor;
       float progressScale = .6f + .4f * searchInProgressFactor;
 
+      displayOnlyFoundMessagesButton.setAlpha(counterAlpha);
       searchCounterView.setAlpha(counterAlpha);
       searchCounterView.setScaleX(counterScale);
       searchCounterView.setScaleY(counterScale);
@@ -10333,7 +10576,33 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (searchControlsFactor != factor) {
         searchControlsFactor = factor;
         searchJumpToDateButton.setAlpha(factor);
-        searchByButton.setAlpha(factor * searchByVisibility);
+
+        searchNextButton.setAlpha(factor);
+        searchPrevButton.setAlpha(factor);
+
+        scrollToBottomButtonWrap.setVisibility(factor > 0 ? View.GONE : View.VISIBLE);
+        floatFilterButtonWrap.setVisibility(View.VISIBLE);
+        hideBottomBarWhileSearch = factor > 0;
+        mentionButtonWrap.setVisibility(factor > 0 ? View.GONE : View.VISIBLE);
+        reactionsButtonWrap.setVisibility(factor > 0 ? View.GONE : View.VISIBLE);
+        floatFilterButtonWrap.setVisibility(inPreviewSearchMode() ? View.VISIBLE : View.GONE);
+
+        searchByButton.setAlpha(factor);
+        searchByButton.setEnabled(true);
+        searchByButton.setVisibility(View.VISIBLE);
+
+        searchFilterButton.setAlpha(factor);
+
+        var lp = (FrameLayout.LayoutParams) searchFilterButton.getLayoutParams();
+        lp.leftMargin = Screen.dp(104f);
+
+        if (isChannel() || isSecretChat() || isSelfChat() || (chat != null && !tdlib.isSupergroup(chat.id) && !tdlib.isMultiChat(chat.id))) {
+          searchByButton.setVisibility(View.GONE);
+          searchByButton.setEnabled(false);
+          lp.leftMargin = Screen.dp(52f);
+        }
+        searchFilterButton.setLayoutParams(lp);
+
         updateSearchNavigation();
       }
       boolean translate = needSearchControlsTranslate();
@@ -10382,8 +10651,36 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Override
   protected void onLeaveSearchMode () {
+    boolean needReload = false;
+    if (searchFilterController != null) {
+      needReload = searchFilterController.getSelectedFilter() != null ||
+        searchFilterController.getSelectedMember() != null;
+      searchFilterController.destroy();
+      searchFilterController = null;
+    }
+    searchByButton.reset();
+    resetFilterButton();
     manager.onDestroySearch();
+    resetSearhControls();
     searchMedia(null);
+
+    if (needReload) {
+      reloadData();
+    }
+  }
+
+  private void resetFilterButton () {
+    if (searchFilterButton != null) {
+      searchFilterButton.setImageResource(R.drawable.ic_baseline_filter_list_24);
+      searchFilterButton.setColorFilter(Theme.getColor(R.id.theme_color_icon));
+    }
+    if (floatFilterButton != null) {
+      floatFilterButton.setIcon(R.drawable.ic_baseline_filter_list_24);
+      floatFilterButton.setIconColorId(R.id.theme_color_icon);
+    }
+    if (searchFilterController != null) {
+      searchFilterController.resetFilter();
+    }
   }
 
   private void moveSearchSelection (boolean next) {
@@ -10409,18 +10706,75 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void onChatSearchFinished (String counter, int index, int totalCount) {
     lastSearchIndex = index;
     lastSearchTotalCount = totalCount;
-    searchNextButton.setEnabled(index < totalCount);
-    searchPrevButton.setEnabled(index > 0);
-    searchCounterView.setText(counter);
+
+    if (searchNextButton != null) {
+      searchNextButton.setEnabled(true);
+      searchPrevButton.setEnabled(true);
+      displayOnlyFoundMessagesButton.setEnabled(true);
+      searchNextButton.setIconColorId(index < totalCount - 1 ? R.id.theme_color_circleButtonChatIcon : R.id.theme_color_textSelectionHighlight);
+      searchPrevButton.setIconColorId(index > 0 ? R.id.theme_color_circleButtonChatIcon : R.id.theme_color_textSelectionHighlight);
+      searchCounterView.setText(counter);
+      searchCounterView.setVisibility(View.VISIBLE);
+
+      if(isLocalFilterApplyed()){
+        searchNextButton.setEnabled(false);
+        searchPrevButton.setEnabled(false);
+        searchCounterView.setVisibility(View.GONE);
+      }
+
+    }
+
+    if (searchFilterController != null) {
+      String searchQuery = manager.getSearchInput();
+      if (searchQuery != null && !searchQuery.isEmpty()) {
+        SearchFiltersController.FilterData filterData = searchFilterController.getSelectedFilter();
+        if (filterData != null && filterData.filter.getConstructor() == TdApi.SearchMessagesFilterVideoNote.CONSTRUCTOR) {
+          searchFilterController.resetFilter();
+          searchFilterButton.setImageResource(R.drawable.ic_baseline_filter_list_24);
+          searchFilterButton.setColorFilter(Theme.getColor(R.id.theme_color_icon));
+          if (floatFilterButton != null) {
+            floatFilterButton.setIcon(R.drawable.ic_baseline_filter_list_24);
+            floatFilterButton.setIconColorId(R.id.theme_color_icon);
+          }
+        }
+      }
+    }
+
+
     setSearchInProgress(false, true);
     updateSearchNavigation();
   }
 
+  private void searchForSender (String query) {
+    getSearchFilterController();
+    var filter = searchFilterController.getSelectedFilter() == null ? null : searchFilterController.getSelectedFilter().filter;
+
+    manager.onPrepareToSearch();
+    manager.setSearchInput(query);
+    manager.search(chat.id, messageThread, previewSearchSender, chat.type.getConstructor() == TdApi.ChatTypeSecret.CONSTRUCTOR, query,filter);
+
+    manager.showOnlyFoundMessages(previewSearchSender, filter, true);
+  }
+
+  private void searchChatMessages (String query, TdApi.MessageSender sender, TdApi.SearchMessagesFilter filter) {
+    // TODO pick fromUserId
+    if(inPreviewSearchMode()){
+      searchForSender(query);
+      return;
+    }
+
+    checkSearchByVisible();
+    manager.search(chat.id, messageThread, sender, chat.type.getConstructor() == TdApi.ChatTypeSecret.CONSTRUCTOR, query,filter);
+    searchMedia(query);
+  }
+
+  private void searchChatMessages (String query, TdApi.MessageSender sender) {
+    searchChatMessages(query,sender, new TdApi.SearchMessagesFilterEmpty());
+  }
+
   private void searchChatMessages (String query) {
     // TODO pick fromUserId
-    checkSearchByVisible();
-    manager.search(chat.id, messageThread, null, chat.type.getConstructor() == TdApi.ChatTypeSecret.CONSTRUCTOR, query);
-    searchMedia(query);
+    searchChatMessages(query,manager.getSearchSender());
   }
 
   private String lastMediaSearchQuery;
@@ -10440,6 +10794,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private void clearChatSearchInput () {
     clearSearchInput();
+    checkoutDisplayOnlyReset();
     // TODO clear input on first tap, clear "From: " on second tap
   }
 

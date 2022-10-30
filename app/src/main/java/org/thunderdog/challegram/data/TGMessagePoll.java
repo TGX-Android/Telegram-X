@@ -1546,4 +1546,36 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
       invalidate();
     }
   }
+
+  @Override
+  protected Text[] getSearchableText () {
+    if (options == null || options.length == 0) {
+      return null;
+    }
+
+    List<Text> texts = new ArrayList<>(options.length + 1);
+
+    if (questionText != null) {
+      Text text = questionText.getCurrent();
+      if (text != null) {
+        texts.add(text);
+      }
+    }
+
+    for (OptionEntry option : options) {
+      if (option != null && option.text != null) {
+        Text text = option.text.getCurrent();
+        if (text != null) {
+          texts.add(text);
+        }
+      }
+    }
+
+    if (texts.size() > 0) {
+      Text[] arr = new Text[texts.size()];
+      texts.toArray(arr);
+      return arr;
+    }
+    return null;
+  }
 }
