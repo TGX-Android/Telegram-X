@@ -28,6 +28,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -42,6 +43,7 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.component.chat.ChatSendersView;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGUser;
@@ -55,7 +57,9 @@ import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
+import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibSender;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.Theme;
@@ -91,7 +95,8 @@ import me.vkryl.td.TdConstants;
 public class MediaLayout extends FrameLayoutFix implements
   MediaBottomBar.Callback, BaseActivity.PopupAnimatorOverride,
   View.OnClickListener, BaseActivity.ActivityListener, ActivityResultHandler, /*ActivityResultCancelHandler,*/ BackListener,
-  PopupLayout.AnimatedPopupProvider, PopupLayout.DismissListener, FactorAnimator.Target, ThemeChangeListener, Lang.Listener, Destroyable, PopupLayout.TouchDownInterceptor {
+  PopupLayout.AnimatedPopupProvider, PopupLayout.DismissListener, FactorAnimator.Target, ThemeChangeListener, Lang.Listener, Destroyable, PopupLayout.TouchDownInterceptor,
+  ChatListener {
 
   private interface MediaCallback { }
 
@@ -245,6 +250,7 @@ public class MediaLayout extends FrameLayoutFix implements
 
     ThemeManager.instance().addThemeListener(this);
     Lang.addLanguageListener(this);
+    tdlib().listeners().subscribeToChatUpdates(getTargetChatId(), this);
   }
 
   public void initCustom () {
@@ -338,6 +344,10 @@ public class MediaLayout extends FrameLayoutFix implements
 
   public long getTargetChatId () {
     return target != null ? target.getChatId() : 0;
+  }
+
+  public TdApi.MessageSender getTargetMessageSender () {
+    return (target != null && target.getChat() != null && target.getChat().messageSenderId != null) ? target.getChat().messageSenderId : null;
   }
 
   public long getTargetMessageThreadId () {
@@ -483,6 +493,7 @@ public class MediaLayout extends FrameLayoutFix implements
     if (hidden) {
       return;
     }
+    tdlib().listeners().unsubscribeFromChatUpdates(getTargetChatId(), this);
     setForceHidden();
     hideCircular = multi;
 
@@ -1203,6 +1214,7 @@ public class MediaLayout extends FrameLayoutFix implements
 
   private CounterHeaderView counterView;
   private ImageView sendButton;
+  private ChatSendersView chatSendersView;
   private HapticMenuHelper sendMenu;
   private BackHeaderButton closeButton;
   private TextView counterHintView;
@@ -1289,8 +1301,26 @@ public class MediaLayout extends FrameLayoutFix implements
       sendButton.setOnClickListener(this);
       bottomBar.addView(sendButton);
 
+      chatSendersView = new ChatSendersView(getContext(), tdlib(), ChatSendersView.RADIUS_SMALL);
+      chatSendersView.setOutlineFactor(1f);
+      int avatarSize = Screen.dp(17);
+      FrameLayout.LayoutParams fp = FrameLayoutFix.newParams(avatarSize, avatarSize, Gravity.RIGHT);
+      fp.setMargins(0, Screen.dp(30), Screen.dp(11), 0);
+      chatSendersView.setLayoutParams(fp);
+      themeListeners.addThemeInvalidateListener(chatSendersView);
+      bottomBar.addView(chatSendersView);
+
+      TdApi.MessageSender messageSender = getTargetMessageSender();
+      if (messageSender != null) {
+        TdApi.Chat chat = target.getChat();
+        TdlibSender sender = new TdlibSender(tdlib(), chat.id, chat.messageSenderId);
+        if (!sender.isSelf()) {
+          chatSendersView.setNewSender(sender);
+        }
+      }
+
       sendMenu = new HapticMenuHelper(list -> {
-        List<HapticMenuHelper.MenuItem> items = tdlib().ui().fillDefaultHapticMenu(getTargetChatId(), false, getCurrentController().canRemoveMarkdown(), true);
+        List<HapticMenuHelper.MenuItem> items = tdlib().ui().fillDefaultHapticMenu(getTargetChatId(), false, getCurrentController().canRemoveMarkdown(), true, true, true);
         if (items == null)
           items = new ArrayList<>();
         getCurrentController().addCustomItems(items);
@@ -1317,6 +1347,11 @@ public class MediaLayout extends FrameLayoutFix implements
                   getCurrentController().onMultiSendPress(Td.newSendOptions(schedule), false),
                 getTargetChatId(), false, false, null, null
               );
+            }
+            break;
+          case R.id.btn_changeSender:
+            if (target != null) {
+              target.openChatChangeSenderController();
             }
             break;
         }
@@ -1358,6 +1393,7 @@ public class MediaLayout extends FrameLayoutFix implements
 
       counterView.setAlpha(0f);
       sendButton.setAlpha(0f);
+      chatSendersView.setAlpha(0f);
       closeButton.setAlpha(0f);
       counterHintView.setAlpha(0f);
       groupMediaView.setAlpha(0f);
@@ -1415,6 +1451,9 @@ public class MediaLayout extends FrameLayoutFix implements
       counterView.setEnabled(enabled);
       groupMediaView.setEnabled(enabled);
       sendButton.setEnabled(enabled);
+      if (getTargetMessageSender() != null) {
+        chatSendersView.setEnabled(enabled);
+      }
       closeButton.setEnabled(enabled);
     }
   }
@@ -1485,6 +1524,9 @@ public class MediaLayout extends FrameLayoutFix implements
     }
     if (counterView != null) {
       counterView.setAlpha(factor);
+      if (getTargetMessageSender() != null) {
+        chatSendersView.setAlpha(factor);
+      }
       sendButton.setAlpha(factor);
       closeButton.setAlpha(factor);
       checkCounterHint();
@@ -1631,6 +1673,22 @@ public class MediaLayout extends FrameLayoutFix implements
       if (c != null) {
         c.get().setVisibility(visible ? View.VISIBLE : View.INVISIBLE);
       }
+    }
+  }
+
+  @Override
+  public void onChatDefaultMessageSenderIdChanged (long chatId, TdApi.MessageSender senderId) {
+    UI.post(() -> {
+      if (getTargetChatId() == chatId) {
+        updateSender(senderId);
+      }
+    });
+  }
+
+  private void updateSender (TdApi.MessageSender senderId) {
+    TdlibSender tdlibSender = new TdlibSender(tdlib(), getTargetChatId(), senderId);
+    if (chatSendersView != null) {
+      chatSendersView.setNewSender(tdlibSender);
     }
   }
 }

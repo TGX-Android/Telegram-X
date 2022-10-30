@@ -1134,7 +1134,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
         return null;
       List<HapticMenuHelper.MenuItem> items = null;
       if (selectedChats.size() == 1) {
-        items = tdlib.ui().fillDefaultHapticMenu(selectedChats.valueAt(0).getChatId(), false, false, !forceSendWithoutSound, true);
+        items = tdlib.ui().fillDefaultHapticMenu(selectedChats.valueAt(0).getChatId(), false, false, !forceSendWithoutSound, true, false);
         if (items == null)
           items = new ArrayList<>(1);
         items.add(new HapticMenuHelper.MenuItem(R.id.btn_sendAndOpen, Lang.getString(R.string.SendAndOpen), R.drawable.baseline_forward_24));

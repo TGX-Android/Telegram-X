@@ -28,6 +28,7 @@ import androidx.annotation.UiThread;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.component.chat.ChatSendersView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.TD;
@@ -41,6 +42,7 @@ import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
+import org.thunderdog.challegram.telegram.TdlibSender;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeListenerEntry;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
@@ -62,9 +64,11 @@ import me.vkryl.td.Td;
 
 public class VerticalChatView extends BaseView implements Destroyable, ChatListener, FactorAnimator.Target, TdlibCache.UserDataChangeListener, TdlibCache.UserStatusChangeListener, NotificationSettingsListener, AttachDelegate, SimplestCheckBoxHelper.Listener, TextColorSet, TooltipOverlayView.LocationProvider {
   private final ImageReceiver receiver;
+  private final ImageReceiver senderReceiver;
   private final Counter counter;
 
   private SimplestCheckBoxHelper checkBoxHelper;
+  private ChatSendersView.ChatSenderEntity chatSenderEntity;
 
   public VerticalChatView (@NonNull Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -73,6 +77,7 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
     RippleSupport.setTransparentSelector(this);
 
     receiver = new ImageReceiver(this, Screen.dp(25f));
+    senderReceiver = new ImageReceiver(this, Screen.dp(12f));
     counter = new Counter.Builder().callback(this).outlineColor(R.id.theme_color_filling).build();
   }
 
@@ -112,16 +117,19 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
   @Override
   public void attach () {
     receiver.attach();
+    senderReceiver.attach();
   }
 
   @Override
   public void detach () {
     receiver.detach();
+    senderReceiver.detach();
   }
 
   @Override
   public void performDestroy () {
     receiver.destroy();
+    senderReceiver.destroy();
     setChat(null);
   }
 
@@ -184,6 +192,7 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
         tdlib.cache().unsubscribeFromUserUpdates(oldUserId, this);
       }
       this.chat = chat;
+
       setPreviewChatId(chat != null ? chat.getList() : null, newChatId, null);
       if (chat != null) {
         updateTextColor();
@@ -197,9 +206,19 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
         if (newUserId != 0) {
           tdlib.cache().subscribeToUserUpdates(newUserId, this);
         }
+        if (chat.getChat() != null && chat.getChat().messageSenderId != null) {
+          TdlibSender sender = new TdlibSender(tdlib, chat.getChatId(), chat.getChat().messageSenderId);
+          if (!sender.isSelf()) {
+            this.chatSenderEntity = new ChatSendersView.ChatSenderEntity(context(), sender, 12);
+            this.chatSenderEntity.setBackgroundColor(Theme.getColor(R.id.theme_color_filling));
+            this.chatSenderEntity.setOutlineFactor(1f);
+            this.senderReceiver.requestFile(chatSenderEntity.getAvatarFile());
+          }
+        }
       } else {
         setAvatar(null);
         setTitle("");
+        this.chatSenderEntity = null;
       }
     }
   }
@@ -420,6 +439,12 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
       }
       trimmedTitle.draw(c, startX, startY);
       paint.setColor(sourceColor);
+    }
+
+    if (chatSenderEntity != null) {
+      x = receiver.centerX() - (float) ((double) (receiver.getWidth() / 2) + Math.sin(radians));
+      y = receiver.centerY() + (float) ((double) (receiver.getHeight() / 2) * Math.cos(radians));
+      chatSenderEntity.draw(c, senderReceiver, x, y, 1f);
     }
   }
 

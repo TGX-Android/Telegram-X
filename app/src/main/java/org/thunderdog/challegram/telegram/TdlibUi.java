@@ -6049,11 +6049,16 @@ public class TdlibUi extends Handler {
   }
 
   public List<HapticMenuHelper.MenuItem> fillDefaultHapticMenu (long chatId, boolean isEdit, boolean canToggleMarkdown, boolean canSendWithoutSound) {
-    return fillDefaultHapticMenu(chatId, isEdit, canToggleMarkdown, canSendWithoutSound, false);
+    return fillDefaultHapticMenu(chatId, isEdit, canToggleMarkdown, canSendWithoutSound, false, false);
   }
 
-  public List<HapticMenuHelper.MenuItem> fillDefaultHapticMenu (long chatId, boolean isEdit, boolean canToggleMarkdown, boolean canSendWithoutSound, boolean isForward) {
+  public List<HapticMenuHelper.MenuItem> fillDefaultHapticMenu (long chatId, boolean isEdit, boolean canToggleMarkdown, boolean canSendWithoutSound, boolean isForward, boolean canChangeSender) {
     List<HapticMenuHelper.MenuItem> items = new ArrayList<>();
+    TdApi.Chat chat = tdlib.chat(chatId);
+    if (canChangeSender && chat != null && chat.messageSenderId != null) {
+      TdlibSender sender = new TdlibSender(tdlib, chatId, chat.messageSenderId);
+      items.add(0, new HapticMenuHelper.MenuItem(R.id.btn_changeSender, "Send as...", sender.getDescription(), tdlib, sender));
+    }
     if (!isEdit && !ChatId.isSecret(chatId)) {
       if (tdlib.isSelfChat(chatId)) {
         items.add(new HapticMenuHelper.MenuItem(R.id.btn_sendScheduled, Lang.getString(R.string.SendReminder), R.drawable.baseline_date_range_24).bindTutorialFlag(Settings.TUTORIAL_SET_REMINDER));

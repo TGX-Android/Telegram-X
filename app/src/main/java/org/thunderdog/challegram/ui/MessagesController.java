@@ -96,6 +96,7 @@ import org.thunderdog.challegram.component.chat.AttachLinearLayout;
 import org.thunderdog.challegram.component.chat.AudioFile;
 import org.thunderdog.challegram.component.chat.ChatBottomBarView;
 import org.thunderdog.challegram.component.chat.ChatHeaderView;
+import org.thunderdog.challegram.component.chat.ChatSendersView;
 import org.thunderdog.challegram.component.chat.CommandKeyboardLayout;
 import org.thunderdog.challegram.component.chat.CounterBadgeView;
 import org.thunderdog.challegram.component.chat.EmojiToneHelper;
@@ -321,7 +322,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private HapticMenuHelper sendMenu;
   private HapticMenuHelper senderMenu;
   private InvisibleImageView cameraButton, scheduleButton;
-  private AvatarView senderAvatarView;
+  private ChatSendersView senderAvatarView;
   private InvisibleImageView commandButton;
   private @Nullable SilentButton silentButton;
 
@@ -343,13 +344,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public List<HapticMenuHelper.MenuItem> onCreateHapticMenu (View view) {
     TdApi.FormattedText currentText = null;
     boolean canSendWithoutMarkdown = inputView != null && !Td.equalsTo(inputView.getOutputText(true), currentText = inputView.getOutputText(false), true);
-    List<HapticMenuHelper.MenuItem> items = tdlib.ui().fillDefaultHapticMenu(getChatId(), isEditingMessage(), canSendWithoutMarkdown, true);
+    List<HapticMenuHelper.MenuItem> items = tdlib.ui().fillDefaultHapticMenu(getChatId(), isEditingMessage(), canSendWithoutMarkdown, true, false, true);
     if (items == null)
       items = new ArrayList<>();
-    if (chat != null && chat.messageSenderId != null) {
-      TdlibSender sender = new TdlibSender(tdlib, getChatId(), chat.messageSenderId);
-      items.add(0, new HapticMenuHelper.MenuItem(R.id.btn_changeSender, "Send as...", sender.getDescription(), tdlib, sender));
-    }
     if (!canSendWithoutMarkdown && tdlib.shouldSendAsDice(currentText) && !isEditingMessage()) {
       if (TD.EMOJI_DART.textRepresentation.equals(currentText.text)) {
         items.add(new HapticMenuHelper.MenuItem(R.id.btn_sendNoMarkdown, Lang.getString(R.string.SendDiceAsEmoji), R.drawable.baseline_gps_fixed_24));
@@ -413,7 +410,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return true;
   }
 
-  private void openChatChangeSenderController () {
+  public void openChatChangeSenderController () {
     hideAllKeyboards();
     if (inputView != null) {
       inputView.clearFocus();
@@ -996,6 +993,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
         if (inputView != null && getMeasuredWidth() > 0) {
           inputView.checkPlaceholderWidth();
         }
+        if (senderAvatarView != null) {
+          updateSenderAvatar();
+        }
       }
     };
     attachButtons.setOrientation(LinearLayout.HORIZONTAL);
@@ -1014,14 +1014,27 @@ public class MessagesController extends ViewController<MessagesController.Argume
     mediaButton.setOnClickListener(this);
     mediaButton.setLayoutParams(lp);
 
-    lp = new LinearLayout.LayoutParams(Screen.dp(ATTACH_BUTTONS_WIDTH), Screen.dp(49f));
-    int senderAvatarPadding = Screen.dp(10);
-    senderAvatarView = new AvatarView(context);
+    params = new RelativeLayout.LayoutParams(Screen.dp(49f), Screen.dp(49f));
+    params.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+    if (Lang.rtl()) {
+      params.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
+    } else {
+      params.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
+    }
+    senderAvatarView = new ChatSendersView(context, tdlib, ChatSendersView.RADIUS_DEFAULT) {
+      @Override
+      public boolean dispatchTouchEvent (MotionEvent event) {
+        if (inputView != null && inputView.isEmpty()) {
+          return super.dispatchTouchEvent(event);
+        } else {
+          return false;
+        }
+      }
+    };
     senderAvatarView.setId(R.id.btn_chatSender);
     addThemeFilterListener(senderAvatarView, R.id.theme_color_icon);
     senderAvatarView.setOnClickListener(this);
-    senderAvatarView.setLayoutParams(lp);
-    senderAvatarView.setPadding(senderAvatarPadding, senderAvatarPadding, senderAvatarPadding, senderAvatarPadding);
+    senderAvatarView.setLayoutParams(params);
     senderAvatarView.setVisibility(View.INVISIBLE);
     Views.setClickable(senderAvatarView);
 
@@ -1086,9 +1099,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
     if (scheduleButton != null) {
       attachButtons.addView(scheduleButton);
-    }
-    if (senderAvatarView != null) {
-      attachButtons.addView(senderAvatarView);
     }
     if (cameraButton != null) {
       attachButtons.addView(cameraButton);
@@ -1322,6 +1332,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       contentView.addView(emojiButton);
       contentView.addView(attachButtons);
       contentView.addView(sendButton);
+      contentView.addView(senderAvatarView);
 
       initSearchControls();
       contentView.addView(searchControlsLayout);
@@ -2950,7 +2961,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (chat != null) {
       tdlibSender = new TdlibSender(tdlib, getChatId(), senderId);
       if (senderAvatarView != null) {
-        senderAvatarView.setMessageSender(tdlib, tdlibSender, true);
+        senderAvatarView.setNewSender(tdlibSender);
       }
     }
   }
@@ -4031,6 +4042,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     if (wallpaperViewBlurPreview != null) {
       wallpaperViewBlurPreview.performDestroy();
+    }
+
+    if (senderAvatarView != null) {
+      senderAvatarView.performDestroy();
     }
 
     if (backgroundParamsView != null) {
@@ -6701,6 +6716,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     sendButton.setTranslationY(y);
     emojiButton.setTranslationY(y);
     attachButtons.setTranslationY(y);
+    updateSenderAvatar();
 
     if (prevButtonsY != y) {
       prevButtonsY = y;
@@ -7041,7 +7057,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   // Silent mode
 
   public int getHorizontalInputPadding () {
-    return attachButtons.getVisibleChildrenWidth();
+    return attachButtons.getVisibleChildrenWidth() + (senderAvatarView != null && !sendShown.getValue() ? Screen.dp(49) : 0);
   }
 
   private void updateSilentButton (boolean visible) {
@@ -8797,7 +8813,36 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (tooltipInfo != null && tooltipInfo.isVisible()) {
         tooltipInfo.reposition();
       }
+
+      if (senderAvatarView != null) {
+        setSenderAvatarFactor(factor);
+      }
     }
+  }
+
+  private void updateSenderAvatar () {
+    setSenderAvatarFactor(inputView.isEmpty() ? 0f : 1f);
+  }
+
+  private void setSenderAvatarFactor (float factor) {
+    float scale = 1f - .4f * factor;
+    float y = bottomWrap.getTop() + (inputView != null ? inputView.getBottom() : Screen.dp(49f)) - Screen.dp(49f);
+    float attachButtonsWidth = attachButtons.getVisibleChildrenWidth();
+    float endX = -attachButtonsWidth + (attachButtonsWidth + Screen.dp(5)) * factor;
+
+    if (tdlibSender != null && tdlibSender.isSelf()) {
+      senderAvatarView.setAlpha(1f - factor);
+      senderAvatarView.setTranslationX(endX);
+      senderAvatarView.setTranslationY(y);
+    } else {
+      float endY = y + Screen.dp(9) * factor;
+      senderAvatarView.setTranslationX(endX);
+      senderAvatarView.setTranslationY(endY);
+    }
+
+    senderAvatarView.setScaleX(scale);
+    senderAvatarView.setScaleY(scale);
+    senderAvatarView.setOutlineFactor(factor);
   }
 
   private static final int ANIMATOR_SEND = 9;
