@@ -1,0 +1,3 @@
+‘Send As’
+
+In the org.thunderdog.challegram.ui.MessagesController file, instead of view cameraButton, org.thunderdog.challegram.custom.ImButton is used, which is responsible for the current user's avatar and animation.
