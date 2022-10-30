@@ -455,7 +455,7 @@ public class Log {
         tags = TAG_NDK | TAG_CRASH;
       } else {
         settings = prefs.getInt(Settings.KEY_LOG_SETTINGS, 0);
-        level = prefs.getInt(Settings.KEY_LOG_LEVEL, Log.LEVEL_VERBOSE);
+        level = prefs.getInt(Settings.KEY_LOG_LEVEL, Log.LEVEL_ASSERT);
         long defaultTags = Log.TAG_CRASH | Log.TAG_FCM | Log.TAG_ACCOUNTS;
         if (Config.DEBUG_GALAXY_TAB_2) {
           defaultTags |= Log.TAG_INTRO;
