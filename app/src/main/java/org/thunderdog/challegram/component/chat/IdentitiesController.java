@@ -99,6 +99,9 @@ public class IdentitiesController extends ViewController<IdentitiesController.Ar
       }
       case ANIMATOR_CLEAR_BUTTON_DISAPPEARANCE: {
         clearButton.setAlpha(factor);
+        clearButton.setScaleX(factor);
+        clearButton.setScaleY(factor);
+        clearButton.setRotation(-90f * factor * factor);
       }
     }
   }
@@ -415,7 +418,6 @@ public class IdentitiesController extends ViewController<IdentitiesController.Ar
       Screen.dp(20f), Screen.dp(BAR_Y_PADDING), Screen.dp(20f), Screen.dp(BAR_Y_PADDING)
     );
     clearButton.setColorFilter(Theme.textAccentColor());
-    RippleSupport.setTransparentSelector(clearButton);
     clearButton.setAlpha(0f);
 
     leftWrapper.addView(backButton);
