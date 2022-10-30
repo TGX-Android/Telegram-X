@@ -1234,12 +1234,14 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         String newIdentityPrefix = newIdentityHintPrefix == null ? "" : newIdentityHintPrefix;
 
         if (identityNameFactor < 1f) {
+          identityTextPaint.setAlpha((int) (255 * (1f - identityPrefixFactor)));
           c.drawText(
             oldIdentityPrefix,
             getPaddingLeft(),
             identityBaseline - (identityTextHeight + padding) *  identityPrefixFactor,
             identityTextPaint
           );
+          identityTextPaint.setAlpha((int) (255 *(1f - identityNameFactor)));
           c.drawText(
             TextUtils.ellipsize(oldIdentityName, identityTextPaint, oldIdentityNameAvailWidth, TextUtils.TruncateAt.END).toString(),
             getPaddingLeft() + oldIdentityHintPrefixWidth,
@@ -1248,12 +1250,14 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
           );
         }
 
+        identityTextPaint.setAlpha((int) (255 * identityPrefixFactor));
         c.drawText(
           newIdentityPrefix,
           getPaddingLeft(),
           identityBaseline * identityPrefixFactor + (getMeasuredHeight() + identityTextHeight) * (1f - identityPrefixFactor),
           identityTextPaint
         );
+        identityTextPaint.setAlpha((int) (255 * identityNameFactor));
         c.drawText(
           TextUtils.ellipsize(newIdentityName, identityTextPaint, newIdentityNameAvailWidth, TextUtils.TruncateAt.END).toString(),
           getPaddingLeft() + newIdentityHintPrefixWidth,
@@ -1264,12 +1268,14 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         String oldIdentityName = oldIdentityHintName == null ? "" : oldIdentityHintName;
         String oldIdentityPrefix = oldIdentityHintPrefix == null ? "" : oldIdentityHintPrefix;
 
+        identityTextPaint.setAlpha((int) (255 * (1f - identityPrefixFactor)));
         c.drawText(
           oldIdentityPrefix,
           getPaddingLeft(),
           identityBaseline * identityPrefixFactor + (getMeasuredHeight() + identityTextHeight) * (1f - identityPrefixFactor),
           identityTextPaint
         );
+        identityTextPaint.setAlpha((int) (255 * (1f - identityNameFactor)));
         c.drawText(
           TextUtils.ellipsize(oldIdentityName, identityTextPaint, oldIdentityNameAvailWidth, TextUtils.TruncateAt.END).toString(),
           getPaddingLeft() + oldIdentityHintPrefixWidth,

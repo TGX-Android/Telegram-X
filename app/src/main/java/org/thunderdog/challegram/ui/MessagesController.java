@@ -10730,14 +10730,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
   // Identity switch
 
   private static final int ANIMATOR_SWITCH_IDENTITY = 16;
-  public static final long IDENTITY_SWITCH_DURATION = 150l;
+  public static final long IDENTITY_SWITCH_DURATION = 1500l;
 
   private final BoolAnimator identitySwitchAnimator = new BoolAnimator(ANIMATOR_SWITCH_IDENTITY, this, AnimatorUtils.DECELERATE_INTERPOLATOR, IDENTITY_SWITCH_DURATION);
 
   private void setIdentitySwitchFactor (float factor) {
     float reverseFactor = 1f - factor;
     oldIdentityIcon.setTranslationY(-factor * Screen.dp(49f));
+    oldIdentityIcon.setAlpha(reverseFactor);
     newIdentityIcon.setTranslationY(reverseFactor * Screen.dp(49f));
+    newIdentityIcon.setAlpha(factor);
   }
 
   public void openIdentitySwitch (TdApi.Chat chat) {
@@ -10854,8 +10856,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
     switchIdentityButton.setVisibility(View.INVISIBLE);
     oldIdentityIcon.setTranslationY(0f);
     oldIdentityIcon.setVisibility(View.VISIBLE);
+    oldIdentityIcon.setAlpha(1f);
     newIdentityIcon.setTranslationY(Screen.dp(49f));
     newIdentityIcon.setVisibility(View.VISIBLE);
+    newIdentityIcon.setAlpha(0f);
   }
 
   private void finishSwitchIdentityAnim () {
