@@ -2752,7 +2752,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         boolean isPremium = currentUser.isPremium;
         if (selfChat) {
           TdApi.MessageSenderUser selfUserSender = new TdApi.MessageSenderUser(currentUser.id);
-          SendAsMenuHelper.MenuItem currentUserItem = new SendAsMenuHelper.MenuItem(-1, currentUser.firstName + " " + currentUser.lastName, currentUser.username, selfUserSender, false, tdlib);
+          SendAsMenuHelper.MenuItem currentUserItem = new SendAsMenuHelper.MenuItem(-1, currentUser.firstName + " " + currentUser.lastName, Lang.getString(R.string.YourAccount), selfUserSender, false, tdlib);
           sendAsItems.add(currentUserItem);
         }
 
@@ -2774,8 +2774,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
                 TdApi.Chat sendAsChat = tdlib.chat(messageSenderChat.chatId);
                 if (sendAsChat == null) continue;
                 String chatTitle = sendAsChat.title;
+                String chatUsername = tdlib.chatUsername(messageSenderChat.chatId);
 
-                item = new SendAsMenuHelper.MenuItem(i, chatTitle, "@username", messageSender, sender.needsPremium && !isPremium, tdlib);
+                item = new SendAsMenuHelper.MenuItem(i, chatTitle, "@" + chatUsername, messageSender, sender.needsPremium && !isPremium, tdlib);
               } else {
                 TdApi.MessageSenderUser senderUser = (TdApi.MessageSenderUser) messageSender;
                 TdApi.User user = tdlib.cache().user(senderUser.userId);

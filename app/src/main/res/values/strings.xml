@@ -4415,4 +4415,5 @@
   <string name="format_PRMadeBy">%1$s by %2$s</string>
   <string name="JustAsX">as %1$s</string>
   <string name="AnonymousAdmin">Anonymous Admin</string>
+  <string name="YourAccount">your account</string>
 </resources>
