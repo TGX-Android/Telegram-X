@@ -511,7 +511,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (messageThread == null) return;
 
     if (messageThread.areComments()) {
-      headerCell.setForcedSubtitle(Lang.plural(R.string.xComments, knownMessageCount));
+      if (knownMessageCount > 0) {
+        headerCell.setForcedSubtitle(Lang.plural(R.string.xComments, knownMessageCount));
+      } else {
+        headerCell.setForcedSubtitle(Lang.getString(R.string.NoComments));
+      }
     } else {
       headerCell.setForcedSubtitle(Lang.pluralBold(R.string.xRepliesTo, knownMessageCount, tdlib.senderName(messageThread.getThreadAuthor(), true)));
     }

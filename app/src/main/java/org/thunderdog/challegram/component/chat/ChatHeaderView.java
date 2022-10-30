@@ -103,14 +103,19 @@ public class ChatHeaderView extends ComplexHeaderView {
     }
 
     if (messageThread != null) {
+      int threadSize = messageThread.getSize();
       setInnerMargins(Screen.dp(56f), Screen.dp(49f));
       if (messageThread.areComments()) {
         TdApi.Chat sourceChat = messageThread.getSourceChat();
         setChatPhoto(sourceChat, sourceChat.photo);
-        setText(tdlib.chatTitle(sourceChat), Lang.plural(R.string.xComments, messageThread.getSize()));
+        if (threadSize > 0) {
+          setText(tdlib.chatTitle(sourceChat), Lang.plural(R.string.xComments, threadSize));
+        } else {
+          setText(tdlib.chatTitle(sourceChat), Lang.getString(R.string.NoComments));
+        }
       } else {
         setChatPhoto(chat, chat.photo);
-        setText(tdlib.chatTitle(chat), Lang.pluralBold(R.string.xRepliesTo, messageThread.getSize(), tdlib.senderName(messageThread.getThreadAuthor(), true)));
+        setText(tdlib.chatTitle(chat), Lang.pluralBold(R.string.xRepliesTo, threadSize, tdlib.senderName(messageThread.getThreadAuthor(), true)));
       }
 
       attachChatStatus(messageThread.getChatId(), messageThread.getMessageThreadId());
