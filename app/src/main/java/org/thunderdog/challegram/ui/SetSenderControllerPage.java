@@ -143,8 +143,11 @@ public class SetSenderControllerPage extends BottomSheetViewController.BottomShe
   }
 
   private boolean search (String title, String query) {
-    Highlight highlight = Highlight.valueOf(title, query);
-    return highlight != null && !highlight.parts.isEmpty();
+    if (StringUtils.equalsOrBothEmpty(title, query) || StringUtils.isEmpty(title) || StringUtils.isEmpty(query)) {
+      return true;
+    }
+
+    return title.startsWith(query);
   }
 
   private boolean isEmpty;
