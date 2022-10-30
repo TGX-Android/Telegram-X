@@ -137,7 +137,6 @@ public class MenuMoreWrap extends MenuWrap {
     menuItem.setTag(menuItem.getMeasuredWidth());
     return menuItem;
   }
-<<<<<<< HEAD
 
   @Override
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {

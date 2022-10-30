@@ -400,8 +400,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void onHapticMenuItemClick (View view, View parentView) {
     switch (view.getId()) {
       case R.id.btn_sendOnceOnline: {
-        if (!sendShowingVoice(false, new TdApi.MessageSchedulingStateSendWhenOnline())) {
-          sendText(true, false, new TdApi.MessageSchedulingStateSendWhenOnline());
+        TdApi.MessageSendOptions sendOptions = Td.newSendOptions(new TdApi.MessageSchedulingStateSendWhenOnline());
+        if (!sendShowingVoice(sendOptions)) {
+          sendText(true, sendOptions);
         }
         break;
       }
@@ -545,7 +546,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @SuppressLint("ClickableViewAccessibility") @Override
   protected View onCreateView (final Context context) {
-    isLoading = true;
 
     if (!isInForceTouchMode()) {
       UI.setSoftInputMode(UI.getContext(context), Config.DEFAULT_WINDOW_PARAMS);
@@ -4316,12 +4316,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private Object selectedMessageTag;
 
   @Deprecated
-  public void showMessageOptions (TGMessage msg, int[] ids, String[] options, int[] icons, Object selectedMessageTag, TdApi.ChatMember selectedMessageSender, boolean disableViewCounter) {
-    showMessageOptions(msg, ids, options, icons, selectedMessageTag, selectedMessageSender, disableViewCounter, false);
-  }
-
-  @Deprecated
-  public void showMessageOptions (TGMessage msg, int[] ids, String[] options, int[] icons, Object selectedMessageTag, TdApi.ChatMember selectedMessageSender, boolean disableViewCounter, boolean withReactions) {
+  public void showMessageOptions (TGMessage msg, int[] ids, String[] options, int[] icons, Object selectedMessageTag, TdApi.ChatMember selectedMessageSender, boolean disableMessageMetadata) {
     // TODO rework into proper style
     this.selectedMessage = msg;
     this.selectedMessageTag = selectedMessageTag;
