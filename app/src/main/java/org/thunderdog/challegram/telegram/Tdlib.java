@@ -9507,8 +9507,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   ) {
     Client.ResultHandler handler = result -> {
       switch (result.getConstructor()) {
-        case TdApi.MessageSenders.CONSTRUCTOR: {
-          TdApi.MessageSenders messageSenders = (TdApi.MessageSenders) result;
+        case TdApi.ChatMessageSenders.CONSTRUCTOR: {
+          TdApi.ChatMessageSenders messageSenders = (TdApi.ChatMessageSenders) result;
           parseSendersToIdentities(chat, Arrays.asList(messageSenders.senders), onSuccess, onFailure);
           break;
         }
@@ -9526,7 +9526,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public void parseSendersToIdentities(
     TdApi.Chat currentChat,
-    List<TdApi.MessageSender> messageSenders,
+    List<TdApi.ChatMessageSender> messageSenders,
     Consumer<List<Identity>> onSuccess,
     Consumer<TdApi.Error> onFailure
   ) {
@@ -9560,12 +9560,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         }
       }
     };
-    for (TdApi.MessageSender messageSender: messageSenders) {
-      if (messageSender.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR) {
-        TdApi.MessageSenderUser messageSenderUser = (TdApi.MessageSenderUser) messageSender;
+    for (TdApi.ChatMessageSender messageSender: messageSenders) {
+      if (messageSender.sender.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR) {
+        TdApi.MessageSenderUser messageSenderUser = (TdApi.MessageSenderUser) messageSender.sender;
         client().send(new TdApi.GetUser(messageSenderUser.userId), handler);
-      } else if (messageSender.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR) {
-        TdApi.MessageSenderChat messageSenderChat = (TdApi.MessageSenderChat) messageSender;
+      } else if (messageSender.sender.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR) {
+        TdApi.MessageSenderChat messageSenderChat = (TdApi.MessageSenderChat) messageSender.sender;
         client().send(new TdApi.GetChat(messageSenderChat.chatId), handler);
       } else {
         throw new IllegalArgumentException("Can't parse this type of sender");
