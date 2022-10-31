@@ -6605,6 +6605,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
         int distance = 45;
         int left = endX - Screen.dp(40f) - (replyInfo.recentReplierIds.length - 1) * distance;
+        if (replyInfo.lastReadInboxMessageId > 0 && replyInfo.lastMessageId > replyInfo.lastReadInboxMessageId) {
+          Drawables.draw(c, Drawables.get(R.drawable.dot_not_read_comments), left - Screen.dp(5f), cy - Screen.dp(2f), Paints.getBitmapPaint());
+        }
         for (int i = replyInfo.recentReplierIds.length - 1; i >= 0; i--) {
           TdApi.MessageSender messageSender = replyInfo.recentReplierIds[i];
 
@@ -6675,7 +6678,14 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       avaWidth += Screen.dp(12f);
     }
 
-    return leftPadding + textWidth + avaWidth;
+    float badgeWidth = 0;
+    if (replyInfo != null) {
+      if (replyInfo.lastReadInboxMessageId > 0 && replyInfo.lastMessageId > replyInfo.lastReadInboxMessageId) {
+        badgeWidth = Screen.dp(11f);
+      }
+    }
+
+    return leftPadding + textWidth + badgeWidth + avaWidth;
   }
 
   private void drawFooter (MessageView view, Canvas c) {
