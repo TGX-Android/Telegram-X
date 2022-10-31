@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.text.TextPaint;
+import android.text.TextUtils;
 
 import androidx.core.graphics.drawable.DrawableCompat;
 
@@ -45,10 +46,11 @@ public class IdentityView extends BaseView implements FactorAnimator.Target {
   private String name;
   private String username;
 
-  private Paint namePaint;
+  private TextPaint namePaint;
   private float nameHeight;
-  private Paint usernamePaint;
+  private TextPaint usernamePaint;
   private float usernameHeight;
+  private float textAvailWidth;
 
   private SimplestCheckBoxHelper checkBoxHelper;
 
@@ -79,7 +81,7 @@ public class IdentityView extends BaseView implements FactorAnimator.Target {
     namePaint.setTypeface(Fonts.getRobotoMedium());
     ThemeManager.addThemeListener(namePaint, R.id.theme_color_text);
 
-    usernamePaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
+    usernamePaint = new TextPaint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
     usernamePaint.setColor(Theme.textDecentColor());
     usernamePaint.setTextSize(Screen.dp(15f));
     usernamePaint.setTypeface(Fonts.getRobotoRegular());
@@ -164,6 +166,11 @@ public class IdentityView extends BaseView implements FactorAnimator.Target {
       centerY - lockRadius,
       getMeasuredWidth() - getPaddingRight(),
       centerY + lockRadius);
+
+    final int totalPaddingLeft = getPaddingLeft() + Screen.dp(AVATAR_RADIUS * 2) + Screen.dp(TEXT_PADDING) + Screen.dp(OUT_X_PADDING);
+    final int lockIconPadding = identity.isLocked() ? Screen.dp(ICON_RADIUS * 2) + Screen.dp(TEXT_PADDING) + Screen.dp(OUT_X_PADDING) : 0;
+    final int totalPaddingRight = getPaddingRight() + lockIconPadding;
+    textAvailWidth = getMeasuredWidth() - totalPaddingLeft - totalPaddingRight;
   }
 
   @Override
@@ -206,12 +213,14 @@ public class IdentityView extends BaseView implements FactorAnimator.Target {
     if (name != null) {
       float startX = getPaddingLeft() + Screen.dp(AVATAR_RADIUS * 2) + Screen.dp(TEXT_PADDING);
       float startY = nameHeight + textPaddingY;
-      c.drawText(name, startX, startY, namePaint);
+      CharSequence trimmedName = TextUtils.ellipsize(name, namePaint, textAvailWidth, TextUtils.TruncateAt.END).toString();
+      c.drawText(trimmedName.toString(), startX, startY, namePaint);
     }
     if (username != null) {
       float startX = getPaddingLeft() + Screen.dp(AVATAR_RADIUS * 2) + Screen.dp(TEXT_PADDING);
       float startY = getMeasuredHeight() - textPaddingY;
-      c.drawText(username, startX, startY, usernamePaint);
+      CharSequence trimmedUsername = TextUtils.ellipsize(username, usernamePaint, textAvailWidth, TextUtils.TruncateAt.END).toString();
+      c.drawText(trimmedUsername.toString(), startX, startY, usernamePaint);
     }
   }
 }
