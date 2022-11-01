@@ -47,6 +47,7 @@ import me.vkryl.android.widget.FrameLayoutFix;
 public class IdentitiesController extends ViewController<IdentitiesController.Arguments>
   implements View.OnClickListener, FactorAnimator.Target {
   private final static float TOP_BAR_ICON_SIZE = 24f;
+  private final static float TOP_BAR_HEIGHT = 56f;
   private final static float BAR_Y_PADDING = 20f;
   private static final long ANIMATION_DURATION = 220l;
   private static final int ANIMATOR_TOP_BAR_SWITCH = 0;
@@ -125,7 +126,7 @@ public class IdentitiesController extends ViewController<IdentitiesController.Ar
     FrameLayoutFix wrapper = new FrameLayoutFix(context);
     RelativeLayout.LayoutParams wrapperParams = new RelativeLayout.LayoutParams(
       FrameLayoutFix.LayoutParams.MATCH_PARENT,
-      FrameLayoutFix.LayoutParams.WRAP_CONTENT
+      Screen.dp(480f)
     );
     wrapperParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
     wrapper.setLayoutParams(wrapperParams);
@@ -143,7 +144,7 @@ public class IdentitiesController extends ViewController<IdentitiesController.Ar
     layout = new LinearLayout(context);
     FrameLayoutFix.LayoutParams layoutParams = new FrameLayoutFix.LayoutParams(
       RelativeLayout.LayoutParams.MATCH_PARENT,
-      Screen.dp(400f)
+      RelativeLayout.LayoutParams.MATCH_PARENT
     );
     layout.setLayoutParams(layoutParams);
     layout.setOrientation(LinearLayout.VERTICAL);
@@ -272,7 +273,7 @@ public class IdentitiesController extends ViewController<IdentitiesController.Ar
     RelativeLayout topBar = new RelativeLayout(context);
     LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
       LinearLayout.LayoutParams.MATCH_PARENT,
-      Screen.dp(56f)
+      Screen.dp(TOP_BAR_HEIGHT)
     );
     topBar.setGravity(Gravity.CENTER_VERTICAL);
     topBar.setLayoutParams(params);
@@ -345,7 +346,7 @@ public class IdentitiesController extends ViewController<IdentitiesController.Ar
     RelativeLayout topBar = new RelativeLayout(context);
     LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
       LinearLayout.LayoutParams.MATCH_PARENT,
-      Screen.dp(56f)
+      Screen.dp(TOP_BAR_HEIGHT)
     );
     topBar.setGravity(Gravity.CENTER_VERTICAL);
     topBar.setLayoutParams(params);

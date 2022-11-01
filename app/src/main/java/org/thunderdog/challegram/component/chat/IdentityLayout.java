@@ -6,6 +6,7 @@ import android.animation.ValueAnimator;
 import android.content.Context;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.RelativeLayout;
 
 import androidx.annotation.NonNull;
@@ -232,6 +233,8 @@ public class IdentityLayout extends RelativeLayout
     View controllerView = controller.get();
     int screenHeight = Screen.getDisplayHeight();
     int heightDiff = screenHeight - contentHeight;
-    controllerView.setMinimumHeight(contentHeight + (int) (heightDiff * factor));
+    ViewGroup.LayoutParams params = controllerView.getLayoutParams();
+    params.height = (contentHeight + (int) (heightDiff * factor));
+    controllerView.setLayoutParams(params);
   }
 }
