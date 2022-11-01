@@ -170,14 +170,20 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
           int left = Screen.dp(20f);
           int top = this.getTop() - (Screen.dp(43f) + (Screen.dp(50f)) * (senderMenuItem.id - 1));
           int bottom = this.getTop() - (Screen.dp(23f) + Screen.dp(50f) * (senderMenuItem.id - 1));
-          if (senderMenuItem.senderAvatarInfo.hasAvatar()) {
-            ImageReceiver imageReceiver = complexReceiver.getImageReceiver(senderMenuItem.id);
-            imageReceiver.setBounds(left, top, left + 2 * Screen.dp(10f), bottom);
-            imageReceiver.setRadius(Screen.dp(10f));
-            imageReceiver.draw(canvas);
+
+          if (senderMenuItem.isPersonal) {
+            Drawable icon = Drawables.get(getResources(), R.drawable.dot_baseline_acc_personal_24);
+            Drawables.draw(canvas, icon, left - Screen.dp(2f), top, Paints.getPorterDuffPaint(Theme.getColor(R.id.theme_color_textLight)));
           } else {
-            AvatarPlaceholder avatarPlaceholder = new AvatarPlaceholder(Screen.dp(20f), senderMenuItem.senderAvatarInfo.getAvatarMetadata(), null);
-            avatarPlaceholder.draw(canvas, left + Screen.dp(10f), this.getTop() + Screen.dp(15f), 1f, Screen.dp(10f));
+            if (senderMenuItem.senderAvatarInfo.hasAvatar()) {
+              ImageReceiver imageReceiver = complexReceiver.getImageReceiver(senderMenuItem.id);
+              imageReceiver.setBounds(left, top, left + 2 * Screen.dp(10f), bottom);
+              imageReceiver.setRadius(Screen.dp(10f));
+              imageReceiver.draw(canvas);
+            } else {
+              AvatarPlaceholder avatarPlaceholder = new AvatarPlaceholder(Screen.dp(10f), senderMenuItem.senderAvatarInfo.getAvatarMetadata(), null);
+              avatarPlaceholder.draw(canvas, left + Screen.dp(10f), top + Screen.dp(10f), 1f, Screen.dp(10f));
+            }
           }
         }
 

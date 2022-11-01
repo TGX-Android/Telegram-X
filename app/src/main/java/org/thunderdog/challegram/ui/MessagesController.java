@@ -2712,7 +2712,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
               if (getChatId() == chatId) {
                 TdApi.ChatAdministrators chatAdministrators = (TdApi.ChatAdministrators) object;
                 manager.setChatAdmins(chatAdministrators);
-                updateSendAs(chatAdministrators);
+                updateSendAs();
               }
             }
           });
@@ -2725,11 +2725,20 @@ public class MessagesController extends ViewController<MessagesController.Argume
     checkLinkedChat();
   }
 
-  private void updateSendAs (TdApi.ChatAdministrators chatAdministrators) {
-    boolean showSendAs = false;
+  private void updateSendAs () {
+    if (chat == null || getChatId() == 0) return;
+
     boolean supergroup = TD.isSupergroup(chat.type);
 
-    showSendAs = /*isAdmin ||*/ supergroup;
+    boolean isAdmin = TD.isAdmin(tdlib.chatStatus(chat.id));
+
+    boolean isMultiChat = ChatId.isMultiChat(chat.id);
+    boolean isPrivate = ChatId.isPrivate(chat.id);
+    boolean isPublicChat = tdlib.isPublicChat(getChatId());
+    boolean isChannelChat = tdlib.isChannelChat(chat);
+    boolean isRepliesChat = tdlib.isRepliesChat(getChatId());
+
+    boolean showSendAs = (isAdmin || (supergroup || isMultiChat)) && isPublicChat;
 
     sendAsButton.setVisibility(showSendAs ? View.VISIBLE : View.INVISIBLE);
     cameraButton.setVisible(!showSendAs);
@@ -2737,11 +2746,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
     attachButtons.updatePivot();
 
     if (showSendAs) {
-      initSendAsItems(chat, chatAdministrators);
+      initSendAsItems();
     }
   }
 
-  private void initSendAsItems (@NonNull TdApi.Chat chat, TdApi.ChatAdministrators chatAdministrators) {
+  private void initSendAsItems () {
     tdlib.send(new TdApi.GetChatAvailableMessageSenders(chat.id), new Client.ResultHandler() {
       @Override
       public void onResult (TdApi.Object object) {
@@ -2752,7 +2761,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         boolean isPremium = currentUser.isPremium;
         if (selfChat) {
           TdApi.MessageSenderUser selfUserSender = new TdApi.MessageSenderUser(currentUser.id);
-          SendAsMenuHelper.MenuItem currentUserItem = new SendAsMenuHelper.MenuItem(-1, currentUser.firstName + " " + currentUser.lastName, Lang.getString(R.string.YourAccount), selfUserSender, false, tdlib);
+          SendAsMenuHelper.MenuItem currentUserItem = new SendAsMenuHelper.MenuItem(0, currentUser.firstName + " " + currentUser.lastName, Lang.getString(R.string.YourAccount), selfUserSender, false, tdlib);
           sendAsItems.add(currentUserItem);
         }
 
@@ -2774,9 +2783,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
                 TdApi.Chat sendAsChat = tdlib.chat(messageSenderChat.chatId);
                 if (sendAsChat == null) continue;
                 String chatTitle = sendAsChat.title;
-                String chatUsername = tdlib.chatUsername(messageSenderChat.chatId);
+                if (tdlib.isMultiChat(sendAsChat) && Td.isAnonymous(tdlib.chatStatus(sendAsChat.id)) /*&& !tdlib.isChannel(chat.messageSenderId)*/) {
+                  item = new SendAsMenuHelper.MenuItem(i, chatTitle, Lang.getString(R.string.AnonymousAdmin), messageSender, sender.needsPremium && !isPremium, tdlib);
+                } else {
+                  String chatUsername = tdlib.chatUsername(messageSenderChat.chatId);
+                  item = new SendAsMenuHelper.MenuItem(i, chatTitle, "@" + chatUsername, messageSender, sender.needsPremium && !isPremium, tdlib);
+                }
 
-                item = new SendAsMenuHelper.MenuItem(i, chatTitle, "@" + chatUsername, messageSender, sender.needsPremium && !isPremium, tdlib);
               } else {
                 TdApi.MessageSenderUser senderUser = (TdApi.MessageSenderUser) messageSender;
                 TdApi.User user = tdlib.cache().user(senderUser.userId);
@@ -2982,6 +2995,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     runOnUiThreadOptional(() -> {
       if (getChatId() == chatId) {
         updateInputHint();
+        if (sendAsButton.getVisibility() == View.VISIBLE) {
+          sendAsButton.setMessageSender(tdlib, senderId);
+        }
       }
     });
   }

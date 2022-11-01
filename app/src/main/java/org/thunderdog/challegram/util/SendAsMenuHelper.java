@@ -34,6 +34,7 @@ import org.thunderdog.challegram.widget.PopupLayout;
 import java.util.List;
 
 import me.vkryl.core.lambda.Destroyable;
+import me.vkryl.td.Td;
 
 public class SendAsMenuHelper implements View.OnTouchListener, View.OnLongClickListener, View.OnClickListener {
   @Override
@@ -55,6 +56,7 @@ public class SendAsMenuHelper implements View.OnTouchListener, View.OnLongClickL
     public final CharSequence username;
     public final TdApi.MessageSender sender;
     public final boolean needPremium;
+    public boolean isPersonal;
     public final SenderAvatarInfo senderAvatarInfo;
     private final int iconResId;
 
@@ -65,6 +67,7 @@ public class SendAsMenuHelper implements View.OnTouchListener, View.OnLongClickL
     private View.OnClickListener onClickListener;
     private boolean visible = true;
 
+
     public MenuItem (int id, CharSequence title, CharSequence username, TdApi.MessageSender sender, boolean needPremium, Tdlib tdlib) {
       this.id = id;
       this.title = title;
@@ -73,6 +76,13 @@ public class SendAsMenuHelper implements View.OnTouchListener, View.OnLongClickL
       this.needPremium = needPremium;
       this.senderAvatarInfo = new SenderAvatarInfo(sender, tdlib);
       this.iconResId = 0;
+      TdApi.User user = tdlib.myUser();
+      if (user != null) {
+        long senderUserId = Td.getSenderUserId(sender);
+        if (senderUserId != 0) {
+          isPersonal = user.id == senderUserId;
+        }
+      }
     }
 
     public MenuItem (int id, CharSequence title, int iconResId) {
