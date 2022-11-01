@@ -315,7 +315,7 @@ public class IdentitiesController extends ViewController<IdentitiesController.Ar
       sendAsWidth,
       ViewGroup.LayoutParams.WRAP_CONTENT
     );
-    sendAsText.setPadding(Screen.dp(20f), 0, Screen.dp(20f), 0);
+    sendAsText.setPadding(Screen.dp(10f), 0, Screen.dp(10f), 0);
     sendAsText.setId(R.id.msg_sendAs);
     sendAsText.setBoldText(Lang.getString(R.string.MessageAsX, ""), null, false);
     sendAsText.setTextSize(18f);
@@ -385,7 +385,7 @@ public class IdentitiesController extends ViewController<IdentitiesController.Ar
     LinearLayout.LayoutParams textParams = new LinearLayout.LayoutParams(
       searchWidth, ViewGroup.LayoutParams.MATCH_PARENT
     );
-    searchText.setPadding(Screen.dp(20f), 0, Screen.dp(20f), 0);
+    searchText.setPadding(Screen.dp(10f), 0, Screen.dp(10f), 0);
     searchText.setId(R.id.edit_searchIdentity);
     searchText.setHint(Lang.getString(R.string.Search));
     searchText.setLayoutParams(textParams);
