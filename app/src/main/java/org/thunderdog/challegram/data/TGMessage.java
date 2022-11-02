@@ -213,7 +213,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   // counters
 
-  private final Counter viewCounter, replyCounter, shareCounter, isPinned;
+  private final Counter viewCounter, replyCounter, shareCounter, isPinned, commentCounter;
   private Counter shrinkedReactionsCounter, reactionsCounter;
   private ReactionsCounterDrawable reactionsCounterDrawable;
 
@@ -276,7 +276,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   public static final int REACTIONS_DRAW_MODE_ONLY_ICON = 2;
   private final float avaRadius = 11.8f;
 
-  private ImageReceiver commentSenderAvatarReceiver;
+  private ComplexReceiver commentSenderAvatarReceiver;
 
   protected TGMessage (MessagesManager manager, TdApi.Message msg) {
     if (!initialized) {
@@ -410,6 +410,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       .callback(this)
       .colorSet(() -> messageReactions.hasChosen() ? Theme.getColor(R.id.theme_color_badge): Theme.getColor(R.id.theme_color_iconLight))
       .drawable(R.drawable.baseline_favorite_14, 14f, 0f, Gravity.CENTER_HORIZONTAL)
+      .build();
+    this.commentCounter = new Counter.Builder()
+      .noBackground()
+      .allBold(false)
+      .textSize(14f)
+      .callback(this)
+      .colorSet(() -> Theme.getColor(getChatAuthorColorId()))
       .build();
 
     updateInteractionInfo(false);
@@ -1686,7 +1693,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     final float selectableFactor = manager.getSelectableFactor();
 
     if (this.commentSenderAvatarReceiver == null) {
-      this.commentSenderAvatarReceiver = new ImageReceiver(view, Screen.dp(avaRadius));
+      this.commentSenderAvatarReceiver = new ComplexReceiver(view, Screen.dp(avaRadius));
     }
 
     checkEdges();
@@ -1762,7 +1769,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       float commentButton = hasCommentButton.getFloatValue();
       if (commentButton > 0f) {
         int y = bottomContentEdge - getBubbleReduceHeight();
-        c.drawLine(leftContentEdge, y, rightContentEdge, y, Paints.strokeSeparatorPaint(ColorUtils.alphaColor(commentButton, getSeparatorColor())));
+        c.drawLine(leftContentEdge + 15f, y, rightContentEdge - 15f, y, Paints.strokeSeparatorPaint(ColorUtils.alphaColor(commentButton, Theme.getColor(R.id.theme_color_iconLight))));
         if (commentButton != 1f) {
           c.save();
           c.clipRect(leftContentEdge, y, rightContentEdge, bottomContentEdge);
@@ -5017,6 +5024,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     hasCommentButton.setValue(commentMode == COMMENT_MODE_BUTTON, animated);
     shareCounter.setCount(interactionInfo != null ? interactionInfo.forwardCount : 0, animated);
     isPinned.showHide(isPinned(), animated);
+    int replyCount = (interactionInfo != null && interactionInfo.replyInfo != null) ? interactionInfo.replyInfo.replyCount : 0;
+    commentCounter.setCount(replyCount, animated);
 
     if (interactionInfo != null) {
       replyInfo = interactionInfo.replyInfo;
@@ -6596,7 +6605,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
         int distance = 45;
         int left = endX - Screen.dp(40f) - (replyInfo.recentReplierIds.length - 1) * distance;
-        commentSenderAvatarReceiver.invalidate();
+        if (replyInfo.lastReadInboxMessageId > 0 && replyInfo.lastMessageId > replyInfo.lastReadInboxMessageId) {
+          Drawables.draw(c, Drawables.get(R.drawable.dot_not_read_comments), left - Screen.dp(5f), cy - Screen.dp(2f), Paints.getBitmapPaint());
+        }
         for (int i = replyInfo.recentReplierIds.length - 1; i >= 0; i--) {
           TdApi.MessageSender messageSender = replyInfo.recentReplierIds[i];
 
@@ -6605,11 +6616,15 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           TdApi.User user = tdlib().cache().user(Td.getSenderId(messageSender));
           ImageFile userAvatar = TD.getAvatar(tdlib(), user);
 
+          long senderId = Td.getSenderId(messageSender);
+
           int radius = Screen.dp(avaRadius);
           if (userAvatar != null) {
-            commentSenderAvatarReceiver.requestFile(userAvatar);
-            commentSenderAvatarReceiver.setBounds(left - radius, cy - radius, left + radius, cy + radius);
-            commentSenderAvatarReceiver.draw(c);
+            ImageReceiver imageReceiver = commentSenderAvatarReceiver.getImageReceiver(senderId);
+            imageReceiver.requestFile(userAvatar);
+            imageReceiver.setRadius(radius);
+            imageReceiver.setBounds(left - radius, cy - radius, left + radius, cy + radius);
+            imageReceiver.draw(c);
           } else {
             AvatarPlaceholder avatarPlaceholder = tdlib.cache().userPlaceholder(user, true, ComplexHeaderView.getBaseAvatarRadiusDp(), null);
             avatarPlaceholder.draw(c, left, cy, 1f, 30);
@@ -6624,8 +6639,16 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       }
     }
 
-    String text = replyCount > 0 ? Lang.plural(R.string.xComments, replyCount) : Lang.getString(R.string.LeaveComment);
-    c.drawText(text, (startX + Screen.dp(12f) + drawable.getIntrinsicWidth() + 30f), cy + 10f, Paints.getRegularTextPaint(14f, ColorUtils.alphaColor(alpha, Theme.getColor(iconColorId))));
+    float offset = 0;
+    float startTextX = startX + Screen.dp(12f) + drawable.getIntrinsicWidth() + Screen.dp(12f);
+    if (replyCount > 0) {
+      commentCounter.draw(c, startTextX, cy + 3f, Gravity.CENTER, alpha);
+      offset = U.measureText(String.valueOf(replyCount), Paints.getRegularTextPaint(14f, ColorUtils.alphaColor(alpha, Theme.getColor(iconColorId))));
+    }
+
+    String text = replyCount > 0 ? Lang.plural(R.string.xComments, replyCount).split(" ")[1] : Lang.getString(R.string.LeaveComment);
+
+    c.drawText(text, (startX + Screen.dp(12f) + drawable.getIntrinsicWidth() + 30f + offset), cy + 15f, Paints.getRegularTextPaint(14f, ColorUtils.alphaColor(alpha, Theme.getColor(iconColorId))));
     // TODO draw text, avatars, ripple effect
 
     if (replyCount == 0) {
@@ -6634,7 +6657,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   private float computeReplyWidth (TdApi.MessageReplyInfo replyInfo) {
-    int replyCount = replyInfo.replyCount;
+    int replyCount = getReplyCount();
     int iconColorId = getChatAuthorColorId();
 
     float leftPadding = Screen.dp(12f) + 24f + Screen.dp(12f);
@@ -6644,7 +6667,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     float textWidth = U.measureText(text, paint);
 
     float avaWidth = Screen.dp(12f);
-    int length = replyInfo.recentReplierIds.length;
+    int length = (replyInfo != null  && replyInfo.recentReplierIds != null) ? replyInfo.recentReplierIds.length : 0;
 
     for (int i = 0; i < length; i++) {
       avaWidth += (30f * 2);
@@ -6655,7 +6678,14 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       avaWidth += Screen.dp(12f);
     }
 
-    return leftPadding + textWidth + avaWidth;
+    float badgeWidth = 0;
+    if (replyInfo != null) {
+      if (replyInfo.lastReadInboxMessageId > 0 && replyInfo.lastMessageId > replyInfo.lastReadInboxMessageId) {
+        badgeWidth = Screen.dp(11f);
+      }
+    }
+
+    return leftPadding + textWidth + badgeWidth + avaWidth;
   }
 
   private void drawFooter (MessageView view, Canvas c) {
