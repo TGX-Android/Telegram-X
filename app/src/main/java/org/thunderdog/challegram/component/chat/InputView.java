@@ -45,9 +45,11 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowInsets;
 import android.view.inputmethod.BaseInputConnection;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputConnection;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.LinearLayout;
 
 import androidx.annotation.IdRes;
@@ -55,6 +57,8 @@ import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.inputmethod.InputConnectionCompat;
 
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -92,6 +96,7 @@ import org.thunderdog.challegram.receiver.RefreshRateLimiter;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
+import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
@@ -122,7 +127,9 @@ import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
-public class InputView extends NoClipEditText implements InlineSearchContext.Callback, InlineResultsWrap.PickListener, RtlCheckListener, FinalNewLineFilter.Callback, CustomEmojiSurfaceProvider, Destroyable {
+public class InputView extends NoClipEditText
+  implements InlineSearchContext.Callback, InlineResultsWrap.PickListener, RtlCheckListener,
+  FinalNewLineFilter.Callback, CustomEmojiSurfaceProvider, Destroyable, Keyboard.OnStateChangeListener {
   public static final boolean USE_ANDROID_SELECTION_FIX = true;
 
   private final TextPaint paint;
@@ -141,6 +148,20 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
   private final Tdlib tdlib;
   private final InlineSearchContext inlineContext;
+
+  @Override
+  public void onKeyboardStateChanged (boolean isVisible) {
+    if (isVisible) {
+      hideIdentityHint(true);
+    } else {
+      showIdentityHint(true);
+    }
+  }
+
+  @Override
+  public void closeAdditionalKeyboards () {
+
+  }
 
   public interface InputListener {
     boolean canSearchInline (InputView v);
@@ -332,16 +353,6 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         }
       });
     }
-
-    setOnFocusChangeListener((View view, boolean hasFocus) -> {
-      UI.post(() -> {
-        if (hasFocus) {
-          hideIdentityHint(true);
-        } else {
-          showIdentityHint(true);
-        }
-      });
-    });
   }
 
   @Override
@@ -1084,9 +1095,6 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   }
 
   private void animateNewIdentityHint (String newIdentityHintName, boolean animated) {
-    if (hasFocus()) {
-      newIdentityHintName = null;
-    }
     setIdentityHint(newIdentityHintName);
     if (newIdentityHintName != null) {
       if (!showIdentityHintPrefix.getValue()) {

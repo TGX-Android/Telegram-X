@@ -1454,8 +1454,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       contentView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
       contentView.addView(pagerContentView);
 
-      return contentView;
 
+
+      return contentView;
     }
 
     return contentView;
@@ -8074,7 +8075,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       params.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM, visible ? RelativeLayout.TRUE : 0);
       scrollToBottomButtonWrap.setLayoutParams(params);
     }
-
+    if (inputView != null) {
+      inputView.onKeyboardStateChanged(visible);
+    }
     if (isFocused()) {
       //boolean emojiShown = this.emojiShown;
       // boolean commandsShown = this.commandsShown;
