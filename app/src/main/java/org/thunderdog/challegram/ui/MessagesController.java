@@ -1042,6 +1042,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     sendAsButton.setColorFilter(Theme.iconColor());
     addThemeFilterListener(sendAsButton, R.id.theme_color_icon);
     sendAsButton.setOnClickListener(this);
+    sendAsButton.setVisibility(View.GONE);
     sendAsButton.setLayoutParams(lp);
     //Views.setClickable(sendAsButton);
     //RippleSupport.setTransparentSelector(sendAsButton);
@@ -2665,14 +2666,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     headerCell.setChat(tdlib, chat, messageThread);
 
-    if (chat != null && chat.messageSenderId != null) {
-      sendAsButton.setVisibility(View.VISIBLE);
-      cameraButton.setVisibility(View.GONE);
-    } else {
-      sendAsButton.setVisibility(View.GONE);
-      cameraButton.setVisibility(View.VISIBLE);
-    }
-
     if (inPreviewMode) {
       switch (previewMode) {
         case PREVIEW_MODE_EVENT_LOG:
@@ -2758,8 +2751,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     //
     updateSendAs(false);
-
-    checkAvailableMessageSenders();
+    updateAvailableMessageSenders();
 
     // Loading bot information after the messages to display them faster
 
@@ -2987,6 +2979,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return;
     }
 
+    if (chat.messageSenderId != null) {
+      cameraButton.setVisibility(View.GONE);
+      sendAsButton.setVisibility(View.VISIBLE);
+    } else {
+      sendAsButton.setVisibility(View.GONE);
+      cameraButton.setVisibility(View.VISIBLE);
+    }
+
     Drawable avatar = null;
     String title = null;
 
@@ -3067,6 +3067,20 @@ public class MessagesController extends ViewController<MessagesController.Argume
       sendAsCaption.setAlpha(1f);  // restoring after possible setSendFactor without hasSendAsCaption
       displaySendAsCaption();
     }
+  }
+
+  private void updateAvailableMessageSenders () {
+    if (chat == null/* || chat.messageSenderId == null*/) {
+      return;
+    }
+
+    tdlib().client().send(new TdApi.GetChatAvailableMessageSenders(chat.id), result -> {
+      if (result instanceof TdApi.ChatMessageSenders) {
+        messageSenders = (TdApi.ChatMessageSenders) result;
+      } else {
+        messageSenders = new TdApi.ChatMessageSenders(new TdApi.ChatMessageSender[] {});
+      }
+    });
   }
 
   private void updateBottomBar (boolean isUpdate) {
@@ -4064,20 +4078,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
         setScrollToBottomVisible(false, isFocused());
       }
     }
-  }
-
-  private void checkAvailableMessageSenders () {
-    if (chat == null || chat.messageSenderId == null) {
-      return;
-    }
-
-    tdlib().client().send(new TdApi.GetChatAvailableMessageSenders(chat.id), result -> {
-      if (result instanceof TdApi.ChatMessageSenders) {
-        messageSenders = (TdApi.ChatMessageSenders) result;
-      } else {
-        messageSenders = new TdApi.ChatMessageSenders(new TdApi.ChatMessageSender[] {});
-      }
-    });
   }
 
   private void checkLinkedChat () {
@@ -9936,7 +9936,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     tdlib.ui().post(() -> {
       if (ChatId.toSupergroupId(getChatId()) == supergroup.id) {
         updateBottomBar(true);
-        checkAvailableMessageSenders();
+        updateAvailableMessageSenders();
       }
     });
   }
