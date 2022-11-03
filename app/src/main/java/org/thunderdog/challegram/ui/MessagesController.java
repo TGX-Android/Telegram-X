@@ -1360,6 +1360,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     sendAsCaption = new AnimatedTextView(context());
     sendAsCaption.setPrefix("as ");
+    sendAsCaption.setAlpha(0f);
     sendAsCaption.setLayoutParams(params);
 
     // Setup
@@ -2961,7 +2962,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     runOnUiThreadOptional(() -> {
       if (getChatId() == chatId) {
         updateInputHint();
-        updateSendAs(inputView != null && inputView.isEmpty());
+        updateSendAs(isFocused() && inputView != null && inputView.isEmpty());
       }
     });
   }
@@ -7754,6 +7755,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         break;
       }
+      case ANIMATOR_SEND: {
+        if (finalFactor == 1f) {
+          hideSendAsCaption();
+        }
+        break;
+      }
     }
   }
 
@@ -8878,7 +8885,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (!sendShown.isAnimating()) {
         if (isVisible) {
           displaySendButton();
-          hideSendAsCaption();
+          if (!animated) {
+            hideSendAsCaption();
+          }
         } else {
           displayAttachButtons();
           displaySendAsCaption();
