@@ -276,4 +276,12 @@ public class ChatChangeSenderController extends MediaBottomBaseController<Void> 
       this.lastQuery = query;
     }
   }
+
+  @Override
+  protected void onLeaveSearchMode () {
+    super.onLeaveSearchMode();
+    this.lastQuery = "";
+    setSenders();
+  }
+
 }
