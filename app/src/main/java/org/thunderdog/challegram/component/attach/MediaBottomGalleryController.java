@@ -59,6 +59,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.v.RtlGridLayoutManager;
 import org.thunderdog.challegram.widget.DoneButton;
@@ -74,15 +75,16 @@ import me.vkryl.td.Td;
 public class MediaBottomGalleryController extends MediaBottomBaseController<MediaBottomGalleryController.Arguments> implements Media.GalleryCallback, MediaGalleryAdapter.Callback, Menu, View.OnClickListener, MediaBottomGalleryBucketAdapter.Callback, MediaViewDelegate, MediaSelectDelegate, MediaSendDelegate {
   public static class Arguments {
     public boolean allowVideos;
+    public boolean showCameraButton;
 
-    public Arguments (boolean allowVideos) {
+    public Arguments (boolean allowVideos, boolean showCameraButton) {
       this.allowVideos = allowVideos;
+      this.showCameraButton = showCameraButton;
     }
   }
 
-  public MediaBottomGalleryController (MediaLayout context, boolean allowCamera) {
+  public MediaBottomGalleryController (MediaLayout context) {
     super(context, R.string.Gallery);
-    this.allowCamera = allowCamera;
   }
 
   @Override
@@ -107,14 +109,6 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
         header.addClearButton(menu, this);
         break;
       }
-    }
-  }
-
-  @Override
-  public void onRecyclerFirstMovement () {
-    if (cameraButton != null && !cameraButtonHasBeenHidden) {
-      cameraButton.setIsVisible(false, true);
-      cameraButtonHasBeenHidden = true;
     }
   }
 
@@ -201,9 +195,7 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   private GridSpacingItemDecoration decoration;
   private int spanCount;
 
-  private boolean allowCamera;
   private DoneButton cameraButton;
-  private boolean cameraButtonHasBeenHidden;
 
   private @Nullable ToggleHeaderView headerCell;
 
@@ -236,7 +228,7 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
     setAdapter(adapter);
     addItemDecoration(decoration);
 
-    if (allowCamera) {
+    if (getArguments() != null && getArguments().showCameraButton) {
       int padding = Screen.dp(2f);
       var params = FrameLayoutFix.newParams(Screen.dp(48f) + padding * 2, Screen.dp(48f) + padding * 2, (Lang.rtl() ? Gravity.LEFT : Gravity.RIGHT) | Gravity.BOTTOM);
       params.rightMargin = params.leftMargin = Screen.dp(16f) - padding;
@@ -252,8 +244,6 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
       cameraButton.setLayoutParams(params);
       cameraButton.setIsVisible(true, false);
       contentView.addView(cameraButton);
-
-      cameraButtonHasBeenHidden = false;
     }
 
     if (galleryLoaded) {
@@ -432,6 +422,18 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
     return false;
   }
 
+  private boolean getIsAtStartingHeight () {
+    return getCurrentHeight() == getStartHeight();
+  }
+
+  @Override
+  protected void onRecyclerTopUpdate (float top) {
+    super.onRecyclerTopUpdate(top);
+    if (cameraButton != null) {
+      cameraButton.setIsVisible(getSelectedMediaCount() ==0 && getIsAtStartingHeight(), true);
+    }
+  }
+
   @Override
   protected void onCompleteShow (boolean isPopup) {
     if (isPopup) {
@@ -461,9 +463,8 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   public void onPhotoOrVideoSelected (int selectedCount, ImageFile image, int selectionIndex) {
     hideSoftwareKeyboard();
     mediaLayout.setCounter(selectedCount);
-    if (cameraButton != null && !cameraButtonHasBeenHidden) {
-      cameraButton.setIsVisible(selectedCount == 0, true);
-      cameraButtonHasBeenHidden = selectedCount != 0;
+    if (cameraButton != null) {
+      cameraButton.setIsVisible(selectedCount == 0 && getIsAtStartingHeight(), true);
     }
   }
 
@@ -537,6 +538,9 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   @Override
   protected void onCancelMultiSelection () {
     adapter.clearSelectedImages((GridLayoutManager) getLayoutManager());
+    if (cameraButton != null) {
+      cameraButton.setIsVisible(getIsAtStartingHeight(), true);
+    }
   }
 
   @Override
@@ -745,11 +749,7 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
       closeSections();
       return true;
     }
-    var r = super.onBackPressed(fromTop);
-    if (!r && cameraButton != null) {
-      cameraButton.setIsVisible(false, false);
-    }
-    return r;
+    return super.onBackPressed(fromTop);
   }
 
   private @Nullable Media.GalleryBucket currentBucket;

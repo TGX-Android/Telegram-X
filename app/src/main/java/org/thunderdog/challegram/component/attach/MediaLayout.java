@@ -376,7 +376,7 @@ public class MediaLayout extends FrameLayoutFix implements
         return new MediaBottomLocationController(this);
       }
       case MODE_GALLERY: {
-        return new MediaBottomGalleryController(this, false/*messageSenderId != null*/);
+        return new MediaBottomGalleryController(this);
       }
     }
     if (rtl) {
@@ -385,7 +385,11 @@ public class MediaLayout extends FrameLayoutFix implements
     switch (index) {
       case 0: return new MediaBottomContactsController(this);
       case 1: return new MediaBottomFilesController(this);
-      case 2: return new MediaBottomGalleryController(this, messageSenderId != null);
+      case 2: {
+        final var c = new MediaBottomGalleryController(this);
+        c.setArguments(new MediaBottomGalleryController.Arguments(true, messageSenderId != null));
+        return c;
+      }
       case 3: return new MediaBottomLocationController(this);
       case 4: return new MediaBottomInlineBotsController(this);
       default: throw new IllegalArgumentException("Unknown index passed: " + index);
