@@ -2694,7 +2694,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     if (tdlibSender != null) {
       cameraButton.setVisibility(View.GONE);
-      senderAvatarView.setVisibility(View.VISIBLE);
+      if (actionShowing) {
+        senderAvatarView.setVisibility(View.INVISIBLE);
+      } else {
+        senderAvatarView.setVisibility(View.VISIBLE);
+      }
     } else {
       cameraButton.setVisibility(View.VISIBLE);
       senderAvatarView.setVisibility(View.GONE);
@@ -3106,9 +3110,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         attachButtons.setVisibility(View.VISIBLE);
         sendButton.setVisibility(View.INVISIBLE);
       }
-      if (tdlibSender != null) {
-        senderAvatarView.setVisibility(View.VISIBLE);
-      }
+      displaySenderAvatarView();
     } else {
       hideActionButton();
       bottomWrap.setVisibility(View.GONE);
@@ -5708,6 +5710,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     hideAttachButtons();
     hideSendButton();
+    hideSenderAvatarView();
     hideEmojiButton();
 
     if (initialized) {
@@ -5731,6 +5734,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
 
     displayEmojiButton();
+    displaySenderAvatarView();
 
     actionShowing = false;
   }
@@ -8775,6 +8779,18 @@ public class MessagesController extends ViewController<MessagesController.Argume
     sendButton.setVisibility(View.INVISIBLE);
   }
 
+  private void displaySenderAvatarView () {
+    if (tdlibSender != null) {
+      senderAvatarView.setVisibility(View.VISIBLE);
+    }
+  }
+
+  private void hideSenderAvatarView () {
+    if (tdlibSender != null) {
+      senderAvatarView.setVisibility(View.INVISIBLE);
+    }
+  }
+
   private void displayAttachButtons () {
     attachButtons.setVisibility(View.VISIBLE);
   }
@@ -8826,7 +8842,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void updateSenderAvatar () {
-    setSenderAvatarFactor(inputView.isEmpty() ? 0f : 1f);
+    setSenderAvatarFactor((inputView != null && !inputView.isEmpty()) ? 1f : 0f);
   }
 
   private void setSenderAvatarFactor (float factor) {
