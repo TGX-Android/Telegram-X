@@ -8356,7 +8356,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return showRestriction(view, R.id.right_sendStickersAndGifs, R.string.ChatDisabledStickers, R.string.ChatRestrictedStickers, R.string.ChatRestrictedStickersUntil);
   }
 
-  private boolean showRestriction (View view, int rightId, int defaultRes, int specificRes, int specificUntilRes) {
+  public boolean showRestriction (View view, int rightId, int defaultRes, int specificRes, int specificUntilRes) {
     if (view != null) {
       CharSequence restrictionText = tdlib.getRestrictionText(chat, rightId, defaultRes, specificRes, specificUntilRes);
       if (restrictionText != null) {

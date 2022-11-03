@@ -239,7 +239,14 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
       cameraButton.setId(R.id.btn_camera);
       addThemeInvalidateListener(cameraButton);
       cameraButton.setOnClickListener(v -> {
-        onCameraRequested();
+        if (mediaLayout.getTarget() != null) {
+          mediaLayout.forceHide();
+
+          final MessagesController c = mediaLayout.getTarget();
+          if (!c.showRestriction(v, R.id.right_sendMedia, R.string.ChatDisabledMedia, R.string.ChatRestrictedMedia, R.string.ChatRestrictedMediaUntil)) {
+            openInAppCamera(new CameraOpenOptions().anchor(v).noTrace(c.isSecretChat()));
+          }
+        }
       });
       cameraButton.setLayoutParams(params);
       cameraButton.setIsVisible(true, false);
