@@ -423,16 +423,22 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private ArrayList<HapticMenuHelper.MenuItem> provideSendersItems(List<TdlibSender> senders) {
-    int max = 5;
-    ArrayList<HapticMenuHelper.MenuItem> items = new ArrayList<>(Math.min(max, senders.size()));
-    for (int i = 0; i < Math.min(senders.size(), max); i++) {
+    boolean displayMore = senders.size() > 6;
+    int sendersCount = displayMore ? 4 : senders.size() - 1;
+    ArrayList<HapticMenuHelper.MenuItem> items = new ArrayList<>(displayMore ? sendersCount + 1 : sendersCount);
+    if (displayMore) {
+      items.add(new HapticMenuHelper.MenuItem(R.id.btn_showMoreSenders, Lang.getString(R.string.MoreSenders), R.drawable.baseline_more_horiz_24));
+    }
+
+    int i = 0;
+    int addedSenders = 0;
+    while (addedSenders < sendersCount && i < senders.size() - 1) {
       TdlibSender sender = senders.get(i);
       if (sender.getSenderId() != tdlibSender.getSenderId()) {
         items.add(new HapticMenuHelper.MenuItem(-1, sender.getName(), sender.getFullUsername(), tdlib, sender));
+        addedSenders++;
       }
-    }
-    if (senders.size() >= max + 1) {
-      items.add(0, new HapticMenuHelper.MenuItem(R.id.btn_showMoreSenders, Lang.getString(R.string.MoreSenders), R.drawable.baseline_more_horiz_24));
+      i++;
     }
     return items;
   }
