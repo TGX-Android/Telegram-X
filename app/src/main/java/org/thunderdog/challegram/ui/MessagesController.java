@@ -79,7 +79,6 @@ import com.google.android.gms.location.LocationSettingsStatusCodes;
 
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
-import org.jetbrains.annotations.NotNull;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
@@ -91,6 +90,7 @@ import org.thunderdog.challegram.component.MediaCollectorDelegate;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.attach.MediaBottomFilesController;
 import org.thunderdog.challegram.component.attach.MediaLayout;
+import org.thunderdog.challegram.component.attach.MessageSendersController;
 import org.thunderdog.challegram.component.attach.SponsoredMessagesInfoController;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.chat.AttachLinearLayout;
@@ -148,7 +148,6 @@ import org.thunderdog.challegram.helper.LiveLocationHelper;
 import org.thunderdog.challegram.helper.Recorder;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
 import org.thunderdog.challegram.loader.ImageReader;
-import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.ImageStrictCache;
 import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.mediaview.MediaViewDelegate;
@@ -208,7 +207,6 @@ import org.thunderdog.challegram.unsorted.Test;
 import org.thunderdog.challegram.util.CancellableResultHandler;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.OptionDelegate;
-import org.thunderdog.challegram.util.SendAsMenuHelper;
 import org.thunderdog.challegram.util.SenderPickerDelegate;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.Unlockable;
@@ -336,8 +334,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   public boolean sponsoredMessageLoaded = false;
 
-  private List<SendAsMenuHelper.MenuItem> sendAsItems = new ArrayList<>();
-  private SendAsMenuHelper sendAsMenu;
+  private List<HapticMenuHelper.MenuItem> sendAsItems = new ArrayList<>();
+  private HapticMenuHelper sendAsMenu;
 
   public MessagesController (Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -349,6 +347,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
     TdApi.FormattedText currentText = null;
     boolean canSendWithoutMarkdown = inputView != null && !Td.equalsTo(inputView.getOutputText(true), currentText = inputView.getOutputText(false), true);
     List<HapticMenuHelper.MenuItem> items = tdlib.ui().fillDefaultHapticMenu(getChatId(), isEditingMessage(), canSendWithoutMarkdown, true);
+
+    if (sendAsItems.size() > 0) {
+//      items.add(0, new HapticMenuHelper.MenuItem(R.id.btn_sendAs, Lang.getString(R.string.SendAsEllipsis), R.drawable.dot_baseline_acc_personal_24));
+
+      if (chat != null && chat.messageSenderId != null) {
+        items.add(0, new HapticMenuHelper.MenuItem(R.id.btn_sendAs, Lang.getString(R.string.SendAsEllipsis), tdlib.getUsername(chat.messageSenderId, true), chat.messageSenderId, false, tdlib));
+      }
+
+    }
+
     if (!canSendWithoutMarkdown && tdlib.shouldSendAsDice(currentText) && !isEditingMessage()) {
       if (items == null)
         items = new ArrayList<>();
@@ -404,6 +412,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
             sendText(true, modifiedSendOptions);
           }
         });
+        break;
+      }
+      case R.id.btn_sendAs: {
+        sendAsMenu.openMenu(parentView);
         break;
       }
     }
@@ -983,13 +995,21 @@ public class MessagesController extends ViewController<MessagesController.Argume
     lp.gravity = Gravity.CENTER;
     sendAsButton = new AvatarView(context, Screen.dp(11f));
     sendAsButton.setId(R.id.msg_send_as);
-
     sendAsButton.setScaleType(ImageView.ScaleType.CENTER);
     sendAsButton.setImageResource(R.drawable.dot_baseline_acc_personal_24);
     sendAsButton.setColorFilter(Theme.iconColor());
     addThemeFilterListener(sendAsButton, R.id.theme_color_icon);
     sendAsButton.setVisibility(View.INVISIBLE);
-    sendAsButton.setOnClickListener(this);
+    sendAsButton.setOnLongClickListener(new View.OnLongClickListener() {
+      @Override
+      public boolean onLongClick (View v) {
+        if (chat != null) {
+          sendAsMenu.openMenu(v);
+          return true;
+        }
+        return false;
+      }
+    });
     sendAsButton.setLayoutParams(lp);
 
     lp = new LinearLayout.LayoutParams(Screen.dp(ATTACH_BUTTONS_WIDTH), Screen.dp(49f));
@@ -1082,7 +1102,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     sendButton.setLayoutParams(params);
 
     sendMenu = new HapticMenuHelper(this, this, getThemeListeners(), null).attachToView(sendButton);
-    sendAsMenu = new SendAsMenuHelper(view -> sendAsItems, new SendAsMenuHelper.OnItemClickListener() {
+    sendAsMenu = new HapticMenuHelper(view -> sendAsItems, new HapticMenuHelper.OnItemClickListener() {
       @Override
       public void onHapticMenuItemClick (View view, View parentView) {
 
@@ -2008,7 +2028,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         if (user == null) {
           break;
         }
-        showOptions(TD.getUserName(user) + ", " + Strings.formatPhone(user.phoneNumber), new int[] {R.id.btn_shareMyContact, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ShareMyContactInfo), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_BLUE, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_contact_phone_24, R.drawable.baseline_cancel_24}, (itemView, id1) -> {
+        showOptions(TD.getUserName(user) + ", " + Strings.formatPhone(user.phoneNumber), new int[] {R.id.btn_shareMyContact, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ShareMyContactInfo), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_BLUE, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_contact_phone_24, R.drawable.baseline_cancel_24}, (itemView, id1) -> {
           if (id1 == R.id.btn_shareMyContact) {
             sendContact(tdlib.myUser(), true, Td.newSendOptions());
           }
@@ -2333,7 +2353,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       this.highlightMessageId = null;
     }
 
-    public Arguments (TdApi.ChatList chatList, TdApi.Chat chat, @Nullable String query, @Nullable TdApi.MessageSender sender, @Nullable TdApi.SearchMessagesFilter filter,  MessageId highlightMessageId, int highlightMode) {
+    public Arguments (TdApi.ChatList chatList, TdApi.Chat chat, @Nullable String query, @Nullable TdApi.MessageSender sender, @Nullable TdApi.SearchMessagesFilter filter, MessageId highlightMessageId, int highlightMode) {
       this.constructor = 4;
       this.chat = chat;
       this.chatList = chatList;
@@ -2579,7 +2599,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           manager.openEventLog(chat);
           messagesView.setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 120l));
           if (getArgumentsStrict().eventLogUserId != 0 && headerCell != null) {
-            manager.applyEventLogFilters(new TdApi.ChatEventLogFilters(true, true, true, true, true, true, true, true, true, true, true, true), new long[] { getArgumentsStrict().eventLogUserId });
+            manager.applyEventLogFilters(new TdApi.ChatEventLogFilters(true, true, true, true, true, true, true, true, true, true, true, true), new long[] {getArgumentsStrict().eventLogUserId});
           }
           break;
         case PREVIEW_MODE_SEARCH:
@@ -2600,13 +2620,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
 
     if (chat.messageSenderId != null) {
-      TdApi.User user = tdlib.myUser();
-      if (chat.messageSenderId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR
-        && (Td.getSenderId(chat.messageSenderId) == user.id)) {
-        sendAsButton.setImageResource(R.drawable.dot_baseline_acc_personal_24);
-      } else {
-        sendAsButton.setMessageSender(tdlib, chat.messageSenderId);
-      }
+      sendAsButton.setMessageSender(tdlib, chat.messageSenderId);
     }
 
     if (inputView != null) {
@@ -2729,26 +2743,21 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (chat == null || getChatId() == 0) return;
 
     boolean supergroup = TD.isSupergroup(chat.type);
-
-    boolean isAdmin = TD.isAdmin(tdlib.chatStatus(chat.id));
-
-    boolean isMultiChat = ChatId.isMultiChat(chat.id);
-    boolean isPrivate = ChatId.isPrivate(chat.id);
     boolean isPublicChat = tdlib.isPublicChat(getChatId());
-    boolean isChannelChat = tdlib.isChannelChat(chat);
-    boolean isRepliesChat = tdlib.isRepliesChat(getChatId());
 
-    boolean showSendAs = (isAdmin || (supergroup || isMultiChat)) && isPublicChat;
+    boolean checkSendAs = supergroup && isPublicChat;
 
-    sendAsButton.setVisibility(showSendAs ? View.VISIBLE : View.INVISIBLE);
-    cameraButton.setVisible(!showSendAs);
-    cameraButton.setTranslationX(sendAsButton.getLayoutParams().width);
-    attachButtons.updatePivot();
-
-    if (showSendAs) {
+    if (checkSendAs) {
       initSendAsItems();
+    } else {
+      cameraButton.setVisible(true);
+      sendAsButton.setVisibility(View.GONE);
+      cameraButton.setTranslationX(sendAsButton.getLayoutParams().width - Screen.dp(20f));
+      attachButtons.updatePivot();
     }
   }
+
+
 
   private void initSendAsItems () {
     tdlib.send(new TdApi.GetChatAvailableMessageSenders(chat.id), new Client.ResultHandler() {
@@ -2756,38 +2765,44 @@ public class MessagesController extends ViewController<MessagesController.Argume
       public void onResult (TdApi.Object object) {
         sendAsItems.clear();
 
-        boolean selfChat = tdlib.isSelfChat(chat);
         TdApi.User currentUser = tdlib.myUser();
         boolean isPremium = currentUser.isPremium;
-        if (selfChat) {
-          TdApi.MessageSenderUser selfUserSender = new TdApi.MessageSenderUser(currentUser.id);
-          SendAsMenuHelper.MenuItem currentUserItem = new SendAsMenuHelper.MenuItem(0, currentUser.firstName + " " + currentUser.lastName, Lang.getString(R.string.YourAccount), selfUserSender, false, tdlib);
-          sendAsItems.add(currentUserItem);
-        }
 
         if (object.getConstructor() == TdApi.ChatMessageSenders.CONSTRUCTOR) {
           TdApi.ChatMessageSenders senders = (TdApi.ChatMessageSenders) object;
-          if (senders.senders != null && senders.senders.length > 0) {
+
+          boolean hasSenders = senders.senders != null && senders.senders.length > 0;
+
+          sendAsButton.setVisibility(hasSenders ? View.VISIBLE : View.GONE);
+          cameraButton.setVisibility(!hasSenders ? View.VISIBLE : View.GONE);
+          cameraButton.setTranslationX(!hasSenders ? 0 : sendAsButton.getLayoutParams().width);
+
+          attachButtons.updatePivot();
+
+          if (hasSenders) {
 
             int maxCountToShow = 5;
             boolean needShowMoreButton = senders.senders.length > maxCountToShow;
-            int countToShow = Math.min(senders.senders.length, maxCountToShow - 1);
+            List<TdApi.ChatMessageSender> filtered = Arrays.stream(senders.senders)
+              .filter(s -> !TD.equalSenders(s.sender, chat.messageSenderId))
+              .collect(Collectors.toList());
+            int countToShow = Math.min(filtered.size(), maxCountToShow - 1);
 
             for (int i = 0; i < countToShow; i++) {
-              TdApi.ChatMessageSender sender = senders.senders[i];
+              TdApi.ChatMessageSender sender = filtered.get(i);
               TdApi.MessageSender messageSender = sender.sender;
 
-              SendAsMenuHelper.MenuItem item = null;
+              HapticMenuHelper.MenuItem item = null;
               if (messageSender.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR) {
                 TdApi.MessageSenderChat messageSenderChat = (TdApi.MessageSenderChat) messageSender;
                 TdApi.Chat sendAsChat = tdlib.chat(messageSenderChat.chatId);
                 if (sendAsChat == null) continue;
                 String chatTitle = sendAsChat.title;
                 if (tdlib.isMultiChat(sendAsChat) && Td.isAnonymous(tdlib.chatStatus(sendAsChat.id)) /*&& !tdlib.isChannel(chat.messageSenderId)*/) {
-                  item = new SendAsMenuHelper.MenuItem(i, chatTitle, Lang.getString(R.string.AnonymousAdmin), messageSender, sender.needsPremium && !isPremium, tdlib);
+                  item = new HapticMenuHelper.MenuItem(i, chatTitle, Lang.getString(R.string.AnonymousAdmin), messageSender, sender.needsPremium && !isPremium, tdlib);
                 } else {
                   String chatUsername = tdlib.chatUsername(messageSenderChat.chatId);
-                  item = new SendAsMenuHelper.MenuItem(i, chatTitle, "@" + chatUsername, messageSender, sender.needsPremium && !isPremium, tdlib);
+                  item = new HapticMenuHelper.MenuItem(i, chatTitle, "@" + chatUsername, messageSender, sender.needsPremium && !isPremium, tdlib);
                 }
 
               } else {
@@ -2795,25 +2810,33 @@ public class MessagesController extends ViewController<MessagesController.Argume
                 TdApi.User user = tdlib.cache().user(senderUser.userId);
                 if (user == null) continue;
 
-                item = new SendAsMenuHelper.MenuItem(i, user.firstName + " " + user.lastName, "@" + user.username, messageSender, sender.needsPremium && !isPremium, tdlib);
+                item = new HapticMenuHelper.MenuItem(i, user.firstName + " " + user.lastName, Lang.getString(R.string.YourAccount), messageSender, sender.needsPremium && !isPremium, tdlib);
               }
 
               sendAsItems.add(item);
             }
 
             if (needShowMoreButton) {
-              SendAsMenuHelper.MenuItem item = new SendAsMenuHelper.MenuItem(R.id.msg_send_as_more, Lang.getString(R.string.MoreMessageOptions), R.drawable.baseline_more_horiz_24);
+              HapticMenuHelper.MenuItem item = new HapticMenuHelper.MenuItem(R.id.msg_send_as_more, Lang.getString(R.string.MoreMessageOptions), R.drawable.baseline_more_horiz_24);
               sendAsItems.add(0, item);
             }
           }
         }
 
-        for (final SendAsMenuHelper.MenuItem sendAsItem : sendAsItems) {
+        for (final HapticMenuHelper.MenuItem sendAsItem : sendAsItems) {
           sendAsItem.setOnClickListener(v -> {
 
             switch (sendAsItem.id) {
               case R.id.msg_send_as_more:
-                //todo: show account selector sheet
+                runOnUiThreadOptional(() -> {
+
+                  MessageSendersController sendersController = new MessageSendersController(context, tdlib);
+                  MessageSendersController.Args args = new MessageSendersController.Args()
+                    .setCurrentChat(chat)
+                    .setSelected(chat.messageSenderId);
+                  sendersController.setArguments(args);
+                  sendersController.show();
+                });
                 break;
               default: {
                 TdApi.MessageSender messageSender = sendAsItem.sender;
@@ -2997,6 +3020,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         updateInputHint();
         if (sendAsButton.getVisibility() == View.VISIBLE) {
           sendAsButton.setMessageSender(tdlib, senderId);
+          updateSendAs();
         }
       }
     });
@@ -5070,7 +5094,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           TdApi.Message message = selectedMessage.getMessage();
           TdApi.Poll poll = ((TdApi.MessagePoll) message.content).poll;
           boolean isQuiz = poll.type.getConstructor() == TdApi.PollTypeQuiz.CONSTRUCTOR;
-          showOptions(Lang.getStringBold(isQuiz ? R.string.StopQuizWarn : R.string.StopPollWarn, poll.question), new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {Lang.getString(isQuiz ? R.string.StopQuiz : R.string.StopPoll), Lang.getString(R.string.Cancel)}, new int [] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_poll_24, R.drawable.baseline_cancel_24}, (optionItemView, optionId) -> {
+          showOptions(Lang.getStringBold(isQuiz ? R.string.StopQuizWarn : R.string.StopPollWarn, poll.question), new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {Lang.getString(isQuiz ? R.string.StopQuiz : R.string.StopPoll), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_poll_24, R.drawable.baseline_cancel_24}, (optionItemView, optionId) -> {
             if (optionId == R.id.btn_done) {
               tdlib.client().send(new TdApi.StopPoll(message.chatId, message.id, message.replyMarkup), tdlib.okHandler());
             }
@@ -5146,7 +5170,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             }
             case TdApi.MessageLocation.CONSTRUCTOR: {
               TdApi.Location location = ((TdApi.MessageLocation) content).location;
-              Intents.openDirections(location.latitude, location.longitude, null,null);
+              Intents.openDirections(location.latitude, location.longitude, null, null);
               break;
             }
           }
@@ -5521,7 +5545,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     boolean animateButtonContent = animated && bottomBarVisible.getFloatValue() > 0f;
     switch (bottomButtonAction) {
       case BOTTOM_ACTION_FOLLOW:
-        bottomBar.setAction(R.id.btn_follow, Lang.getString(R.string.Follow),  R.drawable.baseline_group_add_24, animateButtonContent);
+        bottomBar.setAction(R.id.btn_follow, Lang.getString(R.string.Follow), R.drawable.baseline_group_add_24, animateButtonContent);
         bottomBar.clearPreviewChat();
         break;
       case BOTTOM_ACTION_DISCUSS:
@@ -5905,7 +5929,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
 
-
   private static final int ANIMATOR_REACTION_BUTTON = 15;
   private FactorAnimator reactionButtonAnimator;
   private boolean reactionButtonVisible;
@@ -5951,7 +5974,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
       updateBottomBarStyle();
     }
   }
-
 
 
   // Etc
@@ -6553,7 +6575,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   // Share utils
 
   public void shareMessage (TdApi.Message msg) {
-    shareMessages(msg.chatId, new TdApi.Message[]{msg});
+    shareMessages(msg.chatId, new TdApi.Message[] {msg});
   }
 
   public void shareMessages (long chatId, TdApi.Message[] messages) {
@@ -6976,8 +6998,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
           Location location = null;
           try {
             location = LocationServices.FusedLocationApi.getLastLocation(client);
-          } catch (SecurityException ignored) { }
-          catch (Throwable t) {
+          } catch (SecurityException ignored) {
+          } catch (Throwable t) {
             Log.w("getLastLocation error", t);
           }
           if (location == null && USE_LAST_KNOWN_LOCATION) {
@@ -7017,8 +7039,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
           timeout[0].cancel();
           try {
             manager.removeUpdates(this);
-          } catch (SecurityException ignored) { }
-          catch (Throwable t) {
+          } catch (SecurityException ignored) {
+          } catch (Throwable t) {
             Log.w("removeUpdates failed. Probable resource leak", t);
           }
           if (!sent[0]) {
@@ -7028,13 +7050,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
 
         @Override
-        public void onStatusChanged (String provider, int status, Bundle extras) { }
+        public void onStatusChanged (String provider, int status, Bundle extras) {}
 
         @Override
-        public void onProviderEnabled (String provider) { }
+        public void onProviderEnabled (String provider) {}
 
         @Override
-        public void onProviderDisabled (String provider) { }
+        public void onProviderDisabled (String provider) {}
       };
       timeout[0] = new CancellableRunnable() {
         @Override
@@ -7482,7 +7504,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           items.add(new TopBarView.Item(R.id.btn_shareMyContact, R.string.SharePhoneNumber, v -> {
             TdApi.User user = tdlib.myUser();
             if (user != null) {
-              showOptions(TD.getUserName(user) + ", " + Strings.formatPhone(user.phoneNumber), new int[]{R.id.btn_shareMyContact, R.id.btn_cancel}, new String[]{Lang.getString(R.string.SharePhoneNumberAction), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_BLUE, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_contact_phone_24, R.drawable.baseline_cancel_24}, (itemView, id1) -> {
+              showOptions(TD.getUserName(user) + ", " + Strings.formatPhone(user.phoneNumber), new int[] {R.id.btn_shareMyContact, R.id.btn_cancel}, new String[] {Lang.getString(R.string.SharePhoneNumberAction), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_BLUE, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_contact_phone_24, R.drawable.baseline_cancel_24}, (itemView, id1) -> {
                 if (id1 == R.id.btn_shareMyContact) {
                   tdlib.client().send(new TdApi.SharePhoneNumber(tdlib.chatUserId(chatId)), tdlib.okHandler());
                 }
@@ -7780,7 +7802,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       addThemeSpecialFilterListener(stickerSuggestionArrowView, R.id.theme_color_overlayFilling);
       stickerSuggestionArrowView.setLayoutParams(fparams);
       stickerSuggestionsWrap.addView(stickerSuggestionArrowView);
-    } else if (isMore && stickerSuggestionAdapter.hasStickers() ) {
+    } else if (isMore && stickerSuggestionAdapter.hasStickers()) {
       stickerSuggestionAdapter.addStickers(stickers);
     } else {
       stickerSuggestionAdapter.setStickers(stickers);
@@ -9710,7 +9732,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   @Override
-  public void onChatReadInbox(final long chatId, final long lastReadInboxMessageId, final int unreadCount, boolean availabilityChanged) {
+  public void onChatReadInbox (final long chatId, final long lastReadInboxMessageId, final int unreadCount, boolean availabilityChanged) {
     tdlib.ui().post(() -> {
       if (getChatId() == chatId) {
         updateCounters(true);
@@ -9719,7 +9741,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   @Override
-  public void onChatUnreadMentionCount(final long chatId, final int unreadMentionCount, boolean availabilityChanged) {
+  public void onChatUnreadMentionCount (final long chatId, final int unreadMentionCount, boolean availabilityChanged) {
     tdlib.ui().post(() -> {
       if (getChatId() == chatId) {
         updateCounters(true);
@@ -9801,7 +9823,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   @Override
-  public void onUserUpdated (TdApi.User user) { }
+  public void onUserUpdated (TdApi.User user) {}
 
   @Override
   public void onUserFullUpdated (final long userId, final TdApi.UserFullInfo userFull) {
@@ -10169,7 +10191,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       datePickerDialog.getDatePicker().setMinDate(minDate);
     } catch (Throwable ignored) {
       if (minDate != sourceMinDate) {
-        try { datePickerDialog.getDatePicker().setMinDate(sourceMinDate); } catch (Throwable ignored1) { }
+        try {
+          datePickerDialog.getDatePicker().setMinDate(sourceMinDate);
+        } catch (Throwable ignored1) {
+        }
       }
     }
 

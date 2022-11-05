@@ -1,0 +1,263 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014-2022 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * File created on 20/10/2016
+ */
+package org.thunderdog.challegram.component.chat;
+
+import android.content.Context;
+import android.view.View;
+import android.view.ViewGroup;
+
+import androidx.annotation.Nullable;
+import androidx.collection.LongSparseArray;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.component.attach.MeasuredAdapterDelegate;
+import org.thunderdog.challegram.component.user.UserView;
+import org.thunderdog.challegram.data.TGMessageSender;
+import org.thunderdog.challegram.data.TGUser;
+import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Views;
+
+import java.util.List;
+
+import me.vkryl.android.ViewUtils;
+
+public class MessageSendersAdapter extends RecyclerView.Adapter<MessageSendersAdapter.MessageSenderHolder> implements View.OnClickListener, View.OnLongClickListener, MeasuredAdapterDelegate {
+  public interface Callback {
+    void onUserPicked (TGUser user);
+    void onUserSelected (int selectedCount, TGUser user, boolean isSelected);
+  }
+
+  public static final int OPTION_CLICKABLE = 0x01;
+  public static final int OPTION_SELECTABLE = 0x02;
+  public static final int OPTION_COUNTER = 0x04;
+
+  private final ViewController<?> context;
+  private final Callback callback;
+  private final boolean isClickable;
+  private final boolean isSelectable;
+  private final boolean needCounter;
+  private final @Nullable ViewController<?> themeProvider;
+
+  public MessageSendersAdapter(ViewController<?> context, Callback callback, int options, @Nullable  ViewController<?> themeProvider) {
+    this.context = context;
+    this.callback = callback;
+    this.isClickable = (options & OPTION_CLICKABLE) != 0;
+    this.isSelectable = (options & OPTION_SELECTABLE) != 0;
+    this.selected = isSelectable ? new LongSparseArray<>() : null;
+    this.needCounter = (options & OPTION_COUNTER) != 0;
+    this.themeProvider = themeProvider;
+  }
+
+  private List<TGUser> users;
+  private final LongSparseArray<TGUser> selected;
+
+  private List<TGMessageSender> senders;
+
+  private TGMessageSender selectedSender;
+
+  public void setUsers (List<TGUser> users) {
+    int oldItemCount = getItemCount();
+    this.users = users;
+    U.notifyItemsReplaced(this, oldItemCount);
+  }
+
+  public LongSparseArray<TGUser> getSelectedUsers () {
+    return selected;
+  }
+
+  public void clearSelectedUsers (LinearLayoutManager manager) {
+    if (!isSelectable || users == null || users.isEmpty()) {
+      return;
+    }
+    selected.clear();
+    int first = manager.findFirstVisibleItemPosition();
+    int last = manager.findLastVisibleItemPosition();
+    for (int i = first; i <= last; i++) {
+      if (getItemViewType(i) == MessageSenderHolder.VIEW_TYPE_USER) {
+        View view = manager.findViewByPosition(i);
+        if (view != null) {
+          ((UserView) view).setChecked(false, true);
+        }
+      }
+    }
+    if (first > 0) {
+      notifyItemRangeChanged(0, first);
+    }
+    if (last < users.size()) {
+      notifyItemRangeChanged(last, users.size() - last);
+    }
+  }
+
+  @Override
+  public MessageSenderHolder onCreateViewHolder (ViewGroup parent, int viewType) {
+    return MessageSenderHolder.create(context.context(), context.tdlib(), viewType, isClickable ? this : null, isSelectable ? this : null, themeProvider);
+  }
+
+  @Override
+  public void onBindViewHolder (MessageSenderHolder holder, int position) {
+    TGUser user = users.get(position);
+    if (isSelectable) {
+      holder.setUser(user, selected.get(user.getUserId()) != null);
+    } else {
+      holder.setUser(user);
+    }
+  }
+
+  @Override
+  public void onViewAttachedToWindow (MessageSenderHolder holder) {
+    if (holder.getItemViewType() == MessageSenderHolder.VIEW_TYPE_USER) {
+      ((UserView) holder.itemView).attachReceiver();
+    }
+  }
+
+  @Override
+  public void onViewDetachedFromWindow (MessageSenderHolder holder) {
+    if (holder.getItemViewType() == MessageSenderHolder.VIEW_TYPE_USER) {
+      ((UserView) holder.itemView).detachReceiver();
+    }
+  }
+
+  @Override
+  public int getItemCount () {
+    return users != null && !users.isEmpty() ? users.size() + (needCounter ? 1 : 0) : 0;
+  }
+
+  @Override
+  public int getItemViewType (int position) {
+    return users != null && !users.isEmpty() && position == users.size() ? MessageSenderHolder.VIEW_TYPE_COUNTER : MessageSenderHolder.VIEW_TYPE_USER;
+  }
+
+  @Override
+  public void onClick (View v) {
+    if (!isSelectable) {
+      if (callback != null) {
+        callback.onUserPicked(((UserView) v).getUser());
+      }
+      return;
+    }
+
+    TGUser user = ((UserView) v).getUser();
+
+    boolean inSelectMode = selected.size() > 0;
+    boolean isSelected = selected.get(user.getUserId()) != null;
+
+    if (isSelected) {
+      selected.remove(user.getUserId());
+    } else if (inSelectMode) {
+      selected.put(user.getUserId(), user);
+    }
+
+    if (inSelectMode) {
+      ((UserView) v).setChecked(!isSelected, true);
+    }
+
+    if (callback != null) {
+      if (inSelectMode) {
+        callback.onUserSelected(selected.size(), user, !isSelected);
+      } else {
+        callback.onUserPicked(user);
+      }
+    }
+  }
+
+  @Override
+  public boolean onLongClick (View v) {
+    TGUser user = ((UserView) v).getUser();
+    boolean isSelected = selected.get(user.getUserId()) != null;
+
+    if (isSelected) {
+      selected.remove(user.getUserId());
+    } else {
+      selected.put(user.getUserId(), user);
+    }
+
+    ((UserView) v).setChecked(!isSelected, true);
+    if (callback != null) {
+      callback.onUserSelected(selected.size(), user, !isSelected);
+    }
+
+    return true;
+  }
+
+  @Override
+  public int measureHeight (int maxHeight) {
+    if (getItemCount() == 0) {
+      return 0;
+    }
+    int fullHeight = Screen.dp(UserView.DEFAULT_HEIGHT) * users.size() + (needCounter ? Screen.dp(42f) : 0);
+    return maxHeight < 0 ? fullHeight : Math.min(maxHeight, fullHeight);
+  }
+
+  @Override
+  public int measureScrollTop (int position) {
+    return Screen.dp(UserView.DEFAULT_HEIGHT) * position;
+  }
+
+  static class MessageSenderHolder extends RecyclerView.ViewHolder {
+    public static final int VIEW_TYPE_USER = 0;
+    public static final int VIEW_TYPE_COUNTER = 1;
+
+    public MessageSenderHolder (View itemView) {
+      super(itemView);
+    }
+
+    public void setUser (TGUser user, boolean checked) {
+      ((UserView) itemView).setUser(user);
+      ((UserView) itemView).setChecked(checked, false);
+    }
+
+    public void setUser (TGUser user) {
+      ((UserView) itemView).setUser(user);
+    }
+
+    public static MessageSenderHolder create (Context context, Tdlib tdlib, int viewType, View.OnClickListener onClickListener, View.OnLongClickListener onLongClickListener, @Nullable ViewController<?> themeProvider) {
+      switch (viewType) {
+        case VIEW_TYPE_USER: {
+
+          int offsetLeft = Screen.dp(18f);
+
+          UserView userView;
+          userView = new UserView(context, tdlib);
+          userView.setOffsetLeft(offsetLeft);
+          if (themeProvider != null) {
+            themeProvider.addThemeInvalidateListener(userView);
+          }
+
+          if (onClickListener != null || onLongClickListener != null) {
+            userView.setOnClickListener(onClickListener);
+            userView.setOnLongClickListener(onLongClickListener);
+            ViewUtils.setBackground(userView, Theme.fillingSelector(R.id.theme_color_chatBackground));
+            Views.setClickable(userView);
+          }
+
+          return new MessageSenderHolder(userView);
+        }
+        case VIEW_TYPE_COUNTER: {
+          // TODO
+          return null;
+        }
+        default: {
+          throw new IllegalArgumentException("viewType is unknown");
+        }
+      }
+    }
+  }
+}

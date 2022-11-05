@@ -21,6 +21,8 @@ import android.view.ViewParent;
 import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.data.SenderAvatarInfo;
 import org.thunderdog.challegram.navigation.MenuMoreWrap;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
@@ -33,6 +35,7 @@ import org.thunderdog.challegram.widget.PopupLayout;
 import java.util.List;
 
 import me.vkryl.core.lambda.Destroyable;
+import me.vkryl.td.Td;
 
 public class HapticMenuHelper implements View.OnTouchListener, View.OnLongClickListener {
   public interface Provider {
@@ -46,21 +49,49 @@ public class HapticMenuHelper implements View.OnTouchListener, View.OnLongClickL
   public static class MenuItem implements Destroyable {
     public final int id;
     public final CharSequence title;
+    public final CharSequence username;
+    public final TdApi.MessageSender sender;
+    public final boolean needPremium;
+    private final Drawable icon;
+    public boolean isPersonal;
+    public final SenderAvatarInfo senderAvatarInfo;
     public final int iconResId;
-    public final Drawable icon;
 
     private Tdlib tdlib;
     private long userId;
     private TdlibCache.UserStatusChangeListener userStatusChangeListener;
 
     private View.OnClickListener onClickListener;
-
+    private boolean visible = true;
     private long tutorialFlag;
+
+
+    public MenuItem (int id, CharSequence title, CharSequence username, TdApi.MessageSender sender, boolean needPremium, Tdlib tdlib) {
+      this.id = id;
+      this.title = title;
+      this.username = username;
+      this.sender = sender;
+      this.needPremium = needPremium;
+      this.senderAvatarInfo = new SenderAvatarInfo(sender, tdlib);
+      this.iconResId = 0;
+      this.icon = null;
+      TdApi.User user = tdlib.myUser();
+      if (user != null) {
+        long senderUserId = Td.getSenderUserId(sender);
+        if (senderUserId != 0) {
+          isPersonal = user.id == senderUserId;
+        }
+      }
+    }
 
     public MenuItem (int id, CharSequence title, int iconResId) {
       this.id = id;
       this.title = title;
       this.iconResId = iconResId;
+      username = null;
+      sender = null;
+      needPremium = false;
+      senderAvatarInfo = null;
       this.icon = null;
     }
 
@@ -69,6 +100,10 @@ public class HapticMenuHelper implements View.OnTouchListener, View.OnLongClickL
       this.title = title;
       this.iconResId = 0;
       this.icon = icon;
+      username = null;
+      sender = null;
+      needPremium = false;
+      senderAvatarInfo = null;
     }
 
     public MenuItem setOnClickListener (View.OnClickListener onClickListener) {
@@ -99,7 +134,11 @@ public class HapticMenuHelper implements View.OnTouchListener, View.OnLongClickL
     }
 
     public boolean isVisible () {
-      return userId == 0 || tdlib == null || tdlib.cache().userLastSeenAvailable(userId);
+      return visible || userId == 0 || tdlib == null || tdlib.cache().userLastSeenAvailable(userId);
+    }
+
+    public void setVisible(boolean visible) {
+      this.visible = visible;
     }
 
     @Nullable
@@ -219,13 +258,25 @@ public class HapticMenuHelper implements View.OnTouchListener, View.OnLongClickL
       v.setTranslationY(resultCenterY - centerY);
     });
     moreWrap.init(themeListeners, forcedTheme);
-    for (MenuItem item : items) {
-      item.boundView = moreWrap.addItem(item.id, item.title, item.iconResId, item.icon, itemView -> onMenuItemClick(item, itemView, view));
+    for (int i = 0; i < items.size(); i++) {
+      MenuItem item = items.get(i);
+      if (item.sender == null || item.id == R.id.msg_send_as_more) {
+        item.boundView = moreWrap.addItem(item.id, item.title, item.iconResId, null, itemView -> onMenuItemClick(item, itemView, view));
+      } else {
+        item.boundView = moreWrap.addItem(i, item, itemView -> onMenuItemClick(item, itemView, view));
+      }
       item.boundView.setVisibility(item.isVisible() ? View.VISIBLE : View.GONE);
       if (item.tutorialFlag != 0) {
         Settings.instance().markTutorialAsComplete(item.tutorialFlag);
       }
     }
+//    for (MenuItem item : items) {
+//      item.boundView = moreWrap.addItem(item.id, item.title, item.iconResId, item.icon, itemView -> onMenuItemClick(item, itemView, view));
+//      item.boundView.setVisibility(item.isVisible() ? View.VISIBLE : View.GONE);
+//      if (item.tutorialFlag != 0) {
+//        Settings.instance().markTutorialAsComplete(item.tutorialFlag);
+//      }
+//    }
     moreWrap.setAnchorMode(MenuMoreWrap.ANCHOR_MODE_RIGHT);
     moreWrap.setShouldPivotBottom(true);
     moreWrap.setRightNumber(0);

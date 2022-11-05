@@ -231,6 +231,7 @@ public class AvatarView extends ImageView implements Destroyable, TdlibCache.Use
         receiver.clear();
       }
     }
+    chat = null;
     hasIcon = false;
   }
 
@@ -250,6 +251,7 @@ public class AvatarView extends ImageView implements Destroyable, TdlibCache.Use
         receiver.clear();
       }
     }
+    user = null;
     hasIcon = false;
   }
 
@@ -259,13 +261,17 @@ public class AvatarView extends ImageView implements Destroyable, TdlibCache.Use
       TdApi.MessageSenderChat senderChat = (TdApi.MessageSenderChat) messageSender;
       TdApi.Chat chat = tdlib.chat(senderChat.chatId);
       if (chat != null) {
-        setChat(tdlib, chat);
+        if (!tdlib.isChannel(senderChat)) {
+          setImageResource(R.drawable.dot_baseline_acc_anon_24);
+        } else {
+          setChat(tdlib, chat);
+        }
       }
     } else if (messageSender.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR) {
       TdApi.MessageSenderUser senderUser = (TdApi.MessageSenderUser) messageSender;
       TdApi.User user = tdlib.cache().user(senderUser.userId);
       if (user != null) {
-        setUser(tdlib, user, true);
+        setImageResource(R.drawable.dot_baseline_acc_personal_24);
       }
     }
   }
@@ -406,8 +412,15 @@ public class AvatarView extends ImageView implements Destroyable, TdlibCache.Use
   }
   @Override
   public void setImageResource (int resId) {
-    super.setImageResource(resId);
+    user = null;
+    chat = null;
+    receiver.clear();
     hasIcon = true;
+    super.setImageResource(resId);
+  }
+
+  public boolean isVisible() {
+    return getVisibility() == View.VISIBLE;
   }
 
 }

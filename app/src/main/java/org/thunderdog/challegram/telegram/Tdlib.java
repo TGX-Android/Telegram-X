@@ -91,6 +91,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import me.vkryl.core.ArrayUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.FileUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
@@ -102,7 +103,6 @@ import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.lambda.RunnableInt;
 import me.vkryl.core.lambda.RunnableLong;
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.util.ConditionalExecutor;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.ChatPosition;
@@ -9484,6 +9484,30 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         }
       }
       return suggestedAction;
+    }
+  }
+
+  public String getUsername(TdApi.MessageSender messageSender) {
+    return getUsername(messageSender, false);
+  }
+
+  public String getUsername(TdApi.MessageSender messageSender, boolean hidePersonalName) {
+    if (messageSender == null) return "";
+    if (messageSender.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR) {
+      TdApi.MessageSenderChat messageSenderChat = (TdApi.MessageSenderChat) messageSender;
+      TdApi.Chat sendAsChat = chat(messageSenderChat.chatId);
+      if (sendAsChat == null) return "";
+      if (isMultiChat(sendAsChat) && Td.isAnonymous(chatStatus(sendAsChat.id)) ) {
+        return Lang.getString(R.string.AnonymousAdmin);
+      } else {
+        return chatUsername(messageSenderChat.chatId);
+      }
+    } else {
+      if (hidePersonalName) return Lang.getString(R.string.YourAccount);
+      TdApi.MessageSenderUser senderUser = (TdApi.MessageSenderUser) messageSender;
+      TdApi.User user = cache().user(senderUser.userId);
+      if (user == null) return "";
+      return user.username;
     }
   }
 }

@@ -1131,7 +1131,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   protected void onDraw (Canvas c) {
     if (needShowPlaceholderAnimator.getFloatValue() > 0) {
       int verticalOffset = !StringUtils.isEmptyOrBlank(subPlaceholder) ? Screen.dp(23f) : Screen.dp(15f);
-      mainPlaceholderText.draw(c, getPaddingLeft(), getBaseline() - verticalOffset, null, needShowPlaceholderAnimator.getFloatValue());
+      if (mainPlaceholderText != null) {
+        mainPlaceholderText.draw(c, getPaddingLeft(), getBaseline() - verticalOffset, null, needShowPlaceholderAnimator.getFloatValue());
+      }
       subAnimator.iterator().forEachRemaining(entry -> {
         entry.item.draw(c, getPaddingLeft(), getBaseline() - Screen.dp(3f), null, entry.getVisibility());
       });

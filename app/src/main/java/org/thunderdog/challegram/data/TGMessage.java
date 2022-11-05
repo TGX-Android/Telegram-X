@@ -1260,7 +1260,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       return true;
     if (isPsa() && forceForwardedInfo())
       return true;
-    if (isOutgoing() && sender.isAnonymousGroupAdmin())
+    if (isOutgoing() && (sender.isAnonymousGroupAdmin() || sender.isChannel()))
       return true;
     if (chat != null) {
       switch (chat.type.getConstructor()) {

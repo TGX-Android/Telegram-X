@@ -227,6 +227,7 @@
   <item type="id" name="controller_chatLinks" />
   <item type="id" name="controller_chatLinkMembers" />
   <item type="id" name="controller_sponsoredMessagesInfo" />
+  <item type="id" name="controller_senders" />
 
   <item type="id" name="separator" />
 
@@ -685,6 +686,7 @@
   <item type="id" name="btn_sendToast" />
   <item type="id" name="btn_sendNoSound" />
   <item type="id" name="btn_sendAsFile" />
+  <item type="id" name="btn_sendAs" />
 
   <item type="id" name="btn_ledDisabled" />
 
@@ -1221,4 +1223,5 @@
   <item type="id" name="btn_themeCreateInfo" />
   <item type="id" name="btn_themeExportNeedDefault" />
   <item type="id" name="btn_themeExportSetAuthor" />
+
 </resources>

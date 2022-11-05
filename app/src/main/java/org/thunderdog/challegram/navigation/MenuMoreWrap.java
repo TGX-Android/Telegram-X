@@ -47,7 +47,7 @@ import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
-import org.thunderdog.challegram.util.SendAsMenuHelper;
+import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 
 import me.vkryl.android.AnimatorUtils;
@@ -161,46 +161,18 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     menuItem.setTag(menuItem.getMeasuredWidth());
   }
 
-  public View addItem (SendAsMenuHelper.MenuItem senderMenuItem, OnClickListener listener) {
-    final FrameLayout frameLayout = new FrameLayout(getContext()) {
-      @Override
-      protected void onDraw (Canvas canvas) {
-        super.onDraw(canvas);
-        if (senderMenuItem.senderAvatarInfo != null) {
-          int left = Screen.dp(20f);
-          int top = this.getTop() - (Screen.dp(43f) + (Screen.dp(50f)) * (senderMenuItem.id - 1));
-          int bottom = this.getTop() - (Screen.dp(23f) + Screen.dp(50f) * (senderMenuItem.id - 1));
+  private boolean hasSender(HapticMenuHelper.MenuItem menuItem) {
+    return menuItem.sender != null;
+  }
 
-          if (senderMenuItem.isPersonal) {
-            Drawable icon = Drawables.get(getResources(), R.drawable.dot_baseline_acc_personal_24);
-            Drawables.draw(canvas, icon, left - Screen.dp(2f), top, Paints.getPorterDuffPaint(Theme.getColor(R.id.theme_color_textLight)));
-          } else {
-            if (senderMenuItem.senderAvatarInfo.hasAvatar()) {
-              ImageReceiver imageReceiver = complexReceiver.getImageReceiver(senderMenuItem.id);
-              imageReceiver.setBounds(left, top, left + 2 * Screen.dp(10f), bottom);
-              imageReceiver.setRadius(Screen.dp(10f));
-              imageReceiver.draw(canvas);
-            } else {
-              AvatarPlaceholder avatarPlaceholder = new AvatarPlaceholder(Screen.dp(10f), senderMenuItem.senderAvatarInfo.getAvatarMetadata(), null);
-              avatarPlaceholder.draw(canvas, left + Screen.dp(10f), top + Screen.dp(10f), 1f, Screen.dp(10f));
-            }
-          }
-        }
-
-        if (senderMenuItem.needPremium) {
-          Drawable icon = Drawables.get(getResources(), R.drawable.baseline_lock_16);
-          float x = getMeasuredWidth() - Screen.dp(18 + 16);
-          float y = (getMeasuredHeight() - icon.getMinimumHeight()) / 2f;
-          Drawables.draw(canvas, icon, x, y, Paints.getPorterDuffPaint(Theme.getColor(R.id.theme_color_text)));
-        }
-      }
-    };
+  public View addItem (int index, HapticMenuHelper.MenuItem senderMenuItem, OnClickListener listener) {
+    if (!hasSender(senderMenuItem)) {
+      return addItem(senderMenuItem.id, senderMenuItem.title, senderMenuItem.iconResId, null, listener);
+    }
 
     final int maxWidth = Screen.dp(senderMenuItem.needPremium ? 250: 200);
     final int rightOffset = Screen.dp(senderMenuItem.needPremium ? 48: 18);
-    FrameLayout.LayoutParams lp = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(50), Gravity.LEFT);
 
-    frameLayout.setLayoutParams(lp);
     TextView titleText = new NoScrollTextView(getContext());
     titleText.setId(senderMenuItem.id);
     titleText.setTypeface(Fonts.getRobotoRegular());
@@ -241,9 +213,46 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
       }
     }
 
-    if (senderMenuItem.senderAvatarInfo.hasAvatar()) {
+    if (senderMenuItem.senderAvatarInfo != null && senderMenuItem.senderAvatarInfo.hasAvatar()) {
       complexReceiver.getImageReceiver(senderMenuItem.id).requestFile(senderMenuItem.senderAvatarInfo.getImageFile());
     }
+
+    final FrameLayout frameLayout = new FrameLayout(getContext()) {
+      @Override
+      protected void onDraw (Canvas canvas) {
+        super.onDraw(canvas);
+        if (senderMenuItem.senderAvatarInfo != null) {
+          int left = Screen.dp(20f);
+          int top = this.getTop() - (Screen.dp(43f) + (Screen.dp(50f)) * (index - 1));
+          int bottom = this.getTop() - (Screen.dp(23f) + Screen.dp(50f) * (index - 1));
+
+          if (senderMenuItem.isPersonal) {
+            Drawable icon = Drawables.get(getResources(), R.drawable.dot_baseline_acc_personal_24);
+            Drawables.draw(canvas, icon, left - Screen.dp(2f), top, Paints.getPorterDuffPaint(Theme.getColor(R.id.theme_color_textLight)));
+          } else {
+            if (senderMenuItem.senderAvatarInfo.hasAvatar()) {
+              ImageReceiver imageReceiver = complexReceiver.getImageReceiver(senderMenuItem.id);
+              imageReceiver.setBounds(left, top, left + 2 * Screen.dp(10f), bottom);
+              imageReceiver.setRadius(Screen.dp(10f));
+              imageReceiver.draw(canvas);
+            } else {
+              AvatarPlaceholder avatarPlaceholder = new AvatarPlaceholder(Screen.dp(10f), senderMenuItem.senderAvatarInfo.getAvatarMetadata(), null);
+              avatarPlaceholder.draw(canvas, left + Screen.dp(10f), top + Screen.dp(10f), 1f, Screen.dp(10f));
+            }
+          }
+        }
+
+        if (senderMenuItem.needPremium) {
+          Drawable icon = Drawables.get(getResources(), R.drawable.baseline_lock_16);
+          float x = getMeasuredWidth() - Screen.dp(18 + 16);
+          float y = (getMeasuredHeight() - icon.getMinimumHeight()) / 2f;
+          Drawables.draw(canvas, icon, x, y, Paints.getPorterDuffPaint(Theme.getColor(R.id.theme_color_text)));
+        }
+      }
+    };
+
+    FrameLayout.LayoutParams lp = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(50), Gravity.LEFT);
+    frameLayout.setLayoutParams(lp);
 
     frameLayout.addView(titleText);
     frameLayout.addView(usernameText);
@@ -254,6 +263,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     frameLayout.measure(MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
     frameLayout.setTag(frameLayout.getMeasuredWidth());
     return frameLayout;
+
   }
 
   public TextView addItem (int id, CharSequence title, int iconRes, Drawable icon, OnClickListener listener) {

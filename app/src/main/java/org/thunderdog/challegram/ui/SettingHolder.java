@@ -87,6 +87,7 @@ import org.thunderdog.challegram.widget.JoinedUsersView;
 import org.thunderdog.challegram.widget.ListInfoView;
 import org.thunderdog.challegram.widget.LiveLocationView;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
+import org.thunderdog.challegram.widget.MessageSenderView;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.NonMaterialButton;
 import org.thunderdog.challegram.widget.PageBlockView;
@@ -229,6 +230,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         return Screen.dp(63);
       }
       case ListItem.TYPE_CHAT_BETTER:
+      case ListItem.TYPE_MESSAGE_SENDER:
       case ListItem.TYPE_USER: {
         return Screen.dp(72f);
       }
@@ -349,6 +351,10 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         ((BetterChatView) itemView).attach();
         break;
       }
+      case ListItem.TYPE_MESSAGE_SENDER: {
+        ((MessageSenderView) itemView).attach();
+        break;
+      }
       case ListItem.TYPE_LIVE_LOCATION_TARGET: {
         ((DrawerItemView) ((FrameLayoutFix) itemView).getChildAt(0)).attach();
         break;
@@ -435,6 +441,10 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       }
       case ListItem.TYPE_CHAT_BETTER: {
         ((BetterChatView) itemView).detach();
+        break;
+      }
+      case ListItem.TYPE_MESSAGE_SENDER: {
+        ((MessageSenderView) itemView).detach();
         break;
       }
       default: {
@@ -2000,6 +2010,17 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       }
       case ListItem.TYPE_CHAT_BETTER: {
         BetterChatView view = new BetterChatView(context, tdlib);
+        RippleSupport.setSimpleWhiteBackground(view);
+        view.setOnClickListener(onClickListener);
+        view.setOnLongClickListener(onLongClickListener);
+        view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(72f)));
+        if (themeProvider != null) {
+          themeProvider.addThemeInvalidateListener(view);
+        }
+        return new SettingHolder(view);
+      }
+      case ListItem.TYPE_MESSAGE_SENDER: {
+        MessageSenderView view = new MessageSenderView(context, tdlib);
         RippleSupport.setSimpleWhiteBackground(view);
         view.setOnClickListener(onClickListener);
         view.setOnLongClickListener(onLongClickListener);

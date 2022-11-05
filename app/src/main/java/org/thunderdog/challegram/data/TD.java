@@ -83,6 +83,7 @@ import org.thunderdog.challegram.ui.HashtagController;
 import org.thunderdog.challegram.ui.ShareController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
+import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.text.Letters;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextEntity;
@@ -6638,4 +6639,5 @@ public class TD {
 
     return false;
   }
+
 }

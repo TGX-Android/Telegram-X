@@ -1585,6 +1585,8 @@
   <string name="OpenGroup">View Group</string>
   <string name="OpenBot">View Bot</string>
   <string name="SendAsCopy">Send as copy</string>
+  <string name="SendAs">Send as</string>
+  <string name="SendAsEllipsis">Send as...</string>
   <string name="RemoveCaptions">Remove captions in copies</string>
   <string name="GifHasBeenSavedToGallery">GIF saved to Gallery</string>
   <string name="SavedXGifToGallery_one">%1$s GIF saved to Gallery</string>

@@ -87,6 +87,7 @@ import org.thunderdog.challegram.widget.FileProgressComponent;
 import org.thunderdog.challegram.widget.JoinedUsersView;
 import org.thunderdog.challegram.widget.ListInfoView;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
+import org.thunderdog.challegram.widget.MessageSenderView;
 import org.thunderdog.challegram.widget.NonMaterialButton;
 import org.thunderdog.challegram.widget.PageBlockView;
 import org.thunderdog.challegram.widget.PageBlockWrapView;
@@ -478,6 +479,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
   }
 
   protected void setChatData (ListItem item, int position, BetterChatView chatView) {
+    // Override
+  }
+
+  protected void setMessageSenderData (ListItem item, int position, MessageSenderView senderView) {
     // Override
   }
 
@@ -1376,6 +1381,10 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       }
       case ListItem.TYPE_BUILD_NO: {
         setBuildNo(item, (TextView) holder.itemView, false);
+        break;
+      }
+      case ListItem.TYPE_MESSAGE_SENDER: {
+        setMessageSenderData(item, position, (MessageSenderView) holder.itemView);
         break;
       }
       case ListItem.TYPE_SMALL_MEDIA: {
