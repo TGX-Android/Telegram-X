@@ -1468,7 +1468,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
 
     if (chat.getChat() != null && chat.getChat().messageSenderId != null){
       ids.append(R.id.btn_sendAsSelect);
-      strings.append("Send as...");
+      strings.append(Lang.getString(R.string.SendAs_ellipsis));
       if (tdlib().isSelfUserId(Td.getSenderId(chat.getChat().messageSenderId))) {
         iconsRes.append(R.drawable.dot_baseline_acc_personal_24);
       } else if (chat.getChatId() == Td.getSenderId(chat.getChat().messageSenderId)) {

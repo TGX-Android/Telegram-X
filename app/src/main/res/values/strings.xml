@@ -4413,4 +4413,13 @@
   <string name="XRestrictedVideoMessages">%1$s doesn\'t accept video messages.</string>
 
   <string name="format_PRMadeBy">%1$s by %2$s</string>
+
+  <string name="SendAs">Send as</string>
+  <string name="SendAs_ellipsis">Send as…</string>
+  <string name="SendAsCaptionPrefix">"as "</string>
+  <string name="NoResultsToShow">No results to show</string>
+  <string name="NoResultsToShowDesc">Try changing your search query.</string>
+  <string name="SendAsYourAccount">your account</string>
+  <string name="SendAsAnonymousAdmin">Anonymous Admin</string>
+  <string name="SendAs_more">More</string>
 </resources>

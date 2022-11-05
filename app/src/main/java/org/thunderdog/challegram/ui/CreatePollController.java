@@ -305,7 +305,7 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
           } else {
             senderAvatar = new AvatarDrawable(null, 12f, sender.getAvatar(), sender.getAvatarPlaceholderMetadata());
           }
-          items.add(0, new HapticMenuHelper.MenuItem(R.id.btn_sendAsSelect, "Send as...", sender.getName(), senderAvatarRes, senderAvatar, 0));
+          items.add(0, new HapticMenuHelper.MenuItem(R.id.btn_sendAsSelect, Lang.getString(R.string.SendAs_ellipsis), sender.getName(), senderAvatarRes, senderAvatar, 0));
         }
       }, new TdlibUi.SimpleSendCallback() {
         @Override

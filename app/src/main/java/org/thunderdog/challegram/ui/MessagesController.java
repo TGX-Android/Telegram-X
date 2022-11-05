@@ -360,7 +360,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       } else {
         senderAvatar = new AvatarDrawable(view, 12f, sender.getAvatar(), sender.getAvatarPlaceholderMetadata());
       }
-      items.add(0, new HapticMenuHelper.MenuItem(R.id.btn_sendAsSelect, "Send as...", sender.getName(), senderAvatarRes, senderAvatar, 0));
+      items.add(0, new HapticMenuHelper.MenuItem(R.id.btn_sendAsSelect, Lang.getString(R.string.SendAs_ellipsis), sender.getName(), senderAvatarRes, senderAvatar, 0));
     }
     if (!canSendWithoutMarkdown && tdlib.shouldSendAsDice(currentText) && !isEditingMessage()) {
       if (items == null)
@@ -439,7 +439,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             .filter(it -> Td.getSenderId(it.sender) == newMessageSenderChatId)
             .findFirst().orElse(null);
           if (futureSender != null && futureSender.needsPremium) {
-            UI.showToast("Premium required", Toast.LENGTH_LONG);
+            UI.showToast(Lang.getString(R.string.PremiumRequired), Toast.LENGTH_LONG);
             return;
           }
         }
@@ -1060,10 +1060,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
           AvatarDrawable avatar = null;
           int premiumLockRes = 0;
           if (tdlib().isSelfUserId(it.getChatId())) {
-            username = "your account";
+            username = Lang.getString(R.string.SendAsYourAccount);
             avatarRes = R.drawable.dot_baseline_acc_personal_24;
           } else if (it.getChatId() == chat.id) {
-            username = "Anonymous Admin";
+            username = Lang.getString(R.string.SendAsAnonymousAdmin);
             avatarRes = R.drawable.dot_baseline_acc_anon_24;
           } else {
             username = "@" + tdlib().chatUsername(it.getChatId());
@@ -1078,7 +1078,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           items.add(0, new HapticMenuHelper.MenuItem(R.id.btn_sendAsQuickSelect, it.getName(), username, avatarRes, avatar, premiumLockRes).setExtraTag(it.getChatId()));
         });
       if (messageSenders.senders.length > 5) {
-        items.add(0, new HapticMenuHelper.MenuItem(R.id.btn_sendAsSelect, "More", R.drawable.baseline_more_horiz_24));
+        items.add(0, new HapticMenuHelper.MenuItem(R.id.btn_sendAsSelect, Lang.getString(R.string.SendAs_more), R.drawable.baseline_more_horiz_24));
       }
       return items;
     }, this, getThemeListeners(), null).attachToView(sendAsButton, true);
@@ -1359,7 +1359,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     params.leftMargin = inputView != null ? inputView.getPaddingLeft() : 0;
 
     sendAsCaption = new AnimatedTextView(context());
-    sendAsCaption.setPrefix("as ");
+    sendAsCaption.setPrefix(Lang.getString(R.string.SendAsCaptionPrefix));
     sendAsCaption.setAlpha(0f);
     sendAsCaption.setLayoutParams(params);
 
@@ -3003,7 +3003,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         sendButtonOverlay.setBounds(0, 0, Screen.dp(15f), Screen.dp(15f));
         sendButton.setOverlayIcon(sendButtonOverlay);
 
-        title = "Anonymous Admin";
+        title = Lang.getString(R.string.SendAsAnonymousAdmin);
       } else {
         var sender = IdentitySelectController.parseSender(tdlib(), chat.messageSenderId, null);
         avatar = new AvatarDrawable(null, 12f, sender.getAvatar(), sender.getAvatarPlaceholderMetadata());

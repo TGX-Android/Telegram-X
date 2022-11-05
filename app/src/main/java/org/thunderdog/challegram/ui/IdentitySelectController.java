@@ -27,6 +27,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.user.SimpleUsersAdapter;
 import org.thunderdog.challegram.core.Background;
+import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGFoundChat;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
@@ -129,7 +130,7 @@ public class IdentitySelectController extends ViewController<IdentitySelectContr
 
   public IdentitySelectController (@NonNull Context context, Tdlib tdlib) {
     super(context, tdlib);
-    setName("Send as");
+    setName(Lang.getString(R.string.SendAs));
   }
 
   @Override
@@ -155,7 +156,7 @@ public class IdentitySelectController extends ViewController<IdentitySelectContr
           .filter(it -> Td.getSenderId(it.sender) == Td.getSenderId(senderId))
           .findFirst().orElse(null);
         if (futureSender != null && futureSender.needsPremium) {
-          UI.showToast("Premium required", Toast.LENGTH_LONG);
+          UI.showToast(Lang.getString(R.string.PremiumRequired), Toast.LENGTH_LONG);
           return;
         }
       }
@@ -769,7 +770,7 @@ public class IdentitySelectController extends ViewController<IdentitySelectContr
       b.setSingleLine(true);
       b.setEllipsize(TextUtils.TruncateAt.END);
       b.setGravity(Gravity.CENTER_HORIZONTAL);
-      b.setText("No results to show");
+      b.setText(Lang.getString(R.string.NoResultsToShow));
 
       var c = new TextView(context);
       c.setTypeface(Fonts.getRobotoRegular());
@@ -778,7 +779,7 @@ public class IdentitySelectController extends ViewController<IdentitySelectContr
       c.setSingleLine(true);
       c.setEllipsize(TextUtils.TruncateAt.END);
       c.setGravity(Gravity.CENTER_HORIZONTAL);
-      c.setText("Try changing your search query.");
+      c.setText(Lang.getString(R.string.NoResultsToShowDesc));
 
       var lp = new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
       lp.topMargin = Screen.dp(17f);
@@ -834,10 +835,10 @@ public class IdentitySelectController extends ViewController<IdentitySelectContr
       int senderPremiumLockIconRes = 0;
       boolean hasSmallSenderExtraIcon = false;
       if (tdlib().isSelfChat(item.getAnyId())) {
-        senderUsername = "your account";
+        senderUsername = Lang.getString(R.string.SendAsYourAccount);
         senderPremiumLockIconRes = R.drawable.dot_baseline_acc_personal_24;
       } else if (item.getAnyId() == chatId) {
-        senderUsername = "Anonymous Admin";
+        senderUsername = Lang.getString(R.string.SendAsAnonymousAdmin);
         senderPremiumLockIconRes = R.drawable.dot_baseline_acc_anon_24;
       } else {
         senderUsername = "@" + tdlib().chatUsername(item.getAnyId());

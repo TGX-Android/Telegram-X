@@ -1322,7 +1322,7 @@ public class MediaLayout extends FrameLayoutFix implements
           } else {
             senderAvatar = new AvatarDrawable(list, 12f, sender.getAvatar(), sender.getAvatarPlaceholderMetadata());
           }
-          items.add(0, new HapticMenuHelper.MenuItem(R.id.btn_sendAsSelect, "Send as...", sender.getName(), senderAvatarRes, senderAvatar, 0));
+          items.add(0, new HapticMenuHelper.MenuItem(R.id.btn_sendAsSelect, Lang.getString(R.string.SendAs_ellipsis), sender.getName(), senderAvatarRes, senderAvatar, 0));
         }
         getCurrentController().addCustomItems(items);
         return !items.isEmpty() ? items : null;
