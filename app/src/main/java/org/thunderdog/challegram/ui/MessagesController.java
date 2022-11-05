@@ -28,7 +28,6 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
@@ -2999,7 +2998,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       } else if (chat.id == Td.getSenderId(chat.messageSenderId)) {
         avatar = Drawables.get(R.drawable.dot_baseline_acc_anon_24);
 
-        var sendButtonOverlay = Drawables.get(R.drawable.dot_baseline_acc_anon_24);
+        var sendButtonOverlay = Drawables.get(R.drawable.baseline_incognito_circle_18);
         sendButtonOverlay.setBounds(0, 0, Screen.dp(15f), Screen.dp(15f));
         sendButton.setOverlayIcon(sendButtonOverlay);
 

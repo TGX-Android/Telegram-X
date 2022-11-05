@@ -1287,10 +1287,10 @@ public class MediaLayout extends FrameLayoutFix implements
             final int cx = getMeasuredWidth() / 2;
             final int cy = getMeasuredHeight() / 2;
 
-            double radians = Math.toRadians(Lang.rtl() ? 315f : 40f);
+            double radians = Math.toRadians(Lang.rtl() ? 315f : 45f);
             float ocx = cx + (float) ((double) Screen.dp(15f) * Math.sin(radians));
             float ocy = cy + (float) ((double) Screen.dp(15f) * Math.cos(radians));
-            canvas.drawCircle(ocx, ocy, Screen.dp(9.5f), Paints.getOuterCheckPaint(Theme.fillingColor()));
+            canvas.drawCircle(ocx, ocy, Screen.dp(7.5f + 1f), Paints.getOuterCheckPaint(Theme.fillingColor()));
             Drawables.drawCentered(canvas, sendButtonOverlayIcon, ocx, ocy, Paints.getPorterDuffPaint(Theme.getColor(R.id.theme_color_badgeMuted)));
           }
         }
@@ -1418,7 +1418,7 @@ public class MediaLayout extends FrameLayoutFix implements
       if (tdlib().isSelfChat(Td.getSenderId(messageSenderId))) {
         sendButtonOverlayIcon = null;
       } else if (getTargetChatId() == Td.getSenderId(messageSenderId)) {
-        sendButtonOverlayIcon = Drawables.get(R.drawable.dot_baseline_acc_anon_24);
+        sendButtonOverlayIcon = Drawables.get(R.drawable.baseline_incognito_circle_18);
         sendButtonOverlayIcon.setBounds(0, 0, Screen.dp(15f), Screen.dp(15f));
       } else {
         var sender = IdentitySelectController.parseSender(tdlib(), messageSenderId, null);

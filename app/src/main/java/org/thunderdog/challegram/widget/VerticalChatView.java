@@ -64,6 +64,10 @@ import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.Td;
 
 public class VerticalChatView extends BaseView implements Destroyable, ChatListener, FactorAnimator.Target, TdlibCache.UserDataChangeListener, TdlibCache.UserStatusChangeListener, NotificationSettingsListener, AttachDelegate, SimplestCheckBoxHelper.Listener, TextColorSet, TooltipOverlayView.LocationProvider {
+
+  private static final float SENDER_ICON_RADIUS = 10f;
+  private static final float SENDER_ICON_RADIUS2 = 12f;
+
   private final ImageReceiver receiver;
   private final Counter counter;
 
@@ -76,7 +80,7 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
     RippleSupport.setTransparentSelector(this);
 
     receiver = new ImageReceiver(this, Screen.dp(25f));
-    sendAsReceiver = new ImageReceiver(this, Screen.dp(10f));
+    sendAsReceiver = new ImageReceiver(this, Screen.dp(SENDER_ICON_RADIUS));
     counter = new Counter.Builder().callback(this).outlineColor(R.id.theme_color_filling).build();
   }
 
@@ -110,7 +114,7 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
     int centerX = getMeasuredWidth() / 2;
     int centerY = getMeasuredHeight() / 2 - Screen.dp(11f);
     receiver.setBounds(centerX - radius, centerY - radius, centerX + radius, centerY + radius);
-    radius = Screen.dp(10f);
+    radius = Screen.dp(SENDER_ICON_RADIUS);
     double radians = Math.toRadians(Lang.rtl() ? 135f : 225f);
     centerX = receiver.getCenterX() + (int) ((double) (receiver.getWidth() / 2) * Math.sin(radians));
     centerY = receiver.getCenterY() + (int) ((double) (receiver.getHeight() / 2) * Math.cos(radians));
@@ -166,7 +170,7 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
 
   private void setSendAsPlaceholder (AvatarPlaceholder.Metadata avatarPlaceholderMetadata) {
     if (avatarPlaceholderMetadata != null) {
-      this.sendAsPlaceholder = new AvatarPlaceholder(10f, avatarPlaceholderMetadata, null);
+      this.sendAsPlaceholder = new AvatarPlaceholder(SENDER_ICON_RADIUS, avatarPlaceholderMetadata, null);
     } else {
       this.sendAsPlaceholder = null;
     }
@@ -174,7 +178,10 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
   }
 
   private void setSendAsIcon (int resId) {
-    this.sendAsIcon = resId != 0 ? Drawables.get(resId) : null;
+    sendAsIcon = resId != 0 ? Drawables.get(resId) : null;
+    if (sendAsIcon != null) {
+      sendAsIcon.setBounds(0, 0, Screen.dp(2f * SENDER_ICON_RADIUS2), Screen.dp(2f * SENDER_ICON_RADIUS2));
+    }
     invalidate();
   }
 
@@ -278,7 +285,7 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
           sendAsChat = new TGFoundChat(tdlib(), null, sendAsChatId, true);
         } else {
           // anonymous admin
-          setSendAsIcon(R.drawable.dot_baseline_acc_anon_24);
+          setSendAsIcon(R.drawable.baseline_incognito_circle_18);
           setSendAsPlaceholder(null);
           setSendAsAvatar(null);
         }
@@ -482,16 +489,19 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
       DrawAlgorithms.drawSimplestCheckBox(c, receiver, checkFactor);
     }
     if (hasSendAs) {
-      c.drawCircle(sendAsReceiver.centerX(), sendAsReceiver.centerY(), Screen.dp(11.5f), Paints.getOuterCheckPaint(Theme.fillingColor()));
+      final var radius = Screen.dp(SENDER_ICON_RADIUS);
+      c.drawCircle(sendAsReceiver.centerX(), sendAsReceiver.centerY(), Screen.dp(SENDER_ICON_RADIUS + 0.5f), Paints.getOuterCheckPaint(Theme.fillingColor()));
       if (hasSendAsPhoto) {
         if (sendAsReceiver.needPlaceholder()) {
-          sendAsReceiver.drawPlaceholderRounded(c, Screen.dp(10f));
+          sendAsReceiver.drawPlaceholderRounded(c, radius);
         }
         sendAsReceiver.draw(c);
       } else if (sendAsPlaceholder != null) {
         sendAsPlaceholder.draw(c, sendAsReceiver.centerX(), sendAsReceiver.centerY());
       } else if (sendAsIcon != null) {
-        Drawables.drawCentered(c, sendAsIcon, sendAsReceiver.centerX(), sendAsReceiver.centerY(), Paints.fillingPaint(R.id.theme_color_badgeMutedText));
+        c.drawCircle(sendAsReceiver.centerX(), sendAsReceiver.centerY(), radius, Paints.fillingPaint(Theme.getColor(R.id.theme_color_badgeMutedText)));
+        final var radius2 = Screen.dp(SENDER_ICON_RADIUS2);
+        Drawables.drawWithoutResize(c, sendAsIcon, sendAsReceiver.centerX() - radius2, sendAsReceiver.centerY() - radius2, Paints.getPorterDuffPaint(Theme.getColor(R.id.theme_color_badgeMuted)));
       }
     }
 

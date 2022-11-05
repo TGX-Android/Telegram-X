@@ -156,6 +156,30 @@ public class Drawables {
     }
   }
 
+  public static void drawWithoutResize (Canvas c, Drawable d, float x, float y, @Nullable Paint paint) {
+    if (d == null)
+      return;
+    /*Rect bounds = d.getBounds();
+    int minWidth = d.getMinimumWidth();
+    int minHeight = d.getMinimumHeight();
+    if (bounds.top != 0 || bounds.left != 0 || bounds.right != minWidth || bounds.bottom != minHeight) {
+      d.setBounds(0, 0, minWidth, minHeight);
+    }*/
+    prepare(d, paint);
+    final int saveCount;
+    final boolean needRestore = x != 0 || y != 0;
+    if (needRestore) {
+      saveCount = Views.save(c);
+      c.translate(x, y);
+    } else {
+      saveCount = -1;
+    }
+    d.draw(c);
+    if (needRestore) {
+      Views.restore(c, saveCount);
+    }
+  }
+
   public static Drawable emojiDrawable (String emoji) {
     EmojiInfo info = Emoji.instance().getEmojiInfo(emoji);
     if (info == null)

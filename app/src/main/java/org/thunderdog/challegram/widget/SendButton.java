@@ -131,10 +131,10 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
         }
         Drawables.draw(c, sendIcon, cx - sendIcon.getMinimumWidth() / 2, cy - sendIcon.getMinimumHeight() / 2, paint);
         if (overlayIcon != null) {
-          double radians = Math.toRadians(Lang.rtl() ? 315f : 40f);
+          double radians = Math.toRadians(Lang.rtl() ? 315f : 45f);
           float ocx = cx + (float) ((double) Screen.dp(15f) * Math.sin(radians));
           float ocy = cy + (float) ((double) Screen.dp(15f) * Math.cos(radians));
-          c.drawCircle(ocx, ocy, Screen.dp(9.5f), Paints.getOuterCheckPaint(Theme.fillingColor()));
+          c.drawCircle(ocx, ocy, Screen.dp(7.5f + 1f), Paints.getOuterCheckPaint(Theme.fillingColor()));
           Drawables.drawCentered(c, overlayIcon, ocx, ocy, Paints.getPorterDuffPaint(Theme.getColor(R.id.theme_color_badgeMuted)));
         }
         if (saved) {
