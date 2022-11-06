@@ -54,6 +54,7 @@ public class HapticMenuHelper implements View.OnTouchListener, View.OnLongClickL
     public final boolean needPremium;
     private final Drawable icon;
     public boolean isPersonal;
+    public boolean isAnonymous;
     public final SenderAvatarInfo senderAvatarInfo;
     public final int iconResId;
 
@@ -75,13 +76,7 @@ public class HapticMenuHelper implements View.OnTouchListener, View.OnLongClickL
       this.senderAvatarInfo = new SenderAvatarInfo(sender, tdlib);
       this.iconResId = 0;
       this.icon = null;
-      TdApi.User user = tdlib.myUser();
-      if (user != null) {
-        long senderUserId = Td.getSenderUserId(sender);
-        if (senderUserId != 0) {
-          isPersonal = user.id == senderUserId;
-        }
-      }
+      initPersonalOrAnonymous(sender, tdlib);
     }
 
     public MenuItem (int id, CharSequence title, int iconResId) {
@@ -150,6 +145,20 @@ public class HapticMenuHelper implements View.OnTouchListener, View.OnLongClickL
         this.tdlib.cache().unsubscribeFromUserStatusChanges(userId, userStatusChangeListener);
         this.tdlib = null; this.userStatusChangeListener = null;
         this.boundView = null;
+      }
+    }
+
+    private void initPersonalOrAnonymous (TdApi.MessageSender sender, Tdlib tdlib) {
+      TdApi.User user = tdlib.myUser();
+      if (user != null) {
+        long senderUserId = Td.getSenderUserId(sender);
+        if (senderUserId != 0) {
+          isPersonal = user.id == senderUserId;
+        }
+      }
+      if (sender.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR) {
+        TdApi.MessageSenderChat senderAsChat = (TdApi.MessageSenderChat) sender;
+        isAnonymous = tdlib.isMultiChat(senderAsChat.chatId) && Td.isAnonymous(tdlib.chatStatus(senderAsChat.chatId));
       }
     }
   }
@@ -270,13 +279,6 @@ public class HapticMenuHelper implements View.OnTouchListener, View.OnLongClickL
         Settings.instance().markTutorialAsComplete(item.tutorialFlag);
       }
     }
-//    for (MenuItem item : items) {
-//      item.boundView = moreWrap.addItem(item.id, item.title, item.iconResId, item.icon, itemView -> onMenuItemClick(item, itemView, view));
-//      item.boundView.setVisibility(item.isVisible() ? View.VISIBLE : View.GONE);
-//      if (item.tutorialFlag != 0) {
-//        Settings.instance().markTutorialAsComplete(item.tutorialFlag);
-//      }
-//    }
     moreWrap.setAnchorMode(MenuMoreWrap.ANCHOR_MODE_RIGHT);
     moreWrap.setShouldPivotBottom(true);
     moreWrap.setRightNumber(0);

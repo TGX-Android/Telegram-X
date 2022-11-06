@@ -229,6 +229,9 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
           if (senderMenuItem.isPersonal) {
             Drawable icon = Drawables.get(getResources(), R.drawable.dot_baseline_acc_personal_24);
             Drawables.draw(canvas, icon, left - Screen.dp(2f), top, Paints.getPorterDuffPaint(Theme.getColor(R.id.theme_color_textLight)));
+          } else if (senderMenuItem.isAnonymous) {
+            Drawable icon = Drawables.get(getResources(), R.drawable.dot_baseline_acc_anon_24);
+            Drawables.draw(canvas, icon, left - Screen.dp(2f), top, Paints.getPorterDuffPaint(Theme.getColor(R.id.theme_color_textLight)));
           } else {
             if (senderMenuItem.senderAvatarInfo.hasAvatar()) {
               ImageReceiver imageReceiver = complexReceiver.getImageReceiver(senderMenuItem.id);

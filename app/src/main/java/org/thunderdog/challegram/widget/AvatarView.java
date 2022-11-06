@@ -56,6 +56,8 @@ public class AvatarView extends ImageView implements Destroyable, TdlibCache.Use
   private Drawable overlayIcon;
   private boolean hasIcon = false;
 
+  private boolean needBound = false;
+
 
   public AvatarView (Context context) {
     super(context);
@@ -66,6 +68,9 @@ public class AvatarView extends ImageView implements Destroyable, TdlibCache.Use
   public AvatarView (Context context, int radius) {
     super(context);
     this.receiver = new ImageReceiver(this, radius);
+    if (radius > 0) {
+      needBound = true;
+    }
     this.receiver.setRadius(radius);
   }
 
@@ -167,8 +172,15 @@ public class AvatarView extends ImageView implements Destroyable, TdlibCache.Use
     final int right = getMeasuredWidth() - getPaddingRight();
     final int bottom = getMeasuredHeight() - getPaddingBottom();
 
-    receiver.setBounds(left, top, right, bottom);
-    if (needRounds()) {
+    if (!needBound) {
+      receiver.setBounds(left, top, right, bottom);
+    } else {
+      int radius = receiver.getRadius();
+      int centerX = right - (getMeasuredWidth() / 2);
+      int centerY = bottom - (getMeasuredWidth() / 2) - Screen.dp(1);
+      receiver.setBounds(centerX - radius, centerY - radius, centerX + radius, centerY + radius);
+    }
+    if (needRounds() && !needBound) {
       receiver.setRadius(Math.min(receiver.getWidth(), receiver.getHeight()) / 2);
     }
     if (needFull()) {

@@ -991,8 +991,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     mediaButton.setOnClickListener(this);
     mediaButton.setLayoutParams(lp);
 
-    lp = new LinearLayout.LayoutParams(Screen.dp(22f), Screen.dp(22f));
-    lp.gravity = Gravity.CENTER;
+    lp = new LinearLayout.LayoutParams(Screen.dp(ATTACH_BUTTONS_WIDTH), Screen.dp(49f));
     sendAsButton = new AvatarView(context, Screen.dp(11f));
     sendAsButton.setId(R.id.msg_send_as);
     sendAsButton.setScaleType(ImageView.ScaleType.CENTER);
@@ -1000,16 +999,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
     sendAsButton.setColorFilter(Theme.iconColor());
     addThemeFilterListener(sendAsButton, R.id.theme_color_icon);
     sendAsButton.setVisibility(View.INVISIBLE);
-    sendAsButton.setOnLongClickListener(new View.OnLongClickListener() {
-      @Override
-      public boolean onLongClick (View v) {
-        if (chat != null) {
-          sendAsMenu.openMenu(v);
-          return true;
-        }
-        return false;
-      }
-    });
     sendAsButton.setLayoutParams(lp);
 
     lp = new LinearLayout.LayoutParams(Screen.dp(ATTACH_BUTTONS_WIDTH), Screen.dp(49f));
@@ -1921,10 +1910,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         break;
       }
-      case R.id.msg_send_as: {
-        sendAsMenu.openMenu(v);
-        break;
-      }
     }
   }
 
@@ -2752,7 +2737,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     } else {
       cameraButton.setVisible(true);
       sendAsButton.setVisibility(View.GONE);
-      cameraButton.setTranslationX(sendAsButton.getLayoutParams().width - Screen.dp(20f));
+      cameraButton.setTranslationX(0);
       attachButtons.updatePivot();
     }
   }
@@ -2792,13 +2777,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
               TdApi.ChatMessageSender sender = filtered.get(i);
               TdApi.MessageSender messageSender = sender.sender;
 
-              HapticMenuHelper.MenuItem item = null;
+              HapticMenuHelper.MenuItem item;
               if (messageSender.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR) {
                 TdApi.MessageSenderChat messageSenderChat = (TdApi.MessageSenderChat) messageSender;
                 TdApi.Chat sendAsChat = tdlib.chat(messageSenderChat.chatId);
                 if (sendAsChat == null) continue;
                 String chatTitle = sendAsChat.title;
-                if (tdlib.isMultiChat(sendAsChat) && Td.isAnonymous(tdlib.chatStatus(sendAsChat.id)) /*&& !tdlib.isChannel(chat.messageSenderId)*/) {
+                if (tdlib.isMultiChat(sendAsChat) && Td.isAnonymous(tdlib.chatStatus(sendAsChat.id))) {
                   item = new HapticMenuHelper.MenuItem(i, chatTitle, Lang.getString(R.string.AnonymousAdmin), messageSender, sender.needsPremium && !isPremium, tdlib);
                 } else {
                   String chatUsername = tdlib.chatUsername(messageSenderChat.chatId);
