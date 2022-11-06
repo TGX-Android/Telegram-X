@@ -10122,14 +10122,28 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private static TdApi.SearchMessagesFilter filterListActivate;
 
   // filter list action button end
-  private SparseIntArray mediaCounters;
 
-  private int getMediaCount (@TdApi.SearchMessagesFilter.Constructors int filterConstructor) {
-    return mediaCounters != null ? mediaCounters.get(filterConstructor, -1) : -1;
+  private void getMessageCount (TdApi.SearchMessagesFilter filter, boolean returnLocal) {
+      tdlib.client().send(new TdApi.GetChatMessageCount(getChatId(), filterListActivate, true), result -> {
+        int countMed;
+        result.getConstructor();
+        countMed = ((TdApi.Count) result).count;
+        android.util.Log.d(String.valueOf(countMed), "initSearchControls: " + countMed);
+        if (countMed == -1) {
+          getMessageCount(filter, false);
+          searchMediaView.setText(String.valueOf(null));
+        }
+        searchMediaView.setText(String.valueOf(countMed));
+      });
+      return;
   }
 
-  private TGMessage msg;
+  private void activateFilterButton (TdApi.SearchMessagesFilter filter){
+    manager.openSearch(chat, previewSearchQuery, previewSearchSender, filterListActivate);
+  }
 
+  private ArrayList<TdApi.Message> currentSearchResults;
+  TdApi.FoundMessages messages;
 
   private void initSearchControls () {
     if (searchControlsLayout != null) {
@@ -10203,7 +10217,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
                 filterListRemove = new TdApi.SearchMessagesFilterEmpty();
                 manager.openSearch(chat, previewSearchQuery, previewSearchSender, filterListRemove);
                 filterListButton.setImageResource(icons.get(ids.indexOf(id)));
-
+                searchMediaView.setText("");
                 return true;
               }
 
@@ -10211,142 +10225,69 @@ public class MessagesController extends ViewController<MessagesController.Argume
                 filterListActivate = new TdApi.SearchMessagesFilterEmpty();
                 manager.openSearch(chat, previewSearchQuery, previewSearchSender, filterListActivate);
                 filterListButton.setImageResource(icons.get(ids.indexOf(id)));
+                searchMediaView.setText("");
                 return true;
               }
 
               case R.id.btn_photos: {
                 filterListActivate = new TdApi.SearchMessagesFilterPhoto();
-                manager.openSearch(chat, previewSearchQuery, previewSearchSender, filterListActivate);
+                activateFilterButton(filterListActivate);
                 filterListButton.setImageResource(icons.get(ids.indexOf(id)));
-                tdlib.client().send(new TdApi.GetChatMessageCount(getChatId(), filterListActivate, false), result -> {
-                  int countMed;
-                  result.getConstructor();
-                  countMed = ((TdApi.Count) result).count;
-                  android.util.Log.d(String.valueOf(countMed), "initSearchControls: " + countMed);
-                  if (countMed == -1) {
-                    return;
-                  }
-                  searchMediaView.setText(String.valueOf(countMed));
-                });
-
+                getMessageCount(filterListActivate,false);
                 return true;
               }
 
               case R.id.btn_video: {
                 filterListActivate = new TdApi.SearchMessagesFilterVideo();
-                manager.openSearch(chat, previewSearchQuery, previewSearchSender, filterListActivate);
+                activateFilterButton(filterListActivate);
                 filterListButton.setImageResource(icons.get(ids.indexOf(id)));
-
-                tdlib.client().send(new TdApi.GetChatMessageCount(getChatId(), filterListActivate, false), result -> {
-                  int countMed;
-                  result.getConstructor();
-                  countMed = ((TdApi.Count) result).count;
-                  android.util.Log.d(String.valueOf(countMed), "initSearchControls: " + countMed);
-                  if (countMed == -1) {
-                    return;
-                  }
-                  searchMediaView.setText(String.valueOf(countMed));
-                });
+                getMessageCount(filterListActivate,false);
                 return true;
               }
 
               case R.id.btn_voice: {
                 filterListActivate = new TdApi.SearchMessagesFilterVoiceNote();
-                manager.openSearch(chat, previewSearchQuery, previewSearchSender, filterListActivate);
+                activateFilterButton(filterListActivate);
                 filterListButton.setImageResource(icons.get(ids.indexOf(id)));
-
-                tdlib.client().send(new TdApi.GetChatMessageCount(getChatId(), filterListActivate, false), result -> {
-                  int countMed;
-                  result.getConstructor();
-                  countMed = ((TdApi.Count) result).count;
-                  android.util.Log.d(String.valueOf(countMed), "initSearchControls: " + countMed);
-                  if (countMed == -1) {
-                    return;
-                  }
-                  searchMediaView.setText(String.valueOf(countMed));
-                });
-
+                getMessageCount(filterListActivate,false);
                 return true;
               }
 
               case R.id.btn_videoNote: {
                 filterListActivate = new TdApi.SearchMessagesFilterVideoNote();
-                manager.openSearch(chat, previewSearchQuery, previewSearchSender, filterListActivate);
+                activateFilterButton(filterListActivate);
                 filterListButton.setImageResource(icons.get(ids.indexOf(id)));
-
-                tdlib.client().send(new TdApi.GetChatMessageCount(getChatId(), filterListActivate, false), result -> {
-                  int countMed;
-                  result.getConstructor();
-                  countMed = ((TdApi.Count) result).count;
-                  android.util.Log.d(String.valueOf(countMed), "initSearchControls: " + countMed);
-                  if (countMed == -1) {
-                    return;
-                  }
-                  searchMediaView.setText(String.valueOf(countMed));
-                });
-
+                getMessageCount(filterListActivate,false);
                 return true;
               }
 
               case R.id.btn_music: {
                 filterListActivate = new TdApi.SearchMessagesFilterAudio();
-                manager.openSearch(chat, previewSearchQuery, previewSearchSender, filterListActivate);
+                activateFilterButton(filterListActivate);
                 filterListButton.setImageResource(icons.get(ids.indexOf(id)));
-
-                tdlib.client().send(new TdApi.GetChatMessageCount(getChatId(), filterListActivate, false), result -> {
-                  int countMed;
-                  result.getConstructor();
-                  countMed = ((TdApi.Count) result).count;
-                  android.util.Log.d(String.valueOf(countMed), "initSearchControls: " + countMed);
-                  if (countMed == -1) {
-                    return;
-                  }
-                  searchMediaView.setText(String.valueOf(countMed));
-                });
-
+                getMessageCount(filterListActivate,false);
                 return true;
               }
 
               case R.id.btn_files: {
                 filterListActivate = new TdApi.SearchMessagesFilterDocument();
-                manager.openSearch(chat, previewSearchQuery, previewSearchSender, filterListActivate);
+                activateFilterButton(filterListActivate);
                 filterListButton.setImageResource(icons.get(ids.indexOf(id)));
-
-                tdlib.client().send(new TdApi.GetChatMessageCount(getChatId(), filterListActivate, false), result -> {
-                  int countMed;
-                  result.getConstructor();
-                  countMed = ((TdApi.Count) result).count;
-                  android.util.Log.d(String.valueOf(countMed), "initSearchControls: " + countMed);
-                  if (countMed == -1) {
-                    return;
-                  }
-                  searchMediaView.setText(String.valueOf(countMed));
-                });
+                getMessageCount(filterListActivate,false);
                 return true;
               }
 
               case R.id.btn_gifs: {
                 filterListActivate = new TdApi.SearchMessagesFilterAnimation();
-                manager.openSearch(chat, previewSearchQuery, previewSearchSender, filterListActivate);
+                activateFilterButton(filterListActivate);
                 filterListButton.setImageResource(icons.get(ids.indexOf(id)));
-
-                tdlib.client().send(new TdApi.GetChatMessageCount(getChatId(), filterListActivate, false), result -> {
-                  int countMed;
-                  result.getConstructor();
-                  countMed = ((TdApi.Count) result).count;
-                  android.util.Log.d(String.valueOf(countMed), "initSearchControls: " + countMed);
-                  if (countMed == -1) {
-                    return;
-                  }
-                  searchMediaView.setText(String.valueOf(countMed));
-                });
+                getMessageCount(filterListActivate,false);
                 return true;
               }
+
             }
             return true;
           });
-
-          searchMediaView.setText(null);
 
           final View.OnClickListener thisbutton = a -> {
             switch (a.getId()) {
@@ -10724,6 +10665,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     searchPrevButton.setIsHidden(true,false);
     searchNextButton.setIsHidden(true,false);
     scrollToBottomButtonWrap.setVisibility(View.VISIBLE);
+    searchMediaView.setText("");
   }
     private void moveSearchSelection (boolean next) {
     manager.moveToNextResult(next);
@@ -10734,6 +10676,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     searchChatMessages(query);
     searchPrevButton.setIsHidden(true, true);
     searchNextButton.setIsHidden(true,true);
+    searchMediaView.setText(String.valueOf(null));
   }
 
   // Search counter
