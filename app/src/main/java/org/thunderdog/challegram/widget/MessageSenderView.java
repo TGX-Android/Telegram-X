@@ -429,12 +429,16 @@ public class MessageSenderView extends BaseView implements Destroyable, RemoveHe
       finishIcon = Drawables.get(getResources(), R.drawable.dot_baseline_acc_anon_24);
     } else if (messageSender.isPersonal()) {
       finishIcon = Drawables.get(getResources(), R.drawable.dot_baseline_acc_personal_24);
+    } else if (messageSender.isNeedPremium() && !tdlib.myUser().isPremium) {
+      finishIcon = Drawables.get(getResources(), R.drawable.baseline_lock_16);
     }
+
     if (finishIcon != null) {
       Paint paint = Paints.getIconGrayPorterDuffPaint();
       Drawables.draw(c, finishIcon, getWidth() - Screen.dp(50f), Screen.dp(20f), paint);
     }
 
+    c.drawLine(ChatView.getTimePaddingLeft() + Screen.dp(65f), Screen.dp(70f), getWidth(), Screen.dp(70f), Paints.getBackgroundIconPorterDuffPaint());
     counter.draw(c, rtl ? ChatView.getTimePaddingRight() + Screen.dp(11.5f) : width - ChatView.getTimePaddingRight() - Screen.dp(11.5f), getMeasuredHeight() / 2f, rtl ? Gravity.LEFT : Gravity.RIGHT, 1f);
 
     if (removeHelper != null) {

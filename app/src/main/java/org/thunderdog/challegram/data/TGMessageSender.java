@@ -92,6 +92,10 @@ public class TGMessageSender {
     return isPersonal;
   }
 
+  public boolean isNeedPremium () {
+    return needPremium;
+  }
+
   private void init () {
     if (messageSender.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR) {
       TdApi.MessageSenderChat senderChat = (TdApi.MessageSenderChat) messageSender;

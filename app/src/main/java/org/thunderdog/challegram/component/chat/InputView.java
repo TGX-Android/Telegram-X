@@ -139,11 +139,17 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
   public interface InputListener {
     boolean canSearchInline (InputView v);
+
     void onInputChanged (InputView v, String input);
+
     long provideInlineSearchChatId (InputView v);
+
     TdApi.Chat provideInlineSearchChat (InputView v);
+
     long provideInlineSearchChatUserId (InputView v);
+
     void showInlineResults (InputView v, ArrayList<InlineResult<?>> items, boolean isContent);
+
     void addInlineResults (InputView v, ArrayList<InlineResult<?>> items);
   }
 
@@ -182,7 +188,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     setMaxCodePointCount(0);
     addTextChangedListener(new TextWatcher() {
       @Override
-      public void beforeTextChanged (CharSequence s, int start, int count, int after) { }
+      public void beforeTextChanged (CharSequence s, int start, int count, int after) {}
 
       @Override
       public void onTextChanged (CharSequence s, int start, int before, int count) {
@@ -190,7 +196,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       }
 
       @Override
-      public void afterTextChanged (Editable s) { }
+      public void afterTextChanged (Editable s) {}
     });
 
     if (Config.USE_CUSTOM_INPUT_STYLING) {
@@ -250,14 +256,15 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
                 }
                 default: {
                   if (BuildConfig.DEBUG) {
-                    Log.i("Menu item: %s %s",  UI.getAppContext().getResources().getResourceName(item.getItemId()), item.getTitle());
+                    Log.i("Menu item: %s %s", UI.getAppContext().getResources().getResourceName(item.getItemId()), item.getTitle());
                   }
                   continue;
                 }
               }
               item.setTitle(type != null ? Lang.wrap(Lang.getString(overrideResId), Lang.entityCreator(type)) : Lang.getString(overrideResId));
             }
-          } catch (Throwable ignored) { }
+          } catch (Throwable ignored) {
+          }
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             menu.removeItem(android.R.id.shareText);
           }
@@ -676,6 +683,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   }
 
   private boolean allowsAnyGravity;
+
   private void setAllowsAnyGravity (boolean allows) {
     if (this.allowsAnyGravity != allows) {
       this.allowsAnyGravity = allows;
@@ -730,6 +738,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
   private final ReplaceAnimator<Text> subAnimator = new ReplaceAnimator<>(animator -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
   private final BoolAnimator needShowPlaceholderAnimator = new BoolAnimator(0, (a, b, c, d) -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
+  private final BoolAnimator needShowSubPlaceholderAnimator = new BoolAnimator(0, (a, b, c, d) -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
 
   public void setInputPlaceholder (@StringRes int resId, Object... args) {
     String placeholder = Lang.getString(resId, args);
@@ -748,13 +757,14 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     }
   }
 
-  public void setInputPlaceholder (String placeholder, String subPlaceholder) {
+  public void setInputPlaceholder (CharSequence placeholder, CharSequence subPlaceholder) {
     if (StringUtils.equalsOrBothEmpty(placeholder, this.mainPlaceholder)
       && StringUtils.equalsOrBothEmpty(subPlaceholder, this.subPlaceholder)) {
       return;
     }
     this.mainPlaceholder = placeholder;
     this.subPlaceholder = subPlaceholder;
+    needShowSubPlaceholderAnimator.setValue(!StringUtils.isEmptyOrBlank(subPlaceholder), UI.inUiThread());
     if (controller != null) {
       this.lastPlaceholderAvailWidth = 0;
       checkPlaceholderWidth();
@@ -766,7 +776,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   }
 
   public void checkPlaceholderWidth () {
-    if ((lastPlaceholderRes != 0 || !StringUtils.isEmptyOrBlank(mainPlaceholder)) &&  controller != null) {
+    if ((lastPlaceholderRes != 0 || !StringUtils.isEmptyOrBlank(mainPlaceholder)) && controller != null) {
       int availWidth = Math.max(0, getMeasuredWidth() - controller.getHorizontalInputPadding() - getPaddingLeft());
       if (this.lastPlaceholderAvailWidth != availWidth) {
         this.lastPlaceholderAvailWidth = availWidth;
@@ -1023,8 +1033,8 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       setInputPlaceholder(R.string.Message);
       return;
     }
-    String mainPlaceholder = null;
-    String subPlaceholder = null;
+    CharSequence mainPlaceholder = null;
+    CharSequence subPlaceholder = null;
 
     if (tdlib.isChannel(chat.id)) {
       mainPlaceholder = Lang.getString(isSilent ? R.string.ChannelSilentBroadcast : R.string.ChannelBroadcast);
@@ -1034,9 +1044,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
     if (!tdlib.isChannel(chat.id)) {
       if (tdlib.isMultiChat(chat) && Td.isAnonymous(tdlib.chatStatus(chat.id)) && !tdlib.isChannel(chat.messageSenderId)) {
-        subPlaceholder = Lang.getString(R.string.JustAsX, Lang.getString(R.string.AnonymousAdmin));
+        subPlaceholder = Lang.getStringBold(R.string.JustAsX, Lang.getString(R.string.AnonymousAdmin));
       } else if (chat.messageSenderId != null && !tdlib.isSelfSender(chat.messageSenderId)) {
-        subPlaceholder = Lang.getString(R.string.JustAsX, tdlib.senderName(chat.messageSenderId));
+        subPlaceholder = Lang.getStringBold(R.string.JustAsX, tdlib.senderName(chat.messageSenderId));
       }
     }
     setInputPlaceholder(mainPlaceholder, subPlaceholder);
@@ -1130,12 +1140,23 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   @Override
   protected void onDraw (Canvas c) {
     if (needShowPlaceholderAnimator.getFloatValue() > 0) {
-      int verticalOffset = !StringUtils.isEmptyOrBlank(subPlaceholder) ? Screen.dp(23f) : Screen.dp(15f);
+      int verticalOffset = Screen.dp(15f + 8 * needShowSubPlaceholderAnimator.getFloatValue());
+      int mainPlaceholderY = getBaseline() - verticalOffset;
       if (mainPlaceholderText != null) {
-        mainPlaceholderText.draw(c, getPaddingLeft(), getBaseline() - verticalOffset, null, needShowPlaceholderAnimator.getFloatValue());
+        mainPlaceholderText.draw(c, getPaddingLeft(), mainPlaceholderY, null, needShowPlaceholderAnimator.getFloatValue());
       }
+
+      final int offset = (int) (needShowSubPlaceholderAnimator.getFloatValue() * Screen.dp(4));
+      boolean hasSubPlaceholder = !StringUtils.isEmptyOrBlank(subPlaceholder);
+
       subAnimator.iterator().forEachRemaining(entry -> {
-        entry.item.draw(c, getPaddingLeft(), getBaseline() - Screen.dp(3f), null, entry.getVisibility());
+        final int directionOffset = (int) ((!entry.isAffectingList() && hasSubPlaceholder ?
+          ((entry.getVisibility() - 1f) * Screen.dp(8)) :
+          ((1f - entry.getVisibility()) * Screen.dp(18))));
+        int subY = getBaseline() - offset + directionOffset;
+
+        float visibility = entry.getVisibility();
+        entry.item.draw(c, getPaddingLeft(), subY, null, visibility);
       });
     }
 
@@ -1176,8 +1197,15 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     Editable editable = getText();
     SpannableStringBuilder b = new SpannableStringBuilder(editable);
     CharSequence within = resultHashtag + " ";
-    try { editable.replace(hashtag.getTargetStart(), hashtag.getTargetEnd(), within); } catch (Throwable ignored) {  }
-    try { setInput(hashtag.replaceInTarget(b, within), false, true); setSelection(hashtag.getTargetStart() + within.length()); } catch (Throwable ignored) { }
+    try {
+      editable.replace(hashtag.getTargetStart(), hashtag.getTargetEnd(), within);
+    } catch (Throwable ignored) {
+    }
+    try {
+      setInput(hashtag.replaceInTarget(b, within), false, true);
+      setSelection(hashtag.getTargetStart() + within.length());
+    } catch (Throwable ignored) {
+    }
   }
 
   @Override
@@ -1190,8 +1218,15 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     Editable editable = getText();
     SpannableStringBuilder b = new SpannableStringBuilder(editable);
     CharSequence within = editable.length() == suggestion.getTargetEnd() && suggestion.getTargetStart() == 0 ? resultEmoji : resultEmoji + " ";
-    try { editable.replace(suggestion.getTargetStart(), suggestion.getTargetEnd(), within); } catch (Throwable ignored) { }
-    try { setInput(suggestion.replaceInTarget(b, within), false, true); setSelection(suggestion.getTargetStart() + within.length()); } catch (Throwable ignored) { }
+    try {
+      editable.replace(suggestion.getTargetStart(), suggestion.getTargetEnd(), within);
+    } catch (Throwable ignored) {
+    }
+    try {
+      setInput(suggestion.replaceInTarget(b, within), false, true);
+      setSelection(suggestion.getTargetStart() + within.length());
+    } catch (Throwable ignored) {
+    }
   }
 
   @Override
@@ -1214,8 +1249,15 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       within = resultMention + " ";
     }
 
-    try { editable.replace(mention.getTargetStart(), Math.min(editable.length(), mention.getTargetEnd()), within); } catch (Throwable ignored) { }
-    try { setInput(mention.replaceInTarget(b, within), false, true); setSelection(mention.getTargetStart() + within.length()); } catch (Throwable ignored) { }
+    try {
+      editable.replace(mention.getTargetStart(), Math.min(editable.length(), mention.getTargetEnd()), within);
+    } catch (Throwable ignored) {
+    }
+    try {
+      setInput(mention.replaceInTarget(b, within), false, true);
+      setSelection(mention.getTargetStart() + within.length());
+    } catch (Throwable ignored) {
+    }
   }
 
   @Override
@@ -1523,13 +1565,13 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   }
 
   @Override
-  protected void onAttachedToWindow() {
+  protected void onAttachedToWindow () {
     super.onAttachedToWindow();
     doBugfix();
   }
 
   @Override
-  public void setEnabled(boolean enabled) {
+  public void setEnabled (boolean enabled) {
     this.mEnabled = enabled;
     try {
       super.setEnabled(enabled);

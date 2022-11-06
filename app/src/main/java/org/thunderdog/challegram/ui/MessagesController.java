@@ -349,12 +349,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     List<HapticMenuHelper.MenuItem> items = tdlib.ui().fillDefaultHapticMenu(getChatId(), isEditingMessage(), canSendWithoutMarkdown, true);
 
     if (sendAsItems.size() > 0) {
-//      items.add(0, new HapticMenuHelper.MenuItem(R.id.btn_sendAs, Lang.getString(R.string.SendAsEllipsis), R.drawable.dot_baseline_acc_personal_24));
-
       if (chat != null && chat.messageSenderId != null) {
         items.add(0, new HapticMenuHelper.MenuItem(R.id.btn_sendAs, Lang.getString(R.string.SendAsEllipsis), tdlib.getUsername(chat.messageSenderId, true), chat.messageSenderId, false, tdlib));
       }
-
     }
 
     if (!canSendWithoutMarkdown && tdlib.shouldSendAsDice(currentText) && !isEditingMessage()) {
@@ -2741,8 +2738,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
       attachButtons.updatePivot();
     }
   }
-
-
 
   private void initSendAsItems () {
     tdlib.send(new TdApi.GetChatAvailableMessageSenders(chat.id), new Client.ResultHandler() {
