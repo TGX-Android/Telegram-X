@@ -249,7 +249,7 @@ public class MessageSendersController extends TelegramViewController<MessageSend
     switch (id) {
       case R.id.menu_btn_search: {
         if (displayingSenders != null) {
-          openSearchMode();
+//          openSearchMode();
         }
         break;
       }
