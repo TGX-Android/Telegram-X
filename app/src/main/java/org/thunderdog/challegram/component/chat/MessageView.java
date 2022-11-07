@@ -588,6 +588,11 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         strings.append(R.string.ShowSourceMessage);
         icons.append(R.drawable.baseline_forum_24);
       }
+      if (m.getMessageThread() != null && msg.isThreadHeader()) {
+        ids.append(R.id.btn_messageShowInChat);
+        strings.append(msg.isChannelAutoForward() ? R.string.ShowInDiscussionGroup : R.string.MessageShowInChat);
+        icons.append(R.drawable.outline_forum_24); // FIXME(nikita-toropov) set proper icon
+      }
 
       switch (content.getConstructor()) {
         case TdApi.MessagePoll.CONSTRUCTOR: {

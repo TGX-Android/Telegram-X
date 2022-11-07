@@ -723,6 +723,7 @@
   <string name="GroupPhoto">Group photo</string>
   <string name="ChannelPhoto">Channel photo</string>
   <string name="ShowInChat">Show in Chat</string>
+  <string name="ShowInDiscussionGroup">Show in discussion group</string>
   <string name="GroupIsFull">The group you tried to join is full</string>
   <string name="PasswordIsInvalid">The password you have entered is invalid</string>
   <string name="InviteLinkInvalid">Invite link is invalid or not active anymore</string>
@@ -2467,6 +2468,7 @@
   <string name="MessageUnpinPlaylist">Unpin playlist</string>
   <string name="MessageUnpinFiles">Unpin files</string>
   <string name="MessageReport">Report message</string>
+  <string name="MessageShowInChat">Show in chat</string>
   <string name="ErrorUserDeleted">Cannot perform this action, because user account is deactivated.</string>
   <string name="GroupUpgradedFrom">Group upgraded to supergroup. Tap here to view older history.</string>
   <string name="GroupUpgradedTo">Group upgraded to supergroup.</string>

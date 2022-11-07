@@ -5034,6 +5034,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         return true;
       }
+      case R.id.btn_messageShowInChat: {
+        if (selectedMessage != null) {
+          long chatId = selectedMessage.getChatId();
+          long messageId = selectedMessage.getSmallestId();
+          long[] otherMessageIds = selectedMessage.getOtherMessageIds(messageId);
+          tdlib.ui().openMessage(this, chatId, new MessageId(chatId, messageId, otherMessageIds), selectedMessage.openParameters());
+          clearSelectedMessage();
+        }
+        return true;
+      }
       case R.id.btn_messageDirections: {
         if (selectedMessage != null) {
           TdApi.MessageContent content = selectedMessage.getMessage().content;
