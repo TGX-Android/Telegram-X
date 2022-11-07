@@ -137,6 +137,7 @@ import org.thunderdog.challegram.data.TGBotStart;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGMessageLocation;
 import org.thunderdog.challegram.data.TGMessageMedia;
+import org.thunderdog.challegram.data.TGMessageSender;
 import org.thunderdog.challegram.data.TGMessageSticker;
 import org.thunderdog.challegram.data.TGRecord;
 import org.thunderdog.challegram.data.TGSwitchInline;
@@ -282,6 +283,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   TGMessage.SelectableDelegate, GlobalAccountListener, EmojiToneHelper.Delegate, ComplexHeaderView.Callback, LiveLocationHelper.Callback, CreatePollController.Callback,
   HapticMenuHelper.Provider, HapticMenuHelper.OnItemClickListener, TdlibSettingsManager.DismissRequestsListener {
   public static final float ATTACH_BUTTONS_WIDTH = 47f;
+  public static final int MAX_SENDERS_TO_SHOW = 5;
   private boolean reuseEnabled;
   private boolean destroyInstance;
 
@@ -2761,12 +2763,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
           if (hasSenders) {
 
-            int maxCountToShow = 5;
-            boolean needShowMoreButton = senders.senders.length > maxCountToShow;
+            boolean needShowMoreButton = senders.senders.length > MAX_SENDERS_TO_SHOW;
             List<TdApi.ChatMessageSender> filtered = Arrays.stream(senders.senders)
               .filter(s -> !TD.equalSenders(s.sender, chat.messageSenderId))
               .collect(Collectors.toList());
-            int countToShow = Math.min(filtered.size(), maxCountToShow - 1);
+            int countToShow = Math.min(filtered.size(), MAX_SENDERS_TO_SHOW - 1);
 
             for (int i = 0; i < countToShow; i++) {
               TdApi.ChatMessageSender sender = filtered.get(i);
@@ -2808,12 +2809,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
             switch (sendAsItem.id) {
               case R.id.msg_send_as_more:
+                List<TGMessageSender> result = fillSenders((TdApi.ChatMessageSenders) object);
                 runOnUiThreadOptional(() -> {
-
                   MessageSendersController sendersController = new MessageSendersController(context, tdlib);
                   MessageSendersController.Args args = new MessageSendersController.Args()
                     .setCurrentChat(chat)
-                    .setSelected(chat.messageSenderId);
+                    .setSenders(result);
                   sendersController.setArguments(args);
                   sendersController.show();
                 });
@@ -2846,6 +2847,20 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
       }
     });
+  }
+
+  private List<TGMessageSender> fillSenders (TdApi.ChatMessageSenders object) {
+    TdApi.ChatMessageSenders chatMessageSenders = (TdApi.ChatMessageSenders) object;
+    List<TGMessageSender> result = new ArrayList<>(chatMessageSenders.senders.length);
+    for (TdApi.ChatMessageSender sender : chatMessageSenders.senders) {
+      TGMessageSender tgMessageSender = new TGMessageSender(tdlib, sender.sender, sender.needsPremium);
+      TdApi.MessageSender messageSenderId = chat.messageSenderId;
+      if (messageSenderId != null && Td.getSenderId(messageSenderId) == tgMessageSender.getAnyId()) {
+        tgMessageSender.setSelected(true);
+      }
+      result.add(tgMessageSender);
+    }
+    return result;
   }
 
   public void updateShadowColor () {

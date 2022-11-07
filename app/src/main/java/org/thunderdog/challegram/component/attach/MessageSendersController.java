@@ -52,10 +52,8 @@ import org.thunderdog.challegram.component.chat.MessageSendersAdapter;
 import org.thunderdog.challegram.component.dialogs.SearchManager;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.InlineResult;
-import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGFoundChat;
 import org.thunderdog.challegram.data.TGMessageSender;
-import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.Menu;
@@ -76,7 +74,6 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
-import org.thunderdog.challegram.ui.ContactsController;
 import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.SettingsAdapter;
 import org.thunderdog.challegram.util.HapticMenuHelper;
@@ -84,7 +81,6 @@ import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.BaseView;
-import org.thunderdog.challegram.widget.BetterChatView;
 import org.thunderdog.challegram.widget.CustomImageView;
 import org.thunderdog.challegram.widget.ForceTouchView;
 import org.thunderdog.challegram.widget.MessageSenderView;
@@ -142,16 +138,10 @@ public class MessageSendersController extends TelegramViewController<MessageSend
 
     private boolean allowCopyLink;
 
-    private TdApi.MessageSender selected;
-
     private TdApi.Chat currentChat;
 
     private Runnable after;
-
-    public Args setSelected(TdApi.MessageSender selected) {
-      this.selected = selected;
-      return this;
-    }
+    private List<TGMessageSender> tgMessageSenders;
 
     public Args setCurrentChat(TdApi.Chat currentChat) {
       this.currentChat = currentChat;
@@ -163,6 +153,10 @@ public class MessageSendersController extends TelegramViewController<MessageSend
       return this;
     }
 
+    public Args setSenders (List<TGMessageSender> tgMessageSenders) {
+      this.tgMessageSenders = tgMessageSenders;
+      return this;
+    }
   }
 
   public MessageSendersController(Context context, Tdlib tdlib) {
@@ -686,8 +680,6 @@ public class MessageSendersController extends TelegramViewController<MessageSend
 
       @Override
       protected void setMessageSenderData (ListItem item, int position, MessageSenderView senderView) {
-//        TGFoundChat chat = (TGFoundChat) item.getData();
-//        senderView.setChat(chat);
         TGMessageSender messageSender = (TGMessageSender) item.getData();
         senderView.setPreviewActionListProvider(MessageSendersController.this);
         senderView.setMessageSender(messageSender);
@@ -735,34 +727,10 @@ public class MessageSendersController extends TelegramViewController<MessageSend
 
     // Load chats
 
-//    tdlib.client().send(new TdApi.CreatePrivateChat(tdlib.myUserId(), true), tdlib.silentHandler());
-    // FIXME replace Math.max with proper fix.
-//    int startLoadCount = Math.max(20, Screen.calculateLoadingItems(Screen.dp(95f), 1) * calculateSpanCount());
-//    list.initializeList(this, this::processChats, startLoadCount, this::executeScheduledAnimation);
-
-//    tdlib.searchContacts(null, ContactsController.DISPLAY_LIMIT, this);
-    if (getArguments() != null) {
-      tdlib.send(new TdApi.GetChatAvailableMessageSenders(getArguments().currentChat.id), new Client.ResultHandler() {
-        @Override
-        public void onResult (TdApi.Object object) {
-          if (object.getConstructor() == TdApi.ChatMessageSenders.CONSTRUCTOR) {
-            List<TGMessageSender> result = new ArrayList<>();
-            TdApi.ChatMessageSenders chatMessageSenders = (TdApi.ChatMessageSenders) object;
-            for (TdApi.ChatMessageSender sender : chatMessageSenders.senders) {
-              TGMessageSender tgMessageSender = new TGMessageSender(tdlib, sender.sender, sender.needsPremium);
-              TdApi.MessageSender messageSenderId = getArguments().currentChat.messageSenderId;
-              if (messageSenderId != null && Td.getSenderId(messageSenderId) == tgMessageSender.getAnyId()) {
-                tgMessageSender.setSelected(true);
-              }
-              result.add(tgMessageSender);
-            }
-
-            runOnUiThreadOptional(() ->
-              displaySenders(result)
-            );
-          }
-        }
-      });
+    if (getArguments() != null && getArguments().tgMessageSenders != null) {
+      runOnUiThreadOptional(() ->
+        displaySenders(getArguments().tgMessageSenders)
+      );
     }
 
     return wrapView;
@@ -1506,22 +1474,6 @@ public class MessageSendersController extends TelegramViewController<MessageSend
     } else {
       recyclerView.invalidateItemDecorations();
     }
-
-
-//    if (users.isEmpty()) {
-////      showError(this.users == null ? R.string.NoContacts : R.string.NothingFound, this.users == null);
-//      adapter.setUsers(null);
-//    } else if (this.users == null) {
-////      hideProgress();
-////      hideError();
-//      this.users = users;
-//      adapter.setUsers(users);
-////      expandStartHeight(adapter);
-//    } else {
-//      adapter.setUsers(users);
-////      hideError();
-//    }
-//    adapter.setUsers(users);
     launchOpenAnimation();
   }
 
