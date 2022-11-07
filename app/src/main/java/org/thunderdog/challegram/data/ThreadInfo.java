@@ -49,7 +49,11 @@ public class ThreadInfo {
   }
 
   public static @NonNull ThreadInfo openedFromMessage (@NonNull TdApi.MessageThreadInfo threadInfo, @NonNull TGMessage message) {
-    return openedFromMessage(message.tdlib(), threadInfo, message.msg, 0);
+    return openedFromMessage(message.tdlib(), threadInfo, message.msg);
+  }
+
+  public static @NonNull ThreadInfo openedFromMessage (@NonNull Tdlib tdlib, @NonNull TdApi.MessageThreadInfo threadInfo, @NonNull TdApi.Message message) {
+    return openedFromMessage(tdlib, threadInfo, message, 0);
   }
 
   public static @NonNull ThreadInfo openedFromMessage (@NonNull Tdlib tdlib, @NonNull TdApi.MessageThreadInfo threadInfo, @NonNull TdApi.Message message, long contextChatId) {
