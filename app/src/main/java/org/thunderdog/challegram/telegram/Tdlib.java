@@ -25,6 +25,7 @@ import androidx.annotation.AnyThread;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.Px;
 import androidx.annotation.StringRes;
 import androidx.annotation.UiThread;
 import androidx.collection.LongSparseArray;
@@ -2612,6 +2613,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public @Nullable ImageFile chatAvatar (long chatId) {
+    return chatAvatar(chatId, ChatView.getDefaultAvatarCacheSize());
+  }
+
+  public @Nullable ImageFile chatAvatar (long chatId, @Px int size) {
     if (chatId == 0)
       return null;
     TdApi.Chat chat = chat(chatId);
@@ -2619,7 +2624,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     if (photo == null)
       return null;
     ImageFile avatarFile = new ImageFile(this, photo.small);
-    avatarFile.setSize(ChatView.getDefaultAvatarCacheSize());
+    avatarFile.setSize(size);
     return avatarFile;
   }
 

@@ -14,17 +14,29 @@ package org.thunderdog.challegram.data;
 
 import android.os.Bundle;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.config.Config;
+import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.telegram.Tdlib;
 
 import java.util.Objects;
+
+import me.vkryl.td.Td;
 
 public class ThreadInfo {
   private final boolean areComments;
   private final TdApi.MessageThreadInfo threadInfo;
+  private final long contextChatId;
 
-  public ThreadInfo (TdApi.Message[] openedFromMessages, TdApi.MessageThreadInfo threadInfo, boolean forceComments) {
-    this.areComments = openedFromMessages[0].isChannelPost || (forceComments && (threadInfo.messages[0].isChannelPost || (threadInfo.messages[0].senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR && ((TdApi.MessageSenderChat) threadInfo.messages[0].senderId).chatId != threadInfo.messages[0].chatId)));
+  private ThreadInfo (@NonNull TdApi.MessageThreadInfo threadInfo, long contextChatId, boolean areComments) {
+    this.areComments = areComments;
     this.threadInfo = threadInfo;
+    this.contextChatId = contextChatId;
+
     long messageId = threadInfo.draftMessage != null ? threadInfo.draftMessage.replyToMessageId : 0;
     if (messageId != 0) {
       for (TdApi.Message message : threadInfo.messages) {
@@ -36,23 +48,64 @@ public class ThreadInfo {
     }
   }
 
+  public static @NonNull ThreadInfo openedFromMessage (@NonNull TdApi.MessageThreadInfo threadInfo, @NonNull TGMessage message) {
+    return openedFromMessage(message.tdlib(), threadInfo, message.msg, 0);
+  }
+
+  public static @NonNull ThreadInfo openedFromMessage (@NonNull Tdlib tdlib, @NonNull TdApi.MessageThreadInfo threadInfo, @NonNull TdApi.Message message, long contextChatId) {
+    boolean areComments;
+    if (message.isChannelPost) {
+      if (contextChatId == 0) {
+        contextChatId = message.chatId;
+      }
+      areComments = true;
+    } else {
+      TdApi.Message oldestMessage = getOldestMessage(threadInfo);
+      if (oldestMessage != null && oldestMessage.forwardInfo != null && TD.isChannelAutoForward(oldestMessage)) {
+        if (contextChatId == 0 && tdlib.isRepliesChat(message.chatId)) {
+          contextChatId = oldestMessage.forwardInfo.fromChatId;
+        }
+        areComments = true;
+      } else {
+        areComments = false;
+      }
+    }
+    return new ThreadInfo(threadInfo, contextChatId, areComments);
+  }
+
+  @Override public boolean equals (Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    ThreadInfo that = (ThreadInfo) o;
+    return areComments() == that.areComments() && contextChatId == that.contextChatId && threadInfo.chatId == that.threadInfo.chatId && threadInfo.messageThreadId == that.threadInfo.messageThreadId;
+  }
+
+  @Override public int hashCode () {
+    return Objects.hash(areComments(), contextChatId, threadInfo.chatId, threadInfo.messageThreadId);
+  }
+
+  public boolean belongsTo (long chatId, long messageThreadId) {
+    return threadInfo.chatId == chatId && threadInfo.messageThreadId == messageThreadId;
+  }
+
   public TdApi.Message[] getMessages () {
     return threadInfo.messages;
   }
 
-  @Override
-  public boolean equals (Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    ThreadInfo that = (ThreadInfo) o;
-    return areComments() == that.areComments() &&
-      threadInfo.chatId == that.threadInfo.chatId &&
-      threadInfo.messageThreadId == that.threadInfo.messageThreadId;
+  public long getOldestMessageId () {
+    TdApi.Message oldestMessage = getOldestMessage();
+    return oldestMessage != null ? oldestMessage.id : 0;
   }
 
-  @Override
-  public int hashCode () {
-    return Objects.hash(areComments(), threadInfo.chatId, threadInfo.messageThreadId);
+  public @Nullable TdApi.Message getOldestMessage () {
+    return getOldestMessage(threadInfo);
+  }
+
+  public static @Nullable TdApi.Message getOldestMessage (@Nullable TdApi.MessageThreadInfo threadInfo) {
+    if (threadInfo != null && threadInfo.messages != null && threadInfo.messages.length > 0) {
+      return threadInfo.messages[threadInfo.messages.length - 1];
+    }
+    return null;
   }
 
   public boolean areComments () {
@@ -60,16 +113,27 @@ public class ThreadInfo {
   }
 
   public boolean hasUnreadMessages () {
-    long messageId = Math.max(threadInfo.replyInfo.lastReadInboxMessageId, threadInfo.replyInfo.lastReadOutboxMessageId);
-    return messageId != 0 && threadInfo.replyInfo.lastMessageId > messageId;
+    return Td.hasUnread(threadInfo.replyInfo);
+  }
+
+  public int getSize () {
+    return threadInfo.replyInfo.replyCount;
   }
 
   public TdApi.MessageReplyInfo getReplyInfo () {
     return threadInfo.replyInfo;
   }
 
+  public void setReplyInfo (@NonNull TdApi.MessageReplyInfo replyInfo) {
+    threadInfo.replyInfo = replyInfo;
+  }
+
   public long getChatId () {
     return threadInfo.chatId;
+  }
+
+  public long getContextChatId () {
+    return contextChatId != 0 ? contextChatId : getChatId();
   }
 
   public long getMessageThreadId () {
@@ -84,23 +148,58 @@ public class ThreadInfo {
     return threadInfo.replyInfo.lastMessageId;
   }
 
-  public TdApi.DraftMessage getDraft () {
+  public @Nullable TdApi.DraftMessage getDraft () {
     return threadInfo.draftMessage;
   }
 
-  public int getSize () {
-    return threadInfo.replyInfo.replyCount;
-  }
-
-  public TdApi.InputMessageContent getDraftContent () {
+  public @Nullable TdApi.InputMessageContent getDraftContent () {
     return threadInfo.draftMessage != null ? threadInfo.draftMessage.inputMessageText : null;
   }
 
-  public void saveTo (Bundle outState, String prefix) {
-    // TODO
+  public String chatHeaderTitle (Tdlib tdlib) {
+    return tdlib.chatTitle(getContextChatId());
   }
 
-  public static ThreadInfo restoreFrom (Bundle outState, String prefix) {
-    return null;
+  public CharSequence chatHeaderSubtitle (Tdlib tdlib) {
+    int size = getSize();
+    CharSequence subtitle;
+    if (areComments()) {
+      subtitle = size > 0 ? Lang.pluralBold(R.string.xComments, size) : Lang.getString(R.string.CommentsTitle);
+    } else {
+      if (size > 0) {
+        TdApi.Message message = getOldestMessage();
+        if (message != null) {
+          String senderName = tdlib.senderName(message.senderId, true);
+          subtitle = Lang.pluralBold(R.string.xRepliesToUser, size, senderName);
+        } else {
+          subtitle = Lang.pluralBold(R.string.xReplies, size);
+        }
+      } else {
+        subtitle = Lang.getString(R.string.RepliesTitle);
+      }
+    }
+    return subtitle;
+  }
+
+  public void saveTo (Bundle outState, String prefix) {
+    if (!Config.SAVE_THREAD_INFO_STATE) {
+      return;
+    }
+    TD.saveMessageThreadInfo(outState, prefix, threadInfo);
+    outState.putLong(prefix + "_contextChatId", contextChatId);
+    outState.putBoolean(prefix + "_areComments", areComments);
+  }
+
+  public static @Nullable ThreadInfo restoreFrom (Tdlib tdlib, Bundle savedState, String prefix) {
+    if (!Config.SAVE_THREAD_INFO_STATE) {
+      return null;
+    }
+    TdApi.MessageThreadInfo threadInfo = TD.restoreMessageThreadInfo(tdlib, savedState, prefix);
+    if (threadInfo == null) {
+      return null;
+    }
+    long contextChatId = savedState.getLong(prefix + "_contextChatId");
+    boolean areComments = savedState.getBoolean(prefix + "_areComments");
+    return new ThreadInfo(threadInfo, contextChatId, areComments);
   }
 }

@@ -18,14 +18,17 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
+import android.graphics.Outline;
 import android.graphics.Path;
 import android.graphics.PixelFormat;
+import android.graphics.Point;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewOutlineProvider;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.Interpolator;
 import android.view.animation.OvershootInterpolator;
@@ -44,6 +47,7 @@ import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.data.ThreadInfo;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.navigation.ComplexHeaderView;
 import org.thunderdog.challegram.navigation.DoubleHeaderView;
@@ -51,6 +55,7 @@ import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.ChatListener;
+import org.thunderdog.challegram.telegram.MessageListener;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
@@ -79,7 +84,7 @@ import me.vkryl.td.ChatId;
 
 public class ForceTouchView extends FrameLayoutFix implements
   PopupLayout.AnimatedPopupProvider, FactorAnimator.Target,
-  ChatListener, NotificationSettingsListener, TdlibCache.UserDataChangeListener, TdlibCache.SupergroupDataChangeListener, TdlibCache.BasicGroupDataChangeListener, ThemeChangeListener, TdlibCache.UserStatusChangeListener, SensitiveContentContainer {
+  ChatListener, MessageListener, NotificationSettingsListener, TdlibCache.UserDataChangeListener, TdlibCache.SupergroupDataChangeListener, TdlibCache.BasicGroupDataChangeListener, ThemeChangeListener, TdlibCache.UserStatusChangeListener, SensitiveContentContainer {
   private ForceTouchContext forceTouchContext;
   private final RelativeLayout contentWrap;
   private final View backgroundView;
@@ -93,7 +98,7 @@ public class ForceTouchView extends FrameLayoutFix implements
 
   public interface ActionListener {
     void onForceTouchAction (ForceTouchContext context, int actionId, Object arg);
-    void onAfterForceTouchAction (ForceTouchContext context, int actionId, Object arg);
+    default void onAfterForceTouchAction (ForceTouchContext context, int actionId, Object arg) { }
   }
 
   public interface MaximizeListener {
@@ -110,6 +115,11 @@ public class ForceTouchView extends FrameLayoutFix implements
   // private static TextPaint hintTextPaint;
 
   private final ThemeListenerList themeListenerList;
+
+  private final RectF drawRect = new RectF();
+  private final RectF targetRect = new RectF();
+  private final RectF sourceRect = new RectF();
+  private final @Nullable Path path = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT ? new Path() : null;
 
   public ForceTouchView (Context context) {
     super(context);
@@ -133,55 +143,51 @@ public class ForceTouchView extends FrameLayoutFix implements
 
     params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER);
 
-    final RectF rectF = new RectF();
-
     contentWrap = new RelativeLayout(context) {
-      private final @Nullable Path path = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT ? new Path() : null;
 
       @Override
-      protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-        checkPath();
-      }
+      protected void onSizeChanged (int width, int height, int oldWidth, int oldHeight) {
+        if (width != oldWidth || height != oldHeight) {
+          targetRect.set(0, 0, width, height);
+          if (sourceRect.isEmpty() && height != 0) {
+            sourceRect.set(0, 0, width, Math.min(Screen.dp(200f), height));
 
-      private int lastWidth, lastHeight;
+            int[] location = Views.getLocationOnScreen(this);
+            float y;
+            if (forceTouchContext.sourcePoint != null) {
+              y = forceTouchContext.sourcePoint.y - location[1];
+            } else {
+              y = targetRect.centerY();
+            }
 
-      private void checkPath () {
-        int viewWidth = getMeasuredWidth();
-        int viewHeight = getMeasuredHeight();
+            float dy = y - (y / height) * sourceRect.height();
+            sourceRect.offset(0, dy);
 
-        if (lastWidth != viewWidth || lastHeight != viewHeight) {
-          lastWidth = viewWidth;
-          lastHeight = viewHeight;
-
-          rectF.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
-
-          if (path != null) {
-            path.reset();
-            path.addRoundRect(rectF, Screen.dp(4f), Screen.dp(4f), Path.Direction.CW);
+            drawRect.set(sourceRect);
+            if (path != null) {
+              path.reset();
+              path.addRoundRect(drawRect, Screen.dp(4f), Screen.dp(4f), Path.Direction.CW);
+            }
           }
         }
       }
 
       @Override
       public void draw (Canvas c) {
-        final boolean needClip = !forceTouchContext.needHeader;
-        final int saveCount = needClip ? ViewSupport.clipPath(c, path) : Integer.MIN_VALUE;
+        final int saveCount = ViewSupport.clipPath(c, path);
         super.draw(c);
-        if (needClip) {
-          ViewSupport.restoreClipPath(c, saveCount);
-        }
+        ViewSupport.restoreClipPath(c, saveCount);
         if (path == null) {
-          c.drawRect(0, 0, getMeasuredWidth(), getMeasuredHeight(), Paints.strokeBigPaint(ColorUtils.alphaColor(.2f, Theme.textAccentColor())));
+          c.drawRect(drawRect, Paints.strokeBigPaint(ColorUtils.alphaColor(.2f, Theme.textAccentColor())));
         }
       }
     };
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-      contentWrap.setOutlineProvider(new android.view.ViewOutlineProvider() {
+      contentWrap.setOutlineProvider(new ViewOutlineProvider() {
         @Override
         @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-        public void getOutline (View view, android.graphics.Outline outline) {
-          outline.setRoundRect(0, 0, view.getMeasuredWidth(), view.getMeasuredHeight(), Screen.dp(4f));
+        public void getOutline (View view, Outline outline) {
+          outline.setRoundRect(Math.round(drawRect.left), Math.round(drawRect.top), Math.round(drawRect.right), Math.round(drawRect.bottom), Screen.dp(4f));
         }
       });
       contentWrap.setElevation(Screen.dp(1f));
@@ -190,7 +196,7 @@ public class ForceTouchView extends FrameLayoutFix implements
     ViewUtils.setBackground(contentWrap, new Drawable() {
       @Override
       public void draw (@NonNull Canvas c) {
-        c.drawRoundRect(rectF, Screen.dp(4f), Screen.dp(4f), Paints.fillingPaint(Theme.fillingColor()));
+        c.drawRoundRect(drawRect, Screen.dp(4f), Screen.dp(4f), Paints.fillingPaint(Theme.fillingColor()));
       }
 
       @Override
@@ -239,6 +245,10 @@ public class ForceTouchView extends FrameLayoutFix implements
 
   private @Nullable StateListener listener;
   private ComplexHeaderView headerView;
+  private @Nullable View targetHeaderView;
+  private @Nullable ShadowView headerShadowView;
+  private @Nullable ShadowView footerShadowView;
+  private @Nullable PopupWrapView popupWrapView;
 
   private LinearLayout buttonsList;
   private Tdlib tdlib;
@@ -285,7 +295,6 @@ public class ForceTouchView extends FrameLayoutFix implements
       params.addRule(RelativeLayout.ALIGN_RIGHT, R.id.forceTouch_content);
       contentParams.addRule(RelativeLayout.BELOW, R.id.forceTouch_header);
 
-      View targetHeaderView;
       if (context.needHeaderAvatar) {
         headerView = new ComplexHeaderView(getContext(), tdlib, null);
         headerView.setId(R.id.forceTouch_header);
@@ -293,7 +302,7 @@ public class ForceTouchView extends FrameLayoutFix implements
         headerView.setInnerMargins(Screen.dp(8f), Screen.dp(8f));
         headerView.setTextColors(Theme.textAccentColor(), Theme.textDecentColor());
         if (context.boundDataType == TYPE_CHAT && context.boundDataId != 0) {
-          setupChat(context.boundDataId, context.boundArg1, headerView);
+          setupChat(context.boundDataId, (ThreadInfo) context.boundArg1, headerView);
         } else if (context.boundDataType == TYPE_USER && context.boundDataId != 0) {
           setupUser((int) context.boundDataId, headerView);
         } else {
@@ -315,6 +324,8 @@ public class ForceTouchView extends FrameLayoutFix implements
         headerView.setLayoutParams(params);
         contentWrap.addView(targetHeaderView = headerView);
       }
+      ViewSupport.setThemedBackground(targetHeaderView, R.id.theme_color_filling);
+      themeListenerList.addThemeInvalidateListener(targetHeaderView);
       themeListenerList.addThemeDoubleTextColorListener(targetHeaderView, R.id.theme_color_text, R.id.theme_color_textLight);
 
       params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, Screen.dp(7f));
@@ -322,11 +333,11 @@ public class ForceTouchView extends FrameLayoutFix implements
       params.addRule(RelativeLayout.ALIGN_RIGHT, R.id.forceTouch_content);
       params.addRule(RelativeLayout.ALIGN_TOP, R.id.forceTouch_content);
 
-      ShadowView shadowView = new ShadowView(getContext());
-      shadowView.setSimpleBottomTransparentShadow(true);
-      shadowView.setLayoutParams(params);
-      contentWrap.addView(shadowView);
-      themeListenerList.addThemeInvalidateListener(shadowView);
+      headerShadowView = new ShadowView(getContext());
+      headerShadowView.setSimpleBottomTransparentShadow(true);
+      headerShadowView.setLayoutParams(params);
+      contentWrap.addView(headerShadowView);
+      themeListenerList.addThemeInvalidateListener(headerShadowView);
     }
 
     if (context.hasFooter()) {
@@ -346,6 +357,9 @@ public class ForceTouchView extends FrameLayoutFix implements
       buttonsList.setGravity(Gravity.CENTER_HORIZONTAL);
       buttonsList.setLayoutParams(params);
 
+      ViewSupport.setThemedBackground(buttonsList, R.id.theme_color_filling);
+      themeListenerList.addThemeInvalidateListener(buttonsList);
+
       View offsetView;
 
       if (context.buttonIds.length > 1) {
@@ -363,7 +377,7 @@ public class ForceTouchView extends FrameLayoutFix implements
         params.bottomMargin = contentParams.bottomMargin;
       }
 
-      PopupWrapView popupWrapView = new PopupWrapView(getContext());
+      popupWrapView = new PopupWrapView(getContext());
       popupWrapView.setLayoutParams(params);
       // popupWrapView.setBackgroundColor(0x1cff0000);
 
@@ -415,11 +429,11 @@ public class ForceTouchView extends FrameLayoutFix implements
       params.addRule(RelativeLayout.ALIGN_RIGHT, R.id.forceTouch_content);
       params.addRule(RelativeLayout.ALIGN_BOTTOM, R.id.forceTouch_content);
 
-      ShadowView shadowView = new ShadowView(getContext());
-      shadowView.setSimpleTopShadow(true);
-      shadowView.setLayoutParams(params);
-      contentWrap.addView(shadowView);
-      themeListenerList.addThemeInvalidateListener(shadowView);
+      footerShadowView = new ShadowView(getContext());
+      footerShadowView.setSimpleTopShadow(true);
+      footerShadowView.setLayoutParams(params);
+      contentWrap.addView(footerShadowView);
+      themeListenerList.addThemeInvalidateListener(footerShadowView);
     }
 
     revealFactor = 1f;
@@ -547,10 +561,48 @@ public class ForceTouchView extends FrameLayoutFix implements
   private void setRevealFactor (float factor) {
     if (this.revealFactor != factor) {
       this.revealFactor = factor;
-      final float scale = REVEAL_FACTOR + (1f - REVEAL_FACTOR) * factor;
-      contentWrap.setScaleX(scale);
-      contentWrap.setScaleY(scale);
 
+      if (factor < 1f && path != null) {
+        drawRect.left = MathUtils.fromTo(sourceRect.left, targetRect.left, factor);
+        drawRect.top = MathUtils.fromTo(sourceRect.top, targetRect.top, factor);
+        drawRect.right = MathUtils.fromTo(sourceRect.right, targetRect.right, factor);
+        drawRect.bottom = MathUtils.fromTo(sourceRect.bottom, targetRect.bottom, factor);
+        contentWrap.setScaleX(1f);
+        contentWrap.setScaleY(1f);
+      } else {
+        drawRect.set(targetRect);
+        final float scale = REVEAL_FACTOR + (1f - REVEAL_FACTOR) * factor;
+        contentWrap.setScaleX(scale);
+        contentWrap.setScaleY(scale);
+      }
+
+      if (path != null) {
+        path.reset();
+        path.addRoundRect(drawRect, Screen.dp(4f), Screen.dp(4f), Path.Direction.CW);
+      }
+      if (forceTouchContext.contentView != null) {
+        forceTouchContext.contentView.setTranslationY(drawRect.centerY() - targetRect.centerY());
+      }
+      if (targetHeaderView != null) {
+        targetHeaderView.setTranslationY(drawRect.top);
+      }
+      if (headerShadowView != null) {
+        headerShadowView.setTranslationY(drawRect.top);
+      }
+      if (buttonsList != null) {
+        buttonsList.setTranslationY(drawRect.bottom - targetRect.bottom);
+      }
+      if (popupWrapView != null) {
+        popupWrapView.setTranslationY(drawRect.bottom - targetRect.bottom);
+      }
+      if (footerShadowView != null) {
+        footerShadowView.setTranslationY(drawRect.bottom - targetRect.bottom);
+      }
+
+      contentWrap.invalidate();
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        contentWrap.invalidateOutline();
+      }
 
       if (isMaximizing) {
         float progressFactor = MathUtils.clamp((factor - maximizingFromFactor) / (MAXIMIZE_FACTOR - maximizingFromFactor));
@@ -740,7 +792,7 @@ public class ForceTouchView extends FrameLayoutFix implements
 
   // Animation
 
-  private static final OvershootInterpolator overshootInterpolator = new OvershootInterpolator(1.24f); // 1.78f
+  private static final Interpolator QUAD_OUT = input -> 1f - (1f - input) * (1f - input);
   private FactorAnimator revealAnimator;
 
   @Override
@@ -748,7 +800,7 @@ public class ForceTouchView extends FrameLayoutFix implements
     if (Device.NEED_REDUCE_BOUNCE || Settings.instance().needReduceMotion()) {
       revealAnimator = new FactorAnimator(REVEAL_ANIMATOR, this, new DecelerateInterpolator(1.46f), 140l);
     } else {
-      revealAnimator = new FactorAnimator(REVEAL_ANIMATOR, this, overshootInterpolator, 260l);
+      revealAnimator = new FactorAnimator(REVEAL_ANIMATOR, this, QUAD_OUT, 250l);
     }
   }
 
@@ -828,6 +880,7 @@ public class ForceTouchView extends FrameLayoutFix implements
   public static class ForceTouchContext {
     private final View sourceView;
     private final View contentView;
+    private @Nullable Point sourcePoint;
 
     private boolean allowFullscreen;
     private boolean needHeader, needHeaderAvatar;
@@ -843,7 +896,8 @@ public class ForceTouchView extends FrameLayoutFix implements
     private String title, subtitle;
 
     private int boundDataType;
-    private long boundDataId, boundArg1;
+    private long boundDataId;
+    private @Nullable Object boundArg1;
 
     private StateListener stateListener;
 
@@ -870,6 +924,14 @@ public class ForceTouchView extends FrameLayoutFix implements
       this.contentView = contentView;
       this.stateListener = contentView instanceof StateListener ? (StateListener) contentView : null;
       this.boundController = controller;
+    }
+
+    public void setSource (int x, int y) {
+      if (sourcePoint == null) {
+        sourcePoint = new Point(x, y);
+      } else {
+        sourcePoint.set(x, y);
+      }
     }
 
     public void setTdlib (Tdlib tdlib) {
@@ -952,12 +1014,12 @@ public class ForceTouchView extends FrameLayoutFix implements
       this.subtitle = subtitle;
     }
 
-    public void setBoundChatId (long chatId, long messageThreadId) {
+    public void setBoundChatId (long chatId, @Nullable ThreadInfo messageThread) {
       this.needHeader = true;
       this.needHeaderAvatar = true;
       this.boundDataType = TYPE_CHAT;
       this.boundDataId = chatId;
-      this.boundArg1 = messageThreadId;
+      this.boundArg1 = messageThread;
     }
 
     public void setBoundUserId (long userId) {
@@ -1008,7 +1070,7 @@ public class ForceTouchView extends FrameLayoutFix implements
   private int boundDataType;
   private TdApi.User boundUser;
   private TdApi.Chat boundChat;
-  private long boundMessageThreadId;
+  private ThreadInfo boundMessageThread;
 
   private void setupUser (int userId, ComplexHeaderView headerView) {
     TdApi.User user = tdlib.cache().user(userId);
@@ -1031,23 +1093,27 @@ public class ForceTouchView extends FrameLayoutFix implements
     setChatAvatar();
   }
 
-  private void setupChat (long chatId, long messageThreadId, ComplexHeaderView headerView) {
-    TdApi.Chat chat = tdlib.chat(chatId);
+  private void setupChat (long chatId, @Nullable ThreadInfo messageThread, ComplexHeaderView headerView) {
+    TdApi.Chat chat = tdlib.chatSync(chatId);
     if (chat == null) {
       throw new NullPointerException();
     }
 
     this.boundDataType = TYPE_CHAT;
     this.boundChat = chat;
-    this.boundMessageThreadId = messageThreadId;
-    addChatListeners(chat, messageThreadId, true);
+    this.boundMessageThread = messageThread;
+    addChatListeners(chat, messageThread, true);
 
     headerView.setShowLock(ChatId.isSecret(chatId));
     headerView.setShowVerify(tdlib.chatVerified(chat));
     headerView.setShowScam(tdlib.chatScam(chat));
     headerView.setShowFake(tdlib.chatFake(chat));
-    headerView.setShowMute(tdlib.chatNeedsMuteIcon(chat.id));
-    headerView.setText(tdlib.chatTitle(chat), tdlib.status().chatStatus(chat));
+    headerView.setShowMute(tdlib.chatNeedsMuteIcon(chat));
+    if (messageThread != null) {
+      headerView.setText(messageThread.chatHeaderTitle(tdlib), messageThread.chatHeaderSubtitle(tdlib));
+    } else {
+      headerView.setText(tdlib.chatTitle(chat), tdlib.status().chatStatus(chat));
+    }
     setChatAvatar();
   }
 
@@ -1088,7 +1154,11 @@ public class ForceTouchView extends FrameLayoutFix implements
   private void setChatSubtitle () {
     if (!isDestroyed) {
       if (boundChat != null) {
-        headerView.setSubtitle(tdlib.status().chatStatus(boundChat));
+        if (boundMessageThread != null) {
+          headerView.setSubtitle(boundMessageThread.chatHeaderSubtitle(tdlib));
+        } else {
+          headerView.setSubtitle(tdlib.status().chatStatus(boundChat));
+        }
       }
       if (boundUser != null) {
         headerView.setSubtitle(tdlib.status().getPrivateChatSubtitle(boundUser.id, boundUser, false));
@@ -1108,7 +1178,7 @@ public class ForceTouchView extends FrameLayoutFix implements
 
   private void removeListeners () {
     if (boundChat != null) {
-      addChatListeners(boundChat, boundMessageThreadId, false);
+      addChatListeners(boundChat, boundMessageThread, false);
       boundChat = null;
     }
     if (boundUser != null) {
@@ -1125,16 +1195,24 @@ public class ForceTouchView extends FrameLayoutFix implements
     }
   }
 
-  private void addChatListeners (TdApi.Chat chat, long messageThreadId, boolean add) {
+  private void addChatListeners (TdApi.Chat chat, @Nullable ThreadInfo messageThread, boolean add) {
     if (add) {
       tdlib.listeners().subscribeToChatUpdates(chat.id, this);
       tdlib.listeners().subscribeToSettingsUpdates(chat.id, this);
-      headerView.attachChatStatus(chat.id, messageThreadId);
+      if (messageThread == null || chat.id == messageThread.getChatId()) {
+        headerView.attachChatStatus(chat.id, messageThread != null ? messageThread.getMessageThreadId() : 0);
+      }
+      if (messageThread != null) {
+        tdlib.listeners().subscribeToMessageUpdates(messageThread.getChatId(), this);
+      }
       // tdlib.status().subscribeForChatUpdates(chat.id, this);
     } else {
       tdlib.listeners().unsubscribeFromChatUpdates(chat.id, this);
       tdlib.listeners().unsubscribeFromSettingsUpdates(chat.id, this);
       headerView.removeChatStatus();
+      if (messageThread != null) {
+        tdlib.listeners().unsubscribeFromMessageUpdates(messageThread.getChatId(), this);
+      }
       // tdlib.status().unsubscribeFromChatUpdates(chat.id, this);
     }
     switch (chat.type.getConstructor()) {
@@ -1242,5 +1320,19 @@ public class ForceTouchView extends FrameLayoutFix implements
   @Override
   public void onNotificationSettingsChanged (long chatId, TdApi.ChatNotificationSettings settings) {
     setChatMute();
+  }
+
+  @Override
+  public void onMessageInteractionInfoChanged (long chatId, long messageId, @Nullable TdApi.MessageInteractionInfo interactionInfo) {
+    TdApi.MessageReplyInfo replyInfo = TD.getReplyInfo(interactionInfo);
+    if (replyInfo == null) {
+      return;
+    }
+    tdlib.ui().post(() -> {
+      if (boundMessageThread != null && boundMessageThread.belongsTo(chatId, messageId)) {
+        boundMessageThread.setReplyInfo(replyInfo);
+        setChatSubtitle();
+      }
+    });
   }
 }

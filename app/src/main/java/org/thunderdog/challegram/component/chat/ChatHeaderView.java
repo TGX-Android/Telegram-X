@@ -20,8 +20,6 @@ import android.view.MotionEvent;
 import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
-import org.thunderdog.challegram.R;
-import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.ThreadInfo;
 import org.thunderdog.challegram.navigation.ComplexHeaderView;
@@ -103,15 +101,22 @@ public class ChatHeaderView extends ComplexHeaderView {
     }
 
     if (messageThread != null) {
-      setInnerMargins(Screen.dp(56f), Screen.dp(49f));
-      setText(Lang.plural(messageThread.areComments() ? R.string.xComments : R.string.xReplies, messageThread.getSize()), null);
+      setChatPhoto(chat, chat.photo);
+      setShowVerify(tdlib.chatVerified(chat));
+      setShowScam(tdlib.chatScam(chat));
+      setShowFake(tdlib.chatFake(chat));
+      setShowMute(tdlib.chatNeedsMuteIcon(chat));
+      CharSequence subtitle = messageThread.chatHeaderSubtitle(tdlib);
+      setText(messageThread.chatHeaderTitle(tdlib), subtitle);
+      setForcedSubtitle(subtitle);
+      setExpandedSubtitle(null);
       attachChatStatus(messageThread.getChatId(), messageThread.getMessageThreadId());
     } else {
       setChatPhoto(chat, chat.photo);
       setShowVerify(tdlib.chatVerified(chat));
       setShowScam(tdlib.chatScam(chat));
       setShowFake(tdlib.chatFake(chat));
-      setShowMute(TD.needMuteIcon(chat.notificationSettings, tdlib.scopeNotificationSettings(chat.id)));
+      setShowMute(tdlib.chatNeedsMuteIcon(chat));
       setText(tdlib.chatTitle(chat), !StringUtils.isEmpty(forcedSubtitle) ? forcedSubtitle : tdlib.status().chatStatus(chat));
       setExpandedSubtitle(tdlib.status().chatStatusExpanded(chat));
       setUseRedHighlight(tdlib.isRedTeam(chat.id));

@@ -445,6 +445,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Override
   public void performComplexPhotoOpen () {
+    long headerChatId = getHeaderChatId();
+    TdApi.Chat chat = headerChatId == this.chat.id ? this.chat : tdlib.chat(headerChatId);
     if (chat != null && chat.photo != null && !TD.isFileEmpty(chat.photo.small)) {
       MediaViewController.openFromChat(this, chat, headerCell);
     }
@@ -501,6 +503,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
         headerCell.setForcedSubtitle(Lang.getStringBold(previewSearchSender.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR ? R.string.FoundMessagesFromUser : R.string.FoundMessagesFromChat, tdlib.senderName(previewSearchSender, true)));
       }
     }
+  }
+
+  private void updateThreadSubtitle () {
+    headerCell.setForcedSubtitle(messageThread != null ? messageThread.chatHeaderSubtitle(tdlib) : null);
   }
 
   @Override
@@ -1582,6 +1588,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return chat != null ? chat.id : 0l;
   }
 
+  public final long getHeaderChatId () {
+    return messageThread != null ? messageThread.getContextChatId() : getChatId();
+  }
+
   public long getMessageThreadId () {
     return messageThread != null ? messageThread.getMessageThreadId() : 0l;
   }
@@ -1593,7 +1603,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Nullable
   public TdApi.DraftMessage getDraftMessage () {
-    return messageThread != null ? messageThread.getDraft() : chat.draftMessage;
+    return messageThread != null ? messageThread.getDraft() : chat != null ? chat.draftMessage : null;
   }
 
   public long getChatUserId () {
@@ -1668,12 +1678,29 @@ public class MessagesController extends ViewController<MessagesController.Argume
           ((ViewPagerController<?>) parent).onPagerItemClick(index);
         }
       } else {
-        ProfileController controller = new ProfileController(context, tdlib);
-        controller.setShareCustomHeaderView(true);
-        controller.setArguments(new ProfileController.Args(chat, messageThread, false));
-        navigateTo(controller);
+        if (messageThread != null && messageThread.getChatId() != messageThread.getContextChatId()) {
+          TdApi.Chat contextChat = tdlib.chatSync(messageThread.getContextChatId());
+          if (contextChat != null) {
+            openChatProfile(contextChat);
+          } else {
+            openChatProfile(messageThread.getContextChatId());
+          }
+        } else {
+          openChatProfile(chat);
+        }
       }
     }
+  }
+
+  private void openChatProfile (TdApi.Chat chat) {
+    ProfileController controller = new ProfileController(context, tdlib);
+    controller.setShareCustomHeaderView(true);
+    controller.setArguments(new ProfileController.Args(chat, /* threadInfo */ null, false));
+    navigateTo(controller);
+  }
+
+  private void openChatProfile (long chatId) {
+    tdlib.ui().openChatProfile(this, chatId, /* messageThread */ null, null);
   }
 
   @Override
@@ -1682,7 +1709,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void openLinkedChat () {
-    tdlib.ui().openLinkedChat(this, ChatId.toSupergroupId(getChatId()), new TdlibUi.ChatOpenParameters().keepStack().removeDuplicates());
+    if (messageThread != null && messageThread.getChatId() != 0 && messageThread.getChatId() != messageThread.getContextChatId()) {
+      tdlib.ui().openChat(this, messageThread.getChatId(), new TdlibUi.ChatOpenParameters().keepStack().removeDuplicates());
+    } else {
+      tdlib.ui().openLinkedChat(this, ChatId.toSupergroupId(getChatId()), new TdlibUi.ChatOpenParameters().keepStack().removeDuplicates());
+    }
+  }
+
+  private void manageGroup () {
+    ProfileController controller = new ProfileController(context, tdlib);
+    controller.setArguments(new ProfileController.Args(chat, /*messageThread*/ null, true));
+    navigateTo(controller);
   }
 
   private void joinChat () {
@@ -1925,6 +1962,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case R.id.btn_openLinkedChat: {
         openLinkedChat();
+        break;
+      }
+      case R.id.btn_manageGroup: {
+        manageGroup();
         break;
       }
       case R.id.btn_sendScreenshotNotification: {
@@ -2176,7 +2217,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (chatId != 0 && chat == null)
       return false;
     TdApi.ChatList chatList = TD.chatListFromKey(in.getString(keyPrefix + "chat_list", null));
-    ThreadInfo messageThread = ThreadInfo.restoreFrom(in, keyPrefix + "thread");
+    ThreadInfo messageThread = ThreadInfo.restoreFrom(tdlib, in, keyPrefix + "thread");
     TdApi.SearchMessagesFilter filter = TD.restoreFilter(in, keyPrefix + "filter_");
     Arguments args = null;
     switch (constructor) {
@@ -2535,7 +2576,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
       liveLocation = null;
     }
 
-    headerCell.setChat(tdlib, chat, messageThread);
+    TdApi.Chat headerChat = messageThread != null ? tdlib.chatSync(messageThread.getContextChatId()) : null;
+    headerCell.setChat(tdlib, headerChat != null ? headerChat : chat, messageThread);
 
     if (inPreviewMode) {
       switch (previewMode) {
@@ -2644,7 +2686,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (messageThread != null) {
       TdApi.Message[] messages = messageThread.getMessages();
       TGMessage msg = null;
-      for (TdApi.Message message : messages) {
+      for (int index = messages.length - 1; index >= 0; index--) {
+        TdApi.Message message = messages[index];
         if (msg == null) {
           msg = TGMessage.valueOf(manager, message, chat, (TdApi.ChatAdministrator) null);
         } else {
@@ -3129,7 +3172,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
       case PREVIEW_MODE_WALLPAPER:
         return R.id.menu_gallery;
     }
-    return getChatId() != 0 ? (isSelfChat() || getMessageThreadId() != 0 ? R.id.menu_search : isSecretChat() ? R.id.menu_secretChat : R.id.menu_more) : 0;
+    if (getChatId() != 0) {
+      if (isSelfChat()) {
+        return R.id.menu_search;
+      }
+      if (isSecretChat()) {
+        return R.id.menu_secretChat;
+      }
+      return R.id.menu_more;
+    }
+    return 0;
   }
 
   @Override
@@ -4019,12 +4071,29 @@ public class MessagesController extends ViewController<MessagesController.Argume
     IntList ids = new IntList(4);
     StringList strings = new StringList(4);
 
+    TdApi.ChatMemberStatus status = tdlib.chatStatus(chat.id);
+
+    if (messageThread != null && messageThread.getMessageThreadId() != 0) {
+      if (!manager.isTotallyEmpty() && !messagesHidden) {
+        ids.append(R.id.btn_search);
+        strings.append(R.string.Search);
+      }
+      if (status != null && TD.isAdmin(status) || tdlib.canChangeInfo(chat)) {
+        ids.append(R.id.btn_manageGroup);
+        strings.append(R.string.ManageGroup);
+      }
+      if (messageThread.getChatId() != 0 && messageThread.getChatId() != messageThread.getContextChatId()) {
+        ids.append(R.id.btn_openLinkedChat);
+        strings.append(R.string.LinkedGroup);
+      }
+      showMore(ids.get(), strings.get());
+      return;
+    }
+
     if (!manager.isTotallyEmpty() && (Config.USE_SECRET_SEARCH || !isSecretChat()) && !messagesHidden) {
       ids.append(R.id.btn_search);
       strings.append(R.string.Search);
     }
-
-    TdApi.ChatMemberStatus status = tdlib.chatStatus(chat.id);
 
     if ((!tdlib.isChannel(chat.id) || (status != null && !TD.isLeft(status))) && !tdlib.isSelfChat(chat.id)) {
       ids.append(R.id.btn_mute);
@@ -5112,7 +5181,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case R.id.btn_messageReplies: {
         if (selectedMessage != null) {
-          selectedMessage.openMessageThread(null);
+          selectedMessage.openMessageThread();
           clearSelectedMessage();
         }
         return true;
@@ -5180,7 +5249,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
                   break;
                 }
                 case TdApi.Error.CONSTRUCTOR: {
-                  UI.showError(result);
+                  if ("MSG_ID_INVALID".equals(TD.errorText(result)) && isChannel()) {
+                    UI.showToast(R.string.ChannelPostDeleted, Toast.LENGTH_SHORT);
+                  } else {
+                    UI.showError(result);
+                  }
                   break;
                 }
               }
@@ -6985,6 +7058,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
     .setRawItems(new ListItem[] {item}).setSaveStr(R.string.Pin));
   }
 
+  public void showHidePinnedMessage (boolean show, TdApi.Message message) {
+    if (show) {
+      pinnedMessagesBar.setCollapseButtonVisible(false);
+      pinnedMessagesBar.setContextChatId(getChatId() != getHeaderChatId() ? getHeaderChatId() : 0);
+      pinnedMessagesBar.setMessage(message);
+    }
+    topBar.setItemVisible(pinnedMessagesItem, show, isFocused());
+  }
+
   public void showHidePinnedMessages (boolean show, MessageListManager messageList) {
     if (arePinnedMessages()) {
       if (!show)
@@ -7047,6 +7129,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
         editingMessage.content = content;
         replyView.setReplyTo(editingMessage, Lang.getString(R.string.EditMessage));
         editingMessage.content = oldContent;
+      }
+    }
+  }
+
+  public void onMessageInteractionInfoChanged (long messageId, @Nullable TdApi.MessageInteractionInfo interactionInfo) {
+    if (messageThread != null && messageThread.getMessageThreadId() == messageId) {
+      TdApi.MessageReplyInfo replyInfo = TD.getReplyInfo(interactionInfo);
+      if (replyInfo != null) {
+        messageThread.setReplyInfo(replyInfo);
+        updateThreadSubtitle();
       }
     }
   }
@@ -8771,6 +8863,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
               tdlib.ui().post(() -> {
                 if (isSchedule == areScheduled) {
                   manager.addSentMessages(parsedMessages);
+                  if (messageThread != null) { // FIXME(firefly) 🩼
+                    TdApi.MessageReplyInfo replyInfo = messageThread.getReplyInfo();
+                    if (replyInfo != null) {
+                      replyInfo.replyCount += sentCount;
+                      updateThreadSubtitle();
+                    }
+                  }
                 }
                 onDone.runWithBool(sentCount == expectedCount);
                 if (!areScheduled && isSchedule && isFocused()) {
@@ -9399,6 +9498,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   public void subscribeToUpdates (long chatId) {
     tdlib.listeners().subscribeToChatUpdates(chatId, this);
+    if (chatId != getHeaderChatId()) {
+      tdlib.listeners().subscribeToChatUpdates(getHeaderChatId(), this);
+    }
     tdlib.listeners().subscribeToSettingsUpdates(this);
     if (getChatId() == chatId) {
       switch (chat.type.getConstructor()) {
@@ -9426,6 +9528,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   public void unsubscribeFromUpdates (long chatId) {
     tdlib.listeners().unsubscribeFromChatUpdates(chatId, this);
+    if (chatId != getHeaderChatId()) {
+      tdlib.listeners().unsubscribeFromChatUpdates(getHeaderChatId(), this);
+    }
     tdlib.listeners().unsubscribeFromSettingsUpdates(this);
     // tdlib.status().unsubscribeFromChatUpdates(chatId, this);
     if (getChatId() == chatId) {
@@ -9502,7 +9607,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Override
   public void onChatTitleChanged (final long chatId, final String title) {
     runOnUiThreadOptional(() -> {
-      if (getChatId() == chatId) {
+      if (getHeaderChatId() == chatId) {
         headerCell.updateChatTitle(chatId, title);
       }
     });
@@ -9533,7 +9638,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Override
   public void onChatPhotoChanged (final long chatId, @Nullable final TdApi.ChatPhotoInfo photo) {
     tdlib.ui().post(() -> {
-      if (getChatId() == chatId) {
+      if (getHeaderChatId() == chatId) {
         headerCell.updateChatPhoto(chat, photo);
       }
     });
@@ -9675,8 +9780,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Override
   public void onSupergroupFullUpdated (final long supergroupId, final TdApi.SupergroupFullInfo newSupergroupFull) {
     tdlib.ui().post(() -> {
-      if (ChatId.toSupergroupId(getChatId()) == supergroupId) {
+      if (ChatId.toSupergroupId(getHeaderChatId()) == supergroupId) {
         headerCell.updateUserStatus(chat);
+      }
+      if (ChatId.toSupergroupId(getChatId()) == supergroupId) {
         checkLinkedChat();
       }
     });
@@ -9704,7 +9811,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Override
   public void onBasicGroupFullUpdated (final long basicGroupId, TdApi.BasicGroupFullInfo basicGroupFull) {
     tdlib.ui().post(() -> {
-      if (chat != null && ChatId.toBasicGroupId(getChatId()) == basicGroupId) {
+      if (chat != null && ChatId.toBasicGroupId(getHeaderChatId()) == basicGroupId) {
         headerCell.updateUserStatus(chat);
       }
     });
@@ -9713,7 +9820,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Override
   public void onChatOnlineMemberCountChanged (long chatId, int onlineMemberCount) {
     tdlib.ui().post(() -> {
-      if (chat != null && getChatId() == chatId) {
+      if (chat != null && getHeaderChatId() == chatId) {
         headerCell.updateUserStatus(chat);
       }
     });
@@ -9752,8 +9859,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Override
   public void onNotificationSettingsChanged (long chatId, TdApi.ChatNotificationSettings settings) {
     tdlib.ui().post(() -> {
-      if (getChatId() == chatId) {
+      if (getHeaderChatId() == chatId) {
         headerCell.updateNotificationSettings(chatId, settings);
+      }
+      if (getChatId() == chatId) {
         updateCounters(true);
       }
     });
@@ -10458,8 +10567,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Override
   public void onPrepareForceTouchContext (ForceTouchView.ForceTouchContext context) {
+    ThreadInfo messageThread = getMessageThread();
+    long boundChatId = messageThread != null ? messageThread.getContextChatId() : getChatId();
     context.setIsMatchParent(true);
-    context.setBoundChatId(getChatId(), getMessageThreadId());
+    context.setBoundChatId(boundChatId, messageThread);
     context.setAllowFullscreen(true);
   }
 

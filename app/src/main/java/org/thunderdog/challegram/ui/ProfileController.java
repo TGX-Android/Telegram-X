@@ -213,7 +213,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   @Override
   public boolean restoreInstanceState (Bundle in, String keyPrefix) {
     long chatId = in.getLong(keyPrefix + "chat_id");
-    ThreadInfo threadInfo = ThreadInfo.restoreFrom(in, keyPrefix);
+    ThreadInfo threadInfo = ThreadInfo.restoreFrom(tdlib, in, keyPrefix);
     boolean isEdit = in.getBoolean(keyPrefix + "is_edit");
     TdApi.Chat chat = tdlib.chatSync(chatId);
     if (chat != null && !tdlib.hasPasscode(chat)) {
@@ -928,6 +928,15 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   @Override
   protected void onFloatingButtonPressed () {
+    if (mode == MODE_CHANNEL && FeatureToggles.CHANNEL_PROFILE_FLOATING_BUTTON_OPENS_DISCUSSION_GROUP) {
+      if (supergroup != null && supergroup.isChannel && supergroup.hasLinkedChat) {
+        long linkedChatId = supergroupFull != null ? supergroupFull.linkedChatId : 0;
+        if (linkedChatId != 0) {
+          tdlib.ui().openLinkedChat(this, supergroup.id, new TdlibUi.ChatOpenParameters().keepStack().removeDuplicates());
+          return;
+        }
+      }
+    }
     ViewController<?> c = previousStackItem();
     if (c instanceof MessagesController && c.getChatId() == chat.id) {
       navigateBack();

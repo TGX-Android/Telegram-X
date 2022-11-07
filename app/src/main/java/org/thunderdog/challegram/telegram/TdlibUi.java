@@ -1774,14 +1774,14 @@ public class TdlibUi extends Handler {
       return true;
     }
 
-    public static ChatOpenParameters restoreInstanceState (Bundle in, String keyPrefix) {
+    public static ChatOpenParameters restoreInstanceState (Tdlib tdlib, Bundle in, String keyPrefix) {
       ChatOpenParameters params = new ChatOpenParameters();
       params.options = in.getInt(keyPrefix + "cp_options", 0);
       params.highlightSet = in.getBoolean(keyPrefix + "cp_highlightSet", false);
       params.highlightMode = in.getInt(keyPrefix + "cp_highlightMode", 0);
       params.highlightMessageId = TD.restoreMessageId(in, keyPrefix + "cp_highlightMessageId");
       params.chatList = TD.chatListFromKey(in.getString(keyPrefix + "cp_chatList", null));
-      params.threadInfo = ThreadInfo.restoreFrom(in, keyPrefix + "cp_messageThread");
+      params.threadInfo = ThreadInfo.restoreFrom(tdlib, in, keyPrefix + "cp_messageThread");
       params.filter = TD.restoreFilter(in, keyPrefix + "cp_filter");
       return params;
     }

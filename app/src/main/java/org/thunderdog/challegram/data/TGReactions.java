@@ -486,7 +486,7 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
   }
 
   public boolean toggleReaction (TdApi.ReactionType reactionType, boolean isBig, boolean updateRecentReactions, Client.ResultHandler handler) {
-    TdApi.Message message = parent.getFirstMessageInCombined();
+    TdApi.Message message = parent.getOldestMessage();
     String reactionKey = TD.makeReactionKey(reactionType);
     boolean hasReaction = !chosenReactions.contains(reactionKey);
     if (hasReaction) {

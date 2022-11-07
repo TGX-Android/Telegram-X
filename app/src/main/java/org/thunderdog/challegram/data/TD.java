@@ -800,6 +800,84 @@ public class TD {
     return null;
   }
 
+  public static void saveMessageThreadInfo (Bundle bundle, String prefix, @Nullable TdApi.MessageThreadInfo threadInfo) {
+    if (threadInfo == null) {
+      return;
+    }
+    bundle.putLong(prefix + "_chatId", threadInfo.chatId);
+    bundle.putLong(prefix + "_messageThreadId", threadInfo.messageThreadId);
+    bundle.putInt(prefix + "_unreadMessageCount", threadInfo.unreadMessageCount);
+    saveReplyInfo(bundle, prefix + "_replyInfo", threadInfo.replyInfo);
+    bundle.putInt(prefix + "_messagesLength", threadInfo.messages.length);
+    for (int index = 0; index < threadInfo.messages.length; index++) {
+      bundle.putLong(prefix + "_messageId_" + index, threadInfo.messages[index].id);
+    }
+  }
+
+  public static @Nullable TdApi.MessageThreadInfo restoreMessageThreadInfo (Tdlib tdlib, Bundle bundle, String prefix) {
+    long chatId = bundle.getLong(prefix + "_chatId");
+    long messageThreadId = bundle.getLong(prefix + "_messageThreadId");
+    if (chatId == 0 || messageThreadId == 0) {
+      return null;
+    }
+    TdApi.MessageReplyInfo replyInfo = restoreMessageReplyInfo(bundle, prefix);
+    if (replyInfo == null) {
+      return null;
+    }
+    int unreadMessageCount = bundle.getInt(prefix + "_unreadMessageCount");
+    int messagesLength = bundle.getInt(prefix + "_messagesLength");
+    ArrayList<TdApi.Message> messages = new ArrayList<>(Math.max(messagesLength, 0));
+    for (int index = 0; index < messagesLength; index++) {
+      long messageId = bundle.getLong(prefix + "_messageId_" + index);
+      TdApi.Message message = tdlib.getMessageLocally(chatId, messageId);
+      if (message != null) {
+        messages.add(message);
+      } else {
+        return null;
+      }
+    }
+    TdApi.DraftMessage draftMessage = null; // FIXME(firefly) draftMessage is not saved
+    return new TdApi.MessageThreadInfo(chatId, messageThreadId, replyInfo, unreadMessageCount, messages.toArray(new TdApi.Message[0]), draftMessage);
+  }
+
+  public static void saveReplyInfo (Bundle bundle, String prefix, @Nullable TdApi.MessageReplyInfo replyInfo) {
+    if (replyInfo == null) {
+      return;
+    }
+    bundle.putInt(prefix + "_replyCount", replyInfo.replyCount);
+    bundle.putLong(prefix + "_lastMessageId", replyInfo.lastMessageId);
+    bundle.putLong(prefix + "_lastReadInboxMessageId", replyInfo.lastReadInboxMessageId);
+    bundle.putLong(prefix + "_lastReadOutboxMessageId", replyInfo.lastReadOutboxMessageId);
+    if (replyInfo.recentReplierIds != null) {
+      bundle.putInt(prefix + "_recentReplierIdsLength", replyInfo.recentReplierIds.length);
+      for (int index = 0; index < replyInfo.recentReplierIds.length; index++) {
+        TdApi.MessageSender recentReplierId = replyInfo.recentReplierIds[index];
+        saveSender(bundle, prefix + "_recentReplierId_" + index, recentReplierId);
+      }
+    }
+  }
+
+  public static @Nullable TdApi.MessageReplyInfo restoreMessageReplyInfo (Bundle bundle, String prefix) {
+    if (!bundle.containsKey(prefix + "_replyCount")) {
+      return null;
+    }
+    int replyCount = bundle.getInt(prefix + "_replyCount");
+    long lastMessageId = bundle.getLong(prefix + "_lastMessageId");
+    long lastReadInboxMessageId = bundle.getLong(prefix + "_lastReadInboxMessageId");
+    long lastReadOutboxMessageId = bundle.getLong(prefix + "_lastReadOutboxMessageId");
+    int recentReplierIdsLength = bundle.getInt(prefix + "_recentReplierIdsLength", -1);
+    TdApi.MessageSender[] recentReplierIds;
+    if (recentReplierIdsLength >= 0) {
+      recentReplierIds = new TdApi.MessageSender[recentReplierIdsLength];
+      for (int index = 0; index < recentReplierIdsLength; index++) {
+        recentReplierIds[index] = restoreSender(bundle, prefix + "_recentReplierId_" + index);
+      }
+    } else {
+      recentReplierIds = null;
+    }
+    return new TdApi.MessageReplyInfo(replyCount, recentReplierIds, lastReadInboxMessageId, lastReadOutboxMessageId, lastMessageId);
+  }
+
   public static TdApi.ChatList chatListFromKey (String key) {
     if (StringUtils.isEmpty(key))
       return null;
@@ -1011,6 +1089,17 @@ public class TD {
     return message != null && message.schedulingState != null;
   }
 
+  public static boolean isChannelAutoForward (@Nullable TdApi.Message message) {
+    if (message == null) {
+      return false;
+    }
+    return (message.forwardInfo != null && message.forwardInfo.origin.getConstructor() == TdApi.MessageForwardOriginChannel.CONSTRUCTOR &&
+      message.forwardInfo.fromChatId == ((TdApi.MessageForwardOriginChannel) message.forwardInfo.origin).chatId &&
+      message.senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR &&
+      ((TdApi.MessageSenderChat) message.senderId).chatId == message.forwardInfo.fromChatId
+    );
+  }
+
   public static TdApi.PhotoSize toThumbnailSize (TdApi.Thumbnail thumbnail) {
     if (thumbnail == null)
       return null;
@@ -1146,7 +1235,12 @@ public class TD {
     return interactionInfo != null ? interactionInfo.viewCount : 0;
   }
 
-  public static TdApi.MessageReplyInfo getReplyInfo (TdApi.MessageInteractionInfo interactionInfo) {
+  public static int getReplyCount (TdApi.MessageInteractionInfo interactionInfo) {
+    TdApi.MessageReplyInfo replyInfo = getReplyInfo(interactionInfo);
+    return replyInfo != null ? replyInfo.replyCount : 0;
+  }
+
+  public static @Nullable TdApi.MessageReplyInfo getReplyInfo (TdApi.MessageInteractionInfo interactionInfo) {
     return interactionInfo != null ? interactionInfo.replyInfo : null;
   }
 

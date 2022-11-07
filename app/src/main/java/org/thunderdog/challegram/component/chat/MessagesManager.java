@@ -113,7 +113,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       public void onScrollStateChanged (RecyclerView recyclerView, int newState) {
         if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
           controller.collapsePinnedMessagesBar(true);
-          if (Settings.instance().needHideChatKeyboardOnScroll() && controller != null) {
+          if (Settings.instance().needHideChatKeyboardOnScroll()) {
             controller.hideAllKeyboards();
           }
           wasScrollByUser = true;
@@ -704,7 +704,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   public void resetByMessage (MessageId highlightMessageId, int highlightMode) {
-    clearHeaderMessage();
+    // clearHeaderMessage(); // FIXME(firefly) ???
     this.highlightMessageId = highlightMessageId;
     this.highlightMode = highlightMode;
     loadFromMessage(highlightMessageId, highlightMode, false);
@@ -1139,7 +1139,19 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           adapter.addMessages(items, true);
         }
         if (scrollMessage == null) {
-          if (scrollMessageId != null && scrollMessageId.isHistoryStart() && !items.isEmpty()) {
+          if (headerMessage != null && scrollMessageId != null && scrollMessageId.isHistoryStart() && !items.isEmpty()) {
+            insertHeaderMessageIfNeeded();
+            TGMessage item = items.get(items.size() - 1);
+            int index = adapter.indexOfMessageContainer(item.getId());
+            if (index != -1) {
+              scrollToMessage(index, item, highlightMode, false, false);
+            }
+          } else if (headerMessage != null && scrollMessageId != null && headerMessage.isDescendantOrSelf(scrollMessageId.getMessageId()) && !adapter.isEmpty()) {
+            insertHeaderMessageIfNeeded();
+            if (headerMessage == adapter.getTopMessage()) {
+              scrollToMessage(adapter.getMessageCount() - 1, headerMessage, highlightMode, false, false);
+            }
+          } else if (scrollMessageId != null && scrollMessageId.isHistoryStart() && !items.isEmpty()) {
             manager.scrollToPositionWithOffset(items.size() - 1, -items.get(items.size() - 1).getHeight());
           } else if (scrollPosition == 0) {
             manager.scrollToPositionWithOffset(0, 0);
@@ -1201,14 +1213,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   public void onTopEndLoaded () {
-    if (headerMessage != null && shouldInsertHeaderMessage()) {
-      if (headerMessage instanceof TGMessageBotInfo) {
-        ((TGMessageBotInfo) headerMessage).setBoundAdapter(adapter);
-      }
-      adapter.addMessage(headerMessage, true, false);
-    } else {
-      insertMessageOnLoad = true;
-    }
+    insertHeaderMessageIfNeeded();
     checkBotStart();
     onChatAwaitFinish();
     ensureContentHeight();
@@ -1222,6 +1227,17 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   public void onBottomEndChecked () {
     requestSponsoredMessage();
+  }
+
+  private void insertHeaderMessageIfNeeded () {
+    if (headerMessage != null && shouldInsertHeaderMessage()) {
+      if (headerMessage instanceof TGMessageBotInfo) {
+        ((TGMessageBotInfo) headerMessage).setBoundAdapter(adapter);
+      }
+      adapter.addMessage(headerMessage, true, false);
+    } else {
+      insertMessageOnLoad = true;
+    }
   }
 
   private void requestSponsoredMessage () {
@@ -1610,7 +1626,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         }
       }
       checkPositionInList(msg, index, message.id);
-      viewMessages();
+      viewMessageInternal(message.chatId, message.messageThreadId, message.id); // FIXME(firefly) 🩼
+      viewMessages(); // doesn't affect sent message because it's already viewed
     }
   }
 
@@ -1767,6 +1784,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   public void updateMessageInteractionInfo (long messageId, @Nullable TdApi.MessageInteractionInfo interactionInfo) {
+    controller.onMessageInteractionInfoChanged(messageId, interactionInfo);
     int index = adapter.indexOfMessageContainer(messageId);
     if (index != -1 && adapter.getItem(index).setMessageInteractionInfo(messageId, interactionInfo)) {
       invalidateViewAt(index);
@@ -2105,21 +2123,24 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
   }
 
-  private boolean isHeaderVisible;
+  private @Nullable Boolean isHeaderVisible;
 
   public boolean isHeaderVisible () {
-    return isHeaderVisible;
+    return Boolean.TRUE.equals(isHeaderVisible);
   }
 
   public void setHeaderVisible (boolean headerVisible) {
-    if (this.isHeaderVisible != headerVisible) {
+    if (this.isHeaderVisible == null || this.isHeaderVisible != headerVisible) {
       this.isHeaderVisible = headerVisible;
       TGMessage message = adapter.getMessage(getActiveMessageCount() - 1);
       if (message != null) {
         message.updateDate();
         controller.getMessagesView().invalidate();
       }
-      // TODO show/hide pinned message
+      if (headerMessage != null && !controller.isInForceTouchMode()) {
+        TdApi.Message pinnedMessage = headerMessage.getOldestMessage();
+        controller.showHidePinnedMessage(!headerVisible, pinnedMessage);
+      }
     }
   }
 
@@ -2650,7 +2671,11 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
     int index = adapter.indexOfMessageContainer(messageId);
     if (index == -1) {
-      resetByMessage(messageId, highlightMode);
+      if (headerMessage != null && headerMessage.isDescendantOrSelf(messageId.getMessageId())) {
+        loadFromMessage(new MessageId(headerMessage.getChatId(), headerMessage.getSmallestId()), highlightMode, false);
+      } else {
+        resetByMessage(messageId, highlightMode);
+      }
     } else {
       if ((highlightMode == HIGHLIGHT_MODE_UNREAD_NEXT || highlightMode == HIGHLIGHT_MODE_NORMAL_NEXT) && index > 0) {
         index--;
@@ -2759,6 +2784,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         return HIGHLIGHT_MODE_POSITION_RESTORE;
       if (canGoUnread)
         return HIGHLIGHT_MODE_UNREAD;
+    }
+    if (threadInfo != null) {
+      return HIGHLIGHT_MODE_UNREAD;
     }
     return HIGHLIGHT_MODE_NONE;
   }

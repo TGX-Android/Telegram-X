@@ -227,6 +227,7 @@
   <item type="id" name="controller_chatLinks" />
   <item type="id" name="controller_chatLinkMembers" />
   <item type="id" name="controller_sponsoredMessagesInfo" />
+  <item type="id" name="controller_featureToggles" />
 
   <item type="id" name="separator" />
 
@@ -757,6 +758,7 @@
   <item type="id" name="btn_openAdminInviteLinks" />
   <item type="id" name="btn_manageInviteLinks" />
   <item type="id" name="btn_manageJoinRequests" />
+  <item type="id" name="btn_manageGroup" />
   <item type="id" name="btn_inviteLinkUserLimit" />
   <item type="id" name="btn_inviteLinkUserSlider" />
   <item type="id" name="btn_inviteLinkDateLimit" />
@@ -1219,4 +1221,6 @@
   <item type="id" name="btn_themeCreateInfo" />
   <item type="id" name="btn_themeExportNeedDefault" />
   <item type="id" name="btn_themeExportSetAuthor" />
+
+  <item type="id" name="btn_featureToggles" />
 </resources>

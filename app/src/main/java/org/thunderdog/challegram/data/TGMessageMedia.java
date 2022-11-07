@@ -47,6 +47,7 @@ import org.thunderdog.challegram.util.text.TextWrapper;
 import java.util.ArrayList;
 
 import me.vkryl.android.animator.FactorAnimator;
+import me.vkryl.core.MathUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.td.Td;
 
@@ -405,7 +406,20 @@ public class TGMessageMedia extends TGMessage {
       maxHeight = getSmallestMaxContentHeight();
     }
 
-    mosaicWrapper.build(maxWidth, maxHeight, needFullWidth ? MosaicWrapper.MODE_FIT_WIDTH : MosaicWrapper.MODE_FIT_AS_IS, false);
+    int minWidth = Screen.dp(MosaicWrapper.MIN_LAYOUT_WIDTH);
+    int minHeight = Screen.dp(MosaicWrapper.MIN_LAYOUT_HEIGHT);
+
+    if (commentButton.isVisible() && commentButton.isInline() && useBubbles() && !allowBubbleHorizontalExtend()) {
+      float minContentWidth = commentButton.getAnimatedWidth(0, 1f) - getBubbleContentPadding() * 2;
+      if (minContentWidth > minWidth) {
+        minWidth = Math.round(MathUtils.fromTo(minWidth, minContentWidth, commentButton.getVisibility()));
+      }
+    }
+
+    minWidth = Math.min(minWidth, maxWidth);
+    minHeight = Math.min(minHeight, maxHeight);
+
+    mosaicWrapper.build(maxWidth, maxHeight, minWidth, minHeight, needFullWidth ? MosaicWrapper.MODE_FIT_WIDTH : MosaicWrapper.MODE_FIT_AS_IS, false);
 
     if (isHot()) {
       updateTimerText();
@@ -785,6 +799,9 @@ public class TGMessageMedia extends TGMessage {
 
   @Override
   public boolean allowLongPress (float x, float y) {
+    if (!super.allowLongPress(x, y)) {
+      return false;
+    }
     int cellLeft = getContentX();
     int cellTop = getContentY();
     int cellRight = cellLeft + mosaicWrapper.getWidth();

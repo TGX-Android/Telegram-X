@@ -3974,10 +3974,18 @@
   <string name="xComments_other">%1$s comments</string>
   <string name="xReplies_one">%1$s reply</string>
   <string name="xReplies_other">%1$s replies</string>
+  <string name="xRepliesToUser_one">%1$s reply to %2$s</string>
+  <string name="xRepliesToUser_other">%1$s replies to %2$s</string>
   <string name="ViewXComments_one">View %1$s comment</string>
   <string name="ViewXComments_other">View %1$s comments</string>
   <string name="DiscussionStart">Discussion started</string>
   <string name="NoComments">No comments yet…</string>
+  <string name="NoReplies">No replies yet…</string>
+  <string name="ChannelPostDeleted">Sorry, this post has been removed from the discussion group.</string>
+  <string name="ViewThread">View Thread</string>
+  <string name="ViewInChat">View in chat</string>
+  <string name="CommentsTitle">Comments</string>
+  <string name="RepliesTitle">Replies</string>
 
   <string name="RepliesBot">Replies</string>
   <string name="RepliesBotShort">Replies</string>

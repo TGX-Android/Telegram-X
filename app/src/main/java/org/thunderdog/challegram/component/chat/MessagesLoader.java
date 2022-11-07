@@ -1454,8 +1454,9 @@ public class MessagesLoader implements Client.ResultHandler {
           }
         }
 
-        canLoadTop = specialMode != SPECIAL_MODE_SCHEDULED && (loadingLocal || (totalCount != 0 && getChatId() != 0));
-        canLoadBottom = specialMode != SPECIAL_MODE_SCHEDULED && (scrollMessageId == null || !scrollMessageId.isHistoryEnd()) && canLoadTop && !items.isEmpty() && !isEndReached(new MessageId(suitableMessage.getChatId(), suitableMessage.getId()));
+        final boolean canLoadMore = loadingLocal || (totalCount != 0 && getChatId() != 0);
+        canLoadTop = specialMode != SPECIAL_MODE_SCHEDULED && (scrollMessageId == null || !scrollMessageId.isHistoryStart()) && canLoadMore;
+        canLoadBottom = specialMode != SPECIAL_MODE_SCHEDULED && (scrollMessageId == null || !scrollMessageId.isHistoryEnd()) && canLoadMore && !items.isEmpty() && !isEndReached(new MessageId(suitableMessage.getChatId(), suitableMessage.getId()));
         if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
           Log.i(Log.TAG_MESSAGES_LOADER, "Received initial chunk, startTop:%s startBottom:%s canLoadTop:%b canLoadBottom:%b", getStartTop(), getStartBottom(), canLoadTop, canLoadBottom);
         }
