@@ -3,6 +3,9 @@ package org.thunderdog.challegram.ui;
 import android.content.Context;
 import android.view.View;
 
+import androidx.collection.SparseArrayCompat;
+import androidx.core.view.ViewCompat;
+
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.config.Config;
@@ -10,6 +13,9 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 
 import java.util.Arrays;
+
+import me.vkryl.core.lambda.FutureBool;
+import me.vkryl.core.lambda.RunnableBool;
 
 public final class FeatureToggles {
   public static boolean SHOW_VIEW_IN_CHAT_BUTTON_IN_REPLIES = true;
@@ -21,6 +27,8 @@ public final class FeatureToggles {
 
   public static class Controller extends RecyclerViewController<Void> implements View.OnClickListener {
 
+    private final SparseArrayCompat<FutureBool> valueSuppliers = new SparseArrayCompat<>();
+    private final SparseArrayCompat<RunnableBool> valueConsumers = new SparseArrayCompat<>();
     private SettingsAdapter adapter;
 
     public Controller (Context context, Tdlib tdlib) {
@@ -42,78 +50,74 @@ public final class FeatureToggles {
       adapter = new SettingsAdapter(this) {
         @Override
         protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
-          switch (item.getId()) {
-            case 0x01:
-              view.getToggler().setRadioEnabled(COMMENTS_BUBBLE_BUTTON_ALWAYS_DARK, isUpdate);
-              break;
-            case 0x02:
-              view.getToggler().setRadioEnabled(COMMENTS_BUBBLE_BUTTON_HAS_MIN_WIDTH, isUpdate);
-              break;
-            case 0x11:
-              view.getToggler().setRadioEnabled(SHOW_DISCUSS_BUTTON_IN_CHANNEL_POST_CONTEXT_MENU, isUpdate);
-              break;
-            case 0x12:
-              view.getToggler().setRadioEnabled(SHOW_VIEW_X_COMMENTS_BUTTON_IN_CHANNEL_POST_CONTEXT_MENU, isUpdate);
-              break;
-            case 0x21:
-              view.getToggler().setRadioEnabled(CHANNEL_PROFILE_FLOATING_BUTTON_OPENS_DISCUSSION_GROUP, isUpdate);
-              break;
-            case 0x31:
-              view.getToggler().setRadioEnabled(SHOW_VIEW_IN_CHAT_BUTTON_IN_REPLIES, isUpdate);
-              break;
+          if (view.getToggler() != null) {
+            FutureBool valueSupplier = valueSuppliers.get(view.getId());
+            if (valueSupplier != null) {
+              view.getToggler().setRadioEnabled(valueSupplier.get(), isUpdate);
+            }
           }
         }
       };
       adapter.setItems(Arrays.asList(
-        new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL),
-        new ListItem(ListItem.TYPE_HEADER, 0, 0, "Comment Button", false),
-        new ListItem(ListItem.TYPE_SHADOW_TOP),
-        new ListItem(ListItem.TYPE_RADIO_SETTING, 0x01, 0, "Bubble button always dark", COMMENTS_BUBBLE_BUTTON_ALWAYS_DARK),
-        new ListItem(ListItem.TYPE_RADIO_SETTING, 0x02, 0, "Bubble button has min width (" + Config.COMMENTS_BUBBLE_BUTTON_MIN_WIDTH + "dp)", COMMENTS_BUBBLE_BUTTON_HAS_MIN_WIDTH),
-        new ListItem(ListItem.TYPE_SHADOW_BOTTOM),
+        offsetSmall(),
 
-        new ListItem(ListItem.TYPE_HEADER, 0, 0, "Channel Post", false),
-        new ListItem(ListItem.TYPE_SHADOW_TOP),
-        new ListItem(ListItem.TYPE_RADIO_SETTING, 0x11, 0, "Show \"Discuss\" button in context menu", SHOW_DISCUSS_BUTTON_IN_CHANNEL_POST_CONTEXT_MENU),
-        new ListItem(ListItem.TYPE_RADIO_SETTING, 0x12, 0, "Show \"View X Comments\" button in context menu", SHOW_VIEW_X_COMMENTS_BUTTON_IN_CHANNEL_POST_CONTEXT_MENU),
-        new ListItem(ListItem.TYPE_SHADOW_BOTTOM),
+        header("Comment Button"),
+        shadowTop(),
+        toggle("Bubble button always dark", () -> COMMENTS_BUBBLE_BUTTON_ALWAYS_DARK, (value) -> COMMENTS_BUBBLE_BUTTON_ALWAYS_DARK = value),
+        toggle("Bubble button has min width (" + Config.COMMENTS_BUBBLE_BUTTON_MIN_WIDTH + "dp)", () -> COMMENTS_BUBBLE_BUTTON_HAS_MIN_WIDTH, (value) -> COMMENTS_BUBBLE_BUTTON_HAS_MIN_WIDTH = value),
+        shadowBottom(),
 
-        new ListItem(ListItem.TYPE_HEADER, 0, 0, "Channel Profile", false),
-        new ListItem(ListItem.TYPE_SHADOW_TOP),
-        new ListItem(ListItem.TYPE_RADIO_SETTING, 0x21, 0, "Floating button opens discussion group", CHANNEL_PROFILE_FLOATING_BUTTON_OPENS_DISCUSSION_GROUP),
-        new ListItem(ListItem.TYPE_SHADOW_BOTTOM),
+        header("Channel Post"),
+        shadowTop(),
+        toggle("Show \"Discuss\" button in context menu", () -> SHOW_DISCUSS_BUTTON_IN_CHANNEL_POST_CONTEXT_MENU, (value) -> SHOW_DISCUSS_BUTTON_IN_CHANNEL_POST_CONTEXT_MENU = value),
+        toggle("Show \"View X Comments\" button in context menu", () -> SHOW_VIEW_X_COMMENTS_BUTTON_IN_CHANNEL_POST_CONTEXT_MENU, (value) -> SHOW_VIEW_X_COMMENTS_BUTTON_IN_CHANNEL_POST_CONTEXT_MENU = value),
+        shadowBottom(),
 
-        new ListItem(ListItem.TYPE_HEADER, 0, 0, "Replies Chat", false),
-        new ListItem(ListItem.TYPE_SHADOW_TOP),
-        new ListItem(ListItem.TYPE_RADIO_SETTING, 0x31, 0, "Show \"View in chat\" button like for channel comments", SHOW_VIEW_IN_CHAT_BUTTON_IN_REPLIES),
-        new ListItem(ListItem.TYPE_SHADOW_BOTTOM)
+        header("Channel Profile"),
+        shadowTop(),
+        toggle("Floating button opens discussion group", () -> CHANNEL_PROFILE_FLOATING_BUTTON_OPENS_DISCUSSION_GROUP, (value) -> CHANNEL_PROFILE_FLOATING_BUTTON_OPENS_DISCUSSION_GROUP = value),
+        shadowBottom(),
+
+        header("Replies Chat"),
+        shadowTop(),
+        toggle("Show \"View in chat\" button like for channel comments", () -> SHOW_VIEW_IN_CHAT_BUTTON_IN_REPLIES, (value) -> SHOW_VIEW_IN_CHAT_BUTTON_IN_REPLIES = value),
+        shadowBottom()
       ), true);
       recyclerView.setAdapter(adapter);
     }
 
     @Override
     public void onClick (View v) {
-      adapter.toggleView(v);
-      switch (v.getId()) {
-        case 0x01:
-          COMMENTS_BUBBLE_BUTTON_ALWAYS_DARK = !COMMENTS_BUBBLE_BUTTON_ALWAYS_DARK;
-          break;
-        case 0x02:
-          COMMENTS_BUBBLE_BUTTON_HAS_MIN_WIDTH = !COMMENTS_BUBBLE_BUTTON_HAS_MIN_WIDTH;
-          break;
-        case 0x11:
-          SHOW_DISCUSS_BUTTON_IN_CHANNEL_POST_CONTEXT_MENU = !SHOW_DISCUSS_BUTTON_IN_CHANNEL_POST_CONTEXT_MENU;
-          break;
-        case 0x12:
-          SHOW_VIEW_X_COMMENTS_BUTTON_IN_CHANNEL_POST_CONTEXT_MENU = !SHOW_VIEW_X_COMMENTS_BUTTON_IN_CHANNEL_POST_CONTEXT_MENU;
-          break;
-        case 0x21:
-          CHANNEL_PROFILE_FLOATING_BUTTON_OPENS_DISCUSSION_GROUP = !CHANNEL_PROFILE_FLOATING_BUTTON_OPENS_DISCUSSION_GROUP;
-          break;
-        case 0x31:
-          SHOW_VIEW_IN_CHAT_BUTTON_IN_REPLIES = !SHOW_VIEW_IN_CHAT_BUTTON_IN_REPLIES;
-          break;
+      if (v.getId() != 0) {
+        boolean newValue = adapter.toggleView(v);
+        RunnableBool valueConsumer = valueConsumers.get(v.getId());
+        if (valueConsumer != null) {
+          valueConsumer.runWithBool(newValue);
+        }
       }
+    }
+
+    private ListItem shadowTop () {
+      return new ListItem(ListItem.TYPE_SHADOW_TOP);
+    }
+
+    private ListItem shadowBottom () {
+      return new ListItem(ListItem.TYPE_SHADOW_BOTTOM);
+    }
+
+    private ListItem offsetSmall () {
+      return new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL);
+    }
+
+    private ListItem header (CharSequence text) {
+      return new ListItem(ListItem.TYPE_HEADER, 0, 0, text, false);
+    }
+
+    private ListItem toggle (CharSequence text, FutureBool valueSupplier, RunnableBool valueConsumer) {
+      int id = ViewCompat.generateViewId();
+      valueSuppliers.append(id, valueSupplier);
+      valueConsumers.append(id, valueConsumer);
+      return new ListItem(ListItem.TYPE_RADIO_SETTING, id, 0, text, false);
     }
   }
 }
