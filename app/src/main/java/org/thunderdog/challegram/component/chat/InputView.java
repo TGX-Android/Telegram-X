@@ -994,19 +994,19 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       return;
     }
     int resource;
-    Object[] args = null;
-    TdApi.ChatMemberStatus status = tdlib.chatStatus(chat.id);
+    //Object[] args = null;
+    //TdApi.ChatMemberStatus status = tdlib.chatStatus(chat.id);
     if (tdlib.isChannel(chat.id)) {
       resource = isSilent ? R.string.ChannelSilentBroadcast : R.string.ChannelBroadcast;
-    } else if (tdlib.isMultiChat(chat) && Td.isAnonymous(status)) {
+    }/* else if (tdlib.isMultiChat(chat) && Td.isAnonymous(status)) {
       resource = messageThread != null ? (messageThread.areComments() ? R.string.CommentAnonymously : R.string.MessageReplyAnonymously) :  R.string.MessageAnonymously;
-    }/* else if (chat.messageSenderId != null && !tdlib.isSelfSender(chat.messageSenderId)) {
+    } else if (chat.messageSenderId != null && !tdlib.isSelfSender(chat.messageSenderId)) {
       resource = messageThread != null ? (messageThread.areComments() ? R.string.CommentAsX : R.string.MessageReplyAsX) : R.string.MessageAsX;
       args = new Object[] { tdlib.senderName(chat.messageSenderId) };
     }*/ else {
       resource = messageThread != null ? (messageThread.areComments() ? R.string.Comment : R.string.MessageReply) : R.string.Message;
     }
-    setInputPlaceholder(resource, args);
+    setInputPlaceholder(resource/*, args*/);
   }
 
   public void setDraft (@Nullable TdApi.InputMessageContent draftContent) {
