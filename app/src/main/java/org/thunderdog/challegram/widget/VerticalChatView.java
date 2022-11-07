@@ -220,6 +220,9 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
       if (oldChatId != 0 && !this.chat.noSubscription()) {
         tdlib.listeners().unsubscribeFromChatUpdates(oldChatId, this);
         tdlib.listeners().unsubscribeFromSettingsUpdates(oldChatId, this);
+        if (this.chat.getForceOpenChat()) {
+          tdlib().closeChat(oldChatId, null, false);
+        }
       }
       long oldUserId = getUserId();
       if (oldUserId != 0) {
@@ -235,6 +238,9 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
         if (!chat.noSubscription()) {
           tdlib.listeners().subscribeToChatUpdates(newChatId, this);
           tdlib.listeners().subscribeToSettingsUpdates(newChatId, this);
+          if (chat.getForceOpenChat()) {
+            tdlib().openChat(newChatId, null);
+          }
         }
         if (newUserId != 0) {
           tdlib.cache().subscribeToUserUpdates(newUserId, this);

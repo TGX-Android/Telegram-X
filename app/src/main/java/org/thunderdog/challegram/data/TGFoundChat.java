@@ -145,6 +145,16 @@ public class TGFoundChat {
     return noSubscription;
   }
 
+  private boolean forceOpenChat;
+
+  public boolean getForceOpenChat () {
+    return forceOpenChat;
+  }
+
+  public void setForceOpenChat () {
+    this.forceOpenChat = true;
+  }
+
   public long getId () {
     return chatId;
   }

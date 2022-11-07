@@ -1445,6 +1445,8 @@ public class ShareController extends TelegramViewController<ShareController.Args
     chat.setNoUnread();
     if (rawChat.messageSenderId == null) {
       chat.setNoSubscription();
+    } else {
+      chat.setForceOpenChat();
     }
     return chat;
   }
