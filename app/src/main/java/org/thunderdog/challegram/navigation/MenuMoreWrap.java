@@ -207,16 +207,8 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
   public View addItem2 (int id, CharSequence title, @Nullable CharSequence subtitle, int iconRes, Drawable icon, int rightIconRes, boolean preserveRightIconSpace, OnClickListener listener) {
     var menuItem = new SenderIdentityView(getContext());
     menuItem.setId(id);
-    /*if (forcedTheme != null) {
-      menuItem.setTextColor(forcedTheme.getColor(R.id.theme_color_text));
-    } else {
-      menuItem.setTextColor(Theme.textAccentColor());
-      if (themeListeners != null) {
-        themeListeners.addThemeTextAccentColorListener(menuItem);
-      }
-    }*/
+    menuItem.init(themeListeners, forcedTheme);
     menuItem.setSenderIdentity(iconRes, icon, title, subtitle, rightIconRes, null, preserveRightIconSpace);
-    //menuItem.setGravity(Gravity.CENTER_VERTICAL | Lang.gravity());
     menuItem.setOnClickListener(listener);
     menuItem.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(48f)));
     menuItem.setPadding(Screen.dp(17f), 0, Screen.dp(17f), 0);
@@ -329,6 +321,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
       title.setTypeface(Fonts.getRobotoRegular());
       title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16f);
       title.setTextColor(Theme.textAccentColor());
+      title.setGravity(Gravity.CENTER_VERTICAL | Lang.gravity());
       title.setSingleLine(true);
       title.setEllipsize(TextUtils.TruncateAt.END);
       title.setMaxWidth(Screen.dp(200f));
@@ -338,6 +331,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
       subtitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11f);
       subtitle.setTranslationY(-Screen.dp(3f));
       subtitle.setTextColor(Theme.textDecentColor());
+      subtitle.setGravity(Gravity.CENTER_VERTICAL | Lang.gravity());
       subtitle.setSingleLine(true);
       subtitle.setEllipsize(TextUtils.TruncateAt.END);
       subtitle.setMaxWidth(Screen.dp(200f));
@@ -367,12 +361,24 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
       addView(extra);
     }
 
-    @Override
-    protected void onDraw (Canvas canvas) {
-      avatar.invalidate();
-      //extra.invalidate();
-
-      super.onDraw(canvas);
+    public void init (@Nullable ThemeListenerList themeProvider, ThemeDelegate forcedTheme) {
+      if (forcedTheme != null) {
+        avatar.setColorFilter(Paints.getColorFilter(forcedTheme.getColor(R.id.theme_color_icon)));
+        title.setTextColor(forcedTheme.getColor(R.id.theme_color_text));
+        subtitle.setTextColor(forcedTheme.getColor(R.id.theme_color_textLight));
+        extra.setColorFilter(Paints.getColorFilter(forcedTheme.getColor(R.id.theme_color_text)));
+      } else {
+        avatar.setColorFilter(Paints.getColorFilter(Theme.getColor(R.id.theme_color_icon)));
+        title.setTextColor(Theme.textAccentColor());
+        subtitle.setTextColor(Theme.textDecentColor());
+        extra.setColorFilter(Paints.getColorFilter(Theme.getColor(R.id.theme_color_text)));
+        if (themeProvider != null) {
+          themeProvider.addThemeFilterListener(avatar, R.id.theme_color_icon);
+          themeProvider.addThemeTextAccentColorListener(title);
+          themeProvider.addThemeTextDecentColorListener(subtitle);
+          themeProvider.addThemeFilterListener(extra, R.id.theme_color_text);
+        }
+      }
     }
 
     public void setSenderIdentity (int avatarRes, Drawable avatar, CharSequence title, CharSequence subtitle, int extraRes, Drawable extra, boolean preserveExtraIconSpace) {
@@ -403,6 +409,14 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
       } else {
         this.extra.setVisibility(preserveExtraIconSpace ? INVISIBLE : GONE);
       }
+    }
+
+    @Override
+    protected void onDraw (Canvas canvas) {
+      avatar.invalidate();
+      //extra.invalidate();
+
+      super.onDraw(canvas);
     }
   }
 }
