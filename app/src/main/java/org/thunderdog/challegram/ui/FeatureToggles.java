@@ -14,7 +14,7 @@ import java.util.Arrays;
 public final class FeatureToggles {
   public static boolean SHOW_VIEW_IN_CHAT_BUTTON_IN_REPLIES = true;
   public static boolean SHOW_VIEW_X_COMMENTS_BUTTON_IN_CHANNEL_POST_CONTEXT_MENU = false;
-  public static boolean SHOW_DISCUSS_BUTTON_IN_CHANNEL_POST_CONTEXT_MENU = true;
+  public static boolean SHOW_DISCUSS_BUTTON_IN_CHANNEL_POST_CONTEXT_MENU = false;
   public static boolean COMMENTS_BUBBLE_BUTTON_ALWAYS_DARK = false;
   public static boolean COMMENTS_BUBBLE_BUTTON_HAS_MIN_WIDTH = true;
   public static boolean CHANNEL_PROFILE_FLOATING_BUTTON_OPENS_DISCUSSION_GROUP = true;

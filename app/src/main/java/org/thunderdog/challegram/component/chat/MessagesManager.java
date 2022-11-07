@@ -704,7 +704,6 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   public void resetByMessage (MessageId highlightMessageId, int highlightMode) {
-    // clearHeaderMessage(); // FIXME(firefly) ???
     this.highlightMessageId = highlightMessageId;
     this.highlightMode = highlightMode;
     loadFromMessage(highlightMessageId, highlightMode, false);
@@ -2137,7 +2136,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         message.updateDate();
         controller.getMessagesView().invalidate();
       }
-      if (headerMessage != null && !controller.isInForceTouchMode()) {
+      if (headerMessage != null) {
         TdApi.Message pinnedMessage = headerMessage.getOldestMessage();
         controller.showHidePinnedMessage(!headerVisible, pinnedMessage);
       }

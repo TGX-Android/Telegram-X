@@ -3984,6 +3984,7 @@
   <string name="ChannelPostDeleted">Sorry, this post has been removed from the discussion group.</string>
   <string name="ViewThread">View Thread</string>
   <string name="ViewInChat">View in chat</string>
+  <string name="ViewComment">View comment</string>
   <string name="CommentsTitle">Comments</string>
   <string name="RepliesTitle">Replies</string>
 

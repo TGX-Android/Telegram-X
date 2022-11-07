@@ -693,7 +693,6 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
           icons.append(TD.EMOJI_DART.textRepresentation.equals(emoji) ? R.drawable.baseline_gps_fixed_24 : R.drawable.baseline_casino_24);
         }
 
-        // FIXME(firefly) "Comments - Bottom Sheet": thread header's context menu has "Reply" button
         ids.append(R.id.btn_messageReply);
         strings.append(R.string.Reply);
         icons.append(R.drawable.baseline_reply_24);
