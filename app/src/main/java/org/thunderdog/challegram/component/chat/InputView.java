@@ -735,6 +735,8 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
   private Text mainPlaceholderText;
   private Text subPlaceholderText;
+  private Text asText;
+  private int asTextOffset = 0;
 
   private final ReplaceAnimator<Text> subAnimator = new ReplaceAnimator<>(animator -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
   private final BoolAnimator needShowPlaceholderAnimator = new BoolAnimator(0, (a, b, c, d) -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
@@ -1044,9 +1046,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
     if (!tdlib.isChannel(chat.id)) {
       if (tdlib.isMultiChat(chat) && Td.isAnonymous(tdlib.chatStatus(chat.id)) && !tdlib.isChannel(chat.messageSenderId)) {
-        subPlaceholder = Lang.getStringBold(R.string.JustAsX, Lang.getString(R.string.AnonymousAdmin));
+        subPlaceholder = Lang.getStringBold(R.string.AnonymousAdmin);
       } else if (chat.messageSenderId != null && !tdlib.isSelfSender(chat.messageSenderId)) {
-        subPlaceholder = Lang.getStringBold(R.string.JustAsX, tdlib.senderName(chat.messageSenderId));
+        subPlaceholder = Lang.boldify(tdlib.senderName(chat.messageSenderId));
       }
     }
     setInputPlaceholder(mainPlaceholder, subPlaceholder);
@@ -1137,6 +1139,24 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     }
   }
 
+  private boolean isSubPlaceholderMoving() {
+    return needShowSubPlaceholderAnimator.getFloatValue() > 0 && needShowSubPlaceholderAnimator.getFloatValue() < 1f;
+  }
+
+  private Text getAsText() {
+    if (asText == null) {
+      asText = new Text.Builder(tdlib, Lang.getStringBold(R.string.JustAs), null, 400, Paints.robotoStyleProvider(12), Theme::textPlaceholderColor, null).build();
+    }
+    return asText;
+  }
+
+  private int getAsTextOffset () {
+    if (asTextOffset == 0) {
+      asTextOffset = Math.round(U.measureText(Lang.getString(R.string.JustAs), getPaint()));
+    }
+    return asTextOffset;
+  }
+
   @Override
   protected void onDraw (Canvas c) {
     if (needShowPlaceholderAnimator.getFloatValue() > 0) {
@@ -1149,6 +1169,10 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       final int offset = (int) (needShowSubPlaceholderAnimator.getFloatValue() * Screen.dp(4));
       boolean hasSubPlaceholder = !StringUtils.isEmptyOrBlank(subPlaceholder);
 
+      boolean inProcess = isSubPlaceholderMoving();
+      boolean isAppearance = needShowSubPlaceholderAnimator.getValue() && inProcess;
+      boolean isDisappearance = !needShowSubPlaceholderAnimator.getValue() && inProcess;
+
       subAnimator.iterator().forEachRemaining(entry -> {
         final int directionOffset = (int) ((!entry.isAffectingList() && hasSubPlaceholder ?
           ((entry.getVisibility() - 1f) * Screen.dp(8)) :
@@ -1156,8 +1180,18 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         int subY = getBaseline() - offset + directionOffset;
 
         float visibility = entry.getVisibility();
-        entry.item.draw(c, getPaddingLeft(), subY, null, visibility);
+        entry.item.draw(c, getPaddingLeft() + getAsTextOffset(), subY, null, visibility);
+
+        if (inProcess) {
+          if ((entry.isAffectingList() && isAppearance) || (!entry.isAffectingList() && isDisappearance)) {
+            getAsText().draw(c, getPaddingLeft(), subY, null, needShowSubPlaceholderAnimator.getFloatValue());
+          }
+        }
       });
+
+      if (hasSubPlaceholder && !inProcess) {
+        getAsText().draw(c, getPaddingLeft(), getBaseline() - Screen.dp(4), null, 1f);
+      }
     }
 
     super.onDraw(c);
