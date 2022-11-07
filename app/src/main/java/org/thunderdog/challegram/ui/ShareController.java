@@ -1477,7 +1477,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
         iconsRes.append(R.drawable.dot_baseline_acc_anon_24);
       } else {
         var sender = IdentitySelectController.parseSender(tdlib(), chat.getChat().messageSenderId, null);
-        var senderAvatar = new AvatarDrawable(v, 12f, sender.getAvatar(), sender.getAvatarPlaceholderMetadata());
+        var senderAvatar = new AvatarDrawable(null, 12f, sender.getAvatar(), sender.getAvatarPlaceholderMetadata());
         iconsRes.append(0);
         icons.put(iconsRes.size() - 1, senderAvatar);
       }

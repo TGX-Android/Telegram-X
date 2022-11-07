@@ -27,8 +27,13 @@ public class AvatarDrawable extends Drawable {
     this.radius = radius;
 
     receiver = new ImageReceiver(view, Screen.dp(radius));
-    receiver.setAnimationDisabled(true);
-    receiver.setBounds(0, 0, 2 * Screen.dp(radius), 2 * Screen.dp(radius));
+    if (view == null) {
+      receiver.setUpdateListener(receiver -> {
+        invalidateSelf();
+      });
+    }
+    //receiver.setAnimationDisabled(true);
+    receiver.setBounds(0, 0, Screen.dp(2 * radius), Screen.dp(2 * radius));
 
     hasPhoto = photo != null;
     if (hasPhoto) {
@@ -45,17 +50,16 @@ public class AvatarDrawable extends Drawable {
     var centerX = (left + right) / 2;
     var centerY = (top + bottom) / 2;
     receiver.setBounds(centerX - Screen.dp(radius), centerY - Screen.dp(radius), centerX + Screen.dp(radius), centerY + Screen.dp(radius));
-    //receiver.setRadius(Math.min(receiver.getWidth(), receiver.getHeight()) / 2);
   }
 
   @Override
   public int getIntrinsicHeight () {
-    return 2 * Screen.dp(radius);
+    return Screen.dp(2 * radius);
   }
 
   @Override
   public int getIntrinsicWidth () {
-    return 2 * Screen.dp(radius);
+    return Screen.dp(2 * radius);
   }
 
   @Override
@@ -73,14 +77,10 @@ public class AvatarDrawable extends Drawable {
   }
 
   @Override
-  public void setAlpha (int alpha) {
-
-  }
+  public void setAlpha (int alpha) {}
 
   @Override
-  public void setColorFilter (@Nullable ColorFilter colorFilter) {
-
-  }
+  public void setColorFilter (@Nullable ColorFilter colorFilter) {}
 
   @Override
   public int getOpacity () {

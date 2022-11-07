@@ -357,7 +357,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       } else if (chat.id == Td.getSenderId(chat.messageSenderId)) {
         senderAvatarRes = R.drawable.dot_baseline_acc_anon_24;
       } else {
-        senderAvatar = new AvatarDrawable(view, 12f, sender.getAvatar(), sender.getAvatarPlaceholderMetadata());
+        senderAvatar = new AvatarDrawable(null, 12f, sender.getAvatar(), sender.getAvatarPlaceholderMetadata());
       }
       items.add(0, new HapticMenuHelper.MenuItem(R.id.btn_sendAsSelect, Lang.getString(R.string.SendAs_ellipsis), sender.getName(), senderAvatarRes, senderAvatar, 0));
     }
@@ -1066,7 +1066,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             avatarRes = R.drawable.dot_baseline_acc_anon_24;
           } else {
             username = "@" + tdlib().chatUsername(it.getChatId());
-            avatar = new AvatarDrawable(view, 12f, it.getAvatar(), it.getAvatarPlaceholderMetadata());
+            avatar = new AvatarDrawable(null, 12f, it.getAvatar(), it.getAvatarPlaceholderMetadata());
             if (!tdlib().hasPremium()) {
               var info = tdlib().cache().supergroupFull(ChatId.toSupergroupId(chat.id));
               if (info == null || it.getChatId() != info.linkedChatId) {
@@ -3005,9 +3005,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
         title = Lang.getString(R.string.SendAsAnonymousAdmin);
       } else {
         var sender = IdentitySelectController.parseSender(tdlib(), chat.messageSenderId, null);
-        avatar = new AvatarDrawable(null, 12f, sender.getAvatar(), sender.getAvatarPlaceholderMetadata());
+        avatar = new AvatarDrawable(sendAsButton, 12f, sender.getAvatar(), sender.getAvatarPlaceholderMetadata());
 
-        var sendButtonOverlay = new AvatarDrawable(null, 7.5f, sender.getAvatar(), sender.getAvatarPlaceholderMetadata());
+        var sendButtonOverlay = new AvatarDrawable(sendButton, 7.5f, sender.getAvatar(), sender.getAvatarPlaceholderMetadata());
         sendButtonOverlay.setBounds(0, 0, Screen.dp(15f), Screen.dp(15f));
         sendButton.setOverlayIcon(sendButtonOverlay);
 

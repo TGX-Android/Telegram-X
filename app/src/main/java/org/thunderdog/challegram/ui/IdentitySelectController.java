@@ -669,18 +669,6 @@ public class IdentitySelectController extends ViewController<IdentitySelectContr
       addView(extraIcon);
     }
 
-    @Override
-    protected void onDraw (Canvas canvas) {
-      avatar.invalidate();
-      //extraIcon.invalidate();
-
-      super.onDraw(canvas);
-
-      if (drawBottomSeparator) {
-        canvas.drawRect(titlesLayout.getLeft(), Screen.dp(62f), getWidth(), Screen.dp(63f), Paints.fillingPaint(Theme.getColor(R.id.theme_color_separator)));
-      }
-    }
-
     public TdApi.MessageSender getSenderId () {
       return senderId;
     }
@@ -722,6 +710,18 @@ public class IdentitySelectController extends ViewController<IdentitySelectContr
 
     public void setChecked (boolean isChecked) {
       this.isChecked = isChecked;
+    }
+
+    @Override
+    protected void onDraw (Canvas canvas) {
+      //avatar.invalidate();
+      //extraIcon.invalidate();
+
+      super.onDraw(canvas);
+
+      if (drawBottomSeparator) {
+        canvas.drawRect(titlesLayout.getLeft(), Screen.dp(62f), getWidth(), Screen.dp(63f), Paints.fillingPaint(Theme.getColor(R.id.theme_color_separator)));
+      }
     }
   }
 
@@ -830,7 +830,7 @@ public class IdentitySelectController extends ViewController<IdentitySelectContr
     public void onBindViewHolder (@NonNull MyViewHolder holder, int position) {
       var item = items.get(position);
 
-      var senderAvatar = new AvatarDrawable(holder.itemView, 25f, item.getAvatar(), item.getAvatarPlaceholderMetadata());
+      var senderAvatar = new AvatarDrawable(null, 25f, item.getAvatar(), item.getAvatarPlaceholderMetadata());
       String senderUsername = "";
       int senderPremiumLockIconRes = 0;
       boolean hasSmallSenderExtraIcon = false;

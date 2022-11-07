@@ -413,7 +413,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
 
     @Override
     protected void onDraw (Canvas canvas) {
-      avatar.invalidate();
+      //avatar.invalidate();
       //extra.invalidate();
 
       super.onDraw(canvas);

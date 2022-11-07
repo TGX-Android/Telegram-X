@@ -1307,7 +1307,7 @@ public class MediaLayout extends FrameLayoutFix implements
 
       updateSendButtonOverlayIcon();
 
-      sendMenu = new HapticMenuHelper(list -> {
+      sendMenu = new HapticMenuHelper(view -> {
         List<HapticMenuHelper.MenuItem> items = tdlib().ui().fillDefaultHapticMenu(getTargetChatId(), false, getCurrentController().canRemoveMarkdown(), true);
         if (items == null)
           items = new ArrayList<>();
@@ -1320,7 +1320,7 @@ public class MediaLayout extends FrameLayoutFix implements
           } else if (getTargetChatId() == Td.getSenderId(messageSenderId)) {
             senderAvatarRes = R.drawable.dot_baseline_acc_anon_24;
           } else {
-            senderAvatar = new AvatarDrawable(list, 12f, sender.getAvatar(), sender.getAvatarPlaceholderMetadata());
+            senderAvatar = new AvatarDrawable(null, 12f, sender.getAvatar(), sender.getAvatarPlaceholderMetadata());
           }
           items.add(0, new HapticMenuHelper.MenuItem(R.id.btn_sendAsSelect, Lang.getString(R.string.SendAs_ellipsis), sender.getName(), senderAvatarRes, senderAvatar, 0));
         }
@@ -1423,7 +1423,7 @@ public class MediaLayout extends FrameLayoutFix implements
       } else {
         var sender = IdentitySelectController.parseSender(tdlib(), messageSenderId, null);
 
-        sendButtonOverlayIcon = new AvatarDrawable(null, 7.5f, sender.getAvatar(), sender.getAvatarPlaceholderMetadata());
+        sendButtonOverlayIcon = new AvatarDrawable(sendButton, 7.5f, sender.getAvatar(), sender.getAvatarPlaceholderMetadata());
         sendButtonOverlayIcon.setBounds(0, 0, Screen.dp(15f), Screen.dp(15f));
       }
     } else {
