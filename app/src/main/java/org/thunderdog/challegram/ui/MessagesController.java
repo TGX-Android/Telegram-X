@@ -5229,40 +5229,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         return true;
       }
-      case R.id.btn_messageDiscuss: {
-        if (selectedMessage != null) {
-          TdApi.Message message = selectedMessage.findMessageWithThread();
-          if (message != null) {
-            tdlib.client().send(new TdApi.GetMessageThread(message.chatId, message.id), result -> {
-              switch (result.getConstructor()) {
-                case TdApi.MessageThreadInfo.CONSTRUCTOR: {
-                  TdApi.MessageThreadInfo info = (TdApi.MessageThreadInfo) result;
-                  runOnUiThreadOptional(() -> {
-                    if (getChatId() == message.chatId && info.messages.length > 0) {
-                      long[] otherMessageIds = info.messages.length > 1 ? new long[info.messages.length - 1] : null;
-                      for (int i = 1; i < info.messages.length; i++) {
-                        otherMessageIds[i - 1] = info.messages[i].id;
-                      }
-                      tdlib.ui().openMessage(this, info.chatId, new MessageId(info.chatId, info.messages[0].id, otherMessageIds), new TdlibUi.UrlOpenParameters().sourceMessage(new MessageId(message.chatId, message.id)).controller(this).sourceChat(message.chatId));
-                    }
-                  });
-                  break;
-                }
-                case TdApi.Error.CONSTRUCTOR: {
-                  if ("MSG_ID_INVALID".equals(TD.errorText(result)) && isChannel()) {
-                    UI.showToast(R.string.ChannelPostDeleted, Toast.LENGTH_SHORT);
-                  } else {
-                    UI.showError(result);
-                  }
-                  break;
-                }
-              }
-            });
-          }
-          clearSelectedMessage();
-        }
-        return true;
-      }
       case R.id.btn_messageShare: {
         if (selectedMessage != null && selectedMessage.canBeForwarded()) {
           shareMessages(selectedMessage.getChatId(), selectedMessage.getAllMessages());

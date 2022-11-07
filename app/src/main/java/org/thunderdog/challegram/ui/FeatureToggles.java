@@ -20,7 +20,6 @@ import me.vkryl.core.lambda.RunnableBool;
 public final class FeatureToggles {
   public static boolean SHOW_VIEW_IN_CHAT_BUTTON_IN_REPLIES = true;
   public static boolean SHOW_VIEW_X_COMMENTS_BUTTON_IN_CHANNEL_POST_CONTEXT_MENU = false;
-  public static boolean SHOW_DISCUSS_BUTTON_IN_CHANNEL_POST_CONTEXT_MENU = false;
   public static boolean COMMENTS_BUBBLE_BUTTON_ALWAYS_DARK = false;
   public static boolean COMMENTS_BUBBLE_BUTTON_HAS_MIN_WIDTH = true;
   public static boolean CHANNEL_PROFILE_FLOATING_BUTTON_OPENS_DISCUSSION_GROUP = true;
@@ -69,7 +68,6 @@ public final class FeatureToggles {
 
         header("Channel Post"),
         shadowTop(),
-        toggle("Show \"Discuss\" button in context menu", () -> SHOW_DISCUSS_BUTTON_IN_CHANNEL_POST_CONTEXT_MENU, (value) -> SHOW_DISCUSS_BUTTON_IN_CHANNEL_POST_CONTEXT_MENU = value),
         toggle("Show \"View X Comments\" button in context menu", () -> SHOW_VIEW_X_COMMENTS_BUTTON_IN_CHANNEL_POST_CONTEXT_MENU, (value) -> SHOW_VIEW_X_COMMENTS_BUTTON_IN_CHANNEL_POST_CONTEXT_MENU = value),
         shadowBottom(),
 

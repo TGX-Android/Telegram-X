@@ -698,13 +698,6 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         icons.append(R.drawable.baseline_reply_24);
       }
 
-      // "When opening the channel post’s context menu, a button to open the discussion group must be present"
-      if (FeatureToggles.SHOW_DISCUSS_BUTTON_IN_CHANNEL_POST_CONTEXT_MENU && msg.isChannel() && msg.canGetMessageThread()) {
-        ids.append(R.id.btn_messageDiscuss);
-        strings.append(R.string.DiscussMessage);
-        icons.append(R.drawable.outline_templarian_comment_multiple_24);
-      }
-
       if (msg.canBeForwarded() && isSent) {
         ids.append(R.id.btn_messageShare);
         strings.append(R.string.Share);
