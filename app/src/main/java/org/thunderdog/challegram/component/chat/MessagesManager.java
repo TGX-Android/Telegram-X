@@ -1145,7 +1145,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
             if (index != -1) {
               scrollToMessage(index, item, highlightMode, false, false);
             }
-          } else if (headerMessage != null && scrollMessageId != null && headerMessage.isDescendantOrSelf(scrollMessageId.getMessageId()) && !adapter.isEmpty()) {
+          } else if (headerMessage != null && scrollMessageId != null && !scrollMessageId.isHistoryEnd() && headerMessage.isDescendantOrSelf(scrollMessageId.getMessageId()) && !adapter.isEmpty()) {
             insertHeaderMessageIfNeeded();
             if (headerMessage == adapter.getTopMessage()) {
               scrollToMessage(adapter.getMessageCount() - 1, headerMessage, highlightMode, false, false);
