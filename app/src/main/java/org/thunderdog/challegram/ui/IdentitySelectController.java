@@ -315,7 +315,7 @@ public class IdentitySelectController extends ViewController<IdentitySelectContr
           availableSenders = (TdApi.ChatMessageSenders) result;
 
           var users = Arrays.stream(availableSenders.senders)
-            .map(it -> parseSender2(tdlib(), it.sender))
+            .map(it -> parseSender(tdlib(), it.sender, null))
             .collect(Collectors.toList());
           /*for (int i = 0; i < 3; i++) {
             var users2 = Arrays.stream(availableSenders.senders)
@@ -519,7 +519,7 @@ public class IdentitySelectController extends ViewController<IdentitySelectContr
   protected void onSearchInputChanged (String query) {
     if (query.isEmpty()) {
       var users = Arrays.stream(availableSenders.senders)
-        .map(it -> parseSender2(tdlib(), it.sender))
+        .map(it -> parseSender(tdlib(), it.sender, null))
         .collect(Collectors.toList());
       /*for (int i = 0; i < 3; i++) {
         var users2 = Arrays.stream(availableSenders.senders)
@@ -536,8 +536,8 @@ public class IdentitySelectController extends ViewController<IdentitySelectContr
 
     Background.instance().post(() -> {
       var foundedUsers = Arrays.stream(availableSenders.senders)
-        .map(it -> parseSender2(tdlib(), it.sender))
-        .filter(it -> it.getFullTitle().toLowerCase().contains(query.toLowerCase()))  // TODO: better search?
+        .map(it -> parseSender(tdlib(), it.sender, null))
+        .filter(it -> it.getName().toLowerCase().contains(query.toLowerCase()))  // TODO: better search?
         .collect(Collectors.toList());
       runOnUiThread(() -> {
         adapter.setUsers(foundedUsers);
@@ -557,7 +557,7 @@ public class IdentitySelectController extends ViewController<IdentitySelectContr
     super.onAfterLeaveSearchMode();
 
     var users = Arrays.stream(availableSenders.senders)
-      .map(it -> parseSender2(tdlib(), it.sender))
+      .map(it -> parseSender(tdlib(), it.sender, null))
       .collect(Collectors.toList());
     adapter.setUsers(users);
 
@@ -797,7 +797,7 @@ public class IdentitySelectController extends ViewController<IdentitySelectContr
 
   public class MyAdapter extends RecyclerView.Adapter<MyAdapter.MyViewHolder> {
 
-    private List<TGFoundChat> items = new ArrayList<>();
+    private List<TGUser> items = new ArrayList<>();
 
     //private long chatId;
     private View.OnClickListener onClickListener;
@@ -834,17 +834,17 @@ public class IdentitySelectController extends ViewController<IdentitySelectContr
       String senderUsername = "";
       int senderPremiumLockIconRes = 0;
       boolean hasSmallSenderExtraIcon = false;
-      if (tdlib().isSelfChat(item.getAnyId())) {
+      if (tdlib().isSelfChat(item.getChatId())) {
         senderUsername = Lang.getString(R.string.SendAsYourAccount);
         senderPremiumLockIconRes = R.drawable.dot_baseline_acc_personal_24;
-      } else if (item.getAnyId() == chatId) {
+      } else if (item.getChatId() == chatId) {
         senderUsername = Lang.getString(R.string.SendAsAnonymousAdmin);
         senderPremiumLockIconRes = R.drawable.dot_baseline_acc_anon_24;
       } else {
-        senderUsername = "@" + tdlib().chatUsername(item.getAnyId());
+        senderUsername = "@" + tdlib().chatUsername(item.getChatId());
         if (!tdlib().hasPremium()) {
           var info = tdlib().cache().supergroupFull(ChatId.toSupergroupId(chatId));
-          if (info == null || item.getAnyId() != info.linkedChatId) {
+          if (info == null || item.getChatId() != info.linkedChatId) {
             senderPremiumLockIconRes = R.drawable.baseline_lock_24;
             hasSmallSenderExtraIcon = true;
           }
@@ -852,8 +852,8 @@ public class IdentitySelectController extends ViewController<IdentitySelectContr
       }
 
       ((SenderIdentityView) holder.itemView).setSenderId(item.getSenderId());
-      ((SenderIdentityView) holder.itemView).setSenderIdentity(0, senderAvatar, item.getTitle(), senderUsername, senderPremiumLockIconRes, null);
-      ((SenderIdentityView) holder.itemView).setChecked(item.getAnyId() == Td.getSenderId(messageSenderId));
+      ((SenderIdentityView) holder.itemView).setSenderIdentity(0, senderAvatar, item.getName(), senderUsername, senderPremiumLockIconRes, null);
+      ((SenderIdentityView) holder.itemView).setChecked(item.getChatId() == Td.getSenderId(messageSenderId));
       ((SenderIdentityView) holder.itemView).drawBottomSeparator = position < getItemCount() - 1;
 
       ((SenderIdentityView) holder.itemView).setPadding(Screen.dp(11f), 0, Screen.dp(hasSmallSenderExtraIcon ? 18f : 16f), 0);
@@ -868,7 +868,7 @@ public class IdentitySelectController extends ViewController<IdentitySelectContr
       return items.size();
     }
 
-    public void setUsers(List<TGFoundChat> items) {
+    public void setUsers(List<TGUser> items) {
       int oldItemCount = getItemCount();
       this.items = items;
       U.notifyItemsReplaced(this, oldItemCount);
