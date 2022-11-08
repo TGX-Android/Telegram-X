@@ -662,26 +662,31 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         }
       }
 
-      if ((FeatureToggles.SHOW_VIEW_X_COMMENTS_BUTTON_IN_CHANNEL_POST_CONTEXT_MENU || !msg.isChannel()) && !msg.isRepliesChat() && msg.canGetMessageThread() && msg.getMessageThreadId() != m.getMessageThreadId() && (msg.getSmallestId() != msg.getMessageThreadId() || msg.getReplyCount() > 0)) {
-        ids.append(R.id.btn_messageReplies);
-        boolean areComments = msg.isChannel() || msg.isChannelAutoForward();
-        int replyCount = msg.getReplyCount();
-        if (replyCount == 0) {
-          TdApi.Message message = msg.getMessage();
-          if (message.replyInChatId != 0 && message.replyToMessageId != 0) {
-            TdApi.Message repliedMessage = msg.tdlib().getMessageLocally(message.replyInChatId, message.replyToMessageId);
-            if (repliedMessage != null) {
-              areComments = areComments || TD.isChannelAutoForward(repliedMessage);
-              replyCount = TD.getReplyCount(repliedMessage.interactionInfo);
+      if ((FeatureToggles.SHOW_VIEW_X_COMMENTS_BUTTON_IN_CHANNEL_POST_CONTEXT_MENU || !msg.isChannel()) && !msg.isRepliesChat() && msg.canGetMessageThread() && msg.getMessageThreadId() != m.getMessageThreadId()) {
+        if (msg.isDescendantOrSelf(msg.getMessageThreadId())) {
+          int replyCount = msg.getReplyCount();
+          if (replyCount > 0) {
+            boolean areComments = msg.isChannel() || msg.isChannelAutoForward();
+            strings.append(Lang.plural(areComments ? R.string.ViewXComments : R.string.ViewXReplies, replyCount));
+            ids.append(R.id.btn_messageReplies);
+            icons.append(R.drawable.outline_forum_24);
+          }
+        } else if (msg.getMessageThreadId() != 0) {
+          TdApi.Message repliedMessage = msg.tdlib().getMessageLocally(msg.getChatId(), msg.getMessageThreadId());
+          if (repliedMessage != null) {
+            int replyCount = TD.getReplyCount(repliedMessage.interactionInfo);
+            if (replyCount > 1) {
+              boolean areComments = TD.isChannelAutoForward(repliedMessage);
+              strings.append(Lang.plural(areComments ? R.string.ViewXOtherComments : R.string.ViewXOtherReplies, replyCount - 1));
+              ids.append(R.id.btn_messageReplies);
+              icons.append(R.drawable.outline_forum_24);
             }
+          } else {
+            strings.append(Lang.getString(R.string.ViewThread));
+            ids.append(R.id.btn_messageReplies);
+            icons.append(R.drawable.outline_forum_24);
           }
         }
-        if (replyCount > 0) {
-          strings.append(Lang.plural(areComments ? R.string.ViewXComments : R.string.ViewXReplies, replyCount));
-        } else {
-          strings.append(Lang.getString(R.string.ViewThread));
-        }
-        icons.append(R.drawable.outline_forum_24);
       }
 
       if (m.canWriteMessages() && isSent && msg.canReplyTo()) {
