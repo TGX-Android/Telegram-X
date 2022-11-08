@@ -58,7 +58,9 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.MessagesController;
+import org.thunderdog.challegram.ui.SettingHolder;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.CancellableResultHandler;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
@@ -138,7 +140,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           saveScrollPosition();
           ((MessagesRecyclerView) recyclerView).showDateForcely();
         }
-        if (dy != 0  && !hasScrolled && loader.getChatId() != 0) {
+        if (dy != 0 && !hasScrolled && loader.getChatId() != 0) {
           hasScrolled = true;
           controller.onInteractedWithContent();
           controller.onFirstChatScroll();
@@ -282,6 +284,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         }
       }
       checkScrollButton(first, last);
+      checkHeaderPreview(last);
 
       controller.checkRoundVideo(first, last, true);
     }
@@ -439,6 +442,23 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   public void checkScrollToBottomButton () {
     controller.setScrollToBottomVisible(getActiveMessageCount() > 0 && (lastScrollToBottomVisible || loader.canLoadBottom() || hasReturnMessage()), isReturnAbove());
+  }
+
+  public void checkHeaderPreview (int last) {
+    if (last == -1 || inSpecialMode() || !isFocused || headerMessage == null) {
+      return;
+    }
+    boolean headerVisible = false;
+    int headerBottom = 0;
+    View view = manager.findViewByPosition(last);
+    TGMessage msg = view instanceof MessageProvider ? ((MessageProvider) view).getMessage() : null;
+    if (msg == headerMessage) {
+      headerVisible = true;
+      headerBottom = view.getBottom();
+    }
+    int messagePreviewHeight = SettingHolder.measureHeightForType(ListItem.TYPE_MESSAGE_PREVIEW);
+    boolean showHeaderPreview = !headerVisible || headerBottom <= messagePreviewHeight;
+    controller.showHidePinnedMessage(showHeaderPreview, headerMessage.getOldestMessage());
   }
 
   public void onCanLoadMoreBottomChanged () {
@@ -2122,23 +2142,19 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
   }
 
-  private @Nullable Boolean isHeaderVisible;
+  private boolean isHeaderVisible;
 
   public boolean isHeaderVisible () {
-    return Boolean.TRUE.equals(isHeaderVisible);
+    return isHeaderVisible;
   }
 
   public void setHeaderVisible (boolean headerVisible) {
-    if (this.isHeaderVisible == null || this.isHeaderVisible != headerVisible) {
+    if (this.isHeaderVisible != headerVisible) {
       this.isHeaderVisible = headerVisible;
       TGMessage message = adapter.getMessage(getActiveMessageCount() - 1);
       if (message != null) {
         message.updateDate();
         controller.getMessagesView().invalidate();
-      }
-      if (headerMessage != null) {
-        TdApi.Message pinnedMessage = headerMessage.getOldestMessage();
-        controller.showHidePinnedMessage(!headerVisible, pinnedMessage);
       }
     }
   }
@@ -2332,7 +2348,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       return;
     }
     final long fromMessageId;
-    if (lastViewedMention != 0)  {
+    if (lastViewedMention != 0) {
       fromMessageId = lastViewedMention;
     } else {
       TGMessage message = adapter.getTopMessage();
@@ -2421,7 +2437,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       return;
     }
     final long fromMessageId;
-    if (lastViewedReaction != 0)  {
+    if (lastViewedReaction != 0) {
       fromMessageId = lastViewedReaction;
     } else {
       TGMessage message = adapter.getTopMessage();
@@ -2579,16 +2595,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       scrollToPositionWithOffset(index, 0, false);
       return;
     }
-    final int accountId = tdlib.id();
     if (highlightMode == HIGHLIGHT_MODE_POSITION_RESTORE) {
+      final int accountId = tdlib.id();
       Settings.SavedMessageId messageId = Settings.instance().getScrollMessageId(accountId, loader.getChatId(), loader.getMessageThreadId());
-      int offset;
-      if (messageId != null) {
-        this.returnToMessageIds = messageId.returnToMessageIds;
-        offset = messageId.offsetPixels;
-      } else {
-        offset = 0;
-      }
+      int offset = messageId != null ? messageId.offsetPixels : 0;
       this.returnToMessageIds = messageId != null ? messageId.returnToMessageIds : null;
       scrollToPositionWithOffset(index, offset, false);
       checkScrollToBottomButton();

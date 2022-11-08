@@ -23,6 +23,7 @@ public final class FeatureToggles {
   public static boolean COMMENTS_BUBBLE_BUTTON_ALWAYS_DARK = false;
   public static boolean COMMENTS_BUBBLE_BUTTON_HAS_MIN_WIDTH = true;
   public static boolean CHANNEL_PROFILE_FLOATING_BUTTON_OPENS_DISCUSSION_GROUP = true;
+  public static boolean ALWAYS_SHOW_MARK_AS_READ_ACTION_IN_THREAD_PREVIEW = false;
 
   public static class Controller extends RecyclerViewController<Void> implements View.OnClickListener {
 
@@ -59,6 +60,11 @@ public final class FeatureToggles {
       };
       adapter.setItems(Arrays.asList(
         offsetSmall(),
+
+        header("Threads"),
+        shadowTop(),
+        toggle("Always show \"Mark as Read\" action in preview", () -> ALWAYS_SHOW_MARK_AS_READ_ACTION_IN_THREAD_PREVIEW, (value) -> ALWAYS_SHOW_MARK_AS_READ_ACTION_IN_THREAD_PREVIEW = value),
+        shadowBottom(),
 
         header("Comment Button"),
         shadowTop(),

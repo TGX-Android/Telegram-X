@@ -269,14 +269,9 @@ public class ForceTouchView extends FrameLayoutFix implements
 
     FrameLayoutFix.LayoutParams baseParams = (FrameLayoutFix.LayoutParams) contentWrap.getLayoutParams();
     if (context.isMatchParent) {
-      if (Device.NEED_LESS_PREVIEW_MARGINS) {
-        baseParams.leftMargin = baseParams.rightMargin = Screen.dp(16f);
-        baseParams.topMargin = HeaderView.getTopOffset() + Screen.dp(20f);
-        baseParams.bottomMargin = HeaderView.getTopOffset() + Screen.dp(16f);
-      } else {
-        baseParams.leftMargin = baseParams.rightMargin = Screen.dp(26f);
-        baseParams.topMargin = baseParams.bottomMargin = HeaderView.getTopOffset() + Screen.dp(20f);
-      }
+      baseParams.leftMargin = baseParams.rightMargin = getMatchParentHorizontalMargin();
+      baseParams.topMargin = getMatchParentTopMargin();
+      baseParams.bottomMargin = getMatchParentBottomMargin();
     } else {
       baseParams.leftMargin = baseParams.rightMargin = Screen.dp(16f); // = params.topMargin = params.rightMargin = params.bottomMargin = Screen.dp(8f);
       baseParams.topMargin = baseParams.bottomMargin = HeaderView.getTopOffset() + Screen.dp(12f);
@@ -931,6 +926,18 @@ public class ForceTouchView extends FrameLayoutFix implements
       performAction(false);
     }
     return true;
+  }
+
+  public static int getMatchParentTopMargin () {
+    return HeaderView.getTopOffset() + Screen.dp(20f);
+  }
+
+  public static int getMatchParentBottomMargin () {
+    return HeaderView.getTopOffset() + (Device.NEED_LESS_PREVIEW_MARGINS ? Screen.dp(16f) : Screen.dp(20f));
+  }
+
+  public static int getMatchParentHorizontalMargin () {
+    return Device.NEED_LESS_PREVIEW_MARGINS ? Screen.dp(16f) : Screen.dp(26f);
   }
 
   private static final float MAXIMIZE_FACTOR = 1.3f;

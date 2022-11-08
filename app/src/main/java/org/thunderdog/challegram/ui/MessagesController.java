@@ -2697,6 +2697,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (msg != null) {
         msg.setIsThreadHeader(true);
         manager.setHeaderMessage(msg);
+        showHidePinnedMessage(true, msg.getOldestMessage());
       }
     }
 
@@ -7831,19 +7832,28 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   public int makeGuessAboutWidth () {
     if (isInForceTouchMode()) {
-      return Screen.currentWidth() - Screen.dp(26f) * 2;
+      return Screen.currentWidth() - ForceTouchView.getMatchParentHorizontalMargin() * 2;
     } else {
       return Screen.currentWidth();
     }
   }
 
-  private static int getForcePreviewHeight () {
-    return Screen.currentHeight() - (HeaderView.getTopOffset() + Screen.dp(20f)) * 2 - Screen.dp(ForceTouchView.FOOTER_HEIGHT) - Screen.dp(ForceTouchView.HEADER_HEIGHT);
+  public static int getForcePreviewHeight (boolean hasHeader, boolean hasFooter) {
+    int forcePreviewHeight = Screen.currentHeight()
+      - ForceTouchView.getMatchParentTopMargin()
+      - ForceTouchView.getMatchParentBottomMargin();
+    if (hasHeader) {
+      forcePreviewHeight -= Screen.dp(ForceTouchView.HEADER_HEIGHT);
+    }
+    if (hasFooter) {
+      forcePreviewHeight -= Screen.dp(ForceTouchView.FOOTER_HEIGHT);
+    }
+    return forcePreviewHeight;
   }
 
   public int makeGuessAboutHeight () {
     if (isInForceTouchMode()) {
-      return getForcePreviewHeight();
+      return makeGuessAboutForcePreviewHeight();
     } else {
       int height = Screen.currentHeight() - HeaderView.getSize(true);
 
@@ -7857,6 +7867,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
+  protected int makeGuessAboutForcePreviewHeight () {
+    return getForcePreviewHeight(/* hasHeader */ true, /* hasFooter */ true);
+  }
+
   public int getForceTouchModeOffset () {
     int height = Screen.currentHeight() - HeaderView.getSize(true);
 
@@ -7864,7 +7878,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       height -= Screen.dp(49f);
     }
 
-    return (height - getForcePreviewHeight());
+    return (height - makeGuessAboutForcePreviewHeight());
   }
 
   // Commands

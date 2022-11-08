@@ -20,6 +20,7 @@ import androidx.annotation.Px;
 import androidx.core.util.Pair;
 
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.config.Config;
@@ -685,7 +686,14 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
     if (chat == null) {
       return;
     }
-    MessagesController controller = new MessagesController(context.context(), context.tdlib());
+    MessagesController controller = new MessagesController(context.context(), context.tdlib()) {
+      @Override // Костыли начинаются здесь
+      public int makeGuessAboutForcePreviewHeight () {
+        boolean hasHeader = true;
+        boolean hasFooter = shouldShowMarkAsReadAction(this);
+        return MessagesController.getForcePreviewHeight(hasHeader, hasFooter);
+      }
+    };
     controller.setArguments(new MessagesController.Arguments(context.tdlib(), null, chat, messageThread, null));
     openPreviewAsync(controller, x, y);
   }
@@ -743,8 +751,7 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
 
     controller.onPrepareForceTouchContext(forceTouchContext);
 
-    ThreadInfo threadInfo = controller.getMessageThread();
-    if (threadInfo != null && threadInfo.hasUnreadMessages()) {
+    if (shouldShowMarkAsReadAction(controller)) {
       int[] ids = {R.id.btn_markChatAsRead};
       int[] icons = new int[] {R.drawable.baseline_done_all_24};
       String[] hints = new String[] {Lang.getString(R.string.ActionRead)};
@@ -784,6 +791,13 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
     } else {
       controller.destroy();
     }
+  }
+
+  private static boolean shouldShowMarkAsReadAction (@NonNull MessagesController controller) {
+    if (BuildConfig.EXPERIMENTAL && FeatureToggles.ALWAYS_SHOW_MARK_AS_READ_ACTION_IN_THREAD_PREVIEW) {
+      return true;
+    }
+    return controller.getMessageThread() != null && controller.getMessageThread().hasUnreadMessages();
   }
 
   private void closePreview () {
