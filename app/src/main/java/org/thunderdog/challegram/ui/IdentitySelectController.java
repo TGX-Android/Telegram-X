@@ -171,16 +171,20 @@ public class IdentitySelectController extends ViewController<IdentitySelectContr
           } else {
             //android.util.Log.i("ISC", String.format("SetChatMessageSender to %s (%s)", senderId.toString(), result.toString()));
 
-            messageSenderId = senderId;
-
+            /*messageSenderId = senderId;
             if (callback != null) {
               callback.onComplete(senderId);
             }
-
-            popupLayout.hideWindow(true);
+            popupLayout.hideWindow(true);*/
           }
         })
       );
+
+      // optimistic path, in case of a network error we still be able to close the window (and exec the callback)
+      if (callback != null) {
+        callback.onComplete(senderId);
+      }
+      popupLayout.hideWindow(true);
     });
 
     var params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
