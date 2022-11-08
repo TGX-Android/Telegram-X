@@ -248,6 +248,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }, AnimatorUtils.DECELERATE_INTERPOLATOR, 200l);
 
   private int pTimeLeft, pTimeWidth;
+  private int pChannelSignLeft, pChannelSignTop;
   private int pClockLeft, pClockTop;
   private int pTicksLeft, pTicksTop;
   private int pDateWidth;
@@ -750,6 +751,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         int nameWidth = getAuthorWidth();
         if (needAdminSign() && hAdminNameT != null) {
           nameWidth += hAdminNameT.getWidth();
+        }
+        if (needChannelSign()) {
+          nameWidth += Screen.dp(16f + 6f);
         }
         width = Math.max(width, nameWidth);
       }
@@ -1260,7 +1264,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       return true;
     if (isPsa() && forceForwardedInfo())
       return true;
-    if (isOutgoing() && sender.isAnonymousGroupAdmin())
+    if (isOutgoing() && (sender.isAnonymousGroupAdmin() || sender.isChannel()))
       return true;
     if (chat != null) {
       switch (chat.type.getConstructor()) {
@@ -1830,6 +1834,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           int y = top - Screen.dp(1.5f);
           hAdminNameT.draw(c, x, top - Screen.dp(12f));
         }
+        if (useBubbles && needChannelSign()) {
+          int x = getActualRightContentEdge() - xBubblePadding - xBubblePaddingSmall - Screen.dp(16f);
+          int y = top - Screen.dp(12f);
+          Drawables.draw(c, view.getSparseDrawable(R.drawable.baseline_bullhorn_16, 0), x, y, getDecentIconPaint());
+        }
       }
     }
 
@@ -1842,6 +1851,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       // Time
       if (needMetadata) {
         c.drawText(time, pTimeLeft, xTimeTop + getHeaderPadding(), mTime(true));
+      }
+
+      if (needMetadata && needChannelSign()) {
+        Drawables.draw(c, view.getSparseDrawable(R.drawable.baseline_bullhorn_16, 0), pChannelSignLeft, pChannelSignTop, getDecentIconPaint());
       }
 
       // Clock, tick and views
@@ -2462,6 +2475,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (hasHeader() && needAvatar() && view.getAvatarReceiver().isInsideReceiver(x, y)) {
       return CLICK_TYPE_AVATAR;
     }
+    if (hasHeader() && needChannelSign()) {
+      int left = useBubbles() ? getActualRightContentEdge() - xBubblePadding - xBubblePaddingSmall - Screen.dp(16f) : pChannelSignLeft;
+      int top = useBubbles() ? topContentEdge + xBubbleNameTop - Screen.dp(12f) : pChannelSignTop;
+      if (x >= left && x < (left + Screen.dp(16f)) && y >= top && y < (top + Screen.dp(16f))) {
+        return CLICK_TYPE_CHANNEL_SIGN;
+      }
+    }
     switch (getCommentMode()) {
       case COMMENT_MODE_BUTTON:
         if (useBubbles()) {
@@ -2503,6 +2523,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         }
         case CLICK_TYPE_COMMENTS: {
           openMessageThread(null);
+          break;
+        }
+        case CLICK_TYPE_CHANNEL_SIGN: {
+          tdlib().ui().openChat(TGMessage.this, msg.senderId, null);
           break;
         }
       }
@@ -2561,6 +2585,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private static final int CLICK_TYPE_REPLY = 1;
   private static final int CLICK_TYPE_AVATAR = 2;
   private static final int CLICK_TYPE_COMMENTS = 3;
+  private static final int CLICK_TYPE_CHANNEL_SIGN = 4;
 
   private int clickType = CLICK_TYPE_NONE;
 
@@ -2602,17 +2627,26 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       pBadgeIconX = pBadgeX + (int) badgeWidth + Screen.dp(2f);
     }
 
+    pChannelSignTop = getHeaderPadding() + Screen.dp(1f);
     pClockTop = getHeaderPadding() + Screen.dp(3.5f);
     pTicksTop = getHeaderPadding() + Screen.dp(3f);
 
     if ((flags & FLAG_HEADER_ENABLED) != 0) {
-      pClockLeft = pTimeLeft - Screen.dp(6f);
-      pTicksLeft = pTimeLeft - Screen.dp(3f);
+      pChannelSignLeft = pTimeLeft - Screen.dp(3f) - Screen.dp(16f);
+      if (needChannelSign()) {
+        pClockLeft = pChannelSignLeft - Screen.dp(6f);
+        pTicksLeft = pChannelSignLeft - Screen.dp(3f);
+      } else {
+        pClockLeft = pTimeLeft - Screen.dp(6f);
+        pTicksLeft = pTimeLeft - Screen.dp(3f);
+      }
     } else {
+      //pChannelSignLeft = currentWidth - Screen.dp(17f) - Screen.dp(16f);
       pClockLeft = currentWidth - Screen.dp(17f);
       pTicksLeft = currentWidth - Screen.dp(15f);
 
       if (replyData != null && !alignReplyHorizontally()) {
+        //pChannelSignTop += ReplyComponent.height();
         pClockTop += ReplyComponent.height();
         pTicksTop += ReplyComponent.height();
       }
@@ -2833,6 +2867,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         maxWidth -= hAdminNameT.getWidth();
       } else {
         hAdminNameT = null;
+      }
+      if (needChannelSign()) {
+        maxWidth -= Screen.dp(16f + 6f);
       }
 
       final String authorName;
@@ -4181,7 +4218,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     } else if (StringUtils.isEmpty(msg.authorSignature) && msg.chatId != 0 && tdlib.isMultiChat(msg.chatId)) {
       long chatId = sender.getChatId();
       if (tdlib.isChannel(chatId)) {
-        result = Lang.getString(R.string.message_channelSign);
+        result = null;//Lang.getString(R.string.message_channelSign);
       } else if (ChatId.isMultiChat(chatId)) {
         result = Lang.getString(R.string.message_groupSign);
       }
@@ -4221,6 +4258,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         buildTime();
       }
     }
+  }
+
+  private boolean needChannelSign () {
+    return !isSponsored()
+      && administrator == null
+      && !sender.isAnonymousGroupAdmin()
+      && (StringUtils.isEmpty(msg.authorSignature) && msg.chatId != 0 && tdlib.isMultiChat(msg.chatId) && sender.isChannel());
   }
 
   public final int getDate () {
