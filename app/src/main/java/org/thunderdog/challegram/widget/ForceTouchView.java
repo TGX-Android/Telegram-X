@@ -22,6 +22,7 @@ import android.graphics.Outline;
 import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -111,6 +112,7 @@ public class ForceTouchView extends FrameLayoutFix implements
 
   public static final float FOOTER_HEIGHT = 48f; // 56f
   public static final float HEADER_HEIGHT = 56f;
+  private static final float RADIUS = 4f;
 
   // private static TextPaint hintTextPaint;
 
@@ -166,7 +168,7 @@ public class ForceTouchView extends FrameLayoutFix implements
             drawRect.set(sourceRect);
             if (path != null) {
               path.reset();
-              path.addRoundRect(drawRect, Screen.dp(4f), Screen.dp(4f), Path.Direction.CW);
+              path.addRoundRect(drawRect, Screen.dp(RADIUS), Screen.dp(RADIUS), Path.Direction.CW);
             }
           }
         }
@@ -187,7 +189,7 @@ public class ForceTouchView extends FrameLayoutFix implements
         @Override
         @TargetApi(Build.VERSION_CODES.LOLLIPOP)
         public void getOutline (View view, Outline outline) {
-          outline.setRoundRect(Math.round(drawRect.left), Math.round(drawRect.top), Math.round(drawRect.right), Math.round(drawRect.bottom), Screen.dp(4f));
+          outline.setRoundRect(Math.round(drawRect.left), Math.round(drawRect.top), Math.round(drawRect.right), Math.round(drawRect.bottom), Screen.dp(RADIUS));
         }
       });
       contentWrap.setElevation(Screen.dp(1f));
@@ -196,7 +198,7 @@ public class ForceTouchView extends FrameLayoutFix implements
     ViewUtils.setBackground(contentWrap, new Drawable() {
       @Override
       public void draw (@NonNull Canvas c) {
-        c.drawRoundRect(drawRect, Screen.dp(4f), Screen.dp(4f), Paints.fillingPaint(Theme.fillingColor()));
+        c.drawRoundRect(drawRect, Screen.dp(RADIUS), Screen.dp(RADIUS), Paints.fillingPaint(Theme.fillingColor()));
       }
 
       @Override
@@ -324,8 +326,39 @@ public class ForceTouchView extends FrameLayoutFix implements
         headerView.setLayoutParams(params);
         contentWrap.addView(targetHeaderView = headerView);
       }
-      ViewSupport.setThemedBackground(targetHeaderView, R.id.theme_color_filling);
-      themeListenerList.addThemeInvalidateListener(targetHeaderView);
+      ViewUtils.setBackground(targetHeaderView, new Drawable() {
+        @Override
+        public void draw (@NonNull Canvas canvas) {
+          Rect bounds = getBounds();
+          int radius = Screen.dp(RADIUS);
+          Path path = Paints.getPath();
+          path.reset();
+          path.moveTo(bounds.right, bounds.top + radius);
+          path.rQuadTo(0, -radius, -radius, -radius);
+          path.rLineTo(-(bounds.width() - radius * 2), 0);
+          path.rQuadTo(-radius, 0, -radius, radius);
+          path.rLineTo(0, bounds.height() - radius);
+          path.rLineTo(bounds.width(), 0);
+          path.rLineTo(0, -(bounds.height() - radius));
+          path.close();
+          canvas.drawPath(path, Paints.fillingPaint(Theme.fillingColor()));
+        }
+
+        @Override
+        public void setAlpha (int alpha) {
+
+        }
+
+        @Override
+        public void setColorFilter (@Nullable ColorFilter colorFilter) {
+
+        }
+
+        @Override
+        public int getOpacity () {
+          return PixelFormat.UNKNOWN;
+        }
+      });
       themeListenerList.addThemeDoubleTextColorListener(targetHeaderView, R.id.theme_color_text, R.id.theme_color_textLight);
 
       params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, Screen.dp(7f));
@@ -357,8 +390,39 @@ public class ForceTouchView extends FrameLayoutFix implements
       buttonsList.setGravity(Gravity.CENTER_HORIZONTAL);
       buttonsList.setLayoutParams(params);
 
-      ViewSupport.setThemedBackground(buttonsList, R.id.theme_color_filling);
-      themeListenerList.addThemeInvalidateListener(buttonsList);
+      ViewUtils.setBackground(buttonsList, new Drawable() {
+        @Override
+        public void draw (@NonNull Canvas canvas) {
+          Rect bounds = getBounds();
+          int radius = Screen.dp(RADIUS);
+          Path path = Paints.getPath();
+          path.reset();
+          path.moveTo(bounds.right, bounds.top);
+          path.rLineTo(-bounds.width(), 0);
+          path.rLineTo(0, bounds.height() - radius);
+          path.rQuadTo(0, radius, radius, radius);
+          path.rLineTo(bounds.width() - radius * 2, 0);
+          path.rQuadTo(radius, 0, radius, -radius);
+          path.rLineTo(0, -(bounds.height() - radius));
+          path.close();
+          canvas.drawPath(path, Paints.fillingPaint(Theme.fillingColor()));
+        }
+
+        @Override
+        public void setAlpha (int alpha) {
+
+        }
+
+        @Override
+        public void setColorFilter (@Nullable ColorFilter colorFilter) {
+
+        }
+
+        @Override
+        public int getOpacity () {
+          return PixelFormat.UNKNOWN;
+        }
+      });
 
       View offsetView;
 
@@ -578,7 +642,7 @@ public class ForceTouchView extends FrameLayoutFix implements
 
       if (path != null) {
         path.reset();
-        path.addRoundRect(drawRect, Screen.dp(4f), Screen.dp(4f), Path.Direction.CW);
+        path.addRoundRect(drawRect, Screen.dp(RADIUS), Screen.dp(RADIUS), Path.Direction.CW);
       }
       if (forceTouchContext.contentView != null) {
         forceTouchContext.contentView.setTranslationY(drawRect.centerY() - targetRect.centerY());
