@@ -181,12 +181,12 @@ public final class TGAvatars implements FactorAnimator.Target {
       float cx = avatarRadius + entry.getPosition() * (avatarRadius * 2 + avatarSpacing);
       maxWidth = Math.max(maxWidth, cx + avatarRadius);
     }
-    c.save();
+    int saveCount;
     boolean isRightGravity = (gravity & Gravity.HORIZONTAL_GRAVITY_MASK) == Gravity.RIGHT;
     if (isRightGravity) {
-      c.saveLayerAlpha(x - maxWidth - avatarOutline, cy - avatarRadius - avatarOutline, x + avatarOutline, cy + avatarRadius + avatarOutline, 255, Canvas.ALL_SAVE_FLAG);
+      saveCount = c.saveLayerAlpha(x - maxWidth - avatarOutline, cy - avatarRadius - avatarOutline, x + avatarOutline, cy + avatarRadius + avatarOutline, 255, Canvas.ALL_SAVE_FLAG);
     } else {
-      c.saveLayerAlpha(x - avatarOutline, cy - avatarRadius - avatarOutline, x + maxWidth + avatarOutline, cy + avatarRadius + avatarOutline, 255, Canvas.ALL_SAVE_FLAG);
+      saveCount = c.saveLayerAlpha(x - avatarOutline, cy - avatarRadius - avatarOutline, x + maxWidth + avatarOutline, cy + avatarRadius + avatarOutline, 255, Canvas.ALL_SAVE_FLAG);
     }
     for (int index = animator.size() - 1; index >= 0; index--) {
       ListAnimator.Entry<AvatarEntry> entry = animator.getEntry(index);
@@ -198,7 +198,7 @@ public final class TGAvatars implements FactorAnimator.Target {
       int cx = Math.round(isRightGravity ? x - dx : x + dx);
       entry.item.draw(c, complexReceiver, cx, cy, avatarRadius, avatarOutline, visibility, visibility * alpha);
     }
-    c.restore();
+    c.restoreToCount(saveCount);
   }
 
   private float oldWidth;
