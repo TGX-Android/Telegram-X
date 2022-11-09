@@ -662,11 +662,11 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         }
       }
 
-      if ((FeatureToggles.SHOW_VIEW_X_COMMENTS_BUTTON_IN_CHANNEL_POST_CONTEXT_MENU || !msg.isChannel()) && !msg.isRepliesChat() && msg.canGetMessageThread() && msg.getMessageThreadId() != m.getMessageThreadId()) {
+      if (!msg.isChannel() && !msg.isRepliesChat() && msg.canGetMessageThread() && msg.getMessageThreadId() != m.getMessageThreadId()) {
         if (msg.isDescendantOrSelf(msg.getMessageThreadId())) {
           int replyCount = msg.getReplyCount();
           if (replyCount > 0) {
-            boolean areComments = msg.isChannel() || msg.isChannelAutoForward();
+            boolean areComments = msg.isChannelAutoForward();
             strings.append(Lang.plural(areComments ? R.string.ViewXComments : R.string.ViewXReplies, replyCount));
             ids.append(R.id.btn_messageReplies);
             icons.append(R.drawable.outline_forum_24);
