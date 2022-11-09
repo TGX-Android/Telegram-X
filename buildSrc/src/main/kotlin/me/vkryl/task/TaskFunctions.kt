@@ -64,6 +64,7 @@ fun writeToFile(path: String, mkdirs: Boolean = true, isRelativePath: Boolean = 
     if (!areFileContentsIdentical(file, outFile)) {
       if (isWindows) {
         Thread.sleep(300)
+        System.gc()
       }
       copyOrReplace(outFile, file)
     }
