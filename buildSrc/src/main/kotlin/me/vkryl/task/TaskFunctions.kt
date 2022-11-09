@@ -23,11 +23,17 @@ import kotlin.contracts.InvocationKind
 import kotlin.contracts.contract
 
 @ExperimentalContracts
-fun writeToFile(path: String, mkdirs: Boolean = true, block: (Writer) -> Unit) {
+fun writeToFile(path: String, mkdirs: Boolean = true, isRelativePath: Boolean = true, block: (Writer) -> Unit) {
   contract {
     callsInPlace(block, InvocationKind.EXACTLY_ONCE)
   }
-  val file = File(path)
+
+  val file = if (isRelativePath && System.getProperty("os.name").startsWith("Windows")) {
+    File("${System.getProperty("user.dir")}${File.separator}$path")
+  } else {
+    File(path)
+  }
+
   if (!file.parentFile.exists()) {
     if (mkdirs) {
       if (!file.parentFile.mkdirs())
@@ -134,7 +140,7 @@ fun String.camelCaseToUpperCase(): String {
   return upperCase.toString()
 }
 
-fun String.stripUnderscoresWithCamelCase (): String {
+fun String.stripUnderscoresWithCamelCase(): String {
   val upperCase = StringBuilder(this.length)
   var nextUpperCase = false
   for (c in this) {
@@ -187,7 +193,7 @@ fun String.normalizeArgbHex(): String {
 fun String.parseArgbColor(): Int {
   val hex = this.normalizeArgbHex()
   val colors = mutableListOf<Int>()
-  for (i in 0 .. (hex.length / 2)) {
+  for (i in 0..(hex.length / 2)) {
     val x = hex.substring(i * 2, i * 2 + 1)
     colors.add(x.toInt(16))
   }
@@ -210,10 +216,4 @@ fun String.unwrapDoubleQuotes(): String {
   if (!this.startsWith("\"") || !this.endsWith("\""))
     error("Not wrapped: \"${this}\"")
   return this.substring(1, this.length - 1).replace("\\\"", "\"")
-}
-
-fun String.compatRelativePath(): String {
-  if (!System.getProperty("os.name").startsWith("Windows"))
-    return this
-  return "${System.getProperty("user.dir")}${File.separator}$this"
 }
