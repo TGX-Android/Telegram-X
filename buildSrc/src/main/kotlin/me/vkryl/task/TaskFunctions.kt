@@ -28,7 +28,8 @@ fun writeToFile(path: String, mkdirs: Boolean = true, isRelativePath: Boolean = 
     callsInPlace(block, InvocationKind.EXACTLY_ONCE)
   }
 
-  val file = if (isRelativePath && System.getProperty("os.name").startsWith("Windows")) {
+  val isWindows = System.getProperty("os.name").startsWith("Windows")
+  val file = if (isRelativePath && isWindows) {
     File("${System.getProperty("user.dir")}${File.separator}$path")
   } else {
     File(path)
@@ -60,10 +61,25 @@ fun writeToFile(path: String, mkdirs: Boolean = true, isRelativePath: Boolean = 
   }
 
   if (file.exists()) {
-    file.delete()
-  }
+    if (!areFileContentsIdentical(file, outFile)) {
+      if (isWindows) {
+        Thread.sleep(300)
+      }
+      copyOrReplace(outFile, file)
+    }
+    if (!outFile.delete() && outFile.exists()) {
+      // Give time to unlock the file and try again
+      for(i in 0..7) {
+        Thread.sleep(300)
+        System.gc()
+        if (outFile.delete()) return
+      }
 
-  outFile.renameTo(file)
+      error("Could not delete temp file: ${outFile.absolutePath}")
+    }
+  } else {
+    outFile.renameTo(file)
+  }
 }
 
 fun copyOrReplace(fromFile: File, toFile: File) {
@@ -114,13 +130,15 @@ fun editFile(path: String, block: (String) -> String) {
 }
 
 fun areFileContentsIdentical(a: File, b: File): Boolean {
+  val areIdentical: Boolean
   FileChannel.open(a.toPath(), StandardOpenOption.READ).use { fileChannelA ->
     FileChannel.open(b.toPath(), StandardOpenOption.READ).use { fileChannelB ->
       val mapA = fileChannelA.map(FileChannel.MapMode.READ_ONLY, 0, fileChannelA.size())
       val mapB = fileChannelB.map(FileChannel.MapMode.READ_ONLY, 0, fileChannelB.size())
-      return mapA == mapB
+      areIdentical = mapA == mapB
     }
   }
+  return areIdentical
 }
 
 fun String.camelCaseToUpperCase(): String {
