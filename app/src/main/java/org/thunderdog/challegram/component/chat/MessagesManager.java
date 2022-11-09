@@ -446,7 +446,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   public void checkHeaderPreview (int last) {
-    if (last == -1 || inSpecialMode() || !isFocused || headerMessage == null) {
+    if (last == -1 || inSpecialMode() || !isFocused || headerMessage == null || headerMessage.getId() == 0 || headerMessage instanceof TGMessageBotInfo) {
       return;
     }
     boolean headerVisible = false;
