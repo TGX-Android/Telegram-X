@@ -15,7 +15,7 @@ This is the complete source code and the build instructions for the official alt
 
 * At least **5,34GB** of free disk space: **487,10MB** for source codes and around **4,85GB** for files generated after building all variants
 * **4GB** of RAM
-* **macOS** or **Linux**-based operating system. **Windows** platform is not yet supported in [scripts](/scripts) that build native dependencies, however, it might be easy to patch them in order to make it work.
+* **macOS** or **Linux**-based operating system. **Windows** platform is supported by using [MSYS](https://www.msys2.org/) (e.g., [Git Bash](https://gitforwindows.org/)).
 
 #### macOS
 
@@ -26,6 +26,15 @@ This is the complete source code and the build instructions for the official alt
 
 * git with LFS: `# apt install git git-lfs`
 * Run `$ git lfs install` for the current user, if you didn't have `git-lfs` previously installed
+
+#### Windows
+
+* Shell with `git`, `wget`, and `make` utilities:
+    * **MSYS**: `$ pacman -S make git mingw-w64-x86_64-git-lfs`
+    * **Git Bash**: 
+        1. Download [wget](https://eternallybored.org/misc/wget/), unzip `wget.exe` and move to your `Git\mingw64\bin\`
+        2. Download [make](https://sourceforge.net/projects/ezwinports/files/make-4.3-without-guile-w32-bin.zip), unzip and copy the contents to your `Git\mingw64\` merging the folders, but do **NOT** overwrite any existing files
+* Run `$ git lfs install` for the current user, if you didn't have `git lfs` previously initialized
 
 ### Building
 

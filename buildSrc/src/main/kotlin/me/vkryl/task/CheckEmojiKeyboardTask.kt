@@ -323,7 +323,7 @@ open class CheckEmojiKeyboardTask : BaseTask() {
       error("${missingEmoji.size + incorrectOrderEmoji.size} emoji-related error(s).\n\n${errors.joinToString("\n\n")}")
     }
 
-    writeToFile("app/src/main/java/org/thunderdog/challegram/tool/Emojis.kt") { kt ->
+    writeToFile("app/src/main/java/org/thunderdog/challegram/tool/Emojis.kt".compatRelativePath()) { kt ->
       kt.append("""
         @file:JvmName("Emojis")
 

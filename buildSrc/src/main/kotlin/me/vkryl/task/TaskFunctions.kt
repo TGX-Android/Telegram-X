@@ -54,13 +54,10 @@ fun writeToFile(path: String, mkdirs: Boolean = true, block: (Writer) -> Unit) {
   }
 
   if (file.exists()) {
-    if (!areFileContentsIdentical(file, outFile)) {
-      copyOrReplace(outFile, file)
-    }
-    outFile.delete()
-  } else {
-    outFile.renameTo(file)
+    file.delete()
   }
+
+  outFile.renameTo(file)
 }
 
 fun copyOrReplace(fromFile: File, toFile: File) {
@@ -213,4 +210,10 @@ fun String.unwrapDoubleQuotes(): String {
   if (!this.startsWith("\"") || !this.endsWith("\""))
     error("Not wrapped: \"${this}\"")
   return this.substring(1, this.length - 1).replace("\\\"", "\"")
+}
+
+fun String.compatRelativePath(): String {
+  if (!System.getProperty("os.name").startsWith("Windows"))
+    return this
+  return "${System.getProperty("user.dir")}${File.separator}$this"
 }

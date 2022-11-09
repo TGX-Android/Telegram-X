@@ -24,7 +24,7 @@ open class UpdateExceptionsTask : BaseTask() {
     val appVersion = loadProperties("version.properties").getOrThrow("version.app").toInt()
     if (appVersion == 0)
       error("appVersion == 0")
-    writeToFile("app/src/main/java/org/drinkmore/ClientException.java") { java ->
+    writeToFile("app/src/main/java/org/drinkmore/ClientException.java".compatRelativePath()) { java ->
       java.append("""
         package org.drinkmore;
         
