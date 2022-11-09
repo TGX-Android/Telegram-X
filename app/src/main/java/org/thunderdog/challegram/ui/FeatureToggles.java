@@ -1,9 +1,12 @@
 package org.thunderdog.challegram.ui;
 
+import static androidx.core.text.HtmlCompat.fromHtml;
+
 import android.content.Context;
 import android.view.View;
 
 import androidx.collection.SparseArrayCompat;
+import androidx.core.text.HtmlCompat;
 import androidx.core.view.ViewCompat;
 
 import org.thunderdog.challegram.R;
@@ -24,6 +27,7 @@ public final class FeatureToggles {
   public static boolean COMMENTS_BUBBLE_BUTTON_HAS_MIN_WIDTH = true;
   public static boolean CHANNEL_PROFILE_FLOATING_BUTTON_OPENS_DISCUSSION_GROUP = true;
   public static boolean ALWAYS_SHOW_MARK_AS_READ_ACTION_IN_THREAD_PREVIEW = false;
+  public static boolean SCROLL_TO_HEADER_MESSAGE_ON_THREAD_FIRST_OPEN = false;
 
   public static class Controller extends RecyclerViewController<Void> implements View.OnClickListener {
 
@@ -61,9 +65,16 @@ public final class FeatureToggles {
       adapter.setItems(Arrays.asList(
         offsetSmall(),
 
-        header("Threads"),
+        header("Threads > First Open"),
         shadowTop(),
-        toggle("Always show \"Mark as Read\" action in preview", () -> ALWAYS_SHOW_MARK_AS_READ_ACTION_IN_THREAD_PREVIEW, (value) -> ALWAYS_SHOW_MARK_AS_READ_ACTION_IN_THREAD_PREVIEW = value),
+        toggle("Scroll to header message", () -> SCROLL_TO_HEADER_MESSAGE_ON_THREAD_FIRST_OPEN, (value) -> SCROLL_TO_HEADER_MESSAGE_ON_THREAD_FIRST_OPEN = value),
+        descriptionSmall(fromHtml("<b>On</b> - Trying to show header message fully unless it takes more than half of the RecyclerView's height in which messages display, in which case it should scroll to the maximum position that fits that half", HtmlCompat.FROM_HTML_MODE_COMPACT)),
+        descriptionSmall(fromHtml("<b>Off</b> - Showing with displayed header message preview showing and \"Discussion started\" aligned right below it", HtmlCompat.FROM_HTML_MODE_COMPACT)),
+        shadowBottom(),
+
+        header("Threads > Preview"),
+        shadowTop(),
+        toggle("Always show \"Mark as Read\" action", () -> ALWAYS_SHOW_MARK_AS_READ_ACTION_IN_THREAD_PREVIEW, (value) -> ALWAYS_SHOW_MARK_AS_READ_ACTION_IN_THREAD_PREVIEW = value),
         shadowBottom(),
 
         header("Comment Button"),
@@ -72,9 +83,9 @@ public final class FeatureToggles {
         toggle("Bubble button has min width (" + Config.COMMENTS_BUBBLE_BUTTON_MIN_WIDTH + "dp)", () -> COMMENTS_BUBBLE_BUTTON_HAS_MIN_WIDTH, (value) -> COMMENTS_BUBBLE_BUTTON_HAS_MIN_WIDTH = value),
         shadowBottom(),
 
-        header("Channel Post"),
+        header("Channel Post's Context Menu"),
         shadowTop(),
-        toggle("Show \"View X Comments\" button in context menu", () -> SHOW_VIEW_X_COMMENTS_BUTTON_IN_CHANNEL_POST_CONTEXT_MENU, (value) -> SHOW_VIEW_X_COMMENTS_BUTTON_IN_CHANNEL_POST_CONTEXT_MENU = value),
+        toggle("Show \"View X Comments\" button", () -> SHOW_VIEW_X_COMMENTS_BUTTON_IN_CHANNEL_POST_CONTEXT_MENU, (value) -> SHOW_VIEW_X_COMMENTS_BUTTON_IN_CHANNEL_POST_CONTEXT_MENU = value),
         shadowBottom(),
 
         header("Channel Profile"),
@@ -122,6 +133,10 @@ public final class FeatureToggles {
       valueSuppliers.append(id, valueSupplier);
       valueConsumers.append(id, valueConsumer);
       return new ListItem(ListItem.TYPE_RADIO_SETTING, id, 0, text, false);
+    }
+
+    private ListItem descriptionSmall (CharSequence text) {
+      return new ListItem(ListItem.TYPE_DESCRIPTION_SMALL, 0, 0, text, false);
     }
   }
 }

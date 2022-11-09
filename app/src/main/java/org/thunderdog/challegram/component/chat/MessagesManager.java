@@ -58,6 +58,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.ui.FeatureToggles;
 import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.ui.SettingHolder;
@@ -1160,10 +1161,16 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         if (scrollMessage == null) {
           if (headerMessage != null && scrollMessageId != null && scrollMessageId.isHistoryStart() && !items.isEmpty()) {
             insertHeaderMessageIfNeeded();
-            TGMessage item = items.get(items.size() - 1);
-            int index = adapter.indexOfMessageContainer(item.getId());
-            if (index != -1) {
-              scrollToMessage(index, item, highlightMode, false, false);
+            if (FeatureToggles.SCROLL_TO_HEADER_MESSAGE_ON_THREAD_FIRST_OPEN) {
+              int targetHeight = getTargetHeight();
+              int headerPosition = manager.getItemCount() - 1;
+              manager.scrollToPositionWithOffset(headerPosition, targetHeight / 2);
+            } else {
+              TGMessage item = items.get(items.size() - 1);
+              int index = adapter.indexOfMessageContainer(item.getId());
+              if (index != -1) {
+                scrollToMessage(index, item, highlightMode, false, false);
+              }
             }
           } else if (headerMessage != null && scrollMessageId != null && !scrollMessageId.isHistoryEnd() && headerMessage.isDescendantOrSelf(scrollMessageId.getMessageId()) && !adapter.isEmpty()) {
             insertHeaderMessageIfNeeded();
