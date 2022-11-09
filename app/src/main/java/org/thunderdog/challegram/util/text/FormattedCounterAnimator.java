@@ -112,15 +112,24 @@ public class FormattedCounterAnimator<T extends TextDrawable> extends CounterAni
     int counterStart = textRepresentation.indexOf(counter);
     if (counterStart != -1) {
       int counterEnd = counterStart + counter.length();
-      List<CounterAnimator.Part<T>> parts = new ArrayList<>(textRepresentation.length());
-      for (int i = 0; i < textRepresentation.length(); ) {
+      List<CounterAnimator.Part<T>> parts = new ArrayList<>(counter.length() + 2);
+      String prefix = counterStart > 0 ? textRepresentation.substring(0, counterStart) : null;
+      String suffix = counterEnd < textRepresentation.length() ? textRepresentation.substring(counterEnd) : null;
+      boolean isRtl = Strings.getTextDirection(textRepresentation) == Strings.DIRECTION_RTL;
+      String left = isRtl ? suffix : prefix;
+      if (left != null) {
+        parts.add(new Part<>(0, callback.onCreateTextDrawable(left), false));
+      }
+      for (int i = counterStart; i < counterEnd; ) {
         int codePoint = textRepresentation.codePointAt(i);
         int charCount = Character.charCount(codePoint);
         String part = textRepresentation.substring(i, i + charCount);
-        boolean isCounter = i >= counterStart && i < counterEnd;
-        int index = isCounter ? i - counterStart : i >= counterEnd ? i - counter.length() : i;
-        parts.add(new Part<>(index, callback.onCreateTextDrawable(part), isCounter));
+        parts.add(new Part<>(i - counterStart, callback.onCreateTextDrawable(part), true));
         i += charCount;
+      }
+      String right = isRtl ? prefix : suffix;
+      if (right != null) {
+        parts.add(new Part<>(1, callback.onCreateTextDrawable(right), false));
       }
       setCounterImpl(count, parts, animated);
     } else {
