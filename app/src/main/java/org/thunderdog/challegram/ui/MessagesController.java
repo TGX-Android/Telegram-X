@@ -2566,7 +2566,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     forceHideToast();
     topBar.hideAll(false);
 
-    resetSearhControls();
+    resetSearchControls();
 
     tdlib.ui().updateTTLButton(R.id.menu_secretChat, headerView, chat, true);
     messagesView.setMessageAnimatorEnabled(false);
@@ -2583,6 +2583,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     TdApi.Chat headerChat = messageThread != null ? tdlib.chatSync(messageThread.getContextChatId()) : null;
     headerCell.setChat(tdlib, headerChat != null ? headerChat : chat, messageThread);
+    if (previewMode == PREVIEW_MODE_NONE && !areScheduled) {
+      headerCell.setForcedSubtitle(messageThread != null ? messageThread.chatHeaderSubtitle(tdlib) : null);
+    }
 
     if (inPreviewMode) {
       switch (previewMode) {
@@ -3950,7 +3953,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     cancelJumpToDate();
     cancelAdminsRequest();
-    resetSearhControls();
+    resetSearchControls();
     triggerOneShot = true;
 
     if (manager != null) {
@@ -10157,6 +10160,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       manager.rebuildLayouts();
       if (headerCell != null) {
         headerCell.setChat(tdlib, chat, messageThread);
+        if (messageThread != null) {
+          updateThreadSubtitle();
+        }
       }
     }
   }
@@ -10334,7 +10340,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private boolean searchControlsForChannel;
 
-  private void resetSearhControls () {
+  private void resetSearchControls () {
     if (searchControlsLayout != null) {
       searchCounterView.setText("");
       searchPrevButton.setEnabled(false);

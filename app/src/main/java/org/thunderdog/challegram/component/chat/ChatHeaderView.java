@@ -93,30 +93,23 @@ public class ChatHeaderView extends ComplexHeaderView {
   public void setChat (Tdlib tdlib, TdApi.Chat chat, @Nullable ThreadInfo messageThread) {
     this.tdlib = tdlib;
 
-    setShowLock(chat != null && ChatId.isSecret(chat.id));
-
     if (chat == null) {
       setText("Debug controller", "nobody should find this view");
       return;
     }
 
+    setChatPhoto(chat, chat.photo);
+    setShowVerify(tdlib.chatVerified(chat));
+    setShowScam(tdlib.chatScam(chat));
+    setShowFake(tdlib.chatFake(chat));
+    setShowMute(tdlib.chatNeedsMuteIcon(chat));
+    setShowLock(ChatId.isSecret(chat.id));
     if (messageThread != null) {
-      setChatPhoto(chat, chat.photo);
-      setShowVerify(tdlib.chatVerified(chat));
-      setShowScam(tdlib.chatScam(chat));
-      setShowFake(tdlib.chatFake(chat));
-      setShowMute(tdlib.chatNeedsMuteIcon(chat));
-      CharSequence subtitle = messageThread.chatHeaderSubtitle(tdlib);
-      setText(messageThread.chatHeaderTitle(tdlib), subtitle);
-      setForcedSubtitle(subtitle);
+      setText(messageThread.chatHeaderTitle(tdlib), messageThread.chatHeaderSubtitle(tdlib));
       setExpandedSubtitle(null);
+      setUseRedHighlight(false);
       attachChatStatus(messageThread.getChatId(), messageThread.getMessageThreadId());
     } else {
-      setChatPhoto(chat, chat.photo);
-      setShowVerify(tdlib.chatVerified(chat));
-      setShowScam(tdlib.chatScam(chat));
-      setShowFake(tdlib.chatFake(chat));
-      setShowMute(tdlib.chatNeedsMuteIcon(chat));
       setText(tdlib.chatTitle(chat), !StringUtils.isEmpty(forcedSubtitle) ? forcedSubtitle : tdlib.status().chatStatus(chat));
       setExpandedSubtitle(tdlib.status().chatStatusExpanded(chat));
       setUseRedHighlight(tdlib.isRedTeam(chat.id));
