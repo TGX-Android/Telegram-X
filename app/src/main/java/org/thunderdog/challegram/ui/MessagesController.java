@@ -2702,7 +2702,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (msg != null) {
         msg.setIsThreadHeader(true);
         manager.setHeaderMessage(msg);
-        if (!FeatureToggles.SCROLL_TO_HEADER_MESSAGE_ON_THREAD_FIRST_OPEN) {
+        if (!FeatureToggles.SCROLL_TO_HEADER_MESSAGE_ON_THREAD_FIRST_OPEN && messageThread.getSize() > 0) {
           // TODO(nikita-toropov) rework it
           showHidePinnedMessage(true, msg.getOldestMessage());
         }
@@ -5200,7 +5200,21 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case R.id.btn_messageReplies: {
         if (selectedMessage != null) {
-          selectedMessage.openMessageThread();
+          if (selectedMessage.isChannelAutoForward()) {
+            // View X Comments
+            selectedMessage.openMessageThread();
+          } else if (selectedMessage.isDescendantOrSelf(selectedMessage.getMessageThreadId())) {
+            // View X Replies
+            TdApi.Message message = selectedMessage.findMessageWithThread();
+            if (message != null) {
+              TdApi.GetMessageThread query = new TdApi.GetMessageThread(message.chatId, message.id);
+              MessageId highlightMessageId = new MessageId(message.chatId, MessageId.MIN_VALID_ID);
+              selectedMessage.openMessageThread(query, highlightMessageId);
+            }
+          } else {
+            // View Thread
+            selectedMessage.openMessageThread(selectedMessage.toMessageId());
+          }
           clearSelectedMessage();
         }
         return true;

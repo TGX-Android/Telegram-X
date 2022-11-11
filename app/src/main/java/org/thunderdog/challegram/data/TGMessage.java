@@ -850,27 +850,39 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public final void openMessageThread () {
-    openMessageThread(null, null);
+    TdApi.Message messageWithThread = findMessageWithThread();
+    if (messageWithThread != null) {
+      openMessageThread(new TdApi.GetMessageThread(messageWithThread.chatId, messageWithThread.id));
+    }
   }
 
-  public final void openMessageThread (@Nullable MessageId highlightMessageId) {
+  public final void openMessageThread (@NonNull MessageId highlightMessageId) {
     openMessageThread(highlightMessageId, null);
   }
 
-  public final void openMessageThread (@Nullable MessageId highlightMessageId, @Nullable MessageId fallbackMessageId) {
+  public final void openMessageThread (@NonNull MessageId highlightMessageId, @Nullable MessageId fallbackHighlightMessageId) {
+    TdApi.GetMessageThread query = new TdApi.GetMessageThread(highlightMessageId.getChatId(), highlightMessageId.getMessageId());
+    TdApi.GetMessageThread fallbackQuery;
+    if (fallbackHighlightMessageId != null) {
+      fallbackQuery = new TdApi.GetMessageThread(fallbackHighlightMessageId.getChatId(), fallbackHighlightMessageId.getMessageId());
+    } else {
+      fallbackQuery = null;
+    }
+    openMessageThread(query, highlightMessageId, fallbackQuery, fallbackHighlightMessageId);
+  }
+
+  public final void openMessageThread (@NonNull TdApi.GetMessageThread query) {
+    openMessageThread(query, null);
+  }
+
+  public final void openMessageThread (@NonNull TdApi.GetMessageThread query, @Nullable MessageId highlightMessageId) {
+    openMessageThread(query, highlightMessageId, null, null);
+  }
+
+  public final void openMessageThread (@NonNull TdApi.GetMessageThread query, @Nullable MessageId highlightMessageId, @Nullable TdApi.GetMessageThread fallbackQuery, @Nullable MessageId fallbackHighlightMessageId) {
     if (openingComments.getValue())
       return;
     openingComments.setValue(true, needAnimateChanges());
-    TdApi.GetMessageThread query;
-    if (highlightMessageId != null) {
-      query = new TdApi.GetMessageThread(highlightMessageId.getChatId(), highlightMessageId.getMessageId());
-    } else {
-      TdApi.Message messageWithThread = findMessageWithThread();
-      if (messageWithThread == null) {
-        return;
-      }
-      query = new TdApi.GetMessageThread(messageWithThread.chatId, messageWithThread.id);
-    }
     tdlib.client().send(query, result -> runOnUiThreadOptional(() -> {
       switch (result.getConstructor()) {
         case TdApi.MessageThreadInfo.CONSTRUCTOR: {
@@ -879,7 +891,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
             openingComments.setValue(false, needAnimateChanges());
           });
           if (highlightMessageId != null) {
-            params.highlightMessage(highlightMessageId).ensureHighlightAvailable();
+            if (highlightMessageId.isHistoryStart()) {
+              params.highlightMessage(MessagesManager.HIGHLIGHT_MODE_UNREAD, highlightMessageId);
+            } else {
+              params.highlightMessage(highlightMessageId);
+              params.ensureHighlightAvailable();
+            }
           }
           tdlib.ui().openChat(this, messageThread.chatId, params);
           break;
@@ -896,9 +913,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
             }
             break;
           }
-          if (fallbackMessageId != null) {
+          if (fallbackQuery != null) {
             openingComments.setValue(false, false);
-            openMessageThread(fallbackMessageId, null);
+            openMessageThread(fallbackQuery, fallbackHighlightMessageId);
             break;
           }
           openingComments.setValue(false, needAnimateChanges());

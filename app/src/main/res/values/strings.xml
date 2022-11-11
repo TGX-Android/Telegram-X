@@ -561,8 +561,6 @@
   <string name="Reply">Reply</string>
   <string name="ViewXReplies_one">View %1$s reply</string>
   <string name="ViewXReplies_other">View %1$s replies</string>
-  <string name="ViewXOtherReplies_one">View %1$s other reply</string>
-  <string name="ViewXOtherReplies_other">View %1$s other replies</string>
   <string name="Select">Select</string>
   <string name="Open">Open</string>
   <string name="OpenInExternalApp">Open in…</string>

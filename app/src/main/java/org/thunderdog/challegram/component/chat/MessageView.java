@@ -676,8 +676,11 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
           if (repliedMessage != null) {
             int replyCount = TD.getReplyCount(repliedMessage.interactionInfo);
             if (replyCount > 1) {
-              boolean areComments = TD.isChannelAutoForward(repliedMessage);
-              strings.append(Lang.plural(areComments ? R.string.ViewXOtherComments : R.string.ViewXOtherReplies, replyCount - 1));
+              if (TD.isChannelAutoForward(repliedMessage)) {
+                strings.append(Lang.plural(R.string.ViewXOtherComments, replyCount - 1));
+              } else {
+                strings.append(Lang.getString(R.string.ViewThread));
+              }
               ids.append(R.id.btn_messageReplies);
               icons.append(R.drawable.outline_forum_24);
             }
