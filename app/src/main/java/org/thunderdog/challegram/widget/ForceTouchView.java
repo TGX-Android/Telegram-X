@@ -14,6 +14,8 @@
  */
 package org.thunderdog.challegram.widget;
 
+import static java.lang.annotation.RetentionPolicy.SOURCE;
+
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Canvas;
@@ -37,8 +39,11 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 
+import androidx.annotation.ColorInt;
+import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.Px;
 import androidx.annotation.UiThread;
 
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -73,6 +78,8 @@ import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.SensitiveContentContainer;
 import org.thunderdog.challegram.util.text.Text;
+
+import java.lang.annotation.Retention;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.ViewUtils;
@@ -118,7 +125,7 @@ public class ForceTouchView extends FrameLayoutFix implements
 
   private final ThemeListenerList themeListenerList;
 
-  private final RectF drawRect = new RectF();
+  private final RectF drawingRect = new RectF();
   private final RectF targetRect = new RectF();
   private final RectF sourceRect = new RectF();
   private final @Nullable Path path = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT ? new Path() : null;
@@ -151,24 +158,26 @@ public class ForceTouchView extends FrameLayoutFix implements
       protected void onSizeChanged (int width, int height, int oldWidth, int oldHeight) {
         if (width != oldWidth || height != oldHeight) {
           targetRect.set(0, 0, width, height);
-          if (sourceRect.isEmpty() && height != 0) {
-            sourceRect.set(0, 0, width, Math.min(Screen.dp(200f), height));
+          if (forceTouchContext.animationType == ForceTouchContext.ANIMATION_TYPE_EXPAND_VERTICALLY) {
+            if (sourceRect.isEmpty() && height != 0) {
+              sourceRect.set(0, 0, width, Math.min(Screen.dp(200f), height));
 
-            int[] location = Views.getLocationOnScreen(this);
-            float y;
-            if (forceTouchContext.sourcePoint != null) {
-              y = forceTouchContext.sourcePoint.y - location[1];
-            } else {
-              y = targetRect.centerY();
+              int[] location = Views.getLocationOnScreen(this);
+              float y = forceTouchContext.sourcePoint != null ? forceTouchContext.sourcePoint.y - location[1] : targetRect.centerY();
+              float dy = y - y / height * sourceRect.height();
+              sourceRect.offset(0, dy);
+
+              drawingRect.set(sourceRect);
+              if (path != null) {
+                path.reset();
+                path.addRoundRect(drawingRect, Screen.dp(RADIUS), Screen.dp(RADIUS), Path.Direction.CW);
+              }
             }
-
-            float dy = y - (y / height) * sourceRect.height();
-            sourceRect.offset(0, dy);
-
-            drawRect.set(sourceRect);
+          } else {
+            drawingRect.set(targetRect);
             if (path != null) {
               path.reset();
-              path.addRoundRect(drawRect, Screen.dp(RADIUS), Screen.dp(RADIUS), Path.Direction.CW);
+              path.addRoundRect(drawingRect, Screen.dp(RADIUS), Screen.dp(RADIUS), Path.Direction.CW);
             }
           }
         }
@@ -180,7 +189,7 @@ public class ForceTouchView extends FrameLayoutFix implements
         super.draw(c);
         ViewSupport.restoreClipPath(c, saveCount);
         if (path == null) {
-          c.drawRect(drawRect, Paints.strokeBigPaint(ColorUtils.alphaColor(.2f, Theme.textAccentColor())));
+          c.drawRect(drawingRect, Paints.strokeBigPaint(ColorUtils.alphaColor(.2f, Theme.textAccentColor())));
         }
       }
     };
@@ -189,7 +198,7 @@ public class ForceTouchView extends FrameLayoutFix implements
         @Override
         @TargetApi(Build.VERSION_CODES.LOLLIPOP)
         public void getOutline (View view, Outline outline) {
-          outline.setRoundRect(Math.round(drawRect.left), Math.round(drawRect.top), Math.round(drawRect.right), Math.round(drawRect.bottom), Screen.dp(RADIUS));
+          outline.setRoundRect(Math.round(drawingRect.left), Math.round(drawingRect.top), Math.round(drawingRect.right), Math.round(drawingRect.bottom), Screen.dp(RADIUS));
         }
       });
       contentWrap.setElevation(Screen.dp(1f));
@@ -198,7 +207,7 @@ public class ForceTouchView extends FrameLayoutFix implements
     ViewUtils.setBackground(contentWrap, new Drawable() {
       @Override
       public void draw (@NonNull Canvas c) {
-        c.drawRoundRect(drawRect, Screen.dp(RADIUS), Screen.dp(RADIUS), Paints.fillingPaint(Theme.fillingColor()));
+        c.drawRoundRect(drawingRect, Screen.dp(RADIUS), Screen.dp(RADIUS), Paints.fillingPaint(Theme.fillingColor()));
       }
 
       @Override
@@ -621,46 +630,47 @@ public class ForceTouchView extends FrameLayoutFix implements
     if (this.revealFactor != factor) {
       this.revealFactor = factor;
 
-      if (factor < 1f && path != null) {
-        drawRect.left = MathUtils.fromTo(sourceRect.left, targetRect.left, factor);
-        drawRect.top = MathUtils.fromTo(sourceRect.top, targetRect.top, factor);
-        drawRect.right = MathUtils.fromTo(sourceRect.right, targetRect.right, factor);
-        drawRect.bottom = MathUtils.fromTo(sourceRect.bottom, targetRect.bottom, factor);
+      if (factor < 1f && path != null && forceTouchContext.animationType == ForceTouchContext.ANIMATION_TYPE_EXPAND_VERTICALLY) {
+        drawingRect.left = MathUtils.fromTo(sourceRect.left, targetRect.left, factor);
+        drawingRect.top = MathUtils.fromTo(sourceRect.top, targetRect.top, factor);
+        drawingRect.right = MathUtils.fromTo(sourceRect.right, targetRect.right, factor);
+        drawingRect.bottom = MathUtils.fromTo(sourceRect.bottom, targetRect.bottom, factor);
         contentWrap.setScaleX(1f);
         contentWrap.setScaleY(1f);
       } else {
-        drawRect.set(targetRect);
+        drawingRect.set(targetRect);
         final float scale = REVEAL_FACTOR + (1f - REVEAL_FACTOR) * factor;
         contentWrap.setScaleX(scale);
         contentWrap.setScaleY(scale);
       }
 
-      if (path != null) {
-        path.reset();
-        path.addRoundRect(drawRect, Screen.dp(RADIUS), Screen.dp(RADIUS), Path.Direction.CW);
-      }
-      if (forceTouchContext.contentView != null) {
-        forceTouchContext.contentView.setTranslationY(drawRect.centerY() - targetRect.centerY());
-      }
-      if (targetHeaderView != null) {
-        targetHeaderView.setTranslationY(drawRect.top);
-      }
-      if (headerShadowView != null) {
-        headerShadowView.setTranslationY(drawRect.top);
-      }
-      if (buttonsList != null) {
-        buttonsList.setTranslationY(drawRect.bottom - targetRect.bottom);
-      }
-      if (popupWrapView != null) {
-        popupWrapView.setTranslationY(drawRect.bottom - targetRect.bottom);
-      }
-      if (footerShadowView != null) {
-        footerShadowView.setTranslationY(drawRect.bottom - targetRect.bottom);
-      }
-
-      contentWrap.invalidate();
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-        contentWrap.invalidateOutline();
+      if (forceTouchContext.animationType == ForceTouchContext.ANIMATION_TYPE_EXPAND_VERTICALLY) {
+        if (path != null) {
+          path.reset();
+          path.addRoundRect(drawingRect, Screen.dp(RADIUS), Screen.dp(RADIUS), Path.Direction.CW);
+        }
+        if (forceTouchContext.contentView != null) {
+          forceTouchContext.contentView.setTranslationY(drawingRect.centerY() - targetRect.centerY());
+        }
+        if (targetHeaderView != null) {
+          targetHeaderView.setTranslationY(drawingRect.top);
+        }
+        if (headerShadowView != null) {
+          headerShadowView.setTranslationY(drawingRect.top);
+        }
+        if (buttonsList != null) {
+          buttonsList.setTranslationY(drawingRect.bottom - targetRect.bottom);
+        }
+        if (popupWrapView != null) {
+          popupWrapView.setTranslationY(drawingRect.bottom - targetRect.bottom);
+        }
+        if (footerShadowView != null) {
+          footerShadowView.setTranslationY(drawingRect.bottom - targetRect.bottom);
+        }
+        contentWrap.invalidate();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+          contentWrap.invalidateOutline();
+        }
       }
 
       if (isMaximizing) {
@@ -851,15 +861,18 @@ public class ForceTouchView extends FrameLayoutFix implements
 
   // Animation
 
-  private static final Interpolator QUAD_OUT = input -> 1f - (1f - input) * (1f - input);
+  private static final Interpolator OVERSHOOT_INTERPOLATOR = new OvershootInterpolator(1.24f); // 1.78f
+  private static final Interpolator QUAD_OUT_INTERPOLATOR = input -> 1f - (1f - input) * (1f - input);
   private FactorAnimator revealAnimator;
 
   @Override
   public void prepareShowAnimation () {
     if (Device.NEED_REDUCE_BOUNCE || Settings.instance().needReduceMotion()) {
       revealAnimator = new FactorAnimator(REVEAL_ANIMATOR, this, new DecelerateInterpolator(1.46f), 140l);
+    } else if (forceTouchContext.animationType == ForceTouchContext.ANIMATION_TYPE_EXPAND_VERTICALLY) {
+      revealAnimator = new FactorAnimator(REVEAL_ANIMATOR, this, QUAD_OUT_INTERPOLATOR, 250l);
     } else {
-      revealAnimator = new FactorAnimator(REVEAL_ANIMATOR, this, QUAD_OUT, 250l);
+      revealAnimator = new FactorAnimator(REVEAL_ANIMATOR, this, OVERSHOOT_INTERPOLATOR, 260l);
     }
   }
 
@@ -949,6 +962,13 @@ public class ForceTouchView extends FrameLayoutFix implements
   // Context
 
   public static class ForceTouchContext {
+    @Retention(SOURCE)
+    @IntDef({ANIMATION_TYPE_SCALE, ANIMATION_TYPE_EXPAND_VERTICALLY})
+    public @interface AnimationType {}
+
+    public static final int ANIMATION_TYPE_SCALE = 0;
+    public static final int ANIMATION_TYPE_EXPAND_VERTICALLY = 1;
+
     private final View sourceView;
     private final View contentView;
     private @Nullable Point sourcePoint;
@@ -957,7 +977,8 @@ public class ForceTouchView extends FrameLayoutFix implements
     private boolean needHeader, needHeaderAvatar;
     private boolean isMatchParent;
 
-    private int backgroundColor;
+    private @ColorInt int backgroundColor;
+    private @AnimationType int animationType;
 
     // Header
 
@@ -997,11 +1018,15 @@ public class ForceTouchView extends FrameLayoutFix implements
       this.boundController = controller;
     }
 
-    public void setSource (int x, int y) {
+    public void setAnimationType(@AnimationType int animationType) {
+      this.animationType = animationType;
+    }
+
+    public void setAnimationSourcePoint (@Px int screenX, @Px int screenY) {
       if (sourcePoint == null) {
-        sourcePoint = new Point(x, y);
+        sourcePoint = new Point(screenX, screenY);
       } else {
-        sourcePoint.set(x, y);
+        sourcePoint.set(screenX, screenY);
       }
     }
 
@@ -1009,7 +1034,7 @@ public class ForceTouchView extends FrameLayoutFix implements
       this.tdlib = tdlib;
     }
 
-    public ForceTouchContext setBackgroundColor (int backgroundColor) {
+    public ForceTouchContext setBackgroundColor (@ColorInt int backgroundColor) {
       this.backgroundColor = backgroundColor;
       return this;
     }

@@ -519,7 +519,7 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
     int sourceY = location[1] + Math.round(y);
     ForceTouchView.ForceTouchContext context = new ForceTouchView.ForceTouchContext(tdlib, this, controller.get(), controller);
     context.setStateListener(controller);
-    context.setSource(sourceX, sourceY);
+    context.setAnimationSourcePoint(sourceX, sourceY);
 
     if (controller instanceof ForceTouchView.PreviewDelegate) {
       ((ForceTouchView.PreviewDelegate) controller).onPrepareForceTouchContext(context);

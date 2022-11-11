@@ -744,7 +744,7 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
     int sourceX = location[0] + x;
     int sourceY = location[1] + y;
     ForceTouchView.ForceTouchContext forceTouchContext = new ForceTouchView.ForceTouchContext(tdlib, sourceView, controller.get(), controller);
-    forceTouchContext.setSource(sourceX, sourceY);
+    forceTouchContext.setAnimationSourcePoint(sourceX, sourceY);
     forceTouchContext.setStateListener(controller);
     forceTouchContext.setStateListenerArgument(controller);
     forceTouchContext.setMaximizeListener((target, animateToWhenReady, arg) -> MessagesController.maximizeFrom(tdlib, context.context(), target, animateToWhenReady, arg));

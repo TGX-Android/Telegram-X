@@ -10572,6 +10572,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     context.setIsMatchParent(true);
     context.setBoundChatId(boundChatId, messageThread);
     context.setAllowFullscreen(true);
+    context.setAnimationType(ForceTouchView.ForceTouchContext.ANIMATION_TYPE_EXPAND_VERTICALLY);
   }
 
   public static boolean maximizeFrom (final Tdlib tdlib, final Context context, final FactorAnimator target, final float animateToWhenReady, final Object arg) {
