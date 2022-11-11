@@ -30,6 +30,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.MessageListManager;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.ListManager;
@@ -347,8 +348,14 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
         previewView.setMessage(message, new TdApi.SearchMessagesFilterPinned(), item.getStringValue(), false);
         if (messageList == null) {
           // override message preview
-          TdApi.Message[] threadMessages = message.canGetMessageThread ? new TdApi.Message[] {message} : null;
-          previewView.setPreviewChatId(null, message.chatId, contextChatId, threadMessages, new MessageId(message.chatId, message.id), null, false);
+          MessageId highlightMessageId;
+          //noinspection ConstantConditions
+          if (TD.isChannelAutoForward(message) && message.forwardInfo.fromChatId == contextChatId) {
+            highlightMessageId = new MessageId(message.forwardInfo.fromChatId, message.forwardInfo.fromMessageId);
+          } else {
+            highlightMessageId = new MessageId(message.chatId, message.id);
+          }
+          previewView.setPreviewChatId(null, highlightMessageId.getChatId(), null, highlightMessageId, null);
         }
         updateContentInset(previewView, position);
       }

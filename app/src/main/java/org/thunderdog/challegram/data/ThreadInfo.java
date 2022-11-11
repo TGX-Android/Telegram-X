@@ -63,7 +63,8 @@ public class ThreadInfo {
     TdApi.Message oldestMessage = getOldestMessage(threadInfo);
     boolean areComments = TD.isChannelAutoForward(oldestMessage);
     if (contextChatId == 0 && areComments && chatId != oldestMessage.chatId) {
-      contextChatId = TD.forwardFromGhatId(oldestMessage);
+      //noinspection ConstantConditions
+      contextChatId = oldestMessage.forwardInfo.fromChatId;
     }
     return new ThreadInfo(threadInfo, contextChatId, areComments);
   }

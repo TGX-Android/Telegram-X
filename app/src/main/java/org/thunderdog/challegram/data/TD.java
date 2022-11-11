@@ -1095,10 +1095,6 @@ public class TD {
     );
   }
 
-  public static long forwardFromGhatId (@Nullable TdApi.Message message) {
-    return message != null && message.forwardInfo != null ? message.forwardInfo.fromChatId : 0;
-  }
-
   public static TdApi.PhotoSize toThumbnailSize (TdApi.Thumbnail thumbnail) {
     if (thumbnail == null)
       return null;
