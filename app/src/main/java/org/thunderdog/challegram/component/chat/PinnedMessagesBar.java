@@ -203,6 +203,7 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
 
   public void setCollapseButtonVisible (boolean isVisible) {
     collapseButton.setVisibility(isVisible ? View.VISIBLE : View.GONE);
+    updateContentInsets();
   }
 
   public void setAnimationsDisabled (boolean animationsDisabled) {

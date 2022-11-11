@@ -7059,6 +7059,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return;
     }
     if (show) {
+      pinnedMessagesBar.setCollapseButtonVisible(true);
+      pinnedMessagesBar.setContextChatId(getChatId() != getHeaderChatId() ? getHeaderChatId() : 0);
       pinnedMessagesBar.setMessageList(messageList);
     }
     topBar.setItemVisible(pinnedMessagesItem, show, isFocused());
