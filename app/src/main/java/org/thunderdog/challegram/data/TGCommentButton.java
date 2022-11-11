@@ -681,7 +681,7 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
       return;
     }
     cancelAsyncPreview();
-    ThreadInfo messageThread = ThreadInfo.openedFromMessage(messageThreadInfo, context);
+    ThreadInfo messageThread = ThreadInfo.openedFromChat(messageThreadInfo, context.getChatId());
     TdApi.Chat chat = context.tdlib().chat(messageThreadInfo.chatId);
     if (chat == null) {
       return;

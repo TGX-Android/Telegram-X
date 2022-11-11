@@ -25,6 +25,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 
 import java.util.Objects;
 
+import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
 
 public class ThreadInfo {
@@ -48,31 +49,19 @@ public class ThreadInfo {
     }
   }
 
-  public static @NonNull ThreadInfo openedFromMessage (@NonNull TdApi.MessageThreadInfo threadInfo, @NonNull TGMessage message) {
-    return openedFromMessage(message.tdlib(), threadInfo, message.msg);
+  public static @NonNull ThreadInfo openedFromMessage (@NonNull TdApi.MessageThreadInfo threadInfo, @Nullable MessageId messageId) {
+    return openedFromChat(threadInfo, messageId != null ? messageId.getChatId() : 0);
   }
 
-  public static @NonNull ThreadInfo openedFromMessage (@NonNull Tdlib tdlib, @NonNull TdApi.MessageThreadInfo threadInfo, @NonNull TdApi.Message message) {
-    return openedFromMessage(tdlib, threadInfo, message, 0);
+  public static @NonNull ThreadInfo openedFromChat (@NonNull TdApi.MessageThreadInfo threadInfo, long chatId) {
+    return openedFromChat(threadInfo, chatId, 0);
   }
 
-  public static @NonNull ThreadInfo openedFromMessage (@NonNull Tdlib tdlib, @NonNull TdApi.MessageThreadInfo threadInfo, @NonNull TdApi.Message message, long contextChatId) {
-    boolean areComments;
-    if (message.isChannelPost) {
-      if (contextChatId == 0) {
-        contextChatId = message.chatId;
-      }
-      areComments = true;
-    } else {
-      TdApi.Message oldestMessage = getOldestMessage(threadInfo);
-      if (oldestMessage != null && oldestMessage.forwardInfo != null && TD.isChannelAutoForward(oldestMessage)) {
-        if (contextChatId == 0 && tdlib.isRepliesChat(message.chatId)) {
-          contextChatId = oldestMessage.forwardInfo.fromChatId;
-        }
-        areComments = true;
-      } else {
-        areComments = false;
-      }
+  public static @NonNull ThreadInfo openedFromChat (@NonNull TdApi.MessageThreadInfo threadInfo, long chatId, long contextChatId) {
+    TdApi.Message oldestMessage = getOldestMessage(threadInfo);
+    boolean areComments = TD.isChannelAutoForward(oldestMessage);
+    if (contextChatId == 0 && areComments && chatId != oldestMessage.chatId) {
+      contextChatId = TD.forwardFromGhatId(oldestMessage);
     }
     return new ThreadInfo(threadInfo, contextChatId, areComments);
   }

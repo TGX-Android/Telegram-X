@@ -875,7 +875,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       switch (result.getConstructor()) {
         case TdApi.MessageThreadInfo.CONSTRUCTOR: {
           TdApi.MessageThreadInfo messageThread = (TdApi.MessageThreadInfo) result;
-          TdlibUi.ChatOpenParameters params = new TdlibUi.ChatOpenParameters().keepStack().messageThread(ThreadInfo.openedFromMessage(messageThread, this)).after(chatId -> {
+          TdlibUi.ChatOpenParameters params = new TdlibUi.ChatOpenParameters().keepStack().messageThread(ThreadInfo.openedFromChat(messageThread, getChatId())).after(chatId -> {
             openingComments.setValue(false, needAnimateChanges());
           });
           if (highlightMessageId != null) {
