@@ -202,6 +202,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       super.saveInstanceState(outState, keyPrefix);
       outState.putLong(keyPrefix + "chat_id", args.chat.id);
       if (args.threadInfo != null) {
+        // TODO в ProfileController используется только messageThreadId, нет смысла сохранять весь ThreadInfo
         args.threadInfo.saveTo(outState, keyPrefix + "message_thread");
       }
       outState.putBoolean(keyPrefix + "is_edit", args.isEdit);
@@ -214,6 +215,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   public boolean restoreInstanceState (Bundle in, String keyPrefix) {
     long chatId = in.getLong(keyPrefix + "chat_id");
     ThreadInfo threadInfo = ThreadInfo.restoreFrom(tdlib, in, keyPrefix);
+    if (threadInfo == ThreadInfo.INVALID)
+      return false;
     boolean isEdit = in.getBoolean(keyPrefix + "is_edit");
     TdApi.Chat chat = tdlib.chatSync(chatId);
     if (chat != null && !tdlib.hasPasscode(chat)) {

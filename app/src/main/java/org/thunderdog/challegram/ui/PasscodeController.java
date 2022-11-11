@@ -113,6 +113,8 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
       return false;
     super.restoreInstanceState(in, keyPrefix);
     TdlibUi.ChatOpenParameters parameters = TdlibUi.ChatOpenParameters.restoreInstanceState(tdlib, in, keyPrefix);
+    if (parameters == null)
+      return false;
     setArguments(new Args(chat, passcode, parameters));
     return true;
   }

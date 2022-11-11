@@ -30,7 +30,6 @@ public class Config {
 
   public static final boolean COMMENTS_INLINE_BUTTON_SEPARATOR_1PX = false;
   public static final @Dimension(unit = Dimension.DP) int COMMENTS_BUBBLE_BUTTON_MIN_WIDTH = 200;
-  public static final boolean SAVE_THREAD_INFO_STATE = true;
 
   public static final boolean NEED_SILENT_BROADCAST = false;
 

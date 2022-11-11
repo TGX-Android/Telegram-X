@@ -2188,6 +2188,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       outState.putInt(keyPrefix + "type", args.constructor);
       outState.putLong(keyPrefix + "chat_id", args.chat != null ? args.chat.id : 0);
       outState.putString(keyPrefix + "chat_list", args.chatList != null ? TD.makeChatListKey(args.chatList) : "");
+      if (args.messageThread != null) {
+        args.messageThread.saveTo(outState, keyPrefix + "thread");
+      }
       TD.saveFilter(outState, keyPrefix + "filter_", args.searchFilter);
       if (args.constructor == 1 || args.constructor == 4) {
         outState.putInt(keyPrefix + "mode", args.highlightMode);
@@ -2218,6 +2221,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return false;
     TdApi.ChatList chatList = TD.chatListFromKey(in.getString(keyPrefix + "chat_list", null));
     ThreadInfo messageThread = ThreadInfo.restoreFrom(tdlib, in, keyPrefix + "thread");
+    if (messageThread == ThreadInfo.INVALID)
+      return false;
     TdApi.SearchMessagesFilter filter = TD.restoreFilter(in, keyPrefix + "filter_");
     Arguments args = null;
     switch (constructor) {

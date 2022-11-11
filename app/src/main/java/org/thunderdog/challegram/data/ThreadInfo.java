@@ -29,6 +29,8 @@ import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
 
 public class ThreadInfo {
+  public static final ThreadInfo INVALID = new ThreadInfo(new TdApi.MessageThreadInfo(), 0, false);
+
   private final boolean areComments;
   private final TdApi.MessageThreadInfo threadInfo;
   private final long contextChatId;
@@ -175,21 +177,18 @@ public class ThreadInfo {
   }
 
   public void saveTo (Bundle outState, String prefix) {
-    if (!Config.SAVE_THREAD_INFO_STATE) {
-      return;
-    }
     TD.saveMessageThreadInfo(outState, prefix, threadInfo);
     outState.putLong(prefix + "_contextChatId", contextChatId);
     outState.putBoolean(prefix + "_areComments", areComments);
   }
 
   public static @Nullable ThreadInfo restoreFrom (Tdlib tdlib, Bundle savedState, String prefix) {
-    if (!Config.SAVE_THREAD_INFO_STATE) {
+    if (!savedState.containsKey(prefix + "_areComments")) {
       return null;
     }
     TdApi.MessageThreadInfo threadInfo = TD.restoreMessageThreadInfo(tdlib, savedState, prefix);
     if (threadInfo == null) {
-      return null;
+      return ThreadInfo.INVALID;
     }
     long contextChatId = savedState.getLong(prefix + "_contextChatId");
     boolean areComments = savedState.getBoolean(prefix + "_areComments");

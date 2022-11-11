@@ -820,7 +820,7 @@ public class TD {
     if (chatId == 0 || messageThreadId == 0) {
       return null;
     }
-    TdApi.MessageReplyInfo replyInfo = restoreMessageReplyInfo(bundle, prefix);
+    TdApi.MessageReplyInfo replyInfo = restoreMessageReplyInfo(bundle, prefix + "_replyInfo");
     if (replyInfo == null) {
       return null;
     }
@@ -865,15 +865,10 @@ public class TD {
     long lastMessageId = bundle.getLong(prefix + "_lastMessageId");
     long lastReadInboxMessageId = bundle.getLong(prefix + "_lastReadInboxMessageId");
     long lastReadOutboxMessageId = bundle.getLong(prefix + "_lastReadOutboxMessageId");
-    int recentReplierIdsLength = bundle.getInt(prefix + "_recentReplierIdsLength", -1);
-    TdApi.MessageSender[] recentReplierIds;
-    if (recentReplierIdsLength >= 0) {
-      recentReplierIds = new TdApi.MessageSender[recentReplierIdsLength];
-      for (int index = 0; index < recentReplierIdsLength; index++) {
-        recentReplierIds[index] = restoreSender(bundle, prefix + "_recentReplierId_" + index);
-      }
-    } else {
-      recentReplierIds = null;
+    int recentReplierIdsLength = bundle.getInt(prefix + "_recentReplierIdsLength");
+    TdApi.MessageSender[] recentReplierIds = new TdApi.MessageSender[recentReplierIdsLength];
+    for (int index = 0; index < recentReplierIdsLength; index++) {
+      recentReplierIds[index] = restoreSender(bundle, prefix + "_recentReplierId_" + index);
     }
     return new TdApi.MessageReplyInfo(replyCount, recentReplierIds, lastReadInboxMessageId, lastReadOutboxMessageId, lastMessageId);
   }
@@ -4293,7 +4288,7 @@ public class TD {
       return "image/jpeg";
     return null;
   }
-  
+
   public static @Nullable String getTextOrCaption (TdApi.PushMessageContent content) {
     if (content == null)
       return null;
