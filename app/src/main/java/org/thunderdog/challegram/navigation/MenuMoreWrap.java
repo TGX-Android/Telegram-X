@@ -182,7 +182,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
       return addItem(menuItem.id, menuItem.title, menuItem.iconResId, menuItem.icon, listener);
     }
 
-    final int maxWidth = Screen.dp(menuItem.isLocked ? 244: 200);
+    final int maxWidth = Screen.dp(250);
     final int textRightOffset = Screen.dp(menuItem.isLocked ? 41: 17);
     final Drawable finalIcon = menuItem.iconResId != 0 ? Drawables.get(getResources(), menuItem.iconResId) : menuItem.icon;
     final AvatarReceiver receiver = (menuItem.messageSenderId != null && menuItem.iconResId == 0) ?
