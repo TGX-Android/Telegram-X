@@ -19,7 +19,6 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
-import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.Tdlib;
 
@@ -39,16 +38,7 @@ public class ThreadInfo {
     this.areComments = areComments;
     this.threadInfo = threadInfo;
     this.contextChatId = contextChatId;
-
-    long messageId = threadInfo.draftMessage != null ? threadInfo.draftMessage.replyToMessageId : 0;
-    if (messageId != 0) {
-      for (TdApi.Message message : threadInfo.messages) {
-        if (message.id == messageId) {
-          threadInfo.draftMessage.replyToMessageId = 0;
-          break;
-        }
-      }
-    }
+    setDraft(threadInfo.draftMessage); // nulls draftMessage.replyToMessageId if draft is reply to one of message from which the thread starts
   }
 
   public static @NonNull ThreadInfo openedFromMessage (@NonNull TdApi.MessageThreadInfo threadInfo, @Nullable MessageId messageId) {
@@ -146,6 +136,19 @@ public class ThreadInfo {
 
   public @Nullable TdApi.DraftMessage getDraft () {
     return threadInfo.draftMessage;
+  }
+
+  public void setDraft (@Nullable TdApi.DraftMessage draftMessage) {
+    long replyToMessageId = draftMessage != null ? draftMessage.replyToMessageId : 0;
+    if (replyToMessageId != 0) {
+      for (TdApi.Message message : threadInfo.messages) {
+        if (message.id == replyToMessageId) {
+          draftMessage.replyToMessageId = 0;
+          break;
+        }
+      }
+    }
+    threadInfo.draftMessage = draftMessage;
   }
 
   public @Nullable TdApi.InputMessageContent getDraftContent () {

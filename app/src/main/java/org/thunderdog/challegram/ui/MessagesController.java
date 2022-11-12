@@ -3838,8 +3838,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
           false
         );
         final TdApi.DraftMessage draftMessage = new TdApi.DraftMessage(replyToMessageId, (int) date, inputMessageText);
-        final long outputChatId = messageThread != null ? messageThread.getChatId() : chat.id;
+        final long outputChatId = messageThread != null ? messageThread.getChatId() : getChatId();
         final long messageThreadId = messageThread != null ? messageThread.getMessageThreadId() : 0;
+        if (messageThread != null) {
+          messageThread.setDraft(draftMessage);
+        }
         //noinspection UnsafeOptInUsageError
         tdlib.client().send(new TdApi.SetChatDraftMessage(
           outputChatId,

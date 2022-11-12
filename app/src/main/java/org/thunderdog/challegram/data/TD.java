@@ -14,6 +14,8 @@
  */
 package org.thunderdog.challegram.data;
 
+import static androidx.core.util.ObjectsCompat.requireNonNull;
+
 import android.Manifest;
 import android.app.DownloadManager;
 import android.content.Context;
@@ -808,6 +810,7 @@ public class TD {
     bundle.putLong(prefix + "_messageThreadId", threadInfo.messageThreadId);
     bundle.putInt(prefix + "_unreadMessageCount", threadInfo.unreadMessageCount);
     saveReplyInfo(bundle, prefix + "_replyInfo", threadInfo.replyInfo);
+    saveDraftMessage(bundle, prefix + "_draftMessage", threadInfo.draftMessage);
     bundle.putInt(prefix + "_messagesLength", threadInfo.messages.length);
     for (int index = 0; index < threadInfo.messages.length; index++) {
       bundle.putLong(prefix + "_messageId_" + index, threadInfo.messages[index].id);
@@ -836,8 +839,199 @@ public class TD {
         return null;
       }
     }
-    TdApi.DraftMessage draftMessage = null; // FIXME(firefly) draftMessage is not saved
+    TdApi.DraftMessage draftMessage = restoreDraftMessage(bundle, prefix + "_draftMessage");
     return new TdApi.MessageThreadInfo(chatId, messageThreadId, replyInfo, unreadMessageCount, messages.toArray(new TdApi.Message[0]), draftMessage);
+  }
+
+  public static void saveDraftMessage (Bundle bundle, String prefix, @Nullable TdApi.DraftMessage draftMessage) {
+    if (draftMessage == null) {
+      return;
+    }
+    if (!(draftMessage.inputMessageText instanceof TdApi.InputMessageText)) {
+      throw new UnsupportedOperationException(draftMessage.inputMessageText.toString());
+    }
+    bundle.putLong(prefix + "_replyToMessageId", draftMessage.replyToMessageId);
+    bundle.putInt(prefix + "_date", draftMessage.date);
+    saveInputMessageText(bundle, prefix + "_inputMessageText", (TdApi.InputMessageText) draftMessage.inputMessageText);
+  }
+
+  public static @Nullable TdApi.DraftMessage restoreDraftMessage (Bundle bundle, String prefix) {
+    long replyToMessageId = bundle.getLong(prefix + "_replyToMessageId");
+    int date = bundle.getInt(prefix + "_date");
+    TdApi.InputMessageText inputMessageText = restoreInputMessageText(bundle, prefix + "_inputMessageText");
+    if (inputMessageText == null)
+      return null;
+    return new TdApi.DraftMessage(replyToMessageId, date, inputMessageText);
+  }
+
+  public static void saveInputMessageText (Bundle bundle, String prefix, @Nullable TdApi.InputMessageText inputMessageText) {
+    if (inputMessageText == null) {
+      return;
+    }
+    saveFormattedText(bundle, prefix + "_text", inputMessageText.text);
+    bundle.putBoolean(prefix + "_disableWebPagePreview", inputMessageText.disableWebPagePreview);
+    bundle.putBoolean(prefix + "_clearDraft", inputMessageText.clearDraft);
+  }
+
+  public static @Nullable TdApi.InputMessageText restoreInputMessageText (Bundle bundle, String prefix) {
+    TdApi.FormattedText text = restoreFormattedText(bundle, prefix + "_text");
+    if (text == null) {
+      return null;
+    }
+    boolean disableWebPagePreview = bundle.getBoolean(prefix + "_disableWebPagePreview");
+    boolean clearDraft = bundle.getBoolean(prefix + "_clearDraft");
+    return new TdApi.InputMessageText(text, disableWebPagePreview, clearDraft);
+  }
+
+  public static void saveFormattedText (Bundle bundle, String prefix, @Nullable TdApi.FormattedText formattedText) {
+    if (formattedText == null) {
+      return;
+    }
+    bundle.putString(prefix + "_text", formattedText.text);
+    if (formattedText.entities != null) {
+      bundle.putInt(prefix + "_entityCount", formattedText.entities.length);
+      for (int i = 0; i < formattedText.entities.length; i++) {
+        saveTextEntity(bundle, prefix + "_entity_" + i, formattedText.entities[i]);
+      }
+    }
+  }
+
+  public static @Nullable TdApi.FormattedText restoreFormattedText (Bundle bundle, String prefix) {
+    String text = bundle.getString(prefix + "_text");
+    if (text == null) {
+      return null;
+    }
+    int entityCount = bundle.getInt(prefix + "_entityCount");
+    TdApi.TextEntity[] entities = new TdApi.TextEntity[entityCount];
+    for (int i = 0; i < entityCount; i++) {
+      TdApi.TextEntity entity = restoreTextEntity(bundle, prefix + "_entity_" + i);
+      if (entity != null) {
+        entities[i] = entity;
+      } else {
+        return null;
+      }
+    }
+    return new TdApi.FormattedText(text, entities);
+  }
+
+  public static void saveTextEntity (Bundle bundle, String prefix, @Nullable TdApi.TextEntity textEntity) {
+    if (textEntity == null) {
+      return;
+    }
+    bundle.putInt(prefix + "_offset", textEntity.offset);
+    bundle.putInt(prefix + "_length", textEntity.length);
+    saveTextEntityType(bundle, prefix + "_type", textEntity.type);
+  }
+
+  public static @Nullable TdApi.TextEntity restoreTextEntity (Bundle bundle, String prefix) {
+    if (!bundle.containsKey(prefix + "_offset")) {
+      return null;
+    }
+    int offset = bundle.getInt(prefix + "_offset");
+    int length = bundle.getInt(prefix + "_length");
+    TdApi.TextEntityType type = restoreTextEntityType(bundle, prefix + "_type");
+    if (type == null) {
+      return null;
+    }
+    return new TdApi.TextEntity(offset, length, type);
+  }
+
+  public static void saveTextEntityType (Bundle bundle, String prefix, @Nullable TdApi.TextEntityType type) {
+    if (type == null) {
+      return;
+    }
+    bundle.putInt(prefix + "_constructor", type.getConstructor());
+    switch (type.getConstructor()) {
+      case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
+        bundle.putString(prefix + "_language", ((TdApi.TextEntityTypePreCode) type).language);
+        break;
+      case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
+        bundle.putString(prefix + "_url", ((TdApi.TextEntityTypeTextUrl) type).url);
+        break;
+      case TdApi.TextEntityTypeMentionName.CONSTRUCTOR:
+        bundle.putLong(prefix + "_userId", ((TdApi.TextEntityTypeMentionName) type).userId);
+        break;
+      case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
+        bundle.putLong(prefix + "_customEmojiId", ((TdApi.TextEntityTypeCustomEmoji) type).customEmojiId);
+        break;
+      case TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR:
+        bundle.putInt(prefix + "_mediaTimestamp", ((TdApi.TextEntityTypeMediaTimestamp) type).mediaTimestamp);
+        break;
+      case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR:
+      case TdApi.TextEntityTypeBold.CONSTRUCTOR:
+      case TdApi.TextEntityTypeBotCommand.CONSTRUCTOR:
+      case TdApi.TextEntityTypeCashtag.CONSTRUCTOR:
+      case TdApi.TextEntityTypeCode.CONSTRUCTOR:
+      case TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR:
+      case TdApi.TextEntityTypeHashtag.CONSTRUCTOR:
+      case TdApi.TextEntityTypeItalic.CONSTRUCTOR:
+      case TdApi.TextEntityTypeMention.CONSTRUCTOR:
+      case TdApi.TextEntityTypePhoneNumber.CONSTRUCTOR:
+      case TdApi.TextEntityTypePre.CONSTRUCTOR:
+      case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
+      case TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR:
+      case TdApi.TextEntityTypeUnderline.CONSTRUCTOR:
+      case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
+        break;
+      default:
+        throw new UnsupportedOperationException(type.toString());
+    }
+  }
+
+  public static @Nullable TdApi.TextEntityType restoreTextEntityType (Bundle bundle, String prefix) {
+    if (!bundle.containsKey(prefix + "_constructor")) {
+      return null;
+    }
+    @TdApi.TextEntityType.Constructors int constructor = bundle.getInt(prefix + "_constructor");
+    switch (constructor) {
+      case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR:
+        return new TdApi.TextEntityTypeBankCardNumber();
+      case TdApi.TextEntityTypeBold.CONSTRUCTOR:
+        return new TdApi.TextEntityTypeBold();
+      case TdApi.TextEntityTypeBotCommand.CONSTRUCTOR:
+        return new TdApi.TextEntityTypeBotCommand();
+      case TdApi.TextEntityTypeCashtag.CONSTRUCTOR:
+        return new TdApi.TextEntityTypeCashtag();
+      case TdApi.TextEntityTypeCode.CONSTRUCTOR:
+        return new TdApi.TextEntityTypeCode();
+      case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
+        long customEmoji = requireNonNull(bundle.getLong(prefix + "_customEmojiId"));
+        return new TdApi.TextEntityTypeCustomEmoji(customEmoji);
+      case TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR:
+        return new TdApi.TextEntityTypeEmailAddress();
+      case TdApi.TextEntityTypeHashtag.CONSTRUCTOR:
+        return new TdApi.TextEntityTypeHashtag();
+      case TdApi.TextEntityTypeItalic.CONSTRUCTOR:
+        return new TdApi.TextEntityTypeItalic();
+      case TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR:
+        int mediaTimestamp = bundle.getInt(prefix + "_mediaTimestamp");
+        return new TdApi.TextEntityTypeMediaTimestamp(mediaTimestamp);
+      case TdApi.TextEntityTypeMention.CONSTRUCTOR:
+        return new TdApi.TextEntityTypeMention();
+      case TdApi.TextEntityTypeMentionName.CONSTRUCTOR:
+        long userId = bundle.getLong(prefix + "_userId");
+        return new TdApi.TextEntityTypeMentionName(userId);
+      case TdApi.TextEntityTypePhoneNumber.CONSTRUCTOR:
+        return new TdApi.TextEntityTypePhoneNumber();
+      case TdApi.TextEntityTypePre.CONSTRUCTOR:
+        return new TdApi.TextEntityTypePre();
+      case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
+        String language = requireNonNull(bundle.getString(prefix + "_language"));
+        return new TdApi.TextEntityTypePreCode(language);
+      case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
+        return new TdApi.TextEntityTypeSpoiler();
+      case TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR:
+        return new TdApi.TextEntityTypeStrikethrough();
+      case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
+        String url = requireNonNull(bundle.getString(prefix + "_url"));
+        return new TdApi.TextEntityTypeTextUrl(url);
+      case TdApi.TextEntityTypeUnderline.CONSTRUCTOR:
+        return new TdApi.TextEntityTypeUnderline();
+      case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
+        return new TdApi.TextEntityTypeUrl();
+      default:
+        throw new UnsupportedOperationException("constructor=" + constructor);
+    }
   }
 
   public static void saveReplyInfo (Bundle bundle, String prefix, @Nullable TdApi.MessageReplyInfo replyInfo) {
