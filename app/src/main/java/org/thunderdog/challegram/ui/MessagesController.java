@@ -2928,13 +2928,21 @@ public class MessagesController extends ViewController<MessagesController.Argume
       hideBottomBar(isUpdate);
 
       TdApi.SecretChat secretChat = tdlib.chatToSecretChat(chat.id);
+      TdApi.Supergroup supergroup = tdlib.chatToSupergroup(chat.id);
       if (secretChat != null && !TD.isSecretChatReady(secretChat)) {
         showSecretChatAction(secretChat);
       } else if (tdlib.chatBlocked(chat) && tdlib.isUserChat(chat)) {
         showActionUnblockButton();
-      } else if (tdlib.chatUserDeleted(chat) || (ChatId.isBasicGroup(chat.id) && (!tdlib.chatBasicGroupActive(chat.id) || TD.isNotInChat(status))) || (tdlib.isSupergroupChat(chat) && TD.isNotInChat(status) && messageThread == null)) {
+      } else if (tdlib.chatUserDeleted(chat) || (ChatId.isBasicGroup(chat.id) && (!tdlib.chatBasicGroupActive(chat.id) || TD.isNotInChat(status))) || (tdlib.isSupergroupChat(chat) && TD.isNotInChat(status) && supergroup != null && supergroup.joinToSendMessages)) {
         if (tdlib.isSupergroupChat(chat) && status != null && TD.canReturnToChat(status)) {
           showActionJoinChatButton();
+        } else if (messageThread != null) {
+          CharSequence restrictionStatus = tdlib.getMessageRestrictionText(chat);
+          if (restrictionStatus != null) {
+            showActionButton(restrictionStatus, ACTION_EMPTY, false);
+          } else {
+            hideActionButton();
+          }
         } else {
           showActionDeleteChatButton();
         }
