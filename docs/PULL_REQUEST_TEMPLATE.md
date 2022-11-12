@@ -1,5 +1,6 @@
-The guide below provides the flow for creating a perfect pull request to the Telegram X Repository. Before submitting your PR, ensure that it complies with the following principles. 
-
+ The guide below provides the flow for creating a perfect pull request to the Telegram X Repository. Before submitting your PR, ensure that it complies with the following principles. 
+WALEED ALAREQI
+https://calendly.com/d/g3c-b29-63j/meeting
 ## Perfect PRs must be:
 - [ ] **Rational**. Explain the changes you've made. Be explicit and describe the changes in a few short, concise sentences.
 - [ ] **Completed**. All changes are properly tested and ready to be merged.
