@@ -1314,7 +1314,7 @@ public class MediaLayout extends FrameLayoutFix implements
           items = new ArrayList<>();
         getCurrentController().addCustomItems(items);
         if (senderSendIcon != null) {
-          items.add(0, createHapticSenderItem());
+          items.add(0, senderSendIcon.createHapticSenderItem(getTargetChat()));
         }
         return !items.isEmpty() ? items : null;
       }, (menuItem, parentView, item) -> {
@@ -1671,17 +1671,19 @@ public class MediaLayout extends FrameLayoutFix implements
     return (parent instanceof MessagesController) && !((MessagesController) parent).isCameraButtonVisibleOnAttachPanel();
   }
 
-  private static class SenderSendIcon extends FrameLayout {
+  public static class SenderSendIcon extends FrameLayout {
     private final AvatarView senderAvatarView;
     private final Tdlib tdlib;
     private final long chatId;
     private boolean isPersonal;
     private boolean isAnonymous;
+    private int backgroundColorId;
 
     public SenderSendIcon (@NonNull Context context, Tdlib tdlib, long chatId) {
       super(context);
       this.tdlib = tdlib;
       this.chatId = chatId;
+      this.backgroundColorId = R.id.theme_color_filling;
 
       setWillNotDraw(false);
       setLayoutParams(FrameLayoutFix.newParams(Screen.dp(19), Screen.dp(19)));
@@ -1690,6 +1692,11 @@ public class MediaLayout extends FrameLayoutFix implements
       senderAvatarView.setEnabled(false);
       senderAvatarView.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(15), Screen.dp(15), Gravity.CENTER));
       addView(senderAvatarView);
+    }
+
+    public void setBackgroundColorId (int backgroundColorId) {
+      this.backgroundColorId = backgroundColorId;
+      invalidate();
     }
 
     public AvatarView getSenderAvatarView () {
@@ -1708,7 +1715,7 @@ public class MediaLayout extends FrameLayoutFix implements
     protected void onDraw (Canvas c) {
       float cx = getMeasuredWidth() / 2f;
       float cy = getMeasuredHeight() / 2f;
-      c.drawCircle(cx, cy, Screen.dp(19f / 2f), Paints.fillingPaint(Theme.fillingColor()));
+      c.drawCircle(cx, cy, Screen.dp(19f / 2f), Paints.fillingPaint(Theme.getColor(backgroundColorId)));
 
       if (isAnonymous) {
         c.drawCircle(cx, cy, Screen.dp(15f / 2f), Paints.fillingPaint(Theme.iconLightColor()));
@@ -1738,19 +1745,15 @@ public class MediaLayout extends FrameLayoutFix implements
       setVisibility(!isPersonal ? VISIBLE: GONE);
       invalidate();
     }
-  }
 
-  private HapticMenuHelper.MenuItem createHapticSenderItem () {
-    if (senderSendIcon == null) {
-      return null;
-    }
-    TdApi.Chat chat = getTargetChat();
-    if (senderSendIcon.isAnonymous()) {
-      return new HapticMenuHelper.MenuItem(R.id.btn_openSendersMenu, Lang.getString(R.string.SendAs), chat != null ? tdlib().getMessageSenderTitle(chat.messageSenderId): null, R.drawable.dot_baseline_acc_anon_24);
-    } else if (senderSendIcon.isPersonal()) {
-      return new HapticMenuHelper.MenuItem(R.id.btn_openSendersMenu, Lang.getString(R.string.SendAs), chat != null ? tdlib().getMessageSenderTitle(chat.messageSenderId): null, R.drawable.dot_baseline_acc_personal_24);
-    } else {
-      return new HapticMenuHelper.MenuItem(R.id.btn_openSendersMenu, Lang.getString(R.string.SendAs), chat != null ? tdlib().getMessageSenderTitle(chat.messageSenderId): null, 0, tdlib(), chat != null ? chat.messageSenderId: null, false);
+    public HapticMenuHelper.MenuItem createHapticSenderItem (TdApi.Chat chat) {
+      if (isAnonymous()) {
+        return new HapticMenuHelper.MenuItem(R.id.btn_openSendersMenu, Lang.getString(R.string.SendAs), chat != null ? tdlib.getMessageSenderTitle(chat.messageSenderId): null, R.drawable.dot_baseline_acc_anon_24);
+      } else if (isPersonal()) {
+        return new HapticMenuHelper.MenuItem(R.id.btn_openSendersMenu, Lang.getString(R.string.SendAs), chat != null ? tdlib.getMessageSenderTitle(chat.messageSenderId): null, R.drawable.dot_baseline_acc_personal_24);
+      } else {
+        return new HapticMenuHelper.MenuItem(R.id.btn_openSendersMenu, Lang.getString(R.string.SendAs), chat != null ? tdlib.getMessageSenderTitle(chat.messageSenderId): null, 0, tdlib, chat != null ? chat.messageSenderId: null, false);
+      }
     }
   }
 

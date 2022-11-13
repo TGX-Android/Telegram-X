@@ -60,6 +60,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.MediaCollectorDelegate;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
+import org.thunderdog.challegram.component.attach.MediaLayout;
 import org.thunderdog.challegram.component.chat.EmojiToneHelper;
 import org.thunderdog.challegram.component.chat.InlineResultsWrap;
 import org.thunderdog.challegram.component.chat.InputView;
@@ -126,6 +127,7 @@ import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.MessagesController;
+import org.thunderdog.challegram.ui.SetSenderController;
 import org.thunderdog.challegram.ui.ShareController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Size;
@@ -2780,6 +2782,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private EditButton paintOrMuteButton;
   private EditButton adjustOrTextButton;
   private StopwatchHeaderButton stopwatchButton;
+  private @Nullable MediaLayout.SenderSendIcon senderSendIcon;
 
   private FrameLayoutFix bottomWrap;
   private LinearLayout captionWrapView;
@@ -4709,6 +4712,14 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         sendButton.setBackgroundResource(R.drawable.bg_btn_header_light);
         editWrap.addView(sendButton);
 
+        if (chat != null && chat.messageSenderId != null) {
+          senderSendIcon = new MediaLayout.SenderSendIcon(context, tdlib(), chat.id);
+          senderSendIcon.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(19), Screen.dp(19), Gravity.RIGHT | Gravity.BOTTOM, 0, 0, Screen.dp(11), Screen.dp(8)));
+          senderSendIcon.setBackgroundColorId(getHeaderColorId());
+          senderSendIcon.update(chat.messageSenderId);
+          editWrap.addView(senderSendIcon);
+        }
+
         if (chat != null) {
           tdlib.ui().createSimpleHapticMenu(this, chat.id, () -> currentActiveButton == 0, this::canDisableMarkdown, hapticItems -> {
             int sendAsFile = canSendAsFile();
@@ -4720,6 +4731,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
                   send(Td.newSendOptions(), false, true);
                 }
               }).bindTutorialFlag(Settings.TUTORIAL_SEND_AS_FILE));
+            }
+            if (senderSendIcon != null) {
+              hapticItems.add(0, senderSendIcon.createHapticSenderItem(chat).setOnClickListener(v -> {
+                openSetSenderPopup(chat);
+              }));
             }
           }, (sendOptions, disableMarkdown) -> {
             send(sendOptions, disableMarkdown, false);
@@ -8161,5 +8177,31 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       thumbsRecyclerView.invalidateItemDecorations();
       ensureThumbsPosition(false, false);
     }
+  }
+
+  private void openSetSenderPopup (TdApi.Chat chat) {
+    if (chat == null) return;
+
+    tdlib().send(new TdApi.GetChatAvailableMessageSenders(chat.id), result -> {
+      UI.post(() -> {
+        if (result.getConstructor() == TdApi.ChatMessageSenders.CONSTRUCTOR) {
+          final SetSenderController c = new SetSenderController(context, tdlib());
+          c.setArguments(new SetSenderController.Args(chat, ((TdApi.ChatMessageSenders) result).senders, chat.messageSenderId));
+          c.setShowOverEverything(true);
+          c.setDelegate((s) -> setNewMessageSender(chat, s));
+          c.show();
+        }
+      });
+    });
+  }
+
+  private void setNewMessageSender (TdApi.Chat chat, TdApi.ChatMessageSender sender) {
+    tdlib().send(new TdApi.SetChatMessageSender(chat.id, sender.sender), o -> {
+      UI.post(() -> {
+        if (senderSendIcon != null) {
+          senderSendIcon.update(chat.messageSenderId);
+        }
+      });
+    });
   }
 }

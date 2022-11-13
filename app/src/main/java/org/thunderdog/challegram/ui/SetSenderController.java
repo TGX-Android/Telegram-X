@@ -21,7 +21,7 @@ import me.vkryl.android.widget.FrameLayoutFix;
 
 public class SetSenderController extends BottomSheetViewController<SetSenderController.Args> {
   private final Tdlib tdlib;
-  private SetSenderControllerPage setSenderControllerPage;
+  private final SetSenderControllerPage setSenderControllerPage;
 
   public SetSenderController (@NonNull Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -61,8 +61,18 @@ public class SetSenderController extends BottomSheetViewController<SetSenderCont
     setLickViewColor(Theme.getColor(R.id.theme_color_headerLightBackground));
   }
 
+  private boolean showOverEverything = false;
+
+  public void setShowOverEverything (boolean showOverEverything) {
+    this.showOverEverything = showOverEverything;
+  }
+
   @Override
   protected void setupPopupLayout (PopupLayout popupLayout) {
+    if (showOverEverything) {
+      super.setupPopupLayout(popupLayout);
+      return;
+    }
     popupLayout.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
     popupLayout.setBoundController(setSenderControllerPage);
     popupLayout.setPopupHeightProvider(this);
