@@ -506,7 +506,23 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void updateThreadSubtitle () {
-    headerCell.setForcedSubtitle(messageThread != null ? messageThread.chatHeaderSubtitle(tdlib) : null);
+    if (messageThread == null)
+      return;
+    if (areScheduled) {
+      headerCell.setForcedSubtitle(Lang.lowercase(Lang.getString(R.string.ScheduledMessages)));
+    } else {
+      headerCell.setForcedSubtitle(messageThread.chatHeaderSubtitle(tdlib));
+    }
+  }
+
+  private void updateForcedSubtitle () {
+    if (messageThread != null) {
+      updateThreadSubtitle();
+    } else if (areScheduled) {
+      headerCell.setForcedSubtitle(Lang.lowercase(Lang.getString(isSelfChat() ? R.string.Reminders : R.string.ScheduledMessages)));
+    } else {
+      headerCell.setForcedSubtitle(null);
+    }
   }
 
   @Override
@@ -565,11 +581,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
       }
       default: {
-        if (areScheduled) {
-          headerCell.setForcedSubtitle(Lang.lowercase(Lang.getString(isSelfChat() ? R.string.Reminders : R.string.ScheduledMessages)));
-        } else {
-          headerCell.setCallback(this);
-        }
         break;
       }
     }
@@ -2581,11 +2592,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
       liveLocation = null;
     }
 
+    if (previewMode == PREVIEW_MODE_NONE) {
+      updateForcedSubtitle(); // must be called before calling headerCell.setChat
+      headerCell.setCallback(areScheduled ? null : this);
+    }
     TdApi.Chat headerChat = messageThread != null ? tdlib.chatSync(messageThread.getContextChatId()) : null;
     headerCell.setChat(tdlib, headerChat != null ? headerChat : chat, messageThread);
-    if (previewMode == PREVIEW_MODE_NONE && !areScheduled) {
-      headerCell.setForcedSubtitle(messageThread != null ? messageThread.chatHeaderSubtitle(tdlib) : null);
-    }
 
     if (inPreviewMode) {
       switch (previewMode) {
