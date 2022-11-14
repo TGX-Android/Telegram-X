@@ -851,9 +851,20 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public final void openMessageThread () {
     TdApi.Message messageWithThread = findMessageWithThread();
-    if (messageWithThread != null) {
-      openMessageThread(new TdApi.GetMessageThread(messageWithThread.chatId, messageWithThread.id));
+    if (messageWithThread == null)
+      return;
+    MessageId highlightMessageId;
+    if (isChannel() || isChannelAutoForward()) {
+      // View X Comments
+      highlightMessageId = null;
+    } else if (isDescendantOrSelf(getMessageThreadId())) {
+      // View X Replies
+      highlightMessageId = new MessageId(messageWithThread.chatId, MessageId.MIN_VALID_ID);
+    } else {
+      // View Thread
+      highlightMessageId = toMessageId();
     }
+    openMessageThread(new TdApi.GetMessageThread(messageWithThread.chatId, messageWithThread.id), highlightMessageId);
   }
 
   public final void openMessageThread (@NonNull MessageId highlightMessageId) {
@@ -891,10 +902,16 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
             openingComments.setValue(false, needAnimateChanges());
           });
           if (highlightMessageId != null) {
-            if (highlightMessageId.isHistoryStart()) {
-              params.highlightMessage(MessagesManager.HIGHLIGHT_MODE_UNREAD, highlightMessageId);
+            MessageId finalHighlightMessageId;
+            if (highlightMessageId.getChatId() != messageThread.chatId) {
+              finalHighlightMessageId = new MessageId(messageThread.chatId, highlightMessageId.getMessageId(), highlightMessageId.getOtherMessageIds());
             } else {
-              params.highlightMessage(highlightMessageId);
+              finalHighlightMessageId = highlightMessageId;
+            }
+            if (finalHighlightMessageId.isHistoryStart()) {
+              params.highlightMessage(MessagesManager.HIGHLIGHT_MODE_UNREAD, finalHighlightMessageId);
+            } else {
+              params.highlightMessage(finalHighlightMessageId);
               params.ensureHighlightAvailable();
             }
           }

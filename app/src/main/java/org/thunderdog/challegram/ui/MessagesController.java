@@ -5226,21 +5226,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case R.id.btn_messageReplies: {
         if (selectedMessage != null) {
-          if (selectedMessage.isChannelAutoForward()) {
-            // View X Comments
-            selectedMessage.openMessageThread();
-          } else if (selectedMessage.isDescendantOrSelf(selectedMessage.getMessageThreadId())) {
-            // View X Replies
-            TdApi.Message message = selectedMessage.findMessageWithThread();
-            if (message != null) {
-              TdApi.GetMessageThread query = new TdApi.GetMessageThread(message.chatId, message.id);
-              MessageId highlightMessageId = new MessageId(message.chatId, MessageId.MIN_VALID_ID);
-              selectedMessage.openMessageThread(query, highlightMessageId);
-            }
-          } else {
-            // View Thread
-            selectedMessage.openMessageThread(selectedMessage.toMessageId());
-          }
+          selectedMessage.openMessageThread();
           clearSelectedMessage();
         }
         return true;
