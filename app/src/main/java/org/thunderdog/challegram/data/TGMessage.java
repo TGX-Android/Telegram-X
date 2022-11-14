@@ -616,7 +616,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         top.setIsBottom(true);
       }
       setHeaderEnabled(!headerDisabled());
-      if ((top != null || getDate() != 0 || isScheduled()) && !isSponsored() && !isBelowHeader) {
+      if ((top != null || getDate() != 0 || isScheduled()) && !isSponsored() && (!isBelowHeader || messagesController().areScheduledOnly())) {
         flags |= FLAG_SHOW_DATE;
         setDate(genDate());
       } else {
@@ -5319,7 +5319,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   private void updateShowBadge () {
-    boolean showBadge = isFirstUnread() || isBelowHeader();
+    boolean showBadge = isFirstUnread() || isBelowHeader() && !messagesController().areScheduledOnly();
     flags = BitwiseUtils.setFlag(flags, FLAG_SHOW_BADGE, showBadge);
   }
 
