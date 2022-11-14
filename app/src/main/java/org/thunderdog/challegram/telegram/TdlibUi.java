@@ -2393,7 +2393,7 @@ public class TdlibUi extends Handler {
         context.tdlib().send(new TdApi.GetMessageThread(messageId.getChatId(), messageId.getMessageId()), (result) -> {
           switch (result.getConstructor()) {
             case TdApi.MessageThreadInfo.CONSTRUCTOR:
-              ThreadInfo messageThread = ThreadInfo.openedFromMessage((TdApi.MessageThreadInfo) result, openParameters.messageId);
+              ThreadInfo messageThread = ThreadInfo.openedFromMessage(context.tdlib(), (TdApi.MessageThreadInfo) result, openParameters.messageId);
               openMessage(context, messageThread.getChatId(), messageId, messageThread, openParameters);
               break;
             case TdApi.Error.CONSTRUCTOR:

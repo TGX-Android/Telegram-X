@@ -3433,6 +3433,15 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return supergroup != null && !supergroup.isChannel;
   }
 
+  public boolean isChannelAutoForward (@Nullable TdApi.Message message) {
+    return message != null && message.chatId != 0 && message.forwardInfo != null &&
+      message.forwardInfo.fromChatId != 0 && message.forwardInfo.fromMessageId != 0 &&
+      message.forwardInfo.fromChatId != message.chatId &&
+      message.senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR &&
+      ((TdApi.MessageSenderChat) message.senderId).chatId == message.forwardInfo.fromChatId &&
+      isSupergroup(message.chatId) && isChannel(message.forwardInfo.fromChatId);
+  }
+
   public boolean canDisablePinnedMessageNotifications (long chatId) {
     return !ChatId.isUserChat(chatId);
   }

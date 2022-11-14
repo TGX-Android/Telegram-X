@@ -887,7 +887,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       switch (result.getConstructor()) {
         case TdApi.MessageThreadInfo.CONSTRUCTOR: {
           TdApi.MessageThreadInfo messageThread = (TdApi.MessageThreadInfo) result;
-          TdlibUi.ChatOpenParameters params = new TdlibUi.ChatOpenParameters().keepStack().messageThread(ThreadInfo.openedFromChat(messageThread, getChatId())).after(chatId -> {
+          TdlibUi.ChatOpenParameters params = new TdlibUi.ChatOpenParameters().keepStack().messageThread(ThreadInfo.openedFromChat(tdlib, messageThread, getChatId())).after(chatId -> {
             openingComments.setValue(false, needAnimateChanges());
           });
           if (highlightMessageId != null) {
@@ -2763,14 +2763,16 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public final boolean forceForwardedInfo () {
     return msg.forwardInfo != null && !isOutgoing() && (
-      BitwiseUtils.getFlag(flags, FLAG_SELF_CHAT) || isChannelAutoForward() ||
+      BitwiseUtils.getFlag(flags, FLAG_SELF_CHAT) ||
+      (isChannelAutoForward() && msg.forwardInfo.origin.getConstructor() == TdApi.MessageForwardOriginChannel.CONSTRUCTOR &&
+        msg.forwardInfo.fromChatId == ((TdApi.MessageForwardOriginChannel) msg.forwardInfo.origin).chatId) ||
       msg.forwardInfo.origin.getConstructor() == TdApi.MessageForwardOriginMessageImport.CONSTRUCTOR ||
       (isPsa() && !sender.isUser() && useBubbles()) ||
       isRepliesChat());
   }
 
   public final boolean isChannelAutoForward () {
-    return TD.isChannelAutoForward(msg);
+    return tdlib.isChannelAutoForward(msg);
   }
 
   public final boolean isRepliesChat () {

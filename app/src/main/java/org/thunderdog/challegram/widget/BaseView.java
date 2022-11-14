@@ -291,7 +291,7 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
                     TdApi.MessageThreadInfo threadInfo = (TdApi.MessageThreadInfo) result;
                     tdlib.ui().post(() -> {
                       if (pendingTask == null && pendingController == null) {
-                        openChatPreviewAsync(chatList, chat, ThreadInfo.openedFromChat(threadInfo, chatId, contextChatId), filter, x, y);
+                        openChatPreviewAsync(chatList, chat, ThreadInfo.openedFromChat(tdlib, threadInfo, chatId, contextChatId), filter, x, y);
                       }
                     });
                     break;

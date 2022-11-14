@@ -41,18 +41,18 @@ public class ThreadInfo {
     setDraft(threadInfo.draftMessage); // nulls draftMessage.replyToMessageId if draft is reply to one of message from which the thread starts
   }
 
-  public static @NonNull ThreadInfo openedFromMessage (@NonNull TdApi.MessageThreadInfo threadInfo, @Nullable MessageId messageId) {
-    return openedFromChat(threadInfo, messageId != null ? messageId.getChatId() : 0);
+  public static @NonNull ThreadInfo openedFromMessage (@NonNull Tdlib tdlib, @NonNull TdApi.MessageThreadInfo threadInfo, @Nullable MessageId messageId) {
+    return openedFromChat(tdlib, threadInfo, messageId != null ? messageId.getChatId() : 0);
   }
 
-  public static @NonNull ThreadInfo openedFromChat (@NonNull TdApi.MessageThreadInfo threadInfo, long chatId) {
-    return openedFromChat(threadInfo, chatId, 0);
+  public static @NonNull ThreadInfo openedFromChat (@NonNull Tdlib tdlib, @NonNull TdApi.MessageThreadInfo threadInfo, long chatId) {
+    return openedFromChat(tdlib, threadInfo, chatId, 0);
   }
 
-  public static @NonNull ThreadInfo openedFromChat (@NonNull TdApi.MessageThreadInfo threadInfo, long chatId, long contextChatId) {
+  public static @NonNull ThreadInfo openedFromChat (@NonNull Tdlib tdlib, @NonNull TdApi.MessageThreadInfo threadInfo, long chatId, long contextChatId) {
     TdApi.Message oldestMessage = getOldestMessage(threadInfo);
-    boolean areComments = TD.isChannelAutoForward(oldestMessage);
-    if (contextChatId == 0 && areComments && chatId != oldestMessage.chatId) {
+    boolean areComments = tdlib.isChannelAutoForward(oldestMessage);
+    if (contextChatId == 0 && areComments && oldestMessage != null && chatId != oldestMessage.chatId) {
       //noinspection ConstantConditions
       contextChatId = oldestMessage.forwardInfo.fromChatId;
     }
@@ -126,8 +126,12 @@ public class ThreadInfo {
     return threadInfo.messageThreadId;
   }
 
-  public long getLastReadMessageId () {
+  public long getLastReadInboxMessageId () {
     return threadInfo.replyInfo.lastReadInboxMessageId;
+  }
+
+  public long getLastReadOutboxMessageId () {
+    return threadInfo.replyInfo.lastReadOutboxMessageId;
   }
 
   public long getLastMessageId () {

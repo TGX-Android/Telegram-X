@@ -351,7 +351,7 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
           // override message preview
           MessageId highlightMessageId;
           //noinspection ConstantConditions
-          if (TD.isChannelAutoForward(message) && message.forwardInfo.fromChatId == contextChatId) {
+          if (viewController.tdlib().isChannelAutoForward(message) && message.forwardInfo.fromChatId == contextChatId) {
             highlightMessageId = new MessageId(message.forwardInfo.fromChatId, message.forwardInfo.fromMessageId);
           } else {
             highlightMessageId = new MessageId(message.chatId, message.id);

@@ -1278,17 +1278,6 @@ public class TD {
     return message != null && message.schedulingState != null;
   }
 
-  public static boolean isChannelAutoForward (@Nullable TdApi.Message message) {
-    if (message == null) {
-      return false;
-    }
-    return (message.forwardInfo != null && message.forwardInfo.origin.getConstructor() == TdApi.MessageForwardOriginChannel.CONSTRUCTOR &&
-      message.forwardInfo.fromChatId == ((TdApi.MessageForwardOriginChannel) message.forwardInfo.origin).chatId &&
-      message.senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR &&
-      ((TdApi.MessageSenderChat) message.senderId).chatId == message.forwardInfo.fromChatId
-    );
-  }
-
   public static TdApi.PhotoSize toThumbnailSize (TdApi.Thumbnail thumbnail) {
     if (thumbnail == null)
       return null;

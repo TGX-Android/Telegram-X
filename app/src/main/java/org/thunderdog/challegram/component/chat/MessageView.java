@@ -676,7 +676,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
           if (repliedMessage != null) {
             int replyCount = TD.getReplyCount(repliedMessage.interactionInfo);
             if (replyCount > 1) {
-              if (TD.isChannelAutoForward(repliedMessage)) {
+              if (msg.tdlib().isChannelAutoForward(repliedMessage)) {
                 strings.append(Lang.plural(R.string.ViewXOtherComments, replyCount - 1));
               } else {
                 strings.append(Lang.getString(R.string.ViewThread));
