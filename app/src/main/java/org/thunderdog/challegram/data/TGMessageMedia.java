@@ -39,6 +39,7 @@ import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.util.text.Highlight;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.util.text.TextMedia;
@@ -281,7 +282,7 @@ public class TGMessageMedia extends TGMessage {
               invalidateTextMediaReceiver(text, specificMedia);
             }
           })
-          .setHighlightText(getHighlightedText(caption.text))
+          .setHighlightText(getHighlightedText(Highlight.Pool.KEY_MEDIA_CAPTION, caption.text))
           .addTextFlags(Text.FLAG_BIG_EMOJI)
           .setClickCallback(clickCallback());
         this.wrapper.setViewProvider(currentViews);

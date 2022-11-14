@@ -38,6 +38,7 @@ import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.text.Highlight;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.util.text.TextColorSets;
@@ -209,12 +210,12 @@ public class TGMessageText extends TGMessage {
       if (text.entities != null || !parseEntities) {
         this.wrapper = new TextWrapper(text.text, getTextStyleProvider(), colorSet)
           .setEntities(TextEntity.valueOf(tdlib, text, openParameters()), textMediaListener)
-          .setHighlightText(getHighlightedText(text.text))
+          .setHighlightText(getHighlightedText(Highlight.Pool.KEY_TEXT, text.text))
           .setClickCallback(clickCallback());
       } else {
         this.wrapper = new TextWrapper(text.text, getTextStyleProvider(), colorSet)
           .setEntities(Text.makeEntities(text.text, Text.ENTITY_FLAGS_ALL, null, tdlib, openParameters()), textMediaListener)
-          .setHighlightText(getHighlightedText(text.text))
+          .setHighlightText(getHighlightedText(Highlight.Pool.KEY_TEXT, text.text))
           .setClickCallback(clickCallback());
       }
       this.wrapper.addTextFlags(Text.FLAG_BIG_EMOJI);

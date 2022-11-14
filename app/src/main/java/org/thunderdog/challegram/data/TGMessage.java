@@ -5830,21 +5830,30 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   private @Nullable String highlightedText = null;
+  private final Highlight.Pool searchResultsHighlightPool = new Highlight.Pool();
 
   private void setHighlightedText (@Nullable String text) {
     if (!StringUtils.equalsOrBothEmpty(text, highlightedText)) {
+      searchResultsHighlightPool.clear();
       this.highlightedText = text;
       onUpdateHighlightedText();
       invalidate();
     }
   }
 
-  protected final @Nullable Highlight getHighlightedText (String in) {
+  protected final @Nullable Highlight getHighlightedText (int key, String in) {
     Highlight highlight = Highlight.valueOf(in, highlightedText);
     if (highlight == null) return null;
 
     highlight.setCustomColorSet(getSearchHighlightColorSet());
-    return highlight;
+    int mostRelevantKey = searchResultsHighlightPool.getMostRelevantHighlightKey();
+    searchResultsHighlightPool.add(key, highlight);
+    if (mostRelevantKey != Highlight.Pool.KEY_NONE && mostRelevantKey != searchResultsHighlightPool.getMostRelevantHighlightKey()) {
+      UI.post(this::onUpdateHighlightedText);
+      android.util.Log.i("HIGHLIGHT", "UPDATE");
+    }
+
+    return searchResultsHighlightPool.isMostRelevant(key) ? highlight: null;
   }
 
   public void checkHighlightedText () {
