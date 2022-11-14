@@ -158,7 +158,9 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
     boolean hasRecentReplierIds = recentReplierIds != null && recentReplierIds.length > 0;
     boolean showArrow = !context.useBubbles() || !hasRecentReplierIds;
     arrowVisibilityAnimator.setValue(showArrow, animated);
-    boolean showUnread = replyCount > 0 && hasRecentReplierIds && Td.hasUnread(replyInfo);
+
+    long lastReadInboxMessageId = replyInfo != null ? replyInfo.lastReadInboxMessageId : 0;
+    boolean showUnread = replyCount > 0 && hasRecentReplierIds && Td.hasUnread(replyInfo) && lastReadInboxMessageId != 0;
     badgeVisibilityAnimator.setValue(showUnread, animated);
   }
 
@@ -797,7 +799,9 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
     if (BuildConfig.EXPERIMENTAL && FeatureToggles.ALWAYS_SHOW_MARK_AS_READ_ACTION_IN_THREAD_PREVIEW) {
       return true;
     }
-    return controller.getMessageThread() != null && controller.getMessageThread().hasUnreadMessages();
+    return controller.getMessageThread() != null &&
+      controller.getMessageThread().hasUnreadMessages() &&
+      controller.getMessageThread().getLastReadInboxMessageId() != 0;
   }
 
   private void closePreview () {

@@ -994,7 +994,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (this.width != 0) {
       rebuildLayout();
     } else {
-      buildLayout(Screen.currentWidth());
+      buildLayout(manager.getRecyclerWidth());
     }
   }
 
@@ -4545,11 +4545,20 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (needMention && msg.containsUnreadMention)
       return true;
     TdApi.Chat chat = getChat();
+    ThreadInfo messageThread = messagesController().getMessageThread();
     if (chat == null) {
       chat = tdlib.chat(msg.chatId);
-      setChatData(chat);
+      setChatData(chat, messageThread);
     }
-    return chat != null && (msg.isOutgoing ? chat.lastReadOutboxMessageId : chat.lastReadInboxMessageId) < getBiggestId();
+    long lastReadMessageId;
+    if (messageThread != null) {
+      lastReadMessageId = msg.isOutgoing ? messageThread.getLastReadOutboxMessageId() : messageThread.getLastReadInboxMessageId();
+    } else if (chat != null) {
+      lastReadMessageId = msg.isOutgoing ? chat.lastReadOutboxMessageId : chat.lastReadInboxMessageId;
+    } else {
+      return false;
+    }
+    return lastReadMessageId < getBiggestId();
   }
 
   public boolean isChannel () {
@@ -4670,7 +4679,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return ChatId.toSupergroupId(msg.chatId);
   }
 
-  private void setChatData (TdApi.Chat chat) {
+  private void setChatData (TdApi.Chat chat, @Nullable ThreadInfo messageThread) {
     this.chat = chat;
     int flags = this.flags;
     flags = BitwiseUtils.setFlag(flags, FLAG_NO_UNREAD, needNoUnread());
@@ -4678,7 +4687,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     this.flags = flags;
 
     if (isOutgoing() && !isSending()) {
-      setUnread(chat.lastReadOutboxMessageId);
+      setUnread(messageThread != null ? messageThread.getLastReadOutboxMessageId() : chat.lastReadOutboxMessageId);
     }
 
     /*if (replyData != null && TD.isMultiChat(chat)) {
@@ -7140,14 +7149,14 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   // Other
 
-  public static TGMessage valueOf (MessagesManager context, TdApi.Message msg, TdApi.Chat chat, @Nullable LongSparseArray<TdApi.ChatAdministrator> chatAdmins) {
-    return valueOf(context, msg, chat, msg.senderId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR && chatAdmins != null ? chatAdmins.get(((TdApi.MessageSenderUser) msg.senderId).userId) : null);
+  public static TGMessage valueOf (MessagesManager context, TdApi.Message msg, TdApi.Chat chat, @Nullable ThreadInfo messageThread, @Nullable LongSparseArray<TdApi.ChatAdministrator> chatAdmins) {
+    return valueOf(context, msg, chat, messageThread, msg.senderId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR && chatAdmins != null ? chatAdmins.get(((TdApi.MessageSenderUser) msg.senderId).userId) : null);
   }
 
-  public static TGMessage valueOf (MessagesManager context, TdApi.Message msg, TdApi.Chat chat, @Nullable TdApi.ChatAdministrator admin) {
+  public static TGMessage valueOf (MessagesManager context, TdApi.Message msg, TdApi.Chat chat, @Nullable ThreadInfo messageThread, @Nullable TdApi.ChatAdministrator admin) {
     TGMessage parsedMessage = valueOf(context, msg);
     if (chat != null) {
-      parsedMessage.setChatData(chat);
+      parsedMessage.setChatData(chat, messageThread);
     }
     if (admin != null) {
       parsedMessage.setAdministratorSign(admin);

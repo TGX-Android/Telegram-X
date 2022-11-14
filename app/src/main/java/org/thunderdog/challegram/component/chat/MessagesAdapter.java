@@ -29,6 +29,7 @@ import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGMessageBotInfo;
 import org.thunderdog.challegram.data.TGMessageMedia;
 import org.thunderdog.challegram.data.TGMessagePoll;
+import org.thunderdog.challegram.data.ThreadInfo;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
@@ -485,9 +486,14 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
         message.markAsBeingAdded(true);
       }
       if ((!needScrollToBottom || message.isOld()) && !message.isOutgoing() && message.checkIsUnread(false) && !hasUnreadSeparator()) {
-        TdApi.Chat chat = message.tdlib().chat(message.getChatId());
-        if (chat != null) {
-          message.setShowUnreadBadge(chat.unreadCount > 0);
+        ThreadInfo messageThread = message.messagesController().getMessageThread();
+        if (messageThread != null) {
+          message.setShowUnreadBadge(messageThread.hasUnreadMessages());
+        } else {
+          TdApi.Chat chat = message.tdlib().chat(message.getChatId());
+          if (chat != null) {
+            message.setShowUnreadBadge(chat.unreadCount > 0);
+          }
         }
       }
     }
@@ -599,9 +605,14 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
         for (int i = items.size() - 1; i >= 0; i--) {
           TGMessage message = items.get(i);
           if (!message.isOutgoing() /*&& (message.isOld() || )*/ && message.checkIsUnread(false)) {
-            TdApi.Chat chat = message.tdlib().chat(message.getChatId());
-            if (chat != null) {
-              message.setShowUnreadBadge(chat.unreadCount > 0);
+            ThreadInfo threadInfo = message.messagesController().getMessageThread();
+            if (threadInfo != null) {
+              message.setShowUnreadBadge(threadInfo.hasUnreadMessages());
+            } else {
+              TdApi.Chat chat = message.tdlib().chat(message.getChatId());
+              if (chat != null) {
+                message.setShowUnreadBadge(chat.unreadCount > 0);
+              }
             }
             break;
           }

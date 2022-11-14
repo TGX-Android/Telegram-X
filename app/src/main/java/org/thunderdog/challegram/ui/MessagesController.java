@@ -2709,7 +2709,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       for (int index = messages.length - 1; index >= 0; index--) {
         TdApi.Message message = messages[index];
         if (msg == null) {
-          msg = TGMessage.valueOf(manager, message, chat, (TdApi.ChatAdministrator) null);
+          msg = TGMessage.valueOf(manager, message, chat, messageThread, (TdApi.ChatAdministrator) null);
         } else {
           msg.combineWith(message, true);
         }
@@ -2761,7 +2761,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private void updateCounters (boolean animated) {
     if (chat != null) {
       if (messageThread != null) {
-        setUnreadCountBadge(messageThread.hasUnreadMessages() ? Tdlib.CHAT_MARKED_AS_UNREAD : 0, animated);
+        int unreadCount;
+        if (messageThread.hasUnreadMessages() && messageThread.getLastReadInboxMessageId() != 0) {
+          unreadCount = messageThread.getUnreadMessageCount() != ThreadInfo.UNKNOWN_UNREAD_MESSAGE_COUNT ? messageThread.getUnreadMessageCount() : Tdlib.CHAT_MARKED_AS_UNREAD;
+        } else {
+          unreadCount = 0;
+        }
+        setUnreadCountBadge(unreadCount, animated);
+        setMentionCountBadge(0);
+        setReactionCountBadge(0);
       } else {
         setUnreadCountBadge(chat.unreadCount, true);
         setMentionCountBadge(chat.unreadMentionCount);
@@ -7152,6 +7160,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (replyInfo != null) {
         messageThread.setReplyInfo(replyInfo);
         updateThreadSubtitle();
+        updateCounters(true);
       }
     }
   }
@@ -8890,11 +8899,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
                 if (isSchedule == areScheduled) {
                   manager.addSentMessages(parsedMessages);
                   if (messageThread != null) { // FIXME(firefly) 🩼
-                    TdApi.MessageReplyInfo replyInfo = messageThread.getReplyInfo();
-                    if (replyInfo != null) {
-                      replyInfo.replyCount += sentCount;
-                      updateThreadSubtitle();
-                    }
+                    messageThread.setSize(messageThread.getSize() + sentCount);
+                    updateThreadSubtitle();
                   }
                 }
                 onDone.runWithBool(sentCount == expectedCount);

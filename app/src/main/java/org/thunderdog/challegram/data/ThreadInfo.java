@@ -29,6 +29,7 @@ import me.vkryl.td.Td;
 
 public class ThreadInfo {
   public static final ThreadInfo INVALID = new ThreadInfo(new TdApi.MessageThreadInfo(), 0, false);
+  public static final int UNKNOWN_UNREAD_MESSAGE_COUNT = -1;
 
   private final boolean areComments;
   private final TdApi.MessageThreadInfo threadInfo;
@@ -83,8 +84,24 @@ public class ThreadInfo {
     return oldestMessage != null ? oldestMessage.id : 0;
   }
 
+  public long getNewestMessageId () {
+    TdApi.Message newestMessage = getNewestMessage();
+    return newestMessage != null ? newestMessage.id : 0;
+  }
+
   public @Nullable TdApi.Message getOldestMessage () {
     return getOldestMessage(threadInfo);
+  }
+
+  public @Nullable TdApi.Message getNewestMessage() {
+    return getNewestMessage(threadInfo);
+  }
+
+  public static @Nullable TdApi.Message getNewestMessage (@Nullable TdApi.MessageThreadInfo threadInfo) {
+    if (threadInfo != null && threadInfo.messages != null && threadInfo.messages.length > 0) {
+      return threadInfo.messages[0];
+    }
+    return null;
   }
 
   public static @Nullable TdApi.Message getOldestMessage (@Nullable TdApi.MessageThreadInfo threadInfo) {
@@ -99,18 +116,26 @@ public class ThreadInfo {
   }
 
   public boolean hasUnreadMessages () {
+    if (threadInfo.unreadMessageCount != UNKNOWN_UNREAD_MESSAGE_COUNT) {
+      return threadInfo.unreadMessageCount > 0;
+    }
     return Td.hasUnread(threadInfo.replyInfo);
+  }
+
+  public int getUnreadMessageCount () {
+    return threadInfo.unreadMessageCount;
   }
 
   public int getSize () {
     return threadInfo.replyInfo.replyCount;
   }
 
-  public TdApi.MessageReplyInfo getReplyInfo () {
-    return threadInfo.replyInfo;
+  public void setSize (int size) {
+    threadInfo.replyInfo.replyCount = size;
   }
 
   public void setReplyInfo (@NonNull TdApi.MessageReplyInfo replyInfo) {
+    threadInfo.unreadMessageCount = UNKNOWN_UNREAD_MESSAGE_COUNT; // TODO(nikita-toropov) unreadMessageCount
     threadInfo.replyInfo = replyInfo;
   }
 
