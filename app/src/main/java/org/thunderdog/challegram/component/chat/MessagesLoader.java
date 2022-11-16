@@ -1217,7 +1217,7 @@ public class MessagesLoader implements Client.ResultHandler {
       chatId = messageThread.getChatId();
       lastReadOutboxMessageId = messageThread.getLastReadOutboxMessageId();
       lastReadInboxMessageId = messageThread.getLastReadInboxMessageId();
-      hasUnreadMessages = messageThread.hasUnreadMessages();
+      hasUnreadMessages = messageThread.hasUnreadMessages(chat);
     } else if (chat != null) {
       chatId = chat.id;
       lastReadOutboxMessageId = chat.lastReadOutboxMessageId;

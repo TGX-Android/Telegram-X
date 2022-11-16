@@ -2811,7 +2811,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   public static boolean canGoUnread (TdApi.Chat chat, @Nullable ThreadInfo threadInfo) {
     if (threadInfo != null) {
-      return threadInfo.hasUnreadMessages() && threadInfo.getLastReadInboxMessageId() != 0;
+      return threadInfo.hasUnreadMessages(chat) && threadInfo.getLastReadInboxMessageId() != 0;
     }
     return chat.unreadCount >= CHATS_THRESHOLD &&
             chat.lastReadInboxMessageId != 0 && chat.lastReadInboxMessageId != MessageId.MAX_VALID_ID &&

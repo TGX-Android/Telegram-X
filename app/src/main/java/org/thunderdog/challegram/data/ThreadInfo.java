@@ -115,11 +115,16 @@ public class ThreadInfo {
     return areComments;
   }
 
-  public boolean hasUnreadMessages () {
+  public boolean hasUnreadMessages (@Nullable TdApi.Chat chat) {
+    long lastGlobalReadInboxMessageId = chat != null && chat.id == threadInfo.chatId ? chat.lastReadInboxMessageId : 0;
+    return hasUnreadMessages(lastGlobalReadInboxMessageId);
+  }
+
+  public boolean hasUnreadMessages (long lastGlobalReadInboxMessageId) {
     if (threadInfo.unreadMessageCount != UNKNOWN_UNREAD_MESSAGE_COUNT) {
       return threadInfo.unreadMessageCount > 0;
     }
-    return Td.hasUnread(threadInfo.replyInfo);
+    return Td.hasUnread(threadInfo.replyInfo, lastGlobalReadInboxMessageId);
   }
 
   public int getUnreadMessageCount () {

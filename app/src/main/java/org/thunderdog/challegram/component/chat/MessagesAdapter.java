@@ -486,12 +486,12 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
         message.markAsBeingAdded(true);
       }
       if ((!needScrollToBottom || message.isOld()) && !message.isOutgoing() && message.checkIsUnread(false) && !hasUnreadSeparator()) {
-        ThreadInfo messageThread = message.messagesController().getMessageThread();
-        if (messageThread != null) {
-          message.setShowUnreadBadge(messageThread.hasUnreadMessages());
-        } else {
-          TdApi.Chat chat = message.tdlib().chat(message.getChatId());
-          if (chat != null) {
+        TdApi.Chat chat = message.tdlib().chat(message.getChatId());
+        if (chat != null) {
+          ThreadInfo messageThread = message.messagesController().getMessageThread();
+          if (messageThread != null) {
+            message.setShowUnreadBadge(messageThread.hasUnreadMessages(chat));
+          } else {
             message.setShowUnreadBadge(chat.unreadCount > 0);
           }
         }
@@ -605,12 +605,12 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
         for (int i = items.size() - 1; i >= 0; i--) {
           TGMessage message = items.get(i);
           if (!message.isOutgoing() /*&& (message.isOld() || )*/ && message.checkIsUnread(false)) {
-            ThreadInfo threadInfo = message.messagesController().getMessageThread();
-            if (threadInfo != null) {
-              message.setShowUnreadBadge(threadInfo.hasUnreadMessages());
-            } else {
-              TdApi.Chat chat = message.tdlib().chat(message.getChatId());
-              if (chat != null) {
+            TdApi.Chat chat = message.tdlib().chat(message.getChatId());
+            if (chat != null) {
+              ThreadInfo messageThread = message.messagesController().getMessageThread();
+              if (messageThread != null) {
+                message.setShowUnreadBadge(messageThread.hasUnreadMessages(chat));
+              } else {
                 message.setShowUnreadBadge(chat.unreadCount > 0);
               }
             }

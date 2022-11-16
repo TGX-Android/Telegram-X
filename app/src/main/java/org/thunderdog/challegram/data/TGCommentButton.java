@@ -800,7 +800,7 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
       return true;
     }
     return controller.getMessageThread() != null &&
-      controller.getMessageThread().hasUnreadMessages() &&
+      controller.getMessageThread().hasUnreadMessages(controller.getChat()) &&
       controller.getMessageThread().getLastReadInboxMessageId() != 0;
   }
 
