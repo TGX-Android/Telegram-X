@@ -272,7 +272,7 @@ public final class TGAvatars implements FactorAnimator.Target {
 
     public static @NonNull AvatarEntry fromChatId (@NonNull Tdlib tdlib, long chatId, @Dimension(unit = Dimension.DP) float radius) {
       ImageFile avatarFile = tdlib.chatAvatar(chatId, Screen.dp(radius) * 2);
-      AvatarPlaceholder avatarPlaceholder = tdlib.chatPlaceholder(chatId, null, false, radius, null);
+      AvatarPlaceholder avatarPlaceholder = tdlib.chatPlaceholder(chatId, tdlib.chat(chatId), false, radius, null);
       return new AvatarEntry(chatId, avatarFile, avatarPlaceholder);
     }
 
