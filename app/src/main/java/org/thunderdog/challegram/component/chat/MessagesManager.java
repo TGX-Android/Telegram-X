@@ -446,18 +446,26 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   public void checkHeaderPreview (int last) {
-    if (last == -1 || inSpecialMode() || !isFocused || headerMessage == null || headerMessage.getId() == 0 || headerMessage instanceof TGMessageBotInfo) {
+    if (last == -1 || inSpecialMode() || headerMessage == null || headerMessage.getId() == 0 || headerMessage instanceof TGMessageBotInfo) {
       return;
     }
+    if (getActiveMessageCount() == 0) {
+      controller.showHidePinnedMessage(false, null);
+      return;
+    }
+    int messagePreviewHeight = SettingHolder.measureHeightForType(ListItem.TYPE_MESSAGE_PREVIEW);
+    View view = manager.findViewByPosition(last);
+    if (view == null || view.getTop() > messagePreviewHeight) {
+      controller.showHidePinnedMessage(false, null);
+      return;
+    }
+    TGMessage msg = view instanceof MessageProvider ? ((MessageProvider) view).getMessage() : null;
     boolean headerVisible = false;
     int headerBottom = 0;
-    View view = manager.findViewByPosition(last);
-    TGMessage msg = view instanceof MessageProvider ? ((MessageProvider) view).getMessage() : null;
     if (msg == headerMessage) {
       headerVisible = true;
       headerBottom = view.getBottom();
     }
-    int messagePreviewHeight = SettingHolder.measureHeightForType(ListItem.TYPE_MESSAGE_PREVIEW);
     boolean showHeaderPreview = !headerVisible || headerBottom <= messagePreviewHeight;
     controller.showHidePinnedMessage(showHeaderPreview, headerMessage.getOldestMessage());
   }
@@ -1158,8 +1166,25 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         } else {
           adapter.addMessages(items, true);
         }
-        if (headerMessage != null && !canLoadTop) {
-          insertHeaderMessageIfNeeded();
+        if (headerMessage != null && shouldInsertHeaderMessage()) {
+          boolean topEndReached;
+          if (!canLoadTop) {
+            topEndReached = true;
+          } else if (!items.isEmpty()) {
+            final int accountId = tdlib.id();
+            Settings.SavedMessageId messageId = Settings.instance().getScrollMessageId(accountId, loader.getChatId(), loader.getMessageThreadId());
+            if (messageId != null && messageId.topEndMessageId != 0) {
+              TGMessage topMessage = items.get(items.size() - 1);
+              topEndReached = topMessage.isDescendantOrSelf(messageId.topEndMessageId);
+            } else {
+              topEndReached = false;
+            }
+          } else {
+            topEndReached = !willRepeat;
+          }
+          if (topEndReached) {
+            insertHeaderMessageIfNeeded();
+          }
         }
         if (scrollMessage == null) {
           if (headerMessage != null && scrollMessageId != null && scrollMessageId.isHistoryStart() && !items.isEmpty()) {
@@ -1168,6 +1193,17 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
               int headerPosition = manager.getItemCount() - 1;
               manager.scrollToPositionWithOffset(headerPosition, targetHeight / 2);
             } else {
+              if (!(inSpecialMode() || headerMessage.getId() == 0 || headerMessage instanceof TGMessageBotInfo || headerMessage != adapter.getTopMessage())) {
+                int targetHeight = getTargetHeight();
+                int height = 0;
+                for (TGMessage item : items) {
+                  height += item.getHeight();
+                }
+                int messagePreviewHeight = SettingHolder.measureHeightForType(ListItem.TYPE_MESSAGE_PREVIEW);
+                if (targetHeight <= height + messagePreviewHeight) {
+                  controller.showHidePinnedMessage(true, headerMessage.getOldestMessage());
+                }
+              }
               TGMessage item = items.get(items.size() - 1);
               int index = adapter.indexOfMessageContainer(item.getId());
               if (index != -1) {
@@ -2608,12 +2644,6 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       Settings.SavedMessageId messageId = Settings.instance().getScrollMessageId(accountId, loader.getChatId(), loader.getMessageThreadId());
       int offset = messageId != null ? messageId.offsetPixels : 0;
       this.returnToMessageIds = messageId != null ? messageId.returnToMessageIds : null;
-
-      TGMessage topMessage = adapter.getTopMessage();
-      if (messageId != null && messageId.topEndMessageId != 0 &&
-        topMessage != null && topMessage.isDescendantOrSelf(messageId.topEndMessageId)) {
-        insertHeaderMessageIfNeeded();
-      }
       scrollToPositionWithOffset(index, offset, false);
       checkScrollToBottomButton();
       return;

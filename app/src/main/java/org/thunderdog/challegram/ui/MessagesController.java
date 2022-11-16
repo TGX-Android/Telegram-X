@@ -2717,10 +2717,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (msg != null) {
         msg.setIsThreadHeader(true);
         manager.setHeaderMessage(msg);
-        if (!FeatureToggles.SCROLL_TO_HEADER_MESSAGE_ON_THREAD_FIRST_OPEN && messageThread.getSize() > 0 && !areScheduled) {
-          // TODO(nikita-toropov) rework it
-          showHidePinnedMessage(true, msg.getOldestMessage());
-        }
       }
     }
 
