@@ -142,12 +142,19 @@ public class SetSenderControllerPage extends BottomSheetViewController.BottomShe
     closeSearchMode(null);
   }
 
-  private boolean search (String title, String query) {
-    if (StringUtils.equalsOrBothEmpty(title, query) || StringUtils.isEmpty(title) || StringUtils.isEmpty(query)) {
+  private boolean search (TdApi.MessageSender messageSender, String rawQuery) {
+    String senderName = tdlib.senderName(messageSender);
+    String senderUsername = tdlib.senderUsername(messageSender);
+    boolean searchOnlyByUsername = rawQuery.startsWith("@");
+    String query = searchOnlyByUsername ? rawQuery.substring(1) : rawQuery;
+
+    if (StringUtils.isEmpty(rawQuery)) {
       return true;
     }
 
-    return title.startsWith(query);
+    return (!StringUtils.isEmpty(senderUsername) && Highlight.isExactMatch(Highlight.valueOf(senderUsername, query)))
+      || (!searchOnlyByUsername && Highlight.isExactMatch(Highlight.valueOf(senderName, query)))
+      || (searchOnlyByUsername && !StringUtils.isEmpty(senderUsername) && StringUtils.isEmpty(query));
   }
 
   private boolean isEmpty;
@@ -162,7 +169,7 @@ public class SetSenderControllerPage extends BottomSheetViewController.BottomShe
       TdApi.ChatMessageSender sender = chatAvailableSenders[i];
       DoubleTextWrapper item = parseObject(sender);
       if (item != null) {
-        if (inSearchMode && !search(tdlib.senderName(sender.sender), lastQuery)) {
+        if (inSearchMode && !search(sender.sender, lastQuery)) {
           continue;
         }
 
