@@ -16,14 +16,21 @@ import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.res.TypedArrayUtils;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.Tdlib;
 
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 
+import kotlin.collections.ArraysKt;
+import me.vkryl.core.ArrayUtils;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
 
@@ -75,8 +82,19 @@ public class ThreadInfo {
     return threadInfo.chatId == chatId && threadInfo.messageThreadId == messageThreadId;
   }
 
-  public TdApi.Message[] getMessages () {
-    return threadInfo.messages;
+  public boolean hasMessages () {
+    return threadInfo.messages != null && threadInfo.messages.length > 0;
+  }
+
+  public @Nullable TdApi.Message getMessage (long chatId, long messageId) {
+    if (threadInfo.chatId != chatId)
+      return null;
+    for (TdApi.Message message : threadInfo.messages) {
+      if (message.chatId == chatId && message.id == messageId) {
+        return message;
+      }
+    }
+    return null;
   }
 
   public long getOldestMessageId () {
@@ -93,7 +111,7 @@ public class ThreadInfo {
     return getOldestMessage(threadInfo);
   }
 
-  public @Nullable TdApi.Message getNewestMessage() {
+  public @Nullable TdApi.Message getNewestMessage () {
     return getNewestMessage(threadInfo);
   }
 
@@ -231,5 +249,112 @@ public class ThreadInfo {
     long contextChatId = savedState.getLong(prefix + "_contextChatId");
     boolean areComments = savedState.getBoolean(prefix + "_areComments");
     return new ThreadInfo(threadInfo, contextChatId, areComments);
+  }
+
+  public @Nullable TGMessage buildHeaderMessage (Tdlib tdlib, MessagesManager context) {
+    TGMessage msg = null;
+    for (int index = threadInfo.messages.length - 1; index >= 0; index--) {
+      TdApi.Message message = threadInfo.messages[index];
+      if (message == null) {
+        continue;
+      }
+      if (msg == null) {
+        msg = TGMessage.valueOf(context, message, tdlib.chatStrict(message.chatId), this, (TdApi.ChatAdministrator) null);
+      } else {
+        msg.combineWith(message, true);
+      }
+    }
+    if (msg != null) {
+      msg.setIsThreadHeader(true);
+    }
+    return msg;
+  }
+
+  // Updates
+
+  public void updateInteractionInfoChanged (long chatId, long messageId, @Nullable TdApi.MessageInteractionInfo interactionInfo) {
+    TdApi.Message message = getMessage(chatId, messageId);
+    if (message != null) {
+      message.interactionInfo = interactionInfo;
+    }
+  }
+
+  public void updateMessageContentChanged (long chatId, long messageId, TdApi.MessageContent newContent) {
+    TdApi.Message message = getMessage(chatId, messageId);
+    if (message != null) {
+      message.content = newContent;
+    }
+  }
+
+  public void updateMessageEdited (long chatId, long messageId, int editDate, @Nullable TdApi.ReplyMarkup replyMarkup) {
+    TdApi.Message message = getMessage(chatId, messageId);
+    if (message != null) {
+      message.editDate = editDate;
+      message.replyMarkup = replyMarkup;
+    }
+  }
+
+  public void updateMessagePinned (long chatId, long messageId, boolean isPinned) {
+    TdApi.Message message = getMessage(chatId, messageId);
+    if (message != null) {
+      message.isPinned = isPinned;
+    }
+  }
+
+  public void updateMessageOpened (long chatId, long messageId) {
+    TdApi.Message message = getMessage(chatId, messageId);
+    if (message != null) {
+      TD.setMessageOpened(message);
+    }
+  }
+
+  public void updateMessageMentionRead (long chatId, long messageId) {
+    TdApi.Message message = getMessage(chatId, messageId);
+    if (message != null) {
+      message.containsUnreadMention = false;
+    }
+  }
+
+  public void updateMessageUnreadReactionsChanged (long chatId, long messageId, @Nullable TdApi.UnreadReaction[] unreadReactions) {
+    TdApi.Message message = getMessage(chatId, messageId);
+    if (message != null) {
+      message.unreadReactions = unreadReactions;
+    }
+  }
+
+  public void updateMessagesDeleted (long chatId, long[] messageIds) {
+    if (threadInfo.chatId != chatId || !hasMessages())
+      return;
+    int deletedMessageCount = 0;
+    long oldestMessageId = getOldestMessageId();
+    long newestMessageId = getNewestMessageId();
+    TdApi.Message[] messages = null;
+    for (long messageId : messageIds) {
+      if (messageId < oldestMessageId || messageId > newestMessageId) {
+        continue;
+      }
+      if (messages == null) {
+        messages = threadInfo.messages.clone();
+      }
+      for (int i = 0; i < messages.length; i++) {
+        TdApi.Message message = messages[i];
+        if (message != null && message.chatId == chatId && message.id == messageId) {
+          messages[i] = null;
+          deletedMessageCount++;
+        }
+      }
+    }
+    if (messages != null && deletedMessageCount > 0) {
+      TdApi.Message[] newMessages = new TdApi.Message[messages.length - deletedMessageCount];
+      if (newMessages.length > 0) {
+        int index = 0;
+        for (TdApi.Message message : messages) {
+          if (message != null) {
+            newMessages[index++] = message;
+          }
+        }
+      }
+      threadInfo.messages = newMessages;
+    }
   }
 }

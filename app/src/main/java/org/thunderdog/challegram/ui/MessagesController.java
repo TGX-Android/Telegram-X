@@ -2703,23 +2703,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
       // inputView.setIgnoreAnyChanges(false);
     }
 
-    if (messageThread != null) {
-      TdApi.Message[] messages = messageThread.getMessages();
-      TGMessage msg = null;
-      for (int index = messages.length - 1; index >= 0; index--) {
-        TdApi.Message message = messages[index];
-        if (msg == null) {
-          msg = TGMessage.valueOf(manager, message, chat, messageThread, (TdApi.ChatAdministrator) null);
-        } else {
-          msg.combineWith(message, true);
-        }
-      }
-      if (msg != null) {
-        msg.setIsThreadHeader(true);
-        manager.setHeaderMessage(msg);
-      }
-    }
-
     final long chatId = getChatId();
     tdlib.client().send(new TdApi.GetChatAdministrators(chatId), adminsHandler = new CancellableResultHandler() {
       @Override
@@ -7073,7 +7056,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     .setRawItems(new ListItem[] {item}).setSaveStr(R.string.Pin));
   }
 
-  public void showHidePinnedMessage (boolean show, TdApi.Message message) {
+  public void showHidePinnedMessage (boolean show, @Nullable TdApi.Message message) {
     if (show) {
       pinnedMessagesBar.setCollapseButtonVisible(false);
       pinnedMessagesBar.setContextChatId(getChatId() != getHeaderChatId() ? getHeaderChatId() : 0);
