@@ -16,7 +16,6 @@ import android.os.Bundle;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.content.res.TypedArrayUtils;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
@@ -24,13 +23,8 @@ import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.Tdlib;
 
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
 import java.util.Objects;
 
-import kotlin.collections.ArraysKt;
-import me.vkryl.core.ArrayUtils;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
 
@@ -158,8 +152,18 @@ public class ThreadInfo {
   }
 
   public void setReplyInfo (@NonNull TdApi.MessageReplyInfo replyInfo) {
-    threadInfo.unreadMessageCount = UNKNOWN_UNREAD_MESSAGE_COUNT; // TODO(nikita-toropov) unreadMessageCount
-    threadInfo.replyInfo = replyInfo;
+    if (threadInfo.unreadMessageCount == UNKNOWN_UNREAD_MESSAGE_COUNT) {
+      threadInfo.replyInfo = new TdApi.MessageReplyInfo(
+        replyInfo.replyCount,
+        replyInfo.recentReplierIds,
+        Math.max(threadInfo.replyInfo.lastReadInboxMessageId, replyInfo.lastReadInboxMessageId),
+        Math.max(threadInfo.replyInfo.lastReadOutboxMessageId, replyInfo.lastReadOutboxMessageId),
+        Math.max(threadInfo.replyInfo.lastMessageId, replyInfo.lastMessageId)
+      );
+    } else {
+      threadInfo.replyInfo.replyCount = replyInfo.replyCount;
+      threadInfo.replyInfo.recentReplierIds = replyInfo.recentReplierIds;
+    }
   }
 
   public long getChatId () {
@@ -246,6 +250,7 @@ public class ThreadInfo {
     if (threadInfo == null) {
       return ThreadInfo.INVALID;
     }
+    threadInfo.unreadMessageCount = UNKNOWN_UNREAD_MESSAGE_COUNT;
     long contextChatId = savedState.getLong(prefix + "_contextChatId");
     boolean areComments = savedState.getBoolean(prefix + "_areComments");
     return new ThreadInfo(threadInfo, contextChatId, areComments);
@@ -355,6 +360,49 @@ public class ThreadInfo {
         }
       }
       threadInfo.messages = newMessages;
+    }
+  }
+
+  public boolean onNewMessage (TGMessage message) {
+    if (message.isScheduled() || message.isNotSent())
+      return false;
+    long messageId = message.getBiggestId();
+    if (threadInfo.replyInfo.lastMessageId < messageId) {
+      threadInfo.replyInfo.lastMessageId = messageId;
+      if (message.isUnread() && !message.isOutgoing() && messageId > threadInfo.replyInfo.lastReadInboxMessageId &&
+        threadInfo.unreadMessageCount != UNKNOWN_UNREAD_MESSAGE_COUNT) {
+        threadInfo.unreadMessageCount += 1 + message.getMessageCountBetween(threadInfo.replyInfo.lastReadInboxMessageId, messageId);
+      }
+      return true;
+    }
+    return false;
+  }
+
+  public void onMessageViewed (TGMessage message) {
+    if (message.isScheduled() || message.isNotSent())
+      return;
+    long messageId = message.getBiggestId();
+    threadInfo.replyInfo.lastMessageId = Math.max(threadInfo.replyInfo.lastMessageId, messageId);
+    if (message.isOutgoing()) {
+      threadInfo.replyInfo.lastReadOutboxMessageId = Math.max(threadInfo.replyInfo.lastReadOutboxMessageId, messageId);
+      return;
+    }
+    if (threadInfo.replyInfo.lastReadInboxMessageId >= messageId) {
+      return;
+    }
+    long lastReadInboxMessageId = threadInfo.replyInfo.lastReadInboxMessageId;
+    threadInfo.replyInfo.lastReadInboxMessageId = messageId;
+    if (threadInfo.unreadMessageCount == UNKNOWN_UNREAD_MESSAGE_COUNT)
+      return;
+    if (threadInfo.unreadMessageCount > 0) {
+      TdApi.Chat chat = message.getChat();
+      long lastGlobalReadInboxMessageId = chat != null ? chat.lastReadInboxMessageId : 0;
+      if (Td.hasUnread(threadInfo.replyInfo, lastGlobalReadInboxMessageId)) {
+        int readMessageCount = 1 + message.getMessageCountBetween(lastReadInboxMessageId, messageId);
+        threadInfo.unreadMessageCount = Math.max(threadInfo.unreadMessageCount - readMessageCount, 0);
+      } else {
+        threadInfo.unreadMessageCount = 0;
+      }
     }
   }
 }

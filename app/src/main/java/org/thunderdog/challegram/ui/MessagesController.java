@@ -2737,6 +2737,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
+  public void onUnreadMessageCountChanged () {
+    updateCounters(true);
+  }
+
   private void updateCounters (boolean animated) {
     if (chat != null) {
       if (messageThread != null) {

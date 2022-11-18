@@ -306,6 +306,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       return false;
     }
 
+    ThreadInfo messageThread = loader.getMessageThread();
+
     TGMessage topEdge = adapter.getMessage(first);
     TGMessage bottomEdge = adapter.getMessage(last);
 
@@ -350,6 +352,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           }
           if (msg.containsUnreadReactions() && id > lastViewedReaction) {
             lastViewedReaction = id;
+          }
+          if (messageThread != null) {
+            messageThread.onMessageViewed(msg);
           }
           if (list == null) {
             list = new LongSet(last - first);
@@ -1554,6 +1559,13 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     long messageThreadId = loader.getMessageThreadId();
     if (messageThreadId != 0 && message.getMessageThreadId() != messageThreadId) {
       return;
+    }
+    ThreadInfo messageThread = loader.getMessageThread();
+    if (messageThread != null) {
+      boolean isUpdated = messageThread.onNewMessage(message);
+      if (isUpdated) {
+        controller.onUnreadMessageCountChanged();
+      }
     }
     if (!message.isOutgoing()) {
       controller.checkSwitchPm(message.getMessage());
