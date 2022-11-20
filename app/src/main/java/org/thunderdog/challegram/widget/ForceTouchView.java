@@ -189,9 +189,12 @@ public class ForceTouchView extends FrameLayoutFix implements
 
       @Override
       public void draw (Canvas c) {
-        final int saveCount = ViewSupport.clipPath(c, path);
+        final boolean needClip = !forceTouchContext.needHeader || forceTouchContext.animationType == ForceTouchContext.ANIMATION_TYPE_EXPAND_VERTICALLY;
+        final int saveCount = needClip ? ViewSupport.clipPath(c, path) : Integer.MIN_VALUE;
         super.draw(c);
-        ViewSupport.restoreClipPath(c, saveCount);
+        if (needClip) {
+          ViewSupport.restoreClipPath(c, saveCount);
+        }
         if (path == null) {
           c.drawRect(drawingRect, Paints.strokeBigPaint(ColorUtils.alphaColor(.2f, Theme.textAccentColor())));
         }
