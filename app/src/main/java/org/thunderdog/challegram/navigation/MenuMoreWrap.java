@@ -410,7 +410,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     int index = Math.floorDiv(innerY - Screen.dp(PADDING), Screen.dp(ITEM_HEIGHT));
     setSelectedIndex(index == MathUtils.clamp(index, 0, getChildCount() - 1) ? index: -1);
 
-    Log.i("HAPTIC INNER", String.format("INDEX %d", index));
+    // Log.i("HAPTIC INNER", String.format("INDEX %d", index));
   }
 
   public void onApply () {
