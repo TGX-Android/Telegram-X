@@ -10548,7 +10548,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     TdApi.Supergroup supergroup = tdlib.chatToSupergroup(getChatId());
     if (supergroup == null) return false;
 
-    return chat != null && chat.messageSenderId != null && (!StringUtils.isEmpty(supergroup.username) || supergroup.hasLocation || supergroup.hasLinkedChat);
+    return chat != null && chat.messageSenderId != null;
   }
 
   public boolean isCameraButtonVisibleOnAttachPanel () {
