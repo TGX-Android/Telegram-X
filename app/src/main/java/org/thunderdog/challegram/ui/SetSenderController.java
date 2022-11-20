@@ -130,7 +130,12 @@ public class SetSenderController extends BottomSheetViewController<SetSenderCont
 
   @Override
   protected int getContentOffset () {
-    return Screen.currentHeight() / 2;
+    return (getTargetHeight() - getHeaderHeight(true)) / 2;
+  }
+
+  @Override
+  protected boolean canHideByScroll () {
+    return true;
   }
 
   @Override

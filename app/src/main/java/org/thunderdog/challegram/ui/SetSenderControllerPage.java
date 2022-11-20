@@ -324,7 +324,7 @@ public class SetSenderControllerPage extends BottomSheetViewController.BottomShe
   protected void onAfterLeaveSearchMode () {
     super.onAfterLeaveSearchMode();
     buildCells();
-    recyclerView.scrollBy(0, parent.getContentOffset());
+    recyclerView.scrollBy(0, (parent.getTargetHeight() - HeaderView.getTopOffset()));
   }
 
   @Override
