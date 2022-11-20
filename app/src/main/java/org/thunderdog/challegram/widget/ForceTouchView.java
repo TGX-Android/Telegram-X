@@ -887,22 +887,43 @@ public class ForceTouchView extends FrameLayoutFix implements
   // Animation
 
   private static final Interpolator OVERSHOOT_INTERPOLATOR = new OvershootInterpolator(1.24f); // 1.78f
-  private static final Interpolator QUAD_OUT_INTERPOLATOR = input -> 1f - (1f - input) * (1f - input);
   private FactorAnimator revealAnimator;
 
   @Override
   public void prepareShowAnimation () {
-    if (Device.NEED_REDUCE_BOUNCE || Settings.instance().needReduceMotion()) {
-      revealAnimator = new FactorAnimator(REVEAL_ANIMATOR, this, new DecelerateInterpolator(1.46f), 140l);
-    } else if (forceTouchContext.animationType == ForceTouchContext.ANIMATION_TYPE_EXPAND_VERTICALLY) {
-      revealAnimator = new FactorAnimator(REVEAL_ANIMATOR, this, QUAD_OUT_INTERPOLATOR, 250l);
-    } else {
-      revealAnimator = new FactorAnimator(REVEAL_ANIMATOR, this, OVERSHOOT_INTERPOLATOR, 260l);
+    FactorAnimator revealAnimator;
+    switch (forceTouchContext.animationType) {
+      case ForceTouchContext.ANIMATION_TYPE_EXPAND_VERTICALLY:
+        revealAnimator = expandVerticallyAnimator();
+        break;
+      case ForceTouchContext.ANIMATION_TYPE_SCALE:
+      default:
+        revealAnimator = scaleAnimator();
+        break;
     }
+    this.revealAnimator = revealAnimator;
   }
 
   public boolean isAnimatingReveal () {
     return revealAnimator == null || revealAnimator.isAnimating();
+  }
+
+  private FactorAnimator expandVerticallyAnimator () {
+    if (Settings.instance().needReduceMotion()) {
+      return reduceMotionAnimator();
+    }
+    return new FactorAnimator(REVEAL_ANIMATOR, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 250l);
+  }
+
+  private FactorAnimator scaleAnimator () {
+    if (Device.NEED_REDUCE_BOUNCE || Settings.instance().needReduceMotion()) {
+      return reduceMotionAnimator();
+    }
+    return new FactorAnimator(REVEAL_ANIMATOR, this, OVERSHOOT_INTERPOLATOR, 260l);
+  }
+
+  private FactorAnimator reduceMotionAnimator () {
+    return new FactorAnimator(REVEAL_ANIMATOR, this, new DecelerateInterpolator(1.46f), 140l);
   }
 
   private PopupLayout pendingPopup;
