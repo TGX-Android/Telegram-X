@@ -2932,11 +2932,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
       TdApi.SecretChat secretChat = tdlib.chatToSecretChat(chat.id);
       TdApi.Supergroup supergroup = tdlib.chatToSupergroup(chat.id);
+      boolean joinSupergroupToSendMessages = messageThread == null || supergroup != null && supergroup.joinToSendMessages;
       if (secretChat != null && !TD.isSecretChatReady(secretChat)) {
         showSecretChatAction(secretChat);
       } else if (tdlib.chatBlocked(chat) && tdlib.isUserChat(chat)) {
         showActionUnblockButton();
-      } else if (tdlib.chatUserDeleted(chat) || (ChatId.isBasicGroup(chat.id) && (!tdlib.chatBasicGroupActive(chat.id) || TD.isNotInChat(status))) || (tdlib.isSupergroupChat(chat) && TD.isNotInChat(status) && supergroup != null && supergroup.joinToSendMessages)) {
+      } else if (tdlib.chatUserDeleted(chat) || (ChatId.isBasicGroup(chat.id) && (!tdlib.chatBasicGroupActive(chat.id) || TD.isNotInChat(status))) || (tdlib.isSupergroupChat(chat) && TD.isNotInChat(status) && joinSupergroupToSendMessages)) {
         if (tdlib.isSupergroupChat(chat) && status != null && TD.canReturnToChat(status)) {
           showActionJoinChatButton();
         } else if (messageThread != null) {
