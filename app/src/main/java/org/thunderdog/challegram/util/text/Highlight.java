@@ -256,7 +256,7 @@ public class Highlight {
     return result;
   }
 
-  public static boolean isExactMatch( @Nullable Highlight highlight) {
+  public static boolean isExactMatch (@Nullable Highlight highlight) {
     if (highlight == null) {
       return false;
     }
