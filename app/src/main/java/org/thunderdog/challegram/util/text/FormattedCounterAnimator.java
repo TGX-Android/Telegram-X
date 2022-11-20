@@ -20,15 +20,11 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.CounterAnimator;
 import me.vkryl.android.animator.CounterAnimator.TextDrawable;
 import me.vkryl.android.animator.ListAnimator;
-import me.vkryl.android.animator.VariableFloat;
 import me.vkryl.core.StringUtils;
 
-// FIXME(firefly) get rid of inheritance
 public class FormattedCounterAnimator<T extends TextDrawable> extends CounterAnimator<T> {
   public static class Part<T extends TextDrawable> extends CounterAnimator.Part<T> {
-    private final VariableFloat verticalPosition = new VariableFloat(POSITION_NORMAL); // 0f = center, -1f = top, 1f = bottom
     private final boolean isCounter; // true if this is part of counter
-    private int position = POSITION_NORMAL;
 
     public Part (int index, @NonNull T text, boolean isCounter) {
       super(index, text);
@@ -49,30 +45,6 @@ public class FormattedCounterAnimator<T extends TextDrawable> extends CounterAni
 
     public void setVerticalPositionFrom (int position) {
       verticalPosition.setFrom(position);
-    }
-
-    @Override public float getVerticalPosition () {
-      return verticalPosition.get();
-    }
-
-    @Override public void finishAnimation (boolean applyFutureState) {
-      verticalPosition.finishAnimation(applyFutureState);
-    }
-
-    @Override public boolean applyAnimation (float factor) {
-      return verticalPosition.applyAnimation(factor);
-    }
-
-    @Override public boolean hasChanges () {
-      return verticalPosition.differs(position);
-    }
-
-    @Override public void prepareChanges () {
-      verticalPosition.setTo(position);
-    }
-
-    @Override public void applyChanges () {
-      verticalPosition.set(position);
     }
   }
 
