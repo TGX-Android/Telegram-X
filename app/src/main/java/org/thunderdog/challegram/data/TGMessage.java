@@ -852,7 +852,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
     if (isChannel()) {
       TdApi.Message messageWithThread = findMessageWithThread();
-      return messageWithThread != null && !TGCommentButton.disabledForMessage(messageWithThread) && TD.getReplyInfo(messageWithThread.interactionInfo) != null;
+      return messageWithThread != null && TD.getReplyInfo(messageWithThread.interactionInfo) != null;
     }
     if (isRepliesChat()) {
       return FeatureToggles.SHOW_VIEW_IN_CHAT_BUTTON_IN_REPLIES && msg.forwardInfo != null && msg.forwardInfo.fromChatId != 0 && msg.forwardInfo.fromMessageId != 0 && msg.forwardInfo.fromChatId != msg.chatId;
@@ -937,7 +937,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           if ("MSG_ID_INVALID".equals(TD.errorText(result))) {
             boolean needAnimateChanges = needAnimateChanges();
             openingComments.setValue(false, needAnimateChanges);
-            commentButton.disable(query.chatId, query.messageId, needAnimateChanges);
             if (isChannel()) {
               UI.showToast(R.string.ChannelPostDeleted, Toast.LENGTH_SHORT);
             } else {

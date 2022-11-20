@@ -17,7 +17,6 @@ import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.Px;
-import androidx.core.util.Pair;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BuildConfig;
@@ -49,8 +48,6 @@ import org.thunderdog.challegram.widget.ForceTouchView;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
-import java.util.HashSet;
-import java.util.Set;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
@@ -655,7 +652,6 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
           break;
         case TdApi.Error.CONSTRUCTOR:
           if ("MSG_ID_INVALID".equals(TD.errorText(result))) {
-            disable(messageThreadQuery.chatId, messageThreadQuery.messageId, context.needAnimateChanges());
             if (context.isChannel()) {
               UI.showToast(R.string.ChannelPostDeleted, Toast.LENGTH_SHORT);
             } else {
@@ -810,24 +806,4 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
       context.context().closeForceTouch();
     }
   }
-
-  public void disable (long chatId, long messageId, boolean animated) {
-    disableForMessage(chatId, messageId);
-    setViewMode(TGCommentButton.VIEW_MODE_HIDDEN, animated);
-  }
-
-  public static void disableForMessage (long chatId, long messageId) {
-    DISABLED_FOR_MESSAGE.add(Pair.create(chatId, messageId));
-  }
-
-  public static boolean disabledForMessage (@NonNull TdApi.Message message) {
-    return disabledForMessage(message.chatId, message.id);
-  }
-
-  public static boolean disabledForMessage (long chatId, long messageId) {
-    return DISABLED_FOR_MESSAGE.contains(Pair.create(chatId, messageId));
-  }
-
-  // FIXME(firefly) remove DISABLED_FOR_MESSAGE
-  private static final Set<Pair<Long, Long>> DISABLED_FOR_MESSAGE = new HashSet<>();
 }
