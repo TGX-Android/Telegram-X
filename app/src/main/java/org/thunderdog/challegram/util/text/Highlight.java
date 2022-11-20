@@ -261,13 +261,13 @@ public class Highlight {
       return false;
     }
 
-    for (Part part: highlight.parts) {
-      if (!part.isExactMatch()) {
-        return false;
+    for (Part part : highlight.parts) {
+      if (part.isExactMatch()) {
+        return true;
       }
     }
 
-    return true;
+    return false;
   }
 
   public void addNonIntersectingParts (Highlight other) {
