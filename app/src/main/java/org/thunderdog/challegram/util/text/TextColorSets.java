@@ -17,6 +17,7 @@ import org.thunderdog.challegram.tool.Screen;
 
 public final class TextColorSets {
   public static final TextColorSetThemed WHITE = () -> R.id.theme_color_white;
+  public static final TextColorSetThemed PLACEHOLDER = () -> R.id.theme_color_textPlaceholder;
 
   // Instant View
   public interface InstantView extends TextColorSetThemed {

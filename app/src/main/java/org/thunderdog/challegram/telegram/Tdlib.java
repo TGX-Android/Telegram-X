@@ -9500,4 +9500,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       return suggestedAction;
     }
   }
+
+  public String getMessageSenderTitle (TdApi.MessageSender sender) {
+    if (isSelfSender(sender)) {
+      return Lang.getString(R.string.YourAccount);
+    } else if (!isChannel(sender)) {
+      return Lang.getString(R.string.AnonymousAdmin);
+    } else {
+      return chatTitle(Td.getSenderId(sender));
+    }
+  }
 }

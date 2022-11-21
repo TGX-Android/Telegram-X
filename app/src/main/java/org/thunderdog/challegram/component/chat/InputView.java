@@ -92,6 +92,7 @@ import org.thunderdog.challegram.receiver.RefreshRateLimiter;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
+import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
@@ -102,6 +103,8 @@ import org.thunderdog.challegram.util.CharacterStyleFilter;
 import org.thunderdog.challegram.util.ExternalEmojiFilter;
 import org.thunderdog.challegram.util.FinalNewLineFilter;
 import org.thunderdog.challegram.util.TextSelection;
+import org.thunderdog.challegram.util.text.Text;
+import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.widget.InputWrapperWrapper;
 import org.thunderdog.challegram.widget.NoClipEditText;
 
@@ -111,6 +114,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.List;
 
+import me.vkryl.android.AnimatorUtils;
+import me.vkryl.android.animator.BoolAnimator;
+import me.vkryl.android.animator.ListAnimator;
+import me.vkryl.android.animator.ReplaceAnimator;
 import me.vkryl.android.text.CodePointCountFilter;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
@@ -121,6 +128,16 @@ import me.vkryl.td.Td;
 public class InputView extends NoClipEditText implements InlineSearchContext.Callback, InlineResultsWrap.PickListener, RtlCheckListener, FinalNewLineFilter.Callback, CustomEmojiSurfaceProvider, Destroyable {
   public static final boolean USE_ANDROID_SELECTION_FIX = true;
   private final TextPaint paint;
+
+  private Text placeholderTitle;
+  private Text placeholderSubTitle;
+
+  private CharSequence placeholderTitleText;
+  private CharSequence placeholderSubtitleText;
+
+  private BoolAnimator showPlaceholder = new BoolAnimator(0, (a, b, c, d) -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
+  private BoolAnimator hasSubPlaceholder = new BoolAnimator(0, (a, b, c, d) -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
+  private ReplaceAnimator<Text> subtitleReplaceAnimator = new ReplaceAnimator<>(a -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
 
   // TODO: get rid of chat-related logic inside of InputView
   private @Nullable MessagesController controller;
@@ -278,6 +295,8 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         }
       });
     }
+
+    showPlaceholder.setValue(true, false);
   }
 
   @Override
@@ -699,6 +718,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     }
 
     setAllowsAnyGravity(str.length() > 0);
+    showPlaceholder.setValue(s.length() == 0, UI.inUiThread());
   }
 
   @Override
@@ -724,24 +744,45 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       return;
     }
     this.rawPlaceholder = placeholder;
-    if (controller == null) {
-      setHint(placeholder);
+    setInputPlaceholder(placeholder, null);
+    /*if (controller == null) {
+      // setHint(placeholder);
     } else {
       this.rawPlaceholderWidth = U.measureText(rawPlaceholder, getPaint());
+      this.lastPlaceholderAvailWidth = 0;
+      checkPlaceholderWidth();
+    }*/
+  }
+
+  public void setInputPlaceholder (CharSequence placeholder, CharSequence placeholderSubtitle) {
+    this.placeholderTitleText = placeholder;
+    this.placeholderSubtitleText = placeholderSubtitle;
+    if (controller != null) {
       this.lastPlaceholderAvailWidth = 0;
       checkPlaceholderWidth();
     }
   }
 
   public void checkPlaceholderWidth () {
-    if (lastPlaceholderRes != 0 && controller != null) {
+    if ((lastPlaceholderRes != 0 || !StringUtils.isEmpty(placeholderTitleText)) && controller != null) {
       int availWidth = Math.max(0, getMeasuredWidth() - controller.getHorizontalInputPadding() - getPaddingLeft());
       if (this.lastPlaceholderAvailWidth != availWidth) {
         this.lastPlaceholderAvailWidth = availWidth;
+
+        placeholderTitle = !StringUtils.isEmpty(placeholderTitleText)? new Text.Builder(tdlib, placeholderTitleText, null, availWidth, Paints.robotoStyleProvider(18), TextColorSets.PLACEHOLDER, null)
+          .singleLine().clipTextArea().build(): null;
+
+        placeholderSubTitle = !StringUtils.isEmpty(placeholderSubtitleText) ? new Text.Builder(tdlib, placeholderSubtitleText, null, availWidth, Paints.robotoStyleProvider(12), TextColorSets.PLACEHOLDER, null)
+          .singleLine().clipTextArea().build(): null;
+
+        subtitleReplaceAnimator.replace(placeholderSubTitle, UI.inUiThread());
+
+        hasSubPlaceholder.setValue(placeholderSubTitle != null, UI.inUiThread());
+
         if (rawPlaceholderWidth <= availWidth) {
-          setHint(rawPlaceholder);
+          //setHint(rawPlaceholder);
         } else {
-          setHint(TextUtils.ellipsize(rawPlaceholder, getPaint(), availWidth, TextUtils.TruncateAt.END));
+          //setHint(TextUtils.ellipsize(rawPlaceholder, getPaint(), availWidth, TextUtils.TruncateAt.END));
         }
       }
     }
@@ -994,19 +1035,25 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       return;
     }
     int resource;
+    CharSequence subplaceholder = null;
     Object[] args = null;
     TdApi.ChatMemberStatus status = tdlib.chatStatus(chat.id);
     if (tdlib.isChannel(chat.id)) {
       resource = isSilent ? R.string.ChannelSilentBroadcast : R.string.ChannelBroadcast;
-    } else if (tdlib.isMultiChat(chat) && Td.isAnonymous(status)) {
+    } /*else if (tdlib.isMultiChat(chat) && Td.isAnonymous(status)) {
       resource = messageThread != null ? (messageThread.areComments() ? R.string.CommentAnonymously : R.string.MessageReplyAnonymously) :  R.string.MessageAnonymously;
     } else if (chat.messageSenderId != null && !tdlib.isSelfSender(chat.messageSenderId)) {
       resource = messageThread != null ? (messageThread.areComments() ? R.string.CommentAsX : R.string.MessageReplyAsX) : R.string.MessageAsX;
       args = new Object[] { tdlib.senderName(chat.messageSenderId) };
-    } else {
+    }*/ else {
       resource = messageThread != null ? (messageThread.areComments() ? R.string.Comment : R.string.MessageReply) : R.string.Message;
     }
-    setInputPlaceholder(resource, args);
+    if (!tdlib.isChannel(chat.id) && tdlib.isMultiChat(chat) && Td.isAnonymous(status) && !tdlib.isChannel(chat.messageSenderId)) {
+      subplaceholder = Lang.getStringBold(R.string.AnyAsX, Lang.getString(R.string.AnonymousAdmin)); // "as Anonymous Admin";
+    } else if (!tdlib.isChannel(chat.id) && chat.messageSenderId != null && !tdlib.isSelfSender(chat.messageSenderId)) {
+      subplaceholder = Lang.getStringBold(R.string.AnyAsX, tdlib.senderName(chat.messageSenderId));
+    }
+    setInputPlaceholder(Lang.getString(resource), subplaceholder);
   }
 
   public void setDraft (@Nullable TdApi.InputMessageContent draftContent) {
@@ -1096,6 +1143,20 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
   @Override
   protected void onDraw (Canvas c) {
+    final float alpha = showPlaceholder.getFloatValue();
+    final int offset = (int) (hasSubPlaceholder.getFloatValue() * Screen.dp(8));
+    if (alpha > 0f) {
+      if (placeholderTitle != null) {
+        placeholderTitle.draw(c, getPaddingLeft(), getBaseline() - Screen.dp(17) - offset, null, alpha);
+      }
+      for (ListAnimator.Entry<Text> entry : subtitleReplaceAnimator) {
+        final int offset2 = (int) ((!entry.isAffectingList() ?
+          ((entry.getVisibility() - 1f) * Screen.dp(14)):
+          ((1f - entry.getVisibility()) * Screen.dp(14))));
+        entry.item.draw(c, getPaddingLeft(), getBaseline() + Screen.dp(4) - offset + offset2, null, Math.min(alpha, entry.getVisibility()));
+      }
+    }
+
     super.onDraw(c);
     drawEmojiOverlay(c);
     if (this.displaySuffix.length() > 0 && this.prefix.length() > 0 && getLineCount() == 1) {
@@ -1105,6 +1166,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         c.drawText(displaySuffix, getPaddingLeft() + prefixWidth, getBaseline(), paint);
       }
     }
+
   }
 
   // Inline query

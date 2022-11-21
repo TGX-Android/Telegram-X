@@ -256,6 +256,20 @@ public class Highlight {
     return result;
   }
 
+  public static boolean isExactMatch (@Nullable Highlight highlight) {
+    if (highlight == null) {
+      return false;
+    }
+
+    for (Part part : highlight.parts) {
+      if (part.isExactMatch()) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   public void addNonIntersectingParts (Highlight other) {
     for (Part part : other.parts) {
       addNonIntersectingPart(part);

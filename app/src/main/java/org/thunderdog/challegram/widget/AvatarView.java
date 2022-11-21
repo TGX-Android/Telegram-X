@@ -147,6 +147,8 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
     this.tdlib = null;
     this.chat = null;
     this.user = null;
+    this.userId = 0;
+    this.chatId = 0;
   }
 
   @Override
@@ -168,16 +170,18 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
   }
 
   public long getUserId () {
-    return user != null ? user.id : 0;
+    return user != null ? user.id : userId;
   }
 
   public long getChatId () {
-    return chat != null ? chat.id : 0;
+    return chat != null ? chat.id : chatId;
   }
 
   private TdlibAccount account;
   private TdApi.User user;
   private TdApi.Chat chat;
+  private long userId;
+  private long chatId;
   private Tdlib tdlib;
   private boolean hasPhoto, allowSavedMessages;
   private AvatarPlaceholder.Metadata avatarPlaceholderMetadata;
@@ -207,16 +211,23 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
 
   public void setUser (Tdlib tdlib, @Nullable TdApi.User user, boolean allowSavedMessages) {
     long newUserId = user != null ? user.id : 0;
+    setUser(tdlib, user, newUserId, allowSavedMessages, false);
+  }
+
+  private void setUser (Tdlib tdlib, @Nullable TdApi.User user, long newUserId, boolean allowSavedMessages, boolean ignoreChecks) {
     long oldUserId = getUserId();
-    if (oldUserId != newUserId) {
+    if (oldUserId != newUserId || ignoreChecks) {
       if (oldUserId != 0) {
         this.tdlib.cache().removeUserDataListener(oldUserId, this);
       }
       this.user = user;
+      this.userId = newUserId;
       this.tdlib = tdlib;
       if (newUserId != 0) {
-        setPhoto(tdlib, user, allowSavedMessages);
         tdlib.cache().addUserDataListener(newUserId, this);
+      }
+      if (user != null) {
+        setPhoto(tdlib, user, allowSavedMessages);
       } else {
         receiver.clear();
       }
@@ -225,20 +236,45 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
 
   public void setChat (Tdlib tdlib, @Nullable TdApi.Chat chat) {
     long newChatId = chat != null ? chat.id : 0;
+    setChat(tdlib, chat, newChatId, false);
+  }
+
+  private void setChat (Tdlib tdlib, @Nullable TdApi.Chat chat, long newChatId, boolean ignoreChecks) {
     long oldChatId = getChatId();
-    if (oldChatId != newChatId) {
+    if (oldChatId != newChatId || ignoreChecks) {
       if (oldChatId != 0) {
         this.tdlib.listeners().unsubscribeFromChatUpdates(oldChatId, this);
       }
       this.chat = chat;
       this.tdlib = tdlib;
       if (newChatId != 0) {
-        setPhoto(tdlib, chat);
         tdlib.listeners().subscribeToChatUpdates(newChatId, this);
+      }
+      if (chat != null) {
+        setPhoto(tdlib, chat);
       } else {
         receiver.clear();
       }
     }
+  }
+
+  public void setMessageSender (Tdlib tdlib, @Nullable TdApi.MessageSender sender) {
+    if (sender == null) {
+      receiver.clear();
+      return;
+    }
+    
+    if (sender.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR) {
+      long userId = ((TdApi.MessageSenderUser) sender).userId;
+      setUser(tdlib, tdlib.cache().user(userId), userId, false, true);
+      return;
+    }
+    if (sender.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR) {
+      long chatId = ((TdApi.MessageSenderChat) sender).chatId;
+      setChat(tdlib, tdlib.chat(chatId), chatId, true);
+      return;
+    }
+    receiver.clear();
   }
 
   private static final int BLURRED_SIZE = 160;
@@ -270,6 +306,7 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
       setPhotoImpl(tdlib, chat.photo.small, chat.photo.big);
     } else {
       avatarPlaceholderMetadata = tdlib.chatPlaceholderMetadata(chat, true);
+      avatarPlaceholder = null;
       receiver.clear();
     }
     invalidate();
@@ -281,6 +318,7 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
       setPhotoImpl(tdlib, user.profilePhoto.small, user.profilePhoto.big);
     } else {
       avatarPlaceholderMetadata = tdlib.cache().userPlaceholderMetadata(user, allowSavedMessages);
+      avatarPlaceholder = null;
       receiver.clear();
     }
     invalidate();
@@ -308,6 +346,7 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
     post(() -> {
       if (tdlib != null && getUserId() == user.id) {
         AvatarView.this.user = user;
+        AvatarView.this.userId = user.id;
         setPhoto(tdlib, user, allowSavedMessages);
       }
     });

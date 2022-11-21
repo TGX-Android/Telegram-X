@@ -428,4 +428,8 @@ public class TGFoundChat {
   public AvatarPlaceholder.Metadata getAvatarPlaceholderMetadata () {
     return avatarPlaceholderMetadata;
   }
+
+  public @Nullable TdApi.MessageSender getMessageSenderId () {
+    return chat != null ? chat.messageSenderId: null;
+  }
 }
