@@ -2629,7 +2629,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     forceHideToast();
     topBar.hideAll(false);
 
-    resetSearhControls();
+    resetSearchControls();
     updateSelectMessageSenderInterface(false);
 
     tdlib.ui().updateTTLButton(R.id.menu_secretChat, headerView, chat, true);
