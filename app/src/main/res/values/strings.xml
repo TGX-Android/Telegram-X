@@ -280,6 +280,8 @@
   <string name="CommentAnonymously">Comment anonymously</string>
   <string name="Comment">Comment</string>
   <string name="CommentAsX">Comment as %1$s</string>
+  <string name="AnyAsX">as %1$s</string>
+  <string name="AnonymousAdmin">Anonymous Admin</string>
   <string name="DeletedMessage">Deleted message</string>
   <string name="UnsupportedMessage">Unsupported message</string>
   <string name="UnsupportedMessageType">Unsupported message</string>
@@ -1566,6 +1568,9 @@
   <string name="ChatHintsDelete">Remove %1$s from suggestions?</string>
   <string name="DeleteXFromRecents">Remove %1$s from recently found chats?</string>
   <string name="SendTo">Send to</string>
+  <string name="SendAs">Send as</string>
+  <string name="SendAsOption">Send as...</string>
+  <string name="YourAccount">Your account</string>
   <string name="SelectChats">Select Chats</string>
   <string name="AddComment">Add a comment…</string>
   <string name="SendSticker">Send sticker</string>
@@ -1651,7 +1656,9 @@
   <string name="MessageLifetimePhoto">If you set a timer, the photo will self-destruct after it was viewed.</string>
   <string name="MessageLifetimeVideo">If you set a timer, the video will self-destruct after it is viewed.</string>
   <string name="NoMembersToShow">No members to show</string>
+  <string name="NoResultsToShow">No results to show</string>
   <string name="NoMembersToShowDesc">Try changing your search query.\nFound members will be shown here.</string>
+  <string name="NoResultsToShowDesc">Try changing your search query.</string>
   <string name="ManageChannel">Manage Channel</string>
   <string name="ManageGroup">Manage Group</string>
   <string name="RoleOwner">chat owner</string>
@@ -2457,6 +2464,7 @@
   <string name="TabMessages">Messages</string>
   <string name="MoreMessageOptions">More</string>
   <string name="MoreChatOptions">More</string>
+  <string name="MoreMessageSenders">More</string>
   <string name="MoreForwardOptions">More options…</string>
   <string name="MessagePin">Pin</string>
   <string name="MessagePinAlbum">Pin album</string>
@@ -4413,4 +4421,6 @@
   <string name="XRestrictedVideoMessages">%1$s doesn\'t accept video messages.</string>
 
   <string name="format_PRMadeBy">%1$s by %2$s</string>
+
+  <string name="AnonWarning">This action requires revealing your personal account. Tap again to confirm.</string>
 </resources>

@@ -215,6 +215,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private final Counter viewCounter, replyCounter, shareCounter, isPinned;
   private Counter shrinkedReactionsCounter, reactionsCounter;
   private ReactionsCounterDrawable reactionsCounterDrawable;
+  private Counter isChannelHeaderCounter;
+  private float isChannelHeaderCounterX, isChannelHeaderCounterY;
 
   // forward values
 
@@ -297,9 +299,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     this.messageReactions = new TGReactions(this, tdlib, msg.interactionInfo != null ? msg.interactionInfo.reactions : null, new TGReactions.MessageReactionsDelegate() {
       @Override
       public void onClick (View v, TGReactions.MessageReactionEntry entry) {
-        boolean needAnimation = messageReactions.toggleReaction(entry.getReactionType(), false, false, handler(v, entry, () -> {}));
-        if (needAnimation) {
-          scheduleSetReactionAnimation(new NextReactionAnimation(entry.getTGReaction(), NextReactionAnimation.TYPE_CLICK));
+        boolean hasReaction = messageReactions.hasReaction(entry.getReactionType());
+        if (hasReaction || messagesController().callNonAnonymousProtection(getId() + entry.hashCode(), TGMessage.this, getReactionBubbleLocationProvider(entry))) {
+          boolean needAnimation = messageReactions.toggleReaction(entry.getReactionType(), false, false, handler(v, entry, () -> {
+          }));
+          if (needAnimation) {
+            scheduleSetReactionAnimation(new NextReactionAnimation(entry.getTGReaction(), NextReactionAnimation.TYPE_CLICK));
+          }
         }
       }
 
@@ -356,6 +362,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       .allBold(false)
       .callback(this)
       .drawable(R.drawable.deproko_baseline_pin_14, 14f, 0f, Gravity.CENTER_HORIZONTAL)
+      .build();
+    this.isChannelHeaderCounter = new Counter.Builder()
+      .noBackground()
+      .allBold(false)
+      .callback(this)
+      .drawable(R.drawable.baseline_bullhorn_16, 16f, 0, Gravity.CENTER_HORIZONTAL)
       .build();
     if (msg.isChannelPost || (msg.forwardInfo != null && (
         msg.forwardInfo.origin.getConstructor() == TdApi.MessageForwardOriginChannel.CONSTRUCTOR ||
@@ -750,6 +762,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         int nameWidth = getAuthorWidth();
         if (needAdminSign() && hAdminNameT != null) {
           nameWidth += hAdminNameT.getWidth();
+        }
+        if (needDrawChannelIconInHeader() && hAuthorNameT != null) {
+          nameWidth += isChannelHeaderCounter.getScaledWidth(Screen.dp(5));
         }
         width = Math.max(width, nameWidth);
       }
@@ -1260,7 +1275,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       return true;
     if (isPsa() && forceForwardedInfo())
       return true;
-    if (isOutgoing() && sender.isAnonymousGroupAdmin())
+    if (isOutgoing() && (sender.isAnonymousGroupAdmin() || sender.isChannel()))
       return true;
     if (chat != null) {
       switch (chat.type.getConstructor()) {
@@ -1825,10 +1840,14 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
             hAuthorChatMark.draw(c, cmLeft, cmLeft + hAuthorChatMark.getWidth(), 0, newTop + ((hAuthorNameT.getLineHeight(false) - hAuthorChatMark.getLineHeight(false)) / 2));
           }
         }
+        int right = getActualRightContentEdge() - xBubblePadding - xBubblePaddingSmall;
         if (useBubbles && needAdminSign() && hAdminNameT != null) {
-          int x = getActualRightContentEdge() - xBubblePadding - xBubblePaddingSmall - hAdminNameT.getWidth();
+          right -= hAdminNameT.getWidth();
           int y = top - Screen.dp(1.5f);
-          hAdminNameT.draw(c, x, top - Screen.dp(12f));
+          hAdminNameT.draw(c, right, top - Screen.dp(12f));
+        }
+        if (useBubbles && needDrawChannelIconInHeader() && hAuthorNameT != null) {
+          isChannelHeaderCounter.draw(c, isChannelHeaderCounterX = (right - Screen.dp(6)), isChannelHeaderCounterY = (top - Screen.dp(5)), Gravity.RIGHT | Gravity.BOTTOM, 1f, view, isOutgoing() ? R.id.theme_color_bubbleOut_time: R.id.theme_color_bubbleIn_time);
         }
       }
     }
@@ -1844,17 +1863,29 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         c.drawText(time, pTimeLeft, xTimeTop + getHeaderPadding(), mTime(true));
       }
 
+      int clockX = pClockLeft - Icons.getClockIconWidth() - Screen.dp(Icons.CLOCK_SHIFT_X);
+      int viewsX = pTicksLeft - Icons.getSingleTickWidth() + ((flags & FLAG_HEADER_ENABLED) != 0 ? 0 : Screen.dp(1f)) - Screen.dp(Icons.TICKS_SHIFT_X);
+
+      if (needDrawChannelIconInHeader() && hAuthorNameT != null) {
+        isChannelHeaderCounter.draw(c, isChannelHeaderCounterX = ((isSending() ? clockX: viewsX) + Screen.dp(7)), isChannelHeaderCounterY = (pTicksTop + Screen.dp(5)), Gravity.LEFT, 1f, view, R.id.theme_color_iconLight);
+        clockX -= isChannelHeaderCounter.getScaledWidth(Screen.dp(1));
+        viewsX -= isChannelHeaderCounter.getScaledWidth(Screen.dp(1));
+      }
+
       // Clock, tick and views
       if (isSending()) {
-        Drawables.draw(c, Icons.getClockIcon(R.id.theme_color_iconLight), pClockLeft - Icons.getClockIconWidth() - Screen.dp(Icons.CLOCK_SHIFT_X), pClockTop - Screen.dp(Icons.CLOCK_SHIFT_Y), Paints.getIconLightPorterDuffPaint());
+        Drawables.draw(c, Icons.getClockIcon(R.id.theme_color_iconLight), clockX, pClockTop - Screen.dp(Icons.CLOCK_SHIFT_Y), Paints.getIconLightPorterDuffPaint());
       } else if (isFailed()) {
         // TODO failure icon
       } else if (shouldShowTicks() && getViewCountMode() != VIEW_COUNT_MAIN) {
         boolean unread = isUnread() && !noUnread();
-        Drawables.draw(c, unread ? Icons.getSingleTick(R.id.theme_color_ticks) : Icons.getDoubleTick(R.id.theme_color_ticksRead), pTicksLeft - Icons.getSingleTickWidth() + ((flags & FLAG_HEADER_ENABLED) != 0 ? 0 : Screen.dp(1f)) - Screen.dp(Icons.TICKS_SHIFT_X), pTicksTop - Screen.dp(Icons.TICKS_SHIFT_Y), unread ? Paints.getTicksPaint() : Paints.getTicksReadPaint());
+        Drawables.draw(c, unread ? Icons.getSingleTick(R.id.theme_color_ticks) : Icons.getDoubleTick(R.id.theme_color_ticksRead), viewsX, pTicksTop - Screen.dp(Icons.TICKS_SHIFT_Y), unread ? Paints.getTicksPaint() : Paints.getTicksReadPaint());
       }
 
       int right = pTicksLeft - (shouldShowTicks() ? Icons.getSingleTickWidth() + Screen.dp(2.5f) : 0); //needMetadata ? pTimeLeft - Screen.dp(4f) : pTicksLeft;
+      if (needDrawChannelIconInHeader() && hAuthorNameT != null) {
+        right -= isChannelHeaderCounter.getScaledWidth(Screen.dp(1));
+      }
 
       // Edited
       if (shouldShowEdited()) {
@@ -2456,6 +2487,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   private int getClickType (MessageView view, float x, float y) {
+    if (needDrawChannelIconInHeader() && hAuthorNameT != null) {
+      if (MathUtils.distance(isChannelHeaderCounterX, isChannelHeaderCounterY, x, y) < Screen.dp(8)) {
+        return CLICK_TYPE_CHANNEL_MESSAGE_ICON;
+      }
+    }
+
     if (replyData != null && replyData.isInside(x, y, useBubbles() && !useBubble())) {
       return CLICK_TYPE_REPLY;
     }
@@ -2487,6 +2524,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     @Override
     public void onClickAt (View view, float x, float y) {
       switch (clickType) {
+        case CLICK_TYPE_CHANNEL_MESSAGE_ICON: {
+          openMessageFromChannel();
+          break;
+        }
         case CLICK_TYPE_REPLY: {
           if (replyData != null && replyData.hasValidMessage()) {
             if (msg.replyInChatId != msg.chatId) {
@@ -2561,6 +2602,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private static final int CLICK_TYPE_REPLY = 1;
   private static final int CLICK_TYPE_AVATAR = 2;
   private static final int CLICK_TYPE_COMMENTS = 3;
+  private static final int CLICK_TYPE_CHANNEL_MESSAGE_ICON = 4;
 
   private int clickType = CLICK_TYPE_NONE;
 
@@ -2720,6 +2762,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (part.getEntity() != null && part.getEntity().getTag() instanceof Long) {
       manager.controller().setInputInlineBot(msg.viaBotUserId, viaBotUsername);
       return true;
+    } else if (needDrawChannelIconInHeader()) {
+      return openMessageFromChannel();
     } else {
       return openProfile(view, text, part, openParameters, null);
     }
@@ -2846,11 +2890,15 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           hAuthorChatMark = makeChatMark(maxWidth);
           maxWidth -= hAuthorChatMark.getWidth();
         }
-
+        isChannelHeaderCounter.showHide(needDrawChannelIconInHeader(), false);
+        if (needDrawChannelIconInHeader()) {
+          maxWidth -= isChannelHeaderCounter.getScaledWidth(Screen.dp(5));
+        }
         hAuthorNameT = makeName(authorName, !(forceForwardedInfo() && forwardInfo instanceof TGSourceHidden), isPsa, !needName(false), msg.forwardInfo == null || forceForwardedInfo() ? msg.viaBotUserId : 0, maxWidth, false);
       } else {
         hAuthorNameT = null;
         hAuthorChatMark = null;
+        isChannelHeaderCounter.showHide(false, false);
       }
       if (isPsa) {
         CharSequence text = Lang.getPsaNotificationType(controller(), msg.forwardInfo.publicServiceAnnouncementType);
@@ -2930,11 +2978,15 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         hAuthorChatMark = makeChatMark(totalMaxWidth);
         nameMaxWidth -= hAuthorChatMark.getWidth() + Screen.dp(8f);
       }
-
+      isChannelHeaderCounter.showHide(needDrawChannelIconInHeader(), false);
+      if (needDrawChannelIconInHeader()) {
+        nameMaxWidth -= isChannelHeaderCounter.getScaledWidth(Screen.dp(1));
+      }
       hAuthorNameT = makeName(authorName, !(forceForwardedInfo() && forwardInfo instanceof TGSourceHidden), isPsa, !needName(false), msg.forwardInfo == null || forceForwardedInfo() ? msg.viaBotUserId : 0, nameMaxWidth, false);
     } else {
       hAuthorNameT = null;
       hAuthorChatMark = null;
+      isChannelHeaderCounter.showHide(false, false);
     }
   }
 
@@ -4181,7 +4233,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     } else if (StringUtils.isEmpty(msg.authorSignature) && msg.chatId != 0 && tdlib.isMultiChat(msg.chatId)) {
       long chatId = sender.getChatId();
       if (tdlib.isChannel(chatId)) {
-        result = Lang.getString(R.string.message_channelSign);
+        result = null; //Lang.getString(R.string.message_channelSign);
       } else if (ChatId.isMultiChat(chatId)) {
         result = Lang.getString(R.string.message_groupSign);
       }
@@ -7488,8 +7540,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
         final boolean isOdd = a % 2 == 1;
         final SwipeQuickAction quickReaction = new SwipeQuickAction(reactionObj.getTitle(), reactionDrawable, () -> {
-          if (messageReactions.toggleReaction(reactionType, false, false, handler(findCurrentView(), null, () -> {}))) {
-            scheduleSetReactionAnimation(new NextReactionAnimation(reactionObj, NextReactionAnimation.TYPE_QUICK));
+          boolean hasReaction = messageReactions.hasReaction(reactionType);
+          if (hasReaction || messagesController().callNonAnonymousProtection(getId() + reactionObj.hashCode(), null)) {
+            if (messageReactions.toggleReaction(reactionType, false, false, handler(findCurrentView(), null, () -> {}))) {
+              scheduleSetReactionAnimation(new NextReactionAnimation(reactionObj, NextReactionAnimation.TYPE_QUICK));
+            }
           }
         }, false, true);
 
@@ -8046,15 +8101,31 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       .show(tdlib, text).hideDelayed(3500, TimeUnit.MILLISECONDS);
   }
 
-  @Nullable
   private TooltipOverlayView.LocationProvider getReactionBubbleLocationProvider (TGReactions.MessageReactionEntry entry) {
-    if (entry == null) {
-      return null;
-    }
-
     return (targetView, outRect) -> {
+      if (entry == null) {
+        return;
+      }
       outRect.set(entry.getX(), entry.getY(), entry.getX() + entry.getBubbleWidth(), entry.getY() + entry.getBubbleHeight());
       outRect.offset(lastDrawReactionsX, lastDrawReactionsY);
     };
+  }
+
+  private boolean openMessageFromChannel () {
+    TooltipOverlayView.TooltipBuilder tooltipBuilder = context().tooltipManager().builder(findCurrentView()).locate((targetView, outRect) -> {
+      outRect.left = (int) (isChannelHeaderCounterX - Screen.dp(7));
+      outRect.top = (int) (isChannelHeaderCounterY - Screen.dp(7));
+      outRect.right = (int) (isChannelHeaderCounterX + Screen.dp(7));
+      outRect.bottom = (int) (isChannelHeaderCounterY + Screen.dp(7));
+    });
+
+    tdlib().ui().openChat(this, sender.getChatId(), new TdlibUi.ChatOpenParameters()
+      .urlOpenParameters(new TdlibUi.UrlOpenParameters().tooltip(tooltipBuilder)).keepStack()
+    );
+    return true;
+  }
+
+  private boolean needDrawChannelIconInHeader () {
+    return sender.isChannel() && !messagesController().isChannel();
   }
 }

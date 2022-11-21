@@ -103,6 +103,7 @@ import org.thunderdog.challegram.component.chat.InlineResultsWrap;
 import org.thunderdog.challegram.component.chat.InputView;
 import org.thunderdog.challegram.component.chat.InvisibleImageView;
 import org.thunderdog.challegram.component.chat.JoinRequestsView;
+import org.thunderdog.challegram.component.chat.MessageSenderButton;
 import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessageViewGroup;
 import org.thunderdog.challegram.component.chat.MessagesAdapter;
@@ -145,6 +146,7 @@ import org.thunderdog.challegram.filegen.VideoGenerationInfo;
 import org.thunderdog.challegram.helper.BotHelper;
 import org.thunderdog.challegram.helper.LiveLocationHelper;
 import org.thunderdog.challegram.helper.Recorder;
+import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
 import org.thunderdog.challegram.loader.ImageReader;
 import org.thunderdog.challegram.loader.ImageStrictCache;
@@ -161,6 +163,7 @@ import org.thunderdog.challegram.navigation.DoubleHeaderView;
 import org.thunderdog.challegram.navigation.HeaderButton;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.Menu;
+import org.thunderdog.challegram.navigation.MenuMoreWrap;
 import org.thunderdog.challegram.navigation.MoreDelegate;
 import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.NavigationStack;
@@ -319,6 +322,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private InvisibleImageView commandButton;
   private @Nullable SilentButton silentButton;
 
+  private HapticMenuHelper sendAsMenu;
+  private MessageSenderButton messageSenderButton;
+
   private WallpaperView wallpaperViewBlurPreview;
   private WallpaperParametersView backgroundParamsView;
 
@@ -352,12 +358,34 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (BuildConfig.DEBUG) {
       items.add(new HapticMenuHelper.MenuItem(R.id.btn_sendToast, "Show toast", R.drawable.baseline_warning_24));
     }
+    if (canSelectSender()) {
+      items.add(0, createHapticSenderItem(R.id.btn_openSendersMenu, chat.messageSenderId, false, false));
+    }
     return items;
   }
 
   @Override
-  public void onHapticMenuItemClick (View view, View parentView) {
+  public void onHapticMenuItemClick (View view, View parentView, HapticMenuHelper.MenuItem item) {
     switch (view.getId()) {
+      case R.id.btn_setMsgSender: {
+        if (item.isLocked) {
+          context().tooltipManager().builder(messageSenderButton.getButtonView())
+            .show(tdlib, Lang.getString(R.string.error_PREMIUM_ACCOUNT_REQUIRED))
+            .hideDelayed(2000, TimeUnit.MILLISECONDS);
+          break;
+        }
+        TdApi.MessageSender sender = item.messageSenderId;
+        if (sender != null) {
+          setNewMessageSender(sender);
+        } else {
+          openSetSenderPopup();
+        }
+        break;
+      }
+      case R.id.btn_openSendersMenu: {
+        openSetSenderPopup();
+        break;
+      }
       case R.id.btn_sendOnceOnline: {
         TdApi.MessageSendOptions sendOptions = Td.newSendOptions(new TdApi.MessageSchedulingStateSendWhenOnline());
         if (!sendShowingVoice(sendOptions)) {
@@ -952,10 +980,31 @@ public class MessagesController extends ViewController<MessagesController.Argume
         if (inputView != null && getMeasuredWidth() > 0) {
           inputView.checkPlaceholderWidth();
         }
+        if (messageSenderButton != null) {
+          messageSenderButton.checkPosition();
+        }
       }
     };
     attachButtons.setOrientation(LinearLayout.HORIZONTAL);
     attachButtons.setLayoutParams(params);
+
+    params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(49f));
+    params.addRule(RelativeLayout.ALIGN_PARENT_TOP);
+
+    messageSenderButton = new MessageSenderButton(context, this);
+    messageSenderButton.setLayoutParams(params);
+    messageSenderButton.setDelegate(new MessageSenderButton.Delegate() {
+      @Override
+      public void onClick () {
+        openSetSenderPopup();
+      }
+    });
+    messageSenderButton.setOnLongClickListener(v -> {
+      if (canSelectSender()) {
+        getChatAvailableMessagesSenders(() -> sendAsMenu.openMenu(messageSenderButton.getButtonView()));
+      }
+      return true;
+    });
 
     final float ATTACH_BUTTONS_WIDTH = 47f;
 
@@ -1057,6 +1106,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
     sendButton.setLayoutParams(params);
 
     sendMenu = new HapticMenuHelper(this, this, getThemeListeners(), null).attachToView(sendButton);
+    sendAsMenu = new HapticMenuHelper(hapticSendAsMenuProvider, this, getThemeListeners(), null).selectableMode(messageSenderButton).hapticListener(messageSenderButton);
+    messageSenderButton.setHapticMenuHelper(sendAsMenu);
 
     if (inPreviewMode) {
       switch (previewMode) {
@@ -1263,6 +1314,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       contentView.addView(emojiButton);
       contentView.addView(attachButtons);
       contentView.addView(sendButton);
+      contentView.addView(messageSenderButton);
 
       initSearchControls();
       contentView.addView(searchControlsLayout);
@@ -2521,6 +2573,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     topBar.hideAll(false);
 
     resetSearhControls();
+    updateSelectMessageSenderInterface(false);
 
     tdlib.ui().updateTTLButton(R.id.menu_secretChat, headerView, chat, true);
     messagesView.setMessageAnimatorEnabled(false);
@@ -2828,6 +2881,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     runOnUiThreadOptional(() -> {
       if (getChatId() == chatId) {
         updateInputHint();
+        updateSelectMessageSenderInterface(true);
       }
     });
   }
@@ -2967,9 +3021,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (notEmpty) {
         attachButtons.setVisibility(View.INVISIBLE);
         sendButton.setVisibility(View.VISIBLE);
+        messageSenderButton.setVisibility(View.INVISIBLE);
       } else {
         attachButtons.setVisibility(View.VISIBLE);
         sendButton.setVisibility(View.INVISIBLE);
+        if (canSelectSender()) {
+          messageSenderButton.setVisibility(View.VISIBLE);
+        }
       }
     } else {
       hideActionButton();
@@ -2979,6 +3037,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       emojiButton.setVisibility(View.GONE);
       attachButtons.setVisibility(View.GONE);
       sendButton.setVisibility(View.GONE);
+      messageSenderButton.setVisibility(View.GONE);
     }
   }
 
@@ -6573,6 +6632,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     sendButton.setTranslationY(y);
     emojiButton.setTranslationY(y);
     attachButtons.setTranslationY(y);
+    messageSenderButton.setTranslationY(y);
 
     if (prevButtonsY != y) {
       prevButtonsY = y;
@@ -6913,7 +6973,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   // Silent mode
 
   public int getHorizontalInputPadding () {
-    return attachButtons.getVisibleChildrenWidth();
+    return attachButtons.getVisibleChildrenWidth() + (canSelectSender() ? Screen.dp(47): 0);
   }
 
   private void updateSilentButton (boolean visible) {
@@ -8107,7 +8167,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return showRestriction(view, R.id.right_sendStickersAndGifs, R.string.ChatDisabledStickers, R.string.ChatRestrictedStickers, R.string.ChatRestrictedStickersUntil);
   }
 
-  private boolean showRestriction (View view, int rightId, int defaultRes, int specificRes, int specificUntilRes) {
+  public boolean showRestriction (View view, int rightId, int defaultRes, int specificRes, int specificUntilRes) {
     if (view != null) {
       CharSequence restrictionText = tdlib.getRestrictionText(chat, rightId, defaultRes, specificRes, specificUntilRes);
       if (restrictionText != null) {
@@ -8558,10 +8618,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private void displayAttachButtons () {
     attachButtons.setVisibility(View.VISIBLE);
+    if (canSelectSender()) {
+      messageSenderButton.setVisibility(View.VISIBLE);
+    }
   }
 
   private void hideAttachButtons () {
     attachButtons.setVisibility(View.INVISIBLE);
+    messageSenderButton.setVisibility(View.INVISIBLE);
   }
 
   private void displayEmojiButton () {
@@ -8595,6 +8659,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       attachButtons.setAlpha(1f - factor);
       attachButtons.setScaleX(scale2);
       attachButtons.setScaleY(scale2);
+      messageSenderButton.setSendFactor(sendFactor);
 
       if (tooltipInfo != null && tooltipInfo.isVisible()) {
         tooltipInfo.reposition();
@@ -10471,4 +10536,201 @@ public class MessagesController extends ViewController<MessagesController.Argume
     UI.getContext(context).navigation().navigateTo(c);
     return true;
   }
+
+
+
+
+  public @Nullable TdApi.MessageSender getChatMessageSender () {
+    return chat.messageSenderId;
+  }
+
+  public boolean canSelectSender () {
+    return chat != null && chat.messageSenderId != null;
+  }
+
+  public boolean isCameraButtonVisibleOnAttachPanel () {
+    return !canSelectSender();
+  }
+
+  public HapticMenuHelper.MenuItem createHapticSenderItem (int id, TdApi.MessageSender sender, boolean useUsername, boolean isLocked) {
+    String title = useUsername ? tdlib.senderName(sender): Lang.getString(R.string.SendAs);
+    if (tdlib.isSelfSender(sender)) {
+      return new HapticMenuHelper.MenuItem(id, title, Lang.getString(R.string.YourAccount), R.drawable.dot_baseline_acc_personal_24, tdlib, sender, false);
+    } else if (!tdlib.isChannel(sender)) {
+      return new HapticMenuHelper.MenuItem(id, title, Lang.getString(R.string.AnonymousAdmin), R.drawable.dot_baseline_acc_anon_24, tdlib, sender, false);
+    } else {
+      String username = tdlib.chatUsername(Td.getSenderId(sender));
+      String subtitle = useUsername && !StringUtils.isEmpty(username)? ("@" + username): tdlib.getMessageSenderTitle(sender);
+      return new HapticMenuHelper.MenuItem(id, title, subtitle, 0, tdlib, sender, isLocked);
+    }
+  }
+
+  // Call methods
+
+  public static void getChatAvailableMessagesSenders (Tdlib tdlib, long chatId, @NonNull RunnableData<TdApi.ChatMessageSenders> callback) {
+    tdlib.send(new TdApi.GetChatAvailableMessageSenders(chatId), result -> UI.post(() -> {
+      switch (result.getConstructor()) {
+        case TdApi.ChatMessageSenders.CONSTRUCTOR: {
+          callback.runWithData((TdApi.ChatMessageSenders) result);
+          break;
+        }
+        case TdApi.Error.CONSTRUCTOR: {
+          UI.showError(result);
+          break;
+        }
+      }
+    }));
+  }
+
+  public static void setNewMessageSender (Tdlib tdlib, long chatId, TdApi.ChatMessageSender sender, @Nullable Runnable after) {
+    tdlib.send(new TdApi.SetChatMessageSender(chatId, sender.sender), o -> {
+      if (after != null) {
+        tdlib.ui().post(after);
+      }
+    });
+  }
+
+  private void setNewMessageSender (TdApi.ChatMessageSender sender) {
+    tdlib.send(new TdApi.SetChatMessageSender(getChatId(), sender.sender), tdlib.okHandler());
+  }
+
+  private void setNewMessageSender (TdApi.MessageSender sender) {
+    tdlib.send(new TdApi.SetChatMessageSender(getChatId(), sender), tdlib.okHandler());
+  }
+
+  private void getChatAvailableMessagesSenders (Runnable after) {
+    getChatAvailableMessagesSenders(tdlib, getChatId(), result -> {
+      onUpdateChatAvailableMessagesSenders(result.senders);
+      if (after != null) {
+        tdlib.ui().post(after);
+      }
+    });
+  }
+
+
+  // Interface
+
+  private void updateSelectMessageSenderInterface (boolean animated) {
+    boolean cameraVisible = isCameraButtonVisibleOnAttachPanel();
+    boolean canSetSender = canSelectSender();
+    if (cameraButton != null) {
+      cameraButton.setVisibility(cameraVisible ? View.VISIBLE: View.GONE);  //.setVisible(cameraVisible);
+    }
+
+    messageSenderButton.setVisibility(canSetSender ? View.VISIBLE: View.GONE);
+    if (canSetSender) {
+      messageSenderButton.update(getChatMessageSender(), animated);
+    }
+  }
+
+
+  private CancellableRunnable clearCurrentNonAnonymousActionHash;
+  private long currentNonAnonymousActionHash;
+
+
+  public boolean callNonAnonymousProtection (long hash, TGMessage message, @NonNull TooltipOverlayView.LocationProvider locationProvider) {
+    return callNonAnonymousProtection(hash, message.findCurrentView(), locationProvider);
+  }
+
+  public boolean callNonAnonymousProtection (long hash, View view, @NonNull TooltipOverlayView.LocationProvider locationProvider) {
+    return callNonAnonymousProtection(hash, context.tooltipManager().builder(view).locate(locationProvider));
+  }
+
+  public boolean callNonAnonymousProtection (long hash, @Nullable TooltipOverlayView.TooltipBuilder tooltipBuilder) {
+    if (chat == null || chat.messageSenderId == null || tdlib.isSelfSender(chat.messageSenderId)) {
+      return true;
+    }
+
+    if (currentNonAnonymousActionHash == hash) {
+      currentNonAnonymousActionHash = 0;
+      if (clearCurrentNonAnonymousActionHash != null) {
+        clearCurrentNonAnonymousActionHash.cancel();
+        clearCurrentNonAnonymousActionHash = null;
+      }
+      return true;
+    }
+
+    if (clearCurrentNonAnonymousActionHash != null) {
+      clearCurrentNonAnonymousActionHash.cancel();
+      clearCurrentNonAnonymousActionHash = null;
+    }
+
+    currentNonAnonymousActionHash = hash;
+    clearCurrentNonAnonymousActionHash = new CancellableRunnable() {
+      @Override
+      public void act () {
+        currentNonAnonymousActionHash = 0;
+        clearCurrentNonAnonymousActionHash = null;
+      }
+    };
+
+    tdlib.ui().postDelayed(clearCurrentNonAnonymousActionHash, 10000);
+
+    if (tooltipBuilder != null) {
+      tooltipBuilder
+        .show(tdlib, Lang.getString(R.string.AnonWarning))
+        .hideDelayed(2000, TimeUnit.MILLISECONDS);
+    } else {
+      UI.showToast(Lang.getString(R.string.AnonWarning), Toast.LENGTH_LONG);
+    }
+
+    return false;
+  }
+
+
+
+
+
+  // Updates
+
+  private TdApi.ChatMessageSender[] chatAvailableSenders;
+  private void onUpdateChatAvailableMessagesSenders (TdApi.ChatMessageSender[] senders) {
+    tdlib.ui().post(() -> {
+      this.chatAvailableSenders = senders;
+    });
+  }
+
+
+
+  //
+
+  private void openSetSenderPopup () {
+    getChatAvailableMessagesSenders(() -> {
+      final SetSenderController c = new SetSenderController(context, tdlib);
+      c.setArguments(new SetSenderController.Args(chat, chatAvailableSenders, chat.messageSenderId));
+      c.setDelegate(this::setNewMessageSender);
+      c.show();
+    });
+  }
+
+
+
+  //
+
+  private final HapticMenuHelper.Provider hapticSendAsMenuProvider = new HapticMenuHelper.Provider() {
+    @Override
+    public List<HapticMenuHelper.MenuItem> onCreateHapticMenu (View view) {
+      if (chatAvailableSenders == null || chatAvailableSenders.length == 0) return new ArrayList<>();
+
+      final int maxCount = 5;
+      final boolean needMoreButton = chatAvailableSenders.length > maxCount;
+      final int senderButtonsCount = needMoreButton ? maxCount - 1: chatAvailableSenders.length;
+      List<HapticMenuHelper.MenuItem> items = new ArrayList<>(Math.min(chatAvailableSenders.length, maxCount));
+
+      for (int i = 0; i < senderButtonsCount; i++) {
+        items.add(0, createHapticSenderItem(R.id.btn_setMsgSender, chatAvailableSenders[i].sender, true, chatAvailableSenders[i].needsPremium && !tdlib.hasPremium()));
+      }
+
+      if (needMoreButton) {
+        items.add(0, new HapticMenuHelper.MenuItem(R.id.btn_openSendersMenu, Lang.getString(R.string.MoreMessageSenders), R.drawable.baseline_more_horiz_24));
+      }
+
+      return items;
+    }
+
+    @Override
+    public int getAnchorMode (View view) {
+      return MenuMoreWrap.ANCHOR_MODE_CENTER;
+    }
+  };
 }

@@ -27,7 +27,7 @@ import java.util.List;
 
 import me.vkryl.core.StringUtils;
 
-public class MessageOptionsReactedController extends MessageOptionsPagerController.MessageBottomSheetBaseController<Void> implements View.OnClickListener {
+public class MessageOptionsReactedController extends BottomSheetViewController.BottomSheetBaseRecyclerViewController<Void> implements View.OnClickListener {
   private SettingsAdapter adapter;
   private PopupLayout popupLayout;
   private TGMessage message;

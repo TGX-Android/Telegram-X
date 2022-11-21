@@ -124,6 +124,7 @@
   <item type="id" name="controller_request" />
   <item type="id" name="controller_phone" />
   <item type="id" name="controller_share" />
+  <item type="id" name="controller_sender" />
   <item type="id" name="controller_hashtag" />
   <item type="id" name="controller_camera" />
   <item type="id" name="controller_memberRights" />
@@ -681,6 +682,8 @@
   <item type="id" name="btn_sendOnceOnline" />
   <item type="id" name="btn_sendNoMarkdown" />
   <item type="id" name="btn_sendToast" />
+  <item type="id" name="btn_openSendersMenu" />
+  <item type="id" name="btn_setMsgSender" />
   <item type="id" name="btn_sendNoSound" />
   <item type="id" name="btn_sendAsFile" />
 

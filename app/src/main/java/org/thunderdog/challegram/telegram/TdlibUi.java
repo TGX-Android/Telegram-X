@@ -6090,7 +6090,7 @@ public class TdlibUi extends Handler {
         return items;
       }
       return null;
-    }, (menuView, parentView) -> {
+    }, (menuView, parentView, item) -> {
       switch (menuView.getId()) {
         case R.id.btn_sendScheduled:
           if (context != null) {

@@ -19,6 +19,7 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.view.Gravity;
 import android.view.View;
 
 import androidx.annotation.Nullable;
@@ -35,6 +36,7 @@ import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.MessageSourceProvider;
@@ -44,6 +46,7 @@ import org.thunderdog.challegram.util.text.TextColorSets;
 
 import me.vkryl.android.animator.BounceAnimator;
 import me.vkryl.android.util.MultipleViewProvider;
+import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
@@ -262,7 +265,44 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
     }
   }
 
+  private TdApi.ChatMessageSender chatMessageSender;
+  private boolean isPremiumLocked;
+  private boolean drawAnonymousIcon;
+  private boolean drawFakeCheckbox;
+
+  public void setChatMessageSender (TdApi.ChatMessageSender sender) {
+    this.chatMessageSender = sender;
+    this.isPremiumLocked = !tdlib.hasPremium() && sender.needsPremium;
+    this.drawAnonymousIcon = !tdlib.isSelfSender(sender.sender) && !tdlib.isChannel(Td.getSenderId(sender.sender));
+
+    buildTitle();
+  }
+
+  public void setDrawFakeCheckbox (boolean drawFakeCheckbox) {
+    this.drawFakeCheckbox = drawFakeCheckbox;
+  }
+
+  public boolean isPremiumLocked () {
+    return this.isPremiumLocked;
+  }
+
+  public @Nullable TdApi.ChatMessageSender getChatMessageSender () {
+    return chatMessageSender;
+  }
+
+  private CharSequence forcedSubtitle;
+
+  public void setForcedSubtitle (CharSequence newSubtitle) {
+    this.forcedSubtitle  = newSubtitle;
+    setIgnoreOnline(true);
+    setSubtitle(!StringUtils.isEmpty(forcedSubtitle) ? forcedSubtitle: subtitle);
+  }
+
   public void setSubtitle (CharSequence newSubtitle) {
+    if (!StringUtils.isEmpty(forcedSubtitle)) {
+      newSubtitle = forcedSubtitle;
+    }
+
     if (!StringUtils.equalsOrBothEmpty(this.subtitle, newSubtitle)) {
       this.subtitle = newSubtitle;
       if (currentWidth != 0) {
@@ -335,6 +375,9 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
 
   private void buildTitle () {
     int availWidth = currentWidth - horizontalPadding;
+    if (drawAnonymousIcon || isPremiumLocked) {
+      availWidth -= Screen.dp(30);
+    }
 
     String adminSign = null;
     if (memberInfo != null) {
@@ -418,6 +461,35 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
       }
     }
 
+    if (drawFakeCheckbox) {
+      double radians = Math.toRadians(45f);
+      float cx = receiver.centerX() + (float) ((double) (receiver.getWidth() / 2) * Math.sin(radians));
+      float cy = receiver.centerY() + (float) ((double) (receiver.getHeight() / 2) * Math.cos(radians));
+      c.drawCircle(cx, cy, Screen.dp(11.5f), Paints.fillingPaint(Theme.fillingColor()));
+      c.drawCircle(cx, cy, Screen.dp(10f), Paints.fillingPaint(Theme.radioFillingColor()));
+      c.save();
+      float lineSize = Screen.dp(2);
+      float x1 = cx - Screen.dp(1.5f);
+      float y1 = cy + Screen.dp(5.5f);
+      float w2 = Screen.dp(10f);
+      float h1 = Screen.dp(6f);
+      c.rotate(-45f, x1, y1);
+      c.drawRect(x1, y1 - h1, x1 + lineSize, y1, Paints.fillingPaint(Theme.radioCheckColor()));
+      c.drawRect(x1, y1 - lineSize, x1 + w2, y1, Paints.fillingPaint(Theme.radioCheckColor()));
+      c.restore();
+    }
+    if (drawAnonymousIcon) {
+      Drawable incognitoIcon = view.getSparseDrawable(R.drawable.dot_baseline_acc_anon_24, R.id.theme_color_icon);
+      float x = currentWidth - Screen.dp(28);
+      float y = receiver.centerY();
+      Drawables.draw(c, incognitoIcon, x - incognitoIcon.getMinimumWidth() / 2f, y - incognitoIcon.getMinimumHeight() / 2f, PorterDuffPaint.get(R.id.theme_color_icon));
+    }
+    if (isPremiumLocked) {
+      Drawable incognitoIcon = view.getSparseDrawable(R.drawable.baseline_lock_16, R.id.theme_color_text);
+      float x = currentWidth - Screen.dp(18 + 16);
+      float y = receiver.centerY();
+      Drawables.draw(c, incognitoIcon, x, y - incognitoIcon.getMinimumHeight() / 2f, Paints.getPorterDuffPaint(Theme.getColor(R.id.theme_color_text)));
+    }
     if (trimmedTitle != null) {
       trimmedTitle.draw(c, left, Screen.dp(13f));
     }
