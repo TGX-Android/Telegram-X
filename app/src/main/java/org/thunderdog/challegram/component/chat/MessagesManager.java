@@ -2656,7 +2656,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         return;
       }
       if (shouldShowThreadHeaderPreview() && isTopMessageHeader) {
-        int sumHeight = SettingHolder.measureHeightForType(ListItem.TYPE_MESSAGE_PREVIEW);
+        int previewHeight = SettingHolder.measureHeightForType(ListItem.TYPE_MESSAGE_PREVIEW);
+        int sumHeight = previewHeight;
         for (int index = scrollIndex; index >= 0; index--) {
           TGMessage message = adapter.getMessage(index);
           if (message == null)
@@ -2667,7 +2668,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         }
         if (targetHeight <= sumHeight) {
           controller.showHidePinnedMessage(true, messageThread.getOldestMessage());
-          targetHeight = getTargetHeight(); // changed by showHidePinnedMessage
+          targetHeight -= previewHeight;
         }
       }
       manager.scrollToPositionWithOffset(scrollIndex, targetHeight - scrollMessage.getHeight());
