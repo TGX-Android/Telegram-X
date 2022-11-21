@@ -117,7 +117,7 @@ public class AvatarReceiver extends ImageReceiver {
   }
 
   private void setPhotoImpl (Tdlib tdlib, TdApi.File photoSmall, TdApi.File photoFull) {
-    ImageFile imageFile = new ImageFile(tdlib, photoFull != null ? photoFull : photoSmall);
+    ImageFile imageFile = new ImageFile(tdlib, photoSmall == null ? photoFull : photoSmall);
     imageFile.setScaleType(ImageFile.CENTER_CROP);
     requestFile(imageFile);
   }
