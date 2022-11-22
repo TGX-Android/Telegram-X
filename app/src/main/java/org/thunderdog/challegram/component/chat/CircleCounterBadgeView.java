@@ -10,6 +10,7 @@ import android.widget.RelativeLayout;
 import androidx.annotation.DrawableRes;
 
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.ui.MessagesController;
@@ -33,7 +34,7 @@ public class CircleCounterBadgeView extends FrameLayout implements FactorAnimato
   private final CounterBadgeView counterBadgeView;
   private final BoolAnimator animatorEnabled = new BoolAnimator(ANIMATOR_ENABLED, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 200l);
 
-  public CircleCounterBadgeView (MessagesController controller, int id, View.OnClickListener onClickListener, View.OnLongClickListener onLongClickListener) {
+  public CircleCounterBadgeView (ViewController<?> controller, int id, View.OnClickListener onClickListener, View.OnLongClickListener onLongClickListener) {
     super(controller.context());
     Context context = controller.context();
 
@@ -54,8 +55,12 @@ public class CircleCounterBadgeView extends FrameLayout implements FactorAnimato
 
     circleButton = new CircleButton(context);
     circleButton.setId(id);
-    circleButton.setOnClickListener(onClickListener);
-    circleButton.setOnLongClickListener(onLongClickListener);
+    if (onClickListener != null) {
+      circleButton.setOnClickListener(onClickListener);
+    }
+    if (onLongClickListener != null) {
+      circleButton.setOnLongClickListener(onLongClickListener);
+    }
     circleButton.setTag(counterBadgeView);
     circleButton.setLayoutParams(fParams);
 

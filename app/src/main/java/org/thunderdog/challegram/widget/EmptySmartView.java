@@ -49,6 +49,7 @@ public class EmptySmartView extends View {
   public static final int MODE_EMPTY_PHOTO = 12;
   public static final int MODE_EMPTY_VIDEO = 13;
   public static final int MODE_EMPTY_RESTRICTED = 14;
+  public static final int MODE_EMPTY_RESULTS = 15;
 
   private Letters title, description;
   private Drawable icon;
@@ -121,6 +122,12 @@ public class EmptySmartView extends View {
         case MODE_EMPTY_MEMBERS: {
           titleRes = R.string.NoMembersToShow;
           descRes = R.string.NoMembersToShowDesc;
+          iconRes = R.drawable.baseline_search_96;
+          break;
+        }
+        case MODE_EMPTY_RESULTS: {
+          titleRes = R.string.NoResultsToShow;
+          descRes = R.string.NoResultsToShowDesc;
           iconRes = R.drawable.baseline_search_96;
           break;
         }

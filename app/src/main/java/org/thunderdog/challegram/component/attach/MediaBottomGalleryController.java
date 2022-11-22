@@ -39,6 +39,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.component.chat.CircleCounterBadgeView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.core.Media;
 import org.thunderdog.challegram.data.TD;
@@ -59,6 +60,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.v.RtlGridLayoutManager;
 
@@ -189,6 +191,7 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   private boolean hasGalleryAccess;
   private Media.Gallery gallery;
   private GridSpacingItemDecoration decoration;
+  private @Nullable CircleCounterBadgeView cameraBadgeView;
   private int spanCount;
 
   private @Nullable ToggleHeaderView headerCell;
@@ -232,7 +235,32 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
       loadGalleryPhotos(null);
     }
 
+    if (mediaLayout.needCameraButton()) {
+      cameraBadgeView = new CircleCounterBadgeView(this, R.id.btn_camera, this::onCameraButtonClick, null);
+      cameraBadgeView.init(R.drawable.deproko_baseline_camera_26, 48f, 4f, R.id.theme_color_circleButtonChat, R.id.theme_color_circleButtonChatIcon);
+      cameraBadgeView.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(CircleCounterBadgeView.BUTTON_WRAPPER_WIDTH), Screen.dp(74f), Gravity.BOTTOM | Gravity.RIGHT, 0, 0, Screen.dp(12), Screen.dp(12 + 60)));
+      contentView.addView(cameraBadgeView);
+    }
+
     return contentView;
+  }
+
+  @Override
+  protected void onUpdateBottomBarFactor (float bottomBarFactor, float counterFactor, float y) {
+    float factor = Math.min(bottomBarFactor, 1f - counterFactor);
+    if (cameraBadgeView != null) {
+      cameraBadgeView.setAlpha(factor);
+      cameraBadgeView.setTranslationY(y);
+    }
+  }
+
+  private void onCameraButtonClick (View v) {
+    MessagesController c = mediaLayout.parentMessageController();
+    if (c == null) return;
+
+    if (!c.showRestriction(v, R.id.right_sendMedia, R.string.ChatDisabledMedia, R.string.ChatRestrictedMedia, R.string.ChatRestrictedMediaUntil)) {
+      mediaLayout.hidePopupAndOpenCamera(new CameraOpenOptions().anchor(v).noTrace(c.isSecretChat()));
+    }
   }
 
   @Override

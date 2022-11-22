@@ -15,6 +15,7 @@
 package org.thunderdog.challegram.data;
 
 import android.graphics.Canvas;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.text.TextPaint;
@@ -1452,10 +1453,12 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
                 }
                 int[] selectedOptionIds = selectedOptions.get();
                 int[] currentOptionIds = currentOptions.get();
-                if (Arrays.equals(selectedOptionIds, currentOptionIds)) {
-                  tdlib.client().send(new TdApi.SetPollAnswer(msg.chatId, msg.id, null), tdlib.okHandler());
-                } else {
-                  tdlib.client().send(new TdApi.SetPollAnswer(msg.chatId, msg.id, selectedOptionIds), tdlib.okHandler());
+                if (isAnonymous() || messagesController().callNonAnonymousProtection(msg.id + R.id.btn_vote, this, makeVoteButtonLocationProvider())) {
+                  if (Arrays.equals(selectedOptionIds, currentOptionIds)) {
+                    tdlib.client().send(new TdApi.SetPollAnswer(msg.chatId, msg.id, null), tdlib.okHandler());
+                  } else {
+                    tdlib.client().send(new TdApi.SetPollAnswer(msg.chatId, msg.id, selectedOptionIds), tdlib.okHandler());
+                  }
                 }
                 break;
               }
@@ -1520,10 +1523,12 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
   }
 
   private void chooseOption (final int optionId) {
-    if (getPoll().options[optionId].isBeingChosen) {
-      tdlib.client().send(new TdApi.SetPollAnswer(msg.chatId, msg.id, null), tdlib.okHandler());
-    } else {
-      tdlib.client().send(new TdApi.SetPollAnswer(msg.chatId, msg.id, new int[] {optionId}), tdlib.okHandler());
+    if (isAnonymous() || messagesController().callNonAnonymousProtection(msg.id + optionId, this, makeButtonLocationProvider(optionId))) {
+      if (getPoll().options[optionId].isBeingChosen) {
+        tdlib.client().send(new TdApi.SetPollAnswer(msg.chatId, msg.id, null), tdlib.okHandler());
+      } else {
+        tdlib.client().send(new TdApi.SetPollAnswer(msg.chatId, msg.id, new int[] {optionId}), tdlib.okHandler());
+      }
     }
   }
 
@@ -1545,5 +1550,36 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
       this.highlightOptionId = optionId;
       invalidate();
     }
+  }
+
+  private TooltipOverlayView.LocationProvider makeVoteButtonLocationProvider () {
+    return (targetView, outRect) -> {
+      int startY = questionText.getHeight() + Screen.dp(28f);
+      for (OptionEntry option : options) {
+        int optionHeight = getOptionHeight(option.text);
+        startY += optionHeight;
+      }
+      outRect.set(0, startY, getContentMaxWidth(), startY + Screen.dp(50));
+      outRect.offset(getContentX(), getContentY());
+    };
+  }
+
+  private TooltipOverlayView.LocationProvider makeButtonLocationProvider (int selectedOptionId) {
+    return (targetView, outRect) -> {
+      int startY = questionText.getHeight() + Screen.dp(5f);
+      int optionId = 0;
+      for (OptionEntry option : options) {
+        int optionHeight = getOptionHeight(option.text);
+        if (selectedOptionId == optionId) {
+          startY += Screen.dp(15f + 12f);
+          outRect.set(Screen.dp(0f), startY, Screen.dp(24f), startY + option.text.getLineHeight());
+          outRect.offset(getContentX(), getContentY());
+          return;
+        }
+        startY += optionHeight;
+        optionId++;
+      }
+      outRect.set(0, 0, 0, 0);
+    };
   }
 }

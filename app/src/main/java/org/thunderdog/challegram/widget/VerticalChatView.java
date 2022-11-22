@@ -32,6 +32,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGFoundChat;
+import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
@@ -61,6 +62,8 @@ import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.Td;
 
 public class VerticalChatView extends BaseView implements Destroyable, ChatListener, FactorAnimator.Target, TdlibCache.UserDataChangeListener, TdlibCache.UserStatusChangeListener, NotificationSettingsListener, AttachDelegate, SimplestCheckBoxHelper.Listener, TextColorSet, TooltipOverlayView.LocationProvider {
+  private static final int SENDER_RADIUS = 10;
+
   private final ImageReceiver receiver;
   private final Counter counter;
 
@@ -74,6 +77,7 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
 
     receiver = new ImageReceiver(this, Screen.dp(25f));
     counter = new Counter.Builder().callback(this).outlineColor(R.id.theme_color_filling).build();
+    avatarReceiver = new AvatarReceiver(this, tdlib);
   }
 
   public void setIsChecked (boolean isChecked, boolean animated) {
@@ -106,22 +110,32 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
     final int centerX = getMeasuredWidth() / 2;
     final int centerY = getMeasuredHeight() / 2 - Screen.dp(11f);
     receiver.setBounds(centerX - radius, centerY - radius, centerX + radius, centerY + radius);
+
+    final int senderRadius = Screen.dp(SENDER_RADIUS);
+    final int senderCenterX = centerX - Screen.dp(18);
+    final int senderCenterY = centerY - Screen.dp(15);
+    avatarReceiver.setBounds(senderCenterX - senderRadius, senderCenterY - senderRadius, senderCenterX + senderRadius, senderCenterY + senderRadius);
+    avatarReceiver.setRadius(senderRadius);
+
     buildTrimmedTitle();
   }
 
   @Override
   public void attach () {
     receiver.attach();
+    avatarReceiver.attach();
   }
 
   @Override
   public void detach () {
     receiver.detach();
+    avatarReceiver.detach();
   }
 
   @Override
   public void performDestroy () {
     receiver.destroy();
+    avatarReceiver.destroy();
     setChat(null);
   }
 
@@ -234,6 +248,7 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
     setAvatar(chat.getAvatar());
     setTitle(chat.getSingleLineTitle().toString());
     counter.setCount(chat.getUnreadCount(), !chat.notificationsEnabled(), isUpdate && isParentVisible());
+    setMessageSender(chat.getMessageSenderId());
   }
 
   // Unread badge
@@ -260,6 +275,11 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
 
   @Override
   public void onChatReadInbox(long chatId, long lastReadInboxMessageId, int unreadCount, boolean availabilityChanged) {
+    updateChat(chatId);
+  }
+
+  @Override
+  public void onChatDefaultMessageSenderIdChanged (long chatId, TdApi.MessageSender senderId) {
     updateChat(chatId);
   }
 
@@ -421,11 +441,37 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
       trimmedTitle.draw(c, startX, startY);
       paint.setColor(sourceColor);
     }
+
+    if (hasMessageSender) {
+      c.drawCircle(avatarReceiver.centerX(), avatarReceiver.getCenterY(), Screen.dp(11.5f), Paints.fillingPaint(Theme.fillingColor()));
+
+      if (drawAnonymousSender) {
+        c.drawCircle(avatarReceiver.centerX(), avatarReceiver.getCenterY(), Screen.dp(10f), Paints.fillingPaint(Theme.getColor(R.id.theme_color_iconLight)));
+        Drawables.draw(c, Drawables.get(R.drawable.infanf_baseline_incognito_14), avatarReceiver.centerX() - Screen.dp(7), avatarReceiver.getCenterY() - Screen.dp(7), Paints.getPorterDuffPaint(Theme.getColor(R.id.theme_color_badgeMutedText)));
+      } else {
+        avatarReceiver.draw(c);
+      }
+    }
   }
 
   private static final float SECURE_OFFSET = 12f;
 
   private static TextPaint getTextPaint () {
     return Paints.getSmallTitlePaint();
+  }
+
+  private final AvatarReceiver avatarReceiver;
+  private boolean hasMessageSender = false;
+  private boolean drawAnonymousSender = false;
+
+  private void setMessageSender (TdApi.MessageSender sender) {
+    avatarReceiver.setMessageSender(sender);
+    hasMessageSender = sender != null && (!tdlib.isSelfSender(sender) || Td.isAnonymous(tdlib.chatStatus(chat.getChatId())));
+    drawAnonymousSender = sender != null && !tdlib.isChannel(sender) && Td.isAnonymous(tdlib.chatStatus(chat.getChatId()));
+    invalidate();
+  }
+
+  public AvatarReceiver getAvatarReceiver () {
+    return avatarReceiver;
   }
 }

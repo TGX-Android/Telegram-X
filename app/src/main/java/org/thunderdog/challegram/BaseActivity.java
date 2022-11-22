@@ -2490,7 +2490,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
   private boolean canOpenCamera () {
     return !(
-      getCurrentPopupWindow() != null ||
+      // getCurrentPopupWindow() != null ||
       (cameraAnimator != null && cameraAnimator.isAnimating()) ||
       activityState != UI.STATE_RESUMED ||
       recordAudioVideoController.isOpen() ||
@@ -2561,7 +2561,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   public boolean startCameraDrag (ViewController.CameraOpenOptions options, boolean isOpen) { // User has slided enough to start dragging
-    if (isCameraOpen == isOpen || !canOpenCamera() || isKeyboardVisible()) {
+    if (isCameraOpen == isOpen || !canOpenCamera() /*|| isKeyboardVisible()*/) {
       return false;
     }
     if (isOpen) {
