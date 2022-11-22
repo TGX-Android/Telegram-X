@@ -912,21 +912,14 @@ public class ForceTouchView extends FrameLayoutFix implements
   }
 
   private FactorAnimator expandVerticallyAnimator () {
-    if (Settings.instance().needReduceMotion()) {
-      return reduceMotionAnimator();
-    }
-    return new FactorAnimator(REVEAL_ANIMATOR, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 250l);
+    return new FactorAnimator(REVEAL_ANIMATOR, this, new DecelerateInterpolator(1.46f), 140l);
   }
 
   private FactorAnimator scaleAnimator () {
     if (Device.NEED_REDUCE_BOUNCE || Settings.instance().needReduceMotion()) {
-      return reduceMotionAnimator();
+      return new FactorAnimator(REVEAL_ANIMATOR, this, new DecelerateInterpolator(1.46f), 140l);
     }
     return new FactorAnimator(REVEAL_ANIMATOR, this, OVERSHOOT_INTERPOLATOR, 260l);
-  }
-
-  private FactorAnimator reduceMotionAnimator () {
-    return new FactorAnimator(REVEAL_ANIMATOR, this, new DecelerateInterpolator(1.46f), 140l);
   }
 
   private PopupLayout pendingPopup;
