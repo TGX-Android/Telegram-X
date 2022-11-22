@@ -428,6 +428,9 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
     if (this.adminSign != null) {
       availWidth -= this.adminSign.getWidth() + Screen.dp(4f);
     }
+    if (drawAnonymousIcon || isPremiumLocked) {
+      availWidth -= Screen.dp(30);
+    }
     if (availWidth <= 0) {
       trimmedSubtitle = null;
       return;
