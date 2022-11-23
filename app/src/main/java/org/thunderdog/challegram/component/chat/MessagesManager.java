@@ -286,7 +286,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         }
       }
       checkScrollButton(first, last);
-      checkThreadHeaderPreview(last);
+      checkMessageThreadHeaderPreview(last);
+      checkMessageThreadUnreadCounter();
 
       controller.checkRoundVideo(first, last, true);
     }
@@ -451,7 +452,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     controller.setScrollToBottomVisible(getActiveMessageCount() > 0 && (lastScrollToBottomVisible || loader.canLoadBottom() || hasReturnMessage()), isReturnAbove());
   }
 
-  public void checkThreadHeaderPreview (int last) {
+  public void checkMessageThreadHeaderPreview (int last) {
     if (last == -1)
       return;
     ThreadInfo messageThread = loader.getMessageThread();
@@ -1256,7 +1257,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   public void onBottomEndLoaded () {
     onChatAwaitFinish();
     onCanLoadMoreBottomChanged();
-    onCanCountUnreadMessages();
+    checkMessageThreadUnreadCounter();
   }
 
   public void onBottomEndChecked () {
@@ -3235,12 +3236,16 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
   }
 
-  private void onCanCountUnreadMessages () {
+  private void checkMessageThreadUnreadCounter () {
     ThreadInfo messageThread = loader.getMessageThread();
-    if (messageThread == null)
+    if (messageThread == null || loader.canLoadBottom())
       return;
     long lastReadInboxMessageId = messageThread.getLastReadInboxMessageId();
     int messageCount = adapter.getMessageCount();
+    if (messageCount == 0 || adapter.getBottomMessage().getSmallestId() <= lastReadInboxMessageId) {
+      messageThread.markAsRead();
+      return;
+    }
     int unreadMessageCount = 0;
     for (int index = 0; index < messageCount; index++) {
       TGMessage message = adapter.getItem(index);

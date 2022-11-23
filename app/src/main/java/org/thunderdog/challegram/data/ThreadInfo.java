@@ -433,6 +433,10 @@ public class ThreadInfo implements MessageThreadListener, ChatListener {
     updateReadInbox(messageId, unreadMessageCount, true);
   }
 
+  public void markAsRead () {
+    updateReadInbox(getLastMessageId(), 0, true);
+  }
+
   public void updateUnreadMessageCount (int unreadMessageCount) {
     updateUnreadMessageCount(unreadMessageCount, true);
   }
