@@ -437,6 +437,14 @@ public class ThreadInfo implements MessageThreadListener, ChatListener {
     updateUnreadMessageCount(unreadMessageCount, true);
   }
 
+  public void updateLastMessage (long lastMessageId) {
+    updateLastMessage(lastMessageId, true);
+  }
+
+  public void updateReadInbox (long lastReadInboxMessageId) {
+    updateReadInbox(lastReadInboxMessageId, true);
+  }
+
   @Override
   public void onChatReadInbox (long chatId, long lastReadInboxMessageId, int unreadCount, boolean availabilityChanged) {
     if (chatId == threadInfo.chatId) {
@@ -532,7 +540,8 @@ public class ThreadInfo implements MessageThreadListener, ChatListener {
   }
 
   private void updateReadInbox (long lastReadInboxMessageId, @SuppressWarnings("SameParameterValue") boolean broadcast) {
-    updateReadInbox(lastReadInboxMessageId, threadInfo.unreadMessageCount, broadcast);
+    int unreadMessageCount = lastReadInboxMessageId < threadInfo.replyInfo.lastMessageId ? threadInfo.unreadMessageCount : 0;
+    updateReadInbox(lastReadInboxMessageId, unreadMessageCount, broadcast);
   }
 
   private void updateReadInbox (long lastReadInboxMessageId, int unreadMessageCount, boolean broadcast) {

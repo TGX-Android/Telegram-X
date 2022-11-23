@@ -1695,6 +1695,12 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       checkPositionInList(msg, index, message.id);
       viewMessageInternal(message.chatId, message.messageThreadId, message.id); // FIXME(firefly) 🩼
       viewMessages(); // doesn't affect sent message because it's already viewed
+
+      ThreadInfo messageThread = loader.getMessageThread();
+      if (messageThread != null) {
+        messageThread.updateLastMessage(message.id);
+        messageThread.updateReadInbox(message.id);
+      }
     }
   }
 
@@ -1734,6 +1740,12 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     int index = adapter.indexOfMessageContainer(oldMessageId);
     if (index != -1 && adapter.getItem(index).setSendFailed(message, oldMessageId)) {
       invalidateViewAt(index);
+
+      ThreadInfo messageThread = loader.getMessageThread();
+      if (messageThread != null) {
+        messageThread.updateLastMessage(message.id);
+        messageThread.updateReadInbox(message.id);
+      }
     }
   }
 
