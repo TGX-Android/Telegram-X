@@ -63,7 +63,7 @@ import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.ChatListener;
-import org.thunderdog.challegram.telegram.MessageListener;
+import org.thunderdog.challegram.telegram.MessageThreadListener;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
@@ -95,7 +95,7 @@ import me.vkryl.td.ChatId;
 
 public class ForceTouchView extends FrameLayoutFix implements
   PopupLayout.AnimatedPopupProvider, FactorAnimator.Target,
-  ChatListener, MessageListener, NotificationSettingsListener, TdlibCache.UserDataChangeListener, TdlibCache.SupergroupDataChangeListener, TdlibCache.BasicGroupDataChangeListener, ThemeChangeListener, TdlibCache.UserStatusChangeListener, SensitiveContentContainer {
+  ChatListener, MessageThreadListener, NotificationSettingsListener, TdlibCache.UserDataChangeListener, TdlibCache.SupergroupDataChangeListener, TdlibCache.BasicGroupDataChangeListener, ThemeChangeListener, TdlibCache.UserStatusChangeListener, SensitiveContentContainer {
   private ForceTouchContext forceTouchContext;
   private final RelativeLayout contentWrap;
   private final View backgroundView;
@@ -1252,7 +1252,7 @@ public class ForceTouchView extends FrameLayoutFix implements
     headerView.setShowFake(tdlib.chatFake(chat));
     headerView.setShowMute(tdlib.chatNeedsMuteIcon(chat));
     if (messageThread != null) {
-      headerView.setText(messageThread.chatHeaderTitle(tdlib), messageThread.chatHeaderSubtitle(tdlib));
+      headerView.setText(messageThread.chatHeaderTitle(), messageThread.chatHeaderSubtitle());
     } else {
       headerView.setText(tdlib.chatTitle(chat), tdlib.status().chatStatus(chat));
     }
@@ -1297,7 +1297,7 @@ public class ForceTouchView extends FrameLayoutFix implements
     if (!isDestroyed) {
       if (boundChat != null) {
         if (boundMessageThread != null) {
-          headerView.setSubtitle(boundMessageThread.chatHeaderSubtitle(tdlib));
+          headerView.setSubtitle(boundMessageThread.chatHeaderSubtitle());
         } else {
           headerView.setSubtitle(tdlib.status().chatStatus(boundChat));
         }
@@ -1345,7 +1345,7 @@ public class ForceTouchView extends FrameLayoutFix implements
         headerView.attachChatStatus(chat.id, messageThread != null ? messageThread.getMessageThreadId() : 0);
       }
       if (messageThread != null) {
-        tdlib.listeners().subscribeToMessageUpdates(messageThread.getChatId(), this);
+        messageThread.addListener(this);
       }
       // tdlib.status().subscribeForChatUpdates(chat.id, this);
     } else {
@@ -1353,7 +1353,7 @@ public class ForceTouchView extends FrameLayoutFix implements
       tdlib.listeners().unsubscribeFromSettingsUpdates(chat.id, this);
       headerView.removeChatStatus();
       if (messageThread != null) {
-        tdlib.listeners().unsubscribeFromMessageUpdates(messageThread.getChatId(), this);
+        messageThread.removeListener(this);
       }
       // tdlib.status().unsubscribeFromChatUpdates(chat.id, this);
     }
@@ -1465,16 +1465,7 @@ public class ForceTouchView extends FrameLayoutFix implements
   }
 
   @Override
-  public void onMessageInteractionInfoChanged (long chatId, long messageId, @Nullable TdApi.MessageInteractionInfo interactionInfo) {
-    TdApi.MessageReplyInfo replyInfo = TD.getReplyInfo(interactionInfo);
-    if (replyInfo == null) {
-      return;
-    }
-    tdlib.ui().post(() -> {
-      if (boundMessageThread != null && boundMessageThread.belongsTo(chatId, messageId)) {
-        boundMessageThread.setReplyInfo(replyInfo);
-        setChatSubtitle();
-      }
-    });
+  public void onMessageThreadReplyCountChanged (long chatId, long messageThreadId, int replyCount) {
+    setChatSubtitle();
   }
 }

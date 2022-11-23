@@ -146,7 +146,6 @@ import org.thunderdog.challegram.filegen.VideoGenerationInfo;
 import org.thunderdog.challegram.helper.BotHelper;
 import org.thunderdog.challegram.helper.LiveLocationHelper;
 import org.thunderdog.challegram.helper.Recorder;
-import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
 import org.thunderdog.challegram.loader.ImageReader;
 import org.thunderdog.challegram.loader.ImageStrictCache;
@@ -183,6 +182,7 @@ import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.GlobalAccountListener;
 import org.thunderdog.challegram.telegram.ListManager;
+import org.thunderdog.challegram.telegram.MessageThreadListener;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -269,6 +269,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   ReplyView.Callback, RaiseHelper.Listener, VoiceInputView.Callback,
   TGLegacyManager.EmojiLoadListener, ChatHeaderView.Callback,
   ChatListener, NotificationSettingsListener, EmojiLayout.Listener,
+  MessageThreadListener,
   TdlibCache.SupergroupDataChangeListener, TdlibCache.BasicGroupDataChangeListener, TdlibCache.SecretChatDataChangeListener,
   TdlibCache.UserDataChangeListener,
   TdlibCache.UserStatusChangeListener,
@@ -533,19 +534,19 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
-  private void updateThreadSubtitle () {
+  private void updateMessageThreadSubtitle () {
     if (messageThread == null)
       return;
     if (areScheduled) {
       headerCell.setForcedSubtitle(Lang.lowercase(Lang.getString(R.string.ScheduledMessages)));
     } else {
-      headerCell.setForcedSubtitle(messageThread.chatHeaderSubtitle(tdlib));
+      headerCell.setForcedSubtitle(messageThread.chatHeaderSubtitle());
     }
   }
 
   private void updateForcedSubtitle () {
     if (messageThread != null) {
-      updateThreadSubtitle();
+      updateMessageThreadSubtitle();
     } else if (areScheduled) {
       headerCell.setForcedSubtitle(Lang.lowercase(Lang.getString(isSelfChat() ? R.string.Reminders : R.string.ScheduledMessages)));
     } else {
@@ -2790,15 +2791,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
-  public void onUnreadMessageCountChanged () {
-    updateCounters(true);
-  }
-
   private void updateCounters (boolean animated) {
     if (chat != null) {
       if (messageThread != null) {
         int unreadCount;
-        if (messageThread.hasUnreadMessages(chat) && messageThread.getLastReadInboxMessageId() != 0) {
+        if (messageThread.hasUnreadMessages(chat) && messageThread.getLastReadInboxMessageId() != 0 && !areScheduledOnly()) {
           unreadCount = messageThread.getUnreadMessageCount() != ThreadInfo.UNKNOWN_UNREAD_MESSAGE_COUNT ? messageThread.getUnreadMessageCount() : Tdlib.CHAT_MARKED_AS_UNREAD;
         } else {
           unreadCount = 0;
@@ -5820,7 +5817,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return;
     }
     boolean animated = isUpdate && scrollToBottomVisible.getFloatValue() > 0f && isFocused();
-    unreadCountView.setCounter(unreadCount, !tdlib.chatNotificationsEnabled(getChatId()), animated);
+    boolean isMuted = messageThread == null && !tdlib.chatNotificationsEnabled(getChatId());
+    unreadCountView.setCounter(unreadCount, isMuted, animated);
   }
 
   private static final int ANIMATOR_MENTION_BUTTON = 7;
@@ -7198,20 +7196,23 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
-  public void onMessageInteractionInfoChanged (long messageId, @Nullable TdApi.MessageInteractionInfo interactionInfo) {
-    if (messageThread != null && messageThread.getMessageThreadId() == messageId) {
-      TdApi.MessageReplyInfo replyInfo = TD.getReplyInfo(interactionInfo);
-      if (replyInfo != null) {
-        messageThread.setReplyInfo(replyInfo);
-        updateThreadSubtitle();
-        updateCounters(true);
-      }
-    }
-  }
-
   public void onMessagesDeleted (long chatId, long[] messageIds) {
     if (editingMessage != null && editingMessage.chatId == chatId && ArrayUtils.indexOf(messageIds, editingMessage.id) != -1) {
       closeEdit();
+    }
+  }
+
+  @Override
+  public void onMessageThreadReplyCountChanged (long chatId, long messageThreadId, int replyCount) {
+    if (messageThread != null && messageThread.belongsTo(chatId, messageThreadId)) {
+      updateMessageThreadSubtitle();
+    }
+  }
+
+  @Override
+  public void onMessageThreadReadInbox (long chatId, long messageThreadId, long lastReadInboxMessageId, int remainingUnreadCount) {
+    if (messageThread != null && messageThread.belongsTo(chatId, messageThreadId)) {
+      updateCounters(true);
     }
   }
 
@@ -8947,10 +8948,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
               tdlib.ui().post(() -> {
                 if (isSchedule == areScheduled) {
                   manager.addSentMessages(parsedMessages);
-                  if (messageThread != null) { // FIXME(firefly) 🩼
-                    messageThread.setSize(messageThread.getSize() + sentCount);
-                    updateThreadSubtitle();
-                  }
                 }
                 onDone.runWithBool(sentCount == expectedCount);
                 if (!areScheduled && isSchedule && isFocused()) {
@@ -9583,6 +9580,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       tdlib.listeners().subscribeToChatUpdates(getHeaderChatId(), this);
     }
     tdlib.listeners().subscribeToSettingsUpdates(this);
+    if (messageThread != null) {
+      messageThread.addListener(this);
+    }
     if (getChatId() == chatId) {
       switch (chat.type.getConstructor()) {
         case TdApi.ChatTypePrivate.CONSTRUCTOR: {
@@ -9614,6 +9614,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
     tdlib.listeners().unsubscribeFromSettingsUpdates(this);
     // tdlib.status().unsubscribeFromChatUpdates(chatId, this);
+    if (messageThread != null) {
+      messageThread.removeListener(this);
+    }
     if (getChatId() == chatId) {
       switch (chat.type.getConstructor()) {
         case TdApi.ChatTypePrivate.CONSTRUCTOR: {
@@ -10225,7 +10228,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (headerCell != null) {
         headerCell.setChat(tdlib, chat, messageThread);
         if (messageThread != null) {
-          updateThreadSubtitle();
+          updateMessageThreadSubtitle();
         }
       }
     }

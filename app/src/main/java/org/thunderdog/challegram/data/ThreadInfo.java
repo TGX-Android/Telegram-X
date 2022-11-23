@@ -21,22 +21,31 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.telegram.ChatListener;
+import org.thunderdog.challegram.telegram.MessageThreadListener;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.tool.UI;
 
 import java.util.Objects;
 
+import me.vkryl.core.BitwiseUtils;
+import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
 
-public class ThreadInfo {
-  public static final ThreadInfo INVALID = new ThreadInfo(new TdApi.MessageThreadInfo(), 0, false);
+public class ThreadInfo implements MessageThreadListener, ChatListener {
+  public static final ThreadInfo INVALID = new ThreadInfo(null, new TdApi.MessageThreadInfo(), 0, false);
   public static final int UNKNOWN_UNREAD_MESSAGE_COUNT = -1;
 
+  private final ReferenceList<MessageThreadListener> listeners = new ReferenceList<>();
+
+  private final @Nullable Tdlib tdlib;
   private final boolean areComments;
   private final TdApi.MessageThreadInfo threadInfo;
   private final long contextChatId;
 
-  private ThreadInfo (@NonNull TdApi.MessageThreadInfo threadInfo, long contextChatId, boolean areComments) {
+  private ThreadInfo (@Nullable Tdlib tdlib, @NonNull TdApi.MessageThreadInfo threadInfo, long contextChatId, boolean areComments) {
+    this.tdlib = tdlib;
     this.areComments = areComments;
     this.threadInfo = threadInfo;
     this.contextChatId = contextChatId;
@@ -58,7 +67,7 @@ public class ThreadInfo {
       //noinspection ConstantConditions
       contextChatId = oldestMessage.forwardInfo.fromChatId;
     }
-    return new ThreadInfo(threadInfo, contextChatId, areComments);
+    return new ThreadInfo(tdlib, threadInfo, contextChatId, areComments);
   }
 
   @Override public boolean equals (Object o) {
@@ -80,11 +89,9 @@ public class ThreadInfo {
     return threadInfo.messages != null && threadInfo.messages.length > 0;
   }
 
-  public @Nullable TdApi.Message getMessage (long chatId, long messageId) {
-    if (threadInfo.chatId != chatId)
-      return null;
+  public @Nullable TdApi.Message getMessage (long messageId) {
     for (TdApi.Message message : threadInfo.messages) {
-      if (message.chatId == chatId && message.id == messageId) {
+      if (message.id == messageId) {
         return message;
       }
     }
@@ -127,6 +134,10 @@ public class ThreadInfo {
     return areComments;
   }
 
+  public boolean hasUnreadMessages () {
+    return tdlib != null && hasUnreadMessages(tdlib.chat(threadInfo.chatId));
+  }
+
   public boolean hasUnreadMessages (@Nullable TdApi.Chat chat) {
     long lastGlobalReadInboxMessageId = chat != null && chat.id == threadInfo.chatId ? chat.lastReadInboxMessageId : 0;
     return hasUnreadMessages(lastGlobalReadInboxMessageId);
@@ -145,25 +156,6 @@ public class ThreadInfo {
 
   public int getSize () {
     return threadInfo.replyInfo.replyCount;
-  }
-
-  public void setSize (int size) {
-    threadInfo.replyInfo.replyCount = size;
-  }
-
-  public void setReplyInfo (@NonNull TdApi.MessageReplyInfo replyInfo) {
-    if (threadInfo.unreadMessageCount == UNKNOWN_UNREAD_MESSAGE_COUNT) {
-      threadInfo.replyInfo = new TdApi.MessageReplyInfo(
-        replyInfo.replyCount,
-        replyInfo.recentReplierIds,
-        Math.max(threadInfo.replyInfo.lastReadInboxMessageId, replyInfo.lastReadInboxMessageId),
-        Math.max(threadInfo.replyInfo.lastReadOutboxMessageId, replyInfo.lastReadOutboxMessageId),
-        Math.max(threadInfo.replyInfo.lastMessageId, replyInfo.lastMessageId)
-      );
-    } else {
-      threadInfo.replyInfo.replyCount = replyInfo.replyCount;
-      threadInfo.replyInfo.recentReplierIds = replyInfo.recentReplierIds;
-    }
   }
 
   public long getChatId () {
@@ -211,11 +203,15 @@ public class ThreadInfo {
     return threadInfo.draftMessage != null ? threadInfo.draftMessage.inputMessageText : null;
   }
 
-  public String chatHeaderTitle (Tdlib tdlib) {
+  public String chatHeaderTitle () {
+    if (tdlib == null)
+      return null;
     return tdlib.chatTitle(getContextChatId());
   }
 
-  public CharSequence chatHeaderSubtitle (Tdlib tdlib) {
+  public CharSequence chatHeaderSubtitle () {
+    if (tdlib == null)
+      return null;
     int size = getSize();
     CharSequence subtitle;
     if (areComments()) {
@@ -253,16 +249,15 @@ public class ThreadInfo {
     threadInfo.unreadMessageCount = UNKNOWN_UNREAD_MESSAGE_COUNT;
     long contextChatId = savedState.getLong(prefix + "_contextChatId");
     boolean areComments = savedState.getBoolean(prefix + "_areComments");
-    return new ThreadInfo(threadInfo, contextChatId, areComments);
+    return new ThreadInfo(tdlib, threadInfo, contextChatId, areComments);
   }
 
-  public @Nullable TGMessage buildHeaderMessage (Tdlib tdlib, MessagesManager context) {
+  public @Nullable TGMessage buildHeaderMessage (MessagesManager context) {
+    if (tdlib == null)
+      return null;
     TGMessage msg = null;
     for (int index = threadInfo.messages.length - 1; index >= 0; index--) {
       TdApi.Message message = threadInfo.messages[index];
-      if (message == null) {
-        continue;
-      }
       if (msg == null) {
         msg = TGMessage.valueOf(context, message, tdlib.chatStrict(message.chatId), this, (TdApi.ChatAdministrator) null);
       } else {
@@ -277,132 +272,312 @@ public class ThreadInfo {
 
   // Updates
 
-  public void updateInteractionInfoChanged (long chatId, long messageId, @Nullable TdApi.MessageInteractionInfo interactionInfo) {
-    TdApi.Message message = getMessage(chatId, messageId);
+  public void updateMessageInteractionInfo (long messageId, @Nullable TdApi.MessageInteractionInfo interactionInfo) {
+    TdApi.Message message = getMessage(messageId);
     if (message != null) {
       message.interactionInfo = interactionInfo;
     }
+    if (messageId == threadInfo.messageThreadId) {
+      updateReplyInfo(TD.getReplyInfo(interactionInfo));
+    }
   }
 
-  public void updateMessageContentChanged (long chatId, long messageId, TdApi.MessageContent newContent) {
-    TdApi.Message message = getMessage(chatId, messageId);
+  public void updateMessageContent (long messageId, TdApi.MessageContent newContent) {
+    TdApi.Message message = getMessage(messageId);
     if (message != null) {
       message.content = newContent;
     }
   }
 
-  public void updateMessageEdited (long chatId, long messageId, int editDate, @Nullable TdApi.ReplyMarkup replyMarkup) {
-    TdApi.Message message = getMessage(chatId, messageId);
+  public void updateMessageEdited (long messageId, int editDate, @Nullable TdApi.ReplyMarkup replyMarkup) {
+    TdApi.Message message = getMessage(messageId);
     if (message != null) {
       message.editDate = editDate;
       message.replyMarkup = replyMarkup;
     }
   }
 
-  public void updateMessagePinned (long chatId, long messageId, boolean isPinned) {
-    TdApi.Message message = getMessage(chatId, messageId);
+  public void updateMessageIsPinned (long messageId, boolean isPinned) {
+    TdApi.Message message = getMessage(messageId);
     if (message != null) {
       message.isPinned = isPinned;
     }
   }
 
-  public void updateMessageOpened (long chatId, long messageId) {
-    TdApi.Message message = getMessage(chatId, messageId);
+  public void updateMessageOpened (long messageId) {
+    TdApi.Message message = getMessage(messageId);
     if (message != null) {
       TD.setMessageOpened(message);
     }
   }
 
-  public void updateMessageMentionRead (long chatId, long messageId) {
-    TdApi.Message message = getMessage(chatId, messageId);
+  public void updateMessageMentionRead (long messageId) {
+    TdApi.Message message = getMessage(messageId);
     if (message != null) {
       message.containsUnreadMention = false;
     }
   }
 
-  public void updateMessageUnreadReactionsChanged (long chatId, long messageId, @Nullable TdApi.UnreadReaction[] unreadReactions) {
-    TdApi.Message message = getMessage(chatId, messageId);
+  public void updateMessageUnreadReactions (long messageId, @Nullable TdApi.UnreadReaction[] unreadReactions) {
+    TdApi.Message message = getMessage(messageId);
     if (message != null) {
       message.unreadReactions = unreadReactions;
     }
   }
 
-  public void updateMessagesDeleted (long chatId, long[] messageIds) {
-    if (threadInfo.chatId != chatId || !hasMessages())
-      return;
-    int deletedMessageCount = 0;
-    long oldestMessageId = getOldestMessageId();
-    long newestMessageId = getNewestMessageId();
-    TdApi.Message[] messages = null;
-    for (long messageId : messageIds) {
-      if (messageId < oldestMessageId || messageId > newestMessageId) {
-        continue;
+  public void updateMessagesDeleted (long[] messageIds, int removedCount, int removedUnreadCount) {
+    int deletedMessageCount;
+    int messageCount = threadInfo.messages.length;
+    if (messageCount > 0) {
+      if (messageCount > 32) {
+        throw new UnsupportedOperationException();
       }
-      if (messages == null) {
-        messages = threadInfo.messages.clone();
-      }
-      for (int i = 0; i < messages.length; i++) {
-        TdApi.Message message = messages[i];
-        if (message != null && message.chatId == chatId && message.id == messageId) {
-          messages[i] = null;
-          deletedMessageCount++;
+      int deleted = 0;
+      long oldestMessageId = getOldestMessageId();
+      long newestMessageId = getNewestMessageId();
+      for (long messageId : messageIds) {
+        if (messageId < oldestMessageId || messageId > newestMessageId) {
+          continue;
         }
-      }
-    }
-    if (messages != null && deletedMessageCount > 0) {
-      TdApi.Message[] newMessages = new TdApi.Message[messages.length - deletedMessageCount];
-      if (newMessages.length > 0) {
-        int index = 0;
-        for (TdApi.Message message : messages) {
-          if (message != null) {
-            newMessages[index++] = message;
+        for (int index = 0; index < messageCount; index++) {
+          TdApi.Message message = threadInfo.messages[index];
+          if (message.id == messageId) {
+            deleted = BitwiseUtils.setFlag(deleted, 1 << index, true);
           }
         }
       }
-      threadInfo.messages = newMessages;
-    }
-  }
-
-  public boolean onNewMessage (TGMessage message) {
-    if (message.isScheduled() || message.isNotSent())
-      return false;
-    long messageId = message.getBiggestId();
-    if (threadInfo.replyInfo.lastMessageId < messageId) {
-      threadInfo.replyInfo.lastMessageId = messageId;
-      if (message.isUnread() && !message.isOutgoing() && messageId > threadInfo.replyInfo.lastReadInboxMessageId &&
-        threadInfo.unreadMessageCount != UNKNOWN_UNREAD_MESSAGE_COUNT) {
-        threadInfo.unreadMessageCount += 1 + message.getMessageCountBetween(threadInfo.replyInfo.lastReadInboxMessageId, messageId);
+      deletedMessageCount = Integer.bitCount(deleted);
+      if (deletedMessageCount > 0) {
+        TdApi.Message[] newMessages = new TdApi.Message[messageCount - deletedMessageCount];
+        if (newMessages.length > 0) {
+          int newIndex = 0;
+          for (int index = 0; index < messageCount; index++) {
+            TdApi.Message message = threadInfo.messages[index];
+            if (!BitwiseUtils.getFlag(deleted, 1 << index)) {
+              newMessages[newIndex++] = message;
+            }
+          }
+        }
+        threadInfo.messages = newMessages;
       }
-      return true;
+    } else {
+      deletedMessageCount = 0;
     }
-    return false;
-  }
-
-  public void onMessageViewed (TGMessage message) {
-    if (message.isScheduled() || message.isNotSent())
-      return;
-    long messageId = message.getBiggestId();
-    threadInfo.replyInfo.lastMessageId = Math.max(threadInfo.replyInfo.lastMessageId, messageId);
-    if (message.isOutgoing()) {
-      threadInfo.replyInfo.lastReadOutboxMessageId = Math.max(threadInfo.replyInfo.lastReadOutboxMessageId, messageId);
-      return;
+    int removedReplyCount = removedCount - deletedMessageCount;
+    if (removedReplyCount > 0 && threadInfo.replyInfo.replyCount > 0) {
+      int replyCount = Math.max(threadInfo.replyInfo.replyCount - removedReplyCount, 0);
+      updateReplyCount(replyCount, true);
     }
-    if (threadInfo.replyInfo.lastReadInboxMessageId >= messageId) {
-      return;
-    }
-    long lastReadInboxMessageId = threadInfo.replyInfo.lastReadInboxMessageId;
-    threadInfo.replyInfo.lastReadInboxMessageId = messageId;
-    if (threadInfo.unreadMessageCount == UNKNOWN_UNREAD_MESSAGE_COUNT)
-      return;
-    if (threadInfo.unreadMessageCount > 0) {
-      TdApi.Chat chat = message.getChat();
-      long lastGlobalReadInboxMessageId = chat != null ? chat.lastReadInboxMessageId : 0;
-      if (Td.hasUnread(threadInfo.replyInfo, lastGlobalReadInboxMessageId)) {
-        int readMessageCount = 1 + message.getMessageCountBetween(lastReadInboxMessageId, messageId);
-        threadInfo.unreadMessageCount = Math.max(threadInfo.unreadMessageCount - readMessageCount, 0);
+    int unreadMessageCount;
+    if (threadInfo.unreadMessageCount != UNKNOWN_UNREAD_MESSAGE_COUNT) {
+      if (Td.hasUnread(threadInfo.replyInfo, getGlobalLastReadInboxMessageId())) {
+        if (threadInfo.unreadMessageCount > removedUnreadCount) {
+          unreadMessageCount = threadInfo.unreadMessageCount - removedUnreadCount;
+        } else {
+          unreadMessageCount = UNKNOWN_UNREAD_MESSAGE_COUNT;
+        }
       } else {
-        threadInfo.unreadMessageCount = 0;
+        unreadMessageCount = 0;
+      }
+      updateUnreadMessageCount(unreadMessageCount, true);
+    }
+  }
+
+  public void updateNewMessage (TGMessage message) {
+    if (message.isScheduled())
+      return;
+
+    int replyCount = threadInfo.replyInfo.replyCount + message.getMessageCount();
+    updateReplyCount(replyCount, true);
+
+    long messageId = message.getBiggestId();
+    updateLastMessage(messageId, true);
+
+    if (!message.isOutgoing() && threadInfo.replyInfo.lastReadInboxMessageId < messageId) {
+      if (message.canMarkAsViewed()) {
+        if (threadInfo.unreadMessageCount != UNKNOWN_UNREAD_MESSAGE_COUNT) {
+          int unreadMessageCount = threadInfo.unreadMessageCount + 1 + message.getMessageCountBetween(threadInfo.replyInfo.lastReadInboxMessageId, messageId);
+          updateUnreadMessageCount(unreadMessageCount, true);
+        }
+      } else {
+        updateReadInbox(messageId, true);
       }
     }
+  }
+
+  public void updateMessageViewed (TGMessage message) {
+    if (message.isScheduled())
+      return;
+    long messageId = message.getBiggestId();
+    updateLastMessage(messageId, true);
+    if (threadInfo.replyInfo.lastReadInboxMessageId >= messageId)
+      return;
+    if (threadInfo.unreadMessageCount == UNKNOWN_UNREAD_MESSAGE_COUNT || message.isOutgoing()) {
+      updateReadInbox(messageId, true);
+      return;
+    }
+    int unreadMessageCount;
+    if (threadInfo.replyInfo.lastMessageId > Math.max(getGlobalLastReadInboxMessageId(), messageId)) {
+      int readMessageCount = 1 + message.getMessageCountBetween(threadInfo.replyInfo.lastReadInboxMessageId, messageId);
+      if (threadInfo.unreadMessageCount > readMessageCount) {
+        unreadMessageCount = threadInfo.unreadMessageCount - readMessageCount;
+      } else {
+        unreadMessageCount = UNKNOWN_UNREAD_MESSAGE_COUNT;
+      }
+    } else {
+      unreadMessageCount = 0;
+    }
+    updateReadInbox(messageId, unreadMessageCount, true);
+  }
+
+  public void updateUnreadMessageCount (int unreadMessageCount) {
+    updateUnreadMessageCount(unreadMessageCount, true);
+  }
+
+  @Override
+  public void onChatReadInbox (long chatId, long lastReadInboxMessageId, int unreadCount, boolean availabilityChanged) {
+    if (chatId == threadInfo.chatId) {
+      UI.post(() -> updateReadInbox(lastReadInboxMessageId, true));
+    }
+  }
+
+  @Override
+  public void onChatReadOutbox (long chatId, long lastReadOutboxMessageId) {
+    if (chatId == threadInfo.chatId) {
+      UI.post(() -> updateReadOutbox(lastReadOutboxMessageId, true));
+    }
+  }
+
+  @Override
+  public void onMessageThreadReadInbox (long chatId, long messageThreadId, long lastReadInboxMessageId, int unreadMessageCount) {
+    if (belongsTo(chatId, messageThreadId)) {
+      updateReadInbox(lastReadInboxMessageId, unreadMessageCount, false);
+    }
+  }
+
+  @Override
+  public void onMessageThreadReadOutbox (long chatId, long messageThreadId, long lastReadOutboxMessageId) {
+    if (belongsTo(chatId, messageThreadId)) {
+      updateReadOutbox(lastReadOutboxMessageId, false);
+    }
+  }
+
+  @Override
+  public void onMessageThreadLastMessageChanged (long chatId, long messageThreadId, long lastMessageId) {
+    if (belongsTo(chatId, messageThreadId)) {
+      updateLastMessage(lastMessageId, false);
+    }
+  }
+
+  @Override
+  public void onMessageThreadReplyCountChanged (long chatId, long messageThreadId, int replyCount) {
+    if (belongsTo(chatId, messageThreadId)) {
+      updateReplyCount(replyCount, false);
+    }
+  }
+
+  public void addListener (MessageThreadListener listener) {
+    listeners.add(listener);
+  }
+
+  public void removeListener (MessageThreadListener listener) {
+    listeners.remove(listener);
+  }
+
+  public void subscribeForUpdates () {
+    if (tdlib != null) {
+      tdlib.listeners().subscribeToChatUpdates(threadInfo.chatId, this);
+      tdlib.listeners().subscribeToMessageThreadUpdates(threadInfo.chatId, threadInfo.messageThreadId, this);
+    }
+  }
+
+  public void unsubscribeFromUpdates () {
+    if (tdlib != null) {
+      tdlib.listeners().unsubscribeFromChatUpdates(threadInfo.chatId, this);
+      tdlib.listeners().unsubscribeFromMessageThreadUpdates(threadInfo.chatId, threadInfo.messageThreadId, this);
+    }
+  }
+
+  private void updateLastMessage (long lastMessageId, boolean broadcast) {
+    if (threadInfo.replyInfo.lastMessageId < lastMessageId) {
+      threadInfo.replyInfo.lastMessageId = lastMessageId;
+
+      for (MessageThreadListener listener : listeners) {
+        listener.onMessageThreadLastMessageChanged(threadInfo.chatId, threadInfo.messageThreadId, lastMessageId);
+      }
+      if (tdlib != null && broadcast) {
+        tdlib.listeners().notifyMessageThreadLastMessageChanged(threadInfo.chatId, threadInfo.messageThreadId, lastMessageId);
+      }
+    }
+  }
+
+  private void updateReplyCount (int replyCount, boolean broadcast) {
+    if (threadInfo.replyInfo.replyCount != replyCount) {
+      threadInfo.replyInfo.replyCount = replyCount;
+
+      for (MessageThreadListener listener : listeners) {
+        listener.onMessageThreadReplyCountChanged(threadInfo.chatId, threadInfo.messageThreadId, threadInfo.replyInfo.replyCount);
+      }
+      if (tdlib != null && broadcast) {
+        tdlib.listeners().notifyMessageThreadReplyCountChanged(threadInfo.chatId, threadInfo.messageThreadId, threadInfo.replyInfo.replyCount);
+      }
+    }
+  }
+
+  private void updateUnreadMessageCount (int unreadMessageCount, @SuppressWarnings("SameParameterValue") boolean broadcast) {
+    updateReadInbox(threadInfo.replyInfo.lastReadInboxMessageId, unreadMessageCount, broadcast);
+  }
+
+  private void updateReadInbox (long lastReadInboxMessageId, @SuppressWarnings("SameParameterValue") boolean broadcast) {
+    updateReadInbox(lastReadInboxMessageId, threadInfo.unreadMessageCount, broadcast);
+  }
+
+  private void updateReadInbox (long lastReadInboxMessageId, int unreadMessageCount, boolean broadcast) {
+    if (threadInfo.replyInfo.lastReadInboxMessageId < lastReadInboxMessageId || threadInfo.unreadMessageCount != unreadMessageCount) {
+      threadInfo.replyInfo.lastReadInboxMessageId = lastReadInboxMessageId;
+      threadInfo.unreadMessageCount = unreadMessageCount;
+
+      for (MessageThreadListener listener : listeners) {
+        listener.onMessageThreadReadInbox(threadInfo.chatId, threadInfo.messageThreadId, lastReadInboxMessageId, unreadMessageCount);
+      }
+      if (tdlib != null && broadcast) {
+        tdlib.listeners().notifyMessageThreadReadInbox(threadInfo.chatId, threadInfo.messageThreadId, lastReadInboxMessageId, unreadMessageCount);
+      }
+    }
+  }
+
+  private void updateReadOutbox (long lastReadOutboxMessageId, boolean broadcast) {
+    if (threadInfo.replyInfo.lastReadOutboxMessageId < lastReadOutboxMessageId) {
+      threadInfo.replyInfo.lastReadOutboxMessageId = lastReadOutboxMessageId;
+
+      for (MessageThreadListener listener : listeners) {
+        listener.onMessageThreadReadOutbox(threadInfo.chatId, threadInfo.messageThreadId, lastReadOutboxMessageId);
+      }
+      if (tdlib != null && broadcast) {
+        tdlib.listeners().notifyMessageThreadReadOutbox(threadInfo.chatId, threadInfo.messageThreadId, lastReadOutboxMessageId);
+      }
+    }
+  }
+
+  private void updateReplyInfo (@Nullable TdApi.MessageReplyInfo replyInfo) {
+    if (replyInfo == null) {
+      // thread has been deleted.
+      threadInfo.replyInfo.recentReplierIds = new TdApi.MessageSender[0];
+      updateLastMessage(MessageId.MAX_VALID_ID, true);
+      updateReplyCount(0, true);
+      updateReadInbox(MessageId.MAX_VALID_ID, /* unreadMessageCount */ 0, true);
+      updateReadOutbox(MessageId.MAX_VALID_ID, true);
+    } else {
+      // update ids only
+      threadInfo.replyInfo.recentReplierIds = replyInfo.recentReplierIds;
+      updateLastMessage(replyInfo.lastMessageId, true);
+      updateReadInbox(replyInfo.lastReadInboxMessageId, true);
+      updateReadOutbox(replyInfo.lastReadOutboxMessageId, true);
+    }
+  }
+
+  private long getGlobalLastReadInboxMessageId () {
+    TdApi.Chat chat = tdlib != null ? tdlib.chat(threadInfo.chatId) : null;
+    return chat != null ? chat.lastReadInboxMessageId : 0;
   }
 }

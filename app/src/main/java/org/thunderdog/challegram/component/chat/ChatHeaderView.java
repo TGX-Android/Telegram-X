@@ -105,7 +105,7 @@ public class ChatHeaderView extends ComplexHeaderView {
     setShowMute(tdlib.chatNeedsMuteIcon(chat));
     setShowLock(ChatId.isSecret(chat.id));
     if (messageThread != null) {
-      setText(messageThread.chatHeaderTitle(tdlib), !StringUtils.isEmpty(forcedSubtitle) ? forcedSubtitle : messageThread.chatHeaderSubtitle(tdlib));
+      setText(messageThread.chatHeaderTitle(), !StringUtils.isEmpty(forcedSubtitle) ? forcedSubtitle : messageThread.chatHeaderSubtitle());
       setExpandedSubtitle(null);
       setUseRedHighlight(false);
       attachChatStatus(messageThread.getChatId(), messageThread.getMessageThreadId());

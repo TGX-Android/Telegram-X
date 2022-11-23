@@ -48,6 +48,7 @@ import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.ListManager;
 import org.thunderdog.challegram.telegram.MessageEditListener;
 import org.thunderdog.challegram.telegram.MessageListener;
+import org.thunderdog.challegram.telegram.MessageThreadListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
@@ -85,7 +86,7 @@ import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
 
 public class MessagesManager implements Client.ResultHandler, MessagesSearchManager.Delegate,
-  MessageListener, MessageEditListener, Comparator<TGMessage>, TGPlayerController.PlayListBuilder, BaseActivity.PasscodeListener, TdlibCache.ChatMemberStatusChangeListener, TdlibSettingsManager.DismissMessageListener {
+  MessageListener, MessageEditListener, MessageThreadListener, Comparator<TGMessage>, TGPlayerController.PlayListBuilder, BaseActivity.PasscodeListener, TdlibCache.ChatMemberStatusChangeListener, TdlibSettingsManager.DismissMessageListener {
   private final MessagesController controller;
   private final Tdlib tdlib;
   private MessagesAdapter adapter;
@@ -354,7 +355,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
             lastViewedReaction = id;
           }
           if (messageThread != null) {
-            messageThread.onMessageViewed(msg);
+            messageThread.updateMessageViewed(msg);
           }
           if (list == null) {
             list = new LongSet(last - first);
@@ -1287,7 +1288,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   private void insertHeaderMessageIfNeeded () {
     ThreadInfo messageThread = loader.getMessageThread();
     if (messageThread != null && shouldInsertHeaderMessage()) {
-      TGMessage threadHeaderMessage = messageThread.buildHeaderMessage(tdlib, this);
+      TGMessage threadHeaderMessage = messageThread.buildHeaderMessage(this);
       if (threadHeaderMessage != null) {
         adapter.addMessage(threadHeaderMessage, true, false);
       }
@@ -1562,10 +1563,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
     ThreadInfo messageThread = loader.getMessageThread();
     if (messageThread != null) {
-      boolean isUpdated = messageThread.onNewMessage(message);
-      if (isUpdated) {
-        controller.onUnreadMessageCountChanged();
-      }
+      messageThread.updateNewMessage(message);
     }
     if (!message.isOutgoing()) {
       controller.checkSwitchPm(message.getMessage());
@@ -1776,26 +1774,24 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
   }
 
-  private void updateMessageContentChanged (long chatId, long messageId, TdApi.MessageContent content) {
+  private void updateMessageContent (long chatId, long messageId, TdApi.MessageContent content) {
     controller.onMessageChanged(chatId, messageId, content);
-    if (adapter.isEmpty()) {
-      return;
-    }
-
     ArrayList<TGMessage> items = adapter.getItems();
-    if (items == null || items.isEmpty()) {
-      return;
-    }
-
-    int i = 0;
-    for (TGMessage item : items) {
-      TdApi.Message msg = item.getMessage();
-      if (item.isDescendantOrSelf(messageId)) {
-        replaceMessageContent(item, i, messageId, content);
-      } else if (msg.replyToMessageId == messageId) {
-        item.replaceReplyContent(messageId, content);
+    if (!adapter.isEmpty() && items != null) {
+      int i = 0;
+      for (TGMessage item : items) {
+        TdApi.Message msg = item.getMessage();
+        if (item.isDescendantOrSelf(messageId)) {
+          replaceMessageContent(item, i, messageId, content);
+        } else if (msg.replyToMessageId == messageId) {
+          item.replaceReplyContent(messageId, content);
+        }
+        i++;
       }
-      i++;
+    }
+    ThreadInfo messageThread = loader.getMessageThread();
+    if (messageThread != null) {
+      messageThread.updateMessageContent(messageId, content);
     }
   }
 
@@ -1813,6 +1809,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         }
       }
     }
+    ThreadInfo messageThread = loader.getMessageThread();
+    if (messageThread != null) {
+      messageThread.updateMessageEdited(messageId, editDate, replyMarkup);
+    }
   }
 
   private void updateMessageOpened (long messageId) {
@@ -1820,6 +1820,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     if (index != -1) {
       adapter.getItem(index).setMessageOpened(messageId);
       invalidateViewAt(index);
+    }
+    ThreadInfo messageThread = loader.getMessageThread();
+    if (messageThread != null) {
+      messageThread.updateMessageOpened(messageId);
     }
   }
 
@@ -1839,6 +1843,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       adapter.getItem(index).readMention(messageId);
       // TODO nothing?
     }
+    ThreadInfo messageThread = loader.getMessageThread();
+    if (messageThread != null) {
+      messageThread.updateMessageMentionRead(messageId);
+    }
   }
 
   public void updateMessageUnreadReactions (long messageId, @Nullable TdApi.UnreadReaction[] unreadReactions) {
@@ -1849,13 +1857,20 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       lastCheckedCount = 0;
       viewMessages();
     }
+    ThreadInfo messageThread = loader.getMessageThread();
+    if (messageThread != null) {
+      messageThread.updateMessageUnreadReactions(messageId, unreadReactions);
+    }
   }
 
   public void updateMessageInteractionInfo (long messageId, @Nullable TdApi.MessageInteractionInfo interactionInfo) {
-    controller.onMessageInteractionInfoChanged(messageId, interactionInfo);
     int index = adapter.indexOfMessageContainer(messageId);
     if (index != -1 && adapter.getItem(index).setMessageInteractionInfo(messageId, interactionInfo)) {
       invalidateViewAt(index);
+    }
+    ThreadInfo messageThread = loader.getMessageThread();
+    if (messageThread != null) {
+      messageThread.updateMessageInteractionInfo(messageId, interactionInfo);
     }
   }
 
@@ -1864,6 +1879,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     if (index != -1 && adapter.getItem(index).setIsPinned(messageId, isPinned)) {
       invalidateViewAt(index);
     }
+    ThreadInfo messageThread = loader.getMessageThread();
+    if (messageThread != null) {
+      messageThread.updateMessageIsPinned(messageId, isPinned);
+    }
   }
 
   public void updateMessagesDeleted (long chatId, long[] messageIds) {
@@ -1871,8 +1890,13 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     controller.onMessagesDeleted(chatId, messageIds);
 
     int removedCount = 0;
+    int removedUnreadCount = 0;
     int selectedCount = controller.getSelectedMessageCount();
     boolean unselectedSomeMessages = false;
+
+    TdApi.Chat chat = tdlib.chatStrict(chatId);
+    ThreadInfo messageThread = loader.getMessageThread();
+    long lastReadInboxMessageId = messageThread != null ? messageThread.getLastReadInboxMessageId() : chat.lastReadInboxMessageId;
 
     int i = 0;
     main: while (i < adapter.getMessageCount()) {
@@ -1891,6 +1915,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
               selectedCount--;
               unselectedSomeMessages = true;
             }
+            if (!item.isOutgoing() && messageId > lastReadInboxMessageId) {
+              removedUnreadCount++;
+            }
             if (++removedCount == messageIds.length) {
               break main;
             } else {
@@ -1902,6 +1929,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
             if (controller.unselectMessage(messageId, removed)) {
               selectedCount--;
               unselectedSomeMessages = true;
+            }
+            if (!item.isOutgoing() && messageId > lastReadInboxMessageId) {
+              removedUnreadCount++;
             }
             if (++removedCount == messageIds.length) {
               break main;
@@ -1935,6 +1965,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         rebuildFirstItem(false, false);
         controller.showActionBotButton();
       }
+    }
+    if (messageThread != null) {
+      messageThread.updateMessagesDeleted(messageIds, removedCount, removedUnreadCount);
     }
   }
 
@@ -2927,6 +2960,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   // Subscriber
 
   private long lastSubscribedChatId;
+  private @Nullable ThreadInfo lastSubscribedMessageThread;
 
   private void subscribeForUpdates () {
     long chatId = loader.getChatId();
@@ -2945,6 +2979,17 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         tdlib.cache().addChatMemberStatusListener(lastSubscribedChatId, this);
       }
     }
+    ThreadInfo messageThread = loader.getMessageThread();
+    if (lastSubscribedMessageThread != messageThread) {
+      if (lastSubscribedMessageThread != null) {
+        lastSubscribedMessageThread.unsubscribeFromUpdates();
+      }
+      lastSubscribedMessageThread = messageThread;
+      if (messageThread != null) {
+        messageThread.subscribeForUpdates();
+        messageThread.addListener(this);
+      }
+    }
   }
 
   private void unsubscribeFromUpdates () {
@@ -2952,6 +2997,11 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       controller.unsubscribeFromUpdates(lastSubscribedChatId);
       tdlib.listeners().unsubscribeFromMessageUpdates(lastSubscribedChatId, this);
       lastSubscribedChatId = 0;
+    }
+    if (lastSubscribedMessageThread != null) {
+      lastSubscribedMessageThread.unsubscribeFromUpdates();
+      lastSubscribedMessageThread.removeListener(this);
+      lastSubscribedMessageThread = null;
     }
   }
 
@@ -3063,11 +3113,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
     tdlib.ui().post(() -> {
       if (loader.getChatId() == chatId) {
-        updateMessageContentChanged(chatId, messageId, newContent);
-        ThreadInfo messageThread = loader.getMessageThread();
-        if (messageThread != null) {
-          messageThread.updateMessageContentChanged(chatId, messageId, newContent);
-        }
+        updateMessageContent(chatId, messageId, newContent);
       }
     });
   }
@@ -3084,10 +3130,6 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     tdlib.ui().post(() -> {
       if (loader.getChatId() == chatId) {
         updateMessageEdited(messageId, editDate, replyMarkup);
-        ThreadInfo messageThread = loader.getMessageThread();
-        if (messageThread != null) {
-          messageThread.updateMessageEdited(chatId, messageId, editDate, replyMarkup);
-        }
       }
     });
   }
@@ -3102,10 +3144,6 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     tdlib.ui().post(() -> {
       if (loader.getChatId() == chatId) {
         updateMessageOpened(messageId);
-        ThreadInfo messageThread = loader.getMessageThread();
-        if (messageThread != null) {
-          messageThread.updateMessageOpened(chatId, messageId);
-        }
       }
     });
   }
@@ -3120,10 +3158,6 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     tdlib.ui().post(() -> {
       if (loader.getChatId() == chatId) {
         updateMessageUnreadReactions(messageId, unreadReactions);
-        ThreadInfo messageThread = loader.getMessageThread();
-        if (messageThread != null) {
-          messageThread.updateMessageUnreadReactionsChanged(chatId, messageId, unreadReactions);
-        }
       }
     });
   }
@@ -3138,10 +3172,6 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     tdlib.ui().post(() -> {
       if (loader.getChatId() == chatId) {
         updateMessageInteractionInfo(messageId, interactionInfo);
-        ThreadInfo messageThread = loader.getMessageThread();
-        if (messageThread != null) {
-          messageThread.updateInteractionInfoChanged(chatId, messageId, interactionInfo);
-        }
       }
     });
   }
@@ -3156,10 +3186,6 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     tdlib.ui().post(() -> {
       if (loader.getChatId() == chatId) {
         updateMessageIsPinned(messageId, isPinned);
-        ThreadInfo messageThread = loader.getMessageThread();
-        if (messageThread != null) {
-          messageThread.updateMessagePinned(chatId, messageId, isPinned);
-        }
       }
     });
   }
@@ -3174,10 +3200,6 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     tdlib.ui().post(() -> {
       if (loader.getChatId() == chatId) {
         updateMessageMentionRead(messageId);
-        ThreadInfo messageThread = loader.getMessageThread();
-        if (messageThread != null) {
-          messageThread.updateMessageMentionRead(chatId, messageId);
-        }
       }
     });
   }
@@ -3187,12 +3209,17 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     tdlib.ui().post(() -> {
       if (loader.getChatId() == chatId) {
         updateMessagesDeleted(chatId, messageIds);
-        ThreadInfo messageThread = loader.getMessageThread();
-        if (messageThread != null) {
-          messageThread.updateMessagesDeleted(chatId, messageIds);
-        }
       }
     });
+  }
+
+  @Override
+  public void onMessageThreadReadOutbox (long chatId, long messageThreadId, long lastReadOutboxMessageId) {
+    TdApi.Chat chat = tdlib.chat(chatId);
+    long lastGlobalReadOutboxMessageId = chat != null ? chat.lastReadOutboxMessageId : 0;
+    if (lastReadOutboxMessageId > lastGlobalReadOutboxMessageId) {
+      updateChatReadOutbox(lastReadOutboxMessageId);
+    }
   }
 
   // Colors
