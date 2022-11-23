@@ -412,12 +412,15 @@ public class ThreadInfo implements MessageThreadListener, ChatListener {
     updateLastMessage(messageId, true);
     if (threadInfo.replyInfo.lastReadInboxMessageId >= messageId)
       return;
-    if (threadInfo.unreadMessageCount == UNKNOWN_UNREAD_MESSAGE_COUNT || message.isOutgoing()) {
-      updateReadInbox(messageId, true);
-      return;
-    }
+    boolean hasUnreadMessages = threadInfo.replyInfo.lastMessageId > Math.max(getGlobalLastReadInboxMessageId(), messageId);
     int unreadMessageCount;
-    if (threadInfo.replyInfo.lastMessageId > Math.max(getGlobalLastReadInboxMessageId(), messageId)) {
+    if (threadInfo.unreadMessageCount == UNKNOWN_UNREAD_MESSAGE_COUNT || message.isOutgoing()) {
+      if (hasUnreadMessages) {
+        unreadMessageCount = threadInfo.unreadMessageCount;
+      } else {
+        unreadMessageCount = 0;
+      }
+    } else if (hasUnreadMessages) {
       int readMessageCount = 1 + message.getMessageCountBetween(threadInfo.replyInfo.lastReadInboxMessageId, messageId);
       if (threadInfo.unreadMessageCount > readMessageCount) {
         unreadMessageCount = threadInfo.unreadMessageCount - readMessageCount;
