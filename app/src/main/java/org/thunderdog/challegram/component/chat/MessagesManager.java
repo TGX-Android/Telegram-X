@@ -1256,6 +1256,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   public void onBottomEndLoaded () {
     onChatAwaitFinish();
     onCanLoadMoreBottomChanged();
+    onCanCountUnreadMessages();
   }
 
   public void onBottomEndChecked () {
@@ -3220,6 +3221,25 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     if (lastReadOutboxMessageId > lastGlobalReadOutboxMessageId) {
       updateChatReadOutbox(lastReadOutboxMessageId);
     }
+  }
+
+  private void onCanCountUnreadMessages () {
+    ThreadInfo messageThread = loader.getMessageThread();
+    if (messageThread == null)
+      return;
+    long lastReadInboxMessageId = messageThread.getLastReadInboxMessageId();
+    int messageCount = adapter.getMessageCount();
+    int unreadMessageCount = 0;
+    for (int index = 0; index < messageCount; index++) {
+      TGMessage message = adapter.getItem(index);
+      if (message.isOutgoing())
+        continue;
+      long messageId = message.getBiggestId();
+      if (messageId <= lastReadInboxMessageId)
+        break;
+      unreadMessageCount += 1 + message.getMessageCountBetween(lastReadInboxMessageId, messageId);
+    }
+    messageThread.updateUnreadMessageCount(unreadMessageCount);
   }
 
   // Colors
