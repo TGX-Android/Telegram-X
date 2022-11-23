@@ -2667,8 +2667,18 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
   }
 
+  private String buildSearchResultsCounter (int index, int totalCount, boolean knownIndex, boolean knownTotal) {
+    if (knownIndex) {
+      return Lang.getXofY(index + 1, totalCount);
+    } else if (knownTotal) {
+      return Lang.plural(R.string.SearchExactlyResults, totalCount);
+    } else {
+      return Lang.plural(R.string.SearchApproximateResults, totalCount);
+    }
+  }
+
   @Override
-  public void showSearchResult (int index, int totalCount, MessageId messageId) {
+  public void showSearchResult (int index, int totalCount, boolean knownIndex, boolean knownTotalCount, MessageId messageId) {
     switch (index) {
       case MessagesSearchManager.STATE_LOADING: {
         controller.onChatSearchStarted();
@@ -2683,7 +2693,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         break;
       }
       default: {
-        controller.onChatSearchFinished(Lang.getXofY(index + 1, totalCount), index, totalCount);
+        controller.onChatSearchFinished(buildSearchResultsCounter(index, totalCount, knownIndex, knownTotalCount), index, totalCount);
         if (messageId != null) {
           highlightMessage(messageId, HIGHLIGHT_MODE_NORMAL, null, true);
         }
@@ -2710,6 +2720,14 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   @Override
   public void onTryToLoadNext () {
     // UI.showToast("Animate try to load next", Toast.LENGTH_SHORT);
+  }
+
+  public boolean canSearchNext () {
+    return searchManager.canMoveToNext();
+  }
+
+  public boolean canSearchPrev () {
+    return searchManager.canMoveToPrev();
   }
 
   public boolean centerMessage (final long chatId, final long messageId, boolean delayed, boolean centered) {

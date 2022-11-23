@@ -10595,8 +10595,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
     searchCounterView.setText(counter);
     setSearchInProgress(false, true);
     updateSearchNavigation();
-    goToNextFoundMessageButtonBadge.setEnabled(index < totalCount - 1, true);
-    goToPrevFoundMessageButtonBadge.setEnabled(index > 0, true);
+    goToNextFoundMessageButtonBadge.setEnabled(manager.canSearchNext(), true);
+    goToPrevFoundMessageButtonBadge.setEnabled(manager.canSearchPrev(), true);
     goToNextFoundMessageButtonBadge.setInProgress(false);
     goToPrevFoundMessageButtonBadge.setInProgress(false);
     searchNavigationButtonVisibleAnimator.setValue((index < totalCount) || (index > 0), true);

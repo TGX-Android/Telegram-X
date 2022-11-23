@@ -3139,6 +3139,11 @@
   <string name="PollResultsTitle">Poll Results</string>
   <string name="QuizResultsTitle">Quiz Results</string>
 
+  <string name="SearchExactlyResults_one">%1$s result</string>
+  <string name="SearchExactlyResults_other">%1$s results</string>
+  <string name="SearchApproximateResults_one">~%1$s result</string>
+  <string name="SearchApproximateResults_other">~%1$s results</string>
+
   <string name="xVotes_one">%1$s vote</string>
   <string name="xVotes_other">%1$s votes</string>
   <string name="NoVotes">No votes</string>
