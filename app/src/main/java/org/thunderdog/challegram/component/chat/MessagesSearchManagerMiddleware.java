@@ -35,7 +35,7 @@ public class MessagesSearchManagerMiddleware {
 
   // Middleware for Chats
 
-  private final ArrayList<SendSearchRequestFilterChunkInfo> filteredChunksIndo = new ArrayList<>();
+  private final ArrayList<SendSearchRequestFilterChunkInfo> filteredChunksInfo = new ArrayList<>();
   private int totalCount = -1;
   private int discardedCount = 0;
   private BaseSearchResultManager searchResultManager;
@@ -289,7 +289,7 @@ public class MessagesSearchManagerMiddleware {
     }
 
     if (discardedCount > 0) {
-      this.filteredChunksIndo.add(new SendSearchRequestFilterChunkInfo(minId, maxId, discardedCount));
+      this.filteredChunksInfo.add(new SendSearchRequestFilterChunkInfo(minId, maxId, discardedCount));
       this.discardedCount += discardedCount;
     }
 
@@ -297,7 +297,7 @@ public class MessagesSearchManagerMiddleware {
   }
 
   private boolean isWasDiscardedBefore (long id) {
-    for (SendSearchRequestFilterChunkInfo part: filteredChunksIndo) {
+    for (SendSearchRequestFilterChunkInfo part: filteredChunksInfo) {
       if (part.isChunkPart(id)) return true;
     }
 
@@ -465,7 +465,7 @@ public class MessagesSearchManagerMiddleware {
     this.discardedSecretMessages = 0;
     this.secretMessagesCache.clear();
 
-    this.filteredChunksIndo.clear();
+    this.filteredChunksInfo.clear();
     this.discardedCount = 0;
     this.totalCount = -1;
   }
