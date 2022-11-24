@@ -5187,6 +5187,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case R.id.btn_messageViewList: {
         if (selectedMessage != null) {
+          foundMessageId = new MessageId(selectedMessage.getMessage().chatId, selectedMessage.getMessage().id);
+          manager.setHighlightMessageId(foundMessageId, MessagesManager.HIGHLIGHT_MODE_NORMAL);
           viewMessagesFromSender(selectedMessage.getMessage().senderId, true);
           clearSelectedMessage();
         }
