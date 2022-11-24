@@ -1694,8 +1694,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         }
       }
       checkPositionInList(msg, index, message.id);
-      viewMessageInternal(message.chatId, message.messageThreadId, message.id); // FIXME(firefly) 🩼
-      viewMessages(); // doesn't affect sent message because it's already viewed
+      viewMessages();
 
       ThreadInfo messageThread = loader.getMessageThread();
       if (messageThread != null) {
