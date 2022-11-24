@@ -10761,7 +10761,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       cameraButton.setVisibility(cameraVisible ? View.VISIBLE: View.GONE);  //.setVisible(cameraVisible);
     }
 
-    messageSenderButton.setVisibility(canSetSender ? View.VISIBLE: View.GONE);
+    messageSenderButton.setVisibility((canSetSender && attachButtons.getVisibility() == View.VISIBLE) ? View.VISIBLE: View.GONE);
     if (canSetSender) {
       messageSenderButton.update(getChatMessageSender(), animated);
     }
