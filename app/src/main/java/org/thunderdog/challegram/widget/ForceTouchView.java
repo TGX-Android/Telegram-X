@@ -20,7 +20,6 @@ import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
-import android.graphics.Outline;
 import android.graphics.Path;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
@@ -31,7 +30,6 @@ import android.os.Build;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewOutlineProvider;
 import android.view.animation.DecelerateInterpolator;
 import android.view.animation.Interpolator;
 import android.view.animation.OvershootInterpolator;
@@ -201,10 +199,10 @@ public class ForceTouchView extends FrameLayoutFix implements
       }
     };
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-      contentWrap.setOutlineProvider(new ViewOutlineProvider() {
+      contentWrap.setOutlineProvider(new android.view.ViewOutlineProvider() {
         @Override
         @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-        public void getOutline (View view, Outline outline) {
+        public void getOutline (View view, android.graphics.Outline outline) {
           outline.setRoundRect(Math.round(drawingRect.left), Math.round(drawingRect.top), Math.round(drawingRect.right), Math.round(drawingRect.bottom), Screen.dp(RADIUS));
         }
       });
