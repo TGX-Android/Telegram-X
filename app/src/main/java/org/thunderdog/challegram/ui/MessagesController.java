@@ -2808,7 +2808,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (chat != null) {
       if (messageThread != null) {
         int unreadCount;
-        if (messageThread.hasUnreadMessages(chat) && messageThread.getLastReadInboxMessageId() != 0 && !areScheduledOnly()) {
+        if (messageThread.hasUnreadMessages(chat) && !areScheduledOnly()) {
           unreadCount = messageThread.getUnreadMessageCount() != ThreadInfo.UNKNOWN_UNREAD_MESSAGE_COUNT ? messageThread.getUnreadMessageCount() : Tdlib.CHAT_MARKED_AS_UNREAD;
         } else {
           unreadCount = 0;
