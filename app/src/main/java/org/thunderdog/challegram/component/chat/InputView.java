@@ -717,8 +717,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       setInput(blockedText, true, false);
     }
 
-    setAllowsAnyGravity(str.length() > 0);
-    showPlaceholder.setValue(s.length() == 0, UI.inUiThread());
+    final boolean hasText = s.length() > 0;
+    setAllowsAnyGravity(hasText);
+    showPlaceholder.setValue(!hasText, !hasText && UI.inUiThread());
   }
 
   @Override
