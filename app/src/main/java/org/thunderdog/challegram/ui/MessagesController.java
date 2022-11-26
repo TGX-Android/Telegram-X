@@ -1786,6 +1786,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
     navigateTo(controller);
   }
 
+  private void deleteThread () {
+    if (messageThread == null)
+      return;
+    TdApi.Message message = messageThread.getOldestMessage();
+    if (message != null && message.canGetMessageThread && message.canBeDeletedForAllUsers) {
+      tdlib.deleteMessages(messageThread.getChatId(), new long[]{message.id}, true);
+    }
+  }
+
   private void joinChat () {
     if (referrer != null) {
       tdlib.client().send(new TdApi.JoinChatByInviteLink(referrer.inviteLink), result -> {
@@ -2030,6 +2039,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case R.id.btn_manageGroup: {
         manageGroup();
+        break;
+      }
+      case R.id.btn_deleteThread: {
+        deleteThread();
         break;
       }
       case R.id.btn_sendScreenshotNotification: {
@@ -4164,6 +4177,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (status != null && TD.isAdmin(status) || tdlib.canChangeInfo(chat)) {
         ids.append(R.id.btn_manageGroup);
         strings.append(R.string.ManageGroup);
+      }
+      if (tdlib.canDeleteMessages(messageThread.getChatId())) {
+        TdApi.Message message = messageThread.getOldestMessage();
+        if (message != null && message.canGetMessageThread && message.canBeDeletedForAllUsers) {
+          ids.append(R.id.btn_deleteThread);
+          strings.append(R.string.DeleteThread);
+        }
       }
       if (messageThread.getChatId() != 0 && messageThread.getChatId() != messageThread.getContextChatId()) {
         ids.append(R.id.btn_openLinkedChat);
@@ -7213,6 +7233,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void onMessageThreadReadInbox (long chatId, long messageThreadId, long lastReadInboxMessageId, int remainingUnreadCount) {
     if (messageThread != null && messageThread.belongsTo(chatId, messageThreadId)) {
       updateCounters(true);
+    }
+  }
+
+  @Override
+  public void onMessageThreadDeleted (long chatId, long messageThreadId) {
+    if (messageThread != null && messageThread.belongsTo(chatId, messageThreadId)) {
+      forceFastAnimationOnce();
+      navigateBack();
     }
   }
 

@@ -1669,4 +1669,13 @@ public class TdlibListeners {
       }
     }
   }
+
+  public void notifyMessageThreadDeleted (long chatId, long messageThreadId) {
+    Iterator<MessageThreadListener> iterator = messageThreadListeners.iterator(LongPair.of(chatId, messageThreadId));
+    if (iterator != null) {
+      while (iterator.hasNext()) {
+        iterator.next().onMessageThreadDeleted(chatId, messageThreadId);
+      }
+    }
+  }
 }

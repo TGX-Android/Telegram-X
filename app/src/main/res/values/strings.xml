@@ -488,6 +488,7 @@
   <string name="justAdd">Just add to group</string>
   <string name="KickFromGroup">Remove from group</string>
   <string name="DeleteChat">Delete chat</string>
+  <string name="DeleteThread">Delete Thread</string>
   <string name="slideToCancel">Slide to Cancel</string>
   <string name="fingerprint_hint3">Please add at least one fingerprint in System Settings &gt; Security &gt; Fingerprints.</string>
   <string name="fingerprint_fail">Unknown finger</string>

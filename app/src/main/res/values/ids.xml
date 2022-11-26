@@ -762,6 +762,7 @@
   <item type="id" name="btn_manageInviteLinks" />
   <item type="id" name="btn_manageJoinRequests" />
   <item type="id" name="btn_manageGroup" />
+  <item type="id" name="btn_deleteThread" />
   <item type="id" name="btn_inviteLinkUserLimit" />
   <item type="id" name="btn_inviteLinkUserSlider" />
   <item type="id" name="btn_inviteLinkDateLimit" />

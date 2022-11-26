@@ -352,6 +352,7 @@ public class ThreadInfo implements MessageThreadListener, ChatListener {
       }
       deletedMessageCount = Integer.bitCount(deleted);
       if (deletedMessageCount > 0) {
+        boolean isMessageThreadDeleted = false;
         TdApi.Message[] newMessages = new TdApi.Message[messageCount - deletedMessageCount];
         if (newMessages.length > 0) {
           int newIndex = 0;
@@ -359,10 +360,17 @@ public class ThreadInfo implements MessageThreadListener, ChatListener {
             TdApi.Message message = threadInfo.messages[index];
             if (!BitwiseUtils.getFlag(deleted, 1 << index)) {
               newMessages[newIndex++] = message;
+            } else if (message.canGetMessageThread) {
+              isMessageThreadDeleted = true;
             }
           }
+        } else {
+          isMessageThreadDeleted = true;
         }
         threadInfo.messages = newMessages;
+        if (isMessageThreadDeleted) {
+          notifyMessageThreadDeleted(true);
+        }
       }
     } else {
       deletedMessageCount = 0;
@@ -593,6 +601,15 @@ public class ThreadInfo implements MessageThreadListener, ChatListener {
       updateLastMessage(replyInfo.lastMessageId, true);
       updateReadInbox(replyInfo.lastReadInboxMessageId, true);
       updateReadOutbox(replyInfo.lastReadOutboxMessageId, true);
+    }
+  }
+
+  private void notifyMessageThreadDeleted (@SuppressWarnings("SameParameterValue") boolean broadcast) {
+    for (MessageThreadListener listener : listeners) {
+      listener.onMessageThreadDeleted(threadInfo.chatId, threadInfo.messageThreadId);
+    }
+    if (tdlib != null && broadcast) {
+      tdlib.listeners().notifyMessageThreadDeleted(threadInfo.chatId, threadInfo.messageThreadId);
     }
   }
 
