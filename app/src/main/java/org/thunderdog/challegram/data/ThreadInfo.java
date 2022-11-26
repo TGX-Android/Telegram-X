@@ -89,6 +89,10 @@ public class ThreadInfo implements MessageThreadListener, ChatListener {
     return threadInfo.messages != null && threadInfo.messages.length > 0;
   }
 
+  public boolean isRootMessage (long messageId) {
+    return getMessage(messageId) != null;
+  }
+
   public @Nullable TdApi.Message getMessage (long messageId) {
     for (TdApi.Message message : threadInfo.messages) {
       if (message.id == messageId) {

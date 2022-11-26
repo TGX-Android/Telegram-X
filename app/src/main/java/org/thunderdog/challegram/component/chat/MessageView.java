@@ -663,7 +663,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       }
 
       if (!msg.isChannel() && !msg.isRepliesChat() && msg.canGetMessageThread() && msg.getMessageThreadId() != m.getMessageThreadId()) {
-        if (msg.isDescendantOrSelf(msg.getMessageThreadId())) {
+        if (msg.isMessageThreadRoot()) {
           int replyCount = msg.getReplyCount();
           if (replyCount > 0) {
             boolean areComments = msg.isChannelAutoForward();

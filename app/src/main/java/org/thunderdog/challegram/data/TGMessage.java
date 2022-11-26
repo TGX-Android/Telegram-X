@@ -448,7 +448,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       loadForward();
     }
 
-    if (msg.replyToMessageId != 0 && (msg.replyToMessageId != msg.messageThreadId || msg.messageThreadId != messagesController().getMessageThreadId())) {
+    ThreadInfo messageThread = messagesController().getMessageThread();
+    if (msg.replyToMessageId != 0 && (messageThread == null || !messageThread.isRootMessage(msg.replyToMessageId))) {
       loadReply();
     }
 
@@ -872,7 +873,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (isChannel() || isChannelAutoForward()) {
       // View X Comments
       highlightMessageId = null;
-    } else if (isDescendantOrSelf(getMessageThreadId())) {
+    } else if (isMessageThreadRoot()) {
       // View X Replies
       highlightMessageId = new MessageId(messageWithThread.chatId, MessageId.MIN_VALID_ID);
     } else {
@@ -2838,6 +2839,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return tdlib.isRepliesChat(msg.chatId);
   }
 
+  public final boolean isMessageThread () {
+    return messagesController().getMessageThread() != null;
+  }
+
   private void layoutAvatar () {
     if (useBubbles() && !needAvatar()) {
       hAvatar = null;
@@ -4094,6 +4099,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         return new long[] {msg.id};
       }
     }
+  }
+
+  public final boolean isMessageThreadRoot () {
+    return canGetMessageThread() && (isChannel() || (isMessageThread() && isThreadHeader()) || (msg.messageThreadId != 0 && msg.replyToMessageId == 0));
   }
 
   public final long getMessageThreadId () {
