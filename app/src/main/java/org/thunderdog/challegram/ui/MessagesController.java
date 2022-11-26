@@ -2729,7 +2729,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     closeCommandsKeyboard(false);
 
-    manager.openChat(chat, messageThread, previewSearchFilter, this, areScheduled, !inPreviewMode && !isInForceTouchMode());
+    if (previewSearchSender == null) {
+      manager.openChat(chat, messageThread, previewSearchFilter, this, areScheduled, !inPreviewMode && !isInForceTouchMode());
+    }
+
     updateShadowColor();
     if (scheduleButton != null && scheduleButton.setVisible(tdlib.chatHasScheduled(chat.id))) {
       commandButton.setTranslationX(scheduleButton.isVisible() ? 0 : scheduleButton.getLayoutParams().width);
@@ -3870,10 +3873,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
       Keyboard.show(inputView);
     }
     // tdlib.context().changePreferredAccountId(tdlib.id(), TdlibManager.SWITCH_REASON_CHAT_FOCUS);
-    if (!inPreviewMode && previewSearchSender != null && headerView != null) {
-      viewMessagesFromSender(previewSearchSender, true);
-      previewSearchSender = null;
-    }
   }
 
   private void resetOnFocus () {
@@ -3907,6 +3906,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       lastMessageSearchQuery = previewSearchQuery;
       previewSearchQuery = null;
       return;
+    }
+    if (previewSearchSender != null && headerView != null) {
+      viewMessagesFromSender(previewSearchSender, false);
     }
   }
 
@@ -10563,6 +10565,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   @Override
+  protected int getHeaderColorId () {
+    if (previewSearchSender != null) {
+      return R.id.theme_color_filling;
+    }
+    return super.getHeaderColorId();
+  }
+
+  @Override
   protected void onAfterLeaveSearchMode () {
     super.onAfterLeaveSearchMode();
     resetSearchControls(true);
@@ -11074,6 +11084,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public boolean onBeforeLeaveSearchMode () {
     if (searchMode == SEARCH_MODE_USERS) {
       showSearchByUserView(false, true);
+      return false;
+    }
+    if (previewSearchSender != null) {
+      navigateBack();
       return false;
     }
     return true;
