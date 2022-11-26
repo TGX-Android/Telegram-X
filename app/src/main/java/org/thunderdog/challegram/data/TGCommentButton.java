@@ -57,7 +57,6 @@ import me.vkryl.android.util.ClickHelper;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
-import me.vkryl.core.collection.LongSet;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
@@ -763,15 +762,8 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
           if (messageThread == null) {
             return;
           }
-          // FIXME(firefly) both ways don't work after deleting a message
-          // c.tdlib().markChatAsRead(messageThread.getChatId(), messageThread.getMessageThreadId(), null);
-          LongSet messageIds = new LongSet(2);
-          messageIds.add(messageThread.getLastMessageId());
-          TdApi.Chat chat = c.getChat();
-          if (chat != null && chat.lastMessage != null) {
-            messageIds.add(chat.lastMessage.id);
-          }
-          c.tdlib().send(new TdApi.ViewMessages(messageThread.getChatId(), messageThread.getMessageThreadId(), messageIds.toArray(), true), c.tdlib().okHandler());
+          long[] messageIds = {messageThread.getLastMessageId()};
+          c.tdlib().send(new TdApi.ViewMessages(messageThread.getChatId(), messageThread.getMessageThreadId(), messageIds, true), c.tdlib().okHandler());
         }
       };
       forceTouchContext.setButtons(actionListener, controller, ids, icons, hints);
