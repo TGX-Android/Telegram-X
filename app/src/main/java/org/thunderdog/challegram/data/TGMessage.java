@@ -914,7 +914,17 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       switch (result.getConstructor()) {
         case TdApi.MessageThreadInfo.CONSTRUCTOR: {
           TdApi.MessageThreadInfo messageThread = (TdApi.MessageThreadInfo) result;
-          TdlibUi.ChatOpenParameters params = new TdlibUi.ChatOpenParameters().keepStack().messageThread(ThreadInfo.openedFromChat(tdlib, messageThread, getChatId())).after(chatId -> {
+          ThreadInfo threadInfo = ThreadInfo.openedFromChat(tdlib, messageThread, getChatId());
+          if (Config.SHOW_CHANNEL_POST_REPLY_INFO_IN_COMMENTS && isChannel() &&
+            msg.replyInChatId != 0 && msg.replyToMessageId != 0 &&
+            msg.chatId == query.chatId && isDescendantOrSelf(query.messageId)) {
+            TdApi.Message message = threadInfo.getOldestMessage();
+            if (message != null && message.replyToMessageId == 0 && tdlib.isChannelAutoForward(message)) {
+              message.replyInChatId = msg.replyInChatId;
+              message.replyToMessageId = msg.replyToMessageId;
+            }
+          }
+          TdlibUi.ChatOpenParameters params = new TdlibUi.ChatOpenParameters().keepStack().messageThread(threadInfo).after(chatId -> {
             openingComments.setValue(false, needAnimateChanges());
           });
           if (highlightMessageId != null) {
@@ -2216,7 +2226,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         endX = viewWidth - startX;
       }
 
-      if (useBubbles && isForward() && !(isSelfChat() || isRepliesChat())) {
+      if (useBubbles && isForward() && !forceForwardedInfo()) {
         startX += xTextPadding;
       }
 
@@ -2632,7 +2642,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case CLICK_TYPE_REPLY: {
           if (replyData != null && replyData.hasValidMessage()) {
             if (msg.replyInChatId != msg.chatId) {
-              openMessageThread(new MessageId(msg.replyInChatId, msg.replyToMessageId));
+              if (isMessageThread() && isThreadHeader()) {
+                tdlib.ui().openMessage(controller(), msg.replyInChatId, new MessageId(msg.replyInChatId, msg.replyToMessageId), openParameters());
+              } else {
+                openMessageThread(new MessageId(msg.replyInChatId, msg.replyToMessageId));
+              }
             } else {
               highlightOtherMessage(msg.replyToMessageId);
             }

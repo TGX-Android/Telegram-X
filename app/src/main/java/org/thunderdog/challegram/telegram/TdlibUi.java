@@ -2394,6 +2394,20 @@ public class TdlibUi extends Handler {
           switch (result.getConstructor()) {
             case TdApi.MessageThreadInfo.CONSTRUCTOR:
               ThreadInfo messageThread = ThreadInfo.openedFromMessage(context.tdlib(), (TdApi.MessageThreadInfo) result, openParameters.messageId);
+              if (Config.SHOW_CHANNEL_POST_REPLY_INFO_IN_COMMENTS) {
+                TdApi.Message message = messageThread.getOldestMessage();
+                if (message != null && message.replyToMessageId == 0 && message.forwardInfo != null && tdlib.isChannelAutoForward(message)) {
+                  tdlib.send(new TdApi.GetRepliedMessage(message.forwardInfo.fromChatId, message.forwardInfo.fromMessageId), (object) -> {
+                    if (object.getConstructor() == TdApi.Message.CONSTRUCTOR) {
+                      TdApi.Message repliedMessage = (TdApi.Message) object;
+                      message.replyInChatId = repliedMessage.chatId;
+                      message.replyToMessageId = repliedMessage.id;
+                    }
+                    openMessage(context, messageThread.getChatId(), messageId, messageThread, openParameters);
+                  });
+                  break;
+                }
+              }
               openMessage(context, messageThread.getChatId(), messageId, messageThread, openParameters);
               break;
             case TdApi.Error.CONSTRUCTOR:
