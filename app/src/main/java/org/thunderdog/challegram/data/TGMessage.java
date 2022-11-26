@@ -2701,8 +2701,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private static final int CLICK_TYPE_NONE = 0;
   private static final int CLICK_TYPE_REPLY = 1;
   private static final int CLICK_TYPE_AVATAR = 2;
-  private static final int CLICK_TYPE_COMMENTS = 3;
-  private static final int CLICK_TYPE_CHANNEL_MESSAGE_ICON = 4;
+  private static final int CLICK_TYPE_CHANNEL_MESSAGE_ICON = 3;
 
   private int clickType = CLICK_TYPE_NONE;
 
