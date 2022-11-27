@@ -67,7 +67,6 @@ public class TdlibListeners {
   final ReferenceLongMap<PollListener> pollListeners;
 
   final ReferenceMap<String, ReactionLoadListener> reactionLoadListeners;
-  final ReferenceMap<LongPair, MessageThreadListener> messageThreadListeners;
 
   final Map<String, List<TdApi.Message>> pendingMessages = new HashMap<>();
 
@@ -96,7 +95,6 @@ public class TdlibListeners {
     this.animatedEmojiListeners = new ReferenceList<>(true);
 
     this.reactionLoadListeners = new ReferenceMap<>(true);
-    this.messageThreadListeners = new ReferenceMap<>();
 
     this.messageChatListeners = new ReferenceLongMap<>();
     this.messageEditChatListeners = new ReferenceLongMap<>();
@@ -399,14 +397,6 @@ public class TdlibListeners {
   @AnyThread
   public void removeReactionLoadListener (String reactionKey, ReactionLoadListener listener) {
     reactionLoadListeners.remove(reactionKey, listener);
-  }
-
-  public void subscribeToMessageThreadUpdates (long chatId, long messageThreadId, MessageThreadListener listener) {
-    messageThreadListeners.add(LongPair.of(chatId, messageThreadId), listener);
-  }
-
-  public void unsubscribeFromMessageThreadUpdates (long chatId, long messageThreadId, MessageThreadListener listener) {
-    messageThreadListeners.remove(LongPair.of(chatId, messageThreadId), listener);
   }
 
   @AnyThread
@@ -1629,53 +1619,6 @@ public class TdlibListeners {
   void updateSuggestedActions (TdApi.UpdateSuggestedActions update) {
     for (TdlibOptionListener listener : optionListeners) {
       listener.onSuggestedActionsChanged(update.addedActions, update.removedActions);
-    }
-  }
-
-  // notifyMessageThread
-
-  public void notifyMessageThreadReadInbox (long chatId, long messageThreadId, long lastReadInboxMessageId, int remainingUnreadCount) {
-    Iterator<MessageThreadListener> iterator = messageThreadListeners.iterator(LongPair.of(chatId, messageThreadId));
-    if (iterator != null) {
-      while (iterator.hasNext()) {
-        iterator.next().onMessageThreadReadInbox(chatId, messageThreadId, lastReadInboxMessageId, remainingUnreadCount);
-      }
-    }
-  }
-
-  public void notifyMessageThreadReadOutbox (long chatId, long messageThreadId, long lastReadOutboxMessageId) {
-    Iterator<MessageThreadListener> iterator = messageThreadListeners.iterator(LongPair.of(chatId, messageThreadId));
-    if (iterator != null) {
-      while (iterator.hasNext()) {
-        iterator.next().onMessageThreadReadOutbox(chatId, messageThreadId, lastReadOutboxMessageId);
-      }
-    }
-  }
-
-  public void notifyMessageThreadLastMessageChanged (long chatId, long messageThreadId, long lastMessageId) {
-    Iterator<MessageThreadListener> iterator = messageThreadListeners.iterator(LongPair.of(chatId, messageThreadId));
-    if (iterator != null) {
-      while (iterator.hasNext()) {
-        iterator.next().onMessageThreadLastMessageChanged(chatId, messageThreadId, lastMessageId);
-      }
-    }
-  }
-
-  public void notifyMessageThreadReplyCountChanged (long chatId, long messageThreadId, int replyCount) {
-    Iterator<MessageThreadListener> iterator = messageThreadListeners.iterator(LongPair.of(chatId, messageThreadId));
-    if (iterator != null) {
-      while (iterator.hasNext()) {
-        iterator.next().onMessageThreadReplyCountChanged(chatId, messageThreadId, replyCount);
-      }
-    }
-  }
-
-  public void notifyMessageThreadDeleted (long chatId, long messageThreadId) {
-    Iterator<MessageThreadListener> iterator = messageThreadListeners.iterator(LongPair.of(chatId, messageThreadId));
-    if (iterator != null) {
-      while (iterator.hasNext()) {
-        iterator.next().onMessageThreadDeleted(chatId, messageThreadId);
-      }
     }
   }
 }

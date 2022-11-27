@@ -284,10 +284,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         if (isFocused && !(first - BOTTOM_PRELOAD_COUNT <= 0 && loader.loadMore(false)) && last + TOP_PRELOAD_COUNT >= adapter.getItemCount()) {
           loader.loadMore(true);
         }
+        checkMessageThreadUnreadCounter(first);
       }
       checkScrollButton(first, last);
       checkMessageThreadHeaderPreview(last);
-      checkMessageThreadUnreadCounter();
 
       controller.checkRoundVideo(first, last, true);
     }
@@ -307,8 +307,6 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     if (first == -1 || last == -1 || inSpecialMode() || !isFocused) {
       return false;
     }
-
-    ThreadInfo messageThread = loader.getMessageThread();
 
     TGMessage topEdge = adapter.getMessage(first);
     TGMessage bottomEdge = adapter.getMessage(last);
@@ -354,9 +352,6 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           }
           if (msg.containsUnreadReactions() && id > lastViewedReaction) {
             lastViewedReaction = id;
-          }
-          if (messageThread != null) {
-            messageThread.updateMessageViewed(msg);
           }
           if (list == null) {
             list = new LongSet(last - first);
@@ -1252,11 +1247,13 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     onChatAwaitFinish();
     ensureContentHeight();
     saveScrollPosition();
+    checkMessageThreadReplyCounter();
   }
 
   public void onBottomEndLoaded () {
     onChatAwaitFinish();
     onCanLoadMoreBottomChanged();
+    checkMessageThreadReplyCounter();
     checkMessageThreadUnreadCounter();
   }
 
@@ -1694,13 +1691,11 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         }
       }
       checkPositionInList(msg, index, message.id);
-      viewMessages();
-
       ThreadInfo messageThread = loader.getMessageThread();
       if (messageThread != null) {
-        messageThread.updateLastMessage(message.id);
         messageThread.updateReadInbox(message.id);
       }
+      viewMessages();
     }
   }
 
@@ -1743,7 +1738,6 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
       ThreadInfo messageThread = loader.getMessageThread();
       if (messageThread != null) {
-        messageThread.updateLastMessage(message.id);
         messageThread.updateReadInbox(message.id);
       }
     }
@@ -3228,34 +3222,101 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   @Override
   public void onMessageThreadReadOutbox (long chatId, long messageThreadId, long lastReadOutboxMessageId) {
-    TdApi.Chat chat = tdlib.chat(chatId);
-    long lastGlobalReadOutboxMessageId = chat != null ? chat.lastReadOutboxMessageId : 0;
-    if (lastReadOutboxMessageId > lastGlobalReadOutboxMessageId) {
-      updateChatReadOutbox(lastReadOutboxMessageId);
+    if (chatId == loader.getChatId() && messageThreadId == loader.getMessageThreadId()) {
+      TdApi.Chat chat = tdlib.chat(chatId);
+      long lastGlobalReadOutboxMessageId = chat != null ? chat.lastReadOutboxMessageId : 0;
+      if (lastReadOutboxMessageId > lastGlobalReadOutboxMessageId) {
+        updateChatReadOutbox(lastReadOutboxMessageId);
+      }
     }
   }
 
-  private void checkMessageThreadUnreadCounter () {
+  private void checkMessageThreadReplyCounter () {
+    if (true)
+      return; /// ???
     ThreadInfo messageThread = loader.getMessageThread();
-    if (messageThread == null || loader.canLoadBottom())
+    if (messageThread == null || loader.canLoadTop() || loader.canLoadBottom())
       return;
-    long lastReadInboxMessageId = messageThread.getLastReadInboxMessageId();
-    int messageCount = adapter.getMessageCount();
-    if (messageCount == 0 || adapter.getBottomMessage().getSmallestId() <= lastReadInboxMessageId) {
-      messageThread.markAsRead();
-      return;
-    }
-    int unreadMessageCount = 0;
+    int messageCount = getActiveMessageCount();
+    int replyCount = 0;
     for (int index = 0; index < messageCount; index++) {
-      TGMessage message = adapter.getItem(index);
-      if (message.isOutgoing())
-        continue;
-      long messageId = message.getBiggestId();
-      if (messageId <= lastReadInboxMessageId)
-        break;
-      unreadMessageCount += 1 + message.getMessageCountBetween(lastReadInboxMessageId, messageId);
+      replyCount += adapter.getItem(index).getMessageCount();
     }
-    messageThread.updateUnreadMessageCount(unreadMessageCount);
+    messageThread.updateReplyCount(replyCount);
+  }
+
+  private void checkMessageThreadUnreadCounter () {
+    if (manager != null) {
+      checkMessageThreadUnreadCounter(manager.findFirstVisibleItemPosition());
+    }
+  }
+
+  private void checkMessageThreadUnreadCounter (int firstVisibleItemPosition) {
+    ThreadInfo messageThread = loader.getMessageThread();
+    if (messageThread == null || inSpecialMode() || !isFocused || firstVisibleItemPosition == -1)
+      return;
+    if (loader.canLoadBottom()) {
+      if (messageThread.getUnreadMessageCount() == ThreadInfo.UNKNOWN_UNREAD_MESSAGE_COUNT) {
+        View view = manager.findViewByPosition(firstVisibleItemPosition);
+        if (view instanceof MessageProvider) {
+          TGMessage message = ((MessageProvider) view).getMessage();
+          messageThread.updateReadInbox(message.getBiggestId());
+        }
+        return;
+      }
+      long lastReadInboxMessageId = messageThread.getLastReadInboxMessageId();
+      long maxReadInboxMessageId = lastReadInboxMessageId;
+      int readMessageCount = 0;
+      for (int index = firstVisibleItemPosition; index < manager.getItemCount(); index++) {
+        View view = manager.findViewByPosition(index);
+        if (!(view instanceof MessageProvider))
+          continue;
+        TGMessage message = ((MessageProvider) view).getMessage();
+        if (message.isOutgoing())
+          continue;
+        if (message.isThreadHeader())
+          break;
+        long inboxMessageId = message.getBiggestId();
+        if (inboxMessageId <= lastReadInboxMessageId)
+          break;
+        maxReadInboxMessageId = Math.max(maxReadInboxMessageId, inboxMessageId);
+        readMessageCount += 1 + message.getMessageCountBetween(lastReadInboxMessageId, inboxMessageId);
+      }
+      if (maxReadInboxMessageId > lastReadInboxMessageId) {
+        int unreadMessageCount;
+        if (messageThread.getUnreadMessageCount() > readMessageCount) {
+          unreadMessageCount = messageThread.getUnreadMessageCount() - readMessageCount;
+        } else {
+          unreadMessageCount = ThreadInfo.UNKNOWN_UNREAD_MESSAGE_COUNT;
+        }
+        messageThread.updateReadInbox(maxReadInboxMessageId, unreadMessageCount);
+      }
+    } else {
+      if (firstVisibleItemPosition == 0) {
+        messageThread.markAsRead();
+        return;
+      }
+      long lastReadInboxMessageId = messageThread.getLastReadInboxMessageId();
+      View firstVisibleItemView = manager.findViewByPosition(firstVisibleItemPosition);
+      if (firstVisibleItemView instanceof MessageProvider) {
+        TGMessage firstVisibleMessage = ((MessageProvider) firstVisibleItemView).getMessage();
+        lastReadInboxMessageId = Math.max(lastReadInboxMessageId, firstVisibleMessage.getBiggestId());
+      }
+      int unreadMessageCount = 0;
+      int messageCount = getActiveMessageCount();
+      for (int index = 0; index < messageCount; index++) {
+        TGMessage message = adapter.getItem(index);
+        if (message.isOutgoing())
+          continue;
+        if (message.isThreadHeader())
+          break;
+        long inboxMessageId = message.getBiggestId();
+        if (inboxMessageId <= lastReadInboxMessageId)
+          break;
+        unreadMessageCount += 1 + message.getMessageCountBetween(lastReadInboxMessageId, inboxMessageId);
+      }
+      messageThread.updateReadInbox(lastReadInboxMessageId, unreadMessageCount);
+    }
   }
 
   // Colors
