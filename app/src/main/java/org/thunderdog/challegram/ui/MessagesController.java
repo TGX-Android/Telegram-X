@@ -9786,7 +9786,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Override
   public void onChatReadOutbox (final long chatId, final long lastReadOutboxMessageId) {
     tdlib.ui().post(() -> {
-      if (getChatId() == chatId) {
+      if (getChatId() == chatId && messageThread == null) {
         manager.updateChatReadOutbox(lastReadOutboxMessageId);
       }
     });

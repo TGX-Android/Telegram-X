@@ -2989,11 +2989,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     ThreadInfo messageThread = loader.getMessageThread();
     if (lastSubscribedMessageThread != messageThread) {
       if (lastSubscribedMessageThread != null) {
-        lastSubscribedMessageThread.unsubscribeFromUpdates();
+        lastSubscribedMessageThread.removeListener(this);
       }
       lastSubscribedMessageThread = messageThread;
       if (messageThread != null) {
-        messageThread.subscribeForUpdates();
         messageThread.addListener(this);
       }
     }
@@ -3006,7 +3005,6 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       lastSubscribedChatId = 0;
     }
     if (lastSubscribedMessageThread != null) {
-      lastSubscribedMessageThread.unsubscribeFromUpdates();
       lastSubscribedMessageThread.removeListener(this);
       lastSubscribedMessageThread = null;
     }

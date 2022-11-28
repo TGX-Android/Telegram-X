@@ -21,10 +21,8 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.MessageThreadListener;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.tool.UI;
 
 import java.util.Objects;
 
@@ -33,7 +31,7 @@ import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
 
-public class ThreadInfo implements ChatListener {
+public class ThreadInfo {
   public static final ThreadInfo INVALID = new ThreadInfo(null, new TdApi.MessageThreadInfo(), 0, false);
   public static final int UNKNOWN_UNREAD_MESSAGE_COUNT = -1;
 
@@ -418,31 +416,12 @@ public class ThreadInfo implements ChatListener {
     updateReadInbox(lastReadInboxMessageId, getUnreadMessageCount());
   }
 
-  @Override
-  public void onChatReadOutbox (long chatId, long lastReadOutboxMessageId) {
-    if (chatId == threadInfo.chatId && lastReadOutboxMessageId != 0) {
-      UI.post(() -> updateReadOutbox(lastReadOutboxMessageId));
-    }
-  }
-
   public void addListener (MessageThreadListener listener) {
     listeners.add(listener);
   }
 
   public void removeListener (MessageThreadListener listener) {
     listeners.remove(listener);
-  }
-
-  public void subscribeForUpdates () {
-    if (tdlib != null) {
-      tdlib.listeners().subscribeToChatUpdates(threadInfo.chatId, this);
-    }
-  }
-
-  public void unsubscribeFromUpdates () {
-    if (tdlib != null) {
-      tdlib.listeners().unsubscribeFromChatUpdates(threadInfo.chatId, this);
-    }
   }
 
   private void updateLastMessage (long lastMessageId) {
@@ -490,7 +469,6 @@ public class ThreadInfo implements ChatListener {
       // update ids only
       threadInfo.replyInfo.recentReplierIds = replyInfo.recentReplierIds;
       updateLastMessage(replyInfo.lastMessageId);
-      // updateReplyCount(replyInfo.replyCount); ???
       updateReadInbox(replyInfo.lastReadInboxMessageId, UNKNOWN_UNREAD_MESSAGE_COUNT);
       updateReadOutbox(replyInfo.lastReadOutboxMessageId);
     }
