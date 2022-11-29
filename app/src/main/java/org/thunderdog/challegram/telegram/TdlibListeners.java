@@ -20,7 +20,6 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.data.TD;
-import org.thunderdog.challegram.util.LongPair;
 
 import java.util.ArrayList;
 import java.util.HashMap;
