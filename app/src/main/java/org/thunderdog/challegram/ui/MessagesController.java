@@ -2556,6 +2556,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private boolean inPreviewMode;
   private int previewMode;
   private @Nullable MessageId foundMessageId;
+  private @Nullable MessageId searchFromUserMessageId;
   private @Nullable String previewSearchQuery;
   private TdApi.MessageSender previewSearchSender;
   private TdApi.SearchMessagesFilter previewSearchFilter;
@@ -5313,6 +5314,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       case R.id.btn_messageViewList: {
         if (selectedMessage != null) {
           foundMessageId = new MessageId(selectedMessage.getMessage().chatId, selectedMessage.getMessage().id);
+          searchFromUserMessageId = foundMessageId;
           manager.setHighlightMessageId(foundMessageId, MessagesManager.HIGHLIGHT_MODE_NORMAL);
           viewMessagesFromSender(selectedMessage.getMessage().senderId, true);
           clearSelectedMessage();
@@ -10717,6 +10719,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Override
   protected void onLeaveSearchMode () {
+    if (searchFromUserMessageId != null) {
+      manager.setHighlightMessageId(searchFromUserMessageId, MessagesManager.HIGHLIGHT_MODE_WITHOUT_HIGHLIGHT);
+    }
     onSetSearchFilteredShowMode(false);
     manager.onDestroySearch();
     manager.getAdapter().checkAllMessages();

@@ -2364,6 +2364,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   // Highlight message id
 
+  public static final int HIGHLIGHT_MODE_WITHOUT_HIGHLIGHT = -2;
   public static final int HIGHLIGHT_MODE_START  = -1;
   public static final int HIGHLIGHT_MODE_NONE   = 0;
   public static final int HIGHLIGHT_MODE_NORMAL = 1;
