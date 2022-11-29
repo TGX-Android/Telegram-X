@@ -535,7 +535,7 @@ public class MessagesLoader implements Client.ResultHandler {
       this.content = content;
     }
   }
-  
+
   private static @StringRes int getPreviewStringKey (String key) {
     switch (key) {
       case "json_1_name": return R.string.json_1_name;
@@ -1695,7 +1695,12 @@ public class MessagesLoader implements Client.ResultHandler {
 
   public boolean canLoadBottom () {
     if (canLoadBottom) {
-      return canLoadBottom = !isEndReached();
+      if (isEndReached()) {
+        canLoadBottom = false;
+        manager.onBottomEndLoaded();
+        return false;
+      }
+      return true;
     }
     return false;
   }
