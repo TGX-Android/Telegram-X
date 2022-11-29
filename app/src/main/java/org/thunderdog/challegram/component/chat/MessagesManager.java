@@ -1693,7 +1693,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       checkPositionInList(msg, index, message.id);
       ThreadInfo messageThread = loader.getMessageThread();
       if (messageThread != null) {
-        messageThread.updateReadInbox(message.id);
+        messageThread.updateReadInbox(message);
       }
       viewMessages();
     }
@@ -1738,7 +1738,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
       ThreadInfo messageThread = loader.getMessageThread();
       if (messageThread != null) {
-        messageThread.updateReadInbox(message.id);
+        messageThread.updateReadInbox(message);
       }
     }
   }
@@ -1974,7 +1974,11 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       }
     }
     if (messageThread != null) {
-      messageThread.updateMessagesDeleted(messageIds, removedCount, removedUnreadCount);
+      if (areScheduled()) {
+        messageThread.updateMessagesDeleted(messageIds, /* removedCount */ 0, /* removedUnreadCount */ 0);
+      } else {
+        messageThread.updateMessagesDeleted(messageIds, removedCount, removedUnreadCount);
+      }
     }
   }
 

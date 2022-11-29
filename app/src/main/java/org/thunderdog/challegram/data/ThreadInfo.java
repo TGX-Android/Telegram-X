@@ -387,7 +387,7 @@ public class ThreadInfo {
   }
 
   public void updateNewMessage (TGMessage message) {
-    if (message.isScheduled())
+    if (message.isScheduled() || message.getMessageThreadId() != getMessageThreadId())
       return;
 
     int replyCount = getReplyCount() + message.getMessageCount();
@@ -414,6 +414,12 @@ public class ThreadInfo {
 
   public void updateReadInbox (long lastReadInboxMessageId) {
     updateReadInbox(lastReadInboxMessageId, getUnreadMessageCount());
+  }
+
+  public void updateReadInbox (@Nullable TdApi.Message message) {
+    if (message == null || message.messageThreadId != getMessageThreadId() || TD.isScheduled(message))
+      return;
+    updateReadInbox(message.id);
   }
 
   public void addListener (MessageThreadListener listener) {
