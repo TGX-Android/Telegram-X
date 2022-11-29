@@ -3700,6 +3700,8 @@
   <string name="RemindAtCustomTime">Remind at specific date…</string>
 
   <string name="ScheduledMessages">Scheduled Messages</string>
+  <string name="ScheduledComments">Scheduled Comments</string>
+  <string name="ScheduledReplies">Scheduled Replies</string>
 
   <string name="ScheduledUntilOnline">Scheduled until online</string>
   <string name="ScheduledToday">Scheduled for today</string>

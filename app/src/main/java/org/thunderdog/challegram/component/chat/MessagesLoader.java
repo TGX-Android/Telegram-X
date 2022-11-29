@@ -213,7 +213,7 @@ public class MessagesLoader implements Client.ResultHandler {
 
         // int constructor = object.getConstructor();
 
-        final int knownTotalCount;
+        int knownTotalCount;
         TdApi.Message[] messages;
         final String nextSecretSearchOffset;
         switch (object.getConstructor()) {
@@ -259,6 +259,22 @@ public class MessagesLoader implements Client.ResultHandler {
             }
             Log.unexpectedTdlibResponse(object, TdApi.GetChatHistory.class, TdApi.Messages.class, TdApi.ChatEvents.class, TdApi.Error.class);
             return;
+          }
+        }
+
+        final ThreadInfo finalMessageThread = messageThread;
+        if (specialMode == SPECIAL_MODE_SCHEDULED && finalMessageThread != null && messages.length > 0) {
+          long messageThreadId = finalMessageThread.getMessageThreadId();
+          ArrayList<TdApi.Message> messageList = new ArrayList<>(messages.length);
+          for (TdApi.Message message : messages) {
+            if (message.messageThreadId == messageThreadId || finalMessageThread.isRootMessage(message.replyToMessageId)) {
+              message.messageThreadId = messageThreadId;
+              messageList.add(message);
+            }
+          }
+          if (messages.length != messageList.size()) {
+            messages = messageList.toArray(new TdApi.Message[0]);
+            knownTotalCount = messages.length;
           }
         }
 

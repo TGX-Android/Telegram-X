@@ -6,4 +6,5 @@ public interface MessageThreadListener {
   default void onMessageThreadReadInbox (long chatId, long messageThreadId, long lastReadInboxMessageId, int remainingUnreadCount) { }
   default void onMessageThreadReadOutbox (long chatId, long messageThreadId, long lastReadOutboxMessageId) { }
   default void onMessageThreadDeleted (long chatId, long messageThreadId) { }
+  default void onMessageThreadHasScheduledMessagesChanged (long chatId, long messageThreadId, boolean hasScheduledMessages) { }
 }

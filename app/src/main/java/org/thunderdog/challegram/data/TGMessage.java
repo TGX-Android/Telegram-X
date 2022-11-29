@@ -4119,7 +4119,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public final long getMessageThreadId () {
-    return msg.messageThreadId;
+    return getOldestMessage().messageThreadId;
   }
 
   public final long[] getOtherMessageIds (long exceptMessageId) {

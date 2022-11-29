@@ -23,6 +23,7 @@ import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.MessageThreadListener;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.tool.UI;
 
 import java.util.Objects;
 
@@ -41,6 +42,8 @@ public class ThreadInfo {
   private final boolean areComments;
   private final TdApi.MessageThreadInfo threadInfo;
   private final long contextChatId;
+
+  private boolean hasScheduledMessages = false;
 
   private ThreadInfo (@Nullable Tdlib tdlib, @NonNull TdApi.MessageThreadInfo threadInfo, long contextChatId, boolean areComments) {
     this.tdlib = tdlib;
@@ -88,7 +91,7 @@ public class ThreadInfo {
   }
 
   public boolean isRootMessage (long messageId) {
-    return getMessage(messageId) != null;
+    return messageId != 0 && getMessage(messageId) != null;
   }
 
   public @Nullable TdApi.Message getMessage (long messageId) {
@@ -387,8 +390,13 @@ public class ThreadInfo {
   }
 
   public void updateNewMessage (TGMessage message) {
-    if (message.isScheduled() || message.getMessageThreadId() != getMessageThreadId())
+    if (message.getMessageThreadId() != getMessageThreadId())
       return;
+
+    if (message.isScheduled()) {
+      setHasScheduledMessages(true);
+      return;
+    }
 
     int replyCount = getReplyCount() + message.getMessageCount();
     updateReplyCount(replyCount);
@@ -510,8 +518,48 @@ public class ThreadInfo {
     }
   }
 
+  private void notifyMessageThreadHasScheduledMessagesChanged (boolean hasScheduledMessages) {
+    for (MessageThreadListener listener : listeners) {
+      listener.onMessageThreadHasScheduledMessagesChanged(getChatId(), getMessageThreadId(), hasScheduledMessages);
+    }
+  }
+
   private long getGlobalLastReadInboxMessageId () {
     TdApi.Chat chat = tdlib != null ? tdlib.chat(threadInfo.chatId) : null;
     return chat != null ? chat.lastReadInboxMessageId : 0;
+  }
+
+  public boolean hasScheduledMessages () {
+    return hasScheduledMessages;
+  }
+
+  public void setHasScheduledMessages (boolean hasScheduledMessages) {
+    if (this.hasScheduledMessages != hasScheduledMessages) {
+      this.hasScheduledMessages = hasScheduledMessages;
+      notifyMessageThreadHasScheduledMessagesChanged(hasScheduledMessages);
+    }
+  }
+
+  public void checkHasScheduledMessages () {
+    if (tdlib != null && tdlib.chatHasScheduled(getChatId())) {
+      tdlib.send(new TdApi.GetChatScheduledMessages(getChatId()), (result) -> {
+        if (result.getConstructor() == TdApi.Messages.CONSTRUCTOR) {
+          TdApi.Message[] messages = ((TdApi.Messages) result).messages;
+          boolean hasScheduledMessages = false;
+          for (TdApi.Message message : messages) {
+            if (message.messageThreadId == threadInfo.messageThreadId || isRootMessage(message.replyToMessageId)) {
+              hasScheduledMessages = true;
+              break;
+            }
+          }
+          boolean finalHasScheduledMessages = hasScheduledMessages;
+          UI.post(() -> {
+            setHasScheduledMessages(tdlib.chatHasScheduled(getChatId()) && finalHasScheduledMessages);
+          });
+        }
+      });
+    } else {
+      setHasScheduledMessages(false);
+    }
   }
 }

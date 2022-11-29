@@ -538,7 +538,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (messageThread == null)
       return;
     if (areScheduled) {
-      headerCell.setForcedSubtitle(Lang.lowercase(Lang.getString(R.string.ScheduledMessages)));
+      headerCell.setForcedSubtitle(Lang.lowercase(Lang.getString(messageThread.areComments() ? R.string.ScheduledComments : R.string.ScheduledReplies)));
     } else {
       headerCell.setForcedSubtitle(messageThread.chatHeaderSubtitle());
     }
@@ -2727,9 +2727,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     manager.openChat(chat, messageThread, previewSearchFilter, this, areScheduled, !inPreviewMode && !isInForceTouchMode());
     updateShadowColor();
-    if (scheduleButton != null && scheduleButton.setVisible(tdlib.chatHasScheduled(chat.id))) {
-      commandButton.setTranslationX(scheduleButton.isVisible() ? 0 : scheduleButton.getLayoutParams().width);
-      attachButtons.updatePivot();
+    if (scheduleButton != null) {
+      boolean hasScheduledMessages = messageThread != null ? messageThread.hasScheduledMessages() : tdlib.chatHasScheduled(chat.id);
+      if (scheduleButton.setVisible(hasScheduledMessages)) {
+        commandButton.setTranslationX(scheduleButton.isVisible() ? 0 : scheduleButton.getLayoutParams().width);
+        attachButtons.updatePivot();
+      }
     }
 
     // Preloading data so profile will not jump when opening
@@ -2878,6 +2881,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     checkRoundVideo();
     checkInlineResults();
     checkBroadcastingSomeAction();
+    checkMessageThreadHasScheduledMessages();
     if (pinnedMessagesBar != null) {
       pinnedMessagesBar.setAnimationsDisabled(!isFocused());
     }
@@ -2941,6 +2945,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
     roundVideoController.setAttachedToView(targetView, isInForceTouchMode() ? this : null);
     if (targetChat && onScroll) {
       roundVideoController.onMessagesScroll();
+    }
+  }
+
+  private void checkMessageThreadHasScheduledMessages () {
+    if (messageThread != null && isFocused() && !areScheduledOnly()) {
+      messageThread.checkHasScheduledMessages();
     }
   }
 
@@ -7244,6 +7254,28 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
+  @Override
+  public void onMessageThreadHasScheduledMessagesChanged (long chatId, long messageThreadId, boolean hasScheduledMessages) {
+    if (messageThread != null && messageThread.belongsTo(chatId, messageThreadId)) {
+      updateHasScheduledMessages(hasScheduledMessages);
+    }
+  }
+
+  private void updateHasScheduledMessages (boolean hasScheduledMessages) {
+    if (scheduleButton != null && scheduleButton.setVisible(hasScheduledMessages)) {
+      commandButton.setTranslationX(scheduleButton.isVisible() ? 0 : scheduleButton.getLayoutParams().width);
+      attachButtons.updatePivot();
+    }
+    if (areScheduled && !hasScheduledMessages) {
+      forceFastAnimationOnce();
+      if (inTransformMode()) {
+        exitOnTransformFinish = true;
+      } else {
+        navigateBack();
+      }
+    }
+  }
+
   /*private void updatePinnedMessageView () {
     if (topWrap != null) {
       float factor = pinnedMessageFactor * (1f - getSearchTransformFactor());
@@ -8940,6 +8972,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
           switch (result.getConstructor()) {
             case TdApi.Message.CONSTRUCTOR: {
               TdApi.Message message = (TdApi.Message) result;
+              if (isSchedule && messageThreadId != 0 && message.messageThreadId == 0) {
+                message.messageThreadId = messageThreadId;
+              }
               sentMessages.add(message);
               int sentCount = sentMessages.size();
               if (sentCount < expectedCount) {
@@ -9731,17 +9766,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void onChatHasScheduledMessagesChanged (long chatId, boolean hasScheduledMessages) {
     tdlib.ui().post(() -> {
       if (getChatId() == chatId) {
-        if (scheduleButton != null && scheduleButton.setVisible(tdlib.chatHasScheduled(chatId))) {
-          commandButton.setTranslationX(scheduleButton.isVisible() ? 0 : scheduleButton.getLayoutParams().width);
-          attachButtons.updatePivot();
-        }
-        if (areScheduled && !hasScheduledMessages) {
-          forceFastAnimationOnce();
-          if (inTransformMode()) {
-            exitOnTransformFinish = true;
-          } else {
-            navigateBack();
-          }
+        if (messageThread != null) {
+          messageThread.checkHasScheduledMessages();
+        } else {
+          updateHasScheduledMessages(tdlib.chatHasScheduled(chatId));
         }
       }
     });
