@@ -1812,7 +1812,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void viewScheduledMessages (boolean force) {
     MessagesController c = new MessagesController(context, tdlib);
     boolean keyboardVisible = getKeyboardState();
-    c.setArguments(new Arguments(openedFromChatList, chat, messageThread, null, MessagesManager.HIGHLIGHT_MODE_NONE, null).setScheduled(true).setOpenKeyboard(keyboardVisible));
+    c.setArguments(new Arguments(openedFromChatList, chat, /* messageThread */ null, null, MessagesManager.HIGHLIGHT_MODE_NONE, null).setScheduled(true).setOpenKeyboard(keyboardVisible));
     if (force) {
       c.forceFastAnimationOnce();
     }
@@ -2043,6 +2043,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case R.id.btn_deleteThread: {
         deleteThread();
+        break;
+      }
+      case R.id.btn_viewScheduled: {
+        viewScheduledMessages(false);
         break;
       }
       case R.id.btn_sendScreenshotNotification: {
@@ -2361,7 +2365,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     public boolean areScheduled, openKeyboard;
 
-    public ThreadInfo messageThread;
+    public final @Nullable ThreadInfo messageThread;
 
     public Referrer referrer;
     public TdApi.InternalLinkTypeVideoChat videoChatOrLiveStreamInvitation;
@@ -2401,6 +2405,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       this.previewMode = previewMode;
       this.chat = chat;
       this.chatList = chatList;
+      this.messageThread = null;
 
       this.inPreviewMode = true;
       this.highlightMode = MessagesManager.HIGHLIGHT_MODE_NONE;
@@ -2411,6 +2416,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       this.constructor = 3;
       this.chat = chat;
       this.chatList = chatList;
+      this.messageThread = null;
       this.searchQuery = query;
       this.searchSender = sender;
       this.searchFilter = filter;
@@ -2425,6 +2431,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       this.constructor = 4;
       this.chat = chat;
       this.chatList = chatList;
+      this.messageThread = null;
       this.searchQuery = query;
       this.searchSender = sender;
       this.searchFilter = filter;
@@ -2441,6 +2448,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
 
     public Arguments setScheduled (boolean areScheduled) {
+      if (areScheduled && messageThread != null) {
+        throw new IllegalArgumentException();
+      }
       this.areScheduled = areScheduled;
       return this;
     }
@@ -2727,7 +2737,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     manager.openChat(chat, messageThread, previewSearchFilter, this, areScheduled, !inPreviewMode && !isInForceTouchMode());
     updateShadowColor();
-    if (scheduleButton != null && scheduleButton.setVisible(tdlib.chatHasScheduled(chat.id))) {
+    if (scheduleButton != null && scheduleButton.setVisible(messageThread == null && tdlib.chatHasScheduled(chat.id))) {
       commandButton.setTranslationX(scheduleButton.isVisible() ? 0 : scheduleButton.getLayoutParams().width);
       attachButtons.updatePivot();
     }
@@ -4188,6 +4198,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (messageThread.getChatId() != 0 && messageThread.getChatId() != messageThread.getContextChatId()) {
         ids.append(R.id.btn_openLinkedChat);
         strings.append(R.string.LinkedGroup);
+      }
+      if (tdlib.chatHasScheduled(messageThread.getChatId())) {
+        ids.append(R.id.btn_viewScheduled);
+        strings.append(R.string.ScheduledMessages);
       }
       showMore(ids.get(), strings.get());
       return;
@@ -9731,7 +9745,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void onChatHasScheduledMessagesChanged (long chatId, boolean hasScheduledMessages) {
     tdlib.ui().post(() -> {
       if (getChatId() == chatId) {
-        if (scheduleButton != null && scheduleButton.setVisible(tdlib.chatHasScheduled(chatId))) {
+        if (scheduleButton != null && scheduleButton.setVisible(messageThread == null && tdlib.chatHasScheduled(chatId))) {
           commandButton.setTranslationX(scheduleButton.isVisible() ? 0 : scheduleButton.getLayoutParams().width);
           attachButtons.updatePivot();
         }

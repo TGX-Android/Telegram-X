@@ -3022,14 +3022,14 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   @Override
   public void onNewMessage (final TdApi.Message message) {
-    if ((message.schedulingState != null) == areScheduled()) {
+    final ThreadInfo messageThread = loader.getMessageThread();
+    if (TD.isScheduled(message) == areScheduled()) {
       if (indexOfSentMessage(message.chatId, message.id) != -1)
         return;
       final TdApi.Chat chat = tdlib.chatStrict(message.chatId);
-      final ThreadInfo messageThread = controller.getMessageThread();
       final TGMessage parsedMessage = TGMessage.valueOf(this, message, chat, messageThread, chatAdmins);
       showMessage(chat.id, parsedMessage);
-    } else if (isFocused() && (message.schedulingState != null)) {
+    } else if (isFocused() && TD.isScheduled(message) && messageThread == null) {
       controller.viewScheduledMessages(true);
     }
   }
@@ -3046,7 +3046,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   public List<TGMessage> parseMessages (List<TdApi.Message> messages) {
     final List<TGMessage> parsedMessages = new ArrayList<>(messages.size());
     final TdApi.Chat chat = tdlib.chatStrict(messages.get(0).chatId);
-    final ThreadInfo messageThread = controller.getMessageThread();
+    final ThreadInfo messageThread = loader.getMessageThread();
     TGMessage cur = null;
     LongSparseArray<TdApi.ChatAdministrator> chatAdmins = this.chatAdmins;
     for (TdApi.Message message : messages) {
