@@ -1358,7 +1358,7 @@ public class MessagesLoader implements Client.ResultHandler {
           }
         } else if (!unreadFound) {
           if (top != null && top.getBiggestId() >= lastReadInboxMessageId ||
-              messageThread != null && cur.getBiggestId() > lastReadInboxMessageId) {
+              (messageThread != null && cur.getBiggestId() > lastReadInboxMessageId)) {
             unreadFound = true;
             if (cur.isOutgoing()) {
               lookForInbox = true;
