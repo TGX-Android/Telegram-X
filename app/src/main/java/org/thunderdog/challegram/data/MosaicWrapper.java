@@ -19,6 +19,7 @@ import android.graphics.Paint;
 import android.view.MotionEvent;
 import android.view.View;
 
+import androidx.annotation.Dimension;
 import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -45,6 +46,9 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.reference.ReferenceUtils;
 
 public class MosaicWrapper implements FactorAnimator.Target, ComplexReceiver.KeyFilter {
+  public static final @Dimension(unit = Dimension.DP) int MIN_LAYOUT_WIDTH = 160;
+  public static final @Dimension(unit = Dimension.DP) int MIN_LAYOUT_HEIGHT = 120;
+
   private final ArrayList<MediaWrapper> items;
   private final @Nullable TGMessage parent;
   private MultipleViewProvider viewProvider;
@@ -122,7 +126,7 @@ public class MosaicWrapper implements FactorAnimator.Target, ComplexReceiver.Key
       sumAspectRatio -= (float) wrapper.getContentWidth() / (float) wrapper.getContentHeight();
       if (built) {
         built = false;
-        return build(layoutWidth, layoutHeight, fitMode, animateChanges);
+        return build(layoutWidth, layoutHeight, minLayoutWidth, minLayoutHeight, fitMode, animateChanges);
       }
     }
     return MOSAIC_NOT_CHANGED;
@@ -281,7 +285,7 @@ public class MosaicWrapper implements FactorAnimator.Target, ComplexReceiver.Key
   private static final float SPACING_SIZE_DP = 2f;
 
   private boolean built;
-  private int layoutWidth, layoutHeight;
+  private int layoutWidth, layoutHeight, minLayoutWidth, minLayoutHeight;
   private int fitMode;
   private float sumAspectRatio;
 
@@ -294,30 +298,29 @@ public class MosaicWrapper implements FactorAnimator.Target, ComplexReceiver.Key
     return items.isEmpty() ? 1.0f : sumAspectRatio / (float) items.size();
   }
 
-  public int build (final int layoutWidth, final int layoutHeight, int fitMode, final boolean animateChanges) {
-    return build(layoutWidth, layoutHeight, fitMode, animateChanges, false, 1f);
+  public int build (final int layoutWidth, final int layoutHeight, final int minLayoutWidth, final int minLayoutHeight, int fitMode, final boolean animateChanges) {
+    return build(layoutWidth, layoutHeight, minLayoutWidth, minLayoutHeight, fitMode, animateChanges, false, 1f);
   }
 
-  private int build (final int layoutWidth, final int layoutHeight, int fitMode, final boolean animateChanges, boolean isRetry, float sizeScale) {
+  private int build (final int layoutWidth, final int layoutHeight, final int minLayoutWidth, final int minLayoutHeight, int fitMode, final boolean animateChanges, boolean isRetry, float sizeScale) {
     cancelTouch();
 
     if (layoutWidth <= 0 || layoutHeight <= 0) {
       return MOSAIC_NOT_CHANGED;
     }
 
-    if (built && this.layoutWidth == layoutWidth && this.layoutHeight == layoutHeight && this.fitMode == fitMode) {
+    if (built && this.layoutWidth == layoutWidth && this.layoutHeight == layoutHeight && this.minLayoutWidth == minLayoutWidth && this.minLayoutHeight == minLayoutHeight && this.fitMode == fitMode) {
       return MOSAIC_NOT_CHANGED;
     }
 
     this.layoutWidth = layoutWidth;
     this.layoutHeight = layoutHeight;
+    this.minLayoutWidth = minLayoutWidth;
+    this.minLayoutHeight = minLayoutHeight;
     this.fitMode = fitMode;
     this.built = false;
 
     final int itemCount = this.items.size();
-
-    final int minLayoutWidth = Math.min(layoutWidth, Screen.dp(160f));
-    final int minLayoutHeight = Screen.dp(120f);
 
     if (itemCount == 1) {
       MediaWrapper item = items.get(0);
@@ -807,7 +810,7 @@ public class MosaicWrapper implements FactorAnimator.Target, ComplexReceiver.Key
       }
 
       if (scale != 1f) {
-        int result = build(layoutWidth, layoutHeight, fitMode, animate, true, scale);
+        int result = build(layoutWidth, layoutHeight, minLayoutWidth, minLayoutHeight, fitMode, animate, true, scale);
 
         this.layoutWidth = prevLayoutWidth;
         this.layoutHeight = prevLayoutHeight;
@@ -979,7 +982,7 @@ public class MosaicWrapper implements FactorAnimator.Target, ComplexReceiver.Key
 
   public int rebuild () {
     built = false;
-    return build(layoutWidth, layoutHeight, fitMode, true);
+    return build(layoutWidth, layoutHeight, minLayoutWidth, minLayoutHeight, fitMode, true);
   }
 
   public int replaceMediaWrapper (MediaWrapper mediaWrapper) {

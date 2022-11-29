@@ -36,6 +36,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
@@ -64,6 +65,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.ChatsController;
+import org.thunderdog.challegram.ui.FeatureToggles;
 import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.PeopleController;
 import org.thunderdog.challegram.ui.SettingsAdapter;
@@ -272,6 +274,10 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
     if (Test.NEED_CLICK) {
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_DRAWER_ITEM, R.id.btn_reportBug, R.drawable.baseline_bug_report_24, Test.CLICK_NAME, false));
+    }
+    if (BuildConfig.EXPERIMENTAL) {
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      items.add(new ListItem(ListItem.TYPE_DRAWER_ITEM, R.id.btn_featureToggles, R.drawable.outline_toggle_on_24, "Feature Toggles", false));
     }
     if (Settings.instance().inDeveloperMode()) {
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
@@ -895,6 +901,9 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
         context().currentTdlib().settings().toggleChatStyle();
         break;
       }
+      case R.id.btn_featureToggles:
+        UI.navigateTo(new FeatureToggles.Controller(context, context.currentTdlib()));
+        break;
     }
   }
 

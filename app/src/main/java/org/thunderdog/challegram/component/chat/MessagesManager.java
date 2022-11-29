@@ -48,6 +48,7 @@ import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.ListManager;
 import org.thunderdog.challegram.telegram.MessageEditListener;
 import org.thunderdog.challegram.telegram.MessageListener;
+import org.thunderdog.challegram.telegram.MessageThreadListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
@@ -58,7 +59,10 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.ui.FeatureToggles;
+import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.MessagesController;
+import org.thunderdog.challegram.ui.SettingHolder;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.CancellableResultHandler;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
@@ -82,7 +86,7 @@ import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
 
 public class MessagesManager implements Client.ResultHandler, MessagesSearchManager.Delegate,
-  MessageListener, MessageEditListener, Comparator<TGMessage>, TGPlayerController.PlayListBuilder, BaseActivity.PasscodeListener, TdlibCache.ChatMemberStatusChangeListener, TdlibSettingsManager.DismissMessageListener {
+  MessageListener, MessageEditListener, MessageThreadListener, Comparator<TGMessage>, TGPlayerController.PlayListBuilder, BaseActivity.PasscodeListener, TdlibCache.ChatMemberStatusChangeListener, TdlibSettingsManager.DismissMessageListener {
   private final MessagesController controller;
   private final Tdlib tdlib;
   private MessagesAdapter adapter;
@@ -115,7 +119,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       public void onScrollStateChanged (RecyclerView recyclerView, int newState) {
         if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
           controller.collapsePinnedMessagesBar(true);
-          if (Settings.instance().needHideChatKeyboardOnScroll() && controller != null) {
+          if (Settings.instance().needHideChatKeyboardOnScroll()) {
             controller.hideAllKeyboards();
           }
           wasScrollByUser = true;
@@ -140,7 +144,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           saveScrollPosition();
           ((MessagesRecyclerView) recyclerView).showDateForcely();
         }
-        if (dy != 0  && !hasScrolled && loader.getChatId() != 0) {
+        if (dy != 0 && !hasScrolled && loader.getChatId() != 0) {
           hasScrolled = true;
           controller.onInteractedWithContent();
           controller.onFirstChatScroll();
@@ -282,8 +286,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         if (isFocused && !(first - BOTTOM_PRELOAD_COUNT <= 0 && loader.loadMore(false)) && last + TOP_PRELOAD_COUNT >= adapter.getItemCount()) {
           loader.loadMore(true);
         }
+        checkMessageThreadUnreadCounter(first);
       }
       checkScrollButton(first, last);
+      checkMessageThreadHeaderPreview(last);
 
       controller.checkRoundVideo(first, last, true);
     }
@@ -337,7 +343,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         if (!msg.canBeSaved() && !msg.isSponsored()) {
           hasProtectedContent = true;
         }
-        if (msg == headerMessage) {
+        if (isHeaderMessage(msg)) {
           headerVisible = true;
         }
         maxDate = Math.max(msg.getDate(), maxDate);
@@ -441,6 +447,32 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   public void checkScrollToBottomButton () {
     controller.setScrollToBottomVisible(getActiveMessageCount() > 0 && (lastScrollToBottomVisible || loader.canLoadBottom() || hasReturnMessage()), isReturnAbove());
+  }
+
+  public void checkMessageThreadHeaderPreview (int last) {
+    if (last == -1)
+      return;
+    ThreadInfo messageThread = loader.getMessageThread();
+    if (messageThread == null || !shouldShowThreadHeaderPreview())
+      return;
+    if (getActiveMessageCount() == 0) {
+      controller.showHidePinnedMessage(false, null);
+      return;
+    }
+    int messagePreviewHeight = SettingHolder.measureHeightForType(ListItem.TYPE_MESSAGE_PREVIEW);
+    View view = manager.findViewByPosition(last);
+    if (view == null || view.getTop() > messagePreviewHeight) {
+      controller.showHidePinnedMessage(false, null);
+      return;
+    }
+    TGMessage msg = view instanceof MessageProvider ? ((MessageProvider) view).getMessage() : null;
+    int headerBottom = isHeaderMessage(msg) ? view.getBottom() : Integer.MIN_VALUE;
+    boolean showHeaderPreview = headerBottom <= messagePreviewHeight;
+    controller.showHidePinnedMessage(showHeaderPreview, messageThread.getOldestMessage());
+  }
+
+  public boolean shouldShowThreadHeaderPreview () {
+    return loader.getMessageThread() != null && !inSpecialMode();
   }
 
   public void onCanLoadMoreBottomChanged () {
@@ -1109,7 +1141,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
   }
 
-  public void displayMessages (ArrayList<TGMessage> items, int mode, int scrollPosition, TGMessage scrollMessage, MessageId scrollMessageId, int highlightMode, boolean willRepeat) {
+  public void displayMessages (ArrayList<TGMessage> items, int mode, int scrollPosition, TGMessage scrollMessage, MessageId scrollMessageId, int highlightMode, boolean willRepeat, boolean canLoadTop) {
     int size = items.size();
     if (size == 0 && mode != MessagesLoader.MODE_INITIAL && mode != MessagesLoader.MODE_REPEAT_INITIAL) {
       if (!willRepeat) {
@@ -1140,13 +1172,12 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         } else {
           adapter.addMessages(items, true);
         }
+        checkTopEndReached(items, willRepeat, canLoadTop);
         if (scrollMessage == null) {
           if (scrollMessageId != null && scrollMessageId.isHistoryStart() && !items.isEmpty()) {
-            manager.scrollToPositionWithOffset(items.size() - 1, -items.get(items.size() - 1).getHeight());
-          } else if (scrollPosition == 0) {
-            manager.scrollToPositionWithOffset(0, 0);
+            scrollToHistoryStart();
           } else {
-            manager.scrollToPosition(scrollPosition);
+            scrollToMessage(scrollPosition, scrollMessageId, highlightMode);
           }
         } else {
           scrollToMessage(scrollPosition, scrollMessage, highlightMode == HIGHLIGHT_MODE_NONE ? HIGHLIGHT_MODE_START : highlightMode, false, false);
@@ -1179,8 +1210,18 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   private boolean insertMessageOnLoad;
 
   private boolean shouldInsertHeaderMessage () {
-    TGMessage message = adapter.getTopMessage();
-    return message == null || message != headerMessage;
+    TGMessage topMessage = adapter.getTopMessage();
+    if (loader.getMessageThread() != null) {
+      return topMessage == null || !topMessage.isThreadHeader();
+    }
+    if (headerMessage != null) {
+      return topMessage == null || topMessage != headerMessage;
+    }
+    return false;
+  }
+
+  private boolean isHeaderMessage (@Nullable TGMessage message) {
+    return message != null && (headerMessage == message || message.isThreadHeader());
   }
 
   public void clearHeaderMessage () {
@@ -1203,7 +1244,56 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   public void onTopEndLoaded () {
-    if (headerMessage != null && shouldInsertHeaderMessage()) {
+    insertHeaderMessageIfNeeded();
+    checkBotStart();
+    onChatAwaitFinish();
+    ensureContentHeight();
+    saveScrollPosition();
+    checkMessageThreadReplyCounter();
+  }
+
+  public void onBottomEndLoaded () {
+    onChatAwaitFinish();
+    onCanLoadMoreBottomChanged();
+    checkMessageThreadReplyCounter();
+    checkMessageThreadUnreadCounter();
+  }
+
+  public void onBottomEndChecked () {
+    requestSponsoredMessage();
+  }
+
+  private void checkTopEndReached (List<TGMessage> items, boolean willRepeat, boolean canLoadTop) {
+    if (shouldInsertHeaderMessage()) {
+      boolean topEndReached;
+      if (!canLoadTop) {
+        topEndReached = true;
+      } else if (!items.isEmpty()) {
+        final int accountId = tdlib.id();
+        Settings.SavedMessageId messageId = Settings.instance().getScrollMessageId(accountId, loader.getChatId(), loader.getMessageThreadId());
+        if (messageId != null && messageId.topEndMessageId != 0) {
+          TGMessage topMessage = items.get(items.size() - 1);
+          topEndReached = topMessage.isDescendantOrSelf(messageId.topEndMessageId);
+        } else {
+          topEndReached = false;
+        }
+      } else {
+        topEndReached = !willRepeat;
+      }
+      if (topEndReached) {
+        insertHeaderMessageIfNeeded();
+      }
+    }
+  }
+
+  private void insertHeaderMessageIfNeeded () {
+    ThreadInfo messageThread = loader.getMessageThread();
+    if (messageThread != null && shouldInsertHeaderMessage()) {
+      TGMessage threadHeaderMessage = messageThread.buildHeaderMessage(this);
+      if (threadHeaderMessage != null) {
+        adapter.addMessage(threadHeaderMessage, true, false);
+      }
+    } else if (headerMessage != null && shouldInsertHeaderMessage()) {
       if (headerMessage instanceof TGMessageBotInfo) {
         ((TGMessageBotInfo) headerMessage).setBoundAdapter(adapter);
       }
@@ -1211,19 +1301,6 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     } else {
       insertMessageOnLoad = true;
     }
-    checkBotStart();
-    onChatAwaitFinish();
-    ensureContentHeight();
-    saveScrollPosition();
-  }
-
-  public void onBottomEndLoaded () {
-    onChatAwaitFinish();
-    onCanLoadMoreBottomChanged();
-  }
-
-  public void onBottomEndChecked () {
-    requestSponsoredMessage();
   }
 
   private void requestSponsoredMessage () {
@@ -1260,7 +1337,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   private int getActiveMessageCount () {
     int messageCount = adapter.getMessageCount();
-    if (messageCount > 0 && headerMessage != null && adapter.getMessage(messageCount - 1) == headerMessage) {
+    if (messageCount > 0 && isHeaderMessage(adapter.getTopMessage())) {
       messageCount--;
     }
     return messageCount;
@@ -1485,6 +1562,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     if (messageThreadId != 0 && message.getMessageThreadId() != messageThreadId) {
       return;
     }
+    ThreadInfo messageThread = loader.getMessageThread();
+    if (messageThread != null) {
+      messageThread.updateNewMessage(message);
+    }
     if (!message.isOutgoing()) {
       controller.checkSwitchPm(message.getMessage());
     }
@@ -1612,6 +1693,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         }
       }
       checkPositionInList(msg, index, message.id);
+      ThreadInfo messageThread = loader.getMessageThread();
+      if (messageThread != null) {
+        messageThread.updateReadInbox(message);
+      }
       viewMessages();
     }
   }
@@ -1652,13 +1737,18 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     int index = adapter.indexOfMessageContainer(oldMessageId);
     if (index != -1 && adapter.getItem(index).setSendFailed(message, oldMessageId)) {
       invalidateViewAt(index);
+
+      ThreadInfo messageThread = loader.getMessageThread();
+      if (messageThread != null) {
+        messageThread.updateReadInbox(message);
+      }
     }
   }
 
   private void replaceMessage (TGMessage msg, int index, long messageId, TdApi.Message message) {
     switch (msg.removeMessage(messageId)) {
       case TGMessage.REMOVE_COMPLETELY: {
-        TGMessage replace = TGMessage.valueOf(this, message, msg.getChat(), chatAdmins);
+        TGMessage replace = TGMessage.valueOf(this, message, msg.getChat(), msg.messagesController().getMessageThread(), chatAdmins);
         adapter.replaceItem(index, replace);
         break;
       }
@@ -1693,26 +1783,24 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
   }
 
-  private void updateMessageContentChanged (long chatId, long messageId, TdApi.MessageContent content) {
+  private void updateMessageContent (long chatId, long messageId, TdApi.MessageContent content) {
     controller.onMessageChanged(chatId, messageId, content);
-    if (adapter.isEmpty()) {
-      return;
-    }
-
     ArrayList<TGMessage> items = adapter.getItems();
-    if (items == null || items.isEmpty()) {
-      return;
-    }
-
-    int i = 0;
-    for (TGMessage item : items) {
-      TdApi.Message msg = item.getMessage();
-      if (item.isDescendantOrSelf(messageId)) {
-        replaceMessageContent(item, i, messageId, content);
-      } else if (msg.replyToMessageId == messageId) {
-        item.replaceReplyContent(messageId, content);
+    if (!adapter.isEmpty() && items != null) {
+      int i = 0;
+      for (TGMessage item : items) {
+        TdApi.Message msg = item.getMessage();
+        if (item.isDescendantOrSelf(messageId)) {
+          replaceMessageContent(item, i, messageId, content);
+        } else if (msg.replyToMessageId == messageId) {
+          item.replaceReplyContent(messageId, content);
+        }
+        i++;
       }
-      i++;
+    }
+    ThreadInfo messageThread = loader.getMessageThread();
+    if (messageThread != null) {
+      messageThread.updateMessageContent(messageId, content);
     }
   }
 
@@ -1730,6 +1818,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         }
       }
     }
+    ThreadInfo messageThread = loader.getMessageThread();
+    if (messageThread != null) {
+      messageThread.updateMessageEdited(messageId, editDate, replyMarkup);
+    }
   }
 
   private void updateMessageOpened (long messageId) {
@@ -1737,6 +1829,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     if (index != -1) {
       adapter.getItem(index).setMessageOpened(messageId);
       invalidateViewAt(index);
+    }
+    ThreadInfo messageThread = loader.getMessageThread();
+    if (messageThread != null) {
+      messageThread.updateMessageOpened(messageId);
     }
   }
 
@@ -1756,6 +1852,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       adapter.getItem(index).readMention(messageId);
       // TODO nothing?
     }
+    ThreadInfo messageThread = loader.getMessageThread();
+    if (messageThread != null) {
+      messageThread.updateMessageMentionRead(messageId);
+    }
   }
 
   public void updateMessageUnreadReactions (long messageId, @Nullable TdApi.UnreadReaction[] unreadReactions) {
@@ -1766,12 +1866,20 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       lastCheckedCount = 0;
       viewMessages();
     }
+    ThreadInfo messageThread = loader.getMessageThread();
+    if (messageThread != null) {
+      messageThread.updateMessageUnreadReactions(messageId, unreadReactions);
+    }
   }
 
   public void updateMessageInteractionInfo (long messageId, @Nullable TdApi.MessageInteractionInfo interactionInfo) {
     int index = adapter.indexOfMessageContainer(messageId);
     if (index != -1 && adapter.getItem(index).setMessageInteractionInfo(messageId, interactionInfo)) {
       invalidateViewAt(index);
+    }
+    ThreadInfo messageThread = loader.getMessageThread();
+    if (messageThread != null) {
+      messageThread.updateMessageInteractionInfo(messageId, interactionInfo);
     }
   }
 
@@ -1780,6 +1888,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     if (index != -1 && adapter.getItem(index).setIsPinned(messageId, isPinned)) {
       invalidateViewAt(index);
     }
+    ThreadInfo messageThread = loader.getMessageThread();
+    if (messageThread != null) {
+      messageThread.updateMessageIsPinned(messageId, isPinned);
+    }
   }
 
   public void updateMessagesDeleted (long chatId, long[] messageIds) {
@@ -1787,8 +1899,13 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     controller.onMessagesDeleted(chatId, messageIds);
 
     int removedCount = 0;
+    int removedUnreadCount = 0;
     int selectedCount = controller.getSelectedMessageCount();
     boolean unselectedSomeMessages = false;
+
+    TdApi.Chat chat = tdlib.chatStrict(chatId);
+    ThreadInfo messageThread = loader.getMessageThread();
+    long lastReadInboxMessageId = messageThread != null ? messageThread.getLastReadInboxMessageId() : chat.lastReadInboxMessageId;
 
     int i = 0;
     main: while (i < adapter.getMessageCount()) {
@@ -1807,6 +1924,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
               selectedCount--;
               unselectedSomeMessages = true;
             }
+            if (!item.isOutgoing() && messageId > lastReadInboxMessageId) {
+              removedUnreadCount++;
+            }
             if (++removedCount == messageIds.length) {
               break main;
             } else {
@@ -1818,6 +1938,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
             if (controller.unselectMessage(messageId, removed)) {
               selectedCount--;
               unselectedSomeMessages = true;
+            }
+            if (!item.isOutgoing() && messageId > lastReadInboxMessageId) {
+              removedUnreadCount++;
             }
             if (++removedCount == messageIds.length) {
               break main;
@@ -1850,6 +1973,13 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       } else if (messageCount == 1 && adapter.getMessage(0) instanceof TGMessageBotInfo) {
         rebuildFirstItem(false, false);
         controller.showActionBotButton();
+      }
+    }
+    if (messageThread != null) {
+      if (areScheduled()) {
+        messageThread.updateMessagesDeleted(messageIds, /* removedCount */ 0, /* removedUnreadCount */ 0);
+      } else {
+        messageThread.updateMessagesDeleted(messageIds, removedCount, removedUnreadCount);
       }
     }
   }
@@ -2121,7 +2251,6 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         message.updateDate();
         controller.getMessagesView().invalidate();
       }
-      // TODO show/hide pinned message
     }
   }
 
@@ -2314,7 +2443,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       return;
     }
     final long fromMessageId;
-    if (lastViewedMention != 0)  {
+    if (lastViewedMention != 0) {
       fromMessageId = lastViewedMention;
     } else {
       TGMessage message = adapter.getTopMessage();
@@ -2403,7 +2532,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       return;
     }
     final long fromMessageId;
-    if (lastViewedReaction != 0)  {
+    if (lastViewedReaction != 0) {
       fromMessageId = lastViewedReaction;
     } else {
       TGMessage message = adapter.getTopMessage();
@@ -2556,8 +2685,61 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     } else {
       manager.scrollToPositionWithOffset(index, offset);
     }
+  }
 
+  private void scrollToHistoryStart () {
+    int messageCount = adapter.getMessageCount();
+    if (messageCount == 0)
+      return;
+    boolean isTopMessageHeader = isHeaderMessage(adapter.getTopMessage());
+    int scrollIndex = isTopMessageHeader ? messageCount - 2 : messageCount - 1;
+    if (scrollIndex < 0)
+      return;
+    TGMessage scrollMessage = adapter.getMessage(scrollIndex);
+    if (scrollMessage == null)
+      return;
+    ThreadInfo messageThread = loader.getMessageThread();
+    if (messageThread != null) {
+      int targetHeight = getTargetHeight();
+      if (FeatureToggles.SCROLL_TO_HEADER_MESSAGE_ON_THREAD_FIRST_OPEN && isTopMessageHeader) {
+        manager.scrollToPositionWithOffset(messageCount - 1, targetHeight / 2);
+        return;
+      }
+      if (shouldShowThreadHeaderPreview() && isTopMessageHeader) {
+        int previewHeight = SettingHolder.measureHeightForType(ListItem.TYPE_MESSAGE_PREVIEW);
+        int sumHeight = previewHeight;
+        for (int index = scrollIndex; index >= 0; index--) {
+          TGMessage message = adapter.getMessage(index);
+          if (message == null)
+            break;
+          sumHeight += message.getHeight();
+          if (targetHeight <= sumHeight)
+            break;
+        }
+        if (targetHeight <= sumHeight) {
+          controller.showHidePinnedMessage(true, messageThread.getOldestMessage());
+          targetHeight -= previewHeight;
+        }
+      }
+      manager.scrollToPositionWithOffset(scrollIndex, targetHeight - scrollMessage.getHeight());
+    } else {
+      manager.scrollToPositionWithOffset(scrollIndex, -scrollMessage.getHeight());
+    }
+  }
 
+  private void scrollToMessage (int scrollPosition, @Nullable MessageId scrollMessageId, int highlightMode) {
+    if (scrollMessageId != null && !adapter.isEmpty()) {
+      int index = adapter.indexOfMessageContainer(scrollMessageId);
+      if (index != -1) {
+        scrollToMessage(index, adapter.getItem(index), highlightMode == HIGHLIGHT_MODE_NONE ? HIGHLIGHT_MODE_START : highlightMode, false, false);
+        return;
+      }
+    }
+    if (scrollPosition == 0) {
+      manager.scrollToPositionWithOffset(0, 0);
+    } else {
+      manager.scrollToPosition(scrollPosition);
+    }
   }
 
   private void scrollToMessage (int index, TGMessage scrollMessage, int highlightMode, boolean smooth, boolean blocking) {
@@ -2565,16 +2747,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       scrollToPositionWithOffset(index, 0, false);
       return;
     }
-    final int accountId = tdlib.id();
     if (highlightMode == HIGHLIGHT_MODE_POSITION_RESTORE) {
+      final int accountId = tdlib.id();
       Settings.SavedMessageId messageId = Settings.instance().getScrollMessageId(accountId, loader.getChatId(), loader.getMessageThreadId());
-      int offset;
-      if (messageId != null) {
-        this.returnToMessageIds = messageId.returnToMessageIds;
-        offset = messageId.offsetPixels;
-      } else {
-        offset = 0;
-      }
+      int offset = messageId != null ? messageId.offsetPixels : 0;
       this.returnToMessageIds = messageId != null ? messageId.returnToMessageIds : null;
       scrollToPositionWithOffset(index, offset, false);
       checkScrollToBottomButton();
@@ -2764,7 +2940,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   public static boolean canGoUnread (TdApi.Chat chat, @Nullable ThreadInfo threadInfo) {
     if (threadInfo != null) {
-      return threadInfo.hasUnreadMessages();
+      return threadInfo.hasUnreadMessages(chat) && threadInfo.getLastReadInboxMessageId() != 0;
     }
     return chat.unreadCount >= CHATS_THRESHOLD &&
             chat.lastReadInboxMessageId != 0 && chat.lastReadInboxMessageId != MessageId.MAX_VALID_ID &&
@@ -2791,6 +2967,9 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       if (canGoUnread)
         return HIGHLIGHT_MODE_UNREAD;
     }
+    if (threadInfo != null) {
+      return HIGHLIGHT_MODE_UNREAD;
+    }
     return HIGHLIGHT_MODE_NONE;
   }
 
@@ -2805,7 +2984,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       case HIGHLIGHT_MODE_UNREAD:
       case HIGHLIGHT_MODE_UNREAD_NEXT: {
         if (threadInfo != null) {
-          return new MessageId(threadInfo.getChatId(), threadInfo.getLastReadMessageId() == 0 ? MessageId.MIN_VALID_ID : threadInfo.getLastReadMessageId());
+          return new MessageId(threadInfo.getChatId(), threadInfo.getLastReadInboxMessageId() == 0 ? MessageId.MIN_VALID_ID : threadInfo.getLastReadInboxMessageId());
         } else if (chat.lastReadOutboxMessageId == MessageId.MAX_VALID_ID || ChatId.isMultiChat(chat.id)) {
           return new MessageId(chat.id, chat.lastReadInboxMessageId);
         } else {
@@ -2823,6 +3002,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   // Subscriber
 
   private long lastSubscribedChatId;
+  private @Nullable ThreadInfo lastSubscribedMessageThread;
 
   private void subscribeForUpdates () {
     long chatId = loader.getChatId();
@@ -2841,6 +3021,16 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         tdlib.cache().addChatMemberStatusListener(lastSubscribedChatId, this);
       }
     }
+    ThreadInfo messageThread = loader.getMessageThread();
+    if (lastSubscribedMessageThread != messageThread) {
+      if (lastSubscribedMessageThread != null) {
+        lastSubscribedMessageThread.removeListener(this);
+      }
+      lastSubscribedMessageThread = messageThread;
+      if (messageThread != null) {
+        messageThread.addListener(this);
+      }
+    }
   }
 
   private void unsubscribeFromUpdates () {
@@ -2848,6 +3038,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       controller.unsubscribeFromUpdates(lastSubscribedChatId);
       tdlib.listeners().unsubscribeFromMessageUpdates(lastSubscribedChatId, this);
       lastSubscribedChatId = 0;
+    }
+    if (lastSubscribedMessageThread != null) {
+      lastSubscribedMessageThread.removeListener(this);
+      lastSubscribedMessageThread = null;
     }
   }
 
@@ -2863,7 +3057,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       if (indexOfSentMessage(message.chatId, message.id) != -1)
         return;
       final TdApi.Chat chat = tdlib.chatStrict(message.chatId);
-      final TGMessage parsedMessage = TGMessage.valueOf(this, message, chat, chatAdmins);
+      final ThreadInfo messageThread = controller.getMessageThread();
+      final TGMessage parsedMessage = TGMessage.valueOf(this, message, chat, messageThread, chatAdmins);
       showMessage(chat.id, parsedMessage);
     } else if (isFocused() && (message.schedulingState != null)) {
       controller.viewScheduledMessages(true);
@@ -2882,6 +3077,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   public List<TGMessage> parseMessages (List<TdApi.Message> messages) {
     final List<TGMessage> parsedMessages = new ArrayList<>(messages.size());
     final TdApi.Chat chat = tdlib.chatStrict(messages.get(0).chatId);
+    final ThreadInfo messageThread = controller.getMessageThread();
     TGMessage cur = null;
     LongSparseArray<TdApi.ChatAdministrator> chatAdmins = this.chatAdmins;
     for (TdApi.Message message : messages) {
@@ -2892,7 +3088,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         cur.prepareLayout();
         parsedMessages.add(cur);
       }
-      cur = TGMessage.valueOf(this, message, chat, chatAdmins);
+      cur = TGMessage.valueOf(this, message, chat, messageThread, chatAdmins);
     }
     if (cur != null) {
       cur.prepareLayout();
@@ -2957,7 +3153,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
     tdlib.ui().post(() -> {
       if (loader.getChatId() == chatId) {
-        updateMessageContentChanged(chatId, messageId, newContent);
+        updateMessageContent(chatId, messageId, newContent);
       }
     });
   }
@@ -3055,6 +3251,105 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         updateMessagesDeleted(chatId, messageIds);
       }
     });
+  }
+
+  @Override
+  public void onMessageThreadReadOutbox (long chatId, long messageThreadId, long lastReadOutboxMessageId) {
+    if (chatId == loader.getChatId() && messageThreadId == loader.getMessageThreadId()) {
+      TdApi.Chat chat = tdlib.chat(chatId);
+      long lastGlobalReadOutboxMessageId = chat != null ? chat.lastReadOutboxMessageId : 0;
+      if (lastReadOutboxMessageId > lastGlobalReadOutboxMessageId) {
+        updateChatReadOutbox(lastReadOutboxMessageId);
+      }
+    }
+  }
+
+  private void checkMessageThreadReplyCounter () {
+    ThreadInfo messageThread = loader.getMessageThread();
+    if (messageThread == null || inSpecialMode() || loader.canLoadTop() || loader.canLoadBottom())
+      return;
+    int messageCount = getActiveMessageCount();
+    if (messageCount > 10000)
+      return;
+    int replyCount = 0;
+    for (int index = 0; index < messageCount; index++) {
+      replyCount += adapter.getItem(index).getMessageCount();
+    }
+    messageThread.updateReplyCount(replyCount);
+  }
+
+  private void checkMessageThreadUnreadCounter () {
+    if (manager != null) {
+      checkMessageThreadUnreadCounter(manager.findFirstVisibleItemPosition());
+    }
+  }
+
+  private void checkMessageThreadUnreadCounter (int firstVisibleItemPosition) {
+    ThreadInfo messageThread = loader.getMessageThread();
+    if (messageThread == null || inSpecialMode() || !isFocused || firstVisibleItemPosition == -1)
+      return;
+    if (loader.canLoadBottom()) {
+      if (messageThread.getUnreadMessageCount() == ThreadInfo.UNKNOWN_UNREAD_MESSAGE_COUNT) {
+        View view = manager.findViewByPosition(firstVisibleItemPosition);
+        if (view instanceof MessageProvider) {
+          TGMessage message = ((MessageProvider) view).getMessage();
+          messageThread.updateReadInbox(message.getBiggestId());
+        }
+        return;
+      }
+      long lastReadInboxMessageId = messageThread.getLastReadInboxMessageId();
+      long maxReadInboxMessageId = lastReadInboxMessageId;
+      int readMessageCount = 0;
+      for (int index = firstVisibleItemPosition; index < manager.getItemCount(); index++) {
+        View view = manager.findViewByPosition(index);
+        if (!(view instanceof MessageProvider))
+          continue;
+        TGMessage message = ((MessageProvider) view).getMessage();
+        if (message.isOutgoing())
+          continue;
+        if (message.isThreadHeader())
+          break;
+        long inboxMessageId = message.getBiggestId();
+        if (inboxMessageId <= lastReadInboxMessageId)
+          break;
+        maxReadInboxMessageId = Math.max(maxReadInboxMessageId, inboxMessageId);
+        readMessageCount += 1 + message.getMessageCountBetween(lastReadInboxMessageId, inboxMessageId);
+      }
+      if (maxReadInboxMessageId > lastReadInboxMessageId) {
+        int unreadMessageCount;
+        if (messageThread.getUnreadMessageCount() > readMessageCount) {
+          unreadMessageCount = messageThread.getUnreadMessageCount() - readMessageCount;
+        } else {
+          unreadMessageCount = ThreadInfo.UNKNOWN_UNREAD_MESSAGE_COUNT;
+        }
+        messageThread.updateReadInbox(maxReadInboxMessageId, unreadMessageCount);
+      }
+    } else {
+      if (firstVisibleItemPosition == 0) {
+        messageThread.markAsRead();
+        return;
+      }
+      long lastReadInboxMessageId = messageThread.getLastReadInboxMessageId();
+      View firstVisibleItemView = manager.findViewByPosition(firstVisibleItemPosition);
+      if (firstVisibleItemView instanceof MessageProvider) {
+        TGMessage firstVisibleMessage = ((MessageProvider) firstVisibleItemView).getMessage();
+        lastReadInboxMessageId = Math.max(lastReadInboxMessageId, firstVisibleMessage.getBiggestId());
+      }
+      int unreadMessageCount = 0;
+      int messageCount = getActiveMessageCount();
+      for (int index = 0; index < messageCount; index++) {
+        TGMessage message = adapter.getItem(index);
+        if (message.isOutgoing())
+          continue;
+        if (message.isThreadHeader())
+          break;
+        long inboxMessageId = message.getBiggestId();
+        if (inboxMessageId <= lastReadInboxMessageId)
+          break;
+        unreadMessageCount += 1 + message.getMessageCountBetween(lastReadInboxMessageId, inboxMessageId);
+      }
+      messageThread.updateReadInbox(lastReadInboxMessageId, unreadMessageCount);
+    }
   }
 
   // Colors
