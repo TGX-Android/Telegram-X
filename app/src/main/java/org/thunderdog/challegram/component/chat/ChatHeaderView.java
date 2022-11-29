@@ -20,8 +20,6 @@ import android.view.MotionEvent;
 import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
-import org.thunderdog.challegram.R;
-import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.ThreadInfo;
 import org.thunderdog.challegram.navigation.ComplexHeaderView;
@@ -95,23 +93,23 @@ public class ChatHeaderView extends ComplexHeaderView {
   public void setChat (Tdlib tdlib, TdApi.Chat chat, @Nullable ThreadInfo messageThread) {
     this.tdlib = tdlib;
 
-    setShowLock(chat != null && ChatId.isSecret(chat.id));
-
     if (chat == null) {
       setText("Debug controller", "nobody should find this view");
       return;
     }
 
+    setChatPhoto(chat, chat.photo);
+    setShowVerify(tdlib.chatVerified(chat));
+    setShowScam(tdlib.chatScam(chat));
+    setShowFake(tdlib.chatFake(chat));
+    setShowMute(tdlib.chatNeedsMuteIcon(chat));
+    setShowLock(ChatId.isSecret(chat.id));
     if (messageThread != null) {
-      setInnerMargins(Screen.dp(56f), Screen.dp(49f));
-      setText(Lang.plural(messageThread.areComments() ? R.string.xComments : R.string.xReplies, messageThread.getSize()), null);
+      setText(messageThread.chatHeaderTitle(), !StringUtils.isEmpty(forcedSubtitle) ? forcedSubtitle : messageThread.chatHeaderSubtitle());
+      setExpandedSubtitle(null);
+      setUseRedHighlight(false);
       attachChatStatus(messageThread.getChatId(), messageThread.getMessageThreadId());
     } else {
-      setChatPhoto(chat, chat.photo);
-      setShowVerify(tdlib.chatVerified(chat));
-      setShowScam(tdlib.chatScam(chat));
-      setShowFake(tdlib.chatFake(chat));
-      setShowMute(TD.needMuteIcon(chat.notificationSettings, tdlib.scopeNotificationSettings(chat.id)));
       setText(tdlib.chatTitle(chat), !StringUtils.isEmpty(forcedSubtitle) ? forcedSubtitle : tdlib.status().chatStatus(chat));
       setExpandedSubtitle(tdlib.status().chatStatusExpanded(chat));
       setUseRedHighlight(tdlib.isRedTeam(chat.id));

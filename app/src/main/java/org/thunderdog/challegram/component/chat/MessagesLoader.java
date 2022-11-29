@@ -192,7 +192,7 @@ public class MessagesLoader implements Client.ResultHandler {
   private TdApi.Message[] mergeChunk;
   private int mergeMode;
 
-  private Client.ResultHandler newHandler (final boolean allowMoreTop, final boolean allowMoreBottom, boolean needFindUnrad) {
+  private Client.ResultHandler newHandler (final boolean allowMoreTop, final boolean allowMoreBottom, boolean needFindUnread) {
     final long currentContextId = contextId;
     if (lastHandler != null) {
       throw new IllegalStateException("lastHandler != null");
@@ -465,7 +465,7 @@ public class MessagesLoader implements Client.ResultHandler {
           lastHandler = null;
         }
 
-        processMessages(currentContextId, messages, knownTotalCount, nextSecretSearchOffset, needFindUnrad && object.getConstructor() == TdApi.Messages.CONSTRUCTOR, missingAlbums);
+        processMessages(currentContextId, messages, knownTotalCount, nextSecretSearchOffset, needFindUnread && object.getConstructor() == TdApi.Messages.CONSTRUCTOR, missingAlbums);
       }
     };
   }
@@ -535,7 +535,7 @@ public class MessagesLoader implements Client.ResultHandler {
       this.content = content;
     }
   }
-  
+
   private static @StringRes int getPreviewStringKey (String key) {
     switch (key) {
       case "json_1_name": return R.string.json_1_name;
@@ -1009,7 +1009,7 @@ public class MessagesLoader implements Client.ResultHandler {
   private final Object lock = new Object();
 
   private boolean hasSearchFilter () {
-    return messageThread != null || searchFilter != null;
+    return searchFilter != null;
   }
 
   private void load (final MessageId fromMessageId, final int offset, final int limit, int mode, boolean onlyLocal, boolean allowMoreTop, boolean allowMoreBottom) {
@@ -1020,7 +1020,7 @@ public class MessagesLoader implements Client.ResultHandler {
         canLoadTop = canLoadBottom = false;
         UI.post(() -> {
           manager.onNetworkRequestSent();
-          manager.displayMessages(new ArrayList<>(), mode, 0, null, null, MessagesManager.HIGHLIGHT_MODE_NONE, false);
+          manager.displayMessages(new ArrayList<>(), mode, 0, null, null, MessagesManager.HIGHLIGHT_MODE_NONE, false, false);
         });
         return;
       }
@@ -1057,6 +1057,9 @@ public class MessagesLoader implements Client.ResultHandler {
           if (hasSearchFilter()) {
             loadingLocal = false;
             function = new TdApi.SearchChatMessages(sourceChatId, null, null, (lastFromMessageId = fromMessageId).getMessageId(), lastOffset = offset, lastLimit = limit, searchFilter, messageThread != null ? messageThread.getMessageThreadId() : 0);
+          } else if (messageThread != null) {
+            loadingLocal = false;
+            function = new TdApi.GetMessageThreadHistory(sourceChatId, messageThread.getOldestMessageId(), (lastFromMessageId = fromMessageId).getMessageId(), lastOffset = offset, lastLimit = limit);
           } else {
             function = new TdApi.GetChatHistory(sourceChatId, (lastFromMessageId = fromMessageId).getMessageId(), lastOffset = offset, lastLimit = limit, loadingLocal);
           }
@@ -1212,9 +1215,9 @@ public class MessagesLoader implements Client.ResultHandler {
     final LongSparseArray<TdApi.ChatAdministrator> chatAdmins = manager.getChatAdmins();
     if (messageThread != null) {
       chatId = messageThread.getChatId();
-      lastReadOutboxMessageId = messageThread.getReplyInfo().lastReadOutboxMessageId;
-      lastReadInboxMessageId = messageThread.getReplyInfo().lastReadInboxMessageId;
-      hasUnreadMessages = messageThread.hasUnreadMessages();
+      lastReadOutboxMessageId = messageThread.getLastReadOutboxMessageId();
+      lastReadInboxMessageId = messageThread.getLastReadInboxMessageId();
+      hasUnreadMessages = messageThread.hasUnreadMessages(chat);
     } else if (chat != null) {
       chatId = chat.id;
       lastReadOutboxMessageId = chat.lastReadOutboxMessageId;
@@ -1314,7 +1317,7 @@ public class MessagesLoader implements Client.ResultHandler {
             administrator = chatAdmins.get(adminUserId);
           }
         }
-        cur = TGMessage.valueOf(manager, messages[j], chat, administrator);
+        cur = TGMessage.valueOf(manager, messages[j], chat, messageThread, administrator);
         if (cur != null) {
           if (!containsScrollingMessage && scrollMessageId != null && scrollMessageId.compareTo(messages[j].chatId, messages[j].id)) {
             containsScrollingMessage = true;
@@ -1354,7 +1357,8 @@ public class MessagesLoader implements Client.ResultHandler {
             unreadBadged = cur;
           }
         } else if (!unreadFound) {
-          if (top != null && top.getBiggestId() >= lastReadInboxMessageId) {
+          if (top != null && top.getBiggestId() >= lastReadInboxMessageId ||
+              (messageThread != null && cur.getBiggestId() > lastReadInboxMessageId)) {
             unreadFound = true;
             if (cur.isOutgoing()) {
               lookForInbox = true;
@@ -1454,8 +1458,10 @@ public class MessagesLoader implements Client.ResultHandler {
           }
         }
 
-        canLoadTop = specialMode != SPECIAL_MODE_SCHEDULED && (loadingLocal || (totalCount != 0 && getChatId() != 0));
-        canLoadBottom = specialMode != SPECIAL_MODE_SCHEDULED && (scrollMessageId == null || !scrollMessageId.isHistoryEnd()) && canLoadTop && !items.isEmpty() && !isEndReached(new MessageId(suitableMessage.getChatId(), suitableMessage.getId()));
+        final boolean canLoadMore = loadingLocal || (totalCount != 0 && getChatId() != 0);
+        canLoadTop = specialMode != SPECIAL_MODE_SCHEDULED && (scrollMessageId == null || !scrollMessageId.isHistoryStart()) && canLoadMore && !isLoadingFromThreadStart(scrollMessageId);
+        canLoadBottom = specialMode != SPECIAL_MODE_SCHEDULED && (scrollMessageId == null || !scrollMessageId.isHistoryEnd()) && canLoadMore && suitableMessage != null && !isEndReached(new MessageId(suitableMessage.getChatId(), suitableMessage.getId()));
+
         if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
           Log.i(Log.TAG_MESSAGES_LOADER, "Received initial chunk, startTop:%s startBottom:%s canLoadTop:%b canLoadBottom:%b", getStartTop(), getStartBottom(), canLoadTop, canLoadBottom);
         }
@@ -1477,8 +1483,11 @@ public class MessagesLoader implements Client.ResultHandler {
           return;
         }
 
-        if (messages.length > 0 && chat.lastMessage != null && chat.lastMessage.id == messages[0].id) {
-          UI.post(manager::onBottomEndChecked);
+        if (messages.length > 0) {
+          long lastMessageId = messageThread != null ? messageThread.getLastMessageId() : chat.lastMessage != null ? chat.lastMessage.id : 0;
+          if (lastMessageId != 0 && lastMessageId == messages[0].id) {
+            UI.post(manager::onBottomEndChecked);
+          }
         }
 
         if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
@@ -1512,7 +1521,12 @@ public class MessagesLoader implements Client.ResultHandler {
     }
 
     final int scrollPosition = scrollItemIndex == -1 ? 0 : scrollItemIndex;
-    final MessageId scrollMessageId = unreadBadged != null ? new MessageId(unreadBadged.getChatId(), unreadBadged.getSmallestId()) : this.scrollMessageId;
+    final MessageId scrollMessageId;
+    if (unreadBadged != null && !isLoadingFromThreadStart(this.scrollMessageId)) {
+      scrollMessageId = new MessageId(unreadBadged.getChatId(), unreadBadged.getSmallestId());
+    } else {
+      scrollMessageId = this.scrollMessageId;
+    }
     final int scrollItemIndexFinal = scrollItemIndex;
     final TGMessage scrollItemView = scrollItem;
     boolean unreadFoundFinal = unreadFound;
@@ -1545,7 +1559,7 @@ public class MessagesLoader implements Client.ResultHandler {
 
       final int chunkSize = scrollItemIndexFinal == -1 ? CHUNK_SIZE_SMALL : CHUNK_SIZE_SEARCH;
       boolean willTryAgain = (loadingMode == MODE_INITIAL || loadingMode == MODE_REPEAT_INITIAL) && items.size() < chunkSize && items.size() > 0;
-      manager.displayMessages(items, loadingMode, scrollPosition, scrollItemView, scrollMessageId, scrollHighlightMode, willTryAgain && loadingLocal);
+      manager.displayMessages(items, loadingMode, scrollPosition, scrollItemView, scrollMessageId, scrollHighlightMode, willTryAgain && loadingLocal, canLoadTop);
 
       synchronized (lock) {
         isLoading = false;
@@ -1638,6 +1652,15 @@ public class MessagesLoader implements Client.ResultHandler {
     return msg != null ? new MessageId(msg.getChatId(), msg.getSmallestId()) : null;
   }
 
+  private boolean isLoadingFromThreadStart (MessageId messageId) {
+    if (messageId != null && messageThread != null) {
+      return messageId.isHistoryStart() ||
+        messageThread.getOldestMessageId() <= messageId.getMessageId() &&
+        messageThread.getNewestMessageId() >= messageId.getMessageId();
+    }
+    return false;
+  }
+
   private boolean isEndReached () {
     return isEndReached(getStartBottom());
   }
@@ -1648,9 +1671,15 @@ public class MessagesLoader implements Client.ResultHandler {
     if (messageId != null) {
       if (specialMode == SPECIAL_MODE_SCHEDULED)
         return true;
-      if (chat != null && chat.id == messageId.getChatId()) {
-        if (chat.lastMessage != null && messageId.getMessageId() >= chat.lastMessage.id) {
-          return true;
+      if (getChatId() == messageId.getChatId()) {
+        if (messageThread != null) {
+          if (messageId.getMessageId() >= messageThread.getLastMessageId()) {
+            return true;
+          }
+        } else if (chat != null) {
+          if (chat.lastMessage != null && messageId.getMessageId() >= chat.lastMessage.id) {
+            return true;
+          }
         }
         if (searchFilter != null && searchFilter.getConstructor() == TdApi.SearchMessagesFilterPinned.CONSTRUCTOR && manager.maxPinnedMessageId() != 0 && messageId.getMessageId() >= manager.maxPinnedMessageId()) {
           return true;
@@ -1666,7 +1695,12 @@ public class MessagesLoader implements Client.ResultHandler {
 
   public boolean canLoadBottom () {
     if (canLoadBottom) {
-      return canLoadBottom = !isEndReached();
+      if (isEndReached()) {
+        canLoadBottom = false;
+        manager.onBottomEndLoaded();
+        return false;
+      }
+      return true;
     }
     return false;
   }

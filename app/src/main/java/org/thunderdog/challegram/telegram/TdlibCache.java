@@ -23,6 +23,7 @@ import android.os.SystemClock;
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.Px;
 import androidx.annotation.UiThread;
 import androidx.collection.SparseArrayCompat;
 
@@ -985,6 +986,10 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   }
 
   public @Nullable ImageFile userAvatar (long userId) {
+    return userAvatar(userId, ChatView.getDefaultAvatarCacheSize());
+  }
+
+  public @Nullable ImageFile userAvatar (long userId, @Px int size) {
     if (userId == 0)
       return null;
     TdApi.User user = user(userId);
@@ -992,7 +997,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     if (photo == null)
       return null;
     ImageFile avatarFile = new ImageFile(tdlib, photo.small);
-    avatarFile.setSize(ChatView.getDefaultAvatarCacheSize());
+    avatarFile.setSize(size);
     return avatarFile;
   }
 

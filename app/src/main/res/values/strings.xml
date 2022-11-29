@@ -488,6 +488,7 @@
   <string name="justAdd">Just add to group</string>
   <string name="KickFromGroup">Remove from group</string>
   <string name="DeleteChat">Delete chat</string>
+  <string name="DeleteThread">Delete Thread</string>
   <string name="slideToCancel">Slide to Cancel</string>
   <string name="fingerprint_hint3">Please add at least one fingerprint in System Settings &gt; Security &gt; Fingerprints.</string>
   <string name="fingerprint_fail">Unknown finger</string>
@@ -725,6 +726,7 @@
   <string name="GroupPhoto">Group photo</string>
   <string name="ChannelPhoto">Channel photo</string>
   <string name="ShowInChat">Show in Chat</string>
+  <string name="ShowInDiscussionGroup">Show in discussion group</string>
   <string name="GroupIsFull">The group you tried to join is full</string>
   <string name="PasswordIsInvalid">The password you have entered is invalid</string>
   <string name="InviteLinkInvalid">Invite link is invalid or not active anymore</string>
@@ -2475,6 +2477,7 @@
   <string name="MessageUnpinPlaylist">Unpin playlist</string>
   <string name="MessageUnpinFiles">Unpin files</string>
   <string name="MessageReport">Report message</string>
+  <string name="MessageShowInChat">Show in chat</string>
   <string name="ErrorUserDeleted">Cannot perform this action, because user account is deactivated.</string>
   <string name="GroupUpgradedFrom">Group upgraded to supergroup. Tap here to view older history.</string>
   <string name="GroupUpgradedTo">Group upgraded to supergroup.</string>
@@ -3494,7 +3497,6 @@
   <string name="LogInAsOn">Log in as %1$s on %2$s</string>
   <string name="AllowWriteAccess">Allow %1$s to send me messages</string>
   <string name="Discuss">Discuss</string>
-  <string name="DiscussMessage">Discuss</string>
   <string name="LinkedChannel">Linked Channel</string>
   <string name="LinkedGroup">Linked Group</string>
   <string name="LinkChannel">Link a channel</string>
@@ -3982,10 +3984,21 @@
   <string name="xComments_other">%1$s comments</string>
   <string name="xReplies_one">%1$s reply</string>
   <string name="xReplies_other">%1$s replies</string>
+  <string name="xRepliesToUser_one">%1$s reply to %2$s</string>
+  <string name="xRepliesToUser_other">%1$s replies to %2$s</string>
   <string name="ViewXComments_one">View %1$s comment</string>
   <string name="ViewXComments_other">View %1$s comments</string>
+  <string name="ViewXOtherComments_one">View %1$s other comment</string>
+  <string name="ViewXOtherComments_other">View %1$s other comments</string>
   <string name="DiscussionStart">Discussion started</string>
   <string name="NoComments">No comments yet…</string>
+  <string name="NoReplies">No replies yet…</string>
+  <string name="ChannelPostDeleted">Sorry, this post has been removed from the discussion group.</string>
+  <string name="ViewThread">View Thread</string>
+  <string name="ViewInChat">View in chat</string>
+  <string name="ViewComment">View comment</string>
+  <string name="CommentsTitle">Comments</string>
+  <string name="RepliesTitle">Replies</string>
 
   <string name="RepliesBot">Replies</string>
   <string name="RepliesBotShort">Replies</string>

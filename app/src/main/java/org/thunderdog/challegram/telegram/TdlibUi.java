@@ -1774,14 +1774,17 @@ public class TdlibUi extends Handler {
       return true;
     }
 
-    public static ChatOpenParameters restoreInstanceState (Bundle in, String keyPrefix) {
+    public static @Nullable ChatOpenParameters restoreInstanceState (Tdlib tdlib, Bundle in, String keyPrefix) {
       ChatOpenParameters params = new ChatOpenParameters();
       params.options = in.getInt(keyPrefix + "cp_options", 0);
       params.highlightSet = in.getBoolean(keyPrefix + "cp_highlightSet", false);
       params.highlightMode = in.getInt(keyPrefix + "cp_highlightMode", 0);
       params.highlightMessageId = TD.restoreMessageId(in, keyPrefix + "cp_highlightMessageId");
       params.chatList = TD.chatListFromKey(in.getString(keyPrefix + "cp_chatList", null));
-      params.threadInfo = ThreadInfo.restoreFrom(in, keyPrefix + "cp_messageThread");
+      ThreadInfo threadInfo = ThreadInfo.restoreFrom(tdlib, in, keyPrefix + "cp_messageThread");
+      if (threadInfo == ThreadInfo.INVALID)
+        return null;
+      params.threadInfo = threadInfo;
       params.filter = TD.restoreFilter(in, keyPrefix + "cp_filter");
       return params;
     }
@@ -2268,7 +2271,7 @@ public class TdlibUi extends Handler {
       navigation.getStack().insert(c, 0);
     } else {
       ViewController<?> c = navigation.getCurrentStackItem();
-      if (c instanceof MessagesController && c.getChatId() == chat.id && !((MessagesController) c).inPreviewMode()) {
+      if (c instanceof MessagesController && ((MessagesController) c).getHeaderChatId() == chat.id && !((MessagesController) c).inPreviewMode()) {
         profileController.setShareCustomHeaderView(true);
       }
       navigation.navigateTo(profileController);
@@ -2376,13 +2379,45 @@ public class TdlibUi extends Handler {
   }
 
   public void openMessage (final TdlibDelegate context, final long chatId, final MessageId messageId, final @Nullable UrlOpenParameters openParameters) {
-    openChat(context, chatId, new ChatOpenParameters().keepStack().highlightMessage(messageId).ensureHighlightAvailable().urlOpenParameters(openParameters));
+    openMessage(context, chatId, messageId, /* messageThread */ null, openParameters);}
+
+  public void openMessage (final TdlibDelegate context, final long chatId, final MessageId messageId, final @Nullable ThreadInfo messageThread, final @Nullable UrlOpenParameters openParameters) {
+    openChat(context, chatId, new ChatOpenParameters().keepStack().highlightMessage(messageId).ensureHighlightAvailable().messageThread(messageThread).urlOpenParameters(openParameters));
   }
 
   public void openMessage (final TdlibDelegate context, final TdApi.MessageLinkInfo messageLink, final UrlOpenParameters openParameters) {
     if (messageLink.message != null) {
-      // TODO support for album, comments, etc
-      openMessage(context, messageLink.chatId, new MessageId(messageLink.message.chatId, messageLink.message.id), openParameters);
+      // TODO support for album, media timestamp, etc
+      MessageId messageId = new MessageId(messageLink.message.chatId, messageLink.message.id);
+      if (messageLink.forComment) {
+        context.tdlib().send(new TdApi.GetMessageThread(messageId.getChatId(), messageId.getMessageId()), (result) -> {
+          switch (result.getConstructor()) {
+            case TdApi.MessageThreadInfo.CONSTRUCTOR:
+              ThreadInfo messageThread = ThreadInfo.openedFromMessage(context.tdlib(), (TdApi.MessageThreadInfo) result, openParameters.messageId);
+              if (Config.SHOW_CHANNEL_POST_REPLY_INFO_IN_COMMENTS) {
+                TdApi.Message message = messageThread.getOldestMessage();
+                if (message != null && message.replyToMessageId == 0 && message.forwardInfo != null && tdlib.isChannelAutoForward(message)) {
+                  tdlib.send(new TdApi.GetRepliedMessage(message.forwardInfo.fromChatId, message.forwardInfo.fromMessageId), (object) -> {
+                    if (object.getConstructor() == TdApi.Message.CONSTRUCTOR) {
+                      TdApi.Message repliedMessage = (TdApi.Message) object;
+                      message.replyInChatId = repliedMessage.chatId;
+                      message.replyToMessageId = repliedMessage.id;
+                    }
+                    openMessage(context, messageThread.getChatId(), messageId, messageThread, openParameters);
+                  });
+                  break;
+                }
+              }
+              openMessage(context, messageThread.getChatId(), messageId, messageThread, openParameters);
+              break;
+            case TdApi.Error.CONSTRUCTOR:
+              openMessage(context, messageLink.chatId, messageId, openParameters);
+              break;
+          }
+        });
+      } else {
+        openMessage(context, messageLink.chatId, messageId, openParameters);
+      }
     } else {
       if (tdlib.chat(messageLink.chatId) != null) {
         UI.showToast(tdlib.isChannel(messageLink.chatId) ? R.string.PostNotFound : R.string.MessageNotFound, Toast.LENGTH_SHORT);

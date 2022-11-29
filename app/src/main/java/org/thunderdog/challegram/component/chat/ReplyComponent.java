@@ -52,7 +52,6 @@ import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextEntity;
-import org.thunderdog.challegram.util.text.TextMedia;
 import org.thunderdog.challegram.util.text.TextStyleProvider;
 
 import me.vkryl.android.util.SingleViewProvider;
@@ -72,8 +71,6 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
   private final Tdlib tdlib;
   private final @Nullable TGMessage parent;
 
-  private long chatId;
-  private long messageId;
   private TdApi.MessageSender sender;
   private String senderName;
   private @ThemeColorId int nameColorId;
@@ -106,9 +103,6 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     }
     this.tdlib = message.tdlib();
     this.parent = message;
-    TdApi.Message msg = message.getMessage();
-    this.chatId = msg.chatId;
-    this.messageId = msg.replyToMessageId;
     /*TODO optimize displaying for channels, where you can reply to yourself only?
        if (channelTitle != null) {
       flags |= FLAG_CHANNEL;
@@ -226,6 +220,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
   private void buildContent () {
     int width = getContentWidth();
 
+    //noinspection UnsafeOptInUsageError
     Text trimmedContent = new Text.Builder(content != null ? content.buildText(true) : Lang.getString(R.string.LoadingMessage), width, isMessageComponent() ? TGMessage.getTextStyleProvider() : getTextStyleProvider(), getContentColorSet())
       .singleLine()
       .textFlags(Text.FLAG_CUSTOM_LONG_PRESS)
@@ -503,23 +498,32 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     setContent(title, content, null, preview, image, false, false);
   }
 
-  private TdApi.Function<?> retryFunction;
+  private @Nullable TdApi.Function<TdApi.Message> retryFunction;
 
   public void load () {
-    if (parent != null) {
-      TdApi.Message foundMessage = parent.manager().getAdapter().tryFindMessage(chatId, messageId);
+    if (parent == null)
+      return;
+    TdApi.Message message = parent.getMessage();
+    if (message.chatId == message.replyInChatId && message.replyToMessageId != 0) {
+      TdApi.Message foundMessage = parent.manager().getAdapter().tryFindMessage(message.replyInChatId, message.replyToMessageId);
       if (foundMessage != null) {
         setMessage(foundMessage, false, true);
         return;
       }
     }
     flags |= FLAG_LOADING;
-    if (isMessageComponent()) {
-      retryFunction = new TdApi.GetMessage(chatId, parent.getMessage().replyToMessageId);
-      tdlib.client().send(new TdApi.GetRepliedMessage(chatId, parent.getId()), this);
+    final TdApi.Function<TdApi.Message> function;
+    if (message.forwardInfo != null && message.forwardInfo.fromChatId != 0 && message.forwardInfo.fromMessageId != 0 && !parent.isRepliesChat()) {
+      function = new TdApi.GetRepliedMessage(message.forwardInfo.fromChatId, message.forwardInfo.fromMessageId);
     } else {
-      tdlib.client().send(new TdApi.GetMessage(chatId, messageId), this);
+      function = new TdApi.GetRepliedMessage(message.chatId, message.id);
     }
+    if (message.replyInChatId != 0 && message.replyToMessageId != 0) {
+      retryFunction = new TdApi.GetMessage(message.replyInChatId, message.replyToMessageId);
+    } else {
+      retryFunction = null;
+    }
+    tdlib.send(function, this);
   }
 
   private void parseContent (final TdApi.Message msg, final boolean forceRequestImage) {

@@ -25,6 +25,7 @@ import androidx.annotation.AnyThread;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.Px;
 import androidx.annotation.StringRes;
 import androidx.annotation.UiThread;
 import androidx.collection.LongSparseArray;
@@ -2612,6 +2613,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public @Nullable ImageFile chatAvatar (long chatId) {
+    return chatAvatar(chatId, ChatView.getDefaultAvatarCacheSize());
+  }
+
+  public @Nullable ImageFile chatAvatar (long chatId, @Px int size) {
     if (chatId == 0)
       return null;
     TdApi.Chat chat = chat(chatId);
@@ -2619,7 +2624,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     if (photo == null)
       return null;
     ImageFile avatarFile = new ImageFile(this, photo.small);
-    avatarFile.setSize(ChatView.getDefaultAvatarCacheSize());
+    avatarFile.setSize(size);
     return avatarFile;
   }
 
@@ -3426,6 +3431,15 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   public boolean isSupergroup (long chatId) {
     TdApi.Supergroup supergroup = chatToSupergroup(chatId);
     return supergroup != null && !supergroup.isChannel;
+  }
+
+  public boolean isChannelAutoForward (@Nullable TdApi.Message message) {
+    return message != null && message.chatId != 0 && message.forwardInfo != null &&
+      message.forwardInfo.fromChatId != 0 && message.forwardInfo.fromMessageId != 0 &&
+      message.forwardInfo.fromChatId != message.chatId &&
+      message.senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR &&
+      ((TdApi.MessageSenderChat) message.senderId).chatId == message.forwardInfo.fromChatId &&
+      isSupergroup(message.chatId) && isChannel(message.forwardInfo.fromChatId);
   }
 
   public boolean canDisablePinnedMessageNotifications (long chatId) {

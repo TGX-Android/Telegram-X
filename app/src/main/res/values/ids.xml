@@ -228,6 +228,7 @@
   <item type="id" name="controller_chatLinks" />
   <item type="id" name="controller_chatLinkMembers" />
   <item type="id" name="controller_sponsoredMessagesInfo" />
+  <item type="id" name="controller_featureToggles" />
 
   <item type="id" name="separator" />
 
@@ -760,6 +761,8 @@
   <item type="id" name="btn_openAdminInviteLinks" />
   <item type="id" name="btn_manageInviteLinks" />
   <item type="id" name="btn_manageJoinRequests" />
+  <item type="id" name="btn_manageGroup" />
+  <item type="id" name="btn_deleteThread" />
   <item type="id" name="btn_inviteLinkUserLimit" />
   <item type="id" name="btn_inviteLinkUserSlider" />
   <item type="id" name="btn_inviteLinkDateLimit" />
@@ -1026,7 +1029,6 @@
   <item type="id" name="btn_messagePin" />
   <item type="id" name="btn_messageUnpin" />
   <item type="id" name="btn_messageShare" />
-  <item type="id" name="btn_messageDiscuss" />
   <item type="id" name="btn_messageSelect" />
   <item type="id" name="btn_messageViewList" />
   <item type="id" name="btn_messageFavoriteContent" />
@@ -1039,6 +1041,7 @@
   <item type="id" name="btn_messageApplyLocalization" />
   <item type="id" name="btn_messageInstallTheme" />
   <item type="id" name="btn_messageShowSource" />
+  <item type="id" name="btn_messageShowInChat" />
   <item type="id" name="btn_messageResend" />
   <item type="id" name="btn_messageCallContact" />
   <item type="id" name="btn_messageAddContact" />
@@ -1222,4 +1225,6 @@
   <item type="id" name="btn_themeCreateInfo" />
   <item type="id" name="btn_themeExportNeedDefault" />
   <item type="id" name="btn_themeExportSetAuthor" />
+
+  <item type="id" name="btn_featureToggles" />
 </resources>

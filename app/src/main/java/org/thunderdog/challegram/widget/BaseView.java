@@ -36,6 +36,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.ChatsController;
 import org.thunderdog.challegram.ui.MainController;
 import org.thunderdog.challegram.ui.MessagesController;
@@ -316,7 +317,7 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
         case FORCE_TOUCH_CHAT: {
           TdApi.Chat chat = tdlib.chat(chatId);
           if (chat != null) {
-            if (threadMessages != null) {
+            if (threadMessages != null && threadMessages.length > 0) {
               cancelAsyncPreview();
               tdlib.client().send(new TdApi.GetMessageThread(chatId, threadMessages[0].id), result -> {
                 switch (result.getConstructor()) {
@@ -324,7 +325,7 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
                     TdApi.MessageThreadInfo threadInfo = (TdApi.MessageThreadInfo) result;
                     tdlib.ui().post(() -> {
                       if (pendingTask == null && pendingController == null) {
-                        openChatPreviewAsync(chatList, chat, new ThreadInfo(threadMessages, threadInfo, false), filter, x, y);
+                        openChatPreviewAsync(chatList, chat, ThreadInfo.openedFromChat(tdlib, threadInfo, chatId, contextChatId), filter, x, y);
                       }
                     });
                     break;
@@ -403,12 +404,13 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
 
   // MessagesController-specific
 
-  private long chatId;
+  private long chatId, contextChatId;
   private TdApi.ChatList chatList;
   private TdApi.Message[] threadMessages;
   private TdApi.SearchMessagesFilter filter;
   private int highlightMode;
   private MessageId highlightMessageId;
+  private boolean allowMaximizePreview;
 
   public final void setPreviewChatId (TdApi.ChatList chatList, long chatId, TdApi.Message[] threadMessages) {
     setPreviewChatId(chatList, chatId, threadMessages, null, null);
@@ -419,8 +421,13 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
   }
 
   public final void setPreviewChatId (TdApi.ChatList chatList, long chatId, TdApi.Message[] threadMessages, MessageId highlightMessageId, TdApi.SearchMessagesFilter filter) {
+    setPreviewChatId(chatList, chatId, chatId, threadMessages, highlightMessageId, filter, true);
+  }
+
+  public final void setPreviewChatId (TdApi.ChatList chatList, long chatId, long contextChatId, TdApi.Message[] threadMessages, MessageId highlightMessageId, TdApi.SearchMessagesFilter filter, boolean allowMaximize) {
     this.chatList = chatList;
     this.chatId = chatId;
+    this.contextChatId = contextChatId;
     this.threadMessages = threadMessages;
     this.highlightMessageId = highlightMessageId;
     this.filter = filter;
@@ -429,6 +436,7 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
     } else {
       this.highlightMode = MessagesManager.HIGHLIGHT_MODE_NONE;
     }
+    this.allowMaximizePreview = allowMaximize;
   }
 
   public final TdApi.ChatList getPreviewChatList () {
@@ -540,8 +548,12 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
     if ((ancestor != null && tdlib != null && ancestor.tdlib() != null && ancestor.tdlib().id() != tdlib.id())) {
       return;
     }
+    int[] location = Views.getLocationOnScreen(this);
+    int sourceX = location[0] + Math.round(x);
+    int sourceY = location[1] + Math.round(y);
     ForceTouchView.ForceTouchContext context = new ForceTouchView.ForceTouchContext(tdlib, this, controller.get(), controller);
     context.setStateListener(controller);
+    context.setAnimationSourcePoint(sourceX, sourceY);
 
     if (controller instanceof ForceTouchView.PreviewDelegate) {
       ((ForceTouchView.PreviewDelegate) controller).onPrepareForceTouchContext(context);
@@ -549,7 +561,7 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
 
     // context.setAdditionalOffsetView(UI.getCurrentStackItem(getContext()).getViewForApplyingOffsets());
 
-    if (controller instanceof MessagesController) {
+    if (controller instanceof MessagesController && allowMaximizePreview) {
       context.setMaximizeListener((target, animateToWhenReady, arg) -> MessagesController.maximizeFrom(tdlib, getContext(), target, animateToWhenReady, arg));
     }
 
