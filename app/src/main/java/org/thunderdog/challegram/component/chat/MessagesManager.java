@@ -3230,12 +3230,12 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   private void checkMessageThreadReplyCounter () {
-    if (true)
-      return; /// ???
     ThreadInfo messageThread = loader.getMessageThread();
-    if (messageThread == null || loader.canLoadTop() || loader.canLoadBottom())
+    if (messageThread == null || inSpecialMode() || loader.canLoadTop() || loader.canLoadBottom())
       return;
     int messageCount = getActiveMessageCount();
+    if (messageCount > 10000)
+      return;
     int replyCount = 0;
     for (int index = 0; index < messageCount; index++) {
       replyCount += adapter.getItem(index).getMessageCount();
