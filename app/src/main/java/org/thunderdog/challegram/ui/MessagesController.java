@@ -10412,7 +10412,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
         if (jumpToDateRequest == request) {
           jumpToDateRequest = null;
           setSearchInProgress(false, true);
-          manager.searchMoveToMessage(message);
+          if (canSetSearchFilteredMode()) {
+            manager.searchMoveToMessage(message);
+          }
           manager.highlightMessage(messageId, messageId.isHistoryStart() ? MessagesManager.HIGHLIGHT_MODE_NORMAL : MessagesManager.HIGHLIGHT_MODE_NORMAL_NEXT, null, true);
         }
       });
