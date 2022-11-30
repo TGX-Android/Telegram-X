@@ -99,7 +99,7 @@ public class ChatMembersSearcher {
           TdApi.Chats chats = (TdApi.Chats) object;
           ArrayList<Long> items = new ArrayList<>();
           for (long id : chats.chatIds) {
-            if (checkIfNotFoundBefore(id) && tdlib.isUserChat(id)) {
+            if (checkIfNotFoundBefore(id)) {
               items.add(id);
             }
           }

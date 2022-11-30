@@ -436,7 +436,7 @@ public class ForceTouchView extends FrameLayoutFix implements
 
       View offsetView;
 
-      final int offsetWeight = context.actionItems.size() > 2 ? 1: 4;
+      final int offsetWeight = context.shrunkenFooter ? 4: 1;
 
       if (context.actionItems.size() > 1) {
         offsetView = new View(getContext());
@@ -1040,6 +1040,7 @@ public class ForceTouchView extends FrameLayoutFix implements
     private MaximizeListener maximizeListener;
     private Object listenerArg;
     private ArrayList<BaseView.ActionItem> actionItems;
+    private boolean shrunkenFooter;
     private boolean excludeHeader;
 
     public View getSourceView () {
@@ -1080,6 +1081,10 @@ public class ForceTouchView extends FrameLayoutFix implements
     public ForceTouchContext setExcludeHeader (boolean excludeHeader) {
       this.excludeHeader = excludeHeader;
       return this;
+    }
+
+    public void setShrunkenFooter (boolean shrunkenFooter) {
+      this.shrunkenFooter = shrunkenFooter;
     }
 
     public float getAddX (ForceTouchView target) {

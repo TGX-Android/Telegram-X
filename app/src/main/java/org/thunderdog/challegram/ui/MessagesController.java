@@ -2773,7 +2773,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (chat == null) {
       return;
     }
-
+    if (chat.messageSenderId != null) {
+      getChatAvailableMessagesSenders(null);
+    }
     if (inputView != null) {
       // inputView.setIgnoreAnyChanges(true);
       boolean enabled = !isInputLess();
