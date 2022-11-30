@@ -2574,6 +2574,13 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   private MessagesSearchManager searchManager;
 
+  public void searchMoveToMessage (TdApi.Message message) {
+    if (searchManager == null || message == null) {
+      return;
+    }
+    searchManager.moveToMessage(message);
+  }
+
   public void onPrepareToSearch () {
     if (searchManager == null) {
       searchManager = new MessagesSearchManager(tdlib, this, searchMiddleware);
@@ -2880,8 +2887,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   @Override
-  public void onSearchUpdateTotalCount (int index, int newTotalCount) {
-    controller.onChatSearchFinished(Lang.getXofY(index + 1, newTotalCount), index, newTotalCount);
+  public void onSearchUpdateTotalCount (int index, int totalCount, boolean knownIndex, boolean knownTotalCount) {
+    controller.onChatSearchFinished(buildSearchResultsCounter(index, totalCount, knownIndex, knownTotalCount), index, totalCount);
   }
 
   @Override

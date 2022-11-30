@@ -64,7 +64,7 @@ public class MessagesSearchManager {
 
   public interface Delegate {
     void showSearchResult (int index, int totalCount, boolean knownIndex, boolean knownTotalCount, MessageId messageId);
-    void onSearchUpdateTotalCount (int index, int newTotalCount);
+    void onSearchUpdateTotalCount (int index, int totalCount, boolean knownIndex, boolean knownTotalCount);
     void onAwaitNext (boolean next);
     void onTryToLoadPrevious ();
     void onTryToLoadNext ();
@@ -119,7 +119,7 @@ public class MessagesSearchManager {
     currentDisplayedMessage = foundMsgId != null ? foundMsgId.getMessageId(): 0;
     currentSearchFilter = filter;
     searchManagerMiddleware.setDelegate(newTotalCount -> {
-      //delegate.onSearchUpdateTotalCount(currentIndex, newTotalCount);
+      delegate.onSearchUpdateTotalCount(getMessageIndex(currentDisplayedMessage), newTotalCount, knownIndex(), true);
       currentTotalCount = newTotalCount;
     });
 
@@ -317,6 +317,22 @@ public class MessagesSearchManager {
       delegate.onAwaitNext(next);
       searchInternal(contextId, currentChatId, currentMessageThreadId, currentFromSender, currentSearchFilter, currentIsSecret, currentInput,
         currentDisplayedMessage, currentSecretOffset, next ? SEARCH_DIRECTION_TOP: SEARCH_DIRECTION_BOTTOM);
+    }
+  }
+
+  public void moveToMessage (TdApi.Message message) {
+    int newIndex = getMessageIndex(currentDisplayedMessage = message.id);
+    if (newIndex >= 0) {
+      delegate.showSearchResult(newIndex, currentTotalCount, knownIndex(), true, new MessageId(message.chatId, message.id));
+    } else {
+      flags = FLAG_LOADING;
+      currentSearchResults.clear();
+      currentSearchResults.add(message);
+      currentSearchResultsArr.clear();
+      currentSearchResultsArr.put(message.id, message);
+      delegate.showSearchResult(STATE_LOADING, 0, true, true, null);
+      searchInternal(contextId, currentChatId, currentMessageThreadId, currentFromSender, currentSearchFilter, currentIsSecret, currentInput,
+        currentDisplayedMessage, currentSecretOffset, SEARCH_DIRECTION_AROUND);
     }
   }
 

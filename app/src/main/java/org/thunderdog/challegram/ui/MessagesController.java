@@ -10400,16 +10400,19 @@ public class MessagesController extends ViewController<MessagesController.Argume
     setSearchInProgress(true, true);
     tdlib.client().send(request, object -> {
       final MessageId messageId;
+      final TdApi.Message message;
       if (object.getConstructor() == TdApi.Message.CONSTRUCTOR) {
-        TdApi.Message message = (TdApi.Message) object;
+        message = (TdApi.Message) object;
         messageId = new MessageId(message.chatId, message.id);
       } else {
+        message = null;
         messageId = new MessageId(getChatId(), MessageId.MIN_VALID_ID);
       }
       tdlib.ui().post(() -> {
         if (jumpToDateRequest == request) {
           jumpToDateRequest = null;
           setSearchInProgress(false, true);
+          manager.searchMoveToMessage(message);
           manager.highlightMessage(messageId, messageId.isHistoryStart() ? MessagesManager.HIGHLIGHT_MODE_NORMAL : MessagesManager.HIGHLIGHT_MODE_NORMAL_NEXT, null, true);
         }
       });
