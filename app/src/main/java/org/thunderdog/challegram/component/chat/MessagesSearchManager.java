@@ -320,16 +320,14 @@ public class MessagesSearchManager {
     }
   }
 
-  public void moveToMessage (TdApi.Message message) {
-    int newIndex = getMessageIndex(currentDisplayedMessage = message.id);
+  public void moveToMessage (MessageId message) {
+    int newIndex = getMessageIndex(currentDisplayedMessage = message.getMessageId());
     if (newIndex >= 0) {
-      delegate.showSearchResult(newIndex, currentTotalCount, knownIndex(), true, new MessageId(message.chatId, message.id));
+      delegate.showSearchResult(newIndex, currentTotalCount, knownIndex(), true, message);
     } else {
       flags = FLAG_LOADING;
       currentSearchResults.clear();
-      currentSearchResults.add(message);
       currentSearchResultsArr.clear();
-      currentSearchResultsArr.put(message.id, message);
       delegate.showSearchResult(STATE_LOADING, 0, true, true, null);
       searchInternal(contextId, currentChatId, currentMessageThreadId, currentFromSender, currentSearchFilter, currentIsSecret, currentInput,
         currentDisplayedMessage, currentSecretOffset, SEARCH_DIRECTION_AROUND);

@@ -2574,7 +2574,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   private MessagesSearchManager searchManager;
 
-  public void searchMoveToMessage (TdApi.Message message) {
+  public void searchMoveToMessage (MessageId message) {
     if (searchManager == null || message == null) {
       return;
     }

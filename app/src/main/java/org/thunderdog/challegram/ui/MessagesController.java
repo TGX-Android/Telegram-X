@@ -10388,10 +10388,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void jumpToDate (int date) {
+    final boolean inSearchMode = canSetSearchFilteredMode();
     if (date == 0) {
+      MessageId messageId = new MessageId(getChatId(), MessageId.MIN_VALID_ID);
       jumpToDateRequest = null;
       setSearchInProgress(false, true);
-      manager.highlightMessage(new MessageId(getChatId(), MessageId.MIN_VALID_ID), MessagesManager.HIGHLIGHT_MODE_NORMAL, null, true);
+      if (inSearchMode) {
+        manager.searchMoveToMessage(messageId);
+        return;
+      }
+      manager.highlightMessage(messageId, MessagesManager.HIGHLIGHT_MODE_NORMAL, null, true);
       return;
     }
     final TdApi.GetChatMessageByDate request = new TdApi.GetChatMessageByDate(getChatId(), 0);
@@ -10412,8 +10418,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
         if (jumpToDateRequest == request) {
           jumpToDateRequest = null;
           setSearchInProgress(false, true);
-          if (canSetSearchFilteredMode()) {
-            manager.searchMoveToMessage(message);
+          if (inSearchMode) {
+            manager.searchMoveToMessage(messageId);
+            return;
           }
           manager.highlightMessage(messageId, messageId.isHistoryStart() ? MessagesManager.HIGHLIGHT_MODE_NORMAL : MessagesManager.HIGHLIGHT_MODE_NORMAL_NEXT, null, true);
         }
