@@ -1174,8 +1174,12 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         if (scrollMessage == null) {
           if (scrollMessageId != null && scrollMessageId.isHistoryStart() && !items.isEmpty()) {
             scrollToHistoryStart();
+          } else if (scrollMessageId != null && isHeaderMessage(scrollMessageId) && !adapter.isEmpty()) {
+            scrollToMessage(adapter.getItemCount() - 1, adapter.getTopMessage(), highlightMode == HIGHLIGHT_MODE_NONE ? HIGHLIGHT_MODE_START : highlightMode, false, false);
+          } else if (scrollPosition == 0) {
+            manager.scrollToPositionWithOffset(0, 0);
           } else {
-            scrollToMessage(scrollPosition, scrollMessageId, highlightMode);
+            manager.scrollToPosition(scrollPosition);
           }
         } else {
           scrollToMessage(scrollPosition, scrollMessage, highlightMode == HIGHLIGHT_MODE_NONE ? HIGHLIGHT_MODE_START : highlightMode, false, false);
@@ -1216,6 +1220,13 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       return topMessage == null || topMessage != headerMessage;
     }
     return false;
+  }
+
+  private boolean isHeaderMessage (MessageId messageId) {
+    TGMessage topMessage = adapter.getTopMessage();
+    return isHeaderMessage(topMessage) &&
+      topMessage.getChatId() == messageId.getChatId() &&
+      topMessage.isDescendantOrSelf(messageId.getMessageId());
   }
 
   private boolean isHeaderMessage (@Nullable TGMessage message) {
@@ -2718,21 +2729,6 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       manager.scrollToPositionWithOffset(scrollIndex, targetHeight - scrollMessage.getHeight());
     } else {
       manager.scrollToPositionWithOffset(scrollIndex, -scrollMessage.getHeight());
-    }
-  }
-
-  private void scrollToMessage (int scrollPosition, @Nullable MessageId scrollMessageId, int highlightMode) {
-    if (scrollMessageId != null && !adapter.isEmpty()) {
-      int index = adapter.indexOfMessageContainer(scrollMessageId);
-      if (index != -1) {
-        scrollToMessage(index, adapter.getItem(index), highlightMode == HIGHLIGHT_MODE_NONE ? HIGHLIGHT_MODE_START : highlightMode, false, false);
-        return;
-      }
-    }
-    if (scrollPosition == 0) {
-      manager.scrollToPositionWithOffset(0, 0);
-    } else {
-      manager.scrollToPosition(scrollPosition);
     }
   }
 
