@@ -1788,7 +1788,7 @@ public class TD {
     return messageIds;
   }
 
-  public static boolean forwardMessages (long toChatId, TdApi.Message[] messages, boolean sendCopy, boolean removeCaption, TdApi.MessageSendOptions options, ArrayList<TdApi.Function<?>> out) {
+  public static boolean forwardMessages (long toChatId, long toMessageThreadId, TdApi.Message[] messages, boolean sendCopy, boolean removeCaption, TdApi.MessageSendOptions options, ArrayList<TdApi.Function<?>> out) {
     if (messages.length == 0) {
       return false;
     }
@@ -1798,7 +1798,7 @@ public class TD {
     for (TdApi.Message message : messages) {
       if (message.chatId != fromChatId) {
         if (size > 0) {
-          out.add(new TdApi.ForwardMessages(toChatId, fromChatId, getMessageIds(messages, index, size), options, sendCopy, removeCaption, false));
+          out.add(new TdApi.ForwardMessages(toChatId, toMessageThreadId, fromChatId, getMessageIds(messages, index, size), options, sendCopy, removeCaption, false));
         }
         fromChatId = message.chatId;
         index += size;
@@ -1807,7 +1807,7 @@ public class TD {
       size++;
     }
     if (size > 0) {
-      out.add(new TdApi.ForwardMessages(toChatId, fromChatId, getMessageIds(messages, index, size), options, sendCopy, removeCaption, false));
+      out.add(new TdApi.ForwardMessages(toChatId, toMessageThreadId, fromChatId, getMessageIds(messages, index, size), options, sendCopy, removeCaption, false));
     }
     return true;
   }
@@ -2281,7 +2281,7 @@ public class TD {
       userId,
       firstName,
       lastName,
-      "",
+      null,
       "",
       new TdApi.UserStatusEmpty(),
       null,
@@ -2414,7 +2414,7 @@ public class TD {
             return Lang.getString(R.string.BotStatusCantRead);
           }
         } else {
-          return "@" + user.username;
+          return "@" + Td.primaryUsername(user);
         }
       }
       case TdApi.UserTypeDeleted.CONSTRUCTOR: {
@@ -3480,7 +3480,7 @@ public class TD {
   }
 
   public static String getLink (TdApi.Supergroup supergroup) {
-    return "https://" + getTelegramMeHost() + "/" + supergroup.username;
+    return "https://" + getTelegramMeHost() + "/" + Td.primaryUsername(supergroup);
   }
 
   public static String getStickerPackLink (String name) {
@@ -3488,7 +3488,7 @@ public class TD {
   }
 
   public static String getLink (TdApi.User user) {
-    return "https://" + getTelegramMeHost() + "/" + user.username;
+    return "https://" + getTelegramMeHost() + "/" + Td.primaryUsername(user);
   }
 
   public static String getLink (String username) {

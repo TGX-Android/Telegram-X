@@ -259,11 +259,12 @@ public class ChatEventUtil {
         ArrayList<TdApi.TextEntity> entities = new ArrayList<>(3);
         entities.add(new TdApi.TextEntity(0, start - 1, new TdApi.TextEntityTypeItalic()));
         entities.add(new TdApi.TextEntity(start, userName.length(), new TdApi.TextEntityTypeMentionName(e.userId)));
-        if (user != null && !StringUtils.isEmpty(user.username)) {
+        if (user != null && Td.hasUsername(user)) {
+          String username = Td.primaryUsername(user);
           b.append(" / ");
-          entities.add(new TdApi.TextEntity(b.length(), user.username.length() + 1, new TdApi.TextEntityTypeMention()));
+          entities.add(new TdApi.TextEntity(b.length(), username.length() + 1, new TdApi.TextEntityTypeMention()));
           b.append('@');
-          b.append(user.username);
+          b.append(username);
         }
         TdApi.TextEntity[] array = new TdApi.TextEntity[entities.size()];
         entities.toArray(array);

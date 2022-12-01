@@ -61,6 +61,7 @@ public class TdlibListeners {
   final ReferenceLongMap<MessageListener> messageChatListeners;
   final ReferenceLongMap<MessageEditListener> messageEditChatListeners;
   final ReferenceLongMap<ChatListener> specificChatListeners;
+  final ReferenceMap<String, ForumTopicInfoListener> specificForumTopicListeners;
   final ReferenceLongMap<NotificationSettingsListener> chatSettingsListeners;
   final ReferenceIntMap<FileUpdateListener> fileUpdateListeners;
   final ReferenceLongMap<PollListener> pollListeners;
@@ -98,6 +99,7 @@ public class TdlibListeners {
     this.messageChatListeners = new ReferenceLongMap<>();
     this.messageEditChatListeners = new ReferenceLongMap<>();
     this.specificChatListeners = new ReferenceLongMap<>();
+    this.specificForumTopicListeners = new ReferenceMap<>(true);
     this.chatSettingsListeners = new ReferenceLongMap<>(true);
     this.fileUpdateListeners = new ReferenceIntMap<>();
     this.pollListeners = new ReferenceLongMap<>();
@@ -376,6 +378,16 @@ public class TdlibListeners {
   @AnyThread
   public void unsubscribeFromChatUpdates (long chatId, ChatListener listener) {
     specificChatListeners.remove(chatId, listener);
+  }
+
+  @AnyThread
+  public void subscribeToForumTopicUpdates (long chatId, long messageThreadId, ForumTopicInfoListener listener) {
+    specificForumTopicListeners.add(chatId + "_" + messageThreadId, listener);
+  }
+
+  @AnyThread
+  public void unsubscribeFromForumTopicUpdates (long chatId, long messageThreadId, ForumTopicInfoListener listener) {
+    specificForumTopicListeners.remove(chatId + "_" + messageThreadId, listener);
   }
 
   @AnyThread
@@ -1242,6 +1254,22 @@ public class TdlibListeners {
   void updateChatVideoChat (TdApi.UpdateChatVideoChat update) {
     updateChatVideoChat(update.chatId, update.videoChat, chatListeners.iterator());
     updateChatVideoChat(update.chatId, update.videoChat, specificChatListeners.iterator(update.chatId));
+  }
+
+  // updateForumTopicInfo
+
+  void updateForumTopicInfo (TdApi.UpdateForumTopicInfo update) {
+    updateForumTopicInfo(update.chatId, update.info, chatListeners.iterator());
+    updateForumTopicInfo(update.chatId, update.info, specificChatListeners.iterator(update.chatId));
+    updateForumTopicInfo(update.chatId, update.info, specificForumTopicListeners.iterator(update.chatId + "_" + update.info.messageThreadId));
+  }
+
+  private static void updateForumTopicInfo (long chatId, TdApi.ForumTopicInfo info, @Nullable Iterator<? extends ForumTopicInfoListener> list) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onForumTopicInfoChanged(chatId, info);
+      }
+    }
   }
 
   // updateChatPendingJoinRequests

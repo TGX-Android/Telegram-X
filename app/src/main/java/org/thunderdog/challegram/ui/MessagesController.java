@@ -2683,7 +2683,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           manager.openEventLog(chat);
           messagesView.setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 120l));
           if (getArgumentsStrict().eventLogUserId != 0 && headerCell != null) {
-            manager.applyEventLogFilters(new TdApi.ChatEventLogFilters(true, true, true, true, true, true, true, true, true, true, true, true), new long[] { getArgumentsStrict().eventLogUserId });
+            manager.applyEventLogFilters(new TdApi.ChatEventLogFilters(true, true, true, true, true, true, true, true, true, true, true, true, true), new long[] { getArgumentsStrict().eventLogUserId });
           }
           break;
         case PREVIEW_MODE_SEARCH:
@@ -7557,7 +7557,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       TdApi.Chat chat = tdlib.chat(currentSwitchPmButton.getSourceChatId());
       TdApi.User user = tdlib.cache().user(currentSwitchPmButton.getUserId());
       if (chat != null && user != null) {
-        tdlib.ui().openChat(this, chat, new TdlibUi.ChatOpenParameters().shareItem(new TGSwitchInline(user.username, button.query)));
+        tdlib.ui().openChat(this, chat, new TdlibUi.ChatOpenParameters().shareItem(new TGSwitchInline(Td.primaryUsername(user), button.query)));
       }
     }
   }
@@ -7588,7 +7588,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void openGame (long ownerUserId, TdApi.Game game, final String url, TdApi.Message message) {
     TdApi.User user = tdlib.cache().user(ownerUserId);
     GameController controller = new GameController(context, tdlib);
-    controller.setArguments(new GameController.Args(user != null ? user.id : 0, game, user != null ? "@" + user.username : "Game", url, message, this));
+    controller.setArguments(new GameController.Args(user != null ? user.id : 0, game, user != null ? "@" + Td.primaryUsername(user) : "Game", url, message, this));
     /*PopupLayout popupLayout = new PopupLayout(getContext());
     popupLayout.init(true);
     popupLayout.showSimplePopupView(controller.getWrap(), Screen.currentHeight());*/
@@ -7600,15 +7600,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return;
     }
     final TdApi.User user = viaBotUserId != 0 ? tdlib.cache().user(viaBotUserId) : tdlib.chatUser(chat);
-    if (user == null || StringUtils.isEmpty(user.username)) {
+    if (user == null || !Td.hasUsername(user)) {
       return;
     }
 
-    final String username = user.username;
+    final String username = Td.primaryUsername(user);
 
     if (switchInline.inCurrentChat && canWriteMessages() && hasWritePermission()) {
       if (inputView != null) {
-        inputView.setInput("@" + user.username + " " + switchInline.query, true, true);
+        inputView.setInput("@" + username + " " + switchInline.query, true, true);
       }
       return;
     }
@@ -8583,6 +8583,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
               true,
               true,
               true,
+              true,
               true
             );
             final LongList userIds1;
@@ -9101,7 +9102,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   public void forwardMessage (TdApi.Message message) { // TODO remove all related to Forward stuff to replace with ShareLayout
     if (hasWritePermission()) {
-      tdlib.forwardMessage(chat.id, message.chatId, message.id, Td.newSendOptions(obtainSilentMode()));
+      tdlib.forwardMessage(chat.id, getMessageThreadId(), message.chatId, message.id, Td.newSendOptions(obtainSilentMode()));
     }
   }
 

@@ -907,7 +907,8 @@ public class SettingsController extends ViewController<Void> implements
   }
 
   private boolean setUsername (@Nullable TdApi.User myUser) {
-    String username = myUser != null ? myUser.username : null;
+    TdApi.Usernames usernames = myUser != null ? myUser.usernames : null;
+    String username = usernames != null ? usernames.editableUsername : null;
     if ((myUsername == null && username != null) || (myUsername != null && !myUsername.equals(username))) {
       this.myUsername = username;
       return true;

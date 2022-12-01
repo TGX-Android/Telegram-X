@@ -588,7 +588,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
 
     if (isBot) {
-      if (!StringUtils.isEmpty(user.username)) {
+      if (Td.hasUsername(user)) {
         ids.append(R.id.more_btn_share);
         strings.append(R.string.Share);
       }
@@ -646,7 +646,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       strings.append(Lang.getString(R.string.AddMember));
     }
     if (mode == MODE_CHANNEL || mode == MODE_SUPERGROUP) {
-      if (supergroup.username.length() > 0) {
+      if (Td.hasUsername(supergroup)) {
         ids.append(R.id.more_btn_share);
         strings.append(R.string.Share);
       }
@@ -1728,12 +1728,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             switch (mode) {
               case MODE_USER:
               case MODE_SECRET: {
-                view.setData("@" + user.username);
+                view.setData("@" + Td.primaryUsername(user));
                 break;
               }
               case MODE_CHANNEL:
               case MODE_SUPERGROUP: {
-                view.setData("/" + supergroup.username);
+                view.setData("/" + Td.primaryUsername(supergroup));
                 break;
               }
             }
@@ -1846,12 +1846,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             switch (mode) {
               case MODE_EDIT_SUPERGROUP:
               case MODE_EDIT_CHANNEL: {
-                if (StringUtils.isEmpty(supergroup.username)) {
+                if (Td.isEmpty(supergroup.usernames)) {
                   // view.setName(supergroup.isChannel ? R.string.ChannelType : R.string.GroupType);
                   view.setData(supergroup.isChannel ? R.string.ChannelLinkSet : R.string.GroupLinkSet);
                 } else {
                   // view.setName(supergroup.isChannel ? R.string.ChannelLink : R.string.GroupLink);
-                  view.setData(tdlib.tMeHost() + supergroup.username);
+                  view.setData(tdlib.tMeUrl(supergroup.usernames, true));
                 }
                 break;
               }
@@ -2341,21 +2341,21 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     switch (mode) {
       case MODE_USER:
       case MODE_SECRET: {
-        if (user.username.isEmpty()) {
+        if (!Td.hasUsername(user)) {
           return null;
         }
         if (TD.isBot(user)) {
-          return new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_username, R.drawable.baseline_alternate_email_24, tdlib.tMeHost() + user.username, false);
+          return new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_username, R.drawable.baseline_alternate_email_24, tdlib.tMeUrl(user.usernames, true), false);
         } else {
           return new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_username, R.drawable.baseline_alternate_email_24, R.string.Username);
         }
       }
       case MODE_CHANNEL:
       case MODE_SUPERGROUP: {
-        if (supergroup.username.isEmpty()) {
+        if (!Td.hasUsername(supergroup)) {
           return null;
         }
-        return new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_username, R.drawable.baseline_alternate_email_24, tdlib.tMeHost() + supergroup.username, false);
+        return new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_username, R.drawable.baseline_alternate_email_24, tdlib.tMeUrl(supergroup.usernames, true), false);
       }
     }
     return null;
@@ -2383,7 +2383,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET));
 
     int addedCount = 0;
-    if (!user.username.isEmpty()) {
+    if (Td.hasUsername(user)) {
       final ListItem usernameItem = newUsernameItem();
       if (usernameItem != null) {
         items.add(usernameItem);
@@ -2738,16 +2738,16 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private void checkUsername () {
-    String username;
+    TdApi.Usernames usernames;
     switch (mode) {
       case MODE_USER:
       case MODE_SECRET: {
-        username = user.username;
+        usernames = user.usernames;
         break;
       }
       case MODE_CHANNEL:
       case MODE_SUPERGROUP: {
-        username = supergroup.username;
+        usernames = supergroup.usernames;
         break;
       }
       default: {
@@ -2756,7 +2756,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
     int index = baseAdapter.indexOfViewById(R.id.btn_username);
     boolean hadUsername = index != -1;
-    boolean hasUsername = !username.isEmpty();
+    boolean hasUsername = Td.hasUsername(usernames);
     if (hadUsername != hasUsername) {
       if (hadUsername) {
         removeTopItem(index);
@@ -2880,11 +2880,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   // Group
 
   private boolean isPublicGroup () {
-    return (mode == MODE_SUPERGROUP || mode == MODE_EDIT_SUPERGROUP) && !supergroup.username.isEmpty();
+    return (mode == MODE_SUPERGROUP || mode == MODE_EDIT_SUPERGROUP) && Td.hasUsername(supergroup);
   }
 
   private boolean isPublicChannel () {
-    return (mode == MODE_CHANNEL || mode == MODE_EDIT_CHANNEL) && !supergroup.username.isEmpty();
+    return (mode == MODE_CHANNEL || mode == MODE_EDIT_CHANNEL) && Td.hasUsername(supergroup);
   }
 
   private boolean canManageChat () {

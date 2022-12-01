@@ -67,6 +67,7 @@ import me.vkryl.android.LocaleUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.td.ChatId;
+import me.vkryl.td.Td;
 
 public class InlineSearchContext implements LocationHelper.LocationChangeListener, InlineResultsWrap.LoadMoreCallback {
   public static final int WARNING_OK = 0;
@@ -501,7 +502,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
             if (user != null && user.type.getConstructor() == TdApi.UserTypeBot.CONSTRUCTOR && ((TdApi.UserTypeBot) user.type).isInline) {
               tdlib.ui().post(() -> {
                 String currentUsername = getInlineUsername();
-                if (!isCancelled() && currentUsername != null && username.toLowerCase().equals(currentUsername.toLowerCase()) && user.username != null && user.username.toLowerCase().equals(currentUsername.toLowerCase())) {
+                if (!isCancelled() && username.equalsIgnoreCase(currentUsername) && Td.findUsername(user, currentUsername)) {
                   applyInlineBot(user);
                 }
               });
@@ -517,7 +518,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
       if (allowInlineLocation) {
         searchInlineResultsLocated(inlineQuery, inlineQuery != null && inlineQuery.isEmpty(), false);
       } else {
-        searchInlineResults(inlineBot.username, inlineQuery, null, false);
+        searchInlineResults(Td.primaryUsername(inlineBot.usernames), inlineQuery, null, false);
       }
     } else {
       searchOther(cursorPosition);
@@ -528,9 +529,12 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
     this.inlineBot = user;
     this.allowInlineLocation = ((TdApi.UserTypeBot) user.type).needLocation && Settings.instance().allowLocationForBot(inlineBot.id);
     String username = getInlineUsername();
-    callback.showInlinePlaceholder(username != null ? username : user.username, ((TdApi.UserTypeBot) user.type).inlineQueryPlaceholder);
+    if (username == null) {
+      username = Td.primaryUsername(user);
+    }
+    callback.showInlinePlaceholder(username, ((TdApi.UserTypeBot) user.type).inlineQueryPlaceholder);
     setCurrentMode(MODE_INLINE_SEARCH);
-    requestLocationForInlineBot(currentText.substring(user.username.length() + 2), true);
+    requestLocationForInlineBot(currentText.substring(username.length() + 2), true);
   }
 
   private void clearInlineMode () {
@@ -558,7 +562,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
           if (!requested[0]) {
             requested[0] = true;
             if (currentInlineUsername != null && currentInlineUsername.equals(getInlineUsername())) {
-              searchInlineResults(inlineBot.username, currentText.substring(currentInlineUsername.length() + 2), null, firstQuery);
+              searchInlineResults(Td.primaryUsername(inlineBot), currentText.substring(currentInlineUsername.length() + 2), null, firstQuery);
             }
           }
         };
@@ -577,7 +581,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
         ModernOptions.showLocationAlert(context, currentInlineUsername, onCancel, onConfirm);
       }
     } else {
-      searchInlineResults(inlineBot.username, inlineQuery, null, firstQuery);
+      searchInlineResults(Td.primaryUsername(inlineBot), inlineQuery, null, firstQuery);
     }
   }
 
@@ -593,7 +597,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
   @Override
   public void onLocationResult (LocationHelper context, @NonNull String arg, @Nullable Location location) {
     if (currentText.equals(arg)) {
-      searchInlineResults(inlineBot.username, getInlineQuery(), location, false);
+      searchInlineResults(Td.primaryUsername(inlineBot), getInlineQuery(), location, false);
     }
   }
 
@@ -606,7 +610,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
     }
 
     if (currentText.equals(arg)) {
-      searchInlineResults(inlineBot.username, inlineQuery, savedLocation, false);
+      searchInlineResults(Td.primaryUsername(inlineBot), inlineQuery, savedLocation, false);
     }
   }
 

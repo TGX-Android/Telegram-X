@@ -704,7 +704,7 @@ public class TdlibStatusManager implements CleanupStartupDelegate {
     if (supergroup == null) {
       return "channel unavailable";
     }
-    int resource = supergroup.isChannel ? (StringUtils.isEmpty(supergroup.username) ? R.string.ChannelPrivate : R.string.Channel) : (!StringUtils.isEmpty(supergroup.username) ? R.string.PublicGroup : R.string.Group);
+    int resource = supergroup.isChannel ? (!Td.hasUsername(supergroup) ? R.string.ChannelPrivate : R.string.Channel) : (!Td.isEmpty(supergroup.usernames) ? R.string.PublicGroup : R.string.Group);
     return Lang.lowercase(Lang.getString(resource));
   }
 }

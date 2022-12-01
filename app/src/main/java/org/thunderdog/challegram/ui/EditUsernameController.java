@@ -92,13 +92,13 @@ public class EditUsernameController extends EditBaseController<EditUsernameContr
 
   @Override
   protected void onCreateView (Context context, FrameLayoutFix contentView, RecyclerView recyclerView) {
+    TdApi.Usernames usernames;
     if (chatId != 0) {
-      String username = tdlib.chatUsername(chatId);
-      sourceUsername = currentUsername = username != null ? username : "";
+      usernames = tdlib.chatUsernames(chatId);
     } else {
-      TdApi.User user = tdlib.myUser();
-      sourceUsername = currentUsername = user != null ? user.username : "";
+      usernames = tdlib.myUserUsernames();
     }
+    sourceUsername = currentUsername = usernames != null ? usernames.editableUsername : "";
 
     checkingItem = new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, chatId != 0 ? R.string.LinkChecking : R.string.UsernameChecking).setTextColorId(R.id.theme_color_textLight);
     checkedItem = new ListItem(ListItem.TYPE_DESCRIPTION, R.id.state, 0, 0);

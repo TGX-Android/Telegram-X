@@ -429,7 +429,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (msg.viaBotUserId != 0) {
       TdApi.User viaBot = tdlib.cache().user(msg.viaBotUserId);
       if (viaBot != null) {
-        this.viaBotUsername = "@" + viaBot.username;
+        this.viaBotUsername = "@" + Td.primaryUsername(viaBot);
       } else {
         this.viaBotUsername = null;
       }
@@ -6902,7 +6902,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           } else {
             user = sender.isUser() ? tdlib.cache().user(sender.getUserId()) : null;
           }
-          messagesController().sendCommand(command, user != null && user.type.getConstructor() == TdApi.UserTypeBot.CONSTRUCTOR ? user.username : null);
+          messagesController().sendCommand(command, user != null && user.type.getConstructor() == TdApi.UserTypeBot.CONSTRUCTOR ? Td.primaryUsername(user) : null);
         }
         return true;
       }
@@ -7482,8 +7482,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (chat != null) {
       if (chat.type.getConstructor() == TdApi.ChatTypeSupergroup.CONSTRUCTOR) {
         TdApi.Supergroup supergroup = tdlib.chatToSupergroup(msg.chatId);
-        if (supergroup != null && !StringUtils.isEmpty(supergroup.username)) {
-          b.append("Public post: t.me/").append(supergroup.username).append('/').append(msg.id >> 20).append("\n");
+        if (supergroup != null && Td.hasUsername(supergroup)) {
+          b.append("Public post: t.me/").append(Td.primaryUsername(supergroup)).append('/').append(msg.id >> 20).append("\n");
         }
       }
     } else {

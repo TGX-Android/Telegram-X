@@ -31,6 +31,7 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 
 import me.vkryl.core.StringUtils;
+import me.vkryl.td.Td;
 
 public class InlineResultMention extends InlineResult<UserContext> {
   private static final float TEXT_SIZE_DP = 14f;
@@ -43,11 +44,13 @@ public class InlineResultMention extends InlineResult<UserContext> {
     super(context, tdlib, TYPE_MENTION, null, new UserContext(tdlib, user));
     this.userContext = data;
     this.isInlineBot = isInlineBot;
-    this.description = userContext.getUser() != null && !userContext.getUser().username.isEmpty() ? "@" + userContext.getUser().username : null;
+    String username = userContext.getUsername();
+    this.description = !StringUtils.isEmpty(username) ? "@" + username : null;
   }
 
   private static String getMention (TdApi.User user, boolean forceUsernameless) {
-    return user != null ? forceUsernameless || user.username.isEmpty() ? (!StringUtils.isEmpty(user.firstName) ? user.firstName : TD.getUserName(user.firstName, user.lastName)) : "@" + user.username : null;
+    String username = Td.primaryUsername(user);
+    return user != null ? forceUsernameless || StringUtils.isEmpty(username) ? (!StringUtils.isEmpty(user.firstName) ? user.firstName : TD.getUserName(user.firstName, user.lastName)) : "@" + username : null;
   }
 
   public boolean isInlineBot () {
@@ -63,7 +66,7 @@ public class InlineResultMention extends InlineResult<UserContext> {
   }
 
   public boolean isUsernameless () {
-    return userContext.getUser() != null && userContext.getUser().username.isEmpty();
+    return StringUtils.isEmpty(userContext.getUsername());
   }
 
   public String getMention (boolean forceUsernameless) {
@@ -80,9 +83,9 @@ public class InlineResultMention extends InlineResult<UserContext> {
     String lowerLast = user.lastName.toLowerCase();
     String check2 = TD.getUserName(lowerFirst, lowerLast);
     if (check2.startsWith(check) || lowerLast.startsWith(check)) {
-      return allowUsernameless || !StringUtils.isEmpty(user.username);
+      return allowUsernameless || Td.hasUsername(user);
     }
-    return (allowUsernameless || !user.username.isEmpty()) && user.username.toLowerCase().startsWith(check);
+    return (allowUsernameless || Td.hasUsername(user)) && Td.findUsernameByPrefix(user, check);
   }
 
   private String trimmedDescription;
