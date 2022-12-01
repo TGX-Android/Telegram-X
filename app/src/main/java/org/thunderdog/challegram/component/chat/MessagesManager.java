@@ -1174,8 +1174,12 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         if (scrollMessage == null) {
           if (scrollMessageId != null && scrollMessageId.isHistoryStart() && !items.isEmpty()) {
             scrollToHistoryStart();
+          } else if (scrollMessageId != null && isHeaderMessage(scrollMessageId) && !adapter.isEmpty()) {
+            scrollToMessage(adapter.getItemCount() - 1, adapter.getTopMessage(), highlightMode == HIGHLIGHT_MODE_NONE ? HIGHLIGHT_MODE_START : highlightMode, false, false);
+          } else if (scrollPosition == 0) {
+            manager.scrollToPositionWithOffset(0, 0);
           } else {
-            scrollToMessage(scrollPosition, scrollMessageId, highlightMode);
+            manager.scrollToPosition(scrollPosition);
           }
         } else {
           scrollToMessage(scrollPosition, scrollMessage, highlightMode == HIGHLIGHT_MODE_NONE ? HIGHLIGHT_MODE_START : highlightMode, false, false);
@@ -1216,6 +1220,13 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       return topMessage == null || topMessage != headerMessage;
     }
     return false;
+  }
+
+  private boolean isHeaderMessage (MessageId messageId) {
+    TGMessage topMessage = adapter.getTopMessage();
+    return isHeaderMessage(topMessage) &&
+      topMessage.getChatId() == messageId.getChatId() &&
+      topMessage.isDescendantOrSelf(messageId.getMessageId());
   }
 
   private boolean isHeaderMessage (@Nullable TGMessage message) {
@@ -2721,21 +2732,6 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
   }
 
-  private void scrollToMessage (int scrollPosition, @Nullable MessageId scrollMessageId, int highlightMode) {
-    if (scrollMessageId != null && !adapter.isEmpty()) {
-      int index = adapter.indexOfMessageContainer(scrollMessageId);
-      if (index != -1) {
-        scrollToMessage(index, adapter.getItem(index), highlightMode == HIGHLIGHT_MODE_NONE ? HIGHLIGHT_MODE_START : highlightMode, false, false);
-        return;
-      }
-    }
-    if (scrollPosition == 0) {
-      manager.scrollToPositionWithOffset(0, 0);
-    } else {
-      manager.scrollToPosition(scrollPosition);
-    }
-  }
-
   private void scrollToMessage (int index, TGMessage scrollMessage, int highlightMode, boolean smooth, boolean blocking) {
     if (highlightMode == HIGHLIGHT_MODE_START) {
       scrollToPositionWithOffset(index, 0, false);
@@ -3022,14 +3018,14 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   @Override
   public void onNewMessage (final TdApi.Message message) {
-    if ((message.schedulingState != null) == areScheduled()) {
+    final ThreadInfo messageThread = loader.getMessageThread();
+    if (TD.isScheduled(message) == areScheduled()) {
       if (indexOfSentMessage(message.chatId, message.id) != -1)
         return;
       final TdApi.Chat chat = tdlib.chatStrict(message.chatId);
-      final ThreadInfo messageThread = controller.getMessageThread();
       final TGMessage parsedMessage = TGMessage.valueOf(this, message, chat, messageThread, chatAdmins);
       showMessage(chat.id, parsedMessage);
-    } else if (isFocused() && (message.schedulingState != null)) {
+    } else if (isFocused() && TD.isScheduled(message) && messageThread == null) {
       controller.viewScheduledMessages(true);
     }
   }
@@ -3046,7 +3042,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   public List<TGMessage> parseMessages (List<TdApi.Message> messages) {
     final List<TGMessage> parsedMessages = new ArrayList<>(messages.size());
     final TdApi.Chat chat = tdlib.chatStrict(messages.get(0).chatId);
-    final ThreadInfo messageThread = controller.getMessageThread();
+    final ThreadInfo messageThread = loader.getMessageThread();
     TGMessage cur = null;
     LongSparseArray<TdApi.ChatAdministrator> chatAdmins = this.chatAdmins;
     for (TdApi.Message message : messages) {

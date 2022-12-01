@@ -662,7 +662,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         }
       }
 
-      if (!msg.isChannel() && !msg.isRepliesChat() && msg.canGetMessageThread() && msg.getMessageThreadId() != m.getMessageThreadId()) {
+      if (!msg.isChannel() && !msg.isRepliesChat() && !msg.isThreadHeader() && msg.canGetMessageThread() && msg.getMessageThreadId() != m.getMessageThreadId()) {
         if (msg.isMessageThreadRoot()) {
           int replyCount = msg.getReplyCount();
           if (replyCount > 0) {
