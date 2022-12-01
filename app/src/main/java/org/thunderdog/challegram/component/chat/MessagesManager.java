@@ -2852,8 +2852,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   private String buildSearchResultsCounter (int index, int totalCount, boolean knownIndex, boolean knownTotal) {
-    if (knownIndex) {
+    if (knownIndex && knownTotal) {
       return Lang.getXofY(index + 1, totalCount);
+    } else if (knownIndex) {
+      return Lang.getXofApproximateY(index + 1, totalCount);
     } else if (knownTotal) {
       return Lang.plural(R.string.SearchExactlyResults, totalCount);
     } else {

@@ -119,7 +119,7 @@ public class MessagesSearchManager {
     currentDisplayedMessage = foundMsgId != null ? foundMsgId.getMessageId(): 0;
     currentSearchFilter = filter;
     searchManagerMiddleware.setDelegate(newTotalCount -> {
-      delegate.onSearchUpdateTotalCount(getMessageIndex(currentDisplayedMessage), newTotalCount, knownIndex(), true);
+      delegate.onSearchUpdateTotalCount(getMessageIndex(currentDisplayedMessage), newTotalCount, knownIndex(), knownTotalCount());
       currentTotalCount = newTotalCount;
     });
 
@@ -241,7 +241,7 @@ public class MessagesSearchManager {
       if (messages == null || messages.messages.length == 0) {
         flags &= ~(direction == SEARCH_DIRECTION_TOP ? FLAG_CAN_LOAD_MORE_TOP: FLAG_CAN_LOAD_MORE_BOTTOM);
         if (currentMessage != null) {
-          delegate.showSearchResult(getMessageIndex(currentMessage.id), currentTotalCount, knownIndex(), true, new MessageId(currentMessage.chatId, currentMessage.id));
+          delegate.showSearchResult(getMessageIndex(currentMessage.id), currentTotalCount, knownIndex(), knownTotalCount(), new MessageId(currentMessage.chatId, currentMessage.id));
         }
         return;
       }
@@ -250,12 +250,12 @@ public class MessagesSearchManager {
       if (message == null) {
         flags &= ~(direction == SEARCH_DIRECTION_TOP ? FLAG_CAN_LOAD_MORE_TOP: FLAG_CAN_LOAD_MORE_BOTTOM);
         if (currentMessage != null) {
-          delegate.showSearchResult(getMessageIndex(currentMessage.id), currentTotalCount, knownIndex(), true, new MessageId(currentMessage.chatId, currentMessage.id));
+          delegate.showSearchResult(getMessageIndex(currentMessage.id), currentTotalCount, knownIndex(), knownTotalCount(), new MessageId(currentMessage.chatId, currentMessage.id));
         }
         return;
       }
       currentDisplayedMessage = message.id;
-      delegate.showSearchResult(getMessageIndex(message.id), currentTotalCount, knownIndex(), true, new MessageId(message.chatId, message.id));
+      delegate.showSearchResult(getMessageIndex(message.id), currentTotalCount, knownIndex(), knownTotalCount(), new MessageId(message.chatId, message.id));
       return;
     }
     if (messages == null || messages.messages.length == 0) {
@@ -276,7 +276,7 @@ public class MessagesSearchManager {
     if (foundTargetMessageId != null) {
       int index = getMessageIndex(foundTargetMessageId.getMessageId());
       if (index != -1 || direction == SEARCH_DIRECTION_AROUND) {
-        delegate.showSearchResult(index, currentTotalCount = messages.totalCount, knownIndex(), true, foundTargetMessageId);
+        delegate.showSearchResult(index, currentTotalCount = messages.totalCount, knownIndex(), knownTotalCount(), foundTargetMessageId);
         currentDisplayedMessage = foundTargetMessageId.getMessageId();
         foundTargetMessageId = null;
       } else {
@@ -288,7 +288,7 @@ public class MessagesSearchManager {
       return;
     }
     currentDisplayedMessage = messages.messages[0].id;
-    delegate.showSearchResult(0, currentTotalCount = messages.totalCount, knownIndex(), true, new MessageId(messages.messages[0].chatId, messages.messages[0].id));
+    delegate.showSearchResult(0, currentTotalCount = messages.totalCount, knownIndex(), knownTotalCount(), new MessageId(messages.messages[0].chatId, messages.messages[0].id));
   }
 
   public void moveToNext (boolean next) {
@@ -311,7 +311,7 @@ public class MessagesSearchManager {
     }
     if (0 <= nextIndex && nextIndex < currentSearchResultsArr.size()) {
       TdApi.Message message = getMessageByIndex(nextIndex);
-      delegate.showSearchResult(getMessageIndex(currentDisplayedMessage = message.id), currentTotalCount, knownIndex(), true, new MessageId(message.chatId, message.id));
+      delegate.showSearchResult(getMessageIndex(currentDisplayedMessage = message.id), currentTotalCount, knownIndex(), knownTotalCount(), new MessageId(message.chatId, message.id));
     } else if (next ? canLoadTop(): canLoadBottom()) {
       flags |= FLAG_LOADING;
       delegate.onAwaitNext(next);
@@ -323,7 +323,7 @@ public class MessagesSearchManager {
   public void moveToMessage (MessageId message) {
     int newIndex = getMessageIndex(currentDisplayedMessage = message.getMessageId());
     if (newIndex >= 0) {
-      delegate.showSearchResult(newIndex, currentTotalCount, knownIndex(), true, message);
+      delegate.showSearchResult(newIndex, currentTotalCount, knownIndex(), knownTotalCount(), message);
     } else {
       flags = FLAG_LOADING;
       currentSearchResults.clear();
@@ -383,6 +383,12 @@ public class MessagesSearchManager {
 
   private boolean knownIndex () {
     return currentSearchResultsArr.containsKey(newestFoundMessageId);
+  }
+
+  private boolean knownTotalCount () {
+    return (!canLoadTop() && !canLoadBottom()) || currentSearchResultsArr.size() == currentTotalCount || !((currentSearchFilter != null && currentFromSender != null)
+      || (currentFromSender != null && tdlib.isUserChat(currentChatId))
+      || MessagesSearchManagerMiddleware.isFilterPolyfill(currentSearchFilter));
   }
 
   private @Nullable TdApi.Message getNextMessage (boolean next) {

@@ -1431,6 +1431,7 @@
   <string name="XCreatedGroup">%1$s created the group</string>
   <string name="YouCreatedGroup">You created the group</string>
   <string name="XofY">%1$s of %2$s</string>
+  <string name="XofApproximateY">%1$s of ~%2$s</string>
   <string name="ReadingXLine">Reading line %1$s…</string>
   <string name="format_linesAndViews">%1$s, %2$s</string>
   <string name="xPeopleJoinedGroup_one">%1$s member joined the group</string>
