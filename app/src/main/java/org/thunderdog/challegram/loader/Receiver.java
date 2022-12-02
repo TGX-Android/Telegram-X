@@ -39,16 +39,24 @@ public interface Receiver extends TooltipOverlayView.LocationProvider {
   int getTop ();
   int getRight ();
   int getBottom ();
-  int centerX ();
-  int centerY ();
 
-  void setRadius (int radius);
+  void setRadius (float radius);
 
   void setTag (Object tag);
   Object getTag ();
 
-  int getWidth ();
-  int getHeight ();
+  default int getWidth () {
+    return getRight() - getLeft();
+  }
+  default int getHeight () {
+    return getBottom() - getTop();
+  }
+  default int centerX () {
+    return (int) ((float) (getLeft() + getRight()) * .5f);
+  }
+  default int centerY () {
+    return (int) ((float) (getTop() + getBottom()) * .5f);
+  }
 
   void attach ();
   void detach ();
@@ -94,10 +102,10 @@ public interface Receiver extends TooltipOverlayView.LocationProvider {
   default void drawPlaceholder (Canvas c) {
     drawPlaceholderRounded(c, 0);
   }
-  default void drawPlaceholderRounded (Canvas c, int radius) {
+  default void drawPlaceholderRounded (Canvas c, float radius) {
     drawPlaceholderRounded(c, radius, Theme.placeholderColor());
   }
-  default void drawPlaceholderRounded (Canvas c, int radius, int color) {
+  default void drawPlaceholderRounded (Canvas c, float radius, int color) {
     if (radius > 0) {
       RectF rect = Paints.getRectF();
       rect.set(getLeft(), getTop(), getRight(), getBottom());

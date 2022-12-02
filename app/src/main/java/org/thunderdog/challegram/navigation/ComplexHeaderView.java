@@ -795,7 +795,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
     MediaViewThumbLocation location = new MediaViewThumbLocation();
     location.set(avatarReceiver.getLeft(), avatarReceiver.getTop(), avatarReceiver.getRight(), avatarReceiver.getBottom());
     location.setClip(0, Math.max(-avatarReceiver.getTop(), 0), 0, Math.max(0, avatarReceiver.getBottom() - calculateHeaderHeight()));
-    int radius = avatarReceiver.getRadius();
+    float radius = avatarReceiver.getRadius();
     location.setColorId(R.id.theme_color_headerBackground);
     location.setRoundings(radius, radius, radius, radius);
     return location;

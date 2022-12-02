@@ -31,6 +31,7 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.TGChat;
+import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
@@ -169,7 +170,7 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
   }
 
   private TGChat chat;
-  private final ImageReceiver avatarReceiver;
+  private final AvatarReceiver avatarReceiver;
   private final ComplexReceiver textMediaReceiver;
 
   private final BounceAnimator onlineAnimator;
@@ -184,7 +185,7 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
     setId(R.id.chat);
     RippleSupport.setTransparentSelector(this);
     int chatListMode = getChatListMode();
-    avatarReceiver = new ImageReceiver(this, getAvatarRadius(chatListMode));
+    avatarReceiver = new AvatarReceiver(this);
     avatarReceiver.setBounds(getAvatarLeft(chatListMode), getAvatarTop(chatListMode), getAvatarLeft(chatListMode) + getAvatarSize(chatListMode), getAvatarTop(chatListMode) + getAvatarSize(chatListMode));
     textMediaReceiver = new ComplexReceiver(this, Config.MAX_ANIMATED_EMOJI_REFRESH_RATE);
     setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -398,7 +399,7 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
   private void requestContent () {
     requestTextContent();
     if (chat != null) {
-      avatarReceiver.requestFile(chat.getAvatar());
+      avatarReceiver.requestChat(tdlib, chat.getChatId(), tdlib.needAvatarPreviewAnimation(chat.getChatId()), false);
     } else {
       avatarReceiver.clear();
     }
@@ -414,7 +415,11 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
   }
 
   public void invalidateAvatarReceiver () {
-    avatarReceiver.requestFile(chat != null ? chat.getAvatar() : null);
+    if (chat != null) {
+      avatarReceiver.requestChat(tdlib, chat.getChatId(), tdlib.needAvatarPreviewAnimation(chat.getChatId()), false);
+    } else {
+      avatarReceiver.clear();
+    }
     invalidate();
   }
 

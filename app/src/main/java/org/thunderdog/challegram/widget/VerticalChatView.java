@@ -77,7 +77,7 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
 
     receiver = new ImageReceiver(this, Screen.dp(25f));
     counter = new Counter.Builder().callback(this).outlineColor(R.id.theme_color_filling).build();
-    avatarReceiver = new AvatarReceiver(this, tdlib);
+    avatarReceiver = new AvatarReceiver(this);
   }
 
   public void setIsChecked (boolean isChecked, boolean animated) {
@@ -115,7 +115,6 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
     final int senderCenterX = centerX - Screen.dp(18);
     final int senderCenterY = centerY - Screen.dp(15);
     avatarReceiver.setBounds(senderCenterX - senderRadius, senderCenterY - senderRadius, senderCenterX + senderRadius, senderCenterY + senderRadius);
-    avatarReceiver.setRadius(senderRadius);
 
     buildTrimmedTitle();
   }
@@ -443,11 +442,11 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
     }
 
     if (hasMessageSender) {
-      c.drawCircle(avatarReceiver.centerX(), avatarReceiver.getCenterY(), Screen.dp(11.5f), Paints.fillingPaint(Theme.fillingColor()));
+      c.drawCircle(avatarReceiver.centerX(), avatarReceiver.centerY(), Screen.dp(11.5f), Paints.fillingPaint(Theme.fillingColor()));
 
       if (drawAnonymousSender) {
-        c.drawCircle(avatarReceiver.centerX(), avatarReceiver.getCenterY(), Screen.dp(10f), Paints.fillingPaint(Theme.getColor(R.id.theme_color_iconLight)));
-        Drawables.draw(c, Drawables.get(R.drawable.infanf_baseline_incognito_14), avatarReceiver.centerX() - Screen.dp(7), avatarReceiver.getCenterY() - Screen.dp(7), Paints.getPorterDuffPaint(Theme.getColor(R.id.theme_color_badgeMutedText)));
+        c.drawCircle(avatarReceiver.centerX(), avatarReceiver.centerY(), Screen.dp(10f), Paints.fillingPaint(Theme.getColor(R.id.theme_color_iconLight)));
+        Drawables.draw(c, Drawables.get(R.drawable.infanf_baseline_incognito_14), avatarReceiver.centerX() - Screen.dp(7), avatarReceiver.centerY() - Screen.dp(7), Paints.getPorterDuffPaint(Theme.getColor(R.id.theme_color_badgeMutedText)));
       } else {
         avatarReceiver.draw(c);
       }
@@ -465,7 +464,7 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
   private boolean drawAnonymousSender = false;
 
   private void setMessageSender (TdApi.MessageSender sender) {
-    avatarReceiver.setMessageSender(sender);
+    avatarReceiver.requestMessageSender(tdlib, sender, tdlib.needAvatarPreviewAnimation(sender), false);
     hasMessageSender = sender != null && (!tdlib.isSelfSender(sender) || Td.isAnonymous(tdlib.chatStatus(chat.getChatId())));
     drawAnonymousSender = sender != null && !tdlib.isChannel(sender) && Td.isAnonymous(tdlib.chatStatus(chat.getChatId()));
     invalidate();

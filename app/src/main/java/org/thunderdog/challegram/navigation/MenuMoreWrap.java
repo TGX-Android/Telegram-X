@@ -61,6 +61,7 @@ import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.td.Td;
 
 public class MenuMoreWrap extends LinearLayout implements Animated {
   public static final int ITEM_HEIGHT = 48;
@@ -186,7 +187,10 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     final int textRightOffset = Screen.dp(menuItem.isLocked ? 41: 17);
     final Drawable finalIcon = menuItem.iconResId != 0 ? Drawables.get(getResources(), menuItem.iconResId) : menuItem.icon;
     final AvatarReceiver receiver = (menuItem.messageSenderId != null && menuItem.iconResId == 0) ?
-      complexAvatarReceiver.getAvatarReceiver(tdlib, menuItem.messageSenderId): null;
+      complexAvatarReceiver.getAvatarReceiver(Td.getSenderId(menuItem.messageSenderId)) : null;
+    if (receiver != null) {
+      receiver.requestMessageSender(tdlib, menuItem.messageSenderId, tdlib.needAvatarPreviewAnimation(menuItem.messageSenderId), false);
+    }
 
     FrameLayout.LayoutParams lp = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(ITEM_HEIGHT), Gravity.LEFT);
     FrameLayout frameLayout = new FrameLayout(getContext()) {

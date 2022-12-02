@@ -213,14 +213,8 @@ public class ComplexReceiver implements Destroyable {
     return getReceiver(gifReceivers, view, updateListener, isAttached, animationsDisabled, key, TYPE_GIF);
   }
 
-  public AvatarReceiver getAvatarReceiver (Tdlib tdlib, long key) {
-    return getReceiver(avatarReceivers, view, updateListener, isAttached, animationsDisabled, key, TYPE_AVATAR).setTdlib(tdlib);
-  }
-
-  public AvatarReceiver getAvatarReceiver (Tdlib tdlib, TdApi.MessageSender sender) {
-    AvatarReceiver avatarReceiver = getAvatarReceiver(tdlib, Td.getSenderId(sender));
-    avatarReceiver.setMessageSender(sender);
-    return avatarReceiver;
+  public AvatarReceiver getAvatarReceiver (long key) {
+    return getReceiver(avatarReceivers, view, updateListener, isAttached, animationsDisabled, key, TYPE_AVATAR);
   }
 
   private boolean isAttached = true;

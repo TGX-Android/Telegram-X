@@ -90,6 +90,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.ChatId;
+import me.vkryl.td.Td;
 
 public class ForceTouchView extends FrameLayoutFix implements
   PopupLayout.AnimatedPopupProvider, FactorAnimator.Target,
@@ -476,7 +477,8 @@ public class ForceTouchView extends FrameLayoutFix implements
             }
           };
         } else if (actionItem.messageSender != null && actionItem.iconRes == 0) {
-          AvatarReceiver receiver = complexAvatarReceiver.getAvatarReceiver(tdlib, actionItem.messageSender);
+          AvatarReceiver receiver = complexAvatarReceiver.getAvatarReceiver(Td.getSenderId(actionItem.messageSender));
+          receiver.requestMessageSender(tdlib, actionItem.messageSender, tdlib.needAvatarPreviewAnimation(actionItem.messageSender), false);
           receiver.setBounds(0, 0, Screen.dp(24), Screen.dp(24));
           receiver.setRadius(Screen.dp(12));
           view = new ImageView(getContext()) {

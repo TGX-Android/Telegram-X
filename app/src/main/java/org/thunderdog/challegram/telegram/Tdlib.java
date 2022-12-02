@@ -3291,6 +3291,38 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     throw new RuntimeException(sender.toString());
   }
 
+  public boolean needAvatarPreviewAnimation (long chatId) {
+    if (chatId == 0) {
+      return false;
+    }
+    long userId = chatUserId(chatId);
+    TdApi.User user = cache().user(userId);
+    return user != null && user.isPremium;
+  }
+
+  public boolean needAvatarPreviewAnimation (TdApi.MessageSender sender) {
+    return senderPremium(sender);
+  }
+
+  public boolean senderPremium (TdApi.MessageSender sender) {
+    if (sender == null) {
+      return false;
+    }
+    long userId;
+    switch (sender.getConstructor()) {
+      case TdApi.MessageSenderChat.CONSTRUCTOR:
+        userId = chatUserId(((TdApi.MessageSenderChat) sender).chatId);
+        break;
+      case TdApi.MessageSenderUser.CONSTRUCTOR:
+        userId = ((TdApi.MessageSenderUser) sender).userId;
+        break;
+      default:
+        throw new UnsupportedOperationException(sender.toString());
+    }
+    TdApi.User user = cache().user(userId);
+    return user != null && user.isPremium;
+  }
+
   public String senderUsername (TdApi.MessageSender sender) {
     switch (sender.getConstructor()) {
       case TdApi.MessageSenderChat.CONSTRUCTOR: {

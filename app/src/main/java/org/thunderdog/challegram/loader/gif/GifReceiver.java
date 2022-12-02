@@ -14,11 +14,14 @@
  */
 package org.thunderdog.challegram.loader.gif;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapShader;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.Shader;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.SystemClock;
@@ -75,7 +78,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
 
   private final int progressOffset, progressRadius;
 
-  public GifReceiver (View view) {
+  public GifReceiver (@Nullable View view) {
     this.progressOffset = Screen.dp(1f);
     this.progressRadius = Screen.dp(10f);
 
@@ -91,9 +94,15 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
     this.updateListener = listener;
   }
 
+  private float radius;
+
   @Override
-  public void setRadius (int radius) {
-    // TODO
+  public void setRadius (float radius) {
+    if (this.radius != radius) {
+      this.radius = radius;
+      layoutRect();
+      invalidate();
+    }
   }
 
   private Object tag;
@@ -150,24 +159,6 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
 
   public int getBottom () {
     return bottom;
-  }
-
-  public int centerX () {
-    return (int) ((float) (left + right) * .5f);
-  }
-
-  public int centerY () {
-    return (int) ((float) (bottom + top) * .5f);
-  }
-
-  @Override
-  public int getWidth () {
-    return getRight() - getLeft();
-  }
-
-  @Override
-  public int getHeight () {
-    return getBottom() - getTop();
   }
 
   @Override
@@ -323,6 +314,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
   @Override
   public void clear () {
     requestFile(null);
+    clearShaderPaint();
   }
 
   @Override
@@ -661,6 +653,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
             bitmapPaint.setAlpha(alpha);
           }
           int scaleType = file.getScaleType();
+          Bitmap bitmap = gif.getBitmap(!inBatch);
           if (scaleType != 0) {
             c.save();
             c.clipRect(left, top, right, bottom);
@@ -681,11 +674,15 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
             }
 
             c.concat(bitmapMatrix);
-            c.drawBitmap(gif.getBitmap(!inBatch), 0f, 0f, bitmapPaint);
+            c.drawBitmap(bitmap, 0f, 0f, bitmapPaint);
 
             c.restore();
+          } else if (radius != 0f) {
+            RectF rectF = Paints.getRectF();
+            rectF.set(left, top, right, bottom);
+            c.drawRoundRect(rectF, radius, radius, shaderPaint(bitmap, bitmapPaint.getAlpha()));
           } else {
-            c.drawBitmap(gif.getBitmap(!inBatch), bitmapRect, drawRegion, bitmapPaint);
+            c.drawBitmap(bitmap, bitmapRect, drawRegion, bitmapPaint);
           }
           if (alpha != restoreAlpha) {
             bitmapPaint.setAlpha(restoreAlpha);
@@ -693,5 +690,34 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
         }
       }
     }
+  }
+
+  private Paint shaderPaint;
+  private Bitmap lastShaderBitmap;
+  private Matrix shaderMatrix;
+
+  private Paint shaderPaint (Bitmap bitmap, int alpha) {
+    if (shaderPaint == null) {
+      shaderPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
+      shaderMatrix = new Matrix();
+    }
+    if (lastShaderBitmap != bitmap) {
+      lastShaderBitmap = bitmap;
+      // TODO optimize
+      BitmapShader shader = new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+      shaderPaint.setShader(shader);
+      shaderMatrix.reset();
+      RectF srcRect = new RectF(bitmapRect);
+      RectF dstRect = new RectF(left, top, right, bottom);
+      shaderMatrix.setRectToRect(srcRect, dstRect, Matrix.ScaleToFit.FILL);
+      shader.setLocalMatrix(shaderMatrix);
+    }
+    shaderPaint.setAlpha(alpha);
+    return shaderPaint;
+  }
+
+  private void clearShaderPaint () {
+    lastShaderBitmap = null;
+    shaderPaint = null;
   }
 }
