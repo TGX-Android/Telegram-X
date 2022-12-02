@@ -6087,6 +6087,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void highlightMessage (MessageId messageId, MessageId fromMessageId) {
+    if (inOnlyFoundMode()) {
+      manager.setHighlightMessageId(messageId, MessagesManager.HIGHLIGHT_MODE_NORMAL);
+      onSetSearchFilteredShowMode(false);
+      return;
+    }
     long[] returnToMessageIds = manager.extendReturnToMessageIdStack(fromMessageId);
     highlightMessage(messageId, returnToMessageIds);
   }
@@ -11233,6 +11238,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private void toggleSearchFilteredShowMode () {
     onSetSearchFilteredShowMode(!searchMessagesFilterMode);
+  }
+
+  private boolean inOnlyFoundMode () {
+    return searchMessagesFilterMode;
   }
 
   private void onSetSearchFilteredShowMode (boolean inSearchMode) {
