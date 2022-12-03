@@ -20,6 +20,7 @@ import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.theme.ThemeProperty;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
@@ -47,8 +48,11 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   private final ComplexReceiver complexReceiver;
   private final BoolAnimator isFullScreen;
   private final BoolAnimator isForum;
-  private boolean displayFullSizeOnlyInFullScreen;
   private boolean isDetached;
+
+  private boolean displayFullSizeOnlyInFullScreen;
+  private int defaultAvatarRadiusPropertyId = ThemeProperty.AVATAR_RADIUS;
+  private int forumAvatarRadiusPropertyId = ThemeProperty.AVATAR_RADIUS_FORUM;
 
   public AvatarReceiver (@Nullable View view) {
     this.complexReceiver = new ComplexReceiver(view);
@@ -67,6 +71,14 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   public void setDisplayFullSizeOnlyInFullScreen (boolean displayFullSizeOnlyInFullScreen) {
     if (this.displayFullSizeOnlyInFullScreen != displayFullSizeOnlyInFullScreen) {
       this.displayFullSizeOnlyInFullScreen = displayFullSizeOnlyInFullScreen;
+      invalidate();
+    }
+  }
+
+  public void setAvatarRadiusPropertyIds (@ThemeProperty int defaultAvatarRadiusPropertyId, @ThemeProperty int forumAvatarRadiusPropertyId) {
+    if (this.defaultAvatarRadiusPropertyId != defaultAvatarRadiusPropertyId || this.forumAvatarRadiusPropertyId != forumAvatarRadiusPropertyId) {
+      this.defaultAvatarRadiusPropertyId = defaultAvatarRadiusPropertyId;
+      this.forumAvatarRadiusPropertyId = forumAvatarRadiusPropertyId;
       invalidate();
     }
   }
@@ -862,8 +874,8 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
       float maxRadius = Math.min(getWidth(), getHeight()) / 2f;
       float radiusFactor = MathUtils.clamp(
         MathUtils.fromTo(
-          Theme.avatarRadiusDefault(),
-          Theme.avatarRadiusForum(),
+          Theme.getProperty(defaultAvatarRadiusPropertyId),
+          Theme.getProperty(forumAvatarRadiusPropertyId),
           isForum.getFloatValue()
         )
       );

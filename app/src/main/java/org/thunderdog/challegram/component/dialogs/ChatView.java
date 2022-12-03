@@ -42,6 +42,7 @@ import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.telegram.TdlibStatusManager;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeManager;
+import org.thunderdog.challegram.theme.ThemeProperty;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
@@ -186,6 +187,7 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
     RippleSupport.setTransparentSelector(this);
     int chatListMode = getChatListMode();
     avatarReceiver = new AvatarReceiver(this);
+    avatarReceiver.setAvatarRadiusPropertyIds(ThemeProperty.AVATAR_RADIUS_CHAT_LIST, ThemeProperty.AVATAR_RADIUS_CHAT_LIST_FORUM);
     avatarReceiver.setBounds(getAvatarLeft(chatListMode), getAvatarTop(chatListMode), getAvatarLeft(chatListMode) + getAvatarSize(chatListMode), getAvatarTop(chatListMode) + getAvatarSize(chatListMode));
     textMediaReceiver = new ComplexReceiver(this, Config.MAX_ANIMATED_EMOJI_REFRESH_RATE);
     setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));

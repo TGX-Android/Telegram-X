@@ -42,6 +42,8 @@
 
     <item name="avatarRadius" />
     <item name="avatarRadiusForum" />
+    <item name="avatarRadiusChatList" />
+    <item name="avatarRadiusChatListForum" />
 
     <item name="wallpaperOverrideDate" />
     <item name="wallpaperOverrideUnread" />

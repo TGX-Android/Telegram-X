@@ -2282,6 +2282,8 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
       ThemeProperty.BUBBLE_UNREAD_SHADOW,
       ThemeProperty.AVATAR_RADIUS,
       ThemeProperty.AVATAR_RADIUS_FORUM,
+      ThemeProperty.AVATAR_RADIUS_CHAT_LIST,
+      ThemeProperty.AVATAR_RADIUS_CHAT_LIST_FORUM,
       ThemeProperty.LIGHT_STATUS_BAR,
       ThemeProperty.IMAGE_CORNER,
       ThemeProperty.DATE_CORNER,
