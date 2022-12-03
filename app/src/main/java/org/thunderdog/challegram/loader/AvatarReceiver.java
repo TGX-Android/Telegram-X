@@ -49,6 +49,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   private final ComplexReceiver complexReceiver;
   private final BoolAnimator isFullScreen;
   private final BoolAnimator isForum;
+  private boolean displayFullSizeOnlyInFullScreen;
   private boolean isDetached;
 
   public AvatarReceiver (@Nullable View view) {
@@ -63,6 +64,13 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
       AnimatorUtils.DECELERATE_INTERPOLATOR,
       180l
     );
+  }
+
+  public void setDisplayFullSizeOnlyInFullScreen (boolean displayFullSizeOnlyInFullScreen) {
+    if (this.displayFullSizeOnlyInFullScreen != displayFullSizeOnlyInFullScreen) {
+      this.displayFullSizeOnlyInFullScreen = displayFullSizeOnlyInFullScreen;
+      invalidate();
+    }
   }
 
   public void setFullScreen (boolean isFullScreen, boolean animated) {
@@ -848,7 +856,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
         @ReceiverType int receiverType = 1 << i;
 
         Receiver receiver = BitwiseUtils.getFlag(enabledReceivers, receiverType) ? findReceiver(receiverType) : null;
-        if (receiver != null && !receiver.needPlaceholder()) {
+        if (receiver != null && !receiver.needPlaceholder() && !(displayFullSizeOnlyInFullScreen && (receiverType == ReceiverType.FULL_ANIMATION || receiverType == ReceiverType.FULL_PHOTO) && isFullScreen.getFloatValue() != 1f)) {
           startReceiverTypeIndex = i;
           break;
         }
@@ -860,7 +868,14 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
         if (receiver != null) {
           receiver.setRadius(displayRadius);
           receiver.setBounds(getLeft(), getTop(), getRight(), getBottom());
+          boolean applyAlpha = displayFullSizeOnlyInFullScreen && (receiverType == ReceiverType.FULL_ANIMATION || receiverType == ReceiverType.FULL_PHOTO) && isFullScreen.getFloatValue() != 1f;
+          if (applyAlpha) {
+            receiver.setPaintAlpha(isFullScreen.getFloatValue());
+          }
           receiver.draw(c);
+          if (applyAlpha) {
+            receiver.restorePaintAlpha();
+          }
         }
       }
     } else if (requestedPlaceholder != null) {
