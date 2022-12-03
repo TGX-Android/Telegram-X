@@ -836,7 +836,12 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
         }
       }
     } else if (requestedPlaceholder != null) {
-      drawPlaceholderRounded(c, displayRadius, ColorUtils.alphaColor(alpha, Theme.getColor(requestedPlaceholder.colorId)));
+      int placeholderColor = ColorUtils.fromToArgb(
+        Theme.getColor(requestedPlaceholder.colorId),
+        Theme.getColor(Theme.avatarSmallToBig(requestedPlaceholder.colorId)),
+        isFullScreen.getFloatValue()
+      );
+      drawPlaceholderRounded(c, displayRadius, ColorUtils.alphaColor(alpha, placeholderColor));
       int avatarContentColorId = R.id.theme_color_avatar_content;
       float primaryContentAlpha = requestedPlaceholder.extraDrawableRes != 0 ? 1f - isFullScreen.getFloatValue() : 1f;
       if (primaryContentAlpha > 0f) {
