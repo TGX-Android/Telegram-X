@@ -106,16 +106,19 @@ public interface Receiver extends TooltipOverlayView.LocationProvider {
     drawPlaceholderRounded(c, radius, Theme.placeholderColor());
   }
   default void drawPlaceholderRounded (Canvas c, float radius, int color) {
+    drawPlaceholderRounded(c, radius, color, 0);
+  }
+  default void drawPlaceholderRounded (Canvas c, float radius, int color, int addSize) {
     if (radius > 0) {
       RectF rect = Paints.getRectF();
-      rect.set(getLeft(), getTop(), getRight(), getBottom());
+      rect.set(getLeft() - addSize, getTop() - addSize, getRight() + addSize, getBottom() + addSize);
       if (rect.width() == radius * 2 && rect.height() == radius * 2) {
-        c.drawCircle(rect.centerX(), rect.centerY(), radius, Paints.fillingPaint(color));
+        c.drawCircle(rect.centerX(), rect.centerY(), radius + addSize, Paints.fillingPaint(color));
       } else {
-        c.drawRoundRect(rect, radius, radius, Paints.fillingPaint(color));
+        c.drawRoundRect(rect, radius + addSize, radius + addSize, Paints.fillingPaint(color));
       }
     } else {
-      c.drawRect(getLeft(), getTop(), getRight(), getBottom(), Paints.fillingPaint(color));
+      c.drawRect(getLeft() - addSize, getTop() - addSize, getRight() + addSize, getBottom() + addSize, Paints.fillingPaint(color));
     }
   }
 

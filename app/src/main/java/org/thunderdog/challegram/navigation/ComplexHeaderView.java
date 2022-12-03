@@ -118,6 +118,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
     this.status = new TdlibStatusManager.Helper(UI.getContext(context), tdlib, this, parent);
     setUseDefaultClickListener(false);
     this.receiver = new AvatarReceiver(this);
+    this.receiver.setDisplayFullSizeOnlyInFullScreen(true);
     setCustomControllerProvider(this);
     TGLegacyManager.instance().addEmojiListener(this);
   }

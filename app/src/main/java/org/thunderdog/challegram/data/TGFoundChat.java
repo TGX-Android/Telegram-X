@@ -30,6 +30,7 @@ import org.thunderdog.challegram.util.text.Highlight;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.td.ChatId;
+import me.vkryl.td.Td;
 
 public class TGFoundChat {
   private static final int FLAG_SECRET = 1;
@@ -431,5 +432,10 @@ public class TGFoundChat {
 
   public @Nullable TdApi.MessageSender getMessageSenderId () {
     return chat != null ? chat.messageSenderId: null;
+  }
+
+  public boolean isAnonymousAdmin () {
+    TdApi.ChatMemberStatus status = tdlib.chatStatus(getChatId());
+    return status != null && Td.isAnonymous(status);
   }
 }

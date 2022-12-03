@@ -64,7 +64,7 @@ import me.vkryl.td.Td;
 public class VerticalChatView extends BaseView implements Destroyable, ChatListener, FactorAnimator.Target, TdlibCache.UserDataChangeListener, TdlibCache.UserStatusChangeListener, NotificationSettingsListener, AttachDelegate, SimplestCheckBoxHelper.Listener, TextColorSet, TooltipOverlayView.LocationProvider {
   private static final int SENDER_RADIUS = 10;
 
-  private final ImageReceiver receiver;
+  private final AvatarReceiver avatarReceiver;
   private final Counter counter;
 
   private SimplestCheckBoxHelper checkBoxHelper;
@@ -75,15 +75,15 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
     Views.setClickable(this);
     RippleSupport.setTransparentSelector(this);
 
-    receiver = new ImageReceiver(this, Screen.dp(25f));
-    counter = new Counter.Builder().callback(this).outlineColor(R.id.theme_color_filling).build();
     avatarReceiver = new AvatarReceiver(this);
+    counter = new Counter.Builder().callback(this).outlineColor(R.id.theme_color_filling).build();
+    identityAvatarReceiver = new AvatarReceiver(this);
   }
 
   public void setIsChecked (boolean isChecked, boolean animated) {
     if (isChecked != (checkBoxHelper != null && checkBoxHelper.isChecked())) {
       if (checkBoxHelper == null) {
-        checkBoxHelper = new SimplestCheckBoxHelper(this, receiver);
+        checkBoxHelper = new SimplestCheckBoxHelper(this, avatarReceiver);
       }
       checkBoxHelper.setIsChecked(isChecked, animated);
     }
@@ -106,54 +106,26 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
   @Override
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
     super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-    final int radius = Screen.dp(25f);
-    final int centerX = getMeasuredWidth() / 2;
-    final int centerY = getMeasuredHeight() / 2 - Screen.dp(11f);
-    receiver.setBounds(centerX - radius, centerY - radius, centerX + radius, centerY + radius);
-
-    final int senderRadius = Screen.dp(SENDER_RADIUS);
-    final int senderCenterX = centerX - Screen.dp(18);
-    final int senderCenterY = centerY - Screen.dp(15);
-    avatarReceiver.setBounds(senderCenterX - senderRadius, senderCenterY - senderRadius, senderCenterX + senderRadius, senderCenterY + senderRadius);
-
     buildTrimmedTitle();
   }
 
   @Override
   public void attach () {
-    receiver.attach();
     avatarReceiver.attach();
+    identityAvatarReceiver.attach();
   }
 
   @Override
   public void detach () {
-    receiver.detach();
     avatarReceiver.detach();
+    identityAvatarReceiver.detach();
   }
 
   @Override
   public void performDestroy () {
-    receiver.destroy();
     avatarReceiver.destroy();
+    identityAvatarReceiver.destroy();
     setChat(null);
-  }
-
-  private ImageFile avatarFile;
-  private AvatarPlaceholder avatarPlaceholder;
-
-  private void setAvatar (ImageFile imageFile) {
-    this.avatarFile = imageFile;
-    receiver.requestFile(imageFile);
-    invalidate();
-  }
-
-  private void setAvatarPlaceholder (AvatarPlaceholder.Metadata avatarPlaceholderMetadata) {
-    if (avatarPlaceholderMetadata != null) {
-      this.avatarPlaceholder = new AvatarPlaceholder(25f, avatarPlaceholderMetadata, null);
-    } else {
-      this.avatarPlaceholder = null;
-    }
-    invalidate();
   }
 
   // Data
@@ -211,7 +183,7 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
           tdlib.cache().subscribeToUserUpdates(newUserId, this);
         }
       } else {
-        setAvatar(null);
+        avatarReceiver.clear();
         setTitle("");
       }
     }
@@ -243,11 +215,10 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
 
   private void updateChat (boolean isUpdate) {
     chat.updateChat();
-    setAvatarPlaceholder(chat.getAvatarPlaceholderMetadata());
-    setAvatar(chat.getAvatar());
+    avatarReceiver.requestChat(tdlib, chat.getChatId(), tdlib.needAvatarPreviewAnimation(chat.getChatId()), false);
     setTitle(chat.getSingleLineTitle().toString());
     counter.setCount(chat.getUnreadCount(), !chat.notificationsEnabled(), isUpdate && isParentVisible());
-    setMessageSender(chat.getMessageSenderId());
+    setMessageSender(chat.getMessageSenderId(), chat.isAnonymousAdmin());
   }
 
   // Unread badge
@@ -399,28 +370,39 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
 
   @Override
   public void getTargetBounds (View targetView, Rect outRect) {
-    receiver.toRect(outRect);
+    avatarReceiver.toRect(outRect);
   }
 
   @Override
   protected void onDraw (Canvas c) {
-    if (avatarFile != null) {
-      if (receiver.needPlaceholder()) {
-        receiver.drawPlaceholderRounded(c, Screen.dp(25f));
-      }
-      receiver.draw(c);
-    } else if (avatarPlaceholder != null) {
-      avatarPlaceholder.draw(c, receiver.centerX(), receiver.centerY());
+    final int radius = Screen.dp(25f);
+    final int centerX = getMeasuredWidth() / 2;
+    final int centerY = getMeasuredHeight() / 2 - Screen.dp(11f);
+    avatarReceiver.setBounds(centerX - radius, centerY - radius, centerX + radius, centerY + radius);
+
+    if (avatarReceiver.needPlaceholder()) {
+      avatarReceiver.drawPlaceholder(c);
     }
+    avatarReceiver.draw(c);
+
+    float displayRadius = avatarReceiver.getDisplayRadius();
+
     final float checkFactor = checkBoxHelper != null ? checkBoxHelper.getCheckFactor() : 0f;
-    double radians = Math.toRadians(Lang.rtl() ? 225f : 135f);
-    float x = receiver.centerX() + (float) ((double) (receiver.getWidth() / 2) * Math.sin(radians));
-    float y = receiver.centerY() + (float) ((double) (receiver.getHeight() / 2) * Math.cos(radians));
+    double topRightRadians = Math.toRadians(Lang.rtl() ? 225f : 135f);
+    float checkCenterX, checkCenterY;
+    if (Lang.rtl()) {
+      checkCenterX = avatarReceiver.getLeft() + displayRadius;
+    } else {
+      checkCenterX = avatarReceiver.getRight() - displayRadius;
+    }
+    checkCenterY = avatarReceiver.getTop() + displayRadius;
+    float x = checkCenterX + (float) ((double) displayRadius * Math.sin(topRightRadians));
+    float y = checkCenterY + (float) ((double) displayRadius * Math.cos(topRightRadians));
     counter.draw(c, x, y, Lang.rtl() ? Gravity.LEFT : Gravity.RIGHT, (1f - checkFactor));
 
-    DrawAlgorithms.drawOnline(c, receiver, onlineFactor * (1f - checkFactor));
+    DrawAlgorithms.drawOnline(c, avatarReceiver, onlineFactor * (1f - checkFactor));
     if (checkFactor > 0f) {
-      DrawAlgorithms.drawSimplestCheckBox(c, receiver, checkFactor);
+      DrawAlgorithms.drawSimplestCheckBox(c, avatarReceiver, checkFactor);
     }
 
     if (trimmedTitle != null) {
@@ -441,14 +423,28 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
       paint.setColor(sourceColor);
     }
 
-    if (hasMessageSender) {
-      c.drawCircle(avatarReceiver.centerX(), avatarReceiver.centerY(), Screen.dp(11.5f), Paints.fillingPaint(Theme.fillingColor()));
+    if (hasMessageSender || drawAnonymousSender) {
+      final double topLeftRadians = Math.toRadians(Lang.rtl() ? 135f : 225f);
+      float identityCenterX, identityCenterY;
+      if (Lang.rtl()) {
+        identityCenterX = avatarReceiver.getRight() - displayRadius;
+      } else {
+        identityCenterX = avatarReceiver.getLeft() + displayRadius;
+      }
+      identityCenterY = avatarReceiver.getTop() + displayRadius;
+
+      float senderCenterX = identityCenterX + (float) ((double) displayRadius * Math.sin(topLeftRadians));
+      float senderCenterY = identityCenterY + (float) ((double) displayRadius * Math.cos(topLeftRadians));
+
+      final int senderRadius = Screen.dp(SENDER_RADIUS);
+      identityAvatarReceiver.setBounds((int) senderCenterX - senderRadius, (int) senderCenterY - senderRadius, (int)senderCenterX + senderRadius, (int) senderCenterY + senderRadius);
+      identityAvatarReceiver.drawPlaceholderRounded(c, identityAvatarReceiver.getDisplayRadius(), Theme.fillingColor(), Screen.dp(1.5f));
 
       if (drawAnonymousSender) {
-        c.drawCircle(avatarReceiver.centerX(), avatarReceiver.centerY(), Screen.dp(10f), Paints.fillingPaint(Theme.getColor(R.id.theme_color_iconLight)));
-        Drawables.draw(c, Drawables.get(R.drawable.infanf_baseline_incognito_14), avatarReceiver.centerX() - Screen.dp(7), avatarReceiver.centerY() - Screen.dp(7), Paints.getPorterDuffPaint(Theme.getColor(R.id.theme_color_badgeMutedText)));
+        identityAvatarReceiver.drawPlaceholderRounded(c, identityAvatarReceiver.getDisplayRadius(), Theme.getColor(R.id.theme_color_iconLight));
+        Drawables.draw(c, Drawables.get(R.drawable.infanf_baseline_incognito_14), identityAvatarReceiver.centerX() - Screen.dp(7), identityAvatarReceiver.centerY() - Screen.dp(7), Paints.getPorterDuffPaint(Theme.getColor(R.id.theme_color_badgeMutedText)));
       } else {
-        avatarReceiver.draw(c);
+        identityAvatarReceiver.draw(c);
       }
     }
   }
@@ -459,18 +455,14 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
     return Paints.getSmallTitlePaint();
   }
 
-  private final AvatarReceiver avatarReceiver;
+  private final AvatarReceiver identityAvatarReceiver;
   private boolean hasMessageSender = false;
   private boolean drawAnonymousSender = false;
 
-  private void setMessageSender (TdApi.MessageSender sender) {
-    avatarReceiver.requestMessageSender(tdlib, sender, tdlib.needAvatarPreviewAnimation(sender), false);
+  private void setMessageSender (TdApi.MessageSender sender, boolean forceAnonymousSender) {
+    identityAvatarReceiver.requestMessageSender(tdlib, sender, tdlib.needAvatarPreviewAnimation(sender), false);
     hasMessageSender = sender != null && (!tdlib.isSelfSender(sender) || Td.isAnonymous(tdlib.chatStatus(chat.getChatId())));
-    drawAnonymousSender = sender != null && !tdlib.isChannel(sender) && Td.isAnonymous(tdlib.chatStatus(chat.getChatId()));
+    drawAnonymousSender = (sender == null && forceAnonymousSender) || (sender != null && !tdlib.isChannel(sender) && Td.isAnonymous(tdlib.chatStatus(chat.getChatId())));
     invalidate();
-  }
-
-  public AvatarReceiver getAvatarReceiver () {
-    return avatarReceiver;
   }
 }
