@@ -511,6 +511,9 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
 
     shaderMatrix.reset();
     shaderMatrix.setRectToRect(bitmapRect, drawRegion, Matrix.ScaleToFit.FILL);
+    if (lastShader != null) {
+      lastShader.setLocalMatrix(shaderMatrix);
+    }
 
     if (file != null) {
       switch (file.getScaleType()) {
@@ -702,6 +705,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
 
   private Paint shaderPaint;
   private WeakReference<Bitmap> lastShaderBitmapReference;
+  private BitmapShader lastShader;
 
   private Paint shaderPaint (Bitmap bitmap, int alpha) {
     if (shaderPaint == null) {
@@ -712,7 +716,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
       lastShaderBitmapReference = new WeakReference<>(bitmap);
       BitmapShader shader = new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
       shader.setLocalMatrix(shaderMatrix);
-      shaderPaint.setShader(shader);
+      shaderPaint.setShader(lastShader = shader);
     }
     shaderPaint.setAlpha(alpha);
     return shaderPaint;
@@ -721,5 +725,6 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
   private void clearShaderPaint () {
     lastShaderBitmapReference = null;
     shaderPaint = null;
+    lastShader = null;
   }
 }
