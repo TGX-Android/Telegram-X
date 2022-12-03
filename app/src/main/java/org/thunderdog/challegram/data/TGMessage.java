@@ -65,6 +65,7 @@ import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
@@ -209,8 +210,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private String date;
   private @Nullable Text hAuthorNameT, hPsaTextT, hAuthorChatMark;
   private @Nullable Text hAdminNameT;
-  private ImageFile hAvatar;
-  private AvatarPlaceholder hAvatarPlaceholder;
   private @Nullable Letters uBadge;
 
   // counters
@@ -1756,7 +1755,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return useBubbles() && (!useBubble() || separateReplyFromBubble());
   }
 
-  public final void draw (MessageView view, Canvas c, @NonNull ImageReceiver avatarReceiver, Receiver replyReceiver, ComplexReceiver replyTextMediaReceiver, DoubleImageReceiver previewReceiver, ImageReceiver contentReceiver, GifReceiver gifReceiver, ComplexReceiver complexReceiver) {
+  public final void draw (MessageView view, Canvas c, @NonNull AvatarReceiver avatarReceiver, Receiver replyReceiver, ComplexReceiver replyTextMediaReceiver, DoubleImageReceiver previewReceiver, ImageReceiver contentReceiver, GifReceiver gifReceiver, ComplexReceiver complexReceiver) {
     final int viewWidth = view.getMeasuredWidth();
     final int viewHeight = view.getMeasuredHeight();
 
@@ -1884,13 +1883,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         if (useFullWidth()) {
           c.drawCircle(cx, cy, xAvatarRadius + Screen.dp(2.5f), Paints.fillingPaint(Theme.getColor(R.id.theme_color_chatBackground)));
         }
-        if (hAvatar != null) {
-          if (avatarReceiver.needPlaceholder())
-            avatarReceiver.drawPlaceholderRounded(c, useBubbles ? xBubbleAvatarRadius : xAvatarRadius);
-          avatarReceiver.draw(c);
-        } else if (hAvatarPlaceholder != null) {
-          hAvatarPlaceholder.draw(c, (int) cx, (int) cy);
-        }
+        if (avatarReceiver.needPlaceholder())
+          avatarReceiver.drawPlaceholder(c);
+        avatarReceiver.draw(c);
       }
 
       // Author
@@ -2858,24 +2853,18 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return messagesController().getMessageThread() != null;
   }
 
+  private boolean hasAvatar;
+
   private void layoutAvatar () {
     if (useBubbles() && !needAvatar()) {
-      hAvatar = null;
+      hasAvatar = false;
       return;
     }
-
     if (this.chat == null) {
       this.chat = tdlib.chat(msg.chatId);
     }
-
-    final float avatarRadiusDp = useBubbles() ? BUBBLE_AVATAR_RADIUS : AVATAR_RADIUS;
-    if (forceForwardedInfo()) {
-      hAvatar = forwardInfo.getAvatar();
-      hAvatarPlaceholder = new AvatarPlaceholder(avatarRadiusDp, forwardInfo.getAvatarPlaceholderMetadata(), null);
-    } else {
-      hAvatar = sender.getAvatar();
-      hAvatarPlaceholder = new AvatarPlaceholder(avatarRadiusDp, sender.getPlaceholderMetadata(), null);
-    }
+    hasAvatar = true;
+    // FIXME: better logic behind this method
   }
 
   protected static final float LETTERS_SIZE = 16f;
@@ -2928,7 +2917,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       .build();
   }
 
-  private Text makeName (String authorName, boolean available, boolean isPsa, boolean hideName, long viaBotUserId, int maxWidth, boolean isForward) {
+  private Text makeName (String authorName, int nameColorId, boolean available, boolean isPsa, boolean hideName, long viaBotUserId, int maxWidth, boolean isForward) {
     if (maxWidth <= 0)
       return null;
     boolean hasBot = viaBotUserId != 0;
@@ -2953,22 +2942,21 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     TextColorSet colorTheme;
     if (isPsa) {
       colorTheme = getChatAuthorPsaColorSet();
-    } else if (!isForward && needColoredNames() && hAvatarPlaceholder != null) {
-      int colorId = TD.getNameColorId(hAvatarPlaceholder.metadata.colorId);
+    } else if (!isForward && needColoredNames() && nameColorId != 0) {
       colorTheme = new TextColorSetOverride(getChatAuthorColorSet()) {
         @Override
         public int clickableTextColor (boolean isPressed) {
-          return Theme.getColor(colorId);
+          return Theme.getColor(nameColorId);
         }
 
         @Override
         public int backgroundColor (boolean isPressed) {
-          return isPressed ? ColorUtils.alphaColor(.2f, Theme.getColor(colorId)) : 0;
+          return isPressed ? ColorUtils.alphaColor(.2f, Theme.getColor(nameColorId)) : 0;
         }
 
         @Override
         public int backgroundColorId (boolean isPressed) {
-          return isPressed ? colorId : 0;
+          return isPressed ? nameColorId : 0;
         }
       };
     } else {
@@ -3017,7 +3005,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         if (needDrawChannelIconInHeader()) {
           maxWidth -= isChannelHeaderCounter.getScaledWidth(Screen.dp(5));
         }
-        hAuthorNameT = makeName(authorName, !(forceForwardedInfo() && forwardInfo instanceof TGSourceHidden), isPsa, !needName(false), msg.forwardInfo == null || forceForwardedInfo() ? msg.viaBotUserId : 0, maxWidth, false);
+        hAuthorNameT = makeName(authorName, forceForwardedInfo() ? forwardInfo.getAuthorNameColorId() : sender.getNameColorId(), !(forceForwardedInfo() && forwardInfo instanceof TGSourceHidden), isPsa, !needName(false), msg.forwardInfo == null || forceForwardedInfo() ? msg.viaBotUserId : 0, maxWidth, false);
       } else {
         hAuthorNameT = null;
         hAuthorChatMark = null;
@@ -3105,7 +3093,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       if (needDrawChannelIconInHeader()) {
         nameMaxWidth -= isChannelHeaderCounter.getScaledWidth(Screen.dp(1));
       }
-      hAuthorNameT = makeName(authorName, !(forceForwardedInfo() && forwardInfo instanceof TGSourceHidden), isPsa, !needName(false), msg.forwardInfo == null || forceForwardedInfo() ? msg.viaBotUserId : 0, nameMaxWidth, false);
+      hAuthorNameT = makeName(authorName, forceForwardedInfo() ? forwardInfo.getAuthorNameColorId() : sender.getNameColorId(), !(forceForwardedInfo() && forwardInfo instanceof TGSourceHidden), isPsa, !needName(false), msg.forwardInfo == null || forceForwardedInfo() ? msg.viaBotUserId : 0, nameMaxWidth, false);
     } else {
       hAuthorNameT = null;
       hAuthorChatMark = null;
@@ -3174,7 +3162,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
 
     boolean isPsa = isPsa() && !forceForwardedInfo();
-    fAuthorNameT = makeName(forwardInfo.getAuthorName(), !(forwardInfo instanceof TGSourceHidden), isPsa, false, msg.viaBotUserId, (int) (isPsa ? totalMax : max), true);
+    fAuthorNameT = makeName(forwardInfo.getAuthorName(), 0, !(forwardInfo instanceof TGSourceHidden), isPsa, false, msg.viaBotUserId, (int) (isPsa ? totalMax : max), true);
     if (isPsa) {
       CharSequence text = Lang.getPsaNotificationType(controller(), msg.forwardInfo.publicServiceAnnouncementType);
       fPsaTextT = new Text.Builder(tdlib, text, openParameters(), (int) max, getNameStyleProvider(), getChatAuthorPsaColorSet(), null)
@@ -3717,7 +3705,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   // Image receivers
 
-  public final void layoutAvatar (MessageView view, ImageReceiver receiver) {
+  public final void layoutAvatar (MessageView view, AvatarReceiver receiver) {
     int left, top, size;
     if (useBubbles()) {
       left = xBubbleAvatarLeft;
@@ -3742,11 +3730,16 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
   }
 
-  public final void requestAvatar (ImageReceiver receiver) {
-    if ((flags & FLAG_HEADER_ENABLED) != 0 && hAvatar != null && needAvatar()) {
-      receiver.requestFile(hAvatar);
+  public final void requestAvatar (AvatarReceiver receiver) {
+    if (hasAvatar) {
+      final float avatarRadiusDp = useBubbles() ? BUBBLE_AVATAR_RADIUS : AVATAR_RADIUS;
+      if (forceForwardedInfo()) {
+        forwardInfo.requestAvatar(receiver);
+      } else {
+        receiver.requestMessageSender(tdlib, sender.toSender(), tdlib.needAvatarPreviewAnimation(sender.toSender()), false);
+      }
     } else {
-      receiver.requestFile(null);
+      receiver.clear();
     }
   }
 

@@ -22,6 +22,7 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.telegram.TdlibUi;
@@ -133,12 +134,16 @@ public class TGSourceChat extends TGSource implements Client.ResultHandler, Runn
   }
 
   @Override
-  public ImageFile getAvatar () {
-    return photo != null ? TD.getAvatar(msg.tdlib, photo) : null;
+  public int getAuthorNameColorId () {
+    return TD.getNameColorId(msg.tdlib.chatAvatarColorId(chatId));
   }
 
   @Override
-  public AvatarPlaceholder.Metadata getAvatarPlaceholderMetadata () {
-    return msg.tdlib().chatPlaceholderMetadata(chatId, false);
+  public void requestAvatar (AvatarReceiver receiver) {
+    if (msg.tdlib.isSelfChat(chatId)) {
+      receiver.requestUser(msg.tdlib, msg.tdlib.chatUserId(chatId), msg.tdlib.needAvatarPreviewAnimation(chatId), false);
+    } else {
+      receiver.requestChat(msg.tdlib, chatId, msg.tdlib.needAvatarPreviewAnimation(chatId), false);
+    }
   }
 }

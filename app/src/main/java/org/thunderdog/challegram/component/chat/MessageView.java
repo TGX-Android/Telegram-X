@@ -39,6 +39,7 @@ import org.thunderdog.challegram.data.TGMessageLocation;
 import org.thunderdog.challegram.data.TGMessageSticker;
 import org.thunderdog.challegram.data.TGMessageText;
 import org.thunderdog.challegram.data.TGWebPage;
+import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageReceiver;
@@ -95,7 +96,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
   private int flags;
 
-  private final ImageReceiver avatarReceiver;
+  private final AvatarReceiver avatarReceiver;
   private final GifReceiver gifReceiver;
   private final ComplexReceiver avatarsReceiver;
   private final ComplexReceiver reactionsComplexReceiver, textMediaReceiver, replyTextMediaReceiver;
@@ -112,7 +113,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   public MessageView (Context context) {
     super(context);
     this.refreshRateLimiter = new RefreshRateLimiter(this, Config.MAX_ANIMATED_EMOJI_REFRESH_RATE);
-    avatarReceiver = new ImageReceiver(this, Screen.dp(20.5f));
+    avatarReceiver = new AvatarReceiver(this);
     avatarsReceiver = new ComplexReceiver(this);
     gifReceiver = new GifReceiver(this); // TODO use refreshRateLimiter?
     reactionsComplexReceiver = new ComplexReceiver()
@@ -384,7 +385,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     msg.draw(this, c, avatarReceiver, replyReceiver, replyTextMediaReceiver, previewReceiver, contentReceiver, gifReceiver, complexReceiver);
   }
 
-  public ImageReceiver getAvatarReceiver () {
+  public AvatarReceiver getAvatarReceiver () {
     return avatarReceiver;
   }
 

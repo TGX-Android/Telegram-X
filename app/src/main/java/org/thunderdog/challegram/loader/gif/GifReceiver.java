@@ -134,6 +134,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
   public boolean setBounds (int left, int top, int right, int bottom) {
     if (U.setRect(drawRegion, left, top, right, bottom)) {
       layoutRect();
+      invalidate();
       return true;
     }
     return false;

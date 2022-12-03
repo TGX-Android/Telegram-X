@@ -19,12 +19,15 @@ import android.view.View;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextPart;
+
+import me.vkryl.td.ChatId;
 
 public class TGSourceUser extends TGSource implements TdlibCache.UserDataChangeListener {
   private final long senderUserId;
@@ -85,12 +88,12 @@ public class TGSourceUser extends TGSource implements TdlibCache.UserDataChangeL
   }
 
   @Override
-  public ImageFile getAvatar () {
-    return user == null || TD.isPhotoEmpty(user.profilePhoto) ? null : new ImageFile(msg.tdlib(), user.profilePhoto.small);
+  public int getAuthorNameColorId () {
+    return TD.getNameColorId(msg.tdlib.cache().userAvatarColorId(senderUserId));
   }
 
   @Override
-  public AvatarPlaceholder.Metadata getAvatarPlaceholderMetadata () {
-    return msg.tdlib.cache().userPlaceholderMetadata(senderUserId, msg.tdlib.cache().user(senderUserId), false);
+  public void requestAvatar (AvatarReceiver receiver) {
+    receiver.requestUser(msg.tdlib, senderUserId, msg.tdlib.needAvatarPreviewAnimation(ChatId.fromUserId(senderUserId)), false);
   }
 }
