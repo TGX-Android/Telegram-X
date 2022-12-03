@@ -854,11 +854,7 @@ public class SettingsController extends ViewController<Void> implements
   private void updateHeader () {
     TdApi.User user = tdlib.myUser();
     if (headerCell != null) {
-      if (user == null || TD.isPhotoEmpty(user.profilePhoto)) {
-        headerCell.setAvatarPlaceholder(tdlib.cache().userPlaceholder(tdlib.myUserId(), user, false, ComplexHeaderView.getBaseAvatarRadiusDp(), null));
-      } else {
-        headerCell.setAvatar(user.profilePhoto);
-      }
+      headerCell.getAvatarReceiver().requestUser(tdlib, tdlib.myUserId(), tdlib.needAvatarPreviewAnimation(tdlib.selfChatId()), true);
       headerCell.setText(user != null ? TD.getUserName(user) : Lang.getString(R.string.LoadingUser), getSubtext());
       headerCell.invalidate();
     }

@@ -98,7 +98,7 @@ public class ChatHeaderView extends ComplexHeaderView {
       return;
     }
 
-    setChatPhoto(chat, chat.photo);
+    getAvatarReceiver().requestChat(tdlib, chat.id, tdlib.needAvatarPreviewAnimation(chat.id), true);
     setShowVerify(tdlib.chatVerified(chat));
     setShowScam(tdlib.chatScam(chat));
     setShowFake(tdlib.chatFake(chat));
@@ -117,38 +117,7 @@ public class ChatHeaderView extends ComplexHeaderView {
     }
   }
 
-  private void setChatPhoto (TdApi.Chat chat, @Nullable TdApi.ChatPhotoInfo photo) {
-    boolean empty = tdlib.isSelfChat(chat.id) || photo == null;
-    setPhotoOpenDisabled(empty);
-    if (empty) {
-      setAvatarPlaceholder(tdlib.chatPlaceholder(chat, true, getBaseAvatarRadiusDp(), null));
-    } else {
-      setAvatar(photo);
-    }
-  }
-
   // Updates (new)
-
-  public void updateChatTitle (long chatId, String title) {
-    setTitle(title);
-    TdApi.Chat chat = tdlib.chat(chatId);
-    if (chat != null && chat.photo == null) {
-      setChatPhoto(chat, null);
-      updateAvatar();
-    }
-  }
-
-  public void updateChatPhoto (TdApi.Chat chat, @Nullable TdApi.ChatPhotoInfo photo) {
-    setChatPhoto(chat, photo);
-    updateAvatar();
-  }
-
-  public void updateNotificationSettings (long chatId, TdApi.ChatNotificationSettings settings) {
-    boolean isMuted = TD.needMuteIcon(settings, tdlib.scopeNotificationSettings(chatId));
-    if (getShowMute() != isMuted) {
-      setShowMute(isMuted);
-    }
-  }
 
   private Tdlib tdlib;
 

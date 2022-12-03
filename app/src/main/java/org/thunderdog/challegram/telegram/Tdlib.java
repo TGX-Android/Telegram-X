@@ -3296,6 +3296,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       return false;
     }
     long userId = chatUserId(chatId);
+    if (userId == 0) {
+      return false;
+    }
     TdApi.User user = cache().user(userId);
     return user != null && user.isPremium;
   }

@@ -319,10 +319,12 @@ public class ForceTouchView extends FrameLayoutFix implements
         } else if (context.boundDataType == TYPE_USER && context.boundDataId != 0) {
           setupUser((int) context.boundDataId, headerView);
         } else {
-          if (context.avatarFile != null) {
-            headerView.setAvatar(context.avatarFile);
+          if (context.avatarSender != null) {
+            headerView.getAvatarReceiver().requestMessageSender(tdlib, context.avatarSender, tdlib.needAvatarPreviewAnimation(context.avatarSender), false);
+          } else if (context.avatarPlaceholder != null) {
+            headerView.getAvatarReceiver().requestPlaceholder(tdlib, context.avatarPlaceholder, false, false);
           } else {
-            headerView.setAvatarPlaceholder(context.avatarPlaceholder);
+            headerView.getAvatarReceiver().clear();
           }
           headerView.setText(context.title, context.subtitle);
         }
@@ -1024,8 +1026,8 @@ public class ForceTouchView extends FrameLayoutFix implements
 
     // Header
 
-    private AvatarPlaceholder avatarPlaceholder;
-    private ImageFile avatarFile;
+    private AvatarPlaceholder.Metadata avatarPlaceholder;
+    private TdApi.MessageSender avatarSender;
 
     private String title, subtitle;
 
@@ -1172,9 +1174,9 @@ public class ForceTouchView extends FrameLayoutFix implements
       this.boundArg1 = 0;
     }
 
-    public void setHeaderAvatar (ImageFile avatarFile, AvatarPlaceholder avatarPlaceholder) {
+    public void setHeaderAvatar (TdApi.MessageSender avatarSender, AvatarPlaceholder.Metadata avatarPlaceholder) {
       this.needHeaderAvatar = true;
-      this.avatarFile = avatarFile;
+      this.avatarSender = avatarSender;
       this.avatarPlaceholder = avatarPlaceholder;
     }
 
@@ -1264,22 +1266,13 @@ public class ForceTouchView extends FrameLayoutFix implements
       switch (boundDataType) {
         case TYPE_CHAT: {
           if (boundChat != null) {
-            boolean isSelfChat = tdlib.isSelfChat(boundChat.id);
-            if (!isSelfChat && boundChat.photo != null) {
-              headerView.setAvatar(TD.getAvatar(tdlib, boundChat));
-            } else {
-              headerView.setAvatarPlaceholder(tdlib.chatPlaceholder(boundChat, true, ComplexHeaderView.getBaseAvatarRadiusDp(), null));
-            }
+            headerView.getAvatarReceiver().requestChat(tdlib, boundChat.id, tdlib.needAvatarPreviewAnimation(boundChat.id), false);
           }
           break;
         }
         case TYPE_USER: {
           if (boundUser != null) {
-            if (boundUser.profilePhoto != null) {
-              headerView.setAvatar(TD.getAvatar(tdlib, boundUser));
-            } else {
-              headerView.setAvatarPlaceholder(tdlib.cache().userPlaceholder(boundUser, false, ComplexHeaderView.getBaseAvatarRadiusDp(), null));
-            }
+            headerView.getAvatarReceiver().requestUser(tdlib, boundUser.id, tdlib.needAvatarPreviewAnimation(boundUser.id), false);
           }
           break;
         }

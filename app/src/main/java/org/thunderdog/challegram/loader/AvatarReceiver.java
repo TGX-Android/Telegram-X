@@ -424,22 +424,43 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
 
   // Implementation
 
+  private void updateState (AvatarPlaceholder.Metadata placeholder, TdApi.ProfilePhoto profilePhoto, TdApi.ChatPhotoInfo chatPhotoInfo) {
+    this.requestedPlaceholder = placeholder;
+    this.requestedProfilePhoto = profilePhoto;
+    this.requestedChatPhotoInfo = chatPhotoInfo;
+  }
+
+  @Nullable
+  public AvatarPlaceholder.Metadata getRequestedPlaceholder () {
+    return requestedPlaceholder;
+  }
+
+  @Nullable
+  public TdApi.ProfilePhoto getRequestedProfilePhoto () {
+    return requestedProfilePhoto;
+  }
+
+  @Nullable
+  public TdApi.ChatPhotoInfo getRequestedChatPhotoInfo () {
+    return requestedChatPhotoInfo;
+  }
+
   private void requestEmpty () {
     // Just clear everything, display nothing
     enabledReceivers = 0;
     complexReceiver.clear();
-    requestedPlaceholder = null;
+    updateState(null, null, null);
   }
 
-  private void requestPlaceholder (@NonNull AvatarPlaceholder.Metadata metadata) {
+  private void requestPlaceholder (@NonNull AvatarPlaceholder.Metadata placeholder) {
     // No remote resource, only generated placeholder
     enabledReceivers = 0;
     complexReceiver.clear();
-    requestedPlaceholder = metadata;
+    updateState(placeholder, null, null);
   }
 
   private void requestPhoto (@NonNull TdApi.ProfilePhoto profilePhoto, @Nullable TdApi.ChatPhoto photoFull, boolean allowAnimation, boolean fullSize) {
-    requestedPlaceholder = null;
+    updateState(null, profilePhoto, null);
     if (fullSize) {
       // profilePhoto.minithumbnail, profilePhoto.small, profilePhoto.big, photoFull?.animation
     } else {
@@ -453,7 +474,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   }
 
   private void requestPhoto (@NonNull TdApi.ChatPhotoInfo chatPhotoInfo, @Nullable TdApi.ChatPhoto photoFull, boolean allowAnimation, boolean fullSize) {
-    requestedPlaceholder = null;
+    updateState(null, null, chatPhotoInfo);
     if (fullSize) {
       // chatPhotoInfo.minithumbnail, chatPhotoInfo.small, chatPhotoInfo.big, photoFull?.animation
     } else {
@@ -467,7 +488,12 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   }
 
   private void requestPhoto (@NonNull TdApi.ChatPhoto chatPhoto, boolean allowAnimation, boolean fullSize) {
-    requestedPlaceholder = null;
+    updateState(null, null, new TdApi.ChatPhotoInfo(
+      chatPhoto.sizes.length > 0 ? Td.findSmallest(chatPhoto.sizes).photo : null,
+      chatPhoto.sizes.length > 0 ? Td.findBiggest(chatPhoto.sizes).photo : null,
+      chatPhoto.minithumbnail,
+      chatPhoto.animation != null || chatPhoto.smallAnimation != null
+    ));
     if (fullSize) {
       // chatPhoto.minithumbnail, Td.findSmallest(chatPhoto.sizes), Td.findBiggest(chatPhoto.sizes), allowAnimation ? chatPhoto.animation : null
     } else {
@@ -486,6 +512,8 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
 
   private int enabledReceivers;
   private AvatarPlaceholder.Metadata requestedPlaceholder;
+  private TdApi.ProfilePhoto requestedProfilePhoto;
+  private TdApi.ChatPhotoInfo requestedChatPhotoInfo;
 
   private void loadMinithumbnail (@Nullable TdApi.Minithumbnail minithumbnail) {
     ImageFile file = minithumbnail != null ? new ImageFileLocal(minithumbnail) : null;
@@ -836,11 +864,12 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
         }
       }
     } else if (requestedPlaceholder != null) {
-      int placeholderColor = ColorUtils.fromToArgb(
+      int toColorId = Theme.avatarSmallToBig(requestedPlaceholder.colorId);
+      int placeholderColor = toColorId != 0 ? ColorUtils.fromToArgb(
         Theme.getColor(requestedPlaceholder.colorId),
-        Theme.getColor(Theme.avatarSmallToBig(requestedPlaceholder.colorId)),
+        Theme.getColor(toColorId),
         isFullScreen.getFloatValue()
-      );
+      ) : Theme.getColor(requestedPlaceholder.colorId);
       drawPlaceholderRounded(c, displayRadius, ColorUtils.alphaColor(alpha, placeholderColor));
       int avatarContentColorId = R.id.theme_color_avatar_content;
       float primaryContentAlpha = requestedPlaceholder.extraDrawableRes != 0 ? 1f - isFullScreen.getFloatValue() : 1f;

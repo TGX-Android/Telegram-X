@@ -99,6 +99,10 @@ public class TdlibSender {
     this.flags = flags;
   }
 
+  public TdApi.MessageSender toSender () {
+    return sender;
+  }
+
   public boolean isUser () {
     return sender.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR;
   }

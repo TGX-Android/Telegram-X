@@ -9735,7 +9735,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void onChatTitleChanged (final long chatId, final String title) {
     runOnUiThreadOptional(() -> {
       if (getHeaderChatId() == chatId) {
-        headerCell.updateChatTitle(chatId, title);
+        headerCell.setTitle(title);
       }
     });
   }
@@ -9758,15 +9758,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
             navigateBack();
           }
         }
-      }
-    });
-  }
-
-  @Override
-  public void onChatPhotoChanged (final long chatId, @Nullable final TdApi.ChatPhotoInfo photo) {
-    tdlib.ui().post(() -> {
-      if (getHeaderChatId() == chatId) {
-        headerCell.updateChatPhoto(chat, photo);
       }
     });
   }
@@ -9987,7 +9978,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void onNotificationSettingsChanged (long chatId, TdApi.ChatNotificationSettings settings) {
     tdlib.ui().post(() -> {
       if (getHeaderChatId() == chatId) {
-        headerCell.updateNotificationSettings(chatId, settings);
+        headerCell.setShowMute(TD.needMuteIcon(settings, tdlib.scopeNotificationSettings(chatId)));
       }
       if (getChatId() == chatId) {
         updateCounters(true);

@@ -4905,14 +4905,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private void setHeaderPhoto (boolean update) {
     if (headerCell != null) {
-      if (chat.photo == null) {
-        headerCell.setAvatarPlaceholder(tdlib.chatPlaceholder(chat, true, ComplexHeaderView.getBaseAvatarRadiusDp(), null));
-      } else {
-        headerCell.setAvatar(chat.photo);
-      }
-      if (update) {
-        headerCell.updateAvatar();
-      }
+      headerCell.getAvatarReceiver().requestChat(tdlib, getChatId(), true, true);
     }
   }
 
