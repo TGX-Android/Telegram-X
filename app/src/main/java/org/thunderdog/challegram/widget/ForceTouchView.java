@@ -1272,7 +1272,7 @@ public class ForceTouchView extends FrameLayoutFix implements
         }
         case TYPE_USER: {
           if (boundUser != null) {
-            headerView.getAvatarReceiver().requestUser(tdlib, boundUser.id, tdlib.needAvatarPreviewAnimation(boundUser.id), false);
+            headerView.getAvatarReceiver().requestUser(tdlib, boundUser.id, tdlib.needUserAvatarPreviewAnimation(boundUser.id), false);
           }
           break;
         }

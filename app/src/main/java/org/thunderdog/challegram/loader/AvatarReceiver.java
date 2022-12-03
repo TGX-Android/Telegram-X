@@ -92,7 +92,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   }
 
   public boolean requestPlaceholder (Tdlib tdlib, AvatarPlaceholder.Metadata specificPlaceholder, boolean allowAnimation, boolean fullSize) {
-    return requestData(tdlib, DataType.PLACEHOLDER, specificPlaceholder != null ? specificPlaceholder.colorId : null, null, specificPlaceholder, allowAnimation, fullSize);
+    return requestData(tdlib, DataType.PLACEHOLDER, specificPlaceholder != null ? specificPlaceholder.colorId : 0, null, specificPlaceholder, allowAnimation, fullSize);
   }
 
   public boolean isDisplayingPlaceholder (AvatarPlaceholder.Metadata specificPlaceholder) {

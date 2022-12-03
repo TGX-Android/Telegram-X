@@ -3291,16 +3291,20 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     throw new RuntimeException(sender.toString());
   }
 
+  public boolean needUserAvatarPreviewAnimation (long userId) {
+    if (userId != 0) {
+      TdApi.User user = cache().user(userId);
+      return user != null && user.isPremium;
+    }
+    return false;
+  }
+
   public boolean needAvatarPreviewAnimation (long chatId) {
-    if (chatId == 0) {
-      return false;
+    if (chatId != 0) {
+      long userId = chatUserId(chatId);
+      return needUserAvatarPreviewAnimation(chatUserId(chatId));
     }
-    long userId = chatUserId(chatId);
-    if (userId == 0) {
-      return false;
-    }
-    TdApi.User user = cache().user(userId);
-    return user != null && user.isPremium;
+    return false;
   }
 
   public boolean needAvatarPreviewAnimation (TdApi.MessageSender sender) {
