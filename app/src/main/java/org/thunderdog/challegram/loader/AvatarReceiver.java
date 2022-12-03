@@ -27,10 +27,8 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.DrawableProvider;
-import org.thunderdog.challegram.util.text.Letters;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
-import org.thunderdog.challegram.widget.SparseDrawableView;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
