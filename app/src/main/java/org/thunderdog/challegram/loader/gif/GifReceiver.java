@@ -32,6 +32,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 
 import org.thunderdog.challegram.N;
+import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.Receiver;
@@ -68,13 +69,13 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
   private boolean isDetached;
   private float progress;
 
-  private int left, top, right, bottom;
   private float alpha = 1f;
 
-  private RectF progressRect;
+  private final RectF progressRect;
   private Matrix bitmapMatrix;
-  private Rect bitmapRect;
-  private Rect drawRegion;
+  private final Matrix shaderMatrix;
+  private final RectF bitmapRect;
+  private final RectF drawRegion;
 
   private final int progressOffset, progressRadius;
 
@@ -84,8 +85,9 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
 
     this.view = view;
     this.reference = new GifWatcherReference(this);
-    this.bitmapRect = new Rect();
-    this.drawRegion = new Rect();
+    this.bitmapRect = new RectF();
+    this.shaderMatrix = new Matrix();
+    this.drawRegion = new RectF();
     this.progressRect = new RectF();
   }
 
@@ -128,12 +130,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
   // Getters/Setters
 
   public boolean setBounds (int left, int top, int right, int bottom) {
-    if (this.left != left || this.top != top || this.right != right || this.bottom != bottom) {
-      this.left = left;
-      this.top = top;
-      this.right = right;
-      this.bottom = bottom;
-      this.drawRegion.set(left, top, right, bottom);
+    if (U.setRect(drawRegion, left, top, right, bottom)) {
       layoutRect();
       return true;
     }
@@ -145,20 +142,24 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
     layoutRect();
   }
 
+  @Override
   public int getLeft () {
-    return left;
+    return (int) drawRegion.left;
   }
 
+  @Override
   public int getTop () {
-    return top;
+    return (int) drawRegion.top;
   }
 
+  @Override
   public int getRight () {
-    return right;
+    return (int) drawRegion.right;
   }
 
+  @Override
   public int getBottom () {
-    return bottom;
+    return (int) drawRegion.bottom;
   }
 
   @Override
@@ -218,8 +219,8 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
       int scaleType = file != null ? file.getScaleType() : ImageFile.FIT_CENTER;
       switch (scaleType) {
         case ImageFile.FIT_CENTER: {
-          int availWidth = right - left;
-          int availHeight = bottom - top;
+          int availWidth = (int) drawRegion.width();
+          int availHeight = (int) drawRegion.height();
 
           if (file != null) {
             sourceWidth = availWidth;
@@ -230,8 +231,8 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
           sourceWidth *= ratio;
           sourceHeight *= ratio;
 
-          int centerX = (left + right) / 2;
-          int centerY = (top + bottom) / 2;
+          int centerX = (int) drawRegion.centerX();
+          int centerY = (int) drawRegion.centerY();
 
           return x >= centerX - sourceWidth / 2f && x <= centerX + sourceWidth / 2f && y >= centerY - sourceHeight / 2f && y <= centerY + sourceHeight / 2f;
         }
@@ -470,7 +471,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
   @Override
   public void invalidate () {
     if (view != null) {
-      view.invalidate(left, top, right, bottom);
+      view.invalidate(getLeft(), getTop(), getRight(), getBottom());
     }
     if (updateListener != null) {
       updateListener.onRequestInvalidate(this);
@@ -482,8 +483,8 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
   private int cx, cy;
 
   private void layoutRect () {
-    cx = (int) ((float) (left + right) * .5f);
-    cy = (int) ((float) (top + bottom) * .5f);
+    cx = (int) drawRegion.centerX();
+    cy = (int) drawRegion.centerY();
 
     progressRect.left = cx - progressRadius + progressOffset;
     progressRect.right = cx + progressRadius - progressOffset;
@@ -505,6 +506,9 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
     bitmapRect.right = gif.width();
     bitmapRect.bottom = gif.height();
 
+    shaderMatrix.reset();
+    shaderMatrix.setRectToRect(bitmapRect, drawRegion, Matrix.ScaleToFit.FILL);
+
     if (file != null) {
       switch (file.getScaleType()) {
         case GifFile.FIT_CENTER: {
@@ -522,8 +526,8 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
             deltaHeight = gif.height();
           }
 
-          int viewWidth = drawRegion.width();
-          int viewHeight = drawRegion.height();
+          int viewWidth = getWidth();
+          int viewHeight = getHeight();
 
           float scale = Math.min((float) viewWidth / (float) deltaWidth, (float) viewHeight / (float) deltaHeight);
 
@@ -558,8 +562,8 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
             deltaHeight = gif.height();
           }
 
-          int viewWidth = drawRegion.width();
-          int viewHeight = drawRegion.height();
+          int viewWidth = getWidth();
+          int viewHeight = getHeight();
 
           float scale = Math.max((float) viewWidth / (float) deltaWidth, (float) viewHeight / (float) deltaHeight);
 
@@ -656,16 +660,16 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
           Bitmap bitmap = gif.getBitmap(!inBatch);
           if (scaleType != 0) {
             c.save();
-            c.clipRect(left, top, right, bottom);
+            c.clipRect(drawRegion);
 
-            if (left != 0 || top != 0) {
-              c.translate(left, top);
+            if (drawRegion.left != 0 || drawRegion.top != 0) {
+              c.translate(drawRegion.left, drawRegion.top);
             }
 
             int rotation = gif.getRotation();
             if (rotation != 0) {
-              int width = right - left;
-              int height = bottom - top;
+              int width = getWidth();
+              int height = getHeight();
               /*if (scaleType == GifFile.CENTER_CROP) {
                 float scale = (float) width / (float) height;
                 c.scale(scale, scale, width / 2, height / 2);
@@ -678,11 +682,11 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
 
             c.restore();
           } else if (radius != 0f) {
-            RectF rectF = Paints.getRectF();
-            rectF.set(left, top, right, bottom);
-            c.drawRoundRect(rectF, radius, radius, shaderPaint(bitmap, bitmapPaint.getAlpha()));
+            c.drawRoundRect(drawRegion, radius, radius, shaderPaint(bitmap, bitmapPaint.getAlpha()));
           } else {
-            c.drawBitmap(bitmap, bitmapRect, drawRegion, bitmapPaint);
+            Rect rect = Paints.getRect();
+            rect.set(getLeft(), getTop(), getRight(), getBottom());
+            c.drawBitmap(bitmap, rect, drawRegion, bitmapPaint);
           }
           if (alpha != restoreAlpha) {
             bitmapPaint.setAlpha(restoreAlpha);
@@ -692,25 +696,19 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
     }
   }
 
+
   private Paint shaderPaint;
   private Bitmap lastShaderBitmap;
-  private Matrix shaderMatrix;
 
   private Paint shaderPaint (Bitmap bitmap, int alpha) {
     if (shaderPaint == null) {
       shaderPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
-      shaderMatrix = new Matrix();
     }
     if (lastShaderBitmap != bitmap) {
       lastShaderBitmap = bitmap;
-      // TODO optimize
       BitmapShader shader = new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
-      shaderPaint.setShader(shader);
-      shaderMatrix.reset();
-      RectF srcRect = new RectF(bitmapRect);
-      RectF dstRect = new RectF(left, top, right, bottom);
-      shaderMatrix.setRectToRect(srcRect, dstRect, Matrix.ScaleToFit.FILL);
       shader.setLocalMatrix(shaderMatrix);
+      shaderPaint.setShader(shader);
     }
     shaderPaint.setAlpha(alpha);
     return shaderPaint;
