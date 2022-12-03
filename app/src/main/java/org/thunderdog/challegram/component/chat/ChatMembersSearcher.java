@@ -157,8 +157,12 @@ public class ChatMembersSearcher {
       }
 
       if (isEmpty && !isFinish) {
-        UI.post(() -> next(currentHandler));
-      } else {
+        UI.post(() -> {
+          if (currentHandler != null) {
+            next(currentHandler);
+          }
+        });
+      } else if (currentHandler != null) {
         currentHandler.onResult(new Result(result, usedFilter, !isFinish));
       }
     });
