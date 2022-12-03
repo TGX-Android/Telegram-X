@@ -399,7 +399,12 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
   private void requestContent () {
     requestTextContent();
     if (chat != null) {
-      avatarReceiver.requestChat(tdlib, chat.getChatId(), tdlib.needAvatarPreviewAnimation(chat.getChatId()), false);
+      AvatarPlaceholder.Metadata avatarPlaceholder = chat.getAvatarPlaceholder();
+      if (avatarPlaceholder != null) {
+        avatarReceiver.requestPlaceholder(tdlib, avatarPlaceholder, false, false);
+      } else {
+        avatarReceiver.requestChat(tdlib, chat.getChatId(), tdlib.needAvatarPreviewAnimation(chat.getChatId()), false);
+      }
     } else {
       avatarReceiver.clear();
     }
@@ -662,25 +667,10 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
     }
 
     layoutReceiver();
-
-    if (chat.hasAvatar()) {
-      if (avatarReceiver.needPlaceholder()) {
-        avatarReceiver.drawPlaceholderRounded(c, getAvatarRadius(chatListMode));
-      }
-      avatarReceiver.draw(c);
-    } else {
-      AvatarPlaceholder p = chat.getAvatarPlaceholder();
-      if (p != null) {
-        int cx = avatarReceiver.centerX();
-        int cy = avatarReceiver.centerY();
-        if (chat.isArchive()) {
-          c.drawCircle(cx, cy, p.getRadius(), Paints.fillingPaint(ColorUtils.fromToArgb(Theme.getColor(R.id.theme_color_avatarArchivePinned), Theme.getColor(R.id.theme_color_avatarArchive), isPinnedArchive.getFloatValue())));
-          p.draw(c, cx, cy, 1f, p.getRadius(), false);
-        } else {
-          p.draw(c, cx, cy);
-        }
-      }
+    if (avatarReceiver.needPlaceholder()) {
+      avatarReceiver.drawPlaceholder(c);
     }
+    avatarReceiver.draw(c);
 
     DrawAlgorithms.drawIcon(c, avatarReceiver, 315f, chat.getScheduleAnimator().getFloatValue(), Theme.fillingColor(), getSparseDrawable(R.drawable.baseline_watch_later_10, R.id.theme_color_badgeMuted), PorterDuffPaint.get(R.id.theme_color_badgeMuted, chat.getScheduleAnimator().getFloatValue()));
 
