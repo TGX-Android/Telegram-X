@@ -864,7 +864,7 @@ public class Theme {
   }
 
   public static float avatarRadiusDefault () {
-    return Theme.getProperty(ThemeProperty.AVATAR_RADIUS_DEFAULT);
+    return Theme.getProperty(ThemeProperty.AVATAR_RADIUS);
   }
 
   public static float avatarRadiusForum () {

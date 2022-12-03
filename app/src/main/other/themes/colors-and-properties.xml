@@ -40,7 +40,7 @@
     <item name="subtitleAlpha" />
     <item name="lightStatusBar" />
 
-    <item name="avatarRadiusDefault" />
+    <item name="avatarRadius" />
     <item name="avatarRadiusForum" />
 
     <item name="wallpaperOverrideDate" />

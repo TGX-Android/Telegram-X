@@ -40,6 +40,8 @@ import org.thunderdog.challegram.loader.ReceiverUpdateListener;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 
+import java.lang.ref.WeakReference;
+
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.MathUtils;
 
@@ -685,7 +687,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
             c.drawRoundRect(drawRegion, radius, radius, shaderPaint(bitmap, bitmapPaint.getAlpha()));
           } else {
             Rect rect = Paints.getRect();
-            rect.set(getLeft(), getTop(), getRight(), getBottom());
+            rect.set((int) bitmapRect.left, (int) bitmapRect.top, (int) bitmapRect.right, (int) bitmapRect.bottom);
             c.drawBitmap(bitmap, rect, drawRegion, bitmapPaint);
           }
           if (alpha != restoreAlpha) {
@@ -698,14 +700,15 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
 
 
   private Paint shaderPaint;
-  private Bitmap lastShaderBitmap;
+  private WeakReference<Bitmap> lastShaderBitmapReference;
 
   private Paint shaderPaint (Bitmap bitmap, int alpha) {
     if (shaderPaint == null) {
       shaderPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
     }
+    Bitmap lastShaderBitmap = lastShaderBitmapReference != null ? lastShaderBitmapReference.get() : null;
     if (lastShaderBitmap != bitmap) {
-      lastShaderBitmap = bitmap;
+      lastShaderBitmapReference = new WeakReference<>(bitmap);
       BitmapShader shader = new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
       shader.setLocalMatrix(shaderMatrix);
       shaderPaint.setShader(shader);
@@ -715,7 +718,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
   }
 
   private void clearShaderPaint () {
-    lastShaderBitmap = null;
+    lastShaderBitmapReference = null;
     shaderPaint = null;
   }
 }

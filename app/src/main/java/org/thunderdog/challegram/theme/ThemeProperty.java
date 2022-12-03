@@ -41,7 +41,7 @@ import java.lang.annotation.RetentionPolicy;
   ThemeProperty.SUBTITLE_ALPHA,
   ThemeProperty.IMAGE_CORNER,
   ThemeProperty.LIGHT_STATUS_BAR,
-  ThemeProperty.AVATAR_RADIUS_DEFAULT,
+  ThemeProperty.AVATAR_RADIUS,
   ThemeProperty.AVATAR_RADIUS_FORUM,
   ThemeProperty.WALLPAPER_OVERRIDE_DATE,
   ThemeProperty.WALLPAPER_OVERRIDE_UNREAD,
@@ -70,7 +70,7 @@ public @interface ThemeProperty {
   int DATE_CORNER = R.id.theme_property_dateCorner;
   int LIGHT_STATUS_BAR = R.id.theme_property_lightStatusBar;
 
-  int AVATAR_RADIUS_DEFAULT = R.id.theme_property_avatarRadiusDefault;
+  int AVATAR_RADIUS = R.id.theme_property_avatarRadius;
   int AVATAR_RADIUS_FORUM = R.id.theme_property_avatarRadiusForum;
 
   int WALLPAPER_OVERRIDE_DATE = R.id.theme_property_wallpaperOverrideDate;
