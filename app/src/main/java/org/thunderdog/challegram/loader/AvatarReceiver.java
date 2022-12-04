@@ -507,8 +507,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
     loadMinithumbnail(profilePhoto.minithumbnail);
     loadPreviewPhoto(profilePhoto.small);
     loadFullPhoto(fullSize ? profilePhoto.big : null);
-    loadPreviewAnimation(allowAnimation && photoFull != null && !fullSize ? (photoFull.smallAnimation == null ? photoFull.animation : photoFull.smallAnimation) : null);
-    loadFullAnimation(allowAnimation && photoFull != null && fullSize ? photoFull.animation : null);
+    loadAnimation(photoFull, allowAnimation, fullSize);
   }
 
   private void requestPhoto (@NonNull TdApi.ChatPhotoInfo chatPhotoInfo, @Nullable TdApi.ChatPhoto photoFull, boolean allowAnimation, boolean fullSize) {
@@ -521,8 +520,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
     loadMinithumbnail(chatPhotoInfo.minithumbnail);
     loadPreviewPhoto(chatPhotoInfo.small);
     loadFullPhoto(fullSize ? chatPhotoInfo.big : null);
-    loadPreviewAnimation(allowAnimation && photoFull != null && !fullSize ? (photoFull.smallAnimation == null ? photoFull.animation : photoFull.smallAnimation) : null);
-    loadFullAnimation(allowAnimation && photoFull != null && fullSize ? photoFull.animation : null);
+    loadAnimation(photoFull, allowAnimation, fullSize);
   }
 
   private void requestPhoto (ImageFile specificFile) {
@@ -547,8 +545,19 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
     loadPreviewPhoto(smallestSize != null ? smallestSize.photo : null);
     TdApi.PhotoSize biggestSize = fullSize && chatPhoto.sizes.length > 1 ? Td.findBiggest(chatPhoto.sizes) : null;
     loadFullPhoto(fullSize && biggestSize != null ? biggestSize.photo : null);
-    loadPreviewAnimation(allowAnimation && !fullSize ? (chatPhoto.smallAnimation == null ? chatPhoto.animation : chatPhoto.smallAnimation) : null);
-    loadFullAnimation(allowAnimation && fullSize ? chatPhoto.animation : null);
+    loadAnimation(chatPhoto, allowAnimation, fullSize);
+  }
+
+  private void loadAnimation (@Nullable TdApi.ChatPhoto photo, boolean allowAnimation, boolean fullSize) {
+    if (photo != null && allowAnimation) {
+      TdApi.AnimatedChatPhoto smallAnimation = photo.smallAnimation == null ? photo.animation : photo.smallAnimation;
+      TdApi.AnimatedChatPhoto fullAnimation = photo.smallAnimation != null ? photo.animation : null;
+      loadPreviewAnimation(!fullSize || fullAnimation == null ? smallAnimation : null);
+      loadFullAnimation(fullSize ? fullAnimation : null);
+    } else {
+      loadPreviewAnimation(null);
+      loadFullAnimation(null);
+    }
   }
 
   // Low-level requests
