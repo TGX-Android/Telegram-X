@@ -42,7 +42,6 @@ import org.thunderdog.challegram.data.TGFoundMessage;
 import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
-import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
@@ -55,7 +54,6 @@ import org.thunderdog.challegram.tool.Icons;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.FormattedText;
@@ -72,7 +70,6 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.MessageId;
-import me.vkryl.td.Td;
 
 public class BetterChatView extends BaseView implements Destroyable, RemoveHelper.RemoveDelegate, ChatListener, TdlibCache.UserDataChangeListener, TdlibCache.SupergroupDataChangeListener, TdlibCache.BasicGroupDataChangeListener, NotificationSettingsListener, TdlibCache.UserStatusChangeListener, DrawableProvider, TooltipOverlayView.LocationProvider {
   private static final int FLAG_FAKE_TITLE = 1;
@@ -145,7 +142,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
     setTitle(TD.getUserName(userId, user), null);
     setSubtitleIcon(item.getSubtitleIcon(), item.getSubtitleIconColorId());
     setSubtitle(item.getSubtitle());
-    avatarReceiver.requestUser(tdlib, userId, tdlib.needUserAvatarPreviewAnimation(userId), false);
+    avatarReceiver.requestUser(tdlib, userId, tdlib.needUserAvatarPreviewAnimation(userId), false, true);
     invalidate();
   }
 
@@ -507,7 +504,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
     }
     setTitle(lastChat.getTitle(), lastChat.getTitleHighlight());
     updateSubtitle();
-    avatarReceiver.requestChat(tdlib, lastChat.getChatId(), tdlib.needAvatarPreviewAnimation(lastChat.getChatId()), false);
+    avatarReceiver.requestChat(tdlib, lastChat.getChatId(), tdlib.needAvatarPreviewAnimation(lastChat.getChatId()), false, true);
     setTime(null);
     setUnreadCount(lastChat.getUnreadCount(), !lastChat.notificationsEnabled(), update);
   }
@@ -677,7 +674,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
       setSubtitle(foundMessage.getText(), foundMessage.getHighlight());
       setUnreadCount(0, counter.isMuted(), false);
       TdApi.MessageSender sender = chat.getSenderId();
-      avatarReceiver.requestMessageSender(tdlib, sender, tdlib.needAvatarPreviewAnimation(sender), false);
+      avatarReceiver.requestMessageSender(tdlib, sender, tdlib.needAvatarPreviewAnimation(sender), false, true);
       invalidate();
     }
   }

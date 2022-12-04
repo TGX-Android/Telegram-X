@@ -17,12 +17,10 @@ package org.thunderdog.challegram.navigation;
 import android.animation.Animator;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -189,7 +187,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     final AvatarReceiver receiver = (menuItem.messageSenderId != null && menuItem.iconResId == 0) ?
       complexAvatarReceiver.getAvatarReceiver(Td.getSenderId(menuItem.messageSenderId)) : null;
     if (receiver != null) {
-      receiver.requestMessageSender(tdlib, menuItem.messageSenderId, tdlib.needAvatarPreviewAnimation(menuItem.messageSenderId), false);
+      receiver.requestMessageSender(tdlib, menuItem.messageSenderId, tdlib.needAvatarPreviewAnimation(menuItem.messageSenderId), false, true);
     }
 
     FrameLayout.LayoutParams lp = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(ITEM_HEIGHT), Gravity.LEFT);

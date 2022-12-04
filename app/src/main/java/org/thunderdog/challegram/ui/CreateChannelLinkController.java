@@ -168,7 +168,7 @@ public class CreateChannelLinkController extends ViewController<CreateChannelLin
     headerView.initWithController(this, true);
     headerView.setInnerMargins(Screen.dp(56f), 0);
     headerView.setText(chat.title, Lang.plural(R.string.xMembers, 1));
-    headerView.getAvatarReceiver().requestChat(tdlib, chat != null ? chat.id : 0, false, false);
+    headerView.getAvatarReceiver().requestChat(tdlib, chat != null ? chat.id : 0, false, false, true);
 
     final Runnable scroller = () -> scrollView.fullScroll(View.FOCUS_DOWN);
 

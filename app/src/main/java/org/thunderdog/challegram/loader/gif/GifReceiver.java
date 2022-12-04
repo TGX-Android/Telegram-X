@@ -39,6 +39,7 @@ import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.ReceiverUpdateListener;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Views;
 
 import java.lang.ref.WeakReference;
 
@@ -77,7 +78,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
   private Matrix bitmapMatrix;
   private final Matrix shaderMatrix;
   private final RectF bitmapRect;
-  private final RectF drawRegion;
+  private final RectF drawRegion, croppedDrawRegion;
 
   private final int progressOffset, progressRadius;
 
@@ -91,6 +92,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
     this.shaderMatrix = new Matrix();
     this.drawRegion = new RectF();
     this.progressRect = new RectF();
+    this.croppedDrawRegion = new RectF();
   }
 
   @Override
@@ -510,7 +512,43 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
     bitmapRect.bottom = gif.height();
 
     shaderMatrix.reset();
-    shaderMatrix.setRectToRect(bitmapRect, drawRegion, Matrix.ScaleToFit.FILL);
+    int scaleType = file.getScaleType();
+    if (scaleType != 0) {
+      switch (scaleType) {
+        case GifFile.FIT_CENTER:
+        case GifFile.CENTER_CROP: {
+          float bitmapWidth = bitmapRect.width();
+          float bitmapHeight = bitmapRect.height();
+
+          float targetWidth = drawRegion.width();
+          float targetHeight = drawRegion.height();
+
+          float centerX = drawRegion.centerX();
+          float centerY = drawRegion.centerY();
+
+          float scale = scaleType == GifFile.FIT_CENTER ?
+            Math.min(targetWidth / bitmapWidth, targetHeight / bitmapHeight) :
+            Math.max(targetWidth / bitmapWidth, targetHeight / bitmapHeight);
+
+          bitmapWidth *= scale;
+          bitmapHeight *= scale;
+          croppedDrawRegion.set(
+            centerX - bitmapWidth / 2f,
+            centerY - bitmapHeight / 2f,
+            centerX + bitmapWidth / 2f,
+            centerY + bitmapHeight / 2f
+          );
+          shaderMatrix.setRectToRect(bitmapRect, croppedDrawRegion, Matrix.ScaleToFit.FILL);
+
+          break;
+        }
+        default:
+          throw new UnsupportedOperationException(Integer.toString(scaleType));
+      }
+    } else {
+      croppedDrawRegion.set(drawRegion);
+      shaderMatrix.setRectToRect(bitmapRect, drawRegion, Matrix.ScaleToFit.FILL);
+    }
     if (lastShader != null) {
       lastShader.setLocalMatrix(shaderMatrix);
     }
@@ -664,7 +702,20 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
           }
           int scaleType = file.getScaleType();
           Bitmap bitmap = gif.getBitmap(!inBatch);
-          if (scaleType != 0) {
+          if (radius != 0) {
+            boolean clip = scaleType != 0;
+            int restoreToCount;
+            if (clip) {
+              restoreToCount = Views.save(c);
+              c.clipRect(croppedDrawRegion);
+            } else {
+              restoreToCount = -1;
+            }
+            c.drawRoundRect(croppedDrawRegion, radius, radius, shaderPaint(bitmap, bitmapPaint.getAlpha()));
+            if (clip) {
+              Views.restore(c, restoreToCount);
+            }
+          } else if (scaleType != 0) {
             c.save();
             c.clipRect(drawRegion);
 
@@ -687,8 +738,6 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
             c.drawBitmap(bitmap, 0f, 0f, bitmapPaint);
 
             c.restore();
-          } else if (radius != 0f) {
-            c.drawRoundRect(drawRegion, radius, radius, shaderPaint(bitmap, bitmapPaint.getAlpha()));
           } else {
             Rect rect = Paints.getRect();
             rect.set((int) bitmapRect.left, (int) bitmapRect.top, (int) bitmapRect.right, (int) bitmapRect.bottom);

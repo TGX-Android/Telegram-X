@@ -23,7 +23,6 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.AvatarReceiver;
-import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.util.text.Text;
@@ -141,9 +140,9 @@ public class TGSourceChat extends TGSource implements Client.ResultHandler, Runn
   @Override
   public void requestAvatar (AvatarReceiver receiver) {
     if (msg.tdlib.isSelfChat(chatId)) {
-      receiver.requestUser(msg.tdlib, msg.tdlib.chatUserId(chatId), msg.tdlib.needAvatarPreviewAnimation(chatId), false);
+      receiver.requestUser(msg.tdlib, msg.tdlib.chatUserId(chatId), msg.tdlib.needAvatarPreviewAnimation(chatId), false, true);
     } else {
-      receiver.requestChat(msg.tdlib, chatId, msg.tdlib.needAvatarPreviewAnimation(chatId), false);
+      receiver.requestChat(msg.tdlib, chatId, msg.tdlib.needAvatarPreviewAnimation(chatId), false, true);
     }
   }
 }

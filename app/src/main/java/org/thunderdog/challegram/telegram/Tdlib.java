@@ -2891,6 +2891,37 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return 0;
   }
 
+  @Nullable
+  public TdApi.ChatPhoto chatPhoto (long chatId) {
+    return chatPhoto(chatId, true);
+  }
+
+  @Nullable
+  public TdApi.ChatPhoto chatPhoto (long chatId, boolean allowRequest) {
+    if (chatId == 0) {
+      return null;
+    }
+    switch (ChatId.getType(chatId)) {
+      case TdApi.ChatTypePrivate.CONSTRUCTOR:
+      case TdApi.ChatTypeSecret.CONSTRUCTOR: {
+        long userId = chatUserId(chatId);
+        TdApi.UserFullInfo userFullInfo = userId != 0 ? cache().userFull(userId, allowRequest) : null;
+        return userFullInfo != null ? userFullInfo.photo : null;
+      }
+      case TdApi.ChatTypeSupergroup.CONSTRUCTOR: {
+        long supergroupId = ChatId.toSupergroupId(chatId);
+        TdApi.SupergroupFullInfo supergroupFullInfo = supergroupId != 0 ? cache().supergroupFull(supergroupId, allowRequest) : null;
+        return supergroupFullInfo != null ? supergroupFullInfo.photo : null;
+      }
+      case TdApi.ChatTypeBasicGroup.CONSTRUCTOR: {
+        long basicGroupId = ChatId.toBasicGroupId(chatId);
+        TdApi.BasicGroupFullInfo basicGroupFullInfo = basicGroupId != 0 ? cache().basicGroupFull(basicGroupId, allowRequest) : null;
+        return basicGroupFullInfo != null ? basicGroupFullInfo.photo : null;
+      }
+    }
+    throw new UnsupportedOperationException(Long.toString(chatId));
+  }
+
   public TdApi.MessageSender sender (long chatId) {
     long userId = chatUserId(chatId);
     return userId != 0 ? new TdApi.MessageSenderUser(userId) : new TdApi.MessageSenderChat(chatId);

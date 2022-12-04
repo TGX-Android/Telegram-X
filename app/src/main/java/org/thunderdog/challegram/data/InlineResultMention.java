@@ -31,7 +31,6 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 
 import me.vkryl.core.StringUtils;
-import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
 public class InlineResultMention extends InlineResult<UserContext> {
@@ -112,7 +111,7 @@ public class InlineResultMention extends InlineResult<UserContext> {
   @Override
   public void requestContent (ComplexReceiver receiver, boolean isInvalidate) {
     receiver.clearReceivers((receiverType, receiver1, key) -> receiverType == ComplexReceiver.RECEIVER_TYPE_IMAGE && key == 0);
-    receiver.getAvatarReceiver(0).requestUser(tdlib, userContext.getId(), tdlib.needUserAvatarPreviewAnimation(userContext.getId()), false);
+    receiver.getAvatarReceiver(0).requestUser(tdlib, userContext.getId(), tdlib.needUserAvatarPreviewAnimation(userContext.getId()), false, true);
   }
 
   @Override

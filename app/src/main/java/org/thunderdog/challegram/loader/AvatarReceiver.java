@@ -53,6 +53,20 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   private boolean displayFullSizeOnlyInFullScreen;
   private int defaultAvatarRadiusPropertyId;
   private int forumAvatarRadiusPropertyId;
+  private @ScaleMode int scaleMode;
+
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    ScaleMode.NONE,
+    ScaleMode.FIT_CENTER,
+    ScaleMode.CENTER_CROP
+  })
+  public @interface ScaleMode {
+    int
+      NONE = 0,
+      FIT_CENTER = 1,
+      CENTER_CROP = 2;
+  }
 
   public AvatarReceiver (@Nullable View view) {
     this.complexReceiver = new ComplexReceiver(view);
@@ -75,6 +89,13 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
     }
   }
 
+  public void setScaleMode (@ScaleMode int scaleMode) {
+    if (this.scaleMode != scaleMode) {
+      this.scaleMode = scaleMode;
+      requestResources(true);
+    }
+  }
+
   public void setAvatarRadiusPropertyIds (@ThemeProperty int defaultAvatarRadiusPropertyId, @ThemeProperty int forumAvatarRadiusPropertyId) {
     if (this.defaultAvatarRadiusPropertyId != defaultAvatarRadiusPropertyId || this.forumAvatarRadiusPropertyId != forumAvatarRadiusPropertyId) {
       this.defaultAvatarRadiusPropertyId = defaultAvatarRadiusPropertyId;
@@ -84,6 +105,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   }
 
   public void clearAvatarRadiusPropertyIds () {
+    //noinspection WrongConstant
     setAvatarRadiusPropertyIds(0, 0);
   }
 
@@ -98,7 +120,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   // Public API
 
   public boolean requestPlaceholder (Tdlib tdlib, AvatarPlaceholder.Metadata specificPlaceholder, boolean allowAnimation, boolean fullSize) {
-    return requestData(tdlib, DataType.PLACEHOLDER, specificPlaceholder != null ? specificPlaceholder.colorId : 0, specificPlaceholder, null, null, allowAnimation, fullSize);
+    return requestData(tdlib, DataType.PLACEHOLDER, specificPlaceholder != null ? specificPlaceholder.colorId : 0, specificPlaceholder, null, null, allowAnimation, fullSize, false);
   }
 
   public boolean isDisplayingPlaceholder (AvatarPlaceholder.Metadata specificPlaceholder) {
@@ -108,7 +130,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   }
 
   public boolean requestSpecific (Tdlib tdlib, TdApi.ChatPhoto specificPhoto, boolean allowAnimation, boolean fullSize) {
-    return requestData(tdlib, DataType.SPECIFIC_PHOTO, specificPhoto != null ? specificPhoto.id : 0, null, specificPhoto, null, allowAnimation, fullSize);
+    return requestData(tdlib, DataType.SPECIFIC_PHOTO, specificPhoto != null ? specificPhoto.id : 0, null, specificPhoto, null, allowAnimation, fullSize, false);
   }
 
   public boolean isDisplayingSpecificPhoto (TdApi.ChatPhoto specificPhoto) {
@@ -118,23 +140,23 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   }
 
   public boolean requestSpecific (Tdlib tdlib, ImageFile specificFile) {
-    return requestData(tdlib, DataType.SPECIFIC_FILE, specificFile != null ? specificFile.getId() : 0, null, null, specificFile, false, false);
+    return requestData(tdlib, DataType.SPECIFIC_FILE, specificFile != null ? specificFile.getId() : 0, null, null, specificFile, false, false, false);
   }
 
-  public void requestMessageSender (@Nullable Tdlib tdlib, @Nullable TdApi.MessageSender sender, boolean allowAnimation, boolean fullSize) {
+  public void requestMessageSender (@Nullable Tdlib tdlib, @Nullable TdApi.MessageSender sender, boolean allowAnimation, boolean fullSize, boolean allowUpdates) {
     if (sender != null) {
       switch (sender.getConstructor()) {
         case TdApi.MessageSenderUser.CONSTRUCTOR: {
           long userId = ((TdApi.MessageSenderUser) sender).userId;
-          requestUser(tdlib, userId, allowAnimation, fullSize);
+          requestUser(tdlib, userId, allowAnimation, fullSize, allowUpdates);
           break;
         }
         case TdApi.MessageSenderChat.CONSTRUCTOR: {
           long chatId = ((TdApi.MessageSenderChat) sender).chatId;
           if (tdlib != null && tdlib.isSelfChat(chatId)) {
-            requestUser(tdlib, tdlib.chatUserId(chatId), allowAnimation, fullSize);
+            requestUser(tdlib, tdlib.chatUserId(chatId), allowAnimation, fullSize, allowUpdates);
           } else {
-            requestChat(tdlib, chatId, allowAnimation, fullSize);
+            requestChat(tdlib, chatId, allowAnimation, fullSize, allowUpdates);
           }
           break;
         }
@@ -146,16 +168,16 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
     }
   }
 
-  public boolean requestUser (Tdlib tdlib, long userId, boolean allowAnimation, boolean fullSize) {
-    return requestData(tdlib, DataType.USER, userId, null, null, null, allowAnimation, fullSize);
+  public boolean requestUser (Tdlib tdlib, long userId, boolean allowAnimation, boolean fullSize, boolean allowUpdates) {
+    return requestData(tdlib, DataType.USER, userId, null, null, null, allowAnimation, fullSize, allowUpdates);
   }
 
   public boolean isDisplayingUser (long userId) {
     return dataType == DataType.USER && dataId == userId;
   }
 
-  public boolean requestChat (Tdlib tdlib, long chatId, boolean allowAnimation, boolean fullSize) {
-    return requestData(tdlib, DataType.CHAT, chatId, null, null, null, allowAnimation, fullSize);
+  public boolean requestChat (Tdlib tdlib, long chatId, boolean allowAnimation, boolean fullSize, boolean allowUpdates) {
+    return requestData(tdlib, DataType.CHAT, chatId, null, null, null, allowAnimation, fullSize, allowUpdates);
   }
 
   public boolean isDisplayingChat (long chatId) {
@@ -207,7 +229,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   private AvatarPlaceholder.Metadata specificPlaceholder;
   private TdApi.ChatPhoto specificPhoto;
   private ImageFile specificFile;
-  private boolean allowAnimation, fullSize;
+  private boolean allowAnimation, fullSize, allowUpdates;
 
   private void subscribeToUpdates () {
     switch (dataType) {
@@ -279,7 +301,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   }
 
   @UiThread
-  private boolean requestData (@Nullable Tdlib tdlib, @DataType int dataType, long dataId, @Nullable AvatarPlaceholder.Metadata specificPlaceholder, @Nullable TdApi.ChatPhoto specificPhoto, ImageFile specificFile, boolean allowAnimation, boolean fullSize) {
+  private boolean requestData (@Nullable Tdlib tdlib, @DataType int dataType, long dataId, @Nullable AvatarPlaceholder.Metadata specificPlaceholder, @Nullable TdApi.ChatPhoto specificPhoto, ImageFile specificFile, boolean allowAnimation, boolean fullSize, boolean allowUpdates) {
     if (!UI.inUiThread())
       throw new IllegalStateException();
     if (dataType == DataType.NONE || dataId == 0 || tdlib == null) {
@@ -290,6 +312,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
       specificPlaceholder = null;
       specificFile = null;
       allowAnimation = false;
+      allowUpdates = false;
     }
     if (this.tdlib != tdlib || this.dataType != dataType || this.dataId != dataId) {
       unsubscribeFromUpdates();
@@ -302,6 +325,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
       this.specificFile = specificFile;
       this.allowAnimation = allowAnimation;
       this.fullSize = fullSize;
+      this.allowUpdates = allowUpdates;
       if (dataType == DataType.CHAT) {
         switch (ChatId.getType(dataId)) {
           case TdApi.ChatTypePrivate.CONSTRUCTOR:
@@ -321,7 +345,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
         this.additionalDataId = 0;
       }
 
-      if (!isDetached) {
+      if (!isDetached && allowUpdates) {
         subscribeToUpdates();
       }
 
@@ -419,7 +443,13 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
           requestPlaceholder(metadata);
         } else {
           TdApi.UserFullInfo userFullInfo = profilePhoto.hasAnimation && allowAnimation ? tdlib.cache().userFull(dataId) : null;
-          requestPhoto(profilePhoto, userFullInfo != null ? userFullInfo.photo : null, allowAnimation, fullSize);
+          TdApi.ChatPhoto photoFull = userFullInfo != null ? userFullInfo.photo : null;
+          if (photoFull != null && photoFull.id != profilePhoto.id) {
+            // Information in UserFullInfo is most likely outdated.
+            // Not displaying it until we receive it from TDLib.
+            photoFull = null;
+          }
+          requestPhoto(profilePhoto, photoFull, allowAnimation, fullSize);
         }
         break;
       }
@@ -466,10 +496,11 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
 
   // Implementation
 
-  private void updateState (AvatarPlaceholder.Metadata placeholder, TdApi.ProfilePhoto profilePhoto, TdApi.ChatPhotoInfo chatPhotoInfo) {
+  private void updateState (AvatarPlaceholder.Metadata placeholder, TdApi.ProfilePhoto profilePhoto, TdApi.ChatPhotoInfo chatPhotoInfo, TdApi.ChatPhoto chatPhoto) {
     this.requestedPlaceholder = placeholder;
     this.requestedProfilePhoto = profilePhoto;
     this.requestedChatPhotoInfo = chatPhotoInfo;
+    this.requestedChatPhoto = chatPhoto;
   }
 
   @Nullable
@@ -487,22 +518,35 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
     return requestedChatPhotoInfo;
   }
 
+  @Nullable
+  public TdApi.ChatPhoto getRequestedChatPhoto () {
+    return requestedChatPhoto;
+  }
+
+  public long getRequestedChatId () {
+    return dataType == DataType.CHAT ? dataId : 0;
+  }
+
+  public long getRequestedUserId () {
+    return dataType == DataType.USER ? dataId : 0;
+  }
+
   private void requestEmpty () {
     // Just clear everything, display nothing
     enabledReceivers = 0;
     complexReceiver.clear();
-    updateState(null, null, null);
+    updateState(null, null, null, null);
   }
 
   private void requestPlaceholder (@NonNull AvatarPlaceholder.Metadata placeholder) {
     // No remote resource, only generated placeholder
     enabledReceivers = 0;
     complexReceiver.clear();
-    updateState(placeholder, null, null);
+    updateState(placeholder, null, null, null);
   }
 
   private void requestPhoto (@NonNull TdApi.ProfilePhoto profilePhoto, @Nullable TdApi.ChatPhoto photoFull, boolean allowAnimation, boolean fullSize) {
-    updateState(null, profilePhoto, null);
+    updateState(null, profilePhoto, null, null);
     if (fullSize) {
       // profilePhoto.minithumbnail, profilePhoto.small, profilePhoto.big, photoFull?.animation
     } else {
@@ -515,7 +559,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   }
 
   private void requestPhoto (@NonNull TdApi.ChatPhotoInfo chatPhotoInfo, @Nullable TdApi.ChatPhoto photoFull, boolean allowAnimation, boolean fullSize) {
-    updateState(null, null, chatPhotoInfo);
+    updateState(null, null, chatPhotoInfo, null);
     if (fullSize) {
       // chatPhotoInfo.minithumbnail, chatPhotoInfo.small, chatPhotoInfo.big, photoFull?.animation
     } else {
@@ -528,7 +572,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   }
 
   private void requestPhoto (ImageFile specificFile) {
-    updateState(null, null, null);
+    updateState(null, null, null, null);
     loadPreviewPhoto(specificFile);
   }
 
@@ -538,7 +582,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
       chatPhoto.sizes.length > 0 ? Td.findBiggest(chatPhoto.sizes).photo : null,
       chatPhoto.minithumbnail,
       chatPhoto.animation != null || chatPhoto.smallAnimation != null
-    ));
+    ), chatPhoto);
     if (fullSize) {
       // chatPhoto.minithumbnail, Td.findSmallest(chatPhoto.sizes), Td.findBiggest(chatPhoto.sizes), allowAnimation ? chatPhoto.animation : null
     } else {
@@ -570,10 +614,43 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   private AvatarPlaceholder.Metadata requestedPlaceholder;
   private TdApi.ProfilePhoto requestedProfilePhoto;
   private TdApi.ChatPhotoInfo requestedChatPhotoInfo;
+  private TdApi.ChatPhoto requestedChatPhoto;
+
+  private GifFile applyScale (GifFile file) {
+    if (file != null) {
+      switch (this.scaleMode) {
+        case ScaleMode.NONE:
+          break;
+        case ScaleMode.FIT_CENTER:
+          file.setScaleType(GifFile.FIT_CENTER);
+          break;
+        case ScaleMode.CENTER_CROP:
+          file.setScaleType(GifFile.CENTER_CROP);
+          break;
+      }
+    }
+    return file;
+  }
+
+  private ImageFile applyScale (ImageFile file) {
+    if (file != null) {
+      switch (this.scaleMode) {
+        case ScaleMode.NONE:
+          break;
+        case ScaleMode.FIT_CENTER:
+          file.setScaleType(ImageFile.FIT_CENTER);
+          break;
+        case ScaleMode.CENTER_CROP:
+          file.setScaleType(ImageFile.CENTER_CROP);
+          break;
+      }
+    }
+    return file;
+  }
 
   private void loadMinithumbnail (@Nullable TdApi.Minithumbnail minithumbnail) {
     ImageFile file = minithumbnail != null ? new ImageFileLocal(minithumbnail) : null;
-    minithumbnailReceiver().requestFile(file);
+    minithumbnailReceiver().requestFile(applyScale(file));
     enabledReceivers = BitwiseUtils.setFlag(enabledReceivers, ReceiverType.MINITHUMBNAIL, file != null);
   }
 
@@ -585,11 +662,11 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
     } else {
       file = null;
     }
-    loadPreviewPhoto(file);
+    loadPreviewPhoto(applyScale(file));
   }
 
   private void loadPreviewPhoto (ImageFile imageFile) {
-    previewPhotoReceiver().requestFile(imageFile);
+    previewPhotoReceiver().requestFile(applyScale(imageFile));
     enabledReceivers = BitwiseUtils.setFlag(enabledReceivers, ReceiverType.PREVIEW_PHOTO, imageFile != null);
   }
 
@@ -601,7 +678,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
     } else {
       file = null;
     }
-    fullPhotoReceiver().requestFile(file);
+    fullPhotoReceiver().requestFile(applyScale(file));
     enabledReceivers = BitwiseUtils.setFlag(enabledReceivers, ReceiverType.FULL_PHOTO, file != null);
   }
 
@@ -613,7 +690,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
     } else {
       file = null;
     }
-    previewAnimationReceiver().requestFile(file);
+    previewAnimationReceiver().requestFile(applyScale(file));
     enabledReceivers = BitwiseUtils.setFlag(enabledReceivers, ReceiverType.PREVIEW_ANIMATION, file != null);
   }
 
@@ -625,7 +702,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
     } else {
       file = null;
     }
-    fullAnimationReceiver().requestFile(file);
+    fullAnimationReceiver().requestFile(applyScale(file));
     enabledReceivers = BitwiseUtils.setFlag(enabledReceivers, ReceiverType.FULL_ANIMATION, file != null);
   }
 
@@ -766,7 +843,9 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
       this.isDetached = false;
       requestResources(false);
       complexReceiver.attach();
-      subscribeToUpdates();
+      if (allowUpdates) {
+        subscribeToUpdates();
+      }
     }
   }
 
@@ -786,7 +865,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
 
   @Override
   public void destroy () {
-    requestData(null, DataType.NONE, 0, null, null, null, false, false);
+    requestData(null, DataType.NONE, 0, null, null, null, false, false, false);
   }
 
   @Override

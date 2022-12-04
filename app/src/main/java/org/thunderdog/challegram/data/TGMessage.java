@@ -68,7 +68,6 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
-import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
@@ -3736,7 +3735,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       if (forceForwardedInfo()) {
         forwardInfo.requestAvatar(receiver);
       } else {
-        receiver.requestMessageSender(tdlib, sender.toSender(), tdlib.needAvatarPreviewAnimation(sender.toSender()), false);
+        receiver.requestMessageSender(tdlib, sender.toSender(), tdlib.needAvatarPreviewAnimation(sender.toSender()), false, true);
       }
     } else {
       receiver.clear();

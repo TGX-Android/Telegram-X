@@ -4905,7 +4905,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private void setHeaderPhoto (boolean update) {
     if (headerCell != null) {
-      headerCell.getAvatarReceiver().requestChat(tdlib, getChatId(), true, true);
+      headerCell.getAvatarReceiver().requestChat(tdlib, getChatId(), true, true, true);
     }
   }
 

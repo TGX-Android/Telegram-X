@@ -18,7 +18,6 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.view.Gravity;
@@ -35,12 +34,8 @@ import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.MediaCollectorDelegate;
 import org.thunderdog.challegram.component.chat.ChatHeaderView;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.AvatarReceiver;
-import org.thunderdog.challegram.loader.DoubleImageReceiver;
-import org.thunderdog.challegram.loader.ImageFile;
-import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.mediaview.MediaViewDelegate;
 import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
@@ -70,11 +65,11 @@ import me.vkryl.android.ScrimUtil;
 import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.core.BitwiseUtils;
 
 public class ComplexHeaderView extends BaseView implements RtlCheckListener, StretchyHeaderView, TextChangeDelegate, Destroyable, ColorSwitchPreparator, MediaCollectorDelegate, BaseView.CustomControllerProvider, TdlibStatusManager.HelperTarget, TGLegacyManager.EmojiLoadListener, HeaderView.OffsetChangeListener {
   private static final int FLAG_SHOW_LOCK = 1;
@@ -1031,7 +1026,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
   @Override
   public boolean needsForceTouch (BaseView v, float x, float y) {
     int bound = Screen.dp(6f);
-    return (receiver.getRequestedProfilePhoto() != null || receiver.getRequestedChatPhotoInfo() != null) && x >= receiver.getLeft() - bound && x < receiver.getRight() + bound && y >= receiver.getTop() - bound && y < receiver.getBottom() + bound;
+    return (receiver.getRequestedChatPhoto() != null || receiver.getRequestedProfilePhoto() != null || receiver.getRequestedChatPhotoInfo() != null) && x >= receiver.getLeft() - bound && x < receiver.getRight() + bound && y >= receiver.getTop() - bound && y < receiver.getBottom() + bound;
   }
 
   public AvatarReceiver getAvatarReceiver () {
@@ -1050,9 +1045,9 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
     TdApi.ProfilePhoto profilePhoto = receiver.getRequestedProfilePhoto();
     TdApi.ChatPhotoInfo chatPhotoInfo = receiver.getRequestedChatPhotoInfo();
     if (profilePhoto != null) {
-      args = new SimpleMediaViewController.Args(profilePhoto);
+      args = new SimpleMediaViewController.Args(profilePhoto, receiver.getRequestedUserId());
     } else if (chatPhotoInfo != null) {
-      args = new SimpleMediaViewController.Args(chatPhotoInfo);
+      args = new SimpleMediaViewController.Args(chatPhotoInfo, receiver.getRequestedChatId());
     }
 
     if (args != null) {

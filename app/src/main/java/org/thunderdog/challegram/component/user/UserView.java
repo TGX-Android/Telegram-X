@@ -33,7 +33,6 @@ import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ComplexReceiver;
-import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibContactManager;
@@ -231,7 +230,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
       this.user = user;
       this.unregisteredContact = null;
       buildLayout();
-      avatarReceiver.requestUser(tdlib, user.getUserId(), tdlib.needUserAvatarPreviewAnimation(user.getUserId()), false);
+      avatarReceiver.requestUser(tdlib, user.getUserId(), tdlib.needUserAvatarPreviewAnimation(user.getUserId()), false, true);
     } else {
       if (sourceName == null || user.updateName() || !sourceName.equals(user.getName())) {
         updateName();
@@ -239,7 +238,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
       if (sourceStatus == null || user.updateStatus() || !sourceStatus.equals(user.getStatus())) {
         updateSubtext();
       }
-      avatarReceiver.requestUser(tdlib, user.getUserId(), tdlib.needUserAvatarPreviewAnimation(user.getUserId()), false);
+      avatarReceiver.requestUser(tdlib, user.getUserId(), tdlib.needUserAvatarPreviewAnimation(user.getUserId()), false, true);
     }
   }
 
