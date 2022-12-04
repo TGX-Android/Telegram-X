@@ -6484,6 +6484,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private void setInEditMode (boolean inEditMode, String futureText) {
     sendButton.setInEditMode(inEditMode);
+    messageSenderButton.setAnimateVisible(!inEditMode);
     if (inputView != null) {
       inputView.setIsInEditMessageMode(inEditMode, futureText);
     }
