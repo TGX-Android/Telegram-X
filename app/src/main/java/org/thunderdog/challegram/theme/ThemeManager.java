@@ -551,9 +551,11 @@ public class ThemeManager implements FactorAnimator.Target, GlobalAccountListene
       case ThemeProperty.SUBTITLE_ALPHA:
       case ThemeProperty.AVATAR_RADIUS:
       case ThemeProperty.AVATAR_RADIUS_FORUM:
+        return MathUtils.clamp(value);
+
       case ThemeProperty.AVATAR_RADIUS_CHAT_LIST:
       case ThemeProperty.AVATAR_RADIUS_CHAT_LIST_FORUM:
-        return MathUtils.clamp(value);
+        return value == -1.0f ? value : MathUtils.clamp(value);
 
       case ThemeProperty.BUBBLE_OUTLINE_SIZE:
       case ThemeProperty.IMAGE_CORNER:

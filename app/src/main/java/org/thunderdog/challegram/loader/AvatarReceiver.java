@@ -51,8 +51,8 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   private boolean isDetached;
 
   private boolean displayFullSizeOnlyInFullScreen;
-  private int defaultAvatarRadiusPropertyId = ThemeProperty.AVATAR_RADIUS;
-  private int forumAvatarRadiusPropertyId = ThemeProperty.AVATAR_RADIUS_FORUM;
+  private int defaultAvatarRadiusPropertyId;
+  private int forumAvatarRadiusPropertyId;
 
   public AvatarReceiver (@Nullable View view) {
     this.complexReceiver = new ComplexReceiver(view);
@@ -81,6 +81,10 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
       this.forumAvatarRadiusPropertyId = forumAvatarRadiusPropertyId;
       invalidate();
     }
+  }
+
+  public void clearAvatarRadiusPropertyIds () {
+    setAvatarRadiusPropertyIds(0, 0);
   }
 
   public void setFullScreen (boolean isFullScreen, boolean animated) {
@@ -881,10 +885,18 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
     float fullScreen = this.isFullScreen.getFloatValue();
     if (fullScreen != 1f) {
       float maxRadius = Math.min(getWidth(), getHeight()) / 2f;
+      float defaultAvatarRadius = defaultAvatarRadiusPropertyId != 0 ? Theme.getProperty(defaultAvatarRadiusPropertyId) : -1.0f;
+      if (defaultAvatarRadius == -1.0f) {
+        defaultAvatarRadius = Theme.getProperty(ThemeProperty.AVATAR_RADIUS);
+      }
+      float forumAvatarRadius = forumAvatarRadiusPropertyId != 0 ? Theme.getProperty(forumAvatarRadiusPropertyId) : -1.0f;
+      if (forumAvatarRadius == -1.0f) {
+        forumAvatarRadius = Theme.getProperty(ThemeProperty.AVATAR_RADIUS_FORUM);
+      }
       float radiusFactor = MathUtils.clamp(
         MathUtils.fromTo(
-          Theme.getProperty(defaultAvatarRadiusPropertyId),
-          Theme.getProperty(forumAvatarRadiusPropertyId),
+          defaultAvatarRadius,
+          forumAvatarRadius,
           isForum.getFloatValue()
         )
       );
