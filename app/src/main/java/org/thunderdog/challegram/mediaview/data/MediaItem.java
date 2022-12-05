@@ -1017,7 +1017,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
       case TYPE_CHAT_PROFILE:
       case TYPE_USER_PROFILE: {
         if (chatPhoto != null && isFullPhoto) {
-          avatarReceiver.requestSpecific(tdlib, chatPhoto, true, fullSize);
+          avatarReceiver.requestSpecific(tdlib, new AvatarReceiver.FullChatPhoto(chatPhoto, Td.getSenderId(sourceSender)), true, fullSize);
         } else {
           avatarReceiver.requestMessageSender(tdlib, sourceSender, true, fullSize, false);
         }

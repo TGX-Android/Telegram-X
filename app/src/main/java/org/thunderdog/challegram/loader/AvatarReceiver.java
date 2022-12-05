@@ -45,6 +45,16 @@ import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
 public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDataChangeListener, TdlibCache.SupergroupDataChangeListener, TdlibCache.BasicGroupDataChangeListener {
+  public static class FullChatPhoto {
+    public final @NonNull TdApi.ChatPhoto chatPhoto;
+    public final long chatId;
+
+    public FullChatPhoto (@NonNull TdApi.ChatPhoto chatPhoto, long chatId) {
+      this.chatPhoto = chatPhoto;
+      this.chatId = chatId;
+    }
+  }
+
   private final ComplexReceiver complexReceiver;
   private final BoolAnimator isFullScreen;
   private final BoolAnimator isForum;
@@ -129,8 +139,8 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
       this.specificPlaceholder == specificPlaceholder;
   }
 
-  public boolean requestSpecific (Tdlib tdlib, TdApi.ChatPhoto specificPhoto, boolean allowAnimation, boolean fullSize) {
-    return requestData(tdlib, DataType.SPECIFIC_PHOTO, specificPhoto != null ? specificPhoto.id : 0, null, specificPhoto, null, allowAnimation, fullSize, false);
+  public boolean requestSpecific (Tdlib tdlib, FullChatPhoto specificPhoto, boolean allowAnimation, boolean fullSize) {
+    return requestData(tdlib, DataType.SPECIFIC_PHOTO, specificPhoto != null ? specificPhoto.chatPhoto.id : 0, null, specificPhoto, null, allowAnimation, fullSize, false);
   }
 
   public boolean isDisplayingSpecificPhoto (TdApi.ChatPhoto specificPhoto) {
@@ -227,7 +237,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   private @DataType int dataType = DataType.NONE;
   private long dataId, additionalDataId;
   private AvatarPlaceholder.Metadata specificPlaceholder;
-  private TdApi.ChatPhoto specificPhoto;
+  private FullChatPhoto specificPhoto;
   private ImageFile specificFile;
   private boolean allowAnimation, fullSize, allowUpdates;
 
@@ -235,8 +245,12 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
     switch (dataType) {
       case DataType.NONE:
       case DataType.PLACEHOLDER:
-      case DataType.SPECIFIC_PHOTO:
       case DataType.SPECIFIC_FILE:
+        break;
+      case DataType.SPECIFIC_PHOTO:
+        if (this.additionalDataId != 0) {
+          tdlib.cache().subscribeToSupergroupUpdates(this.additionalDataId, this);
+        }
         break;
       case DataType.USER:
         this.tdlib.cache().addUserDataListener(this.dataId, this);
@@ -273,8 +287,12 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
     switch (this.dataType) {
       case DataType.NONE:
       case DataType.PLACEHOLDER:
-      case DataType.SPECIFIC_PHOTO:
       case DataType.SPECIFIC_FILE:
+        break;
+      case DataType.SPECIFIC_PHOTO:
+        if (this.additionalDataId != 0) {
+          this.tdlib.cache().unsubscribeFromSupergroupUpdates(this.additionalDataId, this);
+        }
         break;
       case DataType.USER: {
         this.tdlib.cache().removeUserDataListener(this.dataId, this);
@@ -301,7 +319,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   }
 
   @UiThread
-  private boolean requestData (@Nullable Tdlib tdlib, @DataType int dataType, long dataId, @Nullable AvatarPlaceholder.Metadata specificPlaceholder, @Nullable TdApi.ChatPhoto specificPhoto, ImageFile specificFile, boolean allowAnimation, boolean fullSize, boolean allowUpdates) {
+  private boolean requestData (@Nullable Tdlib tdlib, @DataType int dataType, long dataId, @Nullable AvatarPlaceholder.Metadata specificPlaceholder, FullChatPhoto specificPhoto, ImageFile specificFile, boolean allowAnimation, boolean fullSize, boolean allowUpdates) {
     if (!UI.inUiThread())
       throw new IllegalStateException();
     if (dataType == DataType.NONE || dataId == 0 || tdlib == null) {
@@ -341,6 +359,8 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
           default:
             throw new UnsupportedOperationException(Long.toString(this.dataId));
         }
+      } else if (dataType == DataType.SPECIFIC_PHOTO) {
+        this.additionalDataId = specificPhoto != null ? ChatId.toSupergroupId(specificPhoto.chatId) : 0;
       } else {
         this.additionalDataId = 0;
       }
@@ -377,7 +397,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
 
   @Override
   public void onSupergroupUpdated (TdApi.Supergroup supergroup) {
-    updateResources(() -> isDisplayingSupergroupChat(supergroup.id));
+    updateResources(() -> isDisplayingSupergroupChat(supergroup.id) || (this.dataType == DataType.SPECIFIC_PHOTO && this.additionalDataId == supergroup.id));
   }
 
   @Override
@@ -412,10 +432,11 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
         break;
       }
       case DataType.SPECIFIC_PHOTO: {
-        setIsForum(false, isUpdate);
         if (specificPhoto != null) {
-          requestPhoto(specificPhoto, allowAnimation, fullSize);
+          setIsForum(tdlib.chatForum(specificPhoto.chatId), isUpdate);
+          requestPhoto(specificPhoto.chatPhoto, allowAnimation, fullSize);
         } else {
+          setIsForum(false, isUpdate);
           requestEmpty();
         }
         break;
@@ -455,8 +476,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
       }
       case DataType.CHAT: {
         TdApi.Chat chat = tdlib.chat(dataId);
-        TdApi.Supergroup supergroup = tdlib.chatToSupergroup(dataId);
-        setIsForum(supergroup != null && supergroup.isForum, isUpdate);
+        setIsForum(tdlib.chatForum(dataId), isUpdate);
         TdApi.ChatPhotoInfo chatPhotoInfo = chat != null && !tdlib.isSelfChat(dataId) ? chat.photo : null;
         if (chatPhotoInfo == null) {
           AvatarPlaceholder.Metadata metadata = tdlib.chatPlaceholderMetadata(dataId, chat, true);

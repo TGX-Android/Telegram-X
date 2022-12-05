@@ -2949,6 +2949,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return user != null && user.type.getConstructor() == TdApi.UserTypeDeleted.CONSTRUCTOR;
   }
 
+  public boolean chatForum (long chatId) {
+    TdApi.Supergroup supergroup = chatToSupergroup(chatId);
+    return supergroup != null && supergroup.isForum;
+  }
+
   public boolean chatBlocked (TdApi.Chat chat) {
     return chat != null && chatBlocked(chat.id);
   }
