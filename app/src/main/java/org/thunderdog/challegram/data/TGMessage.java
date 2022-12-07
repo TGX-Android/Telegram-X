@@ -2649,6 +2649,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
               } else {
                 openMessageThread(new MessageId(msg.replyInChatId, msg.replyToMessageId));
               }
+            } else if (isScheduled()) {
+              tdlib.ui().openMessage(controller(), msg.replyInChatId, new MessageId(msg.replyInChatId, msg.replyToMessageId), openParameters());
             } else {
               highlightOtherMessage(msg.replyToMessageId);
             }
@@ -4121,7 +4123,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public final long getMessageThreadId () {
-    return msg.messageThreadId;
+    return getOldestMessage().messageThreadId;
   }
 
   public final long[] getOtherMessageIds (long exceptMessageId) {

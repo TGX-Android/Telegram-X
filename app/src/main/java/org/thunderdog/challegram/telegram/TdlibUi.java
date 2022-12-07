@@ -157,6 +157,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import me.vkryl.core.ArrayUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
@@ -1816,6 +1817,9 @@ public class TdlibUi extends Handler {
     }
 
     public ChatOpenParameters messageThread (ThreadInfo threadInfo) {
+      if (threadInfo != null && BitwiseUtils.getFlag(options, CHAT_OPTION_SCHEDULED_MESSAGES)) {
+        throw new IllegalArgumentException();
+      }
       this.threadInfo = threadInfo;
       return this;
     }
@@ -1841,6 +1845,9 @@ public class TdlibUi extends Handler {
     }
 
     public ChatOpenParameters scheduledOnly () {
+      if (this.threadInfo != null) {
+        throw new IllegalArgumentException();
+      }
       this.options |= CHAT_OPTION_SCHEDULED_MESSAGES;
       return this;
     }
