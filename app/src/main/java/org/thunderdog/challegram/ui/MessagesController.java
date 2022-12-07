@@ -2515,6 +2515,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       this.searchSender = sender;
       this.inPreviewMode = false;
       this.previewMode = 0;
+      this.messageThread = null;
     }
 
     public Arguments referrer (Referrer referrer) {
