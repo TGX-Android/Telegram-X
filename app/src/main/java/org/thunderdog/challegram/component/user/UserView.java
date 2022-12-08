@@ -230,7 +230,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
       this.user = user;
       this.unregisteredContact = null;
       buildLayout();
-      avatarReceiver.requestUser(tdlib, user.getUserId(), AvatarReceiver.Options.NONE);
+      avatarReceiver.requestUser(tdlib, user.getUserId(), AvatarReceiver.Options.SHOW_ONLINE);
     } else {
       if (sourceName == null || user.updateName() || !sourceName.equals(user.getName())) {
         updateName();
@@ -238,7 +238,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
       if (sourceStatus == null || user.updateStatus() || !sourceStatus.equals(user.getStatus())) {
         updateSubtext();
       }
-      avatarReceiver.requestUser(tdlib, user.getUserId(), AvatarReceiver.Options.NONE);
+      avatarReceiver.requestUser(tdlib, user.getUserId(), AvatarReceiver.Options.SHOW_ONLINE);
     }
   }
 
@@ -297,6 +297,8 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
         statusTop + (height - Screen.dp(DEFAULT_HEIGHT)) / 2f, statusPaint);
     }
     if (user != null || unregisteredContact != null) {
+      float checkFactor = checkBoxHelper != null ? checkBoxHelper.getCheckFactor() : 0f;
+      avatarReceiver.forceAllowOnline(checkBoxHelper == null || !checkBoxHelper.isChecked(), 1f - checkFactor);
       layoutReceiver();
       if (avatarReceiver.needPlaceholder()) {
         avatarReceiver.drawPlaceholder(c);

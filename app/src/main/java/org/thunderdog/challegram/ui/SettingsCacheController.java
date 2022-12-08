@@ -226,7 +226,7 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
         if (entry != null) {
           textView.setText(entry.getTitle(), isCleaningUp && ArrayUtils.contains(busyChatIds, item.getLongId()) ? Lang.getString(R.string.CleaningUp) : Strings.buildSize(entry.getSize()));
           textView.setTitleColorId(entry.isSecret() ? R.id.theme_color_textSecure : entry.isSelfChat() ? R.id.theme_color_textNeutral : R.id.theme_color_text);
-          textView.setAvatar(entry.getAvatarFile(), entry.getAvatarPlaceholderMetadata());
+          textView.setChatAvatar(tdlib, entry.getId());
         }
       }
     };
