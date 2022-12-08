@@ -221,7 +221,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
       this.user = null;
       this.unregisteredContact = contact;
       buildLayout();
-      avatarReceiver.requestPlaceholder(tdlib, avatarPlaceholder, false, false);
+      avatarReceiver.requestPlaceholder(tdlib, avatarPlaceholder, AvatarReceiver.Options.NONE);
     }
   }
 
@@ -230,7 +230,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
       this.user = user;
       this.unregisteredContact = null;
       buildLayout();
-      avatarReceiver.requestUser(tdlib, user.getUserId(), tdlib.needUserAvatarPreviewAnimation(user.getUserId()), false, true);
+      avatarReceiver.requestUser(tdlib, user.getUserId(), AvatarReceiver.Options.NONE);
     } else {
       if (sourceName == null || user.updateName() || !sourceName.equals(user.getName())) {
         updateName();
@@ -238,7 +238,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
       if (sourceStatus == null || user.updateStatus() || !sourceStatus.equals(user.getStatus())) {
         updateSubtext();
       }
-      avatarReceiver.requestUser(tdlib, user.getUserId(), tdlib.needUserAvatarPreviewAnimation(user.getUserId()), false, true);
+      avatarReceiver.requestUser(tdlib, user.getUserId(), AvatarReceiver.Options.NONE);
     }
   }
 

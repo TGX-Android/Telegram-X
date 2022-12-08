@@ -142,7 +142,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
     setTitle(TD.getUserName(userId, user), null);
     setSubtitleIcon(item.getSubtitleIcon(), item.getSubtitleIconColorId());
     setSubtitle(item.getSubtitle());
-    avatarReceiver.requestUser(tdlib, userId, tdlib.needUserAvatarPreviewAnimation(userId), false, true);
+    avatarReceiver.requestUser(tdlib, userId, AvatarReceiver.Options.NONE);
     invalidate();
   }
 
@@ -222,9 +222,9 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
 
   public void setAvatar (ImageFile avatar, AvatarPlaceholder.Metadata avatarPlaceholderMetadata) {
     if (avatar != null) {
-      avatarReceiver.requestSpecific(tdlib, avatar);
+      avatarReceiver.requestSpecific(tdlib, avatar, AvatarReceiver.Options.NONE);
     } else {
-      avatarReceiver.requestPlaceholder(tdlib, avatarPlaceholderMetadata, false, false);
+      avatarReceiver.requestPlaceholder(tdlib, avatarPlaceholderMetadata, AvatarReceiver.Options.NONE);
     }
   }
 
@@ -504,7 +504,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
     }
     setTitle(lastChat.getTitle(), lastChat.getTitleHighlight());
     updateSubtitle();
-    avatarReceiver.requestChat(tdlib, lastChat.getChatId(), tdlib.needAvatarPreviewAnimation(lastChat.getChatId()), false, true);
+    avatarReceiver.requestChat(tdlib, lastChat.getChatId(), AvatarReceiver.Options.NONE);
     setTime(null);
     setUnreadCount(lastChat.getUnreadCount(), !lastChat.notificationsEnabled(), update);
   }
@@ -674,7 +674,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
       setSubtitle(foundMessage.getText(), foundMessage.getHighlight());
       setUnreadCount(0, counter.isMuted(), false);
       TdApi.MessageSender sender = chat.getSenderId();
-      avatarReceiver.requestMessageSender(tdlib, sender, tdlib.needAvatarPreviewAnimation(sender), false, true);
+      avatarReceiver.requestMessageSender(tdlib, sender, AvatarReceiver.Options.NONE);
       invalidate();
     }
   }

@@ -67,6 +67,7 @@ import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.data.ThreadInfo;
 import org.thunderdog.challegram.emoji.EmojiFilter;
 import org.thunderdog.challegram.filegen.SimpleGenerationInfo;
+import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.mediaview.data.MediaStack;
 import org.thunderdog.challegram.navigation.ActivityResultHandler;
@@ -4905,7 +4906,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private void setHeaderPhoto (boolean update) {
     if (headerCell != null) {
-      headerCell.getAvatarReceiver().requestChat(tdlib, getChatId(), true, true, true);
+      headerCell.getAvatarReceiver().requestChat(tdlib, getChatId(), AvatarReceiver.Options.FULL_SIZE);
     }
   }
 

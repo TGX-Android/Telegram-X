@@ -212,7 +212,7 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
 
   private void updateChat (boolean isUpdate) {
     chat.updateChat();
-    avatarReceiver.requestChat(tdlib, chat.getChatId(), tdlib.needAvatarPreviewAnimation(chat.getChatId()), false, true);
+    avatarReceiver.requestChat(tdlib, chat.getChatId(), AvatarReceiver.Options.NONE);
     setTitle(chat.getSingleLineTitle().toString());
     counter.setCount(chat.getUnreadCount(), !chat.notificationsEnabled(), isUpdate && isParentVisible());
     setMessageSender(chat.getMessageSenderId(), chat.isAnonymousAdmin());
@@ -457,7 +457,7 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
   private boolean drawAnonymousSender = false;
 
   private void setMessageSender (TdApi.MessageSender sender, boolean forceAnonymousSender) {
-    identityAvatarReceiver.requestMessageSender(tdlib, sender, tdlib.needAvatarPreviewAnimation(sender), false, true);
+    identityAvatarReceiver.requestMessageSender(tdlib, sender, AvatarReceiver.Options.NONE);
     hasMessageSender = sender != null && (!tdlib.isSelfSender(sender) || Td.isAnonymous(tdlib.chatStatus(chat.getChatId())));
     drawAnonymousSender = (sender == null && forceAnonymousSender) || (sender != null && !tdlib.isChannel(sender) && Td.isAnonymous(tdlib.chatStatus(chat.getChatId())));
     invalidate();

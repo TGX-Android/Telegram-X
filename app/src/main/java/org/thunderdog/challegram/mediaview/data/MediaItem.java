@@ -59,6 +59,7 @@ import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.util.InvalidateContentProvider;
 import me.vkryl.android.util.MultipleViewProvider;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.td.ChatId;
@@ -1016,10 +1017,11 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     switch (type) {
       case TYPE_CHAT_PROFILE:
       case TYPE_USER_PROFILE: {
+        @AvatarReceiver.Options int options = BitwiseUtils.optional(AvatarReceiver.Options.FULL_SIZE, fullSize);
         if (chatPhoto != null && isFullPhoto) {
-          avatarReceiver.requestSpecific(tdlib, new AvatarReceiver.FullChatPhoto(chatPhoto, Td.getSenderId(sourceSender)), true, fullSize);
+          avatarReceiver.requestSpecific(tdlib, new AvatarReceiver.FullChatPhoto(chatPhoto, Td.getSenderId(sourceSender)), options);
         } else {
-          avatarReceiver.requestMessageSender(tdlib, sourceSender, true, fullSize, false);
+          avatarReceiver.requestMessageSender(tdlib, sourceSender, options | AvatarReceiver.Options.NO_UPDATES);
         }
         break;
       }

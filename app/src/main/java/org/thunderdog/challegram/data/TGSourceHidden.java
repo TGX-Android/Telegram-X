@@ -70,7 +70,13 @@ public class TGSourceHidden extends TGSource {
 
   @Override
   public void requestAvatar (AvatarReceiver receiver) {
-    receiver.requestPlaceholder(msg.tdlib, new AvatarPlaceholder.Metadata(TD.getColorIdForName(name), isImported ? null : TD.getLetters(name), isImported ? R.drawable.baseline_phone_24 : 0, 0), false, false);
+    receiver.requestPlaceholder(msg.tdlib,
+      new AvatarPlaceholder.Metadata(
+        TD.getColorIdForName(name),
+        isImported ? null : TD.getLetters(name),
+        isImported ? R.drawable.baseline_phone_24 : 0, 0
+      ), AvatarReceiver.Options.NONE
+    );
   }
 
   @Override

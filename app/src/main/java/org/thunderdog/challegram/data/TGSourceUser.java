@@ -91,6 +91,6 @@ public class TGSourceUser extends TGSource implements TdlibCache.UserDataChangeL
 
   @Override
   public void requestAvatar (AvatarReceiver receiver) {
-    receiver.requestUser(msg.tdlib, senderUserId, msg.tdlib.needUserAvatarPreviewAnimation(senderUserId), false, true);
+    receiver.requestUser(msg.tdlib, senderUserId, AvatarReceiver.Options.NONE);
   }
 }

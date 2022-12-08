@@ -36,6 +36,7 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.ComplexHeaderView;
@@ -168,7 +169,7 @@ public class CreateChannelLinkController extends ViewController<CreateChannelLin
     headerView.initWithController(this, true);
     headerView.setInnerMargins(Screen.dp(56f), 0);
     headerView.setText(chat.title, Lang.plural(R.string.xMembers, 1));
-    headerView.getAvatarReceiver().requestChat(tdlib, chat != null ? chat.id : 0, false, false, true);
+    headerView.getAvatarReceiver().requestChat(tdlib, chat != null ? chat.id : 0, AvatarReceiver.Options.NONE);
 
     final Runnable scroller = () -> scrollView.fullScroll(View.FOCUS_DOWN);
 

@@ -187,7 +187,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     final AvatarReceiver receiver = (menuItem.messageSenderId != null && menuItem.iconResId == 0) ?
       complexAvatarReceiver.getAvatarReceiver(Td.getSenderId(menuItem.messageSenderId)) : null;
     if (receiver != null) {
-      receiver.requestMessageSender(tdlib, menuItem.messageSenderId, tdlib.needAvatarPreviewAnimation(menuItem.messageSenderId), false, true);
+      receiver.requestMessageSender(tdlib, menuItem.messageSenderId, AvatarReceiver.Options.NONE);
     }
 
     FrameLayout.LayoutParams lp = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(ITEM_HEIGHT), Gravity.LEFT);

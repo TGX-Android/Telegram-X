@@ -140,9 +140,9 @@ public class TGSourceChat extends TGSource implements Client.ResultHandler, Runn
   @Override
   public void requestAvatar (AvatarReceiver receiver) {
     if (msg.tdlib.isSelfChat(chatId)) {
-      receiver.requestUser(msg.tdlib, msg.tdlib.chatUserId(chatId), msg.tdlib.needAvatarPreviewAnimation(chatId), false, true);
+      receiver.requestUser(msg.tdlib, msg.tdlib.chatUserId(chatId), AvatarReceiver.Options.NONE);
     } else {
-      receiver.requestChat(msg.tdlib, chatId, msg.tdlib.needAvatarPreviewAnimation(chatId), false, true);
+      receiver.requestChat(msg.tdlib, chatId, AvatarReceiver.Options.NONE);
     }
   }
 }

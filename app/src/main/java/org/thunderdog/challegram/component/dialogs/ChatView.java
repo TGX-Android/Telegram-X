@@ -402,9 +402,9 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
     if (chat != null) {
       AvatarPlaceholder.Metadata avatarPlaceholder = chat.getAvatarPlaceholder();
       if (avatarPlaceholder != null) {
-        avatarReceiver.requestPlaceholder(tdlib, avatarPlaceholder, false, false);
+        avatarReceiver.requestPlaceholder(tdlib, avatarPlaceholder, AvatarReceiver.Options.NONE);
       } else {
-        avatarReceiver.requestChat(tdlib, chat.getChatId(), tdlib.needAvatarPreviewAnimation(chat.getChatId()), false, true);
+        avatarReceiver.requestChat(tdlib, chat.getChatId(), AvatarReceiver.Options.NONE);
       }
     } else {
       avatarReceiver.clear();
@@ -422,7 +422,7 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
 
   public void invalidateAvatarReceiver () {
     if (chat != null) {
-      avatarReceiver.requestChat(tdlib, chat.getChatId(), tdlib.needAvatarPreviewAnimation(chat.getChatId()), false, true);
+      avatarReceiver.requestChat(tdlib, chat.getChatId(), AvatarReceiver.Options.NONE);
     } else {
       avatarReceiver.clear();
     }

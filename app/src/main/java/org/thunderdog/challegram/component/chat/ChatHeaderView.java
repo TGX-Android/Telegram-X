@@ -21,6 +21,7 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.data.ThreadInfo;
+import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.navigation.ComplexHeaderView;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -97,7 +98,7 @@ public class ChatHeaderView extends ComplexHeaderView {
       return;
     }
 
-    getAvatarReceiver().requestChat(tdlib, chat.id, tdlib.needAvatarPreviewAnimation(chat.id), true, true);
+    getAvatarReceiver().requestChat(tdlib, chat.id, AvatarReceiver.Options.FULL_SIZE);
     setShowVerify(tdlib.chatVerified(chat));
     setShowScam(tdlib.chatScam(chat));
     setShowFake(tdlib.chatFake(chat));

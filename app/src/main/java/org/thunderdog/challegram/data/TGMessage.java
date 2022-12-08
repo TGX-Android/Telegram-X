@@ -3735,7 +3735,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       if (forceForwardedInfo()) {
         forwardInfo.requestAvatar(receiver);
       } else {
-        receiver.requestMessageSender(tdlib, sender.toSender(), tdlib.needAvatarPreviewAnimation(sender.toSender()), false, true);
+        receiver.requestMessageSender(tdlib, sender.toSender(), AvatarReceiver.Options.NONE);
       }
     } else {
       receiver.clear();

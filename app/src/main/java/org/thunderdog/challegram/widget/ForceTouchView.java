@@ -319,9 +319,9 @@ public class ForceTouchView extends FrameLayoutFix implements
           setupUser((int) context.boundDataId, headerView);
         } else {
           if (context.avatarSender != null) {
-            headerView.getAvatarReceiver().requestMessageSender(tdlib, context.avatarSender, tdlib.needAvatarPreviewAnimation(context.avatarSender), false, true);
+            headerView.getAvatarReceiver().requestMessageSender(tdlib, context.avatarSender, AvatarReceiver.Options.NONE);
           } else if (context.avatarPlaceholder != null) {
-            headerView.getAvatarReceiver().requestPlaceholder(tdlib, context.avatarPlaceholder, false, false);
+            headerView.getAvatarReceiver().requestPlaceholder(tdlib, context.avatarPlaceholder, AvatarReceiver.Options.NONE);
           } else {
             headerView.getAvatarReceiver().clear();
           }
@@ -479,7 +479,7 @@ public class ForceTouchView extends FrameLayoutFix implements
           };
         } else if (actionItem.messageSender != null && actionItem.iconRes == 0) {
           AvatarReceiver receiver = complexAvatarReceiver.getAvatarReceiver(Td.getSenderId(actionItem.messageSender));
-          receiver.requestMessageSender(tdlib, actionItem.messageSender, tdlib.needAvatarPreviewAnimation(actionItem.messageSender), false, true);
+          receiver.requestMessageSender(tdlib, actionItem.messageSender, AvatarReceiver.Options.NONE);
           receiver.setBounds(0, 0, Screen.dp(24), Screen.dp(24));
           receiver.setRadius(Screen.dp(12));
           view = new ImageView(getContext()) {
@@ -1265,13 +1265,13 @@ public class ForceTouchView extends FrameLayoutFix implements
       switch (boundDataType) {
         case TYPE_CHAT: {
           if (boundChat != null) {
-            headerView.getAvatarReceiver().requestChat(tdlib, boundChat.id, tdlib.needAvatarPreviewAnimation(boundChat.id), false, true);
+            headerView.getAvatarReceiver().requestChat(tdlib, boundChat.id, AvatarReceiver.Options.NONE);
           }
           break;
         }
         case TYPE_USER: {
           if (boundUser != null) {
-            headerView.getAvatarReceiver().requestUser(tdlib, boundUser.id, tdlib.needUserAvatarPreviewAnimation(boundUser.id), false, true);
+            headerView.getAvatarReceiver().requestUser(tdlib, boundUser.id, AvatarReceiver.Options.NONE);
           }
           break;
         }

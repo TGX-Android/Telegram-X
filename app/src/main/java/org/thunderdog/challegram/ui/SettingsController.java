@@ -41,6 +41,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
+import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
 import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.navigation.ActivityResultHandler;
@@ -854,7 +855,7 @@ public class SettingsController extends ViewController<Void> implements
   private void updateHeader () {
     TdApi.User user = tdlib.myUser();
     if (headerCell != null) {
-      headerCell.getAvatarReceiver().requestUser(tdlib, tdlib.myUserId(), tdlib.needUserAvatarPreviewAnimation(tdlib.myUserId()), true, true);
+      headerCell.getAvatarReceiver().requestUser(tdlib, tdlib.myUserId(), AvatarReceiver.Options.FULL_SIZE);
       headerCell.setText(user != null ? TD.getUserName(user) : Lang.getString(R.string.LoadingUser), getSubtext());
       headerCell.invalidate();
     }
