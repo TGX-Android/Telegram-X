@@ -275,17 +275,18 @@ public class MessagesSearchManager {
     }
     if (foundTargetMessageId != null) {
       int index = getMessageIndex(foundTargetMessageId.getMessageId());
-      if (index != -1 || direction == SEARCH_DIRECTION_AROUND) {
+      if (index != -1) {
         delegate.showSearchResult(index, currentTotalCount = messages.totalCount, knownIndex(), knownTotalCount(), foundTargetMessageId);
         currentDisplayedMessage = foundTargetMessageId.getMessageId();
         foundTargetMessageId = null;
-      } else {
+        return;
+      } else if (direction != SEARCH_DIRECTION_AROUND) {
         flags |= FLAG_LOADING;
         currentSearchResults.clear();
         currentSearchResultsArr.clear();
         searchInternal(contextId, currentChatId, currentMessageThreadId, currentFromSender, currentSearchFilter, currentIsSecret, currentInput, foundTargetMessageId.getMessageId(), currentSecretOffset, SEARCH_DIRECTION_AROUND);
+        return;
       }
-      return;
     }
     currentDisplayedMessage = messages.messages[0].id;
     delegate.showSearchResult(0, currentTotalCount = messages.totalCount, knownIndex(), knownTotalCount(), new MessageId(messages.messages[0].chatId, messages.messages[0].id));
@@ -378,7 +379,7 @@ public class MessagesSearchManager {
 
   private int getMessageIndex (long msgId) {
     int index = currentSearchResultsArr.indexOfKey(msgId);
-    return (index < 0) ? index: (currentSearchResultsArr.size() - 1 - index);
+    return (index < 0) ? -1: (currentSearchResultsArr.size() - 1 - index);
   }
 
   private boolean knownIndex () {
