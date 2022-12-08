@@ -2292,6 +2292,24 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
+  public boolean chatOnline (long chatId) {
+    if (chatId == 0 || isSelfChat(chatId))
+      return false;
+    switch (ChatId.getType(chatId)) {
+      case TdApi.ChatTypePrivate.CONSTRUCTOR:
+      case TdApi.ChatTypeSecret.CONSTRUCTOR: {
+        long userId = chatUserId(chatId);
+        return userId != 0 && cache().isOnline(userId);
+      }
+      case TdApi.ChatTypeSupergroup.CONSTRUCTOR:
+      case TdApi.ChatTypeBasicGroup.CONSTRUCTOR:
+        break;
+      default:
+        throw new UnsupportedOperationException(Long.toString(chatId));
+    }
+    return false;
+  }
+
   public int chatOnlineMemberCount (long chatId) {
     if (chatId == 0)
       return 0;

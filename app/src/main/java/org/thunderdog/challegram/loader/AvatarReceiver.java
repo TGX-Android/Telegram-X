@@ -20,7 +20,9 @@ import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.theme.ThemeProperty;
+import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
@@ -36,6 +38,8 @@ import java.lang.annotation.RetentionPolicy;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
+import me.vkryl.android.animator.BounceAnimator;
+import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
@@ -44,7 +48,7 @@ import me.vkryl.core.lambda.FutureBool;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
-public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDataChangeListener, TdlibCache.SupergroupDataChangeListener, TdlibCache.BasicGroupDataChangeListener {
+public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDataChangeListener, TdlibCache.UserStatusChangeListener, TdlibCache.SupergroupDataChangeListener, TdlibCache.BasicGroupDataChangeListener {
   public static class FullChatPhoto {
     public final @NonNull TdApi.ChatPhoto chatPhoto;
     public final long chatId;
@@ -58,11 +62,13 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   private final ComplexReceiver complexReceiver;
   private final BoolAnimator isFullScreen;
   private final BoolAnimator isForum;
+  private final BounceAnimator isOnline;
+  private final BoolAnimator allowOnline;
   private boolean isDetached;
 
   private boolean displayFullSizeOnlyInFullScreen;
-  private int defaultAvatarRadiusPropertyId;
-  private int forumAvatarRadiusPropertyId;
+  private @ThemeProperty int defaultAvatarRadiusPropertyId, forumAvatarRadiusPropertyId;
+  private @ThemeColorId int contentCutOutColorId;
   private @ScaleMode int scaleMode;
   private float primaryPlaceholderRadius;
 
@@ -85,7 +91,8 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
     Options.FULL_SIZE,
     Options.FORCE_ANIMATION,
     Options.FORCE_FORUM,
-    Options.NO_UPDATES
+    Options.NO_UPDATES,
+    Options.SHOW_ONLINE
   }, flag = true)
   public @interface Options {
     int
@@ -93,22 +100,18 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
       FULL_SIZE = 1,
       FORCE_ANIMATION = 1 << 1,
       FORCE_FORUM = 1 << 2,
-      NO_UPDATES = 1 << 3
+      NO_UPDATES = 1 << 3,
+      SHOW_ONLINE = 1 << 4
     ;
   }
 
   public AvatarReceiver (@Nullable View view) {
     this.complexReceiver = new ComplexReceiver(view);
-    this.isFullScreen = new BoolAnimator(0,
-      (id, factor, fraction, callee) -> invalidate(),
-      AnimatorUtils.DECELERATE_INTERPOLATOR,
-      180l
-    );
-    this.isForum = new BoolAnimator(0,
-      (id, factor, fraction, callee) -> invalidate(),
-      AnimatorUtils.DECELERATE_INTERPOLATOR,
-      180l
-    );
+    FactorAnimator.Target target = (id, factor, fraction, callee) -> invalidate();
+    this.isFullScreen = new BoolAnimator(0, target, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
+    this.isForum = new BoolAnimator(0, target, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
+    this.isOnline = new BounceAnimator(target);
+    this.allowOnline = new BoolAnimator(0, target, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l, true);
   }
 
   public void setDisplayFullSizeOnlyInFullScreen (boolean displayFullSizeOnlyInFullScreen) {
@@ -133,6 +136,13 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
     }
   }
 
+  public void setContentCutOutColorId (@ThemeColorId int colorId) {
+    if (this.contentCutOutColorId != colorId) {
+      this.contentCutOutColorId = colorId;
+      invalidate();
+    }
+  }
+
   public void clearAvatarRadiusPropertyIds () {
     //noinspection WrongConstant
     setAvatarRadiusPropertyIds(0, 0);
@@ -144,6 +154,14 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
 
   public void forceFullScreen (boolean isFullScreen, float floatValue) {
     this.isFullScreen.forceValue(isFullScreen, floatValue);
+  }
+
+  public void setAllowOnline (boolean allowOnline, boolean animated) {
+    this.allowOnline.setValue(allowOnline, animated);
+  }
+
+  public void forceAllowOnline (boolean allowOnline, float floatValue) {
+    this.allowOnline.forceValue(allowOnline, floatValue);
   }
 
   public void setPrimaryPlaceholderRadius (float radius) {
@@ -279,7 +297,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
         }
         break;
       case DataType.USER:
-        this.tdlib.cache().addUserDataListener(this.dataId, this);
+        this.tdlib.cache().subscribeToUserUpdates(this.dataId, this);
         break;
       case DataType.CHAT: {
         this.tdlib.listeners().subscribeToChatUpdates(this.dataId, this);
@@ -287,7 +305,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
           case TdApi.ChatTypePrivate.CONSTRUCTOR:
           case TdApi.ChatTypeSecret.CONSTRUCTOR: {
             if (this.additionalDataId != 0) {
-              tdlib.cache().addUserDataListener(this.additionalDataId, this);
+              tdlib.cache().subscribeToUserUpdates(this.additionalDataId, this);
             }
             break;
           }
@@ -321,7 +339,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
         }
         break;
       case DataType.USER: {
-        this.tdlib.cache().removeUserDataListener(this.dataId, this);
+        this.tdlib.cache().unsubscribeFromUserUpdates(this.dataId, this);
         break;
       }
       case DataType.CHAT:
@@ -330,7 +348,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
           switch (ChatId.getType(this.dataId)) {
             case TdApi.ChatTypePrivate.CONSTRUCTOR:
             case TdApi.ChatTypeSecret.CONSTRUCTOR:
-              this.tdlib.cache().removeUserDataListener(this.additionalDataId, this);
+              this.tdlib.cache().unsubscribeFromUserUpdates(this.additionalDataId, this);
               break;
             case TdApi.ChatTypeSupergroup.CONSTRUCTOR:
               this.tdlib.cache().unsubscribeFromSupergroupUpdates(this.additionalDataId, this);
@@ -418,6 +436,15 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   }
 
   @Override
+  public void onUserStatusChanged (long userId, TdApi.UserStatus status, boolean uiOnly) {
+    if (!uiOnly) {
+      runOnUiThread(() -> isDisplayingUser(userId) || isDisplayingUserChat(userId), () ->
+        updateOnlineState(true)
+      );
+    }
+  }
+
+  @Override
   public void onSupergroupUpdated (TdApi.Supergroup supergroup) {
     updateResources(() -> isDisplayingSupergroupChat(supergroup.id) || (this.dataType == DataType.SPECIFIC_PHOTO && this.additionalDataId == supergroup.id));
   }
@@ -433,12 +460,19 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   }
 
   @AnyThread
-  private void updateResources (FutureBool act) {
+  private void runOnUiThread (FutureBool condition, Runnable act) {
     UI.post(() -> {
-      if (act.get()) {
-        requestResources(true);
+      if (condition.get()) {
+        act.run();
       }
     });
+  }
+
+  @AnyThread
+  private void updateResources (FutureBool act) {
+    runOnUiThread(act, () ->
+      requestResources(true)
+    );
   }
 
   private void setIsForum (boolean isForum, boolean animated) {
@@ -468,9 +502,41 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
     }
   }
 
+  private void setIsOnline (boolean isOnline, boolean animated) {
+    if (animated && isFullScreen.getFloatValue() == 1f) {
+      animated = false;
+    }
+    this.isOnline.setValue(isOnline, animated);
+  }
+
+  private void updateOnlineState (boolean isUpdate) {
+    boolean allowOnline = BitwiseUtils.getFlag(options, Options.SHOW_ONLINE);
+    switch (dataType) {
+      case DataType.NONE:
+      case DataType.SPECIFIC_FILE:
+      case DataType.PLACEHOLDER: {
+        setIsOnline(false, isUpdate);
+        break;
+      }
+      case DataType.SPECIFIC_PHOTO: {
+        setIsOnline(allowOnline && specificPhoto != null && tdlib.chatOnline(specificPhoto.chatId), isUpdate);
+        break;
+      }
+      case DataType.USER: {
+        setIsOnline(allowOnline && tdlib.cache().isOnline(dataId), isUpdate);
+        break;
+      }
+      case DataType.CHAT: {
+        setIsOnline(allowOnline && tdlib.chatOnline(dataId), isUpdate);
+        break;
+      }
+    }
+  }
+
   @UiThread
   private void requestResources (boolean isUpdate) {
     updateForumState(isUpdate);
+    updateOnlineState(isUpdate);
     if (isUpdate && BitwiseUtils.getFlag(options, Options.NO_UPDATES)) {
       return;
     }
@@ -1085,6 +1151,17 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
         drawPlaceholderDrawable(c, requestedPlaceholder.extraDrawableRes, avatarContentColorId, alpha * (1f - primaryContentAlpha));
       }
     }
+
+    int contentCutOutColor = ColorUtils.alphaColor(alpha,
+      Theme.getColor(contentCutOutColorId != 0 ? contentCutOutColorId : R.id.theme_color_filling)
+    );
+    int onlineColor = ColorUtils.alphaColor(alpha, Theme.getColor(R.id.theme_color_online));
+    DrawAlgorithms.drawOnline(c,
+      this,
+      allowOnline.getFloatValue() * isOnline.getFloatValue(),
+      contentCutOutColor,
+      onlineColor
+    );
   }
 
   private Text displayingLetters;

@@ -58,7 +58,7 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.Td;
 
-public class VerticalChatView extends BaseView implements Destroyable, ChatListener, FactorAnimator.Target, TdlibCache.UserDataChangeListener, TdlibCache.UserStatusChangeListener, NotificationSettingsListener, AttachDelegate, SimplestCheckBoxHelper.Listener, TextColorSet, TooltipOverlayView.LocationProvider {
+public class VerticalChatView extends BaseView implements Destroyable, ChatListener, TdlibCache.UserDataChangeListener, NotificationSettingsListener, AttachDelegate, SimplestCheckBoxHelper.Listener, TextColorSet, TooltipOverlayView.LocationProvider {
   private static final int SENDER_RADIUS = 10;
 
   private final AvatarReceiver avatarReceiver;
@@ -161,23 +161,14 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
         tdlib.listeners().unsubscribeFromChatUpdates(oldChatId, this);
         tdlib.listeners().unsubscribeFromSettingsUpdates(oldChatId, this);
       }
-      long oldUserId = getUserId();
-      if (oldUserId != 0) {
-        tdlib.cache().unsubscribeFromUserUpdates(oldUserId, this);
-      }
       this.chat = chat;
       setPreviewChatId(chat != null ? chat.getList() : null, newChatId, null);
       if (chat != null) {
         updateTextColor();
         updateChat(false);
-        long newUserId = getUserId();
-        setIsOnline(!chat.isSelfChat() && newUserId != 0 && tdlib.cache().isOnline(newUserId), false);
         if (!chat.noSubscription()) {
           tdlib.listeners().subscribeToChatUpdates(newChatId, this);
           tdlib.listeners().subscribeToSettingsUpdates(newChatId, this);
-        }
-        if (newUserId != 0) {
-          tdlib.cache().subscribeToUserUpdates(newUserId, this);
         }
       } else {
         avatarReceiver.clear();
@@ -212,7 +203,7 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
 
   private void updateChat (boolean isUpdate) {
     chat.updateChat();
-    avatarReceiver.requestChat(tdlib, chat.getChatId(), AvatarReceiver.Options.NONE);
+    avatarReceiver.requestChat(tdlib, chat.getChatId(), AvatarReceiver.Options.SHOW_ONLINE);
     setTitle(chat.getSingleLineTitle().toString());
     counter.setCount(chat.getUnreadCount(), !chat.notificationsEnabled(), isUpdate && isParentVisible());
     setMessageSender(chat.getMessageSenderId(), chat.isAnonymousAdmin());
@@ -258,16 +249,6 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
   // Animator target
 
   @Override
-  public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
-    switch (id) {
-      case ANIMATOR_ONLINE: {
-        setOnlineFactor(factor);
-        break;
-      }
-    }
-  }
-
-  @Override
   public void onNotificationSettingsChanged (TdApi.NotificationSettingsScope scope, TdApi.ScopeNotificationSettings settings) {
     if (Td.matchesScope(tdlib.chatType(getChatId()), scope)) {
       tdlib.ui().post(() -> {
@@ -300,61 +281,6 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
     });
   }
 
-  @Override
-  @UiThread
-  public void onUserStatusChanged (long userId, TdApi.UserStatus status, boolean uiOnly) {
-    if (!uiOnly && getUserId() == userId) {
-      setIsOnline(TD.isOnline(status), true);
-    }
-  }
-
-  private static final int ANIMATOR_ONLINE = 1;
-  private float onlineFactor;
-
-  private boolean isOnline;
-
-  private FactorAnimator onlineAnimator;
-
-  private void forceOnlineFactor (boolean isOnline) {
-    if (onlineAnimator != null) {
-      onlineAnimator.forceFactor(isOnline ? 1f : 0f);
-    }
-    setOnlineFactor(isOnline ? 1f : 0f);
-  }
-
-  private void animateOnlineFactor (boolean isOnline) {
-    if (onlineAnimator == null) {
-      onlineAnimator = new FactorAnimator(ANIMATOR_ONLINE, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
-    }
-    onlineAnimator.cancel();
-    if (isOnline && onlineFactor == 0f) {
-      onlineAnimator.setInterpolator(AnimatorUtils.OVERSHOOT_INTERPOLATOR);
-      onlineAnimator.setDuration(210l);
-    } else {
-      onlineAnimator.setInterpolator(AnimatorUtils.DECELERATE_INTERPOLATOR);
-      onlineAnimator.setDuration(100l);
-    }
-    onlineAnimator.animateTo(isOnline ? 1f : 0f);
-  }
-
-  private void setIsOnline (boolean isOnline, boolean animated) {
-    if (this.isOnline != isOnline) {
-      this.isOnline = isOnline;
-      if (animated && isParentVisible()) {
-        animateOnlineFactor(isOnline);
-      } else {
-        forceOnlineFactor(isOnline);
-      }
-    }
-  }
-
-  private void setOnlineFactor (float factor) {
-    if (this.onlineFactor != factor) {
-      this.onlineFactor = factor;
-      invalidate();
-    }
-  }
-
   // Drawing
 
 
@@ -372,9 +298,12 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
 
   @Override
   protected void onDraw (Canvas c) {
+    final float checkFactor = checkBoxHelper != null ? checkBoxHelper.getCheckFactor() : 0f;
     final int radius = Screen.dp(25f);
     final int centerX = getMeasuredWidth() / 2;
     final int centerY = getMeasuredHeight() / 2 - Screen.dp(11f);
+    avatarReceiver.forceAllowOnline(checkBoxHelper == null || !checkBoxHelper.isChecked(), 1f - checkFactor);
+
     avatarReceiver.setBounds(centerX - radius, centerY - radius, centerX + radius, centerY + radius);
 
     if (avatarReceiver.needPlaceholder()) {
@@ -384,7 +313,7 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
 
     float displayRadius = avatarReceiver.getDisplayRadius();
 
-    final float checkFactor = checkBoxHelper != null ? checkBoxHelper.getCheckFactor() : 0f;
+
     double topRightRadians = Math.toRadians(Lang.rtl() ? 225f : 135f);
     float checkCenterX, checkCenterY;
     if (Lang.rtl()) {
@@ -397,7 +326,6 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
     float y = checkCenterY + (float) ((double) displayRadius * Math.cos(topRightRadians));
     counter.draw(c, x, y, Lang.rtl() ? Gravity.LEFT : Gravity.RIGHT, (1f - checkFactor));
 
-    DrawAlgorithms.drawOnline(c, avatarReceiver, onlineFactor * (1f - checkFactor));
     if (checkFactor > 0f) {
       DrawAlgorithms.drawSimplestCheckBox(c, avatarReceiver, checkFactor);
     }

@@ -142,7 +142,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
     setTitle(TD.getUserName(userId, user), null);
     setSubtitleIcon(item.getSubtitleIcon(), item.getSubtitleIconColorId());
     setSubtitle(item.getSubtitle());
-    avatarReceiver.requestUser(tdlib, userId, AvatarReceiver.Options.NONE);
+    avatarReceiver.requestUser(tdlib, userId, AvatarReceiver.Options.SHOW_ONLINE);
     invalidate();
   }
 
@@ -504,7 +504,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
     }
     setTitle(lastChat.getTitle(), lastChat.getTitleHighlight());
     updateSubtitle();
-    avatarReceiver.requestChat(tdlib, lastChat.getChatId(), AvatarReceiver.Options.NONE);
+    avatarReceiver.requestChat(tdlib, lastChat.getChatId(), AvatarReceiver.Options.SHOW_ONLINE);
     setTime(null);
     setUnreadCount(lastChat.getUnreadCount(), !lastChat.notificationsEnabled(), update);
   }

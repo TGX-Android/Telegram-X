@@ -243,6 +243,10 @@ public class DrawAlgorithms {
   }
 
   public static void drawOnline (Canvas c, Receiver receiver, float onlineFactor) {
+    drawOnline(c, receiver, onlineFactor, Theme.fillingColor(), Theme.getColor(R.id.theme_color_online));
+  }
+
+  public static void drawOnline (Canvas c, Receiver receiver, float onlineFactor, int contentCutOutColor, int onlineColor) {
     if (onlineFactor > 0f) {
       float innerRadius = Screen.dp(4.5f);
       float outerRadius = innerRadius + Screen.dp(2f);
@@ -258,8 +262,8 @@ public class DrawAlgorithms {
         x = receiver.centerX() + (float) ((double) (receiver.getWidth() / 2) * Math.sin(radians));
         y = receiver.centerY() + (float) ((double) (receiver.getHeight() / 2) * Math.cos(radians));
       }
-      c.drawCircle(x, y, outerRadius * onlineFactor, Paints.fillingPaint(Theme.fillingColor()));
-      c.drawCircle(x, y, innerRadius * onlineFactor, Paints.fillingPaint(Theme.getColor(R.id.theme_color_online)));
+      c.drawCircle(x, y, outerRadius * onlineFactor, Paints.fillingPaint(contentCutOutColor));
+      c.drawCircle(x, y, innerRadius * onlineFactor, Paints.fillingPaint(onlineColor));
     }
   }
 
