@@ -1865,7 +1865,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           Paint separatorPaint = Config.COMMENTS_INLINE_BUTTON_SEPARATOR_1PX ? Paints.strokeSeparatorPaint(separatorColor) : Paints.strokeSmallPaint(separatorColor);
           c.drawLine(left + Screen.dp(7f), top, right - Screen.dp(7f), top, separatorPaint);
         }
-        commentButton.draw(c, view, left, top, right, bottom);
+        commentButton.draw(view, c, view, left, top, right, bottom);
       }
     }
 
@@ -2094,14 +2094,14 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           int right = left + commentButton.getAnimatedWidth(0, 1f);
           int top = bottom - commentButton.getAnimatedHeight(0, commentButton.getVisibility());
           int inset = Math.round((right - left) * 0.2f * (1f - commentButton.getVisibility()));
-          commentButton.draw(c, view, left + inset, top, right - inset, bottom);
+          commentButton.draw(view, c, view, left + inset, top, right - inset, bottom);
         }
       } else {
         if (commentButton.isInline()) {
           float scale = commentButton.getVisibility();
           int bottom = findBottomEdge() - (useReactionBubbles ? Math.round(Screen.dp(2f) * scale) : 0);
           int top = bottom - commentButton.getAnimatedHeight(0, scale);
-          commentButton.draw(c, view, 0, top, width, bottom);
+          commentButton.draw(view, c, view, 0, top, width, bottom);
         }
       }
     }
@@ -2557,6 +2557,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public final void invalidateTextMediaReceiver () {
     performWithViews(view -> requestTextMedia(view.getTextMediaReceiver()));
+  }
+
+  public final void invalidateAvatarsReceiver () {
+    performWithViews(view -> requestCommentsResources(view.getAvatarsReceiver(), true));
   }
 
   public final void invalidateTextMediaReceiver (@NonNull Text text, @Nullable TextMedia textMedia) {
@@ -3750,9 +3754,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     computeQuickButtons();
   }
 
-  public final void setupCommentButton (ComplexReceiver complexReceiver) {
+  public final void requestCommentsResources (ComplexReceiver complexReceiver, boolean isUpdate) {
     if (commentButton != null) {
-      commentButton.setComplexReceiver(complexReceiver);
+      commentButton.requestResources(complexReceiver, isUpdate);
     }
   }
 

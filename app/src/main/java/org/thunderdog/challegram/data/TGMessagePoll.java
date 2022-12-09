@@ -294,7 +294,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
       float displayRadius = receiver.getDisplayRadius();
       receiver.drawPlaceholderRounded(c, displayRadius, Screen.dp(VOTER_OUTLINE) * alpha * .5f, Paints.getProgressPaint(replaceColor, Screen.dp(VOTER_OUTLINE) * alpha));
       if (receiver.needPlaceholder())
-        receiver.drawPlaceholderRounded(c, displayRadius, ColorUtils.alphaColor(alpha, Theme.placeholderColor()));
+        receiver.drawPlaceholder(c);
       receiver.draw(c);
       if (alpha != 1f)
         receiver.restorePaintAlpha();

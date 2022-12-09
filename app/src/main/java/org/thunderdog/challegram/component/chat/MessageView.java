@@ -57,7 +57,6 @@ import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.EditRightsController;
-import org.thunderdog.challegram.ui.FeatureToggles;
 import org.thunderdog.challegram.ui.HashtagChatController;
 import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.unsorted.Settings;
@@ -276,7 +275,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     message.resetTransformState();
     message.requestAvatar(avatarReceiver);
     message.requestReactions(reactionsComplexReceiver);
-    message.setupCommentButton(avatarsReceiver);
+    message.requestCommentsResources(avatarsReceiver, false);
     message.requestAllTextMedia(this);
 
     if ((flags & FLAG_USE_COMMON_RECEIVER) != 0) {
@@ -387,6 +386,10 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
   public AvatarReceiver getAvatarReceiver () {
     return avatarReceiver;
+  }
+
+  public ComplexReceiver getAvatarsReceiver () {
+    return avatarsReceiver;
   }
 
   public ImageReceiver getContentReceiver () {
