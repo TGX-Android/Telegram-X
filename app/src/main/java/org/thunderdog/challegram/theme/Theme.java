@@ -863,8 +863,8 @@ public class Theme {
     return Theme.getProperty(ThemeProperty.REPLACE_SHADOWS_WITH_SEPARATORS);
   }
 
-  public static float avatarRadiusForum () {
-    return Theme.getProperty(ThemeProperty.AVATAR_RADIUS_FORUM);
+  public static float avatarRadiusDefault () {
+    return Theme.getProperty(ThemeProperty.AVATAR_RADIUS);
   }
 
   public static float getBubbleOutlineFactor () {
