@@ -3754,7 +3754,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, mode == MODE_EDIT_CHANNEL ? R.string.RecentActionsChannelHint : R.string.RecentActionsGroupHint));
     }
 
-    if (tdlib.canDeleteMessages(chat.id) && (tdlib.isSupergroup(chat.id) || (ChatId.isBasicGroup(chat.id) && tdlib.canUpgradeChat(chat.id)))) {
+    if (tdlib.canDeleteMessages(chat.id) && tdlib.chatMemberCount(chat.id) >= tdlib.aggressiveAntiSpamSupergroupMinimumMemberCount() && (tdlib.isSupergroup(chat.id) || (ChatId.isBasicGroup(chat.id) && tdlib.canUpgradeChat(chat.id)))) {
       boolean aggressiveAntiSpamEnabled = supergroupFull != null && supergroupFull.isAggressiveAntiSpamEnabled;
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
       items.add(aggressiveAntiSpamItem = new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleAggressiveAntiSpam, 0, R.string.AggressiveAntiSpam, aggressiveAntiSpamEnabled));

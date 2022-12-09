@@ -22,6 +22,7 @@ import android.text.style.CharacterStyle;
 import android.text.style.ClickableSpan;
 import android.view.MotionEvent;
 import android.view.View;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -38,10 +39,12 @@ import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
+import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.telegram.TdlibSender;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.text.FormattedText;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
@@ -402,7 +405,17 @@ abstract class TGMessageServiceImpl extends TGMessage {
         @Override
         public void onClick (@NonNull View widget) {
           if (sender.isUser()) {
-            tdlib.ui().openPrivateProfile(controller(), sender.getUserId(), openParameters());
+            if (isEventLog() && sender.getUserId() == tdlib.telegramAntiSpamUserId()) {
+              // FIXME tooltip instead of the toast
+              TooltipOverlayView.TooltipBuilder b = openParameters().tooltip;
+              if (b != null) {
+                b.icon(R.drawable.baseline_info_24).show(tdlib, R.string.AggressiveAntiSpamBot).hideDelayed();
+              } else {
+                UI.showToast(R.string.AggressiveAntiSpamBot, Toast.LENGTH_SHORT);
+              }
+            } else {
+              tdlib.ui().openPrivateProfile(controller(), sender.getUserId(), openParameters());
+            }
           } else if (sender.isChat()) {
             tdlib.ui().openChatProfile(controller(), sender.getChatId(), null, openParameters());
           }

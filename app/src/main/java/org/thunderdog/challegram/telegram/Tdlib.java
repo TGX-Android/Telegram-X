@@ -464,6 +464,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   private int disableTopChats = -1;
   private boolean disableSentScheduledMessageNotifications;
+  private long antiSpamBotUserId;
   private String animationSearchBotUsername = "gif";
   private String venueSearchBotUsername = "foursquare";
   private String photoSearchBotUsername = "pic";
@@ -6365,6 +6366,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return aggressiveAntiSpamSupergroupMinimumMemberCount;
   }
 
+  public long telegramAntiSpamUserId () {
+    return antiSpamBotUserId;
+  }
+
   public @ConnectionState int connectionState () {
     return connectionState;
   }
@@ -7994,6 +7999,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
             break;
           case "aggressive_anti_spam_supergroup_member_count_min":
             this.aggressiveAntiSpamSupergroupMinimumMemberCount = (int) longValue;
+            break;
+          case "anti_spam_bot_user_id":
+            this.antiSpamBotUserId = longValue;
             break;
           case "message_caption_length_max":
             this.maxMessageCaptionLength = (int) longValue;
