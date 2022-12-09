@@ -203,7 +203,16 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
 
   private void updateChat (boolean isUpdate) {
     chat.updateChat();
-    avatarReceiver.requestChat(tdlib, chat.getChatId(), AvatarReceiver.Options.SHOW_ONLINE);
+    if (chat.getChatId() != 0) {
+      avatarReceiver.requestChat(tdlib, chat.getChatId(), AvatarReceiver.Options.SHOW_ONLINE);
+    } else {
+      TdApi.MessageSender senderId = chat.getSenderId();
+      if (senderId != null) {
+        avatarReceiver.requestMessageSender(tdlib, senderId, AvatarReceiver.Options.SHOW_ONLINE);
+      } else {
+        avatarReceiver.clear();
+      }
+    }
     setTitle(chat.getSingleLineTitle().toString());
     counter.setCount(chat.getUnreadCount(), !chat.notificationsEnabled(), isUpdate && isParentVisible());
     setMessageSender(chat.getMessageSenderId(), chat.isAnonymousAdmin());
