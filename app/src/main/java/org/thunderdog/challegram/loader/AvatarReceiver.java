@@ -366,7 +366,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   private boolean requestData (@Nullable Tdlib tdlib, @DataType int dataType, long dataId, @Nullable AvatarPlaceholder.Metadata specificPlaceholder, FullChatPhoto specificPhoto, ImageFile specificFile, @Options int options) {
     if (!UI.inUiThread())
       throw new IllegalStateException();
-    if (dataType == DataType.NONE || dataId == 0 || tdlib == null) {
+    if (dataType == DataType.NONE || dataId == 0 || (tdlib == null && !(dataType == DataType.SPECIFIC_FILE || dataType == DataType.PLACEHOLDER))) {
       dataType = DataType.NONE;
       dataId = 0;
       tdlib = null;
