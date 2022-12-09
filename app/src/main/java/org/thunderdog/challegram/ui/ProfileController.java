@@ -1931,6 +1931,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             }
             break;
           }
+          case R.id.btn_toggleAggressiveAntiSpam: {
+            view.getToggler().setRadioEnabled(supergroupFull != null && supergroupFull.isAggressiveAntiSpamEnabled, isUpdate);
+            break;
+          }
         }
         if (item.getViewType() == ListItem.TYPE_RADIO_SETTING) {
           boolean isLocked = item.getId() == R.id.btn_toggleProtection && !tdlib.canToggleContentProtection(chat.id);
@@ -3108,6 +3112,26 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     baseAdapter.updateValuedSettingById(R.id.btn_toggleSignatures);
   }
 
+  private void toggleAggressiveAntiSpam () {
+    if (tdlib.canDeleteMessages(chat.id)) {
+      boolean newValue = !(supergroupFull != null && supergroupFull.isAggressiveAntiSpamEnabled);
+      if (supergroupFull != null) {
+        supergroupFull.isAggressiveAntiSpamEnabled = newValue;
+        tdlib.client().send(new TdApi.ToggleSupergroupIsAggressiveAntiSpamEnabled(supergroup.id, newValue), tdlib.okHandler());
+        baseAdapter.updateValuedSettingById(R.id.btn_toggleAggressiveAntiSpam);
+      } else if (mode == MODE_EDIT_GROUP) {
+        showConfirm(Lang.getMarkdownString(this, R.string.UpgradeChatPrompt), Lang.getString(R.string.Proceed), () ->
+          tdlib.upgradeToSupergroup(chat.id, (oldChatId, newChatId, error) -> {
+            if (newChatId != 0) {
+              tdlib.client().send(new TdApi.ToggleSupergroupIsAggressiveAntiSpamEnabled(ChatId.toSupergroupId(newChatId), true), tdlib.okHandler());
+            }
+          })
+        );
+      }
+    }
+
+  }
+
   private void toggleJoinByRequests (View v) {
     if (tdlib.canToggleJoinByRequest(chat)) {
       boolean joinByRequest = !(supergroup != null && supergroup.joinByRequest);
@@ -3419,6 +3443,11 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     return slowModeItem != null && originalSlowMode != TdConstants.SLOW_MODE_OPTIONS[slowModeItem.getSliderValue()];
   }
 
+  private boolean hasAggressiveAntiSpamChanges () {
+    boolean originalValue = supergroupFull != null && supergroupFull.isAggressiveAntiSpamEnabled;
+    return aggressiveAntiSpamItem != null && originalValue != aggressiveAntiSpamDescItem.isSelected();
+  }
+
   private boolean hasTtlChanges () {
     int originalSlowMode = chat != null ? chat.messageTtl : 0;
     return ttlItem != null && originalSlowMode != TdConstants.CHAT_TTL_OPTIONS[ttlItem.getSliderValue()];
@@ -3600,6 +3629,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private ListItem slowModeItem, slowModeDescItem;
+  private ListItem aggressiveAntiSpamItem, aggressiveAntiSpamDescItem;
   private ListItem ttlItem, ttlDescItem;
 
   private void buildEditCells () {
@@ -3722,6 +3752,14 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM, R.id.belowRecentActions));
     if (hasActions) {
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, mode == MODE_EDIT_CHANNEL ? R.string.RecentActionsChannelHint : R.string.RecentActionsGroupHint));
+    }
+
+    if (tdlib.canDeleteMessages(chat.id) && (tdlib.isSupergroup(chat.id) || (ChatId.isBasicGroup(chat.id) && tdlib.canUpgradeChat(chat.id)))) {
+      boolean aggressiveAntiSpamEnabled = supergroupFull != null && supergroupFull.isAggressiveAntiSpamEnabled;
+      items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+      items.add(aggressiveAntiSpamItem = new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleAggressiveAntiSpam, 0, R.string.AggressiveAntiSpam, aggressiveAntiSpamEnabled));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+      items.add(aggressiveAntiSpamDescItem = new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.AggressiveAntiSpamDesc));
     }
 
     if (tdlib.canRestrictMembers(chat.id) && (tdlib.isSupergroup(chat.id) || (ChatId.isBasicGroup(chat.id) && tdlib.canUpgradeChat(chat.id)))) {
@@ -4655,6 +4693,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       }
       case R.id.btn_toggleSignatures: {
         toggleChannelSignatures();
+        break;
+      }
+      case R.id.btn_toggleAggressiveAntiSpam: {
+        toggleAggressiveAntiSpam();
         break;
       }
       case R.id.btn_toggleProtection: {
@@ -6050,6 +6092,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           if (isEditing()) {
             updateValuedItem(R.id.btn_channelType);
             updateValuedItem(R.id.btn_linkedChat);
+            updateValuedItem(R.id.btn_toggleAggressiveAntiSpam);
             if (mode == MODE_EDIT_CHANNEL || mode == MODE_EDIT_SUPERGROUP) {
               int i = baseAdapter.indexOfViewById(R.id.btn_linkedChat);
               boolean hasLinkedChat = i != -1;

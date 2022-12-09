@@ -3907,6 +3907,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return msg;
   }
 
+  @Nullable
+  public TdApi.ChatEvent getEvent () {
+    return event != null ? event.event : null;
+  }
+
   public TdApi.Message getMessage (long messageId) {
     synchronized (this) {
       if (combinedMessages != null) {
@@ -4405,7 +4410,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public final int getComparingDate () {
-    return eventDate != 0 ? eventDate : msg.schedulingState != null ? (msg.schedulingState.getConstructor() == TdApi.MessageSchedulingStateSendAtDate.CONSTRUCTOR ? ((TdApi.MessageSchedulingStateSendAtDate) msg.schedulingState).sendDate : 0) : msg.date;
+    return (event != null && event.event.date != 0) ? event.event.date : msg.schedulingState != null ? (msg.schedulingState.getConstructor() == TdApi.MessageSchedulingStateSendAtDate.CONSTRUCTOR ? ((TdApi.MessageSchedulingStateSendAtDate) msg.schedulingState).sendDate : 0) : msg.date;
   }
 
   public final boolean isSending () {
@@ -6539,14 +6544,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   // Chat events
 
-  private int eventDate;
-  private boolean hideEventDate;
+  private TdApiExt.MessageChatEvent event;
   private long eventMessageId;
 
   protected final TGMessage setIsEventLog (TdApiExt.MessageChatEvent event, long messageId) {
     flags |= FLAG_EVENT_LOG;
-    this.eventDate = event.event.date;
-    this.hideEventDate = event.hideDate;
+    this.event = event;
     this.time = genTime();
     setDate(genDate());
     return this;
@@ -6554,7 +6557,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   private boolean needHideEventDate () {
     //noinspection WrongConstant
-    return hideEventDate || (msg.content.getConstructor() == TdApiExt.MessageChatEvent.CONSTRUCTOR && ((TdApiExt.MessageChatEvent) msg.content).hideDate);
+    return (event != null & event.hideDate) || (msg.content.getConstructor() == TdApiExt.MessageChatEvent.CONSTRUCTOR && ((TdApiExt.MessageChatEvent) msg.content).hideDate);
   }
 
   public final boolean isEventLog () {

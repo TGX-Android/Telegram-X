@@ -510,6 +510,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private int[] favoriteStickerIds;
   private int unreadTrendingStickerSetsCount;
 
+  private int aggressiveAntiSpamSupergroupMinimumMemberCount = 200;
+
   private @Mode int instanceMode;
   private boolean instancePaused;
   private final AtomicInteger referenceCount = new AtomicInteger(0);
@@ -6359,6 +6361,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return maxMessageTextLength;
   }
 
+  public int aggressiveAntiSpamSupergroupMinimumMemberCount () {
+    return aggressiveAntiSpamSupergroupMinimumMemberCount;
+  }
+
   public @ConnectionState int connectionState () {
     return connectionState;
   }
@@ -7985,6 +7991,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
             break;
           case "message_text_length_max":
             this.maxMessageTextLength = (int) longValue;
+            break;
+          case "aggressive_anti_spam_supergroup_member_count_min":
+            this.aggressiveAntiSpamSupergroupMinimumMemberCount = (int) longValue;
             break;
           case "message_caption_length_max":
             this.maxMessageCaptionLength = (int) longValue;

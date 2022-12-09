@@ -23,6 +23,7 @@ import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.ViewParent;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -1096,6 +1097,20 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
           case R.id.btn_editRights:
             showEventLogRestrict(m, false, sender, myStatus, member);
             break;
+          case R.id.btn_reportFalsePositive: {
+            TdApi.ChatEvent event = msg.getEvent();
+            if (event != null && event.action.getConstructor() == TdApi.ChatEventMessageDeleted.CONSTRUCTOR) {
+              TdApi.ChatEventMessageDeleted deleted = (TdApi.ChatEventMessageDeleted) event.action;
+              m.tdlib().client().send(new TdApi.ReportSupergroupAntiSpamFalsePositive(ChatId.toSupergroupId(deleted.message.chatId), deleted.message.id), result -> {
+                if (result.getConstructor() == TdApi.Ok.CONSTRUCTOR) {
+                  UI.showToast(R.string.ReportFalsePositiveOk, Toast.LENGTH_SHORT);
+                } else {
+                  m.tdlib().okHandler().onResult(result);
+                }
+              });
+            }
+            break;
+          }
           case R.id.btn_messageCopy:
             TdApi.FormattedText text;
 
@@ -1129,6 +1144,14 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
       TdApi.ChatMember member = (TdApi.ChatMember) result;
       boolean isChannel = m.tdlib().isChannel(m.getChatId());
+
+      TdApi.ChatEvent event = msg.getEvent();
+      if (event != null && event.action.getConstructor() == TdApi.ChatEventMessageDeleted.CONSTRUCTOR && ((TdApi.ChatEventMessageDeleted) event.action).canReportAntiSpamFalsePositive) {
+        ids.append(R.id.btn_reportFalsePositive);
+        strings.append(R.string.ReportFalsePositive);
+        icons.append(R.drawable.baseline_report_24);
+        colors.append(ViewController.OPTION_COLOR_NORMAL);
+      }
 
       if (TD.canCopyText(msg.getMessage()) || (msg instanceof TGMessageText && ((TGMessageText) msg).getText().text.trim().length() > 0)) {
         ids.append(R.id.btn_messageCopy);
