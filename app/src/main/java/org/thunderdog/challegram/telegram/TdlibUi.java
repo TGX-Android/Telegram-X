@@ -3414,7 +3414,13 @@ public class TdlibUi extends Handler {
             }
             case TdApi.InternalLinkTypeUserPhoneNumber.CONSTRUCTOR: {
               final String phoneNumber = ((TdApi.InternalLinkTypeUserPhoneNumber) linkType).phoneNumber;
-              openChatProfile(context, 0, null, new TdApi.SearchUserByPhoneNumber(phoneNumber), null);
+              openChatProfile(context, 0, null, new TdApi.SearchUserByPhoneNumber(phoneNumber), openParameters);
+              break;
+            }
+
+            case TdApi.InternalLinkTypeUserToken.CONSTRUCTOR: {
+              final String token = ((TdApi.InternalLinkTypeUserToken) linkType).token;
+              openChatProfile(context, 0, null, new TdApi.SearchUserByToken(token), openParameters);
               break;
             }
             case TdApi.InternalLinkTypePublicChat.CONSTRUCTOR: {
