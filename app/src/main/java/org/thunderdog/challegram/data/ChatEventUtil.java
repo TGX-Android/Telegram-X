@@ -592,7 +592,7 @@ public class ChatEventUtil {
   private static TdApi.MessageContent convertToNativeMessageContent (TdApi.ChatEvent event) {
     switch (event.action.getConstructor()) {
       case TdApi.ChatEventMessageTtlChanged.CONSTRUCTOR:
-        return new TdApi.MessageChatSetTtl(((TdApi.ChatEventMessageTtlChanged) event.action).newMessageTtl);
+        return new TdApi.MessageChatSetTtl(((TdApi.ChatEventMessageTtlChanged) event.action).newMessageTtl, 0);
       case TdApi.ChatEventVideoChatCreated.CONSTRUCTOR:
         return new TdApi.MessageVideoChatStarted(((TdApi.ChatEventVideoChatCreated) event.action).groupCallId);
       case TdApi.ChatEventVideoChatEnded.CONSTRUCTOR:

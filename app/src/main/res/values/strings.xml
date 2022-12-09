@@ -4436,4 +4436,7 @@
   <string name="format_PRMadeBy">%1$s by %2$s</string>
 
   <string name="AnonWarning">This action requires revealing your personal account. Tap again to confirm.</string>
+
+  <string name="LinkPurchasable">This link is unavailable. However, it is available for purchase. [Learn more…](%1$s)</string>
+  <string name="UsernamePurchasable">This username is unavailable. However, it is available for purchase. [Learn more…](%1$s)</string>
 </resources>

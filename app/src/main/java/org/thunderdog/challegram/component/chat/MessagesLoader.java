@@ -887,7 +887,7 @@ public class MessagesLoader implements Client.ResultHandler {
         int seconds;
 
         seconds = data.getInt("ttl");
-        ttl = new TdApi.MessageChatSetTtl(seconds);
+        ttl = new TdApi.MessageChatSetTtl(seconds, 0);
       }
 
       if (date == 0) {
