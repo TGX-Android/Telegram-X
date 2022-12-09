@@ -15,6 +15,7 @@
 package org.thunderdog.challegram.loader;
 
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.RectF;
@@ -106,19 +107,22 @@ public interface Receiver extends TooltipOverlayView.LocationProvider {
     drawPlaceholderRounded(c, radius, Theme.placeholderColor());
   }
   default void drawPlaceholderRounded (Canvas c, float radius, int color) {
-    drawPlaceholderRounded(c, radius, color, 0);
+    drawPlaceholderRounded(c, radius, 0, Paints.fillingPaint(color));
   }
-  default void drawPlaceholderRounded (Canvas c, float radius, int color, int addSize) {
+  default void drawPlaceholderRounded (Canvas c, float radius, int color, float addSize) {
+    drawPlaceholderRounded(c, radius, addSize, Paints.fillingPaint(color));
+  }
+  default void drawPlaceholderRounded (Canvas c, float radius, float addSize, Paint paint) {
     if (radius > 0) {
       RectF rect = Paints.getRectF();
       rect.set(getLeft() - addSize, getTop() - addSize, getRight() + addSize, getBottom() + addSize);
       if (rect.width() == radius * 2 && rect.height() == radius * 2) {
-        c.drawCircle(rect.centerX(), rect.centerY(), radius + addSize, Paints.fillingPaint(color));
+        c.drawCircle(rect.centerX(), rect.centerY(), radius + addSize, paint);
       } else {
-        c.drawRoundRect(rect, radius + addSize, radius + addSize, Paints.fillingPaint(color));
+        c.drawRoundRect(rect, radius + addSize, radius + addSize, paint);
       }
     } else {
-      c.drawRect(getLeft() - addSize, getTop() - addSize, getRight() + addSize, getBottom() + addSize, Paints.fillingPaint(color));
+      c.drawRect(getLeft() - addSize, getTop() - addSize, getRight() + addSize, getBottom() + addSize, paint);
     }
   }
 
