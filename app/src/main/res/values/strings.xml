@@ -4445,4 +4445,7 @@
   <string name="ReportFalsePositive">Report False Positive</string>
   <string name="ReportFalsePositiveOk">Telegram moderators will review your report. Thank you!</string>
   <string name="AggressiveAntiSpamBot">You can manage anti-spam settings on Manage Group screen</string>
+
+  <string name="MultiUsernamePrefix">also</string>
+  <string name="MultiLinkPrefix">also</string>
 </resources>

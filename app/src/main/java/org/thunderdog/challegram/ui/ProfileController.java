@@ -27,6 +27,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.text.InputFilter;
 import android.text.InputType;
+import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.style.ClickableSpan;
 import android.util.SparseIntArray;
@@ -112,6 +113,7 @@ import org.thunderdog.challegram.util.SenderPickerDelegate;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
+import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.util.text.TextWrapper;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.v.HeaderEditText;
@@ -1726,17 +1728,45 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             break;
           }
           case R.id.btn_username: {
-            switch (mode) {
-              case MODE_USER:
-              case MODE_SECRET: {
-                view.setData("@" + Td.primaryUsername(user));
-                break;
+            TdApi.Usernames usernames = tdlib.chatUsernames(chat);
+            if (usernames != null && Td.hasUsername(usernames)) {
+              if (tdlib.isUserChat(chat)) { // Bots + Users: @username
+                view.setData("@" + Td.primaryUsername(usernames));
+              } else { // Otherwise: /username
+                view.setData("/" + Td.primaryUsername(usernames));
               }
-              case MODE_CHANNEL:
-              case MODE_SUPERGROUP: {
-                view.setData("/" + Td.primaryUsername(supergroup));
-                break;
+              if (usernames.activeUsernames.length > 1) {
+                List<TdApi.TextEntity> entities = new ArrayList<>();
+
+                StringBuilder b = new StringBuilder();
+                boolean isUserChat = tdlib.isUserChat(chat);
+                for (int i = 1; i < usernames.activeUsernames.length; i++) {
+                  if (b.length() == 0) {
+                    b.append(Lang.getString(isUserChat ? R.string.MultiUsernamePrefix : R.string.MultiLinkPrefix));
+                    if (b.length() > 0) {
+                      b.append(" ");
+                    }
+                  } else {
+                    b.append(Lang.getConcatSeparator());
+                  }
+                  String activeUsername = usernames.activeUsernames[i];
+                  int start = b.length();
+                  b.append(isUserChat ? "@" : "/").append(activeUsername);
+                  int end = b.length();
+                  entities.add(new TdApi.TextEntity(start, end - start, new TdApi.TextEntityTypeMention()));
+                }
+
+                TdApi.FormattedText formattedText = new TdApi.FormattedText(b.toString(), entities.toArray(new TdApi.TextEntity[0]));
+
+                view.setName(TD.toCharSequence(formattedText));
+              } else if (!tdlib.isUserChat(chat) || tdlib.isBotChat(chat)) {
+                view.setName(tdlib.tMeUrl(usernames, true));
+              } else {
+                view.setName(R.string.Username);
               }
+            } else {
+              view.setData("");
+              view.setName(tdlib.isMultiChat(chat) ? R.string.Link : R.string.Username);
             }
             break;
           }
@@ -2343,27 +2373,19 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private ListItem newUsernameItem () {
-    switch (mode) {
-      case MODE_USER:
-      case MODE_SECRET: {
-        if (!Td.hasUsername(user)) {
-          return null;
-        }
-        if (TD.isBot(user)) {
-          return new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_username, R.drawable.baseline_alternate_email_24, tdlib.tMeUrl(user.usernames, true), false);
-        } else {
-          return new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_username, R.drawable.baseline_alternate_email_24, R.string.Username);
-        }
-      }
-      case MODE_CHANNEL:
-      case MODE_SUPERGROUP: {
-        if (!Td.hasUsername(supergroup)) {
-          return null;
-        }
-        return new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_username, R.drawable.baseline_alternate_email_24, tdlib.tMeUrl(supergroup.usernames, true), false);
-      }
+    if (isEditing()) {
+      return null;
     }
-    return null;
+    TdApi.Usernames usernames = tdlib.chatUsernames(chat);
+    if (usernames == null || !Td.hasUsername(usernames)) {
+      return null;
+    }
+    if (!tdlib.isUserChat(chat) || tdlib.isBotChat(chat)) {
+      String url = tdlib.tMeUrl(usernames, true);
+      return new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_username, R.drawable.baseline_alternate_email_24, url, false);
+    } else {
+      return new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_username, R.drawable.baseline_alternate_email_24, R.string.Username);
+    }
   }
 
   private ListItem newPhoneItem () {
