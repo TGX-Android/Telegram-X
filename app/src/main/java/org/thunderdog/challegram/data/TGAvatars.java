@@ -26,7 +26,6 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.animator.ListAnimator;
 import me.vkryl.android.util.ViewProvider;
-import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
 public final class TGAvatars implements FactorAnimator.Target {
@@ -74,11 +73,7 @@ public final class TGAvatars implements FactorAnimator.Target {
     if (chatIds != null && chatIds.length > 0) {
       List<AvatarEntry> entries = new ArrayList<>(chatIds.length);
       for (long chatId : chatIds) {
-        if (ChatId.getType(chatId) == TdApi.ChatTypePrivate.CONSTRUCTOR) {
-          entries.add(AvatarEntry.fromUserId(tdlib, chatId, avatarRadius));
-        } else {
-          entries.add(AvatarEntry.fromChatId(tdlib, chatId, avatarRadius));
-        }
+        entries.add(new AvatarEntry(tdlib.sender(chatId)));
       }
       setEntries(entries, animated);
     } else {
@@ -90,7 +85,7 @@ public final class TGAvatars implements FactorAnimator.Target {
     if (senders != null && senders.length > 0) {
       List<AvatarEntry> entries = new ArrayList<>(senders.length);
       for (TdApi.MessageSender sender : senders) {
-        entries.add(AvatarEntry.fromSender(tdlib, sender, avatarRadius));
+        entries.add(new AvatarEntry(sender));
       }
       setEntries(entries, animated);
     } else {
@@ -264,26 +259,6 @@ public final class TGAvatars implements FactorAnimator.Target {
 
       if (scale != 1f) {
         c.restore();
-      }
-    }
-
-    public static @NonNull AvatarEntry fromUserId (@NonNull Tdlib tdlib, long userId, @Dimension(unit = Dimension.DP) float radius) {
-      return new AvatarEntry(new TdApi.MessageSenderUser(userId));
-    }
-
-    public static @NonNull AvatarEntry fromChatId (@NonNull Tdlib tdlib, long chatId, @Dimension(unit = Dimension.DP) float radius) {
-      return new AvatarEntry(new TdApi.MessageSenderChat(chatId));
-    }
-
-    public static @NonNull AvatarEntry fromSender (@NonNull Tdlib tdlib, @NonNull TdApi.MessageSender sender, @Dimension(unit = Dimension.DP) float radius) {
-      switch (sender.getConstructor()) {
-        case TdApi.MessageSenderChat.CONSTRUCTOR:
-          return fromChatId(tdlib, ((TdApi.MessageSenderChat) sender).chatId, radius);
-        case TdApi.MessageSenderUser.CONSTRUCTOR:
-          return fromUserId(tdlib, ((TdApi.MessageSenderUser) sender).userId, radius);
-        default: {
-          throw new UnsupportedOperationException(sender.toString());
-        }
       }
     }
   }
