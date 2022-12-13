@@ -2282,8 +2282,12 @@ public class TdlibUi extends Handler {
       navigation.getStack().insert(c, 0);
     } else {
       ViewController<?> c = navigation.getCurrentStackItem();
-      if (c instanceof MessagesController && ((MessagesController) c).getHeaderChatId() == chat.id && !((MessagesController) c).inPreviewMode()) {
+      if (c instanceof MessagesController && !tdlib.isSelfChat(chat) && ((MessagesController) c).getHeaderChatId() == chat.id && !((MessagesController) c).inPreviewMode()) {
         profileController.setShareCustomHeaderView(true);
+      } else if (c instanceof ProfileController && ((ProfileController) c).isSameProfile(profileController)) {
+        profileController.get();
+        profileController.destroy();
+        return;
       }
       navigation.navigateTo(profileController);
     }

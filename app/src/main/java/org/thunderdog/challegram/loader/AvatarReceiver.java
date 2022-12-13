@@ -569,7 +569,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
         TdApi.User user = tdlib.cache().user(dataId);
         TdApi.ProfilePhoto profilePhoto = user != null ? user.profilePhoto : null;
         if (profilePhoto == null) {
-          AvatarPlaceholder.Metadata metadata = tdlib.cache().userPlaceholderMetadata(dataId, user, true);
+          AvatarPlaceholder.Metadata metadata = tdlib.cache().userPlaceholderMetadata(dataId, user, false);
           requestPlaceholder(metadata, options);
         } else {
           boolean allowAnimation = BitwiseUtils.getFlag(options, Options.FORCE_ANIMATION) || tdlib.needUserAvatarPreviewAnimation(dataId);
@@ -1148,7 +1148,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
         }
       }
       if (primaryContentAlpha < 1f) {
-        drawPlaceholderDrawable(c, requestedPlaceholder.extraDrawableRes, avatarContentColorId, alpha * (1f - primaryContentAlpha));
+        drawPlaceholderDrawable(c, requestedPlaceholder.extraDrawableRes, avatarContentColorId, alpha * (1f - primaryContentAlpha) * .75f);
       }
     }
 

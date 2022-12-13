@@ -27,7 +27,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.text.InputFilter;
 import android.text.InputType;
-import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.style.ClickableSpan;
 import android.util.SparseIntArray;
@@ -113,7 +112,6 @@ import org.thunderdog.challegram.util.SenderPickerDelegate;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
-import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.util.text.TextWrapper;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.v.HeaderEditText;
@@ -248,6 +246,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private boolean isUserMode () {
     return mode == MODE_USER || mode == MODE_SECRET;
+  }
+
+  public boolean isSameProfile (ProfileController controller) {
+    return getChatId() == controller.getChatId() && mode == controller.mode;
   }
 
   private TdApi.Chat chat;
@@ -1722,52 +1724,17 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
       @Override
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
+        if (item.getViewType() == ListItem.TYPE_INFO_MULTILINE) {
+          view.setAllowMultiLineName(item.getId() == R.id.btn_username);
+        }
         switch (item.getId()) {
           case R.id.btn_useExplicitDice: {
             view.getToggler().setRadioEnabled(Settings.instance().getNewSetting(item.getLongId()), isUpdate);
             break;
           }
           case R.id.btn_username: {
-            TdApi.Usernames usernames = tdlib.chatUsernames(chat);
-            if (usernames != null && Td.hasUsername(usernames)) {
-              if (tdlib.isUserChat(chat)) { // Bots + Users: @username
-                view.setData("@" + Td.primaryUsername(usernames));
-              } else { // Otherwise: /username
-                view.setData("/" + Td.primaryUsername(usernames));
-              }
-              if (usernames.activeUsernames.length > 1) {
-                List<TdApi.TextEntity> entities = new ArrayList<>();
-
-                StringBuilder b = new StringBuilder();
-                boolean isUserChat = tdlib.isUserChat(chat);
-                for (int i = 1; i < usernames.activeUsernames.length; i++) {
-                  if (b.length() == 0) {
-                    b.append(Lang.getString(isUserChat ? R.string.MultiUsernamePrefix : R.string.MultiLinkPrefix));
-                    if (b.length() > 0) {
-                      b.append(" ");
-                    }
-                  } else {
-                    b.append(Lang.getConcatSeparator());
-                  }
-                  String activeUsername = usernames.activeUsernames[i];
-                  int start = b.length();
-                  b.append(isUserChat ? "@" : "/").append(activeUsername);
-                  int end = b.length();
-                  entities.add(new TdApi.TextEntity(start, end - start, new TdApi.TextEntityTypeMention()));
-                }
-
-                TdApi.FormattedText formattedText = new TdApi.FormattedText(b.toString(), entities.toArray(new TdApi.TextEntity[0]));
-
-                view.setName(TD.toCharSequence(formattedText));
-              } else if (!tdlib.isUserChat(chat) || tdlib.isBotChat(chat)) {
-                view.setName(tdlib.tMeUrl(usernames, true));
-              } else {
-                view.setName(R.string.Username);
-              }
-            } else {
-              view.setData("");
-              view.setName(tdlib.isMultiChat(chat) ? R.string.Link : R.string.Username);
-            }
+            view.setName(getUsernameName());
+            view.setData(getUsernameData());
             break;
           }
           case R.id.btn_phone: {
@@ -2019,6 +1986,53 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
 
     return contentView;
+  }
+
+  private CharSequence getUsernameName () {
+    TdApi.Usernames usernames = tdlib.chatUsernames(chat);
+    if (usernames != null && Td.hasUsername(usernames)) {
+      if (usernames.activeUsernames.length > 1) {
+        List<TdApi.TextEntity> entities = new ArrayList<>();
+
+        StringBuilder b = new StringBuilder();
+        boolean isUserChat = tdlib.isUserChat(chat);
+        for (int i = 1; i < usernames.activeUsernames.length; i++) {
+          if (b.length() == 0) {
+            b.append(Lang.getString(isUserChat ? R.string.MultiUsernamePrefix : R.string.MultiLinkPrefix));
+            if (b.length() > 0) {
+              b.append(" ");
+            }
+          } else {
+            b.append(Lang.getConcatSeparator());
+          }
+          String activeUsername = usernames.activeUsernames[i];
+          int start = b.length();
+          b.append(isUserChat ? "@" : "/").append(activeUsername);
+          int end = b.length();
+          entities.add(new TdApi.TextEntity(start, end - start, /*TODO isUserChat ? new TdApi.TextEntityTypeMention() :*/ new TdApi.TextEntityTypeTextUrl(tdlib.tMeUrl(activeUsername))));
+        }
+
+        TdApi.FormattedText formattedText = new TdApi.FormattedText(b.toString(), entities.toArray(new TdApi.TextEntity[0]));
+
+        return TD.toCharSequence(formattedText);
+      } else if (!tdlib.isUserChat(chat) || tdlib.isBotChat(chat)) {
+        return tdlib.tMeUrl(usernames, true);
+      }
+    }
+    return Lang.getString(R.string.Username);
+  }
+
+  private String getUsernameData () {
+    TdApi.Usernames usernames = tdlib.chatUsernames(chat);
+    if (usernames != null && Td.hasUsername(usernames)) {
+      if (tdlib.isUserChat(chat)) { // Bots + Users: @username
+        return "@" + Td.primaryUsername(usernames);
+      } else { // Otherwise: /username
+        return "/" + Td.primaryUsername(usernames);
+      }
+    } else {
+      return "";
+    }
   }
 
   private int calculateMenuWidth () {
@@ -2382,9 +2396,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
     if (!tdlib.isUserChat(chat) || tdlib.isBotChat(chat)) {
       String url = tdlib.tMeUrl(usernames, true);
-      return new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_username, R.drawable.baseline_alternate_email_24, url, false);
+      return new ListItem(ListItem.TYPE_INFO_MULTILINE, R.id.btn_username, R.drawable.baseline_alternate_email_24, url, false);
     } else {
-      return new ListItem(ListItem.TYPE_INFO_SETTING, R.id.btn_username, R.drawable.baseline_alternate_email_24, R.string.Username);
+      return new ListItem(ListItem.TYPE_INFO_MULTILINE, R.id.btn_username, R.drawable.baseline_alternate_email_24, R.string.Username);
     }
   }
 
@@ -5124,15 +5138,38 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private HashMap<CharSequence, int[]> textCache;
   private View fakeChannelDesc;
+  private int lastUsernameWidth, lastUsernameAddHeight;
+  private CharSequence lastUsernames;
 
   private int calculateHeight (int position, int width, ListItem item) {
     switch (item.getViewType()) {
       case ListItem.TYPE_INFO_MULTILINE: {
-        if (aboutWrapper != null) {
-          aboutWrapper.get(getTextWidth(width));
-          return Math.max(aboutWrapper.getHeight() + Screen.dp(21f + 13f) - Screen.dp(13f) + Screen.dp(12f) + Screen.dp(25), Screen.dp(76f));
+        switch (item.getId()) {
+          case R.id.btn_username: {
+            int availWidth = width - Screen.dp(73f) - Screen.dp(17f);
+            if (availWidth <= 0) {
+              lastUsernameAddHeight = 0;
+              lastUsernameWidth = 0;
+            } else {
+              CharSequence sequence = getUsernameName();
+              if (!StringUtils.equalsOrBothEmpty(sequence, lastUsernames) || lastUsernameWidth != availWidth) {
+                Text text = new Text.Builder(tdlib, sequence, null, availWidth, Paints.robotoStyleProvider(13f), TextColorSets.Regular.NORMAL, null).build();
+                lastUsernameAddHeight = text.getHeight() - text.getLineHeight();
+                lastUsernameWidth = availWidth;
+                lastUsernames = sequence;
+              }
+            }
+            return lastUsernameAddHeight + Screen.dp(76f);
+          }
+          case R.id.btn_description: {
+            if (aboutWrapper != null) {
+              aboutWrapper.get(getTextWidth(width));
+              return Math.max(aboutWrapper.getHeight() + Screen.dp(21f + 13f) - Screen.dp(13f) + Screen.dp(12f) + Screen.dp(25), Screen.dp(76f));
+            }
+            return Screen.dp(76f);
+          }
         }
-        return Screen.dp(76f);
+        throw new UnsupportedOperationException();
       }
       case ListItem.TYPE_DESCRIPTION: {
         if (textCache == null) {

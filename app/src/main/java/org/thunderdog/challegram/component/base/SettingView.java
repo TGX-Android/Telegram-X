@@ -20,9 +20,6 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
-import android.text.Layout;
-import android.text.TextPaint;
-import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -54,7 +51,10 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.DrawModifier;
 import org.thunderdog.challegram.util.text.Counter;
+import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
+import org.thunderdog.challegram.util.text.TextColorSetOverride;
+import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextWrapper;
 import org.thunderdog.challegram.widget.AttachDelegate;
 import org.thunderdog.challegram.widget.CheckBoxView;
@@ -96,21 +96,16 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
   private Drawable icon;
 
   private CharSequence itemName;
-  private CharSequence displayItemName;
-  private Layout displayItemNameLayout;
+  private Text displayItemName;
 
   private CharSequence itemData;
-  private CharSequence displayItemData;
-  private Layout displayItemDataLayout;
+  private Text displayItemData;
 
   private TogglerView togglerView;
 
   private float pLeft, pTop;
   private float pDataLeft, pDataTop;
   private float pIconLeft, pIconTop;
-
-  private int displayItemNameWidth;
-  private int displayItemDataWidth;
 
   private @ThemeColorId
   int textColorId = R.id.theme_color_text;
@@ -212,6 +207,10 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     if (receiver != null)
       receiver.destroy();
     complexReceiver.performDestroy();
+    if (displayItemData != null) {
+      displayItemData.performDestroy();
+      displayItemData = null;
+    }
     if (subscribedToEmojiUpdates) {
       TGLegacyManager.instance().removeEmojiListener(this);
       subscribedToEmojiUpdates = false;
@@ -352,11 +351,19 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
   }
 
   private int getCurrentHeight () {
+    int height;
     if (text != null) {
-      return Math.max(text.getHeight() + (int) pDataTop - Screen.dp(13f) + Screen.dp(12f) + Screen.dp(25), Screen.dp(76f));
+      height = Math.max(text.getHeight() + (int) pDataTop - Screen.dp(13f) + Screen.dp(12f) + Screen.dp(25), Screen.dp(76f));
     } else {
-      return Screen.dp(76f);
+      height = Screen.dp(76f);
     }
+    if (displayItemData != null) {
+      height += displayItemData.getHeight() - displayItemData.getLineHeight();
+    }
+    if (displayItemName != null) {
+      height += displayItemName.getHeight() - displayItemName.getLineHeight();
+    }
+    return height;
   }
 
   public void setName (@StringRes int resId) {
@@ -470,28 +477,43 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     buildLayout(getMeasuredWidth(), getMeasuredHeight());
   }
 
-  private void setDisplayItemName (CharSequence str, float availWidth, TextPaint paint) {
-    str = TextUtils.ellipsize(str, paint, availWidth, TextUtils.TruncateAt.END);
-    displayItemName = str;
-    if (str instanceof String) {
-      displayItemNameWidth = (int) U.measureText(displayItemName, paint);
-      displayItemNameLayout = null;
+  private boolean allowMultiLineName;
+
+  public void setAllowMultiLineName (boolean allowMultiLineName) {
+    if (this.allowMultiLineName != allowMultiLineName) {
+      this.allowMultiLineName = allowMultiLineName;
+      buildLayout();
+    }
+  }
+
+  private void setDisplayItemName (CharSequence str, float availWidth, float textSize) {
+    if (displayItemName != null) {
+      displayItemName.performDestroy();
+    }
+    if (!StringUtils.isEmpty(str) && availWidth > 0) {
+      displayItemName = new Text.Builder(tdlib, str, null, (int) availWidth, Paints.robotoStyleProvider(textSize), this, null)
+        .textFlags(Text.FLAG_CUSTOM_LONG_PRESS)
+        .singleLine(!allowMultiLineName)
+        .view(this)
+        .build();
     } else {
-      displayItemNameLayout = U.createLayout(str, (int) availWidth, paint);
-      displayItemNameWidth = displayItemNameLayout.getWidth();
+      displayItemName = null;
     }
     checkEmojiListener();
   }
 
-  private void setDisplayItemData (CharSequence str, float availWidth, TextPaint paint) {
-    str = TextUtils.ellipsize(str, paint, availWidth, TextUtils.TruncateAt.END);
-    displayItemData = str;
-    if (str instanceof String) {
-      displayItemDataWidth = (int) U.measureText(displayItemData, paint);
-      displayItemDataLayout = null;
+  private void setDisplayItemData (CharSequence str, float availWidth) {
+    if (displayItemData != null) {
+      displayItemData.performDestroy();
+    }
+    if (!StringUtils.isEmpty(str) && availWidth > 0) {
+      displayItemData = new Text.Builder(tdlib, str, null, (int) availWidth, Paints.robotoStyleProvider(16f), this, null)
+        .textFlags(Text.FLAG_CUSTOM_LONG_PRESS)
+        .singleLine(type != TYPE_INFO_MULTILINE)
+        .view(this)
+        .build();
     } else {
-      displayItemDataLayout = U.createLayout(str, (int) availWidth, paint);
-      displayItemDataWidth = displayItemDataLayout.getWidth();
+      displayItemData = null;
     }
     checkEmojiListener();
   }
@@ -533,6 +555,8 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
       pTop = Screen.dp(21f + 13f);
     }
 
+    CharSequence displayItemData, displayItemName;
+
     if (swapDataAndName) {
       displayItemData = itemName;
       displayItemName = itemData;
@@ -545,26 +569,20 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
       pDataLeft = pLeft;
       pDataTop = pTop;
       pTop = pTop + Screen.dp(20f);
-      if (displayItemData != null) {
-        setDisplayItemData(displayItemData, availWidth, Paints.getTextPaint16());
-      }
+      setDisplayItemData(displayItemData, availWidth);
       if (text != null) {
         text.get(lastTextAvailWidth = (int) availWidth);
       } else {
         lastTextAvailWidth = 0;
       }
-      if (displayItemName != null) {
-        setDisplayItemName(displayItemName, availWidth, Paints.getRegularTextPaint(13f));
-      }
+      setDisplayItemName(displayItemName, availWidth, 13f);
     } else {
       if (displayItemData != null) {
-        setDisplayItemData(displayItemData, availWidth, Paints.getTextPaint16());
-        pDataLeft = totalWidth - paddingRight - displayItemDataWidth;
+        setDisplayItemData(displayItemData, availWidth);
+        pDataLeft = totalWidth - paddingRight - (this.displayItemData != null ? this.displayItemData.getWidth() : 0);
         pDataTop = pTop;
       }
-      if (displayItemName != null) {
-        setDisplayItemName(displayItemName, availWidth, Paints.getTextPaint16());
-      }
+      setDisplayItemName(displayItemName, availWidth, 16f);
     }
 
     pIconTop = (flags & FLAG_CENTER_ICON) != 0 && icon != null ?  (totalHeight / 2f - icon.getMinimumHeight() / 2f) : Screen.dp(type == TYPE_INFO || type == TYPE_INFO_COMPACT || type == TYPE_INFO_MULTILINE ? 20f : 16f);
@@ -574,7 +592,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
   private boolean subscribedToEmojiUpdates;
 
   private void checkEmojiListener () {
-    boolean needEmojiListener = this.displayItemNameLayout != null || this.displayItemDataLayout != null;
+    boolean needEmojiListener = (this.displayItemName != null && this.displayItemName.hasMedia()) || (this.displayItemData != null && this.displayItemData.hasMedia());
     if (this.subscribedToEmojiUpdates != needEmojiListener) {
       this.subscribedToEmojiUpdates = needEmojiListener;
       if (needEmojiListener) {
@@ -650,14 +668,9 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     isEnabled.setValue(enabled, animated);
   }
 
-  private static void drawText (Canvas c, CharSequence text, Layout layout, float x, float y, Paint paint, boolean rtl, int viewWidth, float textWidth) {
-    if (layout != null) {
-      c.save();
-      c.translate(rtl ? viewWidth - U.maxWidth(layout) - x : x, y - paint.getTextSize() + Screen.dp(.8f));
-      layout.draw(c);
-      c.restore();
-    } else {
-      c.drawText((String) text, rtl ? viewWidth - textWidth - x : x, y, paint);
+  private static void drawText (Canvas c, float x, int y, int viewWidth, Text wrap, TextColorSet textColorSet) {
+    if (wrap != null) {
+      wrap.draw(c, (int) x, (int) (viewWidth - x), 0, y, textColorSet != null ? textColorSet : TextColorSets.Regular.NEGATIVE);
     }
   }
 
@@ -693,7 +706,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
         int dataTop = (int) (pDataTop - Screen.dp(13f));
         Paint.FontMetricsInt fm = Paints.getTextPaint16().getFontMetricsInt();
         int dataBottom = dataTop + U.getLineHeight(fm);
-        outRect.set((int) pDataLeft, dataTop, (int) (pDataLeft + displayItemDataWidth), dataBottom);
+        outRect.set((int) pDataLeft, dataTop, (int) (pDataLeft + (displayItemData != null ? displayItemData.getWidth() : 0)), dataBottom);
       }
     }
   }
@@ -730,6 +743,17 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     return isPressed ? Theme.textLinkHighlightColor() : 0;
   }
 
+  private final TextColorSet subtitleColorSet = new TextColorSetOverride(this) {
+    @Override
+    public int defaultTextColor () {
+      int subtitleColor = Theme.getColor(dataColorId != 0 ? dataColorId : R.id.theme_color_textLight);
+      if ((flags & FLAG_DATA_SUBTITLE) != 0) {
+        subtitleColor = ColorUtils.alphaColor(Theme.getSubtitleAlpha(), subtitleColor);
+      }
+      return subtitleColor;
+    }
+  };
+
   @Override
   protected void onDraw (Canvas c) {
     if (drawModifiers != null) {
@@ -760,26 +784,17 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     }
 
     final int dataColor = defaultTextColor();
+    int subtitleColor = Theme.getColor(dataColorId != 0 ? dataColorId : R.id.theme_color_textLight);
+    if ((flags & FLAG_DATA_SUBTITLE) != 0) {
+      subtitleColor = ColorUtils.alphaColor(Theme.getSubtitleAlpha(), subtitleColor);
+    }
 
     if (type == TYPE_INFO || type == TYPE_INFO_COMPACT || (type == TYPE_INFO_MULTILINE && text == null)) {
-      if (displayItemName != null) {
-        int subtitleColor = Theme.getColor(dataColorId != 0 ? dataColorId : R.id.theme_color_textLight);
-        if ((flags & FLAG_DATA_SUBTITLE) != 0) {
-          subtitleColor = ColorUtils.alphaColor(Theme.getSubtitleAlpha(), subtitleColor);
-        }
-        drawText(c, displayItemName, displayItemNameLayout, pLeft, pTop, Paints.getRegularTextPaint(13f, subtitleColor), rtl, width, displayItemNameWidth);
-      }
-      if (displayItemData != null) {
-        drawText(c, displayItemData, displayItemDataLayout, pDataLeft, pDataTop, Paints.getTextPaint16(dataColor), rtl, width, displayItemDataWidth);
-      }
+      drawText(c, pLeft, (int) (pTop - Screen.dp(12f)), width, displayItemName, subtitleColorSet);
+      drawText(c, pDataLeft, (int) (pDataTop - Screen.dp(15f)), width, displayItemData, this);
     } else if (type == TYPE_INFO_MULTILINE) {
-      if (displayItemName != null) {
-        int subtitleColor = Theme.getColor(dataColorId != 0 ? dataColorId : R.id.theme_color_textLight);
-        if ((flags & FLAG_DATA_SUBTITLE) != 0) {
-          subtitleColor = ColorUtils.alphaColor(Theme.getSubtitleAlpha(), subtitleColor);
-        }
-        drawText(c, displayItemName, displayItemNameLayout, pLeft, (int) pDataTop - Screen.dp(13f) + text.getHeight() + Screen.dp(17f), Paints.getRegularTextPaint(13f, subtitleColor), rtl, width, displayItemNameWidth);
-      }
+      float top = (int) pDataTop - Screen.dp(13f) + text.getHeight() + Screen.dp(17f);
+      drawText(c, pLeft, (int) (top - Screen.dp(12f)), width, displayItemName, subtitleColorSet);
       // Paints.getTextPaint16(dataColor);
       if (text != null) {
         if (rtl) {
@@ -789,12 +804,8 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
         }
       }
     } else {
-      if (displayItemData != null) {
-        drawText(c, displayItemData, displayItemDataLayout, pDataLeft, pDataTop, Paints.getTextPaint16(dataColor), rtl, width, displayItemDataWidth);
-      }
-      if (displayItemName != null) {
-        drawText(c, displayItemName, displayItemNameLayout, pLeft, pTop, Paints.getTextPaint16(dataColor), rtl, width, displayItemNameWidth);
-      }
+      drawText(c, pDataLeft, (int) (pDataTop - Screen.dp(15)), width, displayItemData, this);
+      drawText(c, pLeft, (int) (pTop - Screen.dp(15f)), width, displayItemName, this);
     }
     if (progressComponent != null) {
       progressComponent.draw(c);
@@ -812,7 +823,10 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
 
   @Override
   public boolean onTouchEvent (MotionEvent e) {
-    return (text != null && text.onTouchEvent(this, e)) || super.onTouchEvent(e);
+    boolean res = (text != null && text.onTouchEvent(this, e));
+    res = (displayItemName != null && displayItemName.onTouchEvent(this, e)) || res;
+    res = (displayItemData != null && displayItemData.onTouchEvent(this, e)) || res;
+    return res || super.onTouchEvent(e);
   }
 
   // Draw modifier

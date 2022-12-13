@@ -451,6 +451,10 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       return maxLineCount(1);
     }
 
+    public Builder singleLine (boolean isSingleLine) {
+      return maxLineCount(isSingleLine ? 1 : -1);
+    }
+
     public Builder clipTextArea () {
       return clipTextArea(true);
     }
