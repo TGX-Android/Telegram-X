@@ -119,7 +119,7 @@ public class MessagesSearchManager {
     currentDisplayedMessage = foundMsgId != null ? foundMsgId.getMessageId(): 0;
     currentSearchFilter = filter;
     searchManagerMiddleware.setDelegate(newTotalCount -> {
-      delegate.onSearchUpdateTotalCount(getMessageIndex(currentDisplayedMessage), newTotalCount, knownIndex(), knownTotalCount());
+      delegate.onSearchUpdateTotalCount(getMessageIndex(currentDisplayedMessage), currentTotalCount = newTotalCount, knownIndex(), knownTotalCount());
       currentTotalCount = newTotalCount;
     });
 
@@ -387,9 +387,12 @@ public class MessagesSearchManager {
   }
 
   private boolean knownTotalCount () {
-    return (!canLoadTop() && !canLoadBottom()) || currentSearchResultsArr.size() == currentTotalCount || !((currentSearchFilter != null && currentFromSender != null)
-      || (currentFromSender != null && tdlib.isUserChat(currentChatId))
-      || MessagesSearchManagerMiddleware.isFilterPolyfill(currentSearchFilter));
+    return (!canLoadTop() && !canLoadBottom())
+      || (searchManagerMiddleware.getCachedMessagesCount() >= currentTotalCount)
+      || (currentSearchResultsArr.size() == currentTotalCount)
+      || !((currentSearchFilter != null && currentFromSender != null)
+        || (currentFromSender != null && tdlib.isUserChat(currentChatId))
+        || MessagesSearchManagerMiddleware.isFilterPolyfill(currentSearchFilter));
   }
 
   private @Nullable TdApi.Message getNextMessage (boolean next) {

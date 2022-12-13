@@ -5,6 +5,7 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
+import androidx.collection.LongSparseArray;
 
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -35,6 +36,7 @@ public class MessagesSearchManagerMiddleware {
 
   // Middleware for Chats
 
+  private final LongSparseArray<TdApi.Message> currentSearchResultsArr = new LongSparseArray<>();
   private final ArrayList<SendSearchRequestFilterChunkInfo> filteredChunksInfo = new ArrayList<>();
   private int totalCount = -1;
   private int discardedCount = 0;
@@ -283,6 +285,7 @@ public class MessagesSearchManagerMiddleware {
       final boolean isFiltered = manager.filter(message);
       if (isFiltered) {
         filteredArr.add(message);
+        currentSearchResultsArr.append(message.id, message);
       } else if (!isWasDiscardedBefore(message.id)) {
         discardedCount += 1;
       }
@@ -315,6 +318,10 @@ public class MessagesSearchManagerMiddleware {
       });
     }
     return newTotalCount;
+  }
+
+  public int getCachedMessagesCount () {
+    return currentSearchResultsArr.size();
   }
 
   private TdApi.Messages makeMessages (SendSearchRequestArguments args, int totalCount) {
@@ -466,6 +473,7 @@ public class MessagesSearchManagerMiddleware {
     this.secretMessagesCache.clear();
 
     this.filteredChunksInfo.clear();
+    this.currentSearchResultsArr.clear();
     this.discardedCount = 0;
     this.totalCount = -1;
   }
