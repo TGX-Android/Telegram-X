@@ -19,6 +19,7 @@ import android.content.ClipDescription;
 import android.content.Context;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.net.Uri;
 import android.os.Build;
@@ -91,6 +92,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.receiver.RefreshRateLimiter;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -717,8 +719,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       setInput(blockedText, true, false);
     }
 
-    setAllowsAnyGravity(str.length() > 0);
-    showPlaceholder.setValue(s.length() == 0, UI.inUiThread());
+    final boolean hasText = s.length() > 0;
+    setAllowsAnyGravity(hasText);
+    showPlaceholder.setValue(!hasText, !hasText && UI.inUiThread());
   }
 
   @Override
@@ -769,10 +772,10 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       if (this.lastPlaceholderAvailWidth != availWidth) {
         this.lastPlaceholderAvailWidth = availWidth;
 
-        placeholderTitle = !StringUtils.isEmpty(placeholderTitleText)? new Text.Builder(tdlib, placeholderTitleText, null, availWidth, Paints.robotoStyleProvider(18), TextColorSets.PLACEHOLDER, null)
+        placeholderTitle = !StringUtils.isEmpty(placeholderTitleText)? new Text.Builder(tdlib, placeholderTitleText, null, availWidth, Paints.robotoStyleProvider(Screen.px(getTextSize())), TextColorSets.PLACEHOLDER, null)
           .singleLine().clipTextArea().build(): null;
 
-        placeholderSubTitle = !StringUtils.isEmpty(placeholderSubtitleText) ? new Text.Builder(tdlib, placeholderSubtitleText, null, availWidth, Paints.robotoStyleProvider(12), TextColorSets.PLACEHOLDER, null)
+        placeholderSubTitle = !StringUtils.isEmpty(placeholderSubtitleText) ? new Text.Builder(tdlib, placeholderSubtitleText, null, availWidth, Paints.robotoStyleProvider(Screen.px(getTextSize()) / 3f * 2f), TextColorSets.PLACEHOLDER, null)
           .singleLine().clipTextArea().build(): null;
 
         subtitleReplaceAnimator.replace(placeholderSubTitle, UI.inUiThread());
@@ -1144,16 +1147,23 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   @Override
   protected void onDraw (Canvas c) {
     final float alpha = showPlaceholder.getFloatValue();
-    final int offset = (int) (hasSubPlaceholder.getFloatValue() * Screen.dp(8));
+    final int offset = (int) (hasSubPlaceholder.getFloatValue() * (getTextSize() / 18 * 8));
+    final int baseline = getBaseline();
+
     if (alpha > 0f) {
       if (placeholderTitle != null) {
-        placeholderTitle.draw(c, getPaddingLeft(), getBaseline() - Screen.dp(17) - offset, null, alpha);
+        final int titleHeight = placeholderTitle.getHeight();
+        final int titleBaseline = (int)(titleHeight * 0.75f);
+        final int y = baseline - titleBaseline - offset;
+        placeholderTitle.draw(c, getPaddingLeft(), y, null, alpha);
+        //c.drawRect(getPaddingLeft(), y, getPaddingLeft() + placeholderTitle.getWidth(), y + placeholderTitle.getHeight(), Paints.strokeSmallPaint(Color.GREEN));
+        //c.drawRect(getPaddingLeft(), y, getPaddingLeft() + placeholderTitle.getWidth(), y + placeholderTitle.getLineHeight(), Paints.strokeSmallPaint(Color.GREEN));
       }
       for (ListAnimator.Entry<Text> entry : subtitleReplaceAnimator) {
         final int offset2 = (int) ((!entry.isAffectingList() ?
-          ((entry.getVisibility() - 1f) * Screen.dp(14)):
-          ((1f - entry.getVisibility()) * Screen.dp(14))));
-        entry.item.draw(c, getPaddingLeft(), getBaseline() + Screen.dp(4) - offset + offset2, null, Math.min(alpha, entry.getVisibility()));
+          ((entry.getVisibility() - 1f) * (getTextSize() / 18f * 14f)):
+          ((1f - entry.getVisibility()) * (getTextSize() / 18f * 14f))));
+        entry.item.draw(c, getPaddingLeft(), baseline - offset / 2 + offset2, null, Math.min(alpha, entry.getVisibility()));
       }
     }
 
@@ -1166,7 +1176,8 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         c.drawText(displaySuffix, getPaddingLeft() + prefixWidth, getBaseline(), paint);
       }
     }
-
+    // c.drawRect(0, baseline, getMeasuredWidth(), baseline, Paints.strokeSmallPaint(Color.RED));
+    // c.drawRect(0, 0, getMeasuredWidth(), getMeasuredHeight(), Paints.strokeBigPaint(Color.RED));
   }
 
   // Inline query

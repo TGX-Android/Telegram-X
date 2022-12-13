@@ -70,7 +70,15 @@ public class SetSenderController extends BottomSheetViewController<SetSenderCont
   @Override
   protected void setupPopupLayout (PopupLayout popupLayout) {
     if (showOverEverything) {
-      super.setupPopupLayout(popupLayout);
+      popupLayout.setBoundController(setSenderControllerPage);
+      popupLayout.setPopupHeightProvider(this);
+      popupLayout.setOverlayStatusBar(true);
+      popupLayout.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+      popupLayout.setTouchProvider(this);
+      popupLayout.setNeedRootInsets();
+      popupLayout.setActivityListener(this);
+      popupLayout.setHideKeyboard();
+      popupLayout.init(false);
       return;
     }
     popupLayout.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);

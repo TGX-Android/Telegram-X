@@ -13,6 +13,7 @@
 package org.thunderdog.challegram.util.text;
 
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 
 public final class TextColorSets {
@@ -163,6 +164,16 @@ public final class TextColorSets {
           return R.id.theme_color_textSearchQueryHighlight;
         }
       },
+      MESSAGE_SEARCH_HIGHLIGHT = new Regular() {
+        @Override
+        public int backgroundColor (boolean isPressed) {
+          return Theme.getColor(R.id.theme_color_textLinkPressHighlight);
+        }
+        @Override
+        public int backgroundColorId (boolean isPressed) {
+          return R.id.theme_color_textLinkPressHighlight;
+        }
+      },
       LINK = new Regular() {
         @Override
         public int defaultTextColorId () {
@@ -269,6 +280,20 @@ public final class TextColorSets {
         public int clickableTextColorId (boolean isPressed) {
           return R.id.theme_color_bubbleOut_messageAuthorPsa;
         }
+      },
+      MESSAGE_SEARCH_HIGHLIGHT = new BubbleOut() {
+        @Override
+        public int defaultTextColorId () {
+          return R.id.theme_color_bubbleOut_text;
+        }
+        @Override
+        public int backgroundColor (boolean isPressed) {
+          return Theme.getColor(R.id.theme_color_bubbleOut_textLinkPressHighlight);
+        }
+        @Override
+        public int backgroundColorId (boolean isPressed) {
+          return R.id.theme_color_bubbleOut_textLinkPressHighlight;
+        }
       };
   }
 
@@ -312,6 +337,20 @@ public final class TextColorSets {
         @Override
         public int clickableTextColorId (boolean isPressed) {
           return R.id.theme_color_messageAuthorPsa;
+        }
+      },
+      MESSAGE_SEARCH_HIGHLIGHT = new BubbleIn() {
+        @Override
+        public int defaultTextColorId () {
+          return R.id.theme_color_bubbleIn_text;
+        }
+        @Override
+        public int backgroundColor (boolean isPressed) {
+          return Theme.getColor(R.id.theme_color_bubbleIn_textLinkPressHighlight);
+        }
+        @Override
+        public int backgroundColorId (boolean isPressed) {
+          return R.id.theme_color_bubbleIn_textLinkPressHighlight;
         }
       };
   }

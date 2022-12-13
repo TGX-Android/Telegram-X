@@ -262,8 +262,7 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
     if (sender == null) {
       receiver.clear();
       return;
-    }
-    
+    };
     if (sender.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR) {
       long userId = ((TdApi.MessageSenderUser) sender).userId;
       setUser(tdlib, tdlib.cache().user(userId), userId, false, true);

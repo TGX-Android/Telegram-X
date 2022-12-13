@@ -98,6 +98,7 @@ import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.ReactionsCounterDrawable;
 import org.thunderdog.challegram.util.text.Counter;
+import org.thunderdog.challegram.util.text.Highlight;
 import org.thunderdog.challegram.util.text.Letters;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
@@ -458,6 +459,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
 
     computeQuickButtons();
+    checkHighlightedText();
   }
 
   private static @NonNull <T> T nonNull (@Nullable T value) {
@@ -4590,7 +4592,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public boolean canBeSelected () {
-    return (!isNotSent() || canResend()) && (flags & FLAG_UNSUPPORTED) == 0 && allowInteraction() && !isSponsored();
+    return (!isNotSent() || canResend()) && (flags & FLAG_UNSUPPORTED) == 0 && allowInteraction() && !isSponsored() && !messagesController().inSearchMode();
   }
 
   public boolean canBePinned () {
@@ -6074,6 +6076,46 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
   }
 
+  private @Nullable String highlightedText = null;
+  private final Highlight.Pool searchResultsHighlightPool = new Highlight.Pool();
+
+  private void setHighlightedText (@Nullable String text) {
+    if (!StringUtils.equalsOrBothEmpty(text, highlightedText)) {
+      searchResultsHighlightPool.clear();
+      this.highlightedText = text;
+      onUpdateHighlightedText();
+      invalidate();
+    }
+  }
+
+  protected final @Nullable Highlight getHighlightedText (int key, String in) {
+    Highlight highlight = Highlight.valueOf(in, highlightedText);
+    if (highlight == null) return null;
+
+    highlight.setCustomColorSet(getSearchHighlightColorSet());
+    int mostRelevantKey = searchResultsHighlightPool.getMostRelevantHighlightKey();
+    searchResultsHighlightPool.add(key, highlight);
+    if (mostRelevantKey != Highlight.Pool.KEY_NONE && mostRelevantKey != searchResultsHighlightPool.getMostRelevantHighlightKey()) {
+      UI.post(this::onUpdateHighlightedText);
+      android.util.Log.i("HIGHLIGHT", "UPDATE");
+    }
+
+    return searchResultsHighlightPool.isMostRelevant(key) ? highlight: null;
+  }
+
+  public void checkHighlightedText () {
+    if (messagesController().isMessageFound(getMessage(getSmallestId()))) {
+      setHighlightedText(manager.controller().getLastMessageSearchQuery());
+    } else {
+      setHighlightedText(null);
+    }
+  }
+
+  // Override
+  protected void onUpdateHighlightedText () {
+
+  }
+
   private FactorAnimator revokeAnimator;
   private static final int ANIMATOR_REVOKE = -1;
 
@@ -6668,6 +6710,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public final TextColorSet getChatAuthorPsaColorSet () {
     return pick(TextColorSets.Regular.MESSAGE_AUTHOR_PSA, TextColorSets.BubbleOut.MESSAGE_AUTHOR_PSA, TextColorSets.BubbleIn.MESSAGE_AUTHOR_PSA);
+  }
+
+  public final TextColorSet getSearchHighlightColorSet () {
+    return pick(TextColorSets.Regular.MESSAGE_SEARCH_HIGHLIGHT, TextColorSets.BubbleOut.MESSAGE_SEARCH_HIGHLIGHT, TextColorSets.BubbleIn.MESSAGE_SEARCH_HIGHLIGHT);
   }
 
   // Colors

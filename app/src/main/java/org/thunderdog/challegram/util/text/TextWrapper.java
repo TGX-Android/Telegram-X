@@ -49,6 +49,7 @@ public class TextWrapper implements ListAnimator.Measurable, Destroyable, Text.T
   private final TextColorSet colorTheme;
 
   private @Nullable TextEntity[] entities;
+  private @Nullable Highlight highlightText;
 
   private boolean isPortrait;
   private int maxLines;
@@ -133,6 +134,11 @@ public class TextWrapper implements ListAnimator.Measurable, Destroyable, Text.T
   public TextWrapper setEntities (TextEntity[] entities, TextMediaListener listener) {
     this.entities = entities;
     this.textMediaListener = listener;
+    return this;
+  }
+
+  public TextWrapper setHighlightText (Highlight highlight) {
+    this.highlightText = highlight;
     return this;
   }
 
@@ -225,6 +231,7 @@ public class TextWrapper implements ListAnimator.Measurable, Destroyable, Text.T
         Text.Builder b = new Text.Builder(this.text, maxWidth, textStyleProvider, colorTheme)
           .maxLineCount(maxLines)
           .entities(entities, this)
+          .highlight(highlightText)
           .lineWidthProvider(lineWidthProvider)
           .textFlags(BitwiseUtils.setFlag(textFlags, Text.FLAG_BIG_EMOJI, false));
         text = b.build();

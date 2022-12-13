@@ -1739,6 +1739,10 @@ public class Lang {
     return getString(R.string.XofY, counter(R.string.XofY, x), counter(R.string.XofY, y));
   }
 
+  public static String getXofApproximateY (int x, int y) {
+    return getString(R.string.XofApproximateY, counter(R.string.XofApproximateY, x), counter(R.string.XofApproximateY, y));
+  }
+
   public static CharSequence pluralMembers (int members, int online, boolean isChannel) {
     if (online > 0) {
       final int membersRes, formatRes = R.string.format_membersAndOnline;

@@ -47,6 +47,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import me.vkryl.android.util.ClickHelper;
+import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.td.ChatId;
@@ -473,6 +474,14 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
   }
 
   public final MessagesController.Arguments createChatPreviewArguments (TdApi.ChatList chatList, TdApi.Chat chat, @Nullable ThreadInfo messageThread, TdApi.SearchMessagesFilter filter) {
+    ViewController<?> controller = context().navigation().getCurrentStackItem();
+    if (controller != null) {
+      String query = controller.getLastSearchInput();
+      if (!StringUtils.isEmpty(query) && highlightMode != MessagesManager.HIGHLIGHT_MODE_NONE) {
+        controller.preventLeavingSearchMode();
+        return new MessagesController.Arguments(chatList, chat, messageThread, highlightMessageId, highlightMode, filter, highlightMessageId, query);
+      }
+    }
     if (filter != null) {
       return new MessagesController.Arguments(chatList, chat, null, null, filter, highlightMessageId, highlightMode);
     } else if (highlightMode != MessagesManager.HIGHLIGHT_MODE_NONE) {

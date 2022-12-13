@@ -572,6 +572,16 @@
   <string name="Gallery">Gallery</string>
   <string name="ChatCamera">Camera</string>
 
+  <string name="MessageSearchFilterAll">All message types</string>
+  <string name="MessageSearchFilterText">Text messages</string>
+  <string name="MessageSearchFilterPhoto">Photos</string>
+  <string name="MessageSearchFilterVideo">Videos</string>
+  <string name="MessageSearchFilterVoice">Voice messages</string>
+  <string name="MessageSearchFilterRound">Video messages</string>
+  <string name="MessageSearchFilterFiles">Files</string>
+  <string name="MessageSearchFilterMusic">Music</string>
+  <string name="MessageSearchFilterGif">Gifs</string>
+
   <string name="VoiceChatInviteOther">You invited %1$s to the video chat</string>
   <string name="VoiceChatInviteSelf">%1$s invited you to the video chat</string>
   <string name="VoiceChatInvite">%1$s invited %2$s to the video chat</string>
@@ -651,6 +661,7 @@
   <string name="GettingLinkInfo">Getting Link Info…</string>
   <string name="ChatsAndContacts">Chats and Contacts</string>
   <string name="GlobalSearch">Global Search</string>
+  <string name="Global">Global</string>
   <string name="Recent">Recent</string>
   <string name="ClearRecentsHint">Clear recent searches?</string>
   <string name="YoutubeRotateHint">PS: Rotate your screen to minimize player</string>
@@ -1420,6 +1431,7 @@
   <string name="XCreatedGroup">%1$s created the group</string>
   <string name="YouCreatedGroup">You created the group</string>
   <string name="XofY">%1$s of %2$s</string>
+  <string name="XofApproximateY">%1$s of ~%2$s</string>
   <string name="ReadingXLine">Reading line %1$s…</string>
   <string name="format_linesAndViews">%1$s, %2$s</string>
   <string name="xPeopleJoinedGroup_one">%1$s member joined the group</string>
@@ -3130,6 +3142,11 @@
 
   <string name="PollResultsTitle">Poll Results</string>
   <string name="QuizResultsTitle">Quiz Results</string>
+
+  <string name="SearchExactlyResults_one">%1$s result</string>
+  <string name="SearchExactlyResults_other">%1$s results</string>
+  <string name="SearchApproximateResults_one">~%1$s result</string>
+  <string name="SearchApproximateResults_other">~%1$s results</string>
 
   <string name="xVotes_one">%1$s vote</string>
   <string name="xVotes_other">%1$s votes</string>

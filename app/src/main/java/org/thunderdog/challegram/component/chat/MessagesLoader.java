@@ -107,6 +107,7 @@ public class MessagesLoader implements Client.ResultHandler {
   private @Nullable ThreadInfo messageThread;
 
   private CancellableResultHandler sponsoredResultHandler;
+  private final MessagesSearchManagerMiddleware searchManagerMiddleware;
 
   private long contextId;
 
@@ -148,9 +149,10 @@ public class MessagesLoader implements Client.ResultHandler {
     tdlib.client().send(new TdApi.GetChatSponsoredMessage(chatId), sponsoredResultHandler);
   }
 
-  public MessagesLoader (MessagesManager manager) {
+  public MessagesLoader (MessagesManager manager, MessagesSearchManagerMiddleware searchMiddleware) {
     this.manager = manager;
     this.tdlib = manager.controller().tdlib();
+    this.searchManagerMiddleware = searchMiddleware;
     reuse();
   }
 
@@ -165,6 +167,7 @@ public class MessagesLoader implements Client.ResultHandler {
     this.searchQuery = query;
     this.searchSender = sender;
     this.searchFilter = filter;
+    this.lastSecretSearchOffset = null;
   }
 
   public int getSpecialMode () {
@@ -1043,7 +1046,7 @@ public class MessagesLoader implements Client.ResultHandler {
         case SPECIAL_MODE_SEARCH: {
           long chatId = getChatId();
           if (ChatId.isSecret(chatId)) {
-            function = new TdApi.SearchSecretMessages(sourceChatId, searchQuery, lastSecretSearchOffset, limit, null);
+            function = new TdApi.SearchSecretMessages(sourceChatId, searchQuery, lastSecretSearchOffset, limit, searchFilter);
           } else {
             function = new TdApi.SearchChatMessages(sourceChatId, searchQuery, searchSender, (lastFromMessageId = fromMessageId).getMessageId(), lastOffset = offset, lastLimit = limit, searchFilter, messageThread != null ? messageThread.getMessageThreadId() : 0);
           }
@@ -1071,7 +1074,15 @@ public class MessagesLoader implements Client.ResultHandler {
         Log.i(Log.TAG_MESSAGES_LOADER, "allowMoreTop:%b, allowMoreBottom:%b. Invoking %s, onlyLocal:%b", allowMoreTop, allowMoreBottom, function, loadingLocal);
       }
 
-      tdlib.client().send(function, newHandler(allowMoreTop, allowMoreBottom, (mode != MODE_MORE_TOP && mode != MODE_MORE_BOTTOM) || !foundUnreadAtLeastOnce));
+      Client.ResultHandler handler = newHandler(allowMoreTop, allowMoreBottom, (mode != MODE_MORE_TOP && mode != MODE_MORE_BOTTOM) || !foundUnreadAtLeastOnce);
+      if (function.getConstructor() == TdApi.SearchSecretMessages.CONSTRUCTOR) {
+        searchManagerMiddleware.search((TdApi.SearchSecretMessages) function, searchSender, handler);
+        return;
+      } else if (function.getConstructor() == TdApi.SearchChatMessages.CONSTRUCTOR) {
+        searchManagerMiddleware.search((TdApi.SearchChatMessages) function, handler);
+      } else {
+        tdlib.client().send(function, handler);
+      }
     }
   }
 
@@ -1397,6 +1408,27 @@ public class MessagesLoader implements Client.ResultHandler {
 
     if (unreadFound && lookForInbox) {
       unreadFound = false;
+    }
+
+
+    if (scrollItemIndex == -1 && scrollMessageId != null && (scrollHighlightMode == MessagesManager.HIGHLIGHT_MODE_NORMAL || scrollHighlightMode == MessagesManager.HIGHLIGHT_MODE_NORMAL_NEXT) && specialMode == SPECIAL_MODE_SEARCH) {
+      TGMessage highlightItem = null;
+      long minDistance = -1;
+      for (TGMessage item: items) {
+        long distance = (item.getId() - scrollMessageId.getMessageId());
+        if (distance >= 0 && (minDistance == -1 || distance < minDistance)) {
+          minDistance = distance;
+          highlightItem = item;
+        }
+      }
+      if (highlightItem != null) {
+        int i = items.indexOf(highlightItem);
+        if (i != -1) {
+          scrollMessageId = highlightItem.toMessageId();
+          scrollItemIndex = items.size() - 1 - i;
+          scrollItem = highlightItem;
+        }
+      }
     }
 
     if (scrollItemIndex == -1 && (scrollHighlightMode == MessagesManager.HIGHLIGHT_MODE_NORMAL || scrollHighlightMode == MessagesManager.HIGHLIGHT_MODE_NORMAL_NEXT) && unreadBadged != null) {
