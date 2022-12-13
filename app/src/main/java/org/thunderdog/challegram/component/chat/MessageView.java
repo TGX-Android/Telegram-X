@@ -569,6 +569,12 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       return null;
     }
 
+    if (!isMore && msg.messagesController().inOnlyFoundMode()) {
+      ids.append(R.id.btn_messageShowInChatSearch);
+      strings.append(R.string.MessageShowInChat);
+      icons.append(R.drawable.baseline_visibility_24);
+    }
+
     if (!isMore) {
       if (msg.isScheduled() && !msg.isNotSent()) {
         ids.append(R.id.btn_messageSendNow);

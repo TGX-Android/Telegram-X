@@ -5275,6 +5275,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         return true;
       }
+      case R.id.btn_messageShowInChatSearch: {
+        if (selectedMessage != null && inOnlyFoundMode()) {
+          long chatId = selectedMessage.getChatId();
+          long messageId = selectedMessage.getSmallestId();
+          long[] otherMessageIds = selectedMessage.getOtherMessageIds(messageId);
+          manager.setHighlightMessageId(new MessageId(chatId, messageId), MessagesManager.HIGHLIGHT_MODE_NORMAL);
+          onSetSearchFilteredShowMode(false);
+          clearSelectedMessage();
+        }
+        return true;
+      }
       case R.id.btn_messageDirections: {
         if (selectedMessage != null) {
           TdApi.MessageContent content = selectedMessage.getMessage().content;
@@ -11256,7 +11267,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     onSetSearchFilteredShowMode(!searchMessagesFilterMode);
   }
 
-  private boolean inOnlyFoundMode () {
+  public boolean inOnlyFoundMode () {
     return searchMessagesFilterMode;
   }
 

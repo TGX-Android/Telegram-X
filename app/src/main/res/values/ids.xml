@@ -1055,6 +1055,7 @@
   <item type="id" name="btn_messageInstallTheme" />
   <item type="id" name="btn_messageShowSource" />
   <item type="id" name="btn_messageShowInChat" />
+  <item type="id" name="btn_messageShowInChatSearch" />
   <item type="id" name="btn_messageResend" />
   <item type="id" name="btn_messageCallContact" />
   <item type="id" name="btn_messageAddContact" />
