@@ -173,7 +173,7 @@ public class ChatSearchMembersView extends FrameLayout implements TdlibCache.Bas
     final TdApi.Object object = result.result;
     final int usedFilter = result.type;
     UI.post(() -> {
-      this.useGlobalSearch = usedFilter == ChatMembersSearcher.FILTER_TYPE_GLOBAL;
+      this.useGlobalSearch = usedFilter == ChatMembersSearcher.FILTER_TYPE_GLOBAL_LOCAL || usedFilter == ChatMembersSearcher.FILTER_TYPE_GLOBAL_GLOBAL;
       this.canLoadMore = canLoadMore;
       this.isLoading = false;
       processData(object);

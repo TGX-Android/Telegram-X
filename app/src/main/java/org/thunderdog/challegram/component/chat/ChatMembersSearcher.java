@@ -22,7 +22,8 @@ public class ChatMembersSearcher {
   public static final int FILTER_TYPE_CONTACTS = 1;
   public static final int FILTER_TYPE_RECENT = 2;
   public static final int FILTER_TYPE_DEFAULT = 3;
-  public static final int FILTER_TYPE_GLOBAL = 4;
+  public static final int FILTER_TYPE_GLOBAL_LOCAL = 4;
+  public static final int FILTER_TYPE_GLOBAL_GLOBAL = 5;
 
   private static final int LIMIT = 30;
 
@@ -72,7 +73,9 @@ public class ChatMembersSearcher {
     long supergroupId = ChatId.toSupergroupId(chatId);
     boolean isSupergroup = supergroupId != 0;
 
-    if (currentFilter == FILTER_TYPE_GLOBAL) {
+    if (currentFilter == FILTER_TYPE_GLOBAL_GLOBAL) {
+      tdlib.client().send(new TdApi.SearchPublicChats(query), o -> onResult(contextId, o));
+    } else if (currentFilter == FILTER_TYPE_GLOBAL_LOCAL) {
       tdlib.client().send(new TdApi.SearchChatsOnServer(query, 50), o -> onResult(contextId, o));
     } else if (isSupergroup) {
       tdlib.client().send(new TdApi.GetSupergroupMembers(supergroupId, makeSupergroupFilter(query, currentFilter), currentOffset, LIMIT), o -> onResult(contextId, o));
@@ -104,7 +107,6 @@ public class ChatMembersSearcher {
             }
           }
           needSetNextFilter = true;
-          isFinish = true;
           long[] chatIds = new long[items.size()];
           ArrayUtils.toArray(items, chatIds);
           result = new TdApi.Chats(items.size(), chatIds);
@@ -145,14 +147,16 @@ public class ChatMembersSearcher {
         } else if (currentFilter == FILTER_TYPE_RECENT) {
           currentFilter = FILTER_TYPE_DEFAULT;
         } else if (currentFilter == FILTER_TYPE_DEFAULT) {
-          currentFilter = FILTER_TYPE_GLOBAL;
-        } else if (currentFilter == FILTER_TYPE_GLOBAL) {
+          currentFilter = FILTER_TYPE_GLOBAL_LOCAL;
+        } else if (currentFilter == FILTER_TYPE_GLOBAL_LOCAL) {
+          currentFilter = FILTER_TYPE_GLOBAL_GLOBAL;
+        } else if (currentFilter == FILTER_TYPE_GLOBAL_GLOBAL) {
           isFinish = true;
         }
         currentOffset = 0;
       }
 
-      if (usedFilter != currentFilter && currentFilter == FILTER_TYPE_GLOBAL && !foundMembers.isEmpty()) {
+      if (usedFilter != currentFilter && currentFilter == FILTER_TYPE_GLOBAL_LOCAL && !foundMembers.isEmpty()) {
         isFinish = true;
       }
 
