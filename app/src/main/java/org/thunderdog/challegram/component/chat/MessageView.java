@@ -433,6 +433,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   private boolean isAttached = true;
 
   public void onAttachedToRecyclerView () {
+    getMessage().checkHighlightedText();
     if (!isAttached) {
       isAttached = true;
       avatarReceiver.attach();
@@ -571,6 +572,12 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       strings.append(R.string.SponsoredInfoMenu);
       icons.append(R.drawable.baseline_info_24);
       return null;
+    }
+
+    if (!isMore && msg.messagesController().inOnlyFoundMode()) {
+      ids.append(R.id.btn_messageShowInChatSearch);
+      strings.append(R.string.MessageShowInChat);
+      icons.append(R.drawable.baseline_visibility_24);
     }
 
     if (!isMore) {

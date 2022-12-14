@@ -623,16 +623,27 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
   }
 
-  protected @CallSuper void updateSearchMode (boolean inSearch) {
+  @CallSuper
+  protected void updateSearchMode (boolean inSearch, boolean needUpdateKeyboard) {
     if (inSearch) {
       cachedLockFocusView = lockFocusView;
       lockFocusView = searchHeaderView;
-      Keyboard.show(searchHeaderView);
+      if (needUpdateKeyboard) {
+        Keyboard.show(searchHeaderView);
+      }
     } else {
       lockFocusView = cachedLockFocusView;
-      Keyboard.hide(searchHeaderView);
+      if (needUpdateKeyboard) {
+        Keyboard.hide(searchHeaderView);
+      }
       cachedLockFocusView = null;
     }
+  }
+
+  @CallSuper
+  @Deprecated
+  protected void updateSearchMode (boolean inSearch) {
+    updateSearchMode(inSearch, true);
   }
 
   protected View getCustomFocusView () {
@@ -1092,7 +1103,11 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     return searchHeaderView;
   }
 
-  protected final String getLastSearchInput () {
+  protected void setSearchInput (String text) {
+    clearSearchInput(text, false);
+  }
+
+  public final String getLastSearchInput () {
     return lastSearchInput;
   }
 
@@ -1355,6 +1370,14 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
   public final boolean inSearchMode () {
     return (flags & FLAG_IN_SEARCH_MODE) != 0;
+  }
+
+  public boolean onBeforeLeaveSearchMode () {
+    return true;
+  }
+
+  protected boolean needHideKeyboardOnTouchBackButton () {
+    return true;
   }
 
   protected final void enterSearchMode () {

@@ -1743,6 +1743,9 @@ public class TdlibUi extends Handler {
     public int highlightMode;
     public MessageId highlightMessageId;
 
+    public String searchQuery;
+    public MessageId foundMessage;
+
     public @Nullable UrlOpenParameters urlOpenParameters;
 
     public TdApi.ChatList chatList;
@@ -1885,6 +1888,12 @@ public class TdlibUi extends Handler {
 
     public ChatOpenParameters highlightMessage (TdApi.Message message) {
       return highlightMessage(new MessageId(message.chatId, message.id));
+    }
+
+    public ChatOpenParameters foundMessage (String query, TdApi.Message message) {
+      this.foundMessage = new MessageId(message.chatId, message.id);
+      this.searchQuery = query;
+      return highlightMessage(foundMessage);
     }
 
     public ChatOpenParameters highlightMessage (MessageId highlightMessageId) {
@@ -2216,7 +2225,9 @@ public class TdlibUi extends Handler {
     controller.postOnAnimationReady(actor);
 
     final MessagesController.Arguments arguments;
-    if (highlightMessageId != null) {
+    if (params != null && !StringUtils.isEmpty(params.searchQuery) && params.foundMessage != null) {
+      arguments = new MessagesController.Arguments(chatList, chat, messageThread, highlightMessageId, highlightMode, filter, params.foundMessage, params.searchQuery);
+    } else if (highlightMessageId != null) {
       arguments = new MessagesController.Arguments(chatList, chat, messageThread, highlightMessageId, highlightMode, filter);
     } else {
       arguments = new MessagesController.Arguments(tdlib, chatList, chat, messageThread, filter);

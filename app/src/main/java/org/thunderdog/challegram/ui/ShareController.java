@@ -1467,6 +1467,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     final TdApi.Chat tdChat = chat.getChat();
 
     context.setExcludeHeader(true);
+    context.setShrunkenFooter(true);
 
     if (tdChat != null && tdChat.messageSenderId != null) {
       if (tdlib.isSelfSender(tdChat.messageSenderId)) {

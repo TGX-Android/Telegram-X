@@ -1671,7 +1671,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     } else if (isOwningStack && stack != null && !stack.isEmpty()) {
       c = stack.getCurrent();
     }
-    if (c != null && getBackButton(c, true) == BackHeaderButton.TYPE_BACK && (c.getKeyboardState() || c.needPreventiveKeyboardHide())) {
+    if (c != null && getBackButton(c, true) == BackHeaderButton.TYPE_BACK && c.needHideKeyboardOnTouchBackButton() && (c.getKeyboardState() || c.needPreventiveKeyboardHide())) {
       c.hideSoftwareKeyboard();
     }
   }
@@ -1679,6 +1679,10 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
   private int transformMode;
 
   private void transform (final ViewController<?> controller, final int mode, int arg, final boolean open, boolean animated, final Runnable after) {
+    transform(controller, mode, arg, open, animated, after, true);
+  }
+
+  private void transform (final ViewController<?> controller, final int mode, int arg, final boolean open, boolean animated, final Runnable after, boolean needUpdateKeyboard) {
     this.transformMode = mode;
 
     openPreview(controller, null, open, MODE_FADE, translationFactor);
@@ -1702,7 +1706,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
       switch (mode) {
         case TRANSFORM_MODE_SEARCH: {
           controller.onLeaveSearchMode();
-          controller.updateSearchMode(false);
+          controller.updateSearchMode(false, needUpdateKeyboard);
           break;
         }
         case TRANSFORM_MODE_CUSTOM: {
@@ -1734,7 +1738,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
         } else {
           switch (mode) {
             case TRANSFORM_MODE_SEARCH: {
-              controller.updateSearchMode(true);
+              controller.updateSearchMode(true, needUpdateKeyboard);
               break;
             }
             case TRANSFORM_MODE_CUSTOM: {
@@ -1895,24 +1899,28 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
 
   // Search mode
 
-  public void openSearchMode () {
+  public void openSearchMode (boolean animated, boolean needUpdateKeyboard) {
     final ViewController<?> controller = stack.getCurrent();
 
     if (isAnimating || controller == null || controller.inTransformMode() || Color.alpha(overlayColor) > 0) {
       return;
     }
 
-    isAnimating = true;
+    isAnimating = animated;
     controller.enterSearchMode();
     translationFactor = 1f;
 
-    transform(controller, TRANSFORM_MODE_SEARCH, 0, true, true, null);
+    transform(controller, TRANSFORM_MODE_SEARCH, 0, true, animated, null, needUpdateKeyboard);
+  }
+
+  public void openSearchMode () {
+    openSearchMode(true, true);
   }
 
   public void closeSearchMode (boolean animated, Runnable after) {
     final ViewController<?> controller = stack.getCurrent();
 
-    if (isAnimating || controller == null || !controller.inSearchMode()) {
+    if (isAnimating || controller == null || !controller.inSearchMode() || !controller.onBeforeLeaveSearchMode()) {
       return;
     }
 

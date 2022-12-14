@@ -368,6 +368,13 @@ public class CircleButton extends View implements FactorAnimator.Target {
     return iconPaint;
   }
 
+  private float iconAlpha = 1f;
+
+  public void setIconAlpha (float iconAlpha) {
+    this.iconAlpha = iconAlpha;
+    invalidate();
+  }
+
   @Override
   protected void onDraw (Canvas c) {
     float width = getMeasuredWidth();
@@ -394,6 +401,10 @@ public class CircleButton extends View implements FactorAnimator.Target {
           bitmapPaint.setAlpha((int) ((float) sourceAlpha * scaleFactor));
         }
 
+        if (iconAlpha != 1f) {
+          bitmapPaint.setAlpha((int) ((float) sourceAlpha * scaleFactor * iconAlpha));
+        }
+
         final boolean savedRotation = iconRotation != 0;
         if (savedRotation) {
           c.save();
@@ -406,6 +417,10 @@ public class CircleButton extends View implements FactorAnimator.Target {
         Drawables.draw(c, icon, cx - icon.getMinimumWidth() / 2, cy - icon.getMinimumHeight() / 2 - (hasText ? Screen.dp(8f) : 0), bitmapPaint);
         if (savedRotation) {
           c.restore();
+        }
+
+        if (iconAlpha != 1f) {
+          bitmapPaint.setAlpha(sourceAlpha);
         }
 
         if (savedScale) {

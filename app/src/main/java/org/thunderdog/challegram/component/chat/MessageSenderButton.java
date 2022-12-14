@@ -45,14 +45,20 @@ public class MessageSenderButton extends FrameLayout implements ReplaceAnimator.
   private ButtonView currentButtonView;
   private ButtonView oldButtonView;
 
-  private ReplaceAnimator<ButtonView> replaceAnimator = new ReplaceAnimator<ButtonView>(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
-  private BoolAnimator quickSelected = new BoolAnimator(0, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
+  private static final int VISIBLE_ANIMATOR = 0;
+  private static final int QUICK_ANIMATOR = 1;
+
+  private final ReplaceAnimator<ButtonView> replaceAnimator = new ReplaceAnimator<>(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
+  private final BoolAnimator quickSelected = new BoolAnimator(QUICK_ANIMATOR, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
+  private final BoolAnimator alphaAnimator = new BoolAnimator(VISIBLE_ANIMATOR, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
 
   public MessageSenderButton (Context context, MessagesController controller) {
     super(context);
 
     this.tdlib = controller.tdlib();
     this.controller = controller;
+
+    alphaAnimator.setValue(true, false);
 
     currentButtonView = new ButtonView(context);
     currentButtonView.setOnClickListener(this::onClick);
@@ -73,6 +79,10 @@ public class MessageSenderButton extends FrameLayout implements ReplaceAnimator.
     controller.addThemeInvalidateListener(oldButtonView);
     controller.addThemeInvalidateListener(this);
     setWillNotDraw(false);
+  }
+
+  public void setAnimateVisible (boolean visible) {
+    alphaAnimator.setValue(visible, UI.inUiThread());
   }
 
   public View getButtonView () {
@@ -237,8 +247,12 @@ public class MessageSenderButton extends FrameLayout implements ReplaceAnimator.
 
   @Override
   public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
-    currentButtonView.setQuickSelectFactor(factor);
-    oldButtonView.setQuickSelectFactor(factor);
+    if (id == QUICK_ANIMATOR) {
+      currentButtonView.setQuickSelectFactor(factor);
+      oldButtonView.setQuickSelectFactor(factor);
+    } else if (id == VISIBLE_ANIMATOR) {
+      setAlpha(factor);
+    }
     invalidate();
   }
 

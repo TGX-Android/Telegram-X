@@ -13,17 +13,26 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.widget.CircleButton;
 
+import me.vkryl.android.AnimatorUtils;
+import me.vkryl.android.animator.BoolAnimator;
+import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 
-public class CircleCounterBadgeView extends FrameLayout {
+public class CircleCounterBadgeView extends FrameLayout implements FactorAnimator.Target {
+  private static final float DISABLED_BUTTON_ALPHA = .4f;
+
   public static final int BUTTON_WRAPPER_WIDTH = Screen.dp(118);
   public static final int BUTTON_PADDING = Screen.dp(24f);
   public static final int PADDING = Screen.dp(4);
 
+  public static final int ANIMATOR_ENABLED = 0;
+
   private final CircleButton circleButton;
   private final CounterBadgeView counterBadgeView;
+  private final BoolAnimator animatorEnabled = new BoolAnimator(ANIMATOR_ENABLED, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 200l);
 
   public CircleCounterBadgeView (ViewController<?> controller, int id, View.OnClickListener onClickListener, View.OnLongClickListener onLongClickListener) {
     super(controller.context());
@@ -60,6 +69,8 @@ public class CircleCounterBadgeView extends FrameLayout {
 
     addView(circleButton);
     addView(counterBadgeView);
+
+    setEnabled(true, false);
   }
 
   public void init (@DrawableRes int icon, float size, float padding, @ThemeColorId int backgroundColorId, @ThemeColorId int iconColorId) {
@@ -68,5 +79,23 @@ public class CircleCounterBadgeView extends FrameLayout {
 
   public void setInProgress (boolean inProgress) {
     circleButton.setInProgress(inProgress);
+  }
+
+  public void setEnabled (boolean enabled, boolean animated) {
+    animatorEnabled.setValue(enabled, animated);
+  }
+
+  public boolean getEnabled () {
+    return animatorEnabled.getValue();
+  }
+
+  @Override
+  public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
+    switch (id) {
+      case ANIMATOR_ENABLED: {
+        circleButton.setIconAlpha(DISABLED_BUTTON_ALPHA + (1 - DISABLED_BUTTON_ALPHA) * factor);
+        break;
+      }
+    }
   }
 }

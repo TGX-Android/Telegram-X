@@ -386,7 +386,8 @@ public abstract class TelegramViewController<T> extends ViewController<T> {
           TGFoundMessage message = (TGFoundMessage) listItem.getData();
           TdApi.Message rawMessage = message.getMessage();
           preventLeavingSearchMode();
-          tdlib.ui().openChat(TelegramViewController.this, rawMessage.chatId, new TdlibUi.ChatOpenParameters().highlightMessage(rawMessage).keepStack());
+          String query = getLastSearchInput();
+          tdlib.ui().openChat(TelegramViewController.this, rawMessage.chatId, new TdlibUi.ChatOpenParameters().foundMessage(query, rawMessage).keepStack());
           break;
         }
       }
