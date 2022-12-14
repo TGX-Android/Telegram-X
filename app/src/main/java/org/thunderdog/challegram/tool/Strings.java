@@ -230,6 +230,20 @@ public class Strings {
     return sb.toString();
   }
 
+  public static <T> String join (CharSequence delimiter, Iterable<T> tokens, Modifier<T> itemModifier) {
+    StringBuilder sb = new StringBuilder();
+    boolean firstTime = true;
+    for (T token : tokens) {
+      if (firstTime) {
+        firstTime = false;
+      } else {
+        sb.append(delimiter);
+      }
+      sb.append(itemModifier.modify(token));
+    }
+    return sb.toString();
+  }
+
   public static String join (CharSequence delimiter, Iterable<?> tokens) {
     StringBuilder sb = new StringBuilder();
     boolean firstTime = true;
