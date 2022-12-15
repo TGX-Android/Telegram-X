@@ -110,7 +110,7 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
       @Override
       public void onSizeChanged () {
         if (context.useBubbles()) {
-          onSizeChanged();
+          TGCommentButton.this.onSizeChanged();
         }
       }
 
