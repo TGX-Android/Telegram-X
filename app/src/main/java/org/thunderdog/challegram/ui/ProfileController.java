@@ -4984,7 +4984,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private void setHeaderPhoto (boolean update) {
     if (headerCell != null) {
-      headerCell.getAvatarReceiver().requestMessageSender(tdlib, tdlib.sender(getChatId()), AvatarReceiver.Options.FULL_SIZE);
+      headerCell.getAvatarReceiver().requestMessageSender(tdlib, tdlib.sender(getChatId()), AvatarReceiver.Options.FULL_SIZE | AvatarReceiver.Options.FORCE_ANIMATION);
     }
   }
 

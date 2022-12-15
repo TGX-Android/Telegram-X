@@ -1017,7 +1017,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     switch (type) {
       case TYPE_CHAT_PROFILE:
       case TYPE_USER_PROFILE: {
-        @AvatarReceiver.Options int options = BitwiseUtils.optional(AvatarReceiver.Options.FULL_SIZE, fullSize);
+        @AvatarReceiver.Options int options = AvatarReceiver.Options.FORCE_ANIMATION | BitwiseUtils.optional(AvatarReceiver.Options.FULL_SIZE, fullSize);
         if (chatPhoto != null && isFullPhoto) {
           avatarReceiver.requestSpecific(tdlib, new AvatarReceiver.FullChatPhoto(chatPhoto, Td.getSenderId(sourceSender)), options);
         } else {
