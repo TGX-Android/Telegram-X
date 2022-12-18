@@ -905,6 +905,9 @@ public class SettingsController extends ViewController<Void> implements
 
   private boolean setUsername (@Nullable TdApi.User myUser) {
     TdApi.Usernames usernames = myUser != null ? myUser.usernames : null;
+    if (myUser != null && usernames == null) {
+      usernames = new TdApi.Usernames(new String[0], new String[0], "");
+    }
     if ((myUsernames == null && usernames != null) || (myUsernames != null && !Td.equalsTo(myUsernames, usernames))) {
       this.myUsernames = usernames;
       return true;
