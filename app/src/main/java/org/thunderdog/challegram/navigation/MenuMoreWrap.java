@@ -227,7 +227,6 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     frameLayout.setWillNotDraw(false);
     if (receiver != null) {
       receiver.setBounds(Screen.dp(19), Screen.dp(ITEM_HEIGHT / 2f - 10), Screen.dp(39), Screen.dp(ITEM_HEIGHT / 2f + 10));
-      receiver.setRadius(Screen.dp(20));
       receiver.setUpdateListener(r -> frameLayout.invalidate());
     }
 
