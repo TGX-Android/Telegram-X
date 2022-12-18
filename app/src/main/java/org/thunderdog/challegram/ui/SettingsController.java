@@ -571,12 +571,12 @@ public class SettingsController extends ViewController<Void> implements
             break;
           }
           case R.id.btn_username: {
-            if (myUsername == null) {
+            if (myUsernames == null) {
               view.setData(R.string.LoadingUsername);
-            } else if (myUsername.isEmpty()) {
+            } else if (StringUtils.isEmpty(myUsernames.editableUsername)) {
               view.setData(R.string.SetUpUsername);
             } else {
-              view.setData("@" + myUsername);
+              view.setData("@" + myUsernames.editableUsername); // TODO multi-username support
             }
             break;
           }
@@ -893,7 +893,7 @@ public class SettingsController extends ViewController<Void> implements
     setBio(newBio);
   }
 
-  private String myUsername;
+  private @Nullable TdApi.Usernames myUsernames;
   private String myPhone, originalPhoneNumber;
   private @Nullable TdApi.FormattedText about;
 
@@ -905,9 +905,8 @@ public class SettingsController extends ViewController<Void> implements
 
   private boolean setUsername (@Nullable TdApi.User myUser) {
     TdApi.Usernames usernames = myUser != null ? myUser.usernames : null;
-    String username = usernames != null ? usernames.editableUsername : null;
-    if ((myUsername == null && username != null) || (myUsername != null && !myUsername.equals(username))) {
-      this.myUsername = username;
+    if ((myUsernames == null && usernames != null) || (myUsernames != null && !Td.equalsTo(myUsernames, usernames))) {
+      this.myUsernames = usernames;
       return true;
     }
     return false;
