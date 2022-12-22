@@ -1212,8 +1212,8 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
     View view = getTargetView();
     Drawable drawable = view instanceof DrawableProvider ?
       ((DrawableProvider) view).getSparseDrawable(resId, colorId) :
-      Drawables.get(colorId);
-    float scale = radiusPx < currentRadiusPx ? radiusPx / (float) currentRadiusPx : 1f;
+      Drawables.get(resId);
+    float scale = radiusPx < currentRadiusPx ? radiusPx / currentRadiusPx : 1f;
     scale *= Math.min(1f, (radiusPx * 2f) / (float) Math.max(drawable.getMinimumWidth(), drawable.getMinimumHeight()));
     float centerX = centerX();
     float centerY = centerY();
