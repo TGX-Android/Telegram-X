@@ -3245,7 +3245,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return true;
   }
 
-  private int bubbleTimePartWidth, bubbleInnerWidth;
+  private int bubbleTimePartWidth;
 
   protected final int getBubbleTimePartWidth () {
     return useBubbles() && useBubbleTime() ? bubbleTimePartWidth : 0;
@@ -3255,8 +3255,16 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return Lang.rtl();
   }
 
-  protected final boolean needExpandBubble (int bottomLineContentWidth) {
-    return bottomLineContentWidth + bubbleTimePartWidth > (allowBubbleHorizontalExtend() ? pRealContentMaxWidth : Math.min(pRealContentMaxWidth, bubbleInnerWidth));
+  protected final boolean needExpandBubble (int bottomLineContentWidth, int bubbleTimePartWidth, int maxLineWidth) {
+    switch (bottomLineContentWidth) {
+      case BOTTOM_LINE_KEEP_WIDTH:
+        return false;
+      case BOTTOM_LINE_EXPAND_HEIGHT:
+        return true;
+      case BOTTOM_LINE_DEFINE_BY_FACTOR:
+        throw new UnsupportedOperationException();
+    }
+    return bottomLineContentWidth > 0 && (bottomLineContentWidth + bubbleTimePartWidth > maxLineWidth);
   }
 
   protected float getBubbleExpandFactor () {
@@ -3282,32 +3290,40 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         final int bubbleTimePartWidthWithoutPadding = computeBubbleTimePartWidth(false);
         final int bubbleTimePartWidth = computeBubbleTimePartWidth(true);
         final int bottomLineContentWidth = useForward() ? BOTTOM_LINE_EXPAND_HEIGHT : hasFooter() ? footerText.getLastLineWidth() + Screen.dp(10f) : getBottomLineContentWidth();
-        final int extendedWidth = bottomLineContentWidth + bubbleTimePartWidth;
         final boolean allowHorizontalExtend = allowBubbleHorizontalExtend();
 
         final int expandedBubbleWidth = allowHorizontalExtend ? Math.max(bubbleWidth, bubbleTimePartWidthWithoutPadding) : bubbleWidth;
         final int expandedBubbleHeight = bubbleHeight + getBubbleTimePartHeight();
-        final int maxLineWidth = allowHorizontalExtend ? pRealContentMaxWidth : Math.min(pRealContentMaxWidth, bubbleWidth);
-        final int fitBubbleWidth = Math.max(bubbleWidth, extendedWidth);
 
         switch (bottomLineContentWidth) {
           case BOTTOM_LINE_KEEP_WIDTH:
             break;
           case BOTTOM_LINE_DEFINE_BY_FACTOR: {
+            final int extendedWidth = getAnimatedBottomLineWidth() + bubbleTimePartWidth;
+            final int fitBubbleWidth = Math.max(bubbleWidth, extendedWidth);
+
             float factor = getBubbleExpandFactor();
-            bubbleWidth = MathUtils.fromTo(Math.max(bubbleWidth, getAnimatedBottomLineWidth() + bubbleTimePartWidth), expandedBubbleWidth, factor);
-            int newBubbleHeight = MathUtils.fromTo(bubbleHeight, expandedBubbleHeight, factor);
-            timeAddedHeight = newBubbleHeight - bubbleHeight;
-            bubbleHeight = newBubbleHeight;
+            if (factor > 0f) {
+              bubbleWidth = MathUtils.fromTo(fitBubbleWidth, expandedBubbleWidth, factor);
+              int newBubbleHeight = MathUtils.fromTo(bubbleHeight, expandedBubbleHeight, factor);
+              timeAddedHeight = newBubbleHeight - bubbleHeight;
+              bubbleHeight = newBubbleHeight;
+            } else {
+              bubbleWidth = fitBubbleWidth;
+            }
             needAnimateTimeExpand = false;
             break;
           }
           default: {
-            if (bottomLineContentWidth == BOTTOM_LINE_EXPAND_HEIGHT || extendedWidth > maxLineWidth) {
+            final int maxLineWidth = allowHorizontalExtend ? pRealContentMaxWidth : Math.min(pRealContentMaxWidth, bubbleWidth);
+            if (needExpandBubble(bottomLineContentWidth, bubbleTimePartWidth, maxLineWidth)) {
               bubbleWidth = expandedBubbleWidth;
               timeAddedHeight = expandedBubbleHeight - bubbleHeight;
               bubbleHeight = expandedBubbleHeight;
             } else {
+              final int extendedWidth = bottomLineContentWidth + bubbleTimePartWidth;
+              //noinspection UnnecessaryLocalVariable
+              final int fitBubbleWidth = Math.max(bubbleWidth, extendedWidth);
               bubbleWidth = fitBubbleWidth;
             }
             break;
@@ -3332,7 +3348,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           bubbleHeight = MathUtils.fromTo(bubbleHeight, reactionsFinalCorrectedHeight, messageReactions.getVisibility());
         }
 
-        this.bubbleInnerWidth = bubbleWidth;
         this.bubbleTimePartWidth = bubbleTimePartWidth;
       } else {
         this.bubbleTimePartWidth = 0;
