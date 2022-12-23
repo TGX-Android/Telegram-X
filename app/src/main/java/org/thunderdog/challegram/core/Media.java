@@ -46,9 +46,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -182,8 +184,9 @@ public class Media {
   private static String[] getGalleryProjection (boolean allowVideos) {
     String[] projection;
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+      final List<String> projectionList = new ArrayList<>();
       if (allowVideos) {
-        projection = new String[] {
+        Collections.addAll(projectionList,
           MediaStore.Files.FileColumns.MEDIA_TYPE,
           MediaStore.Files.FileColumns.MIME_TYPE,
 
@@ -197,11 +200,11 @@ public class Media {
           MediaStore.Images.ImageColumns.WIDTH,
           MediaStore.Images.ImageColumns.HEIGHT,
 
-          MediaStore.Video.VideoColumns.DURATION,
+          MediaStore.Video.VideoColumns.DURATION
           // MediaStore.Video.VideoColumns.RESOLUTION
-        };
+        );
       } else {
-        projection = new String[] {
+        Collections.addAll(projectionList,
           MediaStore.Images.ImageColumns._ID,
           MediaStore.Images.ImageColumns.DATA,
           MediaStore.Images.ImageColumns.DATE_MODIFIED,
@@ -210,9 +213,13 @@ public class Media {
           MediaStore.Images.ImageColumns.BUCKET_ID,
           MediaStore.Images.ImageColumns.BUCKET_DISPLAY_NAME,
           MediaStore.Images.ImageColumns.WIDTH,
-          MediaStore.Images.ImageColumns.HEIGHT,
-        };
+          MediaStore.Images.ImageColumns.HEIGHT
+        );
       }
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        projectionList.add(MediaStore.Images.ImageColumns.IS_FAVORITE);
+      }
+      projection = projectionList.toArray(new String[0]);
     } else {
       if (allowVideos) {
         projection = new String[] {
@@ -339,7 +346,7 @@ public class Media {
       bucketNameColumn,
       durationColumn,
       resolutionColumn,
-      widthColumn, heightColumn;
+      widthColumn, heightColumn, faveColumn;
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
       imageIdColumn = c.getColumnIndex(MediaStore.Images.ImageColumns._ID);
       dataColumn = c.getColumnIndex(MediaStore.Images.ImageColumns.DATA);
@@ -352,6 +359,11 @@ public class Media {
       heightColumn = c.getColumnIndex(MediaStore.Images.ImageColumns.HEIGHT);
       durationColumn = c.getColumnIndex(MediaStore.Video.VideoColumns.DURATION);
       resolutionColumn = -1;
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+        faveColumn = c.getColumnIndex(MediaStore.Images.ImageColumns.IS_FAVORITE);
+      } else {
+        faveColumn = -1;
+      }
     } else {
       imageIdColumn = c.getColumnIndex(MediaStore.Images.Media._ID);
       dataColumn = c.getColumnIndex(MediaStore.Images.Media.DATA);
@@ -364,6 +376,7 @@ public class Media {
       heightColumn = c.getColumnIndex(MediaStore.Images.Media.HEIGHT);
       durationColumn = c.getColumnIndex(MediaStore.Video.Media.DURATION);
       resolutionColumn = c.getColumnIndex(MediaStore.Video.Media.RESOLUTION); // TODO: check if it actually works?
+      faveColumn = -1;
     }
 
     LongSparseArray<GalleryBucket> buckets = new LongSparseArray<>();
@@ -390,6 +403,13 @@ public class Media {
         }
         final int orientation = c.getInt(orientationColumn);
         long bucketId = U.getLongOrInt(c, bucketIdColumn);
+        boolean isFavorite = false;
+        if (faveColumn != -1) {
+          try {
+            int faveValue = c.getInt(faveColumn);
+            isFavorite = faveValue == 1;
+          } catch (Throwable ignored) { }
+        }
 
         if (path == null || path.length() == 0) {
           continue;
@@ -464,6 +484,7 @@ public class Media {
         }
 
         image = new ImageGalleryFile(imageId, path, dateTaken, width, height, bucketId, needThumb);
+        image.setFavorite(isFavorite);
         image.setRotation(orientation);
         image.setScaleType(scaleType);
         if (image.isScreenshot()) {
