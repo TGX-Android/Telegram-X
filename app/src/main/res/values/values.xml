@@ -2,4 +2,5 @@
 <resources>
   <bool name="isTablet">false</bool>
   <bool name="isNight">false</bool>
+  <bool name="com_samsung_android_icon_container_has_icon_container">true</bool>
 </resources>
