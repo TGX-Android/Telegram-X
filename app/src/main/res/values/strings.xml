@@ -773,6 +773,7 @@
   <string name="SearchForImages">Search for images</string>
   <string name="AllMedia">All media</string>
   <string name="AllVideos">All videos</string>
+  <string name="AllFaves">Favorites</string>
   <string name="UserUnavailable">user is unavailable</string>
   <string name="YouCantForwardMoreMessages_one">Sorry, you can\'t forward more than %1$s message at once</string>
   <string name="YouCantForwardMoreMessages_other">Sorry, you can\'t forward more than %1$s messages at once</string>
