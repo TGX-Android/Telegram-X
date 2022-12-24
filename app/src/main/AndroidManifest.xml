@@ -453,6 +453,6 @@
 
     <meta-data
       android:name="com.samsung.android.icon_container.has_icon_container"
-      android:value="true" />
+      android:value="@bool/com_samsung_android_icon_container_has_icon_container"/>
   </application>
 </manifest>

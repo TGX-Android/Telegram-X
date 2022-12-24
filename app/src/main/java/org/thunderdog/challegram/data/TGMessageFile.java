@@ -183,14 +183,25 @@ public class TGMessageFile extends TGMessage {
     }
 
     private boolean needExpandHeight () {
-      int bottomLineWidth = calculateLastLineWidth();
-      return bottomLineWidth == BOTTOM_LINE_EXPAND_HEIGHT || needExpandBubble(bottomLineWidth);
+      if (useBubbles()) {
+        int maxLineWidth = getRealContentMaxWidth();
+        int lastLineWidth = calculateLastLineWidth();
+        int bubbleTimePartWidth = computeBubbleTimePartWidth(/* includePadding */ true);
+        return needExpandBubble(lastLineWidth, bubbleTimePartWidth, maxLineWidth);
+      }
+      return false;
     }
 
     private int calculateVisualLastLineWidth () {
-      int lineWidth = calculateLastLineWidth();
-      boolean needExpand = lineWidth == BOTTOM_LINE_EXPAND_HEIGHT || needExpandBubble(lineWidth);
-      return needExpand ? getWidth() - getBubbleTimePartWidth() : lineWidth;
+      int lastLineWidth = calculateLastLineWidth();
+      if (useBubbles()) {
+        int maxLineWidth = getRealContentMaxWidth();
+        int bubbleTimePartWidth = computeBubbleTimePartWidth(/* includePadding */ true);
+        if (needExpandBubble(lastLineWidth, bubbleTimePartWidth, maxLineWidth)) {
+          return getWidth() - bubbleTimePartWidth;
+        }
+      }
+      return lastLineWidth;
     }
 
     @Override
