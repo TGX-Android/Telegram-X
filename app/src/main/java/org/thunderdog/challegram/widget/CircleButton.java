@@ -41,6 +41,7 @@ import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 
 public class CircleButton extends View implements FactorAnimator.Target {
+  private @DrawableRes int iconRes;
   private Drawable icon;
   private int offsetLeft;
 
@@ -96,6 +97,7 @@ public class CircleButton extends View implements FactorAnimator.Target {
 
   public void init (@DrawableRes int icon, int offsetLeft, float size, float padding, @ThemeColorId int backgroundColorId, @ThemeColorId int iconColorId) {
     this.icon = Drawables.get(icon);
+    this.iconRes = icon;
     this.offsetLeft = offsetLeft;
     this.backgroundColorId = backgroundColorId;
     this.iconColorIsId = true;
@@ -129,6 +131,7 @@ public class CircleButton extends View implements FactorAnimator.Target {
     }
   }
 
+  private @DrawableRes int replaceIconRes;
   private Drawable replaceIcon;
   private float replaceFactor;
   private static final int REPLACE_ANIMATOR = 0;
@@ -139,7 +142,15 @@ public class CircleButton extends View implements FactorAnimator.Target {
     replaceIcon(iconRes, 0);
   }
   public void replaceIcon (@DrawableRes int iconRes, int replaceOffset) {
+    if (replaceIcon != null) {
+      if (this.replaceIconRes == iconRes && this.replaceOffsetLeft == replaceOffset)
+        return;
+    } else {
+      if (this.iconRes == iconRes && this.offsetLeft == replaceOffset)
+        return;
+    }
     this.replaceIcon = Drawables.get(iconRes);
+    this.replaceIconRes = iconRes;
     this.replaceOffsetLeft = replaceOffset;
     if (replaceAnimator == null) {
       replaceAnimator = new FactorAnimator(REPLACE_ANIMATOR, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 220l);
@@ -158,6 +169,7 @@ public class CircleButton extends View implements FactorAnimator.Target {
 
   public void setIcon (@DrawableRes int iconRes, int offsetLeft) {
     this.icon = Drawables.get(iconRes);
+    this.iconRes = iconRes;
     this.offsetLeft = offsetLeft;
     invalidate();
   }
@@ -241,8 +253,11 @@ public class CircleButton extends View implements FactorAnimator.Target {
   private void applyIcon () {
     if (replaceIcon != null) {
       icon = replaceIcon;
+      iconRes = replaceIconRes;
       offsetLeft = replaceOffsetLeft;
       replaceIcon = null;
+      replaceIconRes = 0;
+      replaceOffsetLeft = 0;
     }
   }
 

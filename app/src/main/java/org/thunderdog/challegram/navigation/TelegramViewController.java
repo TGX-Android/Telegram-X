@@ -113,6 +113,8 @@ public abstract class TelegramViewController<T> extends ViewController<T> {
 
   protected void modifyFoundChat (TGFoundChat chat) { }
 
+  protected void modifyFoundChatView (ListItem item, int position, BetterChatView chatView) { }
+
   protected boolean needChatSearchManagerPreparation () {
     // Disable if it's not needed
     return true;
@@ -440,6 +442,7 @@ public abstract class TelegramViewController<T> extends ViewController<T> {
             break;
           }
         }
+        TelegramViewController.this.modifyFoundChatView(item, position, chatView);
       }
 
       @Override

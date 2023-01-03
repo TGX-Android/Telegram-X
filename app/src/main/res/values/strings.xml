@@ -2989,9 +2989,16 @@
   <string name="CategoryPrivate">Private</string>
   <string name="CategorySecret">Secret</string>
   <string name="CategoryGroup">Group Chats</string>
+  <string name="CategoryGroups">Groups</string>
   <string name="CategoryChannels">Channels</string>
   <string name="CategoryBots">Bots</string>
+  <string name="CategoryRead">Read</string>
   <string name="CategoryUnread">Unread</string>
+  <string name="CategoryMuted">Muted</string>
+  <string name="CategoryArchived">Archived</string>
+  <string name="CategoryContacts">Contacts</string>
+  <string name="CategoryNonContacts">Non-Contacts</string>
+
   <string name="xBots_one">%1$s bot</string>
   <string name="xBots_other">%1$s bots</string>
 
@@ -4446,6 +4453,7 @@
   <string name="PremiumRequiredSticker">Sending this sticker requires **Telegram Premium** subscription.</string>
   <string name="PremiumRequiredVoiceVideo">This setting requires **Telegram Premium** subscription.</string>
   <string name="PremiumRequired">This feature requires **Telegram Premium** subscription.</string>
+  <string name="PremiumRequiredMoveFolder">Subscribe to **Telegram Premium** to move the "%1$s" folder.</string>
 
   <string name="XRestrictedVoiceMessages">%1$s doesn\'t accept voice messages.</string>
   <string name="XRestrictedVideoMessages">%1$s doesn\'t accept video messages.</string>
@@ -4453,4 +4461,35 @@
   <string name="format_PRMadeBy">%1$s by %2$s</string>
 
   <string name="AnonWarning">This action requires revealing your personal account. Tap again to confirm.</string>
+
+  <string name="ChatTypes">Chat types</string>
+  <string name="ChatFolders">Chat Folders</string>
+  <string name="ChatFoldersInfo">Create folders for different groups of chats and quickly switch between them.</string>
+  <string name="NewFolder">New Folder</string>
+  <string name="CreateNewFolder">Create New Folder</string>
+  <string name="EditFolder">Edit Folder</string>
+  <string name="EditFolders">Edit Folders</string>
+  <string name="RemoveFolder">Remove Folder</string>
+  <string name="RemoveFolderConfirm">Are you sure you want to remove this folder? Your chats will not be deleted.</string>
+  <string name="FolderNoChatsToDisplay">**Folder is empty**\n\nNo chats currently belong to this folder.</string>
+  <string name="FolderRemoveInclusionConfirm">Are you sure you want to remove "%1$s" from the always included list?</string>
+  <string name="FolderRemoveExclusionConfirm">Are you sure you want to remove "%1$s" from the always excluded list?</string>
+  <string name="IncludeChats">Include Chats</string>
+  <string name="IncludeChatsInfo_one">You can select only one chat.</string>
+  <string name="IncludeChatsInfo_other">You can select up to %1$s chats.</string>
+  <string name="ExcludeChats">Exclude Chats</string>
+  <string name="ExcludeChatsInfo_one">EYou can select only one chat.</string>
+  <string name="ExcludeChatsInfo_other">You can select up to %1$s chats.</string>
+  <string name="FolderIncludedChats">Included Chats</string>
+  <string name="FolderIncludedChatsInfo">Choose chats or types of chats that will appear in this folder.</string>
+  <string name="FolderExcludedChats">Excluded Chats</string>
+  <string name="FolderExcludedChatsInfo">Choose chats or types of chats that will not appear in this folder.</string>
+  <string name="FolderActionIncludeChats">Add Chats</string>
+  <string name="FolderActionExcludeChats">Add Chats</string>
+  <string name="FolderName">Folder name</string>
+  <string name="FolderNameHint">Name</string>
+  <string name="RecommendedFolders">Recommended Folders</string>
+  <string name="AddToFolder">Add to folder</string>
+  <string name="RemoveFromFolder">Remove from folder</string>
+  <string name="ChooseFolder">Choose a folder</string>
 </resources>

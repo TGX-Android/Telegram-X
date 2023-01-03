@@ -32,6 +32,7 @@ import android.widget.FrameLayout;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.Px;
 import androidx.annotation.StringRes;
 
 import org.thunderdog.challegram.R;
@@ -229,6 +230,10 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
 
   public ComplexReceiver getComplexReceiver () {
     return complexReceiver;
+  }
+
+  public @Px float getMeasuredPaddingStart () {
+    return pLeft;
   }
 
   public void setTextColorId (@ThemeColorId int textColorId) {

@@ -18,6 +18,7 @@ import android.content.Context;
 import android.view.View;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -70,6 +71,11 @@ public class CallListController extends RecyclerViewController<Void> implements
   @Override
   public int getId () {
     return R.id.controller_call_list;
+  }
+
+  @Override
+  public CharSequence getName () {
+    return Lang.getString(R.string.Calls);
   }
 
   private SettingsAdapter adapter;
@@ -131,10 +137,27 @@ public class CallListController extends RecyclerViewController<Void> implements
     buildCells();
     recyclerView.setAdapter(adapter);
     recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+      private float lastY;
+      private float lastShowY;
+
       @Override
-      public void onScrolled (RecyclerView recyclerView, int dx, int dy) {
+      public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
         if (messages != null && ((LinearLayoutManager) recyclerView.getLayoutManager()).findLastVisibleItemPosition() >= adapter.getItems().size() - 5) {
           loadMore();
+        }
+        if (Config.CHAT_FOLDERS_ENABLED && getParentOrSelf() == CallListController.this) {
+          lastY += dy;
+          if (dy < 0 && lastShowY - lastY >= Screen.getTouchSlop()) {
+            setDoneVisible(true, true);
+            lastShowY = lastY;
+          } else if (lastY - lastShowY > Screen.getTouchSlopBig()) {
+            setDoneVisible(false, true);
+            lastShowY = lastY;
+          }
+          if (Math.abs(lastY - lastShowY) > Screen.getTouchSlopBig()) {
+            lastY = 0;
+            lastShowY = 0;
+          }
         }
       }
     });
@@ -142,6 +165,22 @@ public class CallListController extends RecyclerViewController<Void> implements
     tdlib.client().send(new TdApi.SearchCallMessages(0, Screen.calculateLoadingItems(Screen.dp(72f), 20), false), this);
     tdlib.client().send(new TdApi.GetTopChats(new TdApi.TopChatCategoryCalls(), 30), this);
     tdlib.listeners().subscribeForAnyUpdates(this);
+  }
+
+  @Override
+  public void onPrepareToShow () {
+    super.onPrepareToShow();
+    if (Config.CHAT_FOLDERS_ENABLED && getParentOrSelf() == this) {
+      setDoneIcon(R.drawable.baseline_phone_24);
+      setDoneVisible(true, false);
+    }
+  }
+
+  @Override
+  protected void onDoneClick () {
+    ContactsController c = new ContactsController(context, tdlib);
+    c.initWithMode(ContactsController.MODE_CALL);
+    navigateTo(c);
   }
 
   @Override

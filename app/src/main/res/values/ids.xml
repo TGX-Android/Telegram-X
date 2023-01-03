@@ -89,6 +89,8 @@
   <item type="id" name="more_btn_addToContacts" />
   <item type="id" name="more_btn_cloudChat" />
   <item type="id" name="more_btn_addToGroup" />
+  <item type="id" name="more_btn_addToFolder" />
+  <item type="id" name="more_btn_removeFromFolder" />
   <item type="id" name="more_btn_edit" />
   <item type="id" name="more_btn_delete" />
   <item type="id" name="more_btn_addMember" />
@@ -229,6 +231,9 @@
   <item type="id" name="controller_chatLinkMembers" />
   <item type="id" name="controller_sponsoredMessagesInfo" />
   <item type="id" name="controller_featureToggles" />
+  <item type="id" name="controller_chatFolders" />
+  <item type="id" name="controller_editChatFolders" />
+  <item type="id" name="controller_selectChats" />
 
   <item type="id" name="separator" />
 
@@ -286,6 +291,16 @@
   <item type="id" name="contact" />
   <item type="id" name="call" />
   <item type="id" name="bucket" />
+  <item type="id" name="chatFilter" />
+  <item type="id" name="recommendedChatFilter" />
+  <item type="id" name="chatType_contact" />
+  <item type="id" name="chatType_nonContact" />
+  <item type="id" name="chatType_group" />
+  <item type="id" name="chatType_channel" />
+  <item type="id" name="chatType_bot" />
+  <item type="id" name="chatType_muted" />
+  <item type="id" name="chatType_read" />
+  <item type="id" name="chatType_archived" />
   <item type="id" name="btn_pinUnpinChat" />
   <item type="id" name="btn_unpinAll" />
   <item type="id" name="btn_reportLocation" />
@@ -1190,6 +1205,12 @@
   <item type="id" name="btn_messageUnblockMember" />
 
   <item type="id" name="btn_applyWallpaper" />
+  <item type="id" name="btn_chatFolders" />
+  <item type="id" name="btn_createNewFolder" />
+  <item type="id" name="btn_editFolder" />
+  <item type="id" name="btn_removeFolder" />
+  <item type="id" name="btn_folderIncludeChats" />
+  <item type="id" name="btn_folderExcludeChats" />
 
   <item type="id" name="right_readMessages" />
   <item type="id" name="right_sendMessages" />

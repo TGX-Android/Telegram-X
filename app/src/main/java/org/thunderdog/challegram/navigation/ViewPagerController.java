@@ -23,10 +23,12 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.IdRes;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.collection.SparseArrayCompat;
+import androidx.core.util.ObjectsCompat;
 import androidx.viewpager.widget.PagerAdapter;
 
 import org.thunderdog.challegram.R;
@@ -40,19 +42,25 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.util.OptionDelegate;
-import org.thunderdog.challegram.widget.rtl.RtlViewPager;
 import org.thunderdog.challegram.widget.ViewPager;
+import org.thunderdog.challegram.widget.rtl.RtlViewPager;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.collection.LongSparseIntArray;
 
 public abstract class ViewPagerController<T> extends TelegramViewController<T> implements ViewPager.OnPageChangeListener, ViewPagerTopView.OnItemClickListener,
   OptionDelegate, SelectDelegate, Menu, MoreDelegate {
   public ViewPagerController (Context context, Tdlib tdlib) {
     super(context, tdlib);
   }
+
+  private static final int NO_POSITION = -1;
 
   public interface ScrollToTopDelegate {
     void onScrollToTopRequested ();
@@ -112,11 +120,13 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
 
   private void updateHeader () {
     if (headerCell != null) {
-      String[] sections = getPagerSections();
-      if (sections != null && sections.length != getPagerItemCount()) {
-        throw new IllegalArgumentException("sections.length != " + getPagerItemCount());
+      List<ViewPagerTopView.Item> sections = getPagerSectionItems();
+      if (sections != null) {
+        if (sections.size() != getPagerItemCount()) {
+          throw new IllegalArgumentException("sections.size() != " + getPagerItemCount());
+        }
+        headerCell.getTopView().setItems(sections);
       }
-      headerCell.getTopView().setItems(sections);
     }
   }
 
@@ -135,12 +145,11 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
     };
     contentView.setWillNotDraw(false);
 
-    String[] sections = getPagerSections();
-    if (sections != null && sections.length != getPagerItemCount()) {
-      throw new IllegalArgumentException("sections.length != " + getPagerItemCount());
-    }
-
+    List<ViewPagerTopView.Item> sections = getPagerSectionItems();
     if (sections != null) {
+      if (sections.size() != getPagerItemCount()) {
+        throw new IllegalArgumentException("sections.size() != " + getPagerItemCount());
+      }
       switch (getTitleStyle()) {
         case TITLE_STYLE_BIG: {
           headerCell = new ViewPagerHeaderView(context);
@@ -384,10 +393,10 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
     return adapter.reversePosition(pager.getCurrentItem()) == 0;
   }
 
-  protected final void replaceController (int position, ViewController<?> newController) {
+  protected final void replaceController (long itemId, ViewController<?> newController) {
+    int position = adapter.getCachedItemPosition(itemId);
     ViewController<?> currentController = adapter.getCachedItemByPosition(position);
     if (currentController != null) {
-      adapter.cachedItems.remove(position);
       currentController.destroy();
       newController.setParentWrapper(this);
       newController.bindThemeListeners(this);
@@ -406,6 +415,51 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
 
   public final int getCurrentPagerItemPosition() {
     return adapter.reversePosition(pager.getCurrentItem());
+  }
+
+  public final void notifyPagerItemPositionsChanged () {
+    if (headerCell != null) {
+      updateHeader();
+    }
+    if (adapter != null) {
+      int itemCount = getPagerItemCount();
+      SparseArrayCompat<ViewController<?>> cachedItems = new SparseArrayCompat<>(itemCount);
+      LongSparseIntArray cachedPositions = new LongSparseIntArray(itemCount);
+      for (int position = 0; position < itemCount; position++) {
+        long itemId = getPagerItemId(position);
+        int oldPosition = adapter.getCachedItemPosition(itemId);
+        if (oldPosition != NO_POSITION) {
+          ViewController<?> cachedItem = adapter.getCachedItemByPosition(oldPosition);
+          cachedItems.put(position, cachedItem);
+          cachedPositions.put(itemId, position);
+          adapter.cachedItems.remove(oldPosition);
+          adapter.cachedPositions.delete(itemId);
+        }
+      }
+      if (inTransformMode() && headerView != null) {
+        int currentPosition = adapter.reversePosition(pager.getCurrentItem());
+        for (int index = 0; index < adapter.cachedItems.size(); index++) {
+          int position = adapter.cachedItems.keyAt(index);
+          if (currentPosition == position) {
+            if (headerView.inSelectMode()) {
+              headerView.finishSelectMode();
+            } else if (headerView.inSearchMode()) {
+              headerView.closeSearchMode(true, /* after */ null);
+            } else if (headerView.inCustomMode()) {
+              headerView.closeCustomMode();
+            }
+            break;
+          }
+        }
+      }
+      adapter.destroyCachedItems();
+      adapter.cachedItems = cachedItems;
+      adapter.cachedPositions = cachedPositions;
+      adapter.notifyDataSetChanged();
+      if (headerCell != null) {
+        headerCell.getTopView().setSelectionFactor(pager.getCurrentItem());
+      }
+    }
   }
 
   public final ViewController<?> getCurrentPagerItem () {
@@ -451,8 +505,8 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
     return c instanceof OptionDelegate && ((OptionDelegate) c).onOptionItemPressed(optionItemView, id);
   }
 
-  public final @Nullable ViewController<?> getCachedControllerForId (int id) {
-    return adapter != null ? adapter.getCachedItemById(id) : null;
+  public final @Nullable ViewController<?> getCachedControllerForId (@IdRes int id) {
+    return adapter != null ? adapter.getCachedItemByControllerId(id) : null;
   }
 
   public final @Nullable ViewController<?> getCachedControllerForPosition (int position) {
@@ -487,10 +541,42 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
     }
   }
 
+  private @Nullable List<ViewPagerTopView.Item> cachedPagerSectionItems;
+
   protected abstract int getPagerItemCount ();
+  protected long getPagerItemId (int position) {
+    return position;
+  }
   protected abstract void onCreateView (Context context, FrameLayoutFix contentView, ViewPager pager);
   protected abstract ViewController<?> onCreatePagerItemForPosition (Context context, int position);
-  protected abstract String[] getPagerSections ();
+  protected @Nullable abstract String[] getPagerSections ();
+  protected @Nullable List<ViewPagerTopView.Item> getPagerSectionItems () {
+    String[] pagerSections = getPagerSections();
+    if (pagerSections == null) {
+      return cachedPagerSectionItems = null;
+    }
+    if (pagerSections.length == 0) {
+      return cachedPagerSectionItems = Collections.emptyList();
+    }
+    if (cachedPagerSectionItems != null && cachedPagerSectionItems.size() == pagerSections.length) {
+      boolean hasChanges = false;
+      for (int i = 0; i < pagerSections.length; i++) {
+        if (!ObjectsCompat.equals(pagerSections[i], cachedPagerSectionItems.get(i).string)) {
+          hasChanges = true;
+          break;
+        }
+      }
+      if (!hasChanges) {
+        return cachedPagerSectionItems;
+      }
+    }
+    List<ViewPagerTopView.Item> pagerSectionItems = new ArrayList<>(pagerSections.length);
+    for (String pagerSection : pagerSections) {
+      pagerSectionItems.add(new ViewPagerTopView.Item(pagerSection));
+    }
+    cachedPagerSectionItems = pagerSectionItems;
+    return pagerSectionItems;
+  }
 
   @Override
   public void onPagerItemClick (int index) {
@@ -520,19 +606,26 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
   public static class ViewPagerAdapter extends PagerAdapter {
     private final Context context;
     private final ViewPagerController<?> parent;
-    private final SparseArrayCompat<ViewController<?>> cachedItems;
+    private /*final*/ SparseArrayCompat<ViewController<?>> cachedItems;
+    private /*final*/ LongSparseIntArray cachedPositions;
 
     public ViewPagerAdapter (Context context, ViewPagerController<?> parent) {
       this.context = context;
       this.parent = parent;
-      this.cachedItems = new SparseArrayCompat<>(parent.getPagerItemCount());
+      int itemCount = parent.getPagerItemCount();
+      this.cachedItems = new SparseArrayCompat<>(itemCount);
+      this.cachedPositions = new LongSparseIntArray(itemCount);
+    }
+
+    public int getCachedItemPosition (long itemId) {
+      return cachedPositions.get(itemId, NO_POSITION);
     }
 
     public @Nullable ViewController<?> getCachedItemByPosition (int position) {
-      return cachedItems.get(position);
+      return position != NO_POSITION ? cachedItems.get(position) : null;
     }
 
-    public @Nullable ViewController<?> getCachedItemById (int id) {
+    public @Nullable ViewController<?> getCachedItemByControllerId (@IdRes int id) {
       int size = cachedItems.size();
       for (int i = 0; i < size; i++) {
         ViewController<?> c = cachedItems.valueAt(i);
@@ -562,6 +655,7 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
         }
       }
       cachedItems.clear();
+      cachedPositions.clear();
     }
 
     private int reversePosition (int position) {
@@ -586,6 +680,7 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
         c.setParentWrapper(parent);
         c.bindThemeListeners(parent);
         cachedItems.put(position, c);
+        cachedPositions.put(parent.getPagerItemId(position), position);
       }
       return c;
     }

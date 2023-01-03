@@ -49,8 +49,8 @@ import org.thunderdog.challegram.tool.Views;
 import me.vkryl.core.lambda.Destroyable;
 
 public class DoubleTextView extends RelativeLayout implements RtlCheckListener, Destroyable {
-  private TextView titleView;
-  private TextView subtitleView;
+  private final TextView titleView;
+  private final TextView subtitleView;
   private final ImageReceiver imageReceiver;
   private final GifReceiver gifReceiver;
   private @Nullable NonMaterialButton button;

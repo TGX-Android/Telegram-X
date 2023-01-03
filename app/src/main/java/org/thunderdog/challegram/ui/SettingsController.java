@@ -652,6 +652,10 @@ public class SettingsController extends ViewController<Void> implements
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_stickerSettings, R.drawable.deproko_baseline_stickers_filled_24, R.string.Stickers));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+    if (Config.CHAT_FOLDERS_ENABLED) {
+      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_chatFolders, R.drawable.baseline_folder_24, R.string.ChatFolders));
+      items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+    }
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_languageSettings, R.drawable.baseline_language_24, R.string.Language));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
@@ -1070,6 +1074,10 @@ public class SettingsController extends ViewController<Void> implements
         SettingsStickersController c = new SettingsStickersController(context, tdlib);
         c.setArguments(this);
         navigateTo(c);
+        break;
+      }
+      case R.id.btn_chatFolders: {
+        navigateTo(new ChatFoldersController(context, tdlib));
         break;
       }
       case R.id.btn_faq: {

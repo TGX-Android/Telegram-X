@@ -64,6 +64,7 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.ui.CallListController;
 import org.thunderdog.challegram.ui.ChatsController;
 import org.thunderdog.challegram.ui.FeatureToggles;
 import org.thunderdog.challegram.ui.ListItem;
@@ -258,6 +259,9 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
     }
 
     items.add(new ListItem(ListItem.TYPE_DRAWER_ITEM, R.id.btn_contacts, R.drawable.baseline_perm_contact_calendar_24, R.string.Contacts));
+    if (Config.CHAT_FOLDERS_ENABLED) {
+      items.add(new ListItem(ListItem.TYPE_DRAWER_ITEM, R.id.btn_calls, R.drawable.baseline_call_24, R.string.Calls));
+    }
     items.add(new ListItem(ListItem.TYPE_DRAWER_ITEM, R.id.btn_savedMessages, R.drawable.baseline_bookmark_24, R.string.SavedMessages));
     this.settingsErrorIcon = getSettingsErrorIcon();
     items.add(new ListItem(ListItem.TYPE_DRAWER_ITEM, R.id.btn_settings, R.drawable.baseline_settings_24, R.string.Settings));
@@ -848,6 +852,10 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
         // openEmptyChat();
         break;
       }
+      case R.id.btn_calls: {
+        openCallList();
+        break;
+      }
       case R.id.btn_reportBug: {
         if (Test.NEED_CLICK) {
           Test.onClick(context);
@@ -902,7 +910,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
         break;
       }
       case R.id.btn_featureToggles:
-        UI.navigateTo(new FeatureToggles.Controller(context, context.currentTdlib()));
+        openController(new FeatureToggles.Controller(context, context.currentTdlib()));
         break;
     }
   }
@@ -1001,6 +1009,10 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
       c.setNeedSearch();
       openController(c);
     });
+  }
+
+  private void openCallList() {
+    openController(new CallListController(context, context.currentTdlib()));
   }
 
   private boolean ignoreClose;

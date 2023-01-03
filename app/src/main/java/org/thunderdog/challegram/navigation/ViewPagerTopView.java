@@ -18,6 +18,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
+import android.text.Layout;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.view.Gravity;
@@ -27,9 +28,9 @@ import android.view.ViewGroup;
 import android.view.ViewParent;
 
 import androidx.annotation.DrawableRes;
+import androidx.annotation.FloatRange;
 import androidx.annotation.NonNull;
 
-import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
@@ -38,6 +39,7 @@ import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.support.RippleSupport;
+import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.tool.Drawables;
@@ -57,9 +59,9 @@ import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 
-public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener, View.OnClickListener, View.OnLongClickListener, Destroyable {
+public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener, View.OnClickListener, View.OnLongClickListener, Destroyable, TGLegacyManager.EmojiLoadListener {
   public static class Item {
-    public final String string;
+    public final CharSequence string;
     public final boolean needFakeBold;
     public final @DrawableRes int iconRes;
     public ImageReceiver imageReceiver;
@@ -70,7 +72,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     public final DrawableProvider provider;
     public final boolean hidden;
 
-    public Item (String string) {
+    public Item (CharSequence string) {
       this.string = string;
       this.needFakeBold = Text.needFakeBold(string);
       this.iconRes = 0;
@@ -84,7 +86,16 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       this.needFakeBold = false;
       this.iconRes = iconRes;
       this.counter = null;
-      this.provider =null;
+      this.provider = null;
+      this.hidden = false;
+    }
+
+    public Item (CharSequence string, Counter counter) {
+      this.string = string;
+      this.needFakeBold = Text.needFakeBold(string);
+      this.counter = counter;
+      this.iconRes = 0;
+      this.provider = null;
       this.hidden = false;
     }
 
@@ -145,13 +156,15 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       if (staticWidth != -1) {
         width = staticWidth;
       } else if (counter != null) {
-        if (imageReceiver != null) {
+        if (string != null) {
+          width = (int) (U.measureEmojiText(string, paint) + counter.getScaledWidth(Screen.dp(6f)));
+        } else if (imageReceiver != null) {
           width = (int) counter.getWidth() + imageReceiverSize;
         } else {
           width = (int) counter.getWidth() + Screen.dp(6f);
         }
       } else if (string != null) {
-        width = (int) U.measureText(string, paint);
+        width = (int) U.measureEmojiText(string, paint);
       } else if (iconRes != 0) {
         width = Screen.dp(24f) + Screen.dp(6f);
       } else {
@@ -165,21 +178,26 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       this.translationX = translationX;
     }
 
-    private String ellipsizedString;
+    private Layout ellipsizedStringLayout;
     private int actualWidth;
 
     public void trimString (int availWidth, TextPaint paint) {
       if (string != null) {
-        ellipsizedString = TextUtils.ellipsize(string, paint, availWidth, TextUtils.TruncateAt.END).toString();
-        actualWidth = (int) U.measureText(ellipsizedString, paint);
+        CharSequence ellipsizedString = TextUtils.ellipsize(string, paint, availWidth, TextUtils.TruncateAt.END);
+        ellipsizedStringLayout = U.createLayout(ellipsizedString, availWidth, paint);
+        actualWidth = ellipsizedStringLayout.getWidth();
       } else {
-        ellipsizedString = null;
+        ellipsizedStringLayout = null;
         actualWidth = width;
       }
     }
 
-    public void untrimString () {
-      ellipsizedString = string;
+    public void untrimString (TextPaint paint) {
+      if (string != null) {
+        ellipsizedStringLayout = U.createLayout(string, (int) Math.ceil(U.measureEmojiText(string, paint)), paint);
+      } else {
+        ellipsizedStringLayout = null;
+      }
       actualWidth = width;
     }
   }
@@ -187,7 +205,8 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   private int maxItemWidth;
 
   private int textPadding;
-  private ComplexReceiver complexReceiver;
+  private final ComplexReceiver complexReceiver;
+  private CounterAlphaProvider counterAlphaProvider = DEFAULT_COUNTER_ALPHA_PROVIDER;
 
   private @ThemeColorId int fromTextColorId, toTextColorId = R.id.theme_color_headerText;
   private @ThemeColorId int selectionColorId;
@@ -197,6 +216,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     this.textPadding = Screen.dp(19f);
     this.complexReceiver = new ComplexReceiver(this);
     setWillNotDraw(false);
+    TGLegacyManager.instance().addEmojiListener(this);
   }
 
   @Override
@@ -261,6 +281,10 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
 
   @Override
   public boolean onLongClick (View v) {
+    if (listener != null && v instanceof BackgroundView) {
+      int i = ((BackgroundView) v).index;
+      return listener.onPagerItemLongClick(i);
+    }
     return false;
   }
 
@@ -283,8 +307,11 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   }
 
   public void setItemAt (int index, String text) {
+    setItemAt(index, new Item(text));
+  }
+
+  public void setItemAt (int index, Item item) {
     Item oldItem = this.items.get(index);
-    Item item = new Item(text);
     this.items.set(index, item);
     onUpdateItems();
     totalWidth -= oldItem.width + textPadding * 2;
@@ -348,7 +375,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   }
 
   public void addItemAtIndex (String item, int index) {
-    addItemAtIndex(new Item(item),  index);
+    addItemAtIndex(new Item(item), index);
   }
 
   public void addItem (int item) {
@@ -389,7 +416,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     if (!shouldWrapContent() && width < availTextWidth) {
       item.trimString(availTextWidth, paint);
     } else {
-      item.untrimString();
+      item.untrimString(paint);
     }
     addView(newBackgroundView(items.size() - 1));
     invalidate();
@@ -442,6 +469,12 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     }
   }
 
+  public void requestItemLayoutAt (int index) {
+    if (index >= 0 && index < items.size()) {
+      setItemAt(index, items.get(index));
+    }
+  }
+
   @Override
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
     if (shouldWrapContent()) {
@@ -481,10 +514,11 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     final int availTextWidth = commonItemWidth - textPadding * 2;
 
     for (Item item : items) {
+      TextPaint textPaint = Paints.getViewPagerTextPaint(textColor, item.needFakeBold);
       if (!wrapContent && item.width < availTextWidth) {
-        item.trimString(availTextWidth, Paints.getViewPagerTextPaint(textColor, item.needFakeBold));
+        item.trimString(availTextWidth, textPaint);
       } else {
-        item.untrimString();
+        item.untrimString(textPaint);
       }
     }
 
@@ -716,26 +750,41 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
           int color = ColorUtils.fromToArgb(textFromColor, textToColor, factor * (1f - disabledFactor));
           if (item.counter != null) {
             float alphaFactor = 1f - MathUtils.clamp(Math.abs(selectionFactor - i));
-            float imageAlpha = .5f + .5f * alphaFactor;
+            float imageAlpha = counterAlphaProvider.getDrawableAlpha(alphaFactor);
             if (items.get(0).hidden) {
               alphaFactor = Math.max(alphaFactor, 1f - MathUtils.clamp(selectionFactor));
               if (i == 1 && selectionFactor < 1) {
                 alphaFactor = 1f;
               }
             }
-            float counterAlpha = .5f + .5f * alphaFactor;
-            if (item.imageReceiver != null) {
+            float textAlpha = counterAlphaProvider.getTextAlpha(alphaFactor);
+            float backgroundAlpha = counterAlphaProvider.getBackgroundAlpha(alphaFactor);
+            if (item.ellipsizedStringLayout != null) {
+              int horizontalPadding = Math.max((itemWidth - item.actualWidth) / 2, 0);
+              int stringX = cx + horizontalPadding;
+              int stringY = viewHeight / 2 - item.ellipsizedStringLayout.getHeight() / 2;
+              c.translate(stringX, stringY);
+              item.ellipsizedStringLayout.getPaint().setColor(color);
+              item.ellipsizedStringLayout.draw(c);
+              c.translate(-stringX, -stringY);
+              item.counter.draw(c, cx + itemWidth - horizontalPadding - item.counter.getWidth() / 2f, viewHeight / 2f, Gravity.CENTER, textAlpha, backgroundAlpha, imageAlpha, item.provider, ThemeColorId.NONE);
+            } else if (item.imageReceiver != null) {
               int size = item.imageReceiverSize;
               int imgY = (viewHeight - size) / 2;
               item.imageReceiver.setAlpha(imageAlpha);
               item.imageReceiver.setBounds(cx, imgY, cx + size, imgY + size);
               item.imageReceiver.drawScaled(c, item.imageReceiverScale);
-              item.counter.draw(c, cx + size, viewHeight / 2f, Gravity.LEFT, counterAlpha, item.provider, 0);
+              item.counter.draw(c, cx + size, viewHeight / 2f, Gravity.LEFT, textAlpha, backgroundAlpha, imageAlpha, item.provider, 0);
             } else {
-              item.counter.draw(c, cx + itemWidth / 2f, viewHeight / 2f, Gravity.CENTER, counterAlpha, imageAlpha, item.provider, 0);
+              item.counter.draw(c, cx + itemWidth / 2f, viewHeight / 2f, Gravity.CENTER, textAlpha, backgroundAlpha, imageAlpha, item.provider, 0);
             }
-          } else if (item.ellipsizedString != null) {
-            c.drawText(item.ellipsizedString, cx + itemWidth / 2 - item.actualWidth / 2, viewHeight / 2 + Screen.dp(6f), Paints.getViewPagerTextPaint(color, item.needFakeBold));
+          } else if (item.ellipsizedStringLayout != null) {
+            int stringX = cx + itemWidth / 2 - item.actualWidth / 2;
+            int stringY = viewHeight / 2 - item.ellipsizedStringLayout.getHeight() / 2;
+            c.translate(stringX, stringY);
+            item.ellipsizedStringLayout.getPaint().setColor(color);
+            item.ellipsizedStringLayout.draw(c);
+            c.translate(-stringX, -stringY);
           } else if (item.iconRes != 0) {
             Drawable drawable = item.getIcon();
             Drawables.draw(c, drawable, cx + itemWidth / 2 - drawable.getMinimumWidth() / 2, viewHeight / 2 - drawable.getMinimumHeight() / 2, Paints.getPorterDuffPaint(color));
@@ -774,8 +823,30 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     }
   }
 
+  private static final CounterAlphaProvider DEFAULT_COUNTER_ALPHA_PROVIDER = new CounterAlphaProvider() {
+  };
+
+  public interface CounterAlphaProvider {
+    default float getTextAlpha (@FloatRange(from = 0f, to = 1f) float alphaFactor) {
+      return .5f + .5f * alphaFactor;
+    }
+    default float getDrawableAlpha (@FloatRange(from = 0f, to = 1f) float alphaFactor) {
+      return .5f + .5f * alphaFactor;
+    }
+    default float getBackgroundAlpha (@FloatRange(from = 0f, to = 1f) float alphaFactor) {
+      return .5f + .5f * alphaFactor;
+    }
+  }
+
+  public void setCounterAlphaProvider (CounterAlphaProvider counterAlphaProvider) {
+    this.counterAlphaProvider = counterAlphaProvider;
+  }
+
   public interface OnItemClickListener {
     void onPagerItemClick (int index);
+    default boolean onPagerItemLongClick (int index) {
+      return false;
+    }
   }
 
   public interface OnSlideOffListener {
@@ -913,5 +984,10 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
         setTranslationX(itemWidth * index);
       }
     }
+  }
+
+  @Override
+  public void onEmojiUpdated (boolean isPackSwitch) {
+    invalidate();
   }
 }

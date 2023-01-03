@@ -22,6 +22,7 @@ import android.os.SystemClock;
 import android.widget.Toast;
 
 import androidx.annotation.AnyThread;
+import androidx.annotation.DrawableRes;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -92,9 +93,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import me.vkryl.core.ArrayUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.FileUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.collection.LongList;
+import me.vkryl.core.collection.LongSet;
 import me.vkryl.core.collection.LongSparseIntArray;
 import me.vkryl.core.collection.LongSparseLongArray;
 import me.vkryl.core.lambda.CancellableRunnable;
@@ -103,7 +107,6 @@ import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.lambda.RunnableInt;
 import me.vkryl.core.lambda.RunnableLong;
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.util.ConditionalExecutor;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.ChatPosition;
@@ -503,6 +506,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private int maxMessageTextLength = 4000;
 
   private int installedStickerSetLimit = 200;
+
+  private long chatFilterChosenChatCountMax = 100;
 
   private boolean disableContactRegisteredNotifications = false;
 
@@ -2184,6 +2189,24 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     } : okHandler();
   }
 
+  public <T extends TdApi.Object> Client.ResultHandler okHandler (Class<T> objectClass) {
+    return okHandler(objectClass, null);
+  }
+
+  public <T extends TdApi.Object> Client.ResultHandler okHandler (Class<T> objectClass, @Nullable Runnable after) {
+    return object -> {
+      if (objectClass.isInstance(object)) {
+        if (after != null) {
+          tdlib().ui().post(after);
+        }
+      } else if (object.getConstructor() == TdApi.Error.CONSTRUCTOR) {
+        UI.showError(object);
+      } else {
+        Log.unexpectedTdlibResponse(object, null, objectClass, TdApi.Error.class);
+      }
+    };
+  }
+
   public Client.ResultHandler doneHandler () {
     return doneHandler;
   }
@@ -2270,7 +2293,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     if (chatIds == null || chatIds.length == 0)
       return;
     if (after != null) {
-      int[] counter = new int[]{chatIds.length};
+      int[] counter = new int[] {chatIds.length};
       for (long chatId : chatIds) {
         client().send(new TdApi.GetChat(chatId), result -> {
           silentHandler.onResult(result);
@@ -3054,6 +3077,18 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
+  public int mainChatListPosition () {
+    synchronized (dataLock) {
+      return mainChatListPosition;
+    }
+  }
+
+  public TdApi.ChatFilterInfo[] chatFilterInfos () {
+    synchronized (dataLock) {
+      return chatFilters;
+    }
+  }
+
   public TdApi.ChatFilterInfo chatFilterInfo (int chatFilterId) {
     synchronized (dataLock) {
       if (chatFilters != null) {
@@ -3194,7 +3229,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       final long userId = msg.viaBotUserId != 0 ? msg.viaBotUserId : Td.getSenderUserId(msg);
       if (userId != 0) {
         TdApi.User user = cache().user(userId);
-        return user != null && !StringUtils.isEmpty(user.username) ? user.username :null;
+        return user != null && !StringUtils.isEmpty(user.username) ? user.username : null;
       }
     }
     return null;
@@ -6214,6 +6249,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return maxMessageTextLength;
   }
 
+  public long chatFilterChosenChatCountMax () {
+    return chatFilterChosenChatCountMax;
+  }
+
   public @ConnectionState int connectionState () {
     return connectionState;
   }
@@ -7100,12 +7139,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     listeners.updateChatAvailableReactions(update);
   }
 
-  private TdApi.ChatFilterInfo[] chatFilters;
+  private int mainChatListPosition;
+  private TdApi.ChatFilterInfo[] chatFilters = new TdApi.ChatFilterInfo[0];
 
   @TdlibThread
   private void updateChatFilters (TdApi.UpdateChatFilters update) {
     synchronized (dataLock) {
       this.chatFilters = update.chatFilters;
+      this.mainChatListPosition = update.mainChatListPosition;
     }
     listeners.updateChatFilters(update);
   }
@@ -7722,7 +7763,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   @TdlibThread
-  private boolean setUnreadChatCounters(@NonNull TdApi.ChatList chatList, int totalCount, int unreadChatCount, int unreadUnmutedCount, int markedAsUnreadCount, int markedAsUnreadUnmutedCount) {
+  private boolean setUnreadChatCounters (@NonNull TdApi.ChatList chatList, int totalCount, int unreadChatCount, int unreadUnmutedCount, int markedAsUnreadCount, int markedAsUnreadUnmutedCount) {
     TdlibCounter counter = getCounter(chatList);
 
     int oldUnreadCount = Math.max(counter.chatCount, 0);
@@ -7787,7 +7828,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         long longValue = ((TdApi.OptionValueInteger) update.value).value;
 
         if (Log.isEnabled(Log.TAG_TDLIB_OPTIONS)) {
-          Log.v(Log.TAG_TDLIB_OPTIONS,"optionInteger %s -> %d", name, longValue);
+          Log.v(Log.TAG_TDLIB_OPTIONS, "optionInteger %s -> %d", name, longValue);
         }
 
         switch (name) {
@@ -7847,6 +7888,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           case "themed_emoji_statuses_sticker_set_id":
             this.themedEmojiStatusesStickerSetId = longValue;
             break;
+          case "chat_filter_chosen_chat_count_max":
+            this.chatFilterChosenChatCountMax = longValue;
+            break;
         }
 
         break;
@@ -7856,7 +7900,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         boolean boolValue = ((TdApi.OptionValueBoolean) update.value).value;
 
         if (Log.isEnabled(Log.TAG_TDLIB_OPTIONS)) {
-          Log.v(Log.TAG_TDLIB_OPTIONS,"optionBool %s -> %b", name, boolValue);
+          Log.v(Log.TAG_TDLIB_OPTIONS, "optionBool %s -> %b", name, boolValue);
         }
 
         switch (name) {
@@ -7924,7 +7968,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
       case TdApi.OptionValueEmpty.CONSTRUCTOR: {
         if (Log.isEnabled(Log.TAG_TDLIB_OPTIONS)) {
-          Log.v(Log.TAG_TDLIB_OPTIONS,"optionEmpty %s -> empty", name);
+          Log.v(Log.TAG_TDLIB_OPTIONS, "optionEmpty %s -> empty", name);
         }
 
         switch (name) {
@@ -8784,7 +8828,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   // Emoji
 
-  void fetchAllMessages (long chatId, @Nullable String query, @Nullable TdApi.SearchMessagesFilter filter,  @NonNull RunnableData<List<TdApi.Message>> callback) {
+  void fetchAllMessages (long chatId, @Nullable String query, @Nullable TdApi.SearchMessagesFilter filter, @NonNull RunnableData<List<TdApi.Message>> callback) {
     List<TdApi.Message> messages = new ArrayList<>();
     boolean needFilter = !StringUtils.isEmpty(query) || filter != null;
     TdApi.Function<?> function;
@@ -9477,7 +9521,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public boolean haveAnySettingsSuggestions () {
     synchronized (dataLock) {
-      for (TdApi.SuggestedAction action: suggestedActions) {
+      for (TdApi.SuggestedAction action : suggestedActions) {
         if (isSettingSuggestion(action))
           return true;
       }
@@ -9509,5 +9553,96 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     } else {
       return chatTitle(Td.getSenderId(sender));
     }
+  }
+
+  public String chatFilterIconName (TdApi.ChatFilter chatFilter) {
+    if (!StringUtils.isEmpty(chatFilter.iconName))
+      return chatFilter.iconName;
+    TdApi.Object result = clientExecute(new TdApi.GetChatFilterDefaultIconName(chatFilter), 0);
+    if (result != null && result.getConstructor() == TdApi.Text.CONSTRUCTOR) {
+      return ((TdApi.Text) result).text;
+    }
+    return "";
+  }
+
+  public @DrawableRes int chatFilterIcon (TdApi.ChatFilter chatFilter, @DrawableRes int defaultIcon) {
+    return TD.iconByName(chatFilterIconName(chatFilter), defaultIcon);
+  }
+
+  public void addChatsToChatFilter (int chatFilterId, long[] chatIds) {
+    if (chatIds.length == 0) {
+      return;
+    }
+    send(new TdApi.GetChatFilter(chatFilterId), (result) -> {
+      switch (result.getConstructor()) {
+        case TdApi.ChatFilter.CONSTRUCTOR:
+          addChatsToChatFilter(chatFilterId, (TdApi.ChatFilter) result, chatIds);
+          break;
+        case TdApi.Error.CONSTRUCTOR:
+          UI.showError(result);
+          break;
+        default:
+          Log.unexpectedTdlibResponse(result, TdApi.GetChatFilter.class, TdApi.ChatFilter.class, TdApi.Error.class);
+          break;
+      }
+    });
+  }
+
+  public void addChatsToChatFilter (int chatFilterId, TdApi.ChatFilter chatFilter, long[] chatIds) {
+    if (chatIds.length == 0) {
+      return;
+    }
+    LongSet includedChatIds = new LongSet(chatFilter.includedChatIds);
+    includedChatIds.addAll(chatIds);
+    chatFilter.includedChatIds = includedChatIds.toArray();
+    chatFilter.excludedChatIds = ArrayUtils.removeAll(chatFilter.excludedChatIds, chatIds);
+    send(new TdApi.EditChatFilter(chatFilterId, chatFilter), okHandler(TdApi.ChatFilterInfo.class));
+  }
+
+  public void removeChatsFromChatFilter (int chatFilterId, long[] chatIds) {
+    if (chatIds.length == 0) {
+      return;
+    }
+    send(new TdApi.GetChatFilter(chatFilterId), (result) -> {
+      switch (result.getConstructor()) {
+        case TdApi.ChatFilter.CONSTRUCTOR:
+          removeChatsFromChatFilter(chatFilterId, (TdApi.ChatFilter) result, chatIds);
+          break;
+        case TdApi.Error.CONSTRUCTOR:
+          UI.showError(result);
+          break;
+        default:
+          Log.unexpectedTdlibResponse(result, TdApi.GetChatFilter.class, TdApi.ChatFilter.class, TdApi.Error.class);
+          break;
+      }
+    });
+  }
+
+  public void removeChatsFromChatFilter (int chatFilterId, TdApi.ChatFilter chatFilter, long[] chatIds) {
+    if (chatIds.length == 0) {
+      return;
+    }
+    LongList pinnedChatIds = new LongList(chatFilter.pinnedChatIds);
+    LongSet includedChatIds = new LongSet(chatFilter.includedChatIds);
+    LongSet excludedChatIds = new LongSet(chatFilter.excludedChatIds);
+    for (long chatId : chatIds) {
+       boolean removed = pinnedChatIds.remove(chatId) | includedChatIds.remove(chatId);
+       if (removed && Config.CHAT_FOLDERS_SMART_CHAT_DELETION_ENABLED) {
+         TdApi.Chat chat = chat(chatId);
+         boolean isBotChat = isBotChat(chat);
+         boolean isUserChat = isUserChat(chat) && !isBotChat;
+         boolean isContactChat = isUserChat && TD.isContact(chatUser(chat));
+         if (!chatFilter.includeContacts && isUserChat && isContactChat) continue;
+         if (!chatFilter.includeNonContacts && isUserChat && !isContactChat) continue;
+         if (!chatFilter.includeGroups && TD.isMultiChat(chat)) continue;
+         if (!chatFilter.includeChannels && isChannelChat(chat)) continue;
+         if (!chatFilter.includeBots && isBotChat) continue;
+       }
+       excludedChatIds.add(chatId);
+    }
+    chatFilter.pinnedChatIds = pinnedChatIds.get();
+    chatFilter.includedChatIds = includedChatIds.toArray();
+    chatFilter.excludedChatIds = excludedChatIds.toArray();
+    send(new TdApi.EditChatFilter(chatFilterId, chatFilter), okHandler(TdApi.ChatFilterInfo.class));
   }
 }

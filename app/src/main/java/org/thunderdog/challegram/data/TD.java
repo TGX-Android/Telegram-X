@@ -46,6 +46,7 @@ import android.view.View;
 import android.widget.Toast;
 
 import androidx.annotation.DrawableRes;
+import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RawRes;
@@ -75,6 +76,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Screen;
@@ -97,9 +99,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import kotlin.collections.SetsKt;
 import me.vkryl.android.html.HtmlEncoder;
 import me.vkryl.android.html.HtmlParser;
 import me.vkryl.android.html.HtmlTag;
@@ -110,7 +114,9 @@ import me.vkryl.core.DateUtils;
 import me.vkryl.core.FileUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.collection.IntList;
 import me.vkryl.core.collection.LongList;
+import me.vkryl.core.lambda.Filter;
 import me.vkryl.core.lambda.Future;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.unit.ByteUnit;
@@ -193,7 +199,7 @@ public class TD {
     throw new IllegalArgumentException(Lang.getResourceEntryName(rightId));
   }
 
-  private static final int[] color_ids =  {
+  private static final int[] color_ids = {
     R.id.theme_color_avatarRed      /* red 0 */,
     R.id.theme_color_avatarOrange   /* orange 1 */,
     R.id.theme_color_avatarYellow   /* yellow 2 */,
@@ -209,7 +215,7 @@ public class TD {
       return false;
     if ((a.forwardInfo == null) == (b.forwardInfo != null))
       return false;
-    if (a.forwardInfo == null){
+    if (a.forwardInfo == null) {
       return a.chatId == b.chatId;
     }
     if (a.forwardInfo.origin.getConstructor() != b.forwardInfo.origin.getConstructor() || a.forwardInfo.fromChatId != b.forwardInfo.fromChatId)
@@ -654,7 +660,7 @@ public class TD {
     return getFileColorId(doc.fileName, doc.mimeType, isOutBubble);
   }
 
-  public static int getFileColorId (String fileName, @Nullable  String mimeType, boolean isOutBubble) {
+  public static int getFileColorId (String fileName, @Nullable String mimeType, boolean isOutBubble) {
     String mime = mimeType != null ? mimeType.toLowerCase() : null;
     int i = fileName.lastIndexOf('.');
     String ext = i != -1 ? fileName.substring(i + 1).toLowerCase() : "";
@@ -3468,7 +3474,7 @@ public class TD {
         switch (status.getConstructor()) {
           case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
           case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
-              return true;
+            return true;
         }
         return false;
       case TdApi.SupergroupMembersFilterRestricted.CONSTRUCTOR:
@@ -4366,7 +4372,7 @@ public class TD {
   }
 
   public static boolean canEditText (TdApi.MessageContent content) {
-     return canBeEdited(content) && content.getConstructor() != TdApi.MessageLocation.CONSTRUCTOR;
+    return canBeEdited(content) && content.getConstructor() != TdApi.MessageLocation.CONSTRUCTOR;
   }
 
   public static boolean canBeEdited (TdApi.MessageContent content) {
@@ -6338,11 +6344,11 @@ public class TD {
     return captionMessage;
   }
 
-  private static ContentPreview getNotificationPinned(int res, int type, Tdlib tdlib, long chatId, TdApi.MessageSender sender, String senderName, String argument, int arg1) {
+  private static ContentPreview getNotificationPinned (int res, int type, Tdlib tdlib, long chatId, TdApi.MessageSender sender, String senderName, String argument, int arg1) {
     return getNotificationPinned(res, type, tdlib, chatId, sender, argument, senderName, false, arg1);
   }
 
-  private static ContentPreview getNotificationPinned(int res, int type, Tdlib tdlib, long chatId, TdApi.MessageSender sender, String senderName, String argument, boolean argumentTranslatable, int arg1) {
+  private static ContentPreview getNotificationPinned (int res, int type, Tdlib tdlib, long chatId, TdApi.MessageSender sender, String senderName, String argument, boolean argumentTranslatable, int arg1) {
     String text;
     if (StringUtils.isEmpty(argument)) {
       try {
@@ -6890,5 +6896,281 @@ public class TD {
         return true;
     }
     return false;
+  }
+
+  public static boolean isMain (@Nullable TdApi.ChatList chatList) {
+    return chatList != null && chatList.getConstructor() == TdApi.ChatListMain.CONSTRUCTOR;
+  }
+
+  public static boolean isArchive (@Nullable TdApi.ChatList chatList) {
+    return chatList != null && chatList.getConstructor() == TdApi.ChatListArchive.CONSTRUCTOR;
+  }
+
+  public static boolean isFilter (@Nullable TdApi.ChatList chatList) {
+    return chatList != null && chatList.getConstructor() == TdApi.ChatListFilter.CONSTRUCTOR;
+  }
+
+  public static void saveChatFilter (Bundle bundle, String prefix, @Nullable TdApi.ChatFilter chatFilter) {
+    if (chatFilter == null) {
+      return;
+    }
+    bundle.putString(prefix + "_title", chatFilter.title);
+    bundle.putString(prefix + "_iconName", chatFilter.iconName);
+    bundle.putLongArray(prefix + "_pinnedChatIds", chatFilter.pinnedChatIds);
+    bundle.putLongArray(prefix + "_includedChatIds", chatFilter.includedChatIds);
+    bundle.putLongArray(prefix + "_excludedChatIds", chatFilter.excludedChatIds);
+    bundle.putIntArray(prefix + "_includedChatTypes", includedChatTypes(chatFilter));
+    bundle.putIntArray(prefix + "_excludedChatTypes", excludedChatTypes(chatFilter));
+  }
+
+  public static @Nullable TdApi.ChatFilter restoreChatFilter (Bundle bundle, String prefix) {
+    String title = bundle.getString(prefix + "_title");
+    if (title == null) {
+      return null;
+    }
+    TdApi.ChatFilter chatFilter = newChatFilter(title);
+    chatFilter.iconName = bundle.getString(prefix + "_iconName");
+    chatFilter.pinnedChatIds = bundle.getLongArray(prefix + "_pinnedChatIds");
+    chatFilter.includedChatIds = bundle.getLongArray(prefix + "_includedChatIds");
+    chatFilter.excludedChatIds = bundle.getLongArray(prefix + "_excludedChatIds");
+    int[] includedChatTypes = bundle.getIntArray(prefix + "_includedChatTypes");
+    int[] excludedChatTypes = bundle.getIntArray(prefix + "_excludedChatTypes");
+    updateIncludedChatTypes(chatFilter, (chatType) -> ArrayUtils.contains(includedChatTypes, chatType));
+    updateExcludedChatTypes(chatFilter, (chatType) -> ArrayUtils.contains(excludedChatTypes, chatType));
+    return chatFilter;
+  }
+
+  public static TdApi.ChatFilter newChatFilter () {
+    return new TdApi.ChatFilter("", "", ArrayUtils.EMPTY_LONGS, ArrayUtils.EMPTY_LONGS, ArrayUtils.EMPTY_LONGS, false, false, false, false, false, false, false, false);
+  }
+
+  public static TdApi.ChatFilter newChatFilter (String title) {
+    TdApi.ChatFilter chatFilter = newChatFilter();
+    chatFilter.title = title;
+    return chatFilter;
+  }
+
+  public static TdApi.ChatFilter newChatFilter (long[] includedChatIds) {
+    TdApi.ChatFilter chatFilter = newChatFilter();
+    chatFilter.includedChatIds = includedChatIds;
+    return chatFilter;
+  }
+
+  public static TdApi.ChatFilter copyOf (TdApi.ChatFilter filter) {
+    return new TdApi.ChatFilter(
+      filter.title,
+      filter.iconName,
+      filter.pinnedChatIds,
+      filter.includedChatIds,
+      filter.excludedChatIds,
+      filter.excludeMuted,
+      filter.excludeRead,
+      filter.excludeArchived,
+      filter.includeContacts,
+      filter.includeNonContacts,
+      filter.includeBots,
+      filter.includeGroups,
+      filter.includeChannels
+    );
+  }
+
+  public static boolean contentEquals (TdApi.ChatFilter lhs, TdApi.ChatFilter rhs) {
+    if (lhs == rhs) {
+      return true;
+    }
+    return Objects.equals(lhs.title, rhs.title) &&
+      Objects.equals(lhs.iconName, rhs.iconName) &&
+      lhs.includeContacts == rhs.includeContacts &&
+      lhs.includeNonContacts == rhs.includeNonContacts &&
+      lhs.includeGroups == rhs.includeGroups &&
+      lhs.includeChannels == rhs.includeChannels &&
+      lhs.includeBots == rhs.includeBots &&
+      lhs.excludeMuted == rhs.excludeMuted &&
+      lhs.excludeRead == rhs.excludeRead &&
+      lhs.excludeArchived == rhs.excludeArchived &&
+      lhs.pinnedChatIds.length == rhs.pinnedChatIds.length &&
+      lhs.includedChatIds.length == rhs.includedChatIds.length &&
+      lhs.excludedChatIds.length == rhs.excludedChatIds.length &&
+      Arrays.equals(lhs.pinnedChatIds, rhs.pinnedChatIds) &&
+      SetsKt.setOf(lhs.includedChatIds).equals(SetsKt.setOf(rhs.includedChatIds)) &&
+      SetsKt.setOf(lhs.excludedChatIds).equals(SetsKt.setOf(rhs.excludedChatIds));
+  }
+
+  public static int[] includedChatTypes (@Nullable TdApi.ChatFilter chatFilter) {
+    if (chatFilter == null)
+      return ArrayUtils.EMPTY_INTS;
+    IntList chatTypes = new IntList(5);
+    if (chatFilter.includeContacts) chatTypes.append(R.id.chatType_contact);
+    if (chatFilter.includeNonContacts) chatTypes.append(R.id.chatType_nonContact);
+    if (chatFilter.includeGroups) chatTypes.append(R.id.chatType_group);
+    if (chatFilter.includeChannels) chatTypes.append(R.id.chatType_channel);
+    if (chatFilter.includeBots) chatTypes.append(R.id.chatType_bot);
+    return chatTypes.get();
+  }
+
+  public static int[] excludedChatTypes (@Nullable TdApi.ChatFilter chatFilter) {
+    if (chatFilter == null)
+      return ArrayUtils.EMPTY_INTS;
+    IntList chatTypes = new IntList(3);
+    if (chatFilter.excludeMuted) chatTypes.append(R.id.chatType_muted);
+    if (chatFilter.excludeRead) chatTypes.append(R.id.chatType_read);
+    if (chatFilter.excludeArchived) chatTypes.append(R.id.chatType_archived);
+    return chatTypes.get();
+  }
+
+  public static void updateIncludedChatTypes (TdApi.ChatFilter chatFilter, Filter<Integer> filter) {
+    chatFilter.includeContacts = filter.accept(R.id.chatType_contact);
+    chatFilter.includeNonContacts = filter.accept(R.id.chatType_nonContact);
+    chatFilter.includeGroups = filter.accept(R.id.chatType_group);
+    chatFilter.includeChannels = filter.accept(R.id.chatType_channel);
+    chatFilter.includeBots = filter.accept(R.id.chatType_bot);
+  }
+
+  public static void updateExcludedChatTypes (TdApi.ChatFilter chatFilter, Filter<Integer> filter) {
+    chatFilter.excludeMuted = filter.accept(R.id.chatType_muted);
+    chatFilter.excludeRead = filter.accept(R.id.chatType_read);
+    chatFilter.excludeArchived = filter.accept(R.id.chatType_archived);
+  }
+
+  public static final int[] CHAT_TYPES = {
+    R.id.chatType_contact,
+    R.id.chatType_nonContact,
+    R.id.chatType_group,
+    R.id.chatType_channel,
+    R.id.chatType_bot,
+    R.id.chatType_muted,
+    R.id.chatType_read,
+    R.id.chatType_archived
+  };
+
+  public static final int[] CHAT_TYPES_TO_INCLUDE = {
+    R.id.chatType_contact,
+    R.id.chatType_nonContact,
+    R.id.chatType_group,
+    R.id.chatType_channel,
+    R.id.chatType_bot
+  };
+
+  public static final int[] CHAT_TYPES_TO_EXCLUDE = {
+    R.id.chatType_muted,
+    R.id.chatType_read,
+    R.id.chatType_archived
+  };
+
+  public static @StringRes int chatTypeName (@IdRes int chatType) {
+    if (chatType == R.id.chatType_contact) return R.string.CategoryContacts;
+    if (chatType == R.id.chatType_nonContact) return R.string.CategoryNonContacts;
+    if (chatType == R.id.chatType_group) return R.string.CategoryGroups;
+    if (chatType == R.id.chatType_channel) return R.string.CategoryChannels;
+    if (chatType == R.id.chatType_bot) return R.string.CategoryBots;
+    if (chatType == R.id.chatType_muted) return R.string.CategoryMuted;
+    if (chatType == R.id.chatType_read) return R.string.CategoryRead;
+    if (chatType == R.id.chatType_archived) return R.string.CategoryArchive;
+    throw new IllegalArgumentException();
+  }
+
+  public static @DrawableRes int chatTypeIcon16 (@IdRes int chatType) {
+    if (chatType == R.id.chatType_contact) return R.drawable.baseline_account_circle_16;
+    if (chatType == R.id.chatType_nonContact) return R.drawable.baseline_help_16;
+    if (chatType == R.id.chatType_group) return R.drawable.baseline_group_16;
+    if (chatType == R.id.chatType_channel) return R.drawable.baseline_bullhorn_16;
+    if (chatType == R.id.chatType_bot) return R.drawable.deproko_baseline_bots_16;
+    if (chatType == R.id.chatType_muted) return R.drawable.baseline_notifications_off_16;
+    if (chatType == R.id.chatType_read) return R.drawable.andrejsharapov_baseline_message_check_16;
+    if (chatType == R.id.chatType_archived) return R.drawable.baseline_archive_16;
+    throw new IllegalArgumentException();
+  }
+
+  public static @DrawableRes int chatTypeIcon24 (@IdRes int chatType) {
+    if (chatType == R.id.chatType_contact) return R.drawable.baseline_account_circle_24;
+    if (chatType == R.id.chatType_nonContact) return R.drawable.baseline_help_24;
+    if (chatType == R.id.chatType_group) return R.drawable.baseline_group_24;
+    if (chatType == R.id.chatType_channel) return R.drawable.baseline_bullhorn_24;
+    if (chatType == R.id.chatType_bot) return R.drawable.deproko_baseline_bots_24;
+    if (chatType == R.id.chatType_muted) return R.drawable.baseline_notifications_off_24;
+    if (chatType == R.id.chatType_read) return R.drawable.andrejsharapov_baseline_message_check_24;
+    if (chatType == R.id.chatType_archived) return R.drawable.baseline_archive_24;
+    throw new IllegalArgumentException();
+  }
+
+  public static @ThemeColorId int chatTypeColor (@IdRes int chatType) {
+    if (chatType == R.id.chatType_contact) return R.id.theme_color_avatarBlue;
+    if (chatType == R.id.chatType_nonContact) return R.id.theme_color_avatarCyan;
+    if (chatType == R.id.chatType_group) return R.id.theme_color_avatarGreen;
+    if (chatType == R.id.chatType_channel) return R.id.theme_color_avatarOrange;
+    if (chatType == R.id.chatType_bot) return R.id.theme_color_avatarRed;
+    if (chatType == R.id.chatType_muted) return R.id.theme_color_avatarPink;
+    if (chatType == R.id.chatType_read) return R.id.theme_color_avatarBlue;
+    if (chatType == R.id.chatType_archived) return R.id.theme_color_avatarArchive;
+    throw new IllegalArgumentException();
+  }
+
+  public static @DrawableRes int iconByName (String iconName, @DrawableRes int defaultIcon) {
+    if (StringUtils.isEmpty(iconName))
+      return defaultIcon;
+    switch (iconName) {
+      case "All":
+        return defaultIcon;
+      case "Unmuted":
+        return R.drawable.baseline_notifications_active_24;
+      case "Bots":
+        return R.drawable.deproko_baseline_bots_24;
+      case "Channels":
+        return R.drawable.baseline_bullhorn_24;
+      case "Groups":
+        return R.drawable.baseline_group_24;
+      case "Private":
+        return R.drawable.baseline_person_24;
+      case "Setup":
+        return R.drawable.baseline_settings_24;
+      case "Cat":
+        return R.drawable.templarian_baseline_cat_24;
+      case "Crown":
+        return R.drawable.baseline_crown_circle_24;
+      case "Favorite":
+        return R.drawable.baseline_star_24;
+      case "Flower":
+        return R.drawable.baseline_local_florist_24;
+      case "Game":
+        return R.drawable.baseline_sports_esports_24;
+      case "Home":
+        return R.drawable.baseline_home_24;
+      case "Love":
+        return R.drawable.baseline_favorite_24;
+      case "Mask":
+        return R.drawable.deproko_baseline_masks_24;
+      case "Party":
+        return R.drawable.baseline_party_popper_24;
+      case "Sport":
+        return R.drawable.baseline_sports_soccer_24;
+      case "Study":
+        return R.drawable.baseline_school_24;
+      case "Work":
+        return R.drawable.baseline_work_24;
+      case "Airplane":
+        return R.drawable.baseline_flight_24;
+      case "Book":
+        return R.drawable.baseline_book_24;
+      case "Light":
+        return R.drawable.deproko_baseline_lamp_filled_24;
+      case "Like":
+        return R.drawable.baseline_thumb_up_24;
+      case "Money":
+        return R.drawable.baseline_currency_bitcoin_24;
+      case "Note":
+        return R.drawable.baseline_music_note_24;
+      case "Palette":
+        return R.drawable.baseline_palette_24;
+      case "Unread":
+        return R.drawable.baseline_mark_chat_unread_24;
+      case "Travel":
+        return R.drawable.baseline_explore_24;
+      case "Custom":
+        return defaultIcon;
+      case "Trade":
+        return defaultIcon;
+      default:
+        return defaultIcon;
+    }
   }
 }

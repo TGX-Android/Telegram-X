@@ -15,7 +15,6 @@
 package org.thunderdog.challegram.util.text;
 
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.view.View;
@@ -41,9 +40,9 @@ import me.vkryl.android.animator.BounceAnimator;
 import me.vkryl.android.animator.CounterAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.animator.ListAnimator;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
-import me.vkryl.core.BitwiseUtils;
 
 public final class Counter implements FactorAnimator.Target, CounterAnimator.Callback<Text>, TextColorSet  {
   public static Callback newCallback (View view) {
@@ -338,13 +337,14 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
   }
 
   public void draw (Canvas c, float cx, float cy, int gravity, float alpha, DrawableProvider drawableProvider, @PorterDuffThemeColorId int drawableColorId) {
-    draw(c, cx, cy, gravity, alpha, alpha, drawableProvider, drawableColorId);
+    draw(c, cx, cy, gravity, alpha, alpha, alpha, drawableProvider, drawableColorId);
   }
 
-  public void draw (Canvas c, float cx, float cy, int gravity, float alpha, float drawableAlpha, DrawableProvider drawableProvider, @PorterDuffThemeColorId int drawableColorId) {
-    if (alpha * getVisibility() > 0f) {
+  public void draw (Canvas c, float cx, float cy, int gravity, float textAlpha, float backgroundAlpha, float drawableAlpha, DrawableProvider drawableProvider, @PorterDuffThemeColorId int drawableColorId) {
+    boolean needBackground = BitwiseUtils.getFlag(flags, FLAG_NEED_BACKGROUND);
+    if (textAlpha * getVisibility() > 0f || (needBackground && backgroundAlpha * getVisibility() > 0f)) {
       Drawable drawable = getDrawable(drawableProvider, drawableColorId);
-      DrawAlgorithms.drawCounter(c, cx, cy, gravity, counter, textSize, BitwiseUtils.getFlag(flags, FLAG_NEED_BACKGROUND),this, drawable, drawableGravity, drawableColorId, Screen.dp(drawableMarginDp), alpha * getVisibility(), drawableAlpha * getVisibility(), isVisible.getFloatValue());
+      DrawAlgorithms.drawCounter(c, cx, cy, gravity, counter, textSize, textAlpha * getVisibility(), needBackground, this, drawable, drawableGravity, drawableColorId, Screen.dp(drawableMarginDp), backgroundAlpha * getVisibility(), drawableAlpha * getVisibility(), isVisible.getFloatValue());
     }
   }
 

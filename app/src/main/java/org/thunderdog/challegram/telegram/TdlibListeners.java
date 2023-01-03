@@ -19,6 +19,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.data.TD;
 
 import java.util.ArrayList;
@@ -40,6 +41,7 @@ public class TdlibListeners {
   final ReferenceList<MessageListener> messageListeners;
   final ReferenceList<MessageEditListener> messageEditListeners;
   final ReferenceList<ChatListener> chatListeners;
+  final ReferenceList<ChatFiltersListener> chatFiltersListeners;
   final ReferenceMap<String, ChatListListener> chatListListeners;
   final ReferenceList<NotificationSettingsListener> settingsListeners;
   final ReferenceList<StickersListener> stickersListeners;
@@ -76,6 +78,7 @@ public class TdlibListeners {
     this.messageEditListeners = new ReferenceList<>();
     this.chatListeners = new ReferenceList<>();
     this.chatListListeners = new ReferenceMap<>(true);
+    this.chatFiltersListeners = new ReferenceList<>(true);
     this.settingsListeners = new ReferenceList<>(true);
     this.stickersListeners = new ReferenceList<>(true);
     this.animationsListeners = new ReferenceList<>();
@@ -386,6 +389,16 @@ public class TdlibListeners {
   @AnyThread
   public void unsubscribeFromChatListUpdates (@NonNull TdApi.ChatList chatList, ChatListListener listener) {
     chatListListeners.remove(TD.makeChatListKey(chatList), listener);
+  }
+
+  @AnyThread
+  public void subscribeToChatFiltersUpdates (ChatFiltersListener listener) {
+    chatFiltersListeners.add(listener);
+  }
+
+  @AnyThread
+  public void unsubscribeFromChatFiltersUpdates (ChatFiltersListener listener) {
+    chatFiltersListeners.remove(listener);
   }
 
   @AnyThread
@@ -1125,7 +1138,9 @@ public class TdlibListeners {
   // updateChatFilters
 
   void updateChatFilters (TdApi.UpdateChatFilters update) {
-    // TODO?
+    for (ChatFiltersListener listener : chatFiltersListeners) {
+      listener.onChatFiltersChanged(update.chatFilters, update.mainChatListPosition);
+    }
   }
 
   // updateChatAvailableReactions
