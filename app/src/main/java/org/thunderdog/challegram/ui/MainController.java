@@ -1814,7 +1814,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
   private int getUnreadCount (TdApi.ChatList chatList) {
     TdlibCounter counter = tdlib.getCounter(chatList);
-    return counter.chatCount;
+    return Math.max(counter.chatCount, 0);
   }
 
   private final TextColorSet unreadCounterColorSet = new TextColorSet() {
