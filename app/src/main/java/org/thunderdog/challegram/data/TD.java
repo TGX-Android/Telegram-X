@@ -7065,7 +7065,7 @@ public class TD {
     if (chatType == R.id.chatType_bot) return R.string.CategoryBots;
     if (chatType == R.id.chatType_muted) return R.string.CategoryMuted;
     if (chatType == R.id.chatType_read) return R.string.CategoryRead;
-    if (chatType == R.id.chatType_archived) return R.string.CategoryArchive;
+    if (chatType == R.id.chatType_archived) return R.string.CategoryArchived;
     throw new IllegalArgumentException();
   }
 
