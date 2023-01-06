@@ -523,6 +523,8 @@ class Chip extends Drawable implements FlowListAnimator.Measurable, Drawable.Cal
   public static final int TYPE_CHAT = 1;
   public static final int TYPE_CHAT_TYPE = 2;
 
+  private static final float AVATAR_RADIUS = 12f;
+
   private static final int[] STATE_DEFAULT = new int[] {android.R.attr.state_enabled};
   private static final int[] STATE_PRESSED = new int[] {android.R.attr.state_enabled, android.R.attr.state_pressed};
 
@@ -545,10 +547,13 @@ class Chip extends Drawable implements FlowListAnimator.Measurable, Drawable.Cal
     this.label = buildLabel(tdlib.chatTitle(chatId));
     if (tdlib.isSelfChat(chatId)) {
       this.avatarFile = null;
-      this.avatarPlaceholder = new AvatarPlaceholder(12f, new AvatarPlaceholder.Metadata(R.id.theme_color_avatarSavedMessages, R.drawable.baseline_bookmark_16), drawableProvider);
+      this.avatarPlaceholder = new AvatarPlaceholder(AVATAR_RADIUS, new AvatarPlaceholder.Metadata(R.id.theme_color_avatarSavedMessages, R.drawable.baseline_bookmark_16), drawableProvider);
+    } else if (tdlib.isRepliesChat(chatId)) {
+      this.avatarFile = null;
+      this.avatarPlaceholder = new AvatarPlaceholder(AVATAR_RADIUS, new AvatarPlaceholder.Metadata(R.id.theme_color_avatarReplies, R.drawable.baseline_reply_16), drawableProvider);
     } else {
-      this.avatarFile = tdlib.chatAvatar(chatId, Screen.dp(24f));
-      this.avatarPlaceholder = tdlib.chatPlaceholder(chatId, tdlib.chat(chatId), true, 12f, drawableProvider);
+      this.avatarFile = tdlib.chatAvatar(chatId, Screen.dp(AVATAR_RADIUS * 2));
+      this.avatarPlaceholder = tdlib.chatPlaceholder(chatId, tdlib.chat(chatId), true, AVATAR_RADIUS, drawableProvider);
     }
     this.drawableProvider = drawableProvider;
     this.complexReceiver = complexReceiver;
@@ -560,7 +565,7 @@ class Chip extends Drawable implements FlowListAnimator.Measurable, Drawable.Cal
     this.type = TYPE_CHAT_TYPE;
     this.label = buildLabel(Lang.getString(TD.chatTypeName(chatType)));
     this.avatarFile = null;
-    this.avatarPlaceholder = new AvatarPlaceholder(12f, new AvatarPlaceholder.Metadata(TD.chatTypeColor(chatType), TD.chatTypeIcon16(chatType)), drawableProvider);
+    this.avatarPlaceholder = new AvatarPlaceholder(AVATAR_RADIUS, new AvatarPlaceholder.Metadata(TD.chatTypeColor(chatType), TD.chatTypeIcon16(chatType)), drawableProvider);
     this.drawableProvider = drawableProvider;
     this.complexReceiver = null;
     initCrossDrawable();
@@ -604,7 +609,7 @@ class Chip extends Drawable implements FlowListAnimator.Measurable, Drawable.Cal
   public void requestFiles () {
     if (complexReceiver != null && avatarFile != null) {
       ImageReceiver imageReceiver = complexReceiver.getImageReceiver(id);
-      imageReceiver.setRadius(Screen.dp(12f));
+      imageReceiver.setRadius(Screen.dp(AVATAR_RADIUS));
       imageReceiver.requestFile(avatarFile);
     }
   }
@@ -637,7 +642,7 @@ class Chip extends Drawable implements FlowListAnimator.Measurable, Drawable.Cal
   }
 
   private static int getIntrinsicWidth (int labelWidth) {
-    return Screen.dp(4f + 24f + 8f + 8f + 18f + 8f) + labelWidth;
+    return Screen.dp(4f + AVATAR_RADIUS * 2 + 8f + 8f + 18f + 8f) + labelWidth;
   }
 
   @Override
@@ -662,7 +667,7 @@ class Chip extends Drawable implements FlowListAnimator.Measurable, Drawable.Cal
     canvas.drawRoundRect(roundRect, radius, radius, Paints.fillingPaint(Theme.fillingColor()));
     canvas.drawRoundRect(roundRect, radius, radius, outlinePaint);
 
-    int avatarRadius = Screen.dp(12f);
+    int avatarRadius = Screen.dp(AVATAR_RADIUS);
     int avatarX = bounds.left + avatarRadius + Screen.dp(4f);
     int avatarY = bounds.centerY();
     ImageReceiver imageReceiver = avatarFile != null && complexReceiver != null ? complexReceiver.getImageReceiver(id) : null;
