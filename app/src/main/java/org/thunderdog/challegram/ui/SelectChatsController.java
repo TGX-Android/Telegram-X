@@ -282,8 +282,12 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
 
   @Override
   protected void onDoneClick () {
-    saveChanges();
-    navigateBack();
+    if (inSearchMode()) {
+      closeSearchMode(null);
+    } else {
+      saveChanges();
+      navigateBack();
+    }
   }
 
   @Override
@@ -364,10 +368,10 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
     }
   }
 
-  private void toggleChatSelection (long chatId, @Nullable View view, boolean removeOnly) {
+  private boolean toggleChatSelection (long chatId, @Nullable View view, boolean removeOnly) {
     boolean selected = selectedChatIds.contains(chatId);
     if (!selected && removeOnly) {
-      return;
+      return false;
     }
     if (selected) {
       selectedChatIds.remove(chatId);
@@ -384,6 +388,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
       }
     }
     adapter.updateSimpleItemById(R.id.input);
+    return !selected;
   }
 
   private void toggleChatTypeSelection (@IdRes int chatType, @Nullable View view, boolean removeOnly) {
@@ -407,8 +412,12 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
 
   @Override
   protected boolean onFoundChatClick (View view, TGFoundChat chat) {
-    toggleChatSelection(chat.getChatId(), null, /* removeOnly */ false);
-    closeSearchMode(null);
+    boolean isChatSelected = toggleChatSelection(chat.getChatId(), null, /* removeOnly */ false);
+    if (view instanceof BetterChatView) {
+      ((BetterChatView) view).setIsChecked(isChatSelected, true);
+    } else {
+      closeSearchMode(null);
+    }
     return true;
   }
 
