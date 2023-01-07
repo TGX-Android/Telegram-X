@@ -886,7 +886,8 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       Views.setClickable(this);
     }
 
-    private boolean inSlideOff, needSlideOff;
+    private float touchDownY;
+    private boolean inSlideOff;
     private ViewParent lockedParent;
 
     @Override
@@ -896,36 +897,39 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
         return ((View) getParent()).getAlpha() >= 1f && super.onTouchEvent(e);
       }
       super.onTouchEvent(e);
-      if (e.getAction() == MotionEvent.ACTION_DOWN) {
-        if (lockedParent != null) {
-          lockedParent.requestDisallowInterceptTouchEvent(false);
-          lockedParent = null;
-        }
-        needSlideOff = slideOffListener.onSlideOffPrepare(this, e, index);
-        if (needSlideOff) {
-          lockedParent = getParent();
-          if (lockedParent != null) {
-            lockedParent.requestDisallowInterceptTouchEvent(true);
-          }
-        }
-      }
-      if (!needSlideOff) {
-        return true;
-      }
       switch (e.getAction()) {
+        case MotionEvent.ACTION_DOWN:
+          touchDownY = e.getY();
+          break;
         case MotionEvent.ACTION_MOVE: {
-          int start = getMeasuredHeight();
-          boolean inSlideOff = e.getY() >= start;
-          if (this.inSlideOff != inSlideOff) {
-            this.inSlideOff = inSlideOff;
-            if (inSlideOff) {
-              slideOffListener.onSlideOffStart(this, e, index);
-            } else {
-              slideOffListener.onSlideOffFinish(this, e, index, false);
+          if (lockedParent == null) {
+            if (Math.abs(e.getY() - touchDownY) > Screen.getTouchSlop()) {
+              if (lockedParent != null) {
+                lockedParent.requestDisallowInterceptTouchEvent(false);
+                lockedParent = null;
+              }
+              boolean needSlideOff = slideOffListener.onSlideOffPrepare(this, e, index);
+              if (needSlideOff) {
+                lockedParent = getParent();
+                if (lockedParent != null) {
+                  lockedParent.requestDisallowInterceptTouchEvent(true);
+                }
+              }
             }
-          }
-          if (inSlideOff) {
-            slideOffListener.onSlideOffMovement(this, e, index);
+          } else {
+            int start = getMeasuredHeight();
+            boolean inSlideOff = e.getY() >= start;
+            if (this.inSlideOff != inSlideOff) {
+              this.inSlideOff = inSlideOff;
+              if (inSlideOff) {
+                slideOffListener.onSlideOffStart(this, e, index);
+              } else {
+                slideOffListener.onSlideOffFinish(this, e, index, false);
+              }
+            }
+            if (inSlideOff) {
+              slideOffListener.onSlideOffMovement(this, e, index);
+            }
           }
           break;
         }
