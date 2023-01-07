@@ -7,7 +7,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
 
-import androidx.annotation.CheckResult;
 import androidx.annotation.IdRes;
 import androidx.annotation.Nullable;
 import androidx.core.view.ViewCompat;
@@ -35,13 +34,11 @@ import org.thunderdog.challegram.widget.BetterChatView;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.StringUtils;
-import me.vkryl.core.collection.LongList;
 
 public class EditChatFolderController extends RecyclerViewController<EditChatFolderController.Arguments> implements View.OnClickListener, SettingsAdapter.TextChangeListener, SelectChatsController.Delegate {
 
@@ -236,11 +233,11 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
     int id = v.getId();
     if (id == R.id.btn_folderIncludeChats) {
       SelectChatsController selectChats = new SelectChatsController(context, tdlib);
-      selectChats.setArguments(SelectChatsController.Arguments.includedChats(this, editedChatFilter));
+      selectChats.setArguments(SelectChatsController.Arguments.includedChats(this, chatFilterId, editedChatFilter));
       navigateTo(selectChats);
     } else if (id == R.id.btn_folderExcludeChats) {
       SelectChatsController selectChats = new SelectChatsController(context, tdlib);
-      selectChats.setArguments(SelectChatsController.Arguments.excludedChats(this, editedChatFilter));
+      selectChats.setArguments(SelectChatsController.Arguments.excludedChats(this, chatFilterId, editedChatFilter));
       navigateTo(selectChats);
     } else if (id == R.id.btn_removeFolder) {
       showRemoveFolderConfirm();
@@ -384,36 +381,16 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
   @Override
   public void onSelectedChatsChanged (int mode, Set<Long> chatIds, Set<Integer> chatTypes) {
     if (mode == SelectChatsController.MODE_FOLDER_INCLUDE_CHATS) {
-      if (chatIds.isEmpty()) {
-        editedChatFilter.pinnedChatIds = ArrayUtils.EMPTY_LONGS;
-        editedChatFilter.includedChatIds = ArrayUtils.EMPTY_LONGS;
-      } else {
-        LongList pinnedChatIds = new LongList(chatIds.size());
-        LongList includedChatIds = new LongList(chatIds.size());
-        for (long chatId : chatIds) {
-          if (ArrayUtils.contains(editedChatFilter.pinnedChatIds, chatId) || (originChatFilter != null && ArrayUtils.contains(originChatFilter.pinnedChatIds, chatId))) {
-            pinnedChatIds.append(chatId);
-          } else {
-            includedChatIds.append(chatId);
-          }
-        }
-        editedChatFilter.pinnedChatIds = pinnedChatIds.get();
-        editedChatFilter.includedChatIds = includedChatIds.get();
-      }
-      editedChatFilter.excludedChatIds = removeAll(editedChatFilter.excludedChatIds, chatIds);
-      TD.updateIncludedChatTypes(editedChatFilter, chatTypes::contains);
-      updateChatFilter(editedChatFilter);
-      updateFolderName();
+      TD.updateIncludedChats(editedChatFilter, originChatFilter, chatIds);
+      TD.updateIncludedChatTypes(editedChatFilter, chatTypes);
     } else if (mode == SelectChatsController.MODE_FOLDER_EXCLUDE_CHATS) {
-      editedChatFilter.pinnedChatIds = removeAll(editedChatFilter.pinnedChatIds, chatIds);
-      editedChatFilter.includedChatIds = removeAll(editedChatFilter.includedChatIds, chatIds);
-      editedChatFilter.excludedChatIds = toArray(chatIds);
-      TD.updateExcludedChatTypes(editedChatFilter, chatTypes::contains);
-      updateChatFilter(editedChatFilter);
-      updateFolderName();
+      TD.updateExcludedChats(editedChatFilter, chatIds);
+      TD.updateExcludedChatTypes(editedChatFilter, chatTypes);
     } else {
       throw new UnsupportedOperationException();
     }
+    updateChatFilter(editedChatFilter);
+    updateFolderName();
   }
 
   private void showRemoveConditionConfirm (int position, ListItem item) {
@@ -566,32 +543,5 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
       int position = viewHolder.getAbsoluteAdapterPosition();
       showRemoveConditionConfirm(position, item);
     }
-  }
-
-  @CheckResult
-  private static long[] removeAll (long[] items, Set<Long> itemsToRemove) {
-    if (itemsToRemove.isEmpty() || items.length == 0) {
-      return items;
-    }
-    LongList itemList = new LongList(items.length);
-    for (long item : items) {
-      if (!itemsToRemove.contains(item)) {
-        itemList.append(item);
-      }
-    }
-    return itemList.get();
-  }
-
-  @CheckResult
-  private static long[] toArray(Collection<Long> collection) {
-    if (collection.isEmpty()) {
-      return ArrayUtils.EMPTY_LONGS;
-    }
-    int index = 0;
-    long[] array = new long[collection.size()];
-    for (long element : collection) {
-      array[index++] = element;
-    }
-    return array;
   }
 }

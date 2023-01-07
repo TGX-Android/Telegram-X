@@ -100,6 +100,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -6956,6 +6957,36 @@ public class TD {
     return chatFilter;
   }
 
+  public static void updateIncludedChats (TdApi.ChatFilter chatFilter, Set<Long> chatIds) {
+    updateIncludedChats(chatFilter, null, chatIds);
+  }
+
+  public static void updateIncludedChats (TdApi.ChatFilter chatFilter, @Nullable TdApi.ChatFilter originChatFilter, Set<Long> chatIds) {
+    if (chatIds.isEmpty()) {
+      chatFilter.pinnedChatIds = ArrayUtils.EMPTY_LONGS;
+      chatFilter.includedChatIds = ArrayUtils.EMPTY_LONGS;
+    } else {
+      LongList pinnedChatIds = new LongList(chatIds.size());
+      LongList includedChatIds = new LongList(chatIds.size());
+      for (long chatId : chatIds) {
+        if (ArrayUtils.contains(chatFilter.pinnedChatIds, chatId) || (originChatFilter != null && ArrayUtils.contains(originChatFilter.pinnedChatIds, chatId))) {
+          pinnedChatIds.append(chatId);
+        } else {
+          includedChatIds.append(chatId);
+        }
+      }
+      chatFilter.pinnedChatIds = pinnedChatIds.get();
+      chatFilter.includedChatIds = includedChatIds.get();
+    }
+    chatFilter.excludedChatIds = U.removeAll(chatFilter.excludedChatIds, chatIds);
+  }
+
+  public static void updateExcludedChats (TdApi.ChatFilter chatFilter, Set<Long> chatIds) {
+    chatFilter.pinnedChatIds = U.removeAll(chatFilter.pinnedChatIds, chatIds);
+    chatFilter.includedChatIds = U.removeAll(chatFilter.includedChatIds, chatIds);
+    chatFilter.excludedChatIds = U.toArray(chatIds);
+  }
+
   public static TdApi.ChatFilter copyOf (TdApi.ChatFilter filter) {
     return new TdApi.ChatFilter(
       filter.title,
@@ -7018,12 +7049,20 @@ public class TD {
     return chatTypes.get();
   }
 
+  public static void updateIncludedChatTypes (TdApi.ChatFilter chatFilter, Set<Integer> chatTypes) {
+    updateIncludedChatTypes(chatFilter, chatTypes::contains);
+  }
+
   public static void updateIncludedChatTypes (TdApi.ChatFilter chatFilter, Filter<Integer> filter) {
     chatFilter.includeContacts = filter.accept(R.id.chatType_contact);
     chatFilter.includeNonContacts = filter.accept(R.id.chatType_nonContact);
     chatFilter.includeGroups = filter.accept(R.id.chatType_group);
     chatFilter.includeChannels = filter.accept(R.id.chatType_channel);
     chatFilter.includeBots = filter.accept(R.id.chatType_bot);
+  }
+
+  public static void updateExcludedChatTypes (TdApi.ChatFilter chatFilter, Set<Integer> chatTypes) {
+    updateExcludedChatTypes(chatFilter, chatTypes::contains);
   }
 
   public static void updateExcludedChatTypes (TdApi.ChatFilter chatFilter, Filter<Integer> filter) {

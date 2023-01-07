@@ -1714,6 +1714,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       options.info(title);
     }
     options.item(new OptionItem(R.id.btn_editFolder, Lang.getString(R.string.EditFolder), OPTION_COLOR_NORMAL, R.drawable.baseline_edit_24));
+    options.item(new OptionItem(R.id.btn_folderIncludeChats, Lang.getString(R.string.FolderActionIncludeChats), OPTION_COLOR_NORMAL, R.drawable.baseline_add_24));
     options.item(new OptionItem(R.id.btn_removeFolder, Lang.getString(R.string.RemoveFolder), OPTION_COLOR_RED, R.drawable.baseline_delete_24));
     options.item(OptionItem.SEPARATOR);
     options.item(new OptionItem(R.id.btn_chatFolders, Lang.getString(R.string.EditFolders), OPTION_COLOR_NORMAL, R.drawable.baseline_rule_folder_24));
@@ -1725,6 +1726,20 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
               TdApi.ChatFilter chatFilter = (TdApi.ChatFilter) result;
               EditChatFolderController controller = new EditChatFolderController(context, tdlib);
               controller.setArguments(new EditChatFolderController.Arguments(chatFilterId, chatFilter));
+              navigateTo(controller);
+              break;
+            case TdApi.Error.CONSTRUCTOR:
+              UI.showError(result);
+              break;
+          }
+        }));
+      } else if (id == R.id.btn_folderIncludeChats) {
+        tdlib.send(new TdApi.GetChatFilter(chatFilterId), (result) -> runOnUiThreadOptional(() -> {
+          switch (result.getConstructor()) {
+            case TdApi.ChatFilter.CONSTRUCTOR:
+              TdApi.ChatFilter chatFilter = (TdApi.ChatFilter) result;
+              SelectChatsController controller = new SelectChatsController(context, tdlib);
+              controller.setArguments(SelectChatsController.Arguments.includedChats(chatFilterId, chatFilter));
               navigateTo(controller);
               break;
             case TdApi.Error.CONSTRUCTOR:

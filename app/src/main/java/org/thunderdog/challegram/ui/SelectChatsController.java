@@ -86,31 +86,35 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
 
   public static class Arguments {
     private final @Mode int mode;
-    private final Delegate delegate;
+    private final int chatFilterId;
+    private final @Nullable TdApi.ChatFilter chatFilter;
+    private final @Nullable Delegate delegate;
     private final Set<Long> selectedChatIds;
     private final Set<Integer> selectedChatTypes;
 
-    public Arguments (@Mode int mode, Delegate delegate) {
-      this(mode, delegate, Collections.emptySet(), Collections.emptySet());
-    }
-
-    private Arguments (@Mode int mode, Delegate delegate, Set<Long> selectedChatIds, Set<Integer> selectedChatTypes) {
+    private Arguments (@Mode int mode, @Nullable Delegate delegate, int chatFilterId, @Nullable TdApi.ChatFilter chatFilter, Set<Long> selectedChatIds, Set<Integer> selectedChatTypes) {
       this.mode = mode;
       this.delegate = delegate;
+      this.chatFilter = chatFilter;
+      this.chatFilterId = chatFilterId;
       this.selectedChatIds = selectedChatIds;
       this.selectedChatTypes = selectedChatTypes;
     }
 
-    public static Arguments includedChats (Delegate delegate, TdApi.ChatFilter chatFilter) {
-      Set<Long> selectedChatIds = unmodifiableLinkedHashSetOf(chatFilter.pinnedChatIds, chatFilter.includedChatIds);
-      Set<Integer> selectedChatTypes = unmodifiableTreeSetOf(TD.includedChatTypes(chatFilter));
-      return new Arguments(MODE_FOLDER_INCLUDE_CHATS, delegate, selectedChatIds, selectedChatTypes);
+    public static Arguments includedChats (int chatFilterId, TdApi.ChatFilter chatFilter) {
+      return includedChats(null, chatFilterId, chatFilter);
     }
 
-    public static Arguments excludedChats (Delegate delegate, TdApi.ChatFilter chatFilter) {
+    public static Arguments includedChats (@Nullable Delegate delegate, int chatFilterId, TdApi.ChatFilter chatFilter) {
+      Set<Long> selectedChatIds = unmodifiableLinkedHashSetOf(chatFilter.pinnedChatIds, chatFilter.includedChatIds);
+      Set<Integer> selectedChatTypes = unmodifiableTreeSetOf(TD.includedChatTypes(chatFilter));
+      return new Arguments(MODE_FOLDER_INCLUDE_CHATS, delegate, chatFilterId, chatFilter, selectedChatIds, selectedChatTypes);
+    }
+
+    public static Arguments excludedChats (@Nullable Delegate delegate, int chatFilterId, TdApi.ChatFilter chatFilter) {
       Set<Long> selectedChatIds = unmodifiableLinkedHashSetOf(chatFilter.excludedChatIds);
       Set<Integer> selectedChatTypes = unmodifiableTreeSetOf(TD.excludedChatTypes(chatFilter));
-      return new Arguments(MODE_FOLDER_EXCLUDE_CHATS, delegate, selectedChatIds, selectedChatTypes);
+      return new Arguments(MODE_FOLDER_EXCLUDE_CHATS, delegate, chatFilterId, chatFilter, selectedChatIds, selectedChatTypes);
     }
 
     private static Set<Integer> unmodifiableTreeSetOf (int[] array) {
@@ -285,14 +289,13 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
     if (inSearchMode()) {
       closeSearchMode(null);
     } else {
-      saveChanges();
-      navigateBack();
+      saveChanges(this::navigateBack);
     }
   }
 
   @Override
   public boolean onBackPressed (boolean fromTop) {
-    if (delegate != null && hasChanges()) {
+    if (hasChanges()) {
       showUnsavedChangesPromptBeforeLeaving(null);
       return true;
     }
@@ -300,7 +303,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
   }
 
   private void updateDoneButton () {
-    setDoneVisible(delegate != null && hasChanges(), true);
+    setDoneVisible(hasChanges(), true);
   }
 
   private void processChats (List<TdlibChatListSlice.Entry> entries) {
@@ -362,9 +365,30 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
     return !selectedChatTypes.equals(arguments.selectedChatTypes) || !selectedChatIds.equals(arguments.selectedChatIds);
   }
 
-  private void saveChanges () {
+  private void saveChanges (@Nullable Runnable after) {
     if (delegate != null) {
       delegate.onSelectedChatsChanged(mode, selectedChatIds, selectedChatTypes);
+      if (after != null) {
+        after.run();
+      }
+    } else {
+      Arguments arguments = getArgumentsStrict();
+      if (arguments.chatFilter != null && (mode == MODE_FOLDER_INCLUDE_CHATS || mode == MODE_FOLDER_EXCLUDE_CHATS)) {
+        int chatFilterId = arguments.chatFilterId;
+        TdApi.ChatFilter chatFilter = TD.copyOf(arguments.chatFilter);
+        if (mode == MODE_FOLDER_INCLUDE_CHATS) {
+          TD.updateIncludedChats(chatFilter, selectedChatIds);
+          TD.updateIncludedChatTypes(chatFilter, selectedChatTypes);
+        } else {
+          TD.updateExcludedChats(chatFilter, selectedChatIds);
+          TD.updateExcludedChatTypes(chatFilter, selectedChatTypes);
+        }
+        tdlib.send(new TdApi.EditChatFilter(chatFilterId, chatFilter), tdlib.okHandler(TdApi.ChatFilterInfo.class, after != null ? () -> {
+          if (!isDestroyed()) {
+            after.run();
+          }
+        } : null));
+      }
     }
   }
 
