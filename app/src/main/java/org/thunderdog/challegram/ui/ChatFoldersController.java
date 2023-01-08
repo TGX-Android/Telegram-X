@@ -5,6 +5,7 @@ import android.content.Context;
 import android.os.Bundle;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 
 import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
@@ -14,6 +15,7 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
@@ -39,12 +41,13 @@ import me.vkryl.core.MathUtils;
 import me.vkryl.core.collection.IntList;
 
 public class ChatFoldersController extends RecyclerViewController<Void> implements View.OnClickListener, View.OnLongClickListener, ChatFiltersListener {
-  private static final int MAIN_CHAT_FILTER_ID = Integer.MIN_VALUE;
+  private static final long MAIN_CHAT_FILTER_ID = Long.MIN_VALUE;
+  private static final long ARCHIVE_CHAT_FILTER_ID = Long.MIN_VALUE + 1;
 
   private final @IdRes int chatFiltersPreviousItemId = ViewCompat.generateViewId();
   private final @IdRes int recommendedChatFiltersPreviousItemId = ViewCompat.generateViewId();
 
-  private int chatFilterCount, chatFilterGroupItemCount, recommendedChatFilterGroupItemCount;
+  private int chatFilterGroupItemCount, recommendedChatFilterGroupItemCount;
   private boolean recommendedChatFiltersInitialized;
 
   private SettingsAdapter adapter;
@@ -80,8 +83,8 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
 
     TdApi.ChatFilterInfo[] chatFilters = tdlib.chatFilterInfos();
     int mainChatListPosition = tdlib.mainChatListPosition();
-    List<ListItem> chatFilterItemList = buildChatFilterItemList(chatFilters, mainChatListPosition);
-    chatFilterCount = chatFilters.length;
+    int archiveChatListPosition = tdlib.settings().archiveChatListPosition();
+    List<ListItem> chatFilterItemList = buildChatFilterItemList(chatFilters, mainChatListPosition, archiveChatListPosition);
     chatFilterGroupItemCount = chatFilterItemList.size();
 
     ArrayList<ListItem> items = new ArrayList<>();
@@ -91,6 +94,46 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
     items.addAll(chatFilterItemList);
 
     adapter = new SettingsAdapter(this) {
+      @Override
+      protected SettingHolder initCustom (ViewGroup parent) {
+        SettingView settingView = new SettingView(context, tdlib);
+        settingView.setType(SettingView.TYPE_SETTING);
+        settingView.addToggler();
+        addThemeInvalidateListener(settingView);
+        return new SettingHolder(settingView);
+      }
+
+      @SuppressLint("ClickableViewAccessibility")
+      @Override
+      protected void setCustom (ListItem item, SettingHolder holder, int position) {
+        SettingView settingView = (SettingView) holder.itemView;
+        settingView.setIcon(item.getIconResource());
+        settingView.setName(item.getString());
+        settingView.setTextColorId(item.getTextColorId(R.id.theme_color_text));
+        settingView.setIgnoreEnabled(true);
+        settingView.setEnabled(true);
+
+        boolean isEnabled;
+        if (isArchiveChatFilter(item)) {
+          isEnabled = tdlib.settings().isArchiveChatListEnabled();
+        } else {
+          isEnabled = true;
+        }
+        settingView.setVisuallyEnabled(isEnabled, false);
+        settingView.getToggler().setRadioEnabled(isEnabled, false);
+        settingView.setIconColorId(isEnabled ? R.id.theme_color_icon : R.id.theme_color_iconLight);
+
+        settingView.setOnTouchListener(new ChatFilterOnTouchListener());
+        settingView.setOnClickListener(v -> {
+          boolean enabled = settingView.getToggler().toggle(true);
+          settingView.setVisuallyEnabled(enabled, true);
+          settingView.setIconColorId(enabled ? R.id.theme_color_icon : R.id.theme_color_iconLight);
+          if (isArchiveChatFilter(item)) {
+            tdlib.settings().setArchiveChatListEnabled(enabled);
+          }
+        });
+      }
+
       @Override
       protected void setDoubleText (ListItem item, int position, DoubleTextView textView, boolean isUpdate) {
         if (item.getId() == R.id.recommendedChatFilter) {
@@ -160,7 +203,7 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
   @Override
   public void onChatFiltersChanged (TdApi.ChatFilterInfo[] chatFilters, int mainChatListPosition) {
     runOnUiThreadOptional(() -> {
-      updateChatFilters(chatFilters, mainChatListPosition);
+      updateChatFilters(chatFilters, mainChatListPosition, tdlib.settings().archiveChatListPosition());
       if (isFocused()) {
         tdlib.ui().postDelayed(() -> {
           if (!isDestroyed() && isFocused()) {
@@ -177,7 +220,7 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
       navigateTo(EditChatFolderController.newFolder(context, tdlib));
     } else if (v.getId() == R.id.chatFilter) {
       ListItem item = (ListItem) v.getTag();
-      if (isMainChatFilter(item)) {
+      if (isMainChatFilter(item) || isArchiveChatFilter(item)) {
         return;
       }
       editChatFilter((TdApi.ChatFilterInfo) item.getData());
@@ -198,7 +241,7 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
   public boolean onLongClick (View v) {
     if (v.getId() == R.id.chatFilter) {
       ListItem item = (ListItem) v.getTag();
-      if (isMainChatFilter(item)) {
+      if (isMainChatFilter(item) || isArchiveChatFilter(item)) {
         return false;
       }
       showChatFilterOptions((TdApi.ChatFilterInfo) item.getData());
@@ -272,7 +315,29 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
   }
 
   private void deleteChatFilter (int chatFilterId) {
-    tdlib.send(new TdApi.DeleteChatFilter(chatFilterId), tdlib.okHandler());
+    int position = -1;
+    TdApi.ChatFilterInfo[] chatFilters = tdlib.chatFilterInfos();
+    for (int index = 0; index < chatFilters.length; index++) {
+      TdApi.ChatFilterInfo chatFilter = chatFilters[index];
+      if (chatFilter.id == chatFilterId) {
+          position = index;
+          break;
+      }
+    }
+    if (position != -1) {
+      int archiveChatListPosition = tdlib.settings().archiveChatListPosition();
+      if (position >= tdlib.mainChatListPosition()) position++;
+      if (position >= archiveChatListPosition) position++;
+      boolean affectsArchiveChatListPosition = position < archiveChatListPosition && archiveChatListPosition < chatFilters.length + 2;
+      tdlib.send(new TdApi.DeleteChatFilter(chatFilterId), tdlib.okHandler(() -> {
+        if (affectsArchiveChatListPosition && archiveChatListPosition == tdlib.settings().archiveChatListPosition()) {
+          tdlib.settings().setArchiveChatListPosition(archiveChatListPosition - 1);
+          if (!isDestroyed()) {
+            updateChatFilters();
+          }
+        }
+      }));
+    }
   }
 
   private void reorderChatFilters () {
@@ -281,33 +346,45 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
     if (firstIndex == RecyclerView.NO_POSITION || lastIndex == RecyclerView.NO_POSITION)
       return;
     int mainChatListPosition = 0;
-    IntList chatFilterIds = new IntList(chatFilterCount - 1);
-    int filterIndex = 0;
+    int archiveChatListPosition = 0;
+    IntList chatFilterIds = new IntList(tdlib.chatFilterInfos().length);
+    int filterPosition = 0;
     for (int index = firstIndex; index <= lastIndex; index++) {
       ListItem item = adapter.getItem(index);
       if (item == null) {
         updateChatFilters();
         return;
       }
-      if (item.getId() == R.id.chatFilter) {
+      if (isChatFilter(item)) {
         if (isMainChatFilter(item)) {
-          mainChatListPosition = filterIndex;
+          mainChatListPosition = filterPosition;
+        } else if (isArchiveChatFilter(item)) {
+          archiveChatListPosition = filterPosition;
         } else {
-          filterIndex++;
           chatFilterIds.append(item.getIntValue());
         }
+        filterPosition++;
       }
+    }
+    if (mainChatListPosition > archiveChatListPosition) {
+      mainChatListPosition--;
+    }
+    if (archiveChatListPosition > chatFilterIds.size()) {
+      archiveChatListPosition = Integer.MAX_VALUE;
     }
     if (mainChatListPosition != 0 && !tdlib.hasPremium()) {
       updateChatFilters();
       return;
     }
-    tdlib.send(new TdApi.ReorderChatFilters(chatFilterIds.get(), mainChatListPosition), (result) -> {
-      if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
-        UI.showError(result);
-        runOnUiThreadOptional(this::updateChatFilters);
-      }
-    });
+    tdlib.settings().setArchiveChatListPosition(archiveChatListPosition);
+    if (chatFilterIds.size() > 0) {
+      tdlib.send(new TdApi.ReorderChatFilters(chatFilterIds.get(), mainChatListPosition), (result) -> {
+        if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
+          UI.showError(result);
+          runOnUiThreadOptional(this::updateChatFilters);
+        }
+      });
+    }
   }
 
   private boolean isChatFilter (ListItem item) {
@@ -315,7 +392,11 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
   }
 
   private boolean isMainChatFilter (ListItem item) {
-    return isChatFilter(item) && item.getIntValue() == MAIN_CHAT_FILTER_ID;
+    return isChatFilter(item) && item.getLongId() == MAIN_CHAT_FILTER_ID;
+  }
+
+  private boolean isArchiveChatFilter (ListItem item) {
+    return isChatFilter(item) && item.getLongId() == ARCHIVE_CHAT_FILTER_ID;
   }
 
   private boolean canMoveChatFilter (ListItem item) {
@@ -342,15 +423,29 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
     return index == RecyclerView.NO_POSITION ? RecyclerView.NO_POSITION : index + 1;
   }
 
-  private List<ListItem> buildChatFilterItemList (TdApi.ChatFilterInfo[] chatFilters, int mainChatListPosition) {
-    List<ListItem> itemList = new ArrayList<>(chatFilters.length + 5);
+  private List<ListItem> buildChatFilterItemList (TdApi.ChatFilterInfo[] chatFilters, int mainChatListPosition, int archiveChatListPosition) {
+    List<ListItem> itemList = new ArrayList<>(chatFilters.length + 6);
     itemList.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.ChatFolders));
     itemList.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-    for (TdApi.ChatFilterInfo chatFilter : chatFilters) {
-      itemList.add(chatFilterItem(chatFilter));
+    int chatFilterCount = chatFilters.length + 2; /* All Chats, Archived */
+    int chatFilterIndex = 0;
+    mainChatListPosition = MathUtils.clamp(mainChatListPosition, 0, chatFilters.length);
+    archiveChatListPosition = MathUtils.clamp(archiveChatListPosition, 0, chatFilterCount - 1);
+    if (mainChatListPosition == archiveChatListPosition) {
+      mainChatListPosition++;
     }
-    int mainChatFilterIndex = MathUtils.clamp(mainChatListPosition, 0, chatFilters.length) + itemList.size() - chatFilters.length;
-    itemList.add(mainChatFilterIndex, mainChatFilterItem());
+    for (int position = 0; position < chatFilterCount; position++) {
+      if (position == mainChatListPosition) {
+        itemList.add(mainChatFilterItem());
+      } else if (position == archiveChatListPosition) {
+        itemList.add(archiveChatFilterItem());
+      } else if (chatFilterIndex < chatFilters.length) {
+        TdApi.ChatFilterInfo chatFilter = chatFilters[chatFilterIndex++];
+        itemList.add(chatFilterItem(chatFilter));
+      } else if (BuildConfig.DEBUG) {
+        throw new RuntimeException();
+      }
+    }
     itemList.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_createNewFolder, R.drawable.baseline_create_new_folder_24, R.string.CreateNewFolder).setTextColorId(R.id.theme_color_inlineText));
     itemList.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM, recommendedChatFiltersPreviousItemId));
     return itemList;
@@ -374,16 +469,25 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
   }
 
   private ListItem mainChatFilterItem () {
-    ListItem mainChatFilter = new ListItem(ListItem.TYPE_SETTING, R.id.chatFilter);
-    mainChatFilter.setString(R.string.CategoryMain);
-    mainChatFilter.setIntValue(MAIN_CHAT_FILTER_ID);
-    mainChatFilter.setIconRes(tdlib.hasPremium() ? R.drawable.baseline_drag_handle_24 : R.drawable.deproko_baseline_lock_24);
-    return mainChatFilter;
+    ListItem item = new ListItem(ListItem.TYPE_SETTING, R.id.chatFilter);
+    item.setString(R.string.CategoryMain);
+    item.setLongId(MAIN_CHAT_FILTER_ID);
+    item.setIconRes(tdlib.hasPremium() ? R.drawable.baseline_drag_handle_24 : R.drawable.deproko_baseline_lock_24);
+    return item;
+  }
+
+  private ListItem archiveChatFilterItem () {
+    ListItem item = new ListItem(ListItem.TYPE_CUSTOM_SINGLE, R.id.chatFilter);
+    item.setString(R.string.CategoryArchive);
+    item.setLongId(ARCHIVE_CHAT_FILTER_ID);
+    item.setIconRes(R.drawable.baseline_drag_handle_24);
+    return item;
   }
 
   private ListItem chatFilterItem (TdApi.ChatFilterInfo chatFilterInfo) {
     ListItem item = new ListItem(ListItem.TYPE_SETTING, R.id.chatFilter, R.drawable.baseline_drag_handle_24, Emoji.instance().replaceEmoji(chatFilterInfo.title));
     item.setIntValue(chatFilterInfo.id);
+    item.setLongId(chatFilterInfo.id);
     item.setData(chatFilterInfo);
     return item;
   }
@@ -398,16 +502,15 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
   }
 
   private void updateChatFilters () {
-    updateChatFilters(tdlib.chatFilterInfos(), tdlib.mainChatListPosition());
+    updateChatFilters(tdlib.chatFilterInfos(), tdlib.mainChatListPosition(), tdlib.settings().archiveChatListPosition());
   }
 
-  private void updateChatFilters (TdApi.ChatFilterInfo[] chatFilters, int mainChatListPosition) {
+  private void updateChatFilters (TdApi.ChatFilterInfo[] chatFilters, int mainChatListPosition, int archiveChatListPosition) {
     int fromIndex = indexOfChatFilterGroup();
     if (fromIndex == RecyclerView.NO_POSITION)
       return;
     List<ListItem> subList = adapter.getItems().subList(fromIndex, fromIndex + chatFilterGroupItemCount);
-    List<ListItem> newList = buildChatFilterItemList(chatFilters, mainChatListPosition);
-    chatFilterCount = chatFilters.length + 1 /* All Chats */;
+    List<ListItem> newList = buildChatFilterItemList(chatFilters, mainChatListPosition, archiveChatListPosition);
     chatFilterGroupItemCount = newList.size();
     DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(chatFiltersDiff(subList, newList));
     subList.clear();
@@ -451,7 +554,7 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
       public boolean areItemsTheSame (ListItem oldItem, ListItem newItem) {
         return oldItem.getViewType() == newItem.getViewType() &&
           oldItem.getId() == newItem.getId() &&
-          oldItem.getIntValue() == newItem.getIntValue();
+          oldItem.getLongId() == newItem.getLongId();
       }
 
       @Override
@@ -501,7 +604,7 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
     @Override
     public boolean canRemove (RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, int position) {
       ListItem item = (ListItem) viewHolder.itemView.getTag();
-      return isChatFilter(item) && !isMainChatFilter(item);
+      return isChatFilter(item) && !isMainChatFilter(item) && !isArchiveChatFilter(item);
     }
 
     @Override
@@ -533,7 +636,7 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
     public boolean canDropOver (@NonNull RecyclerView recyclerView, @NonNull RecyclerView.ViewHolder source, @NonNull RecyclerView.ViewHolder target) {
       ListItem sourceItem = (ListItem) source.itemView.getTag();
       ListItem targetItem = (ListItem) target.itemView.getTag();
-      return isChatFilter(sourceItem) && isChatFilter(targetItem) && canMoveChatFilter(targetItem);
+      return isChatFilter(sourceItem) && isChatFilter(targetItem) && (canMoveChatFilter(targetItem) || BuildConfig.DEBUG && isArchiveChatFilter(sourceItem));
     }
 
     @Override

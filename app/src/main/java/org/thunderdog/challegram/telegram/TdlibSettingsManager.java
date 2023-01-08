@@ -154,6 +154,8 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     editor.remove(key(THEME_GLOBAL_THEME_NIGHT_KEY, accountId));
     editor.remove(key(THEME_GLOBAL_THEME_DAYLIGHT_KEY, accountId));
     editor.remove(key(LOCAL_CHAT_IDS_COUNT, accountId));
+    editor.remove(key(ARCHIVE_CHAT_LIST_ENABLED, accountId));
+    editor.remove(key(ARCHIVE_CHAT_LIST_POSITION, accountId));
     // editor.remove(key(PEER_TO_PEER_KEY, accountId));
     Settings.instance().removeScrollPositions(accountId, editor);
     String dismissPrefix = key(DISMISS_MESSAGE_PREFIX, accountId);
@@ -180,6 +182,8 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     _forcePlainModeInChannels = null;
     _userPreferences = null;
     _localChatIdsCount = null;
+    _archiveChatListEnabled = null;
+    _archiveChatListPosition = null;
     remoteToLocalChatIds.clear();
     localToRemoteChatIds.clear();
 
@@ -1024,5 +1028,70 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
 
   public boolean hasNotificationProblems () {
     return getNotificationProblemCount() > 0;
+  }
+
+  private @Nullable Boolean _archiveChatListEnabled;
+  private @Nullable Integer _archiveChatListPosition;
+  private static final String ARCHIVE_CHAT_LIST_ENABLED = "archive_chat_list_enabled";
+  private static final String ARCHIVE_CHAT_LIST_POSITION = "archive_chat_list_position";
+  private static final int DEFAULT_ARCHIVE_CHAT_LIST_POSITION = Integer.MAX_VALUE;
+  private static final boolean DEFAULT_ARCHIVE_CHAT_LIST_ENABLED = false;
+
+  public boolean isArchiveChatListEnabled () {
+    if (_archiveChatListEnabled == null) {
+      _archiveChatListEnabled = Settings.instance().getBoolean(key(ARCHIVE_CHAT_LIST_ENABLED, tdlib.accountId()), DEFAULT_ARCHIVE_CHAT_LIST_ENABLED);
+    }
+    return _archiveChatListEnabled;
+  }
+
+  public void setArchiveChatListEnabled (boolean isArchiveChatListEnabled) {
+    if (isArchiveChatListEnabled() != isArchiveChatListEnabled) {
+      _archiveChatListEnabled = isArchiveChatListEnabled;
+      Settings.instance().putBoolean(key(ARCHIVE_CHAT_LIST_ENABLED, tdlib.accountId()), isArchiveChatListEnabled);
+      if (chatListPositionListeners != null) {
+        for (ChatListPositionListener chatListPositionListener : chatListPositionListeners) {
+          chatListPositionListener.onArchiveChatListStateChanged(isArchiveChatListEnabled);
+        }
+      }
+    }
+  }
+
+  public int archiveChatListPosition () {
+    if (_archiveChatListPosition == null) {
+      _archiveChatListPosition = Settings.instance().getInt(key(ARCHIVE_CHAT_LIST_POSITION, tdlib.accountId()), DEFAULT_ARCHIVE_CHAT_LIST_POSITION);
+    }
+    return _archiveChatListPosition;
+  }
+
+  public void setArchiveChatListPosition (int position) {
+    if (archiveChatListPosition() != position) {
+      _archiveChatListPosition = position;
+      Settings.instance().putInt(key(ARCHIVE_CHAT_LIST_POSITION, tdlib.accountId()), position);
+      if (chatListPositionListeners != null) {
+        for (ChatListPositionListener chatListPositionListener : chatListPositionListeners) {
+          chatListPositionListener.onArchiveChatListPositionChanged(position);
+        }
+      }
+    }
+  }
+
+  public interface ChatListPositionListener {
+    default void onArchiveChatListStateChanged (boolean isEnabled) { }
+    default void onArchiveChatListPositionChanged (int archiveChatListPosition) { }
+  }
+
+  private @Nullable ReferenceList<ChatListPositionListener> chatListPositionListeners;
+
+  public void addChatListPositionListener (ChatListPositionListener listener) {
+    if (chatListPositionListeners == null) {
+      chatListPositionListeners = new ReferenceList<>();
+    }
+    chatListPositionListeners.add(listener);
+  }
+
+  public void removeChatListPositionListener (ChatListPositionListener listener) {
+    if (chatListPositionListeners != null) {
+      chatListPositionListeners.remove(listener);
+    }
   }
 }

@@ -75,6 +75,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCounter;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibOptionListener;
+import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Screen;
@@ -115,6 +116,7 @@ import me.vkryl.td.TdConstants;
 
 public class MainController extends ViewPagerController<Void> implements Menu, MoreDelegate, OverlayButtonWrap.Callback, TdlibOptionListener, AppUpdater.Listener, CounterChangeListener, ChatFiltersListener {
   private static final long MAIN_CHAT_LIST_SECTION_ID = Long.MIN_VALUE;
+  private static final long ARCHIVE_CHAT_LIST_SECTION_ID = Long.MIN_VALUE + 1;
 
   public MainController (Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -801,6 +803,10 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       tdlib.listeners().removeTotalChatCounterListener(chatListUnreadCountListener);
       chatListUnreadCountListener = null;
     }
+    if (chatListPositionListener != null) {
+      tdlib.settings().removeChatListPositionListener(chatListPositionListener);
+      chatListPositionListener = null;
+    }
   }
 
   private void showSuggestions () {
@@ -1027,18 +1033,18 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       switch (chatList.getConstructor()) {
         case TdApi.ChatListMain.CONSTRUCTOR:
           return MAIN_CHAT_LIST_SECTION_ID;
+        case TdApi.ChatListArchive.CONSTRUCTOR:
+          return ARCHIVE_CHAT_LIST_SECTION_ID;
         case TdApi.ChatListFilter.CONSTRUCTOR:
           return ((TdApi.ChatListFilter) chatList).chatFilterId;
-        case TdApi.ChatListArchive.CONSTRUCTOR:
         default:
           throw new UnsupportedOperationException();
       }
     } else {
       if (position == mainChatListPosition) {
         return MAIN_CHAT_LIST_SECTION_ID;
-      } else {
-        return MAIN_CHAT_LIST_SECTION_ID + position;
       }
+      return position;
     }
   }
 
@@ -1181,7 +1187,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   private List<TdApi.ChatList> pagerChatLists = Collections.emptyList();
 
   private boolean hasFolders () {
-    return Config.CHAT_FOLDERS_ENABLED && pagerChatLists.size() > 1;
+    return Config.CHAT_FOLDERS_ENABLED && !pagerChatLists.isEmpty() && pagerChatLists.size() == pagerSections.size();
   }
 
   @Override
@@ -1760,50 +1766,74 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
   private void initPagerSections () {
     if (Config.CHAT_FOLDERS_ENABLED) {
-      updatePagerSections(tdlib.chatFilterInfos(), tdlib.mainChatListPosition());
+      updatePagerSections(tdlib.chatFilterInfos(), tdlib.mainChatListPosition(), tdlib.settings().archiveChatListPosition());
     }
   }
 
-  private void updatePagerSections (TdApi.ChatFilterInfo[] chatFilters, int mainChatListPosition) {
-    mainChatListPosition = MathUtils.clamp(mainChatListPosition, 0, chatFilters.length);
+  private void updatePagerSections (TdApi.ChatFilterInfo[] chatFilters, int mainChatListPosition, int archiveChatListPosition) {
     boolean hasChatFilters = chatFilters.length > 0;
-    List<TdApi.ChatList> chatLists = new ArrayList<>(chatFilters.length + 1);
-    List<ViewPagerTopView.Item> sections = new ArrayList<>(chatFilters.length + 1);
-    int chatFilterIndex = 0;
-    for (int position = 0; position < chatFilters.length + 1; position++) {
-      CharSequence sectionName;
-      TdApi.ChatList chatList;
-      if (position == mainChatListPosition) {
-        chatList = ChatPosition.CHAT_LIST_MAIN;
-        sectionName = Lang.getString(getMenuSectionName(hasChatFilters));
-      } else {
-        TdApi.ChatFilterInfo chatFilter = chatFilters[chatFilterIndex++];
-        chatList = new TdApi.ChatListFilter(chatFilter.id);
-        sectionName = Emoji.instance().replaceEmoji(chatFilter.title);
-      }
-      Counter unreadCounter = buildUnreadCounter(position);
-      unreadCounter.setCount(getUnreadCount(chatList), false);
-      chatLists.add(chatList);
-      sections.add(new ViewPagerTopView.Item(sectionName, unreadCounter));
-    }
-    this.mainChatListPosition = mainChatListPosition;
-    this.pagerSections = sections;
-    this.pagerChatLists = chatLists;
-    notifyPagerItemPositionsChanged();
-    ViewPager pager = getViewPager();
-    if (pager != null) {
-      onPageSelected(getCurrentPagerItemPosition(), pager.getCurrentItem());
-    }
     if (hasChatFilters) {
+      mainChatListPosition = MathUtils.clamp(mainChatListPosition, 0, chatFilters.length);
+      int chatListCount = chatFilters.length + 1;
+      if (tdlib.settings().isArchiveChatListEnabled()) {
+        archiveChatListPosition = MathUtils.clamp(archiveChatListPosition, 0, chatFilters.length + 1);
+        chatListCount++;
+        if (mainChatListPosition == archiveChatListPosition) {
+          mainChatListPosition++;
+        }
+      } else {
+        archiveChatListPosition = Integer.MIN_VALUE;
+      }
+      List<TdApi.ChatList> chatLists = new ArrayList<>(chatListCount);
+      List<ViewPagerTopView.Item> sections = new ArrayList<>(chatListCount);
+      int chatFilterIndex = 0;
+      for (int position = 0; position < chatListCount; position++) {
+        CharSequence sectionName;
+        TdApi.ChatList chatList;
+        if (position == mainChatListPosition) {
+          chatList = ChatPosition.CHAT_LIST_MAIN;
+          sectionName = Lang.getString(getMenuSectionName(hasChatFilters));
+        } else if (position == archiveChatListPosition) {
+          chatList = ChatPosition.CHAT_LIST_ARCHIVE;
+          sectionName = Lang.getString(R.string.CategoryArchive);
+        } else {
+          TdApi.ChatFilterInfo chatFilter = chatFilters[chatFilterIndex++];
+          chatList = new TdApi.ChatListFilter(chatFilter.id);
+          sectionName = Emoji.instance().replaceEmoji(chatFilter.title);
+        }
+        Counter unreadCounter = buildUnreadCounter(position);
+        unreadCounter.setCount(getUnreadCount(chatList), false);
+        chatLists.add(chatList);
+        sections.add(new ViewPagerTopView.Item(sectionName, unreadCounter));
+      }
+      this.mainChatListPosition = mainChatListPosition;
+      this.pagerSections = sections;
+      this.pagerChatLists = chatLists;
+      if (chatListPositionListener == null) {
+        chatListPositionListener = new ChatListPositionListener();
+        tdlib.settings().addChatListPositionListener(chatListPositionListener);
+      }
       if (chatListUnreadCountListener == null) {
         chatListUnreadCountListener = new ChatListUnreadCountListener();
         tdlib.listeners().addTotalChatCounterListener(chatListUnreadCountListener);
       }
     } else {
+      this.mainChatListPosition = POSITION_CHATS;
+      this.pagerSections = Collections.emptyList();
+      this.pagerChatLists = Collections.emptyList();
+      if (chatListPositionListener != null) {
+        tdlib.settings().removeChatListPositionListener(chatListPositionListener);
+        chatListPositionListener = null;
+      }
       if (chatListUnreadCountListener != null) {
         tdlib.listeners().removeTotalChatCounterListener(chatListUnreadCountListener);
         chatListUnreadCountListener = null;
       }
+    }
+    notifyPagerItemPositionsChanged();
+    ViewPager pager = getViewPager();
+    if (pager != null) {
+      onPageSelected(getCurrentPagerItemPosition(), pager.getCurrentItem());
     }
   }
 
@@ -1844,14 +1874,26 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     }
   };
 
+  private @Nullable ChatListPositionListener chatListPositionListener;
   private @Nullable ChatListUnreadCountListener chatListUnreadCountListener;
+
+  private class ChatListPositionListener implements TdlibSettingsManager.ChatListPositionListener {
+    @Override
+    public void onArchiveChatListStateChanged (boolean isEnabled) {
+      updatePagerSections(tdlib.chatFilterInfos(), tdlib.mainChatListPosition(), tdlib.settings().archiveChatListPosition());
+    }
+
+    @Override
+    public void onArchiveChatListPositionChanged (int archiveChatListPosition) {
+      if (tdlib.settings().isArchiveChatListEnabled()) {
+        updatePagerSections(tdlib.chatFilterInfos(), tdlib.mainChatListPosition(), archiveChatListPosition);
+      }
+    }
+  }
 
   private class ChatListUnreadCountListener implements CounterChangeListener {
     @Override
     public void onChatCounterChanged (@NonNull TdApi.ChatList chatList, boolean availabilityChanged, int totalCount, int unreadCount, int unreadUnmutedCount) {
-      if (chatList.getConstructor() == TdApi.ChatListArchive.CONSTRUCTOR) {
-        return;
-      }
       runOnUiThreadOptional(() -> {
         int positionToUpdate = -1;
         if (chatList.getConstructor() == TdApi.ChatListMain.CONSTRUCTOR) {
@@ -1879,7 +1921,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   public void onChatFiltersChanged (TdApi.ChatFilterInfo[] chatFilters, int mainChatListPosition) {
     if (Config.CHAT_FOLDERS_ENABLED) {
       runOnUiThreadOptional(() -> {
-        updatePagerSections(chatFilters, mainChatListPosition);
+        updatePagerSections(chatFilters, mainChatListPosition, tdlib.settings().archiveChatListPosition());
       });
     }
   }
