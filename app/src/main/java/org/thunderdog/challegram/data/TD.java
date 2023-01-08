@@ -7144,12 +7144,21 @@ public class TD {
     throw new IllegalArgumentException();
   }
 
+  public static String chatTypeIconName (@IdRes int chatType) {
+    if (chatType == R.id.chatType_contact) return "Private";
+    if (chatType == R.id.chatType_nonContact) return "Private";
+    if (chatType == R.id.chatType_group) return "Groups";
+    if (chatType == R.id.chatType_channel) return "Channels";
+    if (chatType == R.id.chatType_bot) return "Bots";
+    return "";
+  }
+
   public static @DrawableRes int iconByName (String iconName, @DrawableRes int defaultIcon) {
     if (StringUtils.isEmpty(iconName))
       return defaultIcon;
     switch (iconName) {
       case "All":
-        return defaultIcon;
+        return R.drawable.baseline_forum_24;
       case "Unmuted":
         return R.drawable.baseline_notifications_active_24;
       case "Bots":
@@ -7205,11 +7214,13 @@ public class TD {
       case "Travel":
         return R.drawable.baseline_explore_24;
       case "Custom":
-        return defaultIcon;
+        return R.drawable.baseline_folder_24;
       case "Trade":
-        return defaultIcon;
+        return R.drawable.baseline_finance_24;
       default:
         return defaultIcon;
     }
   }
+
+  public static final String[] ICON_NAMES = {"All", "Unread", "Unmuted", "Bots", "Channels", "Groups", "Private", "Custom", "Setup", "Cat", "Crown", "Favorite", "Flower", "Game", "Home", "Love", "Mask", "Party", "Sport", "Study", "Trade", "Travel", "Work", "Airplane", "Book", "Light", "Like", "Money", "Note", "Palette"};
 }

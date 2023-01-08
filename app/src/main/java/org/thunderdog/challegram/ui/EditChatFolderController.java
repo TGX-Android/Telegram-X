@@ -1,15 +1,22 @@
 package org.thunderdog.challegram.ui;
 
+import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
+import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
+
 import android.content.Context;
 import android.os.Bundle;
 import android.text.InputType;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 
 import androidx.annotation.IdRes;
 import androidx.annotation.Nullable;
 import androidx.core.view.ViewCompat;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -24,19 +31,26 @@ import org.thunderdog.challegram.data.TGFoundChat;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.BetterChatView;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
+import org.thunderdog.challegram.widget.PopupLayout;
+import org.thunderdog.challegram.widget.ShadowView;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.StringUtils;
 
@@ -141,7 +155,7 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
     ArrayList<ListItem> items = new ArrayList<>();
     items.add(new ListItem(ListItem.TYPE_HEADER_PADDED, 0, 0, R.string.FolderName));
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-    items.add(input = new ListItem(ListItem.TYPE_EDITTEXT_POLL_OPTION, R.id.input, 0, 0).setStringValue(editedChatFilter.title));
+    items.add(input = new ListItem(ListItem.TYPE_CUSTOM_SINGLE, R.id.input).setStringValue(editedChatFilter.title));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     items.add(new ListItem(ListItem.TYPE_HEADER_PADDED, 0, 0, R.string.FolderIncludedChats));
@@ -369,9 +383,21 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
     if (StringUtils.isEmpty(editedChatFilter.title) && editedChatFilter.pinnedChatIds.length == 0 && editedChatFilter.includedChatIds.length == 0) {
       int[] includedChatTypes = TD.includedChatTypes(editedChatFilter);
       if (includedChatTypes.length == 1) {
-        String chatTypeName = Lang.getString(TD.chatTypeName(includedChatTypes[0]));
+        int includedChatType = includedChatTypes[0];
+        String chatTypeName = Lang.getString(TD.chatTypeName(includedChatType));
+        boolean hasChanges = false;
         if (input.setStringValueIfChanged(chatTypeName)) {
           editedChatFilter.title = chatTypeName;
+          hasChanges = true;
+        }
+        if (StringUtils.isEmpty(editedChatFilter.iconName)) {
+          String chatTypeIconName = TD.chatTypeIconName(includedChatType);
+          if (!StringUtils.isEmpty(chatTypeIconName)) {
+            editedChatFilter.iconName = chatTypeIconName;
+            hasChanges = true;
+          }
+        }
+        if (hasChanges) {
           adapter.updateSimpleItemById(input.getId());
         }
       }
@@ -389,8 +415,8 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
     } else {
       throw new UnsupportedOperationException();
     }
-    updateChatFilter(editedChatFilter);
     updateFolderName();
+    updateChatFilter(editedChatFilter);
   }
 
   private void showRemoveConditionConfirm (int position, ListItem item) {
@@ -511,12 +537,57 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
     }
 
     @Override
-    protected void modifyEditText (ListItem item, ViewGroup parent, MaterialEditTextGroup editText) {
+    protected SettingHolder initCustom (ViewGroup parent) {
+      FrameLayoutFix frameLayout = new FrameLayoutFix(parent.getContext());
+      frameLayout.setLayoutParams(new RecyclerView.LayoutParams(MATCH_PARENT, Screen.dp(57f)));
+      ViewSupport.setThemedBackground(frameLayout, R.id.theme_color_filling, EditChatFolderController.this);
+
+      MaterialEditTextGroup editText = new MaterialEditTextGroup(parent.getContext(), false);
+      editText.setId(android.R.id.input);
+      editText.applyRtl(Lang.rtl());
+      editText.addThemeListeners(EditChatFolderController.this);
+      editText.setTextListener(this);
+      editText.setFocusListener(this);
+      editText.addLengthCounter(true);
+      editText.setMaxLength(12, false);
+      editText.getEditText().setLineDisabled(true);
+      editText.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
+
+      FrameLayout.LayoutParams editTextParams = new FrameLayout.LayoutParams(MATCH_PARENT, WRAP_CONTENT);
+      editTextParams.leftMargin = Screen.dp(16f);
+      editTextParams.rightMargin = Screen.dp(57f);
+      editTextParams.bottomMargin = Screen.dp(8f);
+      frameLayout.addView(editText, editTextParams);
+
+      ImageView imageView = new ImageView(parent.getContext());
+      imageView.setId(android.R.id.icon);
+      imageView.setScaleType(ImageView.ScaleType.CENTER);
+      imageView.setColorFilter(Theme.getColor(R.id.theme_color_icon));
+      addThemeFilterListener(imageView, R.id.theme_color_icon);
+      RippleSupport.setTransparentSelector(imageView);
+      Views.setClickable(imageView);
+      imageView.setOnClickListener(v -> showIconSelector());
+
+      FrameLayout.LayoutParams imageViewParams = new FrameLayout.LayoutParams(Screen.dp(57f), Screen.dp(57f), Gravity.CENTER_VERTICAL | Gravity.RIGHT);
+      frameLayout.addView(imageView, imageViewParams);
+
+      setLockFocusView(editText.getEditText());
+
+      SettingHolder holder = new SettingHolder(frameLayout);
+      holder.setIsRecyclable(false);
+      return holder;
+    }
+
+    @Override
+    protected void setCustom (ListItem item, SettingHolder holder, int position) {
+      MaterialEditTextGroup editText = holder.itemView.findViewById(android.R.id.input);
+      editText.applyRtl(Lang.rtl());
       editText.setEmptyHint(R.string.FolderNameHint);
       editText.setText(item.getStringValue());
-      editText.setMaxLength(12, false);
-      editText.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
-      ViewSupport.setThemedBackground(parent, R.id.theme_color_filling, EditChatFolderController.this);
+
+      ImageView imageView = holder.itemView.findViewById(android.R.id.icon);
+      int iconResource = TD.iconByName(editedChatFilter.iconName, R.drawable.baseline_folder_24);
+      imageView.setImageDrawable(Drawables.get(imageView.getResources(), iconResource));
     }
 
     @Override
@@ -543,5 +614,74 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
       int position = viewHolder.getAbsoluteAdapterPosition();
       showRemoveConditionConfirm(position, item);
     }
+  }
+
+  private void showIconSelector () {
+    List<ListItem> items = new ArrayList<>(TD.ICON_NAMES.length);
+    for (String iconName : TD.ICON_NAMES) {
+      items.add(new ListItem(ListItem.TYPE_CUSTOM_SINGLE, 0, TD.iconByName(iconName, 0), 0).setStringValue(iconName));
+    }
+    PopupLayout popupLayout = new PopupLayout(context);
+    SettingsAdapter popupAdapter = new SettingsAdapter(this, null, this) {
+      @Override
+      protected SettingHolder initCustom (ViewGroup parent) {
+        ImageView imageView = new ImageView(parent.getContext()) {
+          @Override
+          protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
+            int size = MeasureSpec.getSize(widthMeasureSpec);
+            setMeasuredDimension(size, size);
+          }
+        };
+        imageView.setScaleType(ImageView.ScaleType.CENTER);
+        imageView.setColorFilter(Theme.getColor(R.id.theme_color_icon));
+        addThemeFilterListener(imageView, R.id.theme_color_icon);
+        Views.setClickable(imageView);
+        imageView.setOnClickListener(v -> {
+          ListItem item = (ListItem) imageView.getTag();
+          editedChatFilter.iconName = item.getStringValue();
+          adapter.updateSimpleItemById(input.getId());
+          updateMenuButton();
+          popupLayout.hideWindow(true);
+        });
+        RippleSupport.setTransparentSelector(imageView);
+        return new SettingHolder(imageView);
+      }
+
+      @Override
+      protected void setCustom (ListItem item, SettingHolder holder, int position) {
+        ImageView imageView = (ImageView) holder.itemView;
+        int iconResource = item.getIconResource();
+        if (iconResource != 0) {
+          imageView.setImageDrawable(Drawables.get(imageView.getResources(), iconResource));
+        } else {
+          imageView.setImageDrawable(null);
+        }
+      }
+    };
+    int screenWidth = Screen.currentWidth();
+    int itemSize = Screen.dp(56f);
+    int spanCount = Math.max(screenWidth / itemSize, 3);
+    popupAdapter.setItems(items, false);
+    RecyclerView recyclerView = new RecyclerView(context);
+    recyclerView.setLayoutManager(new GridLayoutManager(context, spanCount));
+    recyclerView.setAdapter(popupAdapter);
+    ViewSupport.setThemedBackground(recyclerView, R.id.theme_color_background);
+
+    int rowCount = (items.size() + spanCount - 1) / spanCount;
+    int height = rowCount * (screenWidth / spanCount) + Screen.dp(7f);
+
+    ShadowView shadowView = new ShadowView(context);
+    shadowView.setSimpleTopShadow(true);
+    addThemeInvalidateListener(shadowView);
+
+    FrameLayoutFix popupView = new FrameLayoutFix(context);
+    popupView.addView(shadowView, FrameLayoutFix.newParams(MATCH_PARENT, Screen.dp(7f), Gravity.TOP));
+    popupView.addView(recyclerView, FrameLayoutFix.newParams(MATCH_PARENT, WRAP_CONTENT, Gravity.BOTTOM, 0, Screen.dp(7f), 0, 0));
+
+    popupLayout.setPopupHeightProvider(popupView::getHeight);
+    popupLayout.init(true);
+    popupLayout.setHideKeyboard();
+    popupLayout.setNeedRootInsets();
+    popupLayout.showSimplePopupView(popupView, height);
   }
 }
