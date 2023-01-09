@@ -16,6 +16,7 @@ package org.thunderdog.challegram.telegram;
 
 import android.content.SharedPreferences;
 
+import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.collection.LongSparseArray;
@@ -34,6 +35,8 @@ import org.thunderdog.challegram.theme.ThemeManager;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.DeviceTokenType;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
@@ -156,6 +159,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     editor.remove(key(LOCAL_CHAT_IDS_COUNT, accountId));
     editor.remove(key(ARCHIVE_CHAT_LIST_ENABLED, accountId));
     editor.remove(key(ARCHIVE_CHAT_LIST_POSITION, accountId));
+    editor.remove(key(CHAT_FOLDER_STYLE, accountId));
     // editor.remove(key(PEER_TO_PEER_KEY, accountId));
     Settings.instance().removeScrollPositions(accountId, editor);
     String dismissPrefix = key(DISMISS_MESSAGE_PREFIX, accountId);
@@ -184,6 +188,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     _localChatIdsCount = null;
     _archiveChatListEnabled = null;
     _archiveChatListPosition = null;
+    _chatFolderStyle = null;
     remoteToLocalChatIds.clear();
     localToRemoteChatIds.clear();
 
@@ -1032,10 +1037,20 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
 
   private @Nullable Boolean _archiveChatListEnabled;
   private @Nullable Integer _archiveChatListPosition;
+  private @Nullable Integer _chatFolderStyle;
   private static final String ARCHIVE_CHAT_LIST_ENABLED = "archive_chat_list_enabled";
   private static final String ARCHIVE_CHAT_LIST_POSITION = "archive_chat_list_position";
+  private static final String CHAT_FOLDER_STYLE = "chat_folder_style";
   private static final int DEFAULT_ARCHIVE_CHAT_LIST_POSITION = Integer.MAX_VALUE;
   private static final boolean DEFAULT_ARCHIVE_CHAT_LIST_ENABLED = false;
+
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({CHAT_FOLDER_STYLE_TITLE_ONLY, CHAT_FOLDER_STYLE_ICON_ONLY, CHAT_FOLDER_STYLE_ICON_AND_TITLE})
+  public @interface ChatFolderStyle { }
+
+  public static final int CHAT_FOLDER_STYLE_TITLE_ONLY = 0;
+  public static final int CHAT_FOLDER_STYLE_ICON_ONLY = 1;
+  public static final int CHAT_FOLDER_STYLE_ICON_AND_TITLE = 2;
 
   public boolean isArchiveChatListEnabled () {
     if (_archiveChatListEnabled == null) {
@@ -1075,9 +1090,29 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     }
   }
 
+  public @ChatFolderStyle int chatFolderStyle () {
+    if (_chatFolderStyle == null) {
+      _chatFolderStyle = Settings.instance().getInt(key(CHAT_FOLDER_STYLE, tdlib.accountId()), CHAT_FOLDER_STYLE_TITLE_ONLY);
+    }
+    return _chatFolderStyle;
+  }
+
+  public void setChatFolderStyle (@ChatFolderStyle int chatFolderStyle) {
+    if (chatFolderStyle() != chatFolderStyle) {
+      _chatFolderStyle = chatFolderStyle;
+      Settings.instance().putInt(key(CHAT_FOLDER_STYLE, tdlib.accountId()), chatFolderStyle);
+      if (chatListPositionListeners != null) {
+        for (ChatListPositionListener chatListPositionListener : chatListPositionListeners) {
+          chatListPositionListener.onChatFolderStyleChanged(chatFolderStyle);
+        }
+      }
+    }
+  }
+
   public interface ChatListPositionListener {
     default void onArchiveChatListStateChanged (boolean isEnabled) { }
     default void onArchiveChatListPositionChanged (int archiveChatListPosition) { }
+    default void onChatFolderStyleChanged (@ChatFolderStyle int chatFolderStyle) { }
   }
 
   private @Nullable ReferenceList<ChatListPositionListener> chatListPositionListeners;

@@ -1,5 +1,9 @@
 package org.thunderdog.challegram.ui;
 
+import static org.thunderdog.challegram.telegram.TdlibSettingsManager.CHAT_FOLDER_STYLE_ICON_AND_TITLE;
+import static org.thunderdog.challegram.telegram.TdlibSettingsManager.CHAT_FOLDER_STYLE_ICON_ONLY;
+import static org.thunderdog.challegram.telegram.TdlibSettingsManager.CHAT_FOLDER_STYLE_TITLE_ONLY;
+
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Bundle;
@@ -25,6 +29,7 @@ import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.telegram.ChatFiltersListener;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.AdapterSubListUpdateCallback;
@@ -93,6 +98,12 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
 
     items.addAll(chatFilterItemList);
 
+    items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.ChatFoldersSettings));
+    items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_chatFolderStyle, 0, R.string.ChatFoldersStyle));
+    items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+    items.add(new ListItem(ListItem.TYPE_PADDING).setHeight(Screen.dp(12f)));
+
     adapter = new SettingsAdapter(this) {
       @Override
       protected SettingHolder initCustom (ViewGroup parent) {
@@ -158,6 +169,22 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
           view.setOnTouchListener(null);
           view.setClickable(true);
           view.setLongClickable(true);
+          if (item.getId() == R.id.btn_chatFolderStyle) {
+            int stringRes;
+            switch (tdlib.settings().chatFolderStyle()) {
+              case CHAT_FOLDER_STYLE_ICON_AND_TITLE:
+                stringRes = R.string.IconAndTitle;
+                break;
+              case CHAT_FOLDER_STYLE_ICON_ONLY:
+                stringRes = R.string.IconOnly;
+                break;
+              default:
+              case CHAT_FOLDER_STYLE_TITLE_ONLY:
+                stringRes = R.string.TitleOnly;
+                break;
+            }
+            view.setData(stringRes);
+          }
         }
       }
     };
@@ -234,6 +261,25 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
         TdApi.ChatFilter chatFilter = (TdApi.ChatFilter) tag;
         createChatFilter(chatFilter);
       }
+    } else if (v.getId() == R.id.btn_chatFolderStyle) {
+      int chatFolderStyle = tdlib.settings().chatFolderStyle();
+      showSettings(R.id.btn_chatFolderStyle, new ListItem[] {
+        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_titleOnly, 0, R.string.TitleOnly, R.id.btn_chatFolderStyle, chatFolderStyle == CHAT_FOLDER_STYLE_TITLE_ONLY),
+        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_iconOnly, 0, R.string.IconOnly, R.id.btn_chatFolderStyle, chatFolderStyle == CHAT_FOLDER_STYLE_ICON_ONLY),
+        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_iconAndTitle, 0, R.string.IconAndTitle, R.id.btn_chatFolderStyle, chatFolderStyle == CHAT_FOLDER_STYLE_ICON_AND_TITLE),
+      }, (id, result) -> {
+        int selection = result.get(R.id.btn_chatFolderStyle);
+        int style;
+        if (selection == R.id.btn_iconOnly) {
+          style = CHAT_FOLDER_STYLE_ICON_ONLY;
+        } else if (selection == R.id.btn_iconAndTitle) {
+          style = CHAT_FOLDER_STYLE_ICON_AND_TITLE;
+        } else {
+          style = CHAT_FOLDER_STYLE_TITLE_ONLY;
+        }
+        tdlib.settings().setChatFolderStyle(style);
+        adapter.updateValuedSettingById(R.id.btn_chatFolderStyle);
+      });
     }
   }
 

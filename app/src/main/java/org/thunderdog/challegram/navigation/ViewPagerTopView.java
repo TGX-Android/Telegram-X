@@ -73,60 +73,47 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     public final boolean hidden;
 
     public Item (CharSequence string) {
-      this.string = string;
-      this.needFakeBold = Text.needFakeBold(string);
-      this.iconRes = 0;
-      this.counter = null;
-      this.provider = null;
-      this.hidden = false;
+      this(string, 0, null, null, false);
     }
 
-    public Item (int iconRes) {
-      this.string = null;
-      this.needFakeBold = false;
-      this.iconRes = iconRes;
-      this.counter = null;
-      this.provider = null;
-      this.hidden = false;
+    public Item (@DrawableRes int iconRes) {
+      this(null, iconRes, null, null, false);
+    }
+
+    public Item (@DrawableRes int iconRes, Counter counter) {
+      this(null, iconRes, counter, null, false);
     }
 
     public Item (CharSequence string, Counter counter) {
-      this.string = string;
-      this.needFakeBold = Text.needFakeBold(string);
-      this.counter = counter;
-      this.iconRes = 0;
-      this.provider = null;
-      this.hidden = false;
+      this(string, 0, counter, null, false);
+    }
+
+    public Item (CharSequence string, @DrawableRes int iconRes, Counter counter) {
+      this(string, iconRes, counter, null, false);
     }
 
     public Item (Counter counter, DrawableProvider provider, int addWidth) {
-      this.string = null;
-      this.needFakeBold = false;
-      this.iconRes = 0;
-      this.counter = counter;
-      this.provider = provider;
+      this(null, 0, counter, provider, false);
       this.addWidth = addWidth;
-      this.hidden = false;
     }
 
     public Item (TGReaction reaction, Counter counter, DrawableProvider provider, int addWidth) {
-      this.string = null;
-      this.needFakeBold = false;
-      this.iconRes = 0;
-      this.counter = counter;
-      this.provider = provider;
+      this(null, 0, counter, provider, false);
       this.addWidth = addWidth;
       this.reaction = reaction;
-      this.hidden = false;
     }
 
     public Item () {
-      this.string = null;
-      this.needFakeBold = false;
-      this.iconRes = 0;
-      this.counter = null;
-      this.provider = null;
-      this.hidden = true;
+      this(null, 0, null, null, true);
+    }
+
+    private Item (CharSequence string, @DrawableRes int iconRes, Counter counter, DrawableProvider provider, boolean hidden) {
+      this.string = string;
+      this.needFakeBold = string != null && Text.needFakeBold(string);
+      this.iconRes = iconRes;
+      this.counter = counter;
+      this.provider = provider;
+      this.hidden = hidden;
     }
 
     private Drawable icon;
@@ -157,16 +144,18 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
         width = staticWidth;
       } else if (counter != null) {
         if (string != null) {
-          width = (int) (U.measureEmojiText(string, paint) + counter.getScaledWidth(Screen.dp(6f)));
+          width = (int) (U.measureEmojiText(string, paint) + counter.getScaledWidth(Screen.dp(6f))) + (iconRes != 0 ? Screen.dp(24f) + Screen.dp(6f) : 0);
         } else if (imageReceiver != null) {
           width = (int) counter.getWidth() + imageReceiverSize;
+        } else if (iconRes != 0) {
+          width = Screen.dp(24f) + (int) counter.getScaledWidth(Screen.dp(6f));
         } else {
           width = (int) counter.getWidth() + Screen.dp(6f);
         }
       } else if (string != null) {
-        width = (int) U.measureEmojiText(string, paint);
+        width = (int) U.measureEmojiText(string, paint) + (iconRes != 0 ? Screen.dp(24f) + Screen.dp(6f) : 0);
       } else if (iconRes != 0) {
-        width = Screen.dp(24f) + Screen.dp(6f);
+        width = Screen.dp(24f)/* + Screen.dp(6f)*/; // ???
       } else {
         width = 0;
       }
@@ -761,7 +750,14 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
             float backgroundAlpha = counterAlphaProvider.getBackgroundAlpha(alphaFactor);
             if (item.ellipsizedStringLayout != null) {
               int horizontalPadding = Math.max((itemWidth - item.actualWidth) / 2, 0);
-              int stringX = cx + horizontalPadding;
+              int stringX;
+              if (item.iconRes != 0) {
+                Drawable drawable = item.getIcon();
+                Drawables.draw(c, drawable, cx + horizontalPadding, viewHeight / 2 - drawable.getMinimumHeight() / 2, Paints.getPorterDuffPaint(color));
+                stringX = cx + horizontalPadding + Screen.dp(24f) + Screen.dp(6f);
+              } else {
+                stringX = cx + horizontalPadding;
+              }
               int stringY = viewHeight / 2 - item.ellipsizedStringLayout.getHeight() / 2;
               c.translate(stringX, stringY);
               item.ellipsizedStringLayout.getPaint().setColor(color);
@@ -775,11 +771,24 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
               item.imageReceiver.setBounds(cx, imgY, cx + size, imgY + size);
               item.imageReceiver.drawScaled(c, item.imageReceiverScale);
               item.counter.draw(c, cx + size, viewHeight / 2f, Gravity.LEFT, textAlpha, backgroundAlpha, imageAlpha, item.provider, 0);
+            } else if (item.iconRes != 0) {
+              int horizontalPadding = Math.max((itemWidth - item.actualWidth) / 2, 0);
+              Drawable drawable = item.getIcon();
+              Drawables.draw(c, drawable, cx + horizontalPadding, viewHeight / 2 - drawable.getMinimumHeight() / 2, Paints.getPorterDuffPaint(color));
+              item.counter.draw(c, cx + itemWidth - horizontalPadding - item.counter.getWidth() / 2f, viewHeight / 2f, Gravity.CENTER, textAlpha, backgroundAlpha, imageAlpha, item.provider, ThemeColorId.NONE);
             } else {
               item.counter.draw(c, cx + itemWidth / 2f, viewHeight / 2f, Gravity.CENTER, textAlpha, backgroundAlpha, imageAlpha, item.provider, 0);
             }
           } else if (item.ellipsizedStringLayout != null) {
-            int stringX = cx + itemWidth / 2 - item.actualWidth / 2;
+            int stringX;
+            if (item.iconRes != 0) {
+              int horizontalPadding = Math.max((itemWidth - item.actualWidth) / 2, 0);
+              Drawable drawable = item.getIcon();
+              Drawables.draw(c, drawable, cx + horizontalPadding, viewHeight / 2 - drawable.getMinimumHeight() / 2, Paints.getPorterDuffPaint(color));
+              stringX = cx + horizontalPadding + Screen.dp(24f) + Screen.dp(6f);
+            } else {
+              stringX = cx + itemWidth / 2 - item.actualWidth / 2;
+            }
             int stringY = viewHeight / 2 - item.ellipsizedStringLayout.getHeight() / 2;
             c.translate(stringX, stringY);
             item.ellipsizedStringLayout.getPaint().setColor(color);

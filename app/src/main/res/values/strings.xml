@@ -4465,6 +4465,8 @@
   <string name="ChatTypes">Chat types</string>
   <string name="ChatFolders">Chat Folders</string>
   <string name="ChatFoldersInfo">Create folders for different groups of chats and quickly switch between them.</string>
+  <string name="ChatFoldersSettings">Settings</string>
+  <string name="ChatFoldersStyle">Style</string>
   <string name="NewFolder">New Folder</string>
   <string name="CreateNewFolder">Create New Folder</string>
   <string name="EditFolder">Edit Folder</string>
@@ -4492,4 +4494,7 @@
   <string name="AddToFolder">Add to folder</string>
   <string name="RemoveFromFolder">Remove from folder</string>
   <string name="ChooseFolder">Choose a folder</string>
+  <string name="IconOnly">Icon Only</string>
+  <string name="TitleOnly">Title Only</string>
+  <string name="IconAndTitle">Icon &amp; Title</string>
 </resources>
