@@ -105,16 +105,34 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
     items.add(new ListItem(ListItem.TYPE_PADDING).setHeight(Screen.dp(12f)));
 
     adapter = new SettingsAdapter(this) {
+      @SuppressLint("ClickableViewAccessibility")
       @Override
       protected SettingHolder initCustom (ViewGroup parent) {
         SettingView settingView = new SettingView(context, tdlib);
         settingView.setType(SettingView.TYPE_SETTING);
         settingView.addToggler();
         addThemeInvalidateListener(settingView);
+        settingView.setOnTouchListener(new ChatFilterOnTouchListener());
+        settingView.setOnClickListener(ChatFoldersController.this);
+        settingView.setOnLongClickListener(ChatFoldersController.this);
+        settingView.getToggler().setOnClickListener(v -> {
+          ListItem item = (ListItem) settingView.getTag();
+          boolean enabled = settingView.getToggler().toggle(true);
+          settingView.setVisuallyEnabled(enabled, true);
+          settingView.setIconColorId(enabled ? R.id.theme_color_icon : R.id.theme_color_iconLight);
+          if (isMainChatFilter(item)) {
+            throw new UnsupportedOperationException();
+          } else if (isArchiveChatFilter(item)) {
+            tdlib.settings().setArchiveChatListEnabled(enabled);
+          } else if (isChatFilter(item)) {
+            tdlib.settings().setChatFilterEnabled(item.getIntValue(), enabled);
+          } else {
+            throw new IllegalArgumentException();
+          }
+        });
         return new SettingHolder(settingView);
       }
 
-      @SuppressLint("ClickableViewAccessibility")
       @Override
       protected void setCustom (ListItem item, SettingHolder holder, int position) {
         SettingView settingView = (SettingView) holder.itemView;
@@ -125,24 +143,22 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
         settingView.setEnabled(true);
 
         boolean isEnabled;
-        if (isArchiveChatFilter(item)) {
+        if (isMainChatFilter(item)) {
+          throw new UnsupportedOperationException();
+        } else if (isArchiveChatFilter(item)) {
           isEnabled = tdlib.settings().isArchiveChatListEnabled();
+          settingView.setClickable(false);
+          settingView.setLongClickable(false);
+        } else if (isChatFilter(item)) {
+          isEnabled = tdlib.settings().isChatFilterEnabled(item.getIntValue());
+          settingView.setClickable(true);
+          settingView.setLongClickable(true);
         } else {
-          isEnabled = true;
+          throw new IllegalArgumentException();
         }
         settingView.setVisuallyEnabled(isEnabled, false);
         settingView.getToggler().setRadioEnabled(isEnabled, false);
         settingView.setIconColorId(isEnabled ? R.id.theme_color_icon : R.id.theme_color_iconLight);
-
-        settingView.setOnTouchListener(new ChatFilterOnTouchListener());
-        settingView.setOnClickListener(v -> {
-          boolean enabled = settingView.getToggler().toggle(true);
-          settingView.setVisuallyEnabled(enabled, true);
-          settingView.setIconColorId(enabled ? R.id.theme_color_icon : R.id.theme_color_iconLight);
-          if (isArchiveChatFilter(item)) {
-            tdlib.settings().setArchiveChatListEnabled(enabled);
-          }
-        });
       }
 
       @Override
@@ -531,7 +547,7 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
   }
 
   private ListItem chatFilterItem (TdApi.ChatFilterInfo chatFilterInfo) {
-    ListItem item = new ListItem(ListItem.TYPE_SETTING, R.id.chatFilter, R.drawable.baseline_drag_handle_24, Emoji.instance().replaceEmoji(chatFilterInfo.title));
+    ListItem item = new ListItem(ListItem.TYPE_CUSTOM_SINGLE, R.id.chatFilter, R.drawable.baseline_drag_handle_24, Emoji.instance().replaceEmoji(chatFilterInfo.title));
     item.setIntValue(chatFilterInfo.id);
     item.setLongId(chatFilterInfo.id);
     item.setData(chatFilterInfo);

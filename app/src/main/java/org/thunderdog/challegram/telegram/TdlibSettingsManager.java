@@ -42,6 +42,7 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.collection.IntSet;
 import me.vkryl.core.collection.LongSparseLongArray;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.core.BitwiseUtils;
@@ -160,6 +161,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     editor.remove(key(ARCHIVE_CHAT_LIST_ENABLED, accountId));
     editor.remove(key(ARCHIVE_CHAT_LIST_POSITION, accountId));
     editor.remove(key(CHAT_FOLDER_STYLE, accountId));
+    editor.remove(key(DISABLED_CHAT_FILTER_IDS, accountId));
     // editor.remove(key(PEER_TO_PEER_KEY, accountId));
     Settings.instance().removeScrollPositions(accountId, editor);
     String dismissPrefix = key(DISMISS_MESSAGE_PREFIX, accountId);
@@ -189,6 +191,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     _archiveChatListEnabled = null;
     _archiveChatListPosition = null;
     _chatFolderStyle = null;
+    _disabledChatFilterIds = null;
     remoteToLocalChatIds.clear();
     localToRemoteChatIds.clear();
 
@@ -1038,9 +1041,11 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   private @Nullable Boolean _archiveChatListEnabled;
   private @Nullable Integer _archiveChatListPosition;
   private @Nullable Integer _chatFolderStyle;
+  private @Nullable IntSet _disabledChatFilterIds;
   private static final String ARCHIVE_CHAT_LIST_ENABLED = "archive_chat_list_enabled";
   private static final String ARCHIVE_CHAT_LIST_POSITION = "archive_chat_list_position";
   private static final String CHAT_FOLDER_STYLE = "chat_folder_style";
+  private static final String DISABLED_CHAT_FILTER_IDS = "disabled_chat_filter_ids";
   private static final int DEFAULT_ARCHIVE_CHAT_LIST_POSITION = Integer.MAX_VALUE;
   private static final boolean DEFAULT_ARCHIVE_CHAT_LIST_ENABLED = false;
 
@@ -1109,10 +1114,45 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     }
   }
 
+  public boolean isChatFilterEnabled (int chatFilterId) {
+    IntSet disabledChatFilterIds = disabledChatFilterIds();
+    return !disabledChatFilterIds.has(chatFilterId);
+  }
+
+  public void setChatFilterEnabled (int chatFilterId, boolean isEnabled) {
+    IntSet disabledChatFilterIds = disabledChatFilterIds();
+    if (disabledChatFilterIds.has(chatFilterId) == isEnabled) {
+      if (isEnabled) {
+        disabledChatFilterIds.remove(chatFilterId);
+      } else {
+        disabledChatFilterIds.add(chatFilterId);
+      }
+      if (disabledChatFilterIds.isEmpty()) {
+        Settings.instance().remove(key(DISABLED_CHAT_FILTER_IDS, tdlib.accountId()));
+      } else {
+        Settings.instance().putIntArray(key(DISABLED_CHAT_FILTER_IDS, tdlib.accountId()), disabledChatFilterIds.toArray());
+      }
+      if (chatListPositionListeners != null) {
+        for (ChatListPositionListener chatListPositionListener : chatListPositionListeners) {
+          chatListPositionListener.onChatFilterStateChanged(chatFilterId, isEnabled);
+        }
+      }
+    }
+  }
+
+  private IntSet disabledChatFilterIds () {
+    if (_disabledChatFilterIds == null) {
+      int[] disabledChatFilterIds = Settings.instance().getIntArray(key(DISABLED_CHAT_FILTER_IDS, tdlib.accountId()));
+      _disabledChatFilterIds = disabledChatFilterIds != null ? new IntSet(disabledChatFilterIds) : new IntSet(0);
+    }
+    return _disabledChatFilterIds;
+  }
+
   public interface ChatListPositionListener {
     default void onArchiveChatListStateChanged (boolean isEnabled) { }
     default void onArchiveChatListPositionChanged (int archiveChatListPosition) { }
     default void onChatFolderStyleChanged (@ChatFolderStyle int chatFolderStyle) { }
+    default void onChatFilterStateChanged (int chatFilterId, boolean isEnabled) { }
   }
 
   private @Nullable ReferenceList<ChatListPositionListener> chatListPositionListeners;

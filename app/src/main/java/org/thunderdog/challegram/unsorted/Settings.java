@@ -846,6 +846,12 @@ public class Settings {
   public int getInt (String key, int defValue) {
     return pmc.getInt(key, defValue);
   }
+  public int[] getIntArray (String key) {
+    return pmc.getIntArray(key);
+  }
+  public void putIntArray (String key, int[] value) {
+    pmc.putIntArray(key, value);
+  }
   public void putFloat (String key, float value) {
     pmc.putFloat(key, value).apply();
   }
