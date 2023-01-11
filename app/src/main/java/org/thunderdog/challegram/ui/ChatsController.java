@@ -1187,11 +1187,11 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
         }
 
         if (Config.CHAT_FOLDERS_ENABLED) {
-          if (TD.isMain(chatList()) || TD.isArchive(chatList())) {
+          if (TD.isChatListMain(chatList()) || TD.isChatListArchive(chatList())) {
             ids.append(R.id.more_btn_addToFolder);
             strings.append(R.string.AddToFolder);
             icons.append(R.drawable.templarian_baseline_folder_plus_24);
-          } else if (TD.isFilter(chatList())) {
+          } else if (TD.isChatListFilter(chatList())) {
             ids.append(R.id.more_btn_removeFromFolder);
             strings.append(R.string.RemoveFromFolder);
             icons.append(R.drawable.templarian_baseline_folder_remove_24);
@@ -1584,7 +1584,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       }
       case R.id.more_btn_removeFromFolder: {
         TdApi.ChatList chatList = chatList();
-        if (chatList.getConstructor() == TdApi.ChatListFilter.CONSTRUCTOR) {
+        if (TD.isChatListFilter(chatList)) {
           int chatFilterId = ((TdApi.ChatListFilter) chatList).chatFilterId;
           long[] selectedChatIds = ArrayUtils.keys(selectedChats);
           tdlib.removeChatsFromChatFilter(chatFilterId, selectedChatIds);

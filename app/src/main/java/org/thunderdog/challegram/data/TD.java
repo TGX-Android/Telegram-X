@@ -6899,15 +6899,15 @@ public class TD {
     return false;
   }
 
-  public static boolean isMain (@Nullable TdApi.ChatList chatList) {
+  public static boolean isChatListMain (@Nullable TdApi.ChatList chatList) {
     return chatList != null && chatList.getConstructor() == TdApi.ChatListMain.CONSTRUCTOR;
   }
 
-  public static boolean isArchive (@Nullable TdApi.ChatList chatList) {
+  public static boolean isChatListArchive (@Nullable TdApi.ChatList chatList) {
     return chatList != null && chatList.getConstructor() == TdApi.ChatListArchive.CONSTRUCTOR;
   }
 
-  public static boolean isFilter (@Nullable TdApi.ChatList chatList) {
+  public static boolean isChatListFilter (@Nullable TdApi.ChatList chatList) {
     return chatList != null && chatList.getConstructor() == TdApi.ChatListFilter.CONSTRUCTOR;
   }
 

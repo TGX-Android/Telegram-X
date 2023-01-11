@@ -60,7 +60,7 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
     super(context, tdlib);
   }
 
-  private static final int NO_POSITION = -1;
+  protected static final int NO_POSITION = -1;
 
   public interface ScrollToTopDelegate {
     void onScrollToTopRequested ();
@@ -394,14 +394,19 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
   }
 
   protected final void replaceController (long itemId, ViewController<?> newController) {
-    int position = adapter.getCachedItemPosition(itemId);
-    ViewController<?> currentController = adapter.getCachedItemByPosition(position);
-    if (currentController != null) {
-      currentController.destroy();
+    int position = getPagerItemPosition(itemId);
+    if (position != NO_POSITION) {
+      ViewController<?> currentController = adapter.getCachedItemByPosition(position);
+      if (currentController != null) {
+        currentController.destroy();
+      }
       newController.setParentWrapper(this);
       newController.bindThemeListeners(this);
       adapter.cachedItems.put(position, newController);
+      adapter.cachedPositions.put(itemId, position);
       adapter.notifyDataSetChanged();
+    } else {
+      newController.destroy();
     }
   }
 
@@ -415,6 +420,10 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
 
   public final int getCurrentPagerItemPosition() {
     return adapter.reversePosition(pager.getCurrentItem());
+  }
+
+  public final long getCurrentPagerItemId () {
+    return getPagerItemId(getCurrentPagerItemPosition());
   }
 
   public final void notifyPagerItemPositionsChanged () {
@@ -505,8 +514,28 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
     return c instanceof OptionDelegate && ((OptionDelegate) c).onOptionItemPressed(optionItemView, id);
   }
 
+  public int getPagerItemPosition (long itemId) {
+    if (adapter != null) {
+      int cachedItemPosition = adapter.getCachedItemPosition(itemId);
+      if (cachedItemPosition != NO_POSITION) {
+        return cachedItemPosition;
+      }
+    }
+    int pagerItemCount = getPagerItemCount();
+    for (int position = 0; position < pagerItemCount; position++) {
+      if (getPagerItemId(position) == itemId) {
+        return position;
+      }
+    }
+    return NO_POSITION;
+  }
+
   public final @Nullable ViewController<?> getCachedControllerForId (@IdRes int id) {
     return adapter != null ? adapter.getCachedItemByControllerId(id) : null;
+  }
+
+  public final @Nullable ViewController<?> getCachedControllerForItemId (long itemId) {
+    return adapter != null ? adapter.getCachedItemByItemId(itemId) : null;
   }
 
   public final @Nullable ViewController<?> getCachedControllerForPosition (int position) {
@@ -623,6 +652,10 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
 
     public @Nullable ViewController<?> getCachedItemByPosition (int position) {
       return position != NO_POSITION ? cachedItems.get(position) : null;
+    }
+
+    public @Nullable ViewController<?> getCachedItemByItemId (long itemId) {
+      return getCachedItemByPosition(getCachedItemPosition(itemId));
     }
 
     public @Nullable ViewController<?> getCachedItemByControllerId (@IdRes int id) {
