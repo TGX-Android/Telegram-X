@@ -1120,7 +1120,13 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   }
 
   protected long getPagerItemId (int position) {
-    return hasFolders() ? getPagerItemId(pagerChatLists.get(position)) : position;
+    if (hasFolders()) {
+      return getPagerItemId(pagerChatLists.get(position));
+    }
+    if (position == POSITION_CHATS) {
+      return MAIN_PAGER_ITEM_ID;
+    }
+    return position;
   }
 
   private long getPagerItemId (TdApi.ChatList chatList) {
