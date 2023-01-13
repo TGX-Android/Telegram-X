@@ -18,6 +18,7 @@ import android.widget.FrameLayout;
 
 import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.ItemTouchHelper;
@@ -52,9 +53,11 @@ import java.util.List;
 import java.util.Objects;
 
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.collection.IntList;
+import me.vkryl.core.lambda.RunnableBool;
 
 public class ChatFoldersController extends RecyclerViewController<Void> implements View.OnClickListener, View.OnLongClickListener, ChatFiltersListener {
   private static final long MAIN_CHAT_FILTER_ID = Long.MIN_VALUE;
@@ -68,6 +71,8 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
 
   private int chatFilterGroupItemCount, recommendedChatFilterGroupItemCount;
   private boolean recommendedChatFiltersInitialized;
+
+  private @Nullable TdApi.RecommendedChatFilter[] recommendedChatFilters;
 
   private SettingsAdapter adapter;
   private ItemTouchHelper itemTouchHelper;
@@ -211,7 +216,9 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
           settingView.setData(item.getStringValue());
           settingView.setTextColorId(item.getTextColorId(ThemeColorId.NONE));
           settingView.setEnabled(true);
-          settingView.findViewById(R.id.btn_double).setTag(item.getData());
+          View button = settingView.findViewById(R.id.btn_double);
+          button.setEnabled(true);
+          button.setTag(item.getData());
         } else {
           throw new IllegalArgumentException("customViewType=" + customViewType);
         }
@@ -319,8 +326,16 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
     } else if (v.getId() == R.id.btn_double) {
       Object tag = v.getTag();
       if (tag instanceof TdApi.ChatFilter) {
+        v.setEnabled(false);
         TdApi.ChatFilter chatFilter = (TdApi.ChatFilter) tag;
-        createChatFilter(chatFilter);
+        createChatFilter(chatFilter, (ok) -> {
+          if (ok) {
+            v.setTag(null);
+            removeRecommendedChatFilter(chatFilter);
+          } else {
+            v.setEnabled(true);
+          }
+        });
       }
     } else if (v.getId() == R.id.btn_chatFolderStyle) {
       int chatFolderStyle = tdlib.settings().chatFolderStyle();
@@ -417,8 +432,18 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
     }));
   }
 
-  private void createChatFilter (TdApi.ChatFilter chatFilter) {
-    tdlib.send(new TdApi.CreateChatFilter(chatFilter), tdlib.okHandler(TdApi.ChatFilterInfo.class));
+  private void createChatFilter (TdApi.ChatFilter chatFilter, RunnableBool after) {
+    tdlib.send(new TdApi.CreateChatFilter(chatFilter), (result) -> runOnUiThreadOptional(() -> {
+      switch (result.getConstructor()) {
+        case TdApi.ChatFilterInfo.CONSTRUCTOR:
+          after.runWithBool(true);
+          break;
+        case TdApi.Error.CONSTRUCTOR:
+          after.runWithBool(false);
+          UI.showError(result);
+          break;
+      }
+    }));
   }
 
   private void deleteChatFilter (int chatFilterId) {
@@ -649,11 +674,31 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
     if (subList.isEmpty() && newList.isEmpty()) {
       return;
     }
+    recommendedChatFilters = chatFilters;
     recommendedChatFilterGroupItemCount = newList.size();
     DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(recommendedChatFiltersDiff(subList, newList));
     subList.clear();
     subList.addAll(newList);
     diffResult.dispatchUpdatesTo(new AdapterSubListUpdateCallback(adapter, fromIndex));
+  }
+
+  private void removeRecommendedChatFilter (TdApi.ChatFilter chatFilter) {
+    if (recommendedChatFilters == null || recommendedChatFilters.length == 0)
+      return;
+    int indexToRemove = -1;
+    for (int i = 0; i < recommendedChatFilters.length; i++) {
+      if (chatFilter == recommendedChatFilters[i].filter) {
+        indexToRemove = i;
+        break;
+      }
+    }
+    if (indexToRemove != -1) {
+      TdApi.RecommendedChatFilter[] chatFilters = new TdApi.RecommendedChatFilter[recommendedChatFilters.length - 1];
+      if (chatFilters.length > 0) {
+        ArrayUtils.removeElement(recommendedChatFilters, indexToRemove, chatFilters);
+      }
+      updateRecommendedChatFilters(chatFilters);
+    }
   }
 
   private static DiffUtil.Callback chatFiltersDiff (List<ListItem> oldList, List<ListItem> newList) {
