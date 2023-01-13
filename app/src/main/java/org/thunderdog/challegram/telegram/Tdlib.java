@@ -3089,16 +3089,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
-  public TdApi.ChatFilterInfo chatFilterInfo (int chatFilterId) {
+  public @Nullable TdApi.ChatFilterInfo chatFilterInfo (int chatFilterId) {
     synchronized (dataLock) {
-      if (chatFilters != null) {
-        for (TdApi.ChatFilterInfo filter : chatFilters) {
-          if (filter.id == chatFilterId)
-            return filter;
-        }
-      }
+      return chatFiltersById.get(chatFilterId);
     }
-    return null;
   }
 
   public boolean canArchiveChat (TdApi.ChatList chatList, TdApi.Chat chat) {
@@ -7141,11 +7135,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   private int mainChatListPosition;
   private TdApi.ChatFilterInfo[] chatFilters = new TdApi.ChatFilterInfo[0];
+  private final SparseArrayCompat<TdApi.ChatFilterInfo> chatFiltersById = new SparseArrayCompat<>();
 
   @TdlibThread
   private void updateChatFilters (TdApi.UpdateChatFilters update) {
     synchronized (dataLock) {
-      this.chatFilters = update.chatFilters;
+      TdApi.ChatFilterInfo[] chatFilters = update.chatFilters;
+      this.chatFilters = chatFilters;
+      this.chatFiltersById.clear();
+      if (chatFilters != null) {
+        for (TdApi.ChatFilterInfo chatFilter : chatFilters) {
+          this.chatFiltersById.put(chatFilter.id, chatFilter);
+        }
+      }
       this.mainChatListPosition = update.mainChatListPosition;
     }
     listeners.updateChatFilters(update);

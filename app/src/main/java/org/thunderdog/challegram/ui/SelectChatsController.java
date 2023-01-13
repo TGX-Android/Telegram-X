@@ -70,6 +70,7 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.util.ClickHelper;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.MathUtils;
+import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.ChatPosition;
 
@@ -348,7 +349,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
 
   private TGFoundChat foundChat (TdApi.ChatList chatList, TdApi.Chat chat) {
     TGFoundChat foundChat = new TGFoundChat(tdlib, chatList, chat, true, null);
-    foundChat.setNoUnread();
+    modifyChat(foundChat);
     return foundChat;
   }
 
@@ -447,15 +448,13 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
 
   @Override
   protected void modifyFoundChat (TGFoundChat chat) {
-    chat.setNoUnread();
+    modifyChat(chat);
   }
 
   @Override
   protected void modifyFoundChatView (ListItem item, int position, BetterChatView chatView) {
-    chatView.setAllowMaximizePreview(false);
-    chatView.setIsChecked(selectedChatIds.contains(item.getLongId()), false);
+    modifyChatView((TGFoundChat) item.getData(), chatView);
   }
-
 
   @Override
   public void onChatAdded (TdlibChatList chatList, TdApi.Chat chat, int atIndex, Tdlib.ChatChange changeInfo) {
@@ -478,6 +477,50 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
       int firstChatIndex = indexOfFistChat();
       adapter.moveItem(firstChatIndex + fromIndex, firstChatIndex + toIndex);
     });
+  }
+
+  private void modifyChat (TGFoundChat chat) {
+    chat.setNoUnread();
+    if (mode == MODE_FOLDER_INCLUDE_CHATS || mode == MODE_FOLDER_EXCLUDE_CHATS) {
+      chat.setForcedSubtitle(buildFolderListSubtitle(tdlib, chat));
+    }
+  }
+
+  private void modifyChatView (TGFoundChat chat, BetterChatView chatView) {
+    chatView.setAllowMaximizePreview(false);
+    chatView.setIsChecked(selectedChatIds.contains(chat.getChatId()), chatView.isLaidOut());
+    if (mode == MODE_FOLDER_INCLUDE_CHATS || mode == MODE_FOLDER_EXCLUDE_CHATS) {
+      chatView.setNoSubtitle(StringUtils.isEmpty(chat.getForcedSubtitle()));
+    }
+  }
+
+  private static @Nullable String buildFolderListSubtitle (Tdlib tdlib, TGFoundChat foundChat) {
+    TdApi.Chat chat = foundChat.getChat();
+    if (chat == null) {
+      chat = tdlib.chat(foundChat.getChatId());
+    }
+    return chat != null ? buildFolderListSubtitle(tdlib, chat) : null;
+  }
+
+  private static @Nullable String buildFolderListSubtitle (Tdlib tdlib, TdApi.Chat chat) {
+    TdApi.ChatPosition[] chatPositions = chat.positions;
+    if (chatPositions != null && chatPositions.length > 0) {
+      StringBuilder sb = new StringBuilder();
+      for (TdApi.ChatPosition chatPosition : chatPositions) {
+        if (!TD.isChatListFilter(chatPosition.list))
+          continue;
+        TdApi.ChatListFilter chatListFilter = (TdApi.ChatListFilter) chatPosition.list;
+        TdApi.ChatFilterInfo chatFilterInfo = tdlib.chatFilterInfo(chatListFilter.chatFilterId);
+        if (chatFilterInfo == null || StringUtils.isEmptyOrBlank(chatFilterInfo.title))
+          continue;
+        if (sb.length() > 0) {
+          sb.append(", ");
+        }
+        sb.append(chatFilterInfo.title);
+      }
+      return sb.toString();
+    }
+    return null;
   }
 
   public interface Delegate {
@@ -533,9 +576,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
       if (item.getId() == R.id.chat) {
         TGFoundChat foundChat = (TGFoundChat) item.getData();
         chatView.setChat(foundChat);
-        chatView.setNoSubtitle(false);
-        chatView.setIsChecked(selectedChatIds.contains(item.getLongId()), chatView.isLaidOut());
-        chatView.setAllowMaximizePreview(false);
+        SelectChatsController.this.modifyChatView(foundChat, chatView);
       } else if (ArrayUtils.contains(TD.CHAT_TYPES, item.getId())) {
         float avatarRadius = ChatView.getAvatarSizeDp(Settings.CHAT_MODE_2LINE) / 2f;
         AvatarPlaceholder avatarPlaceholder = new AvatarPlaceholder(avatarRadius, new AvatarPlaceholder.Metadata(item.getIntValue(), item.getIconResource()), chatView);
