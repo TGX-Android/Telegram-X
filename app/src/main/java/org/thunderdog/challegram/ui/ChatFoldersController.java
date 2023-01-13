@@ -1,15 +1,20 @@
 package org.thunderdog.challegram.ui;
 
+import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 import static org.thunderdog.challegram.telegram.TdlibSettingsManager.CHAT_FOLDER_STYLE_ICON_AND_TITLE;
 import static org.thunderdog.challegram.telegram.TdlibSettingsManager.CHAT_FOLDER_STYLE_ICON_ONLY;
 import static org.thunderdog.challegram.telegram.TdlibSettingsManager.CHAT_FOLDER_STYLE_TITLE_ONLY;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 
 import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
@@ -25,29 +30,38 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.user.RemoveHelper;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.telegram.ChatFiltersListener;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.AdapterSubListUpdateCallback;
+import org.thunderdog.challegram.util.DrawModifier;
 import org.thunderdog.challegram.util.ListItemDiffUtilCallback;
+import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.v.CustomRecyclerView;
-import org.thunderdog.challegram.widget.DoubleTextView;
+import org.thunderdog.challegram.widget.NonMaterialButton;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.collection.IntList;
 
 public class ChatFoldersController extends RecyclerViewController<Void> implements View.OnClickListener, View.OnLongClickListener, ChatFiltersListener {
   private static final long MAIN_CHAT_FILTER_ID = Long.MIN_VALUE;
   private static final long ARCHIVE_CHAT_FILTER_ID = Long.MIN_VALUE + 1;
+
+  private static final int TYPE_CHAT_FILTER = 0;
+  private static final int TYPE_RECOMMENDED_CHAT_FILTER = 1;
 
   private final @IdRes int chatFiltersPreviousItemId = ViewCompat.generateViewId();
   private final @IdRes int recommendedChatFiltersPreviousItemId = ViewCompat.generateViewId();
@@ -107,68 +121,99 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
     adapter = new SettingsAdapter(this) {
       @SuppressLint("ClickableViewAccessibility")
       @Override
-      protected SettingHolder initCustom (ViewGroup parent) {
-        SettingView settingView = new SettingView(context, tdlib);
-        settingView.setType(SettingView.TYPE_SETTING);
-        settingView.addToggler();
-        addThemeInvalidateListener(settingView);
-        settingView.setOnTouchListener(new ChatFilterOnTouchListener());
-        settingView.setOnClickListener(ChatFoldersController.this);
-        settingView.setOnLongClickListener(ChatFoldersController.this);
-        settingView.getToggler().setOnClickListener(v -> {
-          ListItem item = (ListItem) settingView.getTag();
-          boolean enabled = settingView.getToggler().toggle(true);
-          settingView.setVisuallyEnabled(enabled, true);
-          settingView.setIconColorId(enabled ? R.id.theme_color_icon : R.id.theme_color_iconLight);
+      protected SettingHolder initCustom (ViewGroup parent, int customViewType) {
+        switch (customViewType) {
+          case TYPE_CHAT_FILTER: {
+            SettingView settingView = new SettingView(parent.getContext(), tdlib);
+            settingView.setType(SettingView.TYPE_SETTING);
+            settingView.addToggler();
+            settingView.forcePadding(0, Screen.dp(66f));
+            settingView.setOnTouchListener(new ChatFilterOnTouchListener());
+            settingView.setOnClickListener(ChatFoldersController.this);
+            settingView.setOnLongClickListener(ChatFoldersController.this);
+            settingView.getToggler().setOnClickListener(v -> {
+              UI.forceVibrate(v, false);
+              ListItem item = (ListItem) settingView.getTag();
+              boolean enabled = settingView.getToggler().toggle(true);
+              settingView.setVisuallyEnabled(enabled, true);
+              settingView.setIconColorId(enabled ? R.id.theme_color_icon : R.id.theme_color_iconLight);
+              if (isMainChatFilter(item)) {
+                throw new UnsupportedOperationException();
+              } else if (isArchiveChatFilter(item)) {
+                tdlib.settings().setArchiveChatListEnabled(enabled);
+              } else if (isChatFilter(item)) {
+                tdlib.settings().setChatFilterEnabled(item.getIntValue(), enabled);
+              } else {
+                throw new IllegalArgumentException();
+              }
+            });
+            addThemeInvalidateListener(settingView);
+            return new SettingHolder(settingView);
+          }
+          case TYPE_RECOMMENDED_CHAT_FILTER:
+            SettingView settingView = new SettingView(parent.getContext(), tdlib);
+            settingView.setType(SettingView.TYPE_INFO_COMPACT);
+            settingView.setSwapDataAndName();
+            settingView.setOnClickListener(ChatFoldersController.this);
+            addThemeInvalidateListener(settingView);
+
+            FrameLayout.LayoutParams params = FrameLayoutFix.newParams(WRAP_CONTENT, Screen.dp(28), (Lang.rtl() ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL);
+            params.leftMargin = params.rightMargin = Screen.dp(19f);
+            NonMaterialButton button = new NonMaterialButton(parent.getContext()) {
+              @Override
+              protected void onSizeChanged (int width, int height, int oldWidth, int oldHeight) {
+                settingView.forcePadding(0, Math.max(0, width + params.leftMargin + params.rightMargin - Screen.dp(17f)));
+              }
+            };
+            button.setId(R.id.btn_double);
+            button.setLayoutParams(params);
+            button.setText(R.string.Add);
+            button.setOnClickListener(ChatFoldersController.this);
+            settingView.addView(button);
+
+            return new SettingHolder(settingView);
+        }
+        throw new IllegalArgumentException("customViewType=" + customViewType);
+      }
+
+      @Override
+      protected void modifyCustom (SettingHolder holder, int position, ListItem item, int customViewType, View view, boolean isUpdate) {
+        if (customViewType == TYPE_CHAT_FILTER) {
+          SettingView settingView = (SettingView) holder.itemView;
+          settingView.setIcon(item.getIconResource());
+          settingView.setName(item.getString());
+          settingView.setTextColorId(item.getTextColorId(ThemeColorId.NONE));
+          settingView.setIgnoreEnabled(true);
+          settingView.setEnabled(true);
+          settingView.setDrawModifier(item.getDrawModifier());
+
+          boolean isEnabled;
           if (isMainChatFilter(item)) {
             throw new UnsupportedOperationException();
           } else if (isArchiveChatFilter(item)) {
-            tdlib.settings().setArchiveChatListEnabled(enabled);
+            isEnabled = tdlib.settings().isArchiveChatListEnabled();
+            settingView.setClickable(false);
+            settingView.setLongClickable(false);
           } else if (isChatFilter(item)) {
-            tdlib.settings().setChatFilterEnabled(item.getIntValue(), enabled);
+            isEnabled = tdlib.settings().isChatFilterEnabled(item.getIntValue());
+            settingView.setClickable(true);
+            settingView.setLongClickable(true);
           } else {
             throw new IllegalArgumentException();
           }
-        });
-        return new SettingHolder(settingView);
-      }
-
-      @Override
-      protected void setCustom (ListItem item, SettingHolder holder, int position) {
-        SettingView settingView = (SettingView) holder.itemView;
-        settingView.setIcon(item.getIconResource());
-        settingView.setName(item.getString());
-        settingView.setTextColorId(item.getTextColorId(R.id.theme_color_text));
-        settingView.setIgnoreEnabled(true);
-        settingView.setEnabled(true);
-
-        boolean isEnabled;
-        if (isMainChatFilter(item)) {
-          throw new UnsupportedOperationException();
-        } else if (isArchiveChatFilter(item)) {
-          isEnabled = tdlib.settings().isArchiveChatListEnabled();
-          settingView.setClickable(false);
-          settingView.setLongClickable(false);
-        } else if (isChatFilter(item)) {
-          isEnabled = tdlib.settings().isChatFilterEnabled(item.getIntValue());
-          settingView.setClickable(true);
-          settingView.setLongClickable(true);
+          settingView.setVisuallyEnabled(isEnabled, false);
+          settingView.getToggler().setRadioEnabled(isEnabled, false);
+          settingView.setIconColorId(isEnabled ? R.id.theme_color_icon : R.id.theme_color_iconLight);
+        } else if (customViewType == TYPE_RECOMMENDED_CHAT_FILTER) {
+          SettingView settingView = (SettingView) holder.itemView;
+          settingView.setIcon(item.getIconResource());
+          settingView.setName(item.getString());
+          settingView.setData(item.getStringValue());
+          settingView.setTextColorId(item.getTextColorId(ThemeColorId.NONE));
+          settingView.setEnabled(true);
+          settingView.findViewById(R.id.btn_double).setTag(item.getData());
         } else {
-          throw new IllegalArgumentException();
-        }
-        settingView.setVisuallyEnabled(isEnabled, false);
-        settingView.getToggler().setRadioEnabled(isEnabled, false);
-        settingView.setIconColorId(isEnabled ? R.id.theme_color_icon : R.id.theme_color_iconLight);
-      }
-
-      @Override
-      protected void setDoubleText (ListItem item, int position, DoubleTextView textView, boolean isUpdate) {
-        if (item.getId() == R.id.recommendedChatFilter) {
-          textView.setAvatarPlaceholder(new AvatarPlaceholder.Metadata(0, item.getIconResource(), R.id.theme_color_icon));
-          textView.setText(item.getString(), item.getStringValue());
-          textView.setButton(R.string.Add, ChatFoldersController.this);
-          //noinspection ConstantConditions
-          textView.getButton().setTag(item.getData());
+          throw new IllegalArgumentException("customViewType=" + customViewType);
         }
       }
 
@@ -382,8 +427,8 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
     for (int index = 0; index < chatFilters.length; index++) {
       TdApi.ChatFilterInfo chatFilter = chatFilters[index];
       if (chatFilter.id == chatFilterId) {
-          position = index;
-          break;
+        position = index;
+        break;
       }
     }
     if (position != -1) {
@@ -539,15 +584,16 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
   }
 
   private ListItem archiveChatFilterItem () {
-    ListItem item = new ListItem(ListItem.TYPE_CUSTOM_SINGLE, R.id.chatFilter);
-    item.setString(R.string.CategoryArchive);
+    ListItem item = new ListItem(ListItem.TYPE_CUSTOM - TYPE_CHAT_FILTER, R.id.chatFilter);
+    item.setString(Lang.getString(R.string.Archive));
     item.setLongId(ARCHIVE_CHAT_FILTER_ID);
     item.setIconRes(R.drawable.baseline_drag_handle_24);
+    item.setDrawModifier(new LocalFolderBadge());
     return item;
   }
 
   private ListItem chatFilterItem (TdApi.ChatFilterInfo chatFilterInfo) {
-    ListItem item = new ListItem(ListItem.TYPE_CUSTOM_SINGLE, R.id.chatFilter, R.drawable.baseline_drag_handle_24, Emoji.instance().replaceEmoji(chatFilterInfo.title));
+    ListItem item = new ListItem(ListItem.TYPE_CUSTOM - TYPE_CHAT_FILTER, R.id.chatFilter, R.drawable.baseline_drag_handle_24, Emoji.instance().replaceEmoji(chatFilterInfo.title));
     item.setIntValue(chatFilterInfo.id);
     item.setLongId(chatFilterInfo.id);
     item.setData(chatFilterInfo);
@@ -555,7 +601,7 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
   }
 
   private ListItem recommendedChatFilterItem (TdApi.RecommendedChatFilter recommendedChatFilter) {
-    ListItem item = new ListItem(ListItem.TYPE_DOUBLE_TEXTVIEW, R.id.recommendedChatFilter);
+    ListItem item = new ListItem(ListItem.TYPE_CUSTOM - TYPE_RECOMMENDED_CHAT_FILTER, R.id.recommendedChatFilter);
     item.setData(recommendedChatFilter.filter);
     item.setString(recommendedChatFilter.filter.title);
     item.setStringValue(recommendedChatFilter.description);
@@ -712,13 +758,48 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
     @Override
     public boolean onTouch (View view, MotionEvent event) {
       if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
-        float paddingStart = ((SettingView) view).getMeasuredPaddingStart();
+        float paddingStart = ((SettingView) view).getMeasuredNameStart();
         boolean shouldStartDrag = Lang.rtl() ? event.getX() > view.getWidth() - paddingStart : event.getX() < paddingStart;
         if (shouldStartDrag) {
           startDrag(getRecyclerView().getChildViewHolder(view));
         }
       }
       return false;
+    }
+  }
+
+  private static class LocalFolderBadge implements DrawModifier {
+    private final Text text;
+
+    public LocalFolderBadge () {
+      text = new Text.Builder(Lang.getString(R.string.LocalFolderBadge), Integer.MAX_VALUE, Paints.robotoStyleProvider(12f), Theme::textDecentColor)
+        .allBold()
+        .singleLine()
+        .noClickable()
+        .ignoreNewLines()
+        .ignoreContinuousNewLines()
+        .noSpacing()
+        .build();
+    }
+
+    @Override
+    public void afterDraw (View view, Canvas c) {
+      SettingView settingView = (SettingView) view;
+      float centerY = view.getHeight() / 2 + Screen.dp(.8f);
+      int startX = (int) (settingView.getMeasuredNameStart() + settingView.getMeasuredNameWidth()) + Screen.dp(8f) + Screen.dp(6f);
+      int startY = Math.round(centerY) - text.getLineCenterY();
+      float alpha = 0.7f + settingView.getVisuallyEnabledFactor() * 0.3f;
+      text.draw(c, startX, startY, null, alpha);
+
+      int strokeColor = ColorUtils.alphaColor(alpha, Theme.textDecentColor());
+      Paint.FontMetricsInt fontMetrics = Paints.getFontMetricsInt(Paints.getTextPaint16());
+      float height = fontMetrics.descent - fontMetrics.ascent - Screen.dp(2f);
+      c.drawRoundRect(startX - Screen.dp(6f), centerY - height / 2f, startX + text.getWidth() + Screen.dp(6f), centerY + height / 2f, Screen.dp(4f), Screen.dp(4f), Paints.strokeSmallPaint(strokeColor));
+    }
+
+    @Override
+    public int getWidth () {
+      return Screen.dp(8f) + text.getWidth() + Screen.dp(6f) * 2;
     }
   }
 }
