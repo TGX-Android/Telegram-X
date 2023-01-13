@@ -158,6 +158,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     editor.remove(key(THEME_GLOBAL_THEME_NIGHT_KEY, accountId));
     editor.remove(key(THEME_GLOBAL_THEME_DAYLIGHT_KEY, accountId));
     editor.remove(key(LOCAL_CHAT_IDS_COUNT, accountId));
+    editor.remove(key(MAIN_CHAT_LIST_ENABLED, accountId));
     editor.remove(key(ARCHIVE_CHAT_LIST_ENABLED, accountId));
     editor.remove(key(ARCHIVE_CHAT_LIST_POSITION, accountId));
     editor.remove(key(CHAT_FOLDER_STYLE, accountId));
@@ -188,6 +189,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     _forcePlainModeInChannels = null;
     _userPreferences = null;
     _localChatIdsCount = null;
+    _mainChatListEnabled = null;
     _archiveChatListEnabled = null;
     _archiveChatListPosition = null;
     _chatFolderStyle = null;
@@ -1038,15 +1040,18 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     return getNotificationProblemCount() > 0;
   }
 
+  private @Nullable Boolean _mainChatListEnabled;
   private @Nullable Boolean _archiveChatListEnabled;
   private @Nullable Integer _archiveChatListPosition;
   private @Nullable Integer _chatFolderStyle;
   private @Nullable IntSet _disabledChatFilterIds;
+  private static final String MAIN_CHAT_LIST_ENABLED = "main_chat_list_enabled";
   private static final String ARCHIVE_CHAT_LIST_ENABLED = "archive_chat_list_enabled";
   private static final String ARCHIVE_CHAT_LIST_POSITION = "archive_chat_list_position";
   private static final String CHAT_FOLDER_STYLE = "chat_folder_style";
   private static final String DISABLED_CHAT_FILTER_IDS = "disabled_chat_filter_ids";
   private static final int DEFAULT_ARCHIVE_CHAT_LIST_POSITION = Integer.MAX_VALUE;
+  private static final boolean DEFAULT_MAIN_CHAT_LIST_ENABLED = true;
   private static final boolean DEFAULT_ARCHIVE_CHAT_LIST_ENABLED = false;
 
   @Retention(RetentionPolicy.SOURCE)
@@ -1056,6 +1061,25 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   public static final int CHAT_FOLDER_STYLE_TITLE_ONLY = 0;
   public static final int CHAT_FOLDER_STYLE_ICON_ONLY = 1;
   public static final int CHAT_FOLDER_STYLE_ICON_AND_TITLE = 2;
+
+  public boolean isMainChatListEnabled () {
+    if (_mainChatListEnabled == null) {
+      _mainChatListEnabled = Settings.instance().getBoolean(key(MAIN_CHAT_LIST_ENABLED, tdlib.accountId()), DEFAULT_MAIN_CHAT_LIST_ENABLED);
+    }
+    return _mainChatListEnabled;
+  }
+
+  public void setMainChatListEnabled (boolean isMainChatListEnabled) {
+    if (isMainChatListEnabled() != isMainChatListEnabled) {
+      _mainChatListEnabled = isMainChatListEnabled;
+      Settings.instance().putBoolean(key(MAIN_CHAT_LIST_ENABLED, tdlib.accountId()), isMainChatListEnabled);
+      if (chatListPositionListeners != null) {
+        for (ChatListPositionListener chatListPositionListener : chatListPositionListeners) {
+          chatListPositionListener.onMainChatListStateChanged(isMainChatListEnabled);
+        }
+      }
+    }
+  }
 
   public boolean isArchiveChatListEnabled () {
     if (_archiveChatListEnabled == null) {
@@ -1149,6 +1173,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   }
 
   public interface ChatListPositionListener {
+    default void onMainChatListStateChanged (boolean isEnabled) { }
     default void onArchiveChatListStateChanged (boolean isEnabled) { }
     default void onArchiveChatListPositionChanged (int archiveChatListPosition) { }
     default void onChatFolderStyleChanged (@ChatFolderStyle int chatFolderStyle) { }

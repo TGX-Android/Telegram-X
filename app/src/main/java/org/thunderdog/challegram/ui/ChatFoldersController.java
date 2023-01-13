@@ -143,7 +143,7 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
               settingView.setVisuallyEnabled(enabled, true);
               settingView.setIconColorId(enabled ? R.id.theme_color_icon : R.id.theme_color_iconLight);
               if (isMainChatFilter(item)) {
-                throw new UnsupportedOperationException();
+                tdlib.settings().setMainChatListEnabled(enabled);
               } else if (isArchiveChatFilter(item)) {
                 tdlib.settings().setArchiveChatListEnabled(enabled);
               } else if (isChatFilter(item)) {
@@ -194,7 +194,9 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
 
           boolean isEnabled;
           if (isMainChatFilter(item)) {
-            throw new UnsupportedOperationException();
+            isEnabled = tdlib.settings().isMainChatListEnabled();
+            settingView.setClickable(false);
+            settingView.setLongClickable(false);
           } else if (isArchiveChatFilter(item)) {
             isEnabled = tdlib.settings().isArchiveChatListEnabled();
             settingView.setClickable(false);
@@ -227,32 +229,22 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
       @SuppressLint("ClickableViewAccessibility")
       @Override
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
-        view.setIconColorId(item.getId() == R.id.btn_createNewFolder ? R.id.theme_color_inlineIcon : 0);
-        if (isChatFilter(item)) {
-          boolean isMainChatFilter = isMainChatFilter(item);
-          view.setOnTouchListener(new ChatFilterOnTouchListener());
-          view.setClickable(!isMainChatFilter);
-          view.setLongClickable(!isMainChatFilter);
-        } else {
-          view.setOnTouchListener(null);
-          view.setClickable(true);
-          view.setLongClickable(true);
-          if (item.getId() == R.id.btn_chatFolderStyle) {
-            int stringRes;
-            switch (tdlib.settings().chatFolderStyle()) {
-              case CHAT_FOLDER_STYLE_ICON_AND_TITLE:
-                stringRes = R.string.IconAndTitle;
-                break;
-              case CHAT_FOLDER_STYLE_ICON_ONLY:
-                stringRes = R.string.IconOnly;
-                break;
-              default:
-              case CHAT_FOLDER_STYLE_TITLE_ONLY:
-                stringRes = R.string.TitleOnly;
-                break;
-            }
-            view.setData(stringRes);
+        view.setIconColorId(item.getId() == R.id.btn_createNewFolder ? R.id.theme_color_inlineIcon : ThemeColorId.NONE);
+        if (item.getId() == R.id.btn_chatFolderStyle) {
+          int stringRes;
+          switch (tdlib.settings().chatFolderStyle()) {
+            case CHAT_FOLDER_STYLE_ICON_AND_TITLE:
+              stringRes = R.string.IconAndTitle;
+              break;
+            case CHAT_FOLDER_STYLE_ICON_ONLY:
+              stringRes = R.string.IconOnly;
+              break;
+            default:
+            case CHAT_FOLDER_STYLE_TITLE_ONLY:
+              stringRes = R.string.TitleOnly;
+              break;
           }
+          view.setData(stringRes);
         }
       }
     };
@@ -601,7 +593,7 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
   }
 
   private ListItem mainChatFilterItem () {
-    ListItem item = new ListItem(ListItem.TYPE_SETTING, R.id.chatFilter);
+    ListItem item = new ListItem(ListItem.TYPE_CUSTOM - TYPE_CHAT_FILTER, R.id.chatFilter);
     item.setString(R.string.CategoryMain);
     item.setLongId(MAIN_CHAT_FILTER_ID);
     item.setIconRes(tdlib.hasPremium() ? R.drawable.baseline_drag_handle_24 : R.drawable.deproko_baseline_lock_24);

@@ -1871,16 +1871,21 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     List<TdApi.ChatList> chatLists;
     List<ViewPagerTopView.Item> sections;
     if (chatFilters.length > 0 || tdlib.settings().isArchiveChatListEnabled()) {
-      mainChatListPosition = MathUtils.clamp(mainChatListPosition, 0, chatFilters.length);
-      int chatListCount = chatFilters.length + 1;
+      int chatListCount = chatFilters.length;
+      if (tdlib.settings().isMainChatListEnabled()) {
+        mainChatListPosition = MathUtils.clamp(mainChatListPosition, 0, chatListCount);
+        chatListCount++;
+      } else {
+        mainChatListPosition = NO_POSITION;
+      }
       if (tdlib.settings().isArchiveChatListEnabled()) {
-        archiveChatListPosition = MathUtils.clamp(archiveChatListPosition, 0, chatFilters.length + 1);
+        archiveChatListPosition = MathUtils.clamp(archiveChatListPosition, 0, chatListCount);
         chatListCount++;
         if (mainChatListPosition == archiveChatListPosition) {
           mainChatListPosition++;
         }
       } else {
-        archiveChatListPosition = Integer.MIN_VALUE;
+        archiveChatListPosition = NO_POSITION;
       }
       int chatFolderStyle = tdlib.settings().chatFolderStyle();
       chatLists = new ArrayList<>(chatListCount);
@@ -1928,7 +1933,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       sections = Collections.emptyList();
       chatLists = Collections.emptyList();
     }
-    if (chatLists.size() > 1) {
+    if (chatLists.size() > 1 || (!chatLists.isEmpty() && !TD.isChatListMain(chatLists.get(0)))) {
       this.pagerSections = sections;
       this.pagerChatLists = chatLists;
       if (chatListUnreadCountListener == null) {
@@ -1997,6 +2002,11 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   private @Nullable ChatListUnreadCountListener chatListUnreadCountListener;
 
   private class ChatListPositionListener implements TdlibSettingsManager.ChatListPositionListener {
+    @Override
+    public void onMainChatListStateChanged (boolean isEnabled) {
+      updatePagerSections();
+    }
+
     @Override
     public void onArchiveChatListStateChanged (boolean isEnabled) {
       updatePagerSections();
