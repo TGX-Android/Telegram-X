@@ -314,6 +314,7 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
     } else if (v.getId() == R.id.recommendedChatFilter) {
       ListItem item = (ListItem) v.getTag();
       TdApi.ChatFilter chatFilter = (TdApi.ChatFilter) item.getData();
+      chatFilter.iconName = tdlib.chatFilterIconName(chatFilter);
       navigateTo(EditChatFolderController.newFolder(context, tdlib, chatFilter));
     } else if (v.getId() == R.id.btn_double) {
       Object tag = v.getTag();
