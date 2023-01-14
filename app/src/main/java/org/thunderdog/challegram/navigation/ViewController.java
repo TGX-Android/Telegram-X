@@ -2383,6 +2383,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
         }
       };
     }
+    int totalHeight = shadowView.getLayoutParams().height + optionsWrap.getTextHeight() + popupAdditionalHeight;
     int index = 0;
     for (OptionItem item : options.items) {
       if (item == OptionItem.SEPARATOR) {
@@ -2397,6 +2398,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
         addThemeInvalidateListener(shadowViewTop);
         optionsWrap.addView(shadowViewTop, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(6f)));
         index++;
+        totalHeight += shadowViewBottom.getLayoutParams().height + shadowViewTop.getLayoutParams().height;
         continue;
       }
       TextView text = OptionsLayout.genOptionView(context, item.id, item.name, item.color, item.icon, onClickListener, getThemeListeners(), forcedTheme);
@@ -2409,11 +2411,12 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       }
       optionsWrap.addView(text);
       index++;
+      totalHeight += text.getLayoutParams().height;
     }
 
     // Window
 
-    popupLayout.showSimplePopupView(optionsWrap, shadowView.getLayoutParams().height + Screen.dp(54f) * options.items.length + optionsWrap.getTextHeight() + popupAdditionalHeight);
+    popupLayout.showSimplePopupView(optionsWrap, totalHeight);
 
     return popupLayout;
   }
