@@ -39,9 +39,11 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -81,6 +83,7 @@ import org.thunderdog.challegram.telegram.TdlibCounter;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibOptionListener;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
+import org.thunderdog.challegram.telegram.TdlibSettingsManager.ChatFolderStyle;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Screen;
@@ -218,13 +221,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
         @Override
         public boolean onSlideOffPrepare (View view, MotionEvent event, int index) {
-          long pagerItemId = getPagerItemId(index);
-          if (pagerItemId == MAIN_PAGER_ITEM_ID)
-            return true;
-          if (hasFolders()) {
-            return pagerItemId == ARCHIVE_PAGER_ITEM_ID;
-          }
-          return false;
+          return hasFolders() || getPagerItemId(index) == MAIN_PAGER_ITEM_ID;
         }
 
         @Override
@@ -370,23 +367,30 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     if (pagerItemPosition == NO_POSITION)
       return NO_POSITION;
 
-    String sectionName = Lang.getString(getMenuSectionName(pagerItemId, hasFolders()));
     ViewPagerTopView.Item item;
     if (hasFolders()) {
-      Counter unreadCounter = buildUnreadCounter(pagerItemId, section);
-      if (unreadCounter != null) {
-        unreadCounter.setCount(getUnreadCount(chatsController.chatList()), false);
-      }
       int chatFolderStyle = tdlib.settings().chatFolderStyle();
-      if (chatFolderStyle == CHAT_FOLDER_STYLE_ICON_AND_TITLE ||
-          chatFolderStyle == CHAT_FOLDER_STYLE_ICON_ONLY && section != FILTER_NONE) {
-        item = new ViewPagerTopView.Item(sectionName, TD.isChatListArchive(chatsController.chatList()) ? R.drawable.baseline_archive_24 : R.drawable.baseline_forum_24, unreadCounter);
-      } else if (chatFolderStyle == CHAT_FOLDER_STYLE_ICON_ONLY) {
-        item = new ViewPagerTopView.Item(TD.isChatListArchive(chatsController.chatList()) ? R.drawable.baseline_archive_24 : R.drawable.baseline_forum_24, unreadCounter);
+      if (pagerItemId == MAIN_PAGER_ITEM_ID) {
+        item = buildMainSectionItem(chatFolderStyle);
+      } else if (pagerItemId == ARCHIVE_PAGER_ITEM_ID) {
+        item = buildArchiveSectionItem(chatFolderStyle);
       } else {
-        item = new ViewPagerTopView.Item(sectionName, unreadCounter);
+        TdApi.ChatList chatList = pagerChatLists.get(pagerItemPosition);
+        if (TD.isChatListFilter(chatList)) {
+          TdApi.ChatListFilter chatListFilter = (TdApi.ChatListFilter) chatList;
+          TdApi.ChatFilterInfo chatFilterInfo = tdlib.chatFilterInfo(chatListFilter.chatFilterId);
+          if (chatFilterInfo != null) {
+            item = buildSectionItem(pagerItemId, chatList, chatFilterInfo, chatFolderStyle);
+          } else {
+            chatsController.destroy();
+            return NO_POSITION;
+          }
+        } else {
+          throw new UnsupportedOperationException("chatList = " + chatList);
+        }
       }
     } else {
+      String sectionName = Lang.getString(getMenuSectionName(pagerItemId, /* hasFolders */ false, CHAT_FOLDER_STYLE_TITLE_ONLY));
       item = new ViewPagerTopView.Item(sectionName.toUpperCase());
     }
     headerCell.getTopView().setItemAt(pagerItemPosition, item);
@@ -1189,31 +1193,55 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     return chats;
   }
 
-  private int getMenuSectionName (long pagerItemId, boolean hasFolders) {
+  private int getMenuSectionName (long pagerItemId, boolean hasFolders, @ChatFolderStyle int chatFolderStyle) {
     int selectedFilter = getSelectedFilter(pagerItemId);
-    int chatFolderStyle = hasFolders ? tdlib.settings().chatFolderStyle() : CHAT_FOLDER_STYLE_TITLE_ONLY;
     boolean isArchive = pagerItemId == ARCHIVE_PAGER_ITEM_ID || (pagerItemId == MAIN_PAGER_ITEM_ID && menuNeedArchive);
     if (isArchive) {
-      if (chatFolderStyle == CHAT_FOLDER_STYLE_TITLE_ONLY) {
-        switch (selectedFilter) {
-          case FILTER_UNREAD:
-            return R.string.CategoryArchiveUnread;
-          case FILTER_PRIVATE:
-            return R.string.CategoryArchivePrivate;
-          case FILTER_GROUPS:
-            return R.string.CategoryArchiveGroup;
-          case FILTER_CHANNELS:
-            return R.string.CategoryArchiveChannels;
-          case FILTER_BOTS:
-            return R.string.CategoryArchiveBots;
-        }
-        return R.string.CategoryArchive;
-      }
-      if (selectedFilter == FILTER_NONE) {
-        return R.string.CategoryArchive;
+      return getArchiveSectionName(selectedFilter, chatFolderStyle);
+    }
+    if (selectedFilter != FILTER_NONE) {
+      return getFilterName(selectedFilter);
+    }
+    return hasFolders ? R.string.CategoryMain : R.string.Chats;
+  }
+
+  private int getArchiveSectionName (int selectedFilter, @ChatFolderStyle int chatFolderStyle) {
+    if (chatFolderStyle == CHAT_FOLDER_STYLE_TITLE_ONLY) {
+      switch (selectedFilter) {
+        case FILTER_UNREAD:
+          return R.string.CategoryArchiveUnread;
+        case FILTER_PRIVATE:
+          return R.string.CategoryArchivePrivate;
+        case FILTER_GROUPS:
+          return R.string.CategoryArchiveGroup;
+        case FILTER_CHANNELS:
+          return R.string.CategoryArchiveChannels;
+        case FILTER_BOTS:
+          return R.string.CategoryArchiveBots;
+        case FILTER_NONE:
+        case FILTER_ARCHIVE:
+          return R.string.CategoryArchive;
+        default:
+          throw new UnsupportedOperationException("selectedFilter=" + selectedFilter);
       }
     }
-    switch (selectedFilter) {
+    return selectedFilter == FILTER_NONE ? R.string.CategoryArchive : getFilterName(selectedFilter);
+  }
+
+  private String getMenuSectionName (long pagerItemId, String folderName, int chatFolderStyle) {
+    int selectedFilter = getSelectedFilter(pagerItemId);
+    if (selectedFilter != FILTER_NONE) {
+      String filterName = Lang.getString(getFilterName(selectedFilter));
+      if (chatFolderStyle == CHAT_FOLDER_STYLE_TITLE_ONLY) {
+        return Lang.getString(R.string.format_folderAndFilter, folderName, filterName);
+      }
+      return filterName;
+    }
+    return folderName;
+  }
+
+  private @StringRes int getFilterName (int filter) {
+    switch (filter) {
       case FILTER_UNREAD:
         return R.string.CategoryUnread;
       case FILTER_PRIVATE:
@@ -1224,8 +1252,13 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         return R.string.CategoryChannels;
       case FILTER_BOTS:
         return R.string.CategoryBots;
+      case FILTER_ARCHIVE:
+        return R.string.CategoryArchive;
+      case FILTER_NONE:
+        return 0;
+      default:
+        throw new UnsupportedOperationException("filter=" + filter);
     }
-    return hasFolders ? R.string.CategoryMain : R.string.Chats;
   }
 
   private void modifyNewPagerItemController (final ViewController<?> c) {
@@ -1288,7 +1321,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     if (hasFolders()) {
       throw new UnsupportedOperationException();
     }
-    return new String[] {Lang.getString(getMenuSectionName(MAIN_PAGER_ITEM_ID, /* hasFolders */ false)).toUpperCase(), Lang.getString(R.string.Calls).toUpperCase()/*, UI.getString(R.string.Contacts).toUpperCase()*/};
+    return new String[] {Lang.getString(getMenuSectionName(MAIN_PAGER_ITEM_ID, /* hasFolders */ false, CHAT_FOLDER_STYLE_TITLE_ONLY)).toUpperCase(), Lang.getString(R.string.Calls).toUpperCase()/*, UI.getString(R.string.Contacts).toUpperCase()*/};
   }
 
   @Override
@@ -1892,42 +1925,23 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       sections = new ArrayList<>(chatListCount);
       int chatFilterIndex = 0;
       for (int position = 0; position < chatListCount; position++) {
-        CharSequence sectionName;
-        int iconResource;
         TdApi.ChatList chatList;
+        ViewPagerTopView.Item sectionItem;
         if (position == mainChatListPosition) {
           chatList = ChatPosition.CHAT_LIST_MAIN;
-          sectionName = Lang.getString(getMenuSectionName(MAIN_PAGER_ITEM_ID, /* hasFolders */ true));
-          iconResource = menuNeedArchive ? R.drawable.baseline_archive_24 : R.drawable.baseline_forum_24;
+          sectionItem = buildMainSectionItem(chatFolderStyle);
         } else if (position == archiveChatListPosition) {
           chatList = ChatPosition.CHAT_LIST_ARCHIVE;
-          sectionName = Lang.getString(getMenuSectionName(ARCHIVE_PAGER_ITEM_ID, /* hasFolders */ true));
-          iconResource = R.drawable.baseline_archive_24;
+          sectionItem = buildArchiveSectionItem(chatFolderStyle);
         } else {
           TdApi.ChatFilterInfo chatFilter = chatFilters[chatFilterIndex++];
           if (!tdlib.settings().isChatFilterEnabled(chatFilter.id))
             continue;
           chatList = new TdApi.ChatListFilter(chatFilter.id);
-          sectionName = Emoji.instance().replaceEmoji(chatFilter.title);
-          iconResource = TD.iconByName(chatFilter.iconName, R.drawable.baseline_folder_24);
-        }
-        long pagerItemId = getPagerItemId(chatList);
-        int selectedFilter = getSelectedFilter(pagerItemId);
-        Counter unreadCounter = buildUnreadCounter(pagerItemId, selectedFilter);
-        if (unreadCounter != null) {
-          unreadCounter.setCount(getUnreadCount(chatList), false);
+          sectionItem = buildSectionItem(getPagerItemId(chatList), chatList, chatFilter, chatFolderStyle);
         }
         chatLists.add(chatList);
-        ViewPagerTopView.Item item;
-        if (chatFolderStyle == CHAT_FOLDER_STYLE_ICON_AND_TITLE ||
-            chatFolderStyle == CHAT_FOLDER_STYLE_ICON_ONLY && selectedFilter != FILTER_NONE) {
-          item = new ViewPagerTopView.Item(sectionName, iconResource, unreadCounter);
-        } else if (chatFolderStyle == CHAT_FOLDER_STYLE_ICON_ONLY) {
-          item = new ViewPagerTopView.Item(iconResource, unreadCounter);
-        } else {
-          item = new ViewPagerTopView.Item(sectionName, unreadCounter);
-        }
-        sections.add(item);
+        sections.add(sectionItem);
       }
     } else {
       sections = Collections.emptyList();
@@ -1953,6 +1967,42 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     if (pager != null) {
       onPageSelected(getCurrentPagerItemPosition(), pager.getCurrentItem());
     }
+  }
+
+  private ViewPagerTopView.Item buildMainSectionItem (@ChatFolderStyle int chatFolderStyle) {
+    CharSequence sectionName = Lang.getString(getMenuSectionName(MAIN_PAGER_ITEM_ID, /* hasFolders */ true, chatFolderStyle));
+    int iconResource = menuNeedArchive ? R.drawable.baseline_archive_24 : R.drawable.baseline_forum_24;
+    return buildSectionItem(MAIN_PAGER_ITEM_ID, ChatPosition.CHAT_LIST_MAIN, sectionName, iconResource, chatFolderStyle);
+  }
+
+  private ViewPagerTopView.Item buildArchiveSectionItem (@ChatFolderStyle int chatFolderStyle) {
+    CharSequence sectionName = Lang.getString(getMenuSectionName(ARCHIVE_PAGER_ITEM_ID, /* hasFolders */ true, chatFolderStyle));
+    int iconResource = R.drawable.baseline_archive_24;
+    return buildSectionItem(ARCHIVE_PAGER_ITEM_ID, ChatPosition.CHAT_LIST_ARCHIVE, sectionName, iconResource, chatFolderStyle);
+  }
+
+  private ViewPagerTopView.Item buildSectionItem (long pagerItemId, TdApi.ChatList chatList, TdApi.ChatFilterInfo chatFilterInfo, @ChatFolderStyle int chatFolderStyle) {
+    CharSequence sectionName = Emoji.instance().replaceEmoji(getMenuSectionName(pagerItemId, chatFilterInfo.title, chatFolderStyle));
+    int iconResource = TD.iconByName(chatFilterInfo.iconName, R.drawable.baseline_folder_24);
+    return buildSectionItem(pagerItemId, chatList, sectionName, iconResource, chatFolderStyle);
+  }
+
+  private ViewPagerTopView.Item buildSectionItem (long pagerItemId, TdApi.ChatList chatList, CharSequence sectionName, @DrawableRes int iconResource, @ChatFolderStyle int chatFolderStyle) {
+    int selectedFilter = getSelectedFilter(pagerItemId);
+    Counter unreadCounter = buildUnreadCounter(pagerItemId, selectedFilter);
+    if (unreadCounter != null) {
+      unreadCounter.setCount(getUnreadCount(chatList), false);
+    }
+    ViewPagerTopView.Item item;
+    if (chatFolderStyle == CHAT_FOLDER_STYLE_ICON_AND_TITLE ||
+      chatFolderStyle == CHAT_FOLDER_STYLE_ICON_ONLY && selectedFilter != FILTER_NONE) {
+      item = new ViewPagerTopView.Item(sectionName, iconResource, unreadCounter);
+    } else if (chatFolderStyle == CHAT_FOLDER_STYLE_ICON_ONLY) {
+      item = new ViewPagerTopView.Item(iconResource, unreadCounter);
+    } else {
+      item = new ViewPagerTopView.Item(sectionName, unreadCounter);
+    }
+    return item;
   }
 
   private @Nullable Counter buildUnreadCounter (long pagerItemId, int selectedFilter) {
@@ -2020,7 +2070,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     }
 
     @Override
-    public void onChatFolderStyleChanged (int chatFolderStyle) {
+    public void onChatFolderStyleChanged (@ChatFolderStyle int chatFolderStyle) {
       updatePagerSections();
     }
 

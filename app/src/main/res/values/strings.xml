@@ -88,6 +88,7 @@
   <string name="format_channelAndSignature">%1$s (%2$s)</string>
   <string name="format_minutesAndSeconds">%1$s and %2$s</string>
   <string name="format_chatAndSignature">%1$s (%2$s)</string>
+  <string name="format_folderAndFilter">%1$s / %2$s</string>
   <string name="messagesCount_one">%1$s</string>
   <string name="messagesCount_other">%1$s</string>
   <string name="format_notificationContentGroup">%1$s: %2$s</string>
