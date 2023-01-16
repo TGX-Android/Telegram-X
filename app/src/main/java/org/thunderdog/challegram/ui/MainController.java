@@ -44,6 +44,7 @@ import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
+import androidx.core.util.ObjectsCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -1846,6 +1847,10 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       options.info(title);
     }
     options.item(new OptionItem(R.id.btn_editFolder, Lang.getString(R.string.EditFolder), OPTION_COLOR_NORMAL, R.drawable.baseline_edit_24));
+    int chatFolderStyle = tdlib.settings().chatFolderStyle();
+    if (chatFolderStyle == CHAT_FOLDER_STYLE_ICON_ONLY || chatFolderStyle == CHAT_FOLDER_STYLE_ICON_AND_TITLE) {
+      options.item(new OptionItem(R.id.btn_changeFolderIcon, Lang.getString(R.string.ChatFolderChangeIcon), OPTION_COLOR_NORMAL, R.drawable.baseline_image_24));
+    }
     options.item(new OptionItem(R.id.btn_folderIncludeChats, Lang.getString(R.string.FolderActionIncludeChats), OPTION_COLOR_NORMAL, R.drawable.baseline_add_24));
     options.item(new OptionItem(R.id.btn_removeFolder, Lang.getString(R.string.RemoveFolder), OPTION_COLOR_RED, R.drawable.baseline_delete_24));
     options.item(OptionItem.SEPARATOR);
@@ -1879,6 +1884,23 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
               break;
           }
         }));
+      } else if (id == R.id.btn_changeFolderIcon) {
+        ChatFolderIconSelector.show(this, iconName -> {
+          tdlib.send(new TdApi.GetChatFilter(chatFilterId), (result) -> {
+            switch (result.getConstructor()) {
+              case TdApi.ChatFilter.CONSTRUCTOR:
+                TdApi.ChatFilter chatFilter = (TdApi.ChatFilter) result;
+                if (!ObjectsCompat.equals(chatFilter.iconName, iconName)) {
+                  chatFilter.iconName = iconName;
+                  tdlib.send(new TdApi.EditChatFilter(chatFilterId, chatFilter), tdlib.okHandler(TdApi.ChatFilterInfo.class));
+                }
+                break;
+              case TdApi.Error.CONSTRUCTOR:
+                UI.showError(result);
+                break;
+            }
+          });
+        });
       } else if (id == R.id.btn_removeFolder) {
         showConfirm(Lang.getString(R.string.RemoveFolderConfirm), Lang.getString(R.string.Remove), R.drawable.baseline_delete_24, OPTION_COLOR_RED, () -> {
           tdlib.send(new TdApi.DeleteChatFilter(chatFilterId), tdlib.okHandler());

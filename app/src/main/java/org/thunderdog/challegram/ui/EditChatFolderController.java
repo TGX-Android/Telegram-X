@@ -15,8 +15,8 @@ import android.widget.LinearLayout;
 
 import androidx.annotation.IdRes;
 import androidx.annotation.Nullable;
+import androidx.core.util.ObjectsCompat;
 import androidx.core.view.ViewCompat;
-import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -43,8 +43,6 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.BetterChatView;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
-import org.thunderdog.challegram.widget.PopupLayout;
-import org.thunderdog.challegram.widget.ShadowView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -617,71 +615,12 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
   }
 
   private void showIconSelector () {
-    List<ListItem> items = new ArrayList<>(TD.ICON_NAMES.length);
-    for (String iconName : TD.ICON_NAMES) {
-      items.add(new ListItem(ListItem.TYPE_CUSTOM_SINGLE, 0, TD.iconByName(iconName, 0), 0).setStringValue(iconName));
-    }
-    PopupLayout popupLayout = new PopupLayout(context);
-    SettingsAdapter popupAdapter = new SettingsAdapter(this, null, this) {
-      @Override
-      protected SettingHolder initCustom (ViewGroup parent) {
-        ImageView imageView = new ImageView(parent.getContext()) {
-          @Override
-          protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
-            int size = MeasureSpec.getSize(widthMeasureSpec);
-            setMeasuredDimension(size, size);
-          }
-        };
-        imageView.setScaleType(ImageView.ScaleType.CENTER);
-        imageView.setColorFilter(Theme.getColor(R.id.theme_color_icon));
-        addThemeFilterListener(imageView, R.id.theme_color_icon);
-        Views.setClickable(imageView);
-        imageView.setOnClickListener(v -> {
-          ListItem item = (ListItem) imageView.getTag();
-          editedChatFilter.iconName = item.getStringValue();
-          adapter.updateSimpleItemById(input.getId());
-          updateMenuButton();
-          popupLayout.hideWindow(true);
-        });
-        RippleSupport.setTransparentSelector(imageView);
-        return new SettingHolder(imageView);
+    ChatFolderIconSelector.show(this, iconName -> {
+      if (!ObjectsCompat.equals(editedChatFilter.iconName, iconName)) {
+        editedChatFilter.iconName = iconName;
+        adapter.updateSimpleItemById(input.getId());
+        updateMenuButton();
       }
-
-      @Override
-      protected void setCustom (ListItem item, SettingHolder holder, int position) {
-        ImageView imageView = (ImageView) holder.itemView;
-        int iconResource = item.getIconResource();
-        if (iconResource != 0) {
-          imageView.setImageDrawable(Drawables.get(imageView.getResources(), iconResource));
-        } else {
-          imageView.setImageDrawable(null);
-        }
-      }
-    };
-    int screenWidth = Screen.currentWidth();
-    int itemSize = Screen.dp(56f);
-    int spanCount = Math.max(screenWidth / itemSize, 3);
-    popupAdapter.setItems(items, false);
-    RecyclerView recyclerView = new RecyclerView(context);
-    recyclerView.setLayoutManager(new GridLayoutManager(context, spanCount));
-    recyclerView.setAdapter(popupAdapter);
-    ViewSupport.setThemedBackground(recyclerView, R.id.theme_color_background);
-
-    int rowCount = (items.size() + spanCount - 1) / spanCount;
-    int height = rowCount * (screenWidth / spanCount) + Screen.dp(7f);
-
-    ShadowView shadowView = new ShadowView(context);
-    shadowView.setSimpleTopShadow(true);
-    addThemeInvalidateListener(shadowView);
-
-    FrameLayoutFix popupView = new FrameLayoutFix(context);
-    popupView.addView(shadowView, FrameLayoutFix.newParams(MATCH_PARENT, Screen.dp(7f), Gravity.TOP));
-    popupView.addView(recyclerView, FrameLayoutFix.newParams(MATCH_PARENT, WRAP_CONTENT, Gravity.BOTTOM, 0, Screen.dp(7f), 0, 0));
-
-    popupLayout.setPopupHeightProvider(popupView::getHeight);
-    popupLayout.init(true);
-    popupLayout.setHideKeyboard();
-    popupLayout.setNeedRootInsets();
-    popupLayout.showSimplePopupView(popupView, height);
+    });
   }
 }

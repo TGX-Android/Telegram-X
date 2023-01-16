@@ -1212,6 +1212,7 @@
   <item type="id" name="btn_folderIncludeChats" />
   <item type="id" name="btn_folderExcludeChats" />
   <item type="id" name="btn_chatFolderStyle" />
+  <item type="id" name="btn_changeFolderIcon" />
   <item type="id" name="btn_titleOnly" />
   <item type="id" name="btn_iconOnly" />
   <item type="id" name="btn_iconAndTitle" />

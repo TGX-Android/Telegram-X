@@ -4468,6 +4468,7 @@
   <string name="ChatFoldersInfo">Create folders for different groups of chats and quickly switch between them.</string>
   <string name="ChatFoldersSettings">Settings</string>
   <string name="ChatFoldersStyle">Style</string>
+  <string name="ChatFolderChangeIcon">Change Icon</string>
   <string name="NewFolder">New Folder</string>
   <string name="CreateNewFolder">Create New Folder</string>
   <string name="EditFolder">Edit Folder</string>
@@ -4481,7 +4482,7 @@
   <string name="IncludeChatsInfo_one">You can select only one chat.</string>
   <string name="IncludeChatsInfo_other">You can select up to %1$s chats.</string>
   <string name="ExcludeChats">Exclude Chats</string>
-  <string name="ExcludeChatsInfo_one">EYou can select only one chat.</string>
+  <string name="ExcludeChatsInfo_one">You can select only one chat.</string>
   <string name="ExcludeChatsInfo_other">You can select up to %1$s chats.</string>
   <string name="FolderIncludedChats">Included Chats</string>
   <string name="FolderIncludedChatsInfo">Choose chats or types of chats that will appear in this folder.</string>
