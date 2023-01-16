@@ -28,6 +28,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
@@ -108,26 +109,14 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
 
     public static Arguments includedChats (@Nullable Delegate delegate, int chatFilterId, TdApi.ChatFilter chatFilter) {
       Set<Long> selectedChatIds = unmodifiableLinkedHashSetOf(chatFilter.pinnedChatIds, chatFilter.includedChatIds);
-      Set<Integer> selectedChatTypes = unmodifiableTreeSetOf(TD.includedChatTypes(chatFilter));
+      Set<Integer> selectedChatTypes = U.unmodifiableTreeSetOf(TD.includedChatTypes(chatFilter));
       return new Arguments(MODE_FOLDER_INCLUDE_CHATS, delegate, chatFilterId, chatFilter, selectedChatIds, selectedChatTypes);
     }
 
     public static Arguments excludedChats (@Nullable Delegate delegate, int chatFilterId, TdApi.ChatFilter chatFilter) {
       Set<Long> selectedChatIds = unmodifiableLinkedHashSetOf(chatFilter.excludedChatIds);
-      Set<Integer> selectedChatTypes = unmodifiableTreeSetOf(TD.excludedChatTypes(chatFilter));
+      Set<Integer> selectedChatTypes = U.unmodifiableTreeSetOf(TD.excludedChatTypes(chatFilter));
       return new Arguments(MODE_FOLDER_EXCLUDE_CHATS, delegate, chatFilterId, chatFilter, selectedChatIds, selectedChatTypes);
-    }
-
-    private static Set<Integer> unmodifiableTreeSetOf (int[] array) {
-      if (array.length == 0)
-        return Collections.emptySet();
-      if (array.length == 1)
-        return Collections.singleton(array[0]);
-      Set<Integer> set = new TreeSet<>();
-      for (int value : array) {
-        set.add(value);
-      }
-      return Collections.unmodifiableSet(set);
     }
 
     private static Set<Long> unmodifiableLinkedHashSetOf (long[]... arrays) {

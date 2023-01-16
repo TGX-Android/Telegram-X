@@ -143,6 +143,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
@@ -152,6 +153,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
@@ -3657,5 +3659,29 @@ public class U {
       array[index++] = element;
     }
     return array;
+  }
+
+  public static Set<Integer> unmodifiableTreeSetOf (int[] array) {
+    if (array.length == 0)
+      return Collections.emptySet();
+    if (array.length == 1)
+      return Collections.singleton(array[0]);
+    Set<Integer> set = new TreeSet<>();
+    for (int value : array) {
+      set.add(value);
+    }
+    return Collections.unmodifiableSet(set);
+  }
+
+  public static Set<Long> unmodifiableTreeSetOf (long[] array) {
+    if (array.length == 0)
+      return Collections.emptySet();
+    if (array.length == 1)
+      return Collections.singleton(array[0]);
+    Set<Long> set = new TreeSet<>();
+    for (long value : array) {
+      set.add(value);
+    }
+    return Collections.unmodifiableSet(set);
   }
 }

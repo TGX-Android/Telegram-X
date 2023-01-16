@@ -104,7 +104,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import kotlin.collections.SetsKt;
 import me.vkryl.android.html.HtmlEncoder;
 import me.vkryl.android.html.HtmlParser;
 import me.vkryl.android.html.HtmlTag;
@@ -7023,8 +7022,8 @@ public class TD {
       lhs.includedChatIds.length == rhs.includedChatIds.length &&
       lhs.excludedChatIds.length == rhs.excludedChatIds.length &&
       Arrays.equals(lhs.pinnedChatIds, rhs.pinnedChatIds) &&
-      SetsKt.setOf(lhs.includedChatIds).equals(SetsKt.setOf(rhs.includedChatIds)) &&
-      SetsKt.setOf(lhs.excludedChatIds).equals(SetsKt.setOf(rhs.excludedChatIds));
+      U.unmodifiableTreeSetOf(lhs.includedChatIds).equals(U.unmodifiableTreeSetOf(rhs.includedChatIds)) &&
+      U.unmodifiableTreeSetOf(lhs.excludedChatIds).equals(U.unmodifiableTreeSetOf(rhs.excludedChatIds));
   }
 
   public static int[] includedChatTypes (@Nullable TdApi.ChatFilter chatFilter) {
