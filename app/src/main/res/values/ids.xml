@@ -1208,6 +1208,7 @@
   <item type="id" name="btn_chatFolders" />
   <item type="id" name="btn_createNewFolder" />
   <item type="id" name="btn_editFolder" />
+  <item type="id" name="btn_hideFolder" />
   <item type="id" name="btn_removeFolder" />
   <item type="id" name="btn_folderIncludeChats" />
   <item type="id" name="btn_folderExcludeChats" />

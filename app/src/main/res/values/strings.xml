@@ -4471,6 +4471,7 @@
   <string name="ChatFolderChangeIcon">Change Icon</string>
   <string name="NewFolder">New Folder</string>
   <string name="CreateNewFolder">Create New Folder</string>
+  <string name="HideFolder">Hide Folder</string>
   <string name="EditFolder">Edit Folder</string>
   <string name="EditFolders">Edit Folders</string>
   <string name="RemoveFolder">Remove Folder</string>

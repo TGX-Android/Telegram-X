@@ -1852,6 +1852,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       options.item(new OptionItem(R.id.btn_changeFolderIcon, Lang.getString(R.string.ChatFolderChangeIcon), OPTION_COLOR_NORMAL, R.drawable.baseline_image_24));
     }
     options.item(new OptionItem(R.id.btn_folderIncludeChats, Lang.getString(R.string.FolderActionIncludeChats), OPTION_COLOR_NORMAL, R.drawable.baseline_add_24));
+    options.item(new OptionItem(R.id.btn_hideFolder, Lang.getString(R.string.HideFolder), OPTION_COLOR_NORMAL, R.drawable.baseline_eye_off_24));
     options.item(new OptionItem(R.id.btn_removeFolder, Lang.getString(R.string.RemoveFolder), OPTION_COLOR_RED, R.drawable.baseline_delete_24));
     options.item(OptionItem.SEPARATOR);
     options.item(new OptionItem(R.id.btn_chatFolders, Lang.getString(R.string.EditFolders), OPTION_COLOR_NORMAL, R.drawable.baseline_rule_folder_24));
@@ -1870,6 +1871,8 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
               break;
           }
         }));
+      } else if (id == R.id.btn_hideFolder) {
+        tdlib.settings().setChatFilterEnabled(chatFilterId, false);
       } else if (id == R.id.btn_folderIncludeChats) {
         tdlib.send(new TdApi.GetChatFilter(chatFilterId), (result) -> runOnUiThreadOptional(() -> {
           switch (result.getConstructor()) {
