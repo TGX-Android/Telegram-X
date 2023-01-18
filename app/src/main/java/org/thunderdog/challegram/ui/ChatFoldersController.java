@@ -51,6 +51,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ArrayUtils;
@@ -228,7 +229,16 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
       @SuppressLint("ClickableViewAccessibility")
       @Override
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
-        view.setIconColorId(item.getId() == R.id.btn_createNewFolder ? R.id.theme_color_inlineIcon : ThemeColorId.NONE);
+        if (item.getId() == R.id.btn_createNewFolder) {
+          boolean canCreateFolder = canCreateFolder();
+          view.setIgnoreEnabled(true);
+          view.setVisuallyEnabled(canCreateFolder, isUpdate);
+          view.setIconColorId(canCreateFolder ? R.id.theme_color_inlineIcon : R.id.theme_color_iconLight);
+        } else {
+          view.setIgnoreEnabled(false);
+          view.setEnabledAnimated(true, isUpdate);
+          view.setIconColorId(ThemeColorId.NONE);
+        }
         if (item.getId() == R.id.btn_chatFolderStyle) {
           int stringRes;
           switch (tdlib.settings().chatFolderStyle()) {
@@ -291,6 +301,7 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
   @Override
   public void onChatFiltersChanged (TdApi.ChatFilterInfo[] chatFilters, int mainChatListPosition) {
     runOnUiThreadOptional(() -> {
+      adapter.updateValuedSettingById(R.id.btn_createNewFolder);
       updateChatFilters(chatFilters, mainChatListPosition, tdlib.settings().archiveChatListPosition());
       if (isFocused()) {
         tdlib.ui().postDelayed(() -> {
@@ -305,7 +316,24 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
   @Override
   public void onClick (View v) {
     if (v.getId() == R.id.btn_createNewFolder) {
-      navigateTo(EditChatFolderController.newFolder(context, tdlib));
+      if (canCreateFolder()) {
+        navigateTo(EditChatFolderController.newFolder(context, tdlib));
+      } else {
+        UI.forceVibrateError(v);
+        long chatFolderLimit = tdlib.chatFilterCountMax();
+        CharSequence text;
+        if (tdlib.hasPremium()) {
+          text = Lang.getMarkdownString(this, R.string.ChatFolderLimitReached, chatFolderLimit);
+        } else {
+          text = Lang.getMarkdownString(this, R.string.PremiumRequiredCreateFolder, chatFolderLimit, chatFolderLimit * 2);
+        }
+        context()
+          .tooltipManager()
+          .builder(v)
+          .controller(this)
+          .show(tdlib, text)
+          .hideDelayed(3500, TimeUnit.MILLISECONDS);
+      }
     } else if (v.getId() == R.id.chatFilter) {
       ListItem item = (ListItem) v.getTag();
       if (isMainChatFilter(item) || isArchiveChatFilter(item)) {
@@ -629,6 +657,10 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
     item.setStringValue(recommendedChatFilter.description);
     item.setIconRes(tdlib.chatFilterIcon(recommendedChatFilter.filter, R.drawable.baseline_folder_24));
     return item;
+  }
+
+  private boolean canCreateFolder () {
+    return tdlib.chatFilterCount() < tdlib.chatFilterCountMax();
   }
 
   private void updateChatFilters () {

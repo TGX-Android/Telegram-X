@@ -4455,6 +4455,7 @@
   <string name="PremiumRequiredVoiceVideo">This setting requires **Telegram Premium** subscription.</string>
   <string name="PremiumRequired">This feature requires **Telegram Premium** subscription.</string>
   <string name="PremiumRequiredMoveFolder">Subscribe to **Telegram Premium** to move the "%1$s" folder.</string>
+  <string name="PremiumRequiredCreateFolder">You have reached the limit of **%1$d** folders. You can double the limit to **%2$d** folders by subscribing to **Telegram Premium**</string>
 
   <string name="XRestrictedVoiceMessages">%1$s doesn\'t accept voice messages.</string>
   <string name="XRestrictedVideoMessages">%1$s doesn\'t accept video messages.</string>
@@ -4469,6 +4470,7 @@
   <string name="ChatFoldersSettings">Settings</string>
   <string name="ChatFoldersStyle">Style</string>
   <string name="ChatFolderChangeIcon">Change Icon</string>
+  <string name="ChatFolderLimitReached">You have reached the limit of **%1$d** folders.</string>
   <string name="NewFolder">New Folder</string>
   <string name="CreateNewFolder">Create New Folder</string>
   <string name="HideFolder">Hide Folder</string>

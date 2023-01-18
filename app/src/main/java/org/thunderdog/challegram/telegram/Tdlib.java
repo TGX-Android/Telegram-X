@@ -507,6 +507,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   private int installedStickerSetLimit = 200;
 
+  private long chatFilterCountMax = 10;
   private long chatFilterChosenChatCountMax = 100;
 
   private boolean disableContactRegisteredNotifications = false;
@@ -3080,6 +3081,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   public int mainChatListPosition () {
     synchronized (dataLock) {
       return mainChatListPosition;
+    }
+  }
+
+  public int chatFilterCount () {
+    synchronized (dataLock) {
+      return chatFilters.length;
     }
   }
 
@@ -6243,6 +6250,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return maxMessageTextLength;
   }
 
+  public long chatFilterCountMax () {
+    return chatFilterCountMax;
+  }
+
   public long chatFilterChosenChatCountMax () {
     return chatFilterChosenChatCountMax;
   }
@@ -7889,6 +7900,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
             break;
           case "themed_emoji_statuses_sticker_set_id":
             this.themedEmojiStatusesStickerSetId = longValue;
+            break;
+          case "chat_filter_count_max":
+            this.chatFilterCountMax = longValue;
             break;
           case "chat_filter_chosen_chat_count_max":
             this.chatFilterChosenChatCountMax = longValue;
