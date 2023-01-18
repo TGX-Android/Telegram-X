@@ -74,7 +74,7 @@ public class SmallChatView extends BaseView implements AttachDelegate, TooltipOv
 
   @Override
   public void performDestroy () {
-    avatarReceiver.destroy();
+    setChat(null);
   }
 
   @Override
