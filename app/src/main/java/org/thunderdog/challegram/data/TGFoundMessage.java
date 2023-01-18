@@ -52,10 +52,6 @@ public class TGFoundMessage {
     return highlight;
   }
 
-  public ImageFile getAvatar () {
-    return chat.getAvatar();
-  }
-
   public AvatarPlaceholder.Metadata getAvatarPlaceholderMetadata () {
     return chat.getAvatarPlaceholderMetadata();
   }

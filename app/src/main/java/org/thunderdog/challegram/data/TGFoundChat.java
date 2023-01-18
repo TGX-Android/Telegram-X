@@ -23,6 +23,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.util.text.Highlight;
@@ -53,7 +54,6 @@ public class TGFoundChat {
 
   private String forcedSubtitle;
 
-  private ImageFile avatar;
   private AvatarPlaceholder.Metadata avatarPlaceholderMetadata;
 
   public TGFoundChat (Tdlib tdlib) {
@@ -253,7 +253,6 @@ public class TGFoundChat {
     }
     this.titleHighlight = Highlight.valueOf(this.title.toString(), highlight);
     checkHighlights();
-    setPhoto(user.profilePhoto != null ? user.profilePhoto.small : null);
   }
 
   private void updateUser (TdApi.User user) {
@@ -262,7 +261,6 @@ public class TGFoundChat {
       this.title = TD.getUserName(user);
       this.titleHighlight = Highlight.valueOf(this.title.toString(), highlight);
       checkHighlights();
-      setPhoto(user.profilePhoto != null ? user.profilePhoto.small : null);
     }
   }
 
@@ -276,6 +274,16 @@ public class TGFoundChat {
 
   public long getUserId () {
     return userId;
+  }
+
+  public void requestAvatar (AvatarReceiver receiver, @AvatarReceiver.Options int options) {
+    if (chatId != 0) {
+      receiver.requestChat(tdlib, chatId, options);
+    } else if (userId != 0) {
+      receiver.requestUser(tdlib, userId, options);
+    } else {
+      receiver.clear();
+    }
   }
 
   public TdApi.MessageSender getSenderId () {
@@ -315,7 +323,6 @@ public class TGFoundChat {
     this.needMuteIcon = tdlib.chatNeedsMuteIcon(chatId);
     this.notificationsEnabled = tdlib.chatNotificationsEnabled(chatId);
     this.avatarPlaceholderMetadata = isSelfChat ? tdlib.cache().selfPlaceholderMetadata() : tdlib.chatPlaceholderMetadata(chat, true);
-    setPhoto(!isSelfChat && chat.photo != null ? chat.photo.small : null);
   }
 
   public void updateMuted () {
@@ -333,15 +340,6 @@ public class TGFoundChat {
 
   public int getUnreadCount () {
     return (flags & FLAG_NO_UNREAD) != 0 ? 0 : chat != null ? (chat.unreadCount > 0 ? chat.unreadCount : chat.isMarkedAsUnread ? Tdlib.CHAT_MARKED_AS_UNREAD : 0) : 0;
-  }
-
-  public void setPhoto (TdApi.File photo) {
-    if (photo != null) {
-      this.avatar = new ImageFile(tdlib, photo);
-      this.avatar.setSize(ChatView.getDefaultAvatarCacheSize());
-    } else {
-      this.avatar = null;
-    }
   }
 
   private void setTitleImpl (String title, @Nullable TdApi.Chat chat) {
@@ -412,10 +410,6 @@ public class TGFoundChat {
 
   public CharSequence getSingleLineTitle () {
     return StringUtils.isEmpty(singleLineTitle) ? title : singleLineTitle;
-  }
-
-  public ImageFile getAvatar () {
-    return avatar;
   }
 
   public boolean isSecret () {
