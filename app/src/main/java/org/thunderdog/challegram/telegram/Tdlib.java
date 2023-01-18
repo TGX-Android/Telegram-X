@@ -6486,6 +6486,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private void resetChatsData () {
     knownChatIds.clear();
     chats.clear();
+    chatLists.clear();
     forumTopicInfos.clear();
   }
 
