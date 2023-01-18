@@ -158,6 +158,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     editor.remove(key(THEME_GLOBAL_THEME_NIGHT_KEY, accountId));
     editor.remove(key(THEME_GLOBAL_THEME_DAYLIGHT_KEY, accountId));
     editor.remove(key(LOCAL_CHAT_IDS_COUNT, accountId));
+    editor.remove(key(COUNT_MUTED_CHATS, accountId));
     editor.remove(key(MAIN_CHAT_LIST_ENABLED, accountId));
     editor.remove(key(ARCHIVE_CHAT_LIST_ENABLED, accountId));
     editor.remove(key(ARCHIVE_CHAT_LIST_POSITION, accountId));
@@ -189,6 +190,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     _forcePlainModeInChannels = null;
     _userPreferences = null;
     _localChatIdsCount = null;
+    _countMutedChats = null;
     _mainChatListEnabled = null;
     _archiveChatListEnabled = null;
     _archiveChatListPosition = null;
@@ -1042,6 +1044,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
 
   private @Nullable Boolean _mainChatListEnabled;
   private @Nullable Boolean _archiveChatListEnabled;
+  private @Nullable Boolean _countMutedChats;
   private @Nullable Integer _archiveChatListPosition;
   private @Nullable Integer _chatFolderStyle;
   private @Nullable IntSet _disabledChatFilterIds;
@@ -1050,6 +1053,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   private static final String ARCHIVE_CHAT_LIST_POSITION = "archive_chat_list_position";
   private static final String CHAT_FOLDER_STYLE = "chat_folder_style";
   private static final String DISABLED_CHAT_FILTER_IDS = "disabled_chat_filter_ids";
+  private static final String COUNT_MUTED_CHATS = "count_muted_chats";
   private static final int DEFAULT_ARCHIVE_CHAT_LIST_POSITION = Integer.MAX_VALUE;
   private static final boolean DEFAULT_MAIN_CHAT_LIST_ENABLED = true;
   private static final boolean DEFAULT_ARCHIVE_CHAT_LIST_ENABLED = false;
@@ -1178,6 +1182,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     default void onArchiveChatListPositionChanged (int archiveChatListPosition) { }
     default void onChatFolderStyleChanged (@ChatFolderStyle int chatFolderStyle) { }
     default void onChatFilterStateChanged (int chatFilterId, boolean isEnabled) { }
+    default void onShouldCountMutedChatsChanged (boolean shouldCountMutedChats) { }
   }
 
   private @Nullable ReferenceList<ChatListPositionListener> chatListPositionListeners;
@@ -1192,6 +1197,25 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   public void removeChatListPositionListener (ChatListPositionListener listener) {
     if (chatListPositionListeners != null) {
       chatListPositionListeners.remove(listener);
+    }
+  }
+
+  public boolean shouldCountMutedChats () {
+    if (_countMutedChats == null) {
+      _countMutedChats = Settings.instance().getBoolean(key(COUNT_MUTED_CHATS, tdlib.accountId()), false);
+    }
+    return _countMutedChats;
+  }
+
+  public void setShouldCountMutedChats (boolean shouldCountMutedChats) {
+    if (shouldCountMutedChats() != shouldCountMutedChats) {
+      Settings.instance().putBoolean(key(COUNT_MUTED_CHATS, tdlib.accountId()), shouldCountMutedChats);
+      _countMutedChats = shouldCountMutedChats;
+      if (chatListPositionListeners != null) {
+        for (ChatListPositionListener chatListPositionListener : chatListPositionListeners) {
+          chatListPositionListener.onShouldCountMutedChatsChanged(shouldCountMutedChats);
+        }
+      }
     }
   }
 }

@@ -270,8 +270,17 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       if (Config.CHAT_FOLDERS_ENABLED) {
         headerCell.getTopView().setCounterAlphaProvider(new ViewPagerTopView.CounterAlphaProvider() {
           @Override
-          public float getTextAlpha (float alphaFactor) {
+          public float getTextAlpha (Counter counter, float alphaFactor) {
             return 1f;
+          }
+
+          @Override
+          public float getBackgroundAlpha (Counter counter, float alphaFactor) {
+            return MathUtils.fromTo(
+              .5f,
+              MathUtils.fromTo(1f, .75f, counter.getMuteFactor()),
+              alphaFactor
+            );
           }
         });
       }
@@ -2016,7 +2025,10 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     int selectedFilter = getSelectedFilter(pagerItemId);
     Counter unreadCounter = buildUnreadCounter(pagerItemId, selectedFilter);
     if (unreadCounter != null) {
-      unreadCounter.setCount(getUnreadCount(chatList), false);
+      TdlibCounter counter = tdlib.getCounter(chatList);
+      int unreadCount = Math.max(counter.chatCount, 0);
+      int unreadUnmutedCount = Math.max(counter.chatUnmutedCount, 0);
+      updateCounter(unreadCounter, unreadCount, unreadUnmutedCount, /* animated */ false);
     }
     ViewPagerTopView.Item item;
     if (chatFolderStyle == CHAT_FOLDER_STYLE_ICON_AND_TITLE ||
@@ -2056,9 +2068,13 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     };
   }
 
-  private int getUnreadCount (TdApi.ChatList chatList) {
-    TdlibCounter counter = tdlib.getCounter(chatList);
-    return Math.max(counter.chatCount, 0);
+  private void updateCounter (Counter counter, int unreadCount, int unreadUnmutedCount, boolean animated) {
+    if (tdlib.settings().shouldCountMutedChats()) {
+      boolean muted = unreadCount > 0 ? unreadUnmutedCount == 0 : counter.isMuted();
+      counter.setCount(unreadCount, muted, animated);
+    } else {
+      counter.setCount(unreadUnmutedCount, /* muted */ false, animated);
+    }
   }
 
   private final TextColorSet unreadCounterColorSet = new TextColorSet() {
@@ -2096,12 +2112,23 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
     @Override
     public void onChatFolderStyleChanged (@ChatFolderStyle int chatFolderStyle) {
-      updatePagerSections();
+      if (hasFolders()) {
+        updatePagerSections();
+      }
     }
 
     @Override
     public void onChatFilterStateChanged (int chatFilterId, boolean isEnabled) {
-      updatePagerSections();
+      if (hasFolders()) {
+        updatePagerSections();
+      }
+    }
+
+    @Override
+    public void onShouldCountMutedChatsChanged (boolean shouldCountMutedChats) {
+      if (hasFolders()) {
+        updatePagerSections();
+      }
     }
   }
 
@@ -2113,7 +2140,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         if (positionToUpdate != NO_POSITION) {
           ViewPagerTopView.Item pagerSection = pagerSections.get(positionToUpdate);
           if (pagerSection.counter != null) {
-            pagerSection.counter.setCount(unreadCount, isFocused());
+            updateCounter(pagerSection.counter, unreadCount, unreadUnmutedCount, isFocused());
           }
         }
       });

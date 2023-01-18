@@ -4501,4 +4501,5 @@
   <string name="IconOnly">Icon Only</string>
   <string name="TitleOnly">Title Only</string>
   <string name="IconAndTitle">Icon &amp; Title</string>
+  <string name="CountMutedChats">Count muted chats</string>
 </resources>

@@ -1217,6 +1217,7 @@
   <item type="id" name="btn_titleOnly" />
   <item type="id" name="btn_iconOnly" />
   <item type="id" name="btn_iconAndTitle" />
+  <item type="id" name="btn_countMutedChats" />
 
   <item type="id" name="right_readMessages" />
   <item type="id" name="right_sendMessages" />

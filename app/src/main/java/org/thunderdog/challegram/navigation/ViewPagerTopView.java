@@ -739,15 +739,15 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
           int color = ColorUtils.fromToArgb(textFromColor, textToColor, factor * (1f - disabledFactor));
           if (item.counter != null) {
             float alphaFactor = 1f - MathUtils.clamp(Math.abs(selectionFactor - i));
-            float imageAlpha = counterAlphaProvider.getDrawableAlpha(alphaFactor);
+            float imageAlpha = counterAlphaProvider.getDrawableAlpha(item.counter, alphaFactor);
             if (items.get(0).hidden) {
               alphaFactor = Math.max(alphaFactor, 1f - MathUtils.clamp(selectionFactor));
               if (i == 1 && selectionFactor < 1) {
                 alphaFactor = 1f;
               }
             }
-            float textAlpha = counterAlphaProvider.getTextAlpha(alphaFactor);
-            float backgroundAlpha = counterAlphaProvider.getBackgroundAlpha(alphaFactor);
+            float textAlpha = counterAlphaProvider.getTextAlpha(item.counter, alphaFactor);
+            float backgroundAlpha = counterAlphaProvider.getBackgroundAlpha(item.counter, alphaFactor);
             if (item.ellipsizedStringLayout != null) {
               int horizontalPadding = Math.max((itemWidth - item.actualWidth) / 2, 0);
               int stringX;
@@ -836,13 +836,13 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   };
 
   public interface CounterAlphaProvider {
-    default float getTextAlpha (@FloatRange(from = 0f, to = 1f) float alphaFactor) {
+    default float getTextAlpha (Counter counter, @FloatRange(from = 0f, to = 1f) float alphaFactor) {
       return .5f + .5f * alphaFactor;
     }
-    default float getDrawableAlpha (@FloatRange(from = 0f, to = 1f) float alphaFactor) {
+    default float getDrawableAlpha (Counter counter, @FloatRange(from = 0f, to = 1f) float alphaFactor) {
       return .5f + .5f * alphaFactor;
     }
-    default float getBackgroundAlpha (@FloatRange(from = 0f, to = 1f) float alphaFactor) {
+    default float getBackgroundAlpha (Counter counter, @FloatRange(from = 0f, to = 1f) float alphaFactor) {
       return .5f + .5f * alphaFactor;
     }
   }

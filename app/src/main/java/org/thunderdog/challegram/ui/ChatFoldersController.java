@@ -112,15 +112,14 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
     chatFilterGroupItemCount = chatFilterItemList.size();
 
     ArrayList<ListItem> items = new ArrayList<>();
-    items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL));
-    items.add(new ListItem(ListItem.TYPE_DESCRIPTION, chatFiltersPreviousItemId, 0, R.string.ChatFoldersInfo));
-
-    items.addAll(chatFilterItemList);
-
-    items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.ChatFoldersSettings));
+    items.add(new ListItem(ListItem.TYPE_HEADER_PADDED, 0, 0, R.string.ChatFoldersSettings));
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_chatFolderStyle, 0, R.string.ChatFoldersStyle));
-    items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+    items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_countMutedChats, 0, R.string.CountMutedChats));
+    items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM, chatFiltersPreviousItemId));
+
+    items.addAll(chatFilterItemList);
     items.add(new ListItem(ListItem.TYPE_PADDING).setHeight(Screen.dp(12f)));
 
     adapter = new SettingsAdapter(this) {
@@ -245,6 +244,8 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
               break;
           }
           view.setData(stringRes);
+        } else if (item.getId() == R.id.btn_countMutedChats) {
+          view.getToggler().setRadioEnabled(tdlib.settings().shouldCountMutedChats(), isUpdate);
         }
       }
     };
@@ -349,6 +350,8 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
         tdlib.settings().setChatFolderStyle(style);
         adapter.updateValuedSettingById(R.id.btn_chatFolderStyle);
       });
+    } else if (v.getId() == R.id.btn_countMutedChats) {
+      tdlib.settings().setShouldCountMutedChats(adapter.toggleView(v));
     }
   }
 
@@ -572,7 +575,8 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
       }
     }
     itemList.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_createNewFolder, R.drawable.baseline_create_new_folder_24, R.string.CreateNewFolder).setTextColorId(R.id.theme_color_inlineText));
-    itemList.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM, recommendedChatFiltersPreviousItemId));
+    itemList.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+    itemList.add(new ListItem(ListItem.TYPE_DESCRIPTION, recommendedChatFiltersPreviousItemId, 0, R.string.ChatFoldersInfo));
     return itemList;
   }
 
