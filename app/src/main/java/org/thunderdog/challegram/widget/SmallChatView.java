@@ -23,7 +23,7 @@ import android.view.ViewGroup;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.DoubleTextWrapper;
-import org.thunderdog.challegram.loader.ImageReceiver;
+import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
@@ -31,9 +31,10 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 
 import me.vkryl.android.util.InvalidateContentProvider;
+import me.vkryl.core.lambda.Destroyable;
 
-public class SmallChatView extends BaseView implements AttachDelegate, TooltipOverlayView.LocationProvider, InvalidateContentProvider {
-  private final ImageReceiver receiver;
+public class SmallChatView extends BaseView implements AttachDelegate, TooltipOverlayView.LocationProvider, InvalidateContentProvider, Destroyable {
+  private final AvatarReceiver avatarReceiver;
 
   private DoubleTextWrapper chat;
 
@@ -41,8 +42,7 @@ public class SmallChatView extends BaseView implements AttachDelegate, TooltipOv
     super(context, tdlib);
 
     int viewHeight = Screen.dp(62f);
-    int radius = Screen.dp(50f) / 2;
-    this.receiver = new ImageReceiver(this, radius);
+    this.avatarReceiver = new AvatarReceiver(this);
     layoutReceiver();
     setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, viewHeight));
   }
@@ -52,22 +52,29 @@ public class SmallChatView extends BaseView implements AttachDelegate, TooltipOv
     int radius = Screen.dp(50f) / 2;
     int left = Screen.dp(11f);
     int right = Screen.dp(11f) + radius * 2;
+    int viewWidth = getMeasuredWidth();
+    if (viewWidth == 0)
+      return;
     if (Lang.rtl()) {
-      int viewWidth = getMeasuredWidth();
-      this.receiver.setBounds(viewWidth - right, viewHeight / 2 - radius, viewWidth - left, viewHeight / 2 + radius);
+      this.avatarReceiver.setBounds(viewWidth - right, viewHeight / 2 - radius, viewWidth - left, viewHeight / 2 + radius);
     } else {
-      this.receiver.setBounds(left, viewHeight / 2 - radius, right, viewHeight / 2 + radius);
+      this.avatarReceiver.setBounds(left, viewHeight / 2 - radius, right, viewHeight / 2 + radius);
     }
   }
 
   @Override
   public void attach () {
-    receiver.attach();
+    avatarReceiver.attach();
   }
 
   @Override
   public void detach () {
-    receiver.detach();
+    avatarReceiver.detach();
+  }
+
+  @Override
+  public void performDestroy () {
+    setChat(null);
   }
 
   @Override
@@ -109,7 +116,11 @@ public class SmallChatView extends BaseView implements AttachDelegate, TooltipOv
   }
 
   private void requestFile () {
-    receiver.requestFile(chat != null ? chat.getAvatarFile() : null);
+    if (chat != null) {
+      avatarReceiver.requestMessageSender(tdlib, chat.getSenderId(), AvatarReceiver.Options.NONE);
+    } else {
+      avatarReceiver.clear();
+    }
   }
 
   @Override
@@ -135,17 +146,12 @@ public class SmallChatView extends BaseView implements AttachDelegate, TooltipOv
     }
 
     layoutReceiver();
-
-    if (chat.getAvatarFile() != null) {
-      if (receiver.needPlaceholder()) {
-        receiver.drawPlaceholderRounded(c, receiver.getRadius());
-      }
-      receiver.draw(c);
-    } else if (chat.getAvatarPlaceholder() != null) {
-      chat.getAvatarPlaceholder().draw(c, receiver.centerX(), receiver.centerY());
+    if (avatarReceiver.needPlaceholder()) {
+      avatarReceiver.drawPlaceholder(c);
     }
+    avatarReceiver.draw(c);
 
-    chat.draw(this, receiver, c);
+    chat.draw(this, avatarReceiver, c);
 
     if (checkboxVisible) {
       c.save();

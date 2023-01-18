@@ -2040,7 +2040,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       }
 
       context.setTdlib(tdlib);
-      context.setHeaderAvatar(null, new AvatarPlaceholder(ComplexHeaderView.getBaseAvatarRadiusDp(), new AvatarPlaceholder.Metadata(R.id.theme_color_avatarArchive, R.drawable.baseline_archive_24), null));
+      context.setHeaderAvatar(null, new AvatarPlaceholder.Metadata(R.id.theme_color_avatarArchive, R.drawable.baseline_archive_24));
       context.setHeader(Lang.getString(R.string.ArchiveTitle), Lang.plural(R.string.xChats, tdlib.getTotalChatsCount(ChatPosition.CHAT_LIST_ARCHIVE)));
 
       context.setMaximizeListener((target1, animateToWhenReady, arg) -> {

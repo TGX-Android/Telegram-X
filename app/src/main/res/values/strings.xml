@@ -773,6 +773,7 @@
   <string name="SearchForImages">Search for images</string>
   <string name="AllMedia">All media</string>
   <string name="AllVideos">All videos</string>
+  <string name="AllFaves">Favorites</string>
   <string name="UserUnavailable">user is unavailable</string>
   <string name="YouCantForwardMoreMessages_one">Sorry, you can\'t forward more than %1$s message at once</string>
   <string name="YouCantForwardMoreMessages_other">Sorry, you can\'t forward more than %1$s messages at once</string>
@@ -1971,6 +1972,49 @@
   <string name="EventLogLinkedGroupChanged">%1$s made %2$s the discussion group for this channel</string>
   <string name="EventLogLinkedGroupRemoved">%1$s removed the discussion group %2$s</string>
   <string name="EventLogLocationSet">%1$s set group location to %2$s</string>
+
+  <string name="EventLogAntiSpamEnabled">%1$s enabled aggressive anti-spam</string>
+  <string name="EventLogAntiSpamDisabled">%1$s disabled aggressive anti-spam</string>
+  <string name="EventLogAntiSpamEnabledYou">You enabled aggressive anti-spam</string>
+  <string name="EventLogAntiSpamDisabledYou">You disabled aggressive anti-spam</string>
+
+  <string name="EventLogUsernamesChanged">%1$s changed active usernames from %2$s to %3$s</string>
+  <string name="EventLogUsernamesChangedYou">You changed active usernames from %1$s to %2$s</string>
+  <string name="EventLogUsernamesChangedOrder">%1$s changed usernames order from %2$s to %3$s</string>
+  <string name="EventLogUsernamesChangedOrderYou">You changed usernames order from %1$s to %2$s</string>
+  <string name="EventLogUsernameActivated">%1$s activated %2$s username</string>
+  <string name="EventLogUsernameDeactivated">%1$s deactivated %2$s username</string>
+  <string name="EventLogUsernameActivatedYou">You activated %1$s username</string>
+  <string name="EventLogUsernameDeactivatedYou">You deactivated %1$s username</string>
+  <string name="EventLogUsernamesActivated_one">%2$s activated %1$s username: %3$s</string>
+  <string name="EventLogUsernamesActivated_other">%2$s activated %1$s usernames: %3$s</string>
+  <string name="EventLogUsernamesDeactivated_one">%2$s deactivated %1$s username: %3$s</string>
+  <string name="EventLogUsernamesDeactivated_other">%2$s deactivated %1$s usernames: %3$s</string>
+  <string name="EventLogUsernamesActivatedYou_one">You activated %1$s username: %2$s</string>
+  <string name="EventLogUsernamesActivatedYou_other">You activated %1$s usernames: %2$s</string>
+  <string name="EventLogUsernamesDeactivatedYou_one">You deactivated %1$s username: %2$s</string>
+  <string name="EventLogUsernamesDeactivatedYou_other">You deactivated %1$s usernames: %2$s</string>
+
+  <string name="EventLogForumEnabled">%1$s enabled topics</string>
+  <string name="EventLogForumDisabled">%1$s disabled topics</string>
+  <string name="EventLogForumEnabledYou">You enabled topics</string>
+  <string name="EventLogForumDisabledYou">You disabled topics</string>
+  <string name="EventLogForumTopicPinned">%1$s pinned topic %2$s</string>
+  <string name="EventLogForumTopicPinnedYou">You pinned topic %1$s</string>
+  <string name="EventLogForumTopicCreated">%1$s created topic %2$s</string>
+  <string name="EventLogForumTopicCreatedYou">You created topic %1$s</string>
+  <string name="EventLogForumTopicDeleted">%1$s deleted topic %2$s</string>
+  <string name="EventLogForumTopicDeletedYou">You deleted topic %1$s</string>
+  <string name="EventLogForumTopicEditedName">%1$s changed topic name from %2$s to %3$s</string>
+  <string name="EventLogForumTopicEditedNameYou">You changed topic name from %1$s to %2$s</string>
+  <string name="EventLogForumTopicClosed">%1$s closed topic %2$s</string>
+  <string name="EventLogForumTopicClosedYou">You closed topic %1$s</string>
+  <string name="EventLogForumTopicReopened">%1$s reopened topic %2$s</string>
+  <string name="EventLogForumTopicReopenedYou">You reopened topic %1$s</string>
+  <string name="EventLogForumTopicHidden">%1$s made topic %2$s hidden</string>
+  <string name="EventLogForumTopicHiddenYou">You made topic %1$s hidden</string>
+  <string name="EventLogForumTopicUnhidden">%1$s made topic %2$s visible</string>
+  <string name="EventLogForumTopicUnhiddenYou">You made topic %1$s visible</string>
 
   <string name="EventLogMutedNewParticipants">%1$s muted new video chat participants</string>
   <string name="EventLogUnmutedNewParticipants">%1$s allowed new video chat participants to speak</string>
@@ -4453,4 +4497,16 @@
   <string name="format_PRMadeBy">%1$s by %2$s</string>
 
   <string name="AnonWarning">This action requires revealing your personal account. Tap again to confirm.</string>
+
+  <string name="LinkPurchasable">This link is unavailable. However, it is available for purchase. [Learn more…](%1$s)</string>
+  <string name="UsernamePurchasable">This username is unavailable. However, it is available for purchase. [Learn more…](%1$s)</string>
+
+  <string name="AggressiveAntiSpam">Aggressive Anti-Spam</string>
+  <string name="AggressiveAntiSpamDesc">Telegram will filter more spam, but may occasionally affect ordinary messages. You can report False Positives in Recent Actions.</string>
+  <string name="ReportFalsePositive">Report False Positive</string>
+  <string name="ReportFalsePositiveOk">Telegram moderators will review your report. Thank you!</string>
+  <string name="AggressiveAntiSpamBot">You can manage anti-spam settings on Manage Group screen</string>
+
+  <string name="MultiUsernamePrefix">also</string>
+  <string name="MultiLinkPrefix">also</string>
 </resources>

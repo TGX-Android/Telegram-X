@@ -106,9 +106,17 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
 
   public TGCommentButton (@NonNull TGMessage context) {
     this.context = context;
-    this.avatars = new TGAvatars(context.tdlib(), () -> {
-      if (context.useBubbles()) {
-        onSizeChanged();
+    this.avatars = new TGAvatars(context.tdlib(), new TGAvatars.Callback() {
+      @Override
+      public void onSizeChanged () {
+        if (context.useBubbles()) {
+          TGCommentButton.this.onSizeChanged();
+        }
+      }
+
+      @Override
+      public void onInvalidateMedia (TGAvatars avatars) {
+        context.invalidateAvatarsReceiver();
       }
     }, context.currentViews);
   }
@@ -126,8 +134,8 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
     }
   }
 
-  public void setComplexReceiver (@Nullable ComplexReceiver complexReceiver) {
-    this.avatars.setComplexReceiver(complexReceiver);
+  public void requestResources (@Nullable ComplexReceiver complexReceiver, boolean isUpdate) {
+    this.avatars.requestFiles(complexReceiver, isUpdate);
   }
 
   public void setViewMode (@ViewMode int viewMode, boolean animated) {
@@ -361,15 +369,15 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
     }
   }
 
-  public void draw (@NonNull Canvas c, @NonNull DrawableProvider drawableProvider, int left, int top, int right, int bottom) {
+  public void draw (@NonNull MessageView view, @NonNull Canvas c, @NonNull DrawableProvider drawableProvider, int left, int top, int right, int bottom) {
     if (isBubble()) {
-      drawBubble(c, drawableProvider, left, top, right, bottom);
+      drawBubble(view, c, drawableProvider, left, top, right, bottom);
     } else if (isInline()) {
-      drawInline(c, drawableProvider, left, top, right, bottom);
+      drawInline(view, c, drawableProvider, left, top, right, bottom);
     }
   }
 
-  private void drawInline (@NonNull Canvas c, @NonNull DrawableProvider drawableProvider, int left, int top, int right, int bottom) {
+  private void drawInline (@NonNull MessageView view, @NonNull Canvas c, @NonNull DrawableProvider drawableProvider, int left, int top, int right, int bottom) {
     boolean useBubbles = context.useBubbles();
 
     if (rect.left != left || rect.top != top || rect.right != right || rect.bottom != bottom) {
@@ -427,7 +435,7 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
 
     int avatarsX = right - (useBubbles ? Screen.dp(16f) : Screen.dp(38f));
     int avatarsY = rect.centerY();
-    avatars.draw(c, avatarsX, avatarsY, Gravity.RIGHT, alpha);
+    avatars.draw(view, c, avatarsX, avatarsY, Gravity.RIGHT, alpha);
 
     int badgeX = avatarsX - Math.round(avatars.getAnimatedWidth()) - Screen.dp(8f) - Screen.dp(BADGE_RADIUS);
     int badgeY = rect.centerY();
@@ -436,7 +444,7 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
     ViewSupport.restoreClipPath(c, saveCount);
   }
 
-  private void drawBubble (@NonNull Canvas c, @NonNull DrawableProvider drawableProvider, int left, int top, int right, int bottom) {
+  private void drawBubble (@NonNull MessageView view, @NonNull Canvas c, @NonNull DrawableProvider drawableProvider, int left, int top, int right, int bottom) {
     float radius = 0.75f * (bottom - top);
     if (rect.left != left || rect.top != top || rect.right != right || rect.bottom != bottom) {
       rect.set(left, top, right, bottom);
@@ -488,7 +496,7 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
 
     int avatarsX = right - Screen.dp(6f);
     int avatarsY = rect.centerY();
-    avatars.draw(c, avatarsX, avatarsY, Gravity.RIGHT, alpha);
+    avatars.draw(view, c, avatarsX, avatarsY, Gravity.RIGHT, alpha);
 
     float badgeX = avatarsX - avatars.getAnimatedWidth() - Screen.dp(8f) - Screen.dp(BADGE_RADIUS);
     float badgeY = rect.centerY();

@@ -16,6 +16,7 @@
 package org.thunderdog.challegram.data;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -25,10 +26,14 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.TdlibSender;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.ui.MapController;
 import org.thunderdog.challegram.util.text.FormattedText;
 import org.thunderdog.challegram.util.text.TextColorSet;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.ColorUtils;
@@ -861,6 +866,34 @@ public final class TGMessageService extends TGMessageServiceImpl {
     });
   }
 
+  // Forum Topics
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageForumTopicCreated forumTopicCreated) {
+    super(context, msg);
+    setUnsupportedTextCreator();
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageForumTopicEdited forumTopicEdited) {
+    super(context, msg);
+    setUnsupportedTextCreator();
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageForumTopicIsClosedToggled forumTopicIsClosedToggled) {
+    super(context, msg);
+    setUnsupportedTextCreator();
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageForumTopicIsHiddenToggled forumTopicIsHiddenToggled) {
+    super(context, msg);
+    setUnsupportedTextCreator();
+  }
+
+  private void setUnsupportedTextCreator () {
+    setTextCreator(() ->
+      getText(R.string.UnsupportedMessage)
+    );
+  }
+
   // Custom server's service message
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageCustomServiceAction custom) {
@@ -1044,6 +1077,216 @@ public final class TGMessageService extends TGMessageServiceImpl {
             new SenderArgument(targetSender)
           );
         }
+      }
+    });
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventIsAggressiveAntiSpamEnabledToggled isAggressiveAntiSpamEnabledToggled) {
+    super(context, msg);
+    setTextCreator(() -> {
+      if (msg.isOutgoing) {
+        return getText(isAggressiveAntiSpamEnabledToggled.isAggressiveAntiSpamEnabled ?
+          R.string.EventLogAntiSpamEnabledYou :
+          R.string.EventLogAntiSpamDisabledYou
+        );
+      } else {
+        return getText(isAggressiveAntiSpamEnabledToggled.isAggressiveAntiSpamEnabled ?
+          R.string.EventLogAntiSpamEnabled :
+          R.string.EventLogAntiSpamDisabled,
+          new SenderArgument(sender)
+        );
+      }
+    });
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventActiveUsernamesChanged activeUsernamesChanged) {
+    super(context, msg);
+
+    Set<String> newUsernames = new HashSet<>();
+    Collections.addAll(newUsernames, activeUsernamesChanged.newUsernames);
+    Set<String> oldUsernames = new HashSet<>();
+    Collections.addAll(oldUsernames, activeUsernamesChanged.oldUsernames);
+
+    Set<String> addedUsernames = new HashSet<>(newUsernames);
+    addedUsernames.removeAll(oldUsernames);
+    Set<String> removedUsernames = new HashSet<>(oldUsernames);
+    removedUsernames.removeAll(newUsernames);
+
+    if (addedUsernames.isEmpty() == removedUsernames.isEmpty()) {
+      // %1$s changed active usernames from %2$s to %3$s
+      // %1$s changed order of usernames from %2$s to %3$s
+      setTextCreator(() -> {
+        boolean changedOrder = addedUsernames.isEmpty();
+        String oldUsernamesList = Strings.join(Lang.getConcatSeparator(), activeUsernamesChanged.oldUsernames, username -> "@" + username);
+        String newUsernamesList = Strings.join(Lang.getConcatSeparator(), activeUsernamesChanged.newUsernames, username -> "@" + username);
+        if (msg.isOutgoing) {
+          return getText(
+            changedOrder ? R.string.EventLogUsernamesChangedOrderYou : R.string.EventLogUsernamesChangedYou,
+            new BoldArgument(oldUsernamesList),
+            new BoldArgument(newUsernamesList)
+          );
+        } else {
+          return getText(
+            changedOrder ? R.string.EventLogUsernamesChangedOrder : R.string.EventLogUsernamesChanged,
+            new SenderArgument(sender),
+            new BoldArgument(oldUsernamesList),
+            new BoldArgument(newUsernamesList)
+          );
+        }
+      });
+    } else {
+      int size = Math.max(addedUsernames.size(), removedUsernames.size());
+      boolean isActivate = removedUsernames.isEmpty();
+      if (size == 1) {
+        // %1$s activated %2$s username
+        // %1$s deactivated %2$s username
+        setTextCreator(() -> {
+          String singleUsername = (addedUsernames.isEmpty() ?
+            removedUsernames.iterator() :
+            addedUsernames.iterator()
+          ).next();
+          if (msg.isOutgoing) {
+            return getText(
+              isActivate ? R.string.EventLogUsernameActivatedYou : R.string.EventLogUsernameDeactivatedYou,
+              new BoldArgument(singleUsername)
+            );
+          } else {
+            return getText(
+              isActivate ? R.string.EventLogUsernameActivated : R.string.EventLogUsernameDeactivated,
+              new SenderArgument(sender),
+              new BoldArgument(singleUsername)
+            );
+          }
+        });
+      } else {
+        // %2$s activated %1$s usernames: %3$s
+        // %2$s deactivated %1$s usernames: %3$s
+        setTextCreator(() -> {
+          Set<String> usernames = isActivate ? addedUsernames : removedUsernames;
+          String usernamesList = Strings.join(Lang.getConcatSeparator(), usernames, username -> "@" + username);
+          if (msg.isOutgoing) {
+            return getPlural(
+              isActivate ? R.string.EventLogUsernamesActivatedYou : R.string.EventLogUsernamesDeactivatedYou,
+              usernames.size(),
+              new BoldArgument(usernamesList)
+            );
+          } else {
+            return getPlural(
+              isActivate ? R.string.EventLogUsernamesActivated : R.string.EventLogUsernamesDeactivated,
+              usernames.size(),
+              new SenderArgument(sender),
+              new BoldArgument(usernamesList)
+            );
+          }
+        });
+      }
+    }
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventIsForumToggled isForumToggled) {
+    super(context, msg);
+    setTextCreator(() -> {
+      if (msg.isOutgoing) {
+        return getText(isForumToggled.isForum ?
+          R.string.EventLogForumEnabledYou :
+          R.string.EventLogForumDisabledYou
+        );
+      } else {
+        return getText(isForumToggled.isForum ?
+          R.string.EventLogForumEnabled :
+          R.string.EventLogForumDisabled,
+          new SenderArgument(sender)
+        );
+      }
+    });
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventForumTopicCreated forumTopicCreated) {
+    this(context, msg, forumTopicCreated.topicInfo, R.string.EventLogForumTopicCreated, R.string.EventLogForumTopicCreatedYou);
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventForumTopicDeleted forumTopicDeleted) {
+    this(context, msg, forumTopicDeleted.topicInfo, R.string.EventLogForumTopicDeleted, R.string.EventLogForumTopicDeletedYou);
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventForumTopicPinned forumTopicPinned) {
+    this(context, msg, forumTopicPinned.newTopicInfo != null ? forumTopicPinned.newTopicInfo : forumTopicPinned.oldTopicInfo, R.string.EventLogForumTopicPinned, R.string.EventLogForumTopicPinnedYou);
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventForumTopicToggleIsClosed forumTopicToggleIsClosed) {
+    this(context, msg, forumTopicToggleIsClosed.topicInfo,
+      forumTopicToggleIsClosed.topicInfo.isClosed ?
+        R.string.EventLogForumTopicClosed :
+        R.string.EventLogForumTopicReopened,
+      forumTopicToggleIsClosed.topicInfo.isClosed ?
+        R.string.EventLogForumTopicClosedYou :
+        R.string.EventLogForumTopicReopenedYou
+    );
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventForumTopicToggleIsHidden forumTopicToggleIsHidden) {
+    this(context, msg, forumTopicToggleIsHidden.topicInfo,
+      forumTopicToggleIsHidden.topicInfo.isHidden ?
+        R.string.EventLogForumTopicHidden :
+        R.string.EventLogForumTopicUnhidden,
+      forumTopicToggleIsHidden.topicInfo.isHidden ?
+        R.string.EventLogForumTopicHiddenYou :
+        R.string.EventLogForumTopicUnhiddenYou
+    );
+  }
+
+  private TGMessageService (MessagesManager context, TdApi.Message msg, @Nullable TdApi.ForumTopicInfo forumTopicInfo, @StringRes int topicTextResId, @StringRes int topicTextOutgoingResId) {
+    super(context, msg);
+    String topicName = forumTopicInfo != null ? forumTopicInfo.name : "?";
+    setTextCreator(() -> {
+      if (msg.isOutgoing) {
+        return getText(
+          topicTextOutgoingResId,
+          new BoldArgument(topicName)
+        );
+      } else {
+        return getText(
+          topicTextResId,
+          new SenderArgument(sender),
+          new BoldArgument(topicName)
+        );
+      }
+    });
+    if (forumTopicInfo != null) {
+      setDisplayMessage(msg.chatId, forumTopicInfo.messageThreadId, message -> {
+        setTextCreator(() -> {
+          if (msg.isOutgoing) {
+            return getText(
+              topicTextOutgoingResId,
+              new MessageArgument(message, new TdApi.FormattedText(topicName, null))
+            );
+          } else {
+            return getText(
+              topicTextResId,
+              new SenderArgument(sender),
+              new MessageArgument(message, new TdApi.FormattedText(topicName, null))
+            );
+          }
+        });
+        return true;
+      });
+    }
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventForumTopicEdited forumTopicEdited) {
+    super(context, msg);
+    setTextCreator(() -> {
+      if (msg.isOutgoing) {
+        return getText(R.string.EventLogForumTopicEditedNameYou,
+          new BoldArgument(forumTopicEdited.oldTopicInfo.name),
+          new BoldArgument(forumTopicEdited.newTopicInfo.name)
+        );
+      } else {
+        return getText(R.string.EventLogForumTopicEditedName,
+          new SenderArgument(sender),
+          new BoldArgument(forumTopicEdited.oldTopicInfo.name),
+          new BoldArgument(forumTopicEdited.newTopicInfo.name)
+        );
       }
     });
   }

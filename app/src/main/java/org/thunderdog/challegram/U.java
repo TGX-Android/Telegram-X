@@ -35,6 +35,7 @@ import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.location.Location;
 import android.location.LocationManager;
 import android.media.AudioManager;
@@ -3626,5 +3627,13 @@ public class U {
       }
     }
     return null;
+  }
+
+  public static boolean setRect (RectF rectF, float left, float top, float right, float bottom) {
+    if (rectF.left != left || rectF.top != top || rectF.right != right || rectF.bottom != bottom) {
+      rectF.set(left, top, right, bottom);
+      return true;
+    }
+    return false;
   }
 }

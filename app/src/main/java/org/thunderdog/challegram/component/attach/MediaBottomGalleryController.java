@@ -627,13 +627,17 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
     if (gallery == null || gallery.isEmpty()) {
       return;
     }
+    MediaBottomGalleryBucketAdapter sectionsAdapter = sectionsView != null ?
+      (MediaBottomGalleryBucketAdapter) sectionsView.getAdapter() :
+      new MediaBottomGalleryBucketAdapter(context(), this, gallery);
+    // int sectionsHeight = Math.round((Screen.dp(9f) + Screen.dp(9f) + Screen.dp(30f)) * 5.5f);
+    // TODO: update automatically on orientation change without reopening
+    int sectionsHeight = sectionsAdapter.measureHeight(recyclerView.getMeasuredHeight() + HeaderView.getSize(false) - Screen.dp(8f) * 2) + Screen.dp(8f) * 2;
+    FrameLayoutFix.LayoutParams params = FrameLayoutFix.newParams(Screen.dp(210f) + Screen.dp(8f), sectionsHeight, Gravity.TOP | Gravity.LEFT);
+    params.leftMargin = Screen.dp(50f);
+    params.topMargin = HeaderView.getTopOffset();
+
     if (sectionsView == null) {
-      MediaBottomGalleryBucketAdapter sectionsAdapter = new MediaBottomGalleryBucketAdapter(context(), this, gallery);
-
-      FrameLayoutFix.LayoutParams params = FrameLayoutFix.newParams(Screen.dp(210f) + Screen.dp(8f), sectionsAdapter.measureHeight((Screen.dp(9f) + Screen.dp(9f) + Screen.dp(30f)) * 4) + Screen.dp(8f) * 2, Gravity.TOP | Gravity.LEFT);
-      params.leftMargin = Screen.dp(50f);
-      params.topMargin = HeaderView.getTopOffset();
-
       sectionHelperView = new View(context()) {
         @Override
         public boolean onTouchEvent (MotionEvent event) {
@@ -655,6 +659,8 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
       sectionsView.setAlpha(0f);
       sectionsView.setScaleX(MenuMoreWrap.START_SCALE);
       sectionsView.setScaleY(MenuMoreWrap.START_SCALE);
+    } else {
+      sectionsView.setLayoutParams(params);
     }
 
     if (currentBucket != null) {

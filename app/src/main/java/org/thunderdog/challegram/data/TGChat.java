@@ -93,8 +93,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
 
   private long viewedMessageId;
 
-  private ImageFile avatar;
-  private AvatarPlaceholder avatarPlaceholder;
+  private AvatarPlaceholder.Metadata avatarPlaceholder;
 
   private String title;
   private Text trimmedTitle;
@@ -689,31 +688,13 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
 
   private void setAvatar () {
     if (isArchive()) {
-      avatar = null;
-      avatarPlaceholder = new AvatarPlaceholder(ChatView.getAvatarSizeDp(listMode) / 2f, new AvatarPlaceholder.Metadata(R.id.theme_color_avatarArchive, R.drawable.baseline_archive_24), null);
-      return;
-    }
-    boolean isSelfChat = (flags & FLAG_SELF_CHAT) != 0;
-    TdApi.File file = isSelfChat ? null : TD.getPhotoSmall(chat);
-    if (file == null) {
-      avatar = null;
-      avatarPlaceholder = tdlib.chatPlaceholder(chat, true, ChatView.getAvatarSizeDp(listMode) / 2f, null);
+      avatarPlaceholder = new AvatarPlaceholder.Metadata(R.id.theme_color_avatarArchive, R.drawable.baseline_archive_24);
     } else {
-      avatar = new ImageFile(tdlib, file);
-      avatar.setSize(ChatView.getDefaultAvatarCacheSize());
       avatarPlaceholder = null;
     }
   }
 
-  public boolean hasAvatar () {
-    return avatar != null;
-  }
-
-  public ImageFile getAvatar () {
-    return avatar;
-  }
-
-  public AvatarPlaceholder getAvatarPlaceholder () {
+  public AvatarPlaceholder.Metadata getAvatarPlaceholder () {
     return avatarPlaceholder;
   }
 

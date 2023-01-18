@@ -116,7 +116,7 @@ public class MessagesLoader implements Client.ResultHandler {
   }
 
   // Callback is called only on successful load
-  public void requestSponsoredMessage (long chatId, RunnableData<TdApi.SponsoredMessage> callback) {
+  public void requestSponsoredMessage (long chatId, RunnableData<TdApi.SponsoredMessages> callback) {
     if (!canShowSponsoredMessage(chatId) || isLoadingSponsoredMessage) {
       return;
     }
@@ -129,12 +129,12 @@ public class MessagesLoader implements Client.ResultHandler {
           isLoadingSponsoredMessage = false;
           sponsoredResultHandler = null;
 
-          TdApi.SponsoredMessage message;
+          TdApi.SponsoredMessages message;
 
-          if (object.getConstructor() == TdApi.SponsoredMessage.CONSTRUCTOR) {
-            message = ((TdApi.SponsoredMessage) object);
+          if (object.getConstructor() == TdApi.SponsoredMessages.CONSTRUCTOR) {
+            message = ((TdApi.SponsoredMessages) object);
           } else if (tdlib.account().isDebug()) {
-            message = SponsoredMessageUtils.generateSponsoredMessage(tdlib);
+            message = SponsoredMessageUtils.generateSponsoredMessages(tdlib);
           } else {
             message = null;
           }
@@ -146,7 +146,7 @@ public class MessagesLoader implements Client.ResultHandler {
       }
     };
 
-    tdlib.client().send(new TdApi.GetChatSponsoredMessage(chatId), sponsoredResultHandler);
+    tdlib.client().send(new TdApi.GetChatSponsoredMessages(chatId), sponsoredResultHandler);
   }
 
   public MessagesLoader (MessagesManager manager, MessagesSearchManagerMiddleware searchMiddleware) {
@@ -890,7 +890,7 @@ public class MessagesLoader implements Client.ResultHandler {
         int seconds;
 
         seconds = data.getInt("ttl");
-        ttl = new TdApi.MessageChatSetTtl(seconds);
+        ttl = new TdApi.MessageChatSetTtl(seconds, 0);
       }
 
       if (date == 0) {
@@ -1138,7 +1138,7 @@ public class MessagesLoader implements Client.ResultHandler {
       false, false, false,
       false, false, false,
       false, false, false,
-      isChannel,
+      isChannel, false,
       false,
       event.date, 0,
       null, null, null,

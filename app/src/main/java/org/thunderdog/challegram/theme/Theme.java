@@ -182,7 +182,7 @@ public class Theme {
 
   // Base
 
-  private static float getProperty (final @ThemeProperty int propertyId) {
+  public static float getProperty (final @ThemeProperty int propertyId) {
     return ThemeManager.instance().currentTheme().getProperty(propertyId);
   }
 
@@ -861,6 +861,10 @@ public class Theme {
 
   public static float getSeparatorReplacement () {
     return Theme.getProperty(ThemeProperty.REPLACE_SHADOWS_WITH_SEPARATORS);
+  }
+
+  public static float avatarRadiusDefault () {
+    return Theme.getProperty(ThemeProperty.AVATAR_RADIUS);
   }
 
   public static float getBubbleOutlineFactor () {

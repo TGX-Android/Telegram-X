@@ -17,12 +17,10 @@ package org.thunderdog.challegram.navigation;
 import android.animation.Animator;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -61,6 +59,7 @@ import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.td.Td;
 
 public class MenuMoreWrap extends LinearLayout implements Animated {
   public static final int ITEM_HEIGHT = 48;
@@ -186,7 +185,10 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     final int textRightOffset = Screen.dp(menuItem.isLocked ? 41: 17);
     final Drawable finalIcon = menuItem.iconResId != 0 ? Drawables.get(getResources(), menuItem.iconResId) : menuItem.icon;
     final AvatarReceiver receiver = (menuItem.messageSenderId != null && menuItem.iconResId == 0) ?
-      complexAvatarReceiver.getAvatarReceiver(tdlib, menuItem.messageSenderId): null;
+      complexAvatarReceiver.getAvatarReceiver(Td.getSenderId(menuItem.messageSenderId)) : null;
+    if (receiver != null) {
+      receiver.requestMessageSender(tdlib, menuItem.messageSenderId, AvatarReceiver.Options.NONE);
+    }
 
     FrameLayout.LayoutParams lp = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(ITEM_HEIGHT), Gravity.LEFT);
     FrameLayout frameLayout = new FrameLayout(getContext()) {
@@ -225,7 +227,6 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     frameLayout.setWillNotDraw(false);
     if (receiver != null) {
       receiver.setBounds(Screen.dp(19), Screen.dp(ITEM_HEIGHT / 2f - 10), Screen.dp(39), Screen.dp(ITEM_HEIGHT / 2f + 10));
-      receiver.setRadius(Screen.dp(20));
       receiver.setUpdateListener(r -> frameLayout.invalidate());
     }
 

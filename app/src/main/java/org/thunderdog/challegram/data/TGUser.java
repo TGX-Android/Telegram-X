@@ -35,6 +35,7 @@ import java.util.ArrayList;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.ChatId;
+import me.vkryl.td.Td;
 
 public class TGUser implements UserProvider {
   private static final int FLAG_LOCAL = 0x01;
@@ -254,8 +255,9 @@ public class TGUser implements UserProvider {
       return true;
     } else if (((flags & FLAG_CONTACT) != 0 || (flags & FLAG_SHOW_PHONE_NUMBER) != 0) && user != null) {
       statusText = Strings.formatPhone(user.phoneNumber);
-    } else if ((flags & FLAG_USERNAME) != 0 && user != null) {
-      statusText = "@" + user.username;
+    } else if ((flags & FLAG_USERNAME) != 0 && user != null && !Td.isEmpty(user.usernames)) {
+      TdApi.Usernames usernames = user.usernames;
+      statusText = Td.isEmpty(user.usernames) ? Strings.join(Lang.getConcatSeparator(), usernames.activeUsernames, username -> "@" + username) : null;
     } else {
       statusText = role != 0 ? TD.getRoleName(user, role) : null;
     }
@@ -340,8 +342,12 @@ public class TGUser implements UserProvider {
     return (flags & FLAG_LOCAL) != 0 ? lastName : user == null ? "" : user.lastName;
   }
 
-  public @Nullable String getUsername () {
-    return (flags & FLAG_LOCAL) == 0 && user != null ? user.username : null;
+  public String getUsername () {
+    return Td.primaryUsername(getUsernames());
+  }
+
+  public @Nullable TdApi.Usernames getUsernames () {
+    return (flags & FLAG_LOCAL) == 0 && user != null ? user.usernames : null;
   }
 
   public ImageFile getAvatar () {

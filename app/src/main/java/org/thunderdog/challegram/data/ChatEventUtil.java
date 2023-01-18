@@ -15,8 +15,6 @@
 
 package org.thunderdog.challegram.data;
 
-import android.text.TextUtils;
-
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 
@@ -26,25 +24,29 @@ import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Strings;
-import org.thunderdog.challegram.util.CustomStateListDrawable;
 import org.thunderdog.challegram.util.text.Text;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.td.Td;
 
+/**
+ * Steps to support any new ChatEventAction constructor:
+ *
+ * 1. Decide how it should look
+ * 2. Add corresponding return value to the {@link #getActionMessageMode}
+ * 3. Add construction to the {@link #serviceMessage}, {@link #fullMessage}, or both, depending on the value used in the previous step
+ * 4. If action can be represented as fake {@link TdApi.MessageContent}, then refer to {@link #convertToNativeMessageContent}
+ */
 public class ChatEventUtil {
   @NonNull
   public static TGMessage newMessage (MessagesManager context, TdApi.Message message, TdApiExt.MessageChatEvent event) {
@@ -96,6 +98,15 @@ public class ChatEventUtil {
       case TdApi.ChatEventInviteLinkDeleted.CONSTRUCTOR:
       case TdApi.ChatEventVideoChatParticipantVolumeLevelChanged.CONSTRUCTOR:
       case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR:
+      case TdApi.ChatEventIsAggressiveAntiSpamEnabledToggled.CONSTRUCTOR:
+      case TdApi.ChatEventIsForumToggled.CONSTRUCTOR:
+      case TdApi.ChatEventActiveUsernamesChanged.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicCreated.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicDeleted.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicEdited.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicPinned.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicToggleIsClosed.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicToggleIsHidden.CONSTRUCTOR:
         return ActionMessageMode.ONLY_SERVICE;
       // only full (native)
       case TdApi.ChatEventMessageTtlChanged.CONSTRUCTOR:
@@ -167,6 +178,24 @@ public class ChatEventUtil {
         return new TGMessageService(context, msg, (TdApi.ChatEventVideoChatParticipantVolumeLevelChanged) action);
       case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR:
         return new TGMessageService(context, msg, (TdApi.ChatEventVideoChatParticipantIsMutedToggled) action);
+      case TdApi.ChatEventIsAggressiveAntiSpamEnabledToggled.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventIsAggressiveAntiSpamEnabledToggled) action);
+      case TdApi.ChatEventActiveUsernamesChanged.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventActiveUsernamesChanged) action);
+      case TdApi.ChatEventIsForumToggled.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventIsForumToggled) action);
+      case TdApi.ChatEventForumTopicCreated.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventForumTopicCreated) action);
+      case TdApi.ChatEventForumTopicDeleted.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventForumTopicDeleted) action);
+      case TdApi.ChatEventForumTopicPinned.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventForumTopicPinned) action);
+      case TdApi.ChatEventForumTopicEdited.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventForumTopicEdited) action);
+      case TdApi.ChatEventForumTopicToggleIsClosed.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventForumTopicToggleIsClosed) action);
+      case TdApi.ChatEventForumTopicToggleIsHidden.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventForumTopicToggleIsHidden) action);
       // only full (native)
       case TdApi.ChatEventMessageTtlChanged.CONSTRUCTOR:
       case TdApi.ChatEventVideoChatCreated.CONSTRUCTOR:
@@ -259,11 +288,12 @@ public class ChatEventUtil {
         ArrayList<TdApi.TextEntity> entities = new ArrayList<>(3);
         entities.add(new TdApi.TextEntity(0, start - 1, new TdApi.TextEntityTypeItalic()));
         entities.add(new TdApi.TextEntity(start, userName.length(), new TdApi.TextEntityTypeMentionName(e.userId)));
-        if (user != null && !StringUtils.isEmpty(user.username)) {
+        if (user != null && Td.hasUsername(user)) {
+          String username = Td.primaryUsername(user);
           b.append(" / ");
-          entities.add(new TdApi.TextEntity(b.length(), user.username.length() + 1, new TdApi.TextEntityTypeMention()));
+          entities.add(new TdApi.TextEntity(b.length(), username.length() + 1, new TdApi.TextEntityTypeMention()));
           b.append('@');
-          b.append(user.username);
+          b.append(username);
         }
         TdApi.TextEntity[] array = new TdApi.TextEntity[entities.size()];
         entities.toArray(array);
@@ -552,6 +582,15 @@ public class ChatEventUtil {
       case TdApi.ChatEventInviteLinkDeleted.CONSTRUCTOR:
       case TdApi.ChatEventVideoChatParticipantVolumeLevelChanged.CONSTRUCTOR:
       case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR:
+      case TdApi.ChatEventIsAggressiveAntiSpamEnabledToggled.CONSTRUCTOR:
+      case TdApi.ChatEventActiveUsernamesChanged.CONSTRUCTOR:
+      case TdApi.ChatEventIsForumToggled.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicCreated.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicDeleted.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicEdited.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicPinned.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicToggleIsClosed.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicToggleIsHidden.CONSTRUCTOR:
         throw new IllegalArgumentException(action.toString());
       default:
         throw new UnsupportedOperationException(action.toString());
@@ -591,7 +630,7 @@ public class ChatEventUtil {
   private static TdApi.MessageContent convertToNativeMessageContent (TdApi.ChatEvent event) {
     switch (event.action.getConstructor()) {
       case TdApi.ChatEventMessageTtlChanged.CONSTRUCTOR:
-        return new TdApi.MessageChatSetTtl(((TdApi.ChatEventMessageTtlChanged) event.action).newMessageTtl);
+        return new TdApi.MessageChatSetTtl(((TdApi.ChatEventMessageTtlChanged) event.action).newMessageTtl, 0);
       case TdApi.ChatEventVideoChatCreated.CONSTRUCTOR:
         return new TdApi.MessageVideoChatStarted(((TdApi.ChatEventVideoChatCreated) event.action).groupCallId);
       case TdApi.ChatEventVideoChatEnded.CONSTRUCTOR:
@@ -707,8 +746,8 @@ public class ChatEventUtil {
 
           text.append(Lang.getString(
             newReactions.isEmpty() ? R.string.EventLogReactionsDisabled :
-            oldReactions.isEmpty() ? R.string.EventLogReactionsEnabled :
-            R.string.EventLogReactionsChanged
+              oldReactions.isEmpty() ? R.string.EventLogReactionsEnabled :
+                R.string.EventLogReactionsChanged
           ));
           headerLength = text.length();
 
@@ -818,6 +857,15 @@ public class ChatEventUtil {
       case TdApi.ChatEventVideoChatMuteNewParticipantsToggled.CONSTRUCTOR:
       case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR:
       case TdApi.ChatEventVideoChatParticipantVolumeLevelChanged.CONSTRUCTOR:
+      case TdApi.ChatEventIsAggressiveAntiSpamEnabledToggled.CONSTRUCTOR:
+      case TdApi.ChatEventActiveUsernamesChanged.CONSTRUCTOR:
+      case TdApi.ChatEventIsForumToggled.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicCreated.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicDeleted.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicEdited.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicPinned.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicToggleIsHidden.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicToggleIsClosed.CONSTRUCTOR:
         throw new IllegalArgumentException(event.action.toString());
 
         // Unsupported

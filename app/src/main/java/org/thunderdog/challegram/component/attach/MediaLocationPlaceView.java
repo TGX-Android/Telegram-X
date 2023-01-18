@@ -361,8 +361,8 @@ public class MediaLocationPlaceView extends FrameLayoutFix implements AttachDele
 
   @Override
   protected void onDraw (Canvas c) {
-    int cx = receiver.getCenterX();
-    int cy = receiver.getCenterY();
+    int cx = receiver.centerX();
+    int cy = receiver.centerY();
 
     float alpha = (flags & FLAG_FADED) != 0 ? .6f : 1f;
 
