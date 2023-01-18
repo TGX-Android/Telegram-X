@@ -22,7 +22,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
-import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.component.user.RemoveHelper;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
@@ -39,7 +38,6 @@ import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
-import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.BetterChatView;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
@@ -524,12 +522,10 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
         chatView.setChat((TGFoundChat) item.getData());
         chatView.setAllowMaximizePreview(false);
       } else {
-        float avatarRadius = ChatView.getAvatarSizeDp(Settings.CHAT_MODE_2LINE) / 2f;
-        AvatarPlaceholder avatarPlaceholder = new AvatarPlaceholder(avatarRadius, new AvatarPlaceholder.Metadata(item.getIntValue(), item.getIconResource()), chatView);
         chatView.setTitle(item.getString());
         chatView.setSubtitle(null);
         chatView.setNoSubtitle(true);
-        chatView.setAvatar((ImageFile) null, avatarPlaceholder);
+        chatView.setAvatar((ImageFile) null, new AvatarPlaceholder.Metadata(item.getIntValue(), item.getIconResource()));
         chatView.clearPreviewChat();
       }
     }

@@ -981,7 +981,7 @@ public class MediaLayout extends FrameLayoutFix implements
 
   public void chooseInlineBot (TGUser user) {
     if (user.getUser() != null && target != null) {
-      target.onUsernamePick(user.getUser().username);
+      target.onUsernamePick(Td.primaryUsername(user.getUser()));
     }
     showKeyboardOnHide = true;
     hide(false);

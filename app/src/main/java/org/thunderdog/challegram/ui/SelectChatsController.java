@@ -29,7 +29,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
-import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.TD;
@@ -48,7 +47,6 @@ import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.FlowListAnimator;
 import org.thunderdog.challegram.util.text.Text;
@@ -567,12 +565,10 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
         chatView.setChat(foundChat);
         SelectChatsController.this.modifyChatView(foundChat, chatView);
       } else if (ArrayUtils.contains(TD.CHAT_TYPES, item.getId())) {
-        float avatarRadius = ChatView.getAvatarSizeDp(Settings.CHAT_MODE_2LINE) / 2f;
-        AvatarPlaceholder avatarPlaceholder = new AvatarPlaceholder(avatarRadius, new AvatarPlaceholder.Metadata(item.getIntValue(), item.getIconResource()), chatView);
         chatView.setTitle(item.getString());
         chatView.setSubtitle(null);
         chatView.setNoSubtitle(true);
-        chatView.setAvatar((ImageFile) null, avatarPlaceholder);
+        chatView.setAvatar((ImageFile) null, new AvatarPlaceholder.Metadata(item.getIntValue(), item.getIconResource()));
         chatView.setIsChecked(selectedChatTypes.contains(item.getId()), chatView.isLaidOut());
         chatView.clearPreviewChat();
       } else {

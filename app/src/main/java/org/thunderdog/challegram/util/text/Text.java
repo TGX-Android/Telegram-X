@@ -451,6 +451,10 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       return maxLineCount(1);
     }
 
+    public Builder singleLine (boolean isSingleLine) {
+      return maxLineCount(isSingleLine ? 1 : -1);
+    }
+
     public Builder clipTextArea () {
       return clipTextArea(true);
     }
@@ -2788,7 +2792,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
           startIndex = spoiler.startPartIndex;
           endIndex = spoiler.startPartIndex + spoiler.partsCount;
         } else {
-          if ((onlyClickable && !foundPart.isClickable()) || (!onlyClickable && !foundPart.isClickable() && !BitwiseUtils.getFlag(textFlags, FLAG_ALL_CLICKABLE))) {
+          if (onlyClickable && !foundPart.isClickable()) {
             cancelTouch();
             return false;
           }

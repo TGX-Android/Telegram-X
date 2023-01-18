@@ -15,12 +15,14 @@
 package org.thunderdog.challegram.ui;
 
 import android.content.Context;
+import android.net.Uri;
 import android.text.InputFilter;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 
+import androidx.annotation.IntDef;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.td.libcore.telegram.Client;
@@ -92,13 +94,13 @@ public class EditUsernameController extends EditBaseController<EditUsernameContr
 
   @Override
   protected void onCreateView (Context context, FrameLayoutFix contentView, RecyclerView recyclerView) {
+    TdApi.Usernames usernames;
     if (chatId != 0) {
-      String username = tdlib.chatUsername(chatId);
-      sourceUsername = currentUsername = username != null ? username : "";
+      usernames = tdlib.chatUsernames(chatId);
     } else {
-      TdApi.User user = tdlib.myUser();
-      sourceUsername = currentUsername = user != null ? user.username : "";
+      usernames = tdlib.myUserUsernames();
     }
+    sourceUsername = currentUsername = usernames != null ? usernames.editableUsername : "";
 
     checkingItem = new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, chatId != 0 ? R.string.LinkChecking : R.string.UsernameChecking).setTextColorId(R.id.theme_color_textLight);
     checkedItem = new ListItem(ListItem.TYPE_DESCRIPTION, R.id.state, 0, 0);
@@ -151,12 +153,12 @@ public class EditUsernameController extends EditBaseController<EditUsernameContr
 
     if (sourceUsername.equals(username) && !username.isEmpty()) {
       checkedItem.setTextColorId(R.id.theme_color_textSecure);
-      checkedItem.setString(getResultString(true));
+      checkedItem.setString(getResultString(ResultType.AVAILABLE));
       adapter.updateEditTextById(R.id.input, true, false);
       setState(STATE_CHECKED);
     } else {
       adapter.updateEditTextById(R.id.input, false, false);
-      setState(username.length() < 5 || !TD.matchUsername(username) || username.length() > 32 ? STATE_NONE : STATE_CHECKING);
+      setState(username.length() < MIN_USERNAME_LENGTH || !TD.matchUsername(username) || username.length() > 32 ? STATE_NONE : STATE_CHECKING);
     }
     if (state == STATE_CHECKING) {
       checkUsername();
@@ -253,12 +255,16 @@ public class EditUsernameController extends EditBaseController<EditUsernameContr
         switch (object.getConstructor()) {
           case TdApi.CheckChatUsernameResultOk.CONSTRUCTOR:
             isAvailable = true;
-            result = getResultString(true);
+            result = getResultString(ResultType.AVAILABLE);
             break;
           case TdApi.CheckChatUsernameResultUsernameOccupied.CONSTRUCTOR:
-            result = getResultString(false);
+            result = getResultString(ResultType.OCCUPIED);
             break;
-          case TdApi.CheckChatUsernameResultPublicChatsTooMuch.CONSTRUCTOR:
+
+          case TdApi.CheckChatUsernameResultUsernamePurchasable.CONSTRUCTOR:
+            result = getResultString(ResultType.PURCHASABLE);
+            break;
+          case TdApi.CheckChatUsernameResultPublicChatsTooMany.CONSTRUCTOR:
             result = Lang.getString(R.string.TooManyPublicLinks);
             needOccupiedList = true;
             break;
@@ -346,13 +352,15 @@ public class EditUsernameController extends EditBaseController<EditUsernameContr
     adapter.updateLockEditTextById(R.id.input, inProgress ? currentUsername : null);
   }
 
+  private static final int MIN_USERNAME_LENGTH = 1;
+
   @Override
   protected boolean onDoneClick () {
     if (currentUsername.isEmpty()) {
       setUsername("");
-    } else if (currentUsername.length() < 5) {
+    } else if (currentUsername.length() < MIN_USERNAME_LENGTH) {
       showError(Lang.getString(chatId != 0 ? R.string.LinkInvalidShort : R.string.UsernameInvalidShort));
-    } else if (currentUsername.length() > 32) {
+    } else if (currentUsername.length() > TdConstants.MAX_USERNAME_LENGTH) {
       showError(Lang.getString(chatId != 0 ? R.string.LinkInvalidLong : R.string.UsernameInvalidLong));
     } else if (StringUtils.isNumeric(currentUsername.charAt(0))) {
       showError(Lang.getString(chatId != 0 ? R.string.LinkInvalidStartNumber : R.string.UsernameInvalidStartNumber));
@@ -449,7 +457,7 @@ public class EditUsernameController extends EditBaseController<EditUsernameContr
     if (helpSequence == null) {
       helpSequence = Strings.replaceBoldTokens(Lang.getString(chatId != 0 ? (tdlib.isChannel(chatId) ? R.string.LinkChannelHelp : R.string.LinkGroupHelp) : R.string.UsernameHelp), R.id.theme_color_textLight);
     }
-    if (currentUsername.length() >= 5 && currentUsername.length() <= 32 && chatId == 0) {
+    if (currentUsername.length() >= MIN_USERNAME_LENGTH && currentUsername.length() <= 32 && chatId == 0) {
       SpannableStringBuilder b = new SpannableStringBuilder(helpSequence);
       b.append("\n\n");
       b.append(Lang.getString(currentUsername.equals(sourceUsername) ? R.string.ThisLinkOpens : R.string.ThisLinkWillOpen));
@@ -462,13 +470,38 @@ public class EditUsernameController extends EditBaseController<EditUsernameContr
     return helpSequence;
   }
 
-  private CharSequence getResultString (boolean isAvailable) {
-    if (isAvailable) {
-      SpannableStringBuilder b = new SpannableStringBuilder(Lang.getString(sourceUsername.equals(currentUsername) ? (chatId != 0 ? R.string.LinkCurrent : R.string.UsernameCurrent) : R.string.UsernameAvailable, currentUsername));
-      b.setSpan(new CustomTypefaceSpan(Fonts.getRobotoMedium(), R.id.theme_color_textSecure), 0, currentUsername.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-      return b;
+  @IntDef({
+    ResultType.AVAILABLE,
+    ResultType.OCCUPIED,
+    ResultType.PURCHASABLE
+  })
+  private @interface ResultType {
+    int AVAILABLE = 0, OCCUPIED = 1, PURCHASABLE = 2;
+  }
+
+  private CharSequence getResultString (@ResultType int resultType) {
+    switch (resultType) {
+      case ResultType.AVAILABLE: {
+        SpannableStringBuilder b = new SpannableStringBuilder(Lang.getString(sourceUsername.equals(currentUsername) ? (chatId != 0 ? R.string.LinkCurrent : R.string.UsernameCurrent) : R.string.UsernameAvailable, currentUsername));
+        b.setSpan(new CustomTypefaceSpan(Fonts.getRobotoMedium(), R.id.theme_color_textSecure), 0, currentUsername.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        return b;
+      }
+      case ResultType.OCCUPIED: {
+        return Lang.getString(chatId != 0 ? R.string.LinkInUse : R.string.UsernameInUse);
+      }
+      case ResultType.PURCHASABLE: {
+        String learnMoreUrl = new Uri.Builder()
+          .scheme("https")
+          .authority(TdConstants.FRAGMENT_HOST)
+          .path("username/" + currentUsername)
+          .build()
+          .toString();
+        return Lang.getMarkdownStringSecure(this, chatId != 0 ? R.string.LinkPurchasable : R.string.UsernamePurchasable, learnMoreUrl);
+      }
+      default: {
+        throw new IllegalArgumentException(Integer.toString(resultType));
+      }
     }
-    return Lang.getString(chatId != 0 ? R.string.LinkInUse : R.string.UsernameInUse);
   }
 
 }

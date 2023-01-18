@@ -81,6 +81,7 @@ import java.lang.reflect.Method;
 import java.util.List;
 
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.td.ChatId;
 
 public class TGCallService extends Service implements
@@ -333,14 +334,18 @@ public class TGCallService extends Service implements
     }
     cpuWakelock.release();
     final AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
-    if (isBtHeadsetConnected && !soundPoolMap.isProbablyPlaying()) {
+    boolean isBtHeadsetConnected = this.isBtHeadsetConnected;
+    RunnableBool disconnectBt = isBtHeadsetConnected ? (delayed) -> {
       am.stopBluetoothSco();
-      Log.d(Log.TAG_VOIP, "AudioManager.stopBluetoothSco (in onDestroy)");
+      Log.d(Log.TAG_VOIP, "AudioManager.stopBluetoothSco (in onDestroy), delayed: %b", delayed);
       am.setSpeakerphoneOn(false);
-      Log.d(Log.TAG_VOIP, "AudioManager.setSpeakerphoneOn(false) (in onDestroy)");
-    }
+      Log.d(Log.TAG_VOIP, "AudioManager.setSpeakerphoneOn(false) (in onDestroy), delayed: %b", delayed);
+    } : null;
     try {
       if (!soundPoolMap.isProbablyPlaying()) {
+        if (disconnectBt != null) {
+          disconnectBt.runWithBool(false);
+        }
         am.setMode(AudioManager.MODE_NORMAL);
         Log.d(Log.TAG_VOIP, "AudioManager.setMode(AudioManager.MODE_NORMAL) (in onDestroy)");
       } else {
@@ -348,6 +353,9 @@ public class TGCallService extends Service implements
         UI.post(() -> {
           if (amChangeCounterFinal == amChangeCounter) {
             try {
+              if (disconnectBt != null) {
+                disconnectBt.runWithBool(true);
+              }
               Log.d(Log.TAG_VOIP, "AudioManager.setMode(AudioManager.MODE_NORMAL) (in onDestroy, delayed)");
               am.setMode(AudioManager.MODE_NORMAL);
             } catch (Throwable ignored) { }

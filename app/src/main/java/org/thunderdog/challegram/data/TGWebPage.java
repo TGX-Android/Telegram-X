@@ -251,7 +251,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
           this.type = TYPE_TELEGRAM_BACKGROUND;
           break;
         }
-        case "telegram_adx": {
+        case SponsoredMessageUtils.TELEGRAM_AD_TYPE: {
           this.type = TYPE_TELEGRAM_AD;
           break;
         }

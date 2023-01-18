@@ -39,9 +39,9 @@ import org.thunderdog.challegram.data.CallItem;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGFoundChat;
 import org.thunderdog.challegram.data.TGFoundMessage;
+import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
-import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
@@ -55,7 +55,6 @@ import org.thunderdog.challegram.tool.Icons;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.FormattedText;
@@ -72,7 +71,6 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.MessageId;
-import me.vkryl.td.Td;
 
 public class BetterChatView extends BaseView implements Destroyable, RemoveHelper.RemoveDelegate, ChatListener, TdlibCache.UserDataChangeListener, TdlibCache.SupergroupDataChangeListener, TdlibCache.BasicGroupDataChangeListener, NotificationSettingsListener, TdlibCache.UserStatusChangeListener, DrawableProvider, TooltipOverlayView.LocationProvider {
   private static final int FLAG_FAKE_TITLE = 1;
@@ -83,7 +81,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
 
   private int flags;
 
-  private final ImageReceiver receiver;
+  private final AvatarReceiver avatarReceiver;
   private final ComplexReceiver subtitleMediaReceiver;
   private @Nullable SimplestCheckBoxHelper checkBoxHelper;
 
@@ -106,9 +104,6 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
     invalidate();
   }).build();
 
-  private ImageFile avatar;
-  private AvatarPlaceholder avatarPlaceholder;
-
   private int subtitleIcon;
   private Drawable subtitleIconDrawable;
   private @ThemeColorId
@@ -116,24 +111,24 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
 
   public BetterChatView (Context context, Tdlib tdlib) {
     super(context, tdlib);
-    this.receiver = new ImageReceiver(this, ChatView.getAvatarRadius(Settings.CHAT_MODE_2LINE));
+    this.avatarReceiver = new AvatarReceiver(this);
     this.subtitleMediaReceiver = new ComplexReceiver(this, Config.MAX_ANIMATED_EMOJI_REFRESH_RATE);
-    receiver.setBounds(Screen.dp(11f), Screen.dp(10f), Screen.dp(11f) + Screen.dp(52f), Screen.dp(10f) + Screen.dp(52f));
+    avatarReceiver.setBounds(Screen.dp(11f), Screen.dp(10f), Screen.dp(11f) + Screen.dp(52f), Screen.dp(10f) + Screen.dp(52f));
   }
 
   public void attach () {
-    receiver.attach();
+    avatarReceiver.attach();
     subtitleMediaReceiver.attach();
   }
 
   public void detach () {
-    receiver.detach();
+    avatarReceiver.detach();
     subtitleMediaReceiver.detach();
   }
 
   @Override
   public void performDestroy () {
-    receiver.destroy();
+    avatarReceiver.destroy();
     subtitleMediaReceiver.performDestroy();
     setChatImpl(null);
     setMessageImpl(null);
@@ -142,7 +137,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
   public void setIsChecked (boolean isChecked, boolean animated) {
     if (isChecked != (checkBoxHelper != null && checkBoxHelper.isChecked())) {
       if (checkBoxHelper == null) {
-        checkBoxHelper = new SimplestCheckBoxHelper(this, receiver);
+        checkBoxHelper = new SimplestCheckBoxHelper(this, avatarReceiver);
       }
       checkBoxHelper.setIsChecked(isChecked, animated);
     }
@@ -159,8 +154,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
     setTitle(TD.getUserName(userId, user), null);
     setSubtitleIcon(item.getSubtitleIcon(), item.getSubtitleIconColorId());
     setSubtitle(item.getSubtitle());
-    boolean hasAvatar = user != null && user.profilePhoto != null;
-    setAvatar(hasAvatar ? user.profilePhoto.small : null, hasAvatar || user == null ? null : tdlib.cache().userPlaceholder(user, true, ChatView.getAvatarSizeDp(Settings.CHAT_MODE_2LINE) / 2f, null));
+    avatarReceiver.requestUser(tdlib, userId, AvatarReceiver.Options.SHOW_ONLINE);
     invalidate();
   }
 
@@ -184,9 +178,9 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
     if (Lang.rtl()) {
       int x = Screen.dp(11f);
       int avatarWidth = Screen.dp(52f);
-      receiver.setBounds(width - x - avatarWidth, Screen.dp(10f), width - x, Screen.dp(10f) + Screen.dp(52f));
+      avatarReceiver.setBounds(width - x - avatarWidth, Screen.dp(10f), width - x, Screen.dp(10f) + Screen.dp(52f));
     } else {
-      receiver.setBounds(Screen.dp(11f), Screen.dp(10f), Screen.dp(11f) + Screen.dp(52f), Screen.dp(10f) + Screen.dp(52f));
+      avatarReceiver.setBounds(Screen.dp(11f), Screen.dp(10f), Screen.dp(11f) + Screen.dp(52f), Screen.dp(10f) + Screen.dp(52f));
     }
   }
 
@@ -221,21 +215,6 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
     }
   }
 
-  public void setAvatar (@Nullable TdApi.File file, @Nullable AvatarPlaceholder avatarPlaceholder) {
-    ImageFile avatar;
-    if (file != null) {
-      if (this.avatar == null || Td.getId(this.avatar.getFile()) != file.id) {
-        avatar = new ImageFile(tdlib, file);
-        avatar.setSize(ChatView.getDefaultAvatarCacheSize());
-      } else {
-        avatar = this.avatar;
-      }
-    } else {
-      avatar = null;
-    }
-    setAvatar(avatar, avatarPlaceholder);
-  }
-
   public void setIsOnline (boolean isOnline) {
     int flags = BitwiseUtils.setFlag(this.flags, FLAG_ONLINE, isOnline);
     if (this.flags != flags) {
@@ -261,14 +240,12 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
     }
   }
 
-  public void setAvatar (ImageFile avatar, AvatarPlaceholder avatarPlaceholder) {
-    this.avatar = avatar;
-    this.avatarPlaceholder = avatarPlaceholder;
-    receiver.requestFile(avatar);
-  }
-
   public void setAvatar (ImageFile avatar, AvatarPlaceholder.Metadata avatarPlaceholderMetadata) {
-    setAvatar(avatar, avatarPlaceholderMetadata != null ? new AvatarPlaceholder(ChatView.getAvatarSizeDp(Settings.CHAT_MODE_2LINE) / 2f, avatarPlaceholderMetadata, null) : null);
+    if (avatar != null) {
+      avatarReceiver.requestSpecific(tdlib, avatar, AvatarReceiver.Options.NONE);
+    } else {
+      avatarReceiver.requestPlaceholder(tdlib, avatarPlaceholderMetadata, AvatarReceiver.Options.NONE);
+    }
   }
 
   public void setTitle (CharSequence title) {
@@ -398,17 +375,13 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
 
     layoutReceiver(width);
 
-    if (avatar != null) {
-      if (receiver.needPlaceholder()) {
-        receiver.drawPlaceholderRounded(c, ChatView.getAvatarRadius(Settings.CHAT_MODE_2LINE));
-      }
-      receiver.draw(c);
-    } else if (avatarPlaceholder != null) {
-      avatarPlaceholder.draw(c, receiver.centerX(), receiver.centerY());
+    if (avatarReceiver.needPlaceholder()) {
+      avatarReceiver.drawPlaceholder(c);
     }
+    avatarReceiver.draw(c);
     final float checkFactor = checkBoxHelper != null ? checkBoxHelper.getCheckFactor() : 0f;
     if (checkFactor > 0f) {
-      DrawAlgorithms.drawSimplestCheckBox(c, receiver, checkFactor);
+      DrawAlgorithms.drawSimplestCheckBox(c, avatarReceiver, checkFactor);
     }
     if (displayTitle != null) {
       boolean isSecret = (flags & FLAG_SECRET) != 0;
@@ -544,7 +517,6 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
 
   public void setChat (@Nullable TGFoundChat chat) {
     if (chat == lastChat) {
-      receiver.requestFile(avatar);
       return;
     }
     if (lastMessage != null) {
@@ -562,7 +534,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
     }
     setTitle(lastChat.getTitle(), lastChat.getTitleHighlight());
     updateSubtitle();
-    setAvatar(lastChat.getAvatar(), lastChat.getAvatarPlaceholderMetadata());
+    lastChat.requestAvatar(avatarReceiver, AvatarReceiver.Options.SHOW_ONLINE);
     setTime(null);
     setUnreadCount(lastChat.getUnreadCount(), !lastChat.notificationsEnabled(), update);
   }
@@ -720,7 +692,6 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
     if (lastChat != null) {
       setChatImpl(null);
     } else if (lastMessage == foundMessage) {
-      receiver.requestFile(foundMessage != null ? foundMessage.getAvatar() : null);
       return;
     }
     setMessageImpl(foundMessage);
@@ -732,7 +703,8 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
       setTitle(chat.getTitle(), chat.getTitleHighlight());
       setSubtitle(foundMessage.getText(), foundMessage.getHighlight());
       setUnreadCount(0, counter.isMuted(), false);
-      setAvatar(foundMessage.getAvatar(), foundMessage.getAvatarPlaceholderMetadata() != null ? new AvatarPlaceholder(ChatView.getAvatarSizeDp(Settings.CHAT_MODE_2LINE) / 2f, foundMessage.getAvatarPlaceholderMetadata(), null) : null);
+      TdApi.MessageSender sender = chat.getSenderId();
+      avatarReceiver.requestMessageSender(tdlib, sender, AvatarReceiver.Options.NONE);
       invalidate();
     }
   }

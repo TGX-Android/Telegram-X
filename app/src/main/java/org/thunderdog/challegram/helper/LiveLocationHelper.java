@@ -32,7 +32,6 @@ import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.SettingsWrap;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
@@ -628,7 +627,7 @@ public class LiveLocationHelper implements LiveLocationManager.Listener, FactorA
     b.setDrawerProcessor((item, view, timerView, isUpdate) -> {
       TdApi.Message message = (TdApi.Message) item.getData();
       TdApi.Chat chat = tdlib.chat(message.chatId);
-      view.setAvatar(tdlib.chatPlaceholderMetadata(message.chatId, chat, false), TD.getAvatar(tdlib, chat));
+      view.setAvatar(tdlib, message.chatId);
       view.setText(tdlib.chatTitle(chat));
       view.setPreviewChatId(null, message.chatId, null, new MessageId(message.chatId, message.id), null);
       view.setPreviewActionListProvider(LiveLocationHelper.this);

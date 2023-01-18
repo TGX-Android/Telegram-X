@@ -55,6 +55,8 @@ public class ImageGalleryFile extends ImageFile implements Comparable<ImageGalle
   private long videoBitrate;
   private int videoFrameRate;
 
+  private boolean isFavorite;
+
   public ImageGalleryFile (long imageId, String path, long dateTaken, int width, int height, long bucketId, boolean needThumb) {
     super(null, TD.newFile(CURRENT_ID--, Integer.toString(CURRENT_ID), path, 1));
     this.id = imageId;
@@ -87,7 +89,16 @@ public class ImageGalleryFile extends ImageFile implements Comparable<ImageGalle
     this.duration = source.duration;
     this.mimeType = source.mimeType;
     // this.caption = source.caption;
+    this.isFavorite = source.isFavorite;
     setSize(source.getSize());
+  }
+
+  public void setFavorite (boolean favorite) {
+    isFavorite = favorite;
+  }
+
+  public boolean isFavorite () {
+    return isFavorite;
   }
 
   @Override

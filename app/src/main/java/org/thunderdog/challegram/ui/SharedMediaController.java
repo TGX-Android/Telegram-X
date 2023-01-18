@@ -573,7 +573,7 @@ public class SharedMediaController extends SharedBaseController<MediaItem> imple
         TdlibSender sender = new TdlibSender(tdlib, message.chatId, message.senderId);
         String title = sender.isSelf() ? Lang.getString(R.string.FromYou) : sender.getName();
         context.setHeader(title, Lang.getRelativeTimestamp(mediaItemCopy.getSourceDate(), TimeUnit.SECONDS));
-        context.setHeaderAvatar(sender.getAvatar(), new AvatarPlaceholder(ComplexHeaderView.getBaseAvatarRadiusDp(), sender.getPlaceholderMetadata(), null));
+        context.setHeaderAvatar(sender.toSender(), null);
       }
       if (parent != null) {
         context.setAllowFullscreen(!parent.inSearchMode());

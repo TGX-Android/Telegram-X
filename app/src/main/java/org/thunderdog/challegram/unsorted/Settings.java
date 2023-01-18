@@ -235,7 +235,9 @@ public class Settings {
   public static final String KEY_ACCOUNT_INFO_SUFFIX_ID = ""; // user_id
   public static final String KEY_ACCOUNT_INFO_SUFFIX_NAME1 = "name1"; // first_name
   public static final String KEY_ACCOUNT_INFO_SUFFIX_NAME2 = "name2"; // last_name
-  public static final String KEY_ACCOUNT_INFO_SUFFIX_USERNAME = "username"; // last_name
+  public static final String KEY_ACCOUNT_INFO_SUFFIX_USERNAME = "username"; // username
+  public static final String KEY_ACCOUNT_INFO_SUFFIX_USERNAMES_ACTIVE = "usernames_active"; // username
+  public static final String KEY_ACCOUNT_INFO_SUFFIX_USERNAMES_DISABLED = "usernames_disabled"; // last_name
   public static final String KEY_ACCOUNT_INFO_SUFFIX_PHONE = "phone"; // phone
   public static final String KEY_ACCOUNT_INFO_SUFFIX_PHOTO = "photo"; // path, if loaded
   public static final String KEY_ACCOUNT_INFO_SUFFIX_PHOTO_FULL = "photo_full"; // path, if loaded
@@ -674,7 +676,7 @@ public class Settings {
       if (needAndroidLog()) {
         stream = new TdApi.LogStreamDefault();
       } else {
-        stream = new TdApi.LogStreamFile(TdlibManager.getLogFilePath(false), getLogMaxFileSize(), true);
+        stream = new TdApi.LogStreamFile(TdlibManager.getLogFilePath(false), getLogMaxFileSize(), false);
       }
       TdApi.Object result = Client.execute(new TdApi.SetLogStream(stream));
       if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {

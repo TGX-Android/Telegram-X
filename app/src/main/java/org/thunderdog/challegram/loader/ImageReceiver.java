@@ -59,7 +59,7 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
   private float alpha = 1f, progress;
 
   private boolean isDetached, needProgress, animationDisabled;
-  private int radius;
+  private float radius;
 
   private int left, top, right, bottom;
 
@@ -284,7 +284,7 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
   }
 
   @Override
-  public void setRadius (int radius) {
+  public void setRadius (float radius) {
     if (this.radius != radius) {
       this.radius = radius;
 
@@ -350,15 +350,7 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
     }
   }
 
-  public int centerX () {
-    return (int) ((float) (left + right) * .5f);
-  }
-
-  public int centerY () {
-    return (int) ((float) (bottom + top) * .5f);
-  }
-
-  public int getRadius () {
+  public float getRadius () {
     return radius;
   }
 
@@ -595,14 +587,6 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
     }
   }
 
-  public int getCenterX () {
-    return (left + right) / 2;
-  }
-
-  public int getCenterY () {
-    return (top + bottom) / 2;
-  }
-
   public int getLeft () {
     return left;
   }
@@ -617,14 +601,6 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
 
   public int getBottom () {
     return bottom;
-  }
-
-  public int getWidth () {
-    return right - left;
-  }
-
-  public int getHeight () {
-    return bottom - top;
   }
 
   public void setAlpha (@FloatRange(from = 0.0, to = 1.0) float alpha) {
