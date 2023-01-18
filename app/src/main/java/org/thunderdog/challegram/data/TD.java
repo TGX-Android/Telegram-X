@@ -4099,7 +4099,11 @@ public class TD {
         U.set(isTranslatable, false);
         return ((TdApi.MessageCustomServiceAction) m.content).text;
       }
-      case TdApi.MessagePassportDataSent.CONSTRUCTOR: { // TODO
+      case TdApi.MessagePassportDataSent.CONSTRUCTOR:
+      case TdApi.MessageForumTopicCreated.CONSTRUCTOR:
+      case TdApi.MessageForumTopicEdited.CONSTRUCTOR:
+      case TdApi.MessageForumTopicIsClosedToggled.CONSTRUCTOR:
+      case TdApi.MessageForumTopicIsHiddenToggled.CONSTRUCTOR: { // TODO
         U.set(isTranslatable, true);
         return Lang.getString(R.string.UnsupportedMessage);
       }

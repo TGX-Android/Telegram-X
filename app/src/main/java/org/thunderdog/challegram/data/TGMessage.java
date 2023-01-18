@@ -7479,6 +7479,18 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageChatUpgradeFrom.CONSTRUCTOR: {
           return new TGMessageService(context, msg, (TdApi.MessageChatUpgradeFrom) content);
         }
+        case TdApi.MessageForumTopicCreated.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageForumTopicCreated) content);
+        }
+        case TdApi.MessageForumTopicEdited.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageForumTopicEdited) content);
+        }
+        case TdApi.MessageForumTopicIsClosedToggled.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageForumTopicIsClosedToggled) content);
+        }
+        case TdApi.MessageForumTopicIsHiddenToggled.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageForumTopicIsHiddenToggled) content);
+        }
         // unsupported
         case TdApi.MessageInvoice.CONSTRUCTOR:
         case TdApi.MessagePassportDataSent.CONSTRUCTOR:

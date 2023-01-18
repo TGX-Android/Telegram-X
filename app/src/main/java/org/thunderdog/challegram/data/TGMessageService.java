@@ -866,6 +866,34 @@ public final class TGMessageService extends TGMessageServiceImpl {
     });
   }
 
+  // Forum Topics
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageForumTopicCreated forumTopicCreated) {
+    super(context, msg);
+    setUnsupportedTextCreator();
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageForumTopicEdited forumTopicEdited) {
+    super(context, msg);
+    setUnsupportedTextCreator();
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageForumTopicIsClosedToggled forumTopicIsClosedToggled) {
+    super(context, msg);
+    setUnsupportedTextCreator();
+  }
+
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageForumTopicIsHiddenToggled forumTopicIsHiddenToggled) {
+    super(context, msg);
+    setUnsupportedTextCreator();
+  }
+
+  private void setUnsupportedTextCreator () {
+    setTextCreator(() ->
+      getText(R.string.UnsupportedMessage)
+    );
+  }
+
   // Custom server's service message
 
   public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageCustomServiceAction custom) {
