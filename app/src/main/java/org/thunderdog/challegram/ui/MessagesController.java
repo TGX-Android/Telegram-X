@@ -8548,7 +8548,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     // TdApi.Function function = new TdApi.GetSupergroupMembers(TD.getChatSupergroupId(chat), new TdApi.ChannelMembersFilterAdministrators(), 0, 200);
 
-    tdlib.client().send(new TdApi.GetChatAdministrators(chat.id), object -> {
+    long chatId = chat.id;
+    Client.ResultHandler handler = object -> {
       switch (object.getConstructor()) {
         case TdApi.ChatAdministrators.CONSTRUCTOR: {
           tdlib.ui().post(() -> {
@@ -8565,7 +8566,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
           break;
         }
       }
-    });
+    };
+    if (tdlib.isSupergroupChat(chat) && tdlib.telegramAntiSpamUserId() != 0) {
+      tdlib.client().send(new TdApi.GetUser(tdlib.telegramAntiSpamUserId()), ignored -> {
+        tdlib.client().send(new TdApi.GetChatAdministrators(chatId), handler);
+      });
+    } else {
+      tdlib.client().send(new TdApi.GetChatAdministrators(chatId), handler);
+    }
   }
 
   private static boolean checkFilter (int filter, TdApi.ChatEventLogFilters filters) {
@@ -8693,6 +8701,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
         items.add(new ListItem(ListItem.TYPE_SHADOW_TOP).setTextColorId(R.id.theme_color_background));
 
         items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_members, 0, R.string.EventLogAllAdmins, userIds == null));
+
+        if (tdlib.isSupergroupChat(chat)) {
+          TdApi.SupergroupFullInfo fullInfo = tdlib.cache().supergroupFull(ChatId.toSupergroupId(chat.id));
+          if (fullInfo != null && fullInfo.isAggressiveAntiSpamEnabled) {
+            long userId = tdlib.telegramAntiSpamUserId();
+            if (userId != 0) {
+              items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+              items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR, R.id.user, 0, tdlib.cache().userName(userId), userIds == null || ArrayUtils.indexOf(userIds, userId) != -1).setLongId(userId).setLongValue(userId));
+            }
+          }
+        }
 
         for (TdApi.ChatAdministrator admin : chatAdmins.administrators) {
           items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
