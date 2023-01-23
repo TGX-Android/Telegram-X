@@ -27,6 +27,7 @@ public final class FeatureToggles {
   public static boolean CHANNEL_PROFILE_FLOATING_BUTTON_OPENS_DISCUSSION_GROUP = true;
   public static boolean ALWAYS_SHOW_MARK_AS_READ_ACTION_IN_THREAD_PREVIEW = false;
   public static boolean SCROLL_TO_HEADER_MESSAGE_ON_THREAD_FIRST_OPEN = false;
+  public static boolean USE_CUSTOM_NAVIGATION_COLOR = false;
 
   public static class Controller extends RecyclerViewController<Void> implements View.OnClickListener {
 
@@ -63,6 +64,11 @@ public final class FeatureToggles {
       };
       adapter.setItems(Arrays.asList(
         offsetSmall(),
+
+        header("Chat Folders"),
+        shadowTop(),
+        toggle("\uD80C\uDEF4\uD80C\uDFF2\uD80C\uDF51\uD80C\uDD3F\uD80C\uDFF1", () -> USE_CUSTOM_NAVIGATION_COLOR, (value) -> USE_CUSTOM_NAVIGATION_COLOR = value),
+        shadowBottom(),
 
         header("Threads > First Open"),
         shadowTop(),

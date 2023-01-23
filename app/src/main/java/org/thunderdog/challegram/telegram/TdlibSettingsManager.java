@@ -163,6 +163,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     editor.remove(key(ARCHIVE_CHAT_LIST_ENABLED, accountId));
     editor.remove(key(ARCHIVE_CHAT_LIST_POSITION, accountId));
     editor.remove(key(CHAT_FOLDER_STYLE, accountId));
+    editor.remove(key(DISPLAY_FOLDERS_AT_TOP, accountId));
     editor.remove(key(DISABLED_CHAT_FILTER_IDS, accountId));
     // editor.remove(key(PEER_TO_PEER_KEY, accountId));
     Settings.instance().removeScrollPositions(accountId, editor);
@@ -195,6 +196,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     _archiveChatListEnabled = null;
     _archiveChatListPosition = null;
     _chatFolderStyle = null;
+    _displayFoldersAtTop = null;
     _disabledChatFilterIds = null;
     remoteToLocalChatIds.clear();
     localToRemoteChatIds.clear();
@@ -1045,6 +1047,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   private @Nullable Boolean _mainChatListEnabled;
   private @Nullable Boolean _archiveChatListEnabled;
   private @Nullable Boolean _countMutedChats;
+  private @Nullable Boolean _displayFoldersAtTop;
   private @Nullable Integer _archiveChatListPosition;
   private @Nullable Integer _chatFolderStyle;
   private @Nullable IntSet _disabledChatFilterIds;
@@ -1054,17 +1057,20 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   private static final String CHAT_FOLDER_STYLE = "chat_folder_style";
   private static final String DISABLED_CHAT_FILTER_IDS = "disabled_chat_filter_ids";
   private static final String COUNT_MUTED_CHATS = "count_muted_chats";
+  private static final String DISPLAY_FOLDERS_AT_TOP = "display_folders_at_top";
   private static final int DEFAULT_ARCHIVE_CHAT_LIST_POSITION = Integer.MAX_VALUE;
   private static final boolean DEFAULT_MAIN_CHAT_LIST_ENABLED = true;
   private static final boolean DEFAULT_ARCHIVE_CHAT_LIST_ENABLED = false;
+  private static final boolean DEFAULT_DISPLAY_FOLDERS_AT_TOP = true;
+  private static final boolean DEFAULT_COUNT_MUTED_CHATS = false;
 
   @Retention(RetentionPolicy.SOURCE)
-  @IntDef({CHAT_FOLDER_STYLE_TITLE_ONLY, CHAT_FOLDER_STYLE_ICON_ONLY, CHAT_FOLDER_STYLE_ICON_AND_TITLE})
+  @IntDef({CHAT_FOLDER_STYLE_LABEL_ONLY, CHAT_FOLDER_STYLE_ICON_ONLY, CHAT_FOLDER_STYLE_LABEL_AND_ICON})
   public @interface ChatFolderStyle { }
 
-  public static final int CHAT_FOLDER_STYLE_TITLE_ONLY = 0;
+  public static final int CHAT_FOLDER_STYLE_LABEL_ONLY = 0;
   public static final int CHAT_FOLDER_STYLE_ICON_ONLY = 1;
-  public static final int CHAT_FOLDER_STYLE_ICON_AND_TITLE = 2;
+  public static final int CHAT_FOLDER_STYLE_LABEL_AND_ICON = 2;
 
   public boolean isMainChatListEnabled () {
     if (_mainChatListEnabled == null) {
@@ -1125,7 +1131,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
 
   public @ChatFolderStyle int chatFolderStyle () {
     if (_chatFolderStyle == null) {
-      _chatFolderStyle = Settings.instance().getInt(key(CHAT_FOLDER_STYLE, tdlib.accountId()), CHAT_FOLDER_STYLE_TITLE_ONLY);
+      _chatFolderStyle = Settings.instance().getInt(key(CHAT_FOLDER_STYLE, tdlib.accountId()), CHAT_FOLDER_STYLE_LABEL_ONLY);
     }
     return _chatFolderStyle;
   }
@@ -1202,7 +1208,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
 
   public boolean shouldCountMutedChats () {
     if (_countMutedChats == null) {
-      _countMutedChats = Settings.instance().getBoolean(key(COUNT_MUTED_CHATS, tdlib.accountId()), false);
+      _countMutedChats = Settings.instance().getBoolean(key(COUNT_MUTED_CHATS, tdlib.accountId()), DEFAULT_COUNT_MUTED_CHATS);
     }
     return _countMutedChats;
   }
@@ -1216,6 +1222,20 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
           chatListPositionListener.onShouldCountMutedChatsChanged(shouldCountMutedChats);
         }
       }
+    }
+  }
+
+  public boolean displayFoldersAtTop () {
+    if (_displayFoldersAtTop == null) {
+      _displayFoldersAtTop = Settings.instance().getBoolean(key(DISPLAY_FOLDERS_AT_TOP, tdlib.accountId()), DEFAULT_DISPLAY_FOLDERS_AT_TOP);
+    }
+    return _displayFoldersAtTop;
+  }
+
+  public void setDisplayFoldersAtTop (boolean displayFoldersAtTop) {
+    if (displayFoldersAtTop() != displayFoldersAtTop) {
+      Settings.instance().putBoolean(key(DISPLAY_FOLDERS_AT_TOP, tdlib.accountId()), displayFoldersAtTop);
+      _displayFoldersAtTop = displayFoldersAtTop;
     }
   }
 }

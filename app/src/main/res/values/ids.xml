@@ -1217,10 +1217,11 @@
   <item type="id" name="btn_folderExcludeChats" />
   <item type="id" name="btn_chatFolderStyle" />
   <item type="id" name="btn_changeFolderIcon" />
-  <item type="id" name="btn_titleOnly" />
+  <item type="id" name="btn_labelOnly" />
   <item type="id" name="btn_iconOnly" />
-  <item type="id" name="btn_iconAndTitle" />
+  <item type="id" name="btn_labelAndIcon" />
   <item type="id" name="btn_countMutedChats" />
+  <item type="id" name="btn_displayFoldersAtTop" />
 
   <item type="id" name="right_readMessages" />
   <item type="id" name="right_sendMessages" />

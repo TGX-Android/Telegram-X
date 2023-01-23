@@ -14,9 +14,9 @@
  */
 package org.thunderdog.challegram.ui;
 
-import static org.thunderdog.challegram.telegram.TdlibSettingsManager.CHAT_FOLDER_STYLE_ICON_AND_TITLE;
 import static org.thunderdog.challegram.telegram.TdlibSettingsManager.CHAT_FOLDER_STYLE_ICON_ONLY;
-import static org.thunderdog.challegram.telegram.TdlibSettingsManager.CHAT_FOLDER_STYLE_TITLE_ONLY;
+import static org.thunderdog.challegram.telegram.TdlibSettingsManager.CHAT_FOLDER_STYLE_LABEL_AND_ICON;
+import static org.thunderdog.challegram.telegram.TdlibSettingsManager.CHAT_FOLDER_STYLE_LABEL_ONLY;
 
 import android.Manifest;
 import android.content.ContentResolver;
@@ -44,6 +44,7 @@ import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
+import androidx.core.graphics.ColorUtils;
 import androidx.core.util.ObjectsCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -70,11 +71,13 @@ import org.thunderdog.challegram.navigation.OverlayButtonWrap;
 import org.thunderdog.challegram.navigation.RecyclerViewProvider;
 import org.thunderdog.challegram.navigation.SettingsWrap;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
+import org.thunderdog.challegram.navigation.StretchyHeaderView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.navigation.ViewPagerController;
 import org.thunderdog.challegram.navigation.ViewPagerHeaderViewCompact;
 import org.thunderdog.challegram.navigation.ViewPagerTopView;
 import org.thunderdog.challegram.support.RippleSupport;
+import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.sync.SyncAdapter;
 import org.thunderdog.challegram.telegram.ChatFilter;
 import org.thunderdog.challegram.telegram.ChatFiltersListener;
@@ -85,6 +88,7 @@ import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibOptionListener;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager.ChatFolderStyle;
+import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Screen;
@@ -102,6 +106,7 @@ import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.widget.BubbleLayout;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.PopupLayout;
+import org.thunderdog.challegram.widget.ShadowView;
 import org.thunderdog.challegram.widget.SnackBar;
 import org.thunderdog.challegram.widget.ViewPager;
 
@@ -115,6 +120,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import me.vkryl.android.AnimatorUtils;
+import me.vkryl.android.ViewUtils;
+import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
@@ -140,6 +148,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   }
 
   private FrameLayoutFix mainWrap;
+  private FrameLayoutFix pagerWrap;
   private OverlayButtonWrap composeWrap;
 
   @Override
@@ -154,9 +163,13 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       Test.execute();
     }
 
+    pagerWrap = new FrameLayoutFix(context);
+    pagerWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+    pagerWrap.addView(pager);
+
     mainWrap = new FrameLayoutFix(context);
     mainWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-    mainWrap.addView(pager);
+    mainWrap.addView(pagerWrap);
     generateChatSearchView(mainWrap);
 
     contentView.addView(mainWrap);
@@ -229,15 +242,18 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         public void onSlideOffStart (View view, MotionEvent event, int index) {
           selectedPagerItemId = getPagerItemId(index);
           setMenuVisible(view, selectedPagerItemId, true);
+          if (composeWrap != null && displayTabsAtBottom()) {
+            composeWrap.hide();
+          }
         }
 
         @Override
         public void onSlideOffFinish (View view, MotionEvent event, int index, boolean apply) {
           if (apply && selectedSection != -1) {
             requestChatsSection(selectedSection, selectedPagerItemId);
-            setSelectedSection(-1, event, view.getMeasuredHeight(), true);
+            setSelectedSection(-1, event, getOffsetY(view), true);
           } else {
-            setSelectedSection(-1, event, view.getMeasuredHeight(), false);
+            setSelectedSection(-1, event, getOffsetY(view), false);
           }
           setMenuVisible(view, selectedPagerItemId, false);
           selectedPagerItemId = INVALID_PAGER_ITEM_ID;
@@ -248,10 +264,10 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
           float x = event.getX();
           float y = event.getY();
           x += (menu.getMeasuredWidth() - view.getMeasuredWidth()) / 2;
-          y -= view.getMeasuredHeight() + mainWrap.getTranslationY();
+          y -= getOffsetY(view) + mainWrap.getTranslationY() + pagerWrap.getTranslationY();
           int selectedSection = -1;
           if (x >= 0 && x < menu.getMeasuredWidth()) {
-            int firstItemEnd = menu.getTop() + menu.getChildAt(0).getBottom();
+            int firstItemEnd = menu.getChildAt(0).getBottom();
             if (y <= firstItemEnd) {
               selectedSection = 0;
             } else if (y < menu.getHeight()) {
@@ -264,7 +280,13 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
               }
             }
           }
-          setSelectedSection(selectedSection, event, view.getMeasuredHeight(), false);
+          setSelectedSection(selectedSection, event, getOffsetY(view), false);
+        }
+
+        private int getOffsetY (View view) {
+          FrameLayoutFix.LayoutParams lp = (FrameLayoutFix.LayoutParams) menu.getLayoutParams();
+          int verticalGravity = Gravity.VERTICAL_GRAVITY_MASK & lp.gravity;
+          return verticalGravity == Gravity.BOTTOM ? -menu.getHeight() : view.getHeight();
         }
       });
       if (Config.CHAT_FOLDERS_ENABLED) {
@@ -288,10 +310,35 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
     // tdlib.awaitConnection(this::unlockTabs);
 
+    checkTabs();
+
     context().appUpdater().addListener(this);
     if (context().appUpdater().state() == AppUpdater.State.READY_TO_INSTALL) {
       onAppUpdateAvailable(context().appUpdater().flowType() == AppUpdater.FlowType.TELEGRAM_CHANNEL, true);
     }
+  }
+
+  @Override
+  public CharSequence getName () {
+    return Lang.getString(R.string.Chats);
+  }
+
+  @Override
+  public View getCustomHeaderCell () {
+    if (displayTabsAtBottom()) {
+      return null;
+    }
+    if (headerCell != null) {
+      View headerCellView = headerCell.getView();
+      if (bottomBar != null && headerCellView.getParent() == bottomBar) {
+        if (BuildConfig.EXPERIMENTAL) {
+          throw new IllegalStateException();
+        }
+        bottomBar.removeView(headerCellView);
+      }
+      return headerCellView;
+    }
+    return null;
   }
 
   private boolean unlockTabs () {
@@ -400,7 +447,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         }
       }
     } else {
-      String sectionName = Lang.getString(getMenuSectionName(pagerItemId, /* hasFolders */ false, CHAT_FOLDER_STYLE_TITLE_ONLY));
+      String sectionName = Lang.getString(getMenuSectionName(pagerItemId, /* hasFolders */ false, CHAT_FOLDER_STYLE_LABEL_ONLY));
       item = new ViewPagerTopView.Item(sectionName.toUpperCase());
     }
     headerCell.getTopView().setItemAt(pagerItemPosition, item);
@@ -478,9 +525,12 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   }
 
   private void layoutMenu (@NonNull View view) {
-    if (menu == null)
+    if (menu == null || headerCell == null)
       return;
     menuAnchor = view;
+    int menuWidth = menu.getMeasuredWidth();
+    if (menuWidth == 0)
+      return;
     float x = view.getX();
     View currentView = view;
     do {
@@ -488,8 +538,15 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       if (currentView == null)
         break;
       x += currentView.getX();
-    } while (currentView != headerCell);
-    menu.setTranslationX(Math.max(-Screen.dp(14f), x - menu.getMeasuredWidth() / 2 + view.getMeasuredWidth() / 2));
+    } while (currentView != headerCell.getView());
+    boolean displayTabsAtBottom = displayTabsAtBottom();
+    float translationX = x - menuWidth / 2 + view.getMeasuredWidth() / 2;
+    int dx = displayTabsAtBottom ? 0 : Screen.dp(14f);
+    menu.setTranslationX(MathUtils.clamp(translationX, -dx, Screen.currentWidth() - menuWidth + dx));
+    if (displayTabsAtBottom) {
+      int cornerCenterX = menuWidth / 2 + Math.round(translationX - menu.getTranslationX());
+      menu.setCornerCenterX(MathUtils.clamp(cornerCenterX, Screen.dp(18f), menuWidth - Screen.dp(18f)));
+    }
   }
 
   private void setMenuVisible (View anchorView, long pagerItemId, boolean visible) {
@@ -497,7 +554,8 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       return;
     View parent = null;
     if (menu == null) {
-      menu = new BubbleLayout(context, this, true) {
+      boolean top = !displayTabsAtBottom();
+      menu = new BubbleLayout(context, this, top) {
         @Override
         protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
           super.onMeasure(widthMeasureSpec, heightMeasureSpec);
@@ -506,7 +564,9 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
           }
         }
       };
-      menu.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+      int gravity = (top ? Gravity.TOP : Gravity.BOTTOM) | Gravity.LEFT;
+      int marginBottom = top ? 0 : getHeaderHeight();
+      menu.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, gravity, 0, 0, 0, marginBottom));
       int[] sections = new int[] {
         R.string.CategoryMain,
         R.string.CategoryArchive,
@@ -539,8 +599,8 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         menu.addView(sectionView);
         index++;
       }
-      mainWrap.addView(menu, 1);
-      parent = mainWrap;
+      pagerWrap.addView(menu, 1);
+      parent = pagerWrap;
       tdlib.listeners().addTotalChatCounterListener(this);
     }
     if (visible) {
@@ -635,6 +695,9 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     if (composeWrap != null) {
       composeWrap.close();
     }
+    if (Config.USE_CUSTOM_NAVIGATION_COLOR) {
+      resetNavigationBarColor();
+    }
   }
 
   @Override
@@ -670,7 +733,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
   @Override
   protected View getSearchAntagonistView () {
-    return getViewPager();
+    return pagerWrap;
   }
 
   @Override
@@ -825,15 +888,45 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     if (headerView != null) {
       headerView.updateLockButton(getMenuId());
     }
+    checkTabs();
+    checkMenu();
+    checkMargins();
+  }
+
+  private void checkMargins () {
+    checkPagerMargins();
     checkHeaderMargins();
+    checkComposeWrapPaddings();
+  }
+
+  private void checkComposeWrapPaddings () {
+    if (composeWrap != null) {
+      int paddingBottom = displayTabsAtBottom() ? getHeaderHeight() : 0;
+      composeWrap.setPadding(composeWrap.getPaddingLeft(), composeWrap.getPaddingTop(), composeWrap.getPaddingRight(), paddingBottom);
+    }
+  }
+
+  private void checkPagerMargins () {
+    boolean displayTabsAtBottom = displayTabsAtBottom();
+    int marginBottom = displayTabsAtBottom ? getHeaderHeight() : 0;
+    Views.setBottomMargin(getViewPager(), marginBottom);
+    if (displayTabsAtBottom) {
+      Views.setBottomMargin(pagerWrap, updateSnackBar != null ? Math.round(updateSnackBar.getHeight() * updateSnackBar.getVisibilityFactor()) : 0); // FIXME
+    } else {
+      Views.setBottomMargin(pagerWrap, 0);
+    }
   }
 
   private void checkHeaderMargins () {
-    if (headerCell != null) {
-      RecyclerView recyclerView = ((ViewPagerHeaderViewCompact) headerCell).getRecyclerView();
-      FrameLayoutFix.LayoutParams params = (FrameLayoutFix.LayoutParams) recyclerView.getLayoutParams();
+    if (headerCell == null)
+      return;
+    RecyclerView recyclerView = ((ViewPagerHeaderViewCompact) headerCell.getView()).getRecyclerView();
+    FrameLayoutFix.LayoutParams params = (FrameLayoutFix.LayoutParams) recyclerView.getLayoutParams();
+    int marginLeft, marginRight;
+    if (displayTabsAtBottom()) {
+      marginLeft = marginRight = 0;
+    } else {
       int menuWidth = getMenuButtonsWidth();
-      int marginLeft, marginRight;
       if (Lang.rtl()) {
         marginLeft = menuWidth;
         marginRight = Screen.dp(56f);
@@ -841,11 +934,11 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         marginLeft = Screen.dp(56f);
         marginRight = menuWidth;
       }
-      if (params.rightMargin != marginRight || params.leftMargin != marginLeft) {
-        params.leftMargin = marginLeft;
-        params.rightMargin = marginRight;
-        recyclerView.setLayoutParams(params);
-      }
+    }
+    if (params.rightMargin != marginRight || params.leftMargin != marginLeft) {
+      params.leftMargin = marginLeft;
+      params.rightMargin = marginRight;
+      recyclerView.setLayoutParams(params);
     }
   }
 
@@ -858,10 +951,14 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         @Override
         public void onSnackBarTransition (SnackBar v, float factor) {
           composeWrap.setTranslationY(-v.getMeasuredHeight() * factor);
+          if (displayTabsAtBottom()) {
+            Views.setBottomMargin(pagerWrap, Math.round(v.getMeasuredHeight() * factor)); // FIXME
+          }
         }
 
         @Override
         public void onDestroySnackBar (SnackBar v) {
+          Views.setBottomMargin(pagerWrap, 0); // FIXME
           if (updateSnackBar == v) {
             mainWrap.removeView(updateSnackBar);
             updateSnackBar.removeThemeListeners(MainController.this);
@@ -1031,6 +1128,8 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     }
   }
 
+  private @Nullable BoolAnimator navigationBarColorAnimator;
+
   @Override
   public void onFocus () {
     super.onFocus();
@@ -1042,6 +1141,41 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     showSuggestions();
     checkSyncAlert();
     tdlib.checkDeadlocks();
+
+    if (displayTabsAtBottom()) {
+      animateNavigationBarColor();
+    }
+  }
+
+  @Override
+  public void onThemeColorsChanged (boolean areTemp, ColorState state) {
+    super.onThemeColorsChanged(areTemp, state);
+    if (navigationBarColorAnimator != null && isFocused()) {
+      updateNavigationBarColor(navigationBarColorAnimator.getFloatValue());
+    }
+  }
+
+  private void animateNavigationBarColor () {
+    if (!Config.USE_CUSTOM_NAVIGATION_COLOR || !FeatureToggles.USE_CUSTOM_NAVIGATION_COLOR)
+      return;
+    if (navigationBarColorAnimator == null) {
+      navigationBarColorAnimator = new BoolAnimator(0, (id, factor, fraction, callee) -> {
+        updateNavigationBarColor(factor);
+      }, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
+    }
+    navigationBarColorAnimator.setValue(true, true);
+  }
+
+  private void resetNavigationBarColor () {
+    if (navigationBarColorAnimator != null) {
+      navigationBarColorAnimator.setValue(false, true);
+    }
+  }
+
+  private void updateNavigationBarColor (float factor) {
+    int navigationBarColor = getHeaderColor();
+    boolean isLight = ColorUtils.calculateLuminance(navigationBarColor) > 0.5;
+    context.setCustomNavigationColor(() -> navigationBarColor, factor, isLight);
   }
 
   @Override
@@ -1060,8 +1194,16 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       return false;
     }
     if (headerCell != null) {
-      if (y < HeaderView.getSize(true) && y >= HeaderView.getTopOffset() && x < ((View) headerCell).getMeasuredWidth()) {
-        return !((ViewPagerHeaderViewCompact) headerCell).canScrollLeft();
+      int top, bottom;
+      if (displayTabsAtBottom()) {
+        top = Views.getLocationInWindow(headerCell.getView())[1];
+        bottom = top + headerCell.getView().getHeight();
+      } else {
+        top = HeaderView.getTopOffset();
+        bottom = HeaderView.getSize(true);
+      }
+      if (y < bottom && y >= top && x < headerCell.getView().getMeasuredWidth()) {
+        return !((ViewPagerHeaderViewCompact) headerCell.getView()).canScrollLeft();
       }
     }
     return true;
@@ -1216,7 +1358,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   }
 
   private int getArchiveSectionName (int selectedFilter, @ChatFolderStyle int chatFolderStyle) {
-    if (chatFolderStyle == CHAT_FOLDER_STYLE_TITLE_ONLY) {
+    if (chatFolderStyle == CHAT_FOLDER_STYLE_LABEL_ONLY) {
       switch (selectedFilter) {
         case FILTER_UNREAD:
           return R.string.CategoryArchiveUnread;
@@ -1242,7 +1384,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     int selectedFilter = getSelectedFilter(pagerItemId);
     if (selectedFilter != FILTER_NONE) {
       String filterName = Lang.getString(getFilterName(selectedFilter));
-      if (chatFolderStyle == CHAT_FOLDER_STYLE_TITLE_ONLY) {
+      if (chatFolderStyle == CHAT_FOLDER_STYLE_LABEL_ONLY) {
         return Lang.getString(R.string.format_folderAndFilter, folderName, filterName);
       }
       return filterName;
@@ -1331,7 +1473,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     if (hasFolders()) {
       throw new UnsupportedOperationException();
     }
-    return new String[] {Lang.getString(getMenuSectionName(MAIN_PAGER_ITEM_ID, /* hasFolders */ false, CHAT_FOLDER_STYLE_TITLE_ONLY)).toUpperCase(), Lang.getString(R.string.Calls).toUpperCase()/*, UI.getString(R.string.Contacts).toUpperCase()*/};
+    return new String[] {Lang.getString(getMenuSectionName(MAIN_PAGER_ITEM_ID, /* hasFolders */ false, CHAT_FOLDER_STYLE_LABEL_ONLY)).toUpperCase(), Lang.getString(R.string.Calls).toUpperCase()/*, UI.getString(R.string.Contacts).toUpperCase()*/};
   }
 
   @Override
@@ -1857,7 +1999,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     }
     options.item(new OptionItem(R.id.btn_editFolder, Lang.getString(R.string.EditFolder), OPTION_COLOR_NORMAL, R.drawable.baseline_edit_24));
     int chatFolderStyle = tdlib.settings().chatFolderStyle();
-    if (chatFolderStyle == CHAT_FOLDER_STYLE_ICON_ONLY || chatFolderStyle == CHAT_FOLDER_STYLE_ICON_AND_TITLE) {
+    if (chatFolderStyle == CHAT_FOLDER_STYLE_ICON_ONLY || chatFolderStyle == CHAT_FOLDER_STYLE_LABEL_AND_ICON) {
       options.item(new OptionItem(R.id.btn_changeFolderIcon, Lang.getString(R.string.ChatFolderChangeIcon), OPTION_COLOR_NORMAL, R.drawable.baseline_image_24));
     }
     options.item(new OptionItem(R.id.btn_folderIncludeChats, Lang.getString(R.string.FolderActionIncludeChats), OPTION_COLOR_NORMAL, R.drawable.baseline_add_24));
@@ -1924,6 +2066,103 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     });
   }
 
+  private @Nullable ViewGroup bottomBar;
+
+  @Override
+  protected boolean applyPlayerOffset (float factor, float top) {
+    boolean result = super.applyPlayerOffset(factor, top);
+    if (result && bottomBar != null) {
+      bottomBar.setTranslationY(factor < 1f ? -top : 0);
+    }
+    return result;
+  }
+
+  private void checkTabs () {
+    if (headerCell == null)
+      return;
+    View headerCellView = headerCell.getView();
+    boolean displayTabsAtBottom = displayTabsAtBottom();
+    headerCell.getTopView().setDrawSelectionAtTop(displayTabsAtBottom);
+    headerCell.getTopView().setSlideOffDirection(displayTabsAtBottom ? ViewPagerTopView.SLIDE_OFF_DIRECTION_TOP : ViewPagerTopView.SLIDE_OFF_DIRECTION_BOTTOM);
+
+    if (displayTabsAtBottom) {
+      if (bottomBar == null) {
+        ViewGroup parent = (ViewGroup) headerCellView.getParent();
+        if (parent != null) {
+          if (headerView != null && isFocused() && !inTransformMode()) {
+            headerView.setTitle(this);
+            View titleView = headerView.findViewById(getId());
+            if (titleView != null) {
+              titleView.setAlpha(1f);
+              titleView.setTranslationX(0);
+              titleView.setTranslationY(0);
+              titleView.setVisibility(View.VISIBLE);
+            }
+          } else {
+            parent.removeView(headerCellView);
+          }
+        }
+        ShadowView shadowView = new ShadowView(context);
+        shadowView.setSimpleTopShadow(true);
+        int shadowHeight = shadowView.getLayoutParams().height;
+        Views.setTopMargin(headerCellView, shadowHeight);
+
+        bottomBar = new FrameLayoutFix(context);
+        ViewSupport.setThemedBackground(headerCellView, R.id.theme_color_headerBackground, this);
+        int headerHeight = getHeaderHeight();
+        bottomBar.addView(headerCellView);
+        bottomBar.addView(shadowView);
+        pagerWrap.addView(bottomBar, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, headerHeight + shadowHeight, Gravity.BOTTOM));
+      }
+      headerCellView.setAlpha(1f);
+      headerCellView.setTranslationX(0f);
+      headerCellView.setTranslationY(0f);
+      headerCellView.setVisibility(View.VISIBLE);
+      if (headerCellView instanceof StretchyHeaderView) {
+        ((StretchyHeaderView) headerCellView).setScaleFactor(0f, 0f, 0f, false);
+      }
+      if (isFocused()) {
+        animateNavigationBarColor();
+      }
+    } else {
+      if (bottomBar != null) {
+        pagerWrap.removeView(bottomBar);
+        bottomBar.removeView(headerCellView);
+        bottomBar = null;
+        ViewUtils.setBackground(headerCellView, null);
+        Views.setTopMargin(headerCellView, 0);
+        removeThemeListenerByTarget(headerCellView);
+        if (headerView != null && isFocused() && !inTransformMode()) {
+          headerView.setTitle(this);
+        }
+      }
+      if (isFocused()) {
+        resetNavigationBarColor();
+      }
+    }
+  }
+
+  private void checkMenu () {
+    if (menu != null) {
+      FrameLayoutFix.LayoutParams layoutParams = (FrameLayoutFix.LayoutParams) menu.getLayoutParams();
+      boolean displayTabsAtBottom = displayTabsAtBottom();
+      int gravity = (displayTabsAtBottom ? Gravity.BOTTOM : Gravity.TOP) | Gravity.LEFT;
+      int bottomMargin = displayTabsAtBottom ? getHeaderHeight() : 0;
+      if (menu.setTop(!displayTabsAtBottom)) {
+        menu.setDefaultPadding();
+        menu.setPadding(menu.getPaddingLeft(), menu.getPaddingTop() + Screen.dp(14f), menu.getPaddingRight(), menu.getPaddingBottom() + Screen.dp(13f));
+      }
+      if (gravity != layoutParams.gravity || bottomMargin != layoutParams.bottomMargin) {
+        layoutParams.gravity = gravity;
+        layoutParams.bottomMargin = bottomMargin;
+      }
+    }
+  }
+
+  private boolean displayTabsAtBottom () {
+    return hasFolders() && !tdlib.settings().displayFoldersAtTop();
+  }
+
   private void initPagerSections () {
     if (Config.CHAT_FOLDERS_ENABLED) {
       updatePagerSections();
@@ -1935,6 +2174,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   }
 
   private void updatePagerSections (TdApi.ChatFilterInfo[] chatFilters, int mainChatListPosition, int archiveChatListPosition) {
+    boolean oldHasFolders = hasFolders();
     List<TdApi.ChatList> chatLists;
     List<ViewPagerTopView.Item> sections;
     if (chatFilters.length > 0 || tdlib.settings().isArchiveChatListEnabled()) {
@@ -2001,6 +2241,11 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     if (pager != null) {
       onPageSelected(getCurrentPagerItemPosition(), pager.getCurrentItem());
     }
+    if (oldHasFolders != hasFolders() && pagerWrap != null) {
+      checkTabs();
+      checkMenu();
+      checkMargins();
+    }
   }
 
   private ViewPagerTopView.Item buildMainSectionItem (@ChatFolderStyle int chatFolderStyle) {
@@ -2031,7 +2276,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       updateCounter(unreadCounter, unreadCount, unreadUnmutedCount, /* animated */ false);
     }
     ViewPagerTopView.Item item;
-    if (chatFolderStyle == CHAT_FOLDER_STYLE_ICON_AND_TITLE ||
+    if (chatFolderStyle == CHAT_FOLDER_STYLE_LABEL_AND_ICON ||
       chatFolderStyle == CHAT_FOLDER_STYLE_ICON_ONLY && selectedFilter != FILTER_NONE) {
       item = new ViewPagerTopView.Item(sectionName, iconResource, unreadCounter);
     } else if (chatFolderStyle == CHAT_FOLDER_STYLE_ICON_ONLY) {

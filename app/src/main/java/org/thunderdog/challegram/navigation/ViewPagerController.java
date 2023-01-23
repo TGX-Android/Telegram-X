@@ -85,8 +85,8 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
     if (pager != null) {
       pager.checkRtl();
     }
-    if (getTitleStyle() == TITLE_STYLE_COMPACT_BIG) {
-      TextView textView = (TextView) ((ViewGroup) headerCell).getChildAt(((ViewGroup) headerCell).getChildCount() - 1);
+    if (getTitleStyle() == TITLE_STYLE_COMPACT_BIG && headerCell != null) {
+      TextView textView = headerCell.getView().findViewById(R.id.text_title);
       if (Views.setGravity(textView, Gravity.TOP | (Lang.rtl() ? Gravity.RIGHT : Gravity.LEFT))) {
         FrameLayout.LayoutParams params = ((FrameLayout.LayoutParams) textView.getLayoutParams());
         if (Lang.rtl()) {
@@ -159,7 +159,6 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
         case TITLE_STYLE_COMPACT:
         case TITLE_STYLE_COMPACT_BIG: {
           headerCell = new ViewPagerHeaderViewCompact(context);
-          addThemeInvalidateListener(headerCell.getTopView());
           FrameLayoutFix.LayoutParams params = (FrameLayoutFix.LayoutParams) ((ViewPagerHeaderViewCompact) headerCell).getRecyclerView().getLayoutParams();
           if (getBackButton() != BackHeaderButton.TYPE_NONE && getMenuButtonsWidth() != 0) {
             if (Lang.rtl()) {
@@ -254,7 +253,7 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
 
   public final void changeName (CharSequence newName) {
     if (getTitleStyle() == TITLE_STYLE_COMPACT_BIG && headerCell != null) {
-      TextView view = ((View) headerCell).findViewById(R.id.text_title);
+      TextView view = headerCell.getView().findViewById(R.id.text_title);
       if (view != null) {
         Views.setMediumText(view, newName);
       }
@@ -319,7 +318,7 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
 
   @Override
   public View getCustomHeaderCell () {
-    return (View) headerCell;
+    return headerCell != null ? headerCell.getView() : null;
   }
 
   @Override

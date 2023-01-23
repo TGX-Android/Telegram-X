@@ -29,6 +29,7 @@ import android.view.ViewParent;
 
 import androidx.annotation.DrawableRes;
 import androidx.annotation.FloatRange;
+import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 
 import org.thunderdog.challegram.R;
@@ -50,6 +51,8 @@ import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.Text;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -229,6 +232,13 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     this.fitsParentWidth = fits;
   }
 
+  private boolean drawSelectionAtTop;
+
+  public void setDrawSelectionAtTop (boolean drawSelectionAtTop) {
+    this.drawSelectionAtTop = drawSelectionAtTop;
+    invalidate();
+  }
+
   private OnItemClickListener listener;
 
   public void setOnItemClickListener (OnItemClickListener listener) {
@@ -251,6 +261,19 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
 
   public void setUseDarkBackground () {
     isDark = true;
+  }
+
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({SLIDE_OFF_DIRECTION_TOP, SLIDE_OFF_DIRECTION_BOTTOM})
+  public @interface SlideOffDirection { }
+
+  public static final int SLIDE_OFF_DIRECTION_TOP = -1;
+  public static final int SLIDE_OFF_DIRECTION_BOTTOM = 1;
+
+  private @SlideOffDirection int slideOffDirection = SLIDE_OFF_DIRECTION_BOTTOM;
+
+  public void setSlideOffDirection (@SlideOffDirection int slideOffDirection) {
+    this.slideOffDirection = slideOffDirection;
   }
 
   private BackgroundView newBackgroundView (int i) {
@@ -693,9 +716,13 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
 
       boolean rtl = Lang.rtl();
 
+      int selectionHeight = Screen.dp(2f);
       int selectionLeft = rtl ? this.totalWidth - this.selectionLeft - this.selectionWidth : this.selectionLeft;
+      int selectionRight = selectionLeft + this.selectionWidth;
+      int selectionTop = this.drawSelectionAtTop ? 0 : viewHeight - selectionHeight;
+      int selectionBottom = selectionTop + selectionHeight;
 
-      c.drawRect(selectionLeft, viewHeight - Screen.dp(2f), selectionLeft + selectionWidth, viewHeight, Paints.fillingPaint(disabledFactor == 0f ? selectionColor : ColorUtils.fromToArgb(selectionColor, textFromColor, disabledFactor)));
+      c.drawRect(selectionLeft, selectionTop, selectionRight, selectionBottom, Paints.fillingPaint(disabledFactor == 0f ? selectionColor : ColorUtils.fromToArgb(selectionColor, textFromColor, disabledFactor)));
 
       int cx = rtl ? totalWidth : 0;
       int itemIndex = 0;
@@ -927,7 +954,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
             }
           } else {
             int start = getMeasuredHeight();
-            boolean inSlideOff = e.getY() >= start;
+            boolean inSlideOff = topView.slideOffDirection == SLIDE_OFF_DIRECTION_TOP ? e.getY() <= start : e.getY() >= start;
             if (this.inSlideOff != inSlideOff) {
               this.inSlideOff = inSlideOff;
               if (inSlideOff) {

@@ -126,7 +126,14 @@ public class NonMaterialButton extends View implements FactorAnimator.Target, Cl
 
   @Override
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
-    setMeasuredDimension(MeasureSpec.makeMeasureSpec(textWidth + Screen.dp(15f) * 2 + getPaddingLeft() + getPaddingRight(), MeasureSpec.EXACTLY), getDefaultSize(getSuggestedMinimumHeight(), heightMeasureSpec));
+    int measuredWidth;
+    if (MeasureSpec.getMode(widthMeasureSpec) == MeasureSpec.EXACTLY) {
+      measuredWidth = MeasureSpec.getSize(widthMeasureSpec);
+    } else {
+      measuredWidth = textWidth + Screen.dp(15f) * 2 + getPaddingLeft() + getPaddingRight();
+    }
+    int measuredHeight = getDefaultSize(getSuggestedMinimumHeight(), heightMeasureSpec);
+    setMeasuredDimension(measuredWidth, measuredHeight);
 
     updatePath();
     setProgressBounds();

@@ -1,9 +1,8 @@
 package org.thunderdog.challegram.ui;
 
-import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
-import static org.thunderdog.challegram.telegram.TdlibSettingsManager.CHAT_FOLDER_STYLE_ICON_AND_TITLE;
+import static org.thunderdog.challegram.telegram.TdlibSettingsManager.CHAT_FOLDER_STYLE_LABEL_AND_ICON;
 import static org.thunderdog.challegram.telegram.TdlibSettingsManager.CHAT_FOLDER_STYLE_ICON_ONLY;
-import static org.thunderdog.challegram.telegram.TdlibSettingsManager.CHAT_FOLDER_STYLE_TITLE_ONLY;
+import static org.thunderdog.challegram.telegram.TdlibSettingsManager.CHAT_FOLDER_STYLE_LABEL_ONLY;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -32,6 +31,7 @@ import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.user.RemoveHelper;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.emoji.Emoji;
+import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.telegram.ChatFiltersListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
@@ -115,7 +115,7 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
     ArrayList<ListItem> items = new ArrayList<>();
     items.add(new ListItem(ListItem.TYPE_HEADER_PADDED, 0, 0, R.string.ChatFoldersSettings));
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_chatFolderStyle, 0, R.string.ChatFoldersStyle));
+    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_chatFolderStyle, 0, R.string.ChatFoldersAppearance));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_countMutedChats, 0, R.string.CountMutedChats));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM, chatFiltersPreviousItemId));
@@ -162,8 +162,8 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
             settingView.setOnClickListener(ChatFoldersController.this);
             addThemeInvalidateListener(settingView);
 
-            FrameLayout.LayoutParams params = FrameLayoutFix.newParams(WRAP_CONTENT, Screen.dp(28), (Lang.rtl() ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL);
-            params.leftMargin = params.rightMargin = Screen.dp(19f);
+            FrameLayout.LayoutParams params = FrameLayoutFix.newParams(Screen.dp(29f), Screen.dp(28f), (Lang.rtl() ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL);
+            params.leftMargin = params.rightMargin = Screen.dp(17f);
             NonMaterialButton button = new NonMaterialButton(parent.getContext()) {
               @Override
               protected void onSizeChanged (int width, int height, int oldWidth, int oldHeight) {
@@ -172,7 +172,7 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
             };
             button.setId(R.id.btn_double);
             button.setLayoutParams(params);
-            button.setText(R.string.Add);
+            button.setText(R.string.PlusSign);
             button.setOnClickListener(ChatFoldersController.this);
             settingView.addView(button);
 
@@ -240,20 +240,26 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
           view.setIconColorId(ThemeColorId.NONE);
         }
         if (item.getId() == R.id.btn_chatFolderStyle) {
-          int stringRes;
+          int positionRes;
+          if (tdlib.settings().displayFoldersAtTop()) {
+            positionRes = R.string.ChatFoldersPositionTop;
+          } else {
+            positionRes = R.string.ChatFoldersPositionBottom;
+          }
+          int styleRes;
           switch (tdlib.settings().chatFolderStyle()) {
-            case CHAT_FOLDER_STYLE_ICON_AND_TITLE:
-              stringRes = R.string.IconAndTitle;
+            case CHAT_FOLDER_STYLE_LABEL_AND_ICON:
+              styleRes = R.string.LabelAndIcon;
               break;
             case CHAT_FOLDER_STYLE_ICON_ONLY:
-              stringRes = R.string.IconOnly;
+              styleRes = R.string.IconOnly;
               break;
             default:
-            case CHAT_FOLDER_STYLE_TITLE_ONLY:
-              stringRes = R.string.TitleOnly;
+            case CHAT_FOLDER_STYLE_LABEL_ONLY:
+              styleRes = R.string.LabelOnly;
               break;
           }
-          view.setData(stringRes);
+          view.setData(Lang.getString(R.string.format_chatFoldersPositionAndStyle, Lang.getString(positionRes), Lang.getString(styleRes)));
         } else if (item.getId() == R.id.btn_countMutedChats) {
           view.getToggler().setRadioEnabled(tdlib.settings().shouldCountMutedChats(), isUpdate);
         }
@@ -361,23 +367,35 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
       }
     } else if (v.getId() == R.id.btn_chatFolderStyle) {
       int chatFolderStyle = tdlib.settings().chatFolderStyle();
-      showSettings(R.id.btn_chatFolderStyle, new ListItem[] {
-        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_titleOnly, 0, R.string.TitleOnly, R.id.btn_chatFolderStyle, chatFolderStyle == CHAT_FOLDER_STYLE_TITLE_ONLY),
+      ListItem[] items = new ListItem[] {
+        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_displayFoldersAtTop, 0, R.string.DisplayFoldersAtTheTop, tdlib.settings().displayFoldersAtTop()),
+        new ListItem(ListItem.TYPE_SHADOW_BOTTOM).setTextColorId(R.id.theme_color_background),
+        new ListItem(ListItem.TYPE_SHADOW_TOP).setTextColorId(R.id.theme_color_background),
+        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_labelOnly, 0, R.string.LabelOnly, R.id.btn_chatFolderStyle, chatFolderStyle == CHAT_FOLDER_STYLE_LABEL_ONLY),
+        new ListItem(ListItem.TYPE_SEPARATOR_FULL),
         new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_iconOnly, 0, R.string.IconOnly, R.id.btn_chatFolderStyle, chatFolderStyle == CHAT_FOLDER_STYLE_ICON_ONLY),
-        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_iconAndTitle, 0, R.string.IconAndTitle, R.id.btn_chatFolderStyle, chatFolderStyle == CHAT_FOLDER_STYLE_ICON_AND_TITLE),
-      }, (id, result) -> {
-        int selection = result.get(R.id.btn_chatFolderStyle);
-        int style;
-        if (selection == R.id.btn_iconOnly) {
-          style = CHAT_FOLDER_STYLE_ICON_ONLY;
-        } else if (selection == R.id.btn_iconAndTitle) {
-          style = CHAT_FOLDER_STYLE_ICON_AND_TITLE;
-        } else {
-          style = CHAT_FOLDER_STYLE_TITLE_ONLY;
-        }
-        tdlib.settings().setChatFolderStyle(style);
-        adapter.updateValuedSettingById(R.id.btn_chatFolderStyle);
-      });
+        new ListItem(ListItem.TYPE_SEPARATOR_FULL),
+        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_labelAndIcon, 0, R.string.LabelAndIcon, R.id.btn_chatFolderStyle, chatFolderStyle == CHAT_FOLDER_STYLE_LABEL_AND_ICON),
+      };
+      SettingsWrapBuilder settings = new SettingsWrapBuilder(R.id.btn_chatFolderStyle)
+        .setRawItems(items)
+        .setNeedSeparators(false)
+        .setIntDelegate((id, result) -> {
+          int selection = result.get(R.id.btn_chatFolderStyle);
+          int style;
+          if (selection == R.id.btn_iconOnly) {
+            style = CHAT_FOLDER_STYLE_ICON_ONLY;
+          } else if (selection == R.id.btn_labelAndIcon) {
+            style = CHAT_FOLDER_STYLE_LABEL_AND_ICON;
+          } else {
+            style = CHAT_FOLDER_STYLE_LABEL_ONLY;
+          }
+          boolean displayFoldersAtTop = result.get(R.id.btn_displayFoldersAtTop) != 0;
+          tdlib.settings().setChatFolderStyle(style);
+          tdlib.settings().setDisplayFoldersAtTop(displayFoldersAtTop);
+          adapter.updateValuedSettingById(R.id.btn_chatFolderStyle);
+        });
+      showSettings(settings);
     } else if (v.getId() == R.id.btn_countMutedChats) {
       tdlib.settings().setShouldCountMutedChats(adapter.toggleView(v));
     }

@@ -240,6 +240,11 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
   }
 
   @Override
+  public View getView () {
+    return this;
+  }
+
+  @Override
   public ViewPagerTopView getTopView () {
     return adapter.topView;
   }

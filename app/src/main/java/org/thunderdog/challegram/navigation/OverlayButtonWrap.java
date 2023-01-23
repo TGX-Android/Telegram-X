@@ -317,6 +317,7 @@ public class OverlayButtonWrap extends FrameLayoutFix implements View.OnClickLis
         mainButton.setAlpha(1f - factor);
       } else {
         mainButton.setTranslationY((float) (Screen.dp(16f) * 2 + mainButton.getMeasuredHeight()) * factor);
+        mainButton.setAlpha(factor < 1f ? 1f : 0f);
       }
     }
   }

@@ -76,6 +76,7 @@
   <string name="format_fileSizeAndDescription">%2$s, %1$s</string>
   <string name="format_fileSizeAndExtension">%1$s %2$s</string>
   <string name="format_filesAndFolders">%1$s, %2$s</string>
+  <string name="format_chatFoldersPositionAndStyle">%1$s, %2$s</string>
   <string name="format_contentAndModifyDate2">%1$s, %2$s</string>
   <string name="format_plus">+%1$d</string>
   <string name="format_minus">-%1$d</string>
@@ -1015,6 +1016,7 @@
   <string name="ComeAgainLater">Come again later</string>
   <string name="New">New</string>
   <string name="Add">Add</string>
+  <string name="PlusSign">+</string>
   <string name="AddMemberBtn">Add</string>
   <string name="BlockListEmpty">You haven\'t blocked anyone yet</string>
   <string name="QBlockUser">Block %1$s?</string>
@@ -4524,7 +4526,9 @@
   <string name="ChatFolders">Chat Folders</string>
   <string name="ChatFoldersInfo">Create folders for different groups of chats and quickly switch between them.</string>
   <string name="ChatFoldersSettings">Settings</string>
-  <string name="ChatFoldersStyle">Style</string>
+  <string name="ChatFoldersAppearance">Appearance</string>
+  <string name="ChatFoldersPositionTop">Top</string>
+  <string name="ChatFoldersPositionBottom">Bottom</string>
   <string name="ChatFolderChangeIcon">Change Icon</string>
   <string name="ChatFolderLimitReached">You have reached the limit of **%1$d** folders.</string>
   <string name="NewFolder">New Folder</string>
@@ -4556,8 +4560,9 @@
   <string name="RemoveFromFolder">Remove from folder</string>
   <string name="ChooseFolder">Choose a folder</string>
   <string name="LocalFolderBadge">local folder</string>
-  <string name="IconOnly">Icon Only</string>
-  <string name="TitleOnly">Title Only</string>
-  <string name="IconAndTitle">Icon &amp; Title</string>
+  <string name="IconOnly">Icon only</string>
+  <string name="LabelOnly">Label only</string>
+  <string name="LabelAndIcon">Label with icon</string>
   <string name="CountMutedChats">Count muted chats</string>
+  <string name="DisplayFoldersAtTheTop">Display folders at the top</string>
 </resources>
