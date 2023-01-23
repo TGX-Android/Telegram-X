@@ -525,7 +525,7 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
         chatView.setTitle(item.getString());
         chatView.setSubtitle(null);
         chatView.setNoSubtitle(true);
-        chatView.setAvatar((ImageFile) null, new AvatarPlaceholder.Metadata(item.getIntValue(), item.getIconResource()));
+        chatView.setAvatar(null, new AvatarPlaceholder.Metadata(item.getIntValue(), item.getIconResource()));
         chatView.clearPreviewChat();
       }
     }

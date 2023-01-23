@@ -2312,6 +2312,10 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
         return item(new OptionItem.Builder().id(R.id.btn_cancel).name(R.string.Cancel).icon(R.drawable.baseline_cancel_24).build());
       }
 
+      public int itemCount () {
+        return items.size();
+      }
+
       public Options build () {
         return new Options(info, items.toArray(new OptionItem[0]));
       }

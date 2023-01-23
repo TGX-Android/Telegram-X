@@ -1117,17 +1117,6 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     return true;
   }
 
-  @Override
-  public void onChatCounterChanged (@NonNull TdApi.ChatList chatList, boolean availabilityChanged, int totalCount, int unreadCount, int unreadUnmutedCount) {
-    if (chatList instanceof TdApi.ChatListArchive && availabilityChanged) {
-      tdlib.ui().post(() -> {
-        if (!isDestroyed() && menu != null) {
-          menu.getChildAt(FILTER_ARCHIVE).setVisibility(tdlib.hasArchivedChats() ? View.VISIBLE : View.GONE);
-        }
-      });
-    }
-  }
-
   private @Nullable BoolAnimator navigationBarColorAnimator;
 
   @Override
@@ -1302,11 +1291,18 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   public boolean onPagerItemLongClick (int index) {
     if (hasFolders()) {
       TdApi.ChatList chatList = pagerChatLists.get(index);
-      if (TD.isChatListFilter(chatList)) {
-        ViewPagerTopView.Item section = pagerSections.get(index);
-        showChatListFilterOptions(section.string, (TdApi.ChatListFilter) chatList);
-        return true;
+      String title;
+      if (TD.isChatListArchive(chatList)) {
+        title = Lang.getString(R.string.CategoryArchive);
+      } else if (TD.isChatListFilter(chatList)) {
+        int chatFilterId = ((TdApi.ChatListFilter) chatList).chatFilterId;
+        TdApi.ChatFilterInfo chatFilterInfo = tdlib.chatFilterInfo(chatFilterId);
+        title = chatFilterInfo != null ? chatFilterInfo.title : null;
+      } else {
+        title = null;
       }
+      showChatListOptions(title, chatList);
+      return true;
     }
     return false;
   }
@@ -1991,22 +1987,32 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
   // Chat folders
 
-  private void showChatListFilterOptions (@Nullable CharSequence title, TdApi.ChatListFilter chatListFilter) {
-    int chatFilterId = chatListFilter.chatFilterId;
+  private void showChatListOptions (@Nullable CharSequence title, TdApi.ChatList chatList) {
+    boolean isFilter = TD.isChatListFilter(chatList);
+    boolean isArchive = TD.isChatListArchive(chatList);
+    int chatFilterId = isFilter ? ((TdApi.ChatListFilter) chatList).chatFilterId : 0;
     Options.Builder options = new Options.Builder();
     if (!StringUtils.isEmptyOrBlank(title)) {
       options.info(title);
     }
-    options.item(new OptionItem(R.id.btn_editFolder, Lang.getString(R.string.EditFolder), OPTION_COLOR_NORMAL, R.drawable.baseline_edit_24));
-    int chatFolderStyle = tdlib.settings().chatFolderStyle();
-    if (chatFolderStyle == CHAT_FOLDER_STYLE_ICON_ONLY || chatFolderStyle == CHAT_FOLDER_STYLE_LABEL_AND_ICON) {
-      options.item(new OptionItem(R.id.btn_changeFolderIcon, Lang.getString(R.string.ChatFolderChangeIcon), OPTION_COLOR_NORMAL, R.drawable.baseline_image_24));
+    if (isFilter) {
+      options.item(new OptionItem(R.id.btn_editFolder, Lang.getString(R.string.EditFolder), OPTION_COLOR_NORMAL, R.drawable.baseline_edit_24));
+      int chatFolderStyle = tdlib.settings().chatFolderStyle();
+      if (chatFolderStyle == CHAT_FOLDER_STYLE_ICON_ONLY || chatFolderStyle == CHAT_FOLDER_STYLE_LABEL_AND_ICON) {
+        options.item(new OptionItem(R.id.btn_changeFolderIcon, Lang.getString(R.string.ChatFolderChangeIcon), OPTION_COLOR_NORMAL, R.drawable.baseline_image_24));
+      }
+      options.item(new OptionItem(R.id.btn_folderIncludeChats, Lang.getString(R.string.FolderActionIncludeChats), OPTION_COLOR_NORMAL, R.drawable.baseline_add_24));
     }
-    options.item(new OptionItem(R.id.btn_folderIncludeChats, Lang.getString(R.string.FolderActionIncludeChats), OPTION_COLOR_NORMAL, R.drawable.baseline_add_24));
-    options.item(new OptionItem(R.id.btn_hideFolder, Lang.getString(R.string.HideFolder), OPTION_COLOR_NORMAL, R.drawable.baseline_eye_off_24));
-    options.item(new OptionItem(R.id.btn_removeFolder, Lang.getString(R.string.RemoveFolder), OPTION_COLOR_RED, R.drawable.baseline_delete_24));
-    options.item(OptionItem.SEPARATOR);
-    options.item(new OptionItem(R.id.btn_chatFolders, Lang.getString(R.string.EditFolders), OPTION_COLOR_NORMAL, R.drawable.baseline_rule_folder_24));
+    if (isFilter || isArchive) {
+      options.item(new OptionItem(R.id.btn_hideFolder, Lang.getString(R.string.HideFolder), OPTION_COLOR_NORMAL, R.drawable.baseline_eye_off_24));
+    }
+    if (isFilter) {
+      options.item(new OptionItem(R.id.btn_removeFolder, Lang.getString(R.string.RemoveFolder), OPTION_COLOR_RED, R.drawable.baseline_delete_24));
+    }
+    if (options.itemCount() > 0) {
+      options.item(OptionItem.SEPARATOR);
+    }
+    options.item(new OptionItem(R.id.btn_chatFolders, Lang.getString(R.string.EditFolders), OPTION_COLOR_NORMAL, Build.VERSION.SDK_INT >= Build.VERSION_CODES.N ? R.drawable.baseline_edit_folders :  R.drawable.baseline_rule_folder_24));
     showOptions(options.build(), (v, id) -> {
       if (id == R.id.btn_editFolder) {
         tdlib.send(new TdApi.GetChatFilter(chatFilterId), (result) -> runOnUiThreadOptional(() -> {
@@ -2023,7 +2029,11 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
           }
         }));
       } else if (id == R.id.btn_hideFolder) {
-        tdlib.settings().setChatFilterEnabled(chatFilterId, false);
+        if (isFilter) {
+          tdlib.settings().setChatFilterEnabled(chatFilterId, false);
+        } else if (isArchive) {
+          tdlib.settings().setArchiveChatListEnabled(false);
+        }
       } else if (id == R.id.btn_folderIncludeChats) {
         tdlib.send(new TdApi.GetChatFilter(chatFilterId), (result) -> runOnUiThreadOptional(() -> {
           switch (result.getConstructor()) {
@@ -2364,9 +2374,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
     @Override
     public void onChatFilterStateChanged (int chatFilterId, boolean isEnabled) {
-      if (hasFolders()) {
-        updatePagerSections();
-      }
+      updatePagerSections();
     }
 
     @Override

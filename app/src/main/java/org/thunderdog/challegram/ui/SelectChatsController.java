@@ -66,6 +66,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import me.vkryl.android.AnimatorUtils;
+import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.util.ClickHelper;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.MathUtils;
@@ -143,6 +144,11 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
 
   private Set<Long> selectedChatIds = Collections.emptySet();
   private Set<Integer> selectedChatTypes = Collections.emptySet();
+
+  private final BoolAnimator chipGroupVisibilityAnimator = new BoolAnimator(0, (id, factor, fraction, callee) -> {
+    RecyclerView recyclerView = getRecyclerView();
+    recyclerView.post(recyclerView::invalidateItemDecorations);
+  }, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
 
   public SelectChatsController (@NonNull Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -249,6 +255,19 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
           if (lastVisiblePosition == adapter.getItemCount() - 1) {
             chatListSlice.loadMore(chunkSize, /* after */ null);
           }
+        }
+      }
+    });
+    recyclerView.addItemDecoration(new RecyclerView.ItemDecoration() {
+      @Override
+      public void getItemOffsets (@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
+        if (view instanceof ChipGroup) {
+          int height = ((ChipGroup) view).measureHeight(parent.isLaidOut() ? parent.getWidth() : Screen.currentWidth());
+          int totalHeight = height + SettingHolder.measureHeightForType(ListItem.TYPE_SHADOW_BOTTOM);
+          int offsetTop = -Math.round(totalHeight * (1f - chipGroupVisibilityAnimator.getFloatValue()));
+          outRect.set(0, offsetTop, 0, 0);
+        } else {
+          outRect.setEmpty();
         }
       }
     });
@@ -540,9 +559,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
         }
       });
 
-      SettingHolder holder = new SettingHolder(chipGroup);
-      holder.setIsRecyclable(false);
-      return holder;
+      return new SettingHolder(chipGroup);
     }
 
     @Override
@@ -556,6 +573,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
         chips.add(chipGroup.chat(tdlib, selectedChatId));
       }
       chipGroup.setChips(chips);
+      chipGroupVisibilityAnimator.setValue(!chips.isEmpty(), isFocused());
     }
 
     @Override
@@ -568,7 +586,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
         chatView.setTitle(item.getString());
         chatView.setSubtitle(null);
         chatView.setNoSubtitle(true);
-        chatView.setAvatar((ImageFile) null, new AvatarPlaceholder.Metadata(item.getIntValue(), item.getIconResource()));
+        chatView.setAvatar(null, new AvatarPlaceholder.Metadata(item.getIntValue(), item.getIconResource()));
         chatView.setIsChecked(selectedChatTypes.contains(item.getId()), chatView.isLaidOut());
         chatView.clearPreviewChat();
       } else {
@@ -894,15 +912,20 @@ class ChipGroup extends SparseDrawableView implements ClickHelper.Delegate, Atta
     animator.reset(chips, isLaidOut());
   }
 
+  public int measureHeight (int maxWidth) {
+    int contentWidth = maxWidth - getPaddingLeft() - getPaddingRight();
+    if (contentWidth != animator.getMaxWidth()) {
+      animator.setMaxWidth(contentWidth);
+      animator.measure(isLaidOut());
+    }
+    int contentHeight = Math.max(Screen.dp(32f), (int) animator.getMetadata().getTotalHeight());
+    return contentHeight + getPaddingTop() + getPaddingBottom();
+  }
+
   @Override
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
     int measuredWidth = MeasureSpec.getSize(widthMeasureSpec);
-    int maxWidth = measuredWidth - getPaddingLeft() - getPaddingRight();
-    if (maxWidth != animator.getMaxWidth()) {
-      animator.setMaxWidth(maxWidth);
-      animator.measure(isLaidOut());
-    }
-    int measuredHeight = (int) animator.getMetadata().getTotalHeight() + getPaddingTop() + getPaddingBottom();
+    int measuredHeight = measureHeight(measuredWidth);
     setMeasuredDimension(measuredWidth, measuredHeight);
   }
 
