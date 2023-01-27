@@ -2566,7 +2566,7 @@ public class U {
       adapter.notifyItemRangeRemoved(0, oldItemCount);
     } else {
       adapter.notifyItemRangeRemoved(0, oldItemCount);
-      adapter.notifyItemRangeRemoved(0, newItemCount);
+      adapter.notifyItemRangeInserted(0, newItemCount);
     }
     /* else if (oldItemCount > newItemCount) {
       adapter.notifyItemRangeChanged(0, newItemCount);
