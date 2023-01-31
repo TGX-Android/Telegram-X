@@ -282,11 +282,27 @@ public class TdlibUi extends Handler {
     }
     final long chatId = TD.getChatId(deletingMessages);
     if (chatId == 0 || !context.tdlib().isSupergroup(chatId)) {
+      // Chat is not supergroup
+      return false;
+    }
+    final TdApi.ChatMemberStatus status = tdlib.chatStatus(chatId);
+    if (status == null || !TD.isAdmin(status) || (status.getConstructor() == TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR && !((TdApi.ChatMemberStatusAdministrator) status).rights.canDeleteMessages)) {
+      // User is not a creator or admin with canDeleteMessages right
       return false;
     }
     final TdApi.MessageSender senderId = TD.getSender(deletingMessages);
     if (senderId == null || context.tdlib().isSelfSender(senderId)) {
+      // No need in "delete all" for outgoing messages
       return false;
+    }
+    for (TdApi.Message deletingMessage : deletingMessages) {
+      // No need in "delete all" for outgoing messages
+      // or some of the passed messages can't be deleted at all
+      if (deletingMessage.isOutgoing ||
+        !(deletingMessage.canBeDeletedForAllUsers || deletingMessage.canBeDeletedOnlyForSelf)
+      ) {
+        return false;
+      }
     }
 
     final String name = tdlib.senderName(senderId, true);
