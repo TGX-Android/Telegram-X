@@ -2554,7 +2554,7 @@ public class U {
 
   public static void notifyItemsReplaced (final RecyclerView.Adapter<?> adapter, final int oldItemCount, final int headerItemCount) {
     int newItemCount = adapter.getItemCount();
-    if (headerItemCount < newItemCount)
+    if (newItemCount < headerItemCount)
       throw new IllegalStateException();
     if (oldItemCount == newItemCount) {
       if (oldItemCount != 0) {
