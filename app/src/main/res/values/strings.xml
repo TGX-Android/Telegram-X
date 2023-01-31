@@ -345,8 +345,8 @@
   <string name="ChatContentGroupPhoto_outgoing">Changed the group photo</string>
   <string name="ChatContentGroupPhotoRemove">Removed the group photo</string>
   <string name="ChatContentGroupPhotoRemove_outgoing">Removed the group photo</string>
-  <string name="ChatContentGroupName">Renamed the group to «%1$s»</string>
-  <string name="ChatContentGroupName_outgoing">Renamed the group to «%1$s»</string>
+  <string name="ChatContentGroupName">Renamed the group to "%1$s"</string>
+  <string name="ChatContentGroupName_outgoing">Renamed the group to "%1$s"</string>
   <string name="ChatContentThemeSet">Changed the chat theme to %1$s</string>
   <string name="ChatContentThemeSet_outgoing">Changed the chat theme to %1$s</string>
   <string name="ChatContentThemeDisabled">Disabled the chat theme</string>
@@ -604,7 +604,7 @@
   <string name="LiveStreamScheduledOn">Live stream scheduled on %1$s</string>
   <string name="VideoChatScheduledFor">Video chat scheduled for %1$s</string>
 
-  <string name="group_create_you">You created the group «%1$s»</string>
+  <string name="group_create_you">You created the group "%1$s"</string>
   <string name="group_photo_changed">%1$s changed the group photo</string>
   <string name="group_photo_changed_you">You changed the group photo</string>
   <string name="group_photo_deleted">%1$s removed the group photo</string>
@@ -623,17 +623,17 @@
   <string name="group_user_join_by_link_self">You joined the group via invite link</string>
   <string name="group_user_join_by_link_with_approval">%1$s joined the group via invite link, approved by %2$s</string>
   <string name="group_user_join_by_link_self_with_approval">You joined the group via invite link, approved by %1$s</string>
-  <string name="group_created">%1$s created the group «%2$s»</string>
-  <string name="group_title_changed">%1$s changed the group name to «%2$s»</string>
-  <string name="group_title_changed_you">You changed the group name to «%1$s»</string>
-  <string name="ChannelRenamed">Channel name changed to «%1$s»</string>
+  <string name="group_created">%1$s created the group "%2$s"</string>
+  <string name="group_title_changed">%1$s renamed the group to "%2$s"</string>
+  <string name="group_title_changed_you">You renamed the group to "%1$s"</string>
+  <string name="ChannelRenamed">Channel renamed to "%1$s"</string>
   <string name="Somebody">Somebody</string>
   <string name="GroupUpgraded">Group upgraded to supergroup</string>
   <string name="ActionCreateChannel">Channel created</string>
   <string name="YouCreatedChannel">You created the channel</string>
   <string name="ActionChannelRemovedPhoto">Channel photo removed</string>
   <string name="ActionChannelChangedTitle">Channel renamed</string>
-  <string name="ActionChannelChangedTitleTo">Channel renamed to «%1$s»</string>
+  <string name="ActionChannelChangedTitleTo">Channel renamed to "%1$s"</string>
   <string name="ActionChannelChangedPhoto">Channel photo changed</string>
   <string name="DeleteMessage">Delete message</string>
   <string name="DeleteScheduled">Delete scheduled message</string>
@@ -945,7 +945,7 @@
   <string name="ReEnterAPassword">Re-enter a password</string>
   <string name="EnterANewPassword">Enter a new password</string>
   <string name="EnterANewEmail">Enter a new email address</string>
-  <string name="EnterEmail">Enter a email address</string>
+  <string name="EnterEmail">Enter an email address</string>
   <string name="ForgotPassword">Forgot password?</string>
   <string name="RestorePasswordNoEmailTitle">Sorry</string>
   <string name="SinceNotProvided">Since you didn\'t provide a recovery email when setting up your password, your remaining options are either to remember your password or to reset your account.</string>
@@ -1222,7 +1222,7 @@
   <string name="PhoneNumberHelp">You can change your Telegram number here. Your account and all your cloud data — messages, media, contacts, etc. will be moved to the new number.</string>
   <string name="PhoneNumberAlert">Users will see your new number if they have it in their address book or your privacy settings allow them to see it. You can modify this in Settings &gt; Privacy and Security &gt; Phone number.</string>
   <string name="PhoneNumberInUse">Sorry, this number is already in use.</string>
-  <string name="ChangePhoneHelp">We will send an SMS with a confirmation code to your new number.</string>
+  <string name="ChangePhoneHelp">Your new number will receive a confirmation code via call or SMS.</string>
   <string name="NewPhone">New phone number</string>
   <string name="NewNumber">New Number</string>
   <string name="RegionNotFound">Country code not found</string>
@@ -2042,11 +2042,11 @@
   <string name="EventLogTransferredOwnership">transferred ownership to %1$s</string>
   <string name="EventLogNoLongerCreator">is no longer an owner</string>
 
-  <string name="EventLogReactionsEnabled">Enabled chat reactions</string>
-  <string name="EventLogReactionsDisabled">Disabled all chat reactions</string>
-  <string name="EventLogReactionsChanged">Changed available chat reactions:</string>
-  <string name="EventLogReactionsEnabledAll">Enabled all chat reactions</string>
-  <string name="EventLogReactionsLimited">Limited available chat reactions to:</string>
+  <string name="EventLogReactionsEnabled">Enabled reactions:</string>
+  <string name="EventLogReactionsDisabled">Disabled all reactions</string>
+  <string name="EventLogReactionsChanged">Changed available reactions:</string>
+  <string name="EventLogReactionsEnabledAll">Enabled all reactions</string>
+  <string name="EventLogReactionsLimited">Limited available reactions to:</string>
   <string name="EventLogReactionsAdded2">+ Added:</string>
   <string name="EventLogReactionsRemoved2">– Removed:</string>
 
@@ -2085,7 +2085,7 @@
   <string name="OpenMessage">View Message</string>
   <string name="SavedMessages">Saved Messages</string>
   <string name="Saved">Saved</string>
-  <string name="channel_create_somebody">Channel created «%1$s»</string>
+  <string name="channel_create_somebody">Channel created "%1$s"</string>
   <string name="channel_user_add">%1$s joined the channel</string>
   <string name="channel_user_add_self">You joined the channel</string>
   <string name="channel_user_remove">%1$s left the channel</string>
@@ -2184,10 +2184,10 @@
   <string name="NotificationChannelCommonChannels">Default notification settings for all channels.</string>
   <string name="NotificationChannelSecretChat">Custom notification settings for the Secret Chat with %1$s.</string>
   <string name="NotificationChannelUser">Custom notification settings for messages and mentions from %1$s.</string>
-  <string name="NotificationChannelGroupChat">Custom notification settings for the Group «%1$s».</string>
-  <string name="NotificationChannelGroupChatPublic">Custom notification settings for the Group «%1$s» (%2$s).</string>
-  <string name="NotificationChannelChannelChat">Custom notification settings for the Channel «%1$s».</string>
-  <string name="NotificationChannelChannelChatPublic">Custom notification settings for the Channel «%1$s» (%2$s).</string>
+  <string name="NotificationChannelGroupChat">Custom notification settings for the Group "%1$s".</string>
+  <string name="NotificationChannelGroupChatPublic">Custom notification settings for the Group "%1$s" (%2$s).</string>
+  <string name="NotificationChannelChannelChat">Custom notification settings for the Channel "%1$s".</string>
+  <string name="NotificationChannelChannelChatPublic">Custom notification settings for the Channel "%1$s" (%2$s).</string>
   <string name="NotificationChannelCustom">Custom: %1$s</string>
   <string name="NotificationChannelPlayback">Music Player</string>
   <string name="NotificationChannelCall">Incoming Call</string>
@@ -2885,7 +2885,7 @@
   <string name="ShareTextComment">Check out %2$s\'s comment: %1$s</string>
 
   <string name="ShareTextProfile">%1$s\'s profile photo</string>
-  <string name="ShareTextChat">«%1$s»\'s chat photo</string>
+  <string name="ShareTextChat">"%1$s"\'s chat photo</string>
   <string name="ShareTextChannel">%1$s\'s photo</string>
 
   <string name="ShareTextLink">Check out %1$s: %2$s</string>
@@ -2894,12 +2894,12 @@
   <string name="ShareTextMyLink">Contact me on Telegram: %1$s</string>
   <string name="ShareTextMyLink2">My Telegram link: %1$s</string>
   <string name="ShareTextBotLink">Use %1$s on Telegram: %2$s</string>
-  <string name="ShareTextChatLink">Join «%1$s» on Telegram: %2$s</string>
+  <string name="ShareTextChatLink">Join "%1$s" on Telegram: %2$s</string>
   <string name="ShareTextChannelLink">Follow %1$s on Telegram: %2$s</string>
   <string name="ShareTextProxyLink">Proxy for Telegram: %1$s. This link may be helpful in accessing Telegram if there is no connection in your region.</string>
   <string name="ShareTextProxyLink2">%1$s\n\nThis link may be helpful in accessing Telegram in censored regions.</string>
-  <string name="ShareTextStickerLink">Check out «%1$s» sticker set for Telegram: %2$s</string>
-  <string name="ShareTextStickerLink2">Check out «%1$s» sticker set: %2$s</string>
+  <string name="ShareTextStickerLink">Check out "%1$s" sticker set for Telegram: %2$s</string>
+  <string name="ShareTextStickerLink2">Check out "%1$s" sticker set: %2$s</string>
   <string name="ShareTextLanguageLink">Check out %1$s translation for Telegram: %2$s</string>
 
   <string name="ShareTitleText">Share to…</string>
@@ -3098,12 +3098,12 @@
   <string name="ResetNotificationsConfirm">Reset all notification settings, including custom notification settings for your contacts, groups and channels?</string>
 
   <string name="NotificationsGuideBlockedApp">Notifications from Telegram are blocked in system settings. Tap System Notification Settings to unblock them.</string>
-  <string name="NotificationsGuideBlockedCategory">Notifications for current account are disabled in system settings.\n\nTo enable notifications:\n• Tap System Notification Settings\n• Find «%1$s» notification category.\n• Turn toggle on to unblock notifications.</string>
+  <string name="NotificationsGuideBlockedCategory">Notifications for the current account are disabled in system settings.\n\nTo enable notifications:\n• Tap System Notification Settings\n• Find the "%1$s" notification category\n• Turn the toggle on to unblock notifications.</string>
   <string name="NotificationsGuideBlockedAll">Notifications from Telegram are blocked in your device settings.\n\nTo enable notifications:\n• Tap System Notification Settings.\n• Turn on Show Notifications.</string>
   <string name="NotificationsGuideSyncGlobalOff">You have data sync turned off in system settings. Notifications may not arrive when app is closed.\n\nData sync may be implicitly turned off by the battery optimization mode on your device.</string>
   <string name="NotificationsGuideSyncAppOff">You have data sync turned off for Telegram X. Notifications may not arrive when app is closed.\n\nData sync may be implicitly turned off by the battery optimization mode on your device.</string>
   <string name="NotificationsGuideFirebaseUnavailable">Google Play Services are unavailable. Please check you have them installed and up-to-date.\n\nNotifications may arrive with big delays or not arrive at all without them.</string>
-  <string name="NotificationsGuideFirebaseError">**Firebase Services** have failed to function properly due to error: %1$s\n\nNotifications may arrive with big delays or not arrive at all without them.\n\nPlease make sure:\n• Google Play Services are installed and up-to-date\n• Telegram X is up-to-date\n• Firebase services are enabled\n• They are not blocked by your Internet service or DNS provider\n• If you have firewall or ad blocking software, Firebase domains are whitelisted\n• You can see 404 message in a browser on this page: https://firebaseinstallations.googleapis.com/\n• System date and time is correct\n• Problem doesn\'t go away after restarting your device\n• All system updates are installed.\n\nIf the steps above do not help, you might want to share the detailed error report to @tgandroidtests and look up for additional troubleshooting tips for your device.</string>
+  <string name="NotificationsGuideFirebaseError">**Firebase Services** have failed to function properly due to error: %1$s\n\nNotifications may arrive with big delays or not arrive at all without them.\n\nPlease make sure:\n• Google Play Services are installed and up-to-date: https://support.google.com/googleplay/answer/9037938?hl=en\n• Telegram X is up-to-date\n• Firebase services are enabled\n• They are not blocked by your Internet service or DNS provider\n• If you have firewall or ad blocking software, Firebase domains are whitelisted\n• You can see 404 message in a browser on this page: https://firebaseinstallations.googleapis.com/\n• System date and time is correct\n• Problem doesn\'t go away after restarting your device\n• All system updates are installed\n• You are using the **official** version of Telegram X: @tgx_log\n\nIf the steps above do not help, try again with VPN that you trust, as it might be caused by Internet censorship applied by authorities in your region.</string>
   <string name="NotificationsGuideError">**Telegram X** was unable to display some notifications for this account due to an unknown system error.\n\nPlease make sure:\n• All system updates are installed\n• Telegram X is up-to-date\n• There are no notification restrictions in system settings.\n\nIf the steps above do not help, you might want to share the detailed error report to @tgandroidtests, or look up for troubleshooting tips for your device.</string>
   <string name="NotificationsGuideErrorChat">**Telegram X** was unable to display some notifications from %1$s due to an unknown system error.\n\nPlease make sure:\n• All system updates are installed\n• Telegram X is up-to-date\n• There are no notification restrictions in system settings.\n\nIf the steps above do not help, you might want to share the detailed error report to @tgandroidtests, or look up for troubleshooting tips for your device.</string>
   <string name="TurnSyncOnApp">Turn on data sync</string>
@@ -3405,7 +3405,7 @@
   <string name="PrivacyPhotoContactsExcept">Only contacts (%1$s) can see your profile photo</string>
   <string name="PrivacyPhotoEverybody">Everybody can see your profile photo</string>
   <string name="PrivacyPhotoEverybodyExcept">Everybody (%1$s) can see your profile photo</string>
-  <string name="PrivacyPhotoTitle">Profile Photo</string>
+  <string name="PrivacyPhotoTitle">Profile Photos</string>
 
   <string name="PrivacyVoiceVideoNobody">Nobody can send you voice messages</string>
   <string name="PrivacyVoiceVideoNobodyExcept">Nobody (%1$s) can send you voice messages</string>
@@ -3931,7 +3931,7 @@
   <string name="PrivacyDefaultXChats_one">Default for %1$s chat</string>
   <string name="PrivacyDefaultXChats_other">Default for %1$s chats</string>
 
-  <string name="EditPrivacyPhoto">Profile Photo</string>
+  <string name="EditPrivacyPhoto">Profile Photos</string>
   <string name="EditPrivacyStatus">Last Seen &amp; Online</string>
   <string name="EditPrivacyPhoneNumber">Phone Number</string>
 
