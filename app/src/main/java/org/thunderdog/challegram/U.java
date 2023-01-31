@@ -2549,42 +2549,27 @@ public class U {
   }
 
   public static void notifyItemsReplaced (final RecyclerView.Adapter<?> adapter, final int oldItemCount) {
-    int newItemCount = adapter.getItemCount();
-    if (oldItemCount == newItemCount) {
-      if (oldItemCount != 0) {
-        adapter.notifyItemRangeChanged(0, newItemCount);
-      }
-    } else if (oldItemCount == 0) {
-      adapter.notifyItemRangeInserted(0, newItemCount);
-    } else if (newItemCount == 0) {
-      adapter.notifyItemRangeRemoved(0, oldItemCount);
-    } else {
-      adapter.notifyItemRangeRemoved(0, oldItemCount);
-      adapter.notifyItemRangeRemoved(0, newItemCount);
-    }
-    /* else if (oldItemCount > newItemCount) {
-      adapter.notifyItemRangeChanged(0, newItemCount);
-      adapter.notifyItemRangeRemoved(newItemCount, oldItemCount - newItemCount);
-    } else {
-      adapter.notifyItemRangeChanged(0, oldItemCount);
-      adapter.notifyItemRangeRemoved(oldItemCount, newItemCount - oldItemCount);
-    }*/
+    notifyItemsReplaced(adapter, oldItemCount, 0);
   }
 
   public static void notifyItemsReplaced (final RecyclerView.Adapter<?> adapter, final int oldItemCount, final int headerItemCount) {
     int newItemCount = adapter.getItemCount();
-    int changedItemCount = Math.max(0, newItemCount - headerItemCount);
+    if (headerItemCount < newItemCount)
+      throw new IllegalStateException();
     if (oldItemCount == newItemCount) {
       if (oldItemCount != 0) {
-        adapter.notifyItemRangeChanged(headerItemCount, changedItemCount);
+        adapter.notifyItemRangeChanged(headerItemCount, newItemCount - headerItemCount);
       }
     } else if (oldItemCount == 0) {
       adapter.notifyItemRangeInserted(0, newItemCount);
     } else if (newItemCount == 0) {
       adapter.notifyItemRangeRemoved(0, oldItemCount);
     } else {
-      adapter.notifyItemRangeRemoved(Math.min(headerItemCount, changedItemCount), oldItemCount);
-      adapter.notifyItemRangeInserted(headerItemCount, changedItemCount);
+      // note: do not call notifyItemRangeChanged here
+      if (oldItemCount > headerItemCount) {
+        adapter.notifyItemRangeRemoved(headerItemCount, oldItemCount - headerItemCount);
+      }
+      adapter.notifyItemRangeInserted(headerItemCount, newItemCount - headerItemCount);
     }
   }
 
