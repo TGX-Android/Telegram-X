@@ -717,6 +717,12 @@ public class Paints {
     return rectF;
   }
 
+  public static RectF getRectF (float left, float top, float right, float bottom) {
+    RectF rect = getRectF();
+    rect.set(left, top, right, bottom);
+    return rect;
+  }
+
   private static Path path;
 
   public static Path getPath () {

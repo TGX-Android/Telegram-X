@@ -8,6 +8,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.RectF;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -886,7 +887,10 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
       int strokeColor = ColorUtils.alphaColor(alpha, Theme.textDecentColor());
       Paint.FontMetricsInt fontMetrics = Paints.getFontMetricsInt(Paints.getTextPaint16());
       float height = fontMetrics.descent - fontMetrics.ascent - Screen.dp(2f);
-      c.drawRoundRect(startX - Screen.dp(6f), centerY - height / 2f, startX + text.getWidth() + Screen.dp(6f), centerY + height / 2f, Screen.dp(4f), Screen.dp(4f), Paints.strokeSmallPaint(strokeColor));
+
+      RectF rect = Paints.getRectF(startX - Screen.dp(6f), centerY - height / 2f, startX + text.getWidth() + Screen.dp(6f), centerY + height / 2f);
+      float radius = Screen.dp(4f);
+      c.drawRoundRect(rect, radius, radius, Paints.strokeSmallPaint(strokeColor));
     }
 
     @Override

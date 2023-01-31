@@ -262,7 +262,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
       @Override
       public void getItemOffsets (@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
         if (view instanceof ChipGroup) {
-          int height = ((ChipGroup) view).measureHeight(parent.isLaidOut() ? parent.getWidth() : Screen.currentWidth());
+          int height = ((ChipGroup) view).measureHeight(ViewCompat.isLaidOut(parent) ? parent.getWidth() : Screen.currentWidth());
           int totalHeight = height + SettingHolder.measureHeightForType(ListItem.TYPE_SHADOW_BOTTOM);
           int offsetTop = -Math.round(totalHeight * (1f - chipGroupVisibilityAnimator.getFloatValue()));
           outRect.set(0, offsetTop, 0, 0);
@@ -494,7 +494,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
 
   private void modifyChatView (TGFoundChat chat, BetterChatView chatView) {
     chatView.setAllowMaximizePreview(false);
-    chatView.setIsChecked(selectedChatIds.contains(chat.getChatId()), chatView.isLaidOut());
+    chatView.setIsChecked(selectedChatIds.contains(chat.getChatId()), ViewCompat.isLaidOut(chatView));
     if (mode == MODE_FOLDER_INCLUDE_CHATS || mode == MODE_FOLDER_EXCLUDE_CHATS) {
       chatView.setNoSubtitle(StringUtils.isEmpty(chat.getForcedSubtitle()));
     }
@@ -587,7 +587,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
         chatView.setSubtitle(null);
         chatView.setNoSubtitle(true);
         chatView.setAvatar(null, new AvatarPlaceholder.Metadata(item.getIntValue(), item.getIconResource()));
-        chatView.setIsChecked(selectedChatTypes.contains(item.getId()), chatView.isLaidOut());
+        chatView.setIsChecked(selectedChatTypes.contains(item.getId()), ViewCompat.isLaidOut(chatView));
         chatView.clearPreviewChat();
       } else {
         throw new IllegalArgumentException();
@@ -909,14 +909,14 @@ class ChipGroup extends SparseDrawableView implements ClickHelper.Delegate, Atta
       chip.setCallback(this);
       chip.requestFiles();
     }
-    animator.reset(chips, isLaidOut());
+    animator.reset(chips, ViewCompat.isLaidOut(this));
   }
 
   public int measureHeight (int maxWidth) {
     int contentWidth = maxWidth - getPaddingLeft() - getPaddingRight();
     if (contentWidth != animator.getMaxWidth()) {
       animator.setMaxWidth(contentWidth);
-      animator.measure(isLaidOut());
+      animator.measure(ViewCompat.isLaidOut(this));
     }
     int contentHeight = Math.max(Screen.dp(32f), (int) animator.getMetadata().getTotalHeight());
     return contentHeight + getPaddingTop() + getPaddingBottom();
