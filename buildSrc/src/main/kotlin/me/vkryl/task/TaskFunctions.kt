@@ -212,7 +212,7 @@ fun String.normalizeArgbHex(): String {
 fun String.parseArgbColor(): Int {
   val hex = this.normalizeArgbHex()
   val colors = mutableListOf<Int>()
-  for (i in 0..(hex.length / 2)) {
+  for (i in 0 .. (hex.length / 2)) {
     val x = hex.substring(i * 2, i * 2 + 1)
     colors.add(x.toInt(16))
   }
