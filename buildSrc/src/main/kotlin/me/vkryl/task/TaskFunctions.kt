@@ -159,7 +159,7 @@ fun String.camelCaseToUpperCase(): String {
   return upperCase.toString()
 }
 
-fun String.stripUnderscoresWithCamelCase(): String {
+fun String.stripUnderscoresWithCamelCase (): String {
   val upperCase = StringBuilder(this.length)
   var nextUpperCase = false
   for (c in this) {
