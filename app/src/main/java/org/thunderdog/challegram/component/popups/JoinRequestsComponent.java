@@ -174,7 +174,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
       protected void setJoinRequest (ListItem item, int position, DoubleTextViewWithIcon group, boolean isUpdate) {
         TGUser user = joinRequests.get((isBottomSheet || isSeparateLink || inSearchMode()) ? position : position - 3);
         group.setTag(user);
-        group.text().setAvatar(user.getAvatar(), user.getAvatarPlaceholderMetadata());
+        group.text().setSenderAvatar(tdlib(), user.getSenderId());
         group.text().setText(user.getName(), user.getStatus());
         group.text().setIcon(R.drawable.baseline_person_add_16, (v) -> acceptRequest(user));
         group.icon().setImageResource(R.drawable.baseline_close_24);

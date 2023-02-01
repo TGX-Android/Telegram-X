@@ -1084,6 +1084,9 @@
   <item type="id" name="btn_username_share" />
   <item type="id" name="btn_discard_record" />
 
+  <item type="id" name="btn_toggleAggressiveAntiSpam" />
+  <item type="id" name="btn_reportFalsePositive" />
+
   <item type="id" name="btn_approveChatRequest" />
   <item type="id" name="btn_declineChatRequest" />
 

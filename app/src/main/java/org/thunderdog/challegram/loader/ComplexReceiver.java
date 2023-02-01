@@ -19,14 +19,11 @@ import android.view.View;
 import androidx.annotation.Nullable;
 import androidx.collection.LongSparseArray;
 
-import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.receiver.RefreshRateLimiter;
-import org.thunderdog.challegram.telegram.Tdlib;
 
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.lambda.RunnableData;
-import me.vkryl.td.Td;
 
 public class ComplexReceiver implements Destroyable {
   public interface KeyFilter {
@@ -123,12 +120,13 @@ public class ComplexReceiver implements Destroyable {
   public static final int RECEIVER_TYPE_PREVIEW = 0;
   public static final int RECEIVER_TYPE_IMAGE = 1;
   public static final int RECEIVER_TYPE_GIF = 2;
+  public static final int RECEIVER_TYPE_AVATAR = 3;
 
   public void clearReceivers (@Nullable KeyFilter filter) {
     clearReceivers(imageReceivers, RECEIVER_TYPE_IMAGE, filter);
-    clearReceivers(avatarReceivers, RECEIVER_TYPE_IMAGE, filter);
     clearReceivers(gifReceivers, RECEIVER_TYPE_GIF, filter);
     clearReceivers(previews, RECEIVER_TYPE_PREVIEW, filter);
+    clearReceivers(avatarReceivers, RECEIVER_TYPE_AVATAR, filter);
   }
 
   public void clearReceivers (long key) {
@@ -213,14 +211,8 @@ public class ComplexReceiver implements Destroyable {
     return getReceiver(gifReceivers, view, updateListener, isAttached, animationsDisabled, key, TYPE_GIF);
   }
 
-  public AvatarReceiver getAvatarReceiver (Tdlib tdlib, long key) {
-    return getReceiver(avatarReceivers, view, updateListener, isAttached, animationsDisabled, key, TYPE_AVATAR).setTdlib(tdlib);
-  }
-
-  public AvatarReceiver getAvatarReceiver (Tdlib tdlib, TdApi.MessageSender sender) {
-    AvatarReceiver avatarReceiver = getAvatarReceiver(tdlib, Td.getSenderId(sender));
-    avatarReceiver.setMessageSender(sender);
-    return avatarReceiver;
+  public AvatarReceiver getAvatarReceiver (long key) {
+    return getReceiver(avatarReceivers, view, updateListener, isAttached, animationsDisabled, key, TYPE_AVATAR);
   }
 
   private boolean isAttached = true;

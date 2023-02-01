@@ -23,6 +23,7 @@ import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.ViewParent;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -39,6 +40,7 @@ import org.thunderdog.challegram.data.TGMessageLocation;
 import org.thunderdog.challegram.data.TGMessageSticker;
 import org.thunderdog.challegram.data.TGMessageText;
 import org.thunderdog.challegram.data.TGWebPage;
+import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageReceiver;
@@ -56,7 +58,6 @@ import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.EditRightsController;
-import org.thunderdog.challegram.ui.FeatureToggles;
 import org.thunderdog.challegram.ui.HashtagChatController;
 import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.unsorted.Settings;
@@ -95,7 +96,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
   private int flags;
 
-  private final ImageReceiver avatarReceiver;
+  private final AvatarReceiver avatarReceiver;
   private final GifReceiver gifReceiver;
   private final ComplexReceiver avatarsReceiver;
   private final ComplexReceiver reactionsComplexReceiver, textMediaReceiver, replyTextMediaReceiver;
@@ -112,7 +113,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   public MessageView (Context context) {
     super(context);
     this.refreshRateLimiter = new RefreshRateLimiter(this, Config.MAX_ANIMATED_EMOJI_REFRESH_RATE);
-    avatarReceiver = new ImageReceiver(this, Screen.dp(20.5f));
+    avatarReceiver = new AvatarReceiver(this);
     avatarsReceiver = new ComplexReceiver(this);
     gifReceiver = new GifReceiver(this); // TODO use refreshRateLimiter?
     reactionsComplexReceiver = new ComplexReceiver()
@@ -275,7 +276,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     message.resetTransformState();
     message.requestAvatar(avatarReceiver);
     message.requestReactions(reactionsComplexReceiver);
-    message.setupCommentButton(avatarsReceiver);
+    message.requestCommentsResources(avatarsReceiver, false);
     message.requestAllTextMedia(this);
 
     if ((flags & FLAG_USE_COMMON_RECEIVER) != 0) {
@@ -384,8 +385,12 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     msg.draw(this, c, avatarReceiver, replyReceiver, replyTextMediaReceiver, previewReceiver, contentReceiver, gifReceiver, complexReceiver);
   }
 
-  public ImageReceiver getAvatarReceiver () {
+  public AvatarReceiver getAvatarReceiver () {
     return avatarReceiver;
+  }
+
+  public ComplexReceiver getAvatarsReceiver () {
+    return avatarsReceiver;
   }
 
   public ImageReceiver getContentReceiver () {
@@ -1099,6 +1104,20 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
           case R.id.btn_editRights:
             showEventLogRestrict(m, false, sender, myStatus, member);
             break;
+          case R.id.btn_reportFalsePositive: {
+            TdApi.ChatEvent event = msg.getEvent();
+            if (event != null && event.action.getConstructor() == TdApi.ChatEventMessageDeleted.CONSTRUCTOR) {
+              TdApi.ChatEventMessageDeleted deleted = (TdApi.ChatEventMessageDeleted) event.action;
+              m.tdlib().client().send(new TdApi.ReportSupergroupAntiSpamFalsePositive(ChatId.toSupergroupId(deleted.message.chatId), deleted.message.id), result -> {
+                if (result.getConstructor() == TdApi.Ok.CONSTRUCTOR) {
+                  UI.showToast(R.string.ReportFalsePositiveOk, Toast.LENGTH_SHORT);
+                } else {
+                  m.tdlib().okHandler().onResult(result);
+                }
+              });
+            }
+            break;
+          }
           case R.id.btn_messageCopy:
             TdApi.FormattedText text;
 
@@ -1132,6 +1151,14 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
       TdApi.ChatMember member = (TdApi.ChatMember) result;
       boolean isChannel = m.tdlib().isChannel(m.getChatId());
+
+      TdApi.ChatEvent event = msg.getEvent();
+      if (event != null && event.action.getConstructor() == TdApi.ChatEventMessageDeleted.CONSTRUCTOR && ((TdApi.ChatEventMessageDeleted) event.action).canReportAntiSpamFalsePositive) {
+        ids.append(R.id.btn_reportFalsePositive);
+        strings.append(R.string.ReportFalsePositive);
+        icons.append(R.drawable.baseline_report_24);
+        colors.append(ViewController.OPTION_COLOR_NORMAL);
+      }
 
       if (TD.canCopyText(msg.getMessage()) || (msg instanceof TGMessageText && ((TGMessageText) msg).getText().text.trim().length() > 0)) {
         ids.append(R.id.btn_messageCopy);

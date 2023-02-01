@@ -295,7 +295,7 @@ public class CreateChannelController extends ViewController<String[]> implements
 
     UI.showProgress(Lang.getString(R.string.ProgressCreateChannel), null, 300l);
 
-    tdlib.client().send(new TdApi.CreateNewSupergroupChat(title, true, desc, null, false), this);
+    tdlib.client().send(new TdApi.CreateNewSupergroupChat(title, true, desc, null, 0, false), this);
   }
 
   public void channelCreated (TdApi.Chat chat) {

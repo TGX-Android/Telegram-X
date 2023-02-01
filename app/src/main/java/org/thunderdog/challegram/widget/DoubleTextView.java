@@ -29,16 +29,18 @@ import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
-import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
-import org.thunderdog.challegram.loader.ImageFile;
+import org.thunderdog.challegram.loader.AvatarReceiver;
+import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageReceiver;
+import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.navigation.RtlCheckListener;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.tool.Fonts;
@@ -49,10 +51,8 @@ import org.thunderdog.challegram.tool.Views;
 import me.vkryl.core.lambda.Destroyable;
 
 public class DoubleTextView extends RelativeLayout implements RtlCheckListener, Destroyable {
-  private TextView titleView;
-  private TextView subtitleView;
-  private final ImageReceiver imageReceiver;
-  private final GifReceiver gifReceiver;
+  private final TextView titleView, subtitleView;
+  private final ComplexReceiver receiver;
   private @Nullable NonMaterialButton button;
 
   private boolean ignoreStartOffset;
@@ -142,11 +142,7 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
     int imageSize = viewHeight - Screen.dp(12f) * 2;
     int offset = currentStartOffset = viewHeight / 2 - imageSize / 2;
 
-    imageReceiver = new ImageReceiver(this, 0);
-    imageReceiver.setBounds(offset, offset, offset + imageSize, offset + imageSize);
-
-    gifReceiver = new GifReceiver(this);
-    gifReceiver.setBounds(offset, offset, offset + imageSize, offset + imageSize);
+    this.receiver = new ComplexReceiver(this);
 
     addView(titleView);
     addView(subtitleView);
@@ -156,17 +152,21 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
   @Override
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
     super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+    layoutReceiver(receiver.getImageReceiver(0));
+    layoutReceiver(receiver.getGifReceiver(0));
+    layoutReceiver(receiver.getAvatarReceiver(0));
+  }
+
+  private void layoutReceiver (Receiver receiver) {
     int viewHeight = Screen.dp(72f);
     int imageSize = viewHeight - Screen.dp(12f) * 2;
     int offset = currentStartOffset = viewHeight / 2 - imageSize / 2;
     int startOffset = ignoreStartOffset ? offset / 2 : offset;
     if (Lang.rtl()) {
       int x = getMeasuredWidth() - startOffset - imageSize;
-      imageReceiver.setBounds(x, offset, x + imageSize, offset + imageSize);
-      gifReceiver.setBounds(x, offset, x + imageSize, offset + imageSize);
+      receiver.setBounds(x, offset, x + imageSize, offset + imageSize);
     } else {
-      imageReceiver.setBounds(startOffset, offset, startOffset + imageSize, offset + imageSize);
-      gifReceiver.setBounds(startOffset, offset, startOffset + imageSize, offset + imageSize);
+      receiver.setBounds(startOffset, offset, startOffset + imageSize, offset + imageSize);
     }
   }
 
@@ -184,7 +184,7 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
   public void setIsRounded (boolean isRounded) {
     if (this.isRounded != isRounded) {
       this.isRounded = isRounded;
-      imageReceiver.setRadius(isRounded ? imageReceiver.getWidth() / 2 : 0);
+      receiver.getAvatarReceiver(0).setFullScreen(!isRounded, false);
     }
   }
 
@@ -223,29 +223,28 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
 
   @Override
   public void performDestroy () {
-    imageReceiver.destroy();
-    gifReceiver.destroy();
+    receiver.performDestroy();
   }
 
   public void attach () {
-    imageReceiver.attach();
-    gifReceiver.attach();
+    receiver.attach();
   }
 
   public void detach () {
-    imageReceiver.detach();
-    gifReceiver.detach();
+    receiver.detach();
   }
 
   private @Nullable TGStickerSetInfo stickerSetInfo;
   private @Nullable Path stickerSetContour;
+  private boolean useAvatarReceiver;
 
   public void setStickerSet (@NonNull TGStickerSetInfo stickerSet) {
     needPlaceholder = false;
     titleView.setText(stickerSet.getTitle());
     subtitleView.setText(Lang.plural(stickerSet.isMasks() ? R.string.xMasks : R.string.xStickers, stickerSet.getSize()));
-    imageReceiver.requestFile(stickerSet.getPreviewImage());
-    gifReceiver.requestFile(stickerSet.getPreviewAnimation());
+    receiver.getImageReceiver(0).requestFile(stickerSet.getPreviewImage());
+    receiver.getGifReceiver(0).requestFile(stickerSet.getPreviewAnimation());
+    receiver.getAvatarReceiver(0).clear();
     stickerSetContour = stickerSet.getPreviewContour(Screen.dp(72f) - Screen.dp(12f) * 2);
     stickerSetInfo = stickerSet;
   }
@@ -261,39 +260,51 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
     titleView.setTextColor(Theme.getColor(colorId));
   }
 
-  public void setAvatar (ImageFile avatar, AvatarPlaceholder.Metadata avatarPlaceholder) {
-    imageReceiver.requestFile(avatar);
-    gifReceiver.clear();
-    setAvatarPlaceholder(avatarPlaceholder);
+  public void setUserAvatar (Tdlib tdlib, long userId) {
+    useAvatarReceiver = true;
+    receiver.getAvatarReceiver(0).requestUser(tdlib, userId, AvatarReceiver.Options.SHOW_ONLINE);
+    receiver.getGifReceiver(0).clear();
+    receiver.getImageReceiver(0).clear();
   }
 
-  private AvatarPlaceholder avatarPlaceholder;
+  public void setSenderAvatar (Tdlib tdlib, TdApi.MessageSender sender) {
+    useAvatarReceiver = true;
+    receiver.getAvatarReceiver(0).requestMessageSender(tdlib, sender, AvatarReceiver.Options.SHOW_ONLINE);
+    receiver.getGifReceiver(0).clear();
+    receiver.getImageReceiver(0).clear();
+  }
 
-  public void setAvatarPlaceholder (AvatarPlaceholder.Metadata metadata) {
-    this.avatarPlaceholder = metadata != null ? new AvatarPlaceholder(Screen.px(imageReceiver.getWidth() / 2f), metadata, null) : null;
+  public void setChatAvatar (Tdlib tdlib, long chatId) {
+    useAvatarReceiver = true;
+    receiver.getAvatarReceiver(0).requestChat(tdlib, chatId, AvatarReceiver.Options.SHOW_ONLINE);
+    receiver.getGifReceiver(0).clear();
+    receiver.getImageReceiver(0).clear();
   }
 
   @Override
   protected void onDraw (Canvas c) {
-    if (avatarPlaceholder != null) {
-      avatarPlaceholder.draw(c, imageReceiver.centerX(), imageReceiver.centerY());
+    if (useAvatarReceiver) {
+      AvatarReceiver avatarReceiver = receiver.getAvatarReceiver(0);
+      if (avatarReceiver.needPlaceholder()) {
+        avatarReceiver.drawPlaceholder(c);
+      }
+      avatarReceiver.draw(c);
     } else if (stickerSetInfo != null && stickerSetInfo.isAnimated()) {
+      GifReceiver gifReceiver = receiver.getGifReceiver(0);
       if (gifReceiver.needPlaceholder()) {
         gifReceiver.drawPlaceholderContour(c, stickerSetContour);
       }
       gifReceiver.draw(c);
     } else {
+      ImageReceiver imageReceiver = receiver.getImageReceiver(0);
       if (imageReceiver.needPlaceholder()) {
         if (stickerSetContour != null) {
           imageReceiver.drawPlaceholderContour(c, stickerSetContour);
         } else if (needPlaceholder) {
-          imageReceiver.drawPlaceholderRounded(c, imageReceiver.getWidth() / 2);
+          imageReceiver.drawPlaceholderRounded(c, imageReceiver.getWidth() / 2f);
         }
       }
       imageReceiver.draw(c);
-    }
-    if (Config.DEBUG_STICKER_OUTLINES) {
-      imageReceiver.drawPlaceholderContour(c, stickerSetContour);
     }
     if (stickerSetInfo != null && stickerSetInfo.needSeparatorOnTop()) {
       int height = Math.max(1, Screen.dp(.5f));

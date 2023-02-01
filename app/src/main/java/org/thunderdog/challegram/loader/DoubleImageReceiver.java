@@ -50,7 +50,7 @@ public class DoubleImageReceiver implements Receiver {
   }
 
   @Override
-  public void setRadius (int radius) {
+  public void setRadius (float radius) {
     if (isAnimated)
       throw new UnsupportedOperationException();
     this.preview.setRadius(radius);
@@ -200,7 +200,7 @@ public class DoubleImageReceiver implements Receiver {
     return receiver.getLeft();
   }
 
-  public int getRadius () {
+  public float getRadius () {
     return isAnimated ? 0 : getImageReceiver().getRadius();
   }
 

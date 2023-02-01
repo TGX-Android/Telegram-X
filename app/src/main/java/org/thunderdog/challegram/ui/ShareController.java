@@ -605,15 +605,15 @@ public class ShareController extends TelegramViewController<ShareController.Args
     }
   }
 
-  private void exportContact (String phoneNumber, String firstName, String lastName, String username, @Nullable String customVcard) {
+  private void exportContact (String phoneNumber, String firstName, String lastName, @Nullable TdApi.Usernames usernames, @Nullable String customVcard) {
     StringBuilder b = new StringBuilder()
       .append("BEGIN:VCARD\r\n")
       .append("VERSION:3.0\r\n")
       .append("N:").append(Strings.vcardEscape(lastName)).append(";").append(Strings.vcardEscape(firstName)).append("\r\n")
       .append("FN:").append(Strings.vcardEscape(TD.getUserName(firstName, lastName))).append("\r\n")
       .append("TEL;TYPE=cell:").append(Strings.vcardEscape(Strings.formatPhone(phoneNumber, true, true))).append("\r\n");
-    if (!StringUtils.isEmpty(username)) {
-      b.append("URL:").append(Strings.vcardEscape(tdlib.tMeUrl(username))).append("\r\n");
+    if (Td.hasUsername(usernames)) {
+      b.append("URL:").append(Strings.vcardEscape(tdlib.tMeUrl(usernames))).append("\r\n");
     }
     b.append("END:VCARD\r\n");
     String vcard = b.toString();
@@ -823,7 +823,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
           break;
         }
         case MODE_CONTACT: {
-          exportContact(args.contactUser.phoneNumber, args.contactUser.firstName, args.contactUser.lastName, args.contactUser.username, null);
+          exportContact(args.contactUser.phoneNumber, args.contactUser.firstName, args.contactUser.lastName, args.contactUser.usernames, null);
           break;
         }
       }
@@ -2862,7 +2862,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     switch (msg.content.getConstructor()) {
       case TdApi.MessageContact.CONSTRUCTOR: {
         TdApi.Contact contact = ((TdApi.MessageContact) msg.content).contact;
-        exportContact(contact.phoneNumber, contact.firstName, contact.lastName, contact.userId != 0 ? tdlib.cache().userUsername(contact.userId) : null, contact.vcard);
+        exportContact(contact.phoneNumber, contact.firstName, contact.lastName, contact.userId != 0 ? tdlib.cache().userUsernames(contact.userId) : null, contact.vcard);
         break;
       }
     }
@@ -3047,7 +3047,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
           break;
         }
         case MODE_MESSAGES: {
-          if (!TD.forwardMessages(chatId, args.messages, needHideAuthor, needRemoveCaptions, sendOptions, functions))
+          if (!TD.forwardMessages(chatId, 0, args.messages, needHideAuthor, needRemoveCaptions, sendOptions, functions))
             return;
           break;
         }
@@ -3201,7 +3201,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     Args args = getArgumentsStrict();
     if (args.messages.length == 0)
       return false;
-    if (tdlib.canCopyMessageLinks(args.messages[0].chatId)) {
+    if (tdlib.canCopyPublicMessageLinks(args.messages[0].chatId)) {
       if (args.messages.length == 1) {
         return true;
       }

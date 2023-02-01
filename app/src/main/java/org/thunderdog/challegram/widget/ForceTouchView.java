@@ -54,7 +54,6 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.ThreadInfo;
 import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ComplexReceiver;
-import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.navigation.ComplexHeaderView;
 import org.thunderdog.challegram.navigation.DoubleHeaderView;
 import org.thunderdog.challegram.navigation.HeaderView;
@@ -90,6 +89,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.ChatId;
+import me.vkryl.td.Td;
 
 public class ForceTouchView extends FrameLayoutFix implements
   PopupLayout.AnimatedPopupProvider, FactorAnimator.Target,
@@ -318,10 +318,12 @@ public class ForceTouchView extends FrameLayoutFix implements
         } else if (context.boundDataType == TYPE_USER && context.boundDataId != 0) {
           setupUser((int) context.boundDataId, headerView);
         } else {
-          if (context.avatarFile != null) {
-            headerView.setAvatar(context.avatarFile);
+          if (context.avatarSender != null) {
+            headerView.getAvatarReceiver().requestMessageSender(tdlib, context.avatarSender, AvatarReceiver.Options.NONE);
+          } else if (context.avatarPlaceholder != null) {
+            headerView.getAvatarReceiver().requestPlaceholder(tdlib, context.avatarPlaceholder, AvatarReceiver.Options.NONE);
           } else {
-            headerView.setAvatarPlaceholder(context.avatarPlaceholder);
+            headerView.getAvatarReceiver().clear();
           }
           headerView.setText(context.title, context.subtitle);
         }
@@ -476,7 +478,8 @@ public class ForceTouchView extends FrameLayoutFix implements
             }
           };
         } else if (actionItem.messageSender != null && actionItem.iconRes == 0) {
-          AvatarReceiver receiver = complexAvatarReceiver.getAvatarReceiver(tdlib, actionItem.messageSender);
+          AvatarReceiver receiver = complexAvatarReceiver.getAvatarReceiver(Td.getSenderId(actionItem.messageSender));
+          receiver.requestMessageSender(tdlib, actionItem.messageSender, AvatarReceiver.Options.NONE);
           receiver.setBounds(0, 0, Screen.dp(24), Screen.dp(24));
           receiver.setRadius(Screen.dp(12));
           view = new ImageView(getContext()) {
@@ -1022,8 +1025,8 @@ public class ForceTouchView extends FrameLayoutFix implements
 
     // Header
 
-    private AvatarPlaceholder avatarPlaceholder;
-    private ImageFile avatarFile;
+    private AvatarPlaceholder.Metadata avatarPlaceholder;
+    private TdApi.MessageSender avatarSender;
 
     private String title, subtitle;
 
@@ -1175,9 +1178,9 @@ public class ForceTouchView extends FrameLayoutFix implements
       this.boundArg1 = 0;
     }
 
-    public void setHeaderAvatar (ImageFile avatarFile, AvatarPlaceholder avatarPlaceholder) {
+    public void setHeaderAvatar (TdApi.MessageSender avatarSender, AvatarPlaceholder.Metadata avatarPlaceholder) {
       this.needHeaderAvatar = true;
-      this.avatarFile = avatarFile;
+      this.avatarSender = avatarSender;
       this.avatarPlaceholder = avatarPlaceholder;
     }
 
@@ -1267,22 +1270,13 @@ public class ForceTouchView extends FrameLayoutFix implements
       switch (boundDataType) {
         case TYPE_CHAT: {
           if (boundChat != null) {
-            boolean isSelfChat = tdlib.isSelfChat(boundChat.id);
-            if (!isSelfChat && boundChat.photo != null) {
-              headerView.setAvatar(TD.getAvatar(tdlib, boundChat));
-            } else {
-              headerView.setAvatarPlaceholder(tdlib.chatPlaceholder(boundChat, true, ComplexHeaderView.getBaseAvatarRadiusDp(), null));
-            }
+            headerView.getAvatarReceiver().requestChat(tdlib, boundChat.id, AvatarReceiver.Options.NONE);
           }
           break;
         }
         case TYPE_USER: {
           if (boundUser != null) {
-            if (boundUser.profilePhoto != null) {
-              headerView.setAvatar(TD.getAvatar(tdlib, boundUser));
-            } else {
-              headerView.setAvatarPlaceholder(tdlib.cache().userPlaceholder(boundUser, false, ComplexHeaderView.getBaseAvatarRadiusDp(), null));
-            }
+            headerView.getAvatarReceiver().requestUser(tdlib, boundUser.id, AvatarReceiver.Options.NONE);
           }
           break;
         }

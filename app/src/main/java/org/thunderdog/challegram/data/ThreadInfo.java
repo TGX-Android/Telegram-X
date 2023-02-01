@@ -157,7 +157,8 @@ public class ThreadInfo {
   }
 
   public int getReplyCount () {
-    return threadInfo.replyInfo.replyCount;
+    TdApi.MessageReplyInfo replyInfo = threadInfo.replyInfo;
+    return replyInfo != null ? replyInfo.replyCount : 0;
   }
 
   public long getChatId () {
@@ -173,15 +174,18 @@ public class ThreadInfo {
   }
 
   public long getLastReadInboxMessageId () {
-    return threadInfo.replyInfo.lastReadInboxMessageId;
+    TdApi.MessageReplyInfo replyInfo = threadInfo.replyInfo;
+    return replyInfo != null ? replyInfo.lastReadInboxMessageId : 0;
   }
 
   public long getLastReadOutboxMessageId () {
-    return threadInfo.replyInfo.lastReadOutboxMessageId;
+    TdApi.MessageReplyInfo replyInfo = threadInfo.replyInfo;
+    return replyInfo != null ? replyInfo.lastReadOutboxMessageId : 0;
   }
 
   public long getLastMessageId () {
-    return threadInfo.replyInfo.lastMessageId;
+    TdApi.MessageReplyInfo replyInfo = threadInfo.replyInfo;
+    return replyInfo != null ? replyInfo.lastMessageId : 0;
   }
 
   public @Nullable TdApi.DraftMessage getDraft () {
@@ -431,49 +435,57 @@ public class ThreadInfo {
   }
 
   private void updateLastMessage (long lastMessageId) {
-    if (threadInfo.replyInfo.lastMessageId < lastMessageId) {
-      threadInfo.replyInfo.lastMessageId = lastMessageId;
+    TdApi.MessageReplyInfo replyInfo = threadInfo.replyInfo;
+    if (replyInfo != null && replyInfo.lastMessageId < lastMessageId) {
+      replyInfo.lastMessageId = lastMessageId;
       notifyMessageThreadLastMessageChanged();
     }
   }
 
   public void updateReplyCount (int replyCount) {
-    if (threadInfo.replyInfo.replyCount != replyCount) {
-      threadInfo.replyInfo.replyCount = replyCount;
+    TdApi.MessageReplyInfo replyInfo = threadInfo.replyInfo;
+    if (replyInfo != null && replyInfo.replyCount != replyCount) {
+      replyInfo.replyCount = replyCount;
       notifyMessageThreadReplyCountChanged();
     }
   }
 
   public void updateReadInbox (long lastReadInboxMessageId, int unreadMessageCount) {
-    if (threadInfo.replyInfo.lastReadInboxMessageId > lastReadInboxMessageId)
+    TdApi.MessageReplyInfo replyInfo = threadInfo.replyInfo;
+    if (replyInfo == null || replyInfo.lastReadInboxMessageId > lastReadInboxMessageId)
       return;
-    if (threadInfo.replyInfo.lastReadInboxMessageId == lastReadInboxMessageId && (unreadMessageCount == UNKNOWN_UNREAD_MESSAGE_COUNT || unreadMessageCount == threadInfo.unreadMessageCount))
+    if (replyInfo.lastReadInboxMessageId == lastReadInboxMessageId && (unreadMessageCount == UNKNOWN_UNREAD_MESSAGE_COUNT || unreadMessageCount == threadInfo.unreadMessageCount))
       return;
     updateLastMessage(lastReadInboxMessageId);
-    threadInfo.replyInfo.lastReadInboxMessageId = lastReadInboxMessageId;
-    threadInfo.unreadMessageCount = Td.hasUnread(threadInfo.replyInfo, getGlobalLastReadInboxMessageId()) ? unreadMessageCount : 0;
+    replyInfo.lastReadInboxMessageId = lastReadInboxMessageId;
+    threadInfo.unreadMessageCount = Td.hasUnread(replyInfo, getGlobalLastReadInboxMessageId()) ? unreadMessageCount : 0;
     notifyMessageThreadReadInbox();
   }
 
   private void updateReadOutbox (long lastReadOutboxMessageId) {
-    if (threadInfo.replyInfo.lastReadOutboxMessageId >= lastReadOutboxMessageId)
+    TdApi.MessageReplyInfo replyInfo = threadInfo.replyInfo;
+    if (replyInfo == null || replyInfo.lastReadOutboxMessageId >= lastReadOutboxMessageId)
       return;
     updateLastMessage(lastReadOutboxMessageId);
-    threadInfo.replyInfo.lastReadOutboxMessageId = lastReadOutboxMessageId;
+    replyInfo.lastReadOutboxMessageId = lastReadOutboxMessageId;
     notifyMessageThreadReadOutbox();
   }
 
   private void updateReplyInfo (@Nullable TdApi.MessageReplyInfo replyInfo) {
     if (replyInfo == null) {
       // thread has been deleted.
-      threadInfo.replyInfo.recentReplierIds = new TdApi.MessageSender[0];
+      if (threadInfo.replyInfo != null) {
+        threadInfo.replyInfo.recentReplierIds = new TdApi.MessageSender[0];
+      }
       updateLastMessage(MessageId.MAX_VALID_ID);
       updateReplyCount(0);
       updateReadInbox(MessageId.MAX_VALID_ID, /* unreadMessageCount */ 0);
       updateReadOutbox(MessageId.MAX_VALID_ID);
     } else {
       // update ids only
-      threadInfo.replyInfo.recentReplierIds = replyInfo.recentReplierIds;
+      if (threadInfo.replyInfo != null) {
+        threadInfo.replyInfo.recentReplierIds = replyInfo.recentReplierIds;
+      }
       updateLastMessage(replyInfo.lastMessageId);
       updateReadInbox(replyInfo.lastReadInboxMessageId, UNKNOWN_UNREAD_MESSAGE_COUNT);
       updateReadOutbox(replyInfo.lastReadOutboxMessageId);
