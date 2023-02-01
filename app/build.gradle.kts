@@ -181,7 +181,7 @@ dependencies {
   implementation("androidx.viewpager:viewpager:1.0.0")
   implementation("androidx.work:work-runtime:2.7.1")
   implementation("androidx.browser:browser:1.4.0")
-  implementation("androidx.exifinterface:exifinterface:1.3.4")
+  implementation("androidx.exifinterface:exifinterface:1.3.5")
   implementation("androidx.collection:collection:1.2.0")
   implementation("androidx.interpolator:interpolator:1.0.0")
   implementation("androidx.gridlayout:gridlayout:1.0.0")
@@ -202,11 +202,11 @@ dependencies {
     exclude(group = "com.google.firebase", module = "firebase-measurement-connector")
   }
   // Play In-App Updates: https://developer.android.com/reference/com/google/android/play/core/release-notes-in_app_updates
-  implementation("com.google.android.play:app-update:2.0.0")
+  implementation("com.google.android.play:app-update:2.0.1")
   // ExoPlayer: https://github.com/google/ExoPlayer/blob/release-v2/RELEASENOTES.md
   implementation("com.google.android.exoplayer:exoplayer-core:2.18.1")
   // The Checker Framework: https://checkerframework.org/CHANGELOG.md
-  compileOnly("org.checkerframework:checker-qual:3.25.0")
+  compileOnly("org.checkerframework:checker-qual:3.29.0")
   // OkHttp: https://github.com/square/okhttp/blob/master/CHANGELOG.md
   implementation("com.squareup.okhttp3:okhttp:4.9.3")
   // ShortcutBadger: https://github.com/leolin310148/ShortcutBadger
