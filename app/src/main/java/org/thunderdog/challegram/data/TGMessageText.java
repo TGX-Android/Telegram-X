@@ -38,6 +38,7 @@ import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.text.Highlight;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.util.text.TextColorSets;
@@ -194,7 +195,11 @@ public class TGMessageText extends TGMessage {
   }
 
   private boolean setText (TdApi.FormattedText text, boolean parseEntities) {
-    if (this.text == null || !Td.equalsTo(this.text, text)) {
+    return setText(text, parseEntities, false);
+  }
+
+  private boolean setText (TdApi.FormattedText text, boolean parseEntities, boolean forceUpdate) {
+    if (this.text == null || !Td.equalsTo(this.text, text) || forceUpdate) {
       this.text = text;
       TextColorSet colorSet = isErrorMessage() ? TextColorSets.Regular.NEGATIVE : getTextColorSet();
       TextWrapper.TextMediaListener textMediaListener = (wrapper, updatedText, specificTextMedia) -> {
@@ -205,10 +210,12 @@ public class TGMessageText extends TGMessage {
       if (text.entities != null || !parseEntities) {
         this.wrapper = new TextWrapper(text.text, getTextStyleProvider(), colorSet)
           .setEntities(TextEntity.valueOf(tdlib, text, openParameters()), textMediaListener)
+          .setHighlightText(getHighlightedText(Highlight.Pool.KEY_TEXT, text.text))
           .setClickCallback(clickCallback());
       } else {
         this.wrapper = new TextWrapper(text.text, getTextStyleProvider(), colorSet)
           .setEntities(Text.makeEntities(text.text, Text.ENTITY_FLAGS_ALL, null, tdlib, openParameters()), textMediaListener)
+          .setHighlightText(getHighlightedText(Highlight.Pool.KEY_TEXT, text.text))
           .setClickCallback(clickCallback());
       }
       this.wrapper.addTextFlags(Text.FLAG_BIG_EMOJI);
@@ -225,6 +232,14 @@ public class TGMessageText extends TGMessage {
       return true;
     }
     return false;
+  }
+
+  @Override
+  protected void onUpdateHighlightedText () {
+    if (this.text != null) {
+      setText(this.text, false, true);
+      rebuildContent();
+    }
   }
 
   private boolean hasMedia () {

@@ -26,6 +26,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.theme.ThemeListenerList;
+import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.widget.PopupLayout;
@@ -37,10 +38,16 @@ import me.vkryl.core.lambda.Destroyable;
 public class HapticMenuHelper implements View.OnTouchListener, View.OnLongClickListener {
   public interface Provider {
     List<MenuItem> onCreateHapticMenu (View view);
+    default int getAnchorMode (View view) { return MenuMoreWrap.ANCHOR_MODE_RIGHT; }
   }
 
   public interface OnItemClickListener {
-    void onHapticMenuItemClick (View view, View parentView);
+    void onHapticMenuItemClick (View view, View parentView, MenuItem item);
+  }
+
+  public interface OnItemMenuListener {
+    void onHapticMenuOpen ();
+    void onHapticMenuClose ();
   }
 
   public static class MenuItem implements Destroyable {
@@ -48,6 +55,9 @@ public class HapticMenuHelper implements View.OnTouchListener, View.OnLongClickL
     public final CharSequence title;
     public final int iconResId;
     public final Drawable icon;
+    public final CharSequence subtitle;
+    public final @Nullable TdApi.MessageSender messageSenderId;
+    public final boolean isLocked;
 
     private Tdlib tdlib;
     private long userId;
@@ -62,6 +72,9 @@ public class HapticMenuHelper implements View.OnTouchListener, View.OnLongClickL
       this.title = title;
       this.iconResId = iconResId;
       this.icon = null;
+      this.subtitle = null;
+      this.messageSenderId = null;
+      this.isLocked = false;
     }
 
     public MenuItem (int id, CharSequence title, Drawable icon) {
@@ -69,6 +82,40 @@ public class HapticMenuHelper implements View.OnTouchListener, View.OnLongClickL
       this.title = title;
       this.iconResId = 0;
       this.icon = icon;
+      this.subtitle = null;
+      this.messageSenderId = null;
+      this.isLocked = false;
+    }
+
+    public MenuItem (int id, CharSequence title, CharSequence subtitle, int iconResId) {
+      this.id = id;
+      this.title = title;
+      this.subtitle = subtitle;
+      this.iconResId = iconResId;
+      this.icon = null;
+      this.messageSenderId = null;
+      this.isLocked = false;
+    }
+
+    public MenuItem (int id, CharSequence title, CharSequence subtitle, Drawable icon) {
+      this.id = id;
+      this.title = title;
+      this.subtitle = subtitle;
+      this.iconResId = 0;
+      this.icon = icon;
+      this.messageSenderId = null;
+      this.isLocked = false;
+    }
+
+    public MenuItem (int id, CharSequence title, CharSequence subtitle, int iconResId, Tdlib tdlib, TdApi.MessageSender sender, boolean isLocked) {
+      this.id = id;
+      this.title = title;
+      this.subtitle = subtitle;
+      this.iconResId = iconResId;
+      this.icon = null;
+      this.messageSenderId = sender;
+      this.isLocked = isLocked;
+      this.tdlib = tdlib;
     }
 
     public MenuItem setOnClickListener (View.OnClickListener onClickListener) {
@@ -124,6 +171,10 @@ public class HapticMenuHelper implements View.OnTouchListener, View.OnLongClickL
   @Nullable
   private final ThemeDelegate forcedTheme;
 
+  @Nullable private OnItemMenuListener onHapticMenuListener;
+  private MenuMoreWrap moreWrap;
+  private View hapticView;
+
   public HapticMenuHelper (Provider provider, OnItemClickListener onItemClickListener, @Nullable ThemeListenerList themeListeners, @Nullable ThemeDelegate forcedTheme) {
     this.provider = provider;
     this.onItemClickListener = onItemClickListener;
@@ -132,8 +183,19 @@ public class HapticMenuHelper implements View.OnTouchListener, View.OnLongClickL
   }
 
   public HapticMenuHelper attachToView (View view) {
+    hapticView = view;
     view.setOnLongClickListener(this);
-    // view.setOnTouchListener(this);
+    return this;
+  }
+
+  public HapticMenuHelper hapticListener (OnItemMenuListener listener) {
+    this.onHapticMenuListener = listener;
+    return this;
+  }
+
+  public HapticMenuHelper selectableMode (View view) {
+    hapticView = view;
+    hapticView.setOnTouchListener(this);
     return this;
   }
 
@@ -147,26 +209,36 @@ public class HapticMenuHelper implements View.OnTouchListener, View.OnLongClickL
     List<MenuItem> items = provider.onCreateHapticMenu(v);
     if (items != null && !items.isEmpty()) {
       // UI.forceVibrate(v, true);
-      openMenu(v, items);
+      openMenu(v, items, provider.getAnchorMode(v));
       return true;
     }
     return false;
   }
 
+  private float startX, startY;
+
   @Override
   public boolean onTouch (View v, MotionEvent e) {
-    if (hapticMenu != null) {
-      switch (e.getAction()) {
-        case MotionEvent.ACTION_DOWN:
-          break;
-        case MotionEvent.ACTION_MOVE:
-          processMovement(v, e.getX(), e.getY());
-          break;
-        case MotionEvent.ACTION_CANCEL:
-        case MotionEvent.ACTION_UP:
-          dropMenu(v, e.getX(), e.getY(), e.getAction() == MotionEvent.ACTION_UP);
-          break;
-      }
+    final float x = e.getX();
+    final float y = e.getY();
+
+    if (e.getAction() == MotionEvent.ACTION_DOWN) {
+      this.startX = x;
+      this.startY = y;
+    }
+
+    if (hapticMenu == null) return false;
+
+    switch (e.getAction()) {
+      case MotionEvent.ACTION_DOWN:
+        break;
+      case MotionEvent.ACTION_MOVE:
+        processMovement(v, x, y, startX, startY);
+        break;
+      case MotionEvent.ACTION_CANCEL:
+      case MotionEvent.ACTION_UP:
+        dropMenu(v, e.getX(), e.getY(), e.getAction() == MotionEvent.ACTION_UP);
+        break;
     }
     return false;
   }
@@ -174,17 +246,29 @@ public class HapticMenuHelper implements View.OnTouchListener, View.OnLongClickL
   public boolean openMenu (View view) {
     List<MenuItem> items = provider.onCreateHapticMenu(view);
     if (items != null && !items.isEmpty()) {
-      openMenu(view, items);
+      openMenu(view, items, provider.getAnchorMode(view));
       return true;
     }
     return false;
   }
 
-  private void openMenu (View view, List<MenuItem> items) {
-    if (hapticMenu != null)
-      hapticMenu.hideWindow(false);
+  public boolean isMenuOpened () {
+    return hapticMenu != null && !hapticMenu.isWindowHidden();
+  }
 
-    MenuMoreWrap moreWrap = new MenuMoreWrap(view.getContext());
+  private void openMenu (View view, List<MenuItem> items, int anchorMode) {
+    if (hapticMenu != null) {
+      hapticMenu.hideWindow(false);
+      if (onHapticMenuListener != null) {
+        onHapticMenuListener.onHapticMenuClose();
+      }
+    }
+
+    if (onHapticMenuListener != null) {
+      onHapticMenuListener.onHapticMenuOpen();
+    }
+
+    moreWrap = new MenuMoreWrap(view.getContext());
     moreWrap.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
       ViewParent parent = v.getParent();
       if (parent == null)
@@ -213,20 +297,24 @@ public class HapticMenuHelper implements View.OnTouchListener, View.OnLongClickL
       int centerY = out[1] + viewHeight / 2;
 
       int resultCenterX = Math.max(viewWidth / 2, Math.min(parentWidth - viewWidth / 2, targetCenterX));
-      int resultCenterY = targetCenterY - targetHeight / 2 - viewHeight / 2;
+      int resultCenterY = targetCenterY - targetHeight / 2 - (anchorMode == MenuMoreWrap.ANCHOR_MODE_CENTER ? Screen.dp(12): viewHeight / 2);
 
-      v.setTranslationX(resultCenterX - centerX);
+      v.setTranslationX(resultCenterX - centerX + (anchorMode == MenuMoreWrap.ANCHOR_MODE_CENTER ? Screen.dp(8): 0));
       v.setTranslationY(resultCenterY - centerY);
+
+      if (anchorMode == MenuMoreWrap.ANCHOR_MODE_CENTER) {
+        moreWrap.setBubbleTailX(targetCenterX - (out[0] + resultCenterX - centerX));
+      }
     });
     moreWrap.init(themeListeners, forcedTheme);
     for (MenuItem item : items) {
-      item.boundView = moreWrap.addItem(item.id, item.title, item.iconResId, item.icon, itemView -> onMenuItemClick(item, itemView, view));
+      item.boundView = moreWrap.addItem(item.tdlib, item, itemView -> onMenuItemClick(item, itemView, view));
       item.boundView.setVisibility(item.isVisible() ? View.VISIBLE : View.GONE);
       if (item.tutorialFlag != 0) {
         Settings.instance().markTutorialAsComplete(item.tutorialFlag);
       }
     }
-    moreWrap.setAnchorMode(MenuMoreWrap.ANCHOR_MODE_RIGHT);
+    moreWrap.setAnchorMode(anchorMode);
     moreWrap.setShouldPivotBottom(true);
     moreWrap.setRightNumber(0);
 
@@ -235,6 +323,9 @@ public class HapticMenuHelper implements View.OnTouchListener, View.OnLongClickL
     hapticMenu.setNeedRootInsets();
     hapticMenu.setOverlayStatusBar(true);
     hapticMenu.setDismissListener(popup -> {
+      if (onHapticMenuListener != null) {
+        onHapticMenuListener.onHapticMenuClose();
+      }
       for (MenuItem item : items) {
         item.performDestroy();
       }
@@ -249,20 +340,30 @@ public class HapticMenuHelper implements View.OnTouchListener, View.OnLongClickL
     if (this.hapticMenu != null) {
       this.hapticMenu.hideWindow(true);
       this.hapticMenu = null;
+      if (onHapticMenuListener != null) {
+        onHapticMenuListener.onHapticMenuClose();
+      }
     }
   }
 
-  private void processMovement (View view, float x, float y) {
-    // TODO handle selection
+  private void processMovement (View view, float x, float y, float startX, float startY) {
+    if (hapticMenu == null || moreWrap == null || hapticMenu.isWindowHidden()) return;
+    moreWrap.processMoveEvent(view, x, y, startX, startY);
   }
 
   private void dropMenu (View view, float x, float y, boolean apply) {
-    // TODO handle click ?
+    if (hapticMenu != null && !hapticMenu.isWindowHidden()) {
+      if (apply) {
+        moreWrap.onApply();
+      }
+      hideMenu();
+    }
+    // TODO handle click ? ? ?
   }
 
   private void onMenuItemClick (MenuItem item, View view, View parentView) {
     if (hapticMenu != null && !hapticMenu.isWindowHidden()) {
-      onItemClickListener.onHapticMenuItemClick(view, parentView);
+      onItemClickListener.onHapticMenuItemClick(view, parentView, item);
       if (item.onClickListener != null) {
         item.onClickListener.onClick(view);
       }

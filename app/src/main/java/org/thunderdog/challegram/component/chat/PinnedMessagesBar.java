@@ -30,6 +30,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.MessageListManager;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.ListManager;
@@ -52,6 +53,7 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.lambda.Destroyable;
+import me.vkryl.td.MessageId;
 
 public class PinnedMessagesBar extends ViewGroup implements Destroyable, MessageListManager.ChangeListener, View.OnClickListener {
   private CustomRecyclerView recyclerView;
@@ -102,13 +104,13 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
     recyclerView.addItemDecoration(new RecyclerView.ItemDecoration() {
       @Override
       public void onDrawOver (@NonNull Canvas c, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
-        if (messageList == null)
+        if (messagesAdapter.getItems().isEmpty())
           return;
 
         int viewportHeight = getRecyclerHeight();
 
         int itemHeight = SettingHolder.measureHeightForType(ListItem.TYPE_MESSAGE_PREVIEW);
-        int scrollItemCount = messageList.getTotalCount();
+        int scrollItemCount = messageList != null ? messageList.getTotalCount() : messagesAdapter.getItems().size();
         if (scrollItemCount <= 0)
           return;
 
@@ -199,6 +201,11 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
     setWillNotDraw(false);
   }
 
+  public void setCollapseButtonVisible (boolean isVisible) {
+    collapseButton.setVisibility(isVisible ? View.VISIBLE : View.GONE);
+    updateContentInsets();
+  }
+
   public void setAnimationsDisabled (boolean animationsDisabled) {
     if (this.animationsDisabled != animationsDisabled) {
       this.animationsDisabled = animationsDisabled;
@@ -209,6 +216,10 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
   @Override
   protected void onDraw (Canvas c) {
     c.drawRect(0, getRecyclerHeight(), getMeasuredWidth(), getMeasuredHeight(), Paints.fillingPaint(Theme.fillingColor()));
+  }
+
+  private int getContentInset () {
+    return collapseButton.getVisibility() == View.VISIBLE ? Screen.dp(28f) : 0;
   }
 
   private float getFocusPosition () {
@@ -231,17 +242,13 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
   private void updateContentInsets () {
     float focusPosition = getFocusPosition();
     final float collapse = 1f - getExpandFactor();
-    final int contentInset = Screen.dp(28f);
+    final int contentInset = getContentInset();
     for (int i = 0; i < recyclerView.getChildCount(); i++) {
       View view = recyclerView.getChildAt(i);
       if (view instanceof MessagePreviewView) {
         int adapterPosition = recyclerView.getChildAdapterPosition(view);
         if (adapterPosition != RecyclerView.NO_POSITION) {
-          int inset = collapse == 1f ?
-            contentInset :
-            collapse == 0f ? 0 :
-            Math.round((float) contentInset * (1f - MathUtils.clamp(Math.abs((float) adapterPosition - focusPosition))) * collapse);
-          ((MessagePreviewView) view).setContentInset(inset);
+          updateContentInset((MessagePreviewView) view, adapterPosition, focusPosition, contentInset, collapse);
         }
       }
     }
@@ -303,7 +310,7 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
     int newHeight = getTotalHeight();
     super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(newHeight, MeasureSpec.EXACTLY));
     recyclerView.measure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(getRecyclerHeight(), MeasureSpec.EXACTLY));
-    collapseButton.measure(MeasureSpec.makeMeasureSpec( Screen.dp(40f), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(MathUtils.fromTo(SettingHolder.measureHeightForType(ListItem.TYPE_MESSAGE_PREVIEW), Screen.dp(36f), getExpandFactor()), MeasureSpec.EXACTLY));
+    collapseButton.measure(MeasureSpec.makeMeasureSpec(Screen.dp(40f), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(MathUtils.fromTo(SettingHolder.measureHeightForType(ListItem.TYPE_MESSAGE_PREVIEW), Screen.dp(36f), getExpandFactor()), MeasureSpec.EXACTLY));
     showAllButton.measure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(Screen.dp(36f), MeasureSpec.EXACTLY));
     if (newHeight != lastKnownViewHeight) {
       lastKnownViewHeight = newHeight;
@@ -319,12 +326,18 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
   }
 
   private void updateContentInset (MessagePreviewView view, int position) {
-    float collapse = 1f - getExpandFactor();
-    int contentInset = Screen.dp(28f);
+    updateContentInset(view, position, getFocusPosition(), getContentInset(), 1f - getExpandFactor());
+  }
+
+  private void updateContentInset (MessagePreviewView view, int position, float focusPosition, int contentInset, float collapse) {
+    if (contentInset == 0) {
+      view.setContentInset(0);
+      return;
+    }
     int inset = collapse == 1f ?
       contentInset :
       collapse == 0f ? 0 :
-        Math.round((float) contentInset * (1f - MathUtils.clamp(Math.abs((float) position - getFocusPosition()))) * collapse);
+        Math.round((float) contentInset * (1f - MathUtils.clamp(Math.abs((float) position - focusPosition))) * collapse);
     view.setContentInset(inset);
   }
 
@@ -334,6 +347,17 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
       protected void setMessagePreview (ListItem item, int position, MessagePreviewView previewView) {
         TdApi.Message message = (TdApi.Message) item.getData();
         previewView.setMessage(message, new TdApi.SearchMessagesFilterPinned(), item.getStringValue(), false);
+        if (messageList == null) {
+          // override message preview
+          MessageId highlightMessageId;
+          //noinspection ConstantConditions
+          if (viewController.tdlib().isChannelAutoForward(message) && message.forwardInfo.fromChatId == contextChatId) {
+            highlightMessageId = new MessageId(message.forwardInfo.fromChatId, message.forwardInfo.fromMessageId);
+          } else {
+            highlightMessageId = new MessageId(message.chatId, message.id);
+          }
+          previewView.setPreviewChatId(null, highlightMessageId.getChatId(), null, highlightMessageId, null);
+        }
         updateContentInset(previewView, position);
       }
 
@@ -444,7 +468,9 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
     return itemHeight + Math.round((float) itemHeight * countAnimator.getFactor() * getExpandFactor());
   }
 
-  private MessageListManager messageList;
+  private long contextChatId;
+  private @Nullable TdApi.Message message;
+  private @Nullable MessageListManager messageList;
 
   public void collapse (boolean animated) {
     this.isExpanded.setValue(false, animated);
@@ -457,6 +483,7 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
       this.messageList.removeChangeListener(this);
       this.messageList = null;
     }
+    this.message = null;
     this.messageList = messageList;
     collapse(false);
     canExpand.setValue(messageList != null && messageList.getTotalCount() > 1, false);
@@ -472,6 +499,29 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
     } else {
       messagesAdapter.setItems(new ListItem[0], false);
     }
+  }
+
+  public void setMessage (@Nullable TdApi.Message message) {
+    if (this.message == message) {
+      return;
+    }
+    if (this.messageList != null) {
+      this.messageList.removeChangeListener(this);
+      this.messageList = null;
+    }
+    this.message = message;
+    collapse(false);
+    canExpand.setValue(false, false);
+    countAnimator.forceFactor(0);
+    if (message != null) {
+      messagesAdapter.setItems(new ListItem[] {itemOf(message)}, false);
+    } else {
+      messagesAdapter.setItems(new ListItem[0], false);
+    }
+  }
+
+  public void setContextChatId (long contextChatId) {
+    this.contextChatId = contextChatId;
   }
 
   private long maxFocusMessageId;

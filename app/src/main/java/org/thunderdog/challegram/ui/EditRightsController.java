@@ -131,7 +131,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
           if (args.member.status.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR) {
             TdApi.ChatMemberStatusCreator creator = (TdApi.ChatMemberStatusCreator) args.member.status;
             // TODO bot defaults
-            targetAdmin = new TdApi.ChatMemberStatusAdministrator(creator.customTitle, true, new TdApi.ChatAdministratorRights(true, true, true, true, true, true, true, true, true, true, creator.isAnonymous));
+            targetAdmin = new TdApi.ChatMemberStatusAdministrator(creator.customTitle, true, new TdApi.ChatAdministratorRights(true, true, true, true, true, true, true, true, true, true, true, creator.isAnonymous));
           } else if (args.member.status.getConstructor() == TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR) {
             TdApi.ChatMemberStatusAdministrator admin = (TdApi.ChatMemberStatusAdministrator) args.member.status;
             targetAdmin = (TdApi.ChatMemberStatusAdministrator) Td.copyOf(admin);
@@ -159,7 +159,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         return new TdApi.ChatMemberStatusAdministrator(null, true, Td.copyOf(me.rights));
       }
     }
-    return new TdApi.ChatMemberStatusAdministrator(null, true, new TdApi.ChatAdministratorRights(true, true, true, true, true, true, true, true, false, true, false));
+    return new TdApi.ChatMemberStatusAdministrator(null, true, new TdApi.ChatAdministratorRights(true, true, true, true, true, true, true, true, false, true, true, false));
   }
 
   @Override

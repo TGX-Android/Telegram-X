@@ -31,8 +31,8 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.TGChat;
+import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ComplexReceiver;
-import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
@@ -41,6 +41,7 @@ import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.telegram.TdlibStatusManager;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeManager;
+import org.thunderdog.challegram.theme.ThemeProperty;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
@@ -169,10 +170,9 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
   }
 
   private TGChat chat;
-  private final ImageReceiver avatarReceiver;
+  private final AvatarReceiver avatarReceiver;
   private final ComplexReceiver textMediaReceiver;
 
-  private final BounceAnimator onlineAnimator;
   private final BoolAnimator isSelected = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
 
   public ChatView (Context context, Tdlib tdlib) {
@@ -180,11 +180,11 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
     if (titlePaint == null) {
       initPaints();
     }
-    this.onlineAnimator = new BounceAnimator(new SingleViewProvider(this));
     setId(R.id.chat);
     RippleSupport.setTransparentSelector(this);
     int chatListMode = getChatListMode();
-    avatarReceiver = new ImageReceiver(this, getAvatarRadius(chatListMode));
+    avatarReceiver = new AvatarReceiver(this);
+    avatarReceiver.setAvatarRadiusPropertyIds(ThemeProperty.AVATAR_RADIUS_CHAT_LIST, ThemeProperty.AVATAR_RADIUS_CHAT_LIST_FORUM);
     avatarReceiver.setBounds(getAvatarLeft(chatListMode), getAvatarTop(chatListMode), getAvatarLeft(chatListMode) + getAvatarSize(chatListMode), getAvatarTop(chatListMode) + getAvatarSize(chatListMode));
     textMediaReceiver = new ComplexReceiver(this, Config.MAX_ANIMATED_EMOJI_REFRESH_RATE);
     setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -359,7 +359,6 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
       } else {
         setPreviewChatId(null, 0, null);
       }
-      onlineAnimator.setValue(chat != null && chat.isOnline(), false);
       if (chat != null && chat.isArchive()) {
         setCustomControllerProvider(new CustomControllerProvider() {
           @Override
@@ -398,7 +397,12 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
   private void requestContent () {
     requestTextContent();
     if (chat != null) {
-      avatarReceiver.requestFile(chat.getAvatar());
+      AvatarPlaceholder.Metadata avatarPlaceholder = chat.getAvatarPlaceholder();
+      if (avatarPlaceholder != null) {
+        avatarReceiver.requestPlaceholder(tdlib, avatarPlaceholder, AvatarReceiver.Options.SHOW_ONLINE);
+      } else {
+        avatarReceiver.requestChat(tdlib, chat.getChatId(), AvatarReceiver.Options.SHOW_ONLINE);
+      }
     } else {
       avatarReceiver.clear();
     }
@@ -409,12 +413,12 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
     return c == null || c.getParentOrSelf().getAttachState();
   }
 
-  public void updateOnline () {
-    onlineAnimator.setValue(chat != null && chat.isOnline(), needAnimateChanges());
-  }
-
   public void invalidateAvatarReceiver () {
-    avatarReceiver.requestFile(chat != null ? chat.getAvatar() : null);
+    if (chat != null) {
+      avatarReceiver.requestChat(tdlib, chat.getChatId(), AvatarReceiver.Options.SHOW_ONLINE);
+    } else {
+      avatarReceiver.clear();
+    }
     invalidate();
   }
 
@@ -656,31 +660,14 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
       }
     }
 
+    avatarReceiver.forceAllowOnline(!isSelected.getValue(), 1f - isSelected.getFloatValue());
     layoutReceiver();
-
-    if (chat.hasAvatar()) {
-      if (avatarReceiver.needPlaceholder()) {
-        avatarReceiver.drawPlaceholderRounded(c, getAvatarRadius(chatListMode));
-      }
-      avatarReceiver.draw(c);
-    } else {
-      AvatarPlaceholder p = chat.getAvatarPlaceholder();
-      if (p != null) {
-        int cx = avatarReceiver.centerX();
-        int cy = avatarReceiver.centerY();
-        if (chat.isArchive()) {
-          c.drawCircle(cx, cy, p.getRadius(), Paints.fillingPaint(ColorUtils.fromToArgb(Theme.getColor(R.id.theme_color_avatarArchivePinned), Theme.getColor(R.id.theme_color_avatarArchive), isPinnedArchive.getFloatValue())));
-          p.draw(c, cx, cy, 1f, p.getRadius(), false);
-        } else {
-          p.draw(c, cx, cy);
-        }
-      }
+    if (avatarReceiver.needPlaceholder()) {
+      avatarReceiver.drawPlaceholder(c);
     }
+    avatarReceiver.draw(c);
 
     DrawAlgorithms.drawIcon(c, avatarReceiver, 315f, chat.getScheduleAnimator().getFloatValue(), Theme.fillingColor(), getSparseDrawable(R.drawable.baseline_watch_later_10, R.id.theme_color_badgeMuted), PorterDuffPaint.get(R.id.theme_color_badgeMuted, chat.getScheduleAnimator().getFloatValue()));
-
-    onlineAnimator.setValue(chat.isOnline(), true);
-    DrawAlgorithms.drawOnline(c, avatarReceiver, (1f - isSelected.getFloatValue()) * onlineAnimator.getFloatValue());
     DrawAlgorithms.drawSimplestCheckBox(c, avatarReceiver, isSelected.getFloatValue());
   }
 }

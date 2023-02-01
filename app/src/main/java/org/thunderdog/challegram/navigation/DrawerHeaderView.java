@@ -308,7 +308,7 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
       int cy = startCy + (int) ((float) (targetCy - startCy) * avatarFactor);
 
       if (drawMode == DRAW_MODE_IMAGES || drawMode == DRAW_MODE_REGULAR) {
-        final int cornerRadius = (int) ((float) startRadius * (1f - avatarFactor));
+        final int cornerRadius = (int) ((float) startRadius * (1f - avatarFactor) * Theme.avatarRadiusDefault());
         final int avatarAlpha = (int) (255f * avatarAlphaFactor);
 
         int left = cx - radius;

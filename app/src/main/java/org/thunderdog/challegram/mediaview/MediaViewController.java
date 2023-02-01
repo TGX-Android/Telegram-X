@@ -60,6 +60,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.MediaCollectorDelegate;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
+import org.thunderdog.challegram.component.attach.MediaLayout;
 import org.thunderdog.challegram.component.chat.EmojiToneHelper;
 import org.thunderdog.challegram.component.chat.InlineResultsWrap;
 import org.thunderdog.challegram.component.chat.InputView;
@@ -72,6 +73,7 @@ import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGMessageMedia;
 import org.thunderdog.challegram.data.TGMessageText;
 import org.thunderdog.challegram.data.TGWebPage;
+import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageCache;
 import org.thunderdog.challegram.loader.ImageFile;
@@ -126,6 +128,7 @@ import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.MessagesController;
+import org.thunderdog.challegram.ui.SetSenderController;
 import org.thunderdog.challegram.ui.ShareController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Size;
@@ -1566,7 +1569,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       case R.id.btn_saveToGallery: {
         TdApi.File file = item.getTargetFile();
         if (TD.isFileLoadedAndExists(file)) {
-          U.copyToGallery(file.local.path, item.isGifType() ? U.TYPE_GIF : item.isVideo() ? U.TYPE_VIDEO : U.TYPE_PHOTO);
+          U.copyToGallery(file.local.path, item.isAnimatedAvatar() || item.isGifType() ? U.TYPE_GIF : item.isVideo() ? U.TYPE_VIDEO : U.TYPE_PHOTO);
         }
         break;
       }
@@ -1700,7 +1703,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         forceAnimationType = ANIMATION_TYPE_FADE;
 
         ViewController<?> c = context.navigation().getCurrentStackItem();
-        if (c instanceof MessagesController && c.getChatId() == item.getSourceChatId()) {
+        if (c instanceof MessagesController && c.getChatId() == item.getSourceChatId() && ((MessagesController) c).getMessageThreadId() == messageThreadId) {
           ((MessagesController) c).highlightMessage(new MessageId(item.getSourceChatId(), item.getSourceMessageId()));
         } else {
           tdlib.ui().openMessage(this, item.getSourceChatId(), new MessageId(item.getSourceChatId(), item.getSourceMessageId()), null);
@@ -2022,7 +2025,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       stack.setEstimatedSize(0, photos.totalCount - stack.getCurrentSize());
       loadedInitialChunk = true;
       if (photos.photos.length > 0 && photos.photos[0].id == stack.get(0).getPhotoId()) {
-        stack.get(0).setSourceDate(photos.photos[0].addedDate);
+        stack.get(0).setChatPhoto(photos.photos[0]);
         skipCount = 1;
       }
     }
@@ -2780,6 +2783,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private EditButton paintOrMuteButton;
   private EditButton adjustOrTextButton;
   private StopwatchHeaderButton stopwatchButton;
+  private @Nullable MediaLayout.SenderSendIcon senderSendIcon;
 
   private FrameLayoutFix bottomWrap;
   private LinearLayout captionWrapView;
@@ -3968,7 +3972,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private static class ThumbView extends View implements AttachDelegate, MediaItem.ThumbExpandChangeListener, Destroyable, InvalidateContentProvider {
-    private DoubleImageReceiver preview;
+    private final DoubleImageReceiver preview;
+    private final AvatarReceiver avatarReceiver;
 
     private ThumbItems items;
     private MediaItem item;
@@ -3976,11 +3981,15 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     public ThumbView (Context context, RecyclerView drawTarget) {
       super(context);
       preview = new DoubleImageReceiver(drawTarget, 0);
+      avatarReceiver = new AvatarReceiver(drawTarget);
+      avatarReceiver.setFullScreen(true, false);
+      avatarReceiver.setScaleMode(AvatarReceiver.ScaleMode.CENTER_CROP);
     }
 
     @Override
     public void performDestroy () {
       preview.destroy();
+      avatarReceiver.destroy();
     }
 
     @Override
@@ -3995,6 +4004,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     @Override
     public void attach () {
       preview.attach();
+      avatarReceiver.attach();
       isAttached = true;
       if (item != null) {
         item.attachToThumbView(this);
@@ -4004,6 +4014,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     @Override
     public void detach () {
       preview.detach();
+      avatarReceiver.detach();
       isAttached = false;
       if (item != null) {
         item.detachFromThumbView(this);
@@ -4013,7 +4024,13 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     @Override
     public boolean invalidateContent (Object cause) {
       if (this.item != null && this.item.getPreviewImageFile() == null && (Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE || this.item.isLoaded())) {
-        this.preview.getImageReceiver().requestFile(item.getThumbImageFile(Screen.dp(THUMBS_HEIGHT) + Screen.dp(THUMBS_PADDING) * 2, false));
+        if (this.item.isAvatar()) {
+          this.item.requestAvatar(this.avatarReceiver, false);
+          preview.clear();
+        } else {
+          this.preview.getImageReceiver().requestFile(item.getThumbImageFile(Screen.dp(THUMBS_HEIGHT) + Screen.dp(THUMBS_PADDING) * 2, false));
+          avatarReceiver.clear();
+        }
         return true;
       }
       return false;
@@ -4034,7 +4051,13 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         }
         this.item = item;
         this.items = items;
-        preview.requestFile(item.getThumbImageMiniThumb(), item.getThumbImageFile(Screen.dp(THUMBS_HEIGHT) + Screen.dp(THUMBS_PADDING) * 2, false));
+        if (item.isAvatar()) {
+          item.requestAvatar(avatarReceiver, false);
+          preview.clear();
+        } else {
+          preview.requestFile(item.getThumbImageMiniThumb(), item.getThumbImageFile(Screen.dp(THUMBS_HEIGHT) + Screen.dp(THUMBS_PADDING) * 2, false));
+          avatarReceiver.clear();
+        }
         // preview.requestFile(item != null ? item.getThumbImageFile(Screen.dp(THUMBS_HEIGHT) + Screen.dp(THUMBS_PADDING) * 2, false) : null);
         layoutImage();
         if (isAttached) {
@@ -4089,14 +4112,15 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       float expandFactor = items != null ? items.getExpandFactor(item) * expandAllowance : 0f;
       int thumbWidth = thumbStartWidth + (int) ((float) (thumbEndWidth - thumbStartWidth) * expandFactor);
 
+      Receiver preview = item != null && item.isAvatar() ? avatarReceiver : this.preview;
       if (alpha != 1f) {
         preview.setPaintAlpha(alpha);
       }
       int startX = centerX - thumbWidth / 2;
-      if (preview.needPlaceholder()) {
-        c.drawRect(startX, startY, startX + thumbWidth, startY + thumbHeight, Paints.fillingPaint(0x10ffffff));
-      }
       preview.setBounds(startX, startY, startX + thumbWidth, startY + thumbHeight);
+      if (preview.needPlaceholder()) {
+        preview.drawPlaceholderRounded(c, 0, 0x10ffffff);
+      }
       preview.draw(c);
 
       if (alpha != 1f) {
@@ -4709,6 +4733,14 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         sendButton.setBackgroundResource(R.drawable.bg_btn_header_light);
         editWrap.addView(sendButton);
 
+        if (chat != null && chat.messageSenderId != null) {
+          senderSendIcon = new MediaLayout.SenderSendIcon(context, tdlib(), chat.id);
+          senderSendIcon.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(19), Screen.dp(19), Gravity.RIGHT | Gravity.BOTTOM, 0, 0, Screen.dp(11), Screen.dp(8)));
+          senderSendIcon.setBackgroundColorId(getHeaderColorId());
+          senderSendIcon.update(chat.messageSenderId);
+          editWrap.addView(senderSendIcon);
+        }
+
         if (chat != null) {
           tdlib.ui().createSimpleHapticMenu(this, chat.id, () -> currentActiveButton == 0, this::canDisableMarkdown, hapticItems -> {
             int sendAsFile = canSendAsFile();
@@ -4720,6 +4752,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
                   send(Td.newSendOptions(), false, true);
                 }
               }).bindTutorialFlag(Settings.TUTORIAL_SEND_AS_FILE));
+            }
+            if (senderSendIcon != null) {
+              hapticItems.add(0, senderSendIcon.createHapticSenderItem(chat).setOnClickListener(v -> {
+                openSetSenderPopup(chat);
+              }));
             }
           }, (sendOptions, disableMarkdown) -> {
             send(sendOptions, disableMarkdown, false);
@@ -7989,10 +8026,21 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       return;
     }
 
-    MediaStack stack;
+    MediaItem item;
+    TdApi.ChatPhoto chatPhotoFull = context.tdlib().chatPhoto(chat.id);
+    if (chatPhotoFull != null) {
+      item = new MediaItem(context.context(), context.tdlib(), chat.id, 0, chatPhotoFull);
+    } else {
+      TdApi.ChatPhotoInfo chatPhotoInfo = chat.photo;
+      if (chatPhotoInfo != null) {
+        item = new MediaItem(context.context(), context.tdlib(), chat.id, chatPhotoInfo);
+      } else {
+        return;
+      }
+    }
 
-    stack = new MediaStack(context.context(), context.tdlib());
-    stack.set(new MediaItem(context.context(), context.tdlib(), chat.id, chat.photo));
+    MediaStack stack = new MediaStack(context.context(), context.tdlib());
+    stack.set(item);
 
     Args args = new Args(context, MODE_CHAT_PROFILE, stack);
     if (delegate != null) {
@@ -8084,6 +8132,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     if (context instanceof MediaCollectorDelegate) {
       ((MediaCollectorDelegate) context).modifyMediaArguments(msg, args);
     }
+    args.setMessageThreadId(msg.messagesController().getMessageThreadId());
 
     openWithArgs(context, args);
   }
@@ -8144,6 +8193,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       ((MediaCollectorDelegate) context).modifyMediaArguments(msg, args);
     }
     args.setFilter(filter);
+    args.setMessageThreadId(messageContainer.messagesController().getMessageThreadId());
 
     openWithArgs(context, args);
   }
@@ -8161,5 +8211,31 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       thumbsRecyclerView.invalidateItemDecorations();
       ensureThumbsPosition(false, false);
     }
+  }
+
+  private void openSetSenderPopup (TdApi.Chat chat) {
+    if (chat == null) return;
+
+    tdlib().send(new TdApi.GetChatAvailableMessageSenders(chat.id), result -> {
+      UI.post(() -> {
+        if (result.getConstructor() == TdApi.ChatMessageSenders.CONSTRUCTOR) {
+          final SetSenderController c = new SetSenderController(context, tdlib());
+          c.setArguments(new SetSenderController.Args(chat, ((TdApi.ChatMessageSenders) result).senders, chat.messageSenderId));
+          c.setShowOverEverything(true);
+          c.setDelegate((s) -> setNewMessageSender(chat, s));
+          c.show();
+        }
+      });
+    });
+  }
+
+  private void setNewMessageSender (TdApi.Chat chat, TdApi.ChatMessageSender sender) {
+    tdlib().send(new TdApi.SetChatMessageSender(chat.id, sender.sender), o -> {
+      UI.post(() -> {
+        if (senderSendIcon != null) {
+          senderSendIcon.update(chat.messageSenderId);
+        }
+      });
+    });
   }
 }

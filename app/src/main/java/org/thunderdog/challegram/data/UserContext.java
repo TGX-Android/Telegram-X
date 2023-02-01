@@ -32,6 +32,8 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.util.text.Letters;
 
+import me.vkryl.td.Td;
+
 public class UserContext {
   private final Tdlib tdlib;
   private final long userId;
@@ -107,6 +109,10 @@ public class UserContext {
   @Nullable
   public TdApi.User getUser () {
     return user;
+  }
+
+  public String getUsername () {
+    return Td.primaryUsername(user);
   }
 
   @Nullable

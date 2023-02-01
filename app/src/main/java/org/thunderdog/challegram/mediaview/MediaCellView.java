@@ -29,6 +29,7 @@ import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageLoader;
 import org.thunderdog.challegram.loader.ImageReceiver;
@@ -72,6 +73,7 @@ public class MediaCellView extends ViewGroup implements
 
   private final ImageReceiver imageReceiver;
   private final GifReceiver gifReceiver;
+  private final AvatarReceiver avatarReceiver;
   private final ImageReceiver imagePreviewReceiver;
   private final ImageReceiver miniThumbnail;
   private Receiver preview;
@@ -118,6 +120,10 @@ public class MediaCellView extends ViewGroup implements
     this.imageReceiver = new ImageReceiver(imageView, 0);
     this.imageReceiver.prepareToBeCropped();
     this.gifReceiver = new GifReceiver(imageView);
+    this.avatarReceiver = new AvatarReceiver(imageView);
+    this.avatarReceiver.setDisplayFullSizeOnlyInFullScreen(true);
+    this.avatarReceiver.setScaleMode(AvatarReceiver.ScaleMode.FIT_CENTER);
+    this.avatarReceiver.setFullScreen(true, false);
     this.imagePreviewReceiver = new ImageReceiver(imageView, 0);
     this.imagePreviewReceiver.prepareToBeCropped();
     this.miniThumbnail = new ImageReceiver(imageView, 0);
@@ -482,6 +488,7 @@ public class MediaCellView extends ViewGroup implements
     gifReceiver.destroy();
     imagePreviewReceiver.destroy();
     miniThumbnail.destroy();
+    avatarReceiver.destroy();
     if (playerView != null) {
       playerView.destroy();
     }
@@ -684,7 +691,7 @@ public class MediaCellView extends ViewGroup implements
     layoutReceivers(false);
   }
 
-  private void setImageRadius (int radius) {
+  private void setImageRadius (int radius, float revealFactor) {
     if (receiver instanceof ImageReceiver) {
       ((ImageReceiver) receiver).setRadius(radius);
     }
@@ -692,6 +699,11 @@ public class MediaCellView extends ViewGroup implements
       ((ImageReceiver) preview).setRadius(radius);
     }
     miniThumbnail.setRadius(radius);
+    if (radius == 0) {
+      avatarReceiver.forceFullScreen(true, 1f);
+    } else {
+      avatarReceiver.forceFullScreen(revealFactor != 0f, MathUtils.clamp(revealFactor));
+    }
   }
 
   private void layoutReceivers (boolean forceLayout) {
@@ -722,8 +734,8 @@ public class MediaCellView extends ViewGroup implements
         receiver.forceBoundsLayout();
       }
 
-      setPivotX((left + right) / 2);
-      setPivotY((top + bottom) / 2);
+      setPivotX((left + right) / 2f);
+      setPivotY((top + bottom) / 2f);
 
       return;
     }
@@ -742,7 +754,7 @@ public class MediaCellView extends ViewGroup implements
       setPivotX(receiver.centerX());
       setPivotY(receiver.centerY());
 
-      setImageRadius(0);
+      setImageRadius(0, 1.0f);
 
       return;
     }
@@ -834,7 +846,7 @@ public class MediaCellView extends ViewGroup implements
     }
 
     int radius = imageWidth != imageHeight ? 0 : (int) ((float) thumb.getRadius() * (1f - MathUtils.clamp(revealFactor)));
-    setImageRadius(radius);
+    setImageRadius(radius, revealFactor);
 
     if (!receiver.setBounds(left, top, right, bottom) && forceLayout) {
       receiver.forceBoundsLayout();
@@ -925,6 +937,7 @@ public class MediaCellView extends ViewGroup implements
         gifReceiver.requestFile(null);
       }
       imageReceiver.requestFile(null);
+      avatarReceiver.clear();
 
       delayedLoad = new CancellableRunnable() {
         @Override
@@ -948,11 +961,18 @@ public class MediaCellView extends ViewGroup implements
       if (media.isGif()) {
         gifReceiver.requestFile(media.getTargetGifFile());
         imageReceiver.requestFile(null);
+        avatarReceiver.clear();
       } else if (media.isVideo() && media.isGifType() && revealFactor == 1f && !disappearing && getParent() instanceof MediaView && ((MediaView) getParent()).isOpen()) {
         imageReceiver.requestFile(null);
+        avatarReceiver.clear();
         setHideStaticView(true, false);
+      } else if (media.isAvatar()) {
+        imageReceiver.clear();
+        gifReceiver.clear();
+        media.requestAvatar(avatarReceiver, true);
       } else {
         imageReceiver.requestFile(media.getTargetImageFile(true));
+        avatarReceiver.clear();
         if (preview != gifReceiver) {
           gifReceiver.requestFile(null);
         }
@@ -963,6 +983,7 @@ public class MediaCellView extends ViewGroup implements
         gifReceiver.requestFile(null);
       }
       imageReceiver.requestFile(null);
+      avatarReceiver.clear();
     }
   }
 
@@ -1067,6 +1088,7 @@ public class MediaCellView extends ViewGroup implements
       miniThumbnail.requestFile(null);
       gifReceiver.requestFile(null);
       imageReceiver.requestFile(null);
+      avatarReceiver.clear();
     } else {
       miniThumbnail.requestFile(media.getMiniThumbnail());
       if (media.isVideo() && media.isGifType() && media.isLoaded() && !delayed) {
@@ -1086,8 +1108,8 @@ public class MediaCellView extends ViewGroup implements
           imagePreviewReceiver.requestFile(revealFactor == 0f && media.isGif() ? null : media.getPreviewImageFile());
         }
       }
-      receiver = media.isGif() ? gifReceiver : imageReceiver;
-      if (!forceTouchMode || media.getPreviewImageFile() == null) {
+      receiver = media.isAvatar() ? avatarReceiver : media.isGif() ? gifReceiver : imageReceiver;
+      if (!forceTouchMode || media.getPreviewImageFile() == null || media.isAvatar()) {
         loadMedia(delayed, strength);
       }
       layoutReceivers();
@@ -1557,6 +1579,7 @@ public class MediaCellView extends ViewGroup implements
     imageReceiver.attach();
     imagePreviewReceiver.attach();
     miniThumbnail.attach();
+    avatarReceiver.attach();
   }
 
   public void detach () {
@@ -1564,6 +1587,7 @@ public class MediaCellView extends ViewGroup implements
     imageReceiver.detach();
     imagePreviewReceiver.detach();
     miniThumbnail.detach();
+    avatarReceiver.detach();
   }
 
   // Video

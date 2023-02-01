@@ -678,7 +678,7 @@ public class Lang {
 
   private static String systemTime (long timeInMillis, int style, String fallbackPattern) {
     try {
-      String language = dateFormatLocale().getLanguage();
+      /*String language = dateFormatLocale().getLanguage();
       if (language.equals(Locale.getDefault().getLanguage())) {
         Formatter f = new Formatter(new StringBuilder(50), dateFormatLocale());
         return android.text.format.DateUtils.formatDateRange(UI.getAppContext(), f, timeInMillis, timeInMillis, android.text.format.DateUtils.FORMAT_SHOW_TIME).toString();
@@ -690,7 +690,7 @@ public class Lang {
         try {
           return android.icu.text.DateFormat.getTimeInstance(translateStyle(style, true), dateFormatLocale()).format(DateUtils.dateInstance(timeInMillis));
         } catch (Throwable ignored) { }
-      }
+      }*/
       return java.text.DateFormat.getTimeInstance(translateStyle(style, false), dateFormatLocale()).format(DateUtils.dateInstance(timeInMillis));
     } catch (Throwable ignored) {
       return dateFormat(fallbackPattern, timeInMillis);
@@ -1737,6 +1737,10 @@ public class Lang {
 
   public static String getXofY (int x, int y) {
     return getString(R.string.XofY, counter(R.string.XofY, x), counter(R.string.XofY, y));
+  }
+
+  public static String getXofApproximateY (int x, int y) {
+    return getString(R.string.XofApproximateY, counter(R.string.XofApproximateY, x), counter(R.string.XofApproximateY, y));
   }
 
   public static CharSequence pluralMembers (int members, int online, boolean isChannel) {

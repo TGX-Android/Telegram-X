@@ -124,6 +124,7 @@
   <item type="id" name="controller_request" />
   <item type="id" name="controller_phone" />
   <item type="id" name="controller_share" />
+  <item type="id" name="controller_sender" />
   <item type="id" name="controller_hashtag" />
   <item type="id" name="controller_camera" />
   <item type="id" name="controller_memberRights" />
@@ -227,6 +228,7 @@
   <item type="id" name="controller_chatLinks" />
   <item type="id" name="controller_chatLinkMembers" />
   <item type="id" name="controller_sponsoredMessagesInfo" />
+  <item type="id" name="controller_featureToggles" />
 
   <item type="id" name="separator" />
 
@@ -411,8 +413,10 @@
   <item type="id" name="btn_search_by" />
   <item type="id" name="btn_search_next" />
   <item type="id" name="btn_search_prev" />
+  <item type="id" name="btn_search_onlyResult" />
   <item type="id" name="btn_search_counter" />
   <item type="id" name="btn_search_jump" />
+  <item type="id" name="btn_search_setTypeFilter" />
   <item type="id" name="btn_gps" />
   <item type="id" name="place" />
   <item type="id" name="liveLocation" />
@@ -474,6 +478,7 @@
   <item type="id" name="btn_chatFontSizeReset" />
   <item type="id" name="btn_encryptionKey" />
   <item type="id" name="btn_cancel" />
+  <item type="id" name="btn_clear" />
   <item type="id" name="btn_removeProxy" />
   <item type="id" name="btn_save" />
   <item type="id" name="btn_blockedSenders" />
@@ -681,6 +686,8 @@
   <item type="id" name="btn_sendOnceOnline" />
   <item type="id" name="btn_sendNoMarkdown" />
   <item type="id" name="btn_sendToast" />
+  <item type="id" name="btn_openSendersMenu" />
+  <item type="id" name="btn_setMsgSender" />
   <item type="id" name="btn_sendNoSound" />
   <item type="id" name="btn_sendAsFile" />
 
@@ -757,6 +764,8 @@
   <item type="id" name="btn_openAdminInviteLinks" />
   <item type="id" name="btn_manageInviteLinks" />
   <item type="id" name="btn_manageJoinRequests" />
+  <item type="id" name="btn_manageGroup" />
+  <item type="id" name="btn_deleteThread" />
   <item type="id" name="btn_inviteLinkUserLimit" />
   <item type="id" name="btn_inviteLinkUserSlider" />
   <item type="id" name="btn_inviteLinkDateLimit" />
@@ -1010,6 +1019,16 @@
   <item type="id" name="text_email" />
   <item type="id" name="text_email_email" />
 
+  <item type="id" name="btn_messageSearchFilterAll" />
+  <item type="id" name="btn_messageSearchFilterText" />
+  <item type="id" name="btn_messageSearchFilterPhoto" />
+  <item type="id" name="btn_messageSearchFilterVideo" />
+  <item type="id" name="btn_messageSearchFilterVoice" />
+  <item type="id" name="btn_messageSearchFilterRound" />
+  <item type="id" name="btn_messageSearchFilterFiles" />
+  <item type="id" name="btn_messageSearchFilterMusic" />
+  <item type="id" name="btn_messageSearchFilterGif" />
+
   <item type="id" name="btn_messageMore" />
   <item type="id" name="btn_messageCopy" />
   <item type="id" name="btn_messageCopyLink" />
@@ -1023,7 +1042,6 @@
   <item type="id" name="btn_messagePin" />
   <item type="id" name="btn_messageUnpin" />
   <item type="id" name="btn_messageShare" />
-  <item type="id" name="btn_messageDiscuss" />
   <item type="id" name="btn_messageSelect" />
   <item type="id" name="btn_messageViewList" />
   <item type="id" name="btn_messageFavoriteContent" />
@@ -1036,6 +1054,8 @@
   <item type="id" name="btn_messageApplyLocalization" />
   <item type="id" name="btn_messageInstallTheme" />
   <item type="id" name="btn_messageShowSource" />
+  <item type="id" name="btn_messageShowInChat" />
+  <item type="id" name="btn_messageShowInChatSearch" />
   <item type="id" name="btn_messageResend" />
   <item type="id" name="btn_messageCallContact" />
   <item type="id" name="btn_messageAddContact" />
@@ -1063,6 +1083,9 @@
   <item type="id" name="btn_username_copy_link" />
   <item type="id" name="btn_username_share" />
   <item type="id" name="btn_discard_record" />
+
+  <item type="id" name="btn_toggleAggressiveAntiSpam" />
+  <item type="id" name="btn_reportFalsePositive" />
 
   <item type="id" name="btn_approveChatRequest" />
   <item type="id" name="btn_declineChatRequest" />
@@ -1219,4 +1242,6 @@
   <item type="id" name="btn_themeCreateInfo" />
   <item type="id" name="btn_themeExportNeedDefault" />
   <item type="id" name="btn_themeExportSetAuthor" />
+
+  <item type="id" name="btn_featureToggles" />
 </resources>
