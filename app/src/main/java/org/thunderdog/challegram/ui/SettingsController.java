@@ -326,6 +326,8 @@ public class SettingsController extends ViewController<Void> implements
     switch (status) {
       case TdlibNotificationManager.Status.BLOCKED_ALL:
         return R.string.NotificationsErrorBlocked;
+      case TdlibNotificationManager.Status.MISSING_PERMISSION:
+        return R.string.NotificationsErrorPermission;
       case TdlibNotificationManager.Status.BLOCKED_CATEGORY:
         return R.string.NotificationsErrorBlockedCategory;
       case TdlibNotificationManager.Status.DISABLED_SYNC:
