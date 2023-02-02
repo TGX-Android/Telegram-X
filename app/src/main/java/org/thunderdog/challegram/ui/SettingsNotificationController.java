@@ -368,6 +368,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
       case TdlibNotificationManager.Status.FIREBASE_ERROR:
         return R.drawable.baseline_bug_report_24;
       case TdlibNotificationManager.Status.ACCOUNT_NOT_SELECTED:
+      case TdlibNotificationManager.Status.MISSING_PERMISSION:
       case TdlibNotificationManager.Status.BLOCKED_ALL:
       case TdlibNotificationManager.Status.BLOCKED_CATEGORY:
       case TdlibNotificationManager.Status.INTERNAL_ERROR:
@@ -389,6 +390,7 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         return R.string.ShareNotificationError;
       case TdlibNotificationManager.Status.FIREBASE_ERROR:
         return R.string.FirebaseErrorResolve;
+      case TdlibNotificationManager.Status.MISSING_PERMISSION:
       case TdlibNotificationManager.Status.ACCOUNT_NOT_SELECTED:
       case TdlibNotificationManager.Status.BLOCKED_ALL:
       case TdlibNotificationManager.Status.BLOCKED_CATEGORY:
@@ -401,6 +403,9 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
   private CharSequence makeErrorDescription (@TdlibNotificationManager.Status int status) {
     int guideRes = R.string.NotificationsGuideBlockedApp;
     switch (status) {
+      case TdlibNotificationManager.Status.MISSING_PERMISSION:
+        guideRes = R.string.NotificationsGuidePermission;
+        break;
       case TdlibNotificationManager.Status.BLOCKED_ALL:
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
           guideRes = R.string.NotificationsGuideBlockedAll;

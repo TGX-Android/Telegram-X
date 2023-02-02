@@ -37,6 +37,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -906,6 +907,17 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     showSuggestions();
     checkSyncAlert();
     tdlib.checkDeadlocks();
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      if (context().checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+        context().requestCustomPermissions(new String[] {Manifest.permission.POST_NOTIFICATIONS}, (code, granted) -> {
+          if (granted) {
+            tdlib.notifications().onNotificationPermissionGranted();
+          } else {
+            // Do nothing?
+          }
+        });
+      }
+    }
   }
 
   @Override
