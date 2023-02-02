@@ -124,6 +124,7 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.ActivityPermissionResult;
 import org.thunderdog.challegram.util.AppUpdater;
 import org.thunderdog.challegram.util.KonfettiBuilder;
+import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.widget.BaseRootLayout;
 import org.thunderdog.challegram.widget.DragDropLayout;
 import org.thunderdog.challegram.widget.ForceTouchView;
@@ -132,6 +133,7 @@ import org.thunderdog.challegram.widget.PopupLayout;
 
 import java.lang.ref.Reference;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import me.vkryl.android.AnimatorUtils;
@@ -2262,12 +2264,39 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     }
   }
 
-  public void requestReadWritePermissions () {
+  public static final int RW_MODE_NORMAL = 0, RW_MODE_GALLERY = 1, RW_MODE_FILES = 2;
+
+  public static String[] getReadWritePermissions (int mode) {
+    List<String> permissions = new ArrayList<>();
+    Collections.addAll(permissions,
+      Manifest.permission.READ_EXTERNAL_STORAGE,
+      Manifest.permission.WRITE_EXTERNAL_STORAGE
+    );
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      switch (mode) {
+        case RW_MODE_NORMAL:
+          break;
+        case RW_MODE_GALLERY:
+          Collections.addAll(permissions,
+            Manifest.permission.READ_MEDIA_IMAGES,
+            Manifest.permission.READ_MEDIA_VIDEO
+          );
+          break;
+        case RW_MODE_FILES:
+          Collections.addAll(permissions,
+            Manifest.permission.READ_MEDIA_IMAGES,
+            Manifest.permission.READ_MEDIA_VIDEO,
+            Manifest.permission.READ_MEDIA_AUDIO
+          );
+      }
+    }
+    return permissions.toArray(new String[0]);
+  }
+
+  public void requestReadWritePermissions (int mode) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      requestPermissions(new String[] {
-        Manifest.permission.READ_EXTERNAL_STORAGE,
-        Manifest.permission.WRITE_EXTERNAL_STORAGE
-      }, REQUEST_READ_STORAGE);
+      String[] permissions = getReadWritePermissions(mode);
+      requestPermissions(permissions, REQUEST_READ_STORAGE);
     }
   }
 

@@ -266,7 +266,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
         Log.e("Cannot add Downloads directory", t);
       }
     }
-    if (!addedDownloads && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+    if (!addedDownloads && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
       InlineResultCommon downloadsItem = createItem(context, tdlib, KEY_DOWNLOADS, R.drawable.baseline_file_download_24, Lang.getString(R.string.Downloads), Lang.getString(R.string.Files));
       items.add(createItem(downloadsItem, R.id.btn_downloads));
     }

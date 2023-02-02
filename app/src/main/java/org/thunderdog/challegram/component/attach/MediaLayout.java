@@ -602,11 +602,12 @@ public class MediaLayout extends FrameLayoutFix implements
       }
       case 1: {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-          if (getContext().checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ||
-              getContext().checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            requestedPermissionIndex = toIndex;
-            ((BaseActivity) getContext()).requestReadWritePermissions();
-            return false;
+          String[] permissions = BaseActivity.getReadWritePermissions(BaseActivity.RW_MODE_FILES);
+          for (String permission : permissions) {
+            if (getContext().checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) {
+              UI.getContext(getContext()).requestReadWritePermissions(BaseActivity.RW_MODE_FILES);
+              return false;
+            }
           }
         }
 
