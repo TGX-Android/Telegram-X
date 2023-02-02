@@ -1584,7 +1584,7 @@
   <string name="DeleteXFromRecents">Remove %1$s from recently found chats?</string>
   <string name="SendTo">Send to</string>
   <string name="SendAs">Send as</string>
-  <string name="SendAsOption">Send as...</string>
+  <string name="SendAsOption">Send as…</string>
   <string name="YourAccount">Your account</string>
   <string name="SelectChats">Select Chats</string>
   <string name="AddComment">Add a comment…</string>
