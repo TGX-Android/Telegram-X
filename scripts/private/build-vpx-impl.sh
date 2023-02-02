@@ -1,13 +1,6 @@
 #!/bin/bash
 set -e
 
-function validate_file {
-  test -f "$1" || (echo "File not found: $1" && false)
-}
-function validate_dir {
-  test -d "$1" || (echo "Directory not found: $1" && false)
-}
-
 function checkPreRequisites {
   test "$BUILD_PLATFORM" && echo "build platform: ${BUILD_PLATFORM}"
   test "$CPU_COUNT" && echo "parallel jobs: ${CPU_COUNT}"
@@ -27,10 +20,14 @@ function checkPreRequisites {
   test "$CPU_COUNT"
 }
 
+pushd "$THIRDPARTY_LIBRARIES" > /dev/null
 echo "Checking pre-requisites..."
 checkPreRequisites
+popd > /dev/null
 
 ## build process
+
+pushd "$THIRDPARTY_LIBRARIES/libvpx"
 
 # configuration
 
@@ -116,8 +113,6 @@ configure_abi() {
 }
 
 configure_make() {
-  pushd "libvpx" || exit
-
   ABI=$1;
   echo -e "${STYLE_INFO}- libvpx build started for ${ABI}${STYLE_END}"
   configure_abi
@@ -152,7 +147,6 @@ configure_make() {
     --disable-unit-tests || exit 1
 
   make -j"$CPU_COUNT" install
-  popd || true
 }
 
 for ((i=0; i < ${#ABIS[@]}; i++))
@@ -160,5 +154,7 @@ do
   configure_make "${ABIS[i]}"
   echo -e "${STYLE_INFO}- libvpx build ended for ${ABIS[i]}${STYLE_END}"
 done
+
+popd
 
 echo -e "${STYLE_INFO}- libvpx build done!${STYLE_END}"

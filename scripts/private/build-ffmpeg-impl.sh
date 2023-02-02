@@ -1,24 +1,18 @@
 #!/bin/bash
 set -e
 
-function validate_file {
-  test -f "$1" || (echo "File not found: $1" && false)
-}
-function validate_dir {
-  test -d "$1" || (echo "Directory not found: $1" && false)
-}
 function build_one {
   LIBVPX_INCLUDE_DIR="$THIRDPARTY_LIBRARIES/libvpx/build/$CPU/include"
   LIBVPX_LIB_DIR="$THIRDPARTY_LIBRARIES/libvpx/build/$CPU/lib"
 
-  validate_dir $LIBVPX_INCLUDE_DIR
-  validate_dir $LIBVPX_LIB_DIR
+  validate_dir "$LIBVPX_INCLUDE_DIR"
+  validate_dir "$LIBVPX_LIB_DIR"
 
   AR="${PREBUILT}/bin/llvm-ar"
   NM="${PREBUILT}/bin/llvm-nm"
   STRIP="${PREBUILT}/bin/llvm-strip"
   RANLIB="${PREBUILT}/bin/llvm-ranlib"
-  YASM=$PREBUILT/bin/yasm
+  YASM="${PREBUILT}/bin/yasm"
 
   validate_file "$CC"
   validate_file "$CXX"
@@ -41,13 +35,13 @@ function build_one {
   echo "Configuring... ${NDK}"
 
   ./configure \
-  --nm=${NM} \
-  --ar=${AR} \
-  --as=${AS} \
-  --strip=${STRIP} \
-  --cc=${CC} \
-  --cxx=${CXX} \
-  --ranlib=${RANLIB} \
+  --nm="${NM}" \
+  --ar="${AR}" \
+  --as="${AS}" \
+  --strip="${STRIP}" \
+  --cc="${CC}" \
+  --cxx="${CXX}" \
+  --ranlib="${RANLIB}" \
   --enable-stripping \
   --arch="$ARCH" \
   --target-os=linux \
@@ -132,8 +126,10 @@ function checkPreRequisites {
   test "$CPU_COUNT"
 }
 
+pushd "$THIRDPARTY_LIBRARIES" > /dev/null
 echo "Checking pre-requisites..."
 checkPreRequisites
+popd > /dev/null
 
 ## common
 
@@ -143,7 +139,7 @@ SYSROOT=$PREBUILT/sysroot
 validate_dir "$PREBUILT"
 validate_dir "$SYSROOT"
 
-pushd ffmpeg
+pushd "$THIRDPARTY_LIBRARIES/ffmpeg"
 
 #x86_64
 ANDROID_API=21

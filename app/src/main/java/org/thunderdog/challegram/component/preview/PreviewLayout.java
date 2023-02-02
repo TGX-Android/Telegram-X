@@ -27,6 +27,7 @@ import androidx.collection.SparseArrayCompat;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
+import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.EmbeddedService;
@@ -41,6 +42,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.widget.PopupLayout;
 
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.StringUtils;
 
 public abstract class PreviewLayout extends FrameLayoutFix implements View.OnClickListener, PopupLayout.ShowListener, PopupLayout.DismissListener {
   protected EmbeddedService nativeEmbed;
@@ -198,7 +200,7 @@ public abstract class PreviewLayout extends FrameLayoutFix implements View.OnCli
       PreviewLayout popup = null;
       switch (service.type) {
         case EmbeddedService.TYPE_YOUTUBE:
-          if (YouTube.isYoutubeAppInstalled()) {
+          if (YouTube.isYoutubeAppInstalled() && !StringUtils.isEmpty(BuildConfig.YOUTUBE_API_KEY)) {
             popup = new YouTubePreviewLayout(context, parent);
           } else {
             popup = new WebViewPreviewLayout(context, parent);

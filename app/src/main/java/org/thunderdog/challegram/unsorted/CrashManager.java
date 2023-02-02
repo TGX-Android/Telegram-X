@@ -21,6 +21,7 @@ import android.os.Process;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import org.drinkless.td.libcore.telegram.ClientError;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
@@ -141,12 +142,19 @@ public class CrashManager {
     isCrashing.set(false);
     if (defaultHandler != null) {
       Thread.setDefaultUncaughtExceptionHandler(defaultHandler);
-      defaultHandler.uncaughtException(thread, ex);
+      defaultHandler.uncaughtException(thread, normalizeError(ex));
       Thread.setDefaultUncaughtExceptionHandler(crashHandler);
     } else {
       Process.killProcess(Process.myPid());
       System.exit(10);
     }
+  }
+
+  private static Throwable normalizeError (Throwable t) {
+    if (t instanceof ClientError) {
+      return ((ClientError) t).withoutPotentiallyPrivateData();
+    }
+    return t;
   }
 
   public void crash (@Nullable String description, @NonNull Throwable ex) {

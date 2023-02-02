@@ -178,7 +178,7 @@ public class EditHeaderView extends FrameLayoutFix implements RtlCheckListener, 
     if (text != null) {
       flags |= FLAG_IGNORE_READY;
       input.setText(text);
-      Views.setSelection(input, text.length());
+      input.setSelection(text.length());
       flags &= ~FLAG_IGNORE_READY;
     }
   }

@@ -3,6 +3,4 @@ set -e
 # shellcheck source=set-env.sh
 source "$(dirname "$0")"/set-env.sh
 
-pushd app/jni/thirdparty
-build-ffmpeg-impl.sh || echo "Build failed"
-popd
+build-ffmpeg-impl.sh || (echo "ffmpeg build failed" && exit 1)

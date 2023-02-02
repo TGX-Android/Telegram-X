@@ -486,7 +486,7 @@ public class PhoneController extends EditBaseController<Void> implements Setting
             if (bestIndex != -1) {
               int selectionIndex = bestIndex;
               tdlib.ui().post(() -> {
-                Views.setSelection(v, selectionIndex);
+                v.setSelection(selectionIndex);
               });
             }
           }

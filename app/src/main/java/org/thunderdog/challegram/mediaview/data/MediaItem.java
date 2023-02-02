@@ -33,6 +33,7 @@ import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGMessageMedia;
 import org.thunderdog.challegram.data.TdApiExt;
 import org.thunderdog.challegram.filegen.PhotoGenerationInfo;
+import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageFileLocal;
 import org.thunderdog.challegram.loader.ImageFilteredFile;
@@ -58,6 +59,7 @@ import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.util.InvalidateContentProvider;
 import me.vkryl.android.util.MultipleViewProvider;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.td.ChatId;
@@ -128,7 +130,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
         return new MediaItem(item.context, item.tdlib, ((TdApi.MessageSenderUser) item.sourceSender).userId, item.profilePhoto);
       }
       case TYPE_CHAT_PROFILE: {
-        return new MediaItem(item.context, item.tdlib, item.sourceChatId, item.sourceMessageId, item.chatPhoto);
+        return new MediaItem(item.context, item.tdlib, item.sourceChatId, item.sourceMessageId, item.chatPhoto, item.isFullPhoto);
       }
     }
     return null;
@@ -388,6 +390,8 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
 
     this.width = this.height = Screen.dp(640f);
 
+    setMiniThumbnail(profilePhoto.minithumbnail);
+
     if (profilePhoto.small != null) {
       this.previewImageFile = new ImageFile(tdlib, profilePhoto.small);
       this.previewImageFile.setNeedCancellation(true);
@@ -409,9 +413,17 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
 
   private TdApi.ProfilePhoto profilePhoto;
   private TdApi.ChatPhoto chatPhoto;
+  private boolean isFullPhoto;
 
   public MediaItem setSourceDate (int sourceDate) {
     this.sourceDate = sourceDate;
+    return this;
+  }
+
+  public MediaItem setChatPhoto (TdApi.ChatPhoto chatPhoto) {
+    this.chatPhoto = chatPhoto;
+    this.isFullPhoto = true;
+    setSourceDate(chatPhoto.addedDate);
     return this;
   }
 
@@ -457,13 +469,18 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
       },
       null,
       null
-    ));
+    ), false);
   }
 
   public MediaItem (BaseActivity context, Tdlib tdlib, long chatId, long messageId, TdApi.ChatPhoto photo) {
+    this(context, tdlib, chatId, messageId, photo, true);
+  }
+
+  private MediaItem (BaseActivity context, Tdlib tdlib, long chatId, long messageId, TdApi.ChatPhoto photo, boolean isFullPhoto) {
     this.context = context;
     this.tdlib = tdlib;
     this.type = TYPE_CHAT_PROFILE;
+    this.isFullPhoto = isFullPhoto;
     this.sourceChatId = chatId;
     this.sourceMessageId = messageId;
     this.sourceSender = ChatId.isUserChat(chatId) ? new TdApi.MessageSenderUser(tdlib.chatUserId(chatId)) : new TdApi.MessageSenderChat(chatId);
@@ -483,18 +500,23 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     }
 
     if (big != null) {
-      this.targetFile = big.photo;
       this.targetImage = new ImageFile(tdlib, big.photo);
       this.targetImage.setNeedCancellation(true);
       this.targetImage.setScaleType(ImageFile.FIT_CENTER);
+
+      this.targetFile = photo.animation != null ? photo.animation.file : photo.smallAnimation != null ? photo.smallAnimation.file : big.photo;
       this.fileProgress = new FileProgressComponent(context, tdlib, TdlibFilesManager.DOWNLOAD_FLAG_PHOTO, true, sourceChatId, messageId);
       this.fileProgress.setUseStupidInvalidate();
-      this.fileProgress.setFile(big.photo);
+      this.fileProgress.setFile(targetFile);
     }
 
     this.width = this.height = 640;
 
     setSourceSender(tdlib.sender(chatId));
+  }
+
+  public TdApi.ChatPhoto getChatPhoto () {
+    return chatPhoto;
   }
 
   public static int maxDisplaySize () {
@@ -972,6 +994,44 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     return isGifType() && isVideo();
   }
 
+  public boolean isAnimatedAvatar () {
+    switch (type) {
+      case TYPE_CHAT_PROFILE:
+      case TYPE_USER_PROFILE:
+        return chatPhoto != null && (chatPhoto.animation != null || chatPhoto.smallAnimation != null);
+    }
+    return false;
+  }
+
+  public boolean isAvatar () {
+    switch (type) {
+      case TYPE_CHAT_PROFILE:
+        return chatPhoto != null && (isFullPhoto || Td.getSenderId(sourceSender) != 0);
+      case TYPE_USER_PROFILE:
+        return (chatPhoto != null && isFullPhoto) || Td.getSenderUserId(sourceSender) != 0;
+    }
+    return false;
+  }
+
+  public void requestAvatar (AvatarReceiver avatarReceiver, boolean fullSize) {
+    switch (type) {
+      case TYPE_CHAT_PROFILE:
+      case TYPE_USER_PROFILE: {
+        @AvatarReceiver.Options int options = AvatarReceiver.Options.FORCE_ANIMATION | BitwiseUtils.optional(AvatarReceiver.Options.FULL_SIZE, fullSize);
+        if (chatPhoto != null && isFullPhoto) {
+          avatarReceiver.requestSpecific(tdlib, new AvatarReceiver.FullChatPhoto(chatPhoto, Td.getSenderId(sourceSender)), options);
+        } else {
+          avatarReceiver.requestMessageSender(tdlib, sourceSender, options | AvatarReceiver.Options.NO_UPDATES);
+        }
+        break;
+      }
+      default: {
+        avatarReceiver.clear();
+        break;
+      }
+    }
+  }
+
   public boolean isGif () {
     switch (type) {
       case TYPE_GIF:
@@ -1348,6 +1408,12 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     switch (type) {
       case TYPE_CHAT_PROFILE:
       case TYPE_USER_PROFILE:
+        if (isAnimatedAvatar()) {
+          TdApi.AnimatedChatPhoto targetFile = chatPhoto.animation != null ? chatPhoto.animation : chatPhoto.smallAnimation;
+          if (targetFile != null) {
+            return new TdApi.InputMessageAnimation(file, null, null, 3, targetFile.length, targetFile.length, null);
+          }
+        }
         return new TdApi.InputMessagePhoto(file, null, null, 640, 640, caption, 0);
       case TYPE_PHOTO:
         return new TdApi.InputMessagePhoto(file, null, null, width, height, caption, 0);

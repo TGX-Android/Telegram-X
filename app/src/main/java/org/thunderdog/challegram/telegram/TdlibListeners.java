@@ -61,9 +61,12 @@ public class TdlibListeners {
   final ReferenceLongMap<MessageListener> messageChatListeners;
   final ReferenceLongMap<MessageEditListener> messageEditChatListeners;
   final ReferenceLongMap<ChatListener> specificChatListeners;
+  final ReferenceMap<String, ForumTopicInfoListener> specificForumTopicListeners;
   final ReferenceLongMap<NotificationSettingsListener> chatSettingsListeners;
   final ReferenceIntMap<FileUpdateListener> fileUpdateListeners;
   final ReferenceLongMap<PollListener> pollListeners;
+
+  final ReferenceMap<String, ReactionLoadListener> reactionLoadListeners;
 
   final Map<String, List<TdApi.Message>> pendingMessages = new HashMap<>();
 
@@ -91,9 +94,12 @@ public class TdlibListeners {
 
     this.animatedEmojiListeners = new ReferenceList<>(true);
 
+    this.reactionLoadListeners = new ReferenceMap<>(true);
+
     this.messageChatListeners = new ReferenceLongMap<>();
     this.messageEditChatListeners = new ReferenceLongMap<>();
     this.specificChatListeners = new ReferenceLongMap<>();
+    this.specificForumTopicListeners = new ReferenceMap<>(true);
     this.chatSettingsListeners = new ReferenceLongMap<>(true);
     this.fileUpdateListeners = new ReferenceIntMap<>();
     this.pollListeners = new ReferenceLongMap<>();
@@ -375,6 +381,16 @@ public class TdlibListeners {
   }
 
   @AnyThread
+  public void subscribeToForumTopicUpdates (long chatId, long messageThreadId, ForumTopicInfoListener listener) {
+    specificForumTopicListeners.add(chatId + "_" + messageThreadId, listener);
+  }
+
+  @AnyThread
+  public void unsubscribeFromForumTopicUpdates (long chatId, long messageThreadId, ForumTopicInfoListener listener) {
+    specificForumTopicListeners.remove(chatId + "_" + messageThreadId, listener);
+  }
+
+  @AnyThread
   public void subscribeToChatListUpdates (@NonNull TdApi.ChatList chatList, ChatListListener listener) {
     chatListListeners.add(TD.makeChatListKey(chatList), listener);
   }
@@ -382,6 +398,16 @@ public class TdlibListeners {
   @AnyThread
   public void unsubscribeFromChatListUpdates (@NonNull TdApi.ChatList chatList, ChatListListener listener) {
     chatListListeners.remove(TD.makeChatListKey(chatList), listener);
+  }
+
+  @AnyThread
+  public void addReactionLoadListener (String reactionKey, ReactionLoadListener listener) {
+    reactionLoadListeners.add(reactionKey, listener);
+  }
+
+  @AnyThread
+  public void removeReactionLoadListener (String reactionKey, ReactionLoadListener listener) {
+    reactionLoadListeners.remove(reactionKey, listener);
   }
 
   @AnyThread
@@ -742,6 +768,17 @@ public class TdlibListeners {
   public void notifyAnimatedEmojiListeners (int type) {
     for (AnimatedEmojiListener listener : animatedEmojiListeners) {
       listener.onAnimatedEmojiChanged(type);
+    }
+  }
+
+  // getEmojiReaction + getCustomReaction
+
+  public void notifyReactionLoaded (String reactionKey) {
+    ReferenceList<ReactionLoadListener> list = reactionLoadListeners.removeAll(reactionKey);
+    if (list != null) {
+      for (ReactionLoadListener loadListener : list) {
+        loadListener.onReactionLoaded(reactionKey);
+      }
     }
   }
 
@@ -1217,6 +1254,22 @@ public class TdlibListeners {
   void updateChatVideoChat (TdApi.UpdateChatVideoChat update) {
     updateChatVideoChat(update.chatId, update.videoChat, chatListeners.iterator());
     updateChatVideoChat(update.chatId, update.videoChat, specificChatListeners.iterator(update.chatId));
+  }
+
+  // updateForumTopicInfo
+
+  void updateForumTopicInfo (TdApi.UpdateForumTopicInfo update) {
+    updateForumTopicInfo(update.chatId, update.info, chatListeners.iterator());
+    updateForumTopicInfo(update.chatId, update.info, specificChatListeners.iterator(update.chatId));
+    updateForumTopicInfo(update.chatId, update.info, specificForumTopicListeners.iterator(update.chatId + "_" + update.info.messageThreadId));
+  }
+
+  private static void updateForumTopicInfo (long chatId, TdApi.ForumTopicInfo info, @Nullable Iterator<? extends ForumTopicInfoListener> list) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onForumTopicInfoChanged(chatId, info);
+      }
+    }
   }
 
   // updateChatPendingJoinRequests

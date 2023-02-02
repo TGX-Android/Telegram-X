@@ -503,6 +503,9 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
     }
   }
 
+  protected void onUpdateBottomBarFactor (float bottomBarFactor, float counterFactor, float y) {
+  }
+
   private boolean animatingHeight;
   private ValueAnimator heightAnimator;
 

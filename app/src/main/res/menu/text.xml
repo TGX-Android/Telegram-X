@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
+  <item android:id="@id/btn_plain"
+    android:showAsAction="ifRoom"
+    android:icon="@drawable/baseline_format_clear_24"
+    android:menuCategory="secondary"
+    android:title="@string/TextFormatClear" />
   <item android:id="@id/btn_bold"
     android:showAsAction="ifRoom"
     android:icon="@drawable/baseline_format_bold_24"

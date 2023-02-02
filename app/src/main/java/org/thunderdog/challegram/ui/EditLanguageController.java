@@ -51,6 +51,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
 import org.thunderdog.challegram.util.StringList;
+import org.thunderdog.challegram.util.TextSelection;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 
@@ -163,7 +164,10 @@ public class EditLanguageController extends EditBaseController<EditLanguageContr
       View.OnClickListener onClickListener = v -> {
         String hotKey = ((TextView) v).getText().toString();
         if (!StringUtils.isEmpty(hotKey) && focusedEditText != null) {
-          focusedEditText.getEditText().getText().replace(focusedEditText.getEditText().getSelectionStart(), focusedEditText.getEditText().getSelectionEnd(), hotKey);
+          TextSelection selection = focusedEditText.getEditText().getTextSelection();
+          if (selection != null) {
+            focusedEditText.getEditText().getText().replace(selection.start, selection.end, hotKey);
+          }
         }
       };
       String[] args = new String[argSet.size()];
@@ -579,8 +583,11 @@ public class EditLanguageController extends EditBaseController<EditLanguageContr
         if (focusedEditText != null) {
           String text = getBuiltinValueOrdinary();
           if (!StringUtils.isEmpty(text)) {
-            focusedEditText.getEditText().getText().replace(focusedEditText.getEditText().getSelectionStart(), focusedEditText.getEditText().getSelectionEnd(), text);
-            madeChanges = true;
+            TextSelection selection = focusedEditText.getEditText().getTextSelection();
+            if (selection != null) {
+              focusedEditText.getEditText().getText().replace(selection.start, selection.end, text);
+              madeChanges = true;
+            }
           }
         }
         break;

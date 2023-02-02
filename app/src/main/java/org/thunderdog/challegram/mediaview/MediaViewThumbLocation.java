@@ -28,7 +28,7 @@ import org.thunderdog.challegram.tool.Paints;
 public class MediaViewThumbLocation {
   public int left, top, right, bottom;
   public int clipLeft, clipTop, clipRight, clipBottom;
-  public int topLeftRadius, topRightRadius, bottomRightRadius, bottomLeftRadius;
+  public float topLeftRadius, topRightRadius, bottomRightRadius, bottomLeftRadius;
 
   private static final int FLAG_NO_BOUNCE = 0x01;
   private static final int FLAG_NO_PLACEHOLDER = 0x02;
@@ -115,7 +115,7 @@ public class MediaViewThumbLocation {
 
   private Path path;
 
-  public void setRoundings (int topLeftRadius, int topRightRadius, int bottomRightRadius, int bottomLeftRadius) {
+  public void setRoundings (float topLeftRadius, float topRightRadius, float bottomRightRadius, float bottomLeftRadius) {
     if (this.topLeftRadius != topLeftRadius || this.topRightRadius != topRightRadius || this.bottomRightRadius != bottomRightRadius || this.bottomLeftRadius != bottomLeftRadius) {
       this.topLeftRadius = topLeftRadius;
       this.topRightRadius = topRightRadius;
@@ -145,7 +145,7 @@ public class MediaViewThumbLocation {
   }
 
   private int lastLeft, lastTop, lastRight, lastBottom;
-  private int lastTopLeft, lastTopRight, lastBottomRight, lastBottomLeft;
+  private float lastTopLeft, lastTopRight, lastBottomRight, lastBottomLeft;
 
   private void preparePath (int left, int top, int right, int bottom) {
     if (path == null ||
@@ -173,7 +173,7 @@ public class MediaViewThumbLocation {
     }
   }
 
-  public int getRadius () {
+  public float getRadius () {
     return bottomLeftRadius == bottomRightRadius && bottomLeftRadius == topLeftRadius && bottomLeftRadius == topRightRadius ? bottomLeftRadius : 0;
   }
 

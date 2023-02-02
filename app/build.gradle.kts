@@ -34,6 +34,7 @@ task<me.vkryl.task.CheckEmojiKeyboardTask>("checkEmojiKeyboard") {
 
 val isExperimentalBuild = extra["experimental"] as Boolean? ?: false
 val properties = extra["properties"] as Properties
+val projectName = extra["app_name"] as String
 
 android {
   defaultConfig {
@@ -49,7 +50,7 @@ android {
     buildConfigField("boolean", "EXPERIMENTAL", isExperimentalBuild.toString())
 
     buildConfigInt("TELEGRAM_API_ID", properties.getIntOrThrow("telegram.api_id"))
-    buildConfigString("TELEGRAM_API_HASH", properties.getProperty("telegram.api_hash"))
+    buildConfigString("TELEGRAM_API_HASH", properties.getOrThrow("telegram.api_hash"))
 
     buildConfigString("TELEGRAM_RESOURCES_CHANNEL", Telegram.RESOURCES_CHANNEL)
     buildConfigString("TELEGRAM_UPDATES_CHANNEL", Telegram.UPDATES_CHANNEL)
@@ -58,7 +59,7 @@ android {
     buildConfigString("EMOJI_BUILTIN_ID", Emoji.BUILTIN_ID)
 
     buildConfigString("LANGUAGE_PACK", Telegram.LANGUAGE_PACK)
-    buildConfigString("YOUTUBE_API_KEY", properties.getOrThrow("youtube.api_key"))
+    buildConfigString("YOUTUBE_API_KEY", properties.getProperty("youtube.api_key", ""))
 
     buildConfigString("THEME_FILE_EXTENSION", App.THEME_EXTENSION)
   }
@@ -67,6 +68,7 @@ android {
   // defaultConfig.vectorDrawables.useSupportLibrary = true
 
   sourceSets.getByName("main") {
+    java.srcDirs("./src/google/java") // TODO: Huawei & FOSS editions
     Config.EXOPLAYER_EXTENSIONS.forEach { module ->
       java.srcDirs("../thirdparty/ExoPlayer/extensions/${module}/src/main/java")
     }
@@ -114,7 +116,6 @@ android {
 
     val versionCodeOverride = versionCode * 1000 + abi * 10
     val versionNameOverride = "${variant.versionName}.${defaultConfig.versionCode}${if (extra.has("app_version_suffix")) extra["app_version_suffix"] else ""}-${abiVariant.displayName}${if (extra.has("app_name_suffix")) "-" + extra["app_name_suffix"] else ""}${if (variant.buildType.isDebuggable) "-debug" else ""}"
-    val projectName = properties.getProperty("app.name", "Telegram X")
     val outputFileNamePrefix = properties.getProperty("app.file", projectName.replace(" ", "-").replace("#", ""))
     val fileName = "${outputFileNamePrefix}-${versionNameOverride.replace("-universal(?=-|\$)", "")}"
 
@@ -180,7 +181,7 @@ dependencies {
   implementation("androidx.viewpager:viewpager:1.0.0")
   implementation("androidx.work:work-runtime:2.7.1")
   implementation("androidx.browser:browser:1.4.0")
-  implementation("androidx.exifinterface:exifinterface:1.3.3")
+  implementation("androidx.exifinterface:exifinterface:1.3.5")
   implementation("androidx.collection:collection:1.2.0")
   implementation("androidx.interpolator:interpolator:1.0.0")
   implementation("androidx.gridlayout:gridlayout:1.0.0")
@@ -201,11 +202,11 @@ dependencies {
     exclude(group = "com.google.firebase", module = "firebase-measurement-connector")
   }
   // Play In-App Updates: https://developer.android.com/reference/com/google/android/play/core/release-notes-in_app_updates
-  implementation("com.google.android.play:app-update:2.0.0")
+  implementation("com.google.android.play:app-update:2.0.1")
   // ExoPlayer: https://github.com/google/ExoPlayer/blob/release-v2/RELEASENOTES.md
   implementation("com.google.android.exoplayer:exoplayer-core:2.18.1")
   // The Checker Framework: https://checkerframework.org/CHANGELOG.md
-  compileOnly("org.checkerframework:checker-qual:3.24.0")
+  compileOnly("org.checkerframework:checker-qual:3.29.0")
   // OkHttp: https://github.com/square/okhttp/blob/master/CHANGELOG.md
   implementation("com.squareup.okhttp3:okhttp:4.9.3")
   // ShortcutBadger: https://github.com/leolin310148/ShortcutBadger
@@ -213,7 +214,7 @@ dependencies {
   // ReLinker: https://github.com/KeepSafe/ReLinker/blob/master/CHANGELOG.md
   implementation("com.getkeepsafe.relinker:relinker:1.4.5")
   // Konfetti: https://github.com/DanielMartinus/Konfetti/blob/master/README.md
-  implementation("nl.dionsegijn:konfetti-xml:2.0.1")
+  implementation("nl.dionsegijn:konfetti-xml:2.0.2")
   // Transcoder: https://github.com/natario1/Transcoder/blob/master/docs/_about/changelog.md
   implementation("com.github.natario1:Transcoder:ba8f098c94")
   // https://github.com/mikereedell/sunrisesunsetlib-java

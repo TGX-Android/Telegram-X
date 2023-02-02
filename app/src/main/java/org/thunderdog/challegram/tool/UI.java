@@ -21,6 +21,7 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.os.Build;
+import android.os.CancellationSignal;
 import android.os.Handler;
 import android.os.Looper;
 import android.text.format.DateFormat;
@@ -31,6 +32,7 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
+import androidx.core.content.ContextCompat;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
@@ -132,57 +134,66 @@ public class UI {
     }
   }
 
-  public static boolean startService (Intent intent, boolean isForeground, boolean forcePermissionRequest) {
+  private static boolean startServiceImpl (Context context, Intent intent, boolean isForeground) {
     try {
       if (isForeground) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-          BaseActivity activity = getUiContext();
-          if (activity != null) {
-            activity.requestCustomPermissions(new String[] {Manifest.permission.FOREGROUND_SERVICE}, (code, granted) -> {
-              try {
-                activity.startForegroundService(intent);
-              } catch (Throwable t) {
-                Log.e("Cannot start foreground service", t);
-              }
-            });
-            return true;
-          } else {
-            Log.e("Cannot start foreground service, because activity not found.");
-          }
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-          getContext().startForegroundService(intent);
-          return true;
+        ContextCompat.startForegroundService(context, intent);
+      } else {
+        context.startService(intent);
+      }
+      return true;
+    } catch (Throwable t) {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        if (t instanceof android.app.ForegroundServiceStartNotAllowedException) {
+          Log.e("Cannot start foreground service due to system restrictions", t);
+          return false;
         }
       }
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && forcePermissionRequest) {
+      Log.e("Cannot start service, isForeground:%b", t, isForeground);
+      return false;
+    }
+  }
+
+  public static boolean startService (Intent intent, boolean isForeground, boolean forcePermissionRequest, @Nullable CancellationSignal signal) {
+    if (isForeground) {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
         BaseActivity activity = getUiContext();
         if (activity != null) {
           activity.requestCustomPermissions(new String[] {Manifest.permission.FOREGROUND_SERVICE}, (code, granted) -> {
-            try {
-              activity.startService(intent);
-            } catch (Throwable t) {
-              Log.e("Cannot start service", t);
+            if (signal == null || !signal.isCanceled()) {
+              startServiceImpl(activity, intent, true);
             }
           });
           return true;
         } else {
-          Log.e("Cannot request foreground service permission, because activity not found.");
+          Log.e("Cannot start foreground service, because activity not found.");
         }
       }
-      getContext().startService(intent);
-      return true;
-    } catch (Throwable t) {
-      Log.w("Cannot start service at all", t);
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        return startServiceImpl(getContext(), intent, true);
+      }
     }
-    return false;
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && forcePermissionRequest) {
+      BaseActivity activity = getUiContext();
+      if (activity != null) {
+        activity.requestCustomPermissions(new String[] {Manifest.permission.FOREGROUND_SERVICE}, (code, granted) -> {
+          if (signal == null || !signal.isCanceled()) {
+            startServiceImpl(activity, intent, false);
+          }
+        });
+        return true;
+      } else {
+        Log.e("Cannot request foreground service permission, because activity not found.");
+      }
+    }
+    return startServiceImpl(getContext(), intent, false);
   }
 
   private static long lastResumeTime;
 
   public static void startNotificationService () {
     if (Config.SERVICES_ENABLED) {
-      startService(new Intent(getAppContext(), NetworkListenerService.class), false, false);
+      startService(new Intent(getAppContext(), NetworkListenerService.class), false, false, null);
     }
   }
 

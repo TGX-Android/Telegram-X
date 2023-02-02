@@ -15,6 +15,9 @@
 
 package org.thunderdog.challegram.util.text;
 
+import android.util.Pair;
+import android.util.SparseArray;
+
 import androidx.annotation.Nullable;
 
 import java.util.ArrayList;
@@ -66,9 +69,18 @@ public class Highlight {
   }
 
   public final List<Part> parts = new ArrayList<>();
+  private TextColorSet customColorSet = null;
 
   public Highlight (String text, String highlight) {
     this(text, 0, text.length(), highlight, 0, highlight.length());
+  }
+
+  public TextColorSet getColorSet () {
+    return customColorSet != null ? customColorSet : TextColorSets.Regular.SEARCH_HIGHLIGHT;
+  }
+
+  public void setCustomColorSet (TextColorSet customColorSet) {
+    this.customColorSet = customColorSet;
   }
 
   private static int indexOfWeakCodePoint (String in, int startIndex, int endIndex) {
@@ -105,14 +117,6 @@ public class Highlight {
   }
 
   public Highlight (String text, int start, int end, String highlight, int highlightStart, int highlightEnd) {
-    // It's possible to also ignore diacritics,
-    // e.g. via Normalizer.normalize(..., Normalizer.Form.NFD),
-    // however, it seems server never returns e when looking for é,
-    // at least for global messages search.
-
-    text = text.toLowerCase();
-    highlight = highlight.toLowerCase();
-
     int highlightLength = highlightEnd - highlightStart;
 
     int maxMatchingLength = 0;
@@ -126,7 +130,8 @@ public class Highlight {
       }
 
       int matchingLength = 0;
-      for (int highlightIndex = 0; highlightIndex < highlightLength && matchingLength < (end - index); ) {
+      int highlightIndex = 0;
+      while (highlightIndex < highlightLength && matchingLength < (end - index)) {
         int highlightCodePoint = highlight.codePointAt(highlightStart + highlightIndex);
         int highlightCodePointType = Character.getType(highlightCodePoint);
         boolean highlightCodePointIsSeparator =
@@ -137,11 +142,10 @@ public class Highlight {
         boolean contentCodePointIsSeparator =
           contentCodePointType == Character.SPACE_SEPARATOR ||
           contentCodePointType == Character.LINE_SEPARATOR;
-        if (highlightCodePoint == contentCodePoint || (highlightCodePointIsSeparator && contentCodePointIsSeparator)) {
+        if (highlightCodePoint == contentCodePoint || (highlightCodePointIsSeparator && contentCodePointIsSeparator) || StringUtils.normalizeCodePoint(highlightCodePoint) == StringUtils.normalizeCodePoint(contentCodePoint)) {
           // easy path: code points are equal or similar
-          int charCount = Character.charCount(highlightCodePoint);
-          matchingLength += charCount;
-          highlightIndex += charCount;
+          matchingLength += Character.charCount(contentCodePoint);
+          highlightIndex += Character.charCount(highlightCodePoint);
         } else {
           // harder path: look if text <-> highlight can be transliterated one way or another
           Transliterator.PrefixResult prefixResult = Transliterator.findPrefix(
@@ -157,7 +161,7 @@ public class Highlight {
         }
       }
       if (matchingLength > 0) {
-        parts.add(new Part(index, index + matchingLength, highlight.length() - matchingLength));
+        parts.add(new Part(index, index + matchingLength, highlightLength - highlightIndex));
         next = Math.max(next, index + matchingLength);
         maxMatchingLength = Math.max(maxMatchingLength, matchingLength);
       }
@@ -175,7 +179,7 @@ public class Highlight {
 
     for (int i = parts.size() - 1; i >= 0; i--) {
       Part part = parts.get(i);
-      if (part.length() < maxMatchingLength) {
+      if (part.length() < maxMatchingLength && !part.isExactMatch()) {
         parts.remove(i);
       }
     }
@@ -187,6 +191,11 @@ public class Highlight {
 
   @Nullable
   public static Highlight valueOf (String text, String highlight) {
+    return valueOf(text, highlight, null);
+  }
+
+  @Nullable
+  public static Highlight valueOf (String text, String highlight, TextColorSet customColorSet) {
     if (StringUtils.isEmpty(text) || StringUtils.isEmpty(highlight)) {
       return null;
     }
@@ -261,7 +270,22 @@ public class Highlight {
     if (result.isEmpty()) {
       return null;
     }
+    result.setCustomColorSet(customColorSet);
     return result;
+  }
+
+  public static boolean isExactMatch (@Nullable Highlight highlight) {
+    if (highlight == null) {
+      return false;
+    }
+
+    for (Part part : highlight.parts) {
+      if (part.isExactMatch()) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   public void addNonIntersectingParts (Highlight other) {
@@ -314,5 +338,51 @@ public class Highlight {
 
   public static boolean equals (Highlight a, Highlight b) {
     return (a == null && b == null) || (a != null && a.equals(b));
+  }
+
+  public static class Pool {
+    public static final int KEY_NONE = -1;
+    public static final int KEY_TEXT = 1;
+    public static final int KEY_MEDIA_CAPTION = 2;
+    public static final int KEY_SITE_NAME = 3;
+    public static final int KEY_SITE_TITLE = 4;
+    public static final int KEY_SITE_TEXT = 5;
+    public static final int KEY_FILE_TITLE = 6;
+    public static final int KEY_FILE_SUBTITLE = 7;
+    public static final int KEY_FILE_CAPTION = 8;
+
+    private final SparseArray<Highlight> highlights;
+    private Highlight mostRelevantHighlight;
+    private int mostRelevantHighlightKey;
+
+    public Pool () {
+      highlights = new SparseArray<>();
+    }
+
+    public void add (int key, Highlight highlight) {
+      if (mostRelevantHighlight == null || mostRelevantHighlight.getMaxSize() < highlight.getMaxSize()) {
+        mostRelevantHighlightKey = key;
+        mostRelevantHighlight = highlight;
+      }
+      highlights.append(key, highlight);
+    }
+
+    public Highlight get (int key) {
+      return highlights.get(key);
+    }
+
+    public int getMostRelevantHighlightKey () {
+      return mostRelevantHighlightKey;
+    }
+
+    public boolean isMostRelevant (int key) {
+      return mostRelevantHighlightKey == key;
+    }
+
+    public void clear () {
+      mostRelevantHighlight = null;
+      mostRelevantHighlightKey = KEY_NONE;
+      highlights.clear();
+    }
   }
 }

@@ -1833,7 +1833,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
   // ReactionPreview
 
-  public void openReactionPreview (Tdlib tdlib, StickerSmallView stickerView, TGReaction reaction, int cx, int cy, int maxWidth, int viewportHeight, boolean disableEmojis) {
+  public void openReactionPreview (Tdlib tdlib, StickerSmallView stickerView, TGReaction reaction, @Nullable TGStickerObj effectAnimation, int cx, int cy, int maxWidth, int viewportHeight, boolean disableEmojis) {
     if (stickerPreview != null) {
       return;
     }
@@ -1842,7 +1842,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
     stickerPreview = new StickerPreviewView(this);
     stickerPreview.setControllerView(stickerPreviewControllerView);
-    stickerPreview.setReaction(tdlib, reaction, cx, cy, maxWidth, viewportHeight, disableEmojis);
+    stickerPreview.setReaction(tdlib, reaction, effectAnimation, cx, cy, maxWidth, viewportHeight, disableEmojis);
 
     stickerPreviewWindow = new PopupLayout(this);
     stickerPreviewWindow.setBackListener(stickerPreview);
@@ -2490,7 +2490,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
   private boolean canOpenCamera () {
     return !(
-      getCurrentPopupWindow() != null ||
+      // getCurrentPopupWindow() != null ||
       (cameraAnimator != null && cameraAnimator.isAnimating()) ||
       activityState != UI.STATE_RESUMED ||
       recordAudioVideoController.isOpen() ||
@@ -2561,7 +2561,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   public boolean startCameraDrag (ViewController.CameraOpenOptions options, boolean isOpen) { // User has slided enough to start dragging
-    if (isCameraOpen == isOpen || !canOpenCamera() || isKeyboardVisible()) {
+    if (isCameraOpen == isOpen || !canOpenCamera() /*|| isKeyboardVisible()*/) {
       return false;
     }
     if (isOpen) {

@@ -66,6 +66,19 @@ public class CustomTypefaceSpan extends MetricAffectingSpan {
     this.colorId = colorId;
   }
 
+  public CustomTypefaceSpan (CustomTypefaceSpan copy) {
+    this(copy.typeface, copy.colorId);
+    this.type = copy.type;
+    this.backgroundColorId = copy.backgroundColorId;
+    this.flags = copy.flags;
+    this.textSizeDp = copy.textSizeDp;
+    this.forcedTheme = copy.forcedTheme;
+    this.transparentColorId = copy.transparentColorId;
+    this.boundTransparencyView = copy.boundTransparencyView;
+    this.onClickListener = copy.onClickListener;
+    this.tag = copy.tag;
+  }
+
   public CustomTypefaceSpan setBackgroundColorId (@ThemeColorId int colorId) {
     return setBackgroundColorId(colorId, false);
   }

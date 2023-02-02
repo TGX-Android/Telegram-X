@@ -426,9 +426,9 @@ public class CreateGroupController extends ViewController<Void> implements EditH
     currentIsChannel = currentMemberIds.length > tdlib.basicGroupMaxSize();
 
     if (currentIsChannel) {
-      tdlib.client().send(new TdApi.CreateNewSupergroupChat(title, false, null, null, false), this);
+      tdlib.client().send(new TdApi.CreateNewSupergroupChat(title, false, null, null, 0, false), this);
     } else if (groupCreationCallback != null && groupCreationCallback.forceSupergroupChat()) {
-      tdlib.client().send(new TdApi.CreateNewSupergroupChat(title, false, null, null, false), result -> {
+      tdlib.client().send(new TdApi.CreateNewSupergroupChat(title, false, null, null, 0, false), result -> {
         switch (result.getConstructor()) {
           case TdApi.Chat.CONSTRUCTOR: {
             TdApi.Chat createdGroup = (TdApi.Chat) result;
@@ -444,7 +444,7 @@ public class CreateGroupController extends ViewController<Void> implements EditH
         }
       });
     } else {
-      tdlib.client().send(new TdApi.CreateNewBasicGroupChat(currentMemberIds, title), this);
+      tdlib.client().send(new TdApi.CreateNewBasicGroupChat(currentMemberIds, title, 0), this);
     }
   }
 

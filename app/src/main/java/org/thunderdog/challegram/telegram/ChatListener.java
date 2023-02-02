@@ -18,7 +18,7 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 
-public interface ChatListener {
+public interface ChatListener extends ForumTopicInfoListener {
   default void onChatTopMessageChanged (long chatId, @Nullable TdApi.Message topMessage) { }
   default void onChatPositionChanged (long chatId, TdApi.ChatPosition position, boolean orderChanged, boolean sourceChanged, boolean pinStateChanged) { }
   default void onChatPermissionsChanged (long chatId, TdApi.ChatPermissions permissions) { }
@@ -42,6 +42,6 @@ public interface ChatListener {
   default void onChatUnreadReactionCount(long chatId, int unreadReactionCount, boolean availabilityChanged) { }
   default void onChatDefaultDisableNotifications (long chatId, boolean defaultDisableNotifications) { }
   default void onChatDefaultMessageSenderIdChanged (long chatId, TdApi.MessageSender senderId) { }
-  default void onChatClientDataChanged (long chatId, @Nullable String clientData) { }
-  default void onChatAvailableReactionsUpdated (long chatId, String[] availableReactions) { }
+  default void onChatClientDataChanged (long chatId, @Nullable String clientData)                             { }
+  default void onChatAvailableReactionsUpdated (long chatId, TdApi.ChatAvailableReactions availableReactions) { }
 }

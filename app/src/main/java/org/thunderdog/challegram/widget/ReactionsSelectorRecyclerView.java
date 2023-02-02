@@ -18,6 +18,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -25,6 +26,8 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.util.text.Counter;
+
+import java.util.Set;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 
@@ -35,7 +38,7 @@ public class ReactionsSelectorRecyclerView extends RecyclerView {
   }
 
   public void setMessage (TGMessage message) {
-    String chosen = message.getMessageReactions().getChosen();
+    Set<String> chosen = message.getMessageReactions().getChosen();
     TdApi.AvailableReaction[] reactions = message.getMessageAvailableReactions();
 
     LinearLayoutManager linearLayoutManager = new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false) {
@@ -55,8 +58,10 @@ public class ReactionsSelectorRecyclerView extends RecyclerView {
 
     int index = -1;
     for (int a = 0; a < reactions.length; a++) {
-      if (reactions[a].reaction.equals(chosen)) {
+      String reactionKey = TD.makeReactionKey(reactions[a].type);
+      if (chosen.contains(reactionKey)) {
         index = a;
+        break;
       }
     }
 
@@ -112,7 +117,7 @@ public class ReactionsSelectorRecyclerView extends RecyclerView {
     }
 
     public void playAnimation () {
-      if (centerAnimationSicker != null && centerAnimationSicker.getPreviewAnimation() != null) {
+      if (centerAnimationSicker != null && centerAnimationSicker.getPreviewAnimation() != null && !centerAnimationSicker.isCustomReaction()) {
         centerAnimationSicker.getPreviewAnimation().setPlayOnce(true);
         centerAnimationSicker.getPreviewAnimation().setLooped(false);
       }
@@ -162,7 +167,7 @@ public class ReactionsSelectorRecyclerView extends RecyclerView {
     private final Context context;
     private final TGMessage message;
     private final TdApi.AvailableReaction[] reactions;
-    private final String chosen;
+    private final Set<String> chosen;
     private ReactionSelectDelegate delegate;
 
     ReactionsAdapter (Context context, TGMessage message) {
@@ -185,9 +190,9 @@ public class ReactionsSelectorRecyclerView extends RecyclerView {
 
     @Override
     public void onBindViewHolder (@NonNull ReactionHolder holder, int position) {
-      String emoji = reactions[position].reaction;
-      TGReaction reaction = tdlib.getReaction(emoji);
-      TdApi.MessageReaction tdReaction = message.getMessageReactions().getTdMessageReaction(emoji);
+      TdApi.ReactionType reactionType = reactions[position].type;
+      TGReaction reaction = tdlib.getReaction(reactionType);
+      TdApi.MessageReaction tdReaction = message.getMessageReactions().getTdMessageReaction(reactionType);
       ReactionView view = (ReactionView) holder.itemView;
       if (reaction == null) return;
 

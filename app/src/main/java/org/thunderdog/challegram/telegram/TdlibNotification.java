@@ -165,7 +165,7 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
       case TdApi.NotificationTypeNewMessage.CONSTRUCTOR:
         return ((TdApi.NotificationTypeNewMessage) notification.type).message.content.getConstructor() == TdApi.MessagePinMessage.CONSTRUCTOR;
       case TdApi.NotificationTypeNewPushMessage.CONSTRUCTOR:
-        return TD.isPinnedMessagePushType(((TdApi.NotificationTypeNewPushMessage) notification.type).content);
+        return Td.isPinned(((TdApi.NotificationTypeNewPushMessage) notification.type).content);
       case TdApi.NotificationTypeNewCall.CONSTRUCTOR:
       case TdApi.NotificationTypeNewSecretChat.CONSTRUCTOR:
         break;
@@ -285,10 +285,12 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
 
   public String getContentText () {
     switch (notification.type.getConstructor()) {
-      case TdApi.NotificationTypeNewMessage.CONSTRUCTOR:
-        return TD.getTextFromMessage(((TdApi.NotificationTypeNewMessage) notification.type).message);
+      case TdApi.NotificationTypeNewMessage.CONSTRUCTOR: {
+        TdApi.FormattedText text = Td.textOrCaption(((TdApi.NotificationTypeNewMessage) notification.type).message.content);
+        return Td.getText(text);
+      }
       case TdApi.NotificationTypeNewPushMessage.CONSTRUCTOR:
-        return TD.getTextFromMessage(((TdApi.NotificationTypeNewPushMessage) notification.type).content);
+        return Td.getText(((TdApi.NotificationTypeNewPushMessage) notification.type).content);
       case TdApi.NotificationTypeNewCall.CONSTRUCTOR:
       case TdApi.NotificationTypeNewSecretChat.CONSTRUCTOR:
         break;
@@ -450,13 +452,13 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
     LongSparseArray<TdlibEmojiManager.Entry> customEmojis = new LongSparseArray<>();
     LongSet awaitingCustomEmojiIds = new LongSet();
     Filter<TdlibEmojiManager.Entry> filter = (entry) ->
-      !entry.isNotFound() && entry.sticker != null && entry.sticker.thumbnail != null;
-    TdlibEmojiManager.Watcher watcher = (context, customEmojiId, entry) -> {
+      !entry.isNotFound() && entry.value != null && entry.value.thumbnail != null;
+    TdlibEmojiManager.Watcher watcher = (context, entry) -> {
       synchronized (customEmojis) {
         if (filter.accept(entry)) {
-          customEmojis.put(customEmojiId, entry);
+          customEmojis.put(entry.customEmojiId, entry);
         }
-        awaitingCustomEmojiIds.remove(customEmojiId);
+        awaitingCustomEmojiIds.remove(entry.customEmojiId);
       }
       customEmojiLatch.countDown();
     };
@@ -500,10 +502,10 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
       for (int i = 0; i < customEmojis.size(); i++) {
         TdlibEmojiManager.Entry entry = customEmojis.valueAt(i);
         //noinspection ConstantConditions
-        int thumbnailFileId = entry.sticker.thumbnail.file.id;
+        int thumbnailFileId = entry.value.thumbnail.file.id;
         ImageFile thumbnailFile = files.get(thumbnailFileId);
         if (thumbnailFile == null) {
-          thumbnailFile = TD.toImageFile(tdlib, entry.sticker.thumbnail);
+          thumbnailFile = TD.toImageFile(tdlib, entry.value.thumbnail);
           if (thumbnailFile != null) {
             thumbnailFile.setSize(Screen.dp(15f));
             thumbnailFile.setNoBlur();

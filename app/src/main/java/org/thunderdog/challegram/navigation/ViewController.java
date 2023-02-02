@@ -554,6 +554,16 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     }
   }
 
+  protected final void executeOnUiThreadOptional (@NonNull Runnable runnable) {
+    if (UI.inUiThread()) {
+      if (!isDestroyed()) {
+        runnable.run();
+      }
+    } else {
+      runOnUiThreadOptional(runnable);
+    }
+  }
+
   protected final void runOnUiThread (@NonNull Runnable runnable, long delay) {
     UI.post(runnable, delay);
   }
@@ -613,16 +623,27 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
   }
 
-  protected @CallSuper void updateSearchMode (boolean inSearch) {
+  @CallSuper
+  protected void updateSearchMode (boolean inSearch, boolean needUpdateKeyboard) {
     if (inSearch) {
       cachedLockFocusView = lockFocusView;
       lockFocusView = searchHeaderView;
-      Keyboard.show(searchHeaderView);
+      if (needUpdateKeyboard) {
+        Keyboard.show(searchHeaderView);
+      }
     } else {
       lockFocusView = cachedLockFocusView;
-      Keyboard.hide(searchHeaderView);
+      if (needUpdateKeyboard) {
+        Keyboard.hide(searchHeaderView);
+      }
       cachedLockFocusView = null;
     }
+  }
+
+  @CallSuper
+  @Deprecated
+  protected void updateSearchMode (boolean inSearch) {
+    updateSearchMode(inSearch, true);
   }
 
   protected View getCustomFocusView () {
@@ -1082,7 +1103,11 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     return searchHeaderView;
   }
 
-  protected final String getLastSearchInput () {
+  protected void setSearchInput (String text) {
+    clearSearchInput(text, false);
+  }
+
+  public final String getLastSearchInput () {
     return lastSearchInput;
   }
 
@@ -1099,7 +1124,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       }
       searchHeaderView.setText(text);
       if (!text.isEmpty()) {
-        Views.setSelection(searchHeaderView, text.length());
+        searchHeaderView.setSelection(text.length());
       }
       updateClearSearchButton(!text.isEmpty(), false);
     }
@@ -1347,6 +1372,14 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     return (flags & FLAG_IN_SEARCH_MODE) != 0;
   }
 
+  public boolean onBeforeLeaveSearchMode () {
+    return true;
+  }
+
+  protected boolean needHideKeyboardOnTouchBackButton () {
+    return true;
+  }
+
   protected final void enterSearchMode () {
     flags |= FLAG_IN_SEARCH_MODE;
   }
@@ -1512,7 +1545,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     inputView.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_WEB_EMAIL_ADDRESS);
     if (!StringUtils.isEmpty(value)) {
       inputView.setText(value);
-      Views.setSelection(inputView.getEditText(), 0, value.length());
+      inputView.getEditText().setSelection(0, value.length());
     }
     inputView.getEditText().addTextChangedListener(new TextWatcher() {
       @Override

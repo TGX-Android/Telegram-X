@@ -16,6 +16,7 @@ package org.thunderdog.challegram.telegram;
 
 import android.content.Context;
 import android.os.Build;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -38,6 +39,7 @@ import org.thunderdog.challegram.TDLib;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
+import org.thunderdog.challegram.core.BaseThread;
 import org.thunderdog.challegram.core.WatchDog;
 import org.thunderdog.challegram.core.WatchDogContext;
 import org.thunderdog.challegram.data.TD;
@@ -47,6 +49,8 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.AppBuildInfo;
 import org.thunderdog.challegram.util.Crash;
+import org.thunderdog.challegram.util.DeviceStorageError;
+import org.thunderdog.challegram.util.TokenRetriever;
 
 import java.io.File;
 import java.io.IOException;
@@ -75,6 +79,7 @@ import me.leolin.shortcutbadger.ShortcutBadger;
 import me.vkryl.android.LocaleUtils;
 import me.vkryl.android.SdkVersion;
 import me.vkryl.core.ArrayUtils;
+import me.vkryl.core.FileUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Filter;
 import me.vkryl.core.lambda.RunnableBool;
@@ -192,7 +197,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     if (StringUtils.isEmpty(text))
       return;
     performSyncTask(context, extras.accountId, "reply", (tdlib, onDone) -> {
-      tdlib.sendMessage(extras.chatId, extras.messageThreadId, extras.needReply ? extras.messageIds[extras.messageIds.length - 1] : 0, false, true, new TdApi.InputMessageText(new TdApi.FormattedText(text.toString(), null), false, false), sendingMessage -> {
+      tdlib.sendMessage(extras.chatId, extras.messageThreadId, extras.needReply ? extras.messageIds[extras.messageIds.length - 1] : 0, Td.newSendOptions(), new TdApi.InputMessageText(new TdApi.FormattedText(text.toString(), null), false, false), sendingMessage -> {
         if (sendingMessage == null) {
           UI.showToast(R.string.NotificationReplyFailed, Toast.LENGTH_SHORT);
           if (onDone != null) {
@@ -268,6 +273,8 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   // Impl
 
   private final ArrayList<TdlibAccount> accounts = new ArrayList<>();
+
+  private final Object counterLock = new Object();
 
   private int preferredAccountId = TdlibAccount.NO_ID;
   private TdlibAccount currentAccount;
@@ -528,8 +535,8 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
 
   // Counters
 
-  public void incrementBadgeCounters(@NonNull TdApi.ChatList chatList, int unreadCountDelta, int unreadUnmutedCountDelta, boolean areChats) {
-    synchronized (this) {
+  public void incrementBadgeCounters (@NonNull TdApi.ChatList chatList, int unreadCountDelta, int unreadUnmutedCountDelta, boolean areChats) {
+    synchronized (counterLock) {
       /*if (areChats) {
         this.totalCounter.chatCount += unreadCountDelta;
         this.totalCounter.chatUnmutedCount += unreadUnmutedCountDelta;
@@ -576,32 +583,36 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   }
 
   public void resetBadge () {
-    synchronized (this) {
+    synchronized (counterLock) {
       updateBadgeInternal(true, false);
       dispatchUnreadCount(true);
     }
   }
 
   private boolean logged;
+  private BaseThread badgeUpdaterThread;
 
   private void updateBadgeInternal (boolean force, boolean counterChanged) {
-    try {
-      TdlibBadgeCounter badge = getTotalUnreadBadgeCounter();
-      ShortcutBadger.applyCountOrThrow(UI.getAppContext(), badge.getCount());
-      logged = false;
-    } catch (Throwable t) {
-      if (!logged) {
-        logged = true;
-        Log.v("Could not update app badge", t);
-      }
-    }
-    /*if (Device.IS_XIAOMI && (force || counterChanged) && (totalUnreadCount > 0 || totalUnreadUnmutedCount > 0)) {
-      for (TdlibAccount account : this) {
-        if (account.tdlib != null) {
-          account.tdlib.notifications().updateNotification();
+    if (badgeUpdaterThread == null) {
+      badgeUpdaterThread = new BaseThread("ShortcutBadgerThread") {
+        @Override
+        protected void process (Message msg) {
+          int count = msg.arg1;
+          try {
+            ShortcutBadger.applyCountOrThrow(UI.getAppContext(), count);
+            logged = false;
+          } catch (Throwable t) {
+            if (!logged) {
+              logged = true;
+              Log.v("Could not update app badge", t);
+            }
+          }
         }
-      }
-    }*/
+      };
+    }
+    TdlibBadgeCounter badge = getTotalUnreadBadgeCounter();
+    final int count = badge.getCount();
+    badgeUpdaterThread.sendMessage(Message.obtain(badgeUpdaterThread.getHandler(), 0, count, 0), 0);
   }
 
   public void onUpdateAllNotifications () {
@@ -625,7 +636,6 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   private static final int ACTION_DISPATCH_NETWORK_STATE = 0;
   private static final int ACTION_DISPATCH_NETWORK_TYPE = 1;
   private static final int ACTION_DISPATCH_NETWORK_DATA_SAVER = 2;
-  // private static final int ACTION_DISPATCH_KNOWN_USER_ID = 3;
   private static final int ACTION_DISPATCH_ACCOUNT_PROFILE = 4;
   private static final int ACTION_DISPATCH_ACCOUNT_PROFILE_PHOTO = 5;
   private static final int ACTION_DISPATCH_TOTAL_UNREAD_COUNT = 6;
@@ -642,18 +652,6 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       case ACTION_DISPATCH_NETWORK_DATA_SAVER:
         global().notifySystemDataSaverStateChanged(msg.arg1 == 1);
         break;
-      /*case ACTION_DISPATCH_KNOWN_USER_ID: {
-        int accountId = msg.arg1;
-        int userId = msg.arg2;
-        TdlibAccount account = accounts.get(accountId);
-        if (!account.isUnauthorized() && account.setKnownUserId(userId)) {
-          saveAccount(account, ACCOUNT_USER_CHANGED);
-          if (userId != 0) {
-            account.tdlib().checkDeviceToken();
-          }
-        }
-        break;
-      }*/
       case ACTION_DISPATCH_ACCOUNT_PROFILE: {
         onAccountProfileChanged(account(msg.arg1), (TdApi.User) msg.obj, msg.arg1 == currentAccount.id, msg.arg2 == 1);
         break;
@@ -1102,7 +1100,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
           break;
         }
         default:
-          throw new IllegalArgumentException("mode == ");
+          throw new IllegalArgumentException(Integer.toString(mode));
       }
       return saveCount;
     }
@@ -1137,9 +1135,9 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     File file = getAccountConfigFile();
     try {
       if (!file.exists() && !file.createNewFile())
-        throw new RuntimeException("Cannot save config file");
+        throw new DeviceStorageError("Cannot save config file");
     } catch (IOException e) {
-      throw new RuntimeException(e);
+      throw new DeviceStorageError(e);
     }
 
     int accountNum;
@@ -1147,13 +1145,13 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       accountNum = writeAccountConfig(r, mode, accountId);
     } catch (IOException e) {
       Tracer.onLaunchError(e);
-      throw new RuntimeException(e);
+      throw new DeviceStorageError(e);
     }
     try (RandomAccessFile ignored = new RandomAccessFile(file, MODE_RW)) {
       Log.i(Log.TAG_ACCOUNTS, "Saved %d accounts in %dms, mode:%d", accountNum, SystemClock.uptimeMillis() - ms, mode);
     } catch (IOException e) {
       Tracer.onLaunchError(e);
-      throw new RuntimeException(e);
+      throw new DeviceStorageError(e);
     }
   }
 
@@ -1515,6 +1513,22 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     }, limit, null, after);
   }
 
+  public boolean notifyPushProcessingTakesTooLong (int accountId, long pushId) {
+    TDLib.Tag.notifications(pushId, accountId, "Trying to speed up notification displaying by aborting some of operations");
+    if (accountId != TdlibAccount.NO_ID) {
+      Tdlib tdlib = account(accountId).activeTdlib();
+      return tdlib == null || tdlib.notifyPushProcessingTakesTooLong(pushId);
+    }
+    int failureCount = 0;
+    for (TdlibAccount account : this) {
+      Tdlib tdlib = account.activeTdlib();
+      if (tdlib != null && !tdlib.notifyPushProcessingTakesTooLong(pushId)) {
+        failureCount++;
+      }
+    }
+    return failureCount == 0;
+  }
+
   public void processPushOrSync (long pushId, int accountId, String payload, @Nullable Runnable after) {
     performTdlibTask(pushId, accountId, (account, onDone) -> account.tdlib().processPushOrSync(pushId, payload, onDone), Config.MAX_RUNNING_TDLIBS, null, after);
   }
@@ -1603,14 +1617,14 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     return tokenFullError;
   }
 
-  private String token;
+  private TdApi.DeviceToken token;
 
-  public String getToken () {
+  public TdApi.DeviceToken getToken () {
     return token;
   }
 
-  public synchronized void setDeviceToken (String token) {
-    if (!StringUtils.equalsOrBothEmpty(this.token, token)) {
+  public synchronized void setDeviceToken (TdApi.DeviceToken token) {
+    if (!Td.equalsTo(this.token, token)) {
       Settings.instance().setDeviceToken(token);
       this.token = token;
       setTokenState(TokenState.OK);
@@ -1643,11 +1657,10 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       return;
     }
     setTokenState(TokenState.INITIALIZING);
-    TdlibNotificationUtils.getDeviceToken(retryCount, new TdlibNotificationUtils.RegisterCallback() {
+    TdlibNotificationUtils.getDeviceToken(retryCount, new TokenRetriever.RegisterCallback() {
       @Override
-      public void onSuccess (@NonNull TdApi.DeviceTokenFirebaseCloudMessaging token) {
-        // TODO: use TdApi.DeviceToken instead of taking token's String value directly
-        setDeviceToken(token.token);
+      public void onSuccess (@NonNull TdApi.DeviceToken token) {
+        setDeviceToken(token);
         if (after != null) {
           after.runWithBool(true);
         }
@@ -1664,7 +1677,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     });
   }
 
-  private void dispatchDeviceToken (String token) {
+  private void dispatchDeviceToken (TdApi.DeviceToken token) {
     long[] debugUserIds = null, productionUserIds = null;
     boolean hasNonRegistered = false;
     for (TdlibAccount account : this) {
@@ -2035,21 +2048,19 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     if (account.setUnauthorized(isUnauthorized, userId)) {
       saveAccount(account, ACCOUNT_AUTHORIZATION_CHANGED);
     }
-    if (changed) {
-      if (checkAliveAccount(account)) {
-        checkPauseTimeouts(null);
-      }
-      if (isUnauthorized && accountId == preferredAccountId) {
-        runOnUiThread(() -> {
+    runOnUiThread(() -> {
+      if (changed) {
+        if (checkAliveAccount(account)) {
+          checkPauseTimeouts(null);
+        }
+        if (isUnauthorized && accountId == preferredAccountId) {
           int newAccountId = findNextAccountId(accountId);
           if (newAccountId != TdlibAccount.NO_ID) {
             changePreferredAccountId(newAccountId, SWITCH_REASON_UNAUTHORIZED);
           }
-        });
+        }
       }
-    }
-    runOnUiThread(() -> {
-      global().notifyAuthorizationStateChanged(accounts.get(accountId), authState, status);
+      global().notifyAuthorizationStateChanged(account, authState, status);
     });
   }
 
@@ -2254,33 +2265,55 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   public static String getTdlibDirectory (int accountId, boolean allowExternal, boolean createIfNotFound) {
     File file = allowExternal ? UI.getAppContext().getExternalFilesDir(null) : null;
     if (file != null) {
+      try {
+        File externalStorageDirectory = Environment.getExternalStorageDirectory();
+        if (externalStorageDirectory != null && file.getAbsolutePath().startsWith(externalStorageDirectory.getAbsolutePath())) {
+          String state = Environment.getExternalStorageState();
+          if (!Environment.MEDIA_MOUNTED.equals(state)) {
+            file = null;
+          }
+        }
+      } catch (Throwable t) {
+        t.printStackTrace();
+      }
+    }
+    if (file != null) {
+      try {
+        if (!(file.exists() ? file.isDirectory() : FileUtils.mkdirs(file)) || !file.canWrite()) {
+          file = null;
+        }
+      } catch (SecurityException e) {
+        e.printStackTrace();
+        file = null;
+      }
+    }
+    if (file != null) {
       if (accountId != 0) {
         file = new File(file, "x_account" + accountId);
         if (!file.exists()) {
           if (createIfNotFound) {
-            if (!file.mkdir())
-              throw new IllegalStateException("Could not create external working directory: " + file.getPath());
+            if (!FileUtils.mkdirs(file))
+              throw new DeviceStorageError("Could not create external working directory: " + file.getPath());
           } else {
             return null;
           }
         }
       }
       // FIXME maybe move somewhere better for accountId == 0?
-      return TD.normalizePath(file.getPath());
     } else {
       if (allowExternal && !createIfNotFound)
         return null;
       file = new File(UI.getContext().getFilesDir(), accountId != 0 ? "tdlib" + accountId : "tdlib");
       if (!file.exists()) {
         if (createIfNotFound) {
-          if (!file.mkdir())
-            throw new IllegalStateException("Cannot create working directory: " + file.getPath());
+          if (!FileUtils.mkdirs(file))
+            throw new DeviceStorageError("Cannot create working directory: " + file.getPath());
         } else {
           return null;
         }
       }
-      return TD.normalizePath(file.getPath());
     }
+    return TD.normalizePath(file.getPath());
   }
 
   public static File getTgvoipDirectory () {

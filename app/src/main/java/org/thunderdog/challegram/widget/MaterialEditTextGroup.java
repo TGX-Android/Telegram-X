@@ -493,7 +493,7 @@ public class MaterialEditTextGroup extends FrameLayoutFix implements View.OnFocu
 
   private void setTextImpl (CharSequence text) {
     editText.setText(text);
-    Views.setSelection(editText, text != null ? text.length() : 0);
+    editText.setSelection(text != null ? text.length() : 0);
   }
 
   public void setText (CharSequence text, boolean animated) {
@@ -747,7 +747,7 @@ public class MaterialEditTextGroup extends FrameLayoutFix implements View.OnFocu
       editText.setIsPassword(pendingTextIsPassword);
       if (!StringUtils.isEmpty(pendingText)) {
         editText.setText(pendingText);
-        Views.setSelection(editText, pendingText.length());
+        editText.setSelection(pendingText.length());
       } else {
         editText.setText("");
       }

@@ -276,11 +276,28 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
   }
 
   public void checkWindowFlags () {
-    if (isHidden || isDismissed || windowAnchorView == null)
+    if (isHidden || isDismissed || windowAnchorView == null || isTemporarilyHidden)
       return;
     if (window != null) {
       View rootView = window.getContentView().getRootView();
-      if (patchPopupWindow(rootView, needFullScreen, shouldDisallowScreenshots())) {
+      ViewGroup.LayoutParams layoutParams = rootView.getLayoutParams();
+      boolean disallowScreenShots = shouldDisallowScreenshots();
+      if (!(layoutParams instanceof WindowManager.LayoutParams)) {
+        // TODO: analyze in what situations container parameters become `android.widget.FrameLayout$LayoutParams`
+        // after that, uncomment code below, if it's caused by root view, not by window detachment
+        /*int windowFlags =
+          (needFullScreen ? WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS : 0) |
+          (disallowScreenShots ? WindowManager.LayoutParams.FLAG_SECURE : 0);
+        if (windowFlags != 0) {
+          final BaseActivity context = UI.getContext(getContext());
+          WindowManager.LayoutParams newParams = new WindowManager.LayoutParams();
+          newParams.flags = windowFlags;
+          // WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);?
+          context.getWindowManager().updateViewLayout(rootView, newParams);
+        }*/
+        return;
+      }
+      if (patchPopupWindow(rootView, needFullScreen, disallowScreenShots)) {
         final BaseActivity context = UI.getContext(getContext());
         // WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);?
         context.getWindowManager().updateViewLayout(rootView, rootView.getLayoutParams());
@@ -494,6 +511,7 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
       ((ViewGroup) menuWrap.getParent()).removeView(menuWrap);
     }
 
+    final boolean anchorCenter = menuWrap.getAnchorMode() == MenuMoreWrap.ANCHOR_MODE_CENTER;
     final boolean anchorRight = menuWrap.getAnchorMode() == MenuMoreWrap.ANCHOR_MODE_RIGHT;
     final int padding = Screen.dp(8f);
     final int itemsWidth = menuWrap.getItemsWidth();
@@ -656,6 +674,10 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
           }
 
           if (animationType == ANIMATION_TYPE_MORE_SCALE) {
+            if (menuWrap.getAnchorMode() == MenuMoreWrap.ANCHOR_MODE_CENTER) {
+              final int itemsWidth = menuWrap.getItemsWidth();
+              menuWrap.setPivotX(itemsWidth / 2f);
+            }
             menuWrap.scaleIn(listener);
             return;
           }

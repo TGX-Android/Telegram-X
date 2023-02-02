@@ -15,8 +15,6 @@
 
 package org.thunderdog.challegram.data;
 
-import android.text.TextUtils;
-
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 
@@ -31,14 +29,24 @@ import org.thunderdog.challegram.util.text.Text;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.td.Td;
 
+/**
+ * Steps to support any new ChatEventAction constructor:
+ *
+ * 1. Decide how it should look
+ * 2. Add corresponding return value to the {@link #getActionMessageMode}
+ * 3. Add construction to the {@link #serviceMessage}, {@link #fullMessage}, or both, depending on the value used in the previous step
+ * 4. If action can be represented as fake {@link TdApi.MessageContent}, then refer to {@link #convertToNativeMessageContent}
+ */
 public class ChatEventUtil {
   @NonNull
   public static TGMessage newMessage (MessagesManager context, TdApi.Message message, TdApiExt.MessageChatEvent event) {
@@ -90,6 +98,15 @@ public class ChatEventUtil {
       case TdApi.ChatEventInviteLinkDeleted.CONSTRUCTOR:
       case TdApi.ChatEventVideoChatParticipantVolumeLevelChanged.CONSTRUCTOR:
       case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR:
+      case TdApi.ChatEventIsAggressiveAntiSpamEnabledToggled.CONSTRUCTOR:
+      case TdApi.ChatEventIsForumToggled.CONSTRUCTOR:
+      case TdApi.ChatEventActiveUsernamesChanged.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicCreated.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicDeleted.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicEdited.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicPinned.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicToggleIsClosed.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicToggleIsHidden.CONSTRUCTOR:
         return ActionMessageMode.ONLY_SERVICE;
       // only full (native)
       case TdApi.ChatEventMessageTtlChanged.CONSTRUCTOR:
@@ -161,6 +178,24 @@ public class ChatEventUtil {
         return new TGMessageService(context, msg, (TdApi.ChatEventVideoChatParticipantVolumeLevelChanged) action);
       case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR:
         return new TGMessageService(context, msg, (TdApi.ChatEventVideoChatParticipantIsMutedToggled) action);
+      case TdApi.ChatEventIsAggressiveAntiSpamEnabledToggled.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventIsAggressiveAntiSpamEnabledToggled) action);
+      case TdApi.ChatEventActiveUsernamesChanged.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventActiveUsernamesChanged) action);
+      case TdApi.ChatEventIsForumToggled.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventIsForumToggled) action);
+      case TdApi.ChatEventForumTopicCreated.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventForumTopicCreated) action);
+      case TdApi.ChatEventForumTopicDeleted.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventForumTopicDeleted) action);
+      case TdApi.ChatEventForumTopicPinned.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventForumTopicPinned) action);
+      case TdApi.ChatEventForumTopicEdited.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventForumTopicEdited) action);
+      case TdApi.ChatEventForumTopicToggleIsClosed.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventForumTopicToggleIsClosed) action);
+      case TdApi.ChatEventForumTopicToggleIsHidden.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventForumTopicToggleIsHidden) action);
       // only full (native)
       case TdApi.ChatEventMessageTtlChanged.CONSTRUCTOR:
       case TdApi.ChatEventVideoChatCreated.CONSTRUCTOR:
@@ -253,11 +288,12 @@ public class ChatEventUtil {
         ArrayList<TdApi.TextEntity> entities = new ArrayList<>(3);
         entities.add(new TdApi.TextEntity(0, start - 1, new TdApi.TextEntityTypeItalic()));
         entities.add(new TdApi.TextEntity(start, userName.length(), new TdApi.TextEntityTypeMentionName(e.userId)));
-        if (user != null && !StringUtils.isEmpty(user.username)) {
+        if (user != null && Td.hasUsername(user)) {
+          String username = Td.primaryUsername(user);
           b.append(" / ");
-          entities.add(new TdApi.TextEntity(b.length(), user.username.length() + 1, new TdApi.TextEntityTypeMention()));
+          entities.add(new TdApi.TextEntity(b.length(), username.length() + 1, new TdApi.TextEntityTypeMention()));
           b.append('@');
-          b.append(user.username);
+          b.append(username);
         }
         TdApi.TextEntity[] array = new TdApi.TextEntity[entities.size()];
         entities.toArray(array);
@@ -280,6 +316,7 @@ public class ChatEventUtil {
             footerRes = R.string.EventLogOriginalCaption;
             break;
         }
+        //noinspection UnsafeOptInUsageError
         String text = Td.isEmpty(originalText) ? Lang.getString(R.string.EventLogOriginalCaptionEmpty) : originalText.text;
         fullMessage.setFooter(Lang.getString(footerRes), text, originalText != null ? originalText.entities : null);
         break;
@@ -545,6 +582,15 @@ public class ChatEventUtil {
       case TdApi.ChatEventInviteLinkDeleted.CONSTRUCTOR:
       case TdApi.ChatEventVideoChatParticipantVolumeLevelChanged.CONSTRUCTOR:
       case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR:
+      case TdApi.ChatEventIsAggressiveAntiSpamEnabledToggled.CONSTRUCTOR:
+      case TdApi.ChatEventActiveUsernamesChanged.CONSTRUCTOR:
+      case TdApi.ChatEventIsForumToggled.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicCreated.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicDeleted.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicEdited.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicPinned.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicToggleIsClosed.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicToggleIsHidden.CONSTRUCTOR:
         throw new IllegalArgumentException(action.toString());
       default:
         throw new UnsupportedOperationException(action.toString());
@@ -584,7 +630,7 @@ public class ChatEventUtil {
   private static TdApi.MessageContent convertToNativeMessageContent (TdApi.ChatEvent event) {
     switch (event.action.getConstructor()) {
       case TdApi.ChatEventMessageTtlChanged.CONSTRUCTOR:
-        return new TdApi.MessageChatSetTtl(((TdApi.ChatEventMessageTtlChanged) event.action).newMessageTtl);
+        return new TdApi.MessageChatSetTtl(((TdApi.ChatEventMessageTtlChanged) event.action).newMessageTtl, 0);
       case TdApi.ChatEventVideoChatCreated.CONSTRUCTOR:
         return new TdApi.MessageVideoChatStarted(((TdApi.ChatEventVideoChatCreated) event.action).groupCallId);
       case TdApi.ChatEventVideoChatEnded.CONSTRUCTOR:
@@ -633,49 +679,111 @@ public class ChatEventUtil {
       case TdApi.ChatEventAvailableReactionsChanged.CONSTRUCTOR: {
         TdApi.ChatEventAvailableReactionsChanged e = (TdApi.ChatEventAvailableReactionsChanged) event.action;
 
-        final List<String> addedReactions = new ArrayList<>();
-        final List<String> removedReactions = new ArrayList<>();
+        boolean hasAll = false;
+        Set<String> newReactions = new LinkedHashSet<>();
 
-        for (String newAvailableReaction : e.newAvailableReactions) {
-          if (ArrayUtils.indexOf(e.oldAvailableReactions, newAvailableReaction) == -1) {
-            addedReactions.add(newAvailableReaction);
-          }
+        switch (e.newAvailableReactions.getConstructor()) {
+          case TdApi.ChatAvailableReactionsAll.CONSTRUCTOR:
+            hasAll = true;
+            break;
+          case TdApi.ChatAvailableReactionsSome.CONSTRUCTOR:
+            TdApi.ChatAvailableReactionsSome some = (TdApi.ChatAvailableReactionsSome) e.newAvailableReactions;
+            for (TdApi.ReactionType type : some.reactions) {
+              newReactions.add(TD.makeReactionKey(type));
+            }
+            break;
+          default:
+            throw new UnsupportedOperationException(e.newAvailableReactions.toString());
         }
 
-        for (String oldAvailableReaction : e.oldAvailableReactions) {
-          if (ArrayUtils.indexOf(e.newAvailableReactions, oldAvailableReaction) == -1) {
-            removedReactions.add(oldAvailableReaction);
-          }
+        boolean hadAll = false;
+        Set<String> oldReactions = new LinkedHashSet<>();
+        switch (e.oldAvailableReactions.getConstructor()) {
+          case TdApi.ChatAvailableReactionsAll.CONSTRUCTOR:
+            hadAll = true;
+            break;
+          case TdApi.ChatAvailableReactionsSome.CONSTRUCTOR:
+            TdApi.ChatAvailableReactionsSome some = (TdApi.ChatAvailableReactionsSome) e.oldAvailableReactions;
+            for (TdApi.ReactionType type : some.reactions) {
+              oldReactions.add(TD.makeReactionKey(type));
+            }
+            break;
         }
 
         List<TdApi.TextEntity> entities = new ArrayList<>();
         StringBuilder text = new StringBuilder();
+        RunnableData<Set<String>> emojiAdder = set -> {
+          boolean first = true;
+          for (String reactionKey : set) {
+            text.append(first ? "\n" : " ");
+            TdApi.ReactionType reactionType = TD.toReactionType(reactionKey);
+            switch (reactionType.getConstructor()) {
+              case TdApi.ReactionTypeEmoji.CONSTRUCTOR:
+                text.append(((TdApi.ReactionTypeEmoji) reactionType).emoji);
+                break;
+              case TdApi.ReactionTypeCustomEmoji.CONSTRUCTOR: {
+                long customEmojiId = ((TdApi.ReactionTypeCustomEmoji) reactionType).customEmojiId;
+                String emoji = "⁉️";
+                int offset = text.length();
+                text.append(emoji);
+                entities.add(new TdApi.TextEntity(offset, emoji.length(), new TdApi.TextEntityTypeCustomEmoji(customEmojiId)));
+                break;
+              }
+            }
+            first = false;
+          }
+        };
 
-        if (e.oldAvailableReactions.length == 0) {
-          // Enabled reactions
-          text.append(Lang.getString(R.string.EventLogReactionsEnabled));
-        } else if (e.newAvailableReactions.length == 0) {
-          // Disabled reactions
+        int headerLength = 0;
+
+        if (hasAll == hadAll && !hasAll) {
+          Set<String> addedReactions = new LinkedHashSet<>(newReactions);
+          addedReactions.removeAll(oldReactions);
+
+          Set<String> removedReactions = new LinkedHashSet<>(oldReactions);
+          removedReactions.removeAll(newReactions);
+          removedReactions.removeAll(addedReactions);
+
+          text.append(Lang.getString(
+            newReactions.isEmpty() ? R.string.EventLogReactionsDisabled :
+              oldReactions.isEmpty() ? R.string.EventLogReactionsEnabled :
+                R.string.EventLogReactionsChanged
+          ));
+          headerLength = text.length();
+
+          if (!newReactions.isEmpty() && !oldReactions.isEmpty()) {
+            emojiAdder.runWithData(newReactions);
+          }
+
+          if (!addedReactions.isEmpty()) {
+            text.append("\n\n");
+            text.append(Lang.getString(R.string.EventLogReactionsAdded2));
+            emojiAdder.runWithData(addedReactions);
+          }
+          if (!removedReactions.isEmpty()) {
+            text.append("\n\n");
+            text.append(Lang.getString(R.string.EventLogReactionsRemoved2));
+            emojiAdder.runWithData(removedReactions);
+          }
+        } else if (hasAll) {
+          text.append(Lang.getString(R.string.EventLogReactionsEnabledAll));
+          headerLength = text.length();
+        } else if (newReactions.isEmpty()) {
           text.append(Lang.getString(R.string.EventLogReactionsDisabled));
+          headerLength = text.length();
+          if (!oldReactions.isEmpty()) {
+            text.append("\n\n");
+            text.append(Lang.getString(R.string.EventLogReactionsRemoved2));
+            emojiAdder.runWithData(oldReactions);
+          }
         } else {
-          // Changed available reactions
-          text.append(Lang.getString(R.string.EventLogReactionsChanged));
-        }
-        entities.add(new TdApi.TextEntity(0, text.length(), new TdApi.TextEntityTypeItalic()));
-        if (e.newAvailableReactions.length > 0) {
-          text.append("\n").append(TextUtils.join(" ", e.newAvailableReactions));
+          text.append(Lang.getString(hadAll ? R.string.EventLogReactionsLimited : R.string.EventLogReactionsChanged));
+          headerLength = text.length();
+          emojiAdder.runWithData(newReactions);
         }
 
-        if (!addedReactions.isEmpty() && e.oldAvailableReactions.length > 0) {
-          // + Added:
-          text.append("\n\n");
-          text.append(Lang.getString(R.string.EventLogReactionsAdded, TextUtils.join(" ", addedReactions)));
-        }
-
-        if (!removedReactions.isEmpty()) {
-          // – Removed:
-          text.append("\n\n");
-          text.append(Lang.getString(R.string.EventLogReactionsRemoved, TextUtils.join(" ", removedReactions)));
+        if (headerLength > 0) {
+          entities.add(0, new TdApi.TextEntity(0, headerLength, new TdApi.TextEntityTypeItalic()));
         }
 
         TdApi.FormattedText formattedText = new TdApi.FormattedText(text.toString(), entities.toArray(new TdApi.TextEntity[0]));
@@ -749,6 +857,15 @@ public class ChatEventUtil {
       case TdApi.ChatEventVideoChatMuteNewParticipantsToggled.CONSTRUCTOR:
       case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR:
       case TdApi.ChatEventVideoChatParticipantVolumeLevelChanged.CONSTRUCTOR:
+      case TdApi.ChatEventIsAggressiveAntiSpamEnabledToggled.CONSTRUCTOR:
+      case TdApi.ChatEventActiveUsernamesChanged.CONSTRUCTOR:
+      case TdApi.ChatEventIsForumToggled.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicCreated.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicDeleted.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicEdited.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicPinned.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicToggleIsHidden.CONSTRUCTOR:
+      case TdApi.ChatEventForumTopicToggleIsClosed.CONSTRUCTOR:
         throw new IllegalArgumentException(event.action.toString());
 
         // Unsupported

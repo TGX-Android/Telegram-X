@@ -394,8 +394,9 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
       showOptions(result, ids.get(), strings.get(), colors.get(), icons.get(), (itemView, id) -> {
         switch (id) {
           case R.id.btn_messageViewList:
-            HashtagChatController c = new HashtagChatController(context, tdlib);
-            c.setArguments(new HashtagChatController.Arguments(null, chatId, null, new TdApi.MessageSenderUser(content.getUserId()), false));
+            TdApi.Chat chat = tdlib.chat(chatId);
+            MessagesController c = new MessagesController(context, tdlib);
+            c.setArguments(new MessagesController.Arguments(null, chat, content.getSenderId()));
             if (parent != null) {
               parent.navigateTo(c);
             } else {

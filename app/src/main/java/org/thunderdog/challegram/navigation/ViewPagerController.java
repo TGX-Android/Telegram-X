@@ -314,7 +314,7 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
   }
 
   @Override
-  protected final int getHeaderHeight () {
+  protected int getHeaderHeight () {
     switch (getTitleStyle()) {
       case TITLE_STYLE_BIG:
       case TITLE_STYLE_COMPACT_BIG:

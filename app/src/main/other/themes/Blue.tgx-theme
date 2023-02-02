@@ -12,6 +12,9 @@ bubbleOutlineSize, wallpaperOverrideButton, wallpaperOverrideDate, wallpaperOver
 imageCorner: 3
 shadowDepth: 0.5
 subtitleAlpha: 0.8
+avatarRadius: 1.0
+avatarRadiusForum: 0.5
+avatarRadiusChatListForum, avatarRadiusChatList: -1.0
 #
 attachContact: #E37475
 attachFile, fileYellow: #F1AE53

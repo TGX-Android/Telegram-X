@@ -45,6 +45,11 @@ public final class CustomEmojiId extends CharacterStyle implements EmojiSpan, Pa
   }
 
   @Override
+  public EmojiSpan toBuiltInEmojiSpan () {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   public int getRawSize (Paint paint) {
     throw new UnsupportedOperationException();
   }

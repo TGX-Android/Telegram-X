@@ -17,6 +17,8 @@
 
 set -e
 
+pushd "$THIRDPARTY_LIBRARIES/opus"
+
 ASM_CONVERTER="./celt/arm/arm2gnu.pl"
 
 if [[ ! -x "${ASM_CONVERTER}" ]]; then
@@ -45,5 +47,7 @@ sed \
   celt/arm/armopts.s.in > celt/arm/armopts.s.temp
 ${ASM_CONVERTER} "celt/arm/armopts.s.temp" > "celt/arm/armopts_gnu.s"
 rm "celt/arm/armopts.s.temp"
+
+popd
 
 echo "Converted all ASM files and generated armopts.s successfully."

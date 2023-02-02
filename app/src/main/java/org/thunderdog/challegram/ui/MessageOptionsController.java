@@ -36,7 +36,7 @@ import org.thunderdog.challegram.widget.EmojiTextView;
 
 import me.vkryl.core.StringUtils;
 
-public class MessageOptionsController extends MessageOptionsPagerController.MessageBottomSheetBaseController<MessageOptionsController.Args> {
+public class MessageOptionsController extends BottomSheetViewController.BottomSheetBaseRecyclerViewController<MessageOptionsController.Args> {
   private Options options;
   private View.OnClickListener listener;
   private OptionsAdapter adapter;
@@ -53,6 +53,11 @@ public class MessageOptionsController extends MessageOptionsPagerController.Mess
     super.setArguments(args);
     this.options = args.options;
     this.listener = args.listener;
+  }
+
+  @Override
+  public boolean needBottomDecorationOffsets (RecyclerView parent) {
+    return false;
   }
 
   @Override

@@ -37,7 +37,8 @@ public class TdlibSender {
   private final long inChatId;
   private final TdApi.MessageSender sender;
 
-  private final String name, nameShort, username;
+  private final String name, nameShort;
+  private final TdApi.Usernames usernames;
   private final TdApi.ChatPhotoInfo photo;
   private final Letters letters;
   private final AvatarPlaceholder.Metadata placeholderMetadata;
@@ -60,7 +61,7 @@ public class TdlibSender {
 
         this.name = tdlib.chatTitle(chat, false);
         this.nameShort = tdlib.chatTitle(chat, false, true);
-        this.username = tdlib.chatUsername(chat);
+        this.usernames = tdlib.chatUsernames(chat);
         this.photo = chat != null ? chat.photo : null;
         this.letters = tdlib.chatLetters(chat);
         this.placeholderMetadata = tdlib.chatPlaceholderMetadata(chatId, chat, false);
@@ -79,7 +80,7 @@ public class TdlibSender {
 
         this.name = TD.getUserName(userId, user);
         this.nameShort = TD.getUserSingleName(userId, user);
-        this.username = user != null && !StringUtils.isEmpty(user.username) ? user.username : null;
+        this.usernames = user != null ? user.usernames : null;
         this.photo = profilePhoto != null ? new TdApi.ChatPhotoInfo(profilePhoto.small, profilePhoto.big, profilePhoto.minithumbnail, profilePhoto.hasAnimation) : null;
         this.letters = TD.getLetters(user);
         this.placeholderMetadata = tdlib.cache().userPlaceholderMetadata(userId, user, false);
@@ -96,6 +97,10 @@ public class TdlibSender {
       }
     }
     this.flags = flags;
+  }
+
+  public TdApi.MessageSender toSender () {
+    return sender;
   }
 
   public boolean isUser () {
@@ -138,8 +143,14 @@ public class TdlibSender {
     return nameShort;
   }
 
+  @Nullable
+  public TdApi.Usernames getUsernames () {
+    return usernames;
+  }
+
+  @Nullable
   public String getUsername () {
-    return username;
+    return Td.primaryUsername(usernames);
   }
 
   public TdApi.ChatPhotoInfo getPhoto () {

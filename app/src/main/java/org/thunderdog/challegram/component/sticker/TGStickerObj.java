@@ -36,8 +36,10 @@ public class TGStickerObj {
   private ImageFile fullImage;
   private GifFile previewAnimation, fullAnimation, premiumFullAnimation;
   private String foundByEmoji;
+  private TdApi.ReactionType reactionType;
 
   private int flags;
+  private float displayScale = 1f;
 
   private static final int FLAG_RECENT = 1 << 1;
   private static final int FLAG_TRENDING = 1 << 2;
@@ -52,8 +54,34 @@ public class TGStickerObj {
     }
   }
 
+  public TGStickerObj setDisplayScale (float scale) {
+    this.displayScale = scale;
+    return this;
+  }
+
+  public float getDisplayScale () {
+    return displayScale;
+  }
+
+  public boolean isCustomReaction () {
+    return reactionType != null && reactionType.getConstructor() == TdApi.ReactionTypeCustomEmoji.CONSTRUCTOR;
+  }
+
+  public boolean needGenericAnimation () {
+    return isCustomReaction();
+  }
+
   public TGStickerObj (Tdlib tdlib, @Nullable TdApi.Sticker sticker, TdApi.StickerType stickerType, String[] emojis) {
     set(tdlib, sticker, stickerType, emojis);
+  }
+
+  public TGStickerObj setReactionType (TdApi.ReactionType reactionType) {
+    this.reactionType = reactionType;
+    return this;
+  }
+
+  public TdApi.ReactionType getReactionType () {
+    return reactionType;
   }
 
   public boolean set (Tdlib tdlib, @Nullable TdApi.Sticker sticker, TdApi.StickerType stickerType, String[] emojis) {
@@ -158,12 +186,20 @@ public class TGStickerObj {
     return fullImage;
   }
 
+  @GifFile.OptimizationMode
+  private int previewOptimizationMode = GifFile.OptimizationMode.STICKER_PREVIEW;
+
+  public TGStickerObj setPreviewOptimizationMode (@GifFile.OptimizationMode int mode) {
+    this.previewOptimizationMode = mode;
+    return this;
+  }
+
   public GifFile getPreviewAnimation () {
     if (previewAnimation == null && sticker != null && Td.isAnimated(sticker.format) && tdlib != null) {
       this.previewAnimation = new GifFile(tdlib, sticker);
       this.previewAnimation.setPlayOnce();
       this.previewAnimation.setScaleType(ImageFile.FIT_CENTER);
-      this.previewAnimation.setOptimizationMode(GifFile.OptimizationMode.STICKER_PREVIEW);
+      this.previewAnimation.setOptimizationMode(previewOptimizationMode);
     }
     return previewAnimation;
   }

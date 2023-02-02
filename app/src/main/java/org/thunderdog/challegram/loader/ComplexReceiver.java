@@ -33,12 +33,14 @@ public class ComplexReceiver implements Destroyable {
   private final View view;
   private ComplexReceiverUpdateListener updateListener;
   private final LongSparseArray<ImageReceiver> imageReceivers;
+  private final LongSparseArray<AvatarReceiver> avatarReceivers;
   private final LongSparseArray<GifReceiver> gifReceivers;
   private final LongSparseArray<DoubleImageReceiver> previews;
 
   public ComplexReceiver (View view) {
     this.view = view;
     this.imageReceivers = new LongSparseArray<>(10);
+    this.avatarReceivers = new LongSparseArray<>(10);
     this.gifReceivers = new LongSparseArray<>(10);
     this.previews = new LongSparseArray<>(10);
   }
@@ -55,6 +57,7 @@ public class ComplexReceiver implements Destroyable {
   public ComplexReceiver setUpdateListener (ComplexReceiverUpdateListener listener) {
     this.updateListener = listener;
     setUpdateListener(imageReceivers, listener);
+    setUpdateListener(avatarReceivers, listener);
     setUpdateListener(gifReceivers, listener);
     setUpdateListener(previews, listener);
     return this;
@@ -117,27 +120,32 @@ public class ComplexReceiver implements Destroyable {
   public static final int RECEIVER_TYPE_PREVIEW = 0;
   public static final int RECEIVER_TYPE_IMAGE = 1;
   public static final int RECEIVER_TYPE_GIF = 2;
+  public static final int RECEIVER_TYPE_AVATAR = 3;
 
   public void clearReceivers (@Nullable KeyFilter filter) {
     clearReceivers(imageReceivers, RECEIVER_TYPE_IMAGE, filter);
     clearReceivers(gifReceivers, RECEIVER_TYPE_GIF, filter);
     clearReceivers(previews, RECEIVER_TYPE_PREVIEW, filter);
+    clearReceivers(avatarReceivers, RECEIVER_TYPE_AVATAR, filter);
   }
 
   public void clearReceivers (long key) {
     clearReceiver(imageReceivers, key);
+    clearReceiver(avatarReceivers, key);
     clearReceiver(gifReceivers, key);
     clearReceiver(previews, key);
   }
 
   public void clearReceiversWithHigherKey (long key) {
     clearReceiversWithHigherKey(imageReceivers, key);
+    clearReceiversWithHigherKey(avatarReceivers, key);
     clearReceiversWithHigherKey(gifReceivers, key);
     clearReceiversWithHigherKey(previews, key);
   }
 
   public void clearReceiversRange (long startKey, long endKey) {
     clearReceiversRange(imageReceivers, startKey, endKey);
+    clearReceiversRange(avatarReceivers, startKey, endKey);
     clearReceiversRange(gifReceivers, startKey, endKey);
     clearReceiversRange(previews, startKey, endKey);
   }
@@ -149,6 +157,7 @@ public class ComplexReceiver implements Destroyable {
   private static final int TYPE_DOUBLE = 1;
   private static final int TYPE_IMAGE = 2;
   private static final int TYPE_GIF = 3;
+  private static final int TYPE_AVATAR = 4;
 
   private static <T extends Receiver> T getReceiver (LongSparseArray<T> target, View view, @Nullable ComplexReceiverUpdateListener updateListener, boolean isAttached, boolean animationsDisabled, long key, int type) {
     int i = target.indexOfKey(key);
@@ -157,6 +166,9 @@ public class ComplexReceiver implements Destroyable {
     }
     T receiver;
     switch (type) {
+      case TYPE_AVATAR:
+        receiver = (T) new AvatarReceiver(view);
+        break;
       case TYPE_DOUBLE:
         receiver = (T) new DoubleImageReceiver(view, 0);
         break;
@@ -199,6 +211,10 @@ public class ComplexReceiver implements Destroyable {
     return getReceiver(gifReceivers, view, updateListener, isAttached, animationsDisabled, key, TYPE_GIF);
   }
 
+  public AvatarReceiver getAvatarReceiver (long key) {
+    return getReceiver(avatarReceivers, view, updateListener, isAttached, animationsDisabled, key, TYPE_AVATAR);
+  }
+
   private boolean isAttached = true;
 
   private boolean animationsDisabled;
@@ -214,6 +230,7 @@ public class ComplexReceiver implements Destroyable {
 
   private void iterate (RunnableData<Receiver> callback) {
     iterate(imageReceivers, callback);
+    iterate(avatarReceivers, callback);
     iterate(gifReceivers, callback);
     iterate(previews, callback);
   }
@@ -247,6 +264,7 @@ public class ComplexReceiver implements Destroyable {
   public void attach () {
     isAttached = true;
     attachDetach(imageReceivers, true);
+    attachDetach(avatarReceivers, true);
     attachDetach(gifReceivers, true);
     attachDetach(previews, true);
   }
@@ -254,6 +272,7 @@ public class ComplexReceiver implements Destroyable {
   public void detach () {
     isAttached = false;
     attachDetach(imageReceivers, false);
+    attachDetach(avatarReceivers, false);
     attachDetach(gifReceivers, false);
     attachDetach(previews, false);
   }

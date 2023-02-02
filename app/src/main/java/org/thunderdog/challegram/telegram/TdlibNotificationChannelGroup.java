@@ -41,6 +41,7 @@ import java.util.List;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.SparseLongArray;
 import me.vkryl.td.ChatId;
+import me.vkryl.td.Td;
 
 @TargetApi(Build.VERSION_CODES.O)
 public class TdlibNotificationChannelGroup {
@@ -297,10 +298,10 @@ public class TdlibNotificationChannelGroup {
         TdApi.Supergroup supergroup = tdlib.chatToSupergroup(chatId);
         if (supergroup == null) {
           channel.setDescription(Lang.getString(R.string.NotificationChannelGroupChat, tdlib.chatTitle(chatId)));
-        } else if (StringUtils.isEmpty(supergroup.username)) {
+        } else if (!Td.hasUsername(supergroup)) {
           channel.setDescription(Lang.getString(supergroup.isChannel ? R.string.NotificationChannelChannelChat : R.string.NotificationChannelGroupChat, tdlib.chatTitle(chatId)));
         } else {
-          channel.setDescription(Lang.getString(supergroup.isChannel ? R.string.NotificationChannelChannelChatPublic : R.string.NotificationChannelGroupChatPublic, tdlib.chatTitle(chatId), tdlib.tMeHost() + supergroup.username));
+          channel.setDescription(Lang.getString(supergroup.isChannel ? R.string.NotificationChannelChannelChatPublic : R.string.NotificationChannelGroupChatPublic, tdlib.chatTitle(chatId), tdlib.tMeHost() + Td.primaryUsername(supergroup)));
         }
         break;
     }

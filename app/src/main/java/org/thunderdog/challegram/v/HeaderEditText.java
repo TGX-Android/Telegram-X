@@ -16,6 +16,7 @@ package org.thunderdog.challegram.v;
 
 import android.content.Context;
 import android.os.Build;
+import android.text.InputFilter;
 import android.text.InputType;
 import android.util.AttributeSet;
 import android.view.ActionMode;
@@ -35,6 +36,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.util.CharacterStyleFilter;
 import org.thunderdog.challegram.widget.EmojiEditText;
 
 import me.vkryl.core.ColorUtils;
@@ -87,6 +89,9 @@ public class HeaderEditText extends EmojiEditText implements ActionMode.Callback
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
       setCustomSelectionActionModeCallback(this);
     }
+    setFilters(new InputFilter[] {
+      new CharacterStyleFilter()
+    });
   }
 
   public static HeaderEditText create (@NonNull ViewGroup parent, boolean light, @Nullable ViewController<?> themeProvider) {

@@ -51,6 +51,11 @@ class EmojiSpanImpl extends ReplacementSpan implements EmojiSpan {
     this.info = info;
   }
 
+  @Override
+  public final EmojiSpan toBuiltInEmojiSpan () {
+    return info != null ? newSpan(info) : null;
+  }
+
   public boolean isCustomEmoji () {
     return false;
   }
