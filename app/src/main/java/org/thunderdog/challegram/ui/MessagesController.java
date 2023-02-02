@@ -679,7 +679,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     bottomWrap.setLayoutParams(params);
 
     if (previewMode == PREVIEW_MODE_NONE && !isInForceTouchMode()) {
-      inputView = new InputView(context, tdlib) {
+      inputView = new InputView(context, tdlib, this) {
         @Override
         protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
           super.onMeasure(widthMeasureSpec, heightMeasureSpec);

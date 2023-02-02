@@ -131,15 +131,17 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
   private boolean canHandlePositionChange;
   private int lastHandledPosition;
   private int lastKnownCursorPosition;
+  private ViewController<?> boundController;
 
-  public InlineSearchContext (BaseActivity context, Tdlib tdlib, @NonNull Callback callback) {
+  public InlineSearchContext (BaseActivity context, Tdlib tdlib, @NonNull Callback callback, ViewController<?> boundController) {
     this.context = context;
+    this.boundController = boundController;
     this.locationTracker = new LocationHelper(context, this, true, false);
     this.locationTracker.setPermissionRequester((skipAlert, onCancel, handler) -> {
       if (skipAlert) {
         context.requestLocationPermission(false, true, handler);
       } else {
-        ModernOptions.showLocationAlert(context, getInlineUsername(), onCancel, () -> {
+        ModernOptions.showLocationAlert(boundController, getInlineUsername(), onCancel, () -> {
           context.requestLocationPermission(false, true, handler);
         });
       }
@@ -578,7 +580,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
           }
         };
 
-        ModernOptions.showLocationAlert(context, currentInlineUsername, onCancel, onConfirm);
+        ModernOptions.showLocationAlert(boundController, currentInlineUsername, onCancel, onConfirm);
       }
     } else {
       searchInlineResults(Td.primaryUsername(inlineBot), inlineQuery, null, firstQuery);

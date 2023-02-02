@@ -2314,7 +2314,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       if (skipAlert) {
         requestLocationPermissionImpl(needBackground, handler);
       } else {
-        ModernOptions.showLocationAlert(this, needBackground, onCancel, () -> {
+        ModernOptions.showLocationAlert(navigation.getCurrentStackItem(), needBackground, onCancel, () -> {
           requestLocationPermissionImpl(needBackground, handler);
         });
       }

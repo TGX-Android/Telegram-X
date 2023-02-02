@@ -4833,7 +4833,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         bottomWrap.setLayoutParams(fp);
         checkBottomWrapY();
 
-        InputView captionView = new InputView(context, tdlib) {
+        InputView captionView = new InputView(context, tdlib, this) {
           @Override
           protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);
