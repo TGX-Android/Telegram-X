@@ -15,11 +15,8 @@
 package org.thunderdog.challegram.data;
 
 import org.drinkless.td.libcore.telegram.TdApi;
-import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.util.text.Highlight;
-
-import me.vkryl.core.StringUtils;
 
 public class TGFoundMessage {
   private final TGFoundChat chat;
@@ -50,10 +47,6 @@ public class TGFoundMessage {
 
   public Highlight getHighlight () {
     return highlight;
-  }
-
-  public AvatarPlaceholder.Metadata getAvatarPlaceholderMetadata () {
-    return chat.getAvatarPlaceholderMetadata();
   }
 
   public TdApi.Message getMessage () {
