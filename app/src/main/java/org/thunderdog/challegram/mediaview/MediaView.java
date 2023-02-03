@@ -37,6 +37,7 @@ public class MediaView extends FrameLayoutFix {
   public static final int DIRECTION_AUTO = 0;
   public static final int DIRECTION_BACKWARD = 1;
   public static final int DIRECTION_FORWARD = 2;
+  public static final int DIRECTION_RESET = 3;
 
   private static final boolean USE_GRADIENTS = false;
   private static final float HEADER_ALPHA = USE_GRADIENTS ? 0xff : 0x99;
@@ -333,6 +334,19 @@ public class MediaView extends FrameLayoutFix {
           previewCell.setMedia(stack.getPrevious());
         }
       }
+    }
+  }
+
+  public void replaceMedia (MediaItem oldItem, MediaItem newItem) {
+    if (previewCell != null && previewCell.getMedia() == oldItem) {
+      if (newItem != null) {
+        previewCell.setMedia(newItem);
+      } else {
+        dropPreview(DIRECTION_RESET, 0f);
+      }
+    }
+    if (baseCell.getMedia() == oldItem) {
+      baseCell.setMedia(newItem);
     }
   }
 

@@ -116,10 +116,35 @@ public class MediaStack {
     notifyMediaChanged(true);
   }
 
+  public MediaItem deleteItemAt (int index) {
+    MediaItem removedItem = items.remove(index);
+    if (currentIndex > index) {
+      currentIndex--;
+    }
+    notifyMediaChanged(true);
+    return removedItem;
+  }
+
+  public void setItemAt (int index, MediaItem item) {
+    this.items.set(index, item);
+    notifyMediaChanged(false);
+  }
+
   public int indexOfImageFile (ImageFile imageFile) {
     int i = 0;
     for (MediaItem item : items) {
       if (item.getSourceGalleryFile() == imageFile) {
+        return i;
+      }
+      i++;
+    }
+    return -1;
+  }
+
+  public int indexOfMessage (long chatId, long messageId) {
+    int i = 0;
+    for (MediaItem item : items) {
+      if (item.getSourceChatId() == chatId && item.getSourceMessageId() == messageId) {
         return i;
       }
       i++;
@@ -183,9 +208,9 @@ public class MediaStack {
 
   // appliers
 
-  private void notifyMediaChanged (boolean itemsAdded) {
+  private void notifyMediaChanged (boolean itemCountChanged) {
     if (callback != null) {
-      callback.onMediaChanged(estimatedBefore + currentIndex, getEstimatedSize(), items.get(currentIndex), itemsAdded);
+      callback.onMediaChanged(estimatedBefore + currentIndex, getEstimatedSize(), items.get(currentIndex), itemCountChanged);
     }
   }
 

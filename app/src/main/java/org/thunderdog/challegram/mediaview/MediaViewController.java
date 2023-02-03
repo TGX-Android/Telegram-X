@@ -112,6 +112,7 @@ import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.CallManager;
+import org.thunderdog.challegram.telegram.MessageListener;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
@@ -159,6 +160,7 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.util.ClickHelper;
 import me.vkryl.android.util.InvalidateContentProvider;
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
@@ -175,7 +177,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   PopupLayout.AnimatedPopupProvider, FactorAnimator.Target, View.OnClickListener,
   MediaStackCallback, MediaFiltersAdapter.Callback, Watcher, RotationControlView.Callback, MediaView.ClickListener,
   EmojiLayout.Listener, InputView.InputListener, InlineResultsWrap.OffsetProvider,
-  MediaCellView.Callback, SliderView.Listener, TGLegacyManager.EmojiLoadListener, Menu, Client.ResultHandler, MoreDelegate, PopupLayout.TouchSectionProvider, FlingDetector.Callback, CallManager.CurrentCallListener, ColorPreviewView.BrushChangeListener, PaintState.UndoStateListener, MediaView.FactorChangeListener, EmojiToneHelper.Delegate {
+  MediaCellView.Callback, SliderView.Listener, TGLegacyManager.EmojiLoadListener, Menu, Client.ResultHandler, MoreDelegate, PopupLayout.TouchSectionProvider, FlingDetector.Callback, CallManager.CurrentCallListener, ColorPreviewView.BrushChangeListener, PaintState.UndoStateListener, MediaView.FactorChangeListener, EmojiToneHelper.Delegate, MessageListener {
 
   public static final int MODE_MESSAGES = 0; // opened from chat
   public static final int MODE_PROFILE = 1; // opened from profile or chat (in case of groups and channels)
@@ -1373,7 +1375,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   // Current photo changed
 
   @Override
-  public void onMediaChanged (int index, int estimatedTotalSize, MediaItem currentItem, boolean itemsAdded) {
+  public void onMediaChanged (int index, int estimatedTotalSize, MediaItem currentItem, boolean itemCountChanged) {
     switch (mode) {
       case MODE_GALLERY: {
         checkView.setChecked(selectDelegate != null && selectDelegate.isMediaItemSelected(index, currentItem));
@@ -1387,13 +1389,13 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       }
       case MODE_MESSAGES:
       case MODE_SIMPLE: {
-        if (!itemsAdded) {
+        if (!itemCountChanged) {
           updateVideoState(true);
         }
         updateCaption(true);
 
         updateHeaderButtons();
-        onMediaStackChanged(itemsAdded);
+        onMediaStackChanged(itemCountChanged);
 
         loadMoreIfNeeded();
 
@@ -1401,7 +1403,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       }
       case MODE_PROFILE:
       case MODE_CHAT_PROFILE: {
-        onMediaStackChanged(itemsAdded);
+        onMediaStackChanged(itemCountChanged);
         loadMoreIfNeeded();
         break;
       }
@@ -1834,7 +1836,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     updateThumbsAlpha();
   }
 
-  private void onMediaStackChanged (boolean itemsAdded) {
+  private void onMediaStackChanged (boolean itemCountChanged) {
     switch (mode) {
       case MODE_MESSAGES:
       case MODE_SIMPLE: {
@@ -1860,7 +1862,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         break;
       }
     }
-    if (!itemsAdded) {
+    if (!itemCountChanged) {
       checkNeedThumbs();
     }
   }
@@ -2011,7 +2013,6 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         break;
       }
     }
-
   }
 
   private void addItems (TdApi.ChatPhotos photos) {
@@ -2049,13 +2050,34 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     isLoading = false;
   }
 
+  private long subscribedToChatId;
+
+  private void subscribeToChatId (long chatId) {
+    if (this.subscribedToChatId != chatId) {
+      if (this.subscribedToChatId != 0) {
+        tdlib.listeners().unsubscribeFromMessageUpdates(this.subscribedToChatId, this);
+      }
+      this.subscribedToChatId = chatId;
+      if (chatId != 0) {
+        tdlib.listeners().subscribeToMessageUpdates(chatId, this);
+      }
+    }
+  }
+
   private void addItems (TdApi.Messages messages) {
     List<TdApi.Message> list = new ArrayList<>(messages.messages.length);
     for (TdApi.Message message : messages.messages) {
-      if (!Td.isSecret(message.content))
+      if (!Td.isSecret(message.content)) {
         list.add(message);
+      }
     }
     addItems(list, messages.totalCount);
+    if (messages.messages.length > 0) {
+      long chatId = TD.getChatId(messages.messages);
+      if (chatId != 0) {
+        subscribeToChatId(chatId);
+      }
+    }
   }
 
   private void addItems (List<TdApi.Message> messages, final int totalCount) {
@@ -2125,17 +2147,78 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     isLoading = false;
   }
 
+  private void deleteMedia (int index, MediaItem deletedMedia) {
+    mediaView.replaceMedia(deletedMedia, null);
+    stack.deleteItemAt(index);
+    if (thumbsAnimator != null && thumbsAnimator.getValue()) {
+      if (!needThumbPreviews()) {
+        checkNeedThumbs();
+      } else {
+        thumbsAdapter.items.deleteItem(index, deletedMedia);
+        onFactorChanged(mediaView, slideFactor);
+      }
+    }
+  }
+
+  private void replaceMedia (int index, MediaItem oldMedia, MediaItem newMedia) {
+    mediaView.replaceMedia(oldMedia, newMedia);
+    stack.setItemAt(index, newMedia);
+    if (thumbsAnimator != null && thumbsAnimator.getValue()) {
+      thumbsAdapter.items.replaceItem(index, oldMedia, newMedia);
+      onFactorChanged(mediaView, slideFactor);
+    }
+  }
+
+  @Override
+  public void onMessageContentChanged (long chatId, long messageId, TdApi.MessageContent newContent) {
+    runOnUiThreadOptional(() -> {
+      int index = stack.indexOfMessage(chatId, messageId);
+      if (index != -1) {
+        MediaItem oldItem = stack.get(index);
+        TdApi.Message message = oldItem.getMessage();
+        message.content = newContent;
+        MediaItem newItem = MediaItem.valueOf(context(), tdlib, message);
+        if (newItem != null) {
+          replaceMedia(index, oldItem, newItem);
+        } else if (stack.getCurrentIndex() == index) {
+          forceClose();
+        } else {
+          deleteMedia(index, oldItem);
+        }
+      }
+    });
+  }
+
+  @Override
+  public void onMessagesDeleted (long chatId, long[] messageIds) {
+    runOnUiThreadOptional(() -> {
+      List<MediaItem> items = stack.getAll();
+      int remainingCount = messageIds.length;
+      for (int index = items.size() - 1; index >= 0 && remainingCount > 0; index--) {
+        MediaItem item = items.get(index);
+        if (item.getSourceChatId() == chatId && item.getSourceMessageId() != 0 && ArrayUtils.indexOf(messageIds, item.getSourceMessageId()) != -1) {
+          remainingCount--;
+          if (stack.getCurrentIndex() == index) {
+            forceClose();
+          } else {
+            deleteMedia(index, item);
+          }
+        }
+      }
+    });
+  }
+
   @Override
   public void onResult (TdApi.Object object) {
     switch (object.getConstructor()) {
       case TdApi.ChatPhotos.CONSTRUCTOR: {
         final TdApi.ChatPhotos photos = (TdApi.ChatPhotos) object;
-        runOnUiThread(() -> addItems(photos));
+        runOnUiThreadOptional(() -> addItems(photos));
         break;
       }
       case TdApi.Messages.CONSTRUCTOR: {
         final TdApi.Messages messages = (TdApi.Messages) object;
-        runOnUiThread(() -> addItems(messages));
+        runOnUiThreadOptional(() -> addItems(messages));
         break;
       }
     }
@@ -3843,11 +3926,15 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
   }
 
+  private float slideFactor;
+
   @Override
   public void onFactorChanged (MediaView view, float factor) {
     if (thumbsAnimator == null || !thumbsAnimator.getValue() || thumbsAdapter.items == null) {
       return;
     }
+
+    this.slideFactor = factor;
 
     int focusItemIndex = stack.getCurrentIndex();
 
@@ -4191,6 +4278,33 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     public MediaItem getLast () {
       return items != null && !items.isEmpty() ? items.get(items.size() - 1) : null;
+    }
+
+    public void deleteItem (int indexInStack, MediaItem item) {
+      int index = indexOf(item);
+      if (index != -1) {
+        items.remove(index);
+        if (this.indexInStack > indexInStack) {
+          this.indexInStack--;
+        }
+        adapter.notifyItemRemoved(index);
+        adapter.controller.thumbsRecyclerView.invalidateItemDecorations();
+      }
+    }
+
+    public void replaceItem (int indexInStack, MediaItem oldItem, MediaItem newItem) {
+      if (secondaryItem == oldItem) {
+        secondaryItem = newItem;
+      }
+      if (focusItem == oldItem) {
+        focusItem = newItem;
+      }
+      int index = indexOf(oldItem);
+      if (index != -1) {
+        items.set(index, newItem);
+        adapter.notifyItemChanged(index);
+        adapter.controller.thumbsRecyclerView.invalidateItemDecorations();
+      }
     }
 
     public void addItems (ArrayList<MediaItem> items, boolean onTop, boolean checkMediaGroupId) {
@@ -5355,6 +5469,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     if (captionView instanceof Destroyable) {
       ((Destroyable) captionView).performDestroy();
     }
+    subscribeToChatId(0);
   }
 
   @Override
@@ -7856,6 +7971,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   public void forceClose () {
+    if (forceAnimationType == -1) {
+      forceAnimationType = ANIMATION_TYPE_FADE;
+    }
     if (inPictureInPicture) {
       closePictureInPicture();
     } else {
