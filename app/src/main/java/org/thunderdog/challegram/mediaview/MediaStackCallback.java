@@ -17,5 +17,5 @@ package org.thunderdog.challegram.mediaview;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
 
 public interface MediaStackCallback {
-  void onMediaChanged (int index, int estimatedTotalSize, MediaItem currentItem, boolean itemsAdded);
+  void onMediaChanged (int index, int estimatedTotalSize, MediaItem currentItem, boolean itemCountChanged);
 }

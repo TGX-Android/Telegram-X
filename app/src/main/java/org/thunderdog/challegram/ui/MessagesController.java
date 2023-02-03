@@ -679,7 +679,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     bottomWrap.setLayoutParams(params);
 
     if (previewMode == PREVIEW_MODE_NONE && !isInForceTouchMode()) {
-      inputView = new InputView(context, tdlib) {
+      inputView = new InputView(context, tdlib, this) {
         @Override
         protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
           super.onMeasure(widthMeasureSpec, heightMeasureSpec);
@@ -9285,9 +9285,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
       if (force) {
         noMedia = context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED;
       } else {
-        if (context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-          context.requestReadWritePermissions();
-          return;
+        String[] permissions = BaseActivity.getReadWritePermissions(BaseActivity.RW_MODE_GALLERY);
+        for (String permission : permissions) {
+          if (context.checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) {
+            context.requestReadWritePermissions(BaseActivity.RW_MODE_GALLERY);
+            return;
+          }
         }
         noMedia = false;
       }

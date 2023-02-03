@@ -20,11 +20,9 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
-import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.AvatarReceiver;
-import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.util.text.Highlight;
 
@@ -54,8 +52,6 @@ public class TGFoundChat {
 
   private String forcedSubtitle;
 
-  private AvatarPlaceholder.Metadata avatarPlaceholderMetadata;
-
   public TGFoundChat (Tdlib tdlib) {
     long userId = tdlib.myUserId();
     this.tdlib = tdlib;
@@ -64,7 +60,6 @@ public class TGFoundChat {
     this.userId = userId;
     this.flags |= FLAG_SELF;
     setTitleImpl(Lang.getString(R.string.Saved), null);
-    this.avatarPlaceholderMetadata = tdlib.cache().selfPlaceholderMetadata();
   }
 
   public TGFoundChat (Tdlib tdlib, TdApi.ChatList chatList, long chatId, boolean isGlobal) {
@@ -175,7 +170,6 @@ public class TGFoundChat {
     flags = BitwiseUtils.setFlag(flags, FLAG_SELF, tdlib.isSelfChat(chat.id));
     this.flags = flags;
     this.userId = TD.getUserId(chat.type);
-    this.avatarPlaceholderMetadata = (flags & FLAG_SELF) != 0 ? tdlib.cache().selfPlaceholderMetadata() : tdlib.chatPlaceholderMetadata(chat, true);
     updateChat(chat);
   }
 
@@ -245,10 +239,8 @@ public class TGFoundChat {
 
   private void setUser (TdApi.User user, String highlight) {
     if ((flags & FLAG_SELF) != 0) {
-      this.avatarPlaceholderMetadata = tdlib.cache().selfPlaceholderMetadata();
       this.title = Lang.getString(R.string.SavedMessages);
     } else {
-      this.avatarPlaceholderMetadata = tdlib.cache().userPlaceholderMetadata(user, true);
       this.title = TD.getUserName(user);
     }
     this.titleHighlight = Highlight.valueOf(this.title.toString(), highlight);
@@ -257,7 +249,6 @@ public class TGFoundChat {
 
   private void updateUser (TdApi.User user) {
     if (!isSelfChat()) {
-      this.avatarPlaceholderMetadata = tdlib.cache().userPlaceholderMetadata(user, true);
       this.title = TD.getUserName(user);
       this.titleHighlight = Highlight.valueOf(this.title.toString(), highlight);
       checkHighlights();
@@ -322,7 +313,6 @@ public class TGFoundChat {
     setTitleImpl(tdlib.chatTitle(chat), chat);
     this.needMuteIcon = tdlib.chatNeedsMuteIcon(chatId);
     this.notificationsEnabled = tdlib.chatNotificationsEnabled(chatId);
-    this.avatarPlaceholderMetadata = isSelfChat ? tdlib.cache().selfPlaceholderMetadata() : tdlib.chatPlaceholderMetadata(chat, true);
   }
 
   public void updateMuted () {
@@ -346,7 +336,6 @@ public class TGFoundChat {
     this.title = title;
     this.titleHighlight = Highlight.valueOf(title, highlight);
     checkHighlights();
-    this.avatarPlaceholderMetadata = (flags & FLAG_SELF) != 0 ? tdlib.cache().selfPlaceholderMetadata() : chat != null ? tdlib.chatPlaceholderMetadata(chat, true) : null;
     if ((flags & FLAG_SELF) != 0) {
       this.singleLineTitle = Lang.getString(R.string.Saved);
     } else if (chat != null) {
@@ -418,10 +407,6 @@ public class TGFoundChat {
 
   public boolean isSelfChat () {
     return (flags & FLAG_SELF) != 0;
-  }
-
-  public AvatarPlaceholder.Metadata getAvatarPlaceholderMetadata () {
-    return avatarPlaceholderMetadata;
   }
 
   public @Nullable TdApi.MessageSender getMessageSenderId () {

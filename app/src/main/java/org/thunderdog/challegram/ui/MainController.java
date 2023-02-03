@@ -44,6 +44,7 @@ import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.util.ObjectsCompat;
 import androidx.recyclerview.widget.RecyclerView;
@@ -1130,6 +1131,17 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     showSuggestions();
     checkSyncAlert();
     tdlib.checkDeadlocks();
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      if (context().checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+        context().requestCustomPermissions(new String[] {Manifest.permission.POST_NOTIFICATIONS}, (code, granted) -> {
+          if (granted) {
+            tdlib.notifications().onNotificationPermissionGranted();
+          } else {
+            // Do nothing?
+          }
+        });
+      }
+    }
 
     if (displayTabsAtBottom()) {
       animateNavigationBarColor();

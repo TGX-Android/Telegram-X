@@ -36,13 +36,13 @@ import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.widget.PopupLayout;
 
 public class ModernOptions {
-  public static void showLocationAlert (BaseActivity context, @Nullable String currentInlineUsername, Runnable onCancel, Runnable onAgree) {
+  public static void showLocationAlert (ViewController<?> context, @Nullable String currentInlineUsername, Runnable onCancel, Runnable onAgree) {
     String inlineUsername = "@" + currentInlineUsername;
     showLocationAlert(context, Lang.getStringBold(R.string.LocationAlertBot, inlineUsername), Lang.getStringBold(R.string.LocationAlertBotDisclaimer, inlineUsername), onCancel, onAgree);
   }
 
-  public static void showLocationAlert (BaseActivity context, boolean isBackground, Runnable onCancel, Runnable onAgree) {
-    boolean hasNoPermissions = context.checkLocationPermissions(isBackground) != PackageManager.PERMISSION_GRANTED;
+  public static void showLocationAlert (ViewController<?> context, boolean isBackground, Runnable onCancel, Runnable onAgree) {
+    boolean hasNoPermissions = context.context().checkLocationPermissions(isBackground) != PackageManager.PERMISSION_GRANTED;
     boolean shouldShowAlert;
 
     if (isBackground && Config.REQUEST_BACKGROUND_LOCATION) {
@@ -58,18 +58,17 @@ public class ModernOptions {
     }
   }
 
-  private static void showLocationAlert (BaseActivity context, CharSequence firstLine, CharSequence secondLine, Runnable onCancel, Runnable onAgree) {
+  private static void showLocationAlert (ViewController<?> context, CharSequence firstLine, CharSequence secondLine, Runnable onCancel, Runnable onAgree) {
+    if (!context.isFocused()) {
+      context.addOneShotFocusListener(() -> {
+        showLocationAlert(context, firstLine, secondLine, onCancel, onAgree);
+      });
+      return;
+    }
     Lang.SpanCreator firstItalicCreator = (target, argStart, argEnd, spanIndex, needFakeBold) -> spanIndex == 1 ? Lang.newItalicSpan(needFakeBold) : null;
     CharSequence desc = Lang.getString(R.string.format_doubleLines, firstItalicCreator, firstLine, secondLine);
 
-    ViewController<?> currentController = context.navigation().getCurrentStackItem();
-
-    if (currentController == null) {
-      onAgree.run();
-      return;
-    }
-
-    addBigColoredHeader(currentController.showOptions(
+    addBigColoredHeader(context.showOptions(
       desc,
       new int[]{R.id.btn_done, R.id.btn_privacyPolicy, R.id.btn_cancel},
       new String[]{Lang.getString(R.string.Continue), Lang.getString(R.string.PrivacyPolicy), Lang.getString(R.string.Cancel)},
@@ -89,7 +88,7 @@ public class ModernOptions {
               break;
             case R.id.btn_privacyPolicy:
               onCancel.run();
-              currentController.tdlib().ui().openUrl(currentController, Lang.getStringSecure(R.string.url_privacyPolicy), new TdlibUi.UrlOpenParameters().forceInstantView());
+              context.tdlib().ui().openUrl(context, Lang.getStringSecure(R.string.url_privacyPolicy), new TdlibUi.UrlOpenParameters().forceInstantView());
               break;
             case R.id.btn_cancel:
               onCancel.run();

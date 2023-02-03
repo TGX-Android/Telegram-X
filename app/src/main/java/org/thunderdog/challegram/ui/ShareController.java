@@ -1183,7 +1183,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     bottomWrap.setOrientation(LinearLayout.VERTICAL);
     contentView.addView(bottomWrap);
 
-    inputView = new InputView(context, tdlib) {
+    inputView = new InputView(context, tdlib, this) {
       @Override
       protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);

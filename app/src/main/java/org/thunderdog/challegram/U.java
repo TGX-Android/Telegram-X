@@ -1144,7 +1144,7 @@ public class U {
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && DocumentsContract.isDocumentUri(UI.getContext(), uri)) {
         if (isExternalStorageDocument(uri)) {
           final String docId = DocumentsContract.getDocumentId(uri);
-          final String[] split = docId.split(":");
+          final String[] split = docId.split(":", 2);
           final String type = split[0];
           if ("primary".equalsIgnoreCase(type)) {
             result = Environment.getExternalStorageDirectory() + "/" + split[1];
@@ -1155,7 +1155,7 @@ public class U {
           result = getDataColumn(UI.getContext(), contentUri, null, null);
         } else if (isMediaDocument(uri)) {
           final String docId = DocumentsContract.getDocumentId(uri);
-          final String[] split = docId.split(":");
+          final String[] split = docId.split(":", 2);
           final String type = split[0];
 
           Uri contentUri = null;

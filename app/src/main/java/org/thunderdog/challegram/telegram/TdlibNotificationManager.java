@@ -19,6 +19,7 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.media.AudioAttributes;
 import android.media.AudioManager;
 import android.media.RingtoneManager;
@@ -34,6 +35,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RawRes;
 import androidx.core.app.NotificationManagerCompat;
+import androidx.core.content.ContextCompat;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.FileProvider;
@@ -497,6 +499,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   public boolean areNotificationsBlockedGlobally () {
     switch (getNotificationBlockStatus()) {
       case Status.BLOCKED_ALL:
+      case Status.MISSING_PERMISSION:
       case Status.BLOCKED_CATEGORY:
       case Status.DISABLED_APP_SYNC:
       case Status.DISABLED_SYNC:
@@ -539,28 +542,37 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     Status.FIREBASE_MISSING,
     Status.INTERNAL_ERROR,
     Status.ACCOUNT_NOT_SELECTED,
-    Status.FIREBASE_ERROR
+    Status.FIREBASE_ERROR,
+    Status.MISSING_PERMISSION
   })
   public @interface Status {
-    int NOT_BLOCKED = 0;
-    int BLOCKED_CATEGORY = 1;
-    int BLOCKED_ALL = 2;
-    int DISABLED_SYNC = 3;
-    int DISABLED_APP_SYNC = 4;
-    int FIREBASE_MISSING = 5;
-    int INTERNAL_ERROR = 6;
-    int ACCOUNT_NOT_SELECTED = 7;
-    int FIREBASE_ERROR = 8;
+    int
+      NOT_BLOCKED = 0,
+      BLOCKED_CATEGORY = 1,
+      BLOCKED_ALL = 2,
+      DISABLED_SYNC = 3,
+      DISABLED_APP_SYNC = 4,
+      FIREBASE_MISSING = 5,
+      INTERNAL_ERROR = 6,
+      ACCOUNT_NOT_SELECTED = 7,
+      FIREBASE_ERROR = 8,
+      MISSING_PERMISSION = 9;
   }
 
   public @Status
   int getNotificationBlockStatus () {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      if (ContextCompat.checkSelfPermission(UI.getAppContext(), android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+        return Status.MISSING_PERMISSION;
+      }
+    }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
       long selfUserId = tdlib.myUserId();
       if (selfUserId != 0) {
         android.app.NotificationChannelGroup group = (android.app.NotificationChannelGroup) getSystemChannelGroup();
-
-        if (group != null && group.isBlocked()) {return Status.BLOCKED_CATEGORY;}
+        if (group != null && group.isBlocked()) {
+          return Status.BLOCKED_CATEGORY;
+        }
       }
     }
     if (!NotificationManagerCompat.from(UI.getAppContext()).areNotificationsEnabled()) {
@@ -1988,6 +2000,12 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     tdlib.incrementNotificationReferenceCount();
     queue.sendMessage(message, 0);
     releaseTdlibReference(after);
+  }
+
+  @AnyThread
+  @TargetApi(Build.VERSION_CODES.TIRAMISU)
+  public void onNotificationPermissionGranted () {
+    rebuildNotification();
   }
 
   @AnyThread

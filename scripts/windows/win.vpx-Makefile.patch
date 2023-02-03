@@ -1,0 +1,13 @@
+--- vpx-Makefile	2022-10-14 13:43:55.879528900 +0700
++++ win.vpx-Makefile	2022-10-14 13:44:59.041548900 +0700
+@@ -90,7 +90,9 @@
+ 
+ .PHONY: clean
+ clean::
+-	rm -f $(OBJS-yes) $(OBJS-yes:.o=.d) $(OBJS-yes:.asm.S.o=.asm.S)
++	rm -f $(OBJS-yes)
++	rm -f $(OBJS-yes:.o=.d)
++	rm -f $(OBJS-yes:.asm.S.o=.asm.S)
+ 	rm -f $(CLEAN-OBJS)
+ 
+ .PHONY: clean

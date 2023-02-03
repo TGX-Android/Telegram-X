@@ -163,8 +163,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
   private InputListener inputListener;
   private final RefreshRateLimiter refreshRateLimiter;
+  private final ViewController<?> boundController;
 
-  public InputView (Context context, Tdlib tdlib) {
+  public InputView (Context context, Tdlib tdlib, ViewController<?> boundController) {
     super(context);
     this.tdlib = tdlib;
     this.refreshRateLimiter = new RefreshRateLimiter(this, Config.MAX_ANIMATED_EMOJI_REFRESH_RATE);
@@ -172,7 +173,8 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     this.mediaHolder.setUpdateListener((usages, displayMediaKey) ->
       refreshRateLimiter.invalidate()
     );
-    this.inlineContext = new InlineSearchContext(UI.getContext(context), tdlib, this);
+    this.inlineContext = new InlineSearchContext(UI.getContext(context), tdlib, this, boundController);
+    this.boundController = boundController;
     this.paint = new TextPaint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
     this.paint.setColor(Theme.textPlaceholderColor());
     this.paint.setTypeface(Fonts.getRobotoRegular());
