@@ -1554,32 +1554,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     switch (id) {
       case R.id.more_btn_addToFolder: {
         long[] selectedChatIds = ArrayUtils.keys(selectedChats);
-        Options.Builder options = new Options.Builder();
-        options.info(Lang.getString(R.string.ChooseFolder));
-        TdApi.ChatFilterInfo[] chatFilters = tdlib.chatFilterInfos();
-        for (TdApi.ChatFilterInfo chatFilterInfo : chatFilters) {
-          options.item(new OptionItem(ViewCompat.generateViewId(), chatFilterInfo.title, OPTION_COLOR_NORMAL, TD.iconByName(chatFilterInfo.iconName, R.drawable.baseline_folder_24)));
-        }
-        options.item(new OptionItem(R.id.btn_createNewFolder, Lang.getString(R.string.CreateNewFolder), OPTION_COLOR_BLUE, R.drawable.baseline_create_new_folder_24));
-        showOptions(options.build(), new OptionDelegate() {
-          @Override
-          public Object getTagForItem (int position) {
-            return position < chatFilters.length ? chatFilters[position] : null;
-          }
-
-          @Override
-          public boolean onOptionItemPressed (View optionItemView, int optionId) {
-            if (optionId == R.id.btn_createNewFolder) {
-              TdApi.ChatFilter chatFilter = TD.newChatFilter(selectedChatIds);
-              context().navigation().navigateTo(EditChatFolderController.newFolder(context, tdlib, chatFilter));
-            } else {
-              TdApi.ChatFilterInfo chatFilter = (TdApi.ChatFilterInfo) optionItemView.getTag();
-              tdlib.addChatsToChatFilter(chatFilter.id, selectedChatIds);
-            }
-            onSelectionActionComplete();
-            return true;
-          }
-        });
+        tdlib.ui().showAddChatsToFolderOptions(this, selectedChatIds, this::onSelectionActionComplete);
         break;
       }
       case R.id.more_btn_removeFromFolder: {

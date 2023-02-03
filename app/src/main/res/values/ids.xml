@@ -311,6 +311,8 @@
   <item type="id" name="btn_unarchiveChat" />
   <item type="id" name="btn_markChatAsRead" />
   <item type="id" name="btn_markChatAsUnread" />
+  <item type="id" name="btn_addChatToFolder" />
+  <item type="id" name="btn_removeChatFromFolder" />
   <item type="id" name="btn_members" />
   <item type="id" name="btn_membersReading" />
   <item type="id" name="btn_membersWriting" />

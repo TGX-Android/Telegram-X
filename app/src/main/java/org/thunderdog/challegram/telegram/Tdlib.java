@@ -9793,6 +9793,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     send(new TdApi.EditChatFilter(chatFilterId, chatFilter), okHandler(TdApi.ChatFilterInfo.class));
   }
 
+  public void removeChatFromChatFilter (int chatFilterId, long chatId) {
+    removeChatsFromChatFilter(chatFilterId, new long[] {chatId});
+  }
+
   public void removeChatsFromChatFilter (int chatFilterId, long[] chatIds) {
     if (chatIds.length == 0) {
       return;

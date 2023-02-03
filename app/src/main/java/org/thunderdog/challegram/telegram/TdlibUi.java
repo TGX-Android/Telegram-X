@@ -45,7 +45,9 @@ import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.MainActivity;
+import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.ui.ChatFoldersController;
+import org.thunderdog.challegram.ui.EditChatFolderController;
 import org.thunderdog.challegram.ui.MapControllerFactory;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
@@ -4452,7 +4454,7 @@ public class TdlibUi extends Handler {
 
     final boolean hasNotifications = tdlib.chatNotificationsEnabled(chat);
 
-    final int size = canSelect && onSelect != null ? 6 : 5;
+    final int size = canSelect && onSelect != null ? 8 : 7;
 
     IntList ids = new IntList(size);
     StringList strings = new StringList(size);
@@ -4486,6 +4488,20 @@ public class TdlibUi extends Handler {
       strings.append(isArchived ? R.string.UnarchiveChat : R.string.ArchiveChat);
       colors.append(ViewController.OPTION_COLOR_NORMAL);
       icons.append(isArchived ? R.drawable.baseline_unarchive_24 : R.drawable.baseline_archive_24);
+    }
+
+    if (Config.CHAT_FOLDERS_ENABLED && BuildConfig.DEBUG) {
+      if (TD.isChatListMain(chatList) || TD.isChatListArchive(chatList)) {
+        ids.append(R.id.btn_addChatToFolder);
+        strings.append(R.string.AddToFolder);
+        colors.append(ViewController.OPTION_COLOR_NORMAL);
+        icons.append(R.drawable.templarian_baseline_folder_plus_24);
+      } else if (TD.isChatListFilter(chatList)) {
+        ids.append(R.id.btn_removeChatFromFolder);
+        strings.append(R.string.RemoveFromFolder);
+        colors.append(ViewController.OPTION_COLOR_NORMAL);
+        icons.append(R.drawable.templarian_baseline_folder_remove_24);
+      }
     }
 
     boolean hasPasscode = tdlib.hasPasscode(chat);
@@ -4726,6 +4742,45 @@ public class TdlibUi extends Handler {
     });
   }
 
+  public void showAddChatToFolderOptions (ViewController<?> context, long chatId, @Nullable Runnable after) {
+    showAddChatsToFolderOptions(context, new long[] {chatId}, after);
+  }
+
+  public void showAddChatsToFolderOptions (ViewController<?> context, long[] chatIds, @Nullable Runnable after) {
+    if (chatIds.length == 0)
+      return;
+
+    TdApi.ChatFilterInfo[] chatFilters = tdlib.chatFilterInfos();
+    List<ListItem> items = new ArrayList<>(chatFilters.length + 1);
+    for (TdApi.ChatFilterInfo chatFilterInfo : chatFilters) {
+      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.chatFilter, TD.iconByName(chatFilterInfo.iconName, R.drawable.baseline_folder_24), chatFilterInfo.title).setIntValue(chatFilterInfo.id));
+    }
+    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_createNewFolder, R.drawable.baseline_create_new_folder_24, R.string.CreateNewFolder).setTextColorId(R.id.theme_color_textNeutral));
+    SettingsWrap[] settings = new SettingsWrap[1];
+    settings[0] = context.showSettings(new SettingsWrapBuilder(R.id.btn_addChatToFolder)
+      .addHeaderItem(Lang.getString(R.string.ChooseFolder))
+      .setRawItems(items)
+      .setNeedSeparators(false)
+      .setDisableFooter(true)
+      .setNeedRootInsets(true)
+      .setSettingProcessor((item, view, isUpdate) -> {
+        view.setIconColorId(item.getId() == R.id.btn_createNewFolder ? R.id.theme_color_inlineIcon : ThemeColorId.NONE);
+      })
+      .setOnSettingItemClick((view, id, item, done, adapter) -> {
+        settings[0].window.hideWindow(true);
+        if (item.getId() == R.id.btn_createNewFolder) {
+          TdApi.ChatFilter chatFilter = TD.newChatFilter(chatIds);
+          context.context().navigation().navigateTo(EditChatFolderController.newFolder(context.context(), tdlib, chatFilter));
+        } else {
+          int chatFilterId = item.getIntValue();
+          tdlib.addChatsToChatFilter(chatFilterId, chatIds);
+        }
+        if (after != null) {
+          after.run();
+        }
+      }));
+  }
+
   public boolean processChatAction (ViewController<?> context, final TdApi.ChatList chatList, final long chatId, final @Nullable ThreadInfo messageThread, final int actionId, @Nullable Runnable after) {
     TdApi.Chat chat = tdlib.chat(chatId);
     if (chat == null)
@@ -4764,6 +4819,15 @@ public class TdlibUi extends Handler {
         return true;
       case R.id.btn_phone_call:
         tdlib.context().calls().makeCallDelayed(context, TD.getUserId(chat), null, true);
+        return true;
+      case R.id.btn_addChatToFolder:
+        showAddChatToFolderOptions(context, chatId, /* after */ null);
+        return true;
+      case R.id.btn_removeChatFromFolder:
+        if (TD.isChatListFilter(chatList)) {
+          int chatFilterId = ((TdApi.ChatListFilter) chatList).chatFilterId;
+          tdlib.removeChatFromChatFilter(chatFilterId, chatId);
+        }
         return true;
       default:
         return processLeaveButton(context, chatList, chatId, actionId, after);
