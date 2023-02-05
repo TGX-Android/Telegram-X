@@ -37,7 +37,7 @@ import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 
 public class PhotoGenerationInfo extends GenerationInfo {
-  public static final int SIZE_LIMIT = 2560;//1280;
+  public static final int SIZE_LIMIT = 1280;
 
   private int rotation; // 0, 90, 180 or 270
   private boolean isFiltered;
