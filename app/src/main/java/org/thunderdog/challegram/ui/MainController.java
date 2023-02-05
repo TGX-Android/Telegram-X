@@ -44,7 +44,6 @@ import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
-import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.util.ObjectsCompat;
 import androidx.recyclerview.widget.RecyclerView;
@@ -1157,7 +1156,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   }
 
   private void animateNavigationBarColor () {
-    if (!Config.USE_CUSTOM_NAVIGATION_COLOR || !FeatureToggles.USE_CUSTOM_NAVIGATION_COLOR)
+    if (!Config.USE_CUSTOM_NAVIGATION_COLOR || Config.CHAT_FOLDERS_LIGHT_BOTTOM_BAR || !FeatureToggles.USE_CUSTOM_NAVIGATION_COLOR)
       return;
     if (navigationBarColorAnimator == null) {
       navigationBarColorAnimator = new BoolAnimator(0, (id, factor, fraction, callee) -> {
@@ -2124,17 +2123,27 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
             parent.removeView(headerCellView);
           }
         }
+        int shadowHeight = Screen.dp(3f);
         ShadowView shadowView = new ShadowView(context);
-        shadowView.setSimpleTopShadow(true);
-        int shadowHeight = shadowView.getLayoutParams().height;
-        Views.setTopMargin(headerCellView, shadowHeight);
+        shadowView.setVerticalShadow(new int[]{0x00000000, 0x40000000}, null, shadowHeight);
+        shadowView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, shadowHeight));
+        Views.setTopMargin(headerCellView, shadowHeight - Screen.dp(1f));
 
-        bottomBar = new FrameLayoutFix(context);
-        ViewSupport.setThemedBackground(headerCellView, R.id.theme_color_headerBackground, this);
+        if (Config.CHAT_FOLDERS_LIGHT_BOTTOM_BAR) {
+          ViewSupport.setThemedBackground(headerCellView, R.id.theme_color_headerLightBackground, this);
+          headerCell.getTopView().setSelectionColorId(R.id.theme_color_headerLightText);
+          headerCell.getTopView().setTextFromToColorId(R.id.theme_color_headerLightText, R.id.theme_color_headerLightText);
+        } else {
+          ViewSupport.setThemedBackground(headerCellView, R.id.theme_color_headerBackground, this);
+          headerCell.getTopView().setSelectionColorId(R.id.theme_color_headerTabActive);
+          headerCell.getTopView().setTextFromToColorId(R.id.theme_color_headerTabInactiveText, R.id.theme_color_headerTabActiveText);
+        }
+
         int headerHeight = getHeaderHeight();
-        bottomBar.addView(headerCellView);
+        bottomBar = new FrameLayoutFix(context);
         bottomBar.addView(shadowView);
-        pagerWrap.addView(bottomBar, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, headerHeight + shadowHeight, Gravity.BOTTOM));
+        bottomBar.addView(headerCellView);
+        pagerWrap.addView(bottomBar, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, headerHeight + Views.getTopMargin(headerCellView), Gravity.BOTTOM));
       }
       headerCellView.setAlpha(1f);
       headerCellView.setTranslationX(0f);
@@ -2151,6 +2160,8 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         pagerWrap.removeView(bottomBar);
         bottomBar.removeView(headerCellView);
         bottomBar = null;
+        headerCell.getTopView().setSelectionColorId(R.id.theme_color_headerTabActive);
+        headerCell.getTopView().setTextFromToColorId(R.id.theme_color_headerTabInactiveText, R.id.theme_color_headerTabActiveText);
         ViewUtils.setBackground(headerCellView, null);
         Views.setTopMargin(headerCellView, 0);
         removeThemeListenerByTarget(headerCellView);
@@ -2347,12 +2358,12 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   private final TextColorSet unreadCounterColorSet = new TextColorSet() {
     @Override
     public int defaultTextColor () {
-      return getHeaderColor();
+      return Theme.getColor(Config.CHAT_FOLDERS_LIGHT_BOTTOM_BAR ? R.id.theme_color_headerLightBackground : R.id.theme_color_headerBackground);
     }
 
     @Override
     public int backgroundColor (boolean isPressed) {
-      return getHeaderTextColor();
+      return Theme.getColor(Config.CHAT_FOLDERS_LIGHT_BOTTOM_BAR ? R.id.theme_color_headerLightText : R.id.theme_color_headerText);
     }
   };
 
