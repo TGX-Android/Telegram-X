@@ -535,7 +535,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
       if (headerView != null) {
         headerView.updateCustomButton(getMenuId(), R.id.menu_btn_forward, view -> {
           if (view instanceof HeaderButton) {
-            ((HeaderButton) view).setShowProgress(false,  0f);
+            ((HeaderButton) view).setShowProgress(false, 0f);
           }
         });
       }
@@ -571,7 +571,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     if (!isDestroyed() && headerView != null) {
       headerView.updateCustomButton(getMenuId(), R.id.menu_btn_forward, view -> {
         if (view instanceof HeaderButton) {
-          ((HeaderButton) view).setShowProgress(false,  0f);
+          ((HeaderButton) view).setShowProgress(false, 0f);
         }
       });
     }
@@ -1545,7 +1545,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
   }
 
   private int detectTopRecyclerEdge () {
-    GridLayoutManager manager =  (GridLayoutManager) recyclerView.getLayoutManager();
+    GridLayoutManager manager = (GridLayoutManager) recyclerView.getLayoutManager();
     int first = manager.findFirstVisibleItemPosition();
     int spanCount = manager.getSpanCount();
     int top = 0;
@@ -1680,6 +1680,13 @@ public class ShareController extends TelegramViewController<ShareController.Args
         needUpdateSearchMode = false;
       } else if (autoScrollFinished && top > 0 && inSearchMode() && getSearchTransformFactor() == 1f) {
         recyclerView.scrollBy(0, top);
+      }
+      if (folderSelectorLayout != null) {
+        View boundView = folderSelectorLayout.getBoundView();
+        if (boundView != null && boundView.getTranslationY() != headerView.getTranslationY()) {
+          boundView.setTranslationY(headerView.getTranslationY());
+          boundView.requestLayout();
+        }
       }
     }
   }
@@ -1824,13 +1831,13 @@ public class ShareController extends TelegramViewController<ShareController.Args
     return false;
   }
 
-  private boolean toggleChecked (View view, TGFoundChat chat, RunnableBool after)  {
+  private boolean toggleChecked (View view, TGFoundChat chat, RunnableBool after) {
     return toggleCheckedImpl(view, chat, after, true);
   }
 
   private final LongSet lockedChatIds = new LongSet();
 
-  private boolean toggleCheckedImpl (View view, TGFoundChat chat, @Nullable RunnableBool after, boolean performAsyncChecks)  {
+  private boolean toggleCheckedImpl (View view, TGFoundChat chat, @Nullable RunnableBool after, boolean performAsyncChecks) {
     long chatId = chat.getAnyId();
     if (lockedChatIds.has(chatId)) {
       return false;
@@ -1923,7 +1930,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
   @Override
   public void onClick (View v) {
     switch (v.getId()) {
-      case R.id.btn_send:{
+      case R.id.btn_send: {
         if (selectedChats.size() == 0) {
           if (canShareLink) {
             shareLink();
@@ -3178,7 +3185,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
           break;
         }
         case MODE_CUSTOM_CONTENT: {
-          functions.addAll(TD.sendMessageText(chatId, 0,0, sendOptions, args.customContent, tdlib.maxMessageTextLength()));
+          functions.addAll(TD.sendMessageText(chatId, 0, 0, sendOptions, args.customContent, tdlib.maxMessageTextLength()));
           break;
         }
         case MODE_TELEGRAM_FILES: {
@@ -3354,30 +3361,49 @@ public class ShareController extends TelegramViewController<ShareController.Args
     }
   }
 
+  private @Nullable PopupLayout folderSelectorLayout;
+
   private void showFolderSelector () {
     if (headerView == null)
       return;
-    MenuMoreWrap menu = new MenuMoreWrap(context);
+    MenuMoreWrap menu = new MenuMoreWrap(context, /* scrollable */ true) {
+      @Override
+      protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
+        int overrideHeightMeasureSpec;
+        int heightSpecMode = MeasureSpec.getMode(heightMeasureSpec);
+        if (heightSpecMode == MeasureSpec.UNSPECIFIED) {
+          overrideHeightMeasureSpec = heightMeasureSpec;
+        } else {
+          int heightSpecSize = Math.max(MeasureSpec.getSize(heightMeasureSpec) - Math.round(getTranslationY()), 0);
+          overrideHeightMeasureSpec = MeasureSpec.makeMeasureSpec(heightSpecSize, heightSpecMode);
+        }
+        super.onMeasure(widthMeasureSpec, overrideHeightMeasureSpec);
+      }
+    };
     menu.init(getThemeListeners(), null);
     menu.addItem(0, Lang.getString(R.string.CategoryMain), R.drawable.baseline_forum_24, null, v -> {
       PopupLayout popupLayout = PopupLayout.parentOf(v);
       popupLayout.hideWindow(true);
       displayChatList(Lang.getString(R.string.CategoryMain), ChatPosition.CHAT_LIST_MAIN);
     });
+    View.OnClickListener onItemClickListener = v -> {
+      PopupLayout popupLayout = PopupLayout.parentOf(v);
+      popupLayout.hideWindow(true);
+      TdApi.ChatFilterInfo chatFilterInfo = (TdApi.ChatFilterInfo) v.getTag();
+      displayChatList(chatFilterInfo.title, new TdApi.ChatListFilter(chatFilterInfo.id));
+    };
     for (TdApi.ChatFilterInfo chatFilterInfo : tdlib.chatFilterInfos()) {
-      menu.addItem(0, chatFilterInfo.title, TD.iconByName(chatFilterInfo.iconName, R.drawable.baseline_folder_24), null, v -> {
-        PopupLayout popupLayout = PopupLayout.parentOf(v);
-        popupLayout.hideWindow(true);
-        displayChatList(chatFilterInfo.title, new TdApi.ChatListFilter(chatFilterInfo.id));
-      });
+      View itemView = menu.addItem(View.NO_ID, chatFilterInfo.title, TD.iconByName(chatFilterInfo.iconName, R.drawable.baseline_folder_24), /* icon */ null, onItemClickListener);
+      itemView.setTag(chatFilterInfo);
     }
     menu.setAnchorMode(MenuMoreWrap.ANCHOR_MODE_HEADER);
-    menu.setTranslationY(Math.max(0, headerView.getTranslationY()));
-    PopupLayout popupLayout = new PopupLayout(context);
-    popupLayout.init(true);
-    popupLayout.setNeedRootInsets();
-    popupLayout.setOverlayStatusBar(true);
-    popupLayout.showMoreView(menu);
+    menu.setTranslationY(headerView.getTranslationY());
+    folderSelectorLayout = new PopupLayout(context);
+    folderSelectorLayout.init(true);
+    folderSelectorLayout.setNeedRootInsets();
+    folderSelectorLayout.setOverlayStatusBar(true);
+    folderSelectorLayout.setDismissListener((popup) -> folderSelectorLayout = null);
+    folderSelectorLayout.showMoreView(menu);
   }
 
   @Override
