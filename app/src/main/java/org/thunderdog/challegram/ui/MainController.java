@@ -748,29 +748,51 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
   @Override
   protected TdApi.ChatList getChatMessagesSearchChatList () {
-    if (menuNeedArchive) {
+    ChatsController c = findChatsControllerForSearchMessages();
+    if (c != null && TD.isChatListArchive(c.chatList())) {
       return ChatPosition.CHAT_LIST_ARCHIVE;
     }
     return null;
   }
 
   @Nullable
-  public final ChatsController findChatsController () {
+  public final ChatsController findMainChatsController () {
     return (ChatsController) getCachedControllerForItemId(MAIN_PAGER_ITEM_ID);
+  }
+
+  @Nullable
+  public final ChatsController getCurrentChatsController () {
+    ViewController<?> current = getCurrentPagerItem();
+    return current instanceof ChatsController ? (ChatsController) current : null;
+  }
+
+  @Nullable
+  public final ChatsController findChatsControllerForSearchMessages () {
+    return hasFolders() ? getCurrentChatsController() : findMainChatsController();
   }
 
   @Override
   protected boolean filterChatMessageSearchResult (TdApi.Chat chat) {
-    ChatsController c = findChatsController();
-    ChatFilter filter = c != null ? c.getFilter() : null;
-    return filter != null && filter.canFilterMessages() ? filter.accept(chat) : super.filterChatMessageSearchResult(chat);
+    ChatsController c = findChatsControllerForSearchMessages();
+    if (c != null) {
+      TdApi.ChatList chatList = c.chatList();
+      if (TD.isChatListFilter(chatList) && Config.SEARCH_MESSAGES_ONLY_IN_SELECTED_FOLDER) {
+        if (ChatPosition.findPosition(chat, chatList) == null)
+          return false;
+      }
+      ChatFilter filter = c.getFilter();
+      if (filter != null && filter.canFilterMessages()) {
+        return filter.accept(chat);
+      }
+    }
+    return super.filterChatMessageSearchResult(chat);
   }
 
   @Override
   protected int getChatMessagesSearchTitle () {
-    ChatsController c = findChatsController();
+    ChatsController c = findChatsControllerForSearchMessages();
     ChatFilter filter = c != null ? c.getFilter() : null;
-    boolean isArchive = c != null && c.chatList().getConstructor() == TdApi.ChatListArchive.CONSTRUCTOR;
+    boolean isArchive = c != null && TD.isChatListArchive(c.chatList());
     if (filter != null && filter.canFilterMessages())
       return filter.getMessagesStringRes(isArchive);
     if (isArchive)
@@ -1232,7 +1254,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         return showComposeWrap(null);
       } else {
         if (getCurrentPagerItemId() == MAIN_PAGER_ITEM_ID) {
-          ChatsController c = findChatsController();
+          ChatsController c = findMainChatsController();
           if (c != null && c.isPullingArchive()) {
             return false;
           }
