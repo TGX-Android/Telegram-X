@@ -947,7 +947,11 @@ public class ShareController extends TelegramViewController<ShareController.Args
     if (Config.CHAT_FOLDERS_ENABLED && TD.isChatListMain(displayingChatList) && tdlib.chatFilterCount() > 0) {
       headerCell.setTitle(R.string.CategoryMain);
       headerCell.setTitleIcon(R.drawable.baseline_keyboard_arrow_down_20);
-      headerCell.setOnClickListener(v -> showFolderSelector());
+      headerCell.setOnClickListener(v -> {
+        if (!inSearchMode()) {
+          showFolderSelector();
+        }
+      });
       Views.setClickable(headerCell);
     }
 
@@ -2081,6 +2085,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     } else {
       setAutoScrollFinished(true);
     }
+    hideFolderSelector();
   }
 
   private void setAutoScrollFinished (boolean isFinished) {
@@ -3404,6 +3409,13 @@ public class ShareController extends TelegramViewController<ShareController.Args
     folderSelectorLayout.setOverlayStatusBar(true);
     folderSelectorLayout.setDismissListener((popup) -> folderSelectorLayout = null);
     folderSelectorLayout.showMoreView(menu);
+  }
+
+  private void hideFolderSelector () {
+    if (folderSelectorLayout != null) {
+      folderSelectorLayout.hideWindow(isFocused());
+      folderSelectorLayout = null;
+    }
   }
 
   @Override
