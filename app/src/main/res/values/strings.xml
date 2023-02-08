@@ -4532,6 +4532,7 @@
   <string name="ChatFoldersPositionTop">Top</string>
   <string name="ChatFoldersPositionBottom">Bottom</string>
   <string name="ChatFolderChangeIcon">Change Icon</string>
+  <string name="ChatFolderAddChats">Add Chats</string>
   <string name="ChatFolderLimitReached">You have reached the limit of **%1$d** folders.</string>
   <string name="NewFolder">New Folder</string>
   <string name="CreateNewFolder">Create New Folder</string>
@@ -4552,9 +4553,9 @@
   <string name="FolderIncludedChats">Included Chats</string>
   <string name="FolderIncludedChatsInfo">Choose chats or types of chats that will appear in this folder.</string>
   <string name="FolderExcludedChats">Excluded Chats</string>
-  <string name="FolderExcludedChatsInfo">Choose chats or types of chats that will not appear in this folder.</string>
-  <string name="FolderActionIncludeChats">Add Chats</string>
-  <string name="FolderActionExcludeChats">Add Chats</string>
+  <string name="FolderExcludedChatsInfo">Choose chats or types of chats that will **not** appear in this folder.</string>
+  <string name="FolderActionIncludeChats">Add Chats to Included</string>
+  <string name="FolderActionExcludeChats">Add Chats to Excluded</string>
   <string name="FolderName">Folder name</string>
   <string name="FolderNameHint">Name</string>
   <string name="RecommendedFolders">Recommended Folders</string>
@@ -4567,4 +4568,6 @@
   <string name="LabelAndIcon">Label with icon</string>
   <string name="CountMutedChats">Count muted chats</string>
   <string name="DisplayFoldersAtTheTop">Display folders at the top</string>
+  <string name="ChatsXShowMore_one">Show %1$s more</string>
+  <string name="ChatsXShowMore_other">Show %1$s more</string>
 </resources>

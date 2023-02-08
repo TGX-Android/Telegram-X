@@ -17,10 +17,12 @@ import androidx.annotation.IdRes;
 import androidx.annotation.Nullable;
 import androidx.core.util.ObjectsCompat;
 import androidx.core.view.ViewCompat;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.user.RemoveHelper;
 import org.thunderdog.challegram.core.Lang;
@@ -37,6 +39,8 @@ import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.util.AdapterSubListUpdateCallback;
+import org.thunderdog.challegram.util.ListItemDiffUtilCallback;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.BetterChatView;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
@@ -45,6 +49,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.StringUtils;
@@ -53,6 +58,8 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
 
   private static final int NO_CHAT_FILTER_ID = 0;
   private static final TdApi.ChatFilter EMPTY_CHAT_FILTER = TD.newChatFilter();
+  private static final ArrayList<ListItem> TEMP_ITEM_LIST = new ArrayList<>(0);
+  private static final int COLLAPSED_CHAT_COUNT = 3;
 
   public static class Arguments {
     private final int chatFilterId;
@@ -105,6 +112,9 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
   private final @IdRes int includedChatsNextItemId = ViewCompat.generateViewId();
   private final @IdRes int excludedChatsNextItemId = ViewCompat.generateViewId();
 
+  private boolean showAllIncludedChats;
+  private boolean showAllExcludedChats;
+
   private SettingsAdapter adapter;
   private ListItem input;
 
@@ -155,21 +165,17 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
 
     items.add(new ListItem(ListItem.TYPE_HEADER_PADDED, 0, 0, R.string.FolderIncludedChats));
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_folderIncludeChats, R.drawable.baseline_add_circle_24, R.string.FolderActionIncludeChats).setTextColorId(R.id.theme_color_inlineText));
-    if (editedChatFilter != null) {
-      fillIncludedChats(editedChatFilter, items);
-    }
+    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_folderIncludeChats, R.drawable.baseline_add_24, R.string.FolderActionIncludeChats).setTextColorId(R.id.theme_color_inlineText));
+    fillIncludedChats(editedChatFilter, items);
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM, includedChatsNextItemId));
-    items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.FolderIncludedChatsInfo));
+    items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getMarkdownString(this, R.string.FolderIncludedChatsInfo)));
 
     items.add(new ListItem(ListItem.TYPE_HEADER_PADDED, 0, 0, R.string.FolderExcludedChats));
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_folderExcludeChats, R.drawable.baseline_add_circle_24, R.string.FolderActionExcludeChats).setTextColorId(R.id.theme_color_inlineText));
-    if (editedChatFilter != null) {
-      fillExcludedChats(editedChatFilter, items);
-    }
+    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_folderExcludeChats, R.drawable.baseline_add_24, R.string.FolderActionExcludeChats).setTextColorId(R.id.theme_color_inlineText));
+    fillExcludedChats(editedChatFilter, items);
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM, excludedChatsNextItemId));
-    items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.FolderExcludedChatsInfo));
+    items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getMarkdownString(this, R.string.FolderExcludedChatsInfo)));
 
     if (chatFilterId != NO_CHAT_FILTER_ID) {
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
@@ -182,6 +188,9 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
     adapter.setLockFocusOn(this, /* showAlways */ StringUtils.isEmpty(editedChatFilter.title));
     adapter.setTextChangeListener(this);
     adapter.setItems(items, false);
+    CustomItemAnimator itemAnimator = new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
+    itemAnimator.setSupportsChangeAnimations(false);
+    recyclerView.setItemAnimator(itemAnimator);
     recyclerView.setAdapter(adapter);
     RemoveHelper.attach(recyclerView, new RemoveHelperCallback());
 
@@ -198,6 +207,8 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
     outState.putString(keyPrefix + "_chatFilterName", arguments.chatFilterName);
     TD.saveChatFilter(outState, keyPrefix + "_originChatFilter", originChatFilter);
     TD.saveChatFilter(outState, keyPrefix + "_editedChatFilter", editedChatFilter);
+    outState.putBoolean(keyPrefix + "_showAllIncludedChats", showAllIncludedChats);
+    outState.putBoolean(keyPrefix + "_showAllExcludedChats", showAllExcludedChats);
     return true;
   }
 
@@ -213,6 +224,8 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
       this.chatFilterId = chatFilterId;
       this.originChatFilter = originChatFilter;
       this.editedChatFilter = editedChatFilter;
+      this.showAllIncludedChats = in.getBoolean(keyPrefix + "_showAllIncludedChats");
+      this.showAllExcludedChats = in.getBoolean(keyPrefix + "_showAllExcludedChats");
       return true;
     }
     return false;
@@ -248,6 +261,19 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
       SelectChatsController selectChats = new SelectChatsController(context, tdlib);
       selectChats.setArguments(SelectChatsController.Arguments.excludedChats(this, chatFilterId, editedChatFilter));
       navigateTo(selectChats);
+    } else if (id == R.id.btn_showAdvanced) {
+      ListItem item = (ListItem) v.getTag();
+      if (item.getBoolValue()) {
+        if (!showAllIncludedChats) {
+          showAllIncludedChats = true;
+          updateIncludedChats();
+        }
+      } else {
+        if (!showAllExcludedChats) {
+          showAllExcludedChats = true;
+          updateExcludedChats();
+        }
+      }
     } else if (id == R.id.btn_removeFolder) {
       showRemoveFolderConfirm();
     } else if (id == R.id.chat || ArrayUtils.contains(TD.CHAT_TYPES, id)) {
@@ -285,41 +311,59 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
     updateMenuButton();
   }
 
-  private int indexOfFirstIncludedChat () {
-    int index = adapter.indexOfViewById(includedChatsPreviousItemId);
-    return index == RecyclerView.NO_POSITION ? RecyclerView.NO_POSITION : index + 1;
-  }
-
-  private int indexOfFirstExcludedChat () {
-    int index = adapter.indexOfViewById(excludedChatsPreviousItemId);
-    return index == RecyclerView.NO_POSITION ? RecyclerView.NO_POSITION : index + 1;
-  }
-
   private void fillIncludedChats (TdApi.ChatFilter chatFilter, List<ListItem> outList) {
+    int chatTypeCount = TD.countIncludedChatTypes(chatFilter);
+    int chatCount = chatFilter.pinnedChatIds.length + chatFilter.includedChatIds.length;
+    int visibleChatCount = showAllIncludedChats || (chatCount <= COLLAPSED_CHAT_COUNT + 1) ? chatCount : COLLAPSED_CHAT_COUNT;
+    int moreCount = chatCount - visibleChatCount;
+    int itemCount = (chatTypeCount + visibleChatCount) * 2 + (moreCount > 0 ? 2 : 0);
+    if (itemCount == 0)
+      return;
+    ArrayUtils.ensureCapacity(outList, itemCount);
     for (int includedChatType : TD.includedChatTypes(chatFilter)) {
-      outList.add(new ListItem(ListItem.TYPE_SEPARATOR));
+      outList.add(new ListItem(ListItem.TYPE_SEPARATOR).setIntValue(includedChatType));
       outList.add(chatTypeItem(includedChatType));
     }
+    int count = 0;
     for (long pinnedChatId : chatFilter.pinnedChatIds) {
-      outList.add(new ListItem(ListItem.TYPE_SEPARATOR));
-      outList.add(chatItem(pinnedChatId).setBoolValue(true));
+      if (count++ >= visibleChatCount)
+        break;
+      outList.add(new ListItem(ListItem.TYPE_SEPARATOR).setLongValue(pinnedChatId));
+      outList.add(chatItem(pinnedChatId).setBoolValue(true /* included chat */));
     }
     for (long includedChatId : chatFilter.includedChatIds) {
-      outList.add(new ListItem(ListItem.TYPE_SEPARATOR));
-      outList.add(chatItem(includedChatId).setBoolValue(true));
+      if (count++ >= visibleChatCount)
+        break;
+      outList.add(new ListItem(ListItem.TYPE_SEPARATOR).setLongValue(includedChatId));
+      outList.add(chatItem(includedChatId).setBoolValue(true /* included chat */));
+    }
+    if (moreCount > 0) {
+      outList.add(new ListItem(ListItem.TYPE_SEPARATOR).setIntValue(R.id.btn_showAdvanced));
+      outList.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, R.drawable.baseline_direction_arrow_down_24, Lang.plural(R.string.ChatsXShowMore, moreCount)).setBoolValue(true /* included chats */));
     }
   }
 
   private void fillExcludedChats (TdApi.ChatFilter chatFilter, List<ListItem> outList) {
+    int chatTypeCount = TD.countExcludedChatTypes(chatFilter);
+    int chatCount = chatFilter.excludedChatIds.length;
+    int visibleChatCount = showAllExcludedChats || (chatCount <= COLLAPSED_CHAT_COUNT + 1) ? chatCount : COLLAPSED_CHAT_COUNT;
+    int moreCount = chatCount - visibleChatCount;
+    int itemCount = (chatTypeCount + visibleChatCount) * 2 + (moreCount > 0 ? 2 : 0);
+    if (itemCount == 0)
+      return;
+    ArrayUtils.ensureCapacity(outList, itemCount);
     for (int excludedChatType : TD.excludedChatTypes(chatFilter)) {
-      outList.add(new ListItem(ListItem.TYPE_SEPARATOR));
+      outList.add(new ListItem(ListItem.TYPE_SEPARATOR).setIntValue(excludedChatType));
       outList.add(chatTypeItem(excludedChatType));
     }
-    if (chatFilter.excludedChatIds != null) {
-      for (long excludedChatId : chatFilter.excludedChatIds) {
-        outList.add(new ListItem(ListItem.TYPE_SEPARATOR));
-        outList.add(chatItem(excludedChatId).setBoolValue(false));
-      }
+    for (int index = 0; index < visibleChatCount; index++) {
+      long excludedChatId = chatFilter.excludedChatIds[index];
+      outList.add(new ListItem(ListItem.TYPE_SEPARATOR).setLongValue(excludedChatId));
+      outList.add(chatItem(excludedChatId).setBoolValue(false /* excluded chat */));
+    }
+    if (moreCount > 0) {
+      outList.add(new ListItem(ListItem.TYPE_SEPARATOR).setIntValue(R.id.btn_showAdvanced));
+      outList.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showAdvanced, R.drawable.baseline_direction_arrow_down_24, Lang.plural(R.string.ChatsXShowMore, moreCount)).setBoolValue(false /* excluded chats */));
     }
   }
 
@@ -349,29 +393,48 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
   private void updateChatFilter (TdApi.ChatFilter chatFilter) {
     this.editedChatFilter = chatFilter;
     updateMenuButton();
-    ArrayList<ListItem> itemList = new ArrayList<>(0);
+    updateIncludedChats();
+    updateExcludedChats();
+  }
 
-    int indexOfFirstIncludedChat = indexOfFirstIncludedChat();
-    int includedChatsItemCount = adapter.indexOfViewById(includedChatsNextItemId) - indexOfFirstIncludedChat;
-    if (includedChatsItemCount > 0) {
-      adapter.removeRange(indexOfFirstIncludedChat, includedChatsItemCount);
+  private void updateIncludedChats () {
+    int previousItemIndex = adapter.indexOfViewById(includedChatsPreviousItemId);
+    int nextItemIndex = adapter.indexOfViewById(includedChatsNextItemId);
+    if (previousItemIndex == -1 || nextItemIndex == -1)
+      return;
+    int firstItemIndex = previousItemIndex + 1;
+    TEMP_ITEM_LIST.clear();
+    fillIncludedChats(editedChatFilter, TEMP_ITEM_LIST);
+    if (firstItemIndex < nextItemIndex) {
+      List<ListItem> oldList = adapter.getItems().subList(firstItemIndex, nextItemIndex);
+      DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffUtilCallback(oldList, TEMP_ITEM_LIST));
+      oldList.clear();
+      oldList.addAll(TEMP_ITEM_LIST);
+      diffResult.dispatchUpdatesTo(new AdapterSubListUpdateCallback(adapter, firstItemIndex));
+    } else if (TEMP_ITEM_LIST.size() > 0) {
+      adapter.addItems(firstItemIndex, TEMP_ITEM_LIST.toArray(new ListItem[0]));
     }
-    if (indexOfFirstIncludedChat != RecyclerView.NO_POSITION) {
-      ArrayUtils.ensureCapacity(itemList, chatFilter.includedChatIds.length + 5);
-      fillIncludedChats(chatFilter, itemList);
-      adapter.addItems(indexOfFirstIncludedChat, itemList.toArray(new ListItem[0]));
+    TEMP_ITEM_LIST.clear();
+  }
+
+  private void updateExcludedChats () {
+    int previousItemIndex = adapter.indexOfViewById(excludedChatsPreviousItemId);
+    int nextItemIndex = adapter.indexOfViewById(excludedChatsNextItemId);
+    if (previousItemIndex == -1 || nextItemIndex == -1)
+      return;
+    int firstItemIndex = previousItemIndex + 1;
+    TEMP_ITEM_LIST.clear();
+    fillExcludedChats(editedChatFilter, TEMP_ITEM_LIST);
+    if (firstItemIndex < nextItemIndex) {
+      List<ListItem> oldList = adapter.getItems().subList(firstItemIndex, nextItemIndex);
+      DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffUtilCallback(oldList, TEMP_ITEM_LIST));
+      oldList.clear();
+      oldList.addAll(TEMP_ITEM_LIST);
+      diffResult.dispatchUpdatesTo(new AdapterSubListUpdateCallback(adapter, firstItemIndex));
+    } else if (TEMP_ITEM_LIST.size() > 0) {
+      adapter.addItems(firstItemIndex, TEMP_ITEM_LIST.toArray(new ListItem[0]));
     }
-    int indexOfFirstExcludedChat = indexOfFirstExcludedChat();
-    int excludedChatsItemCount = adapter.indexOfViewById(excludedChatsNextItemId) - indexOfFirstExcludedChat;
-    if (excludedChatsItemCount > 0) {
-      adapter.removeRange(indexOfFirstExcludedChat, excludedChatsItemCount);
-    }
-    if (indexOfFirstExcludedChat != RecyclerView.NO_POSITION) {
-      itemList.clear();
-      ArrayUtils.ensureCapacity(itemList, chatFilter.excludedChatIds.length + 3);
-      fillExcludedChats(chatFilter, itemList);
-      adapter.addItems(indexOfFirstExcludedChat, itemList.toArray(new ListItem[0]));
-    }
+    TEMP_ITEM_LIST.clear();
   }
 
   private void updateFolderName () {
@@ -592,6 +655,29 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
       } else {
         view.setIconColorId(0 /* theme_color_icon */);
       }
+    }
+  }
+
+  private static class DiffUtilCallback extends ListItemDiffUtilCallback {
+    public DiffUtilCallback (List<ListItem> oldList, List<ListItem> newList) {
+      super(oldList, newList);
+    }
+
+    @Override
+    public boolean areItemsTheSame (ListItem oldItem, ListItem newItem) {
+      if (oldItem.getViewType() != newItem.getViewType() || oldItem.getId() != newItem.getId())
+        return false;
+      if (oldItem.getId() == R.id.chat) {
+        return oldItem.getLongId() == newItem.getLongId();
+      }
+      if (oldItem.getViewType() == ListItem.TYPE_SEPARATOR)
+        return oldItem.getIntValue() == newItem.getIntValue() && oldItem.getLongValue() == newItem.getLongValue();
+      return true;
+    }
+
+    @Override
+    public boolean areContentsTheSame (ListItem oldItem, ListItem newItem) {
+      return false;
     }
   }
 

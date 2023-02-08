@@ -7031,10 +7031,32 @@ public class TD {
       U.unmodifiableTreeSetOf(lhs.excludedChatIds).equals(U.unmodifiableTreeSetOf(rhs.excludedChatIds));
   }
 
+  public static int countIncludedChatTypes (@Nullable TdApi.ChatFilter chatFilter) {
+    if (chatFilter == null)
+      return 0;
+    int count = 0;
+    if (chatFilter.includeContacts) count++;
+    if (chatFilter.includeNonContacts) count++;
+    if (chatFilter.includeGroups) count++;
+    if (chatFilter.includeChannels) count++;
+    if (chatFilter.includeBots) count++;
+    return count;
+  }
+
+  public static int countExcludedChatTypes (@Nullable TdApi.ChatFilter chatFilter) {
+    if (chatFilter == null)
+      return 0;
+    int count = 0;
+    if (chatFilter.excludeMuted) count++;
+    if (chatFilter.excludeRead) count++;
+    if (chatFilter.excludeArchived) count++;
+    return count;
+  }
+
   public static int[] includedChatTypes (@Nullable TdApi.ChatFilter chatFilter) {
     if (chatFilter == null)
       return ArrayUtils.EMPTY_INTS;
-    IntList chatTypes = new IntList(5);
+    IntList chatTypes = new IntList(countIncludedChatTypes(chatFilter));
     if (chatFilter.includeContacts) chatTypes.append(R.id.chatType_contact);
     if (chatFilter.includeNonContacts) chatTypes.append(R.id.chatType_nonContact);
     if (chatFilter.includeGroups) chatTypes.append(R.id.chatType_group);
@@ -7046,7 +7068,7 @@ public class TD {
   public static int[] excludedChatTypes (@Nullable TdApi.ChatFilter chatFilter) {
     if (chatFilter == null)
       return ArrayUtils.EMPTY_INTS;
-    IntList chatTypes = new IntList(3);
+    IntList chatTypes = new IntList(countExcludedChatTypes(chatFilter));
     if (chatFilter.excludeMuted) chatTypes.append(R.id.chatType_muted);
     if (chatFilter.excludeRead) chatTypes.append(R.id.chatType_read);
     if (chatFilter.excludeArchived) chatTypes.append(R.id.chatType_archived);
