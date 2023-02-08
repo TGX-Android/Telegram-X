@@ -2380,12 +2380,12 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   private final TextColorSet unreadCounterColorSet = new TextColorSet() {
     @Override
     public int defaultTextColor () {
-      return Theme.getColor(Config.CHAT_FOLDERS_LIGHT_BOTTOM_BAR ? R.id.theme_color_headerLightBackground : R.id.theme_color_headerBackground);
+      return Theme.getColor(Config.CHAT_FOLDERS_LIGHT_BOTTOM_BAR && displayTabsAtBottom() ? R.id.theme_color_headerLightBackground : R.id.theme_color_headerBackground);
     }
 
     @Override
     public int backgroundColor (boolean isPressed) {
-      return Theme.getColor(Config.CHAT_FOLDERS_LIGHT_BOTTOM_BAR ? R.id.theme_color_headerLightText : R.id.theme_color_headerText);
+      return Theme.getColor(Config.CHAT_FOLDERS_LIGHT_BOTTOM_BAR && displayTabsAtBottom() ? R.id.theme_color_headerLightText : R.id.theme_color_headerText);
     }
   };
 
