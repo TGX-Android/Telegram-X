@@ -8085,8 +8085,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     if (context.isStackLocked()) {
       return;
     }
+    if (filter == null && item.isGifType()) {
+      filter = new TdApi.SearchMessagesFilterAnimation();
+    }
     if (context instanceof MediaCollectorDelegate) {
-      stack = ((MediaCollectorDelegate) context).collectMedias(item.getSourceMessageId(), null);
+      stack = ((MediaCollectorDelegate) context).collectMedias(item.getSourceMessageId(), filter);
     }
 
     if (stack == null) {
@@ -8097,7 +8100,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     Args args = new Args(context, MODE_MESSAGES, stack);
     args.reverseMode = true;
     args.forceThumbs = true;
-    args.filter = filter != null ? filter : item.isGifType() ? new TdApi.SearchMessagesFilterAnimation() : null;
+    args.filter = filter;
     if (context instanceof MediaCollectorDelegate) {
       ((MediaCollectorDelegate) context).modifyMediaArguments(item, args);
     }
