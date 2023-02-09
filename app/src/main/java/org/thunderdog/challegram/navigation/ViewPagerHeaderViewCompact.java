@@ -15,11 +15,20 @@
 package org.thunderdog.challegram.navigation;
 
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.LinearGradient;
+import android.graphics.Matrix;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Shader;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.annotation.Dimension;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -99,6 +108,8 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
   private final A adapter;
   private final RecyclerView recyclerView;
 
+  private @Dimension(unit = Dimension.DP) float fadingEdgeLength;
+
   public ViewPagerHeaderViewCompact (Context context) {
     super(context);
 
@@ -110,7 +121,58 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
 
     adapter = new A(topView);
 
-    recyclerView = new RecyclerView(context);
+    recyclerView = new RecyclerView(context) {
+      private final Paint paint = new Paint();
+      private final Matrix matrix = new Matrix();
+
+      {
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_OUT));
+        paint.setShader(new LinearGradient(0, 0, 1, 0, Color.BLACK, 0, Shader.TileMode.CLAMP));
+      }
+
+      @Override
+      public void draw (Canvas c) {
+        int length = Screen.dp(fadingEdgeLength);
+        if (getChildCount() == 0 || length <= 1 /* px */) {
+          super.draw(c);
+          return;
+        }
+        View child = getChildAt(0);
+        int leftSpan = -child.getLeft();
+        float leftFadeStrength = leftSpan < length ? Math.max(0f, leftSpan / (float) length) : 1f;
+        float leftLength = leftFadeStrength * length;
+        boolean drawLeft = leftLength > 1f /* px */;
+
+        int rightSpan = child.getRight() - getWidth();
+        float rightFadeStrength = rightSpan < length ? Math.max(0f, rightSpan / (float) length) : 1f;
+        float rightLength = rightFadeStrength * length;
+        boolean drawRight = rightLength > 1f /* px */;
+
+        if (!drawLeft && !drawRight) {
+          super.draw(c);
+          return;
+        }
+
+        int selectionHeight = Screen.dp(ViewPagerTopView.SELECTION_HEIGHT);
+        int top = topView.isDrawSelectionAtTop() ? selectionHeight : 0;
+        int bottom = getHeight() - (topView.isDrawSelectionAtTop() ? 0 : selectionHeight);
+        int saveCount = c.saveLayerAlpha(0, 0, getWidth(), getHeight(), 0xFF, Canvas.ALL_SAVE_FLAG);
+        super.draw(c);
+        if (drawLeft) {
+          matrix.setScale(leftLength, 1f);
+          paint.getShader().setLocalMatrix(matrix);
+          c.drawRect(0, top, length, bottom, paint);
+        }
+        if (drawRight) {
+          matrix.setScale(rightLength, 1f);
+          matrix.postRotate(180);
+          matrix.postTranslate(getWidth(), 0);
+          paint.getShader().setLocalMatrix(matrix);
+          c.drawRect(getWidth() - length, top, getWidth(), bottom, paint);
+        }
+        c.restoreToCount(saveCount);
+      }
+    };
     recyclerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Size.getHeaderPortraitSize(), Gravity.TOP));
     recyclerView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? OVER_SCROLL_IF_CONTENT_SCROLLS :OVER_SCROLL_NEVER);
     recyclerView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, Lang.rtl()));
@@ -118,6 +180,13 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
     addView(recyclerView);
 
     setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Size.getHeaderBigPortraitSize(true)));
+  }
+
+  public void setFadingEdgeLength (@Dimension(unit = Dimension.DP) float length) {
+    if (fadingEdgeLength != length) {
+      fadingEdgeLength = length;
+      recyclerView.invalidate();
+    }
   }
 
   @Override

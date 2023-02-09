@@ -27,6 +27,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 
+import androidx.annotation.Dimension;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.FloatRange;
 import androidx.annotation.IntDef;
@@ -63,6 +64,8 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 
 public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener, View.OnClickListener, View.OnLongClickListener, Destroyable, TGLegacyManager.EmojiLoadListener {
+  public static final @Dimension(unit = Dimension.DP) float SELECTION_HEIGHT = 2f;
+
   public static class Item {
     public final CharSequence string;
     public final boolean needFakeBold;
@@ -237,6 +240,10 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   public void setDrawSelectionAtTop (boolean drawSelectionAtTop) {
     this.drawSelectionAtTop = drawSelectionAtTop;
     invalidate();
+  }
+
+  public boolean isDrawSelectionAtTop () {
+    return drawSelectionAtTop;
   }
 
   private OnItemClickListener listener;
@@ -716,7 +723,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
 
       boolean rtl = Lang.rtl();
 
-      int selectionHeight = Screen.dp(2f);
+      int selectionHeight = Screen.dp(SELECTION_HEIGHT);
       int selectionLeft = rtl ? this.totalWidth - this.selectionLeft - this.selectionWidth : this.selectionLeft;
       int selectionRight = selectionLeft + this.selectionWidth;
       int selectionTop = this.drawSelectionAtTop ? 0 : viewHeight - selectionHeight;

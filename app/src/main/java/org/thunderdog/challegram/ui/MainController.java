@@ -71,7 +71,6 @@ import org.thunderdog.challegram.navigation.OverlayButtonWrap;
 import org.thunderdog.challegram.navigation.RecyclerViewProvider;
 import org.thunderdog.challegram.navigation.SettingsWrap;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
-import org.thunderdog.challegram.navigation.StretchyHeaderView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.navigation.ViewPagerController;
 import org.thunderdog.challegram.navigation.ViewPagerHeaderViewCompact;
@@ -2123,10 +2122,11 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   private void checkTabs () {
     if (headerCell == null)
       return;
-    View headerCellView = headerCell.getView();
+    ViewPagerHeaderViewCompact headerCellView = (ViewPagerHeaderViewCompact) headerCell.getView();
     boolean displayTabsAtBottom = displayTabsAtBottom();
     headerCell.getTopView().setDrawSelectionAtTop(displayTabsAtBottom);
     headerCell.getTopView().setSlideOffDirection(displayTabsAtBottom ? ViewPagerTopView.SLIDE_OFF_DIRECTION_TOP : ViewPagerTopView.SLIDE_OFF_DIRECTION_BOTTOM);
+    headerCellView.setFadingEdgeLength(displayTabsAtBottom ? 0f : 16f);
 
     if (displayTabsAtBottom) {
       if (bottomBar == null) {
@@ -2171,9 +2171,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       headerCellView.setTranslationX(0f);
       headerCellView.setTranslationY(0f);
       headerCellView.setVisibility(View.VISIBLE);
-      if (headerCellView instanceof StretchyHeaderView) {
-        ((StretchyHeaderView) headerCellView).setScaleFactor(0f, 0f, 0f, false);
-      }
+      headerCellView.setScaleFactor(0f, 0f, 0f, false);
       if (isFocused()) {
         animateNavigationBarColor();
       }
@@ -2186,7 +2184,6 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         headerCell.getTopView().setTextFromToColorId(R.id.theme_color_headerTabInactiveText, R.id.theme_color_headerTabActiveText);
         ViewUtils.setBackground(headerCellView, null);
         Views.setTopMargin(headerCellView, 0);
-        removeThemeListenerByTarget(headerCellView);
         if (headerView != null && isFocused() && !inTransformMode()) {
           headerView.setTitle(this);
         }
