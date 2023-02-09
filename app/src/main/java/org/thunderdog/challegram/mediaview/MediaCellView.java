@@ -17,6 +17,7 @@ package org.thunderdog.challegram.mediaview;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Path;
+import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.net.Uri;
@@ -1554,9 +1555,24 @@ public class MediaCellView extends ViewGroup implements
 
   public void normalizeZoom () {
     if (subsamplingModeEnabled && subsamplingImageLoaded) {
-      SubsamplingScaleImageView.AnimationBuilder b = subsamplingImageView.animateScale(subsamplingImageView.getMinScale());
+      float minScale = subsamplingImageView.getMinScale();
+      SubsamplingScaleImageView.AnimationBuilder b = subsamplingImageView
+        .animateScaleAndCenter(minScale, new PointF(
+          subsamplingImageView.getSWidth() / 2f,
+          subsamplingImageView.getHeight() / 2f
+        ));
       if (b != null) {
-        b.withDuration(ZOOM_DURATION).start();
+        b.withInterruptible(false)
+         .withDuration(ZOOM_DURATION)
+         .withOnAnimationEventListener(new SubsamplingScaleImageView.DefaultOnAnimationEventListener() {
+           @Override
+           public void onComplete () {
+             if (subsamplingImageView.getScale() != subsamplingImageView.getMinScale()) {
+               subsamplingImageView.resetScaleAndCenter();
+             }
+           }
+         })
+         .start();
       }
     } else {
       getDetector().normalizeZoom(true);
