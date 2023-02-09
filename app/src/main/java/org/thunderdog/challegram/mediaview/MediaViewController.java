@@ -56,6 +56,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
+import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.MediaCollectorDelegate;
@@ -178,6 +179,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   MediaStackCallback, MediaFiltersAdapter.Callback, Watcher, RotationControlView.Callback, MediaView.ClickListener,
   EmojiLayout.Listener, InputView.InputListener, InlineResultsWrap.OffsetProvider,
   MediaCellView.Callback, SliderView.Listener, TGLegacyManager.EmojiLoadListener, Menu, Client.ResultHandler, MoreDelegate, PopupLayout.TouchSectionProvider, FlingDetector.Callback, CallManager.CurrentCallListener, ColorPreviewView.BrushChangeListener, PaintState.UndoStateListener, MediaView.FactorChangeListener, EmojiToneHelper.Delegate, MessageListener {
+
+  private static final long REVEAL_ANIMATION_DURATION = /*BuildConfig.DEBUG ? 1800l : */180;
+  private static final long REVEAL_OPEN_ANIMATION_DURATION = /*BuildConfig.DEBUG ? 1800l : */180l;
 
   public static final int MODE_MESSAGES = 0; // opened from chat
   public static final int MODE_PROFILE = 1; // opened from profile or chat (in case of groups and channels)
@@ -330,8 +334,6 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     this.forceAnimationType = ANIMATION_TYPE_CAMERA;
     this.isFromCamera = true;
   }
-
-  private static final long REVEAL_ANIMATION_DURATION = 180;
 
   @Override
   public void prepareShowAnimation () {
@@ -788,7 +790,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           //revealAnimator.setInterpolator(isOpen ? OVERSHOOT_INTERPOLATOR : OVERSHOOT_INTERPOLATOR_2);
           //revealAnimator.setDuration(280l);
           revealAnimator.setInterpolator(AnimatorUtils.DECELERATE_INTERPOLATOR);
-          revealAnimator.setDuration(180l);
+          revealAnimator.setDuration(REVEAL_OPEN_ANIMATION_DURATION);
         } else {
           revealAnimator.setInterpolator(AnimatorUtils.DECELERATE_INTERPOLATOR);
           revealAnimator.setDuration(REVEAL_ANIMATION_DURATION);
@@ -2927,8 +2929,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       forceCloseEmojiKeyboard();
       return true;
     }
-    if (mediaView.getCurrentZoom() > 1f) {
-      mediaView.getBaseCell().getDetector().normalizeZoom(true);
+    if (mediaView.isZoomed()) {
+      mediaView.normalizeZoom();
       return true;
     }
     return false;
@@ -3164,7 +3166,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private boolean canCloseBySlide () {
-    return mode != MODE_SECRET && (mode != MODE_GALLERY || currentSection == SECTION_CAPTION) && mediaView.getCurrentZoom() == 1f && !inCaption;
+    return mode != MODE_SECRET && (mode != MODE_GALLERY || currentSection == SECTION_CAPTION) && !mediaView.isZoomed() && !inCaption;
   }
 
   private boolean listenCloseBySlide;
@@ -4637,14 +4639,14 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         if (slideAnimator != null && slideAnimator.isAnimating()) {
           return true;
         }
-        if (mode == MODE_SECRET || inCaption || disallowIntercept) {
+        if (mode == MODE_SECRET || inCaption || (disallowIntercept && e.getAction() != MotionEvent.ACTION_DOWN)) {
           return super.onInterceptTouchEvent(e);
         }
         switch (e.getAction()) {
           case MotionEvent.ACTION_DOWN: {
             startX = e.getX();
             startY = e.getY();
-            listenCloseBySlide = canCloseBySlide() && pipFactor == 0f && /*mediaView.getBaseReceiver().isInsideContent(startX, startY, 0, 0) && */mediaView.getCurrentZoom() == 1f && mediaView.isBaseVisible();
+            listenCloseBySlide = canCloseBySlide() && pipFactor == 0f && !mediaView.isZoomed() && mediaView.isBaseVisible();
             break;
           }
           case MotionEvent.ACTION_MOVE: {
@@ -8077,7 +8079,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   // Opening and collecting photos
 
-  public static void openFromMedia (ViewController<?> context, MediaItem item) {
+  public static void openFromMedia (ViewController<?> context, MediaItem item, @Nullable TdApi.SearchMessagesFilter filter) {
     MediaStack stack = null;
 
     if (context.isStackLocked()) {
@@ -8095,9 +8097,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     Args args = new Args(context, MODE_MESSAGES, stack);
     args.reverseMode = true;
     args.forceThumbs = true;
-    if (item.isGifType()) {
-      args.filter = new TdApi.SearchMessagesFilterAnimation();
-    }
+    args.filter = filter != null ? filter : item.isGifType() ? new TdApi.SearchMessagesFilterAnimation() : null;
     if (context instanceof MediaCollectorDelegate) {
       ((MediaCollectorDelegate) context).modifyMediaArguments(item, args);
     }
@@ -8231,7 +8231,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         subtitle = webPage.author;
       }
     } else if (webPage.sticker != null) {
-      stack.set(new MediaItem(context.context(), context.tdlib(), msg.getChatId(), msg.getId(), TD.convertToPhoto(webPage.sticker), true).setSourceMessageId(m.chatId, m.id));
+      stack.set(new MediaItem(context.context(), context.tdlib(), msg.getChatId(), msg.getId(), TD.convertToPhoto(webPage.sticker), true, false).setSourceMessageId(m.chatId, m.id));
     } else if (webPage.video != null) {
       stack.set(new MediaItem(context.context(), context.tdlib(), webPage.video, new TdApi.FormattedText("", null), true).setSourceMessageId(m.chatId, m.id));
     } else if (webPage.animation != null) {

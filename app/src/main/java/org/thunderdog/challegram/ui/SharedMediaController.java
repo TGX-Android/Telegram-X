@@ -28,7 +28,6 @@ import org.thunderdog.challegram.component.MediaCollectorDelegate;
 import org.thunderdog.challegram.component.attach.GridSpacingItemDecoration;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.mediaview.MediaCellView;
 import org.thunderdog.challegram.mediaview.MediaViewController;
@@ -36,7 +35,6 @@ import org.thunderdog.challegram.mediaview.MediaViewDelegate;
 import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.mediaview.data.MediaStack;
-import org.thunderdog.challegram.navigation.ComplexHeaderView;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibSender;
@@ -436,7 +434,9 @@ public class SharedMediaController extends SharedBaseController<MediaItem> imple
       int left = view.getLeft();
       int right = view.getRight();
 
-      viewTop -= SettingHolder.measureHeightForType(ListItem.TYPE_FAKE_PAGER_TOPVIEW);
+      if (alternateParent == null) {
+        viewTop -= SettingHolder.measureHeightForType(ListItem.TYPE_FAKE_PAGER_TOPVIEW);
+      }
       int clipTop = viewTop < 0 ? -viewTop : 0;
       int clipBottom = viewBottom < 0 ? -viewBottom : 0;
 
@@ -476,10 +476,10 @@ public class SharedMediaController extends SharedBaseController<MediaItem> imple
       MediaItem mediaItem = (MediaItem) item.getData();
       if (mediaItem.isVideo()) {
         if (mediaItem.isLoaded()) {
-          MediaViewController.openFromMedia(this, mediaItem);
+          MediaViewController.openFromMedia(this, mediaItem, null);
         } else {
           if (!mediaItem.performClick(v, x, y)) {
-            MediaViewController.openFromMedia(this, mediaItem);
+            MediaViewController.openFromMedia(this, mediaItem, null);
           }
         }
       } else if (mediaItem.getType() == MediaItem.TYPE_VIDEO_MESSAGE) {
@@ -489,7 +489,7 @@ public class SharedMediaController extends SharedBaseController<MediaItem> imple
           mediaItem.performClick(v);
         }
       } else {
-        MediaViewController.openFromMedia(this, mediaItem);
+        MediaViewController.openFromMedia(this, mediaItem, null);
       }
     }
   }

@@ -21,6 +21,7 @@ import android.app.DownloadManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.graphics.BitmapFactory;
 import android.graphics.Typeface;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
@@ -1293,6 +1294,33 @@ public class TD {
         return null;
       }
     }
+  }
+
+  public static TdApi.Photo convertToPhoto (TdApi.Document document, @Nullable BitmapFactory.Options options, boolean isRotated) {
+    int width, height;
+    if (options != null && Math.min(options.outWidth, options.outHeight) > 0) {
+      if (isRotated) {
+        //noinspection SuspiciousNameCombination
+        width = options.outHeight; height = options.outWidth;
+      } else {
+        width = options.outWidth;  height = options.outHeight;
+      }
+    } else if (document.thumbnail != null) {
+      width = document.thumbnail.width;
+      height = document.thumbnail.height;
+    } else {
+      width = height = 0;
+    }
+    TdApi.PhotoSize thumbnailSize = toThumbnailSize(document.thumbnail);
+    TdApi.PhotoSize[] sizes = new TdApi.PhotoSize[thumbnailSize != null ? 2 : 1];
+    TdApi.PhotoSize targetSize = new TdApi.PhotoSize("w", document.document, width, height, null);
+    if (thumbnailSize != null) {
+      sizes[0] = thumbnailSize;
+      sizes[1] = targetSize;
+    } else {
+      sizes[0] = targetSize;
+    }
+    return new TdApi.Photo(false, null, sizes);
   }
 
   public static TdApi.Photo convertToPhoto (TdApi.Sticker sticker) {

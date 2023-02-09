@@ -14,6 +14,7 @@
  */
 package org.thunderdog.challegram.widget;
 
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
@@ -38,9 +39,13 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
+import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.filegen.VideoGen;
+import org.thunderdog.challegram.loader.ImageReader;
+import org.thunderdog.challegram.mediaview.MediaViewController;
+import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.MediaDownloadType;
@@ -53,6 +58,7 @@ import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.TGMimeType;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.DrawableProvider;
@@ -113,6 +119,9 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   }
 
   private static final int FLAG_THEME = 1;
+  private static final int FLAG_IMAGE = 1 << 1;
+
+  private TdApi.Document originalDocument;
 
   private final BaseActivity context;
   private final Tdlib tdlib;
@@ -128,8 +137,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   private int downloadedIconRes;
   private int pausedIconRes;
 
-  private long chatId;
-  private long messageId;
+  private long chatId, messageId;
   private boolean isLocal;
 
   private boolean ignoreLoaderClicks;
@@ -351,10 +359,14 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     setDownloadedIconRes(icon, shouldAnimate());
   }
 
-  public void setDownloadedIconRes (TdApi.Document doc) {
-    boolean isTheme = Config.isThemeDoc(doc);
-    setDownloadedIconRes(isTheme ? R.drawable.baseline_palette_24 : R.drawable.baseline_insert_drive_file_24);
+  public void setDocumentMetadata (TdApi.Document document, boolean needIcon) {
+    boolean isTheme = Config.isThemeDoc(document);
+    if (needIcon) {
+      setDownloadedIconRes(isTheme ? R.drawable.baseline_palette_24 : R.drawable.baseline_insert_drive_file_24);
+    }
     flags = BitwiseUtils.setFlag(flags, FLAG_THEME, isTheme);
+    flags = BitwiseUtils.setFlag(flags, FLAG_IMAGE, TGMimeType.isImageMimeType(document.mimeType));
+    this.originalDocument = document;
   }
 
   public void setHideDownloadedIcon (boolean hide) {
@@ -519,31 +531,50 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
     return openFile(c, after);
   }
 
+  private void runOnUiThreadOptional (ViewController<?> c, Runnable runnable) {
+    c.runOnUiThreadOptional(() -> {
+      if (!isDestroyed) {
+        runnable.run();
+      }
+    });
+  }
+
   public boolean openFile (ViewController<?> c, Runnable defaultOpen) {
     if (file != null && fileType == TdlibFilesManager.DOWNLOAD_FLAG_FILE) {
       if (c != null && c.tdlib() == tdlib) {
         tdlib.files().downloadFile(file, TdlibFilesManager.DEFAULT_DOWNLOAD_PRIORITY, 0, 0, result -> {
-          c.runOnUiThreadOptional(() -> {
-            if (isDestroyed)
-              return;
-            switch (result.getConstructor()) {
-              case TdApi.File.CONSTRUCTOR: {
-                if (TD.isFileLoaded(((TdApi.File) result))) {
-                  if (BitwiseUtils.getFlag(flags, FLAG_THEME)) {
+          switch (result.getConstructor()) {
+            case TdApi.File.CONSTRUCTOR: {
+              TdApi.File downloadedFile = (TdApi.File) result;
+              if (TD.isFileLoaded(downloadedFile)) {
+                if (BitwiseUtils.getFlag(flags, FLAG_THEME)) {
+                  runOnUiThreadOptional(c, () -> {
                     c.tdlib().ui().readCustomTheme(c, file, null, defaultOpen);
-                  } else {
-                    defaultOpen.run();
-                  }
+                  });
+                } else if (BitwiseUtils.getFlag(flags, FLAG_IMAGE)) {
+                  Background.instance().post(() -> {
+                    MediaItem item = MediaItem.valueOf(context, tdlib, originalDocument, null);
+                    if (item != null && item.getWidth() > 0 && item.getHeight() > 0) {
+                      runOnUiThreadOptional(c, () -> {
+                        item.setSourceMessageId(chatId, messageId);
+                        MediaViewController.openFromMedia(c, item, new TdApi.SearchMessagesFilterDocument());
+                      });
+                    } else {
+                      runOnUiThreadOptional(c, defaultOpen);
+                    }
+                  });
+                } else {
+                  runOnUiThreadOptional(c, defaultOpen);
                 }
-                break;
               }
-              case TdApi.Error.CONSTRUCTOR: {
-                // TODO show tooltip instead
-                UI.showError(result);
-                break;
-              }
+              break;
             }
-          });
+            case TdApi.Error.CONSTRUCTOR: {
+              // TODO show tooltip instead
+              UI.showError(result);
+              break;
+            }
+          }
         });
       }
       return true;

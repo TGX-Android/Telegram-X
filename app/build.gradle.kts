@@ -223,6 +223,9 @@ dependencies {
   // ZXing: https://github.com/zxing/zxing/blob/master/CHANGES
   implementation("com.google.zxing:core:3.4.1")
 
+  // subsampling-scale-image-view: https://github.com/davemorrissey/subsampling-scale-image-view
+  implementation("com.davemorrissey.labs:subsampling-scale-image-view:3.10.0")
+
   // YouTube: https://developers.google.com/youtube/android/player/
   implementation(files("thirdparty/YouTubeAndroidPlayerApi.jar"))
 

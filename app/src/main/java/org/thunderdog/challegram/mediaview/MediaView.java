@@ -240,8 +240,9 @@ public class MediaView extends FrameLayoutFix {
     int height = MeasureSpec.getSize(heightMeasureSpec); // UI.get().getWindow().getDecorView().getMeasuredHeight();
 
     boolean sameWidth = currentWidth == width;
+    boolean dimensionsChanged = currentHeight != height || !sameWidth;
 
-    if (currentHeight != height || !sameWidth) {
+    if (dimensionsChanged) {
       currentWidth = width;
       currentHeight = height;
       buildLayout(sameWidth);
@@ -287,8 +288,12 @@ public class MediaView extends FrameLayoutFix {
     return offsetTop;
   }
 
-  public float getCurrentZoom () {
-    return baseCell.getDetector().getZoom();
+  public boolean isZoomed () {
+    return baseCell.isZoomed();
+  }
+
+  public void normalizeZoom () {
+    baseCell.normalizeZoom();
   }
 
   private int offsetTop, offsetBottom, offsetHorizontal;
@@ -601,6 +606,7 @@ public class MediaView extends FrameLayoutFix {
 
   @Override
   public void requestDisallowInterceptTouchEvent (boolean disallowIntercept) {
+    // Log.i("requestDisallowIntercept %b", disallowIntercept);
     this.disallowIntercept = disallowIntercept;
     drop();
     super.requestDisallowInterceptTouchEvent(disallowIntercept);
@@ -638,7 +644,7 @@ public class MediaView extends FrameLayoutFix {
         listenMove = !isMoving && e.getPointerCount() == 1;
 
         if (!isMoving) {
-          detector.onTouchEvent(e);
+          return detector.onTouchEvent(e);
         }
 
         break;

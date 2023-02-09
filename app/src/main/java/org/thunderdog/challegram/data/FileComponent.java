@@ -153,10 +153,10 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
     this.progress = new FileProgressComponent(context.context(), context.tdlib(), TdlibFilesManager.DOWNLOAD_FLAG_FILE, hasPreview && TGMimeType.isImageMimeType(doc.mimeType), context.getChatId(), context.getId());
     this.progress.setBackgroundColorProvider(context);
     this.progress.setSimpleListener(this);
+    this.progress.setDocumentMetadata(doc, !hasPreview);
     if (hasPreview) {
       this.progress.setBackgroundColor(0x44000000);
     } else {
-      this.progress.setDownloadedIconRes(doc);
       this.progress.setBackgroundColorId(TD.getFileColorId(doc, context.isOutgoingBubble()));
     }
     this.progress.setFile(doc.document, context.getMessage());
