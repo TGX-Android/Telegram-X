@@ -34,6 +34,7 @@ import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
+import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
@@ -51,6 +52,7 @@ import org.thunderdog.challegram.mediaview.crop.CropState;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.mediaview.gl.EGLEditorView;
 import org.thunderdog.challegram.player.TGPlayerController;
+import org.thunderdog.challegram.receiver.RefreshRateLimiter;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.TdlibFilesManager;
 import org.thunderdog.challegram.telegram.TdlibManager;
@@ -130,6 +132,8 @@ public class MediaCellView extends ViewGroup implements
     }
   }
 
+  private Runnable resetZoomRunnable;
+
   public MediaCellView (Context context) {
     super(context);
 
@@ -142,6 +146,32 @@ public class MediaCellView extends ViewGroup implements
     this.subsamplingImageView.setOrientation(SubsamplingScaleImageView.ORIENTATION_USE_EXIF);
     this.subsamplingImageView.setMaxScale(Math.max(1f, Screen.density()) * 3f);
     this.subsamplingImageView.setDoubleTapZoomDuration(ZOOM_DURATION);
+    this.subsamplingImageView.setOnStateChangedListener(new SubsamplingScaleImageView.DefaultOnStateChangedListener() {
+      @Override
+      public void onScaleChanged (float newScale, int origin) {
+        if (origin == SubsamplingScaleImageView.ORIGIN_DOUBLE_TAP_ZOOM || origin == SubsamplingScaleImageView.ORIGIN_ANIM) {
+          if (resetZoomRunnable != null) {
+            UI.removePendingRunnable(resetZoomRunnable);
+          } else {
+            resetZoomRunnable = () -> {
+              if (subsamplingImageView.isReady() && subsamplingImageView.getScale() != subsamplingImageView.getMinScale()) {
+                float difference = subsamplingImageView.getScale() - subsamplingImageView.getMinScale();
+                int widthDiff = (int) (subsamplingImageView.getSWidth() * difference);
+                int heightDiff = (int) (subsamplingImageView.getSHeight() * difference);
+                if (widthDiff == 0 && heightDiff == 0) {
+                  subsamplingImageView.resetScaleAndCenter();
+                }
+              }
+            };
+          }
+          UI.post(resetZoomRunnable, 200);
+        } else {
+          if (resetZoomRunnable != null) {
+            UI.removePendingRunnable(resetZoomRunnable);
+          }
+        }
+      }
+    });
     this.subsamplingImageView.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
     this.subsamplingImageView.setAlpha(0f);
     this.subsamplingImageView.setOnImageEventListener(new SubsamplingScaleImageView.DefaultOnImageEventListener() {
