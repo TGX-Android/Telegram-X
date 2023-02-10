@@ -96,6 +96,7 @@ import org.thunderdog.challegram.component.chat.AttachLinearLayout;
 import org.thunderdog.challegram.component.chat.AudioFile;
 import org.thunderdog.challegram.component.chat.ChatBottomBarView;
 import org.thunderdog.challegram.component.chat.ChatHeaderView;
+import org.thunderdog.challegram.component.chat.ChatSearchMembersView;
 import org.thunderdog.challegram.component.chat.CircleCounterBadgeView;
 import org.thunderdog.challegram.component.chat.CommandKeyboardLayout;
 import org.thunderdog.challegram.component.chat.CounterBadgeView;
@@ -218,7 +219,6 @@ import org.thunderdog.challegram.v.HeaderEditText;
 import org.thunderdog.challegram.v.MessagesLayoutManager;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
 import org.thunderdog.challegram.widget.AvatarView;
-import org.thunderdog.challegram.component.chat.ChatSearchMembersView;
 import org.thunderdog.challegram.widget.CheckBoxView;
 import org.thunderdog.challegram.widget.CircleButton;
 import org.thunderdog.challegram.widget.CollapseListView;
@@ -9759,7 +9759,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             TGMessage msg = manager.getAdapter().getMessage(i);
             // FIXME state with FOLLOW
             int offset = (int) messagesView.getTranslationY();
-            return msg.getMediaThumbLocation(item.getSourceMessageId(), view, view.getTop(), messagesView.getBottom() - view.getBottom(), view.getTop() + HeaderView.getSize(true) + offset);
+            return msg.getMediaThumbLocation(item.getSourceMessageId(), view, view.getTop() - getTopOffset(), messagesView.getBottom() - view.getBottom(), view.getTop() + HeaderView.getSize(true) + offset);
           }
         }
       }

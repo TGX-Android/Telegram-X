@@ -143,6 +143,7 @@ public class MediaCellView extends ViewGroup implements
     this.imageView.setLayoutParams(new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
     this.subsamplingImageView = new ClippingSubsamplingImageView(context) {
+      @SuppressWarnings("ClickableViewAccessibility")
       @Override
       public boolean onTouchEvent (@NonNull MotionEvent event) {
         MediaView mediaView = (MediaView) MediaCellView.this.getParent();
