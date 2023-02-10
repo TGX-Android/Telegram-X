@@ -603,11 +603,24 @@ public class MediaLayout extends FrameLayoutFix implements
       case 1: {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
           String[] permissions = BaseActivity.getReadWritePermissions(BaseActivity.RW_MODE_FILES);
+          int grantedSpecialPermissionCount = 0;
+          int grantedPermissionCount = 0;
+          int regularPermissionCount = 0;
           for (String permission : permissions) {
-            if (getContext().checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) {
-              UI.getContext(getContext()).requestReadWritePermissions(BaseActivity.RW_MODE_FILES);
-              return false;
+            boolean isRegularPermission = BaseActivity.isRegularReadWritePermission(permission);
+            if (isRegularPermission) {
+              regularPermissionCount++;
             }
+            if (getContext().checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED) {
+              grantedPermissionCount++;
+              if (!isRegularPermission) {
+                grantedSpecialPermissionCount++;
+              }
+            }
+          }
+          if (grantedPermissionCount != permissions.length && !(grantedSpecialPermissionCount > 0 && grantedSpecialPermissionCount == permissions.length - regularPermissionCount)) {
+            UI.getContext(getContext()).requestReadWritePermissions(BaseActivity.RW_MODE_FILES);
+            return false;
           }
         }
 

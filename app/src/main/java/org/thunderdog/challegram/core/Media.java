@@ -267,7 +267,18 @@ public class Media {
       }
 
       if (context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-        return null;
+        boolean fail = true;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+          if (
+            context.checkSelfPermission(Manifest.permission.READ_MEDIA_IMAGES) == PackageManager.PERMISSION_GRANTED ||
+            context.checkSelfPermission(Manifest.permission.READ_MEDIA_VIDEO) == PackageManager.PERMISSION_GRANTED
+          ) {
+            fail = false;
+          }
+        }
+        if (fail) {
+          return null;
+        }
       }
     }
     Cursor cursor = null;
