@@ -26,6 +26,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.os.CancellationSignal;
 import androidx.core.view.GestureDetectorCompat;
@@ -141,7 +142,16 @@ public class MediaCellView extends ViewGroup implements
     this.imageView = new CellImageView(context);
     this.imageView.setLayoutParams(new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-    this.subsamplingImageView = new ClippingSubsamplingImageView(context);
+    this.subsamplingImageView = new ClippingSubsamplingImageView(context) {
+      @Override
+      public boolean onTouchEvent (@NonNull MotionEvent event) {
+        MediaView mediaView = (MediaView) MediaCellView.this.getParent();
+        mediaView.setIgnoreDisallowInterceptTouchEvent(true);
+        boolean res = super.onTouchEvent(event);
+        mediaView.setIgnoreDisallowInterceptTouchEvent(false);
+        return res;
+      }
+    };
     this.subsamplingImageView.setOrientation(SubsamplingScaleImageView.ORIENTATION_USE_EXIF);
     this.subsamplingImageView.setMaxScale(Math.max(1f, Screen.density()) * 3f);
     this.subsamplingImageView.setDoubleTapZoomDuration(ZOOM_DURATION);
@@ -176,7 +186,7 @@ public class MediaCellView extends ViewGroup implements
               }
             };
           }
-          UI.post(resetZoomRunnable, 200);
+          UI.post(resetZoomRunnable, 280l);
         } else {
           if (resetZoomRunnable != null) {
             UI.removePendingRunnable(resetZoomRunnable);
@@ -589,6 +599,7 @@ public class MediaCellView extends ViewGroup implements
     setMedia(null);
     setSubsamplingModeEnabled(false);
     subsamplingImageView.recycle();
+    requestImage(null);
     bufferingProgressView.performDestroy();
     imageReceiver.destroy();
     gifReceiver.destroy();
@@ -611,7 +622,7 @@ public class MediaCellView extends ViewGroup implements
       ImageLoader.instance().loadFile(file, (success, result) -> UI.post(() -> {
         if (media == mediaItem) {
           imagePreviewReceiver.requestFile(media.getPreviewImageFile());
-          imageReceiver.requestFile(file);
+          requestImage(file);
         }
       }));
     }
@@ -1028,10 +1039,18 @@ public class MediaCellView extends ViewGroup implements
       return;
     }
     this.requestedImage = imageFile;
+    if (this.subsamplingLoadSignal != null) {
+      this.subsamplingLoadSignal.cancel();
+      this.subsamplingLoadSignal = null;
+    }
+    if (imageFile == null) {
+      imageReceiver.clear();
+      subsamplingImageView.recycle();
+      return;
+    }
     boolean clearReceiver = true;
     if (imageFile instanceof ImageFileLocal) {
       setSubsamplingModeEnabled(true);
-      U.getExifOrientation(((ImageFileLocal) imageFile).getPath());
       subsamplingImageView.setImage(ImageSource.uri(Uri.fromFile(new File(imageFile.getFilePath()))));
     } else if (imageFile instanceof ImageFileRemote || imageFile.isRemote()) {
       CancellationSignal signal = new CancellationSignal();
@@ -1043,7 +1062,7 @@ public class MediaCellView extends ViewGroup implements
           imageFile.tdlib().client().send(new TdApi.DownloadFile(tdlibFile.id, 32, 0, 0, true), result -> {
             if (result.getConstructor() == TdApi.File.CONSTRUCTOR) {
               TdApi.File downloadedFile = (TdApi.File) result;
-              Td.copyTo(tdlibFile, downloadedFile);
+              Td.copyTo(downloadedFile, tdlibFile);
               if (TD.isFileLoaded(downloadedFile)) {
                 imageFile.tdlib().runOnUiThread(() -> {
                   if (!signal.isCanceled()) {
@@ -1061,6 +1080,7 @@ public class MediaCellView extends ViewGroup implements
         fileHandler.onResult(imageFile.getFile());
       }
     } else {
+      subsamplingImageView.recycle();
       imageReceiver.requestFile(imageFile);
       clearReceiver = false;
     }
@@ -1077,7 +1097,7 @@ public class MediaCellView extends ViewGroup implements
       if (preview != gifReceiver) {
         gifReceiver.requestFile(null);
       }
-      imageReceiver.requestFile(null);
+      requestImage(null);
       avatarReceiver.clear();
 
       delayedLoad = new CancellableRunnable() {
@@ -1101,14 +1121,14 @@ public class MediaCellView extends ViewGroup implements
     if (media != null && (media.isLoaded() || Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE)) {
       if (media.isGif()) {
         gifReceiver.requestFile(media.getTargetGifFile());
-        imageReceiver.requestFile(null);
+        requestImage(null);
         avatarReceiver.clear();
       } else if (media.isVideo() && media.isGifType() && revealFactor == 1f && !disappearing && getParent() instanceof MediaView && ((MediaView) getParent()).isOpen()) {
-        imageReceiver.requestFile(null);
+        requestImage(null);
         avatarReceiver.clear();
         setHideStaticView(true, false);
       } else if (media.isAvatar()) {
-        imageReceiver.clear();
+        requestImage(null);
         gifReceiver.clear();
         media.requestAvatar(avatarReceiver, true);
       } else {
@@ -1124,7 +1144,7 @@ public class MediaCellView extends ViewGroup implements
       if (preview != gifReceiver) {
         gifReceiver.requestFile(null);
       }
-      imageReceiver.requestFile(null);
+      requestImage(null);
       avatarReceiver.clear();
     }
   }
@@ -1230,7 +1250,7 @@ public class MediaCellView extends ViewGroup implements
       imagePreviewReceiver.requestFile(null);
       miniThumbnail.requestFile(null);
       gifReceiver.requestFile(null);
-      imageReceiver.requestFile(null);
+      requestImage(null);
       avatarReceiver.clear();
     } else {
       miniThumbnail.requestFile(media.getMiniThumbnail());
@@ -1296,7 +1316,7 @@ public class MediaCellView extends ViewGroup implements
       if (item.isGif()) {
         gifReceiver.requestFile(item.getTargetGifFile());
       } else {
-        imageReceiver.requestFile(item.getTargetImageFile(true));
+        requestImage(item.getTargetImageFile(true));
       }
     }
   }

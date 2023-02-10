@@ -603,12 +603,18 @@ public class MediaView extends FrameLayoutFix {
 
   private float downStartX, downStartY;
   private boolean listenMove, isMoving;
+  private boolean ignoreDisallowInterceptTouchEvent;
+
+  public void setIgnoreDisallowInterceptTouchEvent (boolean ignoreDisallowInterceptTouchEvent) {
+    this.ignoreDisallowInterceptTouchEvent = ignoreDisallowInterceptTouchEvent;
+  }
 
   @Override
   public void requestDisallowInterceptTouchEvent (boolean disallowIntercept) {
-    // Log.i("requestDisallowIntercept %b", disallowIntercept);
     this.disallowIntercept = disallowIntercept;
-    drop();
+    if (disallowIntercept && !ignoreDisallowInterceptTouchEvent) {
+      drop();
+    }
     super.requestDisallowInterceptTouchEvent(disallowIntercept);
   }
 
@@ -628,7 +634,7 @@ public class MediaView extends FrameLayoutFix {
 
   @Override
   public boolean onInterceptTouchEvent (MotionEvent e) {
-    if (disallowIntercept || disallowMove || disableTouch || detector == null) {
+    if ((disallowIntercept && (e.getAction() != MotionEvent.ACTION_DOWN || !ignoreDisallowInterceptTouchEvent)) || disallowMove || disableTouch || detector == null) {
       // Logger.v("no intercept %s %b", MotionEvent.actionToString(e.getAction()), isMoving);
       return false;
     }
