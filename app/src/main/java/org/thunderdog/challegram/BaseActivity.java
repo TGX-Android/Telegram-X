@@ -2266,6 +2266,15 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
   public static final int RW_MODE_NORMAL = 0, RW_MODE_GALLERY = 1, RW_MODE_FILES = 2;
 
+  public static boolean isRegularReadWritePermission (@NonNull String permission) {
+    switch (permission) {
+      case Manifest.permission.READ_EXTERNAL_STORAGE:
+      case Manifest.permission.WRITE_EXTERNAL_STORAGE:
+        return true;
+    }
+    return false;
+  }
+
   public static String[] getReadWritePermissions (int mode) {
     List<String> permissions = new ArrayList<>();
     Collections.addAll(permissions,
