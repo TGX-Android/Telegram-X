@@ -334,8 +334,12 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
   }
 
   @Override
-  protected boolean setThumbLocation (MediaViewThumbLocation location, View view, int index, MediaItem mediaItem, int clipTop, int clipBottom) {
+  protected boolean setThumbLocation (MediaViewThumbLocation location, View view, MediaItem mediaItem) {
+    int index = indexOfMessage(mediaItem.getSourceMessageId());
+    if (index == -1) {
+      return false;
+    }
     InlineResult<?> item = data.get(index);
-    return super.setThumbLocation(location, view, index, mediaItem, clipTop, clipBottom);
+    return item.setThumbLocation(location, view, index, mediaItem);
   }
 }

@@ -1453,7 +1453,7 @@ public class CameraController extends ViewController<Void> implements CameraDele
       MessagesController m = findOutputController();
       MediaViewController.Args args = new MediaViewController.Args(CameraController.this, MediaViewController.MODE_GALLERY, new MediaViewDelegate() {
         @Override
-        public MediaViewThumbLocation getTargetLocation (int index, MediaItem item) {
+        public MediaViewThumbLocation getTargetLocation (int indexInStack, MediaItem item) {
           MediaViewThumbLocation location = new MediaViewThumbLocation(0, 0, contentView.getMeasuredWidth(), contentView.getMeasuredHeight());
           location.setNoBounce();
           location.setNoPlaceholder();

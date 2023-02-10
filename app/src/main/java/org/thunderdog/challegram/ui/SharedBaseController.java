@@ -1263,7 +1263,7 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
     }
   }
 
-  private int indexOfMessage (long messageId) {
+  protected final int indexOfMessage (long messageId) {
     if (data == null || !supportsMessageContent()) {
       return -1;
     }
@@ -1532,12 +1532,12 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
 
   private final MediaViewThumbLocation location = new MediaViewThumbLocation();
 
-  protected boolean setThumbLocation (MediaViewThumbLocation location, View view, int index, MediaItem mediaItem, int clipTop, int clipBottom) {
+  protected boolean setThumbLocation (MediaViewThumbLocation location, View view, MediaItem mediaItem) {
     return false;
   }
 
   @Override
-  public MediaViewThumbLocation getTargetLocation (int index, MediaItem item) {
+  public MediaViewThumbLocation getTargetLocation (int indexInStack, MediaItem item) {
     int i = adapter.indexOfViewByLongId(item.getSourceMessageId());
     if (i == -1) {
       return null;
@@ -1557,9 +1557,11 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
       int clipTop = viewTop < 0 ? -viewTop : 0;
       int clipBottom = viewBottom < 0 ? -viewBottom : 0;
 
-      if (!setThumbLocation(location, view, index, item, clipTop, clipBottom)) {
-        location.set(left, top, right, bottom);
-        location.setClip(0, clipTop, 0, clipBottom);
+      location.set(left, top, right, bottom);
+      location.setClip(0, clipTop, 0, clipBottom);
+
+      if (!setThumbLocation(location, view, item)) {
+        return null;
       }
 
       return location;

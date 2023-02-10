@@ -568,7 +568,7 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   private final MediaViewThumbLocation location = new MediaViewThumbLocation();
 
   @Override
-  public MediaViewThumbLocation getTargetLocation (int index, MediaItem item) {
+  public MediaViewThumbLocation getTargetLocation (int indexInStack, MediaItem item) {
     if (MediaItem.isGalleryType(item.getType()) && !mediaLayout.isHidden()) {
       View view = adapter.findViewForImage(item.getSourceGalleryFile(), (LinearLayoutManager) getLayoutManager());
       if (view != null) {

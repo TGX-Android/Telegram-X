@@ -38,6 +38,8 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageFileLocal;
+import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
+import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibFilesManager;
@@ -246,6 +248,22 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
   @Override
   public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
 
+  }
+
+  @Override
+  public boolean setThumbLocation (MediaViewThumbLocation location, View view, int index, MediaItem mediaItem) {
+    RectF rectF = Paints.getRectF();
+    rectF.set(Screen.dp(11f), getPaddingVertical(), Screen.dp(11f) + Screen.dp(50f), view.getMeasuredHeight() - getPaddingVertical());
+
+    // location.clipTop -= rectF.top;
+    location.left += rectF.left;
+    location.top += rectF.top;
+    location.right = location.left + (int) rectF.width();
+    location.bottom = location.top + (int) rectF.height();
+    location.setClip(0, 0, 0, 0);
+    location.setRoundings((int) (rectF.width() / 2f));
+
+    return getMediaPreview() != null;
   }
 
   public String getTrackTitle () {

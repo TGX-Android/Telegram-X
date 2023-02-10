@@ -9731,7 +9731,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   @Override
-  public MediaViewThumbLocation getTargetLocation (int index, MediaItem item) {
+  public MediaViewThumbLocation getTargetLocation (int indexInStack, MediaItem item) {
     if (!needTabs() || pagerScrollPosition == MediaTabsAdapter.POSITION_MESSAGES) {
       int i = manager.getAdapter().findMessageByMediaItem(item);
       if (i != -1) {
@@ -9749,7 +9749,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     } else {
       SharedBaseController<?> c = pagerContentAdapter != null ? pagerContentAdapter.cachedItems.get(pagerScrollPosition) : null;
       if (c instanceof MediaViewDelegate) {
-        return ((MediaViewDelegate) c).getTargetLocation(index, item);
+        return ((MediaViewDelegate) c).getTargetLocation(indexInStack, item);
       }
     }
     return null;
