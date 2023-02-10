@@ -222,6 +222,9 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     tdlib.listeners().addOptionsListener(this);
     tdlib.listeners().subscribeToChatFiltersUpdates(this);
     if (Config.CHAT_FOLDERS_ENABLED) {
+      if (this.chatFilterInfos != tdlib.chatFilterInfos()) {
+        updatePagerSections();
+      }
       tdlib.settings().addChatListPositionListener(chatListPositionListener = new ChatListPositionListener());
     }
 
@@ -1488,6 +1491,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     return c;
   }
 
+  private @Nullable TdApi.ChatFilterInfo[] chatFilterInfos;
   private List<ViewPagerTopView.Item> pagerSections = Collections.emptyList();
   private List<TdApi.ChatList> pagerChatLists = Collections.emptyList();
   private final LongSparseIntArray pagerChatListFilters = new LongSparseIntArray();
@@ -2276,6 +2280,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     if (chatLists.size() > 1 || (!chatLists.isEmpty() && !TD.isChatListMain(chatLists.get(0)))) {
       this.pagerSections = sections;
       this.pagerChatLists = chatLists;
+      this.chatFilterInfos = chatFilters;
       if (chatListUnreadCountListener == null) {
         chatListUnreadCountListener = new ChatListUnreadCountListener();
         tdlib.listeners().addTotalChatCounterListener(chatListUnreadCountListener);
@@ -2283,6 +2288,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     } else {
       this.pagerSections = Collections.emptyList();
       this.pagerChatLists = Collections.emptyList();
+      this.chatFilterInfos = null;
       if (chatListUnreadCountListener != null) {
         tdlib.listeners().removeTotalChatCounterListener(chatListUnreadCountListener);
         chatListUnreadCountListener = null;
