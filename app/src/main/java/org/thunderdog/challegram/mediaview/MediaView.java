@@ -634,7 +634,7 @@ public class MediaView extends FrameLayoutFix {
 
   @Override
   public boolean onInterceptTouchEvent (MotionEvent e) {
-    if ((disallowIntercept && (e.getAction() != MotionEvent.ACTION_DOWN || !ignoreDisallowInterceptTouchEvent)) || disallowMove || disableTouch || detector == null) {
+    if ((disallowIntercept && (e.getAction() != MotionEvent.ACTION_DOWN /*|| !ignoreDisallowInterceptTouchEvent*/)) || disallowMove || disableTouch || detector == null) {
       // Logger.v("no intercept %s %b", MotionEvent.actionToString(e.getAction()), isMoving);
       return false;
     }

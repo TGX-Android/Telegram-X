@@ -146,6 +146,9 @@ public class MediaCellView extends ViewGroup implements
       @SuppressWarnings("ClickableViewAccessibility")
       @Override
       public boolean onTouchEvent (@NonNull MotionEvent event) {
+        if (!subsamplingModeEnabled || !isReady()) {
+          return false;
+        }
         MediaView mediaView = (MediaView) MediaCellView.this.getParent();
         mediaView.setIgnoreDisallowInterceptTouchEvent(true);
         boolean res = super.onTouchEvent(event);
@@ -1316,6 +1319,8 @@ public class MediaCellView extends ViewGroup implements
     if (this.media == item && item != null) {
       if (item.isGif()) {
         gifReceiver.requestFile(item.getTargetGifFile());
+      } else if (item.isAvatar()) {
+        media.requestAvatar(avatarReceiver, true);
       } else {
         requestImage(item.getTargetImageFile(true));
       }
@@ -1515,7 +1520,7 @@ public class MediaCellView extends ViewGroup implements
   }
 
   public boolean canTouch (boolean isTouchDown) {
-    return getVisibility() == View.VISIBLE && getParent() instanceof MediaView && ((MediaView) getParent()).isTouchEnabled(isTouchDown) && media != null && revealFactor == 1f && !isZoomed();
+    return getVisibility() == View.VISIBLE && getParent() instanceof MediaView && ((MediaView) getParent()).isTouchEnabled(isTouchDown) && media != null && revealFactor == 1f;
   }
 
   @Override
