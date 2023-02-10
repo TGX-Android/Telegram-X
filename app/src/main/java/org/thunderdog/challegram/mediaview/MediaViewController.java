@@ -56,7 +56,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
-import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.MediaCollectorDelegate;
@@ -211,7 +210,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     private boolean noLoadMore;
     private String customSubtitle;
 
-    private boolean forceThumbs;
+    private boolean forceThumbs, forceOpenIn;
 
     private String copyLink;
 
@@ -246,6 +245,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
     public Args setForceThumbs (boolean forceThumbs) {
       this.forceThumbs = forceThumbs;
+      return this;
+    }
+
+    public Args setForceOpenIn (boolean forceOpenIn) {
+      this.forceOpenIn = forceOpenIn;
       return this;
     }
 
@@ -1498,7 +1502,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         TdApi.Chat chat = tdlib.chat(item.getSourceChatId());
 
         if (item.isLoaded() && item.canBeSaved()) {
-          if (item.isVideo() && !item.isGifType()) {
+          if ((item.isVideo() && !item.isGifType()) || (getArgumentsStrict().forceOpenIn)) {
             ids.append(R.id.btn_open);
             strings.append(R.string.OpenInExternalApp);
           }
@@ -8079,7 +8083,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   // Opening and collecting photos
 
-  public static void openFromMedia (ViewController<?> context, MediaItem item, @Nullable TdApi.SearchMessagesFilter filter) {
+  public static void openFromMedia (ViewController<?> context, MediaItem item, @Nullable TdApi.SearchMessagesFilter filter, boolean forceOpenIn) {
     MediaStack stack = null;
 
     if (context.isStackLocked()) {
@@ -8098,8 +8102,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
 
     Args args = new Args(context, MODE_MESSAGES, stack);
-    args.reverseMode = true;
-    args.forceThumbs = true;
+    args.reverseMode = stack.getReverseModeHint(true);
+    args.forceThumbs = stack.getForceThumbsHint(true);
+    args.forceOpenIn = forceOpenIn || (filter != null && filter.getConstructor() == TdApi.SearchMessagesFilterDocument.CONSTRUCTOR);
     args.filter = filter;
     if (context instanceof MediaCollectorDelegate) {
       ((MediaCollectorDelegate) context).modifyMediaArguments(item, args);

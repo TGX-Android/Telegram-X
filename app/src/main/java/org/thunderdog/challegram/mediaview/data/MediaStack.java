@@ -31,6 +31,7 @@ public class MediaStack {
   private int currentIndex;
   private ArrayList<MediaItem> items;
   private int estimatedBefore, estimatedAfter;
+  private Boolean reverseModeHint, forceThumbsHint;
 
   private @Nullable
   MediaStackCallback callback;
@@ -39,6 +40,22 @@ public class MediaStack {
     this.context = context;
     this.tdlib = tdlib;
     this.currentIndex = -1;
+  }
+
+  public void setReverseModeHint (boolean reverseModeHint) {
+    this.reverseModeHint = reverseModeHint;
+  }
+
+  public boolean getReverseModeHint (boolean defaultValue) {
+    return reverseModeHint != null ? reverseModeHint : defaultValue;
+  }
+
+  public void setForceThumbsHint (boolean forceThumbsHint) {
+    this.forceThumbsHint = forceThumbsHint;
+  }
+
+  public boolean getForceThumbsHint (boolean defaultValue) {
+    return forceThumbsHint != null ? forceThumbsHint : defaultValue;
   }
 
   public void set (MediaItem item) {

@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.widget;
 
-import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Path;
@@ -43,7 +42,6 @@ import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.filegen.VideoGen;
-import org.thunderdog.challegram.loader.ImageReader;
 import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -557,7 +555,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
                     if (item != null && item.getWidth() > 0 && item.getHeight() > 0) {
                       runOnUiThreadOptional(c, () -> {
                         item.setSourceMessageId(chatId, messageId);
-                        MediaViewController.openFromMedia(c, item, new TdApi.SearchMessagesFilterDocument());
+                        MediaViewController.openFromMedia(c, item, new TdApi.SearchMessagesFilterDocument(), true);
                       });
                     } else {
                       runOnUiThreadOptional(c, defaultOpen);

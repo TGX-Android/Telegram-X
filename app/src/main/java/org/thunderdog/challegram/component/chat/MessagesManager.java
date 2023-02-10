@@ -2048,6 +2048,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     MediaStack stack;
     stack = new MediaStack(controller.context(), tdlib);
     stack.set(addedAfter.get(), result);
+    stack.setReverseModeHint(false);
+    stack.setForceThumbsHint(false);
 
     return stack;
   }

@@ -162,8 +162,33 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     this.sourceChatId = sourceChatId;
     this.sourceMessageId = sourceMessageId;
 
-    TdApi.PhotoSize previewSize = MediaWrapper.buildPreviewSize(photo.sizes);
-    TdApi.PhotoSize targetSize = MediaWrapper.buildTargetFile(photo.sizes, previewSize);
+    TdApi.PhotoSize previewSize, targetSize;
+    if (isDocument) {
+      if (photo.sizes.length == 2) {
+        previewSize = photo.sizes[0];
+        targetSize = photo.sizes[1];
+      } else {
+        previewSize = Td.findSmallest(photo);
+        targetSize = Td.findBiggest(photo);
+      }
+      if (targetSize == previewSize) {
+        previewSize = null;
+      }
+    } else {
+      previewSize = MediaWrapper.buildPreviewSize(photo.sizes);
+      targetSize = MediaWrapper.buildTargetFile(photo.sizes, previewSize);
+      if (previewSize == null) {
+        TdApi.PhotoSize smallestSize = Td.findSmallest(photo.sizes);
+        if (smallestSize != null && targetSize != null && smallestSize != targetSize && smallestSize.width <= targetSize.width && smallestSize.height <= targetSize.height) {
+          previewSize = smallestSize;
+        }
+      }
+    }
+
+    if (isDocument && targetSize == null && previewSize != null) {
+      targetSize = previewSize;
+      previewSize = null;
+    }
 
     if (targetSize != null) {
       width = targetSize.width;
@@ -171,10 +196,6 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     } else if (previewSize != null) {
       width = previewSize.width;
       height = previewSize.height;
-      if (isDocument) {
-        targetSize = previewSize;
-        previewSize = null;
-      }
     } else {
       width = 0;
       height = 0;
@@ -771,7 +792,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
       }
       case TdApi.MessageDocument.CONSTRUCTOR: {
         TdApi.Document document = ((TdApi.MessageDocument) msg.content).document;
-        if (TGMimeType.isImageMimeType(document.mimeType) && document.thumbnail != null) {
+        if (TGMimeType.isImageMimeType(document.mimeType)) {
           return new MediaItem(context, tdlib, msg.chatId, msg.id, msg.senderId, msg.date, (TdApi.MessageDocument) msg.content).setMessage(msg);
         }
         break;

@@ -9705,51 +9705,34 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   // Audio utils
 
-  /*public ArrayList<TGAudio> collectAudios (boolean isVoice, boolean unreadOnly) {
-    if (isEventLog()) {
-      return null;
-    }
-    switch (pagerScrollPosition) {
-      case MediaTabsAdapter.POSITION_MESSAGES:
-        return manager.collectAudios(isVoice, unreadOnly);
-    }
-    return null;
-  }*/
-
   @Override
   public MediaStack collectMedias (long fromMessageId, @Nullable TdApi.SearchMessagesFilter filter) {
-    switch (pagerScrollPosition) {
-      case MediaTabsAdapter.POSITION_MESSAGES:
-        return manager.collectMedias(fromMessageId, filter);
-      case MediaTabsAdapter.POSITION_MEDIA:
-        SharedBaseController<?> c = pagerContentAdapter != null ? pagerContentAdapter.cachedItems.get(MediaTabsAdapter.POSITION_MEDIA) : null;
-        if (c != null && c instanceof SharedMediaController) {
-          return ((SharedMediaController) c).collectMedias(fromMessageId, filter);
-        }
-        break;
+    if (!needTabs() || pagerScrollPosition == MediaTabsAdapter.POSITION_MESSAGES) {
+      return manager.collectMedias(fromMessageId, filter);
+    } else {
+      SharedBaseController<?> c = pagerContentAdapter != null ? pagerContentAdapter.cachedItems.get(pagerScrollPosition) : null;
+      if (c instanceof MediaCollectorDelegate) {
+        return ((MediaCollectorDelegate) c).collectMedias(fromMessageId, filter);
+      }
     }
     return null;
   }
 
   @Override
   public void modifyMediaArguments (Object cause, MediaViewController.Args args) {
-    switch (pagerScrollPosition) {
-      case MediaTabsAdapter.POSITION_MESSAGES:
-        args.delegate = this;
-        break;
-      case MediaTabsAdapter.POSITION_MEDIA:
-        SharedBaseController<?> c = pagerContentAdapter != null ? pagerContentAdapter.cachedItems.get(MediaTabsAdapter.POSITION_MEDIA) : null;
-        if (c != null && c instanceof SharedMediaController) {
-          ((SharedMediaController) c).modifyMediaArguments(cause, args);
-        }
-        break;
+    if (!needTabs() || pagerScrollPosition == MediaTabsAdapter.POSITION_MESSAGES) {
+      args.delegate = this;
+    } else {
+      SharedBaseController<?> c = pagerContentAdapter != null ? pagerContentAdapter.cachedItems.get(pagerScrollPosition) : null;
+      if (c instanceof MediaCollectorDelegate) {
+        ((MediaCollectorDelegate) c).modifyMediaArguments(cause, args);
+      }
     }
   }
 
   @Override
   public MediaViewThumbLocation getTargetLocation (int index, MediaItem item) {
-    boolean hasTabs = needTabs();
-    if (!hasTabs || pagerScrollPosition == MediaTabsAdapter.POSITION_MESSAGES) {
+    if (!needTabs() || pagerScrollPosition == MediaTabsAdapter.POSITION_MESSAGES) {
       int i = manager.getAdapter().findMessageByMediaItem(item);
       if (i != -1) {
         View view = manager.getLayoutManager().findViewByPosition(i);
@@ -9763,11 +9746,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
           }
         }
       }
-    }
-    if (hasTabs && pagerScrollPosition == MediaTabsAdapter.POSITION_MEDIA && pagerContentAdapter != null) {
-      SharedBaseController<?> c = pagerContentAdapter.cachedItems.get(pagerScrollPosition);
-      if (c != null && c instanceof SharedMediaController) {
-        ((SharedMediaController) c).getTargetLocation(index, item);
+    } else {
+      SharedBaseController<?> c = pagerContentAdapter != null ? pagerContentAdapter.cachedItems.get(pagerScrollPosition) : null;
+      if (c instanceof MediaViewDelegate) {
+        return ((MediaViewDelegate) c).getTargetLocation(index, item);
       }
     }
     return null;
@@ -9775,10 +9757,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Override
   public void setMediaItemVisible (int index, MediaItem item, boolean isVisible) {
-    int i = manager.getAdapter().findMessageByMediaItem(item);
-    if (i != -1) {
-      TGMessage msg = manager.getAdapter().getMessage(i);
-      msg.setMediaVisible(item, isVisible);
+    if (!needTabs() || pagerScrollPosition == MediaTabsAdapter.POSITION_MESSAGES) {
+      int i = manager.getAdapter().findMessageByMediaItem(item);
+      if (i != -1) {
+        TGMessage msg = manager.getAdapter().getMessage(i);
+        msg.setMediaVisible(item, isVisible);
+      }
     }
   }
 

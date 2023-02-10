@@ -5445,20 +5445,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (currentPositionOffset != 0f) {
       return null;
     }
-    int i = 0;
-    boolean found = false;
-    for (ViewController<?> c : controllers) {
-      if (c instanceof SharedMediaController) {
-        found = true;
-        break;
-      }
-      i++;
-    }
-    if (found && currentMediaPosition == i) {
-      ViewController<?> c = pagerAdapter.findCachedControllerByPosition(i);
-      if (c != null) {
-        return ((SharedMediaController) c).collectMedias(fromMessageId, filter);
-      }
+    ViewController<?> c = pagerAdapter.findCachedControllerByPosition(currentMediaPosition);
+    if (c instanceof MediaCollectorDelegate) {
+      return ((MediaCollectorDelegate) c).collectMedias(fromMessageId, filter);
     }
     return null;
   }
@@ -5468,20 +5457,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (currentPositionOffset != 0f) {
       return;
     }
-    int i = 0;
-    boolean found = false;
-    for (ViewController<?> c : controllers) {
-      if (c instanceof SharedMediaController) {
-        found = true;
-        break;
-      }
-      i++;
-    }
-    if (found && currentMediaPosition == i) {
-      ViewController<?> c = pagerAdapter.findCachedControllerByPosition(i);
-      if (c != null) {
-        ((SharedMediaController) c).modifyMediaArguments(cause, args);
-      }
+    ViewController<?> c = pagerAdapter.findCachedControllerByPosition(currentMediaPosition);
+    if (c instanceof MediaCollectorDelegate) {
+      ((MediaCollectorDelegate) c).modifyMediaArguments(cause, args);
     }
   }
 

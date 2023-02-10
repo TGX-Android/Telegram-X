@@ -1308,6 +1308,9 @@ public class TD {
     } else if (document.thumbnail != null) {
       width = document.thumbnail.width;
       height = document.thumbnail.height;
+      float scale = 2f;
+      width *= scale;
+      height *= scale;
     } else {
       width = height = 0;
     }
