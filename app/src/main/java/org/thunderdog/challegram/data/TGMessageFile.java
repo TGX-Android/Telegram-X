@@ -32,6 +32,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageReceiver;
+import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
@@ -672,6 +673,16 @@ public class TGMessageFile extends TGMessage {
       }
     }
     return res;
+  }
+
+  @Override
+  public MediaViewThumbLocation getMediaThumbLocation (long messageId, View view, int viewTop, int viewBottom, int top) {
+    for (ListAnimator.Entry<CaptionedFile> entry : files) {
+      if (entry.item.messageId == messageId) {
+        return entry.item.component.getMediaThumbLocation(view, viewTop, viewBottom, top);
+      }
+    }
+    return null;
   }
 
   // Document actions

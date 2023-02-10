@@ -38,6 +38,7 @@ import org.thunderdog.challegram.loader.ImageMp3File;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.ImageVideoThumbFile;
 import org.thunderdog.challegram.loader.Receiver;
+import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.TGLegacyAudioManager;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -632,6 +633,25 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
   }
 
   private int lastStartX, lastStartY;
+
+  public MediaViewThumbLocation getMediaThumbLocation (View view, int viewTop, int viewBottom, int top) {
+    if (hasPreview) {
+      MediaViewThumbLocation thumbLocation = new MediaViewThumbLocation();
+      thumbLocation.setNoBounce();
+
+      final int previewSize = getPreviewSize();
+
+      int actualTop = lastStartY + viewTop;
+      int actualBottom = (view.getMeasuredHeight() - (lastStartY + previewSize)) + viewBottom;
+
+      thumbLocation.set(lastStartX, lastStartY + top, lastStartX + previewSize, lastStartY + previewSize + top);
+      thumbLocation.setClip(0, actualTop < 0 ? -actualTop : 0, 0, actualBottom < 0 ? -actualBottom : 0);
+      thumbLocation.setRoundings(previewSize / 2);
+
+      return thumbLocation;
+    }
+    return null;
+  }
 
   public <T extends View & DrawableProvider> void draw (T view, Canvas c, int startX, int startY, Receiver preview, Receiver receiver, @ColorInt int backgroundColor, int contentReplaceColor, float alpha, float checkFactor) {
     this.lastStartX = startX;

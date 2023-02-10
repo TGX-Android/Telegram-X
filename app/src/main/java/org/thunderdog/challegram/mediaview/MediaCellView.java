@@ -264,6 +264,9 @@ public class MediaCellView extends ViewGroup implements
     if (this.subsamplingImageLoaded != isLoaded) {
       this.subsamplingImageLoaded = isLoaded;
       subsamplingImageView.setAlpha(isLoaded || forceTouchMode ? 1f : 0f);
+      if (isLoaded) {
+        imageView.invalidate();
+      }
     }
   }
 
@@ -1753,7 +1756,7 @@ public class MediaCellView extends ViewGroup implements
       }
 
       if (!hideStaticView || !videoReady) {
-        if (receiver.needPlaceholder()) {
+        if (receiver.needPlaceholder() || (subsamplingModeEnabled && !subsamplingImageView.isReady())) {
           if (preview.needPlaceholder()) {
             miniThumbnail.draw(c);
           }
