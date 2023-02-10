@@ -21,12 +21,14 @@ import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.net.Uri;
+import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.Nullable;
 import androidx.core.os.CancellationSignal;
+import androidx.core.view.GestureDetectorCompat;
 
 import com.davemorrissey.labs.subscaleview.ImageSource;
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
@@ -34,7 +36,6 @@ import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
@@ -52,7 +53,6 @@ import org.thunderdog.challegram.mediaview.crop.CropState;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.mediaview.gl.EGLEditorView;
 import org.thunderdog.challegram.player.TGPlayerController;
-import org.thunderdog.challegram.receiver.RefreshRateLimiter;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.TdlibFilesManager;
 import org.thunderdog.challegram.telegram.TdlibManager;
@@ -60,7 +60,6 @@ import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
-import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.widget.FileProgressComponent;
 import org.thunderdog.challegram.widget.ForceTouchView;
 import org.thunderdog.challegram.widget.SparseDrawableView;
@@ -146,6 +145,19 @@ public class MediaCellView extends ViewGroup implements
     this.subsamplingImageView.setOrientation(SubsamplingScaleImageView.ORIENTATION_USE_EXIF);
     this.subsamplingImageView.setMaxScale(Math.max(1f, Screen.density()) * 3f);
     this.subsamplingImageView.setDoubleTapZoomDuration(ZOOM_DURATION);
+    final GestureDetectorCompat gestureDetector = new GestureDetectorCompat(context, new GestureDetector.SimpleOnGestureListener() {
+      @Override
+      public boolean onSingleTapConfirmed(MotionEvent e) {
+        if (subsamplingModeEnabled && subsamplingImageView.isReady() && canTouch(false)) {
+          subsamplingImageView.performClick();
+          ((MediaView) getParent()).onMediaClick(e.getX(), e.getY());
+          return true;
+        }
+        return false;
+      }
+    });
+    //noinspection ClickableViewAccessibility
+    this.subsamplingImageView.setOnTouchListener((view, event) -> gestureDetector.onTouchEvent(event));
     this.subsamplingImageView.setOnStateChangedListener(new SubsamplingScaleImageView.DefaultOnStateChangedListener() {
       @Override
       public void onScaleChanged (float newScale, int origin) {
@@ -1290,7 +1302,7 @@ public class MediaCellView extends ViewGroup implements
   }
 
   public boolean hasVisibleContent () {
-    return !receiver.needPlaceholder() || !preview.needPlaceholder() || !gifReceiver.needPlaceholder() || !miniThumbnail.needPlaceholder() || hideStaticView || (subsamplingModeEnabled && subsamplingImageLoaded && subsamplingImageView.getAlpha() > 0f);
+    return !receiver.needPlaceholder() || !preview.needPlaceholder() || !gifReceiver.needPlaceholder() || !miniThumbnail.needPlaceholder() || hideStaticView || (subsamplingModeEnabled && subsamplingImageView.isReady() && subsamplingImageView.getAlpha() > 0f);
   }
 
   // Post transformation
@@ -1571,7 +1583,7 @@ public class MediaCellView extends ViewGroup implements
   }
 
   public boolean isZoomed () {
-    if (subsamplingModeEnabled && subsamplingImageLoaded) {
+    if (subsamplingModeEnabled && subsamplingImageView.isReady()) {
       float scale = subsamplingImageView.getScale();
       float minScale = subsamplingImageView.getMinScale();
       // Log.i("scale = %f min = %f diff = %f zoomed = %b", scale, minScale, scale - minScale, scale != minScale);
@@ -1584,7 +1596,7 @@ public class MediaCellView extends ViewGroup implements
   }
 
   public void normalizeZoom () {
-    if (subsamplingModeEnabled && subsamplingImageLoaded) {
+    if (subsamplingModeEnabled && subsamplingImageView.isReady()) {
       float minScale = subsamplingImageView.getMinScale();
       SubsamplingScaleImageView.AnimationBuilder b = subsamplingImageView
         .animateScaleAndCenter(minScale, new PointF(
