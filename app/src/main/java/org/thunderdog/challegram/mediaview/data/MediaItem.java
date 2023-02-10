@@ -19,6 +19,8 @@ import android.graphics.Canvas;
 import android.view.MotionEvent;
 import android.view.View;
 
+import androidx.annotation.IntDef;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
@@ -57,6 +59,8 @@ import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.widget.FileProgressComponent;
 
 import java.io.File;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -93,6 +97,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
   private int sourceDate;
   private TdApi.Photo sourcePhoto;
   private TdApi.Video sourceVideo;
+  private TdApi.Document sourceDocument;
   private TdApi.VideoNote sourceVideoNote;
   private TdApi.Animation sourceAnimation;
   private ImageGalleryFile sourceGalleryFile;
@@ -148,9 +153,86 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     this(context, tdlib, sourceChatId, sourceMessageId, photo, false, false);
   }
 
-  public MediaItem (BaseActivity context, Tdlib tdlib, long sourceChatId, long sourceMessageId, TdApi.Document document, @Nullable BitmapFactory.Options options, boolean isRotated) {
-    this(context, tdlib, sourceChatId, sourceMessageId, TD.convertToPhoto(document, options, isRotated), false, true);
+  public MediaItem (BaseActivity context, Tdlib tdlib, long sourceChatId, long sourceMessageId, TdApi.Document document, @Nullable BitmapFactory.Options options, boolean isRotated, U.MediaMetadata mediaMetadata) {
+    this.context = context;
+    this.tdlib = tdlib;
+    this.sourceChatId = sourceChatId;
+    this.sourceMessageId = sourceMessageId;
+
+    int documentType = getMediaDocumentType(document);
+    switch (documentType) {
+      case DocumentType.IMAGE: {
+        TdApi.Photo photo = TD.convertToPhoto(document, options, isRotated);
+        this.type = TYPE_PHOTO;
+        setPhoto(photo, "image/webp".equals(document.mimeType), true);
+        break;
+      }
+      case DocumentType.VIDEO: {
+        TdApi.Video video = TD.convertToVideo(document, options, isRotated);
+        this.type = TYPE_VIDEO;
+        setVideo(video, true, true);
+        break;
+      }
+      case DocumentType.UNKNOWN:
+      default: {
+        throw new UnsupportedOperationException(document.mimeType);
+      }
+    }
+    this.sourceDocument = document;
     this.targetFile = document.document;
+  }
+
+  @IntDef({
+    DocumentType.UNKNOWN, DocumentType.IMAGE, DocumentType.VIDEO
+  })
+  @Retention(RetentionPolicy.SOURCE)
+  public @interface DocumentType {
+    int UNKNOWN = 0, IMAGE = 1, VIDEO = 2;
+  }
+
+  @DocumentType
+  public static int getMediaDocumentType (@Nullable TdApi.Document document) {
+    if (document != null) {
+      @DocumentType int documentType = getMediaDocumentType(document.mimeType);
+      if (documentType != DocumentType.UNKNOWN) {
+        return documentType;
+      }
+      String extension = U.getExtension(document.fileName);
+      if (!StringUtils.isEmpty(extension)) {
+        extension = extension.toLowerCase();
+      }
+      String alternateMimeType = TGMimeType.mimeTypeForExtension(extension);
+      if (!StringUtils.isEmpty(alternateMimeType) && !alternateMimeType.equals(document.mimeType)) {
+        documentType = getMediaDocumentType(alternateMimeType);
+        if (documentType != DocumentType.UNKNOWN) {
+          return documentType;
+        }
+      }
+    }
+    return DocumentType.UNKNOWN;
+  }
+
+  @DocumentType
+  public static int getMediaDocumentType (@NonNull String mimeType) {
+    if (isImageDocument(mimeType)) {
+      return DocumentType.IMAGE;
+    }
+    if (isVideoDocument(mimeType)) {
+      return DocumentType.VIDEO;
+    }
+    return DocumentType.UNKNOWN;
+  }
+
+  public static boolean isMediaDocument (@Nullable TdApi.Document document) {
+    return getMediaDocumentType(document) != DocumentType.UNKNOWN;
+  }
+
+  public static boolean isVideoDocument (@NonNull String mimeType) {
+    return TGMimeType.isVideoMimeType(mimeType) || mimeType.startsWith("video/");
+  }
+
+  public static boolean isImageDocument (@NonNull String mimeType) {
+    return TGMimeType.isImageMimeType(mimeType) || mimeType.startsWith("image/");
   }
 
   public MediaItem (BaseActivity context, Tdlib tdlib, long sourceChatId, long sourceMessageId, TdApi.Photo photo, boolean isWebp, boolean isDocument) {
@@ -162,6 +244,11 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     this.sourceChatId = sourceChatId;
     this.sourceMessageId = sourceMessageId;
 
+    setPhoto(photo, isWebp, isDocument);
+  }
+
+  private void setPhoto (TdApi.Photo photo, boolean isWebp, boolean isDocument) {
+    this.sourcePhoto = photo;
     TdApi.PhotoSize previewSize, targetSize;
     if (isDocument) {
       if (photo.sizes.length == 2) {
@@ -245,7 +332,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
   }
 
   private MediaItem (BaseActivity context, Tdlib tdlib, long sourceChatId, long sourceMessageId, TdApi.MessageSender sourceSender, int sourceDate, TdApi.MessageDocument document) {
-    this(context, tdlib, sourceChatId, sourceMessageId, document.document, null, false);
+    this(context, tdlib, sourceChatId, sourceMessageId, document.document, null, false, null);
     this.sourceSender = sourceSender;
     this.sourceDate = sourceDate;
     this.caption = document.caption;
@@ -340,15 +427,21 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
   }
 
   private MediaItem (BaseActivity context, Tdlib tdlib, long sourceChatId, long sourceMessageId, TdApi.MessageSender sourceSender, int sourceDate, TdApi.Video video, TdApi.FormattedText caption, boolean allowIcon) {
+    this.type = TYPE_VIDEO;
     this.context = context;
     this.tdlib = tdlib;
-    this.type = TYPE_VIDEO;
     this.caption = caption;
-    this.sourceVideo = video;
+
     this.sourceChatId = sourceChatId;
     this.sourceMessageId = sourceMessageId;
     this.sourceSender = sourceSender;
     this.sourceDate = sourceDate;
+
+    setVideo(video, allowIcon, false);
+  }
+
+  private void setVideo (TdApi.Video video, boolean allowIcon, boolean isDocument) {
+    this.sourceVideo = video;
 
     setMiniThumbnail(video.minithumbnail);
     this.previewImageFile = TD.toImageFile(tdlib, video.thumbnail); // TODO MPEG4 support
@@ -368,7 +461,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
       width = height = Screen.dp(100f);
     }
 
-    this.fileProgress = new FileProgressComponent(context, tdlib, TdlibFilesManager.DOWNLOAD_FLAG_VIDEO, true, sourceChatId, sourceMessageId);
+    this.fileProgress = new FileProgressComponent(context, tdlib, isDocument ? TdlibFilesManager.DOWNLOAD_FLAG_FILE : TdlibFilesManager.DOWNLOAD_FLAG_VIDEO, true, sourceChatId, sourceMessageId);
     this.fileProgress.setUseStupidInvalidate();
 
     if (allowIcon) {
@@ -747,25 +840,38 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
   }
 
   public static MediaItem valueOf (BaseActivity context, Tdlib tdlib, TdApi.Document document, TdApi.FormattedText caption) {
-    if (TGMimeType.isImageMimeType(document.mimeType)) {
+    @DocumentType int documentType = getMediaDocumentType(document);
+    if (documentType == DocumentType.IMAGE || documentType == DocumentType.VIDEO) {
       BitmapFactory.Options options = null;
+      U.MediaMetadata mediaMetadata = null;
       boolean isRotated = false;
       int width, height;
       if (TD.isFileLoaded(document.document) && document.thumbnail == null) {
-        String filePath = document.document.local.path;
-        options = ImageReader.getImageSize(filePath);
-        isRotated = U.isExifRotated(filePath);;
-        width = isRotated ? options.outHeight : options.outWidth;;
-        height = isRotated ? options.outWidth : options.outHeight;;
-      } else if (document.thumbnail != null) {
-        width = document.thumbnail.width;
-        height = document.thumbnail.height;
-      } else {
-        width = height = 0;
+        if (documentType == DocumentType.IMAGE) {
+          String filePath = document.document.local.path;
+          options = ImageReader.getImageSize(filePath);
+          isRotated = U.isExifRotated(filePath);
+          width = isRotated ? options.outHeight : options.outWidth;
+          height = isRotated ? options.outWidth : options.outHeight;
+          if (width <= 0 || height <= 0) {
+            return null;
+          }
+        } else if (documentType == DocumentType.VIDEO) {
+          mediaMetadata = U.getMediaMetadata(document.document.local.path);
+          if (mediaMetadata == null || !mediaMetadata.hasVideo) {
+            return null;
+          }
+          isRotated = mediaMetadata.isRotated();
+          width = isRotated ? mediaMetadata.height : mediaMetadata.width;
+          height = isRotated ? mediaMetadata.width : mediaMetadata.height;
+          if (width <= 0 || height <= 0) {
+            return null;
+          }
+        } else {
+          throw new RuntimeException();
+        }
       }
-      if (width > 0 && height > 0) {
-        return new MediaItem(context, tdlib, 0, 0, document, options, isRotated);
-      }
+      return new MediaItem(context, tdlib, 0, 0, document, options, isRotated, mediaMetadata).setCaption(caption);
     }
     return null;
   }
@@ -792,7 +898,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
       }
       case TdApi.MessageDocument.CONSTRUCTOR: {
         TdApi.Document document = ((TdApi.MessageDocument) msg.content).document;
-        if (TGMimeType.isImageMimeType(document.mimeType)) {
+        if (isMediaDocument(document)) {
           return new MediaItem(context, tdlib, msg.chatId, msg.id, msg.senderId, msg.date, (TdApi.MessageDocument) msg.content).setMessage(msg);
         }
         break;
@@ -1331,6 +1437,10 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
 
   public TdApi.Video getSourceVideo () {
     return sourceVideo;
+  }
+
+  public TdApi.Document getSourceDocument () {
+    return sourceDocument;
   }
 
   // Files-related stuff

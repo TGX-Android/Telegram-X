@@ -117,7 +117,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
   }
 
   private static final int FLAG_THEME = 1;
-  private static final int FLAG_IMAGE = 1 << 1;
+  private static final int FLAG_MEDIA_DOCUMENT = 1 << 1;
 
   private TdApi.Document originalDocument;
 
@@ -363,7 +363,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
       setDownloadedIconRes(isTheme ? R.drawable.baseline_palette_24 : R.drawable.baseline_insert_drive_file_24);
     }
     flags = BitwiseUtils.setFlag(flags, FLAG_THEME, isTheme);
-    flags = BitwiseUtils.setFlag(flags, FLAG_IMAGE, TGMimeType.isImageMimeType(document.mimeType));
+    flags = BitwiseUtils.setFlag(flags, FLAG_MEDIA_DOCUMENT, MediaItem.isMediaDocument(document));
     this.originalDocument = document;
   }
 
@@ -549,10 +549,10 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
                   runOnUiThreadOptional(c, () -> {
                     c.tdlib().ui().readCustomTheme(c, file, null, defaultOpen);
                   });
-                } else if (BitwiseUtils.getFlag(flags, FLAG_IMAGE)) {
+                } else if (BitwiseUtils.getFlag(flags, FLAG_MEDIA_DOCUMENT)) {
                   Background.instance().post(() -> {
                     MediaItem item = MediaItem.valueOf(context, tdlib, originalDocument, null);
-                    if (item != null && item.getWidth() > 0 && item.getHeight() > 0) {
+                    if (item != null) {
                       runOnUiThreadOptional(c, () -> {
                         item.setSourceMessageId(chatId, messageId);
                         MediaViewController.openFromMedia(c, item, new TdApi.SearchMessagesFilterDocument(), true);

@@ -1296,6 +1296,33 @@ public class TD {
     }
   }
 
+  public static TdApi.Video convertToVideo (TdApi.Document document, @Nullable BitmapFactory.Options options, boolean isRotated) {
+    int width, height;
+    if (options != null && Math.min(options.outWidth, options.outHeight) > 0) {
+      if (isRotated) {
+        //noinspection SuspiciousNameCombination
+        width = options.outHeight; height = options.outWidth;
+      } else {
+        width = options.outWidth;  height = options.outHeight;
+      }
+    } else if (document.thumbnail != null) {
+      width = document.thumbnail.width;
+      height = document.thumbnail.height;
+      float scale = 2f;
+      width *= scale;
+      height *= scale;
+    } else {
+      width = height = 0;
+    }
+    return new TdApi.Video(
+      0, width, height,
+      document.fileName, document.mimeType,
+      false, true,
+      document.minithumbnail, document.thumbnail,
+      document.document
+    );
+  }
+
   public static TdApi.Photo convertToPhoto (TdApi.Document document, @Nullable BitmapFactory.Options options, boolean isRotated) {
     int width, height;
     if (options != null && Math.min(options.outWidth, options.outHeight) > 0) {

@@ -1323,6 +1323,10 @@ public class U {
     public long getDuration (TimeUnit unit) {
       return unit.convert(durationMs, TimeUnit.MILLISECONDS);
     }
+
+    public boolean isRotated () {
+      return U.isExifRotated(rotation);
+    }
   }
 
   @Nullable

@@ -1646,6 +1646,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         if (item.getSourceVideo() != null) {
           TdApi.Video video = item.getSourceVideo();
           U.openFile(this, video);
+        } else if (item.getSourceDocument() != null) {
+          TdApi.Document document = item.getSourceDocument();
+          U.openFile(this, document.fileName, new File(document.document.local.path), document.mimeType, 0);
         }
         break;
       }

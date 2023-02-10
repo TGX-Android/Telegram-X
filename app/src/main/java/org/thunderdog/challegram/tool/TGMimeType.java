@@ -42,6 +42,28 @@ public class TGMimeType {
      if ("tgs".equals(extension)) {
        return TdConstants.ANIMATED_STICKER_MIME_TYPE;
      }
+
+     // credits: https://github.com/angryziber/gnome-raw-thumbnailer/blob/master/data/raw-thumbnailer.xml
+     switch (extension) {
+       case "dng": return "image/x-adobe-dng";
+       case "arw": return "image/x-sony-arw";
+       case "cr2": return "image/x-canon-cr2";
+       case "crw": return "image/x-canon-crw";
+       case "dcr": return "image/x-kodak-dcr";
+       case "erf": return "image/x-epson-erf";
+       case "k25": return "image/x-kodak-k25";
+       case "kdc": return "image/x-kodak-kdc";
+       case "mrw": return "image/x-minolta-mrw";
+       case "nef": return "image/x-nikon-nef";
+       case "orf": return "image/x-olympus-orf";
+       case "pef": return "image/x-pentax-pef";
+       case "raf": return "image/x-fuji-raf";
+       case "raw": return "image/x-panasonic-raw";
+       case "sr2": return "image/x-sony-sr2";
+       case "srf": return "image/x-sony-srf";
+       case "x3f": return "image/x-sigma-x3f";
+     }
+
      return null;
   }
   public static @Nullable String extensionForMimeType (@Nullable String mimeType) {
