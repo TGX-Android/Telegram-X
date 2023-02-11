@@ -383,24 +383,25 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
     if (checkFactor > 0f) {
       DrawAlgorithms.drawSimplestCheckBox(c, avatarReceiver, checkFactor);
     }
+    boolean noSubtitle = BitwiseUtils.getFlag(flags, FLAG_NO_SUBTITLE);
     if (displayTitle != null) {
       boolean isSecret = (flags & FLAG_SECRET) != 0;
       Paint paint = ChatView.getTitlePaint((flags & FLAG_FAKE_TITLE) != 0);
       int titleLeft = Screen.dp(72f);
-      if (isSecret) {
-        Drawables.drawRtl(c, Icons.getSecureDrawable(), titleLeft - Screen.dp(6f), Screen.dp(12f), Paints.getGreenPorterDuffPaint(), width, rtl);
-        titleLeft += Screen.dp(15f);
-        paint.setColor(Theme.getColor(R.id.theme_color_textSecure));
-      }
       int titleTop;
-      if (BitwiseUtils.getFlag(flags, FLAG_NO_SUBTITLE)) {
+      if (noSubtitle) {
         titleTop = (getHeight() - displayTitle.getHeight()) / 2;
       } else {
         titleTop = Screen.dp(12f) + Screen.dp(1f);
       }
+      if (isSecret) {
+        Drawables.drawRtl(c, Icons.getSecureDrawable(), titleLeft - Screen.dp(6f), titleTop - Screen.dp(1f), Paints.getGreenPorterDuffPaint(), width, rtl);
+        titleLeft += Screen.dp(15f);
+        paint.setColor(Theme.getColor(R.id.theme_color_textSecure));
+      }
       displayTitle.draw(c, titleLeft, titleTop);
     }
-    if (!BitwiseUtils.getFlag(flags, FLAG_NO_SUBTITLE)) {
+    if (!noSubtitle) {
       int subtitleOffset = -Screen.dp(1f);
       if (displaySubtitle != null) {
         int subtitleLeft = Screen.dp(72f);
