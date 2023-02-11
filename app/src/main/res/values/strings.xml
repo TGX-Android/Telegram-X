@@ -4503,7 +4503,8 @@
   <string name="PremiumRequiredVoiceVideo">This setting requires **Telegram Premium** subscription.</string>
   <string name="PremiumRequired">This feature requires **Telegram Premium** subscription.</string>
   <string name="PremiumRequiredMoveFolder">Subscribe to **Telegram Premium** to move the "%1$s" folder.</string>
-  <string name="PremiumRequiredCreateFolder">You have reached the limit of **%1$d** folders. You can double the limit to **%2$d** folders by subscribing to **Telegram Premium**</string>
+  <string name="PremiumRequiredCreateFolder">You have reached the limit of **%1$d** folders. You can double the limit to **%2$d** folders by subscribing to **Telegram Premium**.</string>
+  <string name="PremiumRequiredChatsInFolder">Sorry, you can\'t add more than **%1$d** chats to a folder. You can increase this limit to **%2$d** by subscribing to **Telegram Premium**.</string>
 
   <string name="XRestrictedVoiceMessages">%1$s doesn\'t accept voice messages.</string>
   <string name="XRestrictedVideoMessages">%1$s doesn\'t accept video messages.</string>
@@ -4534,6 +4535,7 @@
   <string name="ChatFolderChangeIcon">Change Icon</string>
   <string name="ChatFolderAddChats">Add Chats</string>
   <string name="ChatFolderLimitReached">You have reached the limit of **%1$d** folders.</string>
+  <string name="ChatsInFolderLimitReached">Sorry, you can\'t add more than **%1$d** chats to a folder. Please create a new one.</string>
   <string name="NewFolder">New Folder</string>
   <string name="CreateNewFolder">Create New Folder</string>
   <string name="HideFolder">Hide Folder</string>
@@ -4545,11 +4547,11 @@
   <string name="FolderRemoveInclusionConfirm">Are you sure you want to remove "%1$s" from the always included list?</string>
   <string name="FolderRemoveExclusionConfirm">Are you sure you want to remove "%1$s" from the always excluded list?</string>
   <string name="IncludeChats">Include Chats</string>
-  <string name="IncludeChatsInfo_one">You can select only one chat.</string>
-  <string name="IncludeChatsInfo_other">You can select up to %1$s chats.</string>
+  <string name="IncludeChatsInfo_one">You can select only one non-secret chat and only one secret chat.</string>
+  <string name="IncludeChatsInfo_other">You can select up to %1$s non-secret chats and the same number of secret chats.</string>
   <string name="ExcludeChats">Exclude Chats</string>
-  <string name="ExcludeChatsInfo_one">You can select only one chat.</string>
-  <string name="ExcludeChatsInfo_other">You can select up to %1$s chats.</string>
+  <string name="ExcludeChatsInfo_one">You can select only one non-secret chat and only one secret chat</string>
+  <string name="ExcludeChatsInfo_other">You can select up to %1$s non-secret chats and the same number of secret chats.</string>
   <string name="FolderIncludedChats">Included Chats</string>
   <string name="FolderIncludedChatsInfo">Choose chats or types of chats that will appear in this folder.</string>
   <string name="FolderExcludedChats">Excluded Chats</string>

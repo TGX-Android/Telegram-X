@@ -18,6 +18,7 @@ import android.os.Build;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import androidx.annotation.IdRes;
 import androidx.annotation.IntDef;
@@ -47,6 +48,7 @@ import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.FlowListAnimator;
 import org.thunderdog.challegram.util.text.Text;
@@ -72,6 +74,7 @@ import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
+import me.vkryl.td.ChatId;
 import me.vkryl.td.ChatPosition;
 
 public class SelectChatsController extends RecyclerViewController<SelectChatsController.Arguments> implements View.OnClickListener, ChatListListener {
@@ -145,6 +148,9 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
   private Set<Long> selectedChatIds = Collections.emptySet();
   private Set<Integer> selectedChatTypes = Collections.emptySet();
 
+  private int secretChatCount;
+  private int nonSecretChatCount;
+
   private final BoolAnimator chipGroupVisibilityAnimator = new BoolAnimator(0, (id, factor, fraction, callee) -> {
     RecyclerView recyclerView = getRecyclerView();
     recyclerView.post(recyclerView::invalidateItemDecorations);
@@ -162,6 +168,16 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
     delegate = args.delegate;
     selectedChatIds = new LinkedHashSet<>(args.selectedChatIds);
     selectedChatTypes = new TreeSet<>(args.selectedChatTypes);
+
+    secretChatCount = 0;
+    nonSecretChatCount = 0;
+    for (long selectedChatId : selectedChatIds) {
+      if (ChatId.isSecret(selectedChatId)) {
+        secretChatCount++;
+      } else {
+        nonSecretChatCount++;
+      }
+    }
   }
 
   @Override
@@ -404,10 +420,41 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
     if (!selected && removeOnly) {
       return false;
     }
+    boolean isSecretChat = ChatId.isSecret(chatId);
     if (selected) {
       selectedChatIds.remove(chatId);
+      if (isSecretChat) {
+        secretChatCount--;
+      } else {
+        nonSecretChatCount--;
+      }
     } else {
+      long chosenChatCountMax = tdlib.chatFilterChosenChatCountMax();
+      long chosenChatCount = isSecretChat ? secretChatCount : nonSecretChatCount;
+      if (chosenChatCount >= chosenChatCountMax) {
+        if (tdlib.hasPremium()) {
+          CharSequence text = Lang.getMarkdownString(this, R.string.ChatsInFolderLimitReached, chosenChatCountMax);
+          UI.showCustomToast(text, Toast.LENGTH_LONG, 0);
+        } else {
+          tdlib.send(new TdApi.GetPremiumLimit(new TdApi.PremiumLimitTypeChatFilterChosenChatCount()), (result) -> runOnUiThreadOptional(() -> {
+            CharSequence text;
+            if (result.getConstructor() == TdApi.PremiumLimit.CONSTRUCTOR) {
+              TdApi.PremiumLimit premiumLimit = (TdApi.PremiumLimit) result;
+              text = Lang.getMarkdownString(this, R.string.PremiumRequiredChatsInFolder, premiumLimit.defaultValue, premiumLimit.premiumValue);
+            } else {
+              text = Lang.getMarkdownString(this, R.string.ChatsInFolderLimitReached, chosenChatCountMax);
+            }
+            UI.showCustomToast(text, Toast.LENGTH_LONG, 0);
+          }));
+        }
+        return false;
+      }
       selectedChatIds.add(chatId);
+      if (isSecretChat) {
+        secretChatCount++;
+      } else {
+        nonSecretChatCount++;
+      }
     }
     updateDoneButton();
     if (view instanceof BetterChatView) {
