@@ -57,9 +57,10 @@ import me.vkryl.core.StringUtils;
 public class EditChatFolderController extends RecyclerViewController<EditChatFolderController.Arguments> implements View.OnClickListener, SettingsAdapter.TextChangeListener, SelectChatsController.Delegate {
 
   private static final int NO_CHAT_FILTER_ID = 0;
+  private static final int COLLAPSED_CHAT_COUNT = 3;
+  private static final int MAX_CHAT_FILTER_TITLE_LENGTH = 12;
   private static final TdApi.ChatFilter EMPTY_CHAT_FILTER = TD.newChatFilter();
   private static final ArrayList<ListItem> TEMP_ITEM_LIST = new ArrayList<>(0);
-  private static final int COLLAPSED_CHAT_COUNT = 3;
 
   public static class Arguments {
     private final int chatFilterId;
@@ -534,7 +535,12 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
   }
 
   private boolean canSaveChanges () {
-    if (StringUtils.isEmpty(editedChatFilter.title)) {
+    String title = editedChatFilter.title;
+    if (StringUtils.isEmpty(title)) {
+      return false;
+    }
+    int codePointCount = Character.codePointCount(title, 0, title.length());
+    if (codePointCount > MAX_CHAT_FILTER_TITLE_LENGTH) {
       return false;
     }
     return (editedChatFilter.includeContacts || editedChatFilter.includeNonContacts || editedChatFilter.includeGroups || editedChatFilter.includeChannels || editedChatFilter.includeBots || editedChatFilter.pinnedChatIds.length > 0 || editedChatFilter.includedChatIds.length > 0) &&
@@ -605,7 +611,7 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
       editText.setTextListener(this);
       editText.setFocusListener(this);
       editText.addLengthCounter(true);
-      editText.setMaxLength(12, false);
+      editText.setMaxLength(MAX_CHAT_FILTER_TITLE_LENGTH);
       editText.getEditText().setLineDisabled(true);
       editText.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
 
