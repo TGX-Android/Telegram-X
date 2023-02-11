@@ -45,6 +45,7 @@ import org.thunderdog.challegram.telegram.TdlibChatListSlice;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.tool.Drawables;
+import org.thunderdog.challegram.tool.Icons;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
@@ -659,6 +660,7 @@ class Chip extends Drawable implements FlowListAnimator.Measurable, Drawable.Cal
   private final @Nullable ImageFile avatarFile;
   private final ComplexReceiver complexReceiver;
   private final DrawableProvider drawableProvider;
+  private final boolean isSecretChat;
 
   private Drawable crossIcon;
   private Drawable crossIconRipple;
@@ -669,6 +671,7 @@ class Chip extends Drawable implements FlowListAnimator.Measurable, Drawable.Cal
     this.id = chatId;
     this.type = TYPE_CHAT;
     this.label = buildLabel(tdlib.chatTitle(chatId));
+    this.isSecretChat = ChatId.isSecret(chatId);
     if (tdlib.isSelfChat(chatId)) {
       this.avatarFile = null;
       this.avatarPlaceholder = new AvatarPlaceholder(AVATAR_RADIUS, new AvatarPlaceholder.Metadata(R.id.theme_color_avatarSavedMessages, R.drawable.baseline_bookmark_16), drawableProvider);
@@ -688,6 +691,7 @@ class Chip extends Drawable implements FlowListAnimator.Measurable, Drawable.Cal
     this.id = chatType;
     this.type = TYPE_CHAT_TYPE;
     this.label = buildLabel(Lang.getString(TD.chatTypeName(chatType)));
+    this.isSecretChat = false;
     this.avatarFile = null;
     this.avatarPlaceholder = new AvatarPlaceholder(AVATAR_RADIUS, new AvatarPlaceholder.Metadata(TD.chatTypeColor(chatType), TD.chatTypeIcon16(chatType)), drawableProvider);
     this.drawableProvider = drawableProvider;
@@ -705,7 +709,7 @@ class Chip extends Drawable implements FlowListAnimator.Measurable, Drawable.Cal
   }
 
   private Text buildLabel (String text) {
-    int maxWidth = (Screen.currentWidth() - Screen.dp(8f) * 3) / 2 - getIntrinsicWidth(/* labelWidth */ 0); // (´・ᴗ・ ` )
+    int maxWidth = (Screen.currentWidth() - Screen.dp(8f) * 3) / 2 - getIntrinsicWidth(/* labelWidth */ 0, /* hasIcon */ isSecretChat); // (´・ᴗ・ ` )
     return new Text.Builder(text, maxWidth, Paints.robotoStyleProvider(14f), this)
       .noClickable()
       .ignoreNewLines()
@@ -760,13 +764,17 @@ class Chip extends Drawable implements FlowListAnimator.Measurable, Drawable.Cal
 
   @Override
   public int getIntrinsicWidth () {
-    int width = getIntrinsicWidth(label.getWidth());
+    int width = getIntrinsicWidth(label.getWidth(), isSecretChat);
     int minWidth = Screen.dp(48f);
     return Math.max(width, minWidth);
   }
 
-  private static int getIntrinsicWidth (int labelWidth) {
-    return Screen.dp(4f + AVATAR_RADIUS * 2 + 8f + 8f + 18f + 8f) + labelWidth;
+  private static int getIntrinsicWidth (int labelWidth, boolean hasIcon) {
+    int width = Screen.dp(4f + AVATAR_RADIUS * 2 + 8f + 8f + 18f + 8f) + labelWidth;
+    if (hasIcon) {
+      width += Screen.dp(15f);
+    }
+    return width;
   }
 
   @Override
@@ -805,7 +813,16 @@ class Chip extends Drawable implements FlowListAnimator.Measurable, Drawable.Cal
       avatarPlaceholder.draw(canvas, avatarX, avatarY);
     }
 
-    label.draw(canvas, bounds.left + avatarRadius * 2 + Screen.dp(8f + 4f), bounds.centerY() - label.getLineCenterY());
+    int labelX = bounds.left + avatarRadius * 2 + Screen.dp(8f + 4f);
+    int labelY = bounds.centerY() - label.getLineCenterY();
+    if (isSecretChat) {
+      Drawable secureDrawable = Icons.getSecureDrawable();
+      int secureIconX = labelX - Screen.dp(7f);
+      int secureIconY = bounds.centerY() - secureDrawable.getMinimumHeight() / 2;
+      Drawables.draw(canvas, secureDrawable, secureIconX, secureIconY, Paints.getGreenPorterDuffPaint());
+      labelX += Screen.dp(15f);
+    }
+    label.draw(canvas, labelX, labelY);
 
     int iconX = bounds.right - Screen.dp(17f);
     int iconY = bounds.centerY();
