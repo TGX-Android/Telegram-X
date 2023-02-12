@@ -1654,6 +1654,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     client().send(function, handler);
   }
 
+  public <T extends TdApi.Object> void send (TdApi.Function<T> function, Class<T> resultClass) {
+    client().send(function, resultHandler(resultClass));
+  }
+
+  public <T extends TdApi.Object> void send (TdApi.Function<T> function, Class<T> resultClass, RunnableData<T> onResult, RunnableData<TdApi.Error> onError) {
+    client().send(function, resultHandler(resultClass, onResult, onError));
+  }
+
   public void sendAll (TdApi.Function<?>[] functions, Client.ResultHandler handler, @Nullable Runnable after) {
     if (functions.length == 0) {
       if (after != null) {
@@ -2194,20 +2202,30 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     } : okHandler();
   }
 
-  public <T extends TdApi.Object> Client.ResultHandler okHandler (Class<T> objectClass) {
-    return okHandler(objectClass, null);
+  public <T extends TdApi.Object> Client.ResultHandler resultHandler (Class<T> resultClass) {
+    return resultHandler(resultClass, null);
   }
 
-  public <T extends TdApi.Object> Client.ResultHandler okHandler (Class<T> objectClass, @Nullable Runnable after) {
+  public <T extends TdApi.Object> Client.ResultHandler resultHandler (Class<T> resultClass, @Nullable Runnable onResult) {
+    return resultHandler(resultClass, onResult != null ? (result) -> onResult.run() : null, null);
+  }
+
+  public <T extends TdApi.Object> Client.ResultHandler resultHandler (Class<T> resultClass, @Nullable RunnableData<T> onResult, @Nullable RunnableData<TdApi.Error> onError) {
     return object -> {
-      if (objectClass.isInstance(object)) {
-        if (after != null) {
-          tdlib().ui().post(after);
+      if (resultClass.isInstance(object)) {
+        if (onResult != null) {
+          T result = resultClass.cast(object);
+          tdlib().ui().post(() -> onResult.runWithData(result));
         }
       } else if (object.getConstructor() == TdApi.Error.CONSTRUCTOR) {
-        UI.showError(object);
+        if (onError != null) {
+          TdApi.Error error = (TdApi.Error) object;
+          tdlib().ui().post(() -> onError.runWithData(error));
+        } else {
+          UI.showError(object);
+        }
       } else {
-        Log.unexpectedTdlibResponse(object, null, objectClass, TdApi.Error.class);
+        Log.unexpectedTdlibResponse(object, null, resultClass, TdApi.Error.class);
       }
     };
   }
@@ -9763,14 +9781,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return TD.iconByName(chatFilterIconName(chatFilter), defaultIcon);
   }
 
-  public void addChatsToChatFilter (int chatFilterId, long[] chatIds) {
+  public void addChatsToChatFilter (TdlibDelegate delegate, int chatFilterId, long[] chatIds) {
     if (chatIds.length == 0) {
       return;
     }
     send(new TdApi.GetChatFilter(chatFilterId), (result) -> {
       switch (result.getConstructor()) {
         case TdApi.ChatFilter.CONSTRUCTOR:
-          addChatsToChatFilter(chatFilterId, (TdApi.ChatFilter) result, chatIds);
+          addChatsToChatFilter(delegate, chatFilterId, (TdApi.ChatFilter) result, chatIds);
           break;
         case TdApi.Error.CONSTRUCTOR:
           UI.showError(result);
@@ -9782,15 +9800,52 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     });
   }
 
-  public void addChatsToChatFilter (int chatFilterId, TdApi.ChatFilter chatFilter, long[] chatIds) {
+  public void addChatsToChatFilter (TdlibDelegate delegate, int chatFilterId, TdApi.ChatFilter chatFilter, long[] chatIds) {
     if (chatIds.length == 0) {
       return;
     }
+    LongSet pinnedChatIds = new LongSet(chatFilter.pinnedChatIds);
     LongSet includedChatIds = new LongSet(chatFilter.includedChatIds);
-    includedChatIds.addAll(chatIds);
+    for (long chatId : chatIds) {
+      if (pinnedChatIds.has(chatId) || includedChatIds.has(chatId)) {
+        continue;
+      }
+      includedChatIds.add(chatId);
+    }
+    if (includedChatIds.size() == chatFilter.includedChatIds.length) {
+      return;
+    }
+    int chatCount = pinnedChatIds.size() + includedChatIds.size();
+    int secretChatCount = 0;
+    for (long pinnedChatId : pinnedChatIds) {
+      if (ChatId.isSecret(pinnedChatId)) secretChatCount++;
+    }
+    for (long includedChatId : includedChatIds) {
+      if (ChatId.isSecret(includedChatId)) secretChatCount++;
+    }
+    int nonSecretChatCount = chatCount - secretChatCount;
+    long chosenChatCountMax = tdlib().chatFilterChosenChatCountMax();
+    if (secretChatCount > chosenChatCountMax || nonSecretChatCount > chosenChatCountMax) {
+      if (hasPremium()) {
+        CharSequence text = Lang.getMarkdownString(delegate, R.string.ChatsInFolderLimitReached, chosenChatCountMax);
+        UI.showCustomToast(text, Toast.LENGTH_LONG, 0);
+      } else {
+        send(new TdApi.GetPremiumLimit(new TdApi.PremiumLimitTypeChatFilterChosenChatCount()), (result) -> {
+          CharSequence text;
+          if (result.getConstructor() == TdApi.PremiumLimit.CONSTRUCTOR) {
+            TdApi.PremiumLimit premiumLimit = (TdApi.PremiumLimit) result;
+            text = Lang.getMarkdownString(delegate, R.string.PremiumRequiredChatsInFolder, premiumLimit.defaultValue, premiumLimit.premiumValue);
+          } else {
+            text = Lang.getMarkdownString(delegate, R.string.ChatsInFolderLimitReached, chosenChatCountMax);
+          }
+          UI.showCustomToast(text, Toast.LENGTH_LONG, 0);
+        });
+      }
+      return;
+    }
     chatFilter.includedChatIds = includedChatIds.toArray();
     chatFilter.excludedChatIds = ArrayUtils.removeAll(chatFilter.excludedChatIds, chatIds);
-    send(new TdApi.EditChatFilter(chatFilterId, chatFilter), okHandler(TdApi.ChatFilterInfo.class));
+    send(new TdApi.EditChatFilter(chatFilterId, chatFilter), TdApi.ChatFilterInfo.class);
   }
 
   public void removeChatFromChatFilter (int chatFilterId, long chatId) {
@@ -9841,6 +9896,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     chatFilter.pinnedChatIds = pinnedChatIds.get();
     chatFilter.includedChatIds = includedChatIds.toArray();
     chatFilter.excludedChatIds = excludedChatIds.toArray();
-    send(new TdApi.EditChatFilter(chatFilterId, chatFilter), okHandler(TdApi.ChatFilterInfo.class));
+    send(new TdApi.EditChatFilter(chatFilterId, chatFilter), TdApi.ChatFilterInfo.class);
   }
 }

@@ -3074,6 +3074,7 @@
   <string name="NobodyLikesSpam2">Sorry, you can interact only with mutual contacts at the moment.</string> <!--PEER_FLOOD-->
   <string name="error_BOTS_TOO_MUCH">There are too many bots in this group. Please remove some of the bots you\'re not using first.</string>
   <string name="error_ADMINS_TOO_MUCH">Sorry, this group has too many admins. Please remove one of the existing admins first.</string>
+  <string name="error_FolderMustContainAtLeast1Chat">Folder must contain at least one chat</string>
 
   <string name="NotificationImportance">Notification Style</string>
   <string name="NotificationImportanceHigh">Sound and pop-up</string>

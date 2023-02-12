@@ -407,7 +407,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
           TD.updateExcludedChats(chatFilter, selectedChatIds);
           TD.updateExcludedChatTypes(chatFilter, selectedChatTypes);
         }
-        tdlib.send(new TdApi.EditChatFilter(chatFilterId, chatFilter), tdlib.okHandler(TdApi.ChatFilterInfo.class, after != null ? () -> {
+        tdlib.send(new TdApi.EditChatFilter(chatFilterId, chatFilter), tdlib.resultHandler(TdApi.ChatFilterInfo.class, after != null ? () -> {
           if (!isDestroyed()) {
             after.run();
           }

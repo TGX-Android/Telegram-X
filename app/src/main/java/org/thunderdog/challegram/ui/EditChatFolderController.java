@@ -535,7 +535,7 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
   }
 
   private boolean canSaveChanges () {
-    String title = editedChatFilter.title;
+    String title = editedChatFilter.title.trim();
     if (StringUtils.isEmpty(title)) {
       return false;
     }
@@ -556,11 +556,11 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
   }
 
   private void createChatFilter (TdApi.ChatFilter chatFilter) {
-    tdlib.send(new TdApi.CreateChatFilter(chatFilter), tdlib.okHandler(TdApi.ChatFilterInfo.class, this::closeSelf));
+    tdlib.send(new TdApi.CreateChatFilter(chatFilter), tdlib.resultHandler(TdApi.ChatFilterInfo.class, this::closeSelf));
   }
 
   private void editChatFilter (int chatFilterId, TdApi.ChatFilter chatFilter) {
-    tdlib.send(new TdApi.EditChatFilter(chatFilterId, chatFilter), tdlib.okHandler(TdApi.ChatFilterInfo.class, this::closeSelf));
+    tdlib.send(new TdApi.EditChatFilter(chatFilterId, chatFilter), tdlib.resultHandler(TdApi.ChatFilterInfo.class, this::closeSelf));
   }
 
   private void deleteChatFilter (int chatFilterId) {

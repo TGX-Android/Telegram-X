@@ -48,6 +48,7 @@ import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.NonMaterialButton;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -231,10 +232,10 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
       @Override
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
         if (item.getId() == R.id.btn_createNewFolder) {
-          boolean canCreateFolder = canCreateFolder();
+          boolean canCreateChatFilter = canCreateChatFilter();
           view.setIgnoreEnabled(true);
-          view.setVisuallyEnabled(canCreateFolder, isUpdate);
-          view.setIconColorId(canCreateFolder ? R.id.theme_color_inlineIcon : R.id.theme_color_iconLight);
+          view.setVisuallyEnabled(canCreateChatFilter, isUpdate);
+          view.setIconColorId(canCreateChatFilter ? R.id.theme_color_inlineIcon : R.id.theme_color_iconLight);
         } else {
           view.setIgnoreEnabled(false);
           view.setEnabledAnimated(true, isUpdate);
@@ -323,23 +324,10 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
   @Override
   public void onClick (View v) {
     if (v.getId() == R.id.btn_createNewFolder) {
-      if (canCreateFolder()) {
+      if (canCreateChatFilter()) {
         navigateTo(EditChatFolderController.newFolder(context, tdlib));
       } else {
-        UI.forceVibrateError(v);
-        long chatFolderLimit = tdlib.chatFilterCountMax();
-        CharSequence text;
-        if (tdlib.hasPremium()) {
-          text = Lang.getMarkdownString(this, R.string.ChatFolderLimitReached, chatFolderLimit);
-        } else {
-          text = Lang.getMarkdownString(this, R.string.PremiumRequiredCreateFolder, chatFolderLimit, chatFolderLimit * 2);
-        }
-        context()
-          .tooltipManager()
-          .builder(v)
-          .controller(this)
-          .show(tdlib, text)
-          .hideDelayed(3500, TimeUnit.MILLISECONDS);
+        showChatFilterLimitReached(v);
       }
     } else if (v.getId() == R.id.chatFilter) {
       ListItem item = (ListItem) v.getTag();
@@ -348,23 +336,34 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
       }
       editChatFilter((TdApi.ChatFilterInfo) item.getData());
     } else if (v.getId() == R.id.recommendedChatFilter) {
-      ListItem item = (ListItem) v.getTag();
-      TdApi.ChatFilter chatFilter = (TdApi.ChatFilter) item.getData();
-      chatFilter.iconName = tdlib.chatFilterIconName(chatFilter);
-      navigateTo(EditChatFolderController.newFolder(context, tdlib, chatFilter));
+      if (canCreateChatFilter()) {
+        ListItem item = (ListItem) v.getTag();
+        TdApi.ChatFilter chatFilter = (TdApi.ChatFilter) item.getData();
+        chatFilter.iconName = tdlib.chatFilterIconName(chatFilter);
+        navigateTo(EditChatFolderController.newFolder(context, tdlib, chatFilter));
+      } else {
+        showChatFilterLimitReached(v);
+      }
     } else if (v.getId() == R.id.btn_double) {
       Object tag = v.getTag();
       if (tag instanceof TdApi.ChatFilter) {
-        v.setEnabled(false);
-        TdApi.ChatFilter chatFilter = (TdApi.ChatFilter) tag;
-        createChatFilter(chatFilter, (ok) -> {
-          if (ok) {
-            v.setTag(null);
-            removeRecommendedChatFilter(chatFilter);
-          } else {
-            v.setEnabled(true);
-          }
-        });
+        if (canCreateChatFilter()) {
+          v.setEnabled(false);
+          TdApi.ChatFilter chatFilter = (TdApi.ChatFilter) tag;
+          WeakReference<View> viewRef = new WeakReference<>(v);
+          createChatFilter(chatFilter, (ok) -> {
+            if (ok) {
+              removeRecommendedChatFilter(chatFilter);
+            } else {
+              View view = viewRef.get();
+              if (view != null && view.getTag() == tag) {
+                view.setEnabled(true);
+              }
+            }
+          });
+        } else {
+          showChatFilterLimitReached(v);
+        }
       }
     } else if (v.getId() == R.id.btn_chatFolderStyle) {
       int chatFolderStyle = tdlib.settings().chatFolderStyle();
@@ -432,6 +431,38 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
       return;
     }
     itemTouchHelper.startDrag(viewHolder);
+  }
+
+  private void showChatFilterLimitReached (View view) {
+    UI.forceVibrateError(view);
+    if (tdlib.hasPremium()) {
+      showTooltip(view, Lang.getMarkdownString(this, R.string.ChatFolderLimitReached, tdlib.chatFilterCountMax()));
+    } else {
+      Object viewTag = view.getTag();
+      WeakReference<View> viewRef = new WeakReference<>(view);
+      tdlib.send(new TdApi.GetPremiumLimit(new TdApi.PremiumLimitTypeChatFilterCount()), (result) -> runOnUiThreadOptional(() -> {
+        View v = viewRef.get();
+        if (v == null || !ViewCompat.isAttachedToWindow(v) || viewTag != v.getTag())
+          return;
+        CharSequence text;
+        if (result.getConstructor() == TdApi.PremiumLimit.CONSTRUCTOR) {
+          TdApi.PremiumLimit premiumLimit = (TdApi.PremiumLimit) result;
+          text = Lang.getMarkdownString(this, R.string.PremiumRequiredCreateFolder, premiumLimit.defaultValue, premiumLimit.premiumValue);
+        } else {
+          text = Lang.getMarkdownString(this, R.string.ChatFolderLimitReached, tdlib.chatFilterCountMax());
+        }
+        showTooltip(v, text);
+      }));
+    }
+  }
+
+  private void showTooltip (View view, CharSequence text) {
+    context()
+      .tooltipManager()
+      .builder(view)
+      .controller(this)
+      .show(tdlib, text)
+      .hideDelayed(3500, TimeUnit.MILLISECONDS);
   }
 
   private void showChatFilterOptions (TdApi.ChatFilterInfo chatFilterInfo) {
@@ -678,7 +709,7 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
     return item;
   }
 
-  private boolean canCreateFolder () {
+  private boolean canCreateChatFilter () {
     return tdlib.chatFilterCount() < tdlib.chatFilterCountMax();
   }
 

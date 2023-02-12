@@ -251,11 +251,13 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
         @Override
         public void onSlideOffFinish (View view, MotionEvent event, int index, boolean apply) {
+          float offsetX = getOffsetX(view);
+          float offsetY = getOffsetX(view);
           if (apply && selectedSection != -1) {
             requestChatsSection(selectedSection, selectedPagerItemId);
-            setSelectedSection(-1, event, getOffsetY(view), true);
+            setSelectedSection(-1, event, offsetX, offsetY, true);
           } else {
-            setSelectedSection(-1, event, getOffsetY(view), false);
+            setSelectedSection(-1, event, offsetX, offsetY, false);
           }
           setMenuVisible(view, selectedPagerItemId, false);
           selectedPagerItemId = INVALID_PAGER_ITEM_ID;
@@ -265,8 +267,10 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         public void onSlideOffMovement (View view, MotionEvent event, int index) {
           float x = event.getX();
           float y = event.getY();
-          x += (menu.getMeasuredWidth() - view.getMeasuredWidth()) / 2;
-          y -= getOffsetY(view) + mainWrap.getTranslationY() + pagerWrap.getTranslationY();
+          float offsetX = getOffsetX(view);
+          float offsetY = getOffsetY(view);
+          x -= offsetX;
+          y -= offsetY + mainWrap.getTranslationY() + pagerWrap.getTranslationY();
           int selectedSection = -1;
           if (x >= 0 && x < menu.getMeasuredWidth()) {
             int firstItemEnd = menu.getChildAt(0).getBottom();
@@ -282,10 +286,14 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
               }
             }
           }
-          setSelectedSection(selectedSection, event, getOffsetY(view), false);
+          setSelectedSection(selectedSection, event, offsetX, offsetY, false);
         }
 
-        private int getOffsetY (View view) {
+        private float getOffsetX (View view) {
+          return menu.getX() - getX(view, headerCell.getView());
+        }
+
+        private float getOffsetY (View view) {
           FrameLayoutFix.LayoutParams lp = (FrameLayoutFix.LayoutParams) menu.getLayoutParams();
           int verticalGravity = Gravity.VERTICAL_GRAVITY_MASK & lp.gravity;
           return verticalGravity == Gravity.BOTTOM ? -menu.getHeight() : view.getHeight();
@@ -382,20 +390,22 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   private int selectedSection = -1;
   private long downTime;
 
-  private void setSelectedSection (int section, MotionEvent event, float yOffset, boolean apply) {
+  private void setSelectedSection (int section, MotionEvent event, float xOffset, float yOffset, boolean apply) {
+    float eventX = event.getX() - xOffset;
+    float eventY = event.getY() - yOffset;
     if (this.selectedSection != section) {
       if (this.selectedSection != -1) {
         View view = menu.getChildAt(this.selectedSection);
-        view.dispatchTouchEvent(MotionEvent.obtain(this.downTime, event.getEventTime(), apply ? MotionEvent.ACTION_UP : MotionEvent.ACTION_CANCEL, event.getX(), event.getY() - yOffset - view.getTop(), event.getMetaState()));
+        view.dispatchTouchEvent(MotionEvent.obtain(this.downTime, event.getEventTime(), apply ? MotionEvent.ACTION_UP : MotionEvent.ACTION_CANCEL, eventX, eventY - view.getTop(), event.getMetaState()));
       }
       this.selectedSection = section;
       if (section != -1) {
         View view = menu.getChildAt(this.selectedSection);
-        view.dispatchTouchEvent(MotionEvent.obtain(this.downTime = SystemClock.uptimeMillis(), event.getEventTime(), MotionEvent.ACTION_DOWN, event.getX(), event.getY() - yOffset - view.getTop(), event.getMetaState()));
+        view.dispatchTouchEvent(MotionEvent.obtain(this.downTime = SystemClock.uptimeMillis(), event.getEventTime(), MotionEvent.ACTION_DOWN, eventX, eventY - view.getTop(), event.getMetaState()));
       }
     } else if (section != -1) {
       View view = menu.getChildAt(this.selectedSection);
-      view.dispatchTouchEvent(MotionEvent.obtain(this.downTime, event.getEventTime(), MotionEvent.ACTION_MOVE, event.getX(), event.getY() - yOffset - view.getTop(), event.getMetaState()));
+      view.dispatchTouchEvent(MotionEvent.obtain(this.downTime, event.getEventTime(), MotionEvent.ACTION_MOVE, eventX, eventY - view.getTop(), event.getMetaState()));
     }
   }
 
@@ -533,14 +543,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     int menuWidth = menu.getMeasuredWidth();
     if (menuWidth == 0)
       return;
-    float x = view.getX();
-    View currentView = view;
-    do {
-      currentView = (View) currentView.getParent();
-      if (currentView == null)
-        break;
-      x += currentView.getX();
-    } while (currentView != headerCell.getView());
+    float x = getX(view, headerCell.getView());
     boolean displayTabsAtBottom = displayTabsAtBottom();
     float translationX = x - menuWidth / 2 + view.getMeasuredWidth() / 2;
     int dx = displayTabsAtBottom ? 0 : Screen.dp(14f);
@@ -549,6 +552,18 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       int cornerCenterX = menuWidth / 2 + Math.round(translationX - menu.getTranslationX());
       menu.setCornerCenterX(MathUtils.clamp(cornerCenterX, Screen.dp(18f), menuWidth - Screen.dp(18f)));
     }
+  }
+
+  private static float getX (View view, View parent) {
+    float x = view.getX();
+    View currentView = view;
+    do {
+      currentView = (View) currentView.getParent();
+      if (currentView == null)
+        break;
+      x += currentView.getX();
+    } while (currentView != parent);
+    return x;
   }
 
   private void setMenuVisible (View anchorView, long pagerItemId, boolean visible) {
@@ -2092,7 +2107,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
                 TdApi.ChatFilter chatFilter = (TdApi.ChatFilter) result;
                 if (!ObjectsCompat.equals(chatFilter.iconName, iconName)) {
                   chatFilter.iconName = iconName;
-                  tdlib.send(new TdApi.EditChatFilter(chatFilterId, chatFilter), tdlib.okHandler(TdApi.ChatFilterInfo.class));
+                  tdlib.send(new TdApi.EditChatFilter(chatFilterId, chatFilter), TdApi.ChatFilterInfo.class);
                 }
                 break;
               case TdApi.Error.CONSTRUCTOR:

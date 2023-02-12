@@ -4755,7 +4755,9 @@ public class TdlibUi extends Handler {
     for (TdApi.ChatFilterInfo chatFilterInfo : chatFilters) {
       items.add(new ListItem(ListItem.TYPE_SETTING, R.id.chatFilter, TD.iconByName(chatFilterInfo.iconName, R.drawable.baseline_folder_24), chatFilterInfo.title).setIntValue(chatFilterInfo.id));
     }
-    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_createNewFolder, R.drawable.baseline_create_new_folder_24, R.string.CreateNewFolder).setTextColorId(R.id.theme_color_textNeutral));
+    if (tdlib.chatFilterCount() < tdlib.chatFilterCountMax()) {
+      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_createNewFolder, R.drawable.baseline_create_new_folder_24, R.string.CreateNewFolder).setTextColorId(R.id.theme_color_textNeutral));
+    }
     SettingsWrap[] settings = new SettingsWrap[1];
     settings[0] = context.showSettings(new SettingsWrapBuilder(R.id.btn_addChatToFolder)
       .addHeaderItem(Lang.getString(R.string.ChooseFolder))
@@ -4773,7 +4775,7 @@ public class TdlibUi extends Handler {
           context.context().navigation().navigateTo(EditChatFolderController.newFolder(context.context(), tdlib, chatFilter));
         } else {
           int chatFilterId = item.getIntValue();
-          tdlib.addChatsToChatFilter(chatFilterId, chatIds);
+          tdlib.addChatsToChatFilter(context, chatFilterId, chatIds);
         }
         if (after != null) {
           after.run();
