@@ -56,6 +56,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
+import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.MediaCollectorDelegate;
@@ -179,8 +180,8 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   EmojiLayout.Listener, InputView.InputListener, InlineResultsWrap.OffsetProvider,
   MediaCellView.Callback, SliderView.Listener, TGLegacyManager.EmojiLoadListener, Menu, Client.ResultHandler, MoreDelegate, PopupLayout.TouchSectionProvider, FlingDetector.Callback, CallManager.CurrentCallListener, ColorPreviewView.BrushChangeListener, PaintState.UndoStateListener, MediaView.FactorChangeListener, EmojiToneHelper.Delegate, MessageListener {
 
-  private static final long REVEAL_ANIMATION_DURATION = /*BuildConfig.DEBUG ? 1800l : */180;
-  private static final long REVEAL_OPEN_ANIMATION_DURATION = /*BuildConfig.DEBUG ? 1800l : */180l;
+  private static final long REVEAL_ANIMATION_DURATION = /*BuildConfig.DEBUG ? 1800l :*/ 180;
+  private static final long REVEAL_OPEN_ANIMATION_DURATION = /*BuildConfig.DEBUG ? 1800l :*/ 180l;
 
   public static final int MODE_MESSAGES = 0; // opened from chat
   public static final int MODE_PROFILE = 1; // opened from profile or chat (in case of groups and channels)

@@ -181,7 +181,23 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
     }
     sourceWidth = getCroppedWidth(sourceWidth);
     sourceHeight = getCroppedHeight(sourceHeight);
-    float ratio = Math.min((float) getWidth() / (float) sourceWidth, (float) getHeight() / (float) sourceHeight);
+    float widthRatio = (float) getWidth() / (float) sourceWidth;
+    float heightRatio = (float) getHeight() / (float) sourceHeight;
+    float ratio;
+    if (file != null) {
+      switch (file.getScaleType()) {
+        case ImageFile.CENTER_CROP:
+          ratio = Math.max(widthRatio, heightRatio);
+          break;
+        case ImageFile.FIT_CENTER:
+          ratio = Math.min(widthRatio, heightRatio);
+          break;
+        default:
+          return getWidth();
+      }
+    } else {
+      ratio = Math.min(widthRatio, heightRatio);
+    }
     sourceWidth *= ratio;
     sourceHeight *= ratio;
     return sourceWidth;
@@ -210,7 +226,23 @@ public class ImageReceiver implements Watcher, ValueAnimator.AnimatorUpdateListe
     }
     sourceWidth = getCroppedWidth(sourceWidth);
     sourceHeight = getCroppedHeight(sourceHeight);
-    float ratio = Math.min((float) getWidth() / (float) sourceWidth, (float) getHeight() / (float) sourceHeight);
+    float widthRatio = (float) getWidth() / (float) sourceWidth;
+    float heightRatio = (float) getHeight() / (float) sourceHeight;
+    float ratio;
+    if (file != null) {
+      switch (file.getScaleType()) {
+        case ImageFile.CENTER_CROP:
+          ratio = Math.max(widthRatio, heightRatio);
+          break;
+        case ImageFile.FIT_CENTER:
+          ratio = Math.min(widthRatio, heightRatio);
+          break;
+        default:
+          return getWidth();
+      }
+    } else {
+      ratio = Math.min(widthRatio, heightRatio);
+    }
     sourceWidth *= ratio;
     sourceHeight *= ratio;
     return sourceHeight;

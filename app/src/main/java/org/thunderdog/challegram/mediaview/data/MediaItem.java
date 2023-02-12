@@ -167,8 +167,14 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
         setPhoto(photo, "image/webp".equals(document.mimeType), true);
         break;
       }
+      case DocumentType.GIF: {
+        TdApi.Animation animation = TD.convertToAnimation(document, options, isRotated, mediaMetadata);
+        this.type = TYPE_GIF;
+        setAnimation(animation, true);
+        break;
+      }
       case DocumentType.VIDEO: {
-        TdApi.Video video = TD.convertToVideo(document, options, isRotated);
+        TdApi.Video video = TD.convertToVideo(document, options, isRotated, mediaMetadata);
         this.type = TYPE_VIDEO;
         setVideo(video, true, true);
         break;
@@ -183,11 +189,11 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
   }
 
   @IntDef({
-    DocumentType.UNKNOWN, DocumentType.IMAGE, DocumentType.VIDEO
+    DocumentType.UNKNOWN, DocumentType.IMAGE, DocumentType.VIDEO, DocumentType.GIF
   })
   @Retention(RetentionPolicy.SOURCE)
   public @interface DocumentType {
-    int UNKNOWN = 0, IMAGE = 1, VIDEO = 2;
+    int UNKNOWN = 0, IMAGE = 1, VIDEO = 2, GIF = 3;
   }
 
   @DocumentType
@@ -215,7 +221,11 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
   @DocumentType
   public static int getMediaDocumentType (@NonNull String mimeType) {
     if (isImageDocument(mimeType)) {
-      return DocumentType.IMAGE;
+      if ("image/gif".equals(mimeType)) {
+        return DocumentType.GIF;
+      } else {
+        return DocumentType.IMAGE;
+      }
     }
     if (isVideoDocument(mimeType)) {
       return DocumentType.VIDEO;
@@ -351,11 +361,15 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     this.tdlib = tdlib;
     this.type = TYPE_GIF;
     this.caption = caption;
-    this.sourceAnimation = animation;
     this.sourceChatId = sourceChatId;
     this.sourceMessageId = sourceMessageId;
     this.sourceSender = sourceSender;
     this.sourceDate = sourceDate;
+    setAnimation(animation, false);
+  }
+
+  private void setAnimation (TdApi.Animation animation, boolean isDocument) {
+    this.sourceAnimation = animation;
 
     setMiniThumbnail(animation.minithumbnail);
     this.previewImageFile = TD.toImageFile(tdlib, animation.thumbnail); // TODO MPEG4 thumbnail support
@@ -367,7 +381,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
 
     this.targetGif = new GifFile(tdlib, animation);
     this.targetGif.setScaleType(GifFile.FIT_CENTER);
-    if (sourceChatId != 0 && sourceMessageId != 0 && !Settings.instance().needAutoplayGIFs()) {
+    if (sourceChatId != 0 && sourceMessageId != 0 && (!Settings.instance().needAutoplayGIFs() && !isDocument)) {
       this.targetGif.setIsStill(true);
     }
 
@@ -378,7 +392,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
       width = height = Screen.dp(100f);
     }
 
-    this.fileProgress = new FileProgressComponent(context, tdlib, TdlibFilesManager.DOWNLOAD_FLAG_GIF, true, sourceChatId, sourceMessageId);
+    this.fileProgress = new FileProgressComponent(context, tdlib, isDocument ? TdlibFilesManager.DOWNLOAD_FLAG_FILE : TdlibFilesManager.DOWNLOAD_FLAG_GIF, true, sourceChatId, sourceMessageId);
     this.fileProgress.setUseStupidInvalidate();
     this.fileProgress.setFile(targetFile);
   }
@@ -841,34 +855,41 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
 
   public static MediaItem valueOf (BaseActivity context, Tdlib tdlib, TdApi.Document document, TdApi.FormattedText caption) {
     @DocumentType int documentType = getMediaDocumentType(document);
-    if (documentType == DocumentType.IMAGE || documentType == DocumentType.VIDEO) {
+    if (documentType != DocumentType.UNKNOWN) {
       BitmapFactory.Options options = null;
       U.MediaMetadata mediaMetadata = null;
       boolean isRotated = false;
       int width, height;
       if (TD.isFileLoaded(document.document) && document.thumbnail == null) {
-        if (documentType == DocumentType.IMAGE) {
-          String filePath = document.document.local.path;
-          options = ImageReader.getImageSize(filePath);
-          isRotated = U.isExifRotated(filePath);
-          width = isRotated ? options.outHeight : options.outWidth;
-          height = isRotated ? options.outWidth : options.outHeight;
-          if (width <= 0 || height <= 0) {
-            return null;
+        switch (documentType) {
+          case DocumentType.IMAGE:
+          case DocumentType.GIF: {
+            String filePath = document.document.local.path;
+            options = ImageReader.getImageSize(filePath);
+            isRotated = U.isExifRotated(filePath);
+            width = isRotated ? options.outHeight : options.outWidth;
+            height = isRotated ? options.outWidth : options.outHeight;
+            if (width <= 0 || height <= 0) {
+              return null;
+            }
+            break;
           }
-        } else if (documentType == DocumentType.VIDEO) {
-          mediaMetadata = U.getMediaMetadata(document.document.local.path);
-          if (mediaMetadata == null || !mediaMetadata.hasVideo) {
-            return null;
+          case DocumentType.VIDEO: {
+            mediaMetadata = U.getMediaMetadata(document.document.local.path);
+            if (mediaMetadata == null || !mediaMetadata.hasVideo) {
+              return null;
+            }
+            isRotated = mediaMetadata.isRotated();
+            width = isRotated ? mediaMetadata.height : mediaMetadata.width;
+            height = isRotated ? mediaMetadata.width : mediaMetadata.height;
+            if (width <= 0 || height <= 0) {
+              return null;
+            }
+            break;
           }
-          isRotated = mediaMetadata.isRotated();
-          width = isRotated ? mediaMetadata.height : mediaMetadata.width;
-          height = isRotated ? mediaMetadata.width : mediaMetadata.height;
-          if (width <= 0 || height <= 0) {
-            return null;
-          }
-        } else {
-          throw new RuntimeException();
+          case DocumentType.UNKNOWN:
+          default:
+            throw new UnsupportedOperationException();
         }
       }
       return new MediaItem(context, tdlib, 0, 0, document, options, isRotated, mediaMetadata).setCaption(caption);
