@@ -616,7 +616,7 @@ public class MediaCellView extends ViewGroup implements
     setMedia(null);
     setSubsamplingModeEnabled(false);
     recycle(subsamplingImageView);
-    requestImage(null);
+    clearImage();
     bufferingProgressView.performDestroy();
     imageReceiver.destroy();
     gifReceiver.destroy();
@@ -639,7 +639,7 @@ public class MediaCellView extends ViewGroup implements
       ImageLoader.instance().loadFile(file, (success, result) -> UI.post(() -> {
         if (media == mediaItem) {
           imagePreviewReceiver.requestFile(media.getPreviewImageFile());
-          requestImage(file);
+          requestImage(media, file);
         }
       }));
     }
@@ -1051,7 +1051,11 @@ public class MediaCellView extends ViewGroup implements
 
   private ImageFile requestedImage;
 
-  private void requestImage (ImageFile imageFile) {
+  private void clearImage () {
+    requestImage(null, null);
+  }
+
+  private void requestImage (MediaItem item, ImageFile imageFile) {
     if (this.requestedImage == imageFile) {
       return;
     }
@@ -1060,8 +1064,8 @@ public class MediaCellView extends ViewGroup implements
       this.subsamplingLoadSignal.cancel();
       this.subsamplingLoadSignal = null;
     }
-    if (imageFile == null) {
-      imageReceiver.clear();
+    if (imageFile == null || (item != null && item.isVideo())) {
+      imageReceiver.requestFile(imageFile);
       recycle(subsamplingImageView);
       return;
     }
@@ -1114,7 +1118,7 @@ public class MediaCellView extends ViewGroup implements
       if (preview != gifReceiver) {
         gifReceiver.requestFile(null);
       }
-      requestImage(null);
+      clearImage();
       avatarReceiver.clear();
 
       delayedLoad = new CancellableRunnable() {
@@ -1138,14 +1142,14 @@ public class MediaCellView extends ViewGroup implements
     if (media != null && (media.isLoaded() || Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE)) {
       if (media.isGif()) {
         gifReceiver.requestFile(media.getTargetGifFile());
-        requestImage(null);
+        clearImage();
         avatarReceiver.clear();
       } else if (media.isVideo() && media.isGifType() && revealFactor == 1f && !disappearing && getParent() instanceof MediaView && ((MediaView) getParent()).isOpen()) {
-        requestImage(null);
+        clearImage();
         avatarReceiver.clear();
         setHideStaticView(true, false);
       } else if (media.isAvatar()) {
-        requestImage(null);
+        clearImage();
         gifReceiver.clear();
         media.requestAvatar(avatarReceiver, true);
       } else {
@@ -1154,14 +1158,14 @@ public class MediaCellView extends ViewGroup implements
           gifReceiver.clear();
         }
         ImageFile imageFile = media.getTargetImageFile(true);
-        requestImage(imageFile);
+        requestImage(media, imageFile);
       }
       invalidateImage();
     } else {
       if (preview != gifReceiver) {
         gifReceiver.requestFile(null);
       }
-      requestImage(null);
+      clearImage();
       avatarReceiver.clear();
     }
   }
@@ -1267,7 +1271,7 @@ public class MediaCellView extends ViewGroup implements
       imagePreviewReceiver.requestFile(null);
       miniThumbnail.requestFile(null);
       gifReceiver.requestFile(null);
-      requestImage(null);
+      clearImage();
       avatarReceiver.clear();
     } else {
       miniThumbnail.requestFile(media.getMiniThumbnail());
@@ -1335,7 +1339,7 @@ public class MediaCellView extends ViewGroup implements
       } else if (item.isAvatar()) {
         media.requestAvatar(avatarReceiver, true);
       } else {
-        requestImage(item.getTargetImageFile(true));
+        requestImage(item, item.getTargetImageFile(true));
       }
     }
   }
