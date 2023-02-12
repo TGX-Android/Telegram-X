@@ -156,8 +156,10 @@ public class MediaCellView extends ViewGroup implements
         return res;
       }
     };
+    this.subsamplingImageView.setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CENTER_INSIDE);
     this.subsamplingImageView.setOrientation(SubsamplingScaleImageView.ORIENTATION_USE_EXIF);
-    this.subsamplingImageView.setMaxScale(Math.max(1f, Screen.density()) * 3f);
+    this.subsamplingImageView.setMaxScale(Float.MAX_VALUE);
+    this.subsamplingImageView.setDoubleTapZoomScale(1f);
     this.subsamplingImageView.setDoubleTapZoomDuration(ZOOM_DURATION);
     final GestureDetectorCompat gestureDetector = new GestureDetectorCompat(context, new GestureDetector.SimpleOnGestureListener() {
       @Override
@@ -203,6 +205,8 @@ public class MediaCellView extends ViewGroup implements
     this.subsamplingImageView.setOnImageEventListener(new SubsamplingScaleImageView.DefaultOnImageEventListener() {
       @Override
       public void onReady () {
+        subsamplingImageView.setMaxScale(Math.max(subsamplingImageView.getMinScale() * 2f, Math.max(1f, Screen.density()) * 3f));
+        subsamplingImageView.setDoubleTapZoomScale(Math.max(subsamplingImageView.getMinScale() * 1.5f, 1f));
         if (subsamplingModeEnabled) {
           setSubsamplingImageLoaded(true);
         }
@@ -246,12 +250,18 @@ public class MediaCellView extends ViewGroup implements
 
   private boolean subsamplingModeEnabled, subsamplingImageLoaded;
 
+  private static void recycle (SubsamplingScaleImageView imageView) {
+    imageView.recycle();
+    imageView.setMaxScale(Float.MAX_VALUE);
+    imageView.setDoubleTapZoomScale(1f);
+  }
+
   private void setSubsamplingModeEnabled (boolean isEnabled) {
     if (this.subsamplingModeEnabled != isEnabled) {
       this.subsamplingModeEnabled = isEnabled;
       if (!isEnabled) {
         setSubsamplingImageLoaded(false);
-        subsamplingImageView.recycle();
+        recycle(subsamplingImageView);
         if (subsamplingLoadSignal != null) {
           subsamplingLoadSignal.cancel();
           subsamplingLoadSignal = null;
@@ -605,7 +615,7 @@ public class MediaCellView extends ViewGroup implements
   public void destroy () {
     setMedia(null);
     setSubsamplingModeEnabled(false);
-    subsamplingImageView.recycle();
+    recycle(subsamplingImageView);
     requestImage(null);
     bufferingProgressView.performDestroy();
     imageReceiver.destroy();
@@ -1052,7 +1062,7 @@ public class MediaCellView extends ViewGroup implements
     }
     if (imageFile == null) {
       imageReceiver.clear();
-      subsamplingImageView.recycle();
+      recycle(subsamplingImageView);
       return;
     }
     boolean clearReceiver = true;
@@ -1087,7 +1097,7 @@ public class MediaCellView extends ViewGroup implements
         fileHandler.onResult(imageFile.getFile());
       }
     } else {
-      subsamplingImageView.recycle();
+      recycle(subsamplingImageView);
       imageReceiver.requestFile(imageFile);
       clearReceiver = false;
     }
@@ -1616,7 +1626,7 @@ public class MediaCellView extends ViewGroup implements
       float scale = subsamplingImageView.getScale();
       float minScale = subsamplingImageView.getMinScale();
       // Log.i("scale = %f min = %f diff = %f zoomed = %b", scale, minScale, scale - minScale, scale != minScale);
-      return scale != 0f && scale != minScale;
+      return scale != 0f && scale > minScale;
     } else {
       float factor = getZoomFactor();
       // Log.i("factor zoom = %f zoomed = %b", factor, factor != 1f);
