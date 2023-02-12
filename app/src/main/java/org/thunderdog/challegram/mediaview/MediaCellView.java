@@ -1760,8 +1760,16 @@ public class MediaCellView extends ViewGroup implements
           clipPath.reset();
           RectF rectF = Paints.getRectF();
 
-          float clipWidth = Math.min(receiver.getTargetWidth(), receiver.getWidth());
-          float clipHeight = Math.min(receiver.getTargetHeight(), receiver.getHeight());
+          int targetWidth = receiver.getTargetWidth();
+          int targetHeight = receiver.getTargetHeight();
+
+          if (targetWidth == 0 || targetHeight == 0) {
+            targetWidth = preview.getTargetWidth();
+            targetHeight = preview.getTargetHeight();
+          }
+
+          float clipWidth = Math.min(targetWidth, receiver.getWidth());
+          float clipHeight = Math.min(targetHeight, receiver.getHeight());
 
           rectF.set(receiver.centerX() - clipWidth / 2f, receiver.centerY() - clipHeight / 2f, receiver.centerX() + clipWidth / 2f, receiver.centerY() + clipHeight / 2f);
           DrawAlgorithms.buildPath(clipPath, rectF, topLeftRadius, topRightRadius, bottomRightRadius, bottomLeftRadius);

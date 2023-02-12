@@ -465,8 +465,11 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     }
     this.targetFile = video.video;
 
-    this.targetImage = MediaWrapper.createThumbFile(tdlib, video.video);
-    this.targetImage.setScaleType(ImageFile.FIT_CENTER);
+    // TODO: remove this targetImage at all, when video.thumbnail is available?
+    // if (previewImageFile == null) {
+      this.targetImage = MediaWrapper.createThumbFile(tdlib, video.video);
+      this.targetImage.setScaleType(ImageFile.FIT_CENTER);
+    // }
 
     this.width = video.width;
     this.height = video.height;
