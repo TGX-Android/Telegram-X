@@ -15,6 +15,7 @@
 package org.thunderdog.challegram.data;
 
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.os.SystemClock;
 import android.view.MotionEvent;
 import android.view.View;
@@ -38,6 +39,7 @@ import org.thunderdog.challegram.loader.ImageMp3File;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.ImageVideoThumbFile;
 import org.thunderdog.challegram.loader.Receiver;
+import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.TGLegacyAudioManager;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -78,6 +80,7 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
 
   public boolean hasPreview;
   public ImageFile miniThumbnail, preview, fullPreview;
+  private boolean mayBeTransparent;
 
   private @Nullable String title;
   private boolean needFakeTitle;
@@ -88,6 +91,7 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
   private float sizeWidth;
 
   private final TGMessage context;
+  private final TdApi.Message message;
 
   // DOCUMENT
 
@@ -95,8 +99,9 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
     return needOpenIn;
   }
 
-  public FileComponent (@NonNull TGMessage context, @NonNull TdApi.Document doc) {
+  public FileComponent (@NonNull TGMessage context, @NonNull TdApi.Message message, @NonNull TdApi.Document doc) {
     this.context = context;
+    this.message = message;
     if (this.needOpenIn = TD.isSupportedMusic(doc)) {
       // TdApi.VoiceNote fakeAudio = new TdApi.VoiceNote(0, null, doc.mimeType, doc.document);
       // setVoice(fakeAudio, null, null);
@@ -150,13 +155,13 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
       }
     }
 
-    this.progress = new FileProgressComponent(context.context(), context.tdlib(), TdlibFilesManager.DOWNLOAD_FLAG_FILE, hasPreview && TGMimeType.isImageMimeType(doc.mimeType), context.getChatId(), context.getId());
+    this.progress = new FileProgressComponent(context.context(), context.tdlib(), TdlibFilesManager.DOWNLOAD_FLAG_FILE, hasPreview && TGMimeType.isImageMimeType(doc.mimeType), message != null ? message.chatId : context.getChatId(), message != null ? message.id : context.getId());
     this.progress.setBackgroundColorProvider(context);
     this.progress.setSimpleListener(this);
+    this.progress.setDocumentMetadata(doc, !hasPreview);
     if (hasPreview) {
       this.progress.setBackgroundColor(0x44000000);
     } else {
-      this.progress.setDownloadedIconRes(doc);
       this.progress.setBackgroundColorId(TD.getFileColorId(doc, context.isOutgoingBubble()));
     }
     this.progress.setFile(doc.document, context.getMessage());
@@ -167,8 +172,9 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
 
   // AUDIO
 
-  public FileComponent (@NonNull TGMessage context, @NonNull TdApi.Audio audio, TdApi.Message playPauseFile, TGPlayerController.PlayListBuilder playListBuilder) {
+  public FileComponent (@NonNull TGMessage context, @NonNull TdApi.Message message, @NonNull TdApi.Audio audio, TdApi.Message playPauseFile, TGPlayerController.PlayListBuilder playListBuilder) {
     this.context = context;
+    this.message = message;
 
     setAudio(audio, playPauseFile, playListBuilder);
   }
@@ -201,7 +207,7 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
       }
     }
 
-    this.progress = new FileProgressComponent(context.context(), context.tdlib(), TdlibFilesManager.DOWNLOAD_FLAG_MUSIC, preview != null, context.getChatId(), context.getId());
+    this.progress = new FileProgressComponent(context.context(), context.tdlib(), TdlibFilesManager.DOWNLOAD_FLAG_MUSIC, preview != null, message != null ? message.chatId : context.getChatId(), message != null ? message.id : context.getId());
     this.progress.setBackgroundColorProvider(context);
     this.progress.setSimpleListener(this);
     if (hasPreview) {
@@ -219,8 +225,9 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
 
   private float unreadFactor;
 
-  public FileComponent (@NonNull TGMessage context, @NonNull TdApi.VoiceNote voice, TdApi.Message playPauseFile, TGPlayerController.PlayListBuilder playListBuilder) {
+  public FileComponent (@NonNull TGMessage context, @NonNull TdApi.Message message, @NonNull TdApi.VoiceNote voice, TdApi.Message playPauseFile, TGPlayerController.PlayListBuilder playListBuilder) {
     this.context = context;
+    this.message = message;
 
     setVoice(voice, playPauseFile, playListBuilder);
   }
@@ -232,7 +239,7 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
     this.waveform = new Waveform(voice.waveform, Waveform.MODE_BITMAP, context.isOutgoingBubble());
     this.unreadFactor = playPauseFile != context.getMessage() || context.isContentRead() ? 0f : 1f;
 
-    this.progress = new FileProgressComponent(context.context(), context.tdlib(), TdlibFilesManager.DOWNLOAD_FLAG_VOICE, false, context.getChatId(), context.getId());
+    this.progress = new FileProgressComponent(context.context(), context.tdlib(), TdlibFilesManager.DOWNLOAD_FLAG_VOICE, false,message != null ? message.chatId : context.getChatId(), message != null ? message.id : context.getId());
     this.progress.setBackgroundColorProvider(context);
     this.progress.setSimpleListener(this);
     this.progress.setBackgroundColorId(context.isOutgoingBubble() ? R.id.theme_color_bubbleOut_file : R.id.theme_color_file);
@@ -435,6 +442,7 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
   private ImageFile createFullPreview () {
     if (fullPreview == null) {
       if (doc != null) {
+        mayBeTransparent = TGMimeType.isTransparentImageMimeType(doc.mimeType);
         fullPreview = createFullPreview(context.tdlib(), doc);
       } else if (audio != null && TD.isFileLoaded(audio.audio) && (audio.albumCoverThumbnail == null || preview == null || Math.max(audio.albumCoverThumbnail.width, audio.albumCoverThumbnail.height) < 90)) {
         fullPreview = new ImageMp3File(audio.audio.local.path);
@@ -633,6 +641,25 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
 
   private int lastStartX, lastStartY;
 
+  public MediaViewThumbLocation getMediaThumbLocation (View view, int viewTop, int viewBottom, int top) {
+    if (hasPreview) {
+      MediaViewThumbLocation thumbLocation = new MediaViewThumbLocation();
+      thumbLocation.setNoBounce();
+
+      final int previewSize = getPreviewSize();
+
+      int actualTop = lastStartY + viewTop;
+      int actualBottom = (view.getMeasuredHeight() - (lastStartY + previewSize)) + viewBottom;
+
+      thumbLocation.set(lastStartX, lastStartY + top, lastStartX + previewSize, lastStartY + previewSize + top);
+      thumbLocation.setClip(0, actualTop < 0 ? -actualTop : 0, 0, actualBottom < 0 ? -actualBottom : 0);
+      thumbLocation.setRoundings(previewSize / 2);
+
+      return thumbLocation;
+    }
+    return null;
+  }
+
   public <T extends View & DrawableProvider> void draw (T view, Canvas c, int startX, int startY, Receiver preview, Receiver receiver, @ColorInt int backgroundColor, int contentReplaceColor, float alpha, float checkFactor) {
     this.lastStartX = startX;
     this.lastStartY = startY;
@@ -653,6 +680,9 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
       }*/
       preview.setPaintAlpha(alpha * preview.getAlpha());
       receiver.setPaintAlpha(alpha * receiver.getAlpha());
+      if (mayBeTransparent) {
+        receiver.drawPlaceholderRounded(c, previewSize / 2f, ColorUtils.alphaColor(alpha, Color.WHITE));
+      }
       DrawAlgorithms.drawReceiver(c, preview, receiver, true, true, startX, startY, startX + previewSize, startY + previewSize);
       receiver.restorePaintAlpha();
       preview.restorePaintAlpha();

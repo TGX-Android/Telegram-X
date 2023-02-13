@@ -598,10 +598,10 @@ public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickLis
   }
 
   @Override
-  public MediaViewThumbLocation getTargetLocation (int index, MediaItem item) {
+  public MediaViewThumbLocation getTargetLocation (int indexInStack, MediaItem item) {
     MediaWrapper wrapper;
     if (isList || collageContext != null) {
-      wrapper = getWrapper(index);
+      wrapper = getWrapper(indexInStack);
     } else {
       wrapper = this.wrapper;
     }

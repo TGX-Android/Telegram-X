@@ -18,7 +18,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
-import android.provider.MediaStore;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -26,7 +25,6 @@ import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.R;
@@ -40,7 +38,8 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageFileLocal;
-import org.thunderdog.challegram.loader.ImageFileRemote;
+import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
+import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibFilesManager;
@@ -50,7 +49,6 @@ import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
-import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.text.Letters;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
@@ -252,6 +250,22 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
 
   }
 
+  @Override
+  public boolean setThumbLocation (MediaViewThumbLocation location, View view, int index, MediaItem mediaItem) {
+    RectF rectF = Paints.getRectF();
+    rectF.set(Screen.dp(11f), getPaddingVertical(), Screen.dp(11f) + Screen.dp(50f), view.getMeasuredHeight() - getPaddingVertical());
+
+    // location.clipTop -= rectF.top;
+    location.left += rectF.left;
+    location.top += rectF.top;
+    location.right = location.left + (int) rectF.width();
+    location.bottom = location.top + (int) rectF.height();
+    location.setClip(0, 0, 0, 0);
+    location.setRoundings((int) (rectF.width() / 2f));
+
+    return getMediaPreview() != null;
+  }
+
   public String getTrackTitle () {
     return title;
   }
@@ -440,8 +454,8 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
     this.fileProgress = new FileProgressComponent(context, tdlib, TdlibFilesManager.DOWNLOAD_FLAG_FILE, getMediaPreview() != null, message.chatId, message.id);
     this.fileProgress.setViewProvider(currentViews);
     this.fileProgress.setSimpleListener(this);
+    this.fileProgress.setDocumentMetadata(document, this.getMediaPreview() == null);
     if (this.getMediaPreview() == null) {
-      this.fileProgress.setDownloadedIconRes(document);
       this.fileProgress.setBackgroundColorId(TD.getFileColorId(document, false));
     } else {
       this.fileProgress.setBackgroundColor(0x44000000);
@@ -471,8 +485,8 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
       this.fileProgress.setSimpleListener(this);
     }
     this.fileProgress.setPausedIconRes(R.drawable.baseline_insert_drive_file_24);
+    this.fileProgress.setDocumentMetadata(data.document, this.getMediaPreview() == null);
     if (this.getMediaPreview() == null) {
-      this.fileProgress.setDownloadedIconRes(data.document);
       this.fileProgress.setBackgroundColorId(TD.getFileColorId(data.document, false));
     } else {
       this.fileProgress.setBackgroundColor(0x44000000);

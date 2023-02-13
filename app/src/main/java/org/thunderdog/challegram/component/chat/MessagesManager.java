@@ -73,6 +73,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import me.vkryl.core.ArrayUtils;
@@ -2016,28 +2017,23 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
 
     final ArrayList<MediaItem> result = new ArrayList<>();
-    final boolean needGifs = filter != null && filter.getConstructor() == TdApi.SearchMessagesFilterAnimation.CONSTRUCTOR;
 
-    final boolean[] found = new boolean[1];
-    final int[] addedAfter = new int[1];
+    AtomicBoolean found = new AtomicBoolean();
+    AtomicInteger addedAfter = new AtomicInteger();
 
     RunnableData<TdApi.Message> callback = message -> {
       if (TD.isSecret(message))
         return;
-      MediaItem item;
-      if (needGifs) {
-        item = message.content.getConstructor() == TdApi.MessageAnimation.CONSTRUCTOR ? MediaItem.valueOf(controller.context(), tdlib, message) : null;
-      } else {
-        item = message.content.getConstructor() == TdApi.MessagePhoto.CONSTRUCTOR || message.content.getConstructor() == TdApi.MessageVideo.CONSTRUCTOR ? MediaItem.valueOf(controller.context(), tdlib, message) : null;
-      }
+      boolean matchesFilter = filter == null || Td.matchesFilter(message, filter);
+      MediaItem item = matchesFilter ? MediaItem.valueOf(controller.context(), tdlib, message) : null;
       if (item != null) {
         result.add(0, item);
-        if (found[0]) {
-          addedAfter[0]++;
+        if (found.get()) {
+          addedAfter.incrementAndGet();
         }
-      }
-      if (!found[0] && message.id == fromMessageId) {
-        found[0] = true;
+        if (message.id == fromMessageId) {
+          found.set(true);
+        }
       }
     };
 
@@ -2045,13 +2041,15 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       parsedMessage.iterate(callback, true);
     }
 
-    if (!found[0]) {
+    if (!found.get()) {
       return null;
     }
 
     MediaStack stack;
     stack = new MediaStack(controller.context(), tdlib);
-    stack.set(addedAfter[0], result);
+    stack.set(addedAfter.get(), result);
+    stack.setReverseModeHint(false);
+    stack.setForceThumbsHint(false);
 
     return stack;
   }

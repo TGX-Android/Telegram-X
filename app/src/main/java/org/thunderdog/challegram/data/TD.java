@@ -21,6 +21,8 @@ import android.app.DownloadManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.graphics.BitmapFactory;
+import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
@@ -41,6 +43,7 @@ import android.text.style.StyleSpan;
 import android.text.style.TypefaceSpan;
 import android.text.style.URLSpan;
 import android.text.style.UnderlineSpan;
+import android.util.Size;
 import android.util.SparseIntArray;
 import android.view.View;
 import android.widget.Toast;
@@ -1293,6 +1296,64 @@ public class TD {
         return null;
       }
     }
+  }
+
+  public static Size getFinalResolution (TdApi.Document document, @Nullable BitmapFactory.Options options, boolean isRotated) {
+    int width, height;
+    if (options != null && Math.min(options.outWidth, options.outHeight) > 0) {
+      if (isRotated) {
+        //noinspection SuspiciousNameCombination
+        width = options.outHeight; height = options.outWidth;
+      } else {
+        width = options.outWidth;  height = options.outHeight;
+      }
+    } else if (document.thumbnail != null) {
+      width = document.thumbnail.width;
+      height = document.thumbnail.height;
+      float scale = 2f;
+      width *= scale;
+      height *= scale;
+    } else {
+      width = height = 0;
+    }
+    return new Size(width, height);
+  }
+
+  public static TdApi.Animation convertToAnimation (TdApi.Document document, @Nullable BitmapFactory.Options options, boolean isRotated, U.MediaMetadata mediaMetadata) {
+    Size size = getFinalResolution(document, options, isRotated);
+    return new TdApi.Animation(
+      mediaMetadata != null ? (int) TimeUnit.MILLISECONDS.toSeconds(mediaMetadata.durationMs) : 0,
+      size.getWidth(), size.getHeight(),
+      document.fileName, document.mimeType, false,
+      document.minithumbnail, document.thumbnail,
+      document.document
+    );
+  }
+
+  public static TdApi.Video convertToVideo (TdApi.Document document, @Nullable BitmapFactory.Options options, boolean isRotated, U.MediaMetadata mediaMetadata) {
+    Size size = getFinalResolution(document, options, isRotated);
+    return new TdApi.Video(
+      mediaMetadata != null ? (int) TimeUnit.MILLISECONDS.toSeconds(mediaMetadata.durationMs) : 0,
+      size.getWidth(), size.getHeight(),
+      document.fileName, document.mimeType,
+      false, true,
+      document.minithumbnail, document.thumbnail,
+      document.document
+    );
+  }
+
+  public static TdApi.Photo convertToPhoto (TdApi.Document document, @Nullable BitmapFactory.Options options, boolean isRotated) {
+    Size size = getFinalResolution(document, options, isRotated);
+    TdApi.PhotoSize thumbnailSize = toThumbnailSize(document.thumbnail);
+    TdApi.PhotoSize[] sizes = new TdApi.PhotoSize[thumbnailSize != null ? 2 : 1];
+    TdApi.PhotoSize targetSize = new TdApi.PhotoSize("w", document.document, size.getWidth(), size.getHeight(), null);
+    if (thumbnailSize != null) {
+      sizes[0] = thumbnailSize;
+      sizes[1] = targetSize;
+    } else {
+      sizes[0] = targetSize;
+    }
+    return new TdApi.Photo(false, null, sizes);
   }
 
   public static TdApi.Photo convertToPhoto (TdApi.Sticker sticker) {

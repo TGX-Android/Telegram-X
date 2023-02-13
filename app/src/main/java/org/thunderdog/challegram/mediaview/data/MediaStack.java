@@ -31,6 +31,7 @@ public class MediaStack {
   private int currentIndex;
   private ArrayList<MediaItem> items;
   private int estimatedBefore, estimatedAfter;
+  private Boolean reverseModeHint, forceThumbsHint;
 
   private @Nullable
   MediaStackCallback callback;
@@ -39,6 +40,22 @@ public class MediaStack {
     this.context = context;
     this.tdlib = tdlib;
     this.currentIndex = -1;
+  }
+
+  public void setReverseModeHint (boolean reverseModeHint) {
+    this.reverseModeHint = reverseModeHint;
+  }
+
+  public boolean getReverseModeHint (boolean defaultValue) {
+    return reverseModeHint != null ? reverseModeHint : defaultValue;
+  }
+
+  public void setForceThumbsHint (boolean forceThumbsHint) {
+    this.forceThumbsHint = forceThumbsHint;
+  }
+
+  public boolean getForceThumbsHint (boolean defaultValue) {
+    return forceThumbsHint != null ? forceThumbsHint : defaultValue;
   }
 
   public void set (MediaItem item) {
@@ -90,12 +107,14 @@ public class MediaStack {
     this.callback = callback;
   }
 
-  public void setEstimatedSize (int estimatedBefore, int estimatedAfter) {
+  public boolean setEstimatedSize (int estimatedBefore, int estimatedAfter) {
     if (this.estimatedBefore != estimatedBefore || this.estimatedAfter != estimatedAfter) {
       this.estimatedBefore = estimatedBefore;
       this.estimatedAfter = estimatedAfter;
       // notifyMediaChanged(false);
+      return true;
     }
+    return false;
   }
 
   public void insertItems (ArrayList<MediaItem> items, boolean onTop) {
@@ -192,6 +211,12 @@ public class MediaStack {
 
   public MediaItem lastAvalable () {
     return items != null ? items.get(items.size() - 1) : null;
+  }
+
+  public void onEndReached (boolean after) {
+    if (setEstimatedSize(after ? estimatedBefore : 0, after ? 0 : estimatedAfter)) {
+      notifyMediaChanged(true);
+    }
   }
 
   public int getCurrentIndex () {

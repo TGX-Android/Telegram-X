@@ -1007,8 +1007,8 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
   public void modifyMediaArguments (Object cause, MediaViewController.Args args) {
     args.delegate = new MediaViewDelegate() {
       @Override
-      public MediaViewThumbLocation getTargetLocation (int index, MediaItem item) {
-        if (index == 0) {
+      public MediaViewThumbLocation getTargetLocation (int indexInStack, MediaItem item) {
+        if (indexInStack == 0) {
           return getThumbLocation();
         }
         return null;
