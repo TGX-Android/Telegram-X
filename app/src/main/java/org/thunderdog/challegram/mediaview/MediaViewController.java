@@ -56,7 +56,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
-import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.MediaCollectorDelegate;
@@ -411,13 +410,13 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   private void setBottomAlpha (float alpha) {
     if (hasCaption() || mode == MODE_GALLERY) {
-      captionWrapView.setAlpha(alpha * headerVisibilityFactor * (1f - pipFactor));
+      captionWrapView.setAlpha(alpha * headerVisible.getFloatValue() * (1f - pipFactor));
     }
     if (videoSliderView != null) {
-      videoSliderView.setAlpha(alpha * headerVisibilityFactor * (1f - pipFactor));
+      videoSliderView.setAlpha(alpha * headerVisible.getFloatValue() * (1f - pipFactor));
     }
     if (thumbsRecyclerView != null) {
-      thumbsRecyclerView.setAlpha(alpha * headerVisibilityFactor * (1f - pipFactor));
+      thumbsRecyclerView.setAlpha(alpha * headerVisible.getFloatValue() * (1f - pipFactor));
     }
   }
 
@@ -1310,7 +1309,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private void setCaptionFactor (float factor) {
     if (this.captionFactor != factor) {
       this.captionFactor = factor;
-      captionWrapView.setAlpha(factor * headerVisibilityFactor);
+      captionWrapView.setAlpha(factor * headerVisible.getFloatValue());
     }
   }
 
@@ -1781,38 +1780,41 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
   }
 
-  private boolean headerVisible = true;
-  private float headerVisibilityFactor = 1f;
-
   private boolean toggleHeaderVisibility () {
     if (headerView != null) {
-      headerVisible = !headerVisible;
-      animateHeaderFactor(headerVisible ? 1f : 0f);
+      boolean isVisible = headerVisible.toggleValue(true);
+      // FIXME: currently there is a "jump" (by the height of navigation bar) effect upon entering/leaving full screen mode
+      // In order to properly fix it:
+      // 1. Bug in third-party dependency has to be fixed (caused by SubsamplingScaleImageView.java:1435-1436)
+      // 2. MediaViewController.dispatchInnerMargins should start passing non-zero values to MediaView
+      // 3. MediaCellView.setOffsets should start properly handling non-zero parameters (currently some of them are unsupported)
+      // For now, it is considered that having proper full-screen mode is more important
+      // than not seeing this visual "glitch".
+      //
+      // Leaving this comment for whoever going to invest time to properly resolve this issue in the future.
+      if (isVisible) {
+        context().removeHideNavigationView(this);
+      } else {
+        context().addHideNavigationView(this);
+      }
       return true;
     }
     return false;
   }
 
-  private FactorAnimator headerAnimator;
   private static final int ANIMATOR_HEADER = 7;
-
-  private void animateHeaderFactor (float toFactor) {
-    if (headerAnimator == null) {
-      headerAnimator = new FactorAnimator(ANIMATOR_HEADER, this, AnimatorUtils.DECELERATE_INTERPOLATOR, BOTTOM_ANIMATION_DURATION, headerVisibilityFactor);
-    }
-    headerAnimator.animateTo(toFactor);
-  }
+  private final BoolAnimator headerVisible = new BoolAnimator(ANIMATOR_HEADER, this, AnimatorUtils.DECELERATE_INTERPOLATOR, BOTTOM_ANIMATION_DURATION, true);
 
   private void updateCaptionAlpha () {
     if (captionWrapView != null) {
-      float alpha = captionFactor * headerVisibilityFactor * (1f - pipFactor);
+      float alpha = captionFactor * headerVisible.getFloatValue() * (1f - pipFactor);
       captionWrapView.setAlpha(alpha);
     }
   }
 
   private void updateSliderAlpha () {
     if (videoSliderView != null) {
-      float alpha = headerVisibilityFactor * (1f - pipFactor) * (inCaption ? 0f : 1f);
+      float alpha = headerVisible.getFloatValue() * (1f - pipFactor) * (inCaption ? 0f : 1f);
       videoSliderView.setAlpha(alpha);
     }
   }
@@ -1828,18 +1830,21 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   private void updateThumbsAlpha () {
     if (thumbsRecyclerView != null) {
-      thumbsRecyclerView.setAlpha(headerAlpha * headerVisibilityFactor * (1f - pipFactor));
+      thumbsRecyclerView.setAlpha(headerAlpha * headerVisible.getFloatValue() * (1f - pipFactor));
     }
   }
 
   private void updateHeaderAlpha () {
+    float alpha = MathUtils.clamp(headerVisible.getFloatValue() * (1f - pipFactor));
     if (headerView != null) {
-      headerView.setAlpha(headerVisibilityFactor * (1f - pipFactor));
+      headerView.setAlpha(alpha);
     }
+    /*if (bottomPaddingView != null) {
+      bottomPaddingView.setAlpha(alpha);
+    }*/
   }
 
   private void setHeaderVisibilityFactor (float factor) {
-    this.headerVisibilityFactor = factor;
     updateHeaderAlpha();
     updateCaptionAlpha();
     updateSliderAlpha();
@@ -3160,6 +3165,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private boolean ignoreCaptionUpdate;
 
   private boolean canRunFullscreen () {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && Config.CUTOUT_ENABLED && mode == MODE_MESSAGES) {
+      return true;
+    }
     return mode == MODE_SECRET && Build.VERSION.SDK_INT < Build.VERSION_CODES.O && Config.CUTOUT_ENABLED; // mode != MODE_GALLERY && mode != MODE_MESSAGES; // mode == MODE_PROFILE || mode == MODE_CHAT_PROFILE;
   }
 
@@ -3233,12 +3241,13 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private void checkBottomWrapY () {
     int thumbsDistance = Screen.dp(THUMBS_PADDING) * 2 + Screen.dp(THUMBS_HEIGHT);
     float offsetDistance = (float) measureBottomWrapHeight() * dismissFactor;
+    // int appliedBottomPadding = -this.appliedBottomPadding;
     if (bottomWrap != null) {
-      bottomWrap.setTranslationY(offsetDistance - (thumbsFactor * (float) thumbsDistance) * (1f - dismissFactor));
+      bottomWrap.setTranslationY(offsetDistance - (thumbsFactor * (float) thumbsDistance) * (1f - dismissFactor) - appliedBottomPadding);
     }
     if (thumbsRecyclerView != null) {
       float dy = ((float) thumbsDistance * Math.max((1f - thumbsFactor), dismissFactor));
-      thumbsRecyclerView.setTranslationY(offsetDistance + dy);
+      thumbsRecyclerView.setTranslationY(offsetDistance + dy - appliedBottomPadding);
     }
   }
 
@@ -4620,6 +4629,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       popupView.init(false);
     } else {
       popupView.init(true);
+      popupView.setIgnoreAllInsets(true);
     }
     popupView.setBoundController(this);
 
@@ -4852,7 +4862,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       case MODE_GALLERY: {
         TdApi.Chat chat = getArgumentsStrict().receiverChatId != 0 ? tdlib.chat(getArgumentsStrict().receiverChatId) : null;
 
-        mediaView.setOffsets(0, 0, 0); // Screen.dp(56f)
+        mediaView.setOffsets(0, 0, 0, 0, 0); // Screen.dp(56f)
         editWrap = new FrameLayoutFix(context);
         editWrap.setBackgroundColor(Theme.getColor(R.id.theme_color_transparentEditor));
         editWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(56f), Gravity.BOTTOM));
@@ -5448,6 +5458,15 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     return bottomInnerMargin;
   }
 
+  private int appliedBottomPadding;
+
+  private void setAppliedBottomPadding (int padding) {
+    if (this.appliedBottomPadding != padding) {
+      this.appliedBottomPadding = padding;
+      checkBottomWrapY();
+    }
+  }
+
   @Override
   public void dispatchInnerMargins (int left, int top, int right, int bottom) {
     boolean changed = this.bottomInnerMargin != bottom;
@@ -5462,7 +5481,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
     if (mediaView != null) {
       if (changed) {
-        mediaView.setOffsetBottom(getSectionBottomOffset(currentSection));
+        int offsetBottom = getSectionBottomOffset(currentSection);
+        mediaView.setNavigationalOffsets(0, 0, offsetBottom);
+        if (canRunFullscreen() && mode != MODE_SECRET) {
+          setAppliedBottomPadding(offsetBottom);
+        }
       }
       mediaView.layoutCells();
     }
@@ -5491,6 +5514,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
     tdlib.context().calls().removeCurrentCallListener(this);
     context.removeFullScreenView(this, true);
+    context.removeHideNavigationView(this);
     if (captionView instanceof Destroyable) {
       ((Destroyable) captionView).performDestroy();
     }
@@ -5705,6 +5729,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private int getSectionBottomOffset (int section) {
+    if (mode != MODE_GALLERY) {
+      return 0;
+    }
     int add = isFromCamera ? this.bottomInnerMargin : 0;
     switch (section) {
       case SECTION_CAPTION: {
@@ -7055,7 +7082,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private void resetMediaPaddings (int section) {
-    mediaView.setOffsets(getHorizontalOffsets(section), getSectionTopOffset(section), getSectionBottomOffset(section));
+    mediaView.setOffsets(getHorizontalOffsets(section), 0, getSectionTopOffset(section), 0, getSectionBottomOffset(section));
   }
 
   private static final int MODE_BACK_PRESS = 0;
@@ -7264,7 +7291,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     fromSection = currentSection;
     fromTopOffset = getSectionTopOffset(fromSection);
     fromBottomOffset = getSectionBottomOffset(fromSection);
-    fromHorOffset = /*fromSection == SECTION_CROP ? getHorizontalOffsets(fromSection) :*/ mediaView.getOffsetHorizontal(); // getHorizontalOffsets(fromSection);
+    fromHorOffset = /*fromSection == SECTION_CROP ? getHorizontalOffsets(fromSection) :*/ mediaView.getPaddingHorizontal(); // getHorizontalOffsets(fromSection);
 
     mediaView.getBaseCell().getDetector().preparePositionReset();
 
@@ -7449,7 +7476,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       currentTopOffset = fromTopOffset;
     }
 
-    mediaView.setOffsets(currentHorOffset, currentTopOffset, currentBottomOffset);
+    mediaView.setOffsets(currentHorOffset, 0, currentTopOffset, 0, currentBottomOffset);
   }
 
   private float mainSectionDisappearFactor;

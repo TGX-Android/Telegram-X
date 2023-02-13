@@ -157,6 +157,7 @@ public class MediaCellView extends ViewGroup implements
         return res;
       }
     };
+    this.subsamplingImageView.setPanLimit(SubsamplingScaleImageView.PAN_LIMIT_INSIDE);
     this.subsamplingImageView.setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CENTER_INSIDE);
     this.subsamplingImageView.setOrientation(SubsamplingScaleImageView.ORIENTATION_USE_EXIF);
     this.subsamplingImageView.setMaxScale(Float.MAX_VALUE);
@@ -288,7 +289,7 @@ public class MediaCellView extends ViewGroup implements
     final int parentWidth = getMeasuredWidth();
     final int parentHeight = getMeasuredHeight();
 
-    final int availWidth = fullWidth - offsetHorizontal * 2;
+    final int availWidth = fullWidth - paddingHorizontal * 2;
     final int availHeight = fullHeight - offsetBottom;
     int imageWidth, imageHeight;
     int imageWidthCropped, imageHeightCropped;
@@ -332,7 +333,7 @@ public class MediaCellView extends ViewGroup implements
     }
 
 
-    int centerX = offsetHorizontal + availWidth / 2;
+    int centerX = paddingHorizontal + availWidth / 2;
     int centerY = availHeight / 2;
 
     int exactLeft = centerX - imageWidth / 2;
@@ -443,7 +444,7 @@ public class MediaCellView extends ViewGroup implements
 
     final int childCount = getChildCount();
 
-    final int availWidth = fullWidth - offsetHorizontal * 2;
+    final int availWidth = fullWidth - paddingHorizontal * 2;
     final int availHeight = fullHeight - offsetBottom;
     int imageWidth, imageHeight;
     int imageWidthCropped, imageHeightCropped;
@@ -519,7 +520,7 @@ public class MediaCellView extends ViewGroup implements
 
       final int childCount = getChildCount();
 
-      final int availWidth = fullWidth - offsetHorizontal * 2;
+      final int availWidth = fullWidth - paddingHorizontal * 2;
       final int availHeight = fullHeight - offsetBottom;
       int imageWidth, imageHeight;
       if (media != null) {
@@ -565,7 +566,7 @@ public class MediaCellView extends ViewGroup implements
       final int parentWidth = getMeasuredWidth();
       final int parentHeight = getMeasuredHeight();
 
-      final int availWidth = fullWidth - offsetHorizontal * 2;
+      final int availWidth = fullWidth - paddingHorizontal * 2;
       final int availHeight = fullHeight - offsetBottom;
       int imageWidth, imageHeight;
       if (media != null) {
@@ -587,7 +588,7 @@ public class MediaCellView extends ViewGroup implements
         imageWidth *= ratio;
         imageHeight *= ratio;
       }
-      int centerX = offsetHorizontal + availWidth / 2;
+      int centerX = paddingHorizontal + availWidth / 2;
       int centerY = availHeight / 2;
       int exactLeft = centerX - imageWidth / 2;
       int exactRight = centerX + imageWidth / 2;
@@ -791,31 +792,39 @@ public class MediaCellView extends ViewGroup implements
 
   // Other
 
-  private int offsetTop, offsetBottom, offsetHorizontal;
+  private int offsetLeft, offsetTop, offsetRight, offsetBottom, paddingHorizontal;
   private int fullWidth, fullHeight;
 
-  public void layoutCell (int offsetLeft, int offsetTop, int offsetBottom, int width, int height) {
+  public void layoutCell (int paddingHorizontal, int offsetLeft, int offsetTop, int offsetRight, int offsetBottom, int width, int height) {
     this.fullWidth = width;
     this.fullHeight = height;
 
-    this.offsetHorizontal = offsetLeft;
+    this.paddingHorizontal = paddingHorizontal;
+    this.offsetLeft = offsetLeft;
     this.offsetTop = offsetTop;
+    this.offsetRight = offsetRight;
     this.offsetBottom = offsetBottom;
 
     layoutReceivers();
   }
 
-  public void setOffsets (int offsetLeft, int offsetTop, int offsetBottom) {
-    if (this.offsetHorizontal != offsetLeft || this.offsetTop != offsetTop || this.offsetBottom != offsetBottom) {
-      this.offsetHorizontal = offsetLeft;
+  public void setOffsets (int paddingHorizontal, int offsetLeft, int offsetTop, int offsetRight, int offsetBottom) {
+    if (this.paddingHorizontal != paddingHorizontal || this.offsetLeft != offsetLeft || this.offsetTop != offsetTop || this.offsetRight != offsetRight || this.offsetBottom != offsetBottom) {
+      this.paddingHorizontal = paddingHorizontal;
+      this.offsetLeft = offsetLeft;
       this.offsetTop = offsetTop;
+      this.offsetRight = offsetRight;
       this.offsetBottom = offsetBottom;
 
       layoutReceivers();
       invalidateImage();
+      // FIXME: bug inside SubsamplingImageView.java:1435-1436
+      // subsamplingImageView.setPadding(0, 0, 0, offsetBottom);
 
-      if (media != null && media.isVideo() && hideStaticView && playerView != null) {
-        playerView.requestLayout();
+      if (media != null) {
+        if (media.isVideo() && hideStaticView && playerView != null) {
+          playerView.requestLayout();
+        }
       }
     }
   }
@@ -876,13 +885,13 @@ public class MediaCellView extends ViewGroup implements
     }
 
     if (thumb == null || revealFactor == 1f || media == null) {
-      if (!receiver.setBounds(offsetHorizontal, offsetTop, fullWidth - offsetHorizontal, fullHeight - offsetBottom) && forceLayout) {
+      if (!receiver.setBounds(paddingHorizontal, offsetTop, fullWidth - paddingHorizontal, fullHeight - offsetBottom) && forceLayout) {
         receiver.forceBoundsLayout();
       }
-      if (!preview.setBounds(offsetHorizontal, offsetTop, fullWidth - offsetHorizontal, fullHeight - offsetBottom) && forceLayout) {
+      if (!preview.setBounds(paddingHorizontal, offsetTop, fullWidth - paddingHorizontal, fullHeight - offsetBottom) && forceLayout) {
         preview.forceBoundsLayout();
       }
-      if (!miniThumbnail.setBounds(offsetHorizontal, offsetTop, fullWidth - offsetHorizontal, fullHeight - offsetBottom) && forceLayout) {
+      if (!miniThumbnail.setBounds(paddingHorizontal, offsetTop, fullWidth - paddingHorizontal, fullHeight - offsetBottom) && forceLayout) {
         miniThumbnail.forceBoundsLayout();
       }
 
@@ -932,9 +941,9 @@ public class MediaCellView extends ViewGroup implements
       int left, top, right, bottom;
 
       if (revealFactor >= 0f) {
-        left = fromLeft + (int) ((float) (offsetHorizontal - fromLeft) * revealFactor) - clipHorizontal;
+        left = fromLeft + (int) ((float) (paddingHorizontal - fromLeft) * revealFactor) - clipHorizontal;
         top = fromTop + (int) ((float) (offsetTop - fromTop) * revealFactor) - clipVertical;
-        right = fromRight + (int) ((float) (fullWidth - offsetHorizontal - fromRight) * revealFactor) + clipHorizontal;
+        right = fromRight + (int) ((float) (fullWidth - paddingHorizontal - fromRight) * revealFactor) + clipHorizontal;
         bottom = fromBottom + (int) ((float) (fullHeight - offsetBottom - fromBottom) * revealFactor) + clipVertical;
       }/* else if (true) {
         left = fromLeft;
@@ -977,9 +986,9 @@ public class MediaCellView extends ViewGroup implements
       setPivotX(centerX);
       setPivotY(centerY);
 
-      int targetLeft = offsetHorizontal;
+      int targetLeft = paddingHorizontal;
       int targetTop = offsetTop;
-      int targetRight = fullWidth - offsetHorizontal;
+      int targetRight = fullWidth - paddingHorizontal;
       int targetBottom = fullHeight - offsetBottom;
 
       int targetWidth = targetRight - targetLeft;

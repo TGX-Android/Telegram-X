@@ -251,33 +251,33 @@ public class MediaView extends FrameLayoutFix {
     super.onMeasure(widthMeasureSpec, heightMeasureSpec);
   }
 
-  public void setOffsetHorizontal (int offsetHorizontal) {
-    if (this.offsetHorizontal != offsetHorizontal) {
-      setOffsets(offsetHorizontal, offsetTop, offsetBottom);
+  public void setPaddingHorizontal (int paddingHorizontal) {
+    if (this.paddingHorizontal != paddingHorizontal) {
+      setOffsets(paddingHorizontal, offsetLeft, offsetTop, offsetRight, offsetBottom);
     }
   }
 
-  public void setOffsets (int offsetHorizontal, int offsetTop, int offsetBottom) {
-    if (this.offsetHorizontal != offsetHorizontal || this.offsetTop != offsetTop || this.offsetBottom != offsetBottom) {
+  public void setOffsets (int paddingHorizontal, int offsetLeft, int offsetTop, int offsetRight, int offsetBottom) {
+    if (this.paddingHorizontal != paddingHorizontal || this.offsetTop != offsetTop || this.offsetBottom != offsetBottom) {
       this.offsetTop = offsetTop;
       this.offsetBottom = offsetBottom;
-      this.offsetHorizontal = offsetHorizontal;
+      this.paddingHorizontal = paddingHorizontal;
 
       if (layoutBuilt) {
-        baseCell.setOffsets(offsetHorizontal, offsetTop, offsetBottom);
+        baseCell.setOffsets(paddingHorizontal, offsetLeft, offsetTop, offsetRight, offsetBottom);
         if (previewCell != null) {
-          previewCell.setOffsets(offsetHorizontal, offsetTop, offsetBottom);
+          previewCell.setOffsets(paddingHorizontal, offsetLeft, offsetTop, offsetRight, offsetBottom);
         }
       }
     }
   }
 
-  public void setOffsetBottom (int bottom) {
-    setOffsets(this.offsetHorizontal, this.offsetTop, bottom);
+  public void setNavigationalOffsets (int left, int right, int bottom) {
+    setOffsets(this.paddingHorizontal, left, this.offsetTop, right, bottom);
   }
 
-  public int getOffsetHorizontal () {
-    return offsetHorizontal;
+  public int getPaddingHorizontal () {
+    return paddingHorizontal;
   }
 
   public int getOffsetBottom () {
@@ -296,7 +296,7 @@ public class MediaView extends FrameLayoutFix {
     baseCell.normalizeZoom();
   }
 
-  private int offsetTop, offsetBottom, offsetHorizontal;
+  private int offsetLeft, offsetTop, offsetRight, offsetBottom, paddingHorizontal;
   private boolean layoutBuilt;
 
   private void buildLayout (boolean animated) {
@@ -318,9 +318,9 @@ public class MediaView extends FrameLayoutFix {
 
   public void layoutCells () {
     int currentHeight = this.currentHeight + getBottomAdd();
-    baseCell.layoutCell(offsetHorizontal, offsetTop, offsetBottom, currentWidth, currentHeight);
+    baseCell.layoutCell(paddingHorizontal, offsetLeft, offsetTop, offsetRight, offsetBottom, currentWidth, currentHeight);
     if (previewCell != null) {
-      previewCell.layoutCell(offsetHorizontal, offsetTop, offsetBottom, currentWidth, currentHeight);
+      previewCell.layoutCell(paddingHorizontal, offsetLeft, offsetTop, offsetRight, offsetBottom, currentWidth, currentHeight);
     }
   }
 
@@ -797,7 +797,7 @@ public class MediaView extends FrameLayoutFix {
   }
 
   public int getActualImageWidth () {
-    return getMeasuredWidth() - offsetHorizontal - offsetHorizontal;
+    return getMeasuredWidth() - paddingHorizontal - paddingHorizontal;
   }
 
   @Override

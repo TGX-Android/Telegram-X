@@ -52,8 +52,12 @@ public class ClippingSubsamplingImageView extends SubsamplingScaleImageView {
       super.onDraw(canvas);
       return;
     }
-    float centerX = getMeasuredWidth() / 2f;
-    float centerY = getMeasuredHeight() / 2f;
+    int paddingLeft = getPaddingLeft();
+    int paddingTop = getPaddingTop();
+    int paddingRight = getPaddingRight();
+    int paddingBottom = getPaddingBottom();
+    float centerX = paddingLeft + (getMeasuredWidth() - paddingLeft - paddingRight) / 2f;
+    float centerY = paddingTop + (getMeasuredHeight() - paddingTop - paddingBottom) / 2f;
     int saveCount = Views.save(canvas);
     RectF rectF = Paints.getRectF();
     rectF.set(

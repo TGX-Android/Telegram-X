@@ -124,7 +124,6 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.ActivityPermissionResult;
 import org.thunderdog.challegram.util.AppUpdater;
 import org.thunderdog.challegram.util.KonfettiBuilder;
-import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.widget.BaseRootLayout;
 import org.thunderdog.challegram.widget.DragDropLayout;
 import org.thunderdog.challegram.widget.ForceTouchView;
@@ -747,6 +746,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   private static final int FULLSCREEN_FLAG_PASSCODE = 1 << 1; // Actually indicates fullscreen should not appear at all
   private static final int FULLSCREEN_FLAG_HAS_NO_FULLSCREEN_VIEWS = 1 << 2; // Actually indicates fullscreen should not appear at all
   private static final int FULLSCREEN_FLAG_HAS_FULLSCREEN_VIEWS = 1 << 3; // Actually indicates fullscreen should not appear at all
+  private static final int FULLSCREEN_FLAG_HIDE_NAVIGATION = 1 << 4; // Hide any navigation-related stuff for complete fullscreen
 
   private int fullScreenFlags;
 
@@ -755,6 +755,8 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     if (this.fullScreenFlags != flags) {
       this.fullScreenFlags = flags;
       setFullScreen(flags != 0 && !BitwiseUtils.getFlag(flags, FULLSCREEN_FLAG_PASSCODE) && !BitwiseUtils.getFlag(flags, FULLSCREEN_FLAG_HAS_NO_FULLSCREEN_VIEWS));
+      setHideNavigation(isFullscreen && BitwiseUtils.getFlag(flags, FULLSCREEN_FLAG_HIDE_NAVIGATION));
+      updateNavigationBarColor();
     }
   }
 
@@ -786,10 +788,22 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
   private boolean isFullscreen, cutoutIgnored;
 
+  private int computeUiVisibility () {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && isFullscreen) {
+      int uiVisibility = View.SYSTEM_UI_FLAG_LOW_PROFILE;
+      if (hideNavigation) {
+        uiVisibility |= View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
+      }
+      return uiVisibility;
+    }
+    return View.SYSTEM_UI_FLAG_VISIBLE;
+  }
+
   private void setFullScreen (boolean isFullscreen) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       if (this.isFullscreen != isFullscreen) {
         this.isFullscreen = isFullscreen;
+        this.hideNavigation = BitwiseUtils.getFlag(fullScreenFlags, FULLSCREEN_FLAG_HIDE_NAVIGATION);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && isFullscreen && (Config.CUTOUT_ENABLED || BitwiseUtils.getFlag(fullScreenFlags, FULLSCREEN_FLAG_CAMERA))) {
           cutoutIgnored = true;
           Window w = getWindow();
@@ -798,21 +812,40 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
           w.setAttributes(params);
         }
         setWindowFlags(isFullscreen ? WindowManager.LayoutParams.FLAG_FULLSCREEN : 0, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        if (isFullscreen) {
-          int uiVisibility =  View.SYSTEM_UI_FLAG_LOW_PROFILE;
-          /*if (hideNavigation) {
-            uiVisibility |= View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
-          }*/
-          setWindowDecorSystemUiVisibility(uiVisibility, true);
-        } else {
-          setWindowDecorSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE, true);
-        }
+        int uiVisibility = computeUiVisibility();
+        setWindowDecorSystemUiVisibility(uiVisibility, true);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && !isFullscreen && (Config.CUTOUT_ENABLED || cutoutIgnored)) {
           Window w = getWindow();
           WindowManager.LayoutParams params = w.getAttributes();
           params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT;
           w.setAttributes(params);
         }
+      }
+    }
+  }
+
+  private final List<ViewController<?>> hideNavigationViews = new ArrayList<>();
+
+  public void addHideNavigationView (ViewController<?> viewController) {
+    if (!hideNavigationViews.contains(viewController)) {
+      hideNavigationViews.add(viewController);
+      setFullScreenFlag(FULLSCREEN_FLAG_HIDE_NAVIGATION, true);
+    }
+  }
+
+  public void removeHideNavigationView (ViewController<?> viewController) {
+    if (hideNavigationViews.remove(viewController)) {
+      setFullScreenFlag(FULLSCREEN_FLAG_HIDE_NAVIGATION, !hideNavigationViews.isEmpty());
+    }
+  }
+
+  private boolean hideNavigation;
+
+  private void setHideNavigation (boolean hideNavigation) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+      if (this.hideNavigation != hideNavigation) {
+        this.hideNavigation = hideNavigation;
+        setWindowDecorSystemUiVisibility(computeUiVisibility(), true);
       }
     }
   }
