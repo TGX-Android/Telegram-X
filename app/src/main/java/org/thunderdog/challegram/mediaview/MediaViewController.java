@@ -1550,7 +1550,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         }
 
         if (!ids.isEmpty()) {
-          showMore(ids.get(), strings.get(), 0);
+          showMore(ids.get(), strings.get(), 0, canRunFullscreen());
         }
 
         break;

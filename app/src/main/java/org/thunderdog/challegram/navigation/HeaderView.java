@@ -1059,8 +1059,12 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     }
     PopupLayout popupLayout = new PopupLayout(getContext());
     popupLayout.init(true);
-    popupLayout.setNeedRootInsets();
-    popupLayout.setOverlayStatusBar(true);
+    if (!isLayered) {
+      popupLayout.setNeedRootInsets();
+      popupLayout.setOverlayStatusBar(true);
+    } else {
+      popupLayout.setIgnoreAllInsets(true);
+    }
     /*if (!isLayered) {
       popupLayout.setNeedRootInsets();
     }*/
