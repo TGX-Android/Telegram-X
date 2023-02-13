@@ -132,6 +132,7 @@ import org.thunderdog.challegram.widget.PopupLayout;
 
 import java.lang.ref.Reference;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import me.vkryl.android.AnimatorUtils;
@@ -745,6 +746,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   private static final int FULLSCREEN_FLAG_PASSCODE = 1 << 1; // Actually indicates fullscreen should not appear at all
   private static final int FULLSCREEN_FLAG_HAS_NO_FULLSCREEN_VIEWS = 1 << 2; // Actually indicates fullscreen should not appear at all
   private static final int FULLSCREEN_FLAG_HAS_FULLSCREEN_VIEWS = 1 << 3; // Actually indicates fullscreen should not appear at all
+  private static final int FULLSCREEN_FLAG_HIDE_NAVIGATION = 1 << 4; // Hide any navigation-related stuff for complete fullscreen
 
   private int fullScreenFlags;
 
@@ -753,6 +755,8 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     if (this.fullScreenFlags != flags) {
       this.fullScreenFlags = flags;
       setFullScreen(flags != 0 && !BitwiseUtils.getFlag(flags, FULLSCREEN_FLAG_PASSCODE) && !BitwiseUtils.getFlag(flags, FULLSCREEN_FLAG_HAS_NO_FULLSCREEN_VIEWS));
+      setHideNavigation(isFullscreen && BitwiseUtils.getFlag(flags, FULLSCREEN_FLAG_HIDE_NAVIGATION));
+      updateNavigationBarColor();
     }
   }
 
@@ -784,10 +788,22 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
   private boolean isFullscreen, cutoutIgnored;
 
+  private int computeUiVisibility () {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && isFullscreen) {
+      int uiVisibility = View.SYSTEM_UI_FLAG_LOW_PROFILE;
+      if (hideNavigation) {
+        uiVisibility |= View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
+      }
+      return uiVisibility;
+    }
+    return View.SYSTEM_UI_FLAG_VISIBLE;
+  }
+
   private void setFullScreen (boolean isFullscreen) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       if (this.isFullscreen != isFullscreen) {
         this.isFullscreen = isFullscreen;
+        this.hideNavigation = BitwiseUtils.getFlag(fullScreenFlags, FULLSCREEN_FLAG_HIDE_NAVIGATION);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && isFullscreen && (Config.CUTOUT_ENABLED || BitwiseUtils.getFlag(fullScreenFlags, FULLSCREEN_FLAG_CAMERA))) {
           cutoutIgnored = true;
           Window w = getWindow();
@@ -796,21 +812,40 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
           w.setAttributes(params);
         }
         setWindowFlags(isFullscreen ? WindowManager.LayoutParams.FLAG_FULLSCREEN : 0, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-        if (isFullscreen) {
-          int uiVisibility =  View.SYSTEM_UI_FLAG_LOW_PROFILE;
-          /*if (hideNavigation) {
-            uiVisibility |= View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
-          }*/
-          setWindowDecorSystemUiVisibility(uiVisibility, true);
-        } else {
-          setWindowDecorSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE, true);
-        }
+        int uiVisibility = computeUiVisibility();
+        setWindowDecorSystemUiVisibility(uiVisibility, true);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && !isFullscreen && (Config.CUTOUT_ENABLED || cutoutIgnored)) {
           Window w = getWindow();
           WindowManager.LayoutParams params = w.getAttributes();
           params.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT;
           w.setAttributes(params);
         }
+      }
+    }
+  }
+
+  private final List<ViewController<?>> hideNavigationViews = new ArrayList<>();
+
+  public void addHideNavigationView (ViewController<?> viewController) {
+    if (!hideNavigationViews.contains(viewController)) {
+      hideNavigationViews.add(viewController);
+      setFullScreenFlag(FULLSCREEN_FLAG_HIDE_NAVIGATION, true);
+    }
+  }
+
+  public void removeHideNavigationView (ViewController<?> viewController) {
+    if (hideNavigationViews.remove(viewController)) {
+      setFullScreenFlag(FULLSCREEN_FLAG_HIDE_NAVIGATION, !hideNavigationViews.isEmpty());
+    }
+  }
+
+  private boolean hideNavigation;
+
+  private void setHideNavigation (boolean hideNavigation) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+      if (this.hideNavigation != hideNavigation) {
+        this.hideNavigation = hideNavigation;
+        setWindowDecorSystemUiVisibility(computeUiVisibility(), true);
       }
     }
   }
@@ -1833,7 +1868,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
   // ReactionPreview
 
-  public void openReactionPreview (Tdlib tdlib, StickerSmallView stickerView, TGReaction reaction, int cx, int cy, int maxWidth, int viewportHeight, boolean disableEmojis) {
+  public void openReactionPreview (Tdlib tdlib, StickerSmallView stickerView, TGReaction reaction, @Nullable TGStickerObj effectAnimation, int cx, int cy, int maxWidth, int viewportHeight, boolean disableEmojis) {
     if (stickerPreview != null) {
       return;
     }
@@ -1842,7 +1877,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
     stickerPreview = new StickerPreviewView(this);
     stickerPreview.setControllerView(stickerPreviewControllerView);
-    stickerPreview.setReaction(tdlib, reaction, cx, cy, maxWidth, viewportHeight, disableEmojis);
+    stickerPreview.setReaction(tdlib, reaction, effectAnimation, cx, cy, maxWidth, viewportHeight, disableEmojis);
 
     stickerPreviewWindow = new PopupLayout(this);
     stickerPreviewWindow.setBackListener(stickerPreview);
@@ -2262,12 +2297,48 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     }
   }
 
-  public void requestReadWritePermissions () {
+  public static final int RW_MODE_NORMAL = 0, RW_MODE_GALLERY = 1, RW_MODE_FILES = 2;
+
+  public static boolean isRegularReadWritePermission (@NonNull String permission) {
+    switch (permission) {
+      case Manifest.permission.READ_EXTERNAL_STORAGE:
+      case Manifest.permission.WRITE_EXTERNAL_STORAGE:
+        return true;
+    }
+    return false;
+  }
+
+  public static String[] getReadWritePermissions (int mode) {
+    List<String> permissions = new ArrayList<>();
+    Collections.addAll(permissions,
+      Manifest.permission.READ_EXTERNAL_STORAGE,
+      Manifest.permission.WRITE_EXTERNAL_STORAGE
+    );
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      switch (mode) {
+        case RW_MODE_NORMAL:
+          break;
+        case RW_MODE_GALLERY:
+          Collections.addAll(permissions,
+            Manifest.permission.READ_MEDIA_IMAGES,
+            Manifest.permission.READ_MEDIA_VIDEO
+          );
+          break;
+        case RW_MODE_FILES:
+          Collections.addAll(permissions,
+            Manifest.permission.READ_MEDIA_IMAGES,
+            Manifest.permission.READ_MEDIA_VIDEO,
+            Manifest.permission.READ_MEDIA_AUDIO
+          );
+      }
+    }
+    return permissions.toArray(new String[0]);
+  }
+
+  public void requestReadWritePermissions (int mode) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      requestPermissions(new String[] {
-        Manifest.permission.READ_EXTERNAL_STORAGE,
-        Manifest.permission.WRITE_EXTERNAL_STORAGE
-      }, REQUEST_READ_STORAGE);
+      String[] permissions = getReadWritePermissions(mode);
+      requestPermissions(permissions, REQUEST_READ_STORAGE);
     }
   }
 
@@ -2285,7 +2356,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       if (skipAlert) {
         requestLocationPermissionImpl(needBackground, handler);
       } else {
-        ModernOptions.showLocationAlert(this, needBackground, onCancel, () -> {
+        ModernOptions.showLocationAlert(navigation.getCurrentStackItem(), needBackground, onCancel, () -> {
           requestLocationPermissionImpl(needBackground, handler);
         });
       }
@@ -2490,7 +2561,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
   private boolean canOpenCamera () {
     return !(
-      getCurrentPopupWindow() != null ||
+      // getCurrentPopupWindow() != null ||
       (cameraAnimator != null && cameraAnimator.isAnimating()) ||
       activityState != UI.STATE_RESUMED ||
       recordAudioVideoController.isOpen() ||
@@ -2561,7 +2632,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   public boolean startCameraDrag (ViewController.CameraOpenOptions options, boolean isOpen) { // User has slided enough to start dragging
-    if (isCameraOpen == isOpen || !canOpenCamera() || isKeyboardVisible()) {
+    if (isCameraOpen == isOpen || !canOpenCamera() /*|| isKeyboardVisible()*/) {
       return false;
     }
     if (isOpen) {

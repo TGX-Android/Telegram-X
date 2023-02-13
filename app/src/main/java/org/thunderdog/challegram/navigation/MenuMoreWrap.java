@@ -16,6 +16,7 @@ package org.thunderdog.challegram.navigation;
 
 import android.animation.Animator;
 import android.content.Context;
+import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
@@ -25,6 +26,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Interpolator;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -32,24 +34,37 @@ import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.loader.AvatarReceiver;
+import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.theme.ThemeListenerList;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.Animated;
+import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.ColorUtils;
+import me.vkryl.core.MathUtils;
+import me.vkryl.core.StringUtils;
+import me.vkryl.td.Td;
 
 public class MenuMoreWrap extends LinearLayout implements Animated {
+  public static final int ITEM_HEIGHT = 48;
+  public static final int PADDING = 8;
+
   public static final float START_SCALE = .56f;
 
   public static final long REVEAL_DURATION = 258l;
@@ -57,16 +72,20 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
 
   public static final int ANCHOR_MODE_RIGHT = 0;
   public static final int ANCHOR_MODE_HEADER = 1;
+  public static final int ANCHOR_MODE_CENTER = 2;
 
   // private int currentWidth;
   private int anchorMode;
 
   private @Nullable ThemeListenerList themeListeners;
   private @Nullable ThemeDelegate forcedTheme;
-
+  private final ComplexReceiver complexAvatarReceiver;
 
   public MenuMoreWrap (Context context) {
     super(context);
+    setWillNotDraw(false);
+    complexAvatarReceiver = new ComplexReceiver(this);
+    factorAnimator.forceFactor(-1);
   }
 
   public void updateDirection () {
@@ -111,6 +130,10 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
           params.gravity = Gravity.TOP | (Lang.rtl() ? Gravity.LEFT : Gravity.RIGHT);
           break;
         }
+        case ANCHOR_MODE_CENTER: {
+          params.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+          break;
+        }
         case ANCHOR_MODE_HEADER: {
           params.gravity = Gravity.TOP | (Lang.rtl() ? Gravity.RIGHT : Gravity.LEFT);
           setTranslationX(Lang.rtl() ? -Screen.dp(46f) : Screen.dp(46f));
@@ -153,6 +176,109 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     menuItem.setTag(menuItem.getMeasuredWidth());
   }
 
+  public View addItem (@Nullable Tdlib tdlib, HapticMenuHelper.MenuItem menuItem, OnClickListener listener) {
+    if ((StringUtils.isEmpty(menuItem.subtitle) && menuItem.messageSenderId == null) || tdlib == null) {
+      return addItem(menuItem.id, menuItem.title, menuItem.iconResId, menuItem.icon, listener);
+    }
+
+    final int maxWidth = Screen.dp(250);
+    final int textRightOffset = Screen.dp(menuItem.isLocked ? 41: 17);
+    final Drawable finalIcon = menuItem.iconResId != 0 ? Drawables.get(getResources(), menuItem.iconResId) : menuItem.icon;
+    final AvatarReceiver receiver = (menuItem.messageSenderId != null && menuItem.iconResId == 0) ?
+      complexAvatarReceiver.getAvatarReceiver(Td.getSenderId(menuItem.messageSenderId)) : null;
+    if (receiver != null) {
+      receiver.requestMessageSender(tdlib, menuItem.messageSenderId, AvatarReceiver.Options.NONE);
+    }
+
+    FrameLayout.LayoutParams lp = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(ITEM_HEIGHT), Gravity.LEFT);
+    FrameLayout frameLayout = new FrameLayout(getContext()) {
+      @Override
+      protected void onDraw (Canvas canvas) {
+        super.onDraw(canvas);
+        if (receiver != null) {
+          receiver.draw(canvas);
+        }
+
+        if (menuItem.isLocked) {
+          Drawable icon = Drawables.get(getResources(), R.drawable.baseline_lock_16);
+          if (icon != null) {
+            float x = getMeasuredWidth() - Screen.dp(17 + 16);
+            float y = (getMeasuredHeight() - icon.getMinimumHeight()) / 2f;
+            Drawables.draw(canvas, icon, x, y, Paints.getPorterDuffPaint(Theme.getColor(R.id.theme_color_text)));
+          }
+        }
+
+        if (finalIcon != null) {
+          canvas.save();
+          canvas.translate(Screen.dp(29) - finalIcon.getMinimumWidth() / 2f, (getMeasuredHeight() - finalIcon.getMinimumHeight()) / 2f);
+          if (menuItem.iconResId == 0) {
+            finalIcon.draw(canvas);
+          } else {
+            Drawables.draw(canvas, finalIcon, 0, 0, PorterDuffPaint.get(R.id.theme_color_icon));
+          }
+          canvas.restore();
+        }
+      }
+    };
+
+    frameLayout.setLayoutParams(lp);
+    frameLayout.setId(menuItem.id);
+    frameLayout.setOnClickListener(listener);
+    frameLayout.setWillNotDraw(false);
+    if (receiver != null) {
+      receiver.setBounds(Screen.dp(19), Screen.dp(ITEM_HEIGHT / 2f - 10), Screen.dp(39), Screen.dp(ITEM_HEIGHT / 2f + 10));
+      receiver.setUpdateListener(r -> frameLayout.invalidate());
+    }
+
+    TextView titleTextItem = new NoScrollTextView(getContext());
+    titleTextItem.setTypeface(Fonts.getRobotoRegular());
+    titleTextItem.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16f);
+    titleTextItem.setText(menuItem.title);
+    titleTextItem.setGravity(Gravity.TOP | Lang.gravity());
+    titleTextItem.setSingleLine(true);
+    titleTextItem.setEllipsize(TextUtils.TruncateAt.END);
+    titleTextItem.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(ITEM_HEIGHT)));
+    titleTextItem.setPadding(Screen.dp(59f), Screen.dp(5f), textRightOffset, 0);
+    titleTextItem.setMaxWidth(maxWidth);
+
+    TextView subtitleTextItem = new NoScrollTextView(getContext());
+    subtitleTextItem.setTypeface(Fonts.getRobotoRegular());
+    subtitleTextItem.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11f);
+    subtitleTextItem.setText(menuItem.subtitle);
+    subtitleTextItem.setGravity(Gravity.BOTTOM | Lang.gravity());
+    subtitleTextItem.setSingleLine(true);
+    subtitleTextItem.setEllipsize(TextUtils.TruncateAt.END);
+    subtitleTextItem.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(ITEM_HEIGHT)));
+    subtitleTextItem.setPadding(Screen.dp(59f), 0, textRightOffset, Screen.dp(8f));
+    subtitleTextItem.setMaxWidth(maxWidth);
+
+    if (forcedTheme != null) {
+      titleTextItem.setTextColor(forcedTheme.getColor(R.id.theme_color_text));
+      subtitleTextItem.setTextColor(forcedTheme.getColor(R.id.theme_color_textLight));
+    } else {
+      titleTextItem.setTextColor(Theme.textAccentColor());
+      subtitleTextItem.setTextColor(Theme.getColor(R.id.theme_color_textLight));
+      if (themeListeners != null) {
+        themeListeners.addThemeTextAccentColorListener(titleTextItem);
+        themeListeners.addThemeTextAccentColorListener(subtitleTextItem);
+      }
+    }
+
+    if (themeListeners != null) {
+      themeListeners.addThemeInvalidateListener(frameLayout);
+    }
+
+    frameLayout.addView(titleTextItem);
+    frameLayout.addView(subtitleTextItem);
+
+    Views.setClickable(frameLayout);
+    RippleSupport.setTransparentSelector(frameLayout);
+    addView(frameLayout);
+    frameLayout.measure(MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
+    frameLayout.setTag(frameLayout.getMeasuredWidth());
+    return frameLayout;
+  }
+
   public TextView addItem (int id, CharSequence title, int iconRes, Drawable icon, OnClickListener listener) {
     TextView menuItem = new NoScrollTextView(getContext());
     menuItem.setId(id);
@@ -171,7 +297,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     menuItem.setSingleLine(true);
     menuItem.setEllipsize(TextUtils.TruncateAt.END);
     menuItem.setOnClickListener(listener);
-    menuItem.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(48f)));
+    menuItem.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(ITEM_HEIGHT)));
     menuItem.setPadding(Screen.dp(17f), 0, Screen.dp(17f), 0);
     menuItem.setCompoundDrawablePadding(Screen.dp(18f));
     icon = iconRes != 0 ? Drawables.get(getResources(), iconRes) : icon;
@@ -207,7 +333,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
   }
 
   public int getItemsWidth () {
-    int padding = Screen.dp(8f);
+    int padding = Screen.dp(PADDING);
     int childCount = getChildCount();
     int maxWidth = 0;
     for (int i = 0; i < childCount; i++) {
@@ -230,8 +356,8 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
   }
 
   public int getItemsHeight () {
-    int itemHeight = Screen.dp(48f);
-    int padding = Screen.dp(8f);
+    int itemHeight = Screen.dp(ITEM_HEIGHT);
+    int padding = Screen.dp(PADDING);
     int total = 0;
     int childCount = getChildCount();
     for (int i = 0; i < childCount; i++) {
@@ -269,5 +395,90 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
       pendingAction.run();
       pendingAction = null;
     }
+  }
+
+  private FactorAnimator factorAnimator = new FactorAnimator(0, (a, b, c, d) -> invalidate(), AnimatorUtils.DECELERATE_INTERPOLATOR, 250L);
+  private int lastSelectedIndex = -1;
+
+  public void processMoveEvent (View v, float x, float y, float startX, float startY) {
+    int[] location = Views.getLocationOnScreen(v);
+    int sourceX = location[0] + (int) x;
+    int sourceY = location[1] + (int) y;
+    location = Views.getLocationOnScreen(this);
+    int innerX = sourceX - location[0];
+    int innerY = sourceY - location[1];
+
+    int index = Math.floorDiv(innerY - Screen.dp(PADDING), Screen.dp(ITEM_HEIGHT));
+    setSelectedIndex(index == MathUtils.clamp(index, 0, getChildCount() - 1) ? index: -1);
+
+    // Log.i("HAPTIC INNER", String.format("INDEX %d", index));
+  }
+
+  public void onApply () {
+    if (lastSelectedIndex != -1) {
+      View v = getChildAt(lastSelectedIndex);
+      if (v != null) v.callOnClick();
+    }
+  }
+
+  private void setSelectedIndex (int index) {
+    if (index == lastSelectedIndex) return;
+    if (lastSelectedIndex == -1 || index == -1) {
+      factorAnimator.forceFactor(index);
+    } else {
+      factorAnimator.animateTo(index);
+    }
+    lastSelectedIndex = index;
+    invalidate();
+  }
+
+  private int bubbleTailX = -1;
+
+  public void setBubbleTailX (int bubbleTailX) {
+    this.bubbleTailX = bubbleTailX;
+    invalidate();
+  }
+
+  @Override
+  protected void onDraw (Canvas canvas) {
+    if (bubbleTailX > 0) {
+      float cx = bubbleTailX;
+      float cy = getMeasuredHeight() - Screen.dp(PADDING);
+      canvas.save();
+      canvas.rotate(45f, cx, cy);
+      canvas.drawRect(
+        cx - Screen.dp(4.5f),
+        cy - Screen.dp(4.5f),
+        cx + Screen.dp(4.5f),
+        cy + Screen.dp(4.5f),
+        Paints.fillingPaint(Theme.fillingColor())
+      );
+      canvas.restore();
+    }
+
+    if (lastSelectedIndex != -1) {
+      int childCount = getChildCount();
+      for (int i = 0; i < childCount; i++) {
+        final float alpha = MathUtils.clamp(1f - Math.abs(factorAnimator.getFactor() - i));
+        if (alpha > 0f) {
+          canvas.drawRect(Screen.dp(PADDING), Screen.dp(PADDING + ITEM_HEIGHT * i), getMeasuredWidth() - Screen.dp(PADDING), Screen.dp(PADDING + ITEM_HEIGHT * (i + 1)), Paints.fillingPaint(ColorUtils.alphaColor(alpha * 0.05f, Theme.getColor(R.id.theme_color_text))));
+        }
+      }
+    }
+
+
+    super.onDraw(canvas);
+  }
+
+  @Override
+  protected void onAttachedToWindow () {
+    super.onAttachedToWindow();
+    complexAvatarReceiver.attach();
+  }
+
+  @Override
+  protected void onDetachedFromWindow () {
+    super.onDetachedFromWindow();
+    complexAvatarReceiver.detach();
   }
 }

@@ -27,7 +27,6 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.ReactionsListAnimator;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.TextColorSet;
@@ -486,16 +485,20 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
     return new TdApi.MessageReaction(reactionType, 0, false, new TdApi.MessageSender[0]);
   }
 
-  public boolean sendReaction (TdApi.ReactionType reactionType, boolean isBig, Client.ResultHandler handler) {
-    TdApi.Message message = parent.getFirstMessageInCombined();
+  public boolean hasReaction (TdApi.ReactionType reactionType) {
     String reactionKey = TD.makeReactionKey(reactionType);
-    boolean needUnset = chosenReactions.contains(reactionKey) && !isBig;
-    if (needUnset) {
-      tdlib.client().send(new TdApi.RemoveMessageReaction(parent.getChatId(), message.id, reactionType), handler);
+    return chosenReactions.contains(reactionKey);
+  }
+
+  public boolean toggleReaction (TdApi.ReactionType reactionType, boolean isBig, boolean updateRecentReactions, Client.ResultHandler handler) {
+    TdApi.Message message = parent.getOldestMessage();
+    boolean hasReaction = !hasReaction(reactionType);
+    if (hasReaction) {
+      tdlib.client().send(new TdApi.AddMessageReaction(parent.getChatId(), message.id, reactionType, isBig, updateRecentReactions), handler);
     } else {
-      tdlib.client().send(new TdApi.AddMessageReaction(parent.getChatId(), message.id, reactionType, isBig, false), handler);
+      tdlib.client().send(new TdApi.RemoveMessageReaction(parent.getChatId(), message.id, reactionType), handler);
     }
-    return !needUnset;
+    return hasReaction;
   }
 
   public static class MessageReactionEntry implements TextColorSet, FactorAnimator.Target {

@@ -698,7 +698,7 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
               NavigationStack stack = navigationStack();
               if (stack != null) {
                 MessagesController c = new MessagesController(context, tdlib);
-                c.setArguments(new MessagesController.Arguments(args.callback.provideChatList(this), tdlib.chatStrict(args.chatId), messageThread, null, MessagesManager.HIGHLIGHT_MODE_NONE, null).setScheduled(true));
+                c.setArguments(new MessagesController.Arguments(args.callback.provideChatList(this), tdlib.chatStrict(args.chatId), /* messageThread */ null, null, MessagesManager.HIGHLIGHT_MODE_NONE, null).setScheduled(true));
                 stack.insertBack(c);
               }
             }

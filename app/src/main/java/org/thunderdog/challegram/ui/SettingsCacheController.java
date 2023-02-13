@@ -226,7 +226,7 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
         if (entry != null) {
           textView.setText(entry.getTitle(), isCleaningUp && ArrayUtils.contains(busyChatIds, item.getLongId()) ? Lang.getString(R.string.CleaningUp) : Strings.buildSize(entry.getSize()));
           textView.setTitleColorId(entry.isSecret() ? R.id.theme_color_textSecure : entry.isSelfChat() ? R.id.theme_color_textNeutral : R.id.theme_color_text);
-          textView.setAvatar(entry.getAvatarFile(), entry.getAvatarPlaceholderMetadata());
+          textView.setChatAvatar(tdlib, entry.getId());
         }
       }
     };
@@ -508,12 +508,12 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
             if (reset) {
               Settings.instance().disableAllLogs();
             }
-            Settings.instance().deleteAllLogs(this::reloadFastStats);
+            Settings.instance().deleteAllLogs(true, this::reloadFastStats);
           }));
         } else {
           showOptions(Lang.getString(R.string.AppLogsClear), new int[] {R.id.btn_deleteFile, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearX, Strings.buildSize(fastStats.getLogsSize())), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
             if (id == R.id.btn_deleteFile) {
-              Settings.instance().deleteAllLogs(this::reloadFastStats);
+              Settings.instance().deleteAllLogs(true, this::reloadFastStats);
             }
             return true;
           });

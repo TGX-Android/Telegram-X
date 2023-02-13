@@ -20,7 +20,7 @@ import org.thunderdog.challegram.widget.PopupLayout;
 
 import java.util.ArrayList;
 
-public class MessageOptionsSeenController extends MessageOptionsPagerController.MessageBottomSheetBaseController<Void> implements View.OnClickListener {
+public class MessageOptionsSeenController extends BottomSheetViewController.BottomSheetBaseRecyclerViewController<Void> implements View.OnClickListener {
   private SettingsAdapter adapter;
   private PopupLayout popupLayout;
   private TGMessage message;

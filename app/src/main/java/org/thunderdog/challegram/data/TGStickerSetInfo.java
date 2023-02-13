@@ -24,6 +24,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.sticker.StickerSetWrap;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -83,6 +84,9 @@ public class TGStickerSetInfo {
         case TdApi.ThumbnailFormatGif.CONSTRUCTOR:
           gifType = GifFile.TYPE_GIF;
           break;
+        case TdApi.ThumbnailFormatJpeg.CONSTRUCTOR:
+        case TdApi.ThumbnailFormatPng.CONSTRUCTOR:
+        case TdApi.ThumbnailFormatWebp.CONSTRUCTOR:
         default:
           gifType = -1;
           break;

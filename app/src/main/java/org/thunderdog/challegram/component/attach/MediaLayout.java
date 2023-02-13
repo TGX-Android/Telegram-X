@@ -19,8 +19,11 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.annotation.TargetApi;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Canvas;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -28,6 +31,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -62,15 +66,19 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeChangeListener;
 import org.thunderdog.challegram.theme.ThemeListenerList;
 import org.thunderdog.challegram.theme.ThemeManager;
+import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Intents;
+import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.CreatePollController;
 import org.thunderdog.challegram.ui.MessagesController;
+import org.thunderdog.challegram.ui.SetSenderController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.HapticMenuHelper;
+import org.thunderdog.challegram.widget.AvatarView;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.ShadowView;
@@ -594,10 +602,24 @@ public class MediaLayout extends FrameLayoutFix implements
       }
       case 1: {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-          if (getContext().checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ||
-              getContext().checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            requestedPermissionIndex = toIndex;
-            ((BaseActivity) getContext()).requestReadWritePermissions();
+          String[] permissions = BaseActivity.getReadWritePermissions(BaseActivity.RW_MODE_FILES);
+          int grantedSpecialPermissionCount = 0;
+          int grantedPermissionCount = 0;
+          int regularPermissionCount = 0;
+          for (String permission : permissions) {
+            boolean isRegularPermission = BaseActivity.isRegularReadWritePermission(permission);
+            if (isRegularPermission) {
+              regularPermissionCount++;
+            }
+            if (getContext().checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED) {
+              grantedPermissionCount++;
+              if (!isRegularPermission) {
+                grantedSpecialPermissionCount++;
+              }
+            }
+          }
+          if (grantedPermissionCount != permissions.length && !(grantedSpecialPermissionCount > 0 && grantedSpecialPermissionCount == permissions.length - regularPermissionCount)) {
+            UI.getContext(getContext()).requestReadWritePermissions(BaseActivity.RW_MODE_FILES);
             return false;
           }
         }
@@ -703,6 +725,9 @@ public class MediaLayout extends FrameLayoutFix implements
     float y = height - (int) ((float) height * factor);
     if (!inSpecificMode()) {
       if (bottomBar != null) {
+        if (currentController != null) {
+          currentController.onUpdateBottomBarFactor(bottomBarFactor, counterFactor, y);
+        }
         bottomBar.setTranslationY(y);
         onCurrentColorChanged();
       }
@@ -920,10 +945,23 @@ public class MediaLayout extends FrameLayoutFix implements
     animator.setInterpolator(AnimatorUtils.DECELERATE_INTERPOLATOR);
   }
 
+  private ViewController.CameraOpenOptions cameraOpenOptions;
+
+  public void hidePopupAndOpenCamera (ViewController.CameraOpenOptions params) {
+    this.cameraOpenOptions = params;
+    forceHide();
+  }
+
   // Popup
 
   @Override
   public void onPopupDismiss (PopupLayout popup) {
+    if (cameraOpenOptions != null) {
+      MessagesController c = parentMessageController();
+      if (c != null && !c.isDestroyed()) {
+        c.openInAppCamera(cameraOpenOptions);
+      }
+    }
     performDestroy();
   }
 
@@ -957,7 +995,7 @@ public class MediaLayout extends FrameLayoutFix implements
 
   public void chooseInlineBot (TGUser user) {
     if (user.getUser() != null && target != null) {
-      target.onUsernamePick(user.getUser().username);
+      target.onUsernamePick(Td.primaryUsername(user.getUser()));
     }
     showKeyboardOnHide = true;
     hide(false);
@@ -1193,6 +1231,7 @@ public class MediaLayout extends FrameLayoutFix implements
   private BackHeaderButton closeButton;
   private TextView counterHintView;
   private ImageView groupMediaView;
+  private @Nullable SenderSendIcon senderSendIcon;
 
   private float groupMediaFactor;
   private boolean needGroupMedia;
@@ -1275,14 +1314,29 @@ public class MediaLayout extends FrameLayoutFix implements
       sendButton.setOnClickListener(this);
       bottomBar.addView(sendButton);
 
+      TdApi.Chat chat = getTargetChat();
+      if (chat != null && chat.messageSenderId != null) {
+        senderSendIcon = new SenderSendIcon(getContext(), tdlib(), chat.id);
+        senderSendIcon.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(19), Screen.dp(19), Gravity.RIGHT | Gravity.BOTTOM, 0, 0, Screen.dp(11), Screen.dp(8)));
+        senderSendIcon.update(chat.messageSenderId);
+        bottomBar.addView(senderSendIcon);
+      }
+
       sendMenu = new HapticMenuHelper(list -> {
         List<HapticMenuHelper.MenuItem> items = tdlib().ui().fillDefaultHapticMenu(getTargetChatId(), false, getCurrentController().canRemoveMarkdown(), true);
         if (items == null)
           items = new ArrayList<>();
         getCurrentController().addCustomItems(items);
+        if (senderSendIcon != null) {
+          items.add(0, senderSendIcon.createHapticSenderItem(getTargetChat()));
+        }
         return !items.isEmpty() ? items : null;
-      }, (menuItem, parentView) -> {
+      }, (menuItem, parentView, item) -> {
         switch (menuItem.getId()) {
+          case R.id.btn_openSendersMenu: {
+            openSetSenderPopup();
+            break;
+          }
           case R.id.btn_sendNoMarkdown:
             pickDateOrProceed((sendOptions, disableMarkdown) ->
               getCurrentController().onMultiSendPress(sendOptions, true)
@@ -1343,6 +1397,9 @@ public class MediaLayout extends FrameLayoutFix implements
 
       counterView.setAlpha(0f);
       sendButton.setAlpha(0f);
+      if (senderSendIcon != null) {
+        senderSendIcon.setAlpha(0f);
+      }
       closeButton.setAlpha(0f);
       counterHintView.setAlpha(0f);
       groupMediaView.setAlpha(0f);
@@ -1354,6 +1411,15 @@ public class MediaLayout extends FrameLayoutFix implements
       checkSuffix(false);
       // setNeedGroupMedia(TGSettingsManager.instance().needGroupMedia(), false);
     }
+  }
+
+  private @Nullable TdApi.Chat getTargetChat () {
+    MessagesController c = getTarget();
+    TdApi.Chat chat = null;
+    if (c != null) {
+      chat = c.getChat();
+    }
+    return chat;
   }
 
   private void checkSuffix (boolean animate) {
@@ -1472,6 +1538,9 @@ public class MediaLayout extends FrameLayoutFix implements
       counterView.setAlpha(factor);
       sendButton.setAlpha(factor);
       closeButton.setAlpha(factor);
+      if (senderSendIcon != null) {
+        senderSendIcon.setAlpha(factor);
+      }
       checkCounterHint();
     }
     setCounterEnabled(factor != 0f);
@@ -1606,5 +1675,126 @@ public class MediaLayout extends FrameLayoutFix implements
         c.get().setVisibility(visible ? View.VISIBLE : View.INVISIBLE);
       }
     }
+  }
+
+  public @Nullable MessagesController parentMessageController () {
+    return (parent instanceof MessagesController) ? (MessagesController) parent : null;
+  }
+
+  public boolean needCameraButton () {
+    return (parent instanceof MessagesController) && !((MessagesController) parent).isCameraButtonVisibleOnAttachPanel();
+  }
+
+  public static class SenderSendIcon extends FrameLayout {
+    private final AvatarView senderAvatarView;
+    private final Tdlib tdlib;
+    private final long chatId;
+    private boolean isPersonal;
+    private boolean isAnonymous;
+    private int backgroundColorId;
+
+    public SenderSendIcon (@NonNull Context context, Tdlib tdlib, long chatId) {
+      super(context);
+      this.tdlib = tdlib;
+      this.chatId = chatId;
+      this.backgroundColorId = R.id.theme_color_filling;
+
+      setWillNotDraw(false);
+      setLayoutParams(FrameLayoutFix.newParams(Screen.dp(19), Screen.dp(19)));
+
+      senderAvatarView = new AvatarView(context);
+      senderAvatarView.setEnabled(false);
+      senderAvatarView.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(15), Screen.dp(15), Gravity.CENTER));
+      addView(senderAvatarView);
+    }
+
+    public void setBackgroundColorId (int backgroundColorId) {
+      this.backgroundColorId = backgroundColorId;
+      invalidate();
+    }
+
+    public AvatarView getSenderAvatarView () {
+      return senderAvatarView;
+    }
+
+    public boolean isAnonymous () {
+      return isAnonymous;
+    }
+
+    public boolean isPersonal () {
+      return isPersonal;
+    }
+
+    @Override
+    protected void onDraw (Canvas c) {
+      float cx = getMeasuredWidth() / 2f;
+      float cy = getMeasuredHeight() / 2f;
+      c.drawCircle(cx, cy, Screen.dp(19f / 2f), Paints.fillingPaint(Theme.getColor(backgroundColorId)));
+
+      if (isAnonymous) {
+        c.drawCircle(cx, cy, Screen.dp(15f / 2f), Paints.fillingPaint(Theme.iconLightColor()));
+        Drawable drawable = Drawables.get(getResources(), R.drawable.infanf_baseline_incognito_11);
+        Drawables.draw(c, drawable, cx - Screen.dp(5.5f), cy - Screen.dp(5.5f), Paints.getPorterDuffPaint(Theme.getColor(R.id.theme_color_badgeMutedText)));
+      }
+
+      super.onDraw(c);
+    }
+
+    public void update (TdApi.MessageSender sender) {
+      final boolean isUserSender = Td.getSenderId(sender) == tdlib.myUserId();
+      final boolean isGroupSender = Td.getSenderId(sender) == chatId;
+
+      if (sender == null || isUserSender || isGroupSender) {
+        update(null, isUserSender, isGroupSender);
+      } else {
+        update(sender, false, false);
+      }
+    }
+
+    private void update (TdApi.MessageSender sender, boolean isPersonal, boolean isAnonymous) {
+      this.senderAvatarView.setVisibility(sender != null ? VISIBLE: GONE);
+      this.senderAvatarView.setMessageSender(tdlib, sender);
+      this.isAnonymous = isAnonymous;
+      this.isPersonal = isPersonal;
+      setVisibility(!isPersonal ? VISIBLE: GONE);
+      invalidate();
+    }
+
+    public HapticMenuHelper.MenuItem createHapticSenderItem (TdApi.Chat chat) {
+      if (isAnonymous()) {
+        return new HapticMenuHelper.MenuItem(R.id.btn_openSendersMenu, Lang.getString(R.string.SendAs), chat != null ? tdlib.getMessageSenderTitle(chat.messageSenderId): null, R.drawable.dot_baseline_acc_anon_24);
+      } else if (isPersonal()) {
+        return new HapticMenuHelper.MenuItem(R.id.btn_openSendersMenu, Lang.getString(R.string.SendAs), chat != null ? tdlib.getMessageSenderTitle(chat.messageSenderId): null, R.drawable.dot_baseline_acc_personal_24);
+      } else {
+        return new HapticMenuHelper.MenuItem(R.id.btn_openSendersMenu, Lang.getString(R.string.SendAs), chat != null ? tdlib.getMessageSenderTitle(chat.messageSenderId): null, 0, tdlib, chat != null ? chat.messageSenderId: null, false);
+      }
+    }
+  }
+
+  private void openSetSenderPopup () {
+    TdApi.Chat chat = getTargetChat();
+    if (chat == null) return;
+
+    tdlib().send(new TdApi.GetChatAvailableMessageSenders(getTargetChatId()), result -> {
+      UI.post(() -> {
+        if (result.getConstructor() == TdApi.ChatMessageSenders.CONSTRUCTOR) {
+          final SetSenderController c = new SetSenderController(getContext(), tdlib());
+          c.setArguments(new SetSenderController.Args(chat, ((TdApi.ChatMessageSenders) result).senders, chat.messageSenderId));
+          c.setDelegate(this::setNewMessageSender);
+          c.show();
+        }
+      });
+    });
+  }
+
+  private void setNewMessageSender (TdApi.ChatMessageSender sender) {
+    tdlib().send(new TdApi.SetChatMessageSender(getTargetChatId(), sender.sender), o -> {
+      UI.post(() -> {
+        TdApi.Chat chat = getTargetChat();
+        if (senderSendIcon != null) {
+          senderSendIcon.update(chat != null ? chat.messageSenderId : null);
+        }
+      });
+    });
   }
 }

@@ -39,14 +39,15 @@ import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.util.text.Highlight;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextEntity;
-import org.thunderdog.challegram.util.text.TextMedia;
 import org.thunderdog.challegram.util.text.TextWrapper;
 
 import java.util.ArrayList;
 
 import me.vkryl.android.animator.FactorAnimator;
+import me.vkryl.core.MathUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.td.Td;
 
@@ -197,6 +198,10 @@ public class TGMessageMedia extends TGMessage {
   private boolean isBeingEdited;
 
   private boolean checkCommonCaption () {
+    return checkCommonCaption(false);
+  }
+
+  private boolean checkCommonCaption (boolean force) {
     TdApi.FormattedText caption = null;
     long captionMessageId = 0;
     boolean hasEditedText = false;
@@ -224,7 +229,7 @@ public class TGMessageMedia extends TGMessage {
       }
     }
     this.isBeingEdited = hasEditedText;
-    return setCaption(caption, captionMessageId);
+    return setCaption(caption, captionMessageId, force);
   }
 
   @Override
@@ -252,8 +257,20 @@ public class TGMessageMedia extends TGMessage {
   }
 
   private boolean setCaption (TdApi.FormattedText caption, long messageId) {
+    return setCaption(caption, messageId, false);
+  }
+
+  @Override
+  protected void onUpdateHighlightedText () {
+    if (mosaicWrapper != null) {
+      checkCommonCaption(true);
+      rebuildContent();
+    }
+  }
+
+  private boolean setCaption (TdApi.FormattedText caption, long messageId, boolean force) {
     this.captionMessageId = messageId;
-    if (!Td.equalsTo(this.caption, caption)) {
+    if (!Td.equalsTo(this.caption, caption) || force) {
       this.caption = caption;
       if (this.wrapper != null) {
         this.wrapper.performDestroy();
@@ -265,6 +282,7 @@ public class TGMessageMedia extends TGMessage {
               invalidateTextMediaReceiver(text, specificMedia);
             }
           })
+          .setHighlightText(getHighlightedText(Highlight.Pool.KEY_MEDIA_CAPTION, caption.text))
           .addTextFlags(Text.FLAG_BIG_EMOJI)
           .setClickCallback(clickCallback());
         this.wrapper.setViewProvider(currentViews);
@@ -405,7 +423,20 @@ public class TGMessageMedia extends TGMessage {
       maxHeight = getSmallestMaxContentHeight();
     }
 
-    mosaicWrapper.build(maxWidth, maxHeight, needFullWidth ? MosaicWrapper.MODE_FIT_WIDTH : MosaicWrapper.MODE_FIT_AS_IS, false);
+    int minWidth = Screen.dp(MosaicWrapper.MIN_LAYOUT_WIDTH);
+    int minHeight = Screen.dp(MosaicWrapper.MIN_LAYOUT_HEIGHT);
+
+    if (commentButton.isVisible() && commentButton.isInline() && useBubbles() && !allowBubbleHorizontalExtend()) {
+      float minContentWidth = commentButton.getAnimatedWidth(0, 1f) - getBubbleContentPadding() * 2;
+      if (minContentWidth > minWidth) {
+        minWidth = Math.round(MathUtils.fromTo(minWidth, minContentWidth, commentButton.getVisibility()));
+      }
+    }
+
+    minWidth = Math.min(minWidth, maxWidth);
+    minHeight = Math.min(minHeight, maxHeight);
+
+    mosaicWrapper.build(maxWidth, maxHeight, minWidth, minHeight, needFullWidth ? MosaicWrapper.MODE_FIT_WIDTH : MosaicWrapper.MODE_FIT_AS_IS, false);
 
     if (isHot()) {
       updateTimerText();
@@ -785,6 +816,9 @@ public class TGMessageMedia extends TGMessage {
 
   @Override
   public boolean allowLongPress (float x, float y) {
+    if (!super.allowLongPress(x, y)) {
+      return false;
+    }
     int cellLeft = getContentX();
     int cellTop = getContentY();
     int cellRight = cellLeft + mosaicWrapper.getWidth();

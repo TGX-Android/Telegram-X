@@ -1,0 +1,20 @@
+--- vpx-configure.sh	2022-10-14 09:32:53.899922400 +0700
++++ win.vpx-configure.sh	2022-10-14 09:32:08.401615900 +0700
+@@ -1,6 +1,6 @@
+ #!/bin/sh
+ ##
+-##  configure.sh
++##  patched configure.sh with source_path_mk as a Windows style path via cygpath
+ ##
+ ##  This script is sourced by the main configure script and contains
+ ##  utility functions and other common bits that aren't strictly libvpx
+@@ -264,7 +264,8 @@
+ fi
+ # Makefiles greedily process the '#' character as a comment, even if it is
+ # inside quotes. So, this character must be escaped in all paths in Makefiles.
+-source_path_mk=$(echo $source_path | sed -e 's;\#;\\\#;g')
++# !! Patched with Windows style path via cygpath
++source_path_mk=$(cygpath -m $(echo $source_path | sed -e 's;\#;\\\#;g'))
+ 
+ if test ! -z "$TMPDIR" ; then
+   TMPDIRx="${TMPDIR}"

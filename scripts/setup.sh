@@ -17,6 +17,10 @@ fi
 
 # == Setup thirdparty libraries ==
 
+if [ "$WIN_PATCH_REQUIRED" = true ]; then
+  patch-windows-impl.sh
+fi
+
 # Patch opus
 patch-opus-impl.sh
 

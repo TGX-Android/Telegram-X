@@ -39,6 +39,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.component.chat.CircleCounterBadgeView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.core.Media;
 import org.thunderdog.challegram.data.TD;
@@ -59,6 +60,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.v.RtlGridLayoutManager;
 
@@ -189,6 +191,7 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   private boolean hasGalleryAccess;
   private Media.Gallery gallery;
   private GridSpacingItemDecoration decoration;
+  private @Nullable CircleCounterBadgeView cameraBadgeView;
   private int spanCount;
 
   private @Nullable ToggleHeaderView headerCell;
@@ -232,7 +235,32 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
       loadGalleryPhotos(null);
     }
 
+    if (mediaLayout.needCameraButton()) {
+      cameraBadgeView = new CircleCounterBadgeView(this, R.id.btn_camera, this::onCameraButtonClick, null);
+      cameraBadgeView.init(R.drawable.deproko_baseline_camera_26, 48f, 4f, R.id.theme_color_circleButtonChat, R.id.theme_color_circleButtonChatIcon);
+      cameraBadgeView.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(CircleCounterBadgeView.BUTTON_WRAPPER_WIDTH), Screen.dp(74f), Gravity.BOTTOM | Gravity.RIGHT, 0, 0, Screen.dp(12), Screen.dp(12 + 60)));
+      contentView.addView(cameraBadgeView);
+    }
+
     return contentView;
+  }
+
+  @Override
+  protected void onUpdateBottomBarFactor (float bottomBarFactor, float counterFactor, float y) {
+    float factor = Math.min(bottomBarFactor, 1f - counterFactor);
+    if (cameraBadgeView != null) {
+      cameraBadgeView.setAlpha(factor);
+      cameraBadgeView.setTranslationY(y);
+    }
+  }
+
+  private void onCameraButtonClick (View v) {
+    MessagesController c = mediaLayout.parentMessageController();
+    if (c == null) return;
+
+    if (!c.showRestriction(v, R.id.right_sendMedia, R.string.ChatDisabledMedia, R.string.ChatRestrictedMedia, R.string.ChatRestrictedMediaUntil)) {
+      mediaLayout.hidePopupAndOpenCamera(new CameraOpenOptions().anchor(v).noTrace(c.isSecretChat()));
+    }
   }
 
   @Override
@@ -540,7 +568,7 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   private final MediaViewThumbLocation location = new MediaViewThumbLocation();
 
   @Override
-  public MediaViewThumbLocation getTargetLocation (int index, MediaItem item) {
+  public MediaViewThumbLocation getTargetLocation (int indexInStack, MediaItem item) {
     if (MediaItem.isGalleryType(item.getType()) && !mediaLayout.isHidden()) {
       View view = adapter.findViewForImage(item.getSourceGalleryFile(), (LinearLayoutManager) getLayoutManager());
       if (view != null) {
@@ -599,13 +627,17 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
     if (gallery == null || gallery.isEmpty()) {
       return;
     }
+    MediaBottomGalleryBucketAdapter sectionsAdapter = sectionsView != null ?
+      (MediaBottomGalleryBucketAdapter) sectionsView.getAdapter() :
+      new MediaBottomGalleryBucketAdapter(context(), this, gallery);
+    // int sectionsHeight = Math.round((Screen.dp(9f) + Screen.dp(9f) + Screen.dp(30f)) * 5.5f);
+    // TODO: update automatically on orientation change without reopening
+    int sectionsHeight = sectionsAdapter.measureHeight(recyclerView.getMeasuredHeight() + HeaderView.getSize(false) - Screen.dp(8f) * 2) + Screen.dp(8f) * 2;
+    FrameLayoutFix.LayoutParams params = FrameLayoutFix.newParams(Screen.dp(210f) + Screen.dp(8f), sectionsHeight, Gravity.TOP | Gravity.LEFT);
+    params.leftMargin = Screen.dp(50f);
+    params.topMargin = HeaderView.getTopOffset();
+
     if (sectionsView == null) {
-      MediaBottomGalleryBucketAdapter sectionsAdapter = new MediaBottomGalleryBucketAdapter(context(), this, gallery);
-
-      FrameLayoutFix.LayoutParams params = FrameLayoutFix.newParams(Screen.dp(210f) + Screen.dp(8f), sectionsAdapter.measureHeight((Screen.dp(9f) + Screen.dp(9f) + Screen.dp(30f)) * 4) + Screen.dp(8f) * 2, Gravity.TOP | Gravity.LEFT);
-      params.leftMargin = Screen.dp(50f);
-      params.topMargin = HeaderView.getTopOffset();
-
       sectionHelperView = new View(context()) {
         @Override
         public boolean onTouchEvent (MotionEvent event) {
@@ -627,6 +659,8 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
       sectionsView.setAlpha(0f);
       sectionsView.setScaleX(MenuMoreWrap.START_SCALE);
       sectionsView.setScaleY(MenuMoreWrap.START_SCALE);
+    } else {
+      sectionsView.setLayoutParams(params);
     }
 
     if (currentBucket != null) {

@@ -27,10 +27,11 @@ import androidx.annotation.Nullable;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
+import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
-import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
@@ -59,7 +60,7 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
 
   private float checkFactor;
   private BoolAnimator checkAnimator;
-  private ImageReceiver receiver;
+  private AvatarReceiver receiver;
   private Counter counter;
 
   public DrawerItemView (Context context, Tdlib tdlib) {
@@ -161,10 +162,9 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
   }
 
   private static final float AVATAR_SIZE = 40f;
-  private static final float AVATAR_LETTERS_SIZE = 16f;
 
   public void addAvatar () {
-    receiver = new ImageReceiver(this, Screen.dp(AVATAR_SIZE) / 2);
+    receiver = new AvatarReceiver(this);
     layoutReceiver();
     counter = new Counter.Builder().callback(this).build();
   }
@@ -183,17 +183,18 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
     }
   }
 
-  private AvatarPlaceholder avatarPlaceholder;
-  private ImageFile imageFile;
+  public void setAvatar (Tdlib tdlib, long chatId) {
+    this.receiver.requestChat(tdlib, chatId, AvatarReceiver.Options.NONE);
+  }
 
-  public void setAvatar (AvatarPlaceholder.Metadata avatarPlaceholderMetadata, @Nullable ImageFile imageFile) {
-    if (avatarPlaceholderMetadata != null) {
-      avatarPlaceholder = new AvatarPlaceholder(AVATAR_SIZE / 2f, avatarPlaceholderMetadata, null);
+  public void setAvatar (TdlibAccount account) {
+    AvatarPlaceholder.Metadata placeholder = account.getAvatarPlaceholderMetadata();
+    ImageFile imageFile = account.getAvatarFile(false);
+    if (imageFile != null) {
+      receiver.requestSpecific(tdlib, imageFile, AvatarReceiver.Options.NONE);
     } else {
-      avatarPlaceholder = null;
+      receiver.requestPlaceholder(tdlib, placeholder, AvatarReceiver.Options.NONE);
     }
-    this.receiver.requestFile(this.imageFile = imageFile);
-    invalidate();
   }
 
   public void setError (boolean error, int errorIcon, boolean animated) {
@@ -301,15 +302,11 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
     }
 
     if (receiver != null) {
-      int radius = Screen.dp(AVATAR_SIZE) / 2;
-      if (imageFile != null) {
-        if (receiver.needPlaceholder()) {
-          receiver.drawPlaceholderRounded(c, radius);
-        }
-        receiver.draw(c);
-      } else if (avatarPlaceholder != null) {
-        avatarPlaceholder.draw(c, receiver.centerX(), receiver.centerY());
+      layoutReceiver();
+      if (receiver.needPlaceholder()) {
+        receiver.drawPlaceholder(c);
       }
+      receiver.draw(c);
       if (checkFactor > 0f) {
         final double radians = Math.toRadians(rtl ? 315f : 45f);
 

@@ -231,7 +231,7 @@ public abstract class RecyclerViewController<T> extends TelegramViewController<T
     return recyclerView;
   }
 
-  protected CustomRecyclerView getRecyclerView () {
+  public CustomRecyclerView getRecyclerView () {
     return recyclerView;
   }
 

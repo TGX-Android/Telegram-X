@@ -266,9 +266,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       fileProgress.setHideDownloadedIcon(true);
     }
 
-    if (isSafeToStream(source) && !video.video.remote.isUploadingActive && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) {
-      setVideoStreamingUi(true);
-    }
+    updateVideoStreamingState();
 
     this.fileProgress.setFile(video.video, source != null ? source.getMessage(messageId) : null);
 
@@ -860,7 +858,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       this.cellHeight = height;
       this.lastLeft = this.lastTop = -1;
       if (widthChanged && !StringUtils.isEmpty(duration)) {
-        if (!(isVideo() && !getFileProgress().isLoaded() && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE)) {
+        if (!(isVideo() && !getFileProgress().isLoaded() && getFileProgress().isVideoStreaming())) {
           trimDuration();
         } else {
           trimDoubleDuration(durationAlternative, durationAlternativeWidth);
@@ -1129,9 +1127,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
 
   @Override
   public void onStateChanged (TdApi.File file, @TdlibFilesManager.FileDownloadState int state) {
-    if (Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE && video != null) {
-      setVideoStreamingUi(!video.video.remote.isUploadingActive);
-    }
+    updateVideoStreamingState();
 
     if ((video != null || animation != null) && updateDuration()) {
       if (source != null) {
@@ -1221,6 +1217,12 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     }
   }
 
+  private void updateVideoStreamingState () {
+    if (Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE && video != null && isSafeToStream(source)) {
+      setVideoStreamingUi(!video.video.remote.isUploadingActive);
+    }
+  }
+
   private boolean updateDuration () {
     if (video == null && animation == null) {
       return false;
@@ -1237,13 +1239,13 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     if (fileProgress.isFailed()) {
       text = textShort = Lang.getString(R.string.failed);
     } else if (!(fileProgress.isUploadFinished() || (source != null && !source.isSending())) || !fileProgress.isLoaded() || (isVideo() && fileProgress.isDownloaded())) {
-      shouldHaveTwoLines = true;
+      shouldHaveTwoLines = fileProgress.isVideoStreaming();
       textShort = Strings.buildSize(fileProgress.getTotalSize());
       if (fileProgress.isLoading() || !fileProgress.isUploadFinished() || (isVideo() && fileProgress.isDownloaded())) {
         if (fileProgress.isProcessing()) {
           twAlternativeHeader = textShort;
           text = Lang.getString(R.string.ProcessingMedia, textShort);
-        } else {
+        } else if (shouldHaveTwoLines || (fileProgress.isLoading() || !fileProgress.isUploadFinished())) {
           long progressSize = fileProgress.getProgressSize();
           long totalSize = fileProgress.getTotalSize();
           if (progressSize <= totalSize) {
@@ -1254,6 +1256,8 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
             text = Strings.buildSize(progressSize) + " / " + textShort;
             twAlternativeHeader = Strings.buildSize(progressSize);
           }
+        } else {
+          textShort = null;
         }
       }
     }

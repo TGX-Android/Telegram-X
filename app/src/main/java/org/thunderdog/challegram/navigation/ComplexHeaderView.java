@@ -18,7 +18,6 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.view.Gravity;
@@ -35,11 +34,8 @@ import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.MediaCollectorDelegate;
 import org.thunderdog.challegram.component.chat.ChatHeaderView;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.TD;
-import org.thunderdog.challegram.loader.DoubleImageReceiver;
-import org.thunderdog.challegram.loader.ImageFile;
-import org.thunderdog.challegram.loader.Receiver;
+import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.mediaview.MediaViewDelegate;
 import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
@@ -69,11 +65,11 @@ import me.vkryl.android.ScrimUtil;
 import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.core.BitwiseUtils;
 
 public class ComplexHeaderView extends BaseView implements RtlCheckListener, StretchyHeaderView, TextChangeDelegate, Destroyable, ColorSwitchPreparator, MediaCollectorDelegate, BaseView.CustomControllerProvider, TdlibStatusManager.HelperTarget, TGLegacyManager.EmojiLoadListener, HeaderView.OffsetChangeListener {
   private static final int FLAG_SHOW_LOCK = 1;
@@ -94,13 +90,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
 
   protected float scaleFactor;
 
-  private AvatarPlaceholder avatarPlaceholder;
-  private Drawable avatarPlaceholderDrawable;
-  private ImageFile avatar, avatarFull;
-  private final DoubleImageReceiver avatarReceiver;
-
-  private @Nullable TdApi.ProfilePhoto previewProfilePhoto;
-  private @Nullable TdApi.ChatPhotoInfo previewChatPhoto;
+  private @NonNull final AvatarReceiver receiver;
 
   private String title, subtitle, expandedSubtitle;
   private TextEntity[] subtitleEntities;
@@ -122,8 +112,8 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
     // this.parent = parent;
     this.status = new TdlibStatusManager.Helper(UI.getContext(context), tdlib, this, parent);
     setUseDefaultClickListener(false);
-    avatarReceiver = new DoubleImageReceiver(this, 1);
-    avatarReceiver.setRadius(0);
+    this.receiver = new AvatarReceiver(this);
+    this.receiver.setDisplayFullSizeOnlyInFullScreen(true);
     setCustomControllerProvider(this);
     TGLegacyManager.instance().addEmojiListener(this);
   }
@@ -259,8 +249,8 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
     if (status != null) {
       status.detachFromAnyChat();
     }
-    if (avatarReceiver != null) {
-      avatarReceiver.clear();
+    if (receiver != null) {
+      receiver.clear();
     }
   }
 
@@ -393,57 +383,6 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
     return (flags & FLAG_SHOW_MUTE) != 0;
   }
 
-  public void setAvatar (@Nullable TdApi.ProfilePhoto profilePhoto) {
-    this.previewProfilePhoto = profilePhoto;
-    this.previewChatPhoto = null;
-    this.avatarPlaceholder = null;
-
-    if (profilePhoto != null) {
-      this.avatar = TD.getAvatar(tdlib, profilePhoto);
-      this.avatarFull = new ImageFile(tdlib, profilePhoto.big);
-    } else {
-      this.avatar = null;
-      this.avatarFull = null;
-    }
-  }
-
-  public void setAvatar (@Nullable TdApi.ChatPhotoInfo chatPhoto) {
-    this.previewChatPhoto = chatPhoto;
-    this.previewProfilePhoto = null;
-    this.avatarPlaceholder = null;
-
-    if (chatPhoto != null) {
-      this.avatar = TD.getAvatar(tdlib, chatPhoto);
-      this.avatarFull = new ImageFile(tdlib, chatPhoto.big);
-    } else {
-      this.avatar = null;
-      this.avatarFull = null;
-    }
-  }
-
-  public void setAvatar (ImageFile avatar) {
-    this.avatar = avatar;
-    this.previewProfilePhoto = null;
-    this.previewChatPhoto = null;
-    this.avatarPlaceholder = null;
-  }
-
-  public ImageFile getAvatar () {
-    return avatar;
-  }
-
-  public void setAvatarPlaceholder (AvatarPlaceholder avatarPlaceholder) {
-    this.avatar = null;
-    this.previewProfilePhoto = null;
-    this.previewChatPhoto = null;
-    this.avatarPlaceholder = avatarPlaceholder;
-    this.avatarPlaceholderDrawable = avatarPlaceholder != null && avatarPlaceholder.metadata.extraDrawableRes != 0 ? getSparseDrawable(avatarPlaceholder.metadata.extraDrawableRes, 0) : null;
-  }
-
-  public void updateAvatar () {
-    avatarReceiver.requestFile(avatar, avatarFull);
-  }
-
   public void setText (@StringRes int titleResId, @StringRes int subtitleResId) {
     setText(Lang.getString(titleResId), Lang.getString(subtitleResId));
   }
@@ -545,12 +484,13 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
     float expandFactor = getAvatarExpandFactor();
     int viewCenterX = getMeasuredWidth() / 2;
     int viewCenterY = currentHeaderOffset + (calculateHeaderHeight() - currentHeaderOffset) / 2;
-    avatarReceiver.setRadius(Math.round(baseRadius * (1f - expandFactor)));
+    // avatarReceiver.setRadius(Math.round(baseRadius * (1f - expandFactor)));
+    receiver.forceFullScreen(expandFactor != 0f, expandFactor);
 
     baseRadius += (viewCenterX - baseRadius) * expandFactor;
     baseCenterX += (viewCenterX - baseCenterX) * expandFactor;
     baseCenterY += (viewCenterY - baseCenterY) * expandFactor;
-    avatarReceiver.setBounds(Math.round(baseCenterX - baseRadius), Math.round(baseCenterY - baseRadius), Math.round(baseCenterX + baseRadius), Math.round(baseCenterY + baseRadius));
+    receiver.setBounds(Math.round(baseCenterX - baseRadius), Math.round(baseCenterY - baseRadius), Math.round(baseCenterX + baseRadius), Math.round(baseCenterY + baseRadius));
   }
 
   // Private utils
@@ -582,7 +522,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
   private void buildLayout () {
     updateTopShadow();
     updateBottomShadow();
-    updateAvatar();
+    layoutReceiver();
     layoutTexts();
     invalidate();
   }
@@ -793,9 +733,9 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
 
   public MediaViewThumbLocation getThumbLocation () {
     MediaViewThumbLocation location = new MediaViewThumbLocation();
-    location.set(avatarReceiver.getLeft(), avatarReceiver.getTop(), avatarReceiver.getRight(), avatarReceiver.getBottom());
-    location.setClip(0, Math.max(-avatarReceiver.getTop(), 0), 0, Math.max(0, avatarReceiver.getBottom() - calculateHeaderHeight()));
-    int radius = avatarReceiver.getRadius();
+    location.set(receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom());
+    location.setClip(0, Math.max(-receiver.getTop(), 0), 0, Math.max(0, receiver.getBottom() - calculateHeaderHeight()));
+    float radius = receiver.getDisplayRadius();
     location.setColorId(R.id.theme_color_headerBackground);
     location.setRoundings(radius, radius, radius, radius);
     return location;
@@ -849,45 +789,22 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
       final float textScaleFactor = MathUtils.fromTo(1f + scaleFactor * .1f, avatarTextScale, avatarExpandFactor);
 
       layoutReceiver();
-      if (avatar != null) {
-        if (avatarReceiver.needPlaceholder()) {
-          avatarReceiver.drawPlaceholderRounded(c, avatarReceiver.getRadius(), Theme.headerPlaceholderColor());
-        }
-        avatarReceiver.draw(c, avatarFull != null ? avatarExpandFactor : 0f);
-        if (avatarExpandFactor > 0f) {
-          getTopShadow().setAlpha((int) (255f * .8f * avatarExpandFactor));
-          getTopShadow().draw(c);
+      if (receiver.needPlaceholder()) {
+        receiver.drawPlaceholderRounded(c, receiver.getDisplayRadius(), Theme.headerPlaceholderColor());
+      }
+      receiver.draw(c);
+      if (avatarExpandFactor > 0f && receiver.getRequestedPlaceholder() == null) {
+        getTopShadow().setAlpha((int) (255f * .8f * avatarExpandFactor));
+        getTopShadow().draw(c);
 
-          c.save();
-          int headerHeight = calculateHeaderHeight();
-          int shadowTop = headerHeight - getBottomShadowSize();
-          // c.clipRect(0, Math.max(shadowTop, getTopShadow().getBounds().bottom), getMeasuredWidth(), headerHeight);
-          c.translate(0, Math.max(shadowTop, getTopShadow().getBounds().bottom - Screen.dp(28f)));
-          getBottomShadow().setAlpha((int) (255f * .8f * avatarExpandFactor));
-          getBottomShadow().draw(c);
-          c.restore();
-        }
-      } else if (avatarPlaceholder != null) {
-        int cx = avatarReceiver.centerX();
-        int cy = avatarReceiver.centerY();
-        int fromColor = avatarPlaceholder.getColor();
-        int toColorId = Theme.avatarSmallToBig(avatarPlaceholder.metadata.colorId);
-        avatarReceiver.drawPlaceholderRounded(c, avatarReceiver.getRadius(), toColorId != 0 ? ColorUtils.fromToArgb(fromColor, Theme.getColor(toColorId), avatarExpandFactor) : fromColor);
-
-        float baseRadius = Screen.dp(getBaseAvatarRadiusDp());
-        float placeholderScale = avatarReceiver.getWidth() / 2f / baseRadius;
         c.save();
-        c.scale(placeholderScale, placeholderScale, cx, cy);
-        avatarPlaceholder.draw(c, cx, cy, 1f - avatarExpandFactor, avatarReceiver.getWidth() / 2, false);
+        int headerHeight = calculateHeaderHeight();
+        int shadowTop = headerHeight - getBottomShadowSize();
+        // c.clipRect(0, Math.max(shadowTop, getTopShadow().getBounds().bottom), getMeasuredWidth(), headerHeight);
+        c.translate(0, Math.max(shadowTop, getTopShadow().getBounds().bottom - Screen.dp(28f)));
+        getBottomShadow().setAlpha((int) (255f * .8f * avatarExpandFactor));
+        getBottomShadow().draw(c);
         c.restore();
-
-        if (avatarPlaceholderDrawable != null && avatarExpandFactor > 0f) {
-          placeholderScale = (avatarReceiver.getWidth() / 2f / ((float) getMeasuredWidth() / 2f));
-          c.save();
-          c.scale(placeholderScale, placeholderScale, cx, cy);
-          Drawables.draw(c, avatarPlaceholderDrawable, cx - avatarPlaceholderDrawable.getMinimumWidth() / 2, cy - avatarPlaceholderDrawable.getMinimumHeight() / 2, Paints.getPorterDuffPaint(ColorUtils.alphaColor(avatarExpandFactor * .3f, Color.WHITE)));
-          c.restore();
-        }
       }
 
       float baseTextLeft = innerLeftMargin + Screen.dp(4f) + Screen.dp(getBaseAvatarRadiusDp()) * 2 + Screen.dp(9f);
@@ -1045,14 +962,14 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
   }
 
   private boolean checkCaught (float x, float y, boolean set) {
-    if ((avatar == null && (flags & FLAG_ALLOW_EMPTY_CLICK) == 0) || callback == null) {
+    if ((receiver.getRequestedPlaceholder() != null && (flags & FLAG_ALLOW_EMPTY_CLICK) == 0) || callback == null) {
       if (set) {
         flags &= ~FLAG_CAUGHT;
       }
       return false;
     }
 
-    boolean caught = y < calculateHeaderHeight() && avatarReceiver.isInsideReceiver(x, y);
+    boolean caught = y < calculateHeaderHeight() && receiver.isInsideReceiver(x, y);
     if (set) {
       this.flags = BitwiseUtils.setFlag(this.flags, FLAG_CAUGHT, caught);
     }
@@ -1090,8 +1007,8 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
   public void modifyMediaArguments (Object cause, MediaViewController.Args args) {
     args.delegate = new MediaViewDelegate() {
       @Override
-      public MediaViewThumbLocation getTargetLocation (int index, MediaItem item) {
-        if (index == 0) {
+      public MediaViewThumbLocation getTargetLocation (int indexInStack, MediaItem item) {
+        if (indexInStack == 0) {
           return getThumbLocation();
         }
         return null;
@@ -1109,11 +1026,11 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
   @Override
   public boolean needsForceTouch (BaseView v, float x, float y) {
     int bound = Screen.dp(6f);
-    return avatarReceiver != null && (previewProfilePhoto != null || previewChatPhoto != null) && x >= avatarReceiver.getLeft() - bound && x < avatarReceiver.getRight() + bound && y >= avatarReceiver.getTop() - bound && y < avatarReceiver.getBottom() + bound;
+    return (receiver.getRequestedChatPhoto() != null || receiver.getRequestedProfilePhoto() != null || receiver.getRequestedChatPhotoInfo() != null) && x >= receiver.getLeft() - bound && x < receiver.getRight() + bound && y >= receiver.getTop() - bound && y < receiver.getBottom() + bound;
   }
 
-  public Receiver getAvatarReceiver () {
-    return avatarReceiver;
+  public AvatarReceiver getAvatarReceiver () {
+    return receiver;
   }
 
   @Override
@@ -1125,10 +1042,12 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
   public ViewController<?> createForceTouchPreview (BaseView v, float x, float y) {
     SimpleMediaViewController.Args args = null;
 
-    if (previewChatPhoto != null) {
-      args = new SimpleMediaViewController.Args(previewChatPhoto);
-    } else if (previewProfilePhoto != null) {
-      args = new SimpleMediaViewController.Args(previewProfilePhoto);
+    TdApi.ProfilePhoto profilePhoto = receiver.getRequestedProfilePhoto();
+    TdApi.ChatPhotoInfo chatPhotoInfo = receiver.getRequestedChatPhotoInfo();
+    if (profilePhoto != null) {
+      args = new SimpleMediaViewController.Args(profilePhoto, receiver.getRequestedUserId());
+    } else if (chatPhotoInfo != null) {
+      args = new SimpleMediaViewController.Args(chatPhotoInfo, receiver.getRequestedChatId());
     }
 
     if (args != null) {

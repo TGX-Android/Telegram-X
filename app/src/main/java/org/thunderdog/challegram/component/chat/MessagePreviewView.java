@@ -48,6 +48,7 @@ import me.vkryl.android.animator.ListAnimator;
 import me.vkryl.android.animator.ReplaceAnimator;
 import me.vkryl.android.util.SingleViewProvider;
 import me.vkryl.android.util.ViewProvider;
+import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.MessageId;
@@ -451,7 +452,26 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     tdlib.runOnUiThread(() -> {
       if (this.message != null && this.message.chatId == chatId && this.message.id == messageId) {
         this.message.content = newContent;
-        updateContentText();
+        buildPreview();
+      }
+    });
+  }
+
+  @Override
+  public void onMessagesDeleted (long chatId, long[] messageIds) {
+    tdlib.runOnUiThread(() -> {
+      if (this.message != null && this.message.chatId == chatId) {
+        if (this.contentPreview != null) {
+          Tdlib.Album album = this.contentPreview.getAlbum();
+          if (album != null) {
+            for (TdApi.Message albumMessage : album.messages) {
+              if (ArrayUtils.contains(messageIds, albumMessage.id)) {
+                buildPreview(); // one of album's message was deleted
+                break;
+              }
+            }
+          }
+        }
       }
     });
   }

@@ -23,6 +23,7 @@ import android.os.SystemClock;
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.Px;
 import androidx.annotation.UiThread;
 import androidx.collection.SparseArrayCompat;
 
@@ -968,7 +969,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
         avatarLetters = userLetters(user);
         avatarColorId = userAvatarColorId(user);
       }
-      extraDrawableRes = tdlib.isSelfUserId(user.id) ? R.drawable.baseline_add_a_photo_56 :
+      extraDrawableRes = /*tdlib.isSelfUserId(user.id) ? R.drawable.baseline_add_a_photo_56 :*/
         tdlib.isRepliesChat(ChatId.fromUserId(user.id)) ? R.drawable.baseline_reply_56 :
         TD.isBot(user) ? R.drawable.deproko_baseline_bots_56 :
           R.drawable.baseline_person_56;
@@ -985,6 +986,10 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   }
 
   public @Nullable ImageFile userAvatar (long userId) {
+    return userAvatar(userId, ChatView.getDefaultAvatarCacheSize());
+  }
+
+  public @Nullable ImageFile userAvatar (long userId, @Px int size) {
     if (userId == 0)
       return null;
     TdApi.User user = user(userId);
@@ -992,7 +997,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     if (photo == null)
       return null;
     ImageFile avatarFile = new ImageFile(tdlib, photo.small);
-    avatarFile.setSize(ChatView.getDefaultAvatarCacheSize());
+    avatarFile.setSize(size);
     return avatarFile;
   }
 
@@ -1049,12 +1054,17 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     return userId != 0 ? TD.getUserSingleName(userId, user(userId)) : "VOID";
   }
 
-  public @Nullable String userUsername (long userId) {
+  public @Nullable TdApi.Usernames userUsernames (long userId) {
     if (userId != 0) {
       TdApi.User user = user(userId);
-      return user != null && !StringUtils.isEmpty(user.username) ? user.username : null;
+      return user != null ? user.usernames : null;
     }
     return null;
+  }
+
+  public @Nullable String userUsername (long userId) {
+    TdApi.Usernames usernames = userUsernames(userId);
+    return Td.primaryUsername(usernames);
   }
 
   @Nullable
@@ -1108,12 +1118,16 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   }
 
   public @Nullable TdApi.User searchUser (String username) {
+    return searchUser(username, false);
+  }
+
+  public @Nullable TdApi.User searchUser (String username, boolean allowDisabled) {
     TdApi.User result = null;
     synchronized (dataLock) {
       final Set<HashMap.Entry<Long, TdApi.User>> entries = users.entrySet();
       for (HashMap.Entry<Long, TdApi.User> entry : entries) {
         TdApi.User user = entry.getValue();
-        if (user.username != null && user.username.length() == username.length() && user.username.toLowerCase().equals(username)) {
+        if (Td.findUsername(user, username, allowDisabled)) {
           result = user;
           break;
         }
@@ -1218,6 +1232,12 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
         throw new IllegalStateException("id:" + supergroupId);
       return supergroup;
     }
+  }
+
+  @Nullable
+  public TdApi.Usernames supergroupUsernames (long supergroupId) {
+    TdApi.Supergroup supergroup = supergroup(supergroupId);
+    return supergroup != null ? supergroup.usernames : null;
   }
 
   @Nullable
@@ -1845,7 +1865,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     TdApi.Supergroup oldSupergroup = supergroups.get(supergroup.id);
     final int mode;
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      mode = oldSupergroup == null ? UPDATE_MODE_NONE : oldSupergroup.isChannel != supergroup.isChannel || !StringUtils.equalsOrBothEmpty(oldSupergroup.username, supergroup.username) ? UPDATE_MODE_IMPORTANT : UPDATE_MODE_UPDATE;
+      mode = oldSupergroup == null ? UPDATE_MODE_NONE : oldSupergroup.isChannel != supergroup.isChannel || !Td.equalsTo(oldSupergroup.usernames, supergroup.usernames) ? UPDATE_MODE_IMPORTANT : UPDATE_MODE_UPDATE;
     } else {
       mode = oldSupergroup == null ? UPDATE_MODE_NONE : UPDATE_MODE_UPDATE;
     }

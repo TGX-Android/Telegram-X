@@ -224,7 +224,7 @@ public class ChatsRecyclerView extends CustomRecyclerView implements ClickHelper
         break;
       View view = manager.findViewByPosition(updated);
       if (view instanceof ChatView && ((ChatView) view).getChatId() == adapter.getChatAt(updated).getChatId()) {
-        ((ChatView) view).updateOnline();
+        // ((ChatView) view).updateOnline();
         view.invalidate();
       } else {
         adapter.notifyItemChanged(updated);

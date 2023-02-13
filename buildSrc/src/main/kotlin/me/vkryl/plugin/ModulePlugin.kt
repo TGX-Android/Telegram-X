@@ -166,7 +166,11 @@ open class ModulePlugin : Plugin<Project> {
             }
 
             var git: List<String>
-            val process = ProcessBuilder("bash", "-c", "echo \"$(git rev-parse --short HEAD) $(git rev-parse HEAD) $(git show -s --format=%ct) $(git config --get remote.origin.url) $(git log -1 --pretty=format:'%an')\"").start()
+            val process = if (System.getProperty("os.name").startsWith("Windows")) {
+              ProcessBuilder("cmd", "/C", "${project.rootDir.absolutePath}\\scripts\\windows\\git-info.cmd").start()
+            } else {
+              ProcessBuilder("bash", "-c", "echo \"$(git rev-parse --short HEAD) $(git rev-parse HEAD) $(git show -s --format=%ct) $(git config --get remote.origin.url) $(git log -1 --pretty=format:'%an')\"").start()
+            }
             process.inputStream.reader(Charsets.UTF_8).use {
               git = it.readText().trim().split(' ', limit = 5)
             }

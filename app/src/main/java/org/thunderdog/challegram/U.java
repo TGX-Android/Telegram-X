@@ -35,6 +35,7 @@ import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.location.Location;
 import android.location.LocationManager;
 import android.media.AudioManager;
@@ -1137,7 +1138,7 @@ public class U {
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && DocumentsContract.isDocumentUri(UI.getContext(), uri)) {
         if (isExternalStorageDocument(uri)) {
           final String docId = DocumentsContract.getDocumentId(uri);
-          final String[] split = docId.split(":");
+          final String[] split = docId.split(":", 2);
           final String type = split[0];
           if ("primary".equalsIgnoreCase(type)) {
             result = Environment.getExternalStorageDirectory() + "/" + split[1];
@@ -1148,7 +1149,7 @@ public class U {
           result = getDataColumn(UI.getContext(), contentUri, null, null);
         } else if (isMediaDocument(uri)) {
           final String docId = DocumentsContract.getDocumentId(uri);
-          final String[] split = docId.split(":");
+          final String[] split = docId.split(":", 2);
           final String type = split[0];
 
           Uri contentUri = null;
@@ -1321,6 +1322,10 @@ public class U {
 
     public long getDuration (TimeUnit unit) {
       return unit.convert(durationMs, TimeUnit.MILLISECONDS);
+    }
+
+    public boolean isRotated () {
+      return U.isExifRotated(rotation);
     }
   }
 
@@ -2548,42 +2553,27 @@ public class U {
   }
 
   public static void notifyItemsReplaced (final RecyclerView.Adapter<?> adapter, final int oldItemCount) {
-    int newItemCount = adapter.getItemCount();
-    if (oldItemCount == newItemCount) {
-      if (oldItemCount != 0) {
-        adapter.notifyItemRangeChanged(0, newItemCount);
-      }
-    } else if (oldItemCount == 0) {
-      adapter.notifyItemRangeInserted(0, newItemCount);
-    } else if (newItemCount == 0) {
-      adapter.notifyItemRangeRemoved(0, oldItemCount);
-    } else {
-      adapter.notifyItemRangeRemoved(0, oldItemCount);
-      adapter.notifyItemRangeRemoved(0, newItemCount);
-    }
-    /* else if (oldItemCount > newItemCount) {
-      adapter.notifyItemRangeChanged(0, newItemCount);
-      adapter.notifyItemRangeRemoved(newItemCount, oldItemCount - newItemCount);
-    } else {
-      adapter.notifyItemRangeChanged(0, oldItemCount);
-      adapter.notifyItemRangeRemoved(oldItemCount, newItemCount - oldItemCount);
-    }*/
+    notifyItemsReplaced(adapter, oldItemCount, 0);
   }
 
   public static void notifyItemsReplaced (final RecyclerView.Adapter<?> adapter, final int oldItemCount, final int headerItemCount) {
     int newItemCount = adapter.getItemCount();
-    int changedItemCount = Math.max(0, newItemCount - headerItemCount);
+    if (newItemCount < headerItemCount)
+      throw new IllegalStateException();
     if (oldItemCount == newItemCount) {
       if (oldItemCount != 0) {
-        adapter.notifyItemRangeChanged(headerItemCount, changedItemCount);
+        adapter.notifyItemRangeChanged(headerItemCount, newItemCount - headerItemCount);
       }
     } else if (oldItemCount == 0) {
       adapter.notifyItemRangeInserted(0, newItemCount);
     } else if (newItemCount == 0) {
       adapter.notifyItemRangeRemoved(0, oldItemCount);
     } else {
-      adapter.notifyItemRangeRemoved(Math.min(headerItemCount, changedItemCount), oldItemCount);
-      adapter.notifyItemRangeInserted(headerItemCount, changedItemCount);
+      // note: do not call notifyItemRangeChanged here
+      if (oldItemCount > headerItemCount) {
+        adapter.notifyItemRangeRemoved(headerItemCount, oldItemCount - headerItemCount);
+      }
+      adapter.notifyItemRangeInserted(headerItemCount, newItemCount - headerItemCount);
     }
   }
 
@@ -3626,5 +3616,13 @@ public class U {
       }
     }
     return null;
+  }
+
+  public static boolean setRect (RectF rectF, float left, float top, float right, float bottom) {
+    if (rectF.left != left || rectF.top != top || rectF.right != right || rectF.bottom != bottom) {
+      rectF.set(left, top, right, bottom);
+      return true;
+    }
+    return false;
   }
 }

@@ -18,6 +18,7 @@ import android.view.View;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.telegram.TdlibUi;
@@ -63,15 +64,21 @@ public class TGSourceHidden extends TGSource {
   }
 
   @Override
-  public ImageFile getAvatar () {
-    return null;
+  public int getAuthorNameColorId () {
+    return TD.getNameColorId(TD.getColorIdForName(name));
+  }
+
+  @Override
+  public void requestAvatar (AvatarReceiver receiver) {
+    receiver.requestPlaceholder(msg.tdlib,
+      new AvatarPlaceholder.Metadata(
+        TD.getColorIdForName(name),
+        isImported ? null : TD.getLetters(name),
+        isImported ? R.drawable.baseline_phone_24 : 0, 0
+      ), AvatarReceiver.Options.NONE
+    );
   }
 
   @Override
   public void destroy () { }
-
-  @Override
-  public AvatarPlaceholder.Metadata getAvatarPlaceholderMetadata () {
-    return new AvatarPlaceholder.Metadata(TD.getColorIdForName(name), isImported ? null : TD.getLetters(name), isImported ? R.drawable.baseline_phone_24 : 0, 0);
-  }
 }

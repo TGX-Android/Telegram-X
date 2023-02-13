@@ -109,6 +109,10 @@ public class ImageFile {
     return tdlib != null ? tdlib.tdlib() : null;
   }
 
+  public boolean isRemote () {
+    return tdlib() != null && getId() > 0;
+  }
+
   public byte[] getBytes () {
     return bytes;
   }

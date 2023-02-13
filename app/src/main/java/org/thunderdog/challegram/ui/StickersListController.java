@@ -151,7 +151,7 @@ public class StickersListController extends ViewController<StickersListControlle
             }
           }
 
-          showMore(ids.get(), strings.get(), icons.get(), 0, true);
+          showMore(ids.get(), strings.get(), icons.get(), 0);
         }
         break;
       }

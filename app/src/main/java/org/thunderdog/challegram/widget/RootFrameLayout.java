@@ -73,7 +73,7 @@ public class RootFrameLayout extends FrameLayoutFix {
     this.ignoreSystemNavigationBar = ignoreSystemNavigationBar;
   }
 
-  public void setIgnoreAll (boolean ignoreAll) {
+  public void setIgnoreAllInsets (boolean ignoreAll) {
     this.ignoreAll = ignoreAll;
   }
 
@@ -226,10 +226,12 @@ public class RootFrameLayout extends FrameLayoutFix {
     int top = wi.getSystemWindowInsetTop();
     int right = wi.getSystemWindowInsetRight();
     int bottom =  wi.getSystemWindowInsetBottom();
-    if (ignoreAll || UI.getContext(getContext()).dispatchCameraMargins(child, left, top, right, bottom)) {
+    if (UI.getContext(getContext()).dispatchCameraMargins(child, left, top, right, bottom)) {
       wi.replaceSystemWindowInsets(0, 0, 0, 0);
     } else {
-      if (ignoreBottom || (shouldIgnoreBottomMargin(child, bottom))) {
+      if (ignoreAll) {
+        wi.replaceSystemWindowInsets(0, 0, 0, 0);
+      } else if (ignoreBottom || (shouldIgnoreBottomMargin(child, bottom))) {
         wi.replaceSystemWindowInsets(left, top, right, 0);
       }
       ViewController<?> c = ViewController.findAncestor(child);
@@ -258,17 +260,21 @@ public class RootFrameLayout extends FrameLayoutFix {
     } else if (drawerGravity == Gravity.RIGHT) {
       wi = wi.replaceSystemWindowInsets(0, wi.getSystemWindowInsetTop(), wi.getSystemWindowInsetRight(), wi.getSystemWindowInsetBottom());
     }
-    lp.leftMargin = ignoreHorizontal ? 0 : wi.getSystemWindowInsetLeft();
-    lp.topMargin = topOnly ? 0 : wi.getSystemWindowInsetTop();
-    lp.rightMargin = ignoreHorizontal ? 0 : wi.getSystemWindowInsetRight();
+    int left = wi.getSystemWindowInsetLeft();
+    int top = wi.getSystemWindowInsetTop();
+    int right = wi.getSystemWindowInsetRight();
     int bottom = wi.getSystemWindowInsetBottom();
-    lp.bottomMargin = ignoreBottom || shouldIgnoreBottomMargin(child, bottom) ? 0 : bottom;
+
+    lp.leftMargin = ignoreAll || ignoreHorizontal ? 0 : left;
+    lp.topMargin = ignoreAll || topOnly ? 0 : top;
+    lp.rightMargin = ignoreAll || ignoreHorizontal ? 0 : right;
+    lp.bottomMargin = ignoreAll || ignoreBottom || shouldIgnoreBottomMargin(child, bottom) ? 0 : bottom;
     if (UI.getContext(getContext()).dispatchCameraMargins(child, lp.leftMargin, lp.topMargin, lp.rightMargin, bottom)) {
       lp.leftMargin = lp.topMargin = lp.rightMargin = lp.bottomMargin = 0;
     } else {
       ViewController<?> c = ViewController.findAncestor(child);
       if (c != null) {
-        c.dispatchInnerMargins(lp.leftMargin, lp.topMargin, lp.rightMargin, bottom);
+        c.dispatchInnerMargins(left, top, right, bottom);
       }
     }
   }

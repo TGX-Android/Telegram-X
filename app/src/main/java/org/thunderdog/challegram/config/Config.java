@@ -17,6 +17,8 @@ package org.thunderdog.challegram.config;
 import android.os.Build;
 import android.view.WindowManager;
 
+import androidx.annotation.Dimension;
+
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.N;
@@ -26,7 +28,9 @@ import org.thunderdog.challegram.data.TD;
 public class Config {
   public static final boolean SUPPORT_SYSTEM_UNDERLINE_SPAN = true;
 
-  public static final boolean COMMENTS_SUPPORTED = false;
+  public static final boolean COMMENTS_INLINE_BUTTON_SEPARATOR_1PX = false;
+  public static final @Dimension(unit = Dimension.DP) int COMMENTS_BUBBLE_BUTTON_MIN_WIDTH = 200;
+  public static final boolean SHOW_CHANNEL_POST_REPLY_INFO_IN_COMMENTS = true;
 
   public static final boolean NEED_SILENT_BROADCAST = false;
 
@@ -169,8 +173,6 @@ public class Config {
 
   public static final boolean SMOOTH_SCROLL_TO_BOTTOM_ENABLED = false; // Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP;
 
-  public static final boolean SEARCH_BY_AVAILABLE = false;
-
   public static final boolean ALLOW_DEBUG_DC = BuildConfig.DEBUG || BuildConfig.EXPERIMENTAL;
 
   public static final boolean DEBUG_DISABLE_DOWNLOAD = false; // BuildConfig.DEBUG;
@@ -286,5 +288,9 @@ public class Config {
 
   public static final boolean DEBUG_REACTIONS_ANIMATIONS = false;
   public static final boolean TEST_STATIC_REACTIONS = false;
-  public static final boolean TEST_GENERIC_REACTION_EFFECTS = BuildConfig.DEBUG;
+  public static final boolean TEST_GENERIC_REACTION_EFFECTS = false;
+
+  public static final boolean REORDER_INSTALLED_STICKER_SETS = false;
+
+  public static final boolean NEED_TEMPORARY_TOPICS_WORKAROUND = true;
 }

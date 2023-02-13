@@ -32,10 +32,12 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageReceiver;
+import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.util.text.Highlight;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.util.text.TextWrapper;
@@ -110,8 +112,12 @@ public class TGMessageFile extends TGMessage {
     }
 
     private boolean updateCaption (boolean animated) {
+      return updateCaption(animated, false);
+    }
+
+    private boolean updateCaption (boolean animated, boolean force) {
       TdApi.FormattedText caption = this.pendingCaption != null ? this.pendingCaption : this.serverCaption;
-      if (!Td.equalsTo(this.effectiveCaption, caption)) {
+      if (!Td.equalsTo(this.effectiveCaption, caption) || force) {
         this.effectiveCaption = Td.isEmpty(caption) ? null : caption;
         if (this.captionWrapper != null) {
           this.captionMediaKeyOffset += this.captionWrapper.getMaxMediaCount();
@@ -124,6 +130,7 @@ public class TGMessageFile extends TGMessage {
                 invalidateTextMediaReceiver(text, specificMedia);
               }
             })
+            .setHighlightText(getHighlightedText(Highlight.Pool.KEY_FILE_CAPTION, caption.text))
             .addTextFlags(Text.FLAG_BIG_EMOJI)
             .setClickCallback(clickCallback());
           wrapper.setViewProvider(currentViews);
@@ -177,14 +184,25 @@ public class TGMessageFile extends TGMessage {
     }
 
     private boolean needExpandHeight () {
-      int bottomLineWidth = calculateLastLineWidth();
-      return bottomLineWidth == BOTTOM_LINE_EXPAND_HEIGHT || needExpandBubble(bottomLineWidth);
+      if (useBubbles()) {
+        int maxLineWidth = getRealContentMaxWidth();
+        int lastLineWidth = calculateLastLineWidth();
+        int bubbleTimePartWidth = computeBubbleTimePartWidth(/* includePadding */ true);
+        return needExpandBubble(lastLineWidth, bubbleTimePartWidth, maxLineWidth);
+      }
+      return false;
     }
 
     private int calculateVisualLastLineWidth () {
-      int lineWidth = calculateLastLineWidth();
-      boolean needExpand = lineWidth == BOTTOM_LINE_EXPAND_HEIGHT || needExpandBubble(lineWidth);
-      return needExpand ? getWidth() - getBubbleTimePartWidth() : lineWidth;
+      int lastLineWidth = calculateLastLineWidth();
+      if (useBubbles()) {
+        int maxLineWidth = getRealContentMaxWidth();
+        int bubbleTimePartWidth = computeBubbleTimePartWidth(/* includePadding */ true);
+        if (needExpandBubble(lastLineWidth, bubbleTimePartWidth, maxLineWidth)) {
+          return getWidth() - bubbleTimePartWidth;
+        }
+      }
+      return lastLineWidth;
     }
 
     @Override
@@ -235,19 +253,19 @@ public class TGMessageFile extends TGMessage {
     switch (message.content.getConstructor()) {
       case TdApi.MessageDocument.CONSTRUCTOR: {
         TdApi.MessageDocument document = (TdApi.MessageDocument) message.content;
-        component = new FileComponent(context, document.document);
+        component = new FileComponent(context, message, document.document);
         caption = document.caption;
         break;
       }
       case TdApi.MessageAudio.CONSTRUCTOR: {
         TdApi.MessageAudio audio = (TdApi.MessageAudio) message.content;
-        component = new FileComponent(context, audio.audio, message, context.manager);
+        component = new FileComponent(context, message, audio.audio, message, context.manager);
         caption = audio.caption;
         break;
       }
       case TdApi.MessageVoiceNote.CONSTRUCTOR: {
         TdApi.MessageVoiceNote voiceNote = (TdApi.MessageVoiceNote) message.content;
-        component = new FileComponent(context, voiceNote.voiceNote, message, context.manager);
+        component = new FileComponent(context, message, voiceNote.voiceNote, message, context.manager);
         caption = voiceNote.caption;
         disallowTouch = false;
         break;
@@ -386,6 +404,15 @@ public class TGMessageFile extends TGMessage {
       return true;
     }
     return filesChanged;
+  }
+
+  @Override
+  protected void onUpdateHighlightedText () {
+    if (filesList == null) return;
+    for (CaptionedFile file : filesList) {
+      file.updateCaption(needAnimateChanges(), true);
+    }
+    rebuildContent();
   }
 
   @Override
@@ -646,6 +673,16 @@ public class TGMessageFile extends TGMessage {
       }
     }
     return res;
+  }
+
+  @Override
+  public MediaViewThumbLocation getMediaThumbLocation (long messageId, View view, int viewTop, int viewBottom, int top) {
+    for (ListAnimator.Entry<CaptionedFile> entry : files) {
+      if (entry.item.messageId == messageId) {
+        return entry.item.component.getMediaThumbLocation(view, viewTop, viewBottom, top);
+      }
+    }
+    return null;
   }
 
   // Document actions

@@ -1163,13 +1163,9 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
         break;
       }
       case R.id.btn_quick_reaction: {
-        tdlib.ensureEmojiReactionsAvailable((reactionsUpdated) ->
-          executeOnUiThread(() -> {
-            EditEnabledReactionsController c = new EditEnabledReactionsController(context, tdlib);
-            c.setArguments(new EditEnabledReactionsController.Args(null, EditEnabledReactionsController.TYPE_QUICK_REACTION));
-            navigateTo(c);
-          })
-        );
+        EditEnabledReactionsController c = new EditEnabledReactionsController(context, tdlib);
+        c.setArguments(new EditEnabledReactionsController.Args(null, EditEnabledReactionsController.TYPE_QUICK_REACTION));
+        navigateTo(c);
         break;
       }
       case R.id.btn_emoji: {

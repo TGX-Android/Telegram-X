@@ -30,6 +30,8 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 
+import me.vkryl.td.Td;
+
 public class InlineResultCommand extends InlineResult<TdApi.BotCommand> {
   private final UserContext userContext;
 
@@ -43,8 +45,14 @@ public class InlineResultCommand extends InlineResult<TdApi.BotCommand> {
     this.userContext = new UserContext(tdlib, user);
   }
 
+  @Nullable
   public String getUsername () {
-    return userContext.getUser() != null ? userContext.getUser().username : null;
+    return Td.primaryUsername(getUsernames());
+  }
+
+  @Nullable
+  public TdApi.Usernames getUsernames () {
+    return userContext.getUser() != null ? userContext.getUser().usernames : null;
   }
 
   public String getCommand () {

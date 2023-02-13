@@ -77,6 +77,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.AppBuildInfo;
 import org.thunderdog.challegram.util.Crash;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
+import org.thunderdog.challegram.util.DeviceStorageError;
 import org.thunderdog.challegram.util.DeviceTokenType;
 
 import java.io.File;
@@ -102,6 +103,7 @@ import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.DateUtils;
+import me.vkryl.core.FileUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.RunnableBool;
@@ -168,7 +170,8 @@ public class Settings {
   private static final int VERSION_38 = 38; // int32 -> int64
   private static final int VERSION_39 = 39; // drop all previously stored crashes
   private static final int VERSION_40 = 40; // drop legacy crash management ids
-  private static final int VERSION = VERSION_40;
+  private static final int VERSION_41 = 41; // clear all application log files
+  private static final int VERSION = VERSION_41;
 
   private static final AtomicBoolean hasInstance = new AtomicBoolean(false);
   private static volatile Settings instance;
@@ -232,7 +235,9 @@ public class Settings {
   public static final String KEY_ACCOUNT_INFO_SUFFIX_ID = ""; // user_id
   public static final String KEY_ACCOUNT_INFO_SUFFIX_NAME1 = "name1"; // first_name
   public static final String KEY_ACCOUNT_INFO_SUFFIX_NAME2 = "name2"; // last_name
-  public static final String KEY_ACCOUNT_INFO_SUFFIX_USERNAME = "username"; // last_name
+  public static final String KEY_ACCOUNT_INFO_SUFFIX_USERNAME = "username"; // username
+  public static final String KEY_ACCOUNT_INFO_SUFFIX_USERNAMES_ACTIVE = "usernames_active"; // username
+  public static final String KEY_ACCOUNT_INFO_SUFFIX_USERNAMES_DISABLED = "usernames_disabled"; // last_name
   public static final String KEY_ACCOUNT_INFO_SUFFIX_PHONE = "phone"; // phone
   public static final String KEY_ACCOUNT_INFO_SUFFIX_PHOTO = "photo"; // path, if loaded
   public static final String KEY_ACCOUNT_INFO_SUFFIX_PHOTO_FULL = "photo_full"; // path, if loaded
@@ -671,7 +676,7 @@ public class Settings {
       if (needAndroidLog()) {
         stream = new TdApi.LogStreamDefault();
       } else {
-        stream = new TdApi.LogStreamFile(TdlibManager.getLogFilePath(false), getLogMaxFileSize(), true);
+        stream = new TdApi.LogStreamFile(TdlibManager.getLogFilePath(false), getLogMaxFileSize(), false);
       }
       TdApi.Object result = Client.execute(new TdApi.SetLogStream(stream));
       if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
@@ -731,8 +736,15 @@ public class Settings {
 
   private Settings () {
     File pmcDir = new File(UI.getAppContext().getFilesDir(), "pmc");
-    if (!pmcDir.exists() && !pmcDir.mkdir()) {
-      throw new IllegalStateException("Unable to create working directory");
+    boolean fatalError;
+    try {
+      fatalError = !pmcDir.exists() && !FileUtils.mkdirs(pmcDir);
+    } catch (SecurityException e) {
+      e.printStackTrace();
+      fatalError = true;
+    }
+    if (fatalError) {
+      throw new DeviceStorageError("Unable to create working directory");
     }
     long ms = SystemClock.uptimeMillis();
     pmc = new LevelDB(new File(pmcDir, "db").getPath(), true, new LevelDB.ErrorHandler() {
@@ -1798,16 +1810,16 @@ public class Settings {
                   TdlibManager.writeAccountConfigFully(r, config);
                 } catch (IOException e) {
                   Tracer.onLaunchError(e);
-                  throw new RuntimeException(e);
+                  throw new DeviceStorageError(e);
                 }
               }
               if (!oldConfigFile.renameTo(backupFile))
-                throw new RuntimeException("Cannot backup old config");
+                throw new DeviceStorageError("Cannot backup old config");
               if (!newConfigFile.renameTo(oldConfigFile))
-                throw new RuntimeException("Cannot save new config");
+                throw new DeviceStorageError("Cannot save new config");
             } catch (Throwable t) {
               Tracer.onLaunchError(t);
-              throw new RuntimeException(t);
+              throw new DeviceStorageError(t);
             }
           }
         }
@@ -1823,6 +1835,10 @@ public class Settings {
           .remove("crash_id_release")
           .remove("crash_id_reported_debug")
           .remove("crash_id_reported_release");
+        break;
+      }
+      case VERSION_41: {
+        deleteAllLogs(false, null);
         break;
       }
     }
@@ -1971,7 +1987,7 @@ public class Settings {
           editor.putString(key, (String) value);
         } else {
           Log.e("Unknown preferences value, key:%s, value:%s", key, value);
-          throw new IllegalStateException("key = " + key + " value = " + value + " (" + (value != null ? value.getClass().getSimpleName() : "null"));
+          throw new UnsupportedOperationException("key = " + key + " value = " + value + " (" + (value != null ? value.getClass().getSimpleName() : "null"));
         }
       }
       if (pipX != null && pipY != null) {
@@ -2082,7 +2098,7 @@ public class Settings {
             String newValue = pmc.tryGetString(key);
             Test.assertEquals((String) value, newValue);
           } else {
-            throw new IllegalStateException("key = " + key + " value = " + value + " (" + (value != null ? value.getClass().getSimpleName() : "null"));
+            throw new UnsupportedOperationException("key = " + key + " value = " + value + " (" + (value != null ? value.getClass().getSimpleName() : "null"));
           }
         } catch (FileNotFoundException e) {
           throw new RuntimeException(key + " not found");
@@ -3158,10 +3174,12 @@ public class Settings {
     Log.setLogLevel(Log.LEVEL_ASSERT);
   }
 
-  public void deleteAllLogs (Runnable after) {
+  public void deleteAllLogs (boolean withTdlibLogs, Runnable after) {
     Background.instance().post(() -> {
       Log.deleteAll(Log.getLogFiles(), futureLogs -> {
-        TdlibManager.deleteAllLogFiles();
+        if (withTdlibLogs) {
+          TdlibManager.deleteAllLogFiles();
+        }
         if (after != null)
           after.run();
       }, null);
@@ -4133,7 +4151,7 @@ public class Settings {
           break;
         }
         default:
-          throw new IllegalArgumentException("typeId == " + typeId);
+          throw new UnsupportedOperationException(Integer.toString(typeId));
       }
 
       return new Proxy(proxyId, server, port, type, null);
@@ -4383,7 +4401,7 @@ public class Settings {
    */
   public boolean removeProxy (int proxyId) {
     if (proxyId <= PROXY_ID_NONE)
-      throw new IllegalArgumentException();
+      throw new IllegalArgumentException(Integer.toString(proxyId));
 
     int availableProxyId = getAvailableProxyId();
     int proxySettings = getProxySettings();
@@ -4441,7 +4459,7 @@ public class Settings {
   @Deprecated
   public int getProxyConnectionTime (int proxyId, int accountId) {
     if (proxyId < PROXY_ID_NONE)
-      throw new IllegalArgumentException("proxyId == " + proxyId);
+      throw new IllegalArgumentException(Integer.toString(proxyId));
     return pmc.getInt(KEY_PROXY_PREFIX_CONNECTION_TIME + proxyId + "_" + accountId, 0);
   }
 
@@ -4523,7 +4541,7 @@ public class Settings {
           stringRes = R.string.ProxyHttp;
           break;
         default:
-          throw new IllegalStateException();
+          throw new UnsupportedOperationException(type.toString());
       }
       return Lang.getString(stringRes, (target, argStart, argEnd, argIndex, needFakeBold) -> new CustomTypefaceSpan(null, R.id.theme_color_textLight), name);
     }
@@ -6295,7 +6313,7 @@ public class Settings {
     AppBuildInfo buildInfo = new AppBuildInfo(installationId);
     pmc.edit()
       .putLong(KEY_APP_INSTALLATION_ID, installationId)
-      .putLong(KEY_APP_COMMIT_DATE, buildInfo.getCommitDate());
+      .putLong(KEY_APP_COMMIT_DATE, buildInfo.maxCommitDate());
     buildInfo.saveTo(pmc, KEY_APP_INSTALLATION_PREFIX + installationId);
     pmc.apply();
     this.currentBuildInformation = buildInfo;

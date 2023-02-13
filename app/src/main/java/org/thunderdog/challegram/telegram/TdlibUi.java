@@ -14,6 +14,7 @@
  */
 package org.thunderdog.challegram.telegram;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -157,6 +158,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import me.vkryl.core.ArrayUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
@@ -178,6 +180,14 @@ public class TdlibUi extends Handler {
   /*package*/ TdlibUi (Tdlib tdlib) {
     super(Looper.getMainLooper());
     this.tdlib = tdlib;
+  }
+
+  public void execute (Runnable runnable) {
+    if (UI.inUiThread()) {
+      runnable.run();
+    } else {
+      post(runnable);
+    }
   }
 
   public static int[] getAvailablePriorityOrImportanceList () {
@@ -272,11 +282,27 @@ public class TdlibUi extends Handler {
     }
     final long chatId = TD.getChatId(deletingMessages);
     if (chatId == 0 || !context.tdlib().isSupergroup(chatId)) {
+      // Chat is not supergroup
+      return false;
+    }
+    final TdApi.ChatMemberStatus status = tdlib.chatStatus(chatId);
+    if (status == null || !TD.isAdmin(status) || (status.getConstructor() == TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR && !((TdApi.ChatMemberStatusAdministrator) status).rights.canDeleteMessages)) {
+      // User is not a creator or admin with canDeleteMessages right
       return false;
     }
     final TdApi.MessageSender senderId = TD.getSender(deletingMessages);
     if (senderId == null || context.tdlib().isSelfSender(senderId)) {
+      // No need in "delete all" for outgoing messages
       return false;
+    }
+    for (TdApi.Message deletingMessage : deletingMessages) {
+      // No need in "delete all" for outgoing messages
+      // or some of the passed messages can't be deleted at all
+      if (deletingMessage.isOutgoing ||
+        !(deletingMessage.canBeDeletedForAllUsers || deletingMessage.canBeDeletedOnlyForSelf)
+      ) {
+        return false;
+      }
     }
 
     final String name = tdlib.senderName(senderId, true);
@@ -1124,7 +1150,7 @@ public class TdlibUi extends Handler {
         boolean canEdit;
 
         if (tdlib.isSelfUserId(user.id)) {
-          if (StringUtils.isEmpty(user.username)) {
+          if (!Td.hasUsername(user)) {
             context.navigationController().navigateTo(new EditUsernameController(context.context(), context.tdlib()));
             return true;
           }
@@ -1150,7 +1176,7 @@ public class TdlibUi extends Handler {
         icons.append(R.drawable.baseline_forward_24);
         strings.append(R.string.ShareLink);
 
-        context.showOptions(canEdit ? null : "@" + user.username, ids.get(), strings.get(), null, icons.get());
+        context.showOptions(canEdit ? null : "@" + Td.primaryUsername(user), ids.get(), strings.get(), null, icons.get());
 
         return true;
       }
@@ -1236,7 +1262,7 @@ public class TdlibUi extends Handler {
         return true;
       }
       case R.id.btn_username_copy: {
-        UI.copyText('@' + user.username, R.string.CopiedUsername);
+        UI.copyText('@' + Td.primaryUsername(user), R.string.CopiedUsername);
         return true;
       }
       case R.id.btn_username_copy_link: {
@@ -1356,7 +1382,10 @@ public class TdlibUi extends Handler {
   }
 
   private void shareUsername (ViewController<?> context, TdApi.User user) {
-    String username = user.username;
+    shareUsername(context, user, Td.primaryUsername(user));
+  }
+
+  private void shareUsername (ViewController<?> context, TdApi.User user, String username) {
     if (StringUtils.isEmpty(username))
       return;
     String link = tdlib.tMeUrl(username);
@@ -1730,6 +1759,9 @@ public class TdlibUi extends Handler {
     public int highlightMode;
     public MessageId highlightMessageId;
 
+    public String searchQuery;
+    public MessageId foundMessage;
+
     public @Nullable UrlOpenParameters urlOpenParameters;
 
     public TdApi.ChatList chatList;
@@ -1766,14 +1798,17 @@ public class TdlibUi extends Handler {
       return true;
     }
 
-    public static ChatOpenParameters restoreInstanceState (Bundle in, String keyPrefix) {
+    public static @Nullable ChatOpenParameters restoreInstanceState (Tdlib tdlib, Bundle in, String keyPrefix) {
       ChatOpenParameters params = new ChatOpenParameters();
       params.options = in.getInt(keyPrefix + "cp_options", 0);
       params.highlightSet = in.getBoolean(keyPrefix + "cp_highlightSet", false);
       params.highlightMode = in.getInt(keyPrefix + "cp_highlightMode", 0);
       params.highlightMessageId = TD.restoreMessageId(in, keyPrefix + "cp_highlightMessageId");
       params.chatList = TD.chatListFromKey(in.getString(keyPrefix + "cp_chatList", null));
-      params.threadInfo = ThreadInfo.restoreFrom(in, keyPrefix + "cp_messageThread");
+      ThreadInfo threadInfo = ThreadInfo.restoreFrom(tdlib, in, keyPrefix + "cp_messageThread");
+      if (threadInfo == ThreadInfo.INVALID)
+        return null;
+      params.threadInfo = threadInfo;
       params.filter = TD.restoreFilter(in, keyPrefix + "cp_filter");
       return params;
     }
@@ -1802,6 +1837,9 @@ public class TdlibUi extends Handler {
     }
 
     public ChatOpenParameters messageThread (ThreadInfo threadInfo) {
+      if (threadInfo != null && BitwiseUtils.getFlag(options, CHAT_OPTION_SCHEDULED_MESSAGES)) {
+        throw new IllegalArgumentException();
+      }
       this.threadInfo = threadInfo;
       return this;
     }
@@ -1827,6 +1865,9 @@ public class TdlibUi extends Handler {
     }
 
     public ChatOpenParameters scheduledOnly () {
+      if (this.threadInfo != null) {
+        throw new IllegalArgumentException();
+      }
       this.options |= CHAT_OPTION_SCHEDULED_MESSAGES;
       return this;
     }
@@ -1863,6 +1904,12 @@ public class TdlibUi extends Handler {
 
     public ChatOpenParameters highlightMessage (TdApi.Message message) {
       return highlightMessage(new MessageId(message.chatId, message.id));
+    }
+
+    public ChatOpenParameters foundMessage (String query, TdApi.Message message) {
+      this.foundMessage = new MessageId(message.chatId, message.id);
+      this.searchQuery = query;
+      return highlightMessage(foundMessage);
     }
 
     public ChatOpenParameters highlightMessage (MessageId highlightMessageId) {
@@ -2194,7 +2241,9 @@ public class TdlibUi extends Handler {
     controller.postOnAnimationReady(actor);
 
     final MessagesController.Arguments arguments;
-    if (highlightMessageId != null) {
+    if (params != null && !StringUtils.isEmpty(params.searchQuery) && params.foundMessage != null) {
+      arguments = new MessagesController.Arguments(chatList, chat, messageThread, highlightMessageId, highlightMode, filter, params.foundMessage, params.searchQuery);
+    } else if (highlightMessageId != null) {
       arguments = new MessagesController.Arguments(chatList, chat, messageThread, highlightMessageId, highlightMode, filter);
     } else {
       arguments = new MessagesController.Arguments(tdlib, chatList, chat, messageThread, filter);
@@ -2260,8 +2309,12 @@ public class TdlibUi extends Handler {
       navigation.getStack().insert(c, 0);
     } else {
       ViewController<?> c = navigation.getCurrentStackItem();
-      if (c instanceof MessagesController && c.getChatId() == chat.id && !((MessagesController) c).inPreviewMode()) {
+      if (c instanceof MessagesController && !tdlib.isSelfChat(chat) && ((MessagesController) c).getHeaderChatId() == chat.id && !((MessagesController) c).inPreviewMode()) {
         profileController.setShareCustomHeaderView(true);
+      } else if (c instanceof ProfileController && ((ProfileController) c).isSameProfile(profileController)) {
+        profileController.get();
+        profileController.destroy();
+        return;
       }
       navigation.navigateTo(profileController);
     }
@@ -2368,13 +2421,46 @@ public class TdlibUi extends Handler {
   }
 
   public void openMessage (final TdlibDelegate context, final long chatId, final MessageId messageId, final @Nullable UrlOpenParameters openParameters) {
-    openChat(context, chatId, new ChatOpenParameters().keepStack().highlightMessage(messageId).ensureHighlightAvailable().urlOpenParameters(openParameters));
+    openMessage(context, chatId, messageId, /* messageThread */ null, openParameters);}
+
+  public void openMessage (final TdlibDelegate context, final long chatId, final MessageId messageId, final @Nullable ThreadInfo messageThread, final @Nullable UrlOpenParameters openParameters) {
+    openChat(context, chatId, new ChatOpenParameters().keepStack().highlightMessage(messageId).ensureHighlightAvailable().messageThread(messageThread).urlOpenParameters(openParameters));
   }
 
   public void openMessage (final TdlibDelegate context, final TdApi.MessageLinkInfo messageLink, final UrlOpenParameters openParameters) {
     if (messageLink.message != null) {
-      // TODO support for album, comments, etc
-      openMessage(context, messageLink.chatId, new MessageId(messageLink.message.chatId, messageLink.message.id), openParameters);
+      // TODO support for album, media timestamp, etc
+      MessageId messageId = new MessageId(messageLink.message.chatId, messageLink.message.id);
+      if (messageLink.messageThreadId != 0) {
+        // FIXME TDLib/Server: need GetMessageThread alternative that accepts (chatId, messageThreadId)
+        context.tdlib().send(new TdApi.GetMessageThread(messageId.getChatId(), messageId.getMessageId()), (result) -> {
+          switch (result.getConstructor()) {
+            case TdApi.MessageThreadInfo.CONSTRUCTOR:
+              ThreadInfo messageThread = ThreadInfo.openedFromMessage(context.tdlib(), (TdApi.MessageThreadInfo) result, openParameters.messageId);
+              if (Config.SHOW_CHANNEL_POST_REPLY_INFO_IN_COMMENTS) {
+                TdApi.Message message = messageThread.getOldestMessage();
+                if (message != null && message.replyToMessageId == 0 && message.forwardInfo != null && tdlib.isChannelAutoForward(message)) {
+                  tdlib.send(new TdApi.GetRepliedMessage(message.forwardInfo.fromChatId, message.forwardInfo.fromMessageId), (object) -> {
+                    if (object.getConstructor() == TdApi.Message.CONSTRUCTOR) {
+                      TdApi.Message repliedMessage = (TdApi.Message) object;
+                      message.replyInChatId = repliedMessage.chatId;
+                      message.replyToMessageId = repliedMessage.id;
+                    }
+                    openMessage(context, messageThread.getChatId(), messageId, messageThread, openParameters);
+                  });
+                  break;
+                }
+              }
+              openMessage(context, messageThread.getChatId(), messageId, messageThread, openParameters);
+              break;
+            case TdApi.Error.CONSTRUCTOR:
+              openMessage(context, messageLink.chatId, messageId, openParameters);
+              break;
+          }
+        });
+      } else {
+        openMessage(context, messageLink.chatId, messageId, openParameters);
+      }
     } else {
       if (tdlib.chat(messageLink.chatId) != null) {
         UI.showToast(tdlib.isChannel(messageLink.chatId) ? R.string.PostNotFound : R.string.MessageNotFound, Toast.LENGTH_SHORT);
@@ -2793,7 +2879,9 @@ public class TdlibUi extends Handler {
       return;
     }
 
-    if (options != null && options.requireOpenPrompt) {
+    Uri uri = Strings.wrapHttps(url);
+
+    if (options != null && options.requireOpenPrompt && (uri == null || !tdlib.isTrustedHost(url, true))) {
       ViewController<?> c = context instanceof ViewController<?> ? (ViewController<?>) context : context.context().navigation().getCurrentStackItem();
       if (c != null && !c.isDestroyed()) {
         AlertDialog.Builder b = new AlertDialog.Builder(context.context(), Theme.dialogTheme());
@@ -2809,7 +2897,6 @@ public class TdlibUi extends Handler {
       return;
     }
 
-    Uri uri = Strings.wrapHttps(url);
     if (uri == null) {
       UI.openUrl(url);
       return;
@@ -3358,7 +3445,13 @@ public class TdlibUi extends Handler {
             }
             case TdApi.InternalLinkTypeUserPhoneNumber.CONSTRUCTOR: {
               final String phoneNumber = ((TdApi.InternalLinkTypeUserPhoneNumber) linkType).phoneNumber;
-              openChatProfile(context, 0, null, new TdApi.SearchUserByPhoneNumber(phoneNumber), null);
+              openChatProfile(context, 0, null, new TdApi.SearchUserByPhoneNumber(phoneNumber), openParameters);
+              break;
+            }
+
+            case TdApi.InternalLinkTypeUserToken.CONSTRUCTOR: {
+              final String token = ((TdApi.InternalLinkTypeUserToken) linkType).token;
+              openChatProfile(context, 0, null, new TdApi.SearchUserByToken(token), openParameters);
               break;
             }
             case TdApi.InternalLinkTypePublicChat.CONSTRUCTOR: {
@@ -5276,6 +5369,7 @@ public class TdlibUi extends Handler {
   // Custom themes
 
   public void showDeleteThemeConfirm (ViewController<?> context, ThemeInfo theme, Runnable onDelete) {
+    //noinspection WrongConstant
     if (!ThemeManager.isCustomTheme(theme.getId()))
       return;
     context.showOptions(Lang.getString(R.string.ThemeRemoveInfo), new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ThemeRemoveConfirm), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
@@ -6081,7 +6175,7 @@ public class TdlibUi extends Handler {
         return items;
       }
       return null;
-    }, (menuView, parentView) -> {
+    }, (menuView, parentView, item) -> {
       switch (menuView.getId()) {
         case R.id.btn_sendScheduled:
           if (context != null) {
@@ -6197,7 +6291,7 @@ public class TdlibUi extends Handler {
         }
       }
       if (seconds > 0) {
-        int sendDate = (int) (tdlib.currentTimeMillis() / 1000l + seconds);
+        int sendDate = (int) (tdlib.currentTime(TimeUnit.SECONDS) + seconds);
         callback.runWithData(Td.newSendOptions(defaultSendOptions, new TdApi.MessageSchedulingStateSendAtDate(sendDate)));
       }
       return true;

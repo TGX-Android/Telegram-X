@@ -18,6 +18,7 @@ import android.view.View;
 
 import androidx.annotation.Nullable;
 
+import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.telegram.TdlibUi;
@@ -35,8 +36,8 @@ public abstract class TGSource {
   public abstract boolean open (View view, Text text, TextPart part,  @Nullable TdlibUi.UrlOpenParameters openParameters, Receiver receiver);
   public abstract void load ();
   public abstract String getAuthorName ();
-  public abstract ImageFile getAvatar ();
-  public abstract AvatarPlaceholder.Metadata getAvatarPlaceholderMetadata ();
+  public abstract int getAuthorNameColorId ();
+  public abstract void requestAvatar (AvatarReceiver receiver);
   public abstract void destroy ();
 
   public boolean isReady () {

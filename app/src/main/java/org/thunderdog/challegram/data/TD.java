@@ -14,11 +14,15 @@
  */
 package org.thunderdog.challegram.data;
 
+import static androidx.core.util.ObjectsCompat.requireNonNull;
+
 import android.Manifest;
 import android.app.DownloadManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.graphics.BitmapFactory;
+import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
@@ -39,6 +43,7 @@ import android.text.style.StyleSpan;
 import android.text.style.TypefaceSpan;
 import android.text.style.URLSpan;
 import android.text.style.UnderlineSpan;
+import android.util.Size;
 import android.util.SparseIntArray;
 import android.view.View;
 import android.widget.Toast;
@@ -800,6 +805,271 @@ public class TD {
     return null;
   }
 
+  public static void saveMessageThreadInfo (Bundle bundle, String prefix, @Nullable TdApi.MessageThreadInfo threadInfo) {
+    if (threadInfo == null) {
+      return;
+    }
+    bundle.putLong(prefix + "_chatId", threadInfo.chatId);
+    bundle.putLong(prefix + "_messageThreadId", threadInfo.messageThreadId);
+    bundle.putInt(prefix + "_unreadMessageCount", threadInfo.unreadMessageCount);
+    saveReplyInfo(bundle, prefix + "_replyInfo", threadInfo.replyInfo);
+    saveDraftMessage(bundle, prefix + "_draftMessage", threadInfo.draftMessage);
+    bundle.putInt(prefix + "_messagesLength", threadInfo.messages.length);
+    for (int index = 0; index < threadInfo.messages.length; index++) {
+      bundle.putLong(prefix + "_messageId_" + index, threadInfo.messages[index].id);
+    }
+  }
+
+  public static @Nullable TdApi.MessageThreadInfo restoreMessageThreadInfo (Tdlib tdlib, Bundle bundle, String prefix) {
+    long chatId = bundle.getLong(prefix + "_chatId");
+    long messageThreadId = bundle.getLong(prefix + "_messageThreadId");
+    if (chatId == 0 || messageThreadId == 0) {
+      return null;
+    }
+    TdApi.MessageReplyInfo replyInfo = restoreMessageReplyInfo(bundle, prefix + "_replyInfo");
+    if (replyInfo == null) {
+      return null;
+    }
+    int unreadMessageCount = bundle.getInt(prefix + "_unreadMessageCount");
+    int messagesLength = bundle.getInt(prefix + "_messagesLength");
+    ArrayList<TdApi.Message> messages = new ArrayList<>(Math.max(messagesLength, 0));
+    for (int index = 0; index < messagesLength; index++) {
+      long messageId = bundle.getLong(prefix + "_messageId_" + index);
+      TdApi.Message message = tdlib.getMessageLocally(chatId, messageId);
+      if (message != null) {
+        messages.add(message);
+      } else {
+        return null;
+      }
+    }
+    TdApi.DraftMessage draftMessage = restoreDraftMessage(bundle, prefix + "_draftMessage");
+    return new TdApi.MessageThreadInfo(chatId, messageThreadId, replyInfo, unreadMessageCount, messages.toArray(new TdApi.Message[0]), draftMessage);
+  }
+
+  public static void saveDraftMessage (Bundle bundle, String prefix, @Nullable TdApi.DraftMessage draftMessage) {
+    if (draftMessage == null) {
+      return;
+    }
+    if (!(draftMessage.inputMessageText instanceof TdApi.InputMessageText)) {
+      throw new UnsupportedOperationException(draftMessage.inputMessageText.toString());
+    }
+    bundle.putLong(prefix + "_replyToMessageId", draftMessage.replyToMessageId);
+    bundle.putInt(prefix + "_date", draftMessage.date);
+    saveInputMessageText(bundle, prefix + "_inputMessageText", (TdApi.InputMessageText) draftMessage.inputMessageText);
+  }
+
+  public static @Nullable TdApi.DraftMessage restoreDraftMessage (Bundle bundle, String prefix) {
+    long replyToMessageId = bundle.getLong(prefix + "_replyToMessageId");
+    int date = bundle.getInt(prefix + "_date");
+    TdApi.InputMessageText inputMessageText = restoreInputMessageText(bundle, prefix + "_inputMessageText");
+    if (inputMessageText == null)
+      return null;
+    return new TdApi.DraftMessage(replyToMessageId, date, inputMessageText);
+  }
+
+  public static void saveInputMessageText (Bundle bundle, String prefix, @Nullable TdApi.InputMessageText inputMessageText) {
+    if (inputMessageText == null) {
+      return;
+    }
+    saveFormattedText(bundle, prefix + "_text", inputMessageText.text);
+    bundle.putBoolean(prefix + "_disableWebPagePreview", inputMessageText.disableWebPagePreview);
+    bundle.putBoolean(prefix + "_clearDraft", inputMessageText.clearDraft);
+  }
+
+  public static @Nullable TdApi.InputMessageText restoreInputMessageText (Bundle bundle, String prefix) {
+    TdApi.FormattedText text = restoreFormattedText(bundle, prefix + "_text");
+    if (text == null) {
+      return null;
+    }
+    boolean disableWebPagePreview = bundle.getBoolean(prefix + "_disableWebPagePreview");
+    boolean clearDraft = bundle.getBoolean(prefix + "_clearDraft");
+    return new TdApi.InputMessageText(text, disableWebPagePreview, clearDraft);
+  }
+
+  public static void saveFormattedText (Bundle bundle, String prefix, @Nullable TdApi.FormattedText formattedText) {
+    if (formattedText == null) {
+      return;
+    }
+    bundle.putString(prefix + "_text", formattedText.text);
+    if (formattedText.entities != null) {
+      bundle.putInt(prefix + "_entityCount", formattedText.entities.length);
+      for (int i = 0; i < formattedText.entities.length; i++) {
+        saveTextEntity(bundle, prefix + "_entity_" + i, formattedText.entities[i]);
+      }
+    }
+  }
+
+  public static @Nullable TdApi.FormattedText restoreFormattedText (Bundle bundle, String prefix) {
+    String text = bundle.getString(prefix + "_text");
+    if (text == null) {
+      return null;
+    }
+    int entityCount = bundle.getInt(prefix + "_entityCount");
+    TdApi.TextEntity[] entities = new TdApi.TextEntity[entityCount];
+    for (int i = 0; i < entityCount; i++) {
+      TdApi.TextEntity entity = restoreTextEntity(bundle, prefix + "_entity_" + i);
+      if (entity != null) {
+        entities[i] = entity;
+      } else {
+        return null;
+      }
+    }
+    return new TdApi.FormattedText(text, entities);
+  }
+
+  public static void saveTextEntity (Bundle bundle, String prefix, @Nullable TdApi.TextEntity textEntity) {
+    if (textEntity == null) {
+      return;
+    }
+    bundle.putInt(prefix + "_offset", textEntity.offset);
+    bundle.putInt(prefix + "_length", textEntity.length);
+    saveTextEntityType(bundle, prefix + "_type", textEntity.type);
+  }
+
+  public static @Nullable TdApi.TextEntity restoreTextEntity (Bundle bundle, String prefix) {
+    if (!bundle.containsKey(prefix + "_offset")) {
+      return null;
+    }
+    int offset = bundle.getInt(prefix + "_offset");
+    int length = bundle.getInt(prefix + "_length");
+    TdApi.TextEntityType type = restoreTextEntityType(bundle, prefix + "_type");
+    if (type == null) {
+      return null;
+    }
+    return new TdApi.TextEntity(offset, length, type);
+  }
+
+  public static void saveTextEntityType (Bundle bundle, String prefix, @Nullable TdApi.TextEntityType type) {
+    if (type == null) {
+      return;
+    }
+    bundle.putInt(prefix + "_constructor", type.getConstructor());
+    switch (type.getConstructor()) {
+      case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
+        bundle.putString(prefix + "_language", ((TdApi.TextEntityTypePreCode) type).language);
+        break;
+      case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
+        bundle.putString(prefix + "_url", ((TdApi.TextEntityTypeTextUrl) type).url);
+        break;
+      case TdApi.TextEntityTypeMentionName.CONSTRUCTOR:
+        bundle.putLong(prefix + "_userId", ((TdApi.TextEntityTypeMentionName) type).userId);
+        break;
+      case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
+        bundle.putLong(prefix + "_customEmojiId", ((TdApi.TextEntityTypeCustomEmoji) type).customEmojiId);
+        break;
+      case TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR:
+        bundle.putInt(prefix + "_mediaTimestamp", ((TdApi.TextEntityTypeMediaTimestamp) type).mediaTimestamp);
+        break;
+      case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR:
+      case TdApi.TextEntityTypeBold.CONSTRUCTOR:
+      case TdApi.TextEntityTypeBotCommand.CONSTRUCTOR:
+      case TdApi.TextEntityTypeCashtag.CONSTRUCTOR:
+      case TdApi.TextEntityTypeCode.CONSTRUCTOR:
+      case TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR:
+      case TdApi.TextEntityTypeHashtag.CONSTRUCTOR:
+      case TdApi.TextEntityTypeItalic.CONSTRUCTOR:
+      case TdApi.TextEntityTypeMention.CONSTRUCTOR:
+      case TdApi.TextEntityTypePhoneNumber.CONSTRUCTOR:
+      case TdApi.TextEntityTypePre.CONSTRUCTOR:
+      case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
+      case TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR:
+      case TdApi.TextEntityTypeUnderline.CONSTRUCTOR:
+      case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
+        break;
+      default:
+        throw new UnsupportedOperationException(type.toString());
+    }
+  }
+
+  public static @Nullable TdApi.TextEntityType restoreTextEntityType (Bundle bundle, String prefix) {
+    if (!bundle.containsKey(prefix + "_constructor")) {
+      return null;
+    }
+    @TdApi.TextEntityType.Constructors int constructor = bundle.getInt(prefix + "_constructor");
+    switch (constructor) {
+      case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR:
+        return new TdApi.TextEntityTypeBankCardNumber();
+      case TdApi.TextEntityTypeBold.CONSTRUCTOR:
+        return new TdApi.TextEntityTypeBold();
+      case TdApi.TextEntityTypeBotCommand.CONSTRUCTOR:
+        return new TdApi.TextEntityTypeBotCommand();
+      case TdApi.TextEntityTypeCashtag.CONSTRUCTOR:
+        return new TdApi.TextEntityTypeCashtag();
+      case TdApi.TextEntityTypeCode.CONSTRUCTOR:
+        return new TdApi.TextEntityTypeCode();
+      case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
+        long customEmoji = requireNonNull(bundle.getLong(prefix + "_customEmojiId"));
+        return new TdApi.TextEntityTypeCustomEmoji(customEmoji);
+      case TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR:
+        return new TdApi.TextEntityTypeEmailAddress();
+      case TdApi.TextEntityTypeHashtag.CONSTRUCTOR:
+        return new TdApi.TextEntityTypeHashtag();
+      case TdApi.TextEntityTypeItalic.CONSTRUCTOR:
+        return new TdApi.TextEntityTypeItalic();
+      case TdApi.TextEntityTypeMediaTimestamp.CONSTRUCTOR:
+        int mediaTimestamp = bundle.getInt(prefix + "_mediaTimestamp");
+        return new TdApi.TextEntityTypeMediaTimestamp(mediaTimestamp);
+      case TdApi.TextEntityTypeMention.CONSTRUCTOR:
+        return new TdApi.TextEntityTypeMention();
+      case TdApi.TextEntityTypeMentionName.CONSTRUCTOR:
+        long userId = bundle.getLong(prefix + "_userId");
+        return new TdApi.TextEntityTypeMentionName(userId);
+      case TdApi.TextEntityTypePhoneNumber.CONSTRUCTOR:
+        return new TdApi.TextEntityTypePhoneNumber();
+      case TdApi.TextEntityTypePre.CONSTRUCTOR:
+        return new TdApi.TextEntityTypePre();
+      case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
+        String language = requireNonNull(bundle.getString(prefix + "_language"));
+        return new TdApi.TextEntityTypePreCode(language);
+      case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
+        return new TdApi.TextEntityTypeSpoiler();
+      case TdApi.TextEntityTypeStrikethrough.CONSTRUCTOR:
+        return new TdApi.TextEntityTypeStrikethrough();
+      case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
+        String url = requireNonNull(bundle.getString(prefix + "_url"));
+        return new TdApi.TextEntityTypeTextUrl(url);
+      case TdApi.TextEntityTypeUnderline.CONSTRUCTOR:
+        return new TdApi.TextEntityTypeUnderline();
+      case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
+        return new TdApi.TextEntityTypeUrl();
+      default:
+        throw new UnsupportedOperationException("constructor=" + constructor);
+    }
+  }
+
+  public static void saveReplyInfo (Bundle bundle, String prefix, @Nullable TdApi.MessageReplyInfo replyInfo) {
+    if (replyInfo == null) {
+      return;
+    }
+    bundle.putInt(prefix + "_replyCount", replyInfo.replyCount);
+    bundle.putLong(prefix + "_lastMessageId", replyInfo.lastMessageId);
+    bundle.putLong(prefix + "_lastReadInboxMessageId", replyInfo.lastReadInboxMessageId);
+    bundle.putLong(prefix + "_lastReadOutboxMessageId", replyInfo.lastReadOutboxMessageId);
+    if (replyInfo.recentReplierIds != null) {
+      bundle.putInt(prefix + "_recentReplierIdsLength", replyInfo.recentReplierIds.length);
+      for (int index = 0; index < replyInfo.recentReplierIds.length; index++) {
+        TdApi.MessageSender recentReplierId = replyInfo.recentReplierIds[index];
+        saveSender(bundle, prefix + "_recentReplierId_" + index, recentReplierId);
+      }
+    }
+  }
+
+  public static @Nullable TdApi.MessageReplyInfo restoreMessageReplyInfo (Bundle bundle, String prefix) {
+    if (!bundle.containsKey(prefix + "_replyCount")) {
+      return null;
+    }
+    int replyCount = bundle.getInt(prefix + "_replyCount");
+    long lastMessageId = bundle.getLong(prefix + "_lastMessageId");
+    long lastReadInboxMessageId = bundle.getLong(prefix + "_lastReadInboxMessageId");
+    long lastReadOutboxMessageId = bundle.getLong(prefix + "_lastReadOutboxMessageId");
+    int recentReplierIdsLength = bundle.getInt(prefix + "_recentReplierIdsLength");
+    TdApi.MessageSender[] recentReplierIds = new TdApi.MessageSender[recentReplierIdsLength];
+    for (int index = 0; index < recentReplierIdsLength; index++) {
+      recentReplierIds[index] = restoreSender(bundle, prefix + "_recentReplierId_" + index);
+    }
+    return new TdApi.MessageReplyInfo(replyCount, recentReplierIds, lastReadInboxMessageId, lastReadOutboxMessageId, lastMessageId);
+  }
+
   public static TdApi.ChatList chatListFromKey (String key) {
     if (StringUtils.isEmpty(key))
       return null;
@@ -1028,6 +1298,64 @@ public class TD {
     }
   }
 
+  public static Size getFinalResolution (TdApi.Document document, @Nullable BitmapFactory.Options options, boolean isRotated) {
+    int width, height;
+    if (options != null && Math.min(options.outWidth, options.outHeight) > 0) {
+      if (isRotated) {
+        //noinspection SuspiciousNameCombination
+        width = options.outHeight; height = options.outWidth;
+      } else {
+        width = options.outWidth;  height = options.outHeight;
+      }
+    } else if (document.thumbnail != null) {
+      width = document.thumbnail.width;
+      height = document.thumbnail.height;
+      float scale = 2f;
+      width *= scale;
+      height *= scale;
+    } else {
+      width = height = 0;
+    }
+    return new Size(width, height);
+  }
+
+  public static TdApi.Animation convertToAnimation (TdApi.Document document, @Nullable BitmapFactory.Options options, boolean isRotated, U.MediaMetadata mediaMetadata) {
+    Size size = getFinalResolution(document, options, isRotated);
+    return new TdApi.Animation(
+      mediaMetadata != null ? (int) TimeUnit.MILLISECONDS.toSeconds(mediaMetadata.durationMs) : 0,
+      size.getWidth(), size.getHeight(),
+      document.fileName, document.mimeType, false,
+      document.minithumbnail, document.thumbnail,
+      document.document
+    );
+  }
+
+  public static TdApi.Video convertToVideo (TdApi.Document document, @Nullable BitmapFactory.Options options, boolean isRotated, U.MediaMetadata mediaMetadata) {
+    Size size = getFinalResolution(document, options, isRotated);
+    return new TdApi.Video(
+      mediaMetadata != null ? (int) TimeUnit.MILLISECONDS.toSeconds(mediaMetadata.durationMs) : 0,
+      size.getWidth(), size.getHeight(),
+      document.fileName, document.mimeType,
+      false, true,
+      document.minithumbnail, document.thumbnail,
+      document.document
+    );
+  }
+
+  public static TdApi.Photo convertToPhoto (TdApi.Document document, @Nullable BitmapFactory.Options options, boolean isRotated) {
+    Size size = getFinalResolution(document, options, isRotated);
+    TdApi.PhotoSize thumbnailSize = toThumbnailSize(document.thumbnail);
+    TdApi.PhotoSize[] sizes = new TdApi.PhotoSize[thumbnailSize != null ? 2 : 1];
+    TdApi.PhotoSize targetSize = new TdApi.PhotoSize("w", document.document, size.getWidth(), size.getHeight(), null);
+    if (thumbnailSize != null) {
+      sizes[0] = thumbnailSize;
+      sizes[1] = targetSize;
+    } else {
+      sizes[0] = targetSize;
+    }
+    return new TdApi.Photo(false, null, sizes);
+  }
+
   public static TdApi.Photo convertToPhoto (TdApi.Sticker sticker) {
     TdApi.PhotoSize thumbnailSize = toThumbnailSize(sticker.thumbnail);
     TdApi.PhotoSize[] sizes = new TdApi.PhotoSize[thumbnailSize != null ? 2 : 1];
@@ -1146,7 +1474,12 @@ public class TD {
     return interactionInfo != null ? interactionInfo.viewCount : 0;
   }
 
-  public static TdApi.MessageReplyInfo getReplyInfo (TdApi.MessageInteractionInfo interactionInfo) {
+  public static int getReplyCount (TdApi.MessageInteractionInfo interactionInfo) {
+    TdApi.MessageReplyInfo replyInfo = getReplyInfo(interactionInfo);
+    return replyInfo != null ? replyInfo.replyCount : 0;
+  }
+
+  public static @Nullable TdApi.MessageReplyInfo getReplyInfo (TdApi.MessageInteractionInfo interactionInfo) {
     return interactionInfo != null ? interactionInfo.replyInfo : null;
   }
 
@@ -1516,7 +1849,7 @@ public class TD {
     return messageIds;
   }
 
-  public static boolean forwardMessages (long toChatId, TdApi.Message[] messages, boolean sendCopy, boolean removeCaption, TdApi.MessageSendOptions options, ArrayList<TdApi.Function<?>> out) {
+  public static boolean forwardMessages (long toChatId, long toMessageThreadId, TdApi.Message[] messages, boolean sendCopy, boolean removeCaption, TdApi.MessageSendOptions options, ArrayList<TdApi.Function<?>> out) {
     if (messages.length == 0) {
       return false;
     }
@@ -1526,7 +1859,7 @@ public class TD {
     for (TdApi.Message message : messages) {
       if (message.chatId != fromChatId) {
         if (size > 0) {
-          out.add(new TdApi.ForwardMessages(toChatId, fromChatId, getMessageIds(messages, index, size), options, sendCopy, removeCaption, false));
+          out.add(new TdApi.ForwardMessages(toChatId, toMessageThreadId, fromChatId, getMessageIds(messages, index, size), options, sendCopy, removeCaption, false));
         }
         fromChatId = message.chatId;
         index += size;
@@ -1535,7 +1868,7 @@ public class TD {
       size++;
     }
     if (size > 0) {
-      out.add(new TdApi.ForwardMessages(toChatId, fromChatId, getMessageIds(messages, index, size), options, sendCopy, removeCaption, false));
+      out.add(new TdApi.ForwardMessages(toChatId, toMessageThreadId, fromChatId, getMessageIds(messages, index, size), options, sendCopy, removeCaption, false));
     }
     return true;
   }
@@ -2009,7 +2342,7 @@ public class TD {
       userId,
       firstName,
       lastName,
-      "",
+      null,
       "",
       new TdApi.UserStatusEmpty(),
       null,
@@ -2019,6 +2352,7 @@ public class TD {
       false,
       false,
       false,
+      true,
       null,
       false,
       false,
@@ -2142,7 +2476,7 @@ public class TD {
             return Lang.getString(R.string.BotStatusCantRead);
           }
         } else {
-          return "@" + user.username;
+          return "@" + Td.primaryUsername(user);
         }
       }
       case TdApi.UserTypeDeleted.CONSTRUCTOR: {
@@ -2707,8 +3041,8 @@ public class TD {
     return RESTRICT_MODE_NONE;
   }
 
-  public static String getTelegramHost () {
-    return TdConstants.TELEGRAM_HOSTS[0];
+  public static String getTelegramMeHost () {
+    return TdConstants.TME_HOSTS[0];
   }
 
   public static byte[] newRandomWaveform () {
@@ -2974,10 +3308,10 @@ public class TD {
     return StringUtils.isEmpty(path) || path.charAt(path.length() - 1) == '/' ? path : path + '/';
   }
 
-  public static boolean isKnownHost (Uri uri) {
+  public static boolean isTelegramMeHost (Uri uri) {
     String host = uri.getHost();
     if (host != null) {
-      for (String knownHost : TdConstants.TELEGRAM_HOSTS) {
+      for (String knownHost : TdConstants.TME_HOSTS) {
         if (StringUtils.equalsOrBothEmpty(knownHost, host)) {
           return true;
         }
@@ -3208,23 +3542,23 @@ public class TD {
   }
 
   public static String getLink (TdApi.Supergroup supergroup) {
-    return "https://" + getTelegramHost() + "/" + supergroup.username;
+    return "https://" + getTelegramMeHost() + "/" + Td.primaryUsername(supergroup);
   }
 
   public static String getStickerPackLink (String name) {
-    return "https://" + getTelegramHost() + "/addstickers/" + name;
+    return "https://" + getTelegramMeHost() + "/addstickers/" + name;
   }
 
   public static String getLink (TdApi.User user) {
-    return "https://" + getTelegramHost() + "/" + user.username;
+    return "https://" + getTelegramMeHost() + "/" + Td.primaryUsername(user);
   }
 
   public static String getLink (String username) {
-    return "https://" + getTelegramHost() + "/" + username;
+    return "https://" + getTelegramMeHost() + "/" + username;
   }
 
   public static String getLink (TdApi.LanguagePackInfo languagePackInfo) {
-    return "https://" + getTelegramHost() + "/setlanguage/" + languagePackInfo.id;
+    return "https://" + getTelegramMeHost() + "/setlanguage/" + languagePackInfo.id;
   }
 
   public static String getRoleName (@Nullable TdApi.User user, int role) {
@@ -3826,7 +4160,11 @@ public class TD {
         U.set(isTranslatable, false);
         return ((TdApi.MessageCustomServiceAction) m.content).text;
       }
-      case TdApi.MessagePassportDataSent.CONSTRUCTOR: { // TODO
+      case TdApi.MessagePassportDataSent.CONSTRUCTOR:
+      case TdApi.MessageForumTopicCreated.CONSTRUCTOR:
+      case TdApi.MessageForumTopicEdited.CONSTRUCTOR:
+      case TdApi.MessageForumTopicIsClosedToggled.CONSTRUCTOR:
+      case TdApi.MessageForumTopicIsHiddenToggled.CONSTRUCTOR: { // TODO
         U.set(isTranslatable, true);
         return Lang.getString(R.string.UnsupportedMessage);
       }
@@ -4195,7 +4533,7 @@ public class TD {
       return "image/jpeg";
     return null;
   }
-  
+
   public static @Nullable String getTextOrCaption (TdApi.PushMessageContent content) {
     if (content == null)
       return null;

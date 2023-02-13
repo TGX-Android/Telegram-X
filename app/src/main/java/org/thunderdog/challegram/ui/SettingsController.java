@@ -41,6 +41,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
+import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
 import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.navigation.ActivityResultHandler;
@@ -325,6 +326,8 @@ public class SettingsController extends ViewController<Void> implements
     switch (status) {
       case TdlibNotificationManager.Status.BLOCKED_ALL:
         return R.string.NotificationsErrorBlocked;
+      case TdlibNotificationManager.Status.MISSING_PERMISSION:
+        return R.string.NotificationsErrorPermission;
       case TdlibNotificationManager.Status.BLOCKED_CATEGORY:
         return R.string.NotificationsErrorBlockedCategory;
       case TdlibNotificationManager.Status.DISABLED_SYNC:
@@ -570,12 +573,12 @@ public class SettingsController extends ViewController<Void> implements
             break;
           }
           case R.id.btn_username: {
-            if (myUsername == null) {
+            if (myUsernames == null) {
               view.setData(R.string.LoadingUsername);
-            } else if (myUsername.isEmpty()) {
+            } else if (StringUtils.isEmpty(myUsernames.editableUsername)) {
               view.setData(R.string.SetUpUsername);
             } else {
-              view.setData("@" + myUsername);
+              view.setData("@" + myUsernames.editableUsername); // TODO multi-username support
             }
             break;
           }
@@ -854,11 +857,7 @@ public class SettingsController extends ViewController<Void> implements
   private void updateHeader () {
     TdApi.User user = tdlib.myUser();
     if (headerCell != null) {
-      if (user == null || TD.isPhotoEmpty(user.profilePhoto)) {
-        headerCell.setAvatarPlaceholder(tdlib.cache().userPlaceholder(tdlib.myUserId(), user, false, ComplexHeaderView.getBaseAvatarRadiusDp(), null));
-      } else {
-        headerCell.setAvatar(user.profilePhoto);
-      }
+      headerCell.getAvatarReceiver().requestUser(tdlib, tdlib.myUserId(), AvatarReceiver.Options.FULL_SIZE);
       headerCell.setText(user != null ? TD.getUserName(user) : Lang.getString(R.string.LoadingUser), getSubtext());
       headerCell.invalidate();
     }
@@ -896,7 +895,7 @@ public class SettingsController extends ViewController<Void> implements
     setBio(newBio);
   }
 
-  private String myUsername;
+  private @Nullable TdApi.Usernames myUsernames;
   private String myPhone, originalPhoneNumber;
   private @Nullable TdApi.FormattedText about;
 
@@ -907,9 +906,12 @@ public class SettingsController extends ViewController<Void> implements
   }
 
   private boolean setUsername (@Nullable TdApi.User myUser) {
-    String username = myUser != null ? myUser.username : null;
-    if ((myUsername == null && username != null) || (myUsername != null && !myUsername.equals(username))) {
-      this.myUsername = username;
+    TdApi.Usernames usernames = myUser != null ? myUser.usernames : null;
+    if (myUser != null && usernames == null) {
+      usernames = new TdApi.Usernames(new String[0], new String[0], "");
+    }
+    if ((myUsernames == null && usernames != null) || (myUsernames != null && !Td.equalsTo(myUsernames, usernames))) {
+      this.myUsernames = usernames;
       return true;
     }
     return false;

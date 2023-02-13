@@ -36,6 +36,7 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.ComplexHeaderView;
@@ -168,11 +169,7 @@ public class CreateChannelLinkController extends ViewController<CreateChannelLin
     headerView.initWithController(this, true);
     headerView.setInnerMargins(Screen.dp(56f), 0);
     headerView.setText(chat.title, Lang.plural(R.string.xMembers, 1));
-    if (photo == null) {
-      headerView.setAvatarPlaceholder(tdlib.chatPlaceholder(chat, true, ComplexHeaderView.getBaseAvatarRadiusDp(), null));
-    } else {
-      headerView.setAvatar(photo);
-    }
+    headerView.getAvatarReceiver().requestChat(tdlib, chat != null ? chat.id : 0, AvatarReceiver.Options.NONE);
 
     final Runnable scroller = () -> scrollView.fullScroll(View.FOCUS_DOWN);
 
@@ -329,7 +326,7 @@ public class CreateChannelLinkController extends ViewController<CreateChannelLin
     switch (object.getConstructor()) {
       case TdApi.ChatInviteLink.CONSTRUCTOR: {
         inviteLink = StringUtils.urlWithoutProtocol(((TdApi.ChatInviteLink) object).inviteLink);
-        for (String host : TdConstants.TELEGRAM_HOSTS) {
+        for (String host : TdConstants.TME_HOSTS) {
           if (inviteLink.startsWith(host)) {
             inviteLink = inviteLink.substring(host.length() + 1);
             break;
