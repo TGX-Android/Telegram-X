@@ -16,6 +16,7 @@ package org.thunderdog.challegram.mediaview;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Path;
 import android.graphics.PointF;
 import android.graphics.Rect;
@@ -1072,10 +1073,12 @@ public class MediaCellView extends ViewGroup implements
     boolean clearReceiver = true;
     if (imageFile instanceof ImageFileLocal) {
       setSubsamplingModeEnabled(true);
+      subsamplingImageView.setTileBackgroundColor(item != null && item.mayBeTransparent() ? Color.WHITE : Color.TRANSPARENT);
       subsamplingImageView.setImage(ImageSource.uri(Uri.fromFile(new File(imageFile.getFilePath()))));
     } else if (imageFile instanceof ImageFileRemote || imageFile.isRemote()) {
       CancellationSignal signal = new CancellationSignal();
       this.subsamplingLoadSignal = signal;
+      subsamplingImageView.setTileBackgroundColor(item != null && item.mayBeTransparent() ? Color.WHITE : Color.TRANSPARENT);
       setSubsamplingModeEnabled(true);
       Client.ResultHandler fileHandler = remoteFileObject -> {
         if (remoteFileObject.getConstructor() == TdApi.File.CONSTRUCTOR) {

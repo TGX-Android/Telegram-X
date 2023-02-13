@@ -1256,6 +1256,18 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     return false;
   }
 
+  public boolean mayBeTransparent () {
+    if (sourceDocument != null && !StringUtils.isEmpty(sourceDocument.mimeType)) {
+      switch (sourceDocument.mimeType) {
+        case "image/gif":
+        case "image/webp":
+        case "image/png":
+          return true;
+      }
+    }
+    return false;
+  }
+
   public boolean isRemoteVideo () {
     switch (type) {
       case TYPE_VIDEO:
