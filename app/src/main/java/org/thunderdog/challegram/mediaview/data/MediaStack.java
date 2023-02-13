@@ -107,12 +107,14 @@ public class MediaStack {
     this.callback = callback;
   }
 
-  public void setEstimatedSize (int estimatedBefore, int estimatedAfter) {
+  public boolean setEstimatedSize (int estimatedBefore, int estimatedAfter) {
     if (this.estimatedBefore != estimatedBefore || this.estimatedAfter != estimatedAfter) {
       this.estimatedBefore = estimatedBefore;
       this.estimatedAfter = estimatedAfter;
       // notifyMediaChanged(false);
+      return true;
     }
+    return false;
   }
 
   public void insertItems (ArrayList<MediaItem> items, boolean onTop) {
@@ -209,6 +211,12 @@ public class MediaStack {
 
   public MediaItem lastAvalable () {
     return items != null ? items.get(items.size() - 1) : null;
+  }
+
+  public void onEndReached (boolean after) {
+    if (setEstimatedSize(after ? estimatedBefore : 0, after ? 0 : estimatedAfter)) {
+      notifyMediaChanged(true);
+    }
   }
 
   public int getCurrentIndex () {

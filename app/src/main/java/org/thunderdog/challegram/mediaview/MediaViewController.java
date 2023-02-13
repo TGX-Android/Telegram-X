@@ -56,6 +56,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
+import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.MediaCollectorDelegate;
@@ -1987,6 +1988,10 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     loadMoreIfNeeded(false, false);
   }
 
+  private TdApi.SearchMessagesFilter searchFilter () {
+    return this.filter != null ? this.filter : new TdApi.SearchMessagesFilterPhotoAndVideo();
+  }
+
   private void loadMoreIfNeeded (boolean edgeReached, boolean isEnd) {
     if (isLoading || getArgumentsStrict().noLoadMore) {
       return;
@@ -2000,7 +2005,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         if (!loadedInitialChunk || (reverseMode ? (edgeReached && isEnd) || stack.getCurrentIndex() >= stack.getCurrentSize() - LOAD_THRESHOLD : (edgeReached && !isEnd) || stack.getCurrentIndex() <= LOAD_THRESHOLD)) {
           isLoading = true;
           MediaItem item = reverseMode ? stack.lastAvalable() : stack.firstAvailable();
-          tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, null, item.getSourceMessageId(), 0, LOAD_COUNT, this.filter != null ? this.filter : new TdApi.SearchMessagesFilterPhotoAndVideo(), messageThreadId), this);
+          tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, null, item.getSourceMessageId(), 0, LOAD_COUNT, searchFilter(), messageThreadId), this);
         }
         break;
       }
@@ -2080,19 +2085,30 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         list.add(message);
       }
     }
-    addItems(list, messages.totalCount);
+    int addedCount = addItemsImpl(list, messages.totalCount);
     if (messages.messages.length > 0) {
       long chatId = TD.getChatId(messages.messages);
       if (chatId != 0) {
         subscribeToChatId(chatId);
       }
     }
+    if (addedCount == 0 && messages.messages.length > 0 && mode == MODE_MESSAGES) {
+      long chatId = messages.messages[0].chatId;
+      long fromMessageId = messages.messages[messages.messages.length - 1].id;
+      tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, null, fromMessageId, 0, LOAD_COUNT, searchFilter(), messageThreadId), this);
+      return;
+    }
+    if (addedCount == 0 && messages.messages.length == 0) {
+      stack.onEndReached(reverseMode);
+      getArgumentsStrict().noLoadMore = true;
+    }
+    isLoading = false;
   }
 
-  private void addItems (List<TdApi.Message> messages, final int totalCount) {
+  private int addItemsImpl (List<TdApi.Message> messages, final int totalCount) {
     if (messages.isEmpty()) {
       processRequestedEndReached();
-      return;
+      return 0;
     }
 
     int skipCount = 0;
@@ -2153,7 +2169,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     stack.insertItems(items, onTop);
     addMoreThumbItems(items, onTop);
 
-    isLoading = false;
+    return items.size();
   }
 
   private void deleteMedia (int index, MediaItem deletedMedia) {
