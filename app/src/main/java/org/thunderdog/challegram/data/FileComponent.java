@@ -91,6 +91,7 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
   private float sizeWidth;
 
   private final TGMessage context;
+  private final TdApi.Message message;
 
   // DOCUMENT
 
@@ -98,8 +99,9 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
     return needOpenIn;
   }
 
-  public FileComponent (@NonNull TGMessage context, @NonNull TdApi.Document doc) {
+  public FileComponent (@NonNull TGMessage context, @NonNull TdApi.Message message, @NonNull TdApi.Document doc) {
     this.context = context;
+    this.message = message;
     if (this.needOpenIn = TD.isSupportedMusic(doc)) {
       // TdApi.VoiceNote fakeAudio = new TdApi.VoiceNote(0, null, doc.mimeType, doc.document);
       // setVoice(fakeAudio, null, null);
@@ -153,7 +155,7 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
       }
     }
 
-    this.progress = new FileProgressComponent(context.context(), context.tdlib(), TdlibFilesManager.DOWNLOAD_FLAG_FILE, hasPreview && TGMimeType.isImageMimeType(doc.mimeType), context.getChatId(), context.getId());
+    this.progress = new FileProgressComponent(context.context(), context.tdlib(), TdlibFilesManager.DOWNLOAD_FLAG_FILE, hasPreview && TGMimeType.isImageMimeType(doc.mimeType), message != null ? message.chatId : context.getChatId(), message != null ? message.id : context.getId());
     this.progress.setBackgroundColorProvider(context);
     this.progress.setSimpleListener(this);
     this.progress.setDocumentMetadata(doc, !hasPreview);
@@ -170,8 +172,9 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
 
   // AUDIO
 
-  public FileComponent (@NonNull TGMessage context, @NonNull TdApi.Audio audio, TdApi.Message playPauseFile, TGPlayerController.PlayListBuilder playListBuilder) {
+  public FileComponent (@NonNull TGMessage context, @NonNull TdApi.Message message, @NonNull TdApi.Audio audio, TdApi.Message playPauseFile, TGPlayerController.PlayListBuilder playListBuilder) {
     this.context = context;
+    this.message = message;
 
     setAudio(audio, playPauseFile, playListBuilder);
   }
@@ -204,7 +207,7 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
       }
     }
 
-    this.progress = new FileProgressComponent(context.context(), context.tdlib(), TdlibFilesManager.DOWNLOAD_FLAG_MUSIC, preview != null, context.getChatId(), context.getId());
+    this.progress = new FileProgressComponent(context.context(), context.tdlib(), TdlibFilesManager.DOWNLOAD_FLAG_MUSIC, preview != null, message != null ? message.chatId : context.getChatId(), message != null ? message.id : context.getId());
     this.progress.setBackgroundColorProvider(context);
     this.progress.setSimpleListener(this);
     if (hasPreview) {
@@ -222,8 +225,9 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
 
   private float unreadFactor;
 
-  public FileComponent (@NonNull TGMessage context, @NonNull TdApi.VoiceNote voice, TdApi.Message playPauseFile, TGPlayerController.PlayListBuilder playListBuilder) {
+  public FileComponent (@NonNull TGMessage context, @NonNull TdApi.Message message, @NonNull TdApi.VoiceNote voice, TdApi.Message playPauseFile, TGPlayerController.PlayListBuilder playListBuilder) {
     this.context = context;
+    this.message = message;
 
     setVoice(voice, playPauseFile, playListBuilder);
   }
@@ -235,7 +239,7 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
     this.waveform = new Waveform(voice.waveform, Waveform.MODE_BITMAP, context.isOutgoingBubble());
     this.unreadFactor = playPauseFile != context.getMessage() || context.isContentRead() ? 0f : 1f;
 
-    this.progress = new FileProgressComponent(context.context(), context.tdlib(), TdlibFilesManager.DOWNLOAD_FLAG_VOICE, false, context.getChatId(), context.getId());
+    this.progress = new FileProgressComponent(context.context(), context.tdlib(), TdlibFilesManager.DOWNLOAD_FLAG_VOICE, false,message != null ? message.chatId : context.getChatId(), message != null ? message.id : context.getId());
     this.progress.setBackgroundColorProvider(context);
     this.progress.setSimpleListener(this);
     this.progress.setBackgroundColorId(context.isOutgoingBubble() ? R.id.theme_color_bubbleOut_file : R.id.theme_color_file);
