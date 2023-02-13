@@ -147,6 +147,18 @@ public class TGMimeType {
     }
     return false;
   }
+  
+  public static boolean isTransparentImageMimeType (@Nullable String mimeType) {
+     if (!StringUtils.isEmpty(mimeType)) {
+       switch (mimeType) {
+         case "image/png":
+         case "image/webp":
+         case "image/gif":
+           return true;
+       }
+     }
+     return false;
+  }
 
   public static boolean isImageMimeType (@Nullable String mimeType) {
     if (StringUtils.isEmpty(mimeType) || !mimeType.startsWith("image/")) {

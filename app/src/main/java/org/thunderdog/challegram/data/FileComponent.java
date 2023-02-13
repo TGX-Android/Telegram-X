@@ -15,6 +15,7 @@
 package org.thunderdog.challegram.data;
 
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.os.SystemClock;
 import android.view.MotionEvent;
 import android.view.View;
@@ -79,6 +80,7 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
 
   public boolean hasPreview;
   public ImageFile miniThumbnail, preview, fullPreview;
+  private boolean mayBeTransparent;
 
   private @Nullable String title;
   private boolean needFakeTitle;
@@ -436,6 +438,7 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
   private ImageFile createFullPreview () {
     if (fullPreview == null) {
       if (doc != null) {
+        mayBeTransparent = TGMimeType.isTransparentImageMimeType(doc.mimeType);
         fullPreview = createFullPreview(context.tdlib(), doc);
       } else if (audio != null && TD.isFileLoaded(audio.audio) && (audio.albumCoverThumbnail == null || preview == null || Math.max(audio.albumCoverThumbnail.width, audio.albumCoverThumbnail.height) < 90)) {
         fullPreview = new ImageMp3File(audio.audio.local.path);
@@ -673,6 +676,9 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
       }*/
       preview.setPaintAlpha(alpha * preview.getAlpha());
       receiver.setPaintAlpha(alpha * receiver.getAlpha());
+      if (mayBeTransparent) {
+        receiver.drawPlaceholderRounded(c, previewSize / 2f, ColorUtils.alphaColor(alpha, Color.WHITE));
+      }
       DrawAlgorithms.drawReceiver(c, preview, receiver, true, true, startX, startY, startX + previewSize, startY + previewSize);
       receiver.restorePaintAlpha();
       preview.restorePaintAlpha();
