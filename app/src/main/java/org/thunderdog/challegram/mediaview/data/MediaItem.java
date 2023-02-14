@@ -1243,6 +1243,10 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     return false;
   }
 
+  public boolean canSeekVideo () {
+    return isVideo() && (Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE || getFileProgress().isDownloaded());
+  }
+
   public boolean isVideo () {
     switch (type) {
       case TYPE_VIDEO:

@@ -1927,6 +1927,7 @@ public class MediaCellView extends ViewGroup implements
 
   private void resetVideoState () {
     setHideStaticView(false, false);
+    updateCanSeek();
     isPlaying = false;
     videoReady = false;
     timeNow = -1;
@@ -2048,13 +2049,13 @@ public class MediaCellView extends ViewGroup implements
     }
   }
 
+  private void updateCanSeek () {
+    setCanSeek(media != null && media.canSeekVideo());
+  }
+
   @Override
   public void onStateChanged (TdApi.File file, @TdlibFilesManager.FileDownloadState int state) {
-    if (media != null && media.isVideo() && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) {
-      setCanSeek(true);
-    } else {
-      setCanSeek(media != null && media.isVideo() && state == TdlibFilesManager.STATE_DOWNLOADED_OR_UPLOADED);
-    }
+    updateCanSeek();
 
     if (state == TdlibFilesManager.STATE_DOWNLOADED_OR_UPLOADED && (forceTouchMode || (media != null && media.isAutoplay()))) {
       autoplayIfNeeded(false);

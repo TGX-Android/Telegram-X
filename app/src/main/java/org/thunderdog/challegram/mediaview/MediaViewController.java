@@ -5126,6 +5126,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         videoSliderView.setInnerAlpha(0f);
         videoSliderView.setTranslationY(Screen.dp(56f));
         videoSliderView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        videoSliderView.setSlideEnabled(stack.getCurrent().canSeekVideo());
         bottomWrap.addView(videoSliderView);
         if (needTrim()) {
           videoSliderView.addTrim(new VideoTimelineView.TimelineDelegate() {
@@ -5414,6 +5415,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         videoSliderView.setAlpha(0f);
         videoSliderView.setTranslationY(Screen.dp(56f));
         videoSliderView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        videoSliderView.setSlideEnabled(stack.getCurrent().canSeekVideo());
         bottomWrap.addView(videoSliderView);
 
         contentView.addView(bottomWrap);
