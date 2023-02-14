@@ -15,6 +15,7 @@
 package org.thunderdog.challegram.mediaview;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Path;
@@ -22,6 +23,7 @@ import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.net.Uri;
+import android.os.Build;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
@@ -143,6 +145,11 @@ public class MediaCellView extends ViewGroup implements
     this.imageView = new CellImageView(context);
     this.imageView.setLayoutParams(new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && Config.USE_HARDWARE_PHOTO_VIEWER_CONFIG) {
+      SubsamplingScaleImageView.setPreferredBitmapConfig(Bitmap.Config.HARDWARE);
+    } else {
+      SubsamplingScaleImageView.setPreferredBitmapConfig(Bitmap.Config.ARGB_8888);
+    }
     this.subsamplingImageView = new ClippingSubsamplingImageView(context) {
       @SuppressWarnings("ClickableViewAccessibility")
       @Override

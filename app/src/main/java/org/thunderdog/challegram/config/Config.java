@@ -293,4 +293,6 @@ public class Config {
   public static final boolean REORDER_INSTALLED_STICKER_SETS = false;
 
   public static final boolean NEED_TEMPORARY_TOPICS_WORKAROUND = true;
+
+  public static final boolean USE_HARDWARE_PHOTO_VIEWER_CONFIG = false;
 }
