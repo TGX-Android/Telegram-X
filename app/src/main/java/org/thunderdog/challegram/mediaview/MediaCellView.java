@@ -1780,6 +1780,11 @@ public class MediaCellView extends ViewGroup implements
             targetHeight = preview.getTargetHeight();
           }
 
+          if (targetWidth == 0 || targetHeight == 0) {
+            targetWidth = miniThumbnail.getTargetWidth();
+            targetHeight = miniThumbnail.getTargetHeight();
+          }
+
           float clipWidth = Math.min(targetWidth, receiver.getWidth());
           float clipHeight = Math.min(targetHeight, receiver.getHeight());
 
