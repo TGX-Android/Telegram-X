@@ -214,8 +214,9 @@ public class MediaCellView extends ViewGroup implements
     this.subsamplingImageView.setOnImageEventListener(new SubsamplingScaleImageView.DefaultOnImageEventListener() {
       @Override
       public void onReady () {
-        subsamplingImageView.setMaxScale(Math.max(subsamplingImageView.getMinScale() * 2f, Math.max(1f, Screen.density()) * 3f));
-        subsamplingImageView.setDoubleTapZoomScale(Math.max(subsamplingImageView.getMinScale() * 1.5f, 1f));
+        float maxScale = Math.max(subsamplingImageView.getMinScale() * 2f, Math.max(1f, Screen.density()) * 3f);
+        subsamplingImageView.setMaxScale(maxScale);
+        subsamplingImageView.setDoubleTapZoomScale(Math.min(maxScale, Math.max(1f, subsamplingImageView.getMinScale() * 2.5f)));
         if (subsamplingModeEnabled) {
           setSubsamplingImageLoaded(true);
         }
