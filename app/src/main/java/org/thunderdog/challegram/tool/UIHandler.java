@@ -15,6 +15,7 @@
 package org.thunderdog.challegram.tool;
 
 import android.content.Context;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.view.Gravity;
@@ -357,7 +358,7 @@ public class UIHandler extends Handler {
       case COPY_TEXT: {
         try {
           U.copyText((CharSequence) msg.obj);
-          if (msg.arg1 != 0) {
+          if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2 && msg.arg1 != 0) {
             showCustomToast(msg.arg1, Toast.LENGTH_SHORT, 0);
           }
         } catch (Throwable t) {
