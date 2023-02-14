@@ -4628,6 +4628,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       popupView.setHideKeyboard();
       popupView.init(false);
     } else {
+      popupView.setNeedRootInsets();
       popupView.init(true);
       popupView.setIgnoreAllInsets(true);
     }
