@@ -2205,7 +2205,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   private void scheduleRefresh () {
     cancelRefresh();
-    if (refreshChatId != 0 && refreshMessageIds != null && refreshMessageIds.size() > 0) {
+    if (refreshChatId != 0 && refreshMessageIds != null && refreshMessageIds.size() > 0 && isFocused) {
       long ms = refreshMaxDate != 0 ? timeTillNextRefresh(tdlib.currentTimeMillis() - TimeUnit.SECONDS.toMillis(refreshMaxDate)) : 60000;
       refreshViewsRunnable = new CancellableRunnable() {
         @Override
@@ -2370,6 +2370,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
     viewMessages();
     saveScrollPosition();
+    scheduleRefresh();
   }
 
   // Highlight message id
