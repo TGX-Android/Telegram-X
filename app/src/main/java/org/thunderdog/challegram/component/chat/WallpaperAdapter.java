@@ -446,7 +446,7 @@ public class WallpaperAdapter extends RecyclerView.Adapter<WallpaperAdapter.View
     TGBackground wallpaper = ((WallpaperView) v).getWallpaper();
     if (wallpaper != null) {
       if (wallpaper.isCustom()) {
-        Intents.openGallery(false);
+        Intents.openGallery(context.context(), false);
       } else {
         context.tdlib().settings().setWallpaper(wallpaper, true, Theme.getWallpaperIdentifier());
       }

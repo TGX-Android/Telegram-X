@@ -2358,7 +2358,7 @@ public class PlaybackController extends ViewController<Void> implements Menu, Mo
       case R.id.btn_saveFile: {
         TD.DownloadedFile downloadedFile = TD.getDownloadedFile(currentItem.getMessage());;
         if (downloadedFile != null) {
-          TD.saveFile(downloadedFile);
+          TD.saveFile(context, downloadedFile);
         }
         break;
       }

@@ -169,12 +169,64 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
 
   @Override
   public int getTargetWidth () {
-    return gif != null ? (gif.isRotated() ? gif.height() : gif.width()) : 0;
+    if (gif != null) {
+      int sourceWidth = (gif.isRotated() ? gif.height() : gif.width());
+      int sourceHeight = (gif.isRotated() ? gif.width() : gif.height());
+
+      float widthRatio = (float) getWidth() / (float) sourceWidth;
+      float heightRatio = (float) getHeight() / (float) sourceHeight;
+
+      float ratio;
+      if (file != null) {
+        switch (file.getScaleType()) {
+          case GifFile.CENTER_CROP:
+            ratio = Math.max(widthRatio, heightRatio);
+            break;
+          case GifFile.FIT_CENTER:
+            ratio = Math.min(widthRatio, heightRatio);
+            break;
+          default:
+            return getWidth();
+        }
+      } else {
+        ratio = Math.min(widthRatio, heightRatio);
+      }
+      sourceWidth *= ratio;
+      sourceHeight *= ratio;
+      return sourceWidth;
+    }
+    return getWidth();
   }
 
   @Override
   public int getTargetHeight () {
-    return gif != null ? (gif.isRotated() ? gif.width() : gif.height()) : 0;
+    if (gif != null) {
+      int sourceWidth = (gif.isRotated() ? gif.height() : gif.width());
+      int sourceHeight = (gif.isRotated() ? gif.width() : gif.height());
+
+      float widthRatio = (float) getWidth() / (float) sourceWidth;
+      float heightRatio = (float) getHeight() / (float) sourceHeight;
+
+      float ratio;
+      if (file != null) {
+        switch (file.getScaleType()) {
+          case GifFile.CENTER_CROP:
+            ratio = Math.max(widthRatio, heightRatio);
+            break;
+          case GifFile.FIT_CENTER:
+            ratio = Math.min(widthRatio, heightRatio);
+            break;
+          default:
+            return getWidth();
+        }
+      } else {
+        ratio = Math.min(widthRatio, heightRatio);
+      }
+      sourceWidth *= ratio;
+      sourceHeight *= ratio;
+      return sourceHeight;
+    }
+    return 0;
   }
 
   // ImageReceiver

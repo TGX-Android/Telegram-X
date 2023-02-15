@@ -15,5 +15,5 @@
 package org.thunderdog.challegram.util;
 
 public interface ActivityPermissionResult {
-  void onPermissionResult (int code, boolean granted);
+  void onPermissionResult (int code, String[] permissions, int[] grantResults, int grantCount);
 }

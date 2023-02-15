@@ -25,6 +25,8 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.InlineResult;
 import org.thunderdog.challegram.data.InlineResultCommon;
 import org.thunderdog.challegram.data.InlineResultMultiline;
+import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
+import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
@@ -34,6 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import me.vkryl.td.MessageId;
+import me.vkryl.td.Td;
 
 public class SharedCommonController extends SharedBaseController<InlineResult<?>> implements View.OnClickListener, TGPlayerController.TrackChangeListener, TGPlayerController.PlayListBuilder {
   public SharedCommonController (Context context, Tdlib tdlib) {
@@ -317,5 +320,26 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
     });
 
     return true;
+  }
+
+  // Media viewer
+
+  @Override
+  protected MediaItem toMediaItem (int index, InlineResult<?> item, @Nullable TdApi.SearchMessagesFilter filter) {
+    TdApi.Message message = item.getMessage();
+    if (message != null && Td.matchesFilter(message, filter)) {
+      return MediaItem.valueOf(context, tdlib, message);
+    }
+    return null;
+  }
+
+  @Override
+  protected boolean setThumbLocation (MediaViewThumbLocation location, View view, MediaItem mediaItem) {
+    int index = indexOfMessage(mediaItem.getSourceMessageId());
+    if (index == -1) {
+      return false;
+    }
+    InlineResult<?> item = data.get(index);
+    return item.setThumbLocation(location, view, index, mediaItem);
   }
 }

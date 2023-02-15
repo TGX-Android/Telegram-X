@@ -174,7 +174,7 @@ public class TextController extends ViewController<TextController.Arguments> imp
     switch (id) {
       case R.id.btn_openLink: {
         File file = new File(filePath);
-        Intents.openFile(file, mimeType);
+        Intents.openFile(context, file, mimeType);
         break;
       }
       case R.id.btn_share: {

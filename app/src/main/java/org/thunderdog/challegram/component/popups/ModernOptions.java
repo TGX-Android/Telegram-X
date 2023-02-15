@@ -12,8 +12,6 @@
  */
 package org.thunderdog.challegram.component.popups;
 
-import android.Manifest;
-import android.content.pm.PackageManager;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -21,10 +19,7 @@ import android.widget.LinearLayout;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.Nullable;
 
-import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.R;
-import org.thunderdog.challegram.U;
-import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.OptionsLayout;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -33,6 +28,7 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.util.OptionDelegate;
+import org.thunderdog.challegram.util.Permissions;
 import org.thunderdog.challegram.widget.PopupLayout;
 
 public class ModernOptions {
@@ -42,16 +38,16 @@ public class ModernOptions {
   }
 
   public static void showLocationAlert (ViewController<?> context, boolean isBackground, Runnable onCancel, Runnable onAgree) {
-    boolean hasNoPermissions = context.context().checkLocationPermissions(isBackground) != PackageManager.PERMISSION_GRANTED;
-    boolean shouldShowAlert;
-
-    if (isBackground && Config.REQUEST_BACKGROUND_LOCATION) {
-      shouldShowAlert = (U.shouldShowPermissionRationale(Manifest.permission.ACCESS_BACKGROUND_LOCATION) || U.shouldShowPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)) && hasNoPermissions;
-    } else {
-      shouldShowAlert = U.shouldShowPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION) || hasNoPermissions;
+    Permissions permissions = context.context().permissions();
+    boolean hasPermissions = permissions.canAccessLocation() && (!isBackground || permissions.canAccessLocationInBackground());
+    if (hasPermissions) {
+      onAgree.run();
+      return;
     }
-
-    if (shouldShowAlert) {
+    // FIXME: should it actually check for permission rationale?
+    if (
+      (isBackground && permissions.shouldShowBackgroundLocationRationale()) ||
+      permissions.shouldShowAccessLocationRationale()) {
       showLocationAlert(context, Lang.getString(isBackground ? R.string.LocationAlertLiveLocation : R.string.LocationAlertLocation), Lang.getString(R.string.LocationAlertLocationDisclaimer), isBackground ? onCancel : () -> {}, onAgree);
     } else {
       onAgree.run();

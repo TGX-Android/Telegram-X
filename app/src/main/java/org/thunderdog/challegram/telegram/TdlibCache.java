@@ -472,6 +472,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     if (isMe = (newUser.id == myUserId)) {
       notifyMyUserListeners(myUserListeners.iterator(), newUser);
       tdlib.downloadMyUser(newUser);
+      tdlib.context().onUpdateAccountProfile(tdlib.id(), newUser, true);
       tdlib.notifications().onUpdateMyUser(newUser);
     }
 

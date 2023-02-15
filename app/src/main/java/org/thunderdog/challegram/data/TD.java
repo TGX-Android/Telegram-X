@@ -16,11 +16,10 @@ package org.thunderdog.challegram.data;
 
 import static androidx.core.util.ObjectsCompat.requireNonNull;
 
-import android.Manifest;
 import android.app.DownloadManager;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.graphics.BitmapFactory;
 import android.graphics.Typeface;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
@@ -41,6 +40,7 @@ import android.text.style.StyleSpan;
 import android.text.style.TypefaceSpan;
 import android.text.style.URLSpan;
 import android.text.style.UnderlineSpan;
+import android.util.Size;
 import android.util.SparseIntArray;
 import android.view.View;
 import android.widget.Toast;
@@ -87,6 +87,7 @@ import org.thunderdog.challegram.ui.HashtagController;
 import org.thunderdog.challegram.ui.ShareController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
+import org.thunderdog.challegram.util.Permissions;
 import org.thunderdog.challegram.util.text.Letters;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextEntity;
@@ -1299,6 +1300,64 @@ public class TD {
         return null;
       }
     }
+  }
+
+  public static Size getFinalResolution (TdApi.Document document, @Nullable BitmapFactory.Options options, boolean isRotated) {
+    int width, height;
+    if (options != null && Math.min(options.outWidth, options.outHeight) > 0) {
+      if (isRotated) {
+        //noinspection SuspiciousNameCombination
+        width = options.outHeight; height = options.outWidth;
+      } else {
+        width = options.outWidth;  height = options.outHeight;
+      }
+    } else if (document.thumbnail != null) {
+      width = document.thumbnail.width;
+      height = document.thumbnail.height;
+      float scale = 2f;
+      width *= scale;
+      height *= scale;
+    } else {
+      width = height = 0;
+    }
+    return new Size(width, height);
+  }
+
+  public static TdApi.Animation convertToAnimation (TdApi.Document document, @Nullable BitmapFactory.Options options, boolean isRotated, U.MediaMetadata mediaMetadata) {
+    Size size = getFinalResolution(document, options, isRotated);
+    return new TdApi.Animation(
+      mediaMetadata != null ? (int) TimeUnit.MILLISECONDS.toSeconds(mediaMetadata.durationMs) : 0,
+      size.getWidth(), size.getHeight(),
+      document.fileName, document.mimeType, false,
+      document.minithumbnail, document.thumbnail,
+      document.document
+    );
+  }
+
+  public static TdApi.Video convertToVideo (TdApi.Document document, @Nullable BitmapFactory.Options options, boolean isRotated, U.MediaMetadata mediaMetadata) {
+    Size size = getFinalResolution(document, options, isRotated);
+    return new TdApi.Video(
+      mediaMetadata != null ? (int) TimeUnit.MILLISECONDS.toSeconds(mediaMetadata.durationMs) : 0,
+      size.getWidth(), size.getHeight(),
+      document.fileName, document.mimeType,
+      false, true,
+      document.minithumbnail, document.thumbnail,
+      document.document
+    );
+  }
+
+  public static TdApi.Photo convertToPhoto (TdApi.Document document, @Nullable BitmapFactory.Options options, boolean isRotated) {
+    Size size = getFinalResolution(document, options, isRotated);
+    TdApi.PhotoSize thumbnailSize = toThumbnailSize(document.thumbnail);
+    TdApi.PhotoSize[] sizes = new TdApi.PhotoSize[thumbnailSize != null ? 2 : 1];
+    TdApi.PhotoSize targetSize = new TdApi.PhotoSize("w", document.document, size.getWidth(), size.getHeight(), null);
+    if (thumbnailSize != null) {
+      sizes[0] = thumbnailSize;
+      sizes[1] = targetSize;
+    } else {
+      sizes[0] = targetSize;
+    }
+    return new TdApi.Photo(false, null, sizes);
   }
 
   public static TdApi.Photo convertToPhoto (TdApi.Sticker sticker) {
@@ -4779,20 +4838,13 @@ public class TD {
     });
   }
 
-  public static void saveFiles (List<DownloadedFile> files) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      BaseActivity context = UI.getUiContext();
-      if (context == null) {
-        return;
+  public static void saveFiles (BaseActivity context, List<DownloadedFile> files) {
+    if (context.permissions().requestWriteExternalStorage(Permissions.WriteType.DOWNLOADS, granted -> {
+      if (granted) {
+        saveFiles(context, files);
       }
-      if (context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-        context.requestCustomPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, (code, granted) -> {
-          if (granted) {
-            saveFiles(files);
-          }
-        });
-        return;
-      }
+    })) {
+      return;
     }
     Background.instance().post(() -> {
       int savedCount = 0;
@@ -4869,22 +4921,22 @@ public class TD {
     });
   }
 
-  public static void saveFile (DownloadedFile file) {
+  public static void saveFile (BaseActivity context, DownloadedFile file) {
     switch (file.getFileType().getConstructor()) {
       case TdApi.FileTypeAnimation.CONSTRUCTOR: {
-        U.copyToGallery(file.getPath(), U.TYPE_GIF);
+        U.copyToGallery(context, file.getPath(), U.TYPE_GIF);
         break;
       }
       case TdApi.FileTypeVideo.CONSTRUCTOR: {
-        U.copyToGallery(file.getPath(), U.TYPE_VIDEO);
+        U.copyToGallery(context, file.getPath(), U.TYPE_VIDEO);
         break;
       }
       case TdApi.FileTypePhoto.CONSTRUCTOR: {
-        U.copyToGallery(file.getPath(), U.TYPE_PHOTO);
+        U.copyToGallery(context, file.getPath(), U.TYPE_PHOTO);
         break;
       }
       default: {
-        saveToDownloads(file);
+        saveToDownloads(context, file);
         break;
       }
     }
@@ -5105,12 +5157,11 @@ public class TD {
       if (context == null) {
         return;
       }
-      if (context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-        context.requestCustomPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, (code, granted) -> {
-          if (granted) {
-            saveToDownloads(file, mimeType);
-          }
-        });
+      if (context.permissions().requestWriteExternalStorage(Permissions.WriteType.DOWNLOADS, granted -> {
+        if (granted) {
+          saveToDownloads(file, mimeType);
+        }
+      })) {
         return;
       }
     }
@@ -5118,24 +5169,17 @@ public class TD {
     Background.instance().post(() -> saveToDownloadsImpl(file, mimeType));
   }
 
-  public static void saveToDownloads (final DownloadedFile file) {
+  public static void saveToDownloads (final BaseActivity context, final DownloadedFile file) {
     if (file == null) {
       return;
     }
 
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      BaseActivity context = UI.getUiContext();
-      if (context == null) {
-        return;
+    if (context.permissions().requestWriteExternalStorage(Permissions.WriteType.DOWNLOADS, granted -> {
+      if (granted) {
+        saveToDownloads(context, file);
       }
-      if (context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-        context.requestCustomPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, (code, granted) -> {
-          if (granted) {
-            saveToDownloads(file);
-          }
-        });
-        return;
-      }
+    })) {
+      return;
     }
 
     Background.instance().post(() -> {

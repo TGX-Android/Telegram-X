@@ -37,7 +37,6 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.attach.MediaLocationPlaceView;
-import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessageLocation;
@@ -514,7 +513,7 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
     }
 
     checkDirectionHidden();
-    isLoadingLocation = U.checkLocationPermission(context);
+    isLoadingLocation = context().permissions().canAccessLocation();
 
     if (needBackgroundMapInitialization(mapView)) {
       runOnBackgroundThread(() -> {
@@ -757,7 +756,7 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
     }
     myLocationButton.setInProgress(false);
     if (location == null) {
-      if (U.checkLocationPermission(this.context) && mapView != null) {
+      if (context().permissions().canAccessLocation() && mapView != null) {
         setLoadingLocation(true);
         boolean willReceiveLocation = displayMyLocation(mapView);
         if (!willReceiveLocation) {

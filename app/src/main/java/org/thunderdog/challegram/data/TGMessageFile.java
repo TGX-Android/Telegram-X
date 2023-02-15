@@ -32,6 +32,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageReceiver;
+import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
@@ -252,19 +253,19 @@ public class TGMessageFile extends TGMessage {
     switch (message.content.getConstructor()) {
       case TdApi.MessageDocument.CONSTRUCTOR: {
         TdApi.MessageDocument document = (TdApi.MessageDocument) message.content;
-        component = new FileComponent(context, document.document);
+        component = new FileComponent(context, message, document.document);
         caption = document.caption;
         break;
       }
       case TdApi.MessageAudio.CONSTRUCTOR: {
         TdApi.MessageAudio audio = (TdApi.MessageAudio) message.content;
-        component = new FileComponent(context, audio.audio, message, context.manager);
+        component = new FileComponent(context, message, audio.audio, message, context.manager);
         caption = audio.caption;
         break;
       }
       case TdApi.MessageVoiceNote.CONSTRUCTOR: {
         TdApi.MessageVoiceNote voiceNote = (TdApi.MessageVoiceNote) message.content;
-        component = new FileComponent(context, voiceNote.voiceNote, message, context.manager);
+        component = new FileComponent(context, message, voiceNote.voiceNote, message, context.manager);
         caption = voiceNote.caption;
         disallowTouch = false;
         break;
@@ -672,6 +673,16 @@ public class TGMessageFile extends TGMessage {
       }
     }
     return res;
+  }
+
+  @Override
+  public MediaViewThumbLocation getMediaThumbLocation (long messageId, View view, int viewTop, int viewBottom, int top) {
+    for (ListAnimator.Entry<CaptionedFile> entry : files) {
+      if (entry.item.messageId == messageId) {
+        return entry.item.component.getMediaThumbLocation(view, viewTop, viewBottom, top);
+      }
+    }
+    return null;
   }
 
   // Document actions

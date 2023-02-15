@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.ui;
 
-import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
@@ -96,6 +95,7 @@ import org.thunderdog.challegram.component.chat.AttachLinearLayout;
 import org.thunderdog.challegram.component.chat.AudioFile;
 import org.thunderdog.challegram.component.chat.ChatBottomBarView;
 import org.thunderdog.challegram.component.chat.ChatHeaderView;
+import org.thunderdog.challegram.component.chat.ChatSearchMembersView;
 import org.thunderdog.challegram.component.chat.CircleCounterBadgeView;
 import org.thunderdog.challegram.component.chat.CommandKeyboardLayout;
 import org.thunderdog.challegram.component.chat.CounterBadgeView;
@@ -212,13 +212,13 @@ import org.thunderdog.challegram.util.CancellableResultHandler;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.SenderPickerDelegate;
+import org.thunderdog.challegram.util.Permissions;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.Unlockable;
 import org.thunderdog.challegram.v.HeaderEditText;
 import org.thunderdog.challegram.v.MessagesLayoutManager;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
 import org.thunderdog.challegram.widget.AvatarView;
-import org.thunderdog.challegram.component.chat.ChatSearchMembersView;
 import org.thunderdog.challegram.widget.CheckBoxView;
 import org.thunderdog.challegram.widget.CircleButton;
 import org.thunderdog.challegram.widget.CollapseListView;
@@ -1977,7 +1977,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case R.id.msg_attach: {
         hideBottomHint();
-        openMediaView(false);
+        openMediaView(false, false);
         break;
       }
       case R.id.msg_send: {
@@ -3600,7 +3600,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         break;
       }
       case R.id.menu_btn_gallery: {
-        Intents.openGallery(false);
+        Intents.openGallery(context, false);
         break;
       }
       case R.id.menu_btn_clear: {
@@ -5510,7 +5510,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             return false;
           }
           //noinspection unchecked
-          TD.saveFiles((List<TD.DownloadedFile>) selectedMessageTag);
+          TD.saveFiles(context, (List<TD.DownloadedFile>) selectedMessageTag);
           clearSelectedMessage();
         }
         return true;
@@ -9274,28 +9274,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private boolean openingMediaLayout;
 
-  private void openMediaView (boolean force) {
+  private void openMediaView (boolean ignorePermissionRequest, boolean noMedia) {
     if (openingMediaLayout) {
       return;
     }
 
-    boolean noMedia;
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      BaseActivity context = context();
-      if (force) {
-        noMedia = context.checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED;
-      } else {
-        String[] permissions = BaseActivity.getReadWritePermissions(BaseActivity.RW_MODE_GALLERY);
-        for (String permission : permissions) {
-          if (context.checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) {
-            context.requestReadWritePermissions(BaseActivity.RW_MODE_GALLERY);
-            return;
-          }
-        }
-        noMedia = false;
-      }
-    } else {
-      noMedia = false;
+    if (!ignorePermissionRequest && context().permissions().requestReadExternalStorage(Permissions.ReadType.IMAGES_AND_VIDEOS, grantType -> {
+      openMediaView(true, grantType == Permissions.GrantResult.NONE);
+    })) {
+      return;
     }
 
     final MediaLayout mediaLayout;
@@ -9333,10 +9320,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Override
   public void onRequestPermissionResult (int requestCode, boolean success) {
     switch (requestCode) {
-      case BaseActivity.REQUEST_READ_STORAGE: {
-        openMediaView(true);
-        break;
-      }
       case BaseActivity.REQUEST_FINE_LOCATION: {
         if (success) {
           // TODO
@@ -9705,51 +9688,34 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   // Audio utils
 
-  /*public ArrayList<TGAudio> collectAudios (boolean isVoice, boolean unreadOnly) {
-    if (isEventLog()) {
-      return null;
-    }
-    switch (pagerScrollPosition) {
-      case MediaTabsAdapter.POSITION_MESSAGES:
-        return manager.collectAudios(isVoice, unreadOnly);
-    }
-    return null;
-  }*/
-
   @Override
   public MediaStack collectMedias (long fromMessageId, @Nullable TdApi.SearchMessagesFilter filter) {
-    switch (pagerScrollPosition) {
-      case MediaTabsAdapter.POSITION_MESSAGES:
-        return manager.collectMedias(fromMessageId, filter);
-      case MediaTabsAdapter.POSITION_MEDIA:
-        SharedBaseController<?> c = pagerContentAdapter != null ? pagerContentAdapter.cachedItems.get(MediaTabsAdapter.POSITION_MEDIA) : null;
-        if (c != null && c instanceof SharedMediaController) {
-          return ((SharedMediaController) c).collectMedias(fromMessageId, filter);
-        }
-        break;
+    if (!needTabs() || pagerScrollPosition == MediaTabsAdapter.POSITION_MESSAGES) {
+      return manager.collectMedias(fromMessageId, filter);
+    } else {
+      SharedBaseController<?> c = pagerContentAdapter != null ? pagerContentAdapter.cachedItems.get(pagerScrollPosition) : null;
+      if (c instanceof MediaCollectorDelegate) {
+        return ((MediaCollectorDelegate) c).collectMedias(fromMessageId, filter);
+      }
     }
     return null;
   }
 
   @Override
   public void modifyMediaArguments (Object cause, MediaViewController.Args args) {
-    switch (pagerScrollPosition) {
-      case MediaTabsAdapter.POSITION_MESSAGES:
-        args.delegate = this;
-        break;
-      case MediaTabsAdapter.POSITION_MEDIA:
-        SharedBaseController<?> c = pagerContentAdapter != null ? pagerContentAdapter.cachedItems.get(MediaTabsAdapter.POSITION_MEDIA) : null;
-        if (c != null && c instanceof SharedMediaController) {
-          ((SharedMediaController) c).modifyMediaArguments(cause, args);
-        }
-        break;
+    if (!needTabs() || pagerScrollPosition == MediaTabsAdapter.POSITION_MESSAGES) {
+      args.delegate = this;
+    } else {
+      SharedBaseController<?> c = pagerContentAdapter != null ? pagerContentAdapter.cachedItems.get(pagerScrollPosition) : null;
+      if (c instanceof MediaCollectorDelegate) {
+        ((MediaCollectorDelegate) c).modifyMediaArguments(cause, args);
+      }
     }
   }
 
   @Override
-  public MediaViewThumbLocation getTargetLocation (int index, MediaItem item) {
-    boolean hasTabs = needTabs();
-    if (!hasTabs || pagerScrollPosition == MediaTabsAdapter.POSITION_MESSAGES) {
+  public MediaViewThumbLocation getTargetLocation (int indexInStack, MediaItem item) {
+    if (!needTabs() || pagerScrollPosition == MediaTabsAdapter.POSITION_MESSAGES) {
       int i = manager.getAdapter().findMessageByMediaItem(item);
       if (i != -1) {
         View view = manager.getLayoutManager().findViewByPosition(i);
@@ -9759,15 +9725,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
             TGMessage msg = manager.getAdapter().getMessage(i);
             // FIXME state with FOLLOW
             int offset = (int) messagesView.getTranslationY();
-            return msg.getMediaThumbLocation(item.getSourceMessageId(), view, view.getTop(), messagesView.getBottom() - view.getBottom(), view.getTop() + HeaderView.getSize(true) + offset);
+            return msg.getMediaThumbLocation(item.getSourceMessageId(), view, view.getTop() - getTopOffset(), messagesView.getBottom() - view.getBottom(), view.getTop() + HeaderView.getSize(true) + offset);
           }
         }
       }
-    }
-    if (hasTabs && pagerScrollPosition == MediaTabsAdapter.POSITION_MEDIA && pagerContentAdapter != null) {
-      SharedBaseController<?> c = pagerContentAdapter.cachedItems.get(pagerScrollPosition);
-      if (c != null && c instanceof SharedMediaController) {
-        ((SharedMediaController) c).getTargetLocation(index, item);
+    } else {
+      SharedBaseController<?> c = pagerContentAdapter != null ? pagerContentAdapter.cachedItems.get(pagerScrollPosition) : null;
+      if (c instanceof MediaViewDelegate) {
+        return ((MediaViewDelegate) c).getTargetLocation(indexInStack, item);
       }
     }
     return null;
@@ -9775,10 +9740,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Override
   public void setMediaItemVisible (int index, MediaItem item, boolean isVisible) {
-    int i = manager.getAdapter().findMessageByMediaItem(item);
-    if (i != -1) {
-      TGMessage msg = manager.getAdapter().getMessage(i);
-      msg.setMediaVisible(item, isVisible);
+    if (!needTabs() || pagerScrollPosition == MediaTabsAdapter.POSITION_MESSAGES) {
+      int i = manager.getAdapter().findMessageByMediaItem(item);
+      if (i != -1) {
+        TGMessage msg = manager.getAdapter().getMessage(i);
+        msg.setMediaVisible(item, isVisible);
+      }
     }
   }
 

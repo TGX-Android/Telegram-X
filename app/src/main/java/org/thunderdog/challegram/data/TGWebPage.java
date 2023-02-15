@@ -301,16 +301,16 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
             if (partedUrl.length == 2) {
               this.component = new WallpaperComponent(parent, webPage, partedUrl[1]);
             } else if (webPage.document != null) {
-              this.component = new FileComponent(parent, webPage.document);
+              this.component = new FileComponent(parent, parent.getMessage(), webPage.document);
             } else {
               this.component = null;
             }
           } else if (webPage.audio != null) {
-            this.component = new FileComponent(parent, webPage.audio, null, null);
+            this.component = new FileComponent(parent, parent.getMessage(), webPage.audio, null, null);
           } else if (webPage.voiceNote != null) {
-            this.component = new FileComponent(parent, webPage.voiceNote, null, null);
+            this.component = new FileComponent(parent, parent.getMessage(), webPage.voiceNote, null, null);
           } else if (webPage.document != null) {
-            this.component = new FileComponent(parent, webPage.document);
+            this.component = new FileComponent(parent, parent.getMessage(), webPage.document);
           } else {
             this.component = null;
           }

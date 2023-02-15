@@ -112,7 +112,7 @@ public class MediaBottomContactsController extends MediaBottomBaseController<Voi
 
   protected void displayContacts (final ArrayList<TGUser> users) {
     if (users.isEmpty()) {
-      showError(this.users == null ? R.string.NoContacts : R.string.NothingFound, this.users == null);
+      showError(this.users == null ? R.string.NoContacts : R.string.NothingFound, 0, null, this.users == null);
       adapter.setUsers(null);
     } else if (this.users == null) {
       hideProgress();
@@ -150,7 +150,7 @@ public class MediaBottomContactsController extends MediaBottomBaseController<Voi
   public void onResult (TdApi.Object object) {
     switch (object.getConstructor()) {
       case TdApi.Error.CONSTRUCTOR: {
-        dispatchError(TD.toErrorString(object), true);
+        dispatchError(TD.toErrorString(object), null, null, true);
         break;
       }
       case TdApi.Users.CONSTRUCTOR: {
@@ -166,7 +166,7 @@ public class MediaBottomContactsController extends MediaBottomBaseController<Voi
         break;
       }
       default: {
-        dispatchError("Unknown constructor: " + object.getConstructor(), true);
+        dispatchError("Unknown constructor: " + object.getConstructor(), null, null, true);
         break;
       }
     }

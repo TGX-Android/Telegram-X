@@ -57,6 +57,7 @@ import org.thunderdog.challegram.navigation.Menu;
 import org.thunderdog.challegram.navigation.MenuMoreWrap;
 import org.thunderdog.challegram.navigation.ToggleHeaderView;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
@@ -227,7 +228,7 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
 
     if (galleryLoaded) {
       if (gallery == null/* && !U.deviceHasAnyCamera(context)*/) {
-        showError(getErrorString(hasGalleryAccess), false);
+        showError(getErrorString(hasGalleryAccess), getResolveErrorString(hasGalleryAccess), getResolveClickListener(hasGalleryAccess), false);
       } else {
         showGallery(false);
       }
@@ -368,9 +369,22 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
     return hasAccess ? Lang.getString(R.string.NoMediaYet) : Lang.getString(R.string.NoGalleryAccess);
   }
 
+  private static String getResolveErrorString (boolean hasAccess) {
+    return hasAccess ? null : Lang.getString(R.string.ResolveNoGalleryAccess);
+  }
+
+  private View.OnClickListener getResolveClickListener (boolean hasAccess) {
+    if (hasAccess) {
+      return null;
+    }
+    return (view) -> {
+      Intents.openPermissionSettings();
+    };
+  }
+
   private void setError (boolean hasAccess) {
     hasGalleryAccess = hasAccess;
-    showError(getErrorString(hasAccess), true);
+    showError(getErrorString(hasAccess), getResolveErrorString(hasAccess), getResolveClickListener(hasAccess), true);
   }
 
   private boolean galleryShown;
@@ -568,7 +582,7 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   private final MediaViewThumbLocation location = new MediaViewThumbLocation();
 
   @Override
-  public MediaViewThumbLocation getTargetLocation (int index, MediaItem item) {
+  public MediaViewThumbLocation getTargetLocation (int indexInStack, MediaItem item) {
     if (MediaItem.isGalleryType(item.getType()) && !mediaLayout.isHidden()) {
       View view = adapter.findViewForImage(item.getSourceGalleryFile(), (LinearLayoutManager) getLayoutManager());
       if (view != null) {
