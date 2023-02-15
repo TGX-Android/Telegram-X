@@ -14,6 +14,7 @@
  */
 package org.thunderdog.challegram.mediaview;
 
+import android.Manifest;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -1577,7 +1578,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       case R.id.btn_saveToGallery: {
         TdApi.File file = item.getTargetFile();
         if (TD.isFileLoadedAndExists(file)) {
-          U.copyToGallery(file.local.path, item.isAnimatedAvatar() || item.isGifType() ? U.TYPE_GIF : item.isVideo() ? U.TYPE_VIDEO : U.TYPE_PHOTO);
+          U.copyToGallery(context, file.local.path, item.isAnimatedAvatar() || item.isGifType() ? U.TYPE_GIF : item.isVideo() ? U.TYPE_VIDEO : U.TYPE_PHOTO);
         }
         break;
       }

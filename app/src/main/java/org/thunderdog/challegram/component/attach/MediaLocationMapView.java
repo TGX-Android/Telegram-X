@@ -568,10 +568,10 @@ public class MediaLocationMapView extends FrameLayoutFix implements OnMapReadyCa
   }
 
   @Override
-  public void onPermissionResult (int code, boolean granted) {
-    if (granted) {
+  public void onPermissionResult (int code, String[] permissions, int[] grantResults, int grantCount) {
+    if (permissions.length == grantCount) {
       checkLocationSettings(true, false);
-    } else if (!U.shouldShowPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)) {
+    } else if (!UI.getContext(UI.getContext()).permissions().shouldShowAccessLocationRationale()) {
       Intents.openPermissionSettings();
     }
   }
@@ -589,6 +589,10 @@ public class MediaLocationMapView extends FrameLayoutFix implements OnMapReadyCa
         setShowMyLocationButton(true);
       }
       return;
+    }
+
+    if (googleMap != null) {
+      googleMap.setMyLocationEnabled(true);
     }
 
     if (noGoogleApiClient) {

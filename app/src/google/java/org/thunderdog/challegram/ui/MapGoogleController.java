@@ -385,7 +385,7 @@ public class MapGoogleController extends MapController<MapView, MapGoogleControl
 
     googleMap.setOnCameraMoveStartedListener(this);
 
-    if (U.checkLocationPermission(context)) {
+    if (context.permissions().canAccessLocation()) {
       try { googleMap.setMyLocationEnabled(true); } catch (Throwable ignored) { }
     }
 

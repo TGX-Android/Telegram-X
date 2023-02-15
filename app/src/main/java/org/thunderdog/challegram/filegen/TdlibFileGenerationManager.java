@@ -1138,7 +1138,7 @@ public final class TdlibFileGenerationManager {
     compress(info, bitmap, info.isFiltered() ? 100 : applyLessCompression ? COMPRESSION_LEVEL_LESS : COMPRESSION_LEVEL, isTransparent && info.getAllowTransparency());
 
     if (saveToGallery) {
-      Background.instance().post(() -> U.savePhotoToGallery(originalBitmap, isTransparent), 750);
+      Background.instance().post(() -> U.savePhotoToGallery(UI.getUiContext(), originalBitmap, isTransparent), 750);
     }
   }
 

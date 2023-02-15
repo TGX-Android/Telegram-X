@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.player;
 
-import android.Manifest;
 import android.graphics.Canvas;
 import android.os.Build;
 import android.os.SystemClock;
@@ -34,7 +33,6 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
-import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.chat.VoiceVideoButtonView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
@@ -744,26 +742,20 @@ public class RecordAudioVideoController implements
 
   // Permissions check
 
-  private static final String[] AUDIO_PERMISSIONS = Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN ? new String[] {
-    Manifest.permission.RECORD_AUDIO,
-    Manifest.permission.WRITE_EXTERNAL_STORAGE,
-    Manifest.permission.READ_EXTERNAL_STORAGE
-  } : new String[] {
-    Manifest.permission.RECORD_AUDIO,
-    Manifest.permission.WRITE_EXTERNAL_STORAGE
-  };
-
-  private boolean needPermissions (boolean video, boolean allowRequest) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      String[] permissions = video ? CameraController.VIDEO_PERMISSIONS : AUDIO_PERMISSIONS;
-      if (U.needsPermissionRequest(permissions)) {
-        if (allowRequest) {
-          U.requestPermissions(permissions, null);
-        }
-        return true;
+  private boolean requestPermissions (boolean video, boolean allowRequest) {
+    if (allowRequest) {
+      if (video) {
+        return context.permissions().requestRecordVideoPermissions(null);
+      } else {
+        return context.permissions().requestRecordAudioPermissions(null);
+      }
+    } else {
+      if (video) {
+        return context.permissions().canRecordVideo();
+      } else {
+        return context.permissions().canRecordAudio();
       }
     }
-    return false;
   }
 
   // Entry points
@@ -910,7 +902,7 @@ public class RecordAudioVideoController implements
     }
 
     final boolean needVideo = !inRaiseMode && preferVideoMode;
-    if (needPermissions(needVideo, !inRaiseMode)) {
+    if (requestPermissions(needVideo, !inRaiseMode)) {
       return false;
     }
 

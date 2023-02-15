@@ -25,6 +25,7 @@ import android.view.ViewGroup;
 
 import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -345,16 +346,16 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
     recyclerView.setAdapter(adapter);
   }
 
-  protected final void dispatchError (final String error, final boolean animated) {
-    runOnUiThread(() -> showError(error, animated));
+  protected final void dispatchError (final String error, final String resolveErrorButtonText, final View.OnClickListener onResolveButtonClick, final boolean animated) {
+    runOnUiThread(() -> showError(error, resolveErrorButtonText, onResolveButtonClick, animated));
   }
 
   public void updateExtraSpacingDecoration () {
     recyclerView.invalidateItemDecorations();
   }
 
-  protected final void showError (@StringRes int errorRes, boolean animated) {
-    showError(Lang.getString(errorRes), animated);
+  protected final void showError (@StringRes int errorRes, @StringRes int resolveErrorButtonRes, View.OnClickListener onResolveButtonClick, boolean animated) {
+    showError(Lang.getString(errorRes), Lang.getString(resolveErrorButtonRes), onResolveButtonClick, animated);
   }
 
   protected void hideError () {
@@ -368,7 +369,7 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
     // force scroll to top
   }
 
-  protected void showError (String error, boolean animated) {
+  protected void showError (String error, @Nullable String resolveButtonText, @Nullable View.OnClickListener onResolveButtonClick, boolean animated) {
     if (emptyView == null) {
       FrameLayoutFix.LayoutParams params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL);
       params.topMargin = HeaderView.getSize(false);

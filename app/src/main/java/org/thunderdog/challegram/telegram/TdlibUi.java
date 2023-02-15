@@ -1535,7 +1535,7 @@ public class TdlibUi extends Handler {
     }
   }
 
-  public boolean handlePhotoOption (Context context, int id, TdApi.User user, EditHeaderView headerView) {
+  public boolean handlePhotoOption (BaseActivity context, int id, TdApi.User user, EditHeaderView headerView) {
     if (user == null && id == R.id.btn_changePhotoDelete && headerView == null) {
       return false;
     }
@@ -1545,7 +1545,7 @@ public class TdlibUi extends Handler {
         return true;
       }
       case R.id.btn_changePhotoGallery: {
-        UI.openGalleryDelayed(false);
+        UI.openGalleryDelayed(context, false);
         return true;
       }
       case R.id.btn_changePhotoDelete: {

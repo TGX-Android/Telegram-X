@@ -14,10 +14,8 @@
  */
 package org.thunderdog.challegram.ui;
 
-import android.Manifest;
 import android.app.TimePickerDialog;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
 import android.os.Build;
@@ -66,6 +64,7 @@ import org.thunderdog.challegram.util.AppUpdater;
 import org.thunderdog.challegram.util.DrawableModifier;
 import org.thunderdog.challegram.util.EmojiModifier;
 import org.thunderdog.challegram.util.ReactionModifier;
+import org.thunderdog.challegram.util.Permissions;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.RadioView;
@@ -1599,11 +1598,10 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
         break;
       }
       case R.id.btn_chatBackground: {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-          if (context().checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            context().requestCustomPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, (code, granted) -> openWallpaperSetup());
-            return;
-          }
+        if (!context().permissions().requestReadExternalStorage(Permissions.ReadType.IMAGES, grantType ->
+          openWallpaperSetup()
+        )) {
+          return;
         }
         openWallpaperSetup();
         break;

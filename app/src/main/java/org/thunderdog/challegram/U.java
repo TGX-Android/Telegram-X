@@ -14,10 +14,7 @@
  */
 package org.thunderdog.challegram;
 
-import android.Manifest;
 import android.animation.ValueAnimator;
-import android.annotation.TargetApi;
-import android.app.Activity;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.Service;
@@ -123,6 +120,7 @@ import org.thunderdog.challegram.tool.TGMimeType;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.TextController;
 import org.thunderdog.challegram.util.AppBuildInfo;
+import org.thunderdog.challegram.util.Permissions;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 
 import java.io.BufferedReader;
@@ -159,13 +157,13 @@ import javax.microedition.khronos.egl.EGL11;
 
 import me.vkryl.android.SdkVersion;
 import me.vkryl.core.ArrayUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.FileUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.util.LocalVar;
 import me.vkryl.td.Td;
 import okio.BufferedSink;
@@ -1205,7 +1203,7 @@ public class U {
       return;
     }
 
-    if (Intents.openFile(file, mimeType)) {
+    if (Intents.openFile(context.context(), file, mimeType)) {
       return;
     }
 
@@ -1247,7 +1245,7 @@ public class U {
     return "com.android.providers.media.documents".equals(uri.getAuthority());
   }
 
-  public static boolean isGoogleDriveDocument(Uri uri) {
+  public static boolean isGoogleDriveDocument (Uri uri) {
     return "com.google.android.apps.docs.storage".equals(uri.getAuthority());
   }
 
@@ -1677,72 +1675,9 @@ public class U {
     return orientation;
   }
 
-  public static boolean requestPermissionsIfNeeded (Runnable onDone, String... permissions) {
-    if (permissions == null || permissions.length == 0)
-      return false;
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      if (U.needsPermissionRequest(permissions)) {
-        BaseActivity activity = UI.getUiContext();
-        if (activity != null) {
-          activity.requestCustomPermissions(permissions, (code, granted) -> {
-            if (granted) {
-              onDone.run();
-            }
-          });
-        }
-        return true;
-      }
-    }
-    return false;
-  }
-
-  public static boolean needsPermissionRequest (final String... permissions) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      BaseActivity context = UI.getUiContext();
-      if (context != null) {
-        for (String permission : permissions) {
-          if (context.checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) {
-            return true;
-          }
-        }
-      }
-    }
-    return false;
-  }
-
   public static void run (Runnable runnable) {
     if (runnable != null) {
       runnable.run();
-    }
-  }
-
-  public static boolean needsPermissionRequest (final String permission) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      BaseActivity context = UI.getUiContext();
-      return context != null && context.checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED;
-    }
-    return false;
-  }
-
-  public static boolean shouldShowPermissionRationale (final String permission) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      BaseActivity context = UI.getUiContext();
-      return context != null && context.shouldShowRequestPermissionRationale(permission);
-    }
-    return false;
-  }
-
-  public static void requestPermissions (final String[] permissions, final RunnableBool after) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      BaseActivity context = UI.getUiContext();
-      if (context == null) {
-        return;
-      }
-      context.requestCustomPermissions(permissions, (code, granted) -> {
-        if (after != null) {
-          after.runWithBool(granted);
-        }
-      });
     }
   }
 
@@ -1751,13 +1686,15 @@ public class U {
   public static final int TYPE_GIF = 2;
   public static final int TYPE_FILE = 3;
 
-  public static void savePhotoToGallery (final Bitmap bitmap, boolean transparent) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && needsPermissionRequest(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE)) {
-      requestPermissions(new String[] {Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE}, result -> {
-        if (result) {
-          savePhotoToGallery(bitmap, transparent);
-        }
-      });
+  public static void savePhotoToGallery (final BaseActivity activity, final Bitmap bitmap, boolean transparent) {
+    if (!UI.isValid(activity)) {
+      return;
+    }
+    if (activity.permissions().requestWriteExternalStorage(Permissions.WriteType.GALLERY, granted -> {
+      if (granted) {
+        savePhotoToGallery(activity, bitmap, transparent);
+      }
+    })) {
       return;
     }
     Background.instance().post(() -> {
@@ -1779,8 +1716,8 @@ public class U {
     });
   }
 
-  public static void copyToGallery (final String fromPath, final int type) {
-    copyToGallery(fromPath, type, true, null);
+  public static void copyToGallery (final BaseActivity context, final String fromPath, final int type) {
+    copyToGallery(context, fromPath, type, true, null);
   }
 
   public static boolean copyToGalleryImpl (final String fromPath, int type, RunnableData<File> onSaved) {
@@ -1803,13 +1740,12 @@ public class U {
     return false;
   }
 
-  public static void copyToGallery (final String fromPath, final int type, boolean needAlert, RunnableData<File> onSaved) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && needsPermissionRequest(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-      requestPermissions(new String[] {Manifest.permission.WRITE_EXTERNAL_STORAGE}, result -> {
-        if (result) {
-          copyToGallery(fromPath, type, needAlert, onSaved);
-        }
-      });
+  public static void copyToGallery (final BaseActivity context, final String fromPath, final int type, boolean needAlert, RunnableData<File> onSaved) {
+    if (context.permissions().requestWriteExternalStorage(Permissions.WriteType.GALLERY, granted -> {
+      if (granted) {
+        copyToGallery(context, fromPath, type, needAlert, onSaved);
+      }
+    })) {
       return;
     }
     if (fromPath != null && !fromPath.isEmpty()) {
@@ -2681,13 +2617,6 @@ public class U {
     return bitmap;
   }
 
-  public static boolean checkLocationPermission (Context context) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      return context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
-    }
-    return true;
-  }
-
   // Array utils
 
   /*public static <T> T[] fit (T[] array, T[] newArray) {
@@ -3524,22 +3453,6 @@ public class U {
   }
 
   // ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION opened, but the permission is still not granted. Ignore until the app restarts.
-
-  public static boolean canManageStorage () {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-      return Environment.isExternalStorageLegacy() || Environment.isExternalStorageManager();
-    }
-    return true; // Q allows for requestExternalStorage
-  }
-
-  @TargetApi(Build.VERSION_CODES.R)
-  public static void requestManageStorage (Context context) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-      Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
-      intent.setData(Uri.parse("package:" + context.getPackageName()));
-      ((Activity) context).startActivityForResult(intent, Intents.ACTIVITY_RESULT_MANAGE_STORAGE);
-    }
-  }
 
   public static boolean canReadFile (String url) {
     try {

@@ -180,11 +180,11 @@ public class LocationHelper implements ActivityResultHandler {
           if (activity != null) {
             Runnable onCancel = () -> onReceiveLocationFailure(ERROR_CODE_PERMISSION_CANCEL);
 
-            ActivityPermissionResult callback = (code, granted) -> {
+            ActivityPermissionResult callback = (code, permissions, grantResults, grantCount) -> {
               if (sendStatus[0]) {
                 return;
               }
-              if (granted) {
+              if (grantCount == permissions.length) {
                 receiveLocationInternal(activity, true, onlyCheck, skipAlert);
               } else {
                 onReceiveLocationFailure(ERROR_CODE_PERMISSION);

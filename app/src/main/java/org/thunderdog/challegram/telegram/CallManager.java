@@ -42,6 +42,7 @@ import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.CallController;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.ActivityPermissionResult;
 import org.thunderdog.challegram.voip.VoIPController;
 import org.thunderdog.challegram.voip.VoIPServerConfig;
 import org.thunderdog.challegram.voip.gui.CallSettings;
@@ -290,8 +291,8 @@ debugCall id:long debug:string = Ok;
       if (UI.getAppContext().checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
         BaseActivity activity = UI.getUiContext();
         if (activity != null) {
-          activity.requestMicPermissionForCall((code, granted) -> {
-            if (granted) {
+          activity.requestMicPermissionForCall((code, permissions, grantResults, grantCount) -> {
+            if (grantCount == permissions.length) {
               if (makeCallContext != null) {
                 makeCall(makeCallContext, userId, null, false);
               } else {

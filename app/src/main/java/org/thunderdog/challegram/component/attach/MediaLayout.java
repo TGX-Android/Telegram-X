@@ -14,14 +14,12 @@
  */
 package org.thunderdog.challegram.component.attach;
 
-import android.Manifest;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -78,6 +76,7 @@ import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.ui.SetSenderController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.HapticMenuHelper;
+import org.thunderdog.challegram.util.Permissions;
 import org.thunderdog.challegram.widget.AvatarView;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.PopupLayout;
@@ -490,7 +489,7 @@ public class MediaLayout extends FrameLayoutFix implements
   @Override
   public void onActivityResult (int requestCode, int resultCode, Intent data) {
     if (requestCode == Intents.ACTIVITY_RESULT_MANAGE_STORAGE) {
-      onActivityPermissionResult(Intents.ACTIVITY_RESULT_MANAGE_STORAGE, U.canManageStorage());
+      onActivityPermissionResult(Intents.ACTIVITY_RESULT_MANAGE_STORAGE, UI.getContext(getContext()).permissions().canManageStorage());
       return;
     }
 
@@ -575,7 +574,7 @@ public class MediaLayout extends FrameLayoutFix implements
   private int requestedPermissionIndex = -1;
 
   @Override
-  public boolean onBottomPrepareSectionChange (int fromIndex, int toIndex) {
+  public boolean onBottomPrepareSectionChange (int fromIndex, int toIndex, boolean ignorePermissionsRequest) {
     if (counterFactor != 0f || (counterAnimator != null && counterAnimator.isAnimating()) || getCurrentController().isAnimating()) {
       return false;
     }
@@ -601,29 +600,14 @@ public class MediaLayout extends FrameLayoutFix implements
         break;
       }
       case 1: {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-          String[] permissions = BaseActivity.getReadWritePermissions(BaseActivity.RW_MODE_FILES);
-          int grantedSpecialPermissionCount = 0;
-          int grantedPermissionCount = 0;
-          int regularPermissionCount = 0;
-          for (String permission : permissions) {
-            boolean isRegularPermission = BaseActivity.isRegularReadWritePermission(permission);
-            if (isRegularPermission) {
-              regularPermissionCount++;
-            }
-            if (getContext().checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED) {
-              grantedPermissionCount++;
-              if (!isRegularPermission) {
-                grantedSpecialPermissionCount++;
-              }
-            }
+        if (!ignorePermissionsRequest && UI.getContext(getContext()).permissions().requestReadExternalStorage(Permissions.ReadType.ALL, grantType -> {
+          // ignore grantType
+          if (bottomBar != null) {
+            bottomBar.setSelectedIndex(toIndex, true);
           }
-          if (grantedPermissionCount != permissions.length && !(grantedSpecialPermissionCount > 0 && grantedSpecialPermissionCount == permissions.length - regularPermissionCount)) {
-            UI.getContext(getContext()).requestReadWritePermissions(BaseActivity.RW_MODE_FILES);
-            return false;
-          }
+        })) {
+          return false;
         }
-
         break;
       }
       case 4: {
@@ -1188,12 +1172,12 @@ public class MediaLayout extends FrameLayoutFix implements
 
   public void openCamera () {
     hide(false);
-    UI.openCameraDelayed(getContext());
+    UI.openCameraDelayed(UI.getContext(getContext()));
   }
 
   public void openGallery (boolean sendAsFile) {
     hide(false);
-    UI.openGalleryDelayed(sendAsFile);
+    UI.openGalleryDelayed(UI.getContext(getContext()), sendAsFile);
   }
 
   @Override

@@ -16,13 +16,10 @@ package org.thunderdog.challegram.data;
 
 import static androidx.core.util.ObjectsCompat.requireNonNull;
 
-import android.Manifest;
 import android.app.DownloadManager;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.BitmapFactory;
-import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
@@ -88,6 +85,7 @@ import org.thunderdog.challegram.ui.HashtagController;
 import org.thunderdog.challegram.ui.ShareController;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
+import org.thunderdog.challegram.util.Permissions;
 import org.thunderdog.challegram.util.text.Letters;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextEntity;
@@ -4834,20 +4832,13 @@ public class TD {
     });
   }
 
-  public static void saveFiles (List<DownloadedFile> files) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      BaseActivity context = UI.getUiContext();
-      if (context == null) {
-        return;
+  public static void saveFiles (BaseActivity context, List<DownloadedFile> files) {
+    if (context.permissions().requestWriteExternalStorage(Permissions.WriteType.DOWNLOADS, granted -> {
+      if (granted) {
+        saveFiles(context, files);
       }
-      if (context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-        context.requestCustomPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, (code, granted) -> {
-          if (granted) {
-            saveFiles(files);
-          }
-        });
-        return;
-      }
+    })) {
+      return;
     }
     Background.instance().post(() -> {
       int savedCount = 0;
@@ -4924,22 +4915,22 @@ public class TD {
     });
   }
 
-  public static void saveFile (DownloadedFile file) {
+  public static void saveFile (BaseActivity context, DownloadedFile file) {
     switch (file.getFileType().getConstructor()) {
       case TdApi.FileTypeAnimation.CONSTRUCTOR: {
-        U.copyToGallery(file.getPath(), U.TYPE_GIF);
+        U.copyToGallery(context, file.getPath(), U.TYPE_GIF);
         break;
       }
       case TdApi.FileTypeVideo.CONSTRUCTOR: {
-        U.copyToGallery(file.getPath(), U.TYPE_VIDEO);
+        U.copyToGallery(context, file.getPath(), U.TYPE_VIDEO);
         break;
       }
       case TdApi.FileTypePhoto.CONSTRUCTOR: {
-        U.copyToGallery(file.getPath(), U.TYPE_PHOTO);
+        U.copyToGallery(context, file.getPath(), U.TYPE_PHOTO);
         break;
       }
       default: {
-        saveToDownloads(file);
+        saveToDownloads(context, file);
         break;
       }
     }
@@ -5160,12 +5151,11 @@ public class TD {
       if (context == null) {
         return;
       }
-      if (context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-        context.requestCustomPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, (code, granted) -> {
-          if (granted) {
-            saveToDownloads(file, mimeType);
-          }
-        });
+      if (context.permissions().requestWriteExternalStorage(Permissions.WriteType.DOWNLOADS, granted -> {
+        if (granted) {
+          saveToDownloads(file, mimeType);
+        }
+      })) {
         return;
       }
     }
@@ -5173,24 +5163,17 @@ public class TD {
     Background.instance().post(() -> saveToDownloadsImpl(file, mimeType));
   }
 
-  public static void saveToDownloads (final DownloadedFile file) {
+  public static void saveToDownloads (final BaseActivity context, final DownloadedFile file) {
     if (file == null) {
       return;
     }
 
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      BaseActivity context = UI.getUiContext();
-      if (context == null) {
-        return;
+    if (context.permissions().requestWriteExternalStorage(Permissions.WriteType.DOWNLOADS, granted -> {
+      if (granted) {
+        saveToDownloads(context, file);
       }
-      if (context.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-        context.requestCustomPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, (code, granted) -> {
-          if (granted) {
-            saveToDownloads(file);
-          }
-        });
-        return;
-      }
+    })) {
+      return;
     }
 
     Background.instance().post(() -> {

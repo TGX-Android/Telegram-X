@@ -810,6 +810,9 @@
   <string name="NoMicrophoneAccess">This feature requires access to microphone.</string>
   <string name="NoCameraAccess">This feature requires access to camera.</string>
   <string name="NoGalleryAccess">Permission error</string>
+  <string name="ResolveNoGalleryAccess">Open settings</string>
+  <string name="MissingGalleryPermission">You have restricted an access to images and videos. Allow access in system settings.</string>
+  <string name="MissingAudioPermission">You have restricted an access to audio files. Allow access in system settings.</string>
   <string name="Install">Install</string>
   <string name="ChatWithYourself">Chat with yourself</string>
   <string name="YouWereKicked">you were kicked</string>
