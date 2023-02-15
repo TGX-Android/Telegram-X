@@ -242,6 +242,10 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
   }
 
   public static boolean isImageDocument (@NonNull String mimeType) {
+    if ("image/svg+xml".equals(mimeType)) {
+      // Unsupported image types
+      return false;
+    }
     return TGMimeType.isImageMimeType(mimeType) || mimeType.startsWith("image/");
   }
 
