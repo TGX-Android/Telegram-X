@@ -342,10 +342,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     if (headerCell != null) {
       View headerCellView = headerCell.getView();
       if (bottomBar != null && headerCellView.getParent() == bottomBar) {
-        if (BuildConfig.EXPERIMENTAL) {
-          throw new IllegalStateException();
-        }
-        bottomBar.removeView(headerCellView);
+        return null;
       }
       return headerCellView;
     }
