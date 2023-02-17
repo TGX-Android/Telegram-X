@@ -29,6 +29,7 @@ import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -158,7 +159,11 @@ public class MediaCellView extends ViewGroup implements
         if (!subsamplingModeEnabled || !isReady()) {
           return false;
         }
-        MediaView mediaView = (MediaView) MediaCellView.this.getParent();
+        ViewParent parent = MediaCellView.this.getParent();
+        if (!(parent instanceof MediaView)) {
+          return false;
+        }
+        MediaView mediaView = (MediaView) parent;
         mediaView.setIgnoreDisallowInterceptTouchEvent(true);
         boolean res = super.onTouchEvent(event);
         mediaView.setIgnoreDisallowInterceptTouchEvent(false);
@@ -177,8 +182,11 @@ public class MediaCellView extends ViewGroup implements
       public boolean onSingleTapConfirmed(MotionEvent e) {
         if (subsamplingModeEnabled && subsamplingImageView.isReady() && canTouch(false)) {
           subsamplingImageView.performClick();
-          ((MediaView) getParent()).onMediaClick(e.getX(), e.getY());
-          return true;
+          ViewParent parent = getParent();
+          if (parent instanceof MediaView) {
+            ((MediaView) parent).onMediaClick(e.getX(), e.getY());
+            return true;
+          }
         }
         return false;
       }
