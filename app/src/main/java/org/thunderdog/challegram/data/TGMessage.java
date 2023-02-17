@@ -2361,7 +2361,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (isAttached != nowIsAttached) {
       flags = BitwiseUtils.setFlag(flags, FLAG_ATTACHED, isAttached);
       onMessageAttachStateChange(isAttached);
-      if (!Config.READ_MESSAGES_BEFORE_FOCUS && isAttached) {
+      if (isAttached) {
         manager.viewMessages();
       }
     }

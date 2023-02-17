@@ -307,7 +307,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   private int lastCheckedCount;
 
   private boolean viewDisplayedMessages (int first, int last) {
-    if (first == -1 || last == -1 || inSpecialMode() || !isFocused) {
+    if (first == -1 || last == -1 || !allowReadMessages()) {
       return false;
     }
 
@@ -2057,20 +2057,18 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   // Reading messages
 
   boolean viewMessageInternal (final long chatId, final long messageThreadId, final long messageId) {
-    LongSet set = new LongSet(1);
-    set.add(messageId);
-    return viewMessagesInternal(chatId, messageThreadId, set, true);
+    if (allowReadMessages()) {
+      LongSet set = new LongSet(1);
+      set.add(messageId);
+      return viewMessagesInternal(chatId, messageThreadId, set, true);
+    } else {
+      return false;
+    }
   }
 
   boolean viewMessagesInternal (final long chatId, final long messageThreadId, final LongSet viewed, boolean append) {
-    if (controller.isInForceTouchMode()) {
-      return false;
-    }
-
-    final boolean isOpen = tdlib.isChatOpen(chatId);
-    final long[] messageIds = viewed.toArray();
-
-    if (isFocused && isOpen) {
+    if (allowReadMessages() && tdlib.isChatOpen(chatId)) {
+      final long[] messageIds = viewed.toArray();
       if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
         Log.i(Log.TAG_MESSAGES_LOADER, "Reading %d messages: %s", messageIds.length, Arrays.toString(messageIds));
       }
@@ -2084,22 +2082,6 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         tdlib.client().send(new TdApi.ViewMessages(chatId, messageThreadId, messageIds, true), loader);
       }
       return true;
-    }
-
-    if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
-      Log.i(Log.TAG_MESSAGES_LOADER, "Scheduling messages read. isFocused: %b, isOpen: %b, append: %b", isFocused, isOpen, append);
-    }
-    if (Config.READ_MESSAGES_BEFORE_FOCUS && append) {
-      if (viewedChatId != chatId || viewedMessages == null) {
-        viewedChatId = chatId;
-        viewedMessageThreadId = messageThreadId;
-        if (viewedMessages == null) {
-          viewedMessages = new LongSet();
-        } else {
-          viewedMessages.clear();
-        }
-      }
-      viewedMessages.addAll(viewed);
     }
     return false;
   }
@@ -2205,18 +2187,22 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   private void scheduleRefresh () {
     cancelRefresh();
-    if (refreshChatId != 0 && refreshMessageIds != null && refreshMessageIds.size() > 0 && isFocused) {
+    if (refreshChatId != 0 && refreshMessageIds != null && refreshMessageIds.size() > 0 && allowReadMessages()) {
       long ms = refreshMaxDate != 0 ? timeTillNextRefresh(tdlib.currentTimeMillis() - TimeUnit.SECONDS.toMillis(refreshMaxDate)) : 60000;
       refreshViewsRunnable = new CancellableRunnable() {
         @Override
         public void act () {
-          ArrayList<TdApi.Function<?>> functions = new ArrayList<>();
-          for (int i = 0; i < refreshMessageIds.size(); i++) {
-            long chatId = refreshMessageIds.keyAt(i);
-            long[] messageIds = refreshMessageIds.valueAt(i);
-            functions.add(new TdApi.ViewMessages(chatId, chatId == refreshChatId ? refreshMessageThreadId : 0, messageIds, false));
+          if (allowReadMessages()) {
+            ArrayList<TdApi.Function<?>> functions = new ArrayList<>();
+            for (int i = 0; i < refreshMessageIds.size(); i++) {
+              long chatId = refreshMessageIds.keyAt(i);
+              long[] messageIds = refreshMessageIds.valueAt(i);
+              functions.add(new TdApi.ViewMessages(chatId, chatId == refreshChatId ? refreshMessageThreadId : 0, messageIds, false));
+            }
+            tdlib.sendAll(functions.toArray(new TdApi.Function<?>[0]), tdlib.okHandler(), () -> tdlib.ui().post(MessagesManager.this::scheduleRefresh));
+          } else {
+            scheduleRefresh();
           }
-          tdlib.sendAll(functions.toArray(new TdApi.Function<?>[0]), tdlib.okHandler(), () -> tdlib.ui().post(MessagesManager.this::scheduleRefresh));
         }
       };
       refreshViewsRunnable.removeOnCancel(tdlib.ui());
@@ -2362,12 +2348,11 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     onCanLoadMoreBottomChanged();
   }
 
+  private boolean allowReadMessages () {
+    return isFocused && !controller.isInForceTouchMode() && !inSpecialMode();
+  }
+
   private void onFocus () {
-    if (Config.READ_MESSAGES_BEFORE_FOCUS && viewedChatId != 0l && viewMessagesInternal(viewedChatId, viewedMessageThreadId, viewedMessages, false)) {
-      viewedChatId = 0l;
-      viewedMessageThreadId = 0l;
-      viewedMessages = null;
-    }
     viewMessages();
     saveScrollPosition();
     scheduleRefresh();

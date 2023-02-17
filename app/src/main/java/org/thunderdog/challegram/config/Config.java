@@ -81,7 +81,6 @@ public class Config {
   public static final boolean NEED_NETWORK_SYNC_REQUEST = false;
 
   public static final boolean VIEW_MESSAGES_BEFORE_SCROLL = false;
-  public static final boolean READ_MESSAGES_BEFORE_FOCUS = false;
 
   // Fields from default config.
 
