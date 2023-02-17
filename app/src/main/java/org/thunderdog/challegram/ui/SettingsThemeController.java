@@ -1601,9 +1601,8 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
         if (!context().permissions().requestReadExternalStorage(Permissions.ReadType.IMAGES, grantType ->
           openWallpaperSetup()
         )) {
-          return;
+          openWallpaperSetup();
         }
-        openWallpaperSetup();
         break;
       }
       case R.id.btn_previewChat: {
