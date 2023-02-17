@@ -2,7 +2,7 @@ plugins {
   `kotlin-dsl`
 }
 
-val kotlinVersion = "1.6.21"
+val kotlinVersion = "1.8.10"
 
 gradlePlugin {
   plugins {
