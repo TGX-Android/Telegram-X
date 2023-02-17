@@ -59,6 +59,7 @@ import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.SettingsAdapter;
+import org.thunderdog.challegram.util.Permissions;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -72,7 +73,6 @@ import java.util.concurrent.TimeUnit;
 import me.vkryl.core.DateUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.RunnableData;
-import me.vkryl.td.Td;
 
 public class MediaBottomFilesController extends MediaBottomBaseController<Void> implements View.OnClickListener, Menu, View.OnLongClickListener, Comparator<File>, TGPlayerController.PlayListBuilder {
   public MediaBottomFilesController (MediaLayout context) {
@@ -102,12 +102,12 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
   @Override
   public void onMenuItemPressed (int id, View view) {
     if (id == R.id.menu_btn_more) {
-      showSystemPicker();
+      showSystemPicker(false);
     }
   }
 
   @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
-  private void showSystemPicker () {
+  private void showSystemPicker (boolean forceDownloads) {
     RunnableData<Set<Uri>> callback = uris -> {
       if (uris != null && !uris.isEmpty()) {
         List<String> files = new ArrayList<>(uris.size());
@@ -251,12 +251,13 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
     items.add(createItem(musicItem, R.id.btn_musicFiles));
 
     boolean addedDownloads = false;
-    if (U.canManageStorage()) {
+    boolean downloadsEmpty = false;
+    if (context.permissions().canManageStorage()) {
       try {
         File file = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
         if (file.exists() && file.isDirectory()) {
           File[] files = file.listFiles();
-          if (files != null && files.length > 0) {
+          if (files != null && !(downloadsEmpty = files.length == 0)) {
             InlineResultCommon common = createItem(context, tdlib, KEY_FOLDER + file.getPath(), R.drawable.baseline_file_download_24, Lang.getString(R.string.Downloads), Lang.plural(R.string.xFiles, files.length));
             items.add(createItem(common, file.isDirectory() ? R.id.btn_folder : R.id.btn_file));
             addedDownloads = true;
@@ -266,7 +267,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
         Log.e("Cannot add Downloads directory", t);
       }
     }
-    if (!addedDownloads && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+    if (!addedDownloads && !downloadsEmpty && context().permissions().canRequestDownloadsAccess()) {
       InlineResultCommon downloadsItem = createItem(context, tdlib, KEY_DOWNLOADS, R.drawable.baseline_file_download_24, Lang.getString(R.string.Downloads), Lang.getString(R.string.Files));
       items.add(createItem(downloadsItem, R.id.btn_downloads));
     }
@@ -1038,21 +1039,68 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
           break;
         }
         default: {
-          if (v.getId() == R.id.btn_internalStorage && !U.canManageStorage()) {
-            showSystemPicker();
-            return;
-          }
-
           String path = result.getId();
-          if (path != null) {
-            if (KEY_GALLERY.equals(path) || KEY_MUSIC.equals(path) || KEY_DOWNLOADS.equals(path) || KEY_BUCKET.equals(path) || path.startsWith(KEY_FOLDER)) {
-              navigateInside(path, result);
-            } else if (KEY_UPPER.equals(path)) {
-              navigateUpper();
+          boolean isDownloads = KEY_DOWNLOADS.equals(path);
+          if (v.getId() == R.id.btn_internalStorage || isDownloads) {
+            if (!context.permissions().canManageStorage()) {
+              showSystemPicker(isDownloads);
+              return;
+            }
+            if (context.permissions().requestReadExternalStorage(Permissions.ReadType.ALL, grantType -> {
+              if (grantType != Permissions.GrantResult.ALL || !context.permissions().canManageStorage()) {
+                showSystemPicker(isDownloads);
+              } else {
+                navigateTo(result);
+              }
+            })) {
+              return;
             }
           }
+
+          if (path != null) {
+            switch (path) {
+              case KEY_GALLERY: {
+                if (context.permissions().requestReadExternalStorage(Permissions.ReadType.IMAGES_AND_VIDEOS, grantType -> {
+                  if (grantType == Permissions.GrantResult.ALL) {
+                    navigateTo(result);
+                  } else {
+                    // TODO 1-tap access to privacy settings?
+                    context.tooltipManager().builder(v).icon(R.drawable.baseline_warning_24).show(tdlib, R.string.MissingGalleryPermission).hideDelayed();
+                  }
+                })) {
+                  return;
+                }
+                break;
+              }
+              case KEY_MUSIC: {
+                if (context.permissions().requestReadExternalStorage(Permissions.ReadType.AUDIO, grantType -> {
+                  if (grantType == Permissions.GrantResult.ALL) {
+                    navigateTo(result);
+                  } else {
+                    // TODO 1-tap access to privacy settings?
+                    context.tooltipManager().builder(v).icon(R.drawable.baseline_warning_24).show(tdlib, R.string.MissingAudioPermission).hideDelayed();
+                  }
+                })) {
+                  return;
+                }
+                break;
+              }
+            }
+          }
+          navigateTo(result);
           break;
         }
+      }
+    }
+  }
+
+  private void navigateTo (InlineResultCommon result) {
+    String path = result.getId();
+    if (path != null) {
+      if (KEY_GALLERY.equals(path) || KEY_MUSIC.equals(path) || KEY_DOWNLOADS.equals(path) || KEY_BUCKET.equals(path) || path.startsWith(KEY_FOLDER)) {
+        navigateInside(path, result);
+      } else if (KEY_UPPER.equals(path)) {
+        navigateUpper();
       }
     }
   }

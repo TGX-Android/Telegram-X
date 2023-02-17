@@ -607,7 +607,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
   public void onLocationRequestFailed (LocationHelper context, int errorCode, @NonNull String arg, @Nullable Location savedLocation) {
     String inlineQuery = getInlineQuery();
 
-    if (errorCode == LocationHelper.ERROR_CODE_PERMISSION && (inlineQuery == null || inlineQuery.isEmpty()) && !U.shouldShowPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)) {
+    if (errorCode == LocationHelper.ERROR_CODE_PERMISSION && (inlineQuery == null || inlineQuery.isEmpty()) && !this.context.permissions().shouldShowAccessLocationRationale()) {
       Intents.openPermissionSettings();
     }
 

@@ -15,6 +15,7 @@
 package org.thunderdog.challegram.mediaview;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Path;
@@ -22,10 +23,13 @@ import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.net.Uri;
+import android.os.Build;
+import android.provider.Settings;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -87,7 +91,7 @@ public class MediaCellView extends ViewGroup implements
   ForceTouchView.StateListener,
   FactorAnimator.Target {
   private static final float SCALE_FACTOR = .25f;
-  private static final int ZOOM_DURATION = 300;
+  public static final int ZOOM_DURATION = 140;
 
   private @Nullable MediaItem media;
   private float factor; // 0f - normal, 1f - out of screen, -1f - fade out
@@ -143,6 +147,11 @@ public class MediaCellView extends ViewGroup implements
     this.imageView = new CellImageView(context);
     this.imageView.setLayoutParams(new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && Config.USE_HARDWARE_PHOTO_VIEWER_CONFIG) {
+      SubsamplingScaleImageView.setPreferredBitmapConfig(Bitmap.Config.HARDWARE);
+    } else {
+      SubsamplingScaleImageView.setPreferredBitmapConfig(Bitmap.Config.ARGB_8888);
+    }
     this.subsamplingImageView = new ClippingSubsamplingImageView(context) {
       @SuppressWarnings("ClickableViewAccessibility")
       @Override
@@ -150,7 +159,11 @@ public class MediaCellView extends ViewGroup implements
         if (!subsamplingModeEnabled || !isReady()) {
           return false;
         }
-        MediaView mediaView = (MediaView) MediaCellView.this.getParent();
+        ViewParent parent = MediaCellView.this.getParent();
+        if (!(parent instanceof MediaView)) {
+          return false;
+        }
+        MediaView mediaView = (MediaView) parent;
         mediaView.setIgnoreDisallowInterceptTouchEvent(true);
         boolean res = super.onTouchEvent(event);
         mediaView.setIgnoreDisallowInterceptTouchEvent(false);
@@ -161,15 +174,19 @@ public class MediaCellView extends ViewGroup implements
     this.subsamplingImageView.setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CENTER_INSIDE);
     this.subsamplingImageView.setOrientation(SubsamplingScaleImageView.ORIENTATION_USE_EXIF);
     this.subsamplingImageView.setMaxScale(Float.MAX_VALUE);
+    this.subsamplingImageView.setEagerLoadingEnabled(false);
     this.subsamplingImageView.setDoubleTapZoomScale(1f);
-    this.subsamplingImageView.setDoubleTapZoomDuration(ZOOM_DURATION);
+    this.subsamplingImageView.setDoubleTapZoomDuration(subsamplingZoomDuration());
     final GestureDetectorCompat gestureDetector = new GestureDetectorCompat(context, new GestureDetector.SimpleOnGestureListener() {
       @Override
       public boolean onSingleTapConfirmed(MotionEvent e) {
         if (subsamplingModeEnabled && subsamplingImageView.isReady() && canTouch(false)) {
           subsamplingImageView.performClick();
-          ((MediaView) getParent()).onMediaClick(e.getX(), e.getY());
-          return true;
+          ViewParent parent = getParent();
+          if (parent instanceof MediaView) {
+            ((MediaView) parent).onMediaClick(e.getX(), e.getY());
+            return true;
+          }
         }
         return false;
       }
@@ -207,8 +224,9 @@ public class MediaCellView extends ViewGroup implements
     this.subsamplingImageView.setOnImageEventListener(new SubsamplingScaleImageView.DefaultOnImageEventListener() {
       @Override
       public void onReady () {
-        subsamplingImageView.setMaxScale(Math.max(subsamplingImageView.getMinScale() * 2f, Math.max(1f, Screen.density()) * 3f));
-        subsamplingImageView.setDoubleTapZoomScale(Math.max(subsamplingImageView.getMinScale() * 1.5f, 1f));
+        float maxScale = Math.max(subsamplingImageView.getMinScale() * 2f, Math.max(1f, Screen.density()) * 3f);
+        subsamplingImageView.setMaxScale(maxScale);
+        subsamplingImageView.setDoubleTapZoomScale(Math.min(maxScale, Math.max(1f, subsamplingImageView.getMinScale() * 2.5f)));
         if (subsamplingModeEnabled) {
           setSubsamplingImageLoaded(true);
         }
@@ -1660,7 +1678,8 @@ public class MediaCellView extends ViewGroup implements
         ));
       if (b != null) {
         b.withInterruptible(false)
-         .withDuration(ZOOM_DURATION)
+         .withDuration(subsamplingZoomDuration())
+         .withEasing(SubsamplingScaleImageView.EASE_IN_OUT_QUAD)
          .withOnAnimationEventListener(new SubsamplingScaleImageView.DefaultOnAnimationEventListener() {
            @Override
            public void onComplete () {
@@ -1674,6 +1693,10 @@ public class MediaCellView extends ViewGroup implements
     } else {
       getDetector().normalizeZoom(true);
     }
+  }
+
+  private int subsamplingZoomDuration () {
+    return Math.max(1, Math.round(ZOOM_DURATION * U.getAnimationScale(getContext())));
   }
 
   public float getZoomFactor () {
@@ -1778,6 +1801,11 @@ public class MediaCellView extends ViewGroup implements
           if (targetWidth == 0 || targetHeight == 0) {
             targetWidth = preview.getTargetWidth();
             targetHeight = preview.getTargetHeight();
+          }
+
+          if (targetWidth == 0 || targetHeight == 0) {
+            targetWidth = miniThumbnail.getTargetWidth();
+            targetHeight = miniThumbnail.getTargetHeight();
           }
 
           float clipWidth = Math.min(targetWidth, receiver.getWidth());
@@ -1914,6 +1942,7 @@ public class MediaCellView extends ViewGroup implements
 
   private void resetVideoState () {
     setHideStaticView(false, false);
+    updateCanSeek();
     isPlaying = false;
     videoReady = false;
     timeNow = -1;
@@ -2035,13 +2064,13 @@ public class MediaCellView extends ViewGroup implements
     }
   }
 
+  private void updateCanSeek () {
+    setCanSeek(media != null && media.canSeekVideo());
+  }
+
   @Override
   public void onStateChanged (TdApi.File file, @TdlibFilesManager.FileDownloadState int state) {
-    if (media != null && media.isVideo() && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) {
-      setCanSeek(true);
-    } else {
-      setCanSeek(media != null && media.isVideo() && state == TdlibFilesManager.STATE_DOWNLOADED_OR_UPLOADED);
-    }
+    updateCanSeek();
 
     if (state == TdlibFilesManager.STATE_DOWNLOADED_OR_UPLOADED && (forceTouchMode || (media != null && media.isAutoplay()))) {
       autoplayIfNeeded(false);

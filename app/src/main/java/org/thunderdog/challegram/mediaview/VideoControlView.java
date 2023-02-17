@@ -229,8 +229,17 @@ public class VideoControlView extends FrameLayoutFix implements FactorAnimator.T
     updateSlider(animated);
   }
 
+  private boolean slideEnabled;
+
   public void setSlideEnabled (boolean isEnabled) {
-    boolean hasSlider = isEnabled && totalDurationMs > 0;
+    if (this.slideEnabled != isEnabled) {
+      this.slideEnabled = isEnabled;
+      updateSliderAvailability();
+    }
+  }
+
+  private void updateSliderAvailability () {
+    boolean hasSlider = slideEnabled && totalDurationMs > 0;
     sliderView.setSlideEnabled(hasSlider, true);
     if (timelineView != null) {
       timelineView.setCanSlide(hasSlider, true);
@@ -254,8 +263,12 @@ public class VideoControlView extends FrameLayoutFix implements FactorAnimator.T
 
   private void setTotalMs (long ms) {
     if (this.totalDurationMs != ms) {
+      boolean changedState = (ms == 0 || totalDurationMs == 0);
       this.totalDurationMs = ms;
       totalView.setText(Strings.buildDuration(Math.round(ms / 1000.0)));
+      if (changedState) {
+        updateSliderAvailability();
+      }
     }
   }
 

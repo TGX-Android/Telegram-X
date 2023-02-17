@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.telegram;
 
-import android.Manifest;
 import android.app.AlertDialog;
 import android.content.ContentResolver;
 import android.content.Context;
@@ -561,28 +560,27 @@ public class TdlibContactManager implements CleanupStartupDelegate {
       return;
     }
 
-    if ((getStatus() != STATUS_INACTIVE /*|| (!force && canShowAlert(false))*/) && U.needsPermissionRequest(Manifest.permission.READ_CONTACTS)) {
-      U.requestPermissions(new String[] {Manifest.permission.READ_CONTACTS}, result -> {
-        if (result) {
-          if (getStatus() == STATUS_INACTIVE) {
-            setStatus(STATUS_IN_FIRST_PROGRESS);
-          }
-          startSyncIfNeeded(context, force, callback);
-        } else {
-          setStatus(STATUS_INACTIVE);
-          if (canShowAlert(force)) {
-            if (U.shouldShowPermissionRationale(Manifest.permission.READ_CONTACTS)) {
-              showAlert(context, (force ? FLAG_NEED_NEVER : 0), callback);
-            } else {
-              showAlert(context, FLAG_NEED_NEVER | FLAG_PERMISSION_DISABLED, callback);
-            }
+    if ((getStatus() != STATUS_INACTIVE /*|| (!force && canShowAlert(false))*/) && context.permissions().requestReadContacts(granted -> {
+      if (granted) {
+        if (getStatus() == STATUS_INACTIVE) {
+          setStatus(STATUS_IN_FIRST_PROGRESS);
+        }
+        startSyncIfNeeded(context, force, callback);
+      } else {
+        setStatus(STATUS_INACTIVE);
+        if (canShowAlert(force)) {
+          if (context.permissions().shouldShowReadContactsRationale()) {
+            showAlert(context, (force ? FLAG_NEED_NEVER : 0), callback);
           } else {
-            if (callback != null) {
-              callback.run();
-            }
+            showAlert(context, FLAG_NEED_NEVER | FLAG_PERMISSION_DISABLED, callback);
+          }
+        } else {
+          if (callback != null) {
+            callback.run();
           }
         }
-      });
+      }
+    })) {
       return;
     }
 
@@ -634,7 +632,7 @@ public class TdlibContactManager implements CleanupStartupDelegate {
   }
 
   public void makeSilentPermissionCheck (BaseActivity context) {
-    boolean hasPermission = !U.needsPermissionRequest(Manifest.permission.READ_CONTACTS);
+    boolean hasPermission = context.permissions().canReadContacts();
     if (pendingRetryDialog != null && pendingRetryDialog.getContext() == context && hasPermission) {
       DialogInterface dialog = pendingRetryDialog;
       Runnable callback = pendingRetryCallback;
@@ -691,28 +689,26 @@ public class TdlibContactManager implements CleanupStartupDelegate {
     AlertDialog.Builder b = new AlertDialog.Builder(context, Theme.dialogTheme());
     b.setTitle(Lang.getString(title));
     b.setMessage(message);
-    b.setPositiveButton(Lang.getString(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && U.needsPermissionRequest(Manifest.permission.READ_CONTACTS) ? (isRetry ? R.string.Settings : R.string.Continue) : R.string.Allow), (dialog, which) -> {
+    b.setPositiveButton(Lang.getString(!context.permissions().canReadContacts() ? (isRetry ? R.string.Settings : R.string.Continue) : R.string.Allow), (dialog, which) -> {
       if (isRetry) {
         Intents.openPermissionSettings();
         return;
       }
       dialog.dismiss();
       setHideOption(HIDE_OPTION_DEFAULT);
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-        U.requestPermissions(new String[] {Manifest.permission.READ_CONTACTS}, result -> {
-          if (result) {
-            if (getStatus() == STATUS_INACTIVE) {
-              setStatus(STATUS_IN_FIRST_PROGRESS);
-            }
-            startSyncIfNeeded(context, allowNever, callback);
-          } else if (U.shouldShowPermissionRationale(Manifest.permission.READ_CONTACTS)) {
-            showAlert(context, flags | FLAG_NOT_FIRST_TIME, callback);
-          } else {
-            // User has checked "Never ask again" or something like that
-            showAlert(context, flags | FLAG_NOT_FIRST_TIME | FLAG_PERMISSION_DISABLED, callback);
+      if (!context.permissions().requestReadContacts(granted -> {
+        if (granted) {
+          if (getStatus() == STATUS_INACTIVE) {
+            setStatus(STATUS_IN_FIRST_PROGRESS);
           }
-        });
-      } else {
+          startSyncIfNeeded(context, allowNever, callback);
+        } else if (context.permissions().shouldShowReadContactsRationale()) {
+          showAlert(context, flags | FLAG_NOT_FIRST_TIME, callback);
+        } else {
+          // User has checked "Never ask again" or something like that
+          showAlert(context, flags | FLAG_NOT_FIRST_TIME | FLAG_PERMISSION_DISABLED, callback);
+        }
+      })) {
         setStatus(STATUS_IN_FIRST_PROGRESS);
         startSyncIfNeeded(context, allowNever, callback);
       }

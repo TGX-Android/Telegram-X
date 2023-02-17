@@ -15,6 +15,7 @@
 package org.thunderdog.challegram.tool;
 
 import android.content.Context;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
 import android.view.Gravity;
@@ -217,7 +218,7 @@ public class UIHandler extends Handler {
   }*/
 
   @Deprecated
-  public void openCamera (Context context, long delay, boolean isPrivate, boolean isVideo) {
+  public void openCamera (BaseActivity context, long delay, boolean isPrivate, boolean isVideo) {
     if (delay <= 0l) {
       sendMessage(Message.obtain(this, OPEN_CAMERA, isPrivate ? 1 : 0, isVideo ? 1 : 0, context));
     } else {
@@ -225,11 +226,11 @@ public class UIHandler extends Handler {
     }
   }
 
-  public void openGallery (long delay, boolean sendAsFile) {
+  public void openGallery (BaseActivity context, long delay, boolean sendAsFile) {
     if (delay <= 0l) {
-      sendMessage(Message.obtain(this, OPEN_GALLERY, sendAsFile ? 1 : 0, 0));
+      sendMessage(Message.obtain(this, OPEN_GALLERY, sendAsFile ? 1 : 0, 0, context));
     } else {
-      sendMessageDelayed(Message.obtain(this, OPEN_GALLERY, sendAsFile ? 1 : 0, 0), delay);
+      sendMessageDelayed(Message.obtain(this, OPEN_GALLERY, sendAsFile ? 1 : 0, 0, context), delay);
     }
   }
 
@@ -357,7 +358,7 @@ public class UIHandler extends Handler {
       case COPY_TEXT: {
         try {
           U.copyText((CharSequence) msg.obj);
-          if (msg.arg1 != 0) {
+          if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2 && msg.arg1 != 0) {
             showCustomToast(msg.arg1, Toast.LENGTH_SHORT, 0);
           }
         } catch (Throwable t) {
@@ -367,15 +368,15 @@ public class UIHandler extends Handler {
         break;
       }
       case OPEN_GALLERY: {
-        Intents.openGallery(msg.arg1 == 1);
+        Intents.openGallery((BaseActivity) msg.obj, msg.arg1 == 1);
         break;
       }
       case OPEN_AUDIO: {
-        Intents.openAudio();
+        Intents.openAudio((BaseActivity) msg.obj);
         break;
       }
       case OPEN_CAMERA: {
-        Intents.openCamera((Context) msg.obj, msg.arg1 == 1, msg.arg2 == 1);
+        Intents.openCamera((BaseActivity) msg.obj, msg.arg1 == 1, msg.arg2 == 1);
         break;
       }
       case OPEN_NUMBER: {

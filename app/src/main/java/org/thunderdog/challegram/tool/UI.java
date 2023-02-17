@@ -159,7 +159,7 @@ public class UI {
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
         BaseActivity activity = getUiContext();
         if (activity != null) {
-          activity.requestCustomPermissions(new String[] {Manifest.permission.FOREGROUND_SERVICE}, (code, granted) -> {
+          activity.requestCustomPermissions(new String[] {Manifest.permission.FOREGROUND_SERVICE}, (code, permissions, grantResults, grantCount) -> {
             if (signal == null || !signal.isCanceled()) {
               startServiceImpl(activity, intent, true);
             }
@@ -176,7 +176,7 @@ public class UI {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && forcePermissionRequest) {
       BaseActivity activity = getUiContext();
       if (activity != null) {
-        activity.requestCustomPermissions(new String[] {Manifest.permission.FOREGROUND_SERVICE}, (code, granted) -> {
+        activity.requestCustomPermissions(new String[] {Manifest.permission.FOREGROUND_SERVICE}, (code, permissions, grantResults, grantCount) -> {
           if (signal == null || !signal.isCanceled()) {
             startServiceImpl(activity, intent, false);
           }
@@ -320,6 +320,21 @@ public class UI {
 
   public static @Nullable BaseActivity getUiContext () {
     return uiContext != null ? uiContext.get() : null;
+  }
+
+  public static boolean isValid (BaseActivity activity) {
+    if (activity != null) {
+      if (activity.getActivityState() == STATE_DESTROYED) {
+        return false;
+      }
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+        if (activity.isDestroyed()) {
+          return false;
+        }
+      }
+      return true;
+    }
+    return false;
   }
 
   public static boolean isNavigationBusyWithSomething () {
@@ -717,14 +732,14 @@ public class UI {
   }
 
   @Deprecated
-  public static void openCameraDelayed (Context context) {
+  public static void openCameraDelayed (BaseActivity context) {
     getAppHandler().openCamera(context, ACTIVITY_DELAY, false, false);
   }
 
   private static final long ACTIVITY_DELAY = 160l;
 
-  public static void openGalleryDelayed (boolean sendAsFile) {
-    getAppHandler().openGallery(ACTIVITY_DELAY, sendAsFile);
+  public static void openGalleryDelayed (BaseActivity context, boolean sendAsFile) {
+    getAppHandler().openGallery(context, ACTIVITY_DELAY, sendAsFile);
   }
 
   public static void setSoftInputMode (BaseActivity context, int inputMode) {

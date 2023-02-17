@@ -681,7 +681,7 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
       preview.setPaintAlpha(alpha * preview.getAlpha());
       receiver.setPaintAlpha(alpha * receiver.getAlpha());
       if (mayBeTransparent) {
-        receiver.drawPlaceholderRounded(c, previewSize / 2f, ColorUtils.alphaColor(alpha, Color.WHITE));
+        c.drawCircle(startX + previewSize / 2f, startY + previewSize / 2f, previewSize / 2f, Paints.fillingPaint(ColorUtils.alphaColor(alpha, Color.WHITE)));
       }
       DrawAlgorithms.drawReceiver(c, preview, receiver, true, true, startX, startY, startX + previewSize, startY + previewSize);
       receiver.restorePaintAlpha();

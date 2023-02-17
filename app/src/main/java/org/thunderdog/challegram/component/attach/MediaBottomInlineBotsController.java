@@ -53,7 +53,7 @@ public class MediaBottomInlineBotsController extends MediaBottomBaseController<V
 
   protected void displayBots (final List<TGUser> users) {
     if (users.isEmpty()) {
-      showError(R.string.NothingFound, true);
+      showError(R.string.NothingFound, 0, null, true);
     } else {
       hideProgress(() -> {
         adapter.setUsers(users);
@@ -99,7 +99,7 @@ public class MediaBottomInlineBotsController extends MediaBottomBaseController<V
   public void onResult (TdApi.Object object) {
     switch (object.getConstructor()) {
       case TdApi.Error.CONSTRUCTOR: {
-        dispatchError(TD.toErrorString(object), true);
+        dispatchError(TD.toErrorString(object), null, null, true);
         break;
       }
       case TdApi.Chat.CONSTRUCTOR: {

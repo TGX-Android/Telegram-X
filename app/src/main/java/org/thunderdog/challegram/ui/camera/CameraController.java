@@ -82,7 +82,7 @@ import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.BitwiseUtils;
 
 public class CameraController extends ViewController<Void> implements CameraDelegate, SensorEventListener, FactorAnimator.Target, View.OnClickListener, CameraButton.RecordListener, CameraOverlayView.FlashListener, Settings.SettingsChangeListener {
-  public static final String[] VIDEO_PERMISSIONS = Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN ? new String[] {
+  public static final String[] VIDEO_PERMISSIONS = Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN && Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ? new String[] {
     Manifest.permission.CAMERA,
     Manifest.permission.RECORD_AUDIO,
     Manifest.permission.WRITE_EXTERNAL_STORAGE,
@@ -93,7 +93,10 @@ public class CameraController extends ViewController<Void> implements CameraDele
     Manifest.permission.WRITE_EXTERNAL_STORAGE
   };
 
-  public static final String[] VIDEO_ONLY_PERMISSIONS = new String[] {
+  public static final String[] VIDEO_ONLY_PERMISSIONS = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ? new String[] {
+    Manifest.permission.CAMERA,
+    Manifest.permission.WRITE_EXTERNAL_STORAGE
+  } : new String[] {
     Manifest.permission.CAMERA,
     Manifest.permission.WRITE_EXTERNAL_STORAGE,
     Manifest.permission.READ_EXTERNAL_STORAGE

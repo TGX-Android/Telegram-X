@@ -83,6 +83,7 @@ import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Passcode;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Test;
+import org.thunderdog.challegram.util.ActivityPermissionResult;
 import org.thunderdog.challegram.util.AppUpdater;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.widget.BubbleLayout;
@@ -907,17 +908,11 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     showSuggestions();
     checkSyncAlert();
     tdlib.checkDeadlocks();
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-      if (context().checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-        context().requestCustomPermissions(new String[] {Manifest.permission.POST_NOTIFICATIONS}, (code, granted) -> {
-          if (granted) {
-            tdlib.notifications().onNotificationPermissionGranted();
-          } else {
-            // Do nothing?
-          }
-        });
+    context().permissions().requestPostNotifications(granted -> {
+      if (granted) {
+        tdlib.notifications().onNotificationPermissionGranted();
       }
-    }
+    });
   }
 
   @Override
@@ -1204,10 +1199,10 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       return;
     }
 
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
       if (context().checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-        context().requestCustomPermissions(new String[] {Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, (code, granted) -> {
-          if (granted) {
+        context().requestCustomPermissions(new String[] {Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE}, (code, permissions, grantResults, grantCount) -> {
+          if (grantCount == permissions.length) {
             shareIntentImpl();
           } else {
             UI.showToast(R.string.NoStorageAccess, Toast.LENGTH_SHORT);

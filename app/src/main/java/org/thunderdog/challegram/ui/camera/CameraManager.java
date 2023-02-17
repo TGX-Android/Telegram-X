@@ -282,7 +282,7 @@ public abstract class CameraManager <T extends View> {
 
     if (!delegate.usePrivateFolder()) {
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        U.copyToGallery(resultFile.getFilePath(), U.TYPE_PHOTO, false, resultFile::trackCopy);
+        U.copyToGallery(UI.getContext(context), resultFile.getFilePath(), U.TYPE_PHOTO, false, resultFile::trackCopy);
       } else {
         U.addToGallery(new File(resultFile.getFilePath()));
       }

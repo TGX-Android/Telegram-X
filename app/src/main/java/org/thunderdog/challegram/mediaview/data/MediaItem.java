@@ -242,6 +242,10 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
   }
 
   public static boolean isImageDocument (@NonNull String mimeType) {
+    if ("image/svg+xml".equals(mimeType)) {
+      // Unsupported image types
+      return false;
+    }
     return TGMimeType.isImageMimeType(mimeType) || mimeType.startsWith("image/");
   }
 
@@ -1241,6 +1245,10 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
       }
     }
     return false;
+  }
+
+  public boolean canSeekVideo () {
+    return isVideo() && (Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE || getFileProgress().isDownloaded());
   }
 
   public boolean isVideo () {

@@ -32,6 +32,7 @@ public class TdlibSender {
   private static final int FLAG_SERVICE_ACCOUNT = 1 << 1;
   private static final int FLAG_SCAM = 1 << 2;
   private static final int FLAG_FAKE = 1 << 3;
+  private static final int FLAG_DEMO = 1 << 4;
 
   private final Tdlib tdlib;
   private final long inChatId;
@@ -53,7 +54,7 @@ public class TdlibSender {
     this.inChatId = inChatId;
     this.sender = sender;
 
-    int flags = 0;
+    int flags = BitwiseUtils.setFlag(0, FLAG_DEMO, isDemo);
     switch (sender.getConstructor()) {
       case TdApi.MessageSenderChat.CONSTRUCTOR: {
         final long chatId = ((TdApi.MessageSenderChat) sender).chatId;
@@ -113,6 +114,10 @@ public class TdlibSender {
 
   public boolean isAnonymousGroupAdmin () {
     return isChat() && inChatId == getChatId() && !tdlib.isChannel(getChatId());
+  }
+
+  public boolean isDemo () {
+    return BitwiseUtils.getFlag(flags, FLAG_DEMO);
   }
 
   public boolean isSameSender (@Nullable TdlibSender sender) {

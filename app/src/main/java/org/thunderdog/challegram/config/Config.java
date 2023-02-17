@@ -81,7 +81,6 @@ public class Config {
   public static final boolean NEED_NETWORK_SYNC_REQUEST = false;
 
   public static final boolean VIEW_MESSAGES_BEFORE_SCROLL = false;
-  public static final boolean READ_MESSAGES_BEFORE_FOCUS = false;
 
   // Fields from default config.
 
@@ -293,4 +292,6 @@ public class Config {
   public static final boolean REORDER_INSTALLED_STICKER_SETS = false;
 
   public static final boolean NEED_TEMPORARY_TOPICS_WORKAROUND = true;
+
+  public static final boolean USE_HARDWARE_PHOTO_VIEWER_CONFIG = false;
 }

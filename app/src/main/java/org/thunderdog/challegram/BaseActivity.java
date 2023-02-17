@@ -124,6 +124,7 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.ActivityPermissionResult;
 import org.thunderdog.challegram.util.AppUpdater;
 import org.thunderdog.challegram.util.KonfettiBuilder;
+import org.thunderdog.challegram.util.Permissions;
 import org.thunderdog.challegram.widget.BaseRootLayout;
 import org.thunderdog.challegram.widget.DragDropLayout;
 import org.thunderdog.challegram.widget.ForceTouchView;
@@ -132,7 +133,6 @@ import org.thunderdog.challegram.widget.PopupLayout;
 
 import java.lang.ref.Reference;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import me.vkryl.android.AnimatorUtils;
@@ -142,6 +142,7 @@ import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.FutureInt;
+import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.core.reference.ReferenceUtils;
 import nl.dionsegijn.konfetti.xml.KonfettiView;
@@ -2243,6 +2244,14 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     return forgottenWindows;
   }
 
+  // Permissions 2.0
+
+  private final Permissions permissions = new Permissions(this);
+
+  public Permissions permissions () {
+    return permissions;
+  }
+
   // Permissions
 
   public static final int REQUEST_USE_FINGERPRINT = 0x01;
@@ -2291,54 +2300,13 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
         requestPermissions(permissions, REQUEST_CUSTOM_NEW);
       } catch (Throwable t) {
         Log.e("Cannot check permissions: %s", TextUtils.join(", ", permissions));
-        after.onPermissionResult(REQUEST_CUSTOM_NEW, false);
+        int[] results = new int[permissions.length];
+        for (int i = 0; i < results.length; i++) {
+          results[i] = PackageManager.PERMISSION_DENIED;
+        }
+        after.onPermissionResult(REQUEST_CUSTOM_NEW, permissions, results, 0);
         this.requestCustomPermissionCallback = null;
       }
-    }
-  }
-
-  public static final int RW_MODE_NORMAL = 0, RW_MODE_GALLERY = 1, RW_MODE_FILES = 2;
-
-  public static boolean isRegularReadWritePermission (@NonNull String permission) {
-    switch (permission) {
-      case Manifest.permission.READ_EXTERNAL_STORAGE:
-      case Manifest.permission.WRITE_EXTERNAL_STORAGE:
-        return true;
-    }
-    return false;
-  }
-
-  public static String[] getReadWritePermissions (int mode) {
-    List<String> permissions = new ArrayList<>();
-    Collections.addAll(permissions,
-      Manifest.permission.READ_EXTERNAL_STORAGE,
-      Manifest.permission.WRITE_EXTERNAL_STORAGE
-    );
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-      switch (mode) {
-        case RW_MODE_NORMAL:
-          break;
-        case RW_MODE_GALLERY:
-          Collections.addAll(permissions,
-            Manifest.permission.READ_MEDIA_IMAGES,
-            Manifest.permission.READ_MEDIA_VIDEO
-          );
-          break;
-        case RW_MODE_FILES:
-          Collections.addAll(permissions,
-            Manifest.permission.READ_MEDIA_IMAGES,
-            Manifest.permission.READ_MEDIA_VIDEO,
-            Manifest.permission.READ_MEDIA_AUDIO
-          );
-      }
-    }
-    return permissions.toArray(new String[0]);
-  }
-
-  public void requestReadWritePermissions (int mode) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      String[] permissions = getReadWritePermissions(mode);
-      requestPermissions(permissions, REQUEST_READ_STORAGE);
     }
   }
 
@@ -2347,7 +2315,12 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
   public void requestLocationPermission (boolean needBackground, boolean skipAlert, ActivityPermissionResult handler) {
     requestLocationPermission(needBackground, skipAlert, () -> {
-      handler.onPermissionResult(REQUEST_FINE_LOCATION, false);
+      String[] permissions = locationPermissions(needBackground);
+      int[] grantResults = new int[permissions.length];
+      for (int i = 0; i < permissions.length; i++) {
+        grantResults[i] = PackageManager.PERMISSION_GRANTED;
+      }
+      handler.onPermissionResult(REQUEST_FINE_LOCATION, permissions, grantResults, 0);
     }, handler);
   }
 
@@ -2363,14 +2336,16 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     }
   }
 
+  private static String[] locationPermissions (boolean needBackground) {if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && Config.REQUEST_BACKGROUND_LOCATION && needBackground) {
+      return new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION};
+    } else {
+      return new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION};
+    }
+  }
+
   private void requestLocationPermissionImpl (boolean needBackground, ActivityPermissionResult handler) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      String[] permissions;
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && Config.REQUEST_BACKGROUND_LOCATION && needBackground) {
-        permissions = new String[]{Manifest.permission.ACCESS_BACKGROUND_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION};
-      } else {
-        permissions = new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION};
-      }
+      String[] permissions = locationPermissions(needBackground);
       if (handler != null) {
         permissionsResultHandlers.put(REQUEST_FINE_LOCATION, handler);
         requestPermissions(permissions, REQUEST_CUSTOM);
@@ -2405,17 +2380,25 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       return;
     }
     switch (requestCode) {
-      case REQUEST_CUSTOM_NEW: {
-        if (requestCustomPermissionCallback != null) {
-          requestCustomPermissionCallback.onPermissionResult(requestCode, grantResults[0] == PackageManager.PERMISSION_GRANTED);
-          requestCustomPermissionCallback = null;
-        }
-        break;
-      }
+      case REQUEST_CUSTOM_NEW:
       case REQUEST_USE_MIC_CALL: {
-        if (requestMicPermissionCallback != null) {
-          requestMicPermissionCallback.onPermissionResult(requestCode, grantResults[0] == PackageManager.PERMISSION_GRANTED);
-          requestMicPermissionCallback = null;
+        ActivityPermissionResult callback =
+          requestCode == REQUEST_CUSTOM_NEW ?
+            requestCustomPermissionCallback :
+            requestMicPermissionCallback;
+        if (callback != null) {
+          if (requestCode == REQUEST_CUSTOM_NEW) {
+            requestCustomPermissionCallback = null;
+          } else {
+            requestMicPermissionCallback = null;
+          }
+          int grantCount = 0;
+          for (int grantResult : grantResults) {
+            if (grantResult == PackageManager.PERMISSION_GRANTED) {
+              grantCount++;
+            }
+          }
+          callback.onPermissionResult(requestCode, permissions, grantResults, grantCount);
         }
         break;
       }
@@ -2451,7 +2434,13 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
         if (key != 0) {
           ActivityPermissionResult handler = permissionsResultHandlers.get(key);
           if (handler != null) {
-            handler.onPermissionResult(key, grantResults[0] == PackageManager.PERMISSION_GRANTED);
+            int grantCount = 0;
+            for (int grantResult : grantResults) {
+              if (grantResult == PackageManager.PERMISSION_GRANTED) {
+                grantCount++;
+              }
+            }
+            handler.onPermissionResult(requestCode, permissions, grantResults, grantCount);
             break;
           }
         }
@@ -2600,17 +2589,16 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   private boolean openCameraByPermissionRequest (ViewController.CameraOpenOptions options) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      if (U.needsPermissionRequest(options.optionalMicrophone ? CameraController.VIDEO_ONLY_PERMISSIONS : CameraController.VIDEO_PERMISSIONS)) {
-        U.requestPermissions(options.optionalMicrophone ? CameraController.VIDEO_ONLY_PERMISSIONS : CameraController.VIDEO_PERMISSIONS, result -> {
-          if (result) {
-            openCameraByTap(options);
-          }
-        });
-        return true;
+    RunnableBool after = granted -> {
+      if (granted) {
+        openCameraByTap(options);
       }
+    };
+    if (options.optionalMicrophone) {
+      return permissions().requestAccessCameraPermission(after);
+    } else {
+      return permissions().requestRecordVideoPermissions(after);
     }
-    return false;
   }
 
   public static int getAndroidOrientationPortrait () {

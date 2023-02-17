@@ -297,7 +297,7 @@ public class SettingsController extends ViewController<Void> implements
           break;
         }
         case R.id.btn_changePhotoGallery: {
-          UI.openGalleryDelayed(false);
+          UI.openGalleryDelayed(context, false);
           break;
         }
         case R.id.btn_changePhotoDelete: {
