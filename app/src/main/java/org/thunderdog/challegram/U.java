@@ -1216,6 +1216,16 @@ public class U {
     UI.showToast(R.string.NoAppToOpen, Toast.LENGTH_SHORT);
   }
 
+  public static float getAnimationScale (Context context) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      return ValueAnimator.getDurationScale();
+    }
+    try {
+      return Settings.Global.getFloat(context.getContentResolver(), Settings.Global.ANIMATOR_DURATION_SCALE, 1.0f);
+    } catch (Throwable ignored) {
+      return 1.0f;
+    }
+  }
   public static String getDataColumn(Context context, Uri uri, String selection, String[] selectionArgs) {
     final String column = "_data";
     final String[] projection = {
