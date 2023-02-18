@@ -18,6 +18,7 @@ import android.content.Context;
 import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.os.SystemClock;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
@@ -137,7 +138,7 @@ public class MediaCellViewDetector implements FactorAnimator.Target {
       callback.onClick(x, y);
       return;
     }
-    long now = System.currentTimeMillis();
+    long now = SystemClock.uptimeMillis();
     if (now - lastClickTime <= DOUBLE_TAP_DELAY) {
       performDoubleTap(x, y);
       return;
@@ -231,7 +232,7 @@ public class MediaCellViewDetector implements FactorAnimator.Target {
 
     if (animate && changed) {
       if (positionAnimator == null) {
-        positionAnimator = new FactorAnimator(ANIMATOR_POSITION, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 140l);
+        positionAnimator = new FactorAnimator(ANIMATOR_POSITION, this, AnimatorUtils.QUADRATIC_EASE_IN_OUT_INTERPOLATOR, MediaCellView.ZOOM_DURATION);
       }
       positionAnimator.animateTo(1f);
     }

@@ -24,10 +24,12 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.net.Uri;
 import android.os.Build;
+import android.provider.Settings;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -89,7 +91,7 @@ public class MediaCellView extends ViewGroup implements
   ForceTouchView.StateListener,
   FactorAnimator.Target {
   private static final float SCALE_FACTOR = .25f;
-  private static final int ZOOM_DURATION = 300;
+  public static final int ZOOM_DURATION = 140;
 
   private @Nullable MediaItem media;
   private float factor; // 0f - normal, 1f - out of screen, -1f - fade out
@@ -157,7 +159,11 @@ public class MediaCellView extends ViewGroup implements
         if (!subsamplingModeEnabled || !isReady()) {
           return false;
         }
-        MediaView mediaView = (MediaView) MediaCellView.this.getParent();
+        ViewParent parent = MediaCellView.this.getParent();
+        if (!(parent instanceof MediaView)) {
+          return false;
+        }
+        MediaView mediaView = (MediaView) parent;
         mediaView.setIgnoreDisallowInterceptTouchEvent(true);
         boolean res = super.onTouchEvent(event);
         mediaView.setIgnoreDisallowInterceptTouchEvent(false);
@@ -168,15 +174,19 @@ public class MediaCellView extends ViewGroup implements
     this.subsamplingImageView.setMinimumScaleType(SubsamplingScaleImageView.SCALE_TYPE_CENTER_INSIDE);
     this.subsamplingImageView.setOrientation(SubsamplingScaleImageView.ORIENTATION_USE_EXIF);
     this.subsamplingImageView.setMaxScale(Float.MAX_VALUE);
+    this.subsamplingImageView.setEagerLoadingEnabled(false);
     this.subsamplingImageView.setDoubleTapZoomScale(1f);
-    this.subsamplingImageView.setDoubleTapZoomDuration(ZOOM_DURATION);
+    this.subsamplingImageView.setDoubleTapZoomDuration(subsamplingZoomDuration());
     final GestureDetectorCompat gestureDetector = new GestureDetectorCompat(context, new GestureDetector.SimpleOnGestureListener() {
       @Override
       public boolean onSingleTapConfirmed(MotionEvent e) {
         if (subsamplingModeEnabled && subsamplingImageView.isReady() && canTouch(false)) {
           subsamplingImageView.performClick();
-          ((MediaView) getParent()).onMediaClick(e.getX(), e.getY());
-          return true;
+          ViewParent parent = getParent();
+          if (parent instanceof MediaView) {
+            ((MediaView) parent).onMediaClick(e.getX(), e.getY());
+            return true;
+          }
         }
         return false;
       }
@@ -1668,7 +1678,8 @@ public class MediaCellView extends ViewGroup implements
         ));
       if (b != null) {
         b.withInterruptible(false)
-         .withDuration(ZOOM_DURATION)
+         .withDuration(subsamplingZoomDuration())
+         .withEasing(SubsamplingScaleImageView.EASE_IN_OUT_QUAD)
          .withOnAnimationEventListener(new SubsamplingScaleImageView.DefaultOnAnimationEventListener() {
            @Override
            public void onComplete () {
@@ -1682,6 +1693,10 @@ public class MediaCellView extends ViewGroup implements
     } else {
       getDetector().normalizeZoom(true);
     }
+  }
+
+  private int subsamplingZoomDuration () {
+    return Math.max(1, Math.round(ZOOM_DURATION * U.getAnimationScale(getContext())));
   }
 
   public float getZoomFactor () {

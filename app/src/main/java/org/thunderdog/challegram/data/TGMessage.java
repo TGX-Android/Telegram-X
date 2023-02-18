@@ -2361,7 +2361,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (isAttached != nowIsAttached) {
       flags = BitwiseUtils.setFlag(flags, FLAG_ATTACHED, isAttached);
       onMessageAttachStateChange(isAttached);
-      if (!Config.READ_MESSAGES_BEFORE_FOCUS && isAttached) {
+      if (isAttached) {
         manager.viewMessages();
       }
     }
@@ -3755,6 +3755,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       final float avatarRadiusDp = useBubbles() ? BUBBLE_AVATAR_RADIUS : AVATAR_RADIUS;
       if (forceForwardedInfo()) {
         forwardInfo.requestAvatar(receiver);
+      } else if (sender.isDemo()) {
+        receiver.requestPlaceholder(tdlib, sender.getPlaceholderMetadata(), AvatarReceiver.Options.NONE);
       } else {
         receiver.requestMessageSender(tdlib, sender.toSender(), AvatarReceiver.Options.NONE);
       }
