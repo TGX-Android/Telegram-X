@@ -304,11 +304,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
           @Override
           public float getBackgroundAlpha (Counter counter, float alphaFactor) {
-            return MathUtils.fromTo(
-              .5f,
-              MathUtils.fromTo(1f, .75f, counter.getMuteFactor()),
-              alphaFactor
-            );
+            return MathUtils.fromTo(.7f, 1f, alphaFactor) * MathUtils.fromTo(1f, .7f, counter.getMuteFactor());
           }
         });
       }
