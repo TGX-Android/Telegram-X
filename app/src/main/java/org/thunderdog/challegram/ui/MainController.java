@@ -317,6 +317,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     // tdlib.awaitConnection(this::unlockTabs);
 
     checkTabs();
+    checkMargins();
 
     context().appUpdater().addListener(this);
     if (context().appUpdater().state() == AppUpdater.State.READY_TO_INSTALL) {
@@ -949,25 +950,32 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   private void checkHeaderMargins () {
     if (headerCell == null)
       return;
-    RecyclerView recyclerView = ((ViewPagerHeaderViewCompact) headerCell.getView()).getRecyclerView();
-    FrameLayoutFix.LayoutParams params = (FrameLayoutFix.LayoutParams) recyclerView.getLayoutParams();
-    int marginLeft, marginRight;
+    ViewPagerHeaderViewCompact headerCellView = ((ViewPagerHeaderViewCompact) headerCell.getView());
+    RecyclerView recyclerView = headerCellView.getRecyclerView();
+    ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) recyclerView.getLayoutParams();
+    if (params.rightMargin != 0 || params.leftMargin != 0) {
+      params.leftMargin = 0;
+      params.rightMargin = 0;
+      recyclerView.setLayoutParams(params);
+    }
+    int paddingLeft, paddingRight;
     if (displayTabsAtBottom()) {
-      marginLeft = marginRight = 0;
+      paddingLeft = paddingRight = 0;
     } else {
-      int menuWidth = getMenuButtonsWidth();
+      int menuWidth = Screen.dp(42f);
+      if (Passcode.instance().isEnabled()) {
+        menuWidth += Screen.dp(48f);
+      }
       if (Lang.rtl()) {
-        marginLeft = menuWidth;
-        marginRight = Screen.dp(56f);
+        paddingLeft = menuWidth;
+        paddingRight = Screen.dp(42f);
       } else {
-        marginLeft = Screen.dp(56f);
-        marginRight = menuWidth;
+        paddingLeft = Screen.dp(42f);
+        paddingRight = menuWidth;
       }
     }
-    if (params.rightMargin != marginRight || params.leftMargin != marginLeft) {
-      params.leftMargin = marginLeft;
-      params.rightMargin = marginRight;
-      recyclerView.setLayoutParams(params);
+    if (headerCellView.getPaddingLeft() != paddingLeft || headerCellView.getPaddingRight() != paddingRight) {
+      headerCellView.setPadding(paddingLeft, headerCellView.getPaddingTop(), paddingRight, headerCellView.getPaddingBottom());
     }
   }
 
@@ -1197,11 +1205,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
   @Override
   protected int getMenuButtonsWidth () {
-    int width = Screen.dp(56f);
-    if (Passcode.instance().isEnabled()) {
-      width += Screen.dp(28f);
-    }
-    return width;
+    return 0; // disable header margins
   }
 
   public boolean showComposeWrap (ViewController<?> controller) {
