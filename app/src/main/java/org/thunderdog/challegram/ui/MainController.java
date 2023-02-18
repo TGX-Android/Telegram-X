@@ -98,7 +98,6 @@ import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Passcode;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Test;
-import org.thunderdog.challegram.util.ActivityPermissionResult;
 import org.thunderdog.challegram.util.AppUpdater;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.text.Counter;
@@ -2134,9 +2133,12 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     if (headerCell == null)
       return;
     ViewPagerHeaderViewCompact headerCellView = (ViewPagerHeaderViewCompact) headerCell.getView();
+    boolean hasFolders = hasFolders();
     boolean displayTabsAtBottom = displayTabsAtBottom();
     headerCell.getTopView().setDrawSelectionAtTop(displayTabsAtBottom);
     headerCell.getTopView().setSlideOffDirection(displayTabsAtBottom ? ViewPagerTopView.SLIDE_OFF_DIRECTION_TOP : ViewPagerTopView.SLIDE_OFF_DIRECTION_BOTTOM);
+    headerCell.getTopView().setItemPadding(Screen.dp(hasFolders ? ViewPagerTopView.COMPACT_ITEM_PADDING : ViewPagerTopView.DEFAULT_ITEM_PADDING));
+    headerCell.getTopView().setItemSpacing(Screen.dp(hasFolders ? ViewPagerTopView.COMPACT_ITEM_SPACING : ViewPagerTopView.DEFAULT_ITEM_SPACING));
     headerCellView.setFadingEdgeLength(displayTabsAtBottom ? 0f : 16f);
 
     if (displayTabsAtBottom) {
@@ -2349,6 +2351,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     } else {
       item = new ViewPagerTopView.Item(sectionName, unreadCounter);
     }
+    item.setMinWidth(Screen.dp(56f - ViewPagerTopView.COMPACT_ITEM_PADDING * 2));
     return item;
   }
 

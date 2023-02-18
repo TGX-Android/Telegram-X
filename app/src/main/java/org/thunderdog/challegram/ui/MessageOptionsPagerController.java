@@ -100,7 +100,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Voi
         .drawable(R.drawable.baseline_favorite_16, 16f, 6f, Gravity.LEFT)
         .build(), this, Screen.dp(16));
       counters[ALL_REACTED_POSITION].counter.setCount(message.getMessageReactions().getTotalCount(), false);
-      baseCountersWidth += counters[ALL_REACTED_POSITION].calculateWidth(null);
+      baseCountersWidth += counters[ALL_REACTED_POSITION].calculateWidth(null, Screen.dp(ViewPagerTopView.DEFAULT_ITEM_SPACING));
     } else {
       ALL_REACTED_POSITION = -1;
     }
@@ -112,7 +112,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Voi
         .drawable(R.drawable.baseline_visibility_16, 16f, 6f, Gravity.LEFT)
         .build(), this, Screen.dp(16));
       counters[SEEN_POSITION].counter.setCount(1, false);
-      int itemWidth = counters[SEEN_POSITION].calculateWidth(null); // - Screen.dp(16);
+      int itemWidth = counters[SEEN_POSITION].calculateWidth(null, Screen.dp(ViewPagerTopView.DEFAULT_ITEM_SPACING)); // - Screen.dp(16);
       baseCountersWidth += itemWidth;
       counters[SEEN_POSITION].setStaticWidth(itemWidth - Screen.dp(16));
       counters[SEEN_POSITION].counter.setCount(Tdlib.CHAT_LOADING, false);
@@ -188,7 +188,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Voi
     prepareControllerForPosition(startPage, null);
     tdlib.ui().post(this::launchOpenAnimation);
 
-    headerCell.getTopView().setTextPadding(Screen.dp(0));
+    headerCell.getTopView().setItemPadding(Screen.dp(0));
     headerCell.getTopView().setItems(Arrays.asList(counters));
     headerCell.getTopView().setOnItemClickListener(this);
     headerCell.getTopView().setSelectionColorId(R.id.theme_color_text);

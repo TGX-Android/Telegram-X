@@ -174,7 +174,7 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
             params.gravity = Gravity.CENTER_HORIZONTAL;
           }
           if (getTitleStyle() == TITLE_STYLE_COMPACT_BIG) {
-            headerCell.getTopView().setTextPadding(Screen.dp(12f));
+            headerCell.getTopView().setItemPadding(Screen.dp(12f));
             TextView title = SimpleHeaderView.newTitle(context);
             title.setTextColor(Theme.headerTextColor());
             addThemeTextColorListener(title, R.id.theme_color_headerText);

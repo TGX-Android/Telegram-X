@@ -32,6 +32,7 @@ import androidx.annotation.DrawableRes;
 import androidx.annotation.FloatRange;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
+import androidx.annotation.Px;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
@@ -65,6 +66,11 @@ import me.vkryl.core.lambda.Destroyable;
 
 public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener, View.OnClickListener, View.OnLongClickListener, Destroyable, TGLegacyManager.EmojiLoadListener {
   public static final @Dimension(unit = Dimension.DP) float SELECTION_HEIGHT = 2f;
+  public static final @Dimension(unit = Dimension.DP) float ICON_SIZE = 24f;
+  public static final @Dimension(unit = Dimension.DP) float DEFAULT_ITEM_PADDING = 19f;
+  public static final @Dimension(unit = Dimension.DP) float COMPACT_ITEM_PADDING = 10f;
+  public static final @Dimension(unit = Dimension.DP) float DEFAULT_ITEM_SPACING = 6f;
+  public static final @Dimension(unit = Dimension.DP) float COMPACT_ITEM_SPACING = 4f;
 
   public static class Item {
     public final CharSequence string;
@@ -135,37 +141,43 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       return obj instanceof Item && ((Item) obj).iconRes == iconRes && StringUtils.equalsOrBothEmpty(((Item) obj).string, string) && (((Item) obj).counter == counter);
     }
 
-    private int width;
+    private int width, contentWidth;
     private int addWidth = 0;
+    private int minWidth = 0;
     private int staticWidth = -1;
     private int translationX = 0;
 
-    public void setStaticWidth (int staticWidth) {
+    public void setMinWidth (@Px int minWidth) {
+      this.minWidth = minWidth;
+    }
+
+    public void setStaticWidth (@Px int staticWidth) {
       this.staticWidth = staticWidth;
     }
 
-    public int calculateWidth (TextPaint paint) {
+    public int calculateWidth (TextPaint paint, @Px int horizontalSpacing) {
       final int width;
       if (staticWidth != -1) {
         width = staticWidth;
       } else if (counter != null) {
         if (string != null) {
-          width = (int) (U.measureEmojiText(string, paint) + counter.getScaledWidth(Screen.dp(6f))) + (iconRes != 0 ? Screen.dp(24f) + Screen.dp(6f) : 0);
+          width = (int) (U.measureEmojiText(string, paint) + counter.getScaledWidth(horizontalSpacing)) + (iconRes != 0 ? Screen.dp(ICON_SIZE) + horizontalSpacing : 0);
         } else if (imageReceiver != null) {
           width = (int) counter.getWidth() + imageReceiverSize;
         } else if (iconRes != 0) {
-          width = Screen.dp(24f) + (int) counter.getScaledWidth(Screen.dp(6f));
+          width = Screen.dp(ICON_SIZE) + (int) counter.getScaledWidth(horizontalSpacing);
         } else {
-          width = (int) counter.getWidth() + Screen.dp(6f);
+          width = (int) counter.getWidth()/* + Screen.dp(6f) */; // ???
         }
       } else if (string != null) {
-        width = (int) U.measureEmojiText(string, paint) + (iconRes != 0 ? Screen.dp(24f) + Screen.dp(6f) : 0);
+        width = (int) U.measureEmojiText(string, paint) + (iconRes != 0 ? Screen.dp(ICON_SIZE) + horizontalSpacing : 0);
       } else if (iconRes != 0) {
-        width = Screen.dp(24f)/* + Screen.dp(6f)*/; // ???
+        width = Screen.dp(ICON_SIZE)/* + Screen.dp(6f)*/; // ???
       } else {
         width = 0;
       }
-      this.width = width + addWidth;
+      this.contentWidth = width + addWidth;
+      this.width = Math.max(contentWidth, minWidth);
       return this.width;
     }
 
@@ -180,7 +192,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       if (string != null) {
         CharSequence ellipsizedString = TextUtils.ellipsize(string, paint, availWidth, TextUtils.TruncateAt.END);
         ellipsizedStringLayout = U.createLayout(ellipsizedString, availWidth, paint);
-        actualWidth = ellipsizedStringLayout.getWidth();
+        actualWidth = ellipsizedStringLayout.getWidth(); // FIXME counter, icon
       } else {
         ellipsizedStringLayout = null;
         actualWidth = width;
@@ -199,7 +211,8 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   private List<Item> items;
   private int maxItemWidth;
 
-  private int textPadding;
+  private @Px int itemPadding;
+  private @Px int itemSpacing;
   private final ComplexReceiver complexReceiver;
   private CounterAlphaProvider counterAlphaProvider = DEFAULT_COUNTER_ALPHA_PROVIDER;
 
@@ -208,7 +221,8 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
 
   public ViewPagerTopView (Context context) {
     super(context);
-    this.textPadding = Screen.dp(19f);
+    this.itemPadding = Screen.dp(DEFAULT_ITEM_PADDING);
+    this.itemSpacing = Screen.dp(DEFAULT_ITEM_SPACING);
     this.complexReceiver = new ComplexReceiver(this);
     setWillNotDraw(false);
     TGLegacyManager.instance().addEmojiListener(this);
@@ -225,8 +239,20 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     }
   }
 
-  public void setTextPadding (int textPadding) {
-    this.textPadding = textPadding;
+  public void setItemPadding (@Px int itemPadding) {
+    if (this.itemPadding != itemPadding) {
+      this.itemPadding = itemPadding;
+      this.lastMeasuredWidth = 0;
+      requestLayout();
+    }
+  }
+
+  public void setItemSpacing (@Px int itemSpacing) {
+    if (this.itemSpacing != itemSpacing) {
+      this.itemSpacing = itemSpacing;
+      this.lastMeasuredWidth = 0;
+      requestLayout();
+    }
   }
 
   private boolean fitsParentWidth;
@@ -333,12 +359,12 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     Item oldItem = this.items.get(index);
     this.items.set(index, item);
     onUpdateItems();
-    totalWidth -= oldItem.width + textPadding * 2;
+    totalWidth -= oldItem.width + itemPadding * 2;
 
     int textColor = Theme.headerTextColor();
     TextPaint paint = Paints.getViewPagerTextPaint(textColor, item.needFakeBold);
-    item.calculateWidth(paint);
-    totalWidth += item.width + textPadding * 2;
+    item.calculateWidth(paint, itemSpacing);
+    totalWidth += item.width + itemPadding * 2;
     maxItemWidth = totalWidth / items.size();
 
     this.lastMeasuredWidth = 0;
@@ -381,8 +407,8 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     int textColor = Theme.headerTextColor();
     for (Item item : items) {
       TextPaint paint = Paints.getViewPagerTextPaint(textColor, item.needFakeBold);
-      item.calculateWidth(paint);
-      totalWidth += item.width + textPadding * 2;
+      item.calculateWidth(paint, itemSpacing);
+      totalWidth += item.width + itemPadding * 2;
       addView(newBackgroundView(i));
       i++;
     }
@@ -420,9 +446,9 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     int textColor = Theme.headerTextColor();
     TextPaint paint = Paints.getViewPagerTextPaint(textColor, item.needFakeBold);
 
-    item.calculateWidth(paint);
+    item.calculateWidth(paint, itemSpacing);
     int width = item.width;
-    totalWidth += width + textPadding * 2;
+    totalWidth += width + itemPadding * 2;
     maxItemWidth = totalWidth / items.size();
 
     commonItemWidth = calculateCommonItemWidth(width);
@@ -431,7 +457,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       selectionFactor++;
     }
 
-    final int availTextWidth = commonItemWidth - textPadding * 2;
+    final int availTextWidth = commonItemWidth - itemPadding * 2;
     if (!shouldWrapContent() && width < availTextWidth) {
       item.trimString(availTextWidth, paint);
     } else {
@@ -497,7 +523,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   @Override
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
     if (shouldWrapContent()) {
-      int totalWidth = textPadding * 2 * items.size() + getTotalWidth();
+      int totalWidth = itemPadding * 2 * items.size() + getTotalWidth();
       super.onMeasure(MeasureSpec.makeMeasureSpec(totalWidth, MeasureSpec.EXACTLY), heightMeasureSpec);
       layout(totalWidth, true);
     } else {
@@ -530,7 +556,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     commonItemWidth = calculateCommonItemWidth(width);
     int textColor = Theme.headerTextColor();
 
-    final int availTextWidth = commonItemWidth - textPadding * 2;
+    final int availTextWidth = commonItemWidth - itemPadding * 2;
 
     for (Item item : items) {
       TextPaint textPaint = Paints.getViewPagerTextPaint(textColor, item.needFakeBold);
@@ -562,18 +588,18 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       float remainFactor = selectionFactor - (float) ((int) selectionFactor);
       if (remainFactor == 0f) {
         int selectionIndex = Math.max(0, Math.min(items.size() - 1, (int) selectionFactor));
-        selectionWidth = items.get(selectionIndex).actualWidth + textPadding * 2;
+        selectionWidth = items.get(selectionIndex).actualWidth + itemPadding * 2;
       } else {
-        int fromWidth = items.get((int) selectionFactor).actualWidth + textPadding * 2;
-        int toWidth = items.get((int) selectionFactor + 1).actualWidth + textPadding * 2;
+        int fromWidth = items.get((int) selectionFactor).actualWidth + itemPadding * 2;
+        int toWidth = items.get((int) selectionFactor + 1).actualWidth + itemPadding * 2;
         selectionWidth = fromWidth + (int) ((float) (toWidth - fromWidth) * remainFactor);
       }
       selectionLeft = 0;
       for (int i = 0; i < (int) selectionFactor; i++) {
-        selectionLeft += items.get(i).actualWidth + textPadding * 2;
+        selectionLeft += items.get(i).actualWidth + itemPadding * 2;
       }
       if (remainFactor != 0f) {
-        selectionLeft += (int) ((float) (items.get((int) selectionFactor).actualWidth + textPadding * 2) * remainFactor);
+        selectionLeft += (int) ((float) (items.get((int) selectionFactor).actualWidth + itemPadding * 2) * remainFactor);
       }
     } else {
       selectionLeft = (int) (selectionFactor * (float) commonItemWidth);
@@ -763,13 +789,15 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
 
         final int itemWidth;
         if (wrapContent) {
-          itemWidth = item.actualWidth + textPadding * 2;
+          itemWidth = item.actualWidth + itemPadding * 2;
         } else {
           itemWidth = commonItemWidth;
         }
         if (rtl)
           cx -= itemWidth;
         if (!item.hidden) {
+          int contentWidth = Math.min(item.contentWidth, item.actualWidth);
+          int horizontalPadding = Math.max(itemWidth - contentWidth, 0) / 2;
           int color = ColorUtils.fromToArgb(textFromColor, textToColor, factor * (1f - disabledFactor));
           if (item.counter != null) {
             float alphaFactor = 1f - MathUtils.clamp(Math.abs(selectionFactor - i));
@@ -783,12 +811,11 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
             float textAlpha = counterAlphaProvider.getTextAlpha(item.counter, alphaFactor);
             float backgroundAlpha = counterAlphaProvider.getBackgroundAlpha(item.counter, alphaFactor);
             if (item.ellipsizedStringLayout != null) {
-              int horizontalPadding = Math.max((itemWidth - item.actualWidth) / 2, 0);
               int stringX;
               if (item.iconRes != 0) {
                 Drawable drawable = item.getIcon();
                 Drawables.draw(c, drawable, cx + horizontalPadding, viewHeight / 2 - drawable.getMinimumHeight() / 2, Paints.getPorterDuffPaint(color));
-                stringX = cx + horizontalPadding + Screen.dp(24f) + Screen.dp(6f);
+                stringX = cx + horizontalPadding + Screen.dp(ICON_SIZE) + itemSpacing;
               } else {
                 stringX = cx + horizontalPadding;
               }
@@ -806,7 +833,6 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
               item.imageReceiver.drawScaled(c, item.imageReceiverScale);
               item.counter.draw(c, cx + size, viewHeight / 2f, Gravity.LEFT, textAlpha, backgroundAlpha, imageAlpha, item.provider, 0);
             } else if (item.iconRes != 0) {
-              int horizontalPadding = Math.max((itemWidth - item.actualWidth) / 2, 0);
               Drawable drawable = item.getIcon();
               Drawables.draw(c, drawable, cx + horizontalPadding, viewHeight / 2 - drawable.getMinimumHeight() / 2, Paints.getPorterDuffPaint(color));
               item.counter.draw(c, cx + itemWidth - horizontalPadding - item.counter.getWidth() / 2f, viewHeight / 2f, Gravity.CENTER, textAlpha, backgroundAlpha, imageAlpha, item.provider, ThemeColorId.NONE);
@@ -816,10 +842,9 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
           } else if (item.ellipsizedStringLayout != null) {
             int stringX;
             if (item.iconRes != 0) {
-              int horizontalPadding = Math.max((itemWidth - item.actualWidth) / 2, 0);
               Drawable drawable = item.getIcon();
               Drawables.draw(c, drawable, cx + horizontalPadding, viewHeight / 2 - drawable.getMinimumHeight() / 2, Paints.getPorterDuffPaint(color));
-              stringX = cx + horizontalPadding + Screen.dp(24f) + Screen.dp(6f);
+              stringX = cx + horizontalPadding + Screen.dp(ICON_SIZE) + itemSpacing;
             } else {
               stringX = cx + itemWidth / 2 - item.actualWidth / 2;
             }
@@ -1017,9 +1042,9 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       if (topView.shouldWrapContent()) {
         int left = 0;
         for (int i = 0; i < index; i++) {
-          left += topView.items.get(i).width + topView.textPadding * 2;
+          left += topView.items.get(i).width + topView.itemPadding * 2;
         }
-        int itemWidth = topView.items.get(index).width + topView.textPadding * 2;
+        int itemWidth = topView.items.get(index).width + topView.itemPadding * 2;
         if (Lang.rtl()) {
           left = MeasureSpec.getSize(widthMeasureSpec) - left - itemWidth;
         }
