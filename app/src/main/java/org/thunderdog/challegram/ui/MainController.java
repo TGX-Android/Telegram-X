@@ -453,7 +453,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         }
       }
     } else {
-      String sectionName = Lang.getString(getMenuSectionName(pagerItemId, /* hasFolders */ false, CHAT_FOLDER_STYLE_LABEL_ONLY));
+      String sectionName = getMenuSectionName(pagerItemId, /* hasFolders */ false, CHAT_FOLDER_STYLE_LABEL_ONLY);
       item = new ViewPagerTopView.Item(sectionName.toUpperCase());
     }
     headerCell.getTopView().setItemAt(pagerItemPosition, item);
@@ -1342,10 +1342,19 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     return chats;
   }
 
-  private int getMenuSectionName (long pagerItemId, boolean hasFolders, @ChatFolderStyle int chatFolderStyle) {
+  private String getMenuSectionName (long pagerItemId, boolean hasFolders, @ChatFolderStyle int chatFolderStyle) {
+    return Lang.getString(getMenuSectionNameRes(pagerItemId, hasFolders, chatFolderStyle));
+  }
+
+  private int getMenuSectionNameRes (long pagerItemId, boolean hasFolders, @ChatFolderStyle int chatFolderStyle) {
     int selectedFilter = getSelectedFilter(pagerItemId);
-    boolean isArchive = pagerItemId == ARCHIVE_PAGER_ITEM_ID || (pagerItemId == MAIN_PAGER_ITEM_ID && menuNeedArchive);
-    if (isArchive) {
+    boolean isMain = pagerItemId == MAIN_PAGER_ITEM_ID;
+    boolean isArchive = pagerItemId == ARCHIVE_PAGER_ITEM_ID;
+    if (!isMain && !isArchive) {
+      throw new UnsupportedOperationException();
+    }
+    //noinspection ConstantConditions
+    if (isArchive || (isMain && menuNeedArchive && !hasFolders)) {
       return getArchiveSectionName(selectedFilter, chatFolderStyle);
     }
     if (selectedFilter != FILTER_NONE) {
@@ -1471,7 +1480,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     if (hasFolders()) {
       throw new UnsupportedOperationException();
     }
-    return new String[] {Lang.getString(getMenuSectionName(MAIN_PAGER_ITEM_ID, /* hasFolders */ false, CHAT_FOLDER_STYLE_LABEL_ONLY)).toUpperCase(), Lang.getString(R.string.Calls).toUpperCase()/*, UI.getString(R.string.Contacts).toUpperCase()*/};
+    return new String[] {getMenuSectionName(MAIN_PAGER_ITEM_ID, /* hasFolders */ false, CHAT_FOLDER_STYLE_LABEL_ONLY).toUpperCase(), Lang.getString(R.string.Calls).toUpperCase()/*, UI.getString(R.string.Contacts).toUpperCase()*/};
   }
 
   @Override
@@ -2265,13 +2274,13 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   }
 
   private ViewPagerTopView.Item buildMainSectionItem (@ChatFolderStyle int chatFolderStyle) {
-    CharSequence sectionName = Lang.getString(getMenuSectionName(MAIN_PAGER_ITEM_ID, /* hasFolders */ true, chatFolderStyle));
+    CharSequence sectionName = getMenuSectionName(MAIN_PAGER_ITEM_ID, /* hasFolders */ true, chatFolderStyle);
     int iconResource = menuNeedArchive ? R.drawable.baseline_archive_24 : R.drawable.baseline_forum_24;
     return buildSectionItem(MAIN_PAGER_ITEM_ID, ChatPosition.CHAT_LIST_MAIN, sectionName, iconResource, chatFolderStyle);
   }
 
   private ViewPagerTopView.Item buildArchiveSectionItem (@ChatFolderStyle int chatFolderStyle) {
-    CharSequence sectionName = Lang.getString(getMenuSectionName(ARCHIVE_PAGER_ITEM_ID, /* hasFolders */ true, chatFolderStyle));
+    CharSequence sectionName = getMenuSectionName(ARCHIVE_PAGER_ITEM_ID, /* hasFolders */ true, chatFolderStyle);
     int iconResource = R.drawable.baseline_archive_24;
     return buildSectionItem(ARCHIVE_PAGER_ITEM_ID, ChatPosition.CHAT_LIST_ARCHIVE, sectionName, iconResource, chatFolderStyle);
   }
@@ -2292,7 +2301,13 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       updateCounter(unreadCounter, unreadCount, unreadUnmutedCount, /* animated */ false);
     }
     ViewPagerTopView.Item item;
-    if (chatFolderStyle == CHAT_FOLDER_STYLE_LABEL_AND_ICON ||
+    if (pagerItemId == MAIN_PAGER_ITEM_ID) {
+      if (selectedFilter != FILTER_NONE && selectedFilter != FILTER_ARCHIVE) {
+        item = new ViewPagerTopView.Item(sectionName, iconResource, unreadCounter);
+      } else {
+        item = new ViewPagerTopView.Item(iconResource, unreadCounter);
+      }
+    } else if (chatFolderStyle == CHAT_FOLDER_STYLE_LABEL_AND_ICON ||
       chatFolderStyle == CHAT_FOLDER_STYLE_ICON_ONLY && selectedFilter != FILTER_NONE) {
       item = new ViewPagerTopView.Item(sectionName, iconResource, unreadCounter);
     } else if (chatFolderStyle == CHAT_FOLDER_STYLE_ICON_ONLY) {
