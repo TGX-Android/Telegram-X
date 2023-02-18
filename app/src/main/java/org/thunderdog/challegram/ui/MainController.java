@@ -44,7 +44,6 @@ import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
-import androidx.core.graphics.ColorUtils;
 import androidx.core.util.ObjectsCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -87,7 +86,6 @@ import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibOptionListener;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager.ChatFolderStyle;
-import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Screen;
@@ -119,9 +117,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.ViewUtils;
-import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
@@ -709,9 +705,6 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     if (composeWrap != null) {
       composeWrap.close();
     }
-    if (Config.USE_CUSTOM_NAVIGATION_COLOR) {
-      resetNavigationBarColor();
-    }
   }
 
   @Override
@@ -1153,8 +1146,6 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     return true;
   }
 
-  private @Nullable BoolAnimator navigationBarColorAnimator;
-
   @Override
   public void onFocus () {
     super.onFocus();
@@ -1171,41 +1162,6 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         tdlib.notifications().onNotificationPermissionGranted();
       }
     });
-
-    if (displayTabsAtBottom()) {
-      animateNavigationBarColor();
-    }
-  }
-
-  @Override
-  public void onThemeColorsChanged (boolean areTemp, ColorState state) {
-    super.onThemeColorsChanged(areTemp, state);
-    if (navigationBarColorAnimator != null && isFocused()) {
-      updateNavigationBarColor(navigationBarColorAnimator.getFloatValue());
-    }
-  }
-
-  private void animateNavigationBarColor () {
-    if (!Config.USE_CUSTOM_NAVIGATION_COLOR || Config.CHAT_FOLDERS_LIGHT_BOTTOM_BAR || !FeatureToggles.USE_CUSTOM_NAVIGATION_COLOR)
-      return;
-    if (navigationBarColorAnimator == null) {
-      navigationBarColorAnimator = new BoolAnimator(0, (id, factor, fraction, callee) -> {
-        updateNavigationBarColor(factor);
-      }, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
-    }
-    navigationBarColorAnimator.setValue(true, true);
-  }
-
-  private void resetNavigationBarColor () {
-    if (navigationBarColorAnimator != null) {
-      navigationBarColorAnimator.setValue(false, true);
-    }
-  }
-
-  private void updateNavigationBarColor (float factor) {
-    int navigationBarColor = getHeaderColor();
-    boolean isLight = ColorUtils.calculateLuminance(navigationBarColor) > 0.5;
-    context.setCustomNavigationColor(() -> navigationBarColor, factor, isLight);
   }
 
   @Override
@@ -2165,15 +2121,9 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         shadowView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, shadowHeight));
         Views.setTopMargin(headerCellView, shadowHeight - Screen.dp(1f));
 
-        if (Config.CHAT_FOLDERS_LIGHT_BOTTOM_BAR) {
-          ViewSupport.setThemedBackground(headerCellView, R.id.theme_color_headerLightBackground, this);
-          headerCell.getTopView().setSelectionColorId(R.id.theme_color_headerLightText);
-          headerCell.getTopView().setTextFromToColorId(R.id.theme_color_headerLightText, R.id.theme_color_headerLightText);
-        } else {
-          ViewSupport.setThemedBackground(headerCellView, R.id.theme_color_headerBackground, this);
-          headerCell.getTopView().setSelectionColorId(R.id.theme_color_headerTabActive);
-          headerCell.getTopView().setTextFromToColorId(R.id.theme_color_headerTabInactiveText, R.id.theme_color_headerTabActiveText);
-        }
+        ViewSupport.setThemedBackground(headerCellView, R.id.theme_color_headerLightBackground, this);
+        headerCell.getTopView().setSelectionColorId(R.id.theme_color_headerLightText);
+        headerCell.getTopView().setTextFromToColorId(R.id.theme_color_headerLightText, R.id.theme_color_headerLightText);
 
         int headerHeight = getHeaderHeight();
         bottomBar = new FrameLayoutFix(context);
@@ -2186,9 +2136,6 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       headerCellView.setTranslationY(0f);
       headerCellView.setVisibility(View.VISIBLE);
       headerCellView.setScaleFactor(0f, 0f, 0f, false);
-      if (isFocused()) {
-        animateNavigationBarColor();
-      }
     } else {
       if (bottomBar != null) {
         pagerWrap.removeView(bottomBar);
@@ -2201,9 +2148,6 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         if (headerView != null && isFocused() && !inTransformMode()) {
           headerView.setTitle(this);
         }
-      }
-      if (isFocused()) {
-        resetNavigationBarColor();
       }
     }
   }
@@ -2394,12 +2338,12 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   private final TextColorSet unreadCounterColorSet = new TextColorSet() {
     @Override
     public int defaultTextColor () {
-      return Theme.getColor(Config.CHAT_FOLDERS_LIGHT_BOTTOM_BAR && displayTabsAtBottom() ? R.id.theme_color_headerLightBackground : R.id.theme_color_headerBackground);
+      return Theme.getColor(displayTabsAtBottom() ? R.id.theme_color_headerLightBackground : R.id.theme_color_headerBackground);
     }
 
     @Override
     public int backgroundColor (boolean isPressed) {
-      return Theme.getColor(Config.CHAT_FOLDERS_LIGHT_BOTTOM_BAR && displayTabsAtBottom() ? R.id.theme_color_headerLightText : R.id.theme_color_headerText);
+      return Theme.getColor(displayTabsAtBottom() ? R.id.theme_color_headerLightText : R.id.theme_color_headerText);
     }
   };
 
