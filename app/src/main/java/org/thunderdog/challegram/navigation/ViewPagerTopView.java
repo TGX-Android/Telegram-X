@@ -293,7 +293,24 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   private boolean isDark;
 
   public void setUseDarkBackground () {
-    isDark = true;
+    setUseDarkBackground(true);
+  }
+
+  public void setUseDarkBackground (boolean useDark) {
+    if (isDark != useDark) {
+      isDark = useDark;
+      int childCount = getChildCount();
+      for (int index = 0; index < childCount; index++) {
+        View childView = getChildAt(index);
+        if (childView instanceof BackgroundView) {
+          if (useDark) {
+            RippleSupport.setTransparentBlackSelector(childView);
+          } else {
+            RippleSupport.setTransparentWhiteSelector(childView);
+          }
+        }
+      }
+    }
   }
 
   @Retention(RetentionPolicy.SOURCE)
