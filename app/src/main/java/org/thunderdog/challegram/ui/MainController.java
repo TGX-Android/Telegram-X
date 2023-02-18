@@ -1289,7 +1289,9 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     if (hasFolders()) {
       TdApi.ChatList chatList = pagerChatLists.get(index);
       String title;
-      if (TD.isChatListArchive(chatList)) {
+      if (TD.isChatListMain(chatList)) {
+        title = Lang.getString(R.string.CategoryMain);
+      } else if (TD.isChatListArchive(chatList)) {
         title = Lang.getString(R.string.CategoryArchive);
       } else if (TD.isChatListFilter(chatList)) {
         int chatFilterId = ((TdApi.ChatListFilter) chatList).chatFilterId;
@@ -1995,6 +1997,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   // Chat folders
 
   private void showChatListOptions (@Nullable CharSequence title, TdApi.ChatList chatList) {
+    boolean isMain = TD.isChatListMain(chatList);
     boolean isFilter = TD.isChatListFilter(chatList);
     boolean isArchive = TD.isChatListArchive(chatList);
     int chatFilterId = isFilter ? ((TdApi.ChatListFilter) chatList).chatFilterId : 0;
@@ -2010,7 +2013,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       }
       options.item(new OptionItem(R.id.btn_folderIncludeChats, Lang.getString(R.string.ChatFolderAddChats), OPTION_COLOR_NORMAL, R.drawable.baseline_add_24));
     }
-    if (isFilter || isArchive) {
+    if (isFilter || isArchive || isMain) {
       options.item(new OptionItem(R.id.btn_hideFolder, Lang.getString(R.string.HideFolder), OPTION_COLOR_NORMAL, R.drawable.baseline_eye_off_24));
     }
     if (isFilter) {
@@ -2038,8 +2041,19 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       } else if (id == R.id.btn_hideFolder) {
         if (isFilter) {
           tdlib.settings().setChatFilterEnabled(chatFilterId, false);
+        } else if (isMain) {
+          tdlib.settings().setMainChatListEnabled(false);
         } else if (isArchive) {
           tdlib.settings().setArchiveChatListEnabled(false);
+        }
+        if (headerCell != null && !StringUtils.isEmptyOrBlank(title)) {
+          context()
+            .tooltipManager()
+            .builder(headerCell.getTopView())
+            .locate((targetView, outRect) -> outRect.left = outRect.right = Screen.dp(56f) - (int) targetView.getX())
+            .controller(this)
+            .show(tdlib, Lang.getString(R.string.HideFolderInfo, title, Lang.getString(R.string.Settings), Lang.getString(R.string.ChatFolders)))
+            .hideDelayed(3500, TimeUnit.MILLISECONDS);
         }
       } else if (id == R.id.btn_folderIncludeChats) {
         tdlib.send(new TdApi.GetChatFilter(chatFilterId), (result) -> runOnUiThreadOptional(() -> {

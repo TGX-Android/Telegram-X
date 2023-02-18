@@ -685,7 +685,7 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
 
   private ListItem archiveChatFilterItem () {
     ListItem item = new ListItem(ListItem.TYPE_CUSTOM - TYPE_CHAT_FILTER, R.id.chatFilter);
-    item.setString(Lang.getString(R.string.CategoryArchive));
+    item.setString(R.string.CategoryArchive);
     item.setLongId(ARCHIVE_CHAT_FILTER_ID);
     item.setIconRes(R.drawable.baseline_drag_handle_24);
     item.setDrawModifier(new LocalFolderBadge());
