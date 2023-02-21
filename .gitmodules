@@ -92,3 +92,9 @@
 [submodule "app/jni/third_party/webrtc"]
 	path = app/jni/third_party/webrtc
 	url = https://github.com/ali-fareed/webrtc
+[submodule "app/jni/third_party/rnnoise"]
+	path = app/jni/third_party/rnnoise
+	url = https://github.com/TGX-Android/rnnoise
+[submodule "app/jni/third_party/pffft"]
+	path = app/jni/third_party/pffft
+	url = https://github.com/TGX-Android/pffft
