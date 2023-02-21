@@ -2577,8 +2577,6 @@ add_library(webrtc STATIC
   "${WEBRTC_DIR}/modules/audio_processing/aec3/config_selector.cc"
   "${WEBRTC_DIR}/modules/rtp_rtcp/source/ulpfec_receiver.cc"
   "${WEBRTC_DIR}/api/video_codecs/av1_profile.cc"
-  "${WEBRTC_DIR}/modules/utility/source/helpers_android.cc"
-  "${WEBRTC_DIR}/modules/utility/source/jvm_android.cc"
   "${WEBRTC_DIR}/modules/utility/maybe_worker_thread.cc"
   "${WEBRTC_DIR}/pc/legacy_stats_collector.cc"
   "${WEBRTC_DIR}/modules/audio_coding/neteq/packet_arrival_history.cc"
@@ -2608,7 +2606,162 @@ add_library(webrtc STATIC
   "${WEBRTC_DIR}/modules/video_coding/timing/rtt_filter.cc"
   "${WEBRTC_DIR}/video/config/simulcast.cc"
   "${WEBRTC_DIR}/api/video_codecs/simulcast_stream.cc"
-  )
+)
+
+target_sources(webrtc PRIVATE
+  "${WEBRTC_DIR}/rtc_base/system/warn_current_thread_is_deadlocked.cc"
+  "${WEBRTC_DIR}/rtc_base/task_queue_libevent.cc"
+  "${WEBRTC_DIR}/rtc_base/task_queue_stdlib.cc"
+
+  "${WEBRTC_DIR}/api/field_trials.cc"
+  "${WEBRTC_DIR}/api/numerics/samples_stats_counter.cc"
+  "${WEBRTC_DIR}/api/task_queue/default_task_queue_factory_libevent.cc"
+  "${WEBRTC_DIR}/api/voip/voip_engine_factory.cc"
+  "${WEBRTC_DIR}/api/video/rtp_video_frame_assembler.cc"
+  "${WEBRTC_DIR}/api/video_codecs/spatial_layer.cc"
+  "${WEBRTC_DIR}/api/video_codecs/scalability_mode_helper.cc"
+
+  "${WEBRTC_DIR}/audio/voip/audio_channel.cc"
+  "${WEBRTC_DIR}/audio/voip/audio_ingress.cc"
+  "${WEBRTC_DIR}/audio/voip/voip_core.cc"
+
+  "${WEBRTC_DIR}/common_audio/third_party/ooura/fft_size_256/fft4g.cc"
+
+  "${WEBRTC_DIR}/sdk/media_constraints.cc"
+
+  "${WEBRTC_DIR}/logging/rtc_event_log/rtc_event_log_impl.cc"
+
+  "${WEBRTC_DIR}/modules/audio_device/audio_device_impl.cc"
+  "${WEBRTC_DIR}/modules/audio_processing/agc2/speech_probability_buffer.cc"
+  "${WEBRTC_DIR}/modules/video_capture/linux/device_info_linux.cc"
+  "${WEBRTC_DIR}/modules/video_capture/linux/video_capture_linux.cc"
+  "${WEBRTC_DIR}/modules/video_capture/video_capture_factory_null.cc"
+  "${WEBRTC_DIR}/modules/video_coding/decoding_state.cc"
+  "${WEBRTC_DIR}/modules/video_coding/event_wrapper.cc"
+  "${WEBRTC_DIR}/modules/video_coding/frame_buffer.cc"
+  "${WEBRTC_DIR}/modules/video_coding/jitter_buffer.cc"
+  "${WEBRTC_DIR}/modules/video_coding/packet.cc"
+  "${WEBRTC_DIR}/modules/video_coding/receiver.cc"
+  "${WEBRTC_DIR}/modules/video_coding/session_info.cc"
+  "${WEBRTC_DIR}/modules/video_coding/video_coding_impl.cc"
+  "${WEBRTC_DIR}/modules/video_coding/video_receiver.cc"
+  "${WEBRTC_DIR}/modules/video_coding/h264_packet_buffer.cc"
+  "${WEBRTC_DIR}/modules/rtp_rtcp/source/deprecated/deprecated_rtp_sender_egress.cc"
+  "${WEBRTC_DIR}/modules/utility/source/helpers_android.cc"
+  "${WEBRTC_DIR}/modules/utility/source/jvm_android.cc"
+
+  "${WEBRTC_DIR}/net/dcsctp/public/dcsctp_socket_factory.cc"
+  "${WEBRTC_DIR}/net/dcsctp/public/dcsctp_handover_state.cc"
+  "${WEBRTC_DIR}/net/dcsctp/public/text_pcap_packet_observer.cc"
+  "${WEBRTC_DIR}/net/dcsctp/socket/callback_deferrer.cc"
+  "${WEBRTC_DIR}/net/dcsctp/socket/dcsctp_socket.cc"
+  "${WEBRTC_DIR}/net/dcsctp/socket/heartbeat_handler.cc"
+  "${WEBRTC_DIR}/net/dcsctp/socket/packet_sender.cc"
+  "${WEBRTC_DIR}/net/dcsctp/socket/state_cookie.cc"
+  "${WEBRTC_DIR}/net/dcsctp/socket/stream_reset_handler.cc"
+  "${WEBRTC_DIR}/net/dcsctp/socket/transmission_control_block.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/chunk_validators.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/crc32c.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/sctp_packet.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/tlv_trait.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/chunk/abort_chunk.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/chunk/chunk.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/chunk/cookie_ack_chunk.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/chunk/cookie_echo_chunk.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/chunk/data_chunk.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/chunk/error_chunk.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/chunk/forward_tsn_chunk.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/chunk/heartbeat_ack_chunk.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/chunk/heartbeat_request_chunk.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/chunk/idata_chunk.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/chunk/iforward_tsn_chunk.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/chunk/init_ack_chunk.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/chunk/init_chunk.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/chunk/reconfig_chunk.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/chunk/sack_chunk.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/chunk/shutdown_ack_chunk.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/chunk/shutdown_chunk.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/chunk/shutdown_complete_chunk.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/error_cause/cookie_received_while_shutting_down_cause.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/error_cause/error_cause.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/error_cause/invalid_mandatory_parameter_cause.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/error_cause/invalid_stream_identifier_cause.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/error_cause/missing_mandatory_parameter_cause.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/error_cause/no_user_data_cause.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/error_cause/out_of_resource_error_cause.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/error_cause/protocol_violation_cause.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/error_cause/stale_cookie_error_cause.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/error_cause/restart_of_an_association_with_new_address_cause.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/error_cause/unrecognized_chunk_type_cause.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/error_cause/unrecognized_parameter_cause.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/error_cause/unresolvable_address_cause.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/error_cause/user_initiated_abort_cause.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/parameter/add_incoming_streams_request_parameter.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/parameter/add_outgoing_streams_request_parameter.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/parameter/forward_tsn_supported_parameter.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/parameter/heartbeat_info_parameter.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/parameter/incoming_ssn_reset_request_parameter.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/parameter/outgoing_ssn_reset_request_parameter.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/parameter/parameter.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/parameter/reconfiguration_response_parameter.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/parameter/ssn_tsn_reset_request_parameter.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/parameter/state_cookie_parameter.cc"
+  "${WEBRTC_DIR}/net/dcsctp/packet/parameter/supported_extensions_parameter.cc"
+  "${WEBRTC_DIR}/net/dcsctp/rx/data_tracker.cc"
+  "${WEBRTC_DIR}/net/dcsctp/rx/reassembly_queue.cc"
+  "${WEBRTC_DIR}/net/dcsctp/rx/traditional_reassembly_streams.cc"
+  "${WEBRTC_DIR}/net/dcsctp/rx/interleaved_reassembly_streams.cc"
+  "${WEBRTC_DIR}/net/dcsctp/tx/outstanding_data.cc"
+  "${WEBRTC_DIR}/net/dcsctp/tx/retransmission_error_counter.cc"
+  "${WEBRTC_DIR}/net/dcsctp/tx/retransmission_queue.cc"
+  "${WEBRTC_DIR}/net/dcsctp/tx/retransmission_timeout.cc"
+  "${WEBRTC_DIR}/net/dcsctp/tx/rr_send_queue.cc"
+  "${WEBRTC_DIR}/net/dcsctp/tx/stream_scheduler.cc"
+  "${WEBRTC_DIR}/net/dcsctp/timer/task_queue_timeout.cc"
+  "${WEBRTC_DIR}/net/dcsctp/timer/timer.cc"
+)
+
+# TODO?: "${WEBRTC_DIR}/sdk/android/src/jni/pc/add_ice_candidate_observer.cc"
+
+# crc32
+
+target_sources(webrtc PRIVATE
+  "${THIRDPARTY_DIR}/crc32c/src/crc32c_portable.cc"
+  "${THIRDPARTY_DIR}/crc32c/src/crc32c.cc"
+)
+target_include_directories(webrtc PRIVATE
+  "${THIRDPARTY_DIR}/crc32c/include"
+)
+
+# libevent
+
+target_sources(webrtc PRIVATE
+  "${THIRDPARTY_DIR}/libevent/buffer.c"
+  "${THIRDPARTY_DIR}/libevent/epoll.c"
+  "${THIRDPARTY_DIR}/libevent/evbuffer.c"
+  "${THIRDPARTY_DIR}/libevent/evdns.c"
+  "${THIRDPARTY_DIR}/libevent/event.c"
+  "${THIRDPARTY_DIR}/libevent/event_tagging.c"
+  "${THIRDPARTY_DIR}/libevent/evrpc.c"
+  "${THIRDPARTY_DIR}/libevent/evutil.c"
+  "${THIRDPARTY_DIR}/libevent/http.c"
+  "${THIRDPARTY_DIR}/libevent/log.c"
+  "${THIRDPARTY_DIR}/libevent/poll.c"
+  "${THIRDPARTY_DIR}/libevent/select.c"
+  "${THIRDPARTY_DIR}/libevent/signal.c"
+  "${THIRDPARTY_DIR}/libevent/strlcpy.c"
+)
+
+# Unknown files:
+
+# "${WEBRTC_DIR}/video/rtp_video_stream_receiver.cc"
+# "${WEBRTC_DIR}/common_video/h264/prefix_parser.cc"
+# "${WEBRTC_DIR}/api/field_trials_registry.cc"
+# "${WEBRTC_DIR}/modules/audio_processing/agc2/speech_level_estimator.cc"
+# "${WEBRTC_DIR}/modules/audio_processing/agc2/input_volume_stats_reporter.cc"
+
+# "${WEBRTC_DIR}/third_party/crc32c/src/crc32c_portable.cc"
+# "${WEBRTC_DIR}/third_party/crc32c/src/crc32c.cc"
 
 target_compile_definitions(webrtc PRIVATE
   RTC_DISABLE_TRACE_EVENTS
@@ -2663,16 +2816,31 @@ if(${ANDROID_ABI} STREQUAL "armeabi-v7a" OR ${ANDROID_ABI} STREQUAL "arm64-v8a")
     "${WEBRTC_DIR}/common_audio/signal_processing/downsample_fast_neon.c"
     "${WEBRTC_DIR}/common_audio/signal_processing/min_max_operations_neon.c"
     "${WEBRTC_DIR}/common_audio/resampler/sinc_resampler_neon.cc"
+    "${WEBRTC_DIR}/common_audio/third_party/ooura/fft_size_128/ooura_fft_neon.cc"
   )
+  if(${ANDROID_ABI} STREQUAL "armeabi-v7a")
+    target_sources(webrtc PRIVATE
+      "${WEBRTC_DIR}/common_audio/signal_processing/complex_bit_reverse_arm.S"
+      "${WEBRTC_DIR}/common_audio/signal_processing/filter_ar_fast_q12_armv7.S"
+    )
+    target_compile_definitions(webrtc PRIVATE
+      WEBRTC_ARCH_ARM
+      WEBRTC_ARCH_ARM_V7
+      WEBRTC_HAS_NEON
+      LIBYUV_NEON
+    )
+  elseif(${ANDROID_ABI} STREQUAL "arm64-v8a")
+    target_sources(webrtc PRIVATE
+      "${WEBRTC_DIR}/common_audio/signal_processing/complex_bit_reverse.c"
+      "${WEBRTC_DIR}/common_audio/signal_processing/filter_ar_fast_q12.c"
+    )
+    target_compile_definitions(webrtc PRIVATE
+      WEBRTC_ARCH_ARM64
+      WEBRTC_HAS_NEON
+      LIBYUV_NEON
+    )
+  endif()
 elseif(${ANDROID_ABI} STREQUAL "x86_64" OR ${ANDROID_ABI} STREQUAL "x86")
-  #"${WEBRTC_DIR}/common_audio/resampler/sinc_resampler_avx2.cc"
-  #"${WEBRTC_DIR}/modules/audio_processing/aec3/vector_math_avx2.cc"
-  #"${WEBRTC_DIR}/modules/audio_processing/aec3/adaptive_fir_filter_avx2.cc"
-  #"${WEBRTC_DIR}/modules/audio_processing/aec3/adaptive_fir_filter_erl_avx2.cc"
-  #"${WEBRTC_DIR}/modules/audio_processing/aec3/matched_filter_avx2.cc"
-  #"${WEBRTC_DIR}/modules/audio_processing/aec3/fft_data_avx2.cc"
-  #"${WEBRTC_DIR}/common_audio/fir_filter_avx2.cc"
-  #"${WEBRTC_DIR}/modules/audio_processing/agc2/rnn_vad/vector_math_avx2.cc"
   target_sources(webrtc PRIVATE
     "${WEBRTC_DIR}/common_audio/fir_filter_sse.cc"
     "${WEBRTC_DIR}/common_audio/resampler/sinc_resampler_sse.cc"
@@ -2680,34 +2848,6 @@ elseif(${ANDROID_ABI} STREQUAL "x86_64" OR ${ANDROID_ABI} STREQUAL "x86")
     "${WEBRTC_DIR}/common_audio/signal_processing/filter_ar_fast_q12.c"
     "${WEBRTC_DIR}/common_audio/third_party/ooura/fft_size_128/ooura_fft_sse2.cc"
   )
-else()
-  message(FATAL_ERROR "Unknown abi: ${ANDROID_ABI}")
-endif()
-
-if(${ANDROID_ABI} STREQUAL "armeabi-v7a")
-  target_sources(webrtc PRIVATE
-    "${WEBRTC_DIR}/common_audio/signal_processing/filter_ar_fast_q12.c"
-    "${WEBRTC_DIR}/common_audio/signal_processing/complex_bit_reverse.c"
-    "${WEBRTC_DIR}/common_audio/third_party/ooura/fft_size_128/ooura_fft_neon.cc"
-  )
-  target_compile_definitions(webrtc PRIVATE
-    WEBRTC_ARCH_ARM
-    WEBRTC_ARCH_ARM_V7
-    WEBRTC_HAS_NEON
-    LIBYUV_NEON
-  )
-elseif(${ANDROID_ABI} STREQUAL "arm64-v8a")
-  target_sources(webrtc PRIVATE
-    "${WEBRTC_DIR}/common_audio/signal_processing/complex_bit_reverse.c"
-    "${WEBRTC_DIR}/common_audio/signal_processing/filter_ar_fast_q12.c"
-    "${WEBRTC_DIR}/common_audio/third_party/ooura/fft_size_128/ooura_fft_neon.cc"
-  )
-  target_compile_definitions(webrtc PRIVATE
-    WEBRTC_ARCH_ARM64
-    WEBRTC_HAS_NEON
-    LIBYUV_NEON
-  )
-elseif(${ANDROID_ABI} STREQUAL "x86_64" OR ${ANDROID_ABI} STREQUAL "x86")
   target_compile_definitions(webrtc PRIVATE
     HAVE_SSE2
   )

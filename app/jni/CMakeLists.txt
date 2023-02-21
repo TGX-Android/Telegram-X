@@ -173,6 +173,9 @@ include("${CMAKE_HOME_DIRECTORY}/BuildAbsl.cmake")
 # webrtc
 include("${CMAKE_HOME_DIRECTORY}/BuildWebRTC.cmake")
 
+# tgcalls
+include("${CMAKE_HOME_DIRECTORY}/BuildTgCalls.cmake")
+
 # yuv
 include("${CMAKE_HOME_DIRECTORY}/BuildYuv.cmake")
 
