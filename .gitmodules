@@ -86,10 +86,9 @@
 	path = app/jni/third_party/openh264
 	url = https://github.com/cisco/openh264
 	shallow = true
-[submodule "rnnoise"]
-	path = app/jni/third_party/rnnoise
-	url = https://github.com/xiph/rnnoise
-	shallow = true
 [submodule "app/jni/third_party/abseil-cpp"]
 	path = app/jni/third_party/abseil-cpp
 	url = https://github.com/abseil/abseil-cpp
+[submodule "app/jni/third_party/webrtc"]
+	path = app/jni/third_party/webrtc
+	url = https://github.com/ali-fareed/webrtc

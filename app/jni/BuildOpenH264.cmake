@@ -69,7 +69,7 @@ add_library(openh264 STATIC
   "${OPENH264_DIR}/codec/processing/src/vaacalc/vaacalcfuncs.cpp"
   "${OPENH264_DIR}/codec/processing/src/vaacalc/vaacalculation.cpp"
 )
-target_include_directories(openh264 PUBLIC
+target_include_directories(openh264 PRIVATE
   "${OPENH264_DIR}/codec/encoder/core/inc"
   "${OPENH264_DIR}/codec/encoder/plus/inc"
   "${OPENH264_DIR}/codec/decoder/plus/inc"
@@ -97,10 +97,10 @@ if (${ANDROID_ABI} STREQUAL "armeabi-v7a")
     "${OPENH264_DIR}/codec/processing/src/arm/pixel_sad_neon.S"
     "${OPENH264_DIR}/codec/processing/src/arm/vaa_calc_neon.S"
   )
-  target_include_directories(openh264 PUBLIC
+  target_include_directories(openh264 PRIVATE
     "${OPENH264_DIR}/codec/common/arm"
   )
-  target_compile_definitions(openh264 PUBLIC
+  target_compile_definitions(openh264 PRIVATE
     HAVE_NEON=1
   )
 elseif(${ANDROID_ABI} STREQUAL "arm64-v8a")
@@ -121,7 +121,7 @@ elseif(${ANDROID_ABI} STREQUAL "arm64-v8a")
     "${OPENH264_DIR}/codec/processing/src/arm64/pixel_sad_aarch64_neon.S"
     "${OPENH264_DIR}/codec/processing/src/arm64/vaa_calc_aarch64_neon.S"
   )
-  target_include_directories(openh264 PUBLIC
+  target_include_directories(openh264 PRIVATE
     "${OPENH264_DIR}/codec/common/arm64"
   )
   target_compile_definitions(openh264 PUBLIC

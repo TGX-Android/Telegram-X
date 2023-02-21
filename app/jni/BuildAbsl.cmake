@@ -347,6 +347,9 @@ add_library(absl STATIC
   "${ABSL_DIR}/absl/types/bad_optional_access.cc"
   "${ABSL_DIR}/absl/types/bad_variant_access.cc"
   )
+target_compile_definitions(absl PRIVATE
+  ABSL_ALLOCATOR_NOTHROW=1
+)
 target_include_directories(absl PUBLIC
   "${ABSL_DIR}"
-  )
+)

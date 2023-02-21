@@ -31,7 +31,7 @@ elseif(${ANDROID_ABI} STREQUAL "x86")
 elseif(${ANDROID_ABI} STREQUAL "armeabi-v7a")
   set(FFMPEG_ABI "armv7-a")
 else()
-  error("Unknown abi: ${ANDROID_ABI}")
+  message(FATAL_ERROR "Unknown abi: ${ANDROID_ABI}")
 endif()
 set(FFMPEG_DIR "${THIRDPARTY_DIR}/ffmpeg/build/${FFMPEG_ABI}")
 set(FFMPEG_LIBS
@@ -75,10 +75,9 @@ else()
   )
 endif()
 set(ADD_C_FLAGS ${ADD_COMMON_FLAGS}
-  -std=c11
   -D_LARGEFILE_SOURCE=1
 )
-set(ADD_CXX_FLAGS ${ADD_COMMON_FLAGS})
+set(ADD_CXX_FLAGS ${ADD_COMMON_FLAGS} -std=c++17)
 
 foreach(lang C CXX)
   Join(ADD_${lang}_FLAGS "${ADD_${lang}_FLAGS}" " ")
@@ -105,8 +104,8 @@ set(EXCLUDE_LIBS
   libusrsctp.a
   libsrtp.a
   libopenh264.a
-  librnnoise.a
   libabsl.a
+  libwebrtc.a
 )
 if (${USE_WEBP})
   list(APPEND EXCLUDE_LIBS
@@ -168,11 +167,11 @@ include("${CMAKE_HOME_DIRECTORY}/BuildLibSRTP.cmake")
 # openh264
 include("${CMAKE_HOME_DIRECTORY}/BuildOpenH264.cmake")
 
-# rnnoise
-include("${CMAKE_HOME_DIRECTORY}/BuildRNNoise.cmake")
-
 # absl
 include("${CMAKE_HOME_DIRECTORY}/BuildAbsl.cmake")
+
+# webrtc
+include("${CMAKE_HOME_DIRECTORY}/BuildWebRTC.cmake")
 
 # yuv
 include("${CMAKE_HOME_DIRECTORY}/BuildYuv.cmake")
@@ -206,6 +205,7 @@ endif()
 foreach(FFMPEG_LIB IN LISTS FFMPEG_LIBS)
   add_library(${FFMPEG_LIB} STATIC IMPORTED)
   set_target_properties(${FFMPEG_LIB} PROPERTIES IMPORTED_LOCATION "${FFMPEG_DIR}/lib/lib${FFMPEG_LIB}.a")
+  target_include_directories(${FFMPEG_LIB} INTERFACE "${FFMPEG_DIR}/include")
 endforeach()
 
 # == Target ==
@@ -285,8 +285,8 @@ target_link_libraries(${NATIVE_LIB}
   usrsctp
   srtp
   openh264
-  rnnoise
   absl
+  webrtc
 )
 if (${USE_WEBP})
   target_link_libraries(${NATIVE_LIB} webpdecoder_static)
