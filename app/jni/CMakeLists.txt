@@ -240,8 +240,6 @@ target_include_directories(${NATIVE_LIB} PRIVATE
   "${THIRDPARTY_DIR}/telegram_intro"
   "${THIRDPARTY_DIR}/exoplayer"
 
-  "${FFMPEG_DIR}/include"
-
   "${THIRDPARTY_DIR}"
   .
 )
