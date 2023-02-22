@@ -86,24 +86,24 @@
 	path = app/jni/third_party/openh264
 	url = https://github.com/cisco/openh264
 	shallow = true
-[submodule "app/jni/third_party/abseil-cpp"]
+[submodule "abseil-cpp"]
 	path = app/jni/third_party/abseil-cpp
 	url = https://github.com/abseil/abseil-cpp
-[submodule "app/jni/third_party/webrtc"]
+[submodule "webrtc"]
 	path = app/jni/third_party/webrtc
 	url = https://github.com/ali-fareed/webrtc
-[submodule "app/jni/third_party/rnnoise"]
+[submodule "rnnoise"]
 	path = app/jni/third_party/rnnoise
 	url = https://github.com/TGX-Android/rnnoise
-[submodule "app/jni/third_party/pffft"]
+[submodule "pffft"]
 	path = app/jni/third_party/pffft
 	url = https://github.com/TGX-Android/pffft
-[submodule "app/jni/third_party/tgcalls"]
+[submodule "tgcalls"]
 	path = app/jni/third_party/tgcalls
 	url = https://github.com/TelegramMessenger/tgcalls
-[submodule "app/jni/third_party/libevent"]
+[submodule "libevent"]
 	path = app/jni/third_party/libevent
 	url = https://github.com/TGX-Android/libevent
-[submodule "app/jni/third_party/crc32c"]
+[submodule "crc32c"]
 	path = app/jni/third_party/crc32c
 	url = https://github.com/google/crc32c
