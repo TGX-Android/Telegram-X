@@ -89,21 +89,28 @@
 [submodule "abseil-cpp"]
 	path = app/jni/third_party/abseil-cpp
 	url = https://github.com/abseil/abseil-cpp
+	shallow = true
 [submodule "webrtc"]
 	path = app/jni/third_party/webrtc
 	url = https://github.com/ali-fareed/webrtc
+	shallow = true
 [submodule "rnnoise"]
 	path = app/jni/third_party/rnnoise
 	url = https://github.com/TGX-Android/rnnoise
+	shallow = true
 [submodule "pffft"]
 	path = app/jni/third_party/pffft
 	url = https://github.com/TGX-Android/pffft
+	shallow = true
 [submodule "tgcalls"]
 	path = app/jni/third_party/tgcalls
 	url = https://github.com/TelegramMessenger/tgcalls
+	shallow = true
 [submodule "libevent"]
 	path = app/jni/third_party/libevent
 	url = https://github.com/TGX-Android/libevent
+	shallow = true
 [submodule "crc32c"]
 	path = app/jni/third_party/crc32c
 	url = https://github.com/google/crc32c
+	shallow = true
