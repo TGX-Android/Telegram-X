@@ -5,6 +5,7 @@ NDK_CMAKE_DIR="$ANDROID_SDK_ROOT/cmake/3.18.1"
 NDK_CMAKE_BIN="$NDK_CMAKE_DIR/bin/cmake"
 NDK_NINJA_BIN="$NDK_CMAKE_DIR/bin/ninja"
 TARGET_DIR="$1"
+CMAKE_ARGS=${@:2}
 
 validate_file "$NDK_CMAKE_BIN"
 validate_file "$NDK_NINJA_BIN"
@@ -19,6 +20,7 @@ function run_cmake {
   $NDK_CMAKE_BIN -DANDROID_ABI="${ARG_ABI}" \
     -DCMAKE_TOOLCHAIN_FILE="${ANDROID_NDK}/build/cmake/android.toolchain.cmake" \
     -DANDROID_NATIVE_API_LEVEL="${ARG_API_LEVEL}" \
+    ${CMAKE_ARGS} \
     -GNinja ../..
   $NDK_NINJA_BIN
 
