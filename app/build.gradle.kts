@@ -69,6 +69,13 @@ android {
 
   sourceSets.getByName("main") {
     java.srcDirs("./src/google/java") // TODO: Huawei & FOSS editions
+    java.srcDirs(
+      "./jni/third_party/webrtc/rtc_base/java/src",
+      "./jni/third_party/webrtc/modules/audio_device/android/java/src",
+      "./jni/third_party/webrtc/sdk/android/api",
+      "./jni/third_party/webrtc/sdk/android/src/java",
+      "../thirdparty/WebRTC/src/java"
+    )
     Config.EXOPLAYER_EXTENSIONS.forEach { module ->
       java.srcDirs("../thirdparty/ExoPlayer/extensions/${module}/src/main/java")
     }
