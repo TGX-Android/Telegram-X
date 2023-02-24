@@ -1427,8 +1427,8 @@ set(WEBRTC_DIR "${THIRDPARTY_DIR}/webrtc")
 #"${WEBRTC_DIR}/p2p/base/ice_agent_interface.h"
 #"${WEBRTC_DIR}/api/video_codecs/video_encoder_factory_template_open_h264_adapter.h"
 
-# IGNORED:
-#"${WEBRTC_DIR}/rtc_base/task_queue_gcd.cc"
+# ignored iOS-specific:
+# "${WEBRTC_DIR}/rtc_base/task_queue_gcd.cc"
 
 add_library(webrtc STATIC
   "${THIRDPARTY_DIR}/rnnoise/src/rnn_vad_weights.cc"
@@ -2721,8 +2721,6 @@ target_sources(webrtc PRIVATE
   "${WEBRTC_DIR}/net/dcsctp/timer/timer.cc"
 )
 
-# TODO?: "${WEBRTC_DIR}/sdk/android/src/jni/pc/add_ice_candidate_observer.cc"
-
 # crc32
 
 target_sources(webrtc PRIVATE
@@ -2752,16 +2750,115 @@ target_sources(webrtc PRIVATE
   "${THIRDPARTY_DIR}/libevent/strlcpy.c"
 )
 
-# Unknown files:
+# sdk
 
+target_sources(webrtc PRIVATE
+  "${WEBRTC_DIR}/modules/audio_device/android/audio_manager.cc"
+
+  "${WEBRTC_DIR}/modules/audio_device/android/build_info.cc"
+
+  "${WEBRTC_DIR}/modules/audio_device/android/opensles_common.cc"
+  "${WEBRTC_DIR}/modules/audio_device/android/opensles_player.cc"
+  "${WEBRTC_DIR}/modules/audio_device/android/opensles_recorder.cc"
+
+  "${WEBRTC_DIR}/sdk/android/native_api/audio_device_module/audio_device_android.cc"
+  "${WEBRTC_DIR}/sdk/android/native_api/base/init.cc"
+  "${WEBRTC_DIR}/sdk/android/native_api/codecs/wrapper.cc"
+
+  "${WEBRTC_DIR}/sdk/android/native_api/jni/jvm.cc"
+  "${WEBRTC_DIR}/sdk/android/native_api/peerconnection/peer_connection_factory.cc"
+  "${WEBRTC_DIR}/sdk/android/native_api/stacktrace/stacktrace.cc"
+  "${WEBRTC_DIR}/sdk/android/native_api/video/video_source.cc"
+  "${WEBRTC_DIR}/sdk/android/native_api/video/wrapper.cc"
+  "${WEBRTC_DIR}/sdk/android/native_api/network_monitor/network_monitor.cc"
+
+  "${WEBRTC_DIR}/sdk/android/src/jni/audio_device/opensles_common.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/audio_device/opensles_player.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/audio_device/opensles_recorder.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/jni_generator_helper.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/jni_helpers.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/jvm.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/pc/audio.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/pc/logging.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/pc/owned_factory_and_threads.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/pc/video.cc"
+
+  "${WEBRTC_DIR}/sdk/android/src/jni/pc/add_ice_candidate_observer.cc"
+  "${WEBRTC_DIR}/sdk/android/native_api/jni/class_loader.cc"
+  "${WEBRTC_DIR}/sdk/android/native_api/jni/java_types.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/egl_base_10_impl.cc"
+  "${WEBRTC_DIR}/modules/audio_device/android/audio_record_jni.cc"
+  "${WEBRTC_DIR}/modules/audio_device/android/audio_track_jni.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/android_video_track_source.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/android_network_monitor.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/java_i420_buffer.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/jni_common.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/builtin_audio_decoder_factory_factory.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/builtin_audio_encoder_factory_factory.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/android_histogram.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/android_metrics.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/h264_utils.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/encoded_image.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/audio_device/java_audio_device_module.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/pc/crypto_options.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/nv12_buffer.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/nv21_buffer.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/video_codec_status.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/scoped_java_ref_counted.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/timestamp_aligner.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/pc/audio_track.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/pc/dtmf_sender.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/pc/media_source.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/pc/media_stream_track.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/audio_device/audio_device_module.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/audio_device/audio_record_jni.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/audio_device/audio_track_jni.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/pc/rtp_parameters.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/pc/call_session_file_rotating_log_sink.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/pc/session_description.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/logging/log_sink.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/pc/data_channel.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/pc/media_stream.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/native_capturer_observer.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/pc/rtp_receiver.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/pc/rtp_sender.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/pc/rtp_transceiver.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/pc/ssl_certificate_verifier_wrapper.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/pc/turn_customizer.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/pc/ice_candidate.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/video_codec_info.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/video_decoder_factory_wrapper.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/video_decoder_fallback.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/video_frame.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/video_sink.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/pc/sdp_observer.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/pc/stats_observer.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/pc/rtc_stats_collector_callback_wrapper.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/pc/media_constraints.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/vp8_codec.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/vp9_codec.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/wrapped_native_i420_buffer.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/yuv_helper.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/video_track.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/video_encoder_fallback.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/pc/peer_connection.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/pc/peer_connection_factory.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/pc/rtc_certificate.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/video_decoder_wrapper.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/video_encoder_factory_wrapper.cc"
+  "${WEBRTC_DIR}/sdk/android/src/jni/video_encoder_wrapper.cc"
+)
+
+# Deprecated non-existent files:
+
+# "${WEBRTC_DIR}/modules/audio_device/android/audio_screen_record_jni.cc"
+# "${WEBRTC_DIR}/modules/audio_device/android/audio_merged_screen_record_jni.cc"
+# "${WEBRTC_DIR}/sdk/android/src/jni/h264_codec.cc"
 # "${WEBRTC_DIR}/video/rtp_video_stream_receiver.cc"
 # "${WEBRTC_DIR}/common_video/h264/prefix_parser.cc"
 # "${WEBRTC_DIR}/api/field_trials_registry.cc"
 # "${WEBRTC_DIR}/modules/audio_processing/agc2/speech_level_estimator.cc"
 # "${WEBRTC_DIR}/modules/audio_processing/agc2/input_volume_stats_reporter.cc"
-
-# "${WEBRTC_DIR}/third_party/crc32c/src/crc32c_portable.cc"
-# "${WEBRTC_DIR}/third_party/crc32c/src/crc32c.cc"
 
 target_compile_definitions(webrtc PRIVATE
   RTC_DISABLE_TRACE_EVENTS
@@ -2870,6 +2967,7 @@ target_link_libraries(webrtc PUBLIC
 
 target_include_directories(webrtc PRIVATE
   .
+  "${WEBRTC_DIR}/generated_sources"
   "${STUB_DIR}"
 )
 
