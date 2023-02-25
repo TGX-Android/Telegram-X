@@ -957,16 +957,19 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     int paddingLeft, paddingRight;
     if (displayTabsAtBottom()) {
       paddingLeft = paddingRight = 0;
+      recyclerView.setPadding(0, 0, 0, 0);
     } else {
-      int menuWidth = Screen.dp(42f);
+      recyclerView.setClipToPadding(false);
+      recyclerView.setPadding(Screen.dp(12), 0, Screen.dp(12), 0);
+      int menuWidth = Screen.dp(44f);
       if (Passcode.instance().isEnabled()) {
         menuWidth += Screen.dp(48f);
       }
       if (Lang.rtl()) {
         paddingLeft = menuWidth;
-        paddingRight = Screen.dp(42f);
+        paddingRight = Screen.dp(44f);
       } else {
-        paddingLeft = Screen.dp(42f);
+        paddingLeft = Screen.dp(44f);
         paddingRight = menuWidth;
       }
     }

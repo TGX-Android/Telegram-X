@@ -197,7 +197,9 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
     }
     final int viewWidth = view.getMeasuredWidth();
     final int parentWidth = recyclerView.getMeasuredWidth();
-    if (viewWidth <= parentWidth) {
+    final int parentPaddingLeft = recyclerView.getPaddingLeft();
+    final int parentPaddingRight = recyclerView.getPaddingRight();
+    if (viewWidth <= parentWidth - parentPaddingLeft - parentPaddingRight) {
       return;
     }
     if (recyclerView.isComputingLayout()) {
@@ -214,7 +216,7 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
     int viewX = -scrolledX;
 
     if ((getParent() != null && ((View) getParent()).getMeasuredWidth() > getMeasuredWidth()) || (viewWidth - parentWidth) < lastItemWidth / 2) {
-      int desiredViewLeft = (int) ((float) -(viewWidth - parentWidth) * totalFactor);
+      int desiredViewLeft = (int) (parentPaddingLeft * (1f - totalFactor) - (viewWidth - parentWidth + parentPaddingRight) * totalFactor);
       if (viewX != desiredViewLeft) {
         recyclerView.stopScroll();
         int diff = (desiredViewLeft - viewX) * (Lang.rtl() ? 1 : -1);
@@ -226,13 +228,18 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
       }
     } else {
       int visibleSelectionX = selectionLeft + viewX;
-      int desiredSelectionX = (int) ((float) Screen.dp(16f) * (selectionLeft >= selectionWidth ? 1f : (float) selectionLeft / (float) selectionWidth));
+      int desiredSelectionX;
+      if (parentPaddingLeft > 0) {
+        desiredSelectionX = parentPaddingLeft;
+      } else {
+        desiredSelectionX = (int) ((float) Screen.dp(16f) * (selectionLeft >= selectionWidth ? 1f : (float) selectionLeft / (float) selectionWidth));
+      }
 
       if (visibleSelectionX != desiredSelectionX) {
         int newViewX = viewX + (desiredSelectionX - visibleSelectionX);
-        int maxX = parentWidth - viewWidth;
-        if (newViewX < maxX) {
-          newViewX = maxX;
+        int minX = parentWidth - parentPaddingRight - viewWidth;
+        if (newViewX < minX) {
+          newViewX = minX;
         }
         if (newViewX != viewX) {
           recyclerView.stopScroll();
@@ -276,8 +283,9 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
     if (i != 0) {
       return true;
     }
+    int maxLeft = recyclerView.getClipToPadding() ? 0 : recyclerView.getPaddingLeft();
     View view = recyclerView.getLayoutManager().findViewByPosition(0);
-    return view == null || view.getLeft() < 0;
+    return view == null || view.getLeft() < maxLeft;
   }
 
   public boolean canScrollInAnyDirection () {
@@ -285,8 +293,10 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
     if (i != 0) {
       return i != RecyclerView.NO_POSITION;
     }
+    int maxLeft = recyclerView.getClipToPadding() ? 0 : recyclerView.getPaddingLeft();
+    int minRight = recyclerView.getMeasuredWidth() - (recyclerView.getClipToPadding() ? 0 : recyclerView.getPaddingRight());
     View view = recyclerView.getLayoutManager().findViewByPosition(0);
-    return view == null || view.getLeft() < 0 || view.getRight() > recyclerView.getMeasuredWidth();
+    return view == null || view.getLeft() < maxLeft || view.getRight() > minRight;
   }
 
   public RecyclerView getRecyclerView () {
