@@ -24,6 +24,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Build;
@@ -119,6 +120,7 @@ import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.ViewUtils;
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
@@ -299,12 +301,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         headerCell.getTopView().setCounterAlphaProvider(new ViewPagerTopView.CounterAlphaProvider() {
           @Override
           public float getTextAlpha (Counter counter, float alphaFactor) {
-            return 1f;
-          }
-
-          @Override
-          public float getBackgroundAlpha (Counter counter, float alphaFactor) {
-            return MathUtils.fromTo(.7f, 1f, alphaFactor) * MathUtils.fromTo(1f, .7f, counter.getMuteFactor());
+            return MathUtils.fromTo(1f, .5f + .5f * alphaFactor, counter.getMuteFactor());
           }
         });
       }
@@ -2336,11 +2333,16 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     if (selectedFilter != FILTER_NONE || (pagerItemId == MAIN_PAGER_ITEM_ID && menuNeedArchive)) {
       return null;
     }
-    return new Counter.Builder()
+    UnreadCounterColorSet unreadCounterColorSet = new UnreadCounterColorSet();
+    Counter unreadCounter = new Counter.Builder()
       .textSize(12f)
+      .backgroundPadding(4f)
+      .outlineAffectsBackgroundSize(false)
       .colorSet(unreadCounterColorSet)
       .callback(unreadCounterCallback(pagerItemId))
       .build();
+    unreadCounterColorSet.setCounter(unreadCounter);
+    return unreadCounter;
   }
 
   private Counter.Callback unreadCounterCallback (long pagerItemId) {
@@ -2367,14 +2369,33 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     }
   }
 
-  private final TextColorSet unreadCounterColorSet = new TextColorSet() {
+  private class UnreadCounterColorSet implements TextColorSet {
+    private @Nullable Counter counter;
+
+    public void setCounter (@Nullable Counter counter) {
+      this.counter = counter;
+    }
+
     @Override
     public int defaultTextColor () {
-      return Theme.getColor(displayTabsAtBottom() ? R.id.theme_color_headerLightBackground : R.id.theme_color_headerBackground);
+      return counter != null ? ColorUtils.fromToArgb(foregroundColor(), backgroundColor(), counter.getMuteFactor()) : foregroundColor();
     }
 
     @Override
     public int backgroundColor (boolean isPressed) {
+      return counter != null ? ColorUtils.alphaColor(1f - counter.getMuteFactor(), backgroundColor()) : backgroundColor();
+    }
+
+    @Override
+    public int outlineColor (boolean isPressed) {
+      return counter != null ? backgroundColor() : Color.TRANSPARENT;
+    }
+
+    private int foregroundColor () {
+      return Theme.getColor(displayTabsAtBottom() ? R.id.theme_color_headerLightBackground : R.id.theme_color_headerBackground);
+    }
+
+    private int backgroundColor() {
       return Theme.getColor(displayTabsAtBottom() ? R.id.theme_color_headerLightText : R.id.theme_color_headerText);
     }
   };
