@@ -51,6 +51,7 @@ import java.lang.annotation.RetentionPolicy;
   ThemeProperty.WALLPAPER_OVERRIDE_TIME,
   ThemeProperty.WALLPAPER_OVERRIDE_BUTTON,
   ThemeProperty.WALLPAPER_OVERRIDE_OVERLAY,
+  ThemeProperty.NONE
 })
 public @interface ThemeProperty {
   int PARENT_THEME = R.id.theme_property_parentTheme;
@@ -84,4 +85,6 @@ public @interface ThemeProperty {
   int WALLPAPER_OVERRIDE_TIME = R.id.theme_property_wallpaperOverrideTime;
   int WALLPAPER_OVERRIDE_BUTTON = R.id.theme_property_wallpaperOverrideButton;
   int WALLPAPER_OVERRIDE_OVERLAY = R.id.theme_property_wallpaperOverrideOverlay;
+
+  int NONE = 0;
 }

@@ -88,6 +88,7 @@ import org.thunderdog.challegram.telegram.TdlibOptionListener;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager.ChatFolderStyle;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.theme.ThemeProperty;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
@@ -2145,8 +2146,8 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         Views.setTopMargin(headerCellView, shadowHeight - Screen.dp(1f));
 
         ViewSupport.setThemedBackground(headerCellView, R.id.theme_color_headerLightBackground, this);
-        headerCell.getTopView().setSelectionColorId(R.id.theme_color_headerLightText);
-        headerCell.getTopView().setTextFromToColorId(R.id.theme_color_headerLightText, R.id.theme_color_headerLightText);
+        headerCell.getTopView().setSelectionColorId(R.id.theme_color_headerLightText, .9f);
+        headerCell.getTopView().setTextFromToColorId(R.id.theme_color_headerLightText, R.id.theme_color_headerLightText, ThemeProperty.SUBTITLE_ALPHA);
 
         int headerHeight = getHeaderHeight();
         bottomBar = new FrameLayoutFix(context);

@@ -45,6 +45,7 @@ import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ThemeProperty;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -216,8 +217,11 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   private final ComplexReceiver complexReceiver;
   private CounterAlphaProvider counterAlphaProvider = DEFAULT_COUNTER_ALPHA_PROVIDER;
 
-  private @ThemeColorId int fromTextColorId, toTextColorId = R.id.theme_color_headerText;
-  private @ThemeColorId int selectionColorId;
+  private @ThemeColorId int fromTextColorId = ThemeColorId.NONE, toTextColorId = R.id.theme_color_headerText;
+  private @ThemeProperty int fromTextColorAlphaId = ThemeProperty.NONE;
+
+  private @ThemeColorId int selectionColorId = ThemeColorId.NONE;
+  private @FloatRange(from = 0.0, to = 1.0) float selectionAlpha = 1f;
 
   public ViewPagerTopView (Context context) {
     super(context);
@@ -682,8 +686,13 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   }
 
   public boolean setTextFromToColorId (@ThemeColorId int fromColorId, @ThemeColorId int toColorId) {
-    if (this.fromTextColorId != fromColorId || this.toTextColorId != toColorId) {
+    return setTextFromToColorId(fromColorId, toColorId, ThemeProperty.NONE);
+  }
+
+  public boolean setTextFromToColorId (@ThemeColorId int fromColorId, @ThemeColorId int toColorId, @ThemeProperty int fromColorAlphaId) {
+    if (this.fromTextColorId != fromColorId || this.toTextColorId != toColorId || this.fromTextColorAlphaId != fromColorAlphaId) {
       this.fromTextColorId = fromColorId;
+      this.fromTextColorAlphaId = fromColorAlphaId;
       this.toTextColorId = toColorId;
       invalidate();
       return true;
@@ -692,8 +701,13 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   }
 
   public boolean setSelectionColorId (@ThemeColorId int colorId) {
-    if (this.selectionColorId != colorId) {
+    return setSelectionColorId(colorId, 1f);
+  }
+
+  public boolean setSelectionColorId (@ThemeColorId int colorId, @FloatRange(from = 0.0, to = 1.0) float alpha) {
+    if (this.selectionColorId != colorId || this.selectionAlpha != alpha) {
       this.selectionColorId = colorId;
+      this.selectionAlpha = alpha;
       invalidate();
       return true;
     }
@@ -761,8 +775,12 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
 
     if (overlayFactor != 1f) {
       int textToColor = Theme.getColor(toTextColorId);
-      int textFromColor = fromTextColorId != 0 ? Theme.getColor(fromTextColorId) : ColorUtils.alphaColor(Theme.getSubtitleAlpha(), Theme.getColor(R.id.theme_color_headerText));
-      int selectionColor = selectionColorId != 0 ? Theme.getColor(selectionColorId) : ColorUtils.alphaColor(.9f, Theme.getColor(R.id.theme_color_headerText));
+      int textFromColor = fromTextColorId != ThemeColorId.NONE ?
+        ColorUtils.alphaColor(fromTextColorAlphaId != ThemeProperty.NONE ? Theme.getProperty(fromTextColorAlphaId) : 1f, Theme.getColor(fromTextColorId)) :
+        ColorUtils.alphaColor(Theme.getSubtitleAlpha(), Theme.getColor(R.id.theme_color_headerText));
+      int selectionColor = selectionColorId != ThemeColorId.NONE ?
+        ColorUtils.alphaColor(selectionAlpha, Theme.getColor(selectionColorId)) :
+        ColorUtils.alphaColor(.9f, Theme.getColor(R.id.theme_color_headerText));
 
       boolean rtl = Lang.rtl();
 
