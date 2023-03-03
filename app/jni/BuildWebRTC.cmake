@@ -2967,7 +2967,7 @@ target_link_libraries(webrtc PUBLIC
 
 target_include_directories(webrtc PRIVATE
   .
-  "${WEBRTC_DIR}/generated_sources"
+  "${WEBRTC_DIR}/generated"
   "${STUB_DIR}"
 )
 
