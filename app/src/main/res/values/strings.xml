@@ -1231,6 +1231,7 @@
   <string name="RegionNotFound">Country code not found</string>
   <string name="ConfirmationCode">Confirmation Code</string>
   <string name="SentSmsCode">We\'ve sent an SMS with an activation code to your phone **%1$s**.</string>
+  <string name="SendingSmsCode">We are sending an SMS with an activation code to your phone **%1$s**…</string>
   <string name="SentAppCode">We\'ve sent the code to the **Telegram** app on your other device.</string>
   <string name="SentEmailCode">We\'ve sent the code to your email **%1$s**.</string>
   <string name="SentCallOnly">We\'ve sent an activation call to your phone **%1$s**.\n\nDon\'t accept the call, Telegram will process everything automatically.</string>
@@ -4547,4 +4548,7 @@
 
   <string name="MultiUsernamePrefix">also</string>
   <string name="MultiLinkPrefix">also</string>
+
+  <string name="SentFragmentCode">Check the Anonymous Numbers section on Fragment to get the code.</string>
+  <string name="OpenFragment">Open Fragment</string>
 </resources>

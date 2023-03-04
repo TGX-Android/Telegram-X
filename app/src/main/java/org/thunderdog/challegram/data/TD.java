@@ -58,6 +58,7 @@ import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.TDLib;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.config.Config;
@@ -2073,13 +2074,21 @@ public class TD {
     return new Letters(output);
   }
 
-  public static TdApi.PhoneNumberAuthenticationSettings defaultPhoneNumberAuthenticationSettings () {
+  public static TdApi.PhoneNumberAuthenticationSettings phoneNumberAuthenticationSettings (Context context) {
+    TdApi.FirebaseAuthenticationSettings firebaseAuthenticationSettings = null;
+    if (StringUtils.isEmpty(BuildConfig.SAFETYNET_API_KEY)) {
+      TDLib.Tag.safetyNet("Ignoring Firebase authentication, because SafetyNet API_KEY is unset");
+    } else if (!U.isGooglePlayServicesAvailable(context)) {
+      TDLib.Tag.safetyNet("Ignoring Firebase authentication, because Firebase services are unavailable");
+    } else {
+      firebaseAuthenticationSettings = new TdApi.FirebaseAuthenticationSettingsAndroid();
+    }
     return new TdApi.PhoneNumberAuthenticationSettings(
       false,
       true,
       false,
       false, // TODO for faster login when SMS method is chosen
-      null, // TODO Firebase SMS
+      firebaseAuthenticationSettings,
       Settings.instance().getAuthenticationTokens()
     );
   }
@@ -2430,7 +2439,7 @@ public class TD {
     if (state != null) {
       switch (state.getConstructor()) {
         case TdApi.AuthorizationStateWaitCode.CONSTRUCTOR:
-          return getCodeLength(((TdApi.AuthorizationStateWaitCode) state).codeInfo.type);
+          return Td.codeLength(((TdApi.AuthorizationStateWaitCode) state).codeInfo.type, TdConstants.DEFAULT_CODE_LENGTH);
         case TdApi.AuthorizationStateWaitEmailCode.CONSTRUCTOR:
           return getCodeLength(((TdApi.AuthorizationStateWaitEmailCode) state).codeInfo);
       }

@@ -22,22 +22,34 @@ fun BaseFlavor.buildConfigLong (name: String, value: Long) =
   this.buildConfigField("long", name, value.toString())
 fun BaseFlavor.buildConfigBool (name: String, value: Boolean) =
   this.buildConfigField("boolean", name, value.toString())
-fun BaseFlavor.buildConfigString (name: String, value: String) =
-  this.buildConfigField("String", name, "\"$value\"")
+fun BaseFlavor.buildConfigString (name: String, value: String?) =
+  this.buildConfigField("String", name, if (value != null) {
+    "\"$value\""
+  } else {
+    "null"
+  })
 fun BaseVariant.buildConfigInt (name: String, value: Int) =
   this.buildConfigField("int", name, value.toString())
 fun BaseVariant.buildConfigLong (name: String, value: Long) =
   this.buildConfigField("long", name, value.toString())
 fun BaseVariant.buildConfigBool (name: String, value: Boolean) =
   this.buildConfigField("boolean", name, value.toString())
-fun BaseVariant.buildConfigString (name: String, value: String) =
-  this.buildConfigField("String", name, "\"$value\"")
+fun BaseVariant.buildConfigString (name: String, value: String?) =
+  this.buildConfigField("String", name, if (value != null) {
+    "\"$value\""
+  } else {
+    "null"
+  })
 fun VariantDimension.buildConfigInt (name: String, value: Int) =
   this.buildConfigField("int", name, value.toString())
 fun VariantDimension.buildConfigLong (name: String, value: Long) =
   this.buildConfigField("long", name, value.toString())
-fun VariantDimension.buildConfigString (name: String, value: String) =
-  this.buildConfigField("String", name, "\"$value\"")
+fun VariantDimension.buildConfigString (name: String, value: String?) =
+  this.buildConfigField("String", name, if (value != null) {
+    "\"$value\""
+  } else {
+    "null"
+  })
 
 
 fun loadProperties (path: String = "local.properties"): Properties {

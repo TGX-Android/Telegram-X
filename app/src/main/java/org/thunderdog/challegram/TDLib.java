@@ -86,6 +86,10 @@ public final class TDLib {
   }
 
   public static final class Tag {
+    public static void safetyNet (String format, Object... formatArgs) {
+      i("[safetynet]: %s", format(format, formatArgs));
+    }
+
     public static void td_init (String format, Object... formatArgs) {
       logModule("td_init", format, formatArgs);
     }

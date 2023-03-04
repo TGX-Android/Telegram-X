@@ -512,13 +512,24 @@ public class CallListController extends RecyclerViewController<Void> implements
   private void loadMore () {
     if (!isLoadingMore && messages != null && !messages.isEmpty() && !endReached && sections != null && !sections.isEmpty() && !isDestroyed()) {
       isLoadingMore = true;
-      tdlib.client().send(new TdApi.SearchCallMessages(nextOffset, 40, false), object -> {
-        runOnUiThreadOptional(() -> {
-          isLoadingMore = false;
+      tdlib.client().send(new TdApi.SearchCallMessages(nextOffset, 40, false), new Client.ResultHandler() {
+        @Override
+        public void onResult (TdApi.Object object) {
           if (object.getConstructor() == TdApi.FoundMessages.CONSTRUCTOR) {
-            addMessages((TdApi.FoundMessages) object);
+            TdApi.FoundMessages foundMessages = (TdApi.FoundMessages) object;
+            if (foundMessages.messages.length == 0 && !StringUtils.isEmpty(foundMessages.nextOffset) && !foundMessages.nextOffset.equals(nextOffset)) {
+              nextOffset = foundMessages.nextOffset;
+              tdlib.client().send(new TdApi.SearchCallMessages(foundMessages.nextOffset, 40, false), this);
+              return;
+            }
           }
-        });
+          runOnUiThreadOptional(() -> {
+            isLoadingMore = false;
+            if (object.getConstructor() == TdApi.FoundMessages.CONSTRUCTOR) {
+              addMessages((TdApi.FoundMessages) object);
+            }
+          });
+        }
       });
     }
   }

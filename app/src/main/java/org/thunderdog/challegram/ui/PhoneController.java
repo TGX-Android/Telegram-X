@@ -910,10 +910,10 @@ public class PhoneController extends EditBaseController<Void> implements Setting
         function = new TdApi.ImportContacts(new TdApi.Contact[] {new TdApi.Contact(phone, getFirstName(), getLastName(), null, 0)});
         break;
       case MODE_CHANGE_NUMBER:
-        function = new TdApi.ChangePhoneNumber(phone, TD.defaultPhoneNumberAuthenticationSettings());
+        function = new TdApi.ChangePhoneNumber(phone, TD.phoneNumberAuthenticationSettings(context));
         break;
       case MODE_LOGIN:
-        function = new TdApi.SetAuthenticationPhoneNumber(phone, TD.defaultPhoneNumberAuthenticationSettings());
+        function = new TdApi.SetAuthenticationPhoneNumber(phone, TD.phoneNumberAuthenticationSettings(context));
         tdlib.setAuthPhoneNumber(phoneCode, phoneNumber);
         break;
       default:
