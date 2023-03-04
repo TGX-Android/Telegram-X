@@ -512,23 +512,13 @@ public class CallListController extends RecyclerViewController<Void> implements
   private void loadMore () {
     if (!isLoadingMore && messages != null && !messages.isEmpty() && !endReached && sections != null && !sections.isEmpty() && !isDestroyed()) {
       isLoadingMore = true;
-      tdlib.client().send(new TdApi.SearchCallMessages(nextOffset, 40, false), new Client.ResultHandler() {
-        @Override
-        public void onResult (TdApi.Object object) {
+      tdlib.client().send(new TdApi.SearchCallMessages(nextOffset, 40, false), object -> {
+        runOnUiThreadOptional(() -> {
+          isLoadingMore = false;
           if (object.getConstructor() == TdApi.FoundMessages.CONSTRUCTOR) {
-            TdApi.FoundMessages foundMessages = (TdApi.FoundMessages) object;
-            if (foundMessages.messages.length == 0 && !StringUtils.isEmpty(foundMessages.nextOffset)) {
-              tdlib.client().send(new TdApi.SearchCallMessages(foundMessages.nextOffset, 40, false), this);
-              return;
-            }
+            addMessages((TdApi.FoundMessages) object);
           }
-          runOnUiThreadOptional(() -> {
-            isLoadingMore = false;
-            if (object.getConstructor() == TdApi.FoundMessages.CONSTRUCTOR) {
-              addMessages((TdApi.FoundMessages) object);
-            }
-          });
-        }
+        });
       });
     }
   }
@@ -685,13 +675,11 @@ public class CallListController extends RecyclerViewController<Void> implements
   public void onResult (final TdApi.Object object) {
     switch (object.getConstructor()) {
       case TdApi.FoundMessages.CONSTRUCTOR: {
-        tdlib.ui().post(() -> {
-          if (!isDestroyed()) {
-            if (Log.isEnabled(Log.TAG_MESSAGES_LOADER) && Log.checkLogLevel(Log.LEVEL_VERBOSE)) {
-              Log.i(Log.TAG_MESSAGES_LOADER, "Calls list: %s", object);
-            }
-            setMessages((TdApi.FoundMessages) object);
+        runOnUiThreadOptional(() -> {
+          if (Log.isEnabled(Log.TAG_MESSAGES_LOADER) && Log.checkLogLevel(Log.LEVEL_VERBOSE)) {
+            Log.i(Log.TAG_MESSAGES_LOADER, "Calls list: %s", object);
           }
+          setMessages((TdApi.FoundMessages) object);
         });
         break;
       }

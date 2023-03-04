@@ -1028,31 +1028,31 @@ public class SearchManager {
           if (runnable != null) {
             runnable.cancel();
           }
-          final TGFoundMessage[] foundMessages;
+          final TGFoundMessage[] messages;
           final String nextOffset;
           switch (object.getConstructor()) {
             case TdApi.FoundMessages.CONSTRUCTOR: {
-              TdApi.FoundMessages messages = (TdApi.FoundMessages) object;
-              List<TGFoundMessage> foundMessageList = new ArrayList<>(messages.messages.length);
+              TdApi.FoundMessages foundMessages = (TdApi.FoundMessages) object;
+              List<TGFoundMessage> foundMessageList = new ArrayList<>(foundMessages.messages.length);
               TdApi.Chat chat = null;
-              for (TdApi.Message message : messages.messages) {
+              for (TdApi.Message message : foundMessages.messages) {
                 if (chat == null || chat.id != message.chatId)
                   chat = tdlib.chat(message.chatId);
                 if (listener.filterMessageSearchResultSource(chat)) {
                   foundMessageList.add(new TGFoundMessage(tdlib, chatList, chat, message, query));
                 }
               }
-              if (foundMessageList.isEmpty() && !StringUtils.isEmpty(messages.nextOffset)) {
-                tdlib.client().send(new TdApi.SearchMessages(chatList, query, messages.nextOffset, loadCount, null, 0, 0), this);
+              if (foundMessageList.isEmpty() && !StringUtils.isEmpty(foundMessages.nextOffset)) {
+                tdlib.client().send(new TdApi.SearchMessages(chatList, query, foundMessages.nextOffset, loadCount, null, 0, 0), this);
                 return;
               }
-              foundMessages = foundMessageList.toArray(new TGFoundMessage[0]);
-              nextOffset = messages.nextOffset;
+              messages = foundMessageList.toArray(new TGFoundMessage[0]);
+              nextOffset = foundMessages.nextOffset;
               break;
             }
             case TdApi.Error.CONSTRUCTOR: {
               Log.w("SearchMessages returned error, displaying no results: %s", TD.toErrorString(object));
-              foundMessages = null;
+              messages = null;
               nextOffset = null;
               break;
             }
@@ -1064,7 +1064,7 @@ public class SearchManager {
           tdlib.ui().post(() -> {
             if (contextId == currentContextId) {
               canLoadMoreMessages = !StringUtils.isEmpty(nextOffset);
-              setMessages(currentContextId, query, loadCount, foundMessages, isMore, nextOffset);
+              setMessages(currentContextId, query, loadCount, messages, isMore, nextOffset);
             }
           });
         }
