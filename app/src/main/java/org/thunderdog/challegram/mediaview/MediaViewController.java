@@ -1726,7 +1726,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       }
       case R.id.btn_setProfilePhoto: {
         final long photoId = item.getPhotoId();
-        tdlib.client().send(new TdApi.SetProfilePhoto(new TdApi.InputChatPhotoPrevious(photoId)), tdlib.okHandler());
+        tdlib.client().send(new TdApi.SetProfilePhoto(new TdApi.InputChatPhotoPrevious(photoId), false), tdlib.okHandler());
         close();
         break;
       }
@@ -2149,7 +2149,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         skipCount--;
         continue;
       }
-      if (TD.isSecret(msg) || (!ChatId.isSecret(msg.chatId) && msg.ttl != 0)) // skip self-destructing images
+      if (TD.isSecret(msg) || (!ChatId.isSecret(msg.chatId) && msg.selfDestructTime != 0)) // skip self-destructing images
         continue;
 
       MediaItem item = MediaItem.valueOf(context(), tdlib, msg);

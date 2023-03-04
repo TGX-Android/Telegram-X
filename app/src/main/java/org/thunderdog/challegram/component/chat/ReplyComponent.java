@@ -592,7 +592,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     } else {
       nameColorId = ThemeColorId.NONE;
     }
-    boolean isPrivate = msg.ttl != 0;
+    boolean isPrivate = msg.selfDestructTime != 0;
     Path contour = null;
     TdApi.Thumbnail thumbnail = null;
     TdApi.PhotoSize photoSize = null;

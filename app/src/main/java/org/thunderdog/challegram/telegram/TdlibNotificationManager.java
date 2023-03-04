@@ -2088,7 +2088,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     if (((c instanceof MessagesController && ((MessagesController) c).compareChat(sentMessage.chatId)) || (c instanceof MainController)) && !c.isPaused()) {
       switch (sentMessage.content.getConstructor()) {
         case TdApi.MessageScreenshotTaken.CONSTRUCTOR:
-        case TdApi.MessageChatSetTtl.CONSTRUCTOR: {
+        case TdApi.MessageChatSetMessageAutoDeleteTime.CONSTRUCTOR: {
           break;
         }
         default: {

@@ -607,7 +607,6 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     }
     throw new UnsupportedOperationException();
   }
-
   public int getBigFileId () {
     return targetFile != null ? targetFile.id : 0;
   }
@@ -621,6 +620,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
         new TdApi.PhotoSize("s", chatPhoto.small, 160, 160, null),
         new TdApi.PhotoSize("m", chatPhoto.big, 640, 640, null)
       },
+      null,
       null,
       null
     ), false);
@@ -1628,16 +1628,16 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
         if (isAnimatedAvatar()) {
           TdApi.AnimatedChatPhoto targetFile = chatPhoto.animation != null ? chatPhoto.animation : chatPhoto.smallAnimation;
           if (targetFile != null) {
-            return new TdApi.InputMessageAnimation(file, null, null, 3, targetFile.length, targetFile.length, null);
+            return new TdApi.InputMessageAnimation(file, null, null, 3, targetFile.length, targetFile.length, null, false);
           }
         }
-        return new TdApi.InputMessagePhoto(file, null, null, 640, 640, caption, 0);
+        return new TdApi.InputMessagePhoto(file, null, null, 640, 640, caption, 0, false);
       case TYPE_PHOTO:
-        return new TdApi.InputMessagePhoto(file, null, null, width, height, caption, 0);
+        return new TdApi.InputMessagePhoto(file, null, null, width, height, caption, 0, false);
       case TYPE_VIDEO:
-        return new TdApi.InputMessageVideo(file, null, null, sourceVideo.duration, sourceVideo.width, sourceVideo.height, sourceVideo.supportsStreaming, caption, 0);
+        return new TdApi.InputMessageVideo(file, null, null, sourceVideo.duration, sourceVideo.width, sourceVideo.height, sourceVideo.supportsStreaming, caption, 0, false);
       case TYPE_GIF:
-        return new TdApi.InputMessageAnimation(file, null, null, sourceAnimation.duration, sourceAnimation.width, sourceAnimation.height, caption);
+        return new TdApi.InputMessageAnimation(file, null, null, sourceAnimation.duration, sourceAnimation.width, sourceAnimation.height, caption, false);
     }
     return null;
   }

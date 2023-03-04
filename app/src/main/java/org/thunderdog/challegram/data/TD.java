@@ -129,20 +129,26 @@ public class TD {
 
   public static boolean isValidRight (@RightId int rightId) {
     switch (rightId) {
-      case R.id.right_readMessages:
-      case R.id.right_sendMessages:
-      case R.id.right_sendMedia:
-      case R.id.right_sendStickersAndGifs:
-      case R.id.right_sendPolls:
-      case R.id.right_embedLinks:
-      case R.id.right_inviteUsers:
-      case R.id.right_pinMessages:
-      case R.id.right_changeChatInfo:
-      case R.id.right_addNewAdmins:
-      case R.id.right_banUsers:
-      case R.id.right_deleteMessages:
-      case R.id.right_editMessages:
-      case R.id.right_sendVoiceVideo:
+      case RightId.READ_MESSAGES:
+      case RightId.SEND_BASIC_MESSAGES:
+      case RightId.SEND_AUDIO:
+      case RightId.SEND_DOCS:
+      case RightId.SEND_PHOTOS:
+      case RightId.SEND_VIDEOS:
+      case RightId.SEND_VOICE_NOTES:
+      case RightId.SEND_VIDEO_NOTES:
+      case RightId.SEND_OTHER_MESSAGES:
+      case RightId.SEND_POLLS:
+      case RightId.EMBED_LINKS:
+      case RightId.CHANGE_CHAT_INFO:
+      case RightId.EDIT_MESSAGES:
+      case RightId.DELETE_MESSAGES:
+      case RightId.BAN_USERS:
+      case RightId.INVITE_USERS:
+      case RightId.PIN_MESSAGES:
+      case RightId.MANAGE_VIDEO_CHATS:
+      case RightId.ADD_NEW_ADMINS:
+      case RightId.REMAIN_ANONYMOUS:
         return true;
     }
     return false;
@@ -166,29 +172,41 @@ public class TD {
 
   public static boolean checkRight (TdApi.ChatPermissions permissions, @RightId int rightId) {
     switch (rightId) {
-      case R.id.right_readMessages:
+      case RightId.READ_MESSAGES:
         return true;
-      case R.id.right_sendMessages:
+      case RightId.SEND_BASIC_MESSAGES:
         return permissions.canSendMessages;
-      case R.id.right_sendMedia:
-      case R.id.right_sendVoiceVideo:
-        return permissions.canSendMediaMessages;
-      case R.id.right_sendStickersAndGifs:
+      case RightId.SEND_AUDIO:
+        return permissions.canSendAudios;
+      case RightId.SEND_DOCS:
+        return permissions.canSendDocuments;
+      case RightId.SEND_PHOTOS:
+        return permissions.canSendPhotos;
+      case RightId.SEND_VIDEOS:
+        return permissions.canSendVideos;
+      case RightId.SEND_VOICE_NOTES:
+        return permissions.canSendVoiceNotes;
+      case RightId.SEND_VIDEO_NOTES:
+        return permissions.canSendVideoNotes;
+      case RightId.SEND_OTHER_MESSAGES:
         return permissions.canSendOtherMessages;
-      case R.id.right_sendPolls:
+      case RightId.SEND_POLLS:
         return permissions.canSendPolls;
-      case R.id.right_embedLinks:
+      case RightId.EMBED_LINKS:
         return permissions.canAddWebPagePreviews;
-      case R.id.right_inviteUsers:
+      case RightId.INVITE_USERS:
         return permissions.canInviteUsers;
-      case R.id.right_pinMessages:
+      case RightId.PIN_MESSAGES:
         return permissions.canPinMessages;
-      case R.id.right_changeChatInfo:
+      case RightId.CHANGE_CHAT_INFO:
         return permissions.canChangeInfo;
-      case R.id.right_addNewAdmins:
-      case R.id.right_banUsers:
-      case R.id.right_deleteMessages:
-      case R.id.right_editMessages:
+      // Admin-only
+      case RightId.ADD_NEW_ADMINS:
+      case RightId.BAN_USERS:
+      case RightId.DELETE_MESSAGES:
+      case RightId.EDIT_MESSAGES:
+      case RightId.MANAGE_VIDEO_CHATS:
+      case RightId.REMAIN_ANONYMOUS:
         break;
     }
     throw new IllegalArgumentException(Lang.getResourceEntryName(rightId));
@@ -237,16 +255,16 @@ public class TD {
   }
 
   public static boolean isSecret (TdApi.InputMessageContent content) {
-    int ttl = 0;
+    int selfDestructTime = 0;
     switch (content.getConstructor()) {
       case TdApi.InputMessagePhoto.CONSTRUCTOR:
-        ttl = ((TdApi.InputMessagePhoto) content).ttl;
+        selfDestructTime = ((TdApi.InputMessagePhoto) content).selfDestructTime;
         break;
       case TdApi.InputMessageVideo.CONSTRUCTOR:
-        ttl = ((TdApi.InputMessageVideo) content).ttl;
+        selfDestructTime = ((TdApi.InputMessageVideo) content).selfDestructTime;
         break;
     }
-    return ttl != 0 && ttl <= 60;
+    return selfDestructTime != 0 && selfDestructTime <= 60;
   }
 
   public static CharSequence formatString (@Nullable TdlibDelegate context, String text, TdApi.TextEntity[] entities, @Nullable Typeface defaultTypeface, @Nullable CustomTypefaceSpan.OnClickListener onClickListener) {
@@ -1524,9 +1542,9 @@ public class TD {
                 videoHeight = temp;
               }
               if (durationSeconds < 30 && info.knownSize < ByteUnit.MB.toBytes(10) && !metadata.hasAudio) {
-                return new TdApi.InputMessageAnimation(inputFile, null, null, durationSeconds, videoWidth, videoHeight, caption);
+                return new TdApi.InputMessageAnimation(inputFile, null, null, durationSeconds, videoWidth, videoHeight, caption, false);
               } else if (durationSeconds > 0) {
-                return new TdApi.InputMessageVideo(inputFile, null, null, durationSeconds, videoWidth, videoHeight, U.canStreamVideo(inputFile), caption, 0);
+                return new TdApi.InputMessageVideo(inputFile, null, null, durationSeconds, videoWidth, videoHeight, U.canStreamVideo(inputFile), caption, 0, false);
               }
             }
           }
@@ -1549,13 +1567,18 @@ public class TD {
   public static boolean hasRestrictions (TdApi.ChatPermissions a, TdApi.ChatPermissions defaultPermissions) {
     return
       (a.canSendMessages != defaultPermissions.canSendMessages && defaultPermissions.canSendMessages) ||
-        (a.canSendMediaMessages != defaultPermissions.canSendMediaMessages && defaultPermissions.canSendMediaMessages) ||
-        (a.canSendOtherMessages != defaultPermissions.canSendOtherMessages && defaultPermissions.canSendOtherMessages) ||
-        (a.canAddWebPagePreviews != defaultPermissions.canAddWebPagePreviews && defaultPermissions.canAddWebPagePreviews) ||
-        (a.canSendPolls != defaultPermissions.canSendPolls && defaultPermissions.canSendPolls) ||
-        (a.canInviteUsers != defaultPermissions.canInviteUsers && defaultPermissions.canInviteUsers) ||
-        (a.canPinMessages != defaultPermissions.canPinMessages && defaultPermissions.canPinMessages) ||
-        (a.canChangeInfo != defaultPermissions.canChangeInfo && defaultPermissions.canChangeInfo);
+      (a.canSendAudios != defaultPermissions.canSendAudios && defaultPermissions.canSendAudios) ||
+      (a.canSendDocuments != defaultPermissions.canSendDocuments && defaultPermissions.canSendDocuments) ||
+      (a.canSendPhotos != defaultPermissions.canSendPhotos && defaultPermissions.canSendPhotos) ||
+      (a.canSendVideos != defaultPermissions.canSendVideos && defaultPermissions.canSendVideos) ||
+      (a.canSendVoiceNotes != defaultPermissions.canSendVoiceNotes && defaultPermissions.canSendVoiceNotes) ||
+      (a.canSendVideoNotes != defaultPermissions.canSendVideoNotes && defaultPermissions.canSendVideoNotes) ||
+      (a.canSendOtherMessages != defaultPermissions.canSendOtherMessages && defaultPermissions.canSendOtherMessages) ||
+      (a.canAddWebPagePreviews != defaultPermissions.canAddWebPagePreviews && defaultPermissions.canAddWebPagePreviews) ||
+      (a.canSendPolls != defaultPermissions.canSendPolls && defaultPermissions.canSendPolls) ||
+      (a.canInviteUsers != defaultPermissions.canInviteUsers && defaultPermissions.canInviteUsers) ||
+      (a.canPinMessages != defaultPermissions.canPinMessages && defaultPermissions.canPinMessages) ||
+      (a.canChangeInfo != defaultPermissions.canChangeInfo && defaultPermissions.canChangeInfo);
   }
 
   public static int getCombineMode (TdApi.Message message) {
@@ -1578,9 +1601,9 @@ public class TD {
     if (content != null) {
       switch (content.getConstructor()) {
         case TdApi.InputMessagePhoto.CONSTRUCTOR:
-          return ((TdApi.InputMessagePhoto) content).ttl == 0 ? COMBINE_MODE_MEDIA : COMBINE_MODE_NONE;
+          return ((TdApi.InputMessagePhoto) content).selfDestructTime == 0 ? COMBINE_MODE_MEDIA : COMBINE_MODE_NONE;
         case TdApi.InputMessageVideo.CONSTRUCTOR:
-          return ((TdApi.InputMessageVideo) content).ttl == 0 ? COMBINE_MODE_MEDIA : COMBINE_MODE_NONE;
+          return ((TdApi.InputMessageVideo) content).selfDestructTime == 0 ? COMBINE_MODE_MEDIA : COMBINE_MODE_NONE;
         case TdApi.InputMessageAnimation.CONSTRUCTOR:
           return COMBINE_MODE_MEDIA;
         case TdApi.InputMessageDocument.CONSTRUCTOR:
@@ -2056,6 +2079,7 @@ public class TD {
       true,
       false,
       false, // TODO for faster login when SMS method is chosen
+      null, // TODO Firebase SMS
       Settings.instance().getAuthenticationTokens()
     );
   }
@@ -2299,7 +2323,7 @@ public class TD {
   }
 
   public static TdApi.InputMessageAnimation toInputMessageContent (TdApi.Animation animation) {
-    return new TdApi.InputMessageAnimation(new TdApi.InputFileId(animation.animation.id), null, null, animation.duration, animation.width, animation.height, null);
+    return new TdApi.InputMessageAnimation(new TdApi.InputFileId(animation.animation.id), null, null, animation.duration, animation.width, animation.height, null, false);
   }
 
   public static TdApi.InputMessageAudio toInputMessageContent (TdApi.Audio audio) {
@@ -2350,7 +2374,6 @@ public class TD {
       false,
       false,
       false,
-      true,
       null,
       false,
       false,
@@ -3960,11 +3983,11 @@ public class TD {
           return Lang.getString(R.string.XTookAScreenshot, tdlib.senderName(m.senderId, true));
         }
       }
-      case TdApi.MessageChatSetTtl.CONSTRUCTOR: {
+      case TdApi.MessageChatSetMessageAutoDeleteTime.CONSTRUCTOR: {
         U.set(isTranslatable, true);
-        TdApi.MessageChatSetTtl ttl = (TdApi.MessageChatSetTtl) m.content;
+        TdApi.MessageChatSetMessageAutoDeleteTime ttl = (TdApi.MessageChatSetMessageAutoDeleteTime) m.content;
         if (ChatId.isUserChat(m.chatId)) {
-          if (ttl.ttl == 0) {
+          if (ttl.messageAutoDeleteTime == 0) {
             if (TD.isOut(m)) {
               return Lang.getString(R.string.YouDisabledTimer);
             } else {
@@ -3972,13 +3995,13 @@ public class TD {
             }
           } else {
             if (TD.isOut(m)) {
-              return Lang.pluralDuration(ttl.ttl, TimeUnit.SECONDS, R.string.YouSetTimerSeconds, R.string.YouSetTimerMinutes, R.string.YouSetTimerHours, R.string.YouSetTimerDays, R.string.YouSetTimerWeeks, R.string.YouSetTimerMonths).toString();
+              return Lang.pluralDuration(ttl.messageAutoDeleteTime, TimeUnit.SECONDS, R.string.YouSetTimerSeconds, R.string.YouSetTimerMinutes, R.string.YouSetTimerHours, R.string.YouSetTimerDays, R.string.YouSetTimerWeeks, R.string.YouSetTimerMonths).toString();
             } else {
-              return Lang.pluralDuration(ttl.ttl, TimeUnit.SECONDS, R.string.XSetTimerSeconds, R.string.XSetTimerMinutes, R.string.XSetTimerHours, R.string.XSetTimerDays, R.string.XSetTimerWeeks, R.string.XSetTimerMonths, tdlib.senderName(m.senderId, true)).toString();
+              return Lang.pluralDuration(ttl.messageAutoDeleteTime, TimeUnit.SECONDS, R.string.XSetTimerSeconds, R.string.XSetTimerMinutes, R.string.XSetTimerHours, R.string.XSetTimerDays, R.string.XSetTimerWeeks, R.string.XSetTimerMonths, tdlib.senderName(m.senderId, true)).toString();
             }
           }
         } else {
-          if (ttl.ttl == 0) {
+          if (ttl.messageAutoDeleteTime == 0) {
             if (TD.isOut(m)) {
               return Lang.getString(R.string.YouDisabledAutoDelete);
             } else {
@@ -3986,15 +4009,15 @@ public class TD {
             }
           } else if (m.isChannelPost) {
             if (TD.isOut(m)) {
-              return Lang.pluralDuration(ttl.ttl, TimeUnit.SECONDS, R.string.YouSetAutoDeletePostsSeconds, R.string.YouSetAutoDeletePostsMinutes, R.string.YouSetAutoDeletePostsHours, R.string.YouSetAutoDeletePostsDays, R.string.YouSetAutoDeletePostsWeeks, R.string.YouSetAutoDeletePostsMonths).toString();
+              return Lang.pluralDuration(ttl.messageAutoDeleteTime, TimeUnit.SECONDS, R.string.YouSetAutoDeletePostsSeconds, R.string.YouSetAutoDeletePostsMinutes, R.string.YouSetAutoDeletePostsHours, R.string.YouSetAutoDeletePostsDays, R.string.YouSetAutoDeletePostsWeeks, R.string.YouSetAutoDeletePostsMonths).toString();
             } else {
-              return Lang.pluralDuration(ttl.ttl, TimeUnit.SECONDS, R.string.XSetAutoDeletePostsSeconds, R.string.XSetAutoDeletePostsMinutes, R.string.XSetAutoDeletePostsHours, R.string.XSetAutoDeletePostsDays, R.string.XSetAutoDeletePostsWeeks, R.string.XSetAutoDeletePostsMonths, tdlib.senderName(m.senderId, true)).toString();
+              return Lang.pluralDuration(ttl.messageAutoDeleteTime, TimeUnit.SECONDS, R.string.XSetAutoDeletePostsSeconds, R.string.XSetAutoDeletePostsMinutes, R.string.XSetAutoDeletePostsHours, R.string.XSetAutoDeletePostsDays, R.string.XSetAutoDeletePostsWeeks, R.string.XSetAutoDeletePostsMonths, tdlib.senderName(m.senderId, true)).toString();
             }
           } else {
             if (TD.isOut(m)) {
-              return Lang.pluralDuration(ttl.ttl, TimeUnit.SECONDS, R.string.YouSetAutoDeleteSeconds, R.string.YouSetAutoDeleteMinutes, R.string.YouSetAutoDeleteHours, R.string.YouSetAutoDeleteDays, R.string.YouSetAutoDeleteWeeks, R.string.YouSetAutoDeleteMonths).toString();
+              return Lang.pluralDuration(ttl.messageAutoDeleteTime, TimeUnit.SECONDS, R.string.YouSetAutoDeleteSeconds, R.string.YouSetAutoDeleteMinutes, R.string.YouSetAutoDeleteHours, R.string.YouSetAutoDeleteDays, R.string.YouSetAutoDeleteWeeks, R.string.YouSetAutoDeleteMonths).toString();
             } else {
-              return Lang.pluralDuration(ttl.ttl, TimeUnit.SECONDS, R.string.XSetAutoDeleteSeconds, R.string.XSetAutoDeleteMinutes, R.string.XSetAutoDeleteHours, R.string.XSetAutoDeleteDays, R.string.XSetAutoDeleteWeeks, R.string.XSetAutoDeleteMonths, tdlib.senderName(m.senderId, true)).toString();
+              return Lang.pluralDuration(ttl.messageAutoDeleteTime, TimeUnit.SECONDS, R.string.XSetAutoDeleteSeconds, R.string.XSetAutoDeleteMinutes, R.string.XSetAutoDeleteHours, R.string.XSetAutoDeleteDays, R.string.XSetAutoDeleteWeeks, R.string.XSetAutoDeleteMonths, tdlib.senderName(m.senderId, true)).toString();
             }
           }
         }
@@ -6276,8 +6299,8 @@ public class TD {
       case TdApi.MessageChatChangeTitle.CONSTRUCTOR:
         alternativeText = ((TdApi.MessageChatChangeTitle) message.content).title;
         break;
-      case TdApi.MessageChatSetTtl.CONSTRUCTOR:
-        arg1 = ((TdApi.MessageChatSetTtl) message.content).ttl;
+      case TdApi.MessageChatSetMessageAutoDeleteTime.CONSTRUCTOR:
+        arg1 = ((TdApi.MessageChatSetMessageAutoDeleteTime) message.content).messageAutoDeleteTime;
         break;
       case TdApi.MessageChatSetTheme.CONSTRUCTOR:
         alternativeText = ((TdApi.MessageChatSetTheme) message.content).themeName;
@@ -6824,7 +6847,7 @@ public class TD {
           else
             return new ContentPreview(EMOJI_THEME, 0, toFormattedText(Lang.getStringBold(R.string.ChatContentThemeSet, formattedArgument.text), true));
         }
-      case TdApi.MessageChatSetTtl.CONSTRUCTOR: {
+      case TdApi.MessageChatSetMessageAutoDeleteTime.CONSTRUCTOR: {
         if (arg1 > 0) {
           final int secondsRes, minutesRes, hoursRes, daysRes, weeksRes, monthsRes;
           if (ChatId.isUserChat(chatId)) {

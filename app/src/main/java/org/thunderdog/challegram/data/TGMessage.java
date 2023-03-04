@@ -452,7 +452,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       loadReply();
     }
 
-    if (isHot() && needHotTimer() && msg.ttlExpiresIn < msg.ttl) {
+    if (isHot() && needHotTimer() && msg.selfDestructIn < msg.selfDestructTime) {
       startHotTimer(false);
     }
 
@@ -4269,7 +4269,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   @AnyThread
   public final boolean wouldCombineWith (TdApi.Message message) {
-    if (msg.mediaAlbumId == 0 || msg.mediaAlbumId != message.mediaAlbumId || msg.ttl != message.ttl || isHot() || isEventLog() || isSponsored()) {
+    if (msg.mediaAlbumId == 0 || msg.mediaAlbumId != message.mediaAlbumId || msg.selfDestructTime != message.selfDestructTime || isHot() || isEventLog() || isSponsored()) {
       return false;
     }
     int combineMode = TD.getCombineMode(msg);
@@ -4974,7 +4974,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public boolean isHotDone () {
-    return isOutgoing() && msg.ttlExpiresIn < msg.ttl;
+    return isOutgoing() && msg.selfDestructIn < msg.selfDestructTime;
   }
 
   protected boolean needHotTimer () {
@@ -5041,26 +5041,26 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private void checkHotTimer () {
     long now = System.currentTimeMillis();
     long elapsed = now - hotTimerStart;
-    double prevTtl = msg.ttlExpiresIn;
+    double prevTtl = msg.selfDestructIn;
     hotTimerStart = now;
-    msg.ttlExpiresIn = Math.max(0, prevTtl - (double) elapsed / 1000.0d);
-    boolean secondsChanged = Math.round(prevTtl) != Math.round(msg.ttlExpiresIn);
+    msg.selfDestructIn = Math.max(0, prevTtl - (double) elapsed / 1000.0d);
+    boolean secondsChanged = Math.round(prevTtl) != Math.round(msg.selfDestructIn);
     onHotInvalidate(secondsChanged);
     if (hotListener != null) {
       hotListener.onHotInvalidate(secondsChanged);
     }
-    if (needHotTimer() && hotTimerStart != 0 && msg.ttlExpiresIn > 0) {
+    if (needHotTimer() && hotTimerStart != 0 && msg.selfDestructIn > 0) {
       HotHandler hotHandler = getHotHandler();
       hotHandler.sendMessageDelayed(Message.obtain(hotHandler, HotHandler.MSG_HOT_CHECK, this), HOT_CHECK_DELAY);
     }
   }
 
   public float getHotExpiresFactor () {
-    return (float) (msg.ttlExpiresIn / msg.ttl);
+    return (float) (msg.selfDestructIn / msg.selfDestructTime);
   }
 
   public String getHotTimerText () {
-    return TdlibUi.getDuration((int) Math.round(msg.ttlExpiresIn), TimeUnit.SECONDS, false);
+    return TdlibUi.getDuration((int) Math.round(msg.selfDestructIn), TimeUnit.SECONDS, false);
   }
 
   public interface HotListener {
@@ -7412,8 +7412,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageChatSetTheme.CONSTRUCTOR: {
           return new TGMessageService(context, msg, (TdApi.MessageChatSetTheme) content);
         }
-        case TdApi.MessageChatSetTtl.CONSTRUCTOR: {
-          return new TGMessageService(context, msg, (TdApi.MessageChatSetTtl) content);
+        case TdApi.MessageChatSetMessageAutoDeleteTime.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageChatSetMessageAutoDeleteTime) content);
         }
         case TdApi.MessageGameScore.CONSTRUCTOR: {
           return new TGMessageService(context, msg, (TdApi.MessageGameScore) content);
@@ -8188,7 +8188,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     } else {
       tdlib.pickRandomGenericOverlaySticker(sticker -> {
         if (sticker != null) {
-          TGStickerObj genericOverlaySticker = new TGStickerObj(tdlib, sticker, null, sticker.type)
+          TGStickerObj genericOverlaySticker = new TGStickerObj(tdlib, sticker, null, sticker.fullType)
             .setReactionType(tgReaction.type);
           executeOnUiThreadOptional(() ->
             act.runWithData(genericOverlaySticker)

@@ -405,7 +405,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
         if (mode == MODE_SECRET) {
           StopwatchHeaderButton headerButton = header.addStopwatchButton(realMenu, this);
-          headerButton.forceValue(tdlib.ui().getTTLShort(chat.id), ChatId.isSecret(chat.id) && tdlib.hasWritePermission(chat));
+          headerButton.forceValue(tdlib.ui().getTTLShort(chat.id), tdlib.canChangeMessageAutoDeleteTime(chat.id));
           if (!headerButton.getIsVisible()) {
             callButton.setTranslationX(Screen.dp(StopwatchHeaderButton.WIDTH));
           }
@@ -1929,7 +1929,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             break;
           }
           case R.id.btn_toggleAggressiveAntiSpam: {
-            view.getToggler().setRadioEnabled(supergroupFull != null && supergroupFull.isAggressiveAntiSpamEnabled, isUpdate);
+            view.getToggler().setRadioEnabled(supergroupFull != null && supergroupFull.hasAggressiveAntiSpamEnabled, isUpdate);
             break;
           }
         }
@@ -2040,7 +2040,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     if (mode == MODE_SECRET || mode == MODE_USER) {
       totalWidth += Screen.dp(48f);
     }
-    if (mode == MODE_SECRET && ChatId.isSecret(chat.id) && tdlib.hasWritePermission(chat)) {
+    if (mode == MODE_SECRET && tdlib.canChangeMessageAutoDeleteTime(chat.id)) {
       totalWidth += Screen.dp(StopwatchHeaderButton.WIDTH);
     }
     switch (getMenuId()) {
@@ -3150,16 +3150,16 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private void toggleAggressiveAntiSpam () {
     if (tdlib.canDeleteMessages(chat.id)) {
-      boolean newValue = !(supergroupFull != null && supergroupFull.isAggressiveAntiSpamEnabled);
+      boolean newValue = !(supergroupFull != null && supergroupFull.hasAggressiveAntiSpamEnabled);
       if (supergroupFull != null) {
-        supergroupFull.isAggressiveAntiSpamEnabled = newValue;
-        tdlib.client().send(new TdApi.ToggleSupergroupIsAggressiveAntiSpamEnabled(supergroup.id, newValue), tdlib.okHandler());
+        supergroupFull.hasAggressiveAntiSpamEnabled = newValue;
+        tdlib.client().send(new TdApi.ToggleSupergroupHasAggressiveAntiSpamEnabled(supergroup.id, newValue), tdlib.okHandler());
         baseAdapter.updateValuedSettingById(R.id.btn_toggleAggressiveAntiSpam);
       } else if (mode == MODE_EDIT_GROUP) {
         showConfirm(Lang.getMarkdownString(this, R.string.UpgradeChatPrompt), Lang.getString(R.string.Proceed), () ->
           tdlib.upgradeToSupergroup(chat.id, (oldChatId, newChatId, error) -> {
             if (newChatId != 0) {
-              tdlib.client().send(new TdApi.ToggleSupergroupIsAggressiveAntiSpamEnabled(ChatId.toSupergroupId(newChatId), true), tdlib.okHandler());
+              tdlib.client().send(new TdApi.ToggleSupergroupHasAggressiveAntiSpamEnabled(ChatId.toSupergroupId(newChatId), true), tdlib.okHandler());
             }
           })
         );
@@ -3480,12 +3480,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private boolean hasAggressiveAntiSpamChanges () {
-    boolean originalValue = supergroupFull != null && supergroupFull.isAggressiveAntiSpamEnabled;
+    boolean originalValue = supergroupFull != null && supergroupFull.hasAggressiveAntiSpamEnabled;
     return aggressiveAntiSpamItem != null && originalValue != aggressiveAntiSpamDescItem.isSelected();
   }
 
   private boolean hasTtlChanges () {
-    int originalSlowMode = chat != null ? chat.messageTtl : 0;
+    int originalSlowMode = chat != null ? chat.messageAutoDeleteTime : 0;
     return ttlItem != null && originalSlowMode != TdConstants.CHAT_TTL_OPTIONS[ttlItem.getSliderValue()];
   }
 
@@ -3560,7 +3560,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
 
     if (hasTtlChanges) {
-      changes.add(new TdApi.SetChatMessageTtl(chat.id, TdConstants.CHAT_TTL_OPTIONS[ttlItem.getSliderValue()]));
+      changes.add(new TdApi.SetChatMessageAutoDeleteTime(chat.id, TdConstants.CHAT_TTL_OPTIONS[ttlItem.getSliderValue()]));
     }
 
     if (changes.isEmpty()) {
@@ -3790,8 +3790,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, mode == MODE_EDIT_CHANNEL ? R.string.RecentActionsChannelHint : R.string.RecentActionsGroupHint));
     }
 
-    if (tdlib.canDeleteMessages(chat.id) && tdlib.chatMemberCount(chat.id) >= tdlib.aggressiveAntiSpamSupergroupMinimumMemberCount() && (tdlib.isSupergroup(chat.id) || (ChatId.isBasicGroup(chat.id) && tdlib.canUpgradeChat(chat.id)))) {
-      boolean aggressiveAntiSpamEnabled = supergroupFull != null && supergroupFull.isAggressiveAntiSpamEnabled;
+    if ((supergroupFull != null && supergroupFull.canToggleAggressiveAntiSpam) || (groupFull != null && groupFull.canToggleAggressiveAntiSpam && tdlib.canUpgradeChat(chat.id))) {
+      boolean aggressiveAntiSpamEnabled = supergroupFull != null && supergroupFull.hasAggressiveAntiSpamEnabled;
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
       items.add(aggressiveAntiSpamItem = new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleAggressiveAntiSpam, 0, R.string.AggressiveAntiSpam, aggressiveAntiSpamEnabled));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
@@ -3824,7 +3824,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
 
     if (tdlib.canDeleteMessages(chat.id) && !ChatId.isSecret(chat.id)) {
-      final int ttlValue = chat != null ? chat.messageTtl : 0;
+      final int ttlValue = chat != null ? chat.messageAutoDeleteTime : 0;
       final boolean isChannel = isChannel();
       items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, isChannel ? R.string.ChannelTtl : R.string.ChatTtl));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));

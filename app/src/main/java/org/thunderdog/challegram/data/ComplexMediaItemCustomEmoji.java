@@ -103,7 +103,7 @@ public class ComplexMediaItemCustomEmoji implements ComplexMediaItem {
 
   @Override
   public String getComplexMediaKey () {
-    return "emoji_" + sticker.customEmojiId + "_" + size;
+    return "emoji_" + Td.customEmojiId(sticker) + "_" + size;
   }
 
   @Override

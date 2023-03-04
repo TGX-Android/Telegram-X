@@ -1055,7 +1055,7 @@ public class Lang {
       case TdApi.MessageChatDeleteMember.CONSTRUCTOR:
       case TdApi.MessageChatDeletePhoto.CONSTRUCTOR:
       case TdApi.MessageChatJoinByLink.CONSTRUCTOR:
-      case TdApi.MessageChatSetTtl.CONSTRUCTOR:
+      case TdApi.MessageChatSetMessageAutoDeleteTime.CONSTRUCTOR:
       case TdApi.MessageChatUpgradeFrom.CONSTRUCTOR:
       case TdApi.MessageChatUpgradeTo.CONSTRUCTOR:
       case TdApi.MessageContactRegistered.CONSTRUCTOR:

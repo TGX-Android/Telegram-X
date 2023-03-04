@@ -453,7 +453,7 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
           } else {
             tdlib.pickRandomGenericOverlaySticker(genericOverlayEffectSticker -> {
               if (genericOverlayEffectSticker != null) {
-                TGStickerObj stickerObj = new TGStickerObj(tdlib, genericOverlayEffectSticker, null, genericOverlayEffectSticker.type)
+                TGStickerObj stickerObj = new TGStickerObj(tdlib, genericOverlayEffectSticker, null, genericOverlayEffectSticker.fullType)
                   .setReactionType(tgReaction.type);
                 executeOnUiThreadOptional(() ->
                   act.runWithData(stickerObj)

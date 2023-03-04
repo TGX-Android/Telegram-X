@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.telegram;
 
-import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -45,7 +44,6 @@ import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.MainActivity;
-import org.thunderdog.challegram.ui.MapControllerFactory;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.base.SettingView;
@@ -104,6 +102,7 @@ import org.thunderdog.challegram.ui.InstantViewController;
 import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.MainController;
 import org.thunderdog.challegram.ui.MapController;
+import org.thunderdog.challegram.ui.MapControllerFactory;
 import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.ui.PasscodeController;
 import org.thunderdog.challegram.ui.PasscodeSetupController;
@@ -793,7 +792,7 @@ public class TdlibUi extends Handler {
   public boolean updateTTLButton (int menuId, HeaderView headerView, TdApi.Chat chat, boolean force) {
     boolean isVisible = false;
     if (headerView != null) {
-      headerView.updateMenuStopwatch(menuId, R.id.menu_btn_stopwatch, getTTLShort(chat != null ? chat.id : 0), isVisible = tdlib.hasWritePermission(chat), force);
+      headerView.updateMenuStopwatch(menuId, R.id.menu_btn_stopwatch, getTTLShort(chat != null ? chat.id : 0), isVisible = tdlib.canChangeMessageAutoDeleteTime(chat.id), force);
     }
     return isVisible;
   }
@@ -804,7 +803,7 @@ public class TdlibUi extends Handler {
     }
     int oldTtl = tdlib.chatTTL(chat.id);
     if (oldTtl != newTtl) {
-      tdlib.setChatMessageTtlSetting(chat.id, newTtl);
+      tdlib.setChatMessageAutoDeleteTime(chat.id, newTtl);
     }
   }
 
@@ -1492,7 +1491,7 @@ public class TdlibUi extends Handler {
     c.setArguments(new ChatsController.Arguments(isGame ? ChatFilter.gamesFilter(tdlib) : ChatFilter.groupsInviteFilter(tdlib), new ChatsController.PickerDelegate() {
       @Override
       public boolean onChatPicked (final TdApi.Chat chat, final Runnable onDone) {
-        if (!tdlib.hasWritePermission(chat)) {
+        if (!tdlib.canSendBasicMessage(chat)) {
           UI.showToast(R.string.YouCantSendMessages, Toast.LENGTH_SHORT);
           return false;
         }
@@ -1613,7 +1612,7 @@ public class TdlibUi extends Handler {
 
   private void setProfilePhoto (String path) {
     UI.showToast(R.string.UploadingPhotoWait, Toast.LENGTH_SHORT);
-    tdlib.client().send(new TdApi.SetProfilePhoto(new TdApi.InputChatPhotoStatic(new TdApi.InputFileGenerated(path, SimpleGenerationInfo.makeConversion(path), 0))), tdlib.profilePhotoHandler());
+    tdlib.client().send(new TdApi.SetProfilePhoto(new TdApi.InputChatPhotoStatic(new TdApi.InputFileGenerated(path, SimpleGenerationInfo.makeConversion(path), 0)), false), tdlib.profilePhotoHandler());
   }
 
   private void deleteProfilePhoto (long photoId) {
@@ -5344,7 +5343,7 @@ public class TdlibUi extends Handler {
     c.setArguments(new ChatsController.Arguments(new ChatsController.PickerDelegate() {
       @Override
       public boolean onChatPicked (TdApi.Chat chat, Runnable onDone) {
-        if (!tdlib.hasWritePermission(chat)) {
+        if (!tdlib.canSendBasicMessage(chat)) {
           UI.showToast(R.string.YouCantSendMessages, Toast.LENGTH_SHORT);
           return false;
         }

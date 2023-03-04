@@ -85,7 +85,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
         if (allowNoLoop) {
           this.animatedFile.setPlayOnce(
             forcePlayOnce ||
-            (specialType != SPECIAL_TYPE_NONE && !(Config.LOOP_BIG_CUSTOM_EMOJI && specialType == SPECIAL_TYPE_ANIMATED_EMOJI && sticker.customEmojiId != 0)) ||
+            (specialType != SPECIAL_TYPE_NONE && !(Config.LOOP_BIG_CUSTOM_EMOJI && specialType == SPECIAL_TYPE_ANIMATED_EMOJI && Td.customEmojiId(sticker) != 0)) ||
             Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_STICKERS_LOOP)
           );
           if (specialType == SPECIAL_TYPE_DICE) {
@@ -684,7 +684,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
             }
             case SPECIAL_TYPE_ANIMATED_EMOJI: {
               GifFile animatedFile = view.getComplexReceiver() != null ? view.getComplexReceiver().getGifReceiver(0).getCurrentFile() : null;
-              if (Config.LOOP_BIG_CUSTOM_EMOJI && sticker != null && sticker.customEmojiId != 0) {
+              if (Config.LOOP_BIG_CUSTOM_EMOJI && Td.customEmojiId(sticker) != 0) {
                 tapProcessed = fallbackAct.get();
               } else if (animatedFile != null) {
                 tapProcessed = animatedFile.setVibrationPattern(Emoji.instance().getVibrationPatternType(sticker.emoji));

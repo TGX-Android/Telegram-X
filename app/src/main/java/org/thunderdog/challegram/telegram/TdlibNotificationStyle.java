@@ -319,7 +319,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     // Notification itself
 
     final boolean needPreview = helper.needPreview(group);
-    final boolean needReply = !Passcode.instance().isLocked() && needPreview && (!isSummary || Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) && !isChannel && tdlib.hasWritePermission(chat) && !group.isOnlyScheduled();
+    final boolean needReply = !Passcode.instance().isLocked() && needPreview && (!isSummary || Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) && !isChannel && tdlib.canSendBasicMessage(chat) && !group.isOnlyScheduled();
     final boolean needReplyToMessage = needReply && canReplyTo(group) && (!ChatId.isPrivate(chatId) || (singleNotification != null && chat.unreadCount > 1));
     final long[] allMessageIds = group.getAllMessageIds();
     final long[] allUserIds = group.isMention() ? group.getAllUserIds() : null;

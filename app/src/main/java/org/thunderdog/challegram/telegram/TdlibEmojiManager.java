@@ -100,11 +100,17 @@ public final class TdlibEmojiManager extends TdlibDataManager<Long, TdApi.Sticke
   @TdlibThread
   private void processStickers (int contextId, long[] customEmojiIds, TdApi.Sticker[] stickers) {
     LongSet remainingIds = stickers.length < customEmojiIds.length ? new LongSet(customEmojiIds) : null;
+    int index = 0;
     for (TdApi.Sticker sticker : stickers) {
-      processData(contextId, sticker.customEmojiId, sticker);
-      if (remainingIds != null) {
-        remainingIds.remove(sticker.customEmojiId);
+      long customEmojiId = customEmojiIds[index];
+      if (customEmojiId != Td.customEmojiId(sticker)) {
+        throw new IllegalArgumentException(customEmojiId + " != " + Td.customEmojiId(sticker));
       }
+      processData(contextId, customEmojiId, sticker);
+      if (remainingIds != null) {
+        remainingIds.remove(customEmojiId);
+      }
+      index++;
     }
     if (remainingIds != null && !remainingIds.isEmpty()) {
       for (long customEmojiId : remainingIds) {

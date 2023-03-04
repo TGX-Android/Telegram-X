@@ -706,7 +706,8 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
       chatPhoto.sizes.length > 0 ? Td.findSmallest(chatPhoto.sizes).photo : null,
       chatPhoto.sizes.length > 0 ? Td.findBiggest(chatPhoto.sizes).photo : null,
       chatPhoto.minithumbnail,
-      chatPhoto.animation != null || chatPhoto.smallAnimation != null
+      chatPhoto.animation != null || chatPhoto.smallAnimation != null,
+      false
     ), chatPhoto, options);
     // full: chatPhoto.minithumbnail, Td.findSmallest(chatPhoto.sizes), Td.findBiggest(chatPhoto.sizes), allowAnimation ? chatPhoto.animation : null
     // preview: chatPhoto.minithumbnail, Td.findSmallest(chatPhoto.sizes), allowAnimation ? chatPhoto?.smallAnimation ?: chatPhoto?.animation : null

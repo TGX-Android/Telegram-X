@@ -74,6 +74,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.ChatListListener;
+import org.thunderdog.challegram.telegram.RightId;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibChatList;
@@ -1698,7 +1699,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
         return tdlib.getMessageRestrictionText(chat);
       }
       case MODE_FILE: {
-        return tdlib.getMediaRestrictionText(chat);
+        return tdlib.getMediaRestrictionText(chat, RightId.SEND_DOCS);
       }
       case MODE_STICKER: {
         return tdlib.getStickerRestrictionText(chat);

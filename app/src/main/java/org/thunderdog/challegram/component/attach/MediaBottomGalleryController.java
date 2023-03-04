@@ -259,7 +259,7 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
     MessagesController c = mediaLayout.parentMessageController();
     if (c == null) return;
 
-    if (!c.showRestriction(v, R.id.right_sendMedia, R.string.ChatDisabledMedia, R.string.ChatRestrictedMedia, R.string.ChatRestrictedMediaUntil)) {
+    if (!c.showPhotoVideoRestriction(v)) {
       mediaLayout.hidePopupAndOpenCamera(new CameraOpenOptions().anchor(v).noTrace(c.isSecretChat()));
     }
   }

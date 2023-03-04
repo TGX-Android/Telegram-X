@@ -597,7 +597,7 @@ public class MessagesLoader implements Client.ResultHandler {
     if (!StringUtils.isEmpty(remoteId) && !Strings.isValidLink(remoteId)) {
       TdApi.File remoteFile = tdlib.getRemoteFile(remoteId, new TdApi.FileTypeProfilePhoto(), 0);
       if (remoteFile != null) {
-        user.profilePhoto = new TdApi.ProfilePhoto(0, remoteFile, remoteFile, null, false);
+        user.profilePhoto = new TdApi.ProfilePhoto(0, remoteFile, remoteFile, null, false, true);
       }
     }
     return user;
@@ -745,7 +745,7 @@ public class MessagesLoader implements Client.ResultHandler {
       TdApi.VoiceNote voice = null;
       TdApi.MessageChatDeleteMember left = null;
       TdApi.MessageSupergroupChatCreate created = null;
-      TdApi.MessageChatSetTtl ttl = null;
+      TdApi.MessageChatSetMessageAutoDeleteTime autoDeleteTime = null;
 
       if (data.has("out"))
         isOut = data.getInt("out") == 1;
@@ -858,15 +858,14 @@ public class MessagesLoader implements Client.ResultHandler {
         if (thumbFile == null || file == null)
           throw new JSONException("sticker.thumbFile == null || sticker.file == null");
         sticker = new TdApi.Sticker(
+          file.id,
           setId,
           width,
           height,
           null,
-          new TdApi.StickerFormatWebp(), new TdApi.StickerTypeRegular(),
-          null, 0, null,
-          new TdApi.Thumbnail(new TdApi.ThumbnailFormatWebp(), width, height, thumbFile),
-          false,
+          new TdApi.StickerFormatWebp(), new TdApi.StickerFullTypeRegular(),
           null,
+          new TdApi.Thumbnail(new TdApi.ThumbnailFormatWebp(), width, height, thumbFile),
           file
         );
       }
@@ -890,7 +889,7 @@ public class MessagesLoader implements Client.ResultHandler {
         int seconds;
 
         seconds = data.getInt("ttl");
-        ttl = new TdApi.MessageChatSetTtl(seconds, 0);
+        autoDeleteTime = new TdApi.MessageChatSetMessageAutoDeleteTime(seconds, 0);
       }
 
       if (date == 0) {
@@ -904,7 +903,7 @@ public class MessagesLoader implements Client.ResultHandler {
 
       TdApi.MessageContent content;
       if (photo != null)
-        content = new TdApi.MessagePhoto(photo, text, false);
+        content = new TdApi.MessagePhoto(photo, text, false, false);
       else if (sticker != null)
         content = new TdApi.MessageSticker(sticker, false);
       else if (audio != null)
@@ -915,8 +914,8 @@ public class MessagesLoader implements Client.ResultHandler {
         content = left;
       else if (created != null)
         content = created;
-      else if (ttl != null)
-        content = ttl;
+      else if (autoDeleteTime != null)
+        content = autoDeleteTime;
       else if (text != null)
         content = new TdApi.MessageText(text, null);
       else
@@ -1143,7 +1142,7 @@ public class MessagesLoader implements Client.ResultHandler {
       event.date, 0,
       null, null, null,
       0, 0, 0,
-      0, 0,
+      0, 0, 0,
       0, null,
       0,
       null,

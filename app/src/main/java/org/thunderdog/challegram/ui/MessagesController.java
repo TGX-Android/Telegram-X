@@ -186,6 +186,7 @@ import org.thunderdog.challegram.telegram.GlobalAccountListener;
 import org.thunderdog.challegram.telegram.ListManager;
 import org.thunderdog.challegram.telegram.MessageThreadListener;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
+import org.thunderdog.challegram.telegram.RightId;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
@@ -1739,7 +1740,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private boolean isInputLess () {
-    return tdlib.isChannel(getChatId()) && !tdlib.hasWritePermission(chat);
+    return tdlib.isChannel(getChatId()) && !tdlib.canSendBasicMessage(chat);
   }
 
   @Override
@@ -1890,7 +1891,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
     switch (v.getId()) {
       case R.id.btn_camera: {
-        if (!showRestriction(v, R.id.right_sendMedia, R.string.ChatDisabledMedia, R.string.ChatRestrictedMedia, R.string.ChatRestrictedMediaUntil)) {
+        if (!showPhotoVideoRestriction(v)) {
           openInAppCamera(new CameraOpenOptions().anchor(v).noTrace(isSecretChat()));
         }
         break;
@@ -2779,7 +2780,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return;
     }
 
-    setLockFocusView(chat != null && tdlib.hasWritePermission(chat) ? inputView : null, false);
+    setLockFocusView(chat != null && tdlib.canSendBasicMessage(chat) ? inputView : null, false);
 
     if (chat == null) {
       return;
@@ -2798,7 +2799,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
     }
 
-    if (tdlib.hasWritePermission(chat)) {
+    if (tdlib.canSendBasicMessage(chat)) {
       TdApi.DraftMessage draftMessage = getDraftMessage();
       if (draftMessage != null && draftMessage.replyToMessageId != 0) {
         if (!ignoreDraftLoad) {
@@ -3468,7 +3469,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case R.id.menu_secretChat: {
         StopwatchHeaderButton headerButton = header.addStopwatchButton(menu, this);
-        headerButton.forceValue(tdlib.ui().getTTLShort(getChatId()), isSecretChat() && tdlib.hasWritePermission(chat));
+        headerButton.forceValue(tdlib.ui().getTTLShort(getChatId()), isSecretChat() && tdlib.canChangeMessageAutoDeleteTime(chat.id));
         header.addMoreButton(menu, this);
         break;
       }
@@ -5146,12 +5147,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return chat != null && tdlib.isSelfChat(chat.id);
   }
 
+  @Deprecated
   public boolean hasWritePermission () {
-    return chat != null && tdlib.hasWritePermission(chat) && !isEventLog();
+    // FIXME: this check is outdated and no longer correct
+    return chat != null && tdlib.canSendBasicMessage(chat) && !isEventLog();
   }
 
-  public boolean canSendMedia () {
-    return tdlib.canSendMedia(chat);
+  public boolean canSendPhotosAndVideos () { // FIXME separate photos and videos
+    return
+      tdlib.canSendMessage(chat, RightId.SEND_PHOTOS) &&
+      tdlib.canSendMessage(chat, RightId.SEND_VIDEOS);
   }
 
   // test
@@ -8148,7 +8153,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return getForcePreviewHeight(/* hasHeader */ true, /* hasFooter */ true);
   }
 
-  public int getForceTouchModeOffset () {
+  /*public int getForceTouchModeOffset () {
     int height = Screen.currentHeight() - HeaderView.getSize(true);
 
     if (tdlib.hasWritePermission(chat) || (tdlib.isChannel(chat.id) && !TD.isMember(tdlib.chatStatus(chat.id)))) {
@@ -8156,7 +8161,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
 
     return (height - makeGuessAboutForcePreviewHeight());
-  }
+  }*/
 
   // Commands
 
@@ -8466,6 +8471,23 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return showRestriction(view, R.id.right_sendStickersAndGifs, R.string.ChatDisabledStickers, R.string.ChatRestrictedStickers, R.string.ChatRestrictedStickersUntil);
   }
 
+  public boolean showPhotoVideoRestriction (View view) { // TODO separate photos & videos
+    Tdlib.RestrictionStatus photosStatus = tdlib.getRestrictionStatus(chat, RightId.SEND_PHOTOS);
+    Tdlib.RestrictionStatus videosStatus = tdlib.getRestrictionStatus(chat, RightId.SEND_VIDEOS);
+    if (photosStatus == null && videosStatus == null) {
+      return false;
+    }
+    if (videosStatus == null || (videosStatus.isGlobal() && photosStatus != null && !photosStatus.isGlobal())) {
+      // photo
+      return showRestriction(view, RightId.SEND_PHOTOS, R.string.ChatDisabledPhoto, R.string.ChatRestrictedPhoto, R.string.ChatRestrictedPhotoUntil);
+    }
+    if (photosStatus == null || (photosStatus.isGlobal() && videosStatus != null && !videosStatus.isGlobal())) {
+      // video
+      return showRestriction(view, RightId.SEND_PHOTOS, R.string.ChatDisabledVideo, R.string.ChatRestrictedVideo, R.string.ChatRestrictedVideoUntil);
+    }
+    return showRestriction(view, RightId.SEND_PHOTOS, R.string.ChatDisabledMedia, R.string.ChatRestrictedMedia, R.string.ChatRestrictedMediaUntil);
+  }
+
   public boolean showRestriction (View view, int rightId, int defaultRes, int specificRes, int specificUntilRes) {
     if (view != null) {
       CharSequence restrictionText = tdlib.getRestrictionText(chat, rightId, defaultRes, specificRes, specificUntilRes);
@@ -8498,7 +8520,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (sticker == null) {
       return false;
     }
-    if (sticker.isPremium && tdlib.ui().showPremiumAlert(this, view, TdlibUi.PremiumFeature.STICKER)) {
+    if (Td.isPremium(sticker) && tdlib.ui().showPremiumAlert(this, view, TdlibUi.PremiumFeature.STICKER)) {
       return false;
     }
     return sendContent(view, R.id.right_sendStickersAndGifs, R.string.ChatDisabledStickers, R.string.ChatRestrictedStickers, R.string.ChatRestrictedStickersUntil, allowReply, initialSendOptions, () -> new TdApi.InputMessageSticker(new TdApi.InputFileId(sticker.sticker.id), null, 0, 0, emoji));
@@ -8704,7 +8726,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
         if (tdlib.isSupergroupChat(chat)) {
           TdApi.SupergroupFullInfo fullInfo = tdlib.cache().supergroupFull(ChatId.toSupergroupId(chat.id));
-          if (fullInfo != null && fullInfo.isAggressiveAntiSpamEnabled) {
+          if (fullInfo != null && fullInfo.hasAggressiveAntiSpamEnabled) {
             long userId = tdlib.telegramAntiSpamUserId();
             if (userId != 0) {
               items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
@@ -9467,7 +9489,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           height = sampledHeight;
         }
         TdApi.InputFileGenerated inputFile = PhotoGenerationInfo.newFile(path, U.getRotationForExifOrientation(orientation));
-        TdApi.InputMessagePhoto photo = tdlib.filegen().createThumbnail(new TdApi.InputMessagePhoto(inputFile, null, null, width, height, null, ttl), isSecret);
+        TdApi.InputMessagePhoto photo = tdlib.filegen().createThumbnail(new TdApi.InputMessagePhoto(inputFile, null, null, width, height, null, ttl, false), isSecret);
         tdlib.sendMessage(chatId, getMessageThreadId(), replyToMessageId, Td.newSendOptions(silent), photo);
       });
     }
@@ -9528,9 +9550,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
           if (asFiles && !forceVideo) {
             content = tdlib.filegen().createThumbnail(TD.toInputMessageContent(file.getFilePath(), inputVideo, fileInfo, caption), isSecretChat);
           } else if (sendAsAnimation && file.getTTL() == 0 && (files.length == 1 || !needGroupMedia)) {
-            content = tdlib.filegen().createThumbnail(new TdApi.InputMessageAnimation(inputVideo, null, null, file.getVideoDuration(true), width, height, caption), isSecretChat);
+            content = tdlib.filegen().createThumbnail(new TdApi.InputMessageAnimation(inputVideo, null, null, file.getVideoDuration(true), width, height, caption, false), isSecretChat);
           } else {
-            content = tdlib.filegen().createThumbnail(new TdApi.InputMessageVideo(inputVideo, null, null, file.getVideoDuration(true), width, height, U.canStreamVideo(inputVideo), caption, file.getTTL()), isSecretChat);
+            content = tdlib.filegen().createThumbnail(new TdApi.InputMessageVideo(inputVideo, null, null, file.getVideoDuration(true), width, height, U.canStreamVideo(inputVideo), caption, file.getTTL(), false), isSecretChat);
           }
         } else {
           int[] size = new int[2];
@@ -9551,7 +9573,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           if (asFiles) {
             content = tdlib.filegen().createThumbnail(new TdApi.InputMessageDocument(inputFile, null, false, caption), isSecretChat);
           } else {
-            content = tdlib.filegen().createThumbnail(new TdApi.InputMessagePhoto(inputFile, null, null, width, height, caption, file.getTTL()), isSecretChat);
+            content = tdlib.filegen().createThumbnail(new TdApi.InputMessagePhoto(inputFile, null, null, width, height, caption, file.getTTL(), false), isSecretChat);
           }
         }
         inputContent[i] = content;

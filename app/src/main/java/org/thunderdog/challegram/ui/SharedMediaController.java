@@ -293,7 +293,7 @@ public class SharedMediaController extends SharedBaseController<MediaItem> imple
   @Override
   protected MediaItem parseObject (TdApi.Object object) {
     TdApi.Message message = (TdApi.Message) object;
-    if (message.ttl > 0 && message.ttl <= 60) {
+    if (message.selfDestructTime > 0 && message.selfDestructTime <= 60) {
       return null;
     }
     MediaItem item = MediaItem.valueOf(context(), tdlib, message);

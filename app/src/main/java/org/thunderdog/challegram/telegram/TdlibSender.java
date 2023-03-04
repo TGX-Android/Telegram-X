@@ -82,7 +82,7 @@ public class TdlibSender {
         this.name = TD.getUserName(userId, user);
         this.nameShort = TD.getUserSingleName(userId, user);
         this.usernames = user != null ? user.usernames : null;
-        this.photo = profilePhoto != null ? new TdApi.ChatPhotoInfo(profilePhoto.small, profilePhoto.big, profilePhoto.minithumbnail, profilePhoto.hasAnimation) : null;
+        this.photo = profilePhoto != null ? new TdApi.ChatPhotoInfo(profilePhoto.small, profilePhoto.big, profilePhoto.minithumbnail, profilePhoto.hasAnimation, profilePhoto.isPersonal) : null;
         this.letters = TD.getLetters(user);
         this.placeholderMetadata = tdlib.cache().userPlaceholderMetadata(userId, user, false);
 

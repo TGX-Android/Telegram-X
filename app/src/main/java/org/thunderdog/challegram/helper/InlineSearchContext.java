@@ -446,7 +446,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
     final long chatId = callback.provideInlineSearchChatId();
     TdApi.Function<?> function;
     if (more) {
-      function = new TdApi.SearchStickers(emoji, 1000);
+      function = new TdApi.SearchStickers(new TdApi.StickerTypeRegular(), emoji, 1000);
     } else {
       function = new TdApi.GetStickers(new TdApi.StickerTypeRegular(), emoji, 1000, chatId);
     }
@@ -457,7 +457,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
   private void displayStickers (TdApi.Sticker[] stickers, String foundByEmoji, boolean isMore) {
     ArrayList<TGStickerObj> list = new ArrayList<>(stickers.length);
     for (TdApi.Sticker sticker : stickers) {
-      list.add(new TGStickerObj(tdlib, sticker, foundByEmoji, sticker.type));
+      list.add(new TGStickerObj(tdlib, sticker, foundByEmoji, sticker.fullType));
     }
     callback.showInlineStickers(list, isMore);
   }

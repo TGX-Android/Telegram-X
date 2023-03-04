@@ -21,12 +21,14 @@ import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.telegram.Tdlib;
 
+import me.vkryl.td.Td;
+
 public class InlineResultSticker extends InlineResult<TdApi.InlineQueryResultSticker> {
   private final TGStickerObj sticker;
 
   public InlineResultSticker (BaseActivity context, Tdlib tdlib, String emoji, TdApi.InlineQueryResultSticker data) {
     super(context, tdlib, TYPE_STICKER, data.id, data);
-    this.sticker = new TGStickerObj(tdlib, data.sticker, emoji, data.sticker.type);
+    this.sticker = new TGStickerObj(tdlib, data.sticker, emoji, data.sticker.fullType);
   }
 
   public @NonNull TGStickerObj getSticker () {

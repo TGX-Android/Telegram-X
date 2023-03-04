@@ -1228,7 +1228,7 @@ public class TdlibListeners {
 
   // updateMessageTtlSetting
 
-  private static void updateChatMessageTtlSetting (long chatId, int messageTtlSetting, @Nullable Iterator<ChatListener> list) {
+  private static void updateChatMessageAutoDeleteTime (long chatId, int messageTtlSetting, @Nullable Iterator<ChatListener> list) {
     if (list != null) {
       while (list.hasNext()) {
         list.next().onChatMessageTtlSettingChanged(chatId, messageTtlSetting);
@@ -1236,9 +1236,9 @@ public class TdlibListeners {
     }
   }
 
-  void updateChatMessageTtlSetting (TdApi.UpdateChatMessageTtl update) {
-    updateChatMessageTtlSetting(update.chatId, update.messageTtl, chatListeners.iterator());
-    updateChatMessageTtlSetting(update.chatId, update.messageTtl, specificChatListeners.iterator(update.chatId));
+  void updateChatMessageAutoDeleteTime (TdApi.UpdateChatMessageAutoDeleteTime update) {
+    updateChatMessageAutoDeleteTime(update.chatId, update.messageAutoDeleteTime, chatListeners.iterator());
+    updateChatMessageAutoDeleteTime(update.chatId, update.messageAutoDeleteTime, specificChatListeners.iterator(update.chatId));
   }
 
   // updateChatVoiceChat
