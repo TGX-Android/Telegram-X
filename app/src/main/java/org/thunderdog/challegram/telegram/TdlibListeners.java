@@ -1316,6 +1316,21 @@ public class TdlibListeners {
     updateChatIsMarkedAsUnread(update.chatId, update.isMarkedAsUnread, specificChatListeners.iterator(update.chatId));
   }
 
+  // updateChatIsTranslatable
+
+  private static void updateChatIsTranslatable (long chatId, boolean isTranslatable, @Nullable Iterator<ChatListener> list) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onChatIsTranslatableChanged(chatId, isTranslatable);
+      }
+    }
+  }
+
+  void updateChatIsTranslatable (TdApi.UpdateChatIsTranslatable update) {
+    updateChatIsTranslatable(update.chatId, update.isTranslatable, chatListeners.iterator());
+    updateChatIsTranslatable(update.chatId, update.isTranslatable, specificChatListeners.iterator(update.chatId));
+  }
+
   // updateChatIsBlocked
 
   private static void updateChatIsBlocked (long chatId, boolean isBlocked, @Nullable Iterator<ChatListener> list) {

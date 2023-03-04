@@ -7499,6 +7499,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   @TdlibThread
+  private void updateChatIsTranslatable (TdApi.UpdateChatIsTranslatable update) {
+    synchronized (dataLock) {
+      final TdApi.Chat chat = chats.get(update.chatId);
+      if (TdlibUtils.assertChat(update.chatId, chat, update)) {
+        return;
+      }
+      chat.isTranslatable = update.isTranslatable;
+    }
+
+    listeners.updateChatIsTranslatable(update);
+  }
+
+  @TdlibThread
   private void updateChatIsBlocked (TdApi.UpdateChatIsBlocked update) {
     synchronized (dataLock) {
       final TdApi.Chat chat = chats.get(update.chatId);
@@ -7806,6 +7819,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   @TdlibThread
   private void updateTermsOfService (TdApi.UpdateTermsOfService update) {
     ui().sendMessage(ui().obtainMessage(MSG_ACTION_DISPATCH_TERMS_OF_SERVICE, update));
+  }
+
+  @TdlibThread
+  private void updateAutosaveSettings (TdApi.UpdateAutosaveSettings update) {
+    // TODO?
   }
 
   private final List<TdApi.SuggestedAction> suggestedActions = new ArrayList<>();
@@ -8496,6 +8514,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         updateChatIsMarkedAsUnread((TdApi.UpdateChatIsMarkedAsUnread) update);
         break;
       }
+      case TdApi.UpdateChatIsTranslatable.CONSTRUCTOR: {
+        updateChatIsTranslatable((TdApi.UpdateChatIsTranslatable) update);
+        break;
+      }
       case TdApi.UpdateChatIsBlocked.CONSTRUCTOR: {
         updateChatIsBlocked((TdApi.UpdateChatIsBlocked) update);
         break;
@@ -8750,6 +8772,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
       case TdApi.UpdateTermsOfService.CONSTRUCTOR: {
         updateTermsOfService((TdApi.UpdateTermsOfService) update);
+        break;
+      }
+      case TdApi.UpdateAutosaveSettings.CONSTRUCTOR: {
+        updateAutosaveSettings((TdApi.UpdateAutosaveSettings) update);
         break;
       }
       case TdApi.UpdateSuggestedActions.CONSTRUCTOR: {
