@@ -5368,7 +5368,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
     long timeZoneOffset = TimeUnit.MILLISECONDS.toSeconds(
       TimeZone.getDefault().getRawOffset() +
-        TimeZone.getDefault().getDSTSavings()
+      TimeZone.getDefault().getDSTSavings()
     );
     params.put("package_id", UI.getAppContext().getPackageName());
     String installerName = U.getInstallerPackageName();
@@ -5407,6 +5407,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
     return params;
   }
+
   private void checkConnectionParams (Client client, boolean force) {
     Map<String, Object> params = newConnectionParams();
     String connectionParams = JSON.stringify(JSON.toObject(params));
