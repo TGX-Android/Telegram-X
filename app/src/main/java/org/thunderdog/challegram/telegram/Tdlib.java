@@ -1748,7 +1748,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     getAllChats(chatList, chat -> {
       boolean read = false;
       if (chat.unreadCount != 0 && chat.lastMessage != null) {
-        readMessages(chat.id, 0, new long[] {chat.lastMessage.id});
+        readMessages(chat.id, new long[] {chat.lastMessage.id}, new TdApi.MessageSourceChatList());
         read = true;
       }
       if (chat.isMarkedAsUnread) {
@@ -3408,14 +3408,28 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return false;
   }
 
-  public void markChatAsRead (long chatId, long messageThreadId, @Nullable Runnable after) {
+  public void markChatAsRead (long chatId, TdApi.MessageSource source, boolean allowRemoveMarkedAsUnrad, @Nullable Runnable after) {
     TdApi.Chat chat = chat(chatId);
     if (chat != null) {
-      if (messageThreadId == 0 && chat.isMarkedAsUnread) {
-        client().send(new TdApi.ToggleChatIsMarkedAsUnread(chat.id, false), okHandler(after));
+      if (chat.isMarkedAsUnread && allowRemoveMarkedAsUnrad) {
+        switch (source.getConstructor()) {
+          case TdApi.MessageSourceChatHistory.CONSTRUCTOR:
+          case TdApi.MessageSourceHistoryPreview.CONSTRUCTOR:
+          case TdApi.MessageSourceChatList.CONSTRUCTOR:
+          case TdApi.MessageSourceSearch.CONSTRUCTOR:
+          case TdApi.MessageSourceChatEventLog.CONSTRUCTOR:
+          case TdApi.MessageSourceNotification.CONSTRUCTOR:
+          case TdApi.MessageSourceOther.CONSTRUCTOR:
+            client().send(new TdApi.ToggleChatIsMarkedAsUnread(chat.id, false), okHandler(after));
+            break;
+          case TdApi.MessageSourceMessageThreadHistory.CONSTRUCTOR:
+          case TdApi.MessageSourceForumTopicHistory.CONSTRUCTOR:
+            // No need to remove marked as unread mark
+            break;
+        }
       }
-      if (!hasPasscode(chat) && chat.lastMessage != null && (messageThreadId != 0 || chat.unreadCount > 0)) {
-        client().send(new TdApi.ViewMessages(chatId, messageThreadId, new long[] {chat.lastMessage.id}, true), okHandler(after));
+      if (!hasPasscode(chat) && chat.lastMessage != null) {
+        client().send(new TdApi.ViewMessages(chatId, new long[] {chat.lastMessage.id}, source, true), okHandler(after));
       }
     }
   }
@@ -5069,11 +5083,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     client().send(new TdApi.DeleteMessages(chatId, messageIds, revoke), okHandler);
   }
 
-  public void readMessages (long chatId, long messageThreadId, long[] messageIds) {
+  public void readMessages (long chatId, long[] messageIds, TdApi.MessageSource source) {
     if (Log.isEnabled(Log.TAG_FCM)) {
       Log.i(Log.TAG_FCM, "Reading messages chatId:%d messageIds:%s", Log.generateSingleLineException(2), chatId, Arrays.toString(messageIds));
     }
-    client().send(new TdApi.ViewMessages(chatId, messageThreadId, messageIds, true), okHandler);
+    client().send(new TdApi.ViewMessages(chatId, messageIds, source, true), okHandler);
   }
 
   // TDLib config

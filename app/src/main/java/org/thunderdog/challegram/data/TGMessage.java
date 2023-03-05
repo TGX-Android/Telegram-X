@@ -4107,6 +4107,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public final void getIds (@NonNull LongSet ids) {
+    //noinspection WrongConstant
+    if (msg.content.getConstructor() == TdApiExt.MessageChatEvent.CONSTRUCTOR) {
+      return;
+    }
     synchronized (this) {
       if (combinedMessages != null && !combinedMessages.isEmpty()) {
         ids.ensureCapacity(ids.size() + combinedMessages.size());

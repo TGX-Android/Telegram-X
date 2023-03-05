@@ -2433,7 +2433,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
 
     if (TD.isBot(user)) {
-      if (userFull != null && (!Td.isEmpty(userFull.bio) || (userFull.botInfo != null && !StringUtils.isEmpty(userFull.botInfo.shareText)))) {
+      if (userFull != null && (!Td.isEmpty(userFull.bio) || (userFull.botInfo != null && !StringUtils.isEmpty(userFull.botInfo.shortDescription)))) {
         items.add(newDescriptionItem());
         addedCount++;
       }
@@ -2690,7 +2690,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private String getDescriptionValue () {
     if (userFull != null) {
-      return !Td.isEmpty(userFull.bio) ? userFull.bio.text : userFull.botInfo != null && !StringUtils.isEmpty(userFull.botInfo.shareText) ? userFull.botInfo.shareText : "";
+      return !Td.isEmpty(userFull.bio) ? userFull.bio.text : userFull.botInfo != null && !StringUtils.isEmpty(userFull.botInfo.shortDescription) ? userFull.botInfo.shortDescription : "";
     }
     if (supergroupFull != null) {
       return !StringUtils.isEmpty(supergroupFull.description) ? supergroupFull.description : "";
@@ -2711,7 +2711,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         return setDescription(userFull.bio);
       }
       if (userFull.botInfo != null) {
-        return setDescription(userFull.botInfo.shareText);
+        return setDescription(userFull.botInfo.shortDescription);
       }
       return setDescription("");
     }

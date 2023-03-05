@@ -21,8 +21,8 @@ import org.thunderdog.challegram.navigation.ViewController;
 public class ModernActionedLayout extends MediaLayout {
   private MediaBottomBaseController<?> curController;
 
-  public static void showMessageSeen (ViewController<?> context, TGMessage msg, long[] userIds) {
-    showMal(context, (mal) -> new MessageSeenController(mal, msg, userIds));
+  public static void showMessageSeen (ViewController<?> context, TGMessage msg, TdApi.MessageViewers viewers) {
+    showMal(context, (mal) -> new MessageSeenController(mal, msg, viewers));
   }
 
   public static void showJoinRequests (ViewController<?> context, long chatId, TdApi.ChatJoinRequestsInfo requestsInfo) {

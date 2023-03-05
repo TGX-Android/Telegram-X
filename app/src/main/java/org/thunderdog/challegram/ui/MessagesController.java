@@ -212,8 +212,8 @@ import org.thunderdog.challegram.unsorted.Test;
 import org.thunderdog.challegram.util.CancellableResultHandler;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.OptionDelegate;
-import org.thunderdog.challegram.util.SenderPickerDelegate;
 import org.thunderdog.challegram.util.Permissions;
+import org.thunderdog.challegram.util.SenderPickerDelegate;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.Unlockable;
 import org.thunderdog.challegram.v.HeaderEditText;
@@ -4533,25 +4533,25 @@ public class MessagesController extends ViewController<MessagesController.Argume
     optionsLayout.addView(receiptWrap, 2);
 
     tdlib.client().send(new TdApi.GetMessageViewers(message.getChatId(), message.getId()), (obj) -> {
-      if (obj.getConstructor() != TdApi.Users.CONSTRUCTOR) return;
+      if (obj.getConstructor() != TdApi.MessageViewers.CONSTRUCTOR) return;
       runOnUiThreadOptional(() -> {
-        TdApi.Users users = (TdApi.Users) obj;
+        TdApi.MessageViewers viewers = (TdApi.MessageViewers) obj;
 
-        if (users.userIds.length > 1) {
-          receiptText.setText(MessageSeenController.getViewString(message, users.totalCount).toString());
-        } else if (users.userIds.length == 1) {
-          receiptText.setText(tdlib.senderName(new TdApi.MessageSenderUser(users.userIds[0])));
+        if (viewers.viewers.length > 1) {
+          receiptText.setText(MessageSeenController.getViewString(message, viewers.viewers.length).toString());
+        } else if (viewers.viewers.length == 1) {
+          receiptText.setText(tdlib.senderName(new TdApi.MessageSenderUser(viewers.viewers[0].userId)));
         } else {
           receiptText.setText(MessageSeenController.getNobodyString(message));
         }
 
-        tav.setUsers(tdlib, users);
+        tav.setUsers(tdlib, viewers);
         receiptWrap.setOnClickListener((v) -> {
           layout.hideWindow(true);
-          if (users.userIds.length > 1) {
-            ModernActionedLayout.showMessageSeen(this, message, users.userIds);
-          } else if (users.userIds.length == 1) {
-            tdlib.ui().openPrivateProfile(this, users.userIds[0], new TdlibUi.UrlOpenParameters().tooltip(context().tooltipManager().builder(v)));
+          if (viewers.viewers.length > 1) {
+            ModernActionedLayout.showMessageSeen(this, message, viewers);
+          } else if (viewers.viewers.length == 1) {
+            tdlib.ui().openPrivateProfile(this, viewers.viewers[0].userId, new TdlibUi.UrlOpenParameters().tooltip(context().tooltipManager().builder(v)));
           }
         });
       });
@@ -7694,7 +7694,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private void processSwitchPm (InlineResultButton button) {
     currentSwitchPmButton = button;
-    tdlib.sendBotStartMessage(button.getUserId(), getChatId(), button.data());
+    tdlib.sendBotStartMessage(button.getUserId(), getChatId(), button.botStartParameter());
   }
 
   public void switchBackToSourcePmIfNeeded (TdApi.InlineKeyboardButtonTypeSwitchInline button) {
@@ -7726,7 +7726,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void onSwitchPm (InlineResultButton button) {
-    tdlib.sendBotStartMessage(button.getUserId(), getChatId(), button.data());
+    tdlib.sendBotStartMessage(button.getUserId(), getChatId(), button.botStartParameter());
     inputView.setText("");
   }
 
@@ -9646,6 +9646,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   public void setBroadcastAction (@TdApi.ChatAction.Constructors int action) {
     if (action == TdApi.ChatActionCancel.CONSTRUCTOR) {
+      //noinspection WrongConstant
       action = 0;
     }
     boolean hadAction = this.broadcastingAction != 0;
@@ -9669,7 +9670,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private SparseIntArray actions;
 
-  public void setChatAction (int action, boolean set, boolean force) {
+  public void setChatAction (@TdApi.ChatAction.Constructors int action, boolean set, boolean force) {
     if (chat == null) {
       return;
     }

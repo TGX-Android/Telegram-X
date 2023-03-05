@@ -15,21 +15,19 @@
 package org.thunderdog.challegram.data;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
+import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Screen;
 
-public class InlineResultButton extends InlineResult<String> {
+public class InlineResultButton extends InlineResult<TdApi.InlineQueryResultsButton> {
   private final long userId;
-  private final @NonNull String text;
   private long sourceChatId;
 
-  public InlineResultButton (BaseActivity context, Tdlib tdlib, long inlineBotId, @NonNull String text, @Nullable String parameter) {
-    super(context, tdlib, TYPE_BUTTON, null, parameter);
+  public InlineResultButton (BaseActivity context, Tdlib tdlib, long inlineBotId, @NonNull TdApi.InlineQueryResultsButton button) {
+    super(context, tdlib, TYPE_BUTTON, null, button);
     this.userId = inlineBotId;
-    this.text = text;
   }
 
   public long getSourceChatId () {
@@ -45,7 +43,15 @@ public class InlineResultButton extends InlineResult<String> {
   }
 
   public @NonNull String getText () {
-    return text;
+    return data.text;
+  }
+
+  public String botStartParameter () {
+    if (data.type.getConstructor() == TdApi.InlineQueryResultsButtonTypeStartBot.CONSTRUCTOR) {
+      return ((TdApi.InlineQueryResultsButtonTypeStartBot) data.type).parameter;
+    } else {
+      return "";
+    }
   }
 
   @Override

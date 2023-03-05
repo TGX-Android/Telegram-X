@@ -1227,7 +1227,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
           targetAdmin.rights.canPostMessages = newValue;
         } else {
           setCanViewMessages(canViewMessages || newValue);
-          targetRestrict.permissions.canSendMessages = newValue;
+          targetRestrict.permissions.canSendBasicMessages = newValue;
         }
         break;
       }
@@ -1240,7 +1240,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       case RightId.SEND_VIDEO_NOTES:
       case RightId.SEND_OTHER_MESSAGES: {
         setCanViewMessages(canViewMessages || newValue);
-        // targetRestrict.permissions.canSendMessages = targetRestrict.permissions.canSendMessages || newValue;
+        // targetRestrict.permissions.canSendBasicMessages = targetRestrict.permissions.canSendBasicMessages || newValue;
         //noinspection SwitchIntDef
         switch (id) {
           case RightId.SEND_AUDIO:
@@ -1274,7 +1274,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       }
       case RightId.EMBED_LINKS: {
         setCanViewMessages(canViewMessages || newValue);
-        targetRestrict.permissions.canSendMessages = targetRestrict.permissions.canSendMessages || newValue;
+        targetRestrict.permissions.canSendBasicMessages = targetRestrict.permissions.canSendBasicMessages || newValue;
         targetRestrict.permissions.canAddWebPagePreviews = newValue;
         break;
       }
@@ -1301,7 +1301,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
           targetAdmin.rights.canPinMessages = newValue;
         } else {
           setCanViewMessages(canViewMessages || newValue);
-          // FIXME? targetRestrict.permissions.canSendMessages = targetRestrict.permissions.canSendMessages || newValue;
+          // FIXME? targetRestrict.permissions.canSendBasicMessages = targetRestrict.permissions.canSendBasicMessages || newValue;
           targetRestrict.permissions.canPinMessages = newValue;
         }
         break;
@@ -1330,7 +1330,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
     }
     if (getArgumentsStrict().mode == MODE_CHAT_PERMISSIONS || getArgumentsStrict().mode == MODE_RESTRICTION) {
       targetRestrict.isMember = canViewMessages;
-      targetRestrict.permissions.canSendMessages = getValueForId(RightId.SEND_BASIC_MESSAGES);
+      targetRestrict.permissions.canSendBasicMessages = getValueForId(RightId.SEND_BASIC_MESSAGES);
       targetRestrict.permissions.canAddWebPagePreviews = getValueForId(RightId.EMBED_LINKS);
       targetRestrict.permissions.canSendAudios = getValueForId(RightId.SEND_AUDIO);
       targetRestrict.permissions.canSendDocuments = getValueForId(RightId.SEND_DOCS);
@@ -1390,10 +1390,10 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         if (getArgumentsStrict().mode == MODE_ADMIN_PROMOTION) {
           return targetAdmin.rights.canPostMessages;
         } else {
-          return canViewMessages && targetRestrict.permissions.canSendMessages;
+          return canViewMessages && targetRestrict.permissions.canSendBasicMessages;
         }
       case RightId.EMBED_LINKS:
-        return canViewMessages && targetRestrict.permissions.canSendMessages && targetRestrict.permissions.canAddWebPagePreviews;
+        return canViewMessages && targetRestrict.permissions.canSendBasicMessages && targetRestrict.permissions.canAddWebPagePreviews;
       case RightId.SEND_AUDIO:
         return canViewMessages && targetRestrict.permissions.canSendAudios;
       case RightId.SEND_DOCS:
@@ -1426,7 +1426,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         if (getArgumentsStrict().mode == MODE_ADMIN_PROMOTION) {
           return targetAdmin.rights.canPinMessages || checkDefaultRight(id);
         } else {
-          return canViewMessages && targetRestrict.permissions.canPinMessages; // FIXME? targetRestrict.permissions.canSendMessages
+          return canViewMessages && targetRestrict.permissions.canPinMessages; // FIXME? targetRestrict.permissions.canSendBasicMessages
         }
       case RightId.DELETE_MESSAGES:
         return targetAdmin.rights.canDeleteMessages;

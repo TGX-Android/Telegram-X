@@ -176,7 +176,7 @@ public class TD {
       case RightId.READ_MESSAGES:
         return true;
       case RightId.SEND_BASIC_MESSAGES:
-        return permissions.canSendMessages;
+        return permissions.canSendBasicMessages;
       case RightId.SEND_AUDIO:
         return permissions.canSendAudios;
       case RightId.SEND_DOCS:
@@ -1567,7 +1567,7 @@ public class TD {
 
   public static boolean hasRestrictions (TdApi.ChatPermissions a, TdApi.ChatPermissions defaultPermissions) {
     return
-      (a.canSendMessages != defaultPermissions.canSendMessages && defaultPermissions.canSendMessages) ||
+      (a.canSendBasicMessages != defaultPermissions.canSendBasicMessages && defaultPermissions.canSendBasicMessages) ||
       (a.canSendAudios != defaultPermissions.canSendAudios && defaultPermissions.canSendAudios) ||
       (a.canSendDocuments != defaultPermissions.canSendDocuments && defaultPermissions.canSendDocuments) ||
       (a.canSendPhotos != defaultPermissions.canSendPhotos && defaultPermissions.canSendPhotos) ||
@@ -3271,18 +3271,6 @@ public class TD {
       }
     }
     return false;
-  }
-
-  public static boolean hasWritePermission (TdApi.BasicGroup basicGroup) {
-    return basicGroup != null && basicGroup.isActive && hasWritePermission(basicGroup.status);
-  }
-
-  public static boolean hasWritePermission (TdApi.ChatMemberStatus status) {
-    return !isNotInChat(status) && (status.getConstructor() != TdApi.ChatMemberStatusRestricted.CONSTRUCTOR || hasWritePermission(((TdApi.ChatMemberStatusRestricted) status).permissions));
-  }
-
-  public static boolean hasWritePermission (TdApi.ChatPermissions permissions) {
-    return permissions != null && permissions.canSendMessages;
   }
 
   public static boolean isLocalLanguagePackId (String languagePackId) {

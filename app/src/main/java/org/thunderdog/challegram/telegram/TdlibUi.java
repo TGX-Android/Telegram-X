@@ -2774,7 +2774,7 @@ public class TdlibUi extends Handler {
         case TdApi.LoginUrlInfoOpen.CONSTRUCTOR: {
           TdApi.LoginUrlInfoOpen open = (TdApi.LoginUrlInfoOpen) externalLinkInfoResult;
           if (options != null) {
-            if (open.skipConfirm) {
+            if (open.skipConfirmation) {
               options.disableOpenPrompt();
             }
             options.displayUrl(originalUrl);
@@ -4435,7 +4435,7 @@ public class TdlibUi extends Handler {
     });
   }
 
-  public void showChatOptions (ViewController<?> context, final TdApi.ChatList chatList, final long chatId, final ThreadInfo messageThread, boolean canSelect, boolean isSelected, @Nullable Runnable onSelect) {
+  public void showChatOptions (ViewController<?> context, final TdApi.ChatList chatList, final long chatId, final ThreadInfo messageThread, final TdApi.MessageSource source, boolean canSelect, boolean isSelected, @Nullable Runnable onSelect) {
     TdApi.Chat chat = tdlib.chat(chatId);
     if (chat == null)
       return;
@@ -4552,25 +4552,25 @@ public class TdlibUi extends Handler {
         onSelect.run();
         return true;
       }
-      return processChatAction(context, chatList, chatId, messageThread, id, null);
+      return processChatAction(context, chatList, chatId, messageThread, source, id, null);
     });
   }
 
-  private void showPinUnpinConfirm (ViewController<?> context, final TdApi.ChatList chatList, final long chatId, @Nullable Runnable after) {
+  private void showPinUnpinConfirm (ViewController<?> context, final TdApi.ChatList chatList, final long chatId, TdApi.MessageSource source, @Nullable Runnable after) {
     boolean isPinned = tdlib.chatPinned(chatList, chatId);
     context.showOptions(tdlib.chatTitle(chatId), new int[] {isPinned ? R.id.btn_unpinChat : R.id.btn_pinChat, R.id.btn_cancel}, new String[] {Lang.getString(isPinned ? R.string.UnpinFromTop : R.string.PinToTop), Lang.getString(R.string.Cancel)}, null, new int[] {isPinned ? R.drawable.deproko_baseline_pin_undo_24 : R.drawable.deproko_baseline_pin_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
       if (id == R.id.btn_unpinChat || id == R.id.btn_pinChat) {
-        processChatAction(context, chatList, chatId, null, id, after);
+        processChatAction(context, chatList, chatId, null, source, id, after);
       }
       return true;
     });
   }
 
-  private void showArchiveUnarchiveChat (ViewController<?> context, final TdApi.ChatList chatList, final long chatId, @Nullable Runnable after) {
+  private void showArchiveUnarchiveChat (ViewController<?> context, final TdApi.ChatList chatList, final long chatId, TdApi.MessageSource source, @Nullable Runnable after) {
     boolean isArchived = tdlib.chatArchived(chatId);
     context.showOptions(tdlib.chatTitle(chatId), new int[] {isArchived ? R.id.btn_unarchiveChat : R.id.btn_archiveChat, R.id.btn_cancel}, new String[] {Lang.getString(isArchived ? R.string.UnarchiveChat : R.string.ArchiveChat), Lang.getString(R.string.Cancel)}, null, new int[] {isArchived ? R.drawable.baseline_unarchive_24 : R.drawable.baseline_archive_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
       if (id == R.id.btn_unarchiveChat || id == R.id.btn_archiveChat) {
-        processChatAction(context, chatList, chatId, null, id, after);
+        processChatAction(context, chatList, chatId, null, source, id, after);
       }
       return true;
     });
@@ -4725,7 +4725,7 @@ public class TdlibUi extends Handler {
     });
   }
 
-  public boolean processChatAction (ViewController<?> context, final TdApi.ChatList chatList, final long chatId, final @Nullable ThreadInfo messageThread, final int actionId, @Nullable Runnable after) {
+  public boolean processChatAction (ViewController<?> context, final TdApi.ChatList chatList, final long chatId, final @Nullable ThreadInfo messageThread, final TdApi.MessageSource source, final int actionId, @Nullable Runnable after) {
     TdApi.Chat chat = tdlib.chat(chatId);
     if (chat == null)
       return false;
@@ -4734,7 +4734,7 @@ public class TdlibUi extends Handler {
         tdlib.ui().toggleMute(context, chatId, false, after);
         return true;
       case R.id.btn_pinUnpinChat:
-        showPinUnpinConfirm(context, chatList, chatId, after);
+        showPinUnpinConfirm(context, chatList, chatId, source, after);
         return true;
       case R.id.btn_unpinChat:
         tdlib.client().send(new TdApi.ToggleChatIsPinned(chatList, chatId, false), tdlib.okHandler(after));
@@ -4743,7 +4743,7 @@ public class TdlibUi extends Handler {
         tdlib.client().send(new TdApi.ToggleChatIsPinned(chatList, chatId, true), tdlib.okHandler(after));
         return true;
       case R.id.btn_archiveUnarchiveChat:
-        showArchiveUnarchiveChat(context, chatList, chatId, after);
+        showArchiveUnarchiveChat(context, chatList, chatId, source, after);
         return true;
       case R.id.btn_archiveChat:
         tdlib.client().send(new TdApi.AddChatToList(chatId, ChatPosition.CHAT_LIST_ARCHIVE), tdlib.okHandler(after));
@@ -4753,9 +4753,9 @@ public class TdlibUi extends Handler {
         return true;
       case R.id.btn_markChatAsRead:
         if (messageThread != null) {
-          tdlib.markChatAsRead(messageThread.getChatId(), messageThread.getMessageThreadId(), after);
+          tdlib.markChatAsRead(messageThread.getChatId(), source, false, after);
         } else {
-          tdlib.markChatAsRead(chat.id, 0, after);
+          tdlib.markChatAsRead(chat.id, source, true, after);
         }
         return true;
       case R.id.btn_markChatAsUnread:
@@ -4769,7 +4769,7 @@ public class TdlibUi extends Handler {
     }
   }
 
-  public final ForceTouchView.ActionListener createSimpleChatActions (final ViewController<?> context, final TdApi.ChatList chatList, final long chatId, final @Nullable ThreadInfo messageThread, IntList ids, IntList icons, StringList strings, final boolean allowInteractions, final boolean canSelect, final boolean isSelected, @Nullable Runnable onSelect) {
+  public final ForceTouchView.ActionListener createSimpleChatActions (final ViewController<?> context, final TdApi.ChatList chatList, final long chatId, final @Nullable ThreadInfo messageThread, final TdApi.MessageSource source, IntList ids, IntList icons, StringList strings, final boolean allowInteractions, final boolean canSelect, final boolean isSelected, @Nullable Runnable onSelect) {
     final TdApi.Chat chat = tdlib.chat(chatId);
     if (chat == null) {
       return null;
@@ -4836,7 +4836,7 @@ public class TdlibUi extends Handler {
         if (actionId == R.id.btn_selectChat) {
           onSelect.run();
         } else {
-          processChatAction(context, chatList, chatId, messageThread, actionId, null);
+          processChatAction(context, chatList, chatId, messageThread, source, actionId, null);
         }
       }
 

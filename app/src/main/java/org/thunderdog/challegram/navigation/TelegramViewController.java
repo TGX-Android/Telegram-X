@@ -285,7 +285,7 @@ public abstract class TelegramViewController<T> extends ViewController<T> {
             case R.id.btn_markChatAsUnread:
             case R.id.btn_removeChatFromListOrClearHistory:
             case R.id.btn_removePsaChatFromList: {
-              tdlib.ui().processChatAction(TelegramViewController.this, chat.getList(), chat.getChatId(), chat.getMessageThread(), actionId, null);
+              tdlib.ui().processChatAction(TelegramViewController.this, chat.getList(), chat.getChatId(), chat.getMessageThread(), new TdApi.MessageSourceSearch(), actionId, null);
               break;
             }
             case R.id.btn_selectChat: {

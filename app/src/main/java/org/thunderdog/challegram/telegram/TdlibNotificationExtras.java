@@ -179,7 +179,7 @@ public class TdlibNotificationExtras {
     if (areMentions) {
       tdlib.client().send(new TdApi.ReadAllChatMentions(chatId), tdlib.silentHandler());
     } else {
-      tdlib.readMessages(chatId, messageThreadId, messageIds);
+      tdlib.readMessages(chatId, messageIds, new TdApi.MessageSourceNotification());
     }
     hide(tdlib);
     if (needToast) {

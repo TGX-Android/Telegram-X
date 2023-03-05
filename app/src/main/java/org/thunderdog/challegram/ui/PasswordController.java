@@ -1222,6 +1222,15 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     if (this.inProgress != inProgress) {
       this.inProgress = inProgress;
       nextButton.setInProgress(inProgress);
+      if (needStackLocking()) {
+        if (isFocused()) {
+          setStackLocked(inProgress);
+        } else {
+          addOneShotFocusListener(() ->
+            setStackLocked(this.inProgress)
+          );
+        }
+      }
     }
   }
 
@@ -1443,9 +1452,6 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     }
 
     setInProgress(true);
-    if (needStackLocking()) {
-      setStackLocked(true);
-    }
 
     TdApi.Function<?> function;
     switch (mode) {
@@ -1467,9 +1473,6 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     tdlib.client().send(function, object -> tdlib.ui().post(() -> {
       if (!isDestroyed()) {
         setInProgress(false);
-        if (needStackLocking()) {
-          setStackLocked(false);
-        }
         switch (object.getConstructor()) {
           case TdApi.Ok.CONSTRUCTOR: {
             switch (mode) {

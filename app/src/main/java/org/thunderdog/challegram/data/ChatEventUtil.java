@@ -547,7 +547,7 @@ public class ChatEventUtil {
           if (memberId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR) {
             appendRight(b, R.string.EventLogRestrictedReadMessages, oldCanReadMessages, newCanReadMessages, false);
           }
-          appendRight(b, R.string.EventLogRestrictedSendMessages, oldBan != null ? oldBan.permissions.canSendMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canSendMessages : newCanReadMessages, false);
+          appendRight(b, R.string.EventLogRestrictedSendMessages, oldBan != null ? oldBan.permissions.canSendBasicMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canSendBasicMessages : newCanReadMessages, false);
           appendRight(b, R.string.EventLogRestrictedSendPhoto, oldBan != null ? oldBan.permissions.canSendPhotos : oldCanReadMessages, newBan != null ? newBan.permissions.canSendPhotos : newCanReadMessages, false);
           appendRight(b, R.string.EventLogRestrictedSendVideo, oldBan != null ? oldBan.permissions.canSendVideos : oldCanReadMessages, newBan != null ? newBan.permissions.canSendVideos : newCanReadMessages, false);
           appendRight(b, R.string.EventLogRestrictedSendAudio, oldBan != null ? oldBan.permissions.canSendAudios : oldCanReadMessages, newBan != null ? newBan.permissions.canSendAudios : newCanReadMessages, false);
@@ -668,7 +668,7 @@ public class ChatEventUtil {
 
         TdApi.ChatEventPermissionsChanged permissions = (TdApi.ChatEventPermissionsChanged) event.action;
 
-        appendRight(b, R.string.EventLogPermissionSendMessages, permissions.oldPermissions.canSendMessages, permissions.newPermissions.canSendMessages, true);
+        appendRight(b, R.string.EventLogPermissionSendMessages, permissions.oldPermissions.canSendBasicMessages, permissions.newPermissions.canSendBasicMessages, true);
         appendRight(b, R.string.EventLogPermissionSendPhoto, permissions.oldPermissions.canSendPhotos, permissions.newPermissions.canSendPhotos, true);
         appendRight(b, R.string.EventLogPermissionSendVideo, permissions.oldPermissions.canSendVideos, permissions.newPermissions.canSendVideos, true);
         appendRight(b, R.string.EventLogPermissionSendAudio, permissions.oldPermissions.canSendAudios, permissions.newPermissions.canSendAudios, true);
