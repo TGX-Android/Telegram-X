@@ -2715,7 +2715,7 @@
   <string name="email_LoginTooLong_text">My Internet service provider is: (please enter the name)\n\nI\'ve just installed the application and tried to start messaging, but Telegram X is unable to connect to the server. Please help.\n\nApp version: %1$s\nLanguage: %2$s\nAwait time: %3$s\nSystem Language: %4$s\nSystem Version: %5$s</string>
 
   <string name="email_LoginDeadEnd_subject">Telegram X SMS not sent: %1$s</string>
-  <string name="email_LoginDeadEnd_text">My Internet service provider is: (please enter the name)\n\nI\'m trying to use my mobile phone number: %1$s\nBut Telegram could not send me SMS with the confirmation code. Please help.\n\nBelow are all details that might help understanding the issue:\n%2$s\nError: %3$s</string>
+  <string name="email_LoginDeadEnd_text">My Internet service provider is: (please enter the name)\n\nI\'m trying to use my mobile phone number: %1$s\nBut Telegram could not send me SMS with the confirmation code. Please help.\n\nBelow are all details that might help understanding the issue.\nError: %3$s\n%2$s</string>
 
   <string name="email_InvalidNumber_subject">Invalid phone number: %1$s</string>
   <string name="email_InvalidNumber_text">My mobile phone operator: (please enter the name)\nI\'m trying to use my mobile phone number: %1$s\nBut Telegram says it\'s invalid. Please help.</string>
