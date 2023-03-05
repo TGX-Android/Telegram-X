@@ -516,7 +516,7 @@ public class Settings {
       if (flags != newFlags) {
         _settings = newFlags;
         pmc.putInt(settingsKey, newFlags);
-        apply();
+        apply(false);
         return true;
       }
       return false;
@@ -539,7 +539,7 @@ public class Settings {
         pmc.remove(maxSizeKey);
       else
         pmc.putLong(maxSizeKey, bytes);
-      apply();
+      apply(false);
     }
 
     public List<String> getModules () {
@@ -645,7 +645,7 @@ public class Settings {
       return TDLIB_LOG_VERBOSITY_UNKNOWN;
     }
 
-    public void apply () {
+    public void apply (boolean async) {
       if (UI.TEST_MODE == UI.TEST_MODE_AUTO)
         return;
       int globalVerbosityLevel = DEFAULT_LOG_GLOBAL_VERBOSITY_LEVEL;
@@ -680,7 +680,14 @@ public class Settings {
       }
       TdApi.Object result = Client.execute(new TdApi.SetLogStream(stream));
       if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
-        Tracer.onTdlibFatalError(null, TdApi.SetLogStream.class, (TdApi.Error) result, new RuntimeException().getStackTrace());
+        Runnable act = () -> {
+          Tracer.onTdlibFatalError(null, TdApi.SetLogStream.class, (TdApi.Error) result, new RuntimeException().getStackTrace());
+        };
+        if (async) {
+          UI.post(act);
+        } else {
+          act.run();
+        }
       }
     }
   }
@@ -793,7 +800,7 @@ public class Settings {
     trackInstalledApkVersion();
     Log.i("Opened database in %dms", SystemClock.uptimeMillis() - ms);
     checkPendingPasscodeLocks();
-    applyLogSettings();
+    applyLogSettings(true);
   }
 
   // Schedule
@@ -3165,8 +3172,8 @@ public class Settings {
     return tdlibLogSettings.isEnabled() || Log.getLogLevel() > Log.LEVEL_ASSERT;
   }
 
-  public void applyLogSettings () {
-    tdlibLogSettings.apply();
+  public void applyLogSettings (boolean async) {
+    tdlibLogSettings.apply(async);
   }
 
   public void disableAllLogs () {

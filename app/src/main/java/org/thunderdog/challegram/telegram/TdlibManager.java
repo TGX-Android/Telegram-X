@@ -2240,7 +2240,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
         return -1;
     }
 
-    Settings.instance().applyLogSettings();
+    Settings.instance().applyLogSettings(false);
 
     return removedSize;
   }

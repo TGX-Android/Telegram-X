@@ -1233,7 +1233,7 @@
   <string name="SentSmsCode">We\'ve sent an SMS with an activation code to your phone **%1$s**.</string>
   <string name="SendingSmsCode">We are sending an SMS with an activation code to your phone **%1$s**…</string>
   <string name="SentAppCode">We\'ve sent the code to the **Telegram** app on your other device.</string>
-  <string name="SentEmailCode">We\'ve sent the code to your email **%1$s**.</string>
+  <string name="SentEmailCode">We\'ve sent the code to your email %1$s.</string>
   <string name="SentCallOnly">We\'ve sent an activation call to your phone **%1$s**.\n\nDon\'t accept the call, Telegram will process everything automatically.</string>
   <string name="SentCallCode">Calling your phone **%1$s** to dictate the code.</string>
   <string name="SentMissedCall">Within next few seconds you should receive a short call from a phone number which starts with **%1$s**.</string>
@@ -4551,4 +4551,5 @@
 
   <string name="SentFragmentCode">Check the Anonymous Numbers section on Fragment to get the code.</string>
   <string name="OpenFragment">Open Fragment</string>
+  <string name="AnonymousNumbers">&#127988;&#8205;&#9760;&#65039; Anonymous Numbers</string>
 </resources>
