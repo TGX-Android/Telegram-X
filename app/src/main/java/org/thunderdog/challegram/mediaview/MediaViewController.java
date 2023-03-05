@@ -4937,7 +4937,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
               int count = selectDelegate != null ? selectDelegate.getSelectedMediaCount() : 1;
               hapticItems.add(new HapticMenuHelper.MenuItem(R.id.btn_sendAsFile, count <= 1 ? Lang.getString(onlyVideos ? R.string.SendOriginal : R.string.SendAsFile) : Lang.plural(onlyVideos ? R.string.SendXOriginals : R.string.SendAsXFiles, count), R.drawable.baseline_insert_drive_file_24).setOnClickListener(v -> {
                 if (v.getId() == R.id.btn_sendAsFile) {
-                  send(Td.newSendOptions(), false, true);
+                  send(sendButton, Td.newSendOptions(), false, true);
                 }
               }).bindTutorialFlag(Settings.TUTORIAL_SEND_AS_FILE));
             }
@@ -4947,7 +4947,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
               }));
             }
           }, (sendOptions, disableMarkdown) -> {
-            send(sendOptions, disableMarkdown, false);
+            send(sendButton, sendOptions, disableMarkdown, false);
           }, getForcedTheme()).attachToView(sendButton);
         }
 
@@ -7854,7 +7854,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         if (currentSection != SECTION_CAPTION) {
           changeSection(SECTION_CAPTION, MODE_OK);
         } else {
-          send(Td.newSendOptions(), false, false);
+          send(v, Td.newSendOptions(), false, false);
         }
         break;
       }
@@ -8138,20 +8138,17 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     return SEND_MODE_NONE;
   }
 
-  public void send (TdApi.MessageSendOptions initialSendOptions, boolean disableMarkdown, boolean asFiles) {
+  public void send (View view, TdApi.MessageSendOptions initialSendOptions, boolean disableMarkdown, boolean asFiles) {
     if (sendDelegate == null) {
       return;
     }
 
     if (initialSendOptions.schedulingState == null && getArgumentsStrict().areOnlyScheduled) {
       tdlib.ui().showScheduleOptions(this, getOutputChatId(), false, (modifiedSendOptions, disableMarkdown1) -> {
-        send(modifiedSendOptions, disableMarkdown, asFiles);
+        send(view, modifiedSendOptions, disableMarkdown, asFiles);
       }, initialSendOptions, getForcedTheme());
       return;
     }
-
-    forceAnimationType = ANIMATION_TYPE_FADE;
-    isMediaSent = true;
 
     ArrayList<ImageFile> imageFiles = selectDelegate != null ? selectDelegate.getSelectedMediaItems(true) : null;
 
@@ -8162,9 +8159,12 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       imageFiles.add(stack.getCurrent().getSourceGalleryFile());
     }
 
-    sendDelegate.sendSelectedItems(imageFiles, initialSendOptions, disableMarkdown, asFiles);
-    setUIBlocked(true);
-    popupView.hideWindow(true);
+    if (sendDelegate.sendSelectedItems(view, imageFiles, initialSendOptions, disableMarkdown, asFiles)) {
+      forceAnimationType = ANIMATION_TYPE_FADE;
+      isMediaSent = true;
+      setUIBlocked(true);
+      popupView.hideWindow(true);
+    }
   }
 
   private boolean isProfileStack () {

@@ -3103,7 +3103,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         if (tdlib.isSupergroupChat(chat) && status != null && TD.canReturnToChat(status)) {
           showActionJoinChatButton();
         } else if (messageThread != null) {
-          CharSequence restrictionStatus = tdlib.getMessageRestrictionText(chat);
+          CharSequence restrictionStatus = tdlib.getBasicMessageRestrictionText(chat);
           if (restrictionStatus != null) {
             showActionButton(restrictionStatus, ACTION_EMPTY, false);
           } else {
@@ -3115,7 +3115,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       } else if (tdlib.isBotChat(chat) && chat.lastMessage == null) {
         showActionBotButton();
       } else {
-        CharSequence restrictionStatus = tdlib.getMessageRestrictionText(chat);
+        CharSequence restrictionStatus = tdlib.getBasicMessageRestrictionText(chat);
         if (restrictionStatus != null) {
           showActionButton(restrictionStatus, ACTION_EMPTY, false);
         } else {
@@ -8472,8 +8472,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public boolean showPhotoVideoRestriction (View view) { // TODO separate photos & videos
-    Tdlib.RestrictionStatus photosStatus = tdlib.getRestrictionStatus(chat, RightId.SEND_PHOTOS);
-    Tdlib.RestrictionStatus videosStatus = tdlib.getRestrictionStatus(chat, RightId.SEND_VIDEOS);
+    return showPhotoVideoRestriction(view, true, true);
+  }
+
+  public boolean showPhotoVideoRestriction (View view, boolean checkPhotos, boolean checkVideos) { // TODO separate photos & videos
+    Tdlib.RestrictionStatus photosStatus = checkPhotos ? tdlib.getRestrictionStatus(chat, RightId.SEND_PHOTOS) : null;
+    Tdlib.RestrictionStatus videosStatus = checkVideos ? tdlib.getRestrictionStatus(chat, RightId.SEND_VIDEOS) : null;
     if (photosStatus == null && videosStatus == null) {
       return false;
     }
@@ -8488,20 +8492,28 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return showRestriction(view, RightId.SEND_PHOTOS, R.string.ChatDisabledMedia, R.string.ChatRestrictedMedia, R.string.ChatRestrictedMediaUntil);
   }
 
-  public boolean showRestriction (View view, int rightId, int defaultRes, int specificRes, int specificUntilRes) {
-    if (view != null) {
-      CharSequence restrictionText = tdlib.getRestrictionText(chat, rightId, defaultRes, specificRes, specificUntilRes);
-      if (restrictionText != null) {
-        if (view == sendButton || view == recordButton) {
-          showBottomHint(restrictionText, true);
-        } else {
-          context().tooltipManager().builder(view).icon(R.drawable.baseline_warning_24).controller(this).show(tdlib, restrictionText).hideDelayed();
-        }
-        return true;
+  public boolean showRestriction (View view, @RightId int rightId) {
+    CharSequence text = tdlib.getDefaultRestrictionText(chat, rightId);
+    return showRestriction(view, text);
+  }
+
+  public boolean showRestriction (View view, CharSequence restrictionText) {
+    if (restrictionText != null) {
+      if (view == sendButton || view == recordButton) {
+        showBottomHint(restrictionText, true);
+      } else if (view == null) {
+        UI.showToast(restrictionText, Toast.LENGTH_SHORT);
+      } else {
+        context().tooltipManager().builder(view).icon(R.drawable.baseline_warning_24).controller(this).show(tdlib, restrictionText).hideDelayed();
       }
-      return false;
+      return true;
     }
-    return tdlib.showRestriction(chat, rightId, defaultRes, specificRes, specificUntilRes);
+    return false;
+  }
+
+  public boolean showRestriction (View view, int rightId, int defaultRes, int specificRes, int specificUntilRes) {
+    CharSequence restrictionText = tdlib.buildRestrictionText(chat, rightId, defaultRes, specificRes, specificUntilRes);
+    return showRestriction(view, restrictionText);
   }
 
   private boolean sendContent (View view, int rightId, int defaultRes, int specificRes, int specificUntilRes, FutureLong replyToMessageId, TdApi.MessageSendOptions initialSendOptions, Future<TdApi.InputMessageContent> content) {
@@ -9392,7 +9404,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             MediaStack stack = new MediaStack(context, tdlib);
             stack.set(new MediaItem(context, tdlib, galleryFile));
             MediaViewController controller = new MediaViewController(context, tdlib);
-            controller.setArguments(MediaViewController.Args.fromGallery(this, null, null, (images, options, disableMarkdown, asFiles) -> sendPhotosAndVideosCompressed(new ImageGalleryFile[] {galleryFile}, false, options, disableMarkdown, asFiles), stack, areScheduledOnly()).setReceiverChatId(getChatId()).setDeleteOnExit(isSecretChat() || !Settings.instance().getNewSetting(Settings.SETTING_FLAG_CAMERA_KEEP_DISCARDED_MEDIA)));
+            controller.setArguments(MediaViewController.Args.fromGallery(this, null, null, (view, images, options, disableMarkdown, asFiles) -> sendPhotosAndVideosCompressed(new ImageGalleryFile[] {galleryFile}, false, options, disableMarkdown, asFiles), stack, areScheduledOnly()).setReceiverChatId(getChatId()).setDeleteOnExit(isSecretChat() || !Settings.instance().getNewSetting(Settings.SETTING_FLAG_CAMERA_KEEP_DISCARDED_MEDIA)));
             controller.open();
           });
         }
@@ -9495,13 +9507,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
-  public void sendCompressed (final ImageGalleryFile image, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles) {
-    sendPhotosAndVideosCompressed(new ImageGalleryFile[] {image}, false, options, disableMarkdown, asFiles);
+  public boolean sendCompressed (final ImageGalleryFile image, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles) {
+    return sendPhotosAndVideosCompressed(new ImageGalleryFile[] {image}, false, options, disableMarkdown, asFiles);
   }
 
-  public void sendPhotosAndVideosCompressed (final ImageGalleryFile[] files, final boolean needGroupMedia, final TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles) {
+  public boolean sendPhotosAndVideosCompressed (final ImageGalleryFile[] files, final boolean needGroupMedia, final TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles) {
     if (files == null || files.length == 0 || !hasWritePermission()) {
-      return;
+      return false;
     }
 
     final long chatId = chat.id;
@@ -9584,6 +9596,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
         tdlib.client().send(function, tdlib.messageHandler());
       }
     });
+
+    return true;
   }
 
   /*private void uploadFile (boolean isSecretChat, TdApi.InputMessageContent content) {

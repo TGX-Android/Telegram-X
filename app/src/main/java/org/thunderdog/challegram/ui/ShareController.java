@@ -1696,10 +1696,10 @@ public class ShareController extends TelegramViewController<ShareController.Args
     TdApi.Chat chat = tdlib.chatStrict(chatId);
     switch (mode) {
       case MODE_TEXT: {
-        return tdlib.getMessageRestrictionText(chat);
+        return tdlib.getBasicMessageRestrictionText(chat);
       }
       case MODE_FILE: {
-        return tdlib.getMediaRestrictionText(chat, RightId.SEND_DOCS);
+        return tdlib.getDefaultRestrictionText(chat, RightId.SEND_DOCS);
       }
       case MODE_STICKER: {
         return tdlib.getStickerRestrictionText(chat);

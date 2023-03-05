@@ -40,7 +40,6 @@ import android.text.style.StyleSpan;
 import android.text.style.TypefaceSpan;
 import android.text.style.URLSpan;
 import android.text.style.UnderlineSpan;
-import android.util.Size;
 import android.util.SparseIntArray;
 import android.view.View;
 import android.widget.Toast;
@@ -1314,6 +1313,22 @@ public class TD {
     }
   }
 
+  public static class Size {
+    public final int width, height;
+
+    public Size (int width, int height) {
+      this.width = width;
+      this.height = height;
+    }
+
+    public int getWidth () {
+      return width;
+    }
+
+    public int getHeight () {
+      return height;
+    }
+  }
   public static Size getFinalResolution (TdApi.Document document, @Nullable BitmapFactory.Options options, boolean isRotated) {
     int width, height;
     if (options != null && Math.min(options.outWidth, options.outHeight) > 0) {

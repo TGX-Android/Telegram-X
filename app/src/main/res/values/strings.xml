@@ -3366,6 +3366,7 @@
   <string name="ChatDisabledGifs">Only admins can send GIFs in this group</string>
   <string name="ChatDisabledBots">Only admins can use inline bots in this group</string>
   <string name="ChatDisabledStickers">Only admins can send stickers in this group</string>
+  <string name="ChatDisabledGames">Only admins can send stickers in this group</string>
   <string name="ChatDisabledDice">Only admins can roll a die in this group. Hold to send it as an emoji.</string>
   <string name="ChatDisabledDart">Only admins can play darts in this group. Hold to send it as an emoji.</string>
   <string name="ChatDisabledMedia">Only admins can send media in this group</string>
@@ -3383,6 +3384,8 @@
   <string name="ChatRestrictedGifsUntil">Admins have restricted you from sending GIFs in this group until %1$s</string>
   <string name="ChatRestrictedBots">The admins of this group have restricted your ability to send inline content.</string>
   <string name="ChatRestrictedBotsUntil">The admins of this group have restricted your ability to send inline content until %1$s</string>
+  <string name="ChatRestrictedGames">The admins of this group have restricted your ability to start games.</string>
+  <string name="ChatRestrictedGamesUntil">The admins of this group have restricted your ability to start games until %1$s</string>
   <string name="ChatRestrictedStickers">Admins have restricted you from sending stickers in this group</string>
   <string name="ChatRestrictedStickersUntil">Admins have restricted you from sending stickers in this group until %1$s</string>
   <string name="ChatRestrictedDice">Admins have restricted you from rolling a die in this group. Hold to send it as an emoji.</string>

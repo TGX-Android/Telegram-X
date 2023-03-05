@@ -1087,12 +1087,18 @@ public class MediaLayout extends FrameLayoutFix implements
     });
   }
 
-  public void sendPhotosOrVideos (ArrayList<ImageFile> images, boolean areRemote, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles) {
+  public boolean sendPhotosOrVideos (View view, ArrayList<ImageFile> images, boolean areRemote, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles, boolean disableAnimation) {
     if (images == null || images.isEmpty()) {
-      return;
+      return false;
     }
     // ArrayList<String> results = new ArrayList<>(images.size());
     if (areRemote) {
+      if (target != null) {
+        CharSequence text = target.tdlib().getInlineRestrictionText(target.getChat());
+        if (target.showRestriction(view, text)) {
+          return false;
+        }
+      }
       boolean first = true;
       for (ImageFile rawFile : images) {
         String resultId;
@@ -1109,40 +1115,61 @@ public class MediaLayout extends FrameLayoutFix implements
         }
         first = false;
       }
+    } else {
+      ArrayList<ImageGalleryFile> galleryFiles = new ArrayList<>(images.size());
 
-      hide(true);
-      return;
-    }
+      boolean first = true;
 
-    ArrayList<ImageGalleryFile> galleryFiles = new ArrayList<>(images.size());
-
-    boolean first = true;
-    for (ImageFile rawFile : images) {
-      if (!(rawFile instanceof ImageGalleryFile)) {
-        throw new IllegalArgumentException("rawFile instanceof " + rawFile.getClass().getName());
-      }
-      ImageGalleryFile galleryFile = (ImageGalleryFile) rawFile;
-      if (galleryFile.getFilePath() != null) {
-        galleryFiles.add(galleryFile);
-      }
-      if (callback != null && callback instanceof MediaGalleryCallback) {
-        if (galleryFile.isVideo()) {
-          ((MediaGalleryCallback) callback).onSendVideo(galleryFile, first);
-        } else {
-          ((MediaGalleryCallback) callback).onSendPhoto(galleryFile, first);
+      if (target != null) {
+        boolean havePhotos = false;
+        boolean haveVideos = false;
+        for (ImageFile rawFile : images) {
+          if (!(rawFile instanceof ImageGalleryFile)) {
+            throw new IllegalArgumentException("rawFile instanceof " + rawFile.getClass().getName());
+          }
+          ImageGalleryFile galleryFile = (ImageGalleryFile) rawFile;
+          if (galleryFile.isVideo()) {
+            haveVideos = true;
+          } else {
+            havePhotos = true;
+          }
+          if (havePhotos && haveVideos) {
+            break;
+          }
+        }
+        if (target.showPhotoVideoRestriction(view, havePhotos, haveVideos)) {
+          return false;
         }
       }
-      first = false;
+      for (ImageFile rawFile : images) {
+        ImageGalleryFile galleryFile = (ImageGalleryFile) rawFile;
+        if (galleryFile.getFilePath() != null) {
+          galleryFiles.add(galleryFile);
+        }
+        if (callback != null && callback instanceof MediaGalleryCallback) {
+          if (galleryFile.isVideo()) {
+            ((MediaGalleryCallback) callback).onSendVideo(galleryFile, first);
+          } else {
+            ((MediaGalleryCallback) callback).onSendPhoto(galleryFile, first);
+          }
+        }
+        first = false;
+      }
+
+      if (target != null) {
+        ImageGalleryFile[] result = new ImageGalleryFile[galleryFiles.size()];
+        galleryFiles.toArray(result);
+        Settings.instance().setNeedGroupMedia(needGroupMedia);
+        target.sendPhotosAndVideosCompressed(result, needGroupMedia, options, disableMarkdown, asFiles);
+      }
     }
 
-    if (target != null) {
-      ImageGalleryFile[] result = new ImageGalleryFile[galleryFiles.size()];
-      galleryFiles.toArray(result);
-      Settings.instance().setNeedGroupMedia(needGroupMedia);
-      target.sendPhotosAndVideosCompressed(result, needGroupMedia, options, disableMarkdown, asFiles);
+    if (disableAnimation) {
+      forceHide();
+    } else {
+      hide(true);
     }
-
-    hide(true);
+    return true;
   }
 
   public void sendVenue (MediaLocationData place) {
@@ -1185,7 +1212,7 @@ public class MediaLayout extends FrameLayoutFix implements
     switch (v.getId()) {
       case R.id.btn_send: {
         pickDateOrProceed((sendOptions, disableMarkdown) ->
-          getCurrentController().onMultiSendPress(sendOptions, false)
+          getCurrentController().onMultiSendPress(v, sendOptions, false)
         );
         break;
       }
@@ -1310,7 +1337,7 @@ public class MediaLayout extends FrameLayoutFix implements
         List<HapticMenuHelper.MenuItem> items = tdlib().ui().fillDefaultHapticMenu(getTargetChatId(), false, getCurrentController().canRemoveMarkdown(), true);
         if (items == null)
           items = new ArrayList<>();
-        getCurrentController().addCustomItems(items);
+        getCurrentController().addCustomItems(sendButton, items);
         if (senderSendIcon != null) {
           items.add(0, senderSendIcon.createHapticSenderItem(getTargetChat()));
         }
@@ -1323,22 +1350,22 @@ public class MediaLayout extends FrameLayoutFix implements
           }
           case R.id.btn_sendNoMarkdown:
             pickDateOrProceed((sendOptions, disableMarkdown) ->
-              getCurrentController().onMultiSendPress(sendOptions, true)
+              getCurrentController().onMultiSendPress(sendButton, sendOptions, true)
             );
             break;
           case R.id.btn_sendNoSound:
             pickDateOrProceed((sendOptions, disableMarkdown) ->
-              getCurrentController().onMultiSendPress(sendOptions, false)
+              getCurrentController().onMultiSendPress(sendButton, sendOptions, false)
             );
             break;
           case R.id.btn_sendOnceOnline:
-            getCurrentController().onMultiSendPress(Td.newSendOptions(new TdApi.MessageSchedulingStateSendWhenOnline()), false);
+            getCurrentController().onMultiSendPress(sendButton, Td.newSendOptions(new TdApi.MessageSchedulingStateSendWhenOnline()), false);
             break;
           case R.id.btn_sendScheduled:
             if (target != null) {
               tdlib().ui().pickSchedulingState(target,
                 schedule ->
-                  getCurrentController().onMultiSendPress(Td.newSendOptions(schedule), false),
+                  getCurrentController().onMultiSendPress(sendButton, Td.newSendOptions(schedule), false),
                 getTargetChatId(), false, false, null, null
               );
             }

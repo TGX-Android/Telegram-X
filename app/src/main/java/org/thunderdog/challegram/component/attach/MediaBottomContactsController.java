@@ -137,7 +137,7 @@ public class MediaBottomContactsController extends MediaBottomBaseController<Voi
   }
 
   @Override
-  protected void onMultiSendPress (@NonNull TdApi.MessageSendOptions options, boolean disableMarkdown) {
+  protected void onMultiSendPress (View view, @NonNull TdApi.MessageSendOptions options, boolean disableMarkdown) {
     mediaLayout.sendContacts(adapter.getSelectedUsers(), options);
   }
 

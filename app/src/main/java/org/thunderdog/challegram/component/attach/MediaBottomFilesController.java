@@ -1191,7 +1191,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
   }
 
   @Override
-  protected void onMultiSendPress (@NonNull TdApi.MessageSendOptions options, boolean disableMarkdown) {
+  protected void onMultiSendPress (View view, @NonNull TdApi.MessageSendOptions options, boolean disableMarkdown) {
     if (selectedItems == null || selectedItems.isEmpty()) {
       return;
     }

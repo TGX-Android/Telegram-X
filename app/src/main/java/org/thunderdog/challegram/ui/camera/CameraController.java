@@ -1435,12 +1435,13 @@ public class CameraController extends ViewController<Void> implements CameraDele
     return m != null && m.isSecretChat();
   }
 
-  private void onSendMedia (ImageGalleryFile file, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles) {
+  private boolean onSendMedia (ImageGalleryFile file, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles) {
     MessagesController m = findOutputController();
     if (m != null) {
       context.forceCloseCamera();
-      m.sendCompressed(file, options, disableMarkdown, asFiles);
+      return m.sendCompressed(file, options, disableMarkdown, asFiles);
     }
+    return false;
   }
 
   @Override
@@ -1503,9 +1504,9 @@ public class CameraController extends ViewController<Void> implements CameraDele
         public ArrayList<ImageFile> getSelectedMediaItems (boolean copy) {
           return null;
         }
-      }, (images, options, disableMarkdown, asFiles) -> {
+      }, (view, images, options, disableMarkdown, asFiles) -> {
         ImageGalleryFile galleryFile = (ImageGalleryFile) images.get(0);
-        onSendMedia(galleryFile, options, disableMarkdown, asFiles);
+        return onSendMedia(galleryFile, options, disableMarkdown, asFiles);
       }, stack).setOnlyScheduled(m != null && m.areScheduledOnly());
       if (m != null) {
         args.setReceiverChatId(m.getChatId());

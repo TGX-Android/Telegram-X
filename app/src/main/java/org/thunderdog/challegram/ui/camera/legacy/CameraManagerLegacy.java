@@ -21,7 +21,6 @@ import android.hardware.Camera;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.util.Size;
 
 import androidx.annotation.AnyThread;
 import androidx.annotation.UiThread;

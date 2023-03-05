@@ -472,13 +472,13 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   }
 
   @Override
-  protected void onMultiSendPress (@NonNull TdApi.MessageSendOptions options, boolean disableMarkdown) {
+  protected void onMultiSendPress (View view, @NonNull TdApi.MessageSendOptions options, boolean disableMarkdown) {
     // TODO delete other
-    mediaLayout.sendPhotosOrVideos(adapter.getSelectedPhotosAndVideosAsList(true), showingFoundImages, options, disableMarkdown, false);
+    mediaLayout.sendPhotosOrVideos(view, adapter.getSelectedPhotosAndVideosAsList(true), showingFoundImages, options, disableMarkdown, false, false);
   }
 
   @Override
-  protected void addCustomItems (@NonNull List<HapticMenuHelper.MenuItem> hapticItems) {
+  protected void addCustomItems (View view, @NonNull List<HapticMenuHelper.MenuItem> hapticItems) {
     if (canSendAsFile()) {
       List<ImageFile> files = adapter.getSelectedPhotosAndVideosAsList(false);
       boolean allVideo = files != null;
@@ -494,7 +494,7 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
       hapticItems.add(new HapticMenuHelper.MenuItem(R.id.btn_sendAsFile, count <= 1 ? Lang.getString(allVideo ? R.string.SendOriginal : R.string.SendAsFile) : Lang.plural(allVideo ? R.string.SendXOriginals : R.string.SendAsXFiles, count), R.drawable.baseline_insert_drive_file_24).setOnClickListener(v -> {
         if (v.getId() == R.id.btn_sendAsFile) {
           mediaLayout.pickDateOrProceed((sendOptions, disableMarkdown) ->
-            mediaLayout.sendPhotosOrVideos(adapter.getSelectedPhotosAndVideosAsList(true), showingFoundImages, sendOptions, disableMarkdown, true)
+            mediaLayout.sendPhotosOrVideos(view, adapter.getSelectedPhotosAndVideosAsList(true), showingFoundImages, sendOptions, disableMarkdown, true, false)
           );
         }
       }));
@@ -532,10 +532,9 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   }
 
   @Override
-  public void sendSelectedItems (ArrayList<ImageFile> images, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles) {
+  public boolean sendSelectedItems (View view, ArrayList<ImageFile> images, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles) {
     // TODO delete other
-    mediaLayout.forceHide();
-    mediaLayout.sendPhotosOrVideos(images, false, options, disableMarkdown, asFiles);
+    return mediaLayout.sendPhotosOrVideos(view, images, false, options, disableMarkdown, asFiles, true);
   }
 
   @Override

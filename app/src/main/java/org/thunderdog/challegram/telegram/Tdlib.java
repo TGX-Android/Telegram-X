@@ -9585,63 +9585,144 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         case TdApi.MessageAnimation.CONSTRUCTOR:
           return getGifRestrictionText(chat);
         case TdApi.MessageSticker.CONSTRUCTOR:
+        case TdApi.MessageDice.CONSTRUCTOR:
           return getStickerRestrictionText(chat);
         case TdApi.MessagePoll.CONSTRUCTOR:
-          return getMediaRestrictionText(chat, RightId.SEND_POLLS);
+          return getDefaultRestrictionText(chat, RightId.SEND_POLLS);
         case TdApi.MessageAudio.CONSTRUCTOR:
-          return getMediaRestrictionText(chat, RightId.SEND_AUDIO);
+          return getDefaultRestrictionText(chat, RightId.SEND_AUDIO);
         case TdApi.MessageDocument.CONSTRUCTOR:
-          return getMediaRestrictionText(chat, RightId.SEND_DOCS);
+          return getDefaultRestrictionText(chat, RightId.SEND_DOCS);
         case TdApi.MessagePhoto.CONSTRUCTOR:
-          return getMediaRestrictionText(chat, RightId.SEND_PHOTOS);
+        case TdApi.MessageExpiredPhoto.CONSTRUCTOR:
+          return getDefaultRestrictionText(chat, RightId.SEND_PHOTOS);
         case TdApi.MessageVideo.CONSTRUCTOR:
-          return getMediaRestrictionText(chat, RightId.SEND_VIDEOS);
+        case TdApi.MessageExpiredVideo.CONSTRUCTOR:
+          return getDefaultRestrictionText(chat, RightId.SEND_VIDEOS);
         case TdApi.MessageVideoNote.CONSTRUCTOR:
-          return getMediaRestrictionText(chat, RightId.SEND_VIDEO_NOTES);
+          return getDefaultRestrictionText(chat, RightId.SEND_VIDEO_NOTES);
         case TdApi.MessageVoiceNote.CONSTRUCTOR:
-          return getMediaRestrictionText(chat, RightId.SEND_VOICE_NOTES);
+          return getDefaultRestrictionText(chat, RightId.SEND_VOICE_NOTES);
+        // RightId.SEND_BASIC_MESSAGES
+        case TdApi.MessageText.CONSTRUCTOR:
+        case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
+        case TdApi.MessageVenue.CONSTRUCTOR:
+        case TdApi.MessageLocation.CONSTRUCTOR:
+        case TdApi.MessageProximityAlertTriggered.CONSTRUCTOR:
+        case TdApi.MessageContact.CONSTRUCTOR:
+        case TdApi.MessageInvoice.CONSTRUCTOR:
+        case TdApi.MessagePaymentSuccessful.CONSTRUCTOR:
+        case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
+          return getBasicMessageRestrictionText(chat);
+
+        case TdApi.MessageGame.CONSTRUCTOR:
+        case TdApi.MessageGameScore.CONSTRUCTOR:
+          return getGameRestrictionText(chat);
+
+        // None of these
+        case TdApi.MessageCall.CONSTRUCTOR:
+        case TdApi.MessageBasicGroupChatCreate.CONSTRUCTOR:
+        case TdApi.MessageBotWriteAccessAllowed.CONSTRUCTOR:
+        case TdApi.MessageChatAddMembers.CONSTRUCTOR:
+        case TdApi.MessageChatChangePhoto.CONSTRUCTOR:
+        case TdApi.MessageChatChangeTitle.CONSTRUCTOR:
+        case TdApi.MessageChatDeleteMember.CONSTRUCTOR:
+        case TdApi.MessageChatDeletePhoto.CONSTRUCTOR:
+        case TdApi.MessageChatJoinByLink.CONSTRUCTOR:
+        case TdApi.MessageChatJoinByRequest.CONSTRUCTOR:
+        case TdApi.MessageChatSetMessageAutoDeleteTime.CONSTRUCTOR:
+        case TdApi.MessageChatSetTheme.CONSTRUCTOR:
+        case TdApi.MessageChatShared.CONSTRUCTOR:
+        case TdApi.MessageChatUpgradeFrom.CONSTRUCTOR:
+        case TdApi.MessageChatUpgradeTo.CONSTRUCTOR:
+        case TdApi.MessageContactRegistered.CONSTRUCTOR:
+        case TdApi.MessageCustomServiceAction.CONSTRUCTOR:
+        case TdApi.MessageForumTopicCreated.CONSTRUCTOR:
+        case TdApi.MessageForumTopicEdited.CONSTRUCTOR:
+        case TdApi.MessageForumTopicIsClosedToggled.CONSTRUCTOR:
+        case TdApi.MessageForumTopicIsHiddenToggled.CONSTRUCTOR:
+        case TdApi.MessageGiftedPremium.CONSTRUCTOR:
+        case TdApi.MessageInviteVideoChatParticipants.CONSTRUCTOR:
+        case TdApi.MessagePassportDataReceived.CONSTRUCTOR:
+        case TdApi.MessagePassportDataSent.CONSTRUCTOR:
+        case TdApi.MessagePinMessage.CONSTRUCTOR:
+        case TdApi.MessageScreenshotTaken.CONSTRUCTOR:
+        case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
+        case TdApi.MessageSupergroupChatCreate.CONSTRUCTOR:
+        case TdApi.MessageUnsupported.CONSTRUCTOR:
+        case TdApi.MessageUserShared.CONSTRUCTOR:
+        case TdApi.MessageVideoChatEnded.CONSTRUCTOR:
+        case TdApi.MessageVideoChatScheduled.CONSTRUCTOR:
+        case TdApi.MessageVideoChatStarted.CONSTRUCTOR:
+        case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
+        case TdApi.MessageWebAppDataSent.CONSTRUCTOR:
+        case TdApi.MessageWebsiteConnected.CONSTRUCTOR:
+          // None of these messages ever passed to this method,
+          // assuming we want to check RightId.SEND_BASIC_MESSAGES
+          return getBasicMessageRestrictionText(chat);
       }
+      throw new UnsupportedOperationException(message.content.toString());
     }
-    return getMessageRestrictionText(chat);
+    // Assuming if null is passed, we want to check if we can write text messages
+    return getBasicMessageRestrictionText(chat);
   }
 
-  public CharSequence getRestrictionText (TdApi.Chat chat, TdApi.InputMessageContent message) {
-    if (message != null) {
-      switch (message.getConstructor()) {
+  public CharSequence getRestrictionText (TdApi.Chat chat, TdApi.InputMessageContent content) {
+    if (content != null) {
+      switch (content.getConstructor()) {
         case TdApi.InputMessageAudio.CONSTRUCTOR:
-          return getMediaRestrictionText(chat, RightId.SEND_AUDIO);
+          return getDefaultRestrictionText(chat, RightId.SEND_AUDIO);
         case TdApi.InputMessageDocument.CONSTRUCTOR:
-          return getMediaRestrictionText(chat, RightId.SEND_DOCS);
+          return getDefaultRestrictionText(chat, RightId.SEND_DOCS);
         case TdApi.InputMessagePhoto.CONSTRUCTOR:
-          return getMediaRestrictionText(chat, RightId.SEND_PHOTOS);
+          return getDefaultRestrictionText(chat, RightId.SEND_PHOTOS);
         case TdApi.InputMessageVideo.CONSTRUCTOR:
-          return getMediaRestrictionText(chat, RightId.SEND_VIDEOS);
+          return getDefaultRestrictionText(chat, RightId.SEND_VIDEOS);
         case TdApi.InputMessageVideoNote.CONSTRUCTOR:
-          return getMediaRestrictionText(chat, RightId.SEND_VIDEO_NOTES);
+          return getDefaultRestrictionText(chat, RightId.SEND_VIDEO_NOTES);
         case TdApi.InputMessageVoiceNote.CONSTRUCTOR:
-          return getMediaRestrictionText(chat, RightId.SEND_VOICE_NOTES);
+          return getDefaultRestrictionText(chat, RightId.SEND_VOICE_NOTES);
         case TdApi.InputMessagePoll.CONSTRUCTOR:
-          return getMediaRestrictionText(chat, RightId.SEND_POLLS);
+          return getDefaultRestrictionText(chat, RightId.SEND_POLLS);
         // RightId.SEND_OTHER_MESSAGES
         case TdApi.InputMessageAnimation.CONSTRUCTOR:
           return getGifRestrictionText(chat);
         case TdApi.InputMessageSticker.CONSTRUCTOR:
           return getStickerRestrictionText(chat);
+        case TdApi.InputMessageDice.CONSTRUCTOR:
+          return getDiceRestrictionText(chat, ((TdApi.InputMessageDice) content).emoji);
+        case TdApi.InputMessageGame.CONSTRUCTOR:
+          return getGameRestrictionText(chat);
+
+        // RightId.SEND_BASIC_MESSAGES
+        case TdApi.InputMessageForwarded.CONSTRUCTOR: // TODO tdlib.getMessageLocally?
+        case TdApi.InputMessageInvoice.CONSTRUCTOR:
+        case TdApi.InputMessageLocation.CONSTRUCTOR:
+        case TdApi.InputMessageText.CONSTRUCTOR:
+        case TdApi.InputMessageVenue.CONSTRUCTOR:
+        case TdApi.InputMessageContact.CONSTRUCTOR:
+          return getBasicMessageRestrictionText(chat);
       }
+      throw new UnsupportedOperationException(content.toString());
     }
-    return getMessageRestrictionText(chat);
+    // Assuming if null is passed, we want to check if we can write text messages
+    return getBasicMessageRestrictionText(chat);
   }
 
-  public CharSequence getMessageRestrictionText (TdApi.Chat chat) {
-    return getRestrictionText(chat, RightId.SEND_BASIC_MESSAGES, R.string.ChatDisabledMessages, R.string.ChatRestrictedMessages, R.string.ChatRestrictedMessagesUntil);
+  public CharSequence getBasicMessageRestrictionText (TdApi.Chat chat) {
+    return getDefaultRestrictionText(chat, RightId.SEND_BASIC_MESSAGES);
   }
 
-  public CharSequence getMediaRestrictionText (TdApi.Chat chat, @RightId int mediaRightId) {
+  public CharSequence getDefaultRestrictionText (TdApi.Chat chat, @RightId int rightId) {
     final @StringRes int disabledMediaRes, restrictedMediaRes, restrictedMediaUntilRes;
+    @StringRes int specificRes = R.string.UserDisabledMessages, specificUserRes = 0;
     //noinspection SwitchIntDef
-    switch (mediaRightId) {
+    switch (rightId) {
       case RightId.SEND_BASIC_MESSAGES:
-        return getMessageRestrictionText(chat);
+        disabledMediaRes = R.string.ChatDisabledMessages;
+        restrictedMediaRes = R.string.ChatRestrictedMessages;
+        restrictedMediaUntilRes = R.string.ChatRestrictedMessagesUntil;
+        break;
       case RightId.SEND_AUDIO:
         disabledMediaRes = R.string.ChatDisabledAudio;
         restrictedMediaRes = R.string.ChatRestrictedAudio;
@@ -9666,11 +9747,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         disabledMediaRes = R.string.ChatDisabledVoice;
         restrictedMediaRes = R.string.ChatRestrictedVoice;
         restrictedMediaUntilRes = R.string.ChatRestrictedVoiceUntil;
+        specificUserRes = R.string.XRestrictedVoiceMessages;
         break;
       case RightId.SEND_VIDEO_NOTES:
         disabledMediaRes = R.string.ChatDisabledVideoNotes;
         restrictedMediaRes = R.string.ChatRestrictedVideoNotes;
         restrictedMediaUntilRes = R.string.ChatRestrictedVideoNotesUntil;
+        specificUserRes = R.string.XRestrictedVideoMessages;
         break;
       case RightId.SEND_OTHER_MESSAGES:
         disabledMediaRes = R.string.ChatDisabledOther;
@@ -9683,44 +9766,64 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         restrictedMediaUntilRes = R.string.ChatRestrictedPollsUntil;
         break;
       default:
-        throw new IllegalArgumentException(Lang.getResourceEntryName(mediaRightId));
+        throw new IllegalArgumentException(Lang.getResourceEntryName(rightId));
     }
-    return getRestrictionText(chat, mediaRightId, disabledMediaRes, restrictedMediaRes, restrictedMediaUntilRes);
-  }
-
-  public CharSequence getVoiceVideoRestricitonText (TdApi.Chat chat, boolean needVideo) {
-    return getRestrictionText(chat, needVideo ? RightId.SEND_VIDEO_NOTES : RightId.SEND_VOICE_NOTES,
-      needVideo ? R.string.ChatDisabledVideoNotes : R.string.ChatDisabledVoice,
-      needVideo ? R.string.ChatRestrictedVideoNotes : R.string.ChatRestrictedVoice,
-      needVideo ? R.string.ChatRestrictedVideoNotesUntil : R.string.ChatRestrictedVoiceUntil,
-      R.string.UserDisabledMessages,
-      needVideo ? R.string.XRestrictedVideoMessages : R.string.XRestrictedVoiceMessages
+    return buildRestrictionText(chat,
+      rightId,
+      disabledMediaRes, restrictedMediaRes, restrictedMediaUntilRes,
+      specificRes, specificUserRes
     );
   }
 
+  public CharSequence getVoiceVideoRestricitonText (TdApi.Chat chat, boolean needVideo) {
+    return getDefaultRestrictionText(chat, needVideo ? RightId.SEND_VIDEO_NOTES : RightId.SEND_VOICE_NOTES);
+  }
+
   public CharSequence getGifRestrictionText (TdApi.Chat chat) {
-    return getRestrictionText(chat, RightId.SEND_OTHER_MESSAGES, R.string.ChatDisabledGifs, R.string.ChatRestrictedGifs, R.string.ChatRestrictedGifsUntil);
+    return buildRestrictionText(chat, RightId.SEND_OTHER_MESSAGES, R.string.ChatDisabledGifs, R.string.ChatRestrictedGifs, R.string.ChatRestrictedGifsUntil);
   }
 
   public CharSequence getStickerRestrictionText (TdApi.Chat chat) {
-    return getRestrictionText(chat, RightId.SEND_OTHER_MESSAGES, R.string.ChatDisabledStickers, R.string.ChatRestrictedStickers, R.string.ChatRestrictedStickersUntil);
+    return buildRestrictionText(chat, RightId.SEND_OTHER_MESSAGES, R.string.ChatDisabledStickers, R.string.ChatRestrictedStickers, R.string.ChatRestrictedStickersUntil);
+  }
+
+  public CharSequence getGameRestrictionText (TdApi.Chat chat) {
+    return buildRestrictionText(chat, RightId.SEND_OTHER_MESSAGES, R.string.ChatDisabledGames, R.string.ChatRestrictedGames, R.string.ChatRestrictedGamesUntil);
   }
 
   public CharSequence getInlineRestrictionText (TdApi.Chat chat) {
-    return getRestrictionText(chat, RightId.SEND_OTHER_MESSAGES, R.string.ChatDisabledBots, R.string.ChatRestrictedBots, R.string.ChatRestrictedBotsUntil);
+    return buildRestrictionText(chat, RightId.SEND_OTHER_MESSAGES, R.string.ChatDisabledBots, R.string.ChatRestrictedBots, R.string.ChatRestrictedBotsUntil);
   }
 
   public CharSequence getPollRestrictionText (TdApi.Chat chat) {
-    return getRestrictionText(chat, RightId.SEND_POLLS, R.string.ChatDisabledPolls, R.string.ChatRestrictedPolls, R.string.ChatRestrictedPollsUntil);
+    return getDefaultRestrictionText(chat, RightId.SEND_POLLS);
   }
 
-  public CharSequence getRestrictionText (TdApi.Chat chat, @RightId int rightId, @StringRes int defaultRes, @StringRes int specificRes, @StringRes int specificUntilRes) {
-    return getRestrictionText(chat, rightId, defaultRes, specificRes, specificUntilRes, R.string.UserDisabledMessages, 0);
+  public CharSequence getDiceRestrictionText (TdApi.Chat chat, String emoji) {
+    int disabledRes, restrictedRes, restrictedUntilRes;
+    if (TD.EMOJI_DART.textRepresentation.equals(emoji)) {
+      disabledRes = R.string.ChatDisabledDart;
+      restrictedRes = R.string.ChatRestrictedDart;
+      restrictedUntilRes = R.string.ChatRestrictedDartUntil;
+    } else if (TD.EMOJI_DICE.textRepresentation.equals(emoji)) {
+      disabledRes = R.string.ChatDisabledDice;
+      restrictedRes = R.string.ChatRestrictedDice;
+      restrictedUntilRes = R.string.ChatRestrictedDiceUntil;
+    } else {
+      disabledRes = R.string.ChatDisabledStickers;
+      restrictedRes = R.string.ChatRestrictedStickers;
+      restrictedUntilRes = R.string.ChatRestrictedStickersUntil;
+    }
+    return buildRestrictionText(chat, RightId.SEND_OTHER_MESSAGES, disabledRes, restrictedRes, restrictedUntilRes);
   }
 
-  public CharSequence getRestrictionText (TdApi.Chat chat, @RightId int rightId,
-                                          @StringRes int defaultRes, @StringRes int specificRes, @StringRes int specificUntilRes,
-                                          @StringRes int defaultUserRes, @StringRes int specificUserRes) {
+  public CharSequence buildRestrictionText (TdApi.Chat chat, @RightId int rightId, @StringRes int defaultRes, @StringRes int specificRes, @StringRes int specificUntilRes) {
+    return buildRestrictionText(chat, rightId, defaultRes, specificRes, specificUntilRes, R.string.UserDisabledMessages, 0);
+  }
+
+  public CharSequence buildRestrictionText (TdApi.Chat chat, @RightId int rightId,
+                                            @StringRes int defaultRes, @StringRes int specificRes, @StringRes int specificUntilRes,
+                                            @StringRes int defaultUserRes, @StringRes int specificUserRes) {
     RestrictionStatus status = getRestrictionStatus(chat, rightId);
     if (status != null) {
       switch (rightId) {
@@ -9733,13 +9836,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         case RightId.SEND_VIDEO_NOTES:
         case RightId.SEND_OTHER_MESSAGES:
         case RightId.SEND_POLLS: {
-          CharSequence restriction = getMediaRestrictionText(chat, rightId);
-          if (restriction != null)
-            return restriction;
           break;
         }
         case RightId.EMBED_LINKS: {
-          CharSequence restriction = getMessageRestrictionText(chat);
+          // check if there is any restriction text for RightId.SEND_BASIC_MESSAGES
+          CharSequence restriction = getBasicMessageRestrictionText(chat);
           if (restriction != null)
             return restriction;
           break;
@@ -9784,7 +9885,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public boolean showRestriction (TdApi.Chat chat, @RightId int rightId, @StringRes int defaultRes, @StringRes int specificRes, @StringRes int specificUntilRes) {
-    CharSequence res = getRestrictionText(chat, rightId, defaultRes, specificRes, specificUntilRes);
+    CharSequence res = buildRestrictionText(chat, rightId, defaultRes, specificRes, specificUntilRes);
     if (res != null) {
       UI.showToast(res, Toast.LENGTH_SHORT);
       return true;

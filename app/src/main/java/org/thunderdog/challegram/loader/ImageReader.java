@@ -25,7 +25,6 @@ import android.os.Build;
 import android.os.OperationCanceledException;
 import android.os.SystemClock;
 import android.provider.MediaStore;
-import android.util.Size;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -528,7 +527,7 @@ public class ImageReader {
     } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
       Uri uri = ContentUris.withAppendedId(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, imageId);
       try {
-        bitmap = UI.getAppContext().getContentResolver().loadThumbnail(uri, new Size(512, 512), actor.getCancellationSignal());
+        bitmap = UI.getAppContext().getContentResolver().loadThumbnail(uri, new android.util.Size(512, 512), actor.getCancellationSignal());
       } catch (OperationCanceledException | IOException e) {
         bitmap = null;
       }
