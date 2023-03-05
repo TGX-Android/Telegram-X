@@ -14,6 +14,7 @@
  */
 package org.thunderdog.challegram.telegram;
 
+import android.content.Context;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Looper;
@@ -5296,7 +5297,33 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return deviceToken == null ? Settings.instance().getDeviceToken() : deviceToken;
   }
 
-  private void checkConnectionParams (Client client, boolean force) {
+  public String safetyNetApiKey () {
+    // TODO: server config
+    return BuildConfig.SAFETYNET_API_KEY;
+  }
+
+  public TdApi.PhoneNumberAuthenticationSettings phoneNumberAuthenticationSettings (Context context) {
+    TdApi.FirebaseAuthenticationSettings firebaseAuthenticationSettings = null;
+    String safetyNetApiKey = safetyNetApiKey();
+    if (StringUtils.isEmpty(safetyNetApiKey)) {
+      TDLib.Tag.safetyNet("Ignoring Firebase authentication, because SafetyNet API_KEY is unset");
+    } else if (Config.REQUIRE_FIREBASE_SERVICES_FOR_SAFETYNET && !U.isGooglePlayServicesAvailable(context)) {
+      TDLib.Tag.safetyNet("Ignoring Firebase authentication, because Firebase services are unavailable");
+    } else {
+      TDLib.Tag.safetyNet("Enabling Firebase authentication for the next request");
+      firebaseAuthenticationSettings = new TdApi.FirebaseAuthenticationSettingsAndroid();
+    }
+    return new TdApi.PhoneNumberAuthenticationSettings(
+      false, // TODO transparently request permission & enter flash call
+      true,
+      false, // TODO check if passed phone number is inserted in the current phone
+      false, // TODO for faster login when SMS method is chosen
+      firebaseAuthenticationSettings,
+      Settings.instance().getAuthenticationTokens()
+    );
+  }
+
+  private Map<String, Object> newConnectionParams () {
     Map<String, Object> params = new LinkedHashMap<>();
     if (isServiceInstance()) {
       params.put("device_token", "HIDDEN");
@@ -5334,14 +5361,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           break;
         }
         case TdlibManager.TokenState.NONE:
-          return;
+          break;
         default:
           throw new IllegalStateException(Integer.toString(state));
       }
     }
     long timeZoneOffset = TimeUnit.MILLISECONDS.toSeconds(
       TimeZone.getDefault().getRawOffset() +
-      TimeZone.getDefault().getDSTSavings()
+        TimeZone.getDefault().getDSTSavings()
     );
     params.put("package_id", UI.getAppContext().getPackageName());
     String installerName = U.getInstallerPackageName();
@@ -5366,6 +5393,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       pr.put("id", BuildConfig.PULL_REQUEST_ID[i]);
       pr.put("commit", BuildConfig.PULL_REQUEST_COMMIT[i]);
       pr.put("date", BuildConfig.PULL_REQUEST_COMMIT_DATE[i]);
+      //noinspection ConstantConditions
       if (pullRequests == null) {
         pullRequests = new ArrayList<>();
       }
@@ -5377,6 +5405,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
     params.put("git", git);
 
+    return params;
+  }
+  private void checkConnectionParams (Client client, boolean force) {
+    Map<String, Object> params = newConnectionParams();
     String connectionParams = JSON.stringify(JSON.toObject(params));
     if (connectionParams != null && (force || !StringUtils.equalsOrBothEmpty(lastReportedConnectionParams, connectionParams))) {
       this.lastReportedConnectionParams = connectionParams;

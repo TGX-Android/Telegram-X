@@ -560,12 +560,13 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       return;
     }
     TdApi.AuthenticationCodeTypeFirebaseAndroid firebase = (TdApi.AuthenticationCodeTypeFirebaseAndroid) codeType;
-    if (StringUtils.isEmpty(BuildConfig.SAFETYNET_API_KEY)) {
+    String safetyNetApiKey = tdlib.safetyNetApiKey();
+    if (StringUtils.isEmpty(safetyNetApiKey)) {
       TDLib.Tag.safetyNet("Requesting next code type, because SafetyNet API_KEY is unavailable");
       requestNextCodeType(false, false);
       return;
     }
-    if (!U.isGooglePlayServicesAvailable(context)) {
+    if (Config.REQUIRE_FIREBASE_SERVICES_FOR_SAFETYNET && !U.isGooglePlayServicesAvailable(context)) {
       TDLib.Tag.safetyNet("Requesting next code type, because Firebase services are unavailable");
       requestNextCodeType(false, false);
       return;
@@ -581,7 +582,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     };
     //noinspection ConstantConditions
     SafetyNet.getClient(context)
-      .attest(firebase.nonce, BuildConfig.SAFETYNET_API_KEY)
+      .attest(firebase.nonce, safetyNetApiKey)
       .addOnSuccessListener(attestationSuccess -> {
         String attestationResult = attestationSuccess.getJwsResult();
         if (StringUtils.isEmpty(attestationResult)) {

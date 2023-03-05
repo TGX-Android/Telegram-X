@@ -3412,7 +3412,7 @@ public class TdlibUi extends Handler {
             }
             case TdApi.InternalLinkTypePhoneNumberConfirmation.CONSTRUCTOR: {
               TdApi.InternalLinkTypePhoneNumberConfirmation confirmPhone = (TdApi.InternalLinkTypePhoneNumberConfirmation) linkType;
-              TdApi.PhoneNumberAuthenticationSettings authenticationSettings = TD.phoneNumberAuthenticationSettings(context.context());
+              TdApi.PhoneNumberAuthenticationSettings authenticationSettings = context.tdlib().phoneNumberAuthenticationSettings(context.context());
               // TODO progress?
               ViewController<?> currentController = context.context().navigation().getCurrentStackItem();
               tdlib.client().send(new TdApi.SendPhoneNumberConfirmationCode(confirmPhone.hash, confirmPhone.phoneNumber, authenticationSettings), confirmationResult -> {

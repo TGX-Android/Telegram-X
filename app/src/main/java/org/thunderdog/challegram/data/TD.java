@@ -58,7 +58,6 @@ import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
-import org.thunderdog.challegram.TDLib;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.config.Config;
@@ -2072,25 +2071,6 @@ public class TD {
       output = StringUtils.isEmpty(empty) ? "…" : empty;
     }
     return new Letters(output);
-  }
-
-  public static TdApi.PhoneNumberAuthenticationSettings phoneNumberAuthenticationSettings (Context context) {
-    TdApi.FirebaseAuthenticationSettings firebaseAuthenticationSettings = null;
-    if (StringUtils.isEmpty(BuildConfig.SAFETYNET_API_KEY)) {
-      TDLib.Tag.safetyNet("Ignoring Firebase authentication, because SafetyNet API_KEY is unset");
-    } else if (!U.isGooglePlayServicesAvailable(context)) {
-      TDLib.Tag.safetyNet("Ignoring Firebase authentication, because Firebase services are unavailable");
-    } else {
-      firebaseAuthenticationSettings = new TdApi.FirebaseAuthenticationSettingsAndroid();
-    }
-    return new TdApi.PhoneNumberAuthenticationSettings(
-      false,
-      true,
-      false,
-      false, // TODO for faster login when SMS method is chosen
-      firebaseAuthenticationSettings,
-      Settings.instance().getAuthenticationTokens()
-    );
   }
 
   public static Letters getLetters (TdApi.User user) {
