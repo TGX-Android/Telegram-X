@@ -2107,7 +2107,7 @@
   <string name="OpenMessage">View Message</string>
   <string name="SavedMessages">Saved Messages</string>
   <string name="Saved">Saved</string>
-  <string name="channel_create_somebody">Channel created "%1$s"</string>
+  <string name="channel_create_somebody">Channel "%1$s" created</string>
   <string name="channel_user_add">%1$s joined the channel</string>
   <string name="channel_user_add_self">You joined the channel</string>
   <string name="channel_user_remove">%1$s left the channel</string>
