@@ -57,6 +57,7 @@ import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
+import org.thunderdog.challegram.telegram.RightId;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorState;
@@ -1025,9 +1026,19 @@ public class MediaLayout extends FrameLayoutFix implements
     hide(true);
   }
 
-  public void sendFilesMixed (List<String> files, ArrayList<MediaBottomFilesController.MusicEntry> musicFiles, TdApi.MessageSendOptions options, boolean isMultiSend) {
+  public void sendFilesMixed (View view, List<String> files, ArrayList<MediaBottomFilesController.MusicEntry> musicFiles, TdApi.MessageSendOptions options, boolean isMultiSend) {
     if ((files == null || files.isEmpty()) && (musicFiles == null || musicFiles.isEmpty()))
       return;
+    if (files != null && !files.isEmpty()) {
+      if (target != null && target.showRestriction(view, RightId.SEND_DOCS)) {
+        return;
+      }
+    }
+    if (musicFiles != null && !musicFiles.isEmpty()) {
+      if (target != null && target.showRestriction(view, RightId.SEND_AUDIO)) {
+        return;
+      }
+    }
     boolean needGroupMedia;
     if (isMultiSend) {
       needGroupMedia = this.needGroupMedia;
@@ -1037,28 +1048,37 @@ public class MediaLayout extends FrameLayoutFix implements
     }
     if (target != null) {
       if (files != null) {
-        target.sendFiles(files, needGroupMedia, true, options);
+        target.sendFiles(view, files, needGroupMedia, true, options);
       }
       if (musicFiles != null) {
-        target.sendMusic(musicFiles, needGroupMedia, true, options);
+        target.sendMusic(view, musicFiles, needGroupMedia, true, options);
       }
     }
     hide(isMultiSend);
   }
 
-  public void sendFile (String file) {
+  public void sendFile (View v, String file) {
+    if (target != null && target.showRestriction(v, RightId.SEND_DOCS)) {
+      return;
+    }
     pickDateOrProceed((sendOptions, disableMarkdown) -> {
       if (target != null) {
-        target.sendFiles(Collections.singletonList(file), needGroupMedia, true, sendOptions);
+        if (target.showRestriction(v, RightId.SEND_DOCS)) {
+          return;
+        }
+        target.sendFiles(v, Collections.singletonList(file), needGroupMedia, true, sendOptions);
       }
       hide(false);
     });
   }
 
-  public void sendMusic (MediaBottomFilesController.MusicEntry musicFile) {
+  public void sendMusic (View view, MediaBottomFilesController.MusicEntry musicFile) {
+    if (target != null && target.showRestriction(view, RightId.SEND_AUDIO)) {
+      return;
+    }
     pickDateOrProceed((sendOptions, disableMarkdown) -> {
       if (target != null) {
-        target.sendMusic(Collections.singletonList(musicFile), needGroupMedia, true, sendOptions);
+        target.sendMusic(view, Collections.singletonList(musicFile), needGroupMedia, true, sendOptions);
       }
       hide(false);
     });

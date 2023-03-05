@@ -1519,8 +1519,12 @@ public class TD {
   }
 
   public static TdApi.InputMessageContent toInputMessageContent (String filePath, TdApi.InputFile inputFile, @NonNull FileInfo info, TdApi.FormattedText caption) {
+    return toInputMessageContent(filePath, inputFile, info, caption, true, true, true, true);
+  }
+
+  public static TdApi.InputMessageContent toInputMessageContent (String filePath, TdApi.InputFile inputFile, @NonNull FileInfo info, TdApi.FormattedText caption, boolean allowAudio, boolean allowAnimation, boolean allowVideo, boolean allowDocs) {
     if (!StringUtils.isEmpty(info.mimeType)) {
-      if (info.mimeType.startsWith("audio/") && !info.mimeType.equals("audio/ogg")) {
+      if (allowAudio && info.mimeType.startsWith("audio/") && !info.mimeType.equals("audio/ogg")) {
         String title = null, performer = null;
         int duration = 0;
         MediaMetadataRetriever retriever;
@@ -1556,9 +1560,9 @@ public class TD {
                 videoWidth = videoHeight;
                 videoHeight = temp;
               }
-              if (durationSeconds < 30 && info.knownSize < ByteUnit.MB.toBytes(10) && !metadata.hasAudio) {
+              if (allowAnimation && durationSeconds < 30 && info.knownSize < ByteUnit.MB.toBytes(10) && !metadata.hasAudio) {
                 return new TdApi.InputMessageAnimation(inputFile, null, null, durationSeconds, videoWidth, videoHeight, caption, false);
-              } else if (durationSeconds > 0) {
+              } else if (allowVideo && durationSeconds > 0) {
                 return new TdApi.InputMessageVideo(inputFile, null, null, durationSeconds, videoWidth, videoHeight, U.canStreamVideo(inputFile), caption, 0, false);
               }
             }
@@ -1568,7 +1572,10 @@ public class TD {
         }
       }
     }
-    return new TdApi.InputMessageDocument(inputFile, null, false, caption);
+    if (allowDocs) {
+      return new TdApi.InputMessageDocument(inputFile, null, false, caption);
+    }
+    return null;
   }
 
   public static TdApi.InputFile createInputFile (String path) {

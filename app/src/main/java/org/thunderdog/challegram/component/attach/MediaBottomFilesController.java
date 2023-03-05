@@ -52,6 +52,7 @@ import org.thunderdog.challegram.loader.ImageGalleryFile;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.Menu;
 import org.thunderdog.challegram.player.TGPlayerController;
+import org.thunderdog.challegram.telegram.RightId;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Screen;
@@ -120,7 +121,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
           }
         }
         mediaLayout.pickDateOrProceed((sendOptions, disableMarkdown) ->
-          mediaLayout.sendFilesMixed(files, null, sendOptions, false)
+          mediaLayout.sendFilesMixed(mediaLayout.getTarget() != null ? mediaLayout.getTarget().getAttachButton() : null, files, null, sendOptions, false)
         );
       }
     };
@@ -173,15 +174,22 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
   private int initialItemsCount;
 
   private void buildCells () {
-    navigateToPath(null, null, false, null, null, null);
+    navigateToPath(null, null, null, false, null, null, null);
   }
 
-  private void navigateToPath (final String currentPath, final String parentPath, boolean isUpper, final InlineResultCommon data, Runnable onDone, Runnable onError) {
+  private void navigateToPath (final View view, final String currentPath, final String parentPath, boolean isUpper, final InlineResultCommon data, Runnable onDone, Runnable onError) {
     cancelCurrentLoadOperation();
 
     ArrayList<ListItem> items = new ArrayList<>();
 
     if (currentPath != null && !currentPath.isEmpty()) {
+      if (!isUpper && mediaLayout.getTarget() != null) {
+        boolean isMusic = KEY_MUSIC.equals(currentPath);
+        boolean res = mediaLayout.getTarget().showRestriction(view, isMusic ? RightId.SEND_AUDIO : RightId.SEND_DOCS);
+        if (res) {
+          return;
+        }
+      }
       LoadOperation operation;
       RunnableData<Runnable> before = null;
       if (KEY_GALLERY.equals(currentPath)) {
@@ -1023,11 +1031,11 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
           } else {
             switch (result.getType()) {
               case InlineResult.TYPE_AUDIO: {
-                mediaLayout.sendMusic((MusicEntry) result.getTag());
+                mediaLayout.sendMusic(v, (MusicEntry) result.getTag());
                 break;
               }
               case InlineResult.TYPE_DOCUMENT: {
-                mediaLayout.sendFile(result.getId());
+                mediaLayout.sendFile(v, result.getId());
                 break;
               }
             }
@@ -1035,11 +1043,18 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
           break;
         }
         case R.id.btn_bucket: {
-          navigateInside(KEY_BUCKET, result);
+          navigateInside(v, KEY_BUCKET, result);
           break;
         }
         default: {
           String path = result.getId();
+          boolean isMusic = KEY_MUSIC.equals(path);
+          if (mediaLayout.getTarget() != null) {
+            boolean res = mediaLayout.getTarget().showRestriction(v, isMusic ? RightId.SEND_AUDIO : RightId.SEND_DOCS);
+            if (res) {
+              return;
+            }
+          }
           boolean isDownloads = KEY_DOWNLOADS.equals(path);
           if (v.getId() == R.id.btn_internalStorage || isDownloads) {
             if (!context.permissions().canManageStorage()) {
@@ -1050,7 +1065,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
               if (grantType != Permissions.GrantResult.ALL || !context.permissions().canManageStorage()) {
                 showSystemPicker(isDownloads);
               } else {
-                navigateTo(result);
+                navigateTo(v, result);
               }
             })) {
               return;
@@ -1062,7 +1077,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
               case KEY_GALLERY: {
                 if (context.permissions().requestReadExternalStorage(Permissions.ReadType.IMAGES_AND_VIDEOS, grantType -> {
                   if (grantType == Permissions.GrantResult.ALL) {
-                    navigateTo(result);
+                    navigateTo(v, result);
                   } else {
                     // TODO 1-tap access to privacy settings?
                     context.tooltipManager().builder(v).icon(R.drawable.baseline_warning_24).show(tdlib, R.string.MissingGalleryPermission).hideDelayed();
@@ -1075,7 +1090,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
               case KEY_MUSIC: {
                 if (context.permissions().requestReadExternalStorage(Permissions.ReadType.AUDIO, grantType -> {
                   if (grantType == Permissions.GrantResult.ALL) {
-                    navigateTo(result);
+                    navigateTo(v, result);
                   } else {
                     // TODO 1-tap access to privacy settings?
                     context.tooltipManager().builder(v).icon(R.drawable.baseline_warning_24).show(tdlib, R.string.MissingAudioPermission).hideDelayed();
@@ -1087,18 +1102,18 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
               }
             }
           }
-          navigateTo(result);
+          navigateTo(v, result);
           break;
         }
       }
     }
   }
 
-  private void navigateTo (InlineResultCommon result) {
+  private void navigateTo (View view, InlineResultCommon result) {
     String path = result.getId();
     if (path != null) {
       if (KEY_GALLERY.equals(path) || KEY_MUSIC.equals(path) || KEY_DOWNLOADS.equals(path) || KEY_BUCKET.equals(path) || path.startsWith(KEY_FOLDER)) {
-        navigateInside(path, result);
+        navigateInside(view, path, result);
       } else if (KEY_UPPER.equals(path)) {
         navigateUpper();
       }
@@ -1216,7 +1231,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
       return;
     }
 
-    mediaLayout.sendFilesMixed(files, musicEntries, options, true);
+    mediaLayout.sendFilesMixed(view, files, musicEntries, options, true);
   }
 
   @Override
@@ -1250,7 +1265,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
         collapseToStart();
       } else {
         StackItem item = stack.get(stack.size() - 1);
-        navigateToPath(item.path, getLastPath(2), true, null, () -> {
+        navigateToPath(null, item.path, getLastPath(2), true, null, () -> {
           LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
           manager.scrollToPositionWithOffset(removedItem.position, removedItem.positionOffset);
         }, this::navigateUpper);
@@ -1262,17 +1277,17 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
     return stack.size() < skipCount ? null : normalizePath(stack.get(stack.size() - skipCount).path);
   }
 
-  private void navigateInside (final String path, final InlineResultCommon data) {
+  private void navigateInside (final View view, final String path, final InlineResultCommon data) {
     if (inFileSelectMode) {
       mediaLayout.cancelMultiSelection();
     }
 
     final LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
     final int firstPosition = manager.findFirstVisibleItemPosition();
-    final View view = firstPosition != RecyclerView.NO_POSITION ? manager.findViewByPosition(firstPosition) : null;
-    final int firstPositionOffset = view != null ? view.getTop() : 0;
+    final View firstView = firstPosition != RecyclerView.NO_POSITION ? manager.findViewByPosition(firstPosition) : null;
+    final int firstPositionOffset = firstView != null ? firstView.getTop() : 0;
 
-    navigateToPath(path, getLastPath(1), false, data, () -> {
+    navigateToPath(view, path, getLastPath(1), false, data, () -> {
       stack.add(new StackItem(path, firstPosition != RecyclerView.NO_POSITION ? firstPosition : 0, firstPositionOffset));
       manager.scrollToPositionWithOffset(0, 0);
     }, null);
