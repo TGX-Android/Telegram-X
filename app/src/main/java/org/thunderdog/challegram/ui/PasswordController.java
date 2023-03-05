@@ -18,9 +18,8 @@ import android.content.Context;
 import android.text.InputType;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
-import android.text.TextPaint;
+import android.text.Spanned;
 import android.text.method.LinkMovementMethod;
-import android.text.style.ClickableSpan;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -38,7 +37,6 @@ import androidx.annotation.StringRes;
 import com.google.android.gms.safetynet.SafetyNet;
 
 import org.drinkless.td.libcore.telegram.TdApi;
-import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.TDLib;
@@ -55,6 +53,7 @@ import org.thunderdog.challegram.telegram.AuthorizationListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
+import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
@@ -73,7 +72,6 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.StringUtils;
-import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
 
 public class PasswordController extends ViewController<PasswordController.Args> implements View.OnClickListener, FactorAnimator.Target, MaterialEditTextGroup.EmptyListener, MaterialEditTextGroup.DoneListener, MaterialEditTextGroup.TextChangeListener, AuthorizationListener, Handler.Callback {
@@ -786,7 +784,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       }
       case HINT_ANIMATOR: {
         if (finalFactor == 0f) {
-          if (pendingHint != null && !pendingHint.isEmpty()) {
+          if (!StringUtils.isEmpty(pendingHint)) {
             setHint(pendingHint, pendingHintIsError);
             pendingHint = null;
             pendingHintIsError = false;
@@ -814,16 +812,16 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     setHintText(Lang.getString(res), isError);
   }
 
-  private void setHint (String text, boolean isError) {
+  private void setHint (CharSequence text, boolean isError) {
     hintView.setText(text);
     hintView.setTextColor(isError ? Theme.textRedColor() : Theme.textDecentColor());
     removeThemeListenerByTarget(hintView);
-    addThemeTextColorListener(hintView, isError ? R.id.theme_color_textNegative : R.id.theme_color_textLight);
+    addOrUpdateThemeTextColorListener(hintView, isError ? R.id.theme_color_textNegative : R.id.theme_color_textLight);
     editText.setInErrorState(isError);
   }
 
-  private void setHintText (@Nullable String text, boolean isError) {
-    if (text == null || text.isEmpty()) {
+  private void setHintText (@Nullable CharSequence text, boolean isError) {
+    if (StringUtils.isEmpty(text)) {
       animateHint(0f);
       if (hintView.getAlpha() == 0f) {
         setHint("", false);
@@ -838,7 +836,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     }
   }
 
-  private String pendingHint;
+  private CharSequence pendingHint;
   private boolean pendingHintIsError;
 
   private static final int FORGET_ANIMATOR = 1;
@@ -908,8 +906,31 @@ public class PasswordController extends ViewController<PasswordController.Args> 
   }
 
   private void onDeadEndReached () {
-    // TODO show UI that authorization failed and ways to solve this
     TDLib.Tag.safetyNet("Dead end reached: attestation failed and codeInfo.nextType is null");
+    CharSequence message = Lang.getMarkdownString(this, R.string.login_DeadEnd);
+    if (message instanceof Spannable) {
+      CustomTypefaceSpan[] spans = ((Spannable) message).getSpans(0, message.length(), CustomTypefaceSpan.class);
+      for (CustomTypefaceSpan span : spans) {
+        if (span.getEntityType() != null && span.getEntityType().getConstructor() == TdApi.TextEntityTypeItalic.CONSTRUCTOR) {
+          span.setTypeface(null);
+          span.setColorId(R.id.theme_color_textLink);
+          span.setEntityType(new TdApi.TextEntityTypeEmailAddress());
+          int start = ((Spannable) message).getSpanStart(span);
+          int end = ((Spannable) message).getSpanEnd(span);
+          ((Spannable) message).setSpan(new NoUnderlineClickableSpan() {
+            @Override
+            public void onClick (@NonNull View widget) {
+              Intents.sendEmail(
+                Lang.getStringSecure(R.string.email_SmsHelp),
+                Lang.getStringSecure(R.string.email_LoginDeadEnd_subject, formattedPhone),
+                Lang.getStringSecure(R.string.email_LoginDeadEnd_text, formattedPhone, U.getUsefulMetadata(tdlib)));
+            }
+          }, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+          break;
+        }
+      }
+    }
+    setHint(message, true);
   }
 
   private void requestNextCodeType (boolean byUser, boolean force) {

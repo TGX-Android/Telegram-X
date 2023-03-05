@@ -2708,11 +2708,14 @@
 
   <string name="HelpEmailError">Please send an email to %1$s and tell us about your problem</string>
 
-  <string name="email_SmsHelp">sms@stel.com</string>
-  <string name="email_LoginHelp">login@stel.com</string>
+  <string name="email_SmsHelp">sms@telegram.org</string>
+  <string name="email_LoginHelp">login@telegram.org</string>
 
   <string name="email_LoginTooLong_subject">Telegram X connection issue</string>
   <string name="email_LoginTooLong_text">My Internet service provider is: (please enter the name)\n\nI\'ve just installed the application and tried to start messaging, but Telegram X is unable to connect to the server. Please help.\n\nApp version: %1$s\nLanguage: %2$s\nAwait time: %3$s\nSystem Language: %4$s\nSystem Version: %5$s</string>
+
+  <string name="email_LoginDeadEnd_subject">Telegram X SMS not sent: %1$s</string>
+  <string name="email_LoginDeadEnd_text">My Internet service provider is: (please enter the name)\n\nI\'m trying to use my mobile phone number: %1$s\nBut Telegram could not send me SMS with the confirmation code. Please help.\n\nBelow are all details that might help understanding the issue:\n%2$s</string>
 
   <string name="email_InvalidNumber_subject">Invalid phone number: %1$s</string>
   <string name="email_InvalidNumber_text">My mobile phone operator: (please enter the name)\nI\'m trying to use my mobile phone number: %1$s\nBut Telegram says it\'s invalid. Please help.</string>
@@ -3077,7 +3080,7 @@
   <string name="error_PEER_ID_INVALID">Sorry, you don\'t have access to this chat or channel.</string>
   <string name="error_STICKERSET_INVALID">Sticker set not found or no longer exists.</string>
   <string name="error_CHANNELS_TOO_MUCH">Sorry, you are a member of too many groups or channels. Please leave some before joining a new one.</string>
-  <string name="error_PHONE_NUMBER_BANNED">Sorry, this phone number is banned. Contact us at login@stel.com if you need help.</string>
+  <string name="error_PHONE_NUMBER_BANNED">Sorry, this phone number is banned. Contact us at login@telegram.org if you need help.</string>
   <string name="error_CHANNELS_ADMIN_LOCATED_TOO_MUCH">Sorry, you have too many location-based groups already. Please delete one of your existing ones first.</string>
   <string name="error_PREMIUM_ACCOUNT_REQUIRED">This feature requires Telegram Premium subscription.</string>
   <string name="error_INVITE_REQUEST_SENT">Request to join this chat has been sent.</string>
@@ -4552,4 +4555,6 @@
   <string name="SentFragmentCode">Check the Anonymous Numbers section on Fragment to get the code.</string>
   <string name="OpenFragment">Open Fragment</string>
   <string name="AnonymousNumbers">&#127988;&#8205;&#9760;&#65039; Anonymous Numbers</string>
+
+  <string name="login_DeadEnd">We could not send an SMS with a confirmation code to your phone number. __Contact us__, if you need help.</string>
 </resources>
