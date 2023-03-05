@@ -561,6 +561,8 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     return contentView;
   }
 
+  private String lastSafetyNetError;
+
   private void sendFirebaseSmsIfNeeded (boolean forced) {
     TdApi.AuthenticationCodeType codeType = authenticationCodeType();
     if (codeType == null || codeType.getConstructor() != TdApi.AuthenticationCodeTypeFirebaseAndroid.CONSTRUCTOR || isFirebaseSmsSent) {
@@ -594,6 +596,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
         String attestationResult = attestationSuccess.getJwsResult();
         if (StringUtils.isEmpty(attestationResult)) {
           TDLib.Tag.safetyNet("Attestation success, but result is empty");
+          lastSafetyNetError = "EMPTY_JWS_RESULT";
           executeOnUiThreadOptional(onAttestationFailure);
         } else {
           TDLib.Tag.safetyNet("Attestation success: %s", attestationResult);
@@ -604,6 +607,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
                 updateAuthState();
                 TDLib.Tag.safetyNet("Attestation finished successfully");
               } else {
+                lastSafetyNetError = TD.toErrorString(result);
                 TDLib.Tag.safetyNet("Attestation failed by server, retrying once: %s", TD.toErrorString(result));
                 requestNextCodeType(false, true);
               }
@@ -612,6 +616,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
         }
       })
       .addOnFailureListener(attestationError -> {
+        lastSafetyNetError = attestationError.getMessage();
         TDLib.Tag.safetyNet("Attestation failed with error: %s", attestationError.getMessage());
         executeOnUiThreadOptional(onAttestationFailure);
       });
@@ -923,7 +928,9 @@ public class PasswordController extends ViewController<PasswordController.Args> 
               Intents.sendEmail(
                 Lang.getStringSecure(R.string.email_SmsHelp),
                 Lang.getStringSecure(R.string.email_LoginDeadEnd_subject, formattedPhone),
-                Lang.getStringSecure(R.string.email_LoginDeadEnd_text, formattedPhone, U.getUsefulMetadata(tdlib)));
+                Lang.getStringSecure(R.string.email_LoginDeadEnd_text, formattedPhone, U.getUsefulMetadata(tdlib)),
+                StringUtils.isEmpty(lastSafetyNetError) ? "none" : lastSafetyNetError
+              );
             }
           }, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
           break;
