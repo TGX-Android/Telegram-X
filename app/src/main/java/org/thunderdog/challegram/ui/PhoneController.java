@@ -60,6 +60,7 @@ import org.thunderdog.challegram.tool.TGPhoneFormat;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
+import org.thunderdog.challegram.util.NoUnderlineClickableSpan;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 
@@ -966,16 +967,10 @@ public class PhoneController extends EditBaseController<Void> implements Setting
                   span.setEntityType(new TdApi.TextEntityTypeEmailAddress());
                   int start = ((Spannable) message).getSpanStart(span);
                   int end = ((Spannable) message).getSpanEnd(span);
-                  ((Spannable) message).setSpan(new ClickableSpan() {
+                  ((Spannable) message).setSpan(new NoUnderlineClickableSpan() {
                     @Override
                     public void onClick (@NonNull View widget) {
                       Intents.sendEmail(help.email, help.subject, help.text);
-                    }
-
-                    @Override
-                    public void updateDrawState (@NonNull TextPaint ds) {
-                      super.updateDrawState(ds);
-                      ds.setUnderlineText(false);
                     }
                   }, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                   break;

@@ -18,6 +18,9 @@ import android.content.Context;
 import android.text.InputType;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
+import android.text.TextPaint;
+import android.text.method.LinkMovementMethod;
+import android.text.style.ClickableSpan;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -58,6 +61,7 @@ import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
+import org.thunderdog.challegram.util.NoUnderlineClickableSpan;
 import org.thunderdog.challegram.widget.CircleButton;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 import org.thunderdog.challegram.widget.NoScrollTextView;
@@ -521,6 +525,11 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     params.topMargin = topMargin + Screen.dp(60f) + Screen.dp(14f);
 
     hintView = new NoScrollTextView(context);
+    hintView.setMovementMethod(LinkMovementMethod.getInstance());
+    hintView.setLinkTextColor(Theme.textLinkColor());
+    hintView.setHighlightColor(Theme.textLinkHighlightColor());
+    addThemeLinkTextColorListener(hintView, R.id.theme_color_textLink);
+    addThemeHighlightColorListener(hintView, R.id.theme_color_textLinkPressHighlight);
     hintView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
     hintView.setTextColor(Theme.textDecentColor());
     addThemeTextColorListener(hintView, R.id.theme_color_textLight);
@@ -669,14 +678,12 @@ public class PasswordController extends ViewController<PasswordController.Args> 
           b.append(" ");
           int start = b.length();
           b.append(Lang.getStringSecure(R.string.OpenFragment));
-          b.setSpan(new CustomTypefaceSpan(null, R.id.theme_color_textLink)
-            .setOnClickListener((view, span, clickedText) -> {
+          b.setSpan(new NoUnderlineClickableSpan() {
+            @Override
+            public void onClick (@NonNull View widget) {
               UI.openUrl(fragment.url);
-              return true;
-            }),
-            start, b.length(),
-            Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-          );
+            }
+          }, start, b.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         }
         return b;
       }
