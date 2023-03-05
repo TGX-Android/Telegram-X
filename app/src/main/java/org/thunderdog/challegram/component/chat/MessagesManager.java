@@ -2451,17 +2451,16 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
     final long chatId = loader.getChatId();
     final long messageThreadId = loader.getMessageThreadId();
-    final boolean[] isRetry = new boolean[1];
+    final AtomicBoolean isRetry = new AtomicBoolean();
     mentionsHandler = new CancellableResultHandler() {
       @Override
       public void processResult (final TdApi.Object object) {
-        if (object.getConstructor() == TdApi.Messages.CONSTRUCTOR) {
-          TdApi.Messages messages = (TdApi.Messages) object;
-          if (messages.totalCount > 0 && messages.messages.length == 0 && !isRetry[0]) {
-            isRetry[0] = true;
+        if (object.getConstructor() == TdApi.FoundChatMessages.CONSTRUCTOR) {
+          TdApi.FoundChatMessages messages = (TdApi.FoundChatMessages) object;
+          if (messages.totalCount > 0 && messages.messages.length == 0 && isRetry.getAndSet(true)) {
             tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, null, 0, 0, 10, new TdApi.SearchMessagesFilterUnreadMention(), messageThreadId), this);
           } else {
-            setMentions(this, messages, isRetry[0] ? 0 : fromMessageId);
+            setMentions(this, messages, isRetry.get() ? 0 : fromMessageId);
           }
         } else {
           setMentions(this, null, fromMessageId);
@@ -2471,7 +2470,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, null, fromMessageId, -9, 10, new TdApi.SearchMessagesFilterUnreadMention(), messageThreadId), mentionsHandler);
   }
 
-  private void setMentions (final CancellableResultHandler handler, final TdApi.Messages messages, final long fromMessageId) {
+  private void setMentions (final CancellableResultHandler handler, final TdApi.FoundChatMessages messages, final long fromMessageId) {
     tdlib.ui().post(() -> {
       if (handler == mentionsHandler) {
         mentionsHandler = null;
@@ -2499,7 +2498,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   private CancellableResultHandler reactionsHandler;
   private long lastViewedReaction = 0;
 
-  private void setUnreadReactions (final CancellableResultHandler handler, final TdApi.Messages messages, final long fromMessageId) {
+  private void setUnreadReactions (final CancellableResultHandler handler, final TdApi.FoundChatMessages messages, final long fromMessageId) {
     tdlib.ui().post(() -> {
       if (handler == reactionsHandler) {
         reactionsHandler = null;
@@ -2540,17 +2539,16 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
     final long chatId = loader.getChatId();
     final long messageThreadId = loader.getMessageThreadId();
-    final boolean[] isRetry = new boolean[1];
+    final AtomicBoolean isRetry = new AtomicBoolean();
     reactionsHandler = new CancellableResultHandler() {
       @Override
       public void processResult (final TdApi.Object object) {
-        if (object.getConstructor() == TdApi.Messages.CONSTRUCTOR) {
-          TdApi.Messages messages = (TdApi.Messages) object;
-          if (messages.totalCount > 0 && messages.messages.length == 0 && !isRetry[0]) {
-            isRetry[0] = true;
+        if (object.getConstructor() == TdApi.FoundChatMessages.CONSTRUCTOR) {
+          TdApi.FoundChatMessages messages = (TdApi.FoundChatMessages) object;
+          if (messages.totalCount > 0 && messages.messages.length == 0 && !isRetry.getAndSet(true)) {
             tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, null, 0, 0, 10, new TdApi.SearchMessagesFilterUnreadReaction(), messageThreadId), this);
           } else {
-            setUnreadReactions(this, messages, isRetry[0] ? 0 : fromMessageId);
+            setUnreadReactions(this, messages, isRetry.get() ? 0 : fromMessageId);
           }
         } else {
           setUnreadReactions(this, null, fromMessageId);

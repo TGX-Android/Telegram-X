@@ -167,7 +167,8 @@ public class MessagesLoader implements Client.ResultHandler {
     this.searchQuery = query;
     this.searchSender = sender;
     this.searchFilter = filter;
-    this.lastSecretSearchOffset = null;
+    this.lastSearchNextOffset = null;
+    this.lastSearchNextFromMessageId = 0;
   }
 
   public int getSpecialMode () {
@@ -218,7 +219,8 @@ public class MessagesLoader implements Client.ResultHandler {
 
         final int knownTotalCount;
         TdApi.Message[] messages;
-        final String nextSecretSearchOffset;
+        final String nextSearchOffset;
+        final long nextSearchFromMessageId;
         switch (object.getConstructor()) {
           case TdApi.Messages.CONSTRUCTOR: {
             if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
@@ -227,7 +229,18 @@ public class MessagesLoader implements Client.ResultHandler {
             TdApi.Messages result = (TdApi.Messages) object;
             messages = result.messages;
             knownTotalCount = result.totalCount;
-            nextSecretSearchOffset = null;
+            nextSearchOffset = null; nextSearchFromMessageId = 0;
+            break;
+          }
+          case TdApi.FoundChatMessages.CONSTRUCTOR: {
+            if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
+              Log.i(Log.TAG_MESSAGES_LOADER, "Received %d found messages in %dms", ((TdApi.FoundChatMessages) object).messages.length, ms);
+            }
+            TdApi.FoundChatMessages result = (TdApi.FoundChatMessages) object;
+            messages = result.messages;
+            knownTotalCount = result.totalCount;
+            nextSearchFromMessageId = result.nextFromMessageId;
+            nextSearchOffset = null;
             break;
           }
           case TdApi.FoundMessages.CONSTRUCTOR: {
@@ -236,15 +249,16 @@ public class MessagesLoader implements Client.ResultHandler {
             }
             TdApi.FoundMessages foundMessages = (TdApi.FoundMessages) object;
             messages = foundMessages.messages;
-            nextSecretSearchOffset = foundMessages.nextOffset;
+            nextSearchOffset = foundMessages.nextOffset;
             knownTotalCount = foundMessages.totalCount;
+            nextSearchFromMessageId = 0;
             break;
           }
           case TdApi.Error.CONSTRUCTOR: {
             Log.w(Log.TAG_MESSAGES_LOADER, "Received error: %s", TD.toErrorString(object));
             messages = new TdApi.Message[0];
             knownTotalCount = -1;
-            nextSecretSearchOffset = null;
+            nextSearchOffset = null; nextSearchFromMessageId = 0;
             break;
           }
           case TdApi.ChatEvents.CONSTRUCTOR: {
@@ -252,15 +266,20 @@ public class MessagesLoader implements Client.ResultHandler {
               Log.i(Log.TAG_MESSAGES_LOADER, "Received %d events in %dms", ((TdApi.ChatEvents) object).events.length, ms);
             }
             messages = parseChatEvents(getChatId(), ((TdApi.ChatEvents) object).events);
-            nextSecretSearchOffset = null;
             knownTotalCount = -1;
+            nextSearchOffset = null; nextSearchFromMessageId = 0;
             break;
           }
           default: {
             synchronized (lock) {
               lastHandler = null;
             }
-            Log.unexpectedTdlibResponse(object, TdApi.GetChatHistory.class, TdApi.Messages.class, TdApi.ChatEvents.class, TdApi.Error.class);
+            Log.unexpectedTdlibResponse(object,
+              TdApi.GetChatHistory.class,
+              TdApi.Messages.class, TdApi.FoundMessages.class, TdApi.FoundChatMessages.class,
+              TdApi.ChatEvents.class,
+              TdApi.Error.class
+            );
             return;
           }
         }
@@ -468,7 +487,9 @@ public class MessagesLoader implements Client.ResultHandler {
           lastHandler = null;
         }
 
-        processMessages(currentContextId, messages, knownTotalCount, nextSecretSearchOffset, needFindUnread && object.getConstructor() == TdApi.Messages.CONSTRUCTOR, missingAlbums);
+        processMessages(currentContextId,
+          messages, knownTotalCount, nextSearchOffset, nextSearchFromMessageId,
+          needFindUnread && object.getConstructor() == TdApi.Messages.CONSTRUCTOR, missingAlbums);
       }
     };
   }
@@ -519,7 +540,11 @@ public class MessagesLoader implements Client.ResultHandler {
 
       TdApi.Message[] messagesArray = new TdApi.Message[messages.size()];
       messages.toArray(messagesArray);
-      processMessages(contextId, messagesArray, 0, null, true, null);
+      processMessages(
+        contextId, messagesArray,
+        0, null, 0,
+        true, null
+      );
     });
   }
 
@@ -1005,7 +1030,8 @@ public class MessagesLoader implements Client.ResultHandler {
   private boolean loadingLocal, loadingAllowMoreTop, loadingAllowMoreBottom;
 
   private MessageId lastFromMessageId;
-  private String lastSecretSearchOffset;
+  private String lastSearchNextOffset;
+  private long lastSearchNextFromMessageId;
   private int lastOffset, lastLimit;
   private boolean foundUnreadAtLeastOnce;
   private final Object lock = new Object();
@@ -1045,7 +1071,7 @@ public class MessagesLoader implements Client.ResultHandler {
         case SPECIAL_MODE_SEARCH: {
           long chatId = getChatId();
           if (ChatId.isSecret(chatId)) {
-            function = new TdApi.SearchSecretMessages(sourceChatId, searchQuery, lastSecretSearchOffset, limit, searchFilter);
+            function = new TdApi.SearchSecretMessages(sourceChatId, searchQuery, lastSearchNextOffset, limit, searchFilter);
           } else {
             function = new TdApi.SearchChatMessages(sourceChatId, searchQuery, searchSender, (lastFromMessageId = fromMessageId).getMessageId(), lastOffset = offset, lastLimit = limit, searchFilter, messageThread != null ? messageThread.getMessageThreadId() : 0);
           }
@@ -1074,13 +1100,20 @@ public class MessagesLoader implements Client.ResultHandler {
       }
 
       Client.ResultHandler handler = newHandler(allowMoreTop, allowMoreBottom, (mode != MODE_MORE_TOP && mode != MODE_MORE_BOTTOM) || !foundUnreadAtLeastOnce);
-      if (function.getConstructor() == TdApi.SearchSecretMessages.CONSTRUCTOR) {
-        searchManagerMiddleware.search((TdApi.SearchSecretMessages) function, searchSender, handler);
-        return;
-      } else if (function.getConstructor() == TdApi.SearchChatMessages.CONSTRUCTOR) {
-        searchManagerMiddleware.search((TdApi.SearchChatMessages) function, handler);
-      } else {
-        tdlib.client().send(function, handler);
+      //noinspection SwitchIntDef
+      switch (function.getConstructor()) {
+        case TdApi.SearchSecretMessages.CONSTRUCTOR: {
+          searchManagerMiddleware.search((TdApi.SearchSecretMessages) function, searchSender, handler);
+          break;
+        }
+        case TdApi.SearchChatMessages.CONSTRUCTOR: {
+          searchManagerMiddleware.search((TdApi.SearchChatMessages) function, handler);
+          break;
+        }
+        default: {
+          tdlib.client().send(function, handler);
+          break;
+        }
       }
     }
   }
@@ -1213,7 +1246,9 @@ public class MessagesLoader implements Client.ResultHandler {
     stepsCount = 0;
   }
 
-  private void processMessages (final long currentContextId, TdApi.Message[] messages, int knownTotalMessageCount, String nextSecretSearchId, boolean needFindUnread, @Nullable List<List<TdApi.Message>> missingAlbums) {
+  private void processMessages (final long currentContextId, TdApi.Message[] messages, int knownTotalMessageCount,
+                                String nextSearchOffset, long nextSearchFromMessageId,
+                                boolean needFindUnread, @Nullable List<List<TdApi.Message>> missingAlbums) {
     if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
       Log.v(Log.TAG_MESSAGES_LOADER, "Processing %d messages...", messages.length);
     }
@@ -1568,7 +1603,9 @@ public class MessagesLoader implements Client.ResultHandler {
       }
 
       setKnownTotalMessageCount(knownTotalMessageCount);
-      lastSecretSearchOffset = nextSecretSearchId;
+      lastSearchNextOffset = nextSearchOffset;
+      lastSearchNextFromMessageId = nextSearchFromMessageId;
+
       foundUnreadAtLeastOnce = foundUnreadAtLeastOnce || unreadFoundFinal;
 
       if (missingAlbums != null) {

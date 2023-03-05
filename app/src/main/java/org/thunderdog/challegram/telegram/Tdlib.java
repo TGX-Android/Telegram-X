@@ -8984,6 +8984,17 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       @Override
       public void onResult (TdApi.Object result) {
         switch (result.getConstructor()) {
+          case TdApi.FoundChatMessages.CONSTRUCTOR: {
+            TdApi.FoundChatMessages fetchedMessages = (TdApi.FoundChatMessages) result;
+            Collections.addAll(messages, fetchedMessages.messages);
+            if (fetchedMessages.nextFromMessageId == 0) {
+              callback.runWithData(messages);
+            } else {
+              ((TdApi.SearchChatMessages) function).fromMessageId = fetchedMessages.nextFromMessageId;
+              client().send(function, this);
+            }
+            break;
+          }
           case TdApi.Messages.CONSTRUCTOR: {
             TdApi.Messages fetchedMessages = (TdApi.Messages) result;
             if (fetchedMessages.messages.length == 0) {
@@ -8991,18 +9002,15 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
             } else {
               Collections.addAll(messages, fetchedMessages.messages);
               long fromMessageId = messages.get(messages.size() - 1).id;
-              if (needFilter) {
-                ((TdApi.SearchChatMessages) function).fromMessageId = fromMessageId;
-              } else {
-                ((TdApi.GetChatHistory) function).fromMessageId = fromMessageId;
-              }
+              ((TdApi.GetChatHistory) function).fromMessageId = fromMessageId;
               client().send(function, this);
             }
             break;
           }
           case TdApi.Error.CONSTRUCTOR: {
-            if (messages.isEmpty())
+            if (messages.isEmpty()) {
               UI.showError(result);
+            }
             callback.runWithData(messages);
             break;
           }

@@ -158,7 +158,8 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
   private long playlistMaxMessageId, playlistMinMessageId;
   private String playlistSearchQuery;
   private TdApi.GetInlineQueryResults playlistInlineQuery;
-  private String playlistInlineNextOffset, playlistSecretNextOffset;
+  private String playlistInlineNextOffset, playlistSearchNextOffset;
+  private long playlistSearchNextFromMessageId;
 
   private final ProximityManager proximityManager;
   private final TdlibManager context;
@@ -1217,11 +1218,12 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
       this.playlistSearchQuery = null;
       this.playlistMessageThreadId = 0;
       this.playlistInlineQuery = null;
-      this.playlistInlineNextOffset = this.playlistSecretNextOffset = null;
+      this.playlistInlineNextOffset = this.playlistSearchNextOffset = null; this.playlistSearchNextFromMessageId = 0;
       this.removedMessageList.clear();
       if (playList != null) {
         playlistSearchQuery = playList.searchQuery;
-        playlistSecretNextOffset = playList.secretNextOffset;
+        playlistSearchNextOffset = playList.searchNextOffset;
+        playlistSearchNextFromMessageId = playList.searchNextFromMessageId;
         playlistMessageThreadId = playList.messageThreadId;
         if (playList.playListInformationSet) {
           playlistChatId = playList.chatId;
@@ -1288,40 +1290,39 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
     return object -> {
       final List<TdApi.Message> moreMessages;
       switch (object.getConstructor()) {
-        case TdApi.FoundMessages.CONSTRUCTOR: {
-          TdApi.FoundMessages foundMessages = (TdApi.FoundMessages) object;
-          if (foundMessages.messages.length == 0) {
-            moreMessages = null;
-          } else {
-            moreMessages = new ArrayList<>(foundMessages.messages.length);
-            for (int i = foundMessages.messages.length - 1; i >= 0; i--) {
-              TdApi.Message message = foundMessages.messages[i];
-              if (message == null || message.chatId != chatId || !matchesFilter(message.content, contentType)) {
-                continue;
-              }
-              if (areNew) {
-                if (message.id <= maxMessageId) {
-                  continue;
-                }
-              } else {
-                if (message.id >= minMessageId) {
-                  break;
-                }
-              }
-              moreMessages.add(message);
-            }
-            synchronized (TGPlayerController.this) {
-              if (contextId == messageListContextId) {
-                playlistSecretNextOffset = foundMessages.nextOffset;
-              }
-            }
-          }
-          ArrayUtils.trimToSize(moreMessages);
-          break;
-        }
+        case TdApi.FoundMessages.CONSTRUCTOR:
+        case TdApi.FoundChatMessages.CONSTRUCTOR:
         case TdApi.Messages.CONSTRUCTOR: {
-          TdApi.Messages messages = (TdApi.Messages) object;
-          TdApi.Message[] array = messages.messages;
+          TdApi.Message[] array;
+          switch (object.getConstructor()) {
+            case TdApi.FoundMessages.CONSTRUCTOR: {
+              TdApi.FoundMessages foundMessages = (TdApi.FoundMessages) object;
+              array = foundMessages.messages;
+              synchronized (TGPlayerController.this) {
+                if (contextId == messageListContextId) {
+                  playlistSearchNextOffset = foundMessages.nextOffset;
+                }
+              }
+              break;
+            }
+            case TdApi.FoundChatMessages.CONSTRUCTOR: {
+              TdApi.FoundChatMessages foundChatMessages = (TdApi.FoundChatMessages) object;
+              array = foundChatMessages.messages;
+              synchronized (TGPlayerController.this) {
+                if (contextId == messageListContextId) {
+                  playlistSearchNextFromMessageId = foundChatMessages.nextFromMessageId;
+                }
+              }
+              break;
+            }
+            case TdApi.Messages.CONSTRUCTOR: {
+              TdApi.Messages messages = (TdApi.Messages) object;
+              array = messages.messages;
+              break;
+            }
+            default:
+              throw new UnsupportedOperationException(object.toString());
+          }
           if (array.length == 0) {
             moreMessages = null;
           } else {
@@ -1509,12 +1510,28 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
     final ArrayList<TdApi.Function<?>> functions = new ArrayList<>(totalCount);
     TdApi.Function<?> requestOld, requestNew;
     if (!StringUtils.isEmpty(playlistSearchQuery) && ChatId.isSecret(chatId)) {
-      requestOld = allowOlder ? new TdApi.SearchSecretMessages(chatId, playlistSearchQuery, playlistSecretNextOffset, 100, filter) : null;
+      requestOld = allowOlder ? new TdApi.SearchSecretMessages(
+        chatId,
+        playlistSearchQuery, playlistSearchNextOffset,
+        100, filter
+      ) : null;
       requestNew = null;
       messageListStateFlags |= LIST_STATE_LOADED_NEW;
     } else {
-      requestOld = allowOlder ? new TdApi.SearchChatMessages(chatId, playlistSearchQuery, null, minMessageId, 0, 100, filter, playlistMessageThreadId) : null;
-      requestNew = allowNewer ? playlistInlineQuery != null ? makeNextInlineQuery() : new TdApi.SearchChatMessages(chatId, playlistSearchQuery, null, maxMessageId, -99, 100, filter, playlistMessageThreadId) : null;
+      requestOld = allowOlder ? new TdApi.SearchChatMessages(
+        chatId, playlistSearchQuery, null,
+        playlistSearchNextFromMessageId != 0 ? Math.min(minMessageId, playlistSearchNextFromMessageId) : minMessageId,
+        0, 100, filter,
+        playlistMessageThreadId
+      ) : null;
+      requestNew = allowNewer ? playlistInlineQuery != null ? makeNextInlineQuery() : new TdApi.SearchChatMessages(
+        chatId,
+        playlistSearchQuery, null,
+        maxMessageId,
+        -99, 100,
+        filter,
+        playlistMessageThreadId
+      ) : null;
     }
 
     if ((playListFlags & PLAYLIST_FLAG_REVERSE) != 0) {
@@ -1799,7 +1816,8 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
     private final int originIndex;
 
     private int playListFlags;
-    private String searchQuery, secretNextOffset;
+    private String searchQuery, searchNextOffset;
+    private long searchNextFromMessageId;
     private long messageThreadId;
 
     private List<TdApi.Message> removedMessages;

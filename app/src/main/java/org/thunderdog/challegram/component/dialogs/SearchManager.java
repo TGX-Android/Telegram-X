@@ -1057,7 +1057,7 @@ public class SearchManager {
               break;
             }
             default: {
-              Log.unexpectedTdlibResponse(object, TdApi.SearchMessages.class, TdApi.Messages.class, TdApi.Error.class);
+              Log.unexpectedTdlibResponse(object, TdApi.SearchMessages.class, TdApi.FoundMessages.class, TdApi.Error.class);
               return;
             }
           }

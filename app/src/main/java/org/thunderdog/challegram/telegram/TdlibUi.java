@@ -388,8 +388,8 @@ public class TdlibUi extends Handler {
       });
       // TODO TDLib / server: ability to get totalCount with limit=0
       tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, senderId, 0, 0, 1, null, 0), result -> {
-        if (result.getConstructor() == TdApi.Messages.CONSTRUCTOR) {
-          int moreCount = ((TdApi.Messages) result).totalCount - deletingMessages.length;
+        if (result.getConstructor() == TdApi.FoundChatMessages.CONSTRUCTOR) {
+          int moreCount = ((TdApi.FoundChatMessages) result).totalCount - deletingMessages.length;
           if (moreCount > 0) {
             tdlib.ui().post(() -> {
               int i = wrap.adapter.indexOfViewById(R.id.btn_deleteAll);

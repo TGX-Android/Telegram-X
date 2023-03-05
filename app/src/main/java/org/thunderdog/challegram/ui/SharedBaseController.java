@@ -605,6 +605,22 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
         modifyResultIfNeeded(items, true);
         break;
       }
+      case TdApi.FoundChatMessages.CONSTRUCTOR: {
+        TdApi.FoundChatMessages messages = (TdApi.FoundChatMessages) object;
+        nextOffset = messages.nextFromMessageId;
+        items = new ArrayList<>(messages.messages.length);
+        for (TdApi.Message message : messages.messages) {
+          if (message == null) {
+            continue;
+          }
+          T parsedItem = parseObject(message);
+          if (parsedItem != null) {
+            items.add(parsedItem);
+          }
+        }
+        modifyResultIfNeeded(items, true);
+        break;
+      }
       case TdApi.Messages.CONSTRUCTOR: {
         TdApi.Messages messages = (TdApi.Messages) object;
         items = new ArrayList<>(messages.messages.length);
