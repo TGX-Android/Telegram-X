@@ -41,6 +41,7 @@ import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import androidx.annotation.AnyThread;
+import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
@@ -144,6 +145,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.CancellableRunnable;
+import me.vkryl.core.lambda.FutureBool;
 import me.vkryl.core.lambda.RunnableLong;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
@@ -1914,22 +1916,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             }
             break;
           }
-          case R.id.btn_toggleProtection: {
-            view.getToggler().setRadioEnabled(chat.hasProtectedContent, isUpdate);
-            break;
-          }
-          case R.id.btn_toggleJoinByRequest: {
-            view.getToggler().setRadioEnabled(supergroup != null && supergroup.joinByRequest, isUpdate);
-            break;
-          }
-          case R.id.btn_toggleSignatures: {
-            if (mode == MODE_EDIT_CHANNEL) {
-              view.getToggler().setRadioEnabled(supergroup.signMessages, isUpdate);
-            }
-            break;
-          }
-          case R.id.btn_toggleAggressiveAntiSpam: {
-            view.getToggler().setRadioEnabled(supergroupFull != null && supergroupFull.hasAggressiveAntiSpamEnabled, isUpdate);
+          case R.id.btn_toggleSignatures:
+          case R.id.btn_toggleProtection:
+          case R.id.btn_toggleJoinByRequest:
+          case R.id.btn_toggleAggressiveAntiSpam:
+          case R.id.btn_toggleHideMembers: {
+            view.getToggler().setRadioEnabled(item.isSelected(), isUpdate);
             break;
           }
         }
@@ -3141,60 +3133,75 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     return false;
   }
 
-  private void toggleChannelSignatures () {
-    boolean sign = !supergroup.signMessages;
-    supergroup.signMessages = sign;
-    tdlib.client().send(new TdApi.ToggleSupergroupSignMessages(supergroup.id, sign), tdlib.okHandler());
-    baseAdapter.updateValuedSettingById(R.id.btn_toggleSignatures);
+  private interface SupergroupFeatureRunnable {
+    void setSupergroupFeatureValue (long supergroupId, @Nullable TdApi.SupergroupFullInfo fullInfo, boolean newValue);
   }
 
-  private void toggleAggressiveAntiSpam () {
-    if (tdlib.canDeleteMessages(chat.id)) {
-      boolean newValue = !(supergroupFull != null && supergroupFull.hasAggressiveAntiSpamEnabled);
-      if (supergroupFull != null) {
-        supergroupFull.hasAggressiveAntiSpamEnabled = newValue;
-        tdlib.client().send(new TdApi.ToggleSupergroupHasAggressiveAntiSpamEnabled(supergroup.id, newValue), tdlib.okHandler());
-        baseAdapter.updateValuedSettingById(R.id.btn_toggleAggressiveAntiSpam);
-      } else if (mode == MODE_EDIT_GROUP) {
-        showConfirm(Lang.getMarkdownString(this, R.string.UpgradeChatPrompt), Lang.getString(R.string.Proceed), () ->
-          tdlib.upgradeToSupergroup(chat.id, (oldChatId, newChatId, error) -> {
-            if (newChatId != 0) {
-              tdlib.client().send(new TdApi.ToggleSupergroupHasAggressiveAntiSpamEnabled(ChatId.toSupergroupId(newChatId), true), tdlib.okHandler());
-            }
-          })
-        );
-      }
+  private void toggleSupergroupGroupFeature (FutureBool currentValue, SupergroupFeatureRunnable runnable, @IdRes int toggleViewId) {
+    boolean newValue = !currentValue.get();
+    if (supergroupFull != null) {
+      runnable.setSupergroupFeatureValue(supergroup.id, supergroupFull, newValue);
+      baseAdapter.updateValuedSettingById(toggleViewId);
+    } else if (mode == MODE_EDIT_GROUP) {
+      showConfirm(Lang.getMarkdownString(this, R.string.UpgradeChatPrompt), Lang.getString(R.string.Proceed), () ->
+        tdlib.upgradeToSupergroup(chat.id, (oldChatId, newChatId, error) -> {
+          if (newChatId != 0) {
+            long supergroupId = ChatId.toSupergroupId(newChatId);
+            runnable.setSupergroupFeatureValue(supergroupId, supergroupFull, newValue);
+            runOnUiThreadOptional(() ->
+              baseAdapter.updateValuedSettingById(toggleViewId)
+            );
+          }
+        })
+      );
     }
+  }
 
+  private void toggleAggressiveAntiSpam (View v) {
+    boolean canToggleAggressiveAntiSpam =
+      (supergroupFull != null && supergroupFull.canToggleAggressiveAntiSpam) ||
+      (groupFull != null && groupFull.canToggleAggressiveAntiSpam);
+    if (canToggleAggressiveAntiSpam) {
+      boolean newValue = baseAdapter.toggleView(v);
+      aggressiveAntiSpamItem.setSelected(newValue);
+      checkDoneButton();
+    }
+  }
+
+  private void toggleHideMembers (View v) {
+    boolean canToggleHideMembers =
+      (supergroupFull != null && supergroupFull.canHideMembers) ||
+      (groupFull != null && groupFull.canHideMembers);
+    if (canToggleHideMembers) {
+      boolean newValue = baseAdapter.toggleView(v);
+      hideMembersItem.setSelected(newValue);
+      checkDoneButton();
+    }
   }
 
   private void toggleJoinByRequests (View v) {
     if (tdlib.canToggleJoinByRequest(chat)) {
-      boolean joinByRequest = !(supergroup != null && supergroup.joinByRequest);
-      if (supergroup != null) {
-        supergroup.joinByRequest = joinByRequest;
-        tdlib.client().send(new TdApi.ToggleSupergroupJoinByRequest(supergroup.id, joinByRequest), tdlib.okHandler());
-        baseAdapter.updateValuedSettingById(R.id.btn_toggleJoinByRequest);
-      } else if (mode == MODE_EDIT_GROUP) {
-        showConfirm(Lang.getMarkdownString(this, R.string.UpgradeChatPrompt), Lang.getString(R.string.Proceed), () ->
-          tdlib.upgradeToSupergroup(chat.id, (oldChatId, newChatId, error) -> {
-            if (newChatId != 0) {
-              tdlib.client().send(new TdApi.ToggleSupergroupJoinByRequest(ChatId.toSupergroupId(newChatId), joinByRequest), tdlib.okHandler());
-            }
-          })
-        );
-      }
+      boolean newValue = baseAdapter.toggleView(v);
+      toggleJoinByRequestItem.setSelected(newValue);
+      checkDoneButton();
     }
   }
 
   private void toggleContentProtection (View v) {
     if (tdlib.canToggleContentProtection(chat.id)) {
-      boolean enabled = !chat.hasProtectedContent;
-      chat.hasProtectedContent = enabled;
-      tdlib.client().send(new TdApi.ToggleChatHasProtectedContent(chat.id, enabled), tdlib.okHandler());
-      baseAdapter.updateValuedSettingById(R.id.btn_toggleProtection);
+      boolean enabled = baseAdapter.toggleView(v);
+      toggleHasProtectionItem.setSelected(enabled);
+      checkDoneButton();
     } else {
       context().tooltipManager().builder(((SettingView) v).getToggler()).show(tdlib, isChannel() ? R.string.OnlyOwnerChannel : R.string.OnlyOwnerGroup);
+    }
+  }
+
+  private void toggleChannelSignatures (View v) {
+    if (tdlib.canToggleSignMessages(chat)) {
+      boolean newValue = baseAdapter.toggleView(v);
+      toggleSignMessagesItem.setSelected(newValue);
+      checkDoneButton();
     }
   }
 
@@ -3471,7 +3478,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       (chatTitleItem != null && !StringUtils.equalsOrBothEmpty(chat.title, chatTitleItem.getStringValue())) ||
       (chatDescriptionItem != null && !StringUtils.equalsOrBothEmpty(getDescriptionValue(), chatDescriptionItem.getStringValue())) ||
       hasTtlChanges() ||
-      hasSlowModeChanges();
+      hasSlowModeChanges() ||
+      hasAggressiveAntiSpamChanges() ||
+      hasHideMembersChanges() ||
+      hasContentProtectionChanges() ||
+      hasJoinByRequestChanges() ||
+      hasSignMessagesChanges();
   }
 
   private boolean hasSlowModeChanges () {
@@ -3481,7 +3493,27 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
   private boolean hasAggressiveAntiSpamChanges () {
     boolean originalValue = supergroupFull != null && supergroupFull.hasAggressiveAntiSpamEnabled;
-    return aggressiveAntiSpamItem != null && originalValue != aggressiveAntiSpamDescItem.isSelected();
+    return aggressiveAntiSpamItem != null && originalValue != aggressiveAntiSpamItem.isSelected();
+  }
+
+  private boolean hasHideMembersChanges () {
+    boolean originalValue = supergroupFull != null && supergroupFull.hasHiddenMembers;
+    return hideMembersItem != null && originalValue != hideMembersItem.isSelected();
+  }
+
+  private boolean hasContentProtectionChanges () {
+    boolean originalValue = chat.hasProtectedContent;
+    return toggleHasProtectionItem != null && originalValue != toggleHasProtectionItem.isSelected();
+  }
+
+  private boolean hasJoinByRequestChanges () {
+    boolean originalValue = supergroup != null && supergroup.joinByRequest;
+    return toggleJoinByRequestItem != null && originalValue != toggleJoinByRequestItem.isSelected();
+  }
+
+  private boolean hasSignMessagesChanges () {
+    boolean originalValue = supergroup != null && supergroup.signMessages;
+    return toggleSignMessagesItem != null && originalValue != toggleSignMessagesItem.isSelected();
   }
 
   private boolean hasTtlChanges () {
@@ -3528,7 +3560,15 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       return;
     }
 
-    if (!force && hasSlowModeChanges() && ChatId.isBasicGroup(chat.id)) {
+    boolean hasSlowModeChanges = hasSlowModeChanges();
+    boolean hasTtlChanges = hasTtlChanges();
+    boolean hasAggressiveAntiSpamChanges = hasAggressiveAntiSpamChanges();
+    boolean hasHideMembersChanges = hasHideMembersChanges();
+    boolean hasContentProtectionChanges = hasContentProtectionChanges();
+    boolean hasJoinByRequestChanges = hasJoinByRequestChanges();
+    boolean hasSignMessagesChanges = hasSignMessagesChanges();
+
+    if (!force && (hasSlowModeChanges || hasAggressiveAntiSpamChanges || hasHideMembersChanges || hasJoinByRequestChanges || hasSignMessagesChanges) && ChatId.isBasicGroup(chat.id)) {
       showConfirm(Lang.getMarkdownString(this, R.string.UpgradeChatPrompt), Lang.getString(R.string.Proceed), () -> applyChatChanges(true));
       return;
     }
@@ -3552,15 +3592,32 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       }
     }
 
-    boolean hasSlowModeChanges = hasSlowModeChanges();
-    boolean hasTtlChanges = hasTtlChanges();
-
     if (hasSlowModeChanges) {
       changes.add(new TdApi.SetChatSlowModeDelay(chat.id, TdConstants.SLOW_MODE_OPTIONS[slowModeItem.getSliderValue()]));
     }
 
     if (hasTtlChanges) {
       changes.add(new TdApi.SetChatMessageAutoDeleteTime(chat.id, TdConstants.CHAT_TTL_OPTIONS[ttlItem.getSliderValue()]));
+    }
+
+    if (hasContentProtectionChanges) {
+      changes.add(new TdApi.ToggleChatHasProtectedContent(chat.id, toggleHasProtectionItem.isSelected()));
+    }
+
+    if (hasJoinByRequestChanges) {
+      changes.add(new TdApi.ToggleSupergroupJoinByRequest(ChatId.toSupergroupId(chat.id), toggleJoinByRequestItem.isSelected()));
+    }
+
+    if (hasAggressiveAntiSpamChanges) {
+      changes.add(new TdApi.ToggleSupergroupHasAggressiveAntiSpamEnabled(ChatId.toSupergroupId(chat.id), aggressiveAntiSpamItem.isSelected()));
+    }
+
+    if (hasHideMembersChanges) {
+      changes.add(new TdApi.ToggleSupergroupHasHiddenMembers(ChatId.toSupergroupId(chat.id), hideMembersItem.isSelected()));
+    }
+
+    if (hasSignMessagesChanges) {
+      changes.add(new TdApi.ToggleSupergroupSignMessages(ChatId.toSupergroupId(chat.id), toggleSignMessagesItem.isSelected()));
     }
 
     if (changes.isEmpty()) {
@@ -3665,7 +3722,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   private ListItem slowModeItem, slowModeDescItem;
-  private ListItem aggressiveAntiSpamItem, aggressiveAntiSpamDescItem;
+  private ListItem aggressiveAntiSpamItem, hideMembersItem,
+    toggleJoinByRequestItem, toggleHasProtectionItem, toggleSignMessagesItem;
   private ListItem ttlItem, ttlDescItem;
 
   private void buildEditCells () {
@@ -3736,7 +3794,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
     if (tdlib.canToggleJoinByRequest(chat)) {
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-      items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleJoinByRequest, 0, R.string.ApproveNewMembers, supergroup != null && supergroup.joinByRequest));
+      items.add(toggleJoinByRequestItem = new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleJoinByRequest, 0, R.string.ApproveNewMembers, supergroup != null && supergroup.joinByRequest));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.ApproveNewMembersInfo));
     }
@@ -3745,12 +3803,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
 
     if (tdlib.canToggleSignMessages(chat)) {
       items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
-      items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleSignatures, 0, R.string.ChannelSignMessages, supergroup.signMessages));
+      items.add(toggleSignMessagesItem = new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleSignatures, 0, R.string.ChannelSignMessages, supergroup.signMessages));
       added = true;
     }
     if (tdlib.canToggleContentProtection(chat.id) || TD.isAdmin(supergroup != null ? supergroup.status : group.status)) {
       items.add(new ListItem(added ? ListItem.TYPE_SEPARATOR_FULL : ListItem.TYPE_SHADOW_TOP));
-      items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleProtection, 0, R.string.RestrictSaving, chat.hasProtectedContent));
+      items.add(toggleHasProtectionItem = new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleProtection, 0, R.string.RestrictSaving, chat.hasProtectedContent));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
       items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, mode == MODE_EDIT_CHANNEL ? R.string.RestrictSavingChannelHint : R.string.RestrictSavingGroupHint));
       added = false;
@@ -3795,7 +3853,15 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
       items.add(aggressiveAntiSpamItem = new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleAggressiveAntiSpam, 0, R.string.AggressiveAntiSpam, aggressiveAntiSpamEnabled));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-      items.add(aggressiveAntiSpamDescItem = new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.AggressiveAntiSpamDesc));
+      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.AggressiveAntiSpamDesc));
+    }
+
+    if ((supergroupFull != null && supergroupFull.canHideMembers) || (groupFull != null && groupFull.canHideMembers && tdlib.canUpgradeChat(chat.id))) {
+      boolean membersHidden = supergroupFull != null && supergroupFull.hasHiddenMembers;
+      items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+      items.add(hideMembersItem = new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleHideMembers, 0, R.string.HideMembers, membersHidden));
+      items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+      items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.HideMembersDesc));
     }
 
     if (tdlib.canRestrictMembers(chat.id) && (tdlib.isSupergroup(chat.id) || (ChatId.isBasicGroup(chat.id) && tdlib.canUpgradeChat(chat.id)))) {
@@ -4728,11 +4794,15 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         break;
       }
       case R.id.btn_toggleSignatures: {
-        toggleChannelSignatures();
+        toggleChannelSignatures(v);
         break;
       }
       case R.id.btn_toggleAggressiveAntiSpam: {
-        toggleAggressiveAntiSpam();
+        toggleAggressiveAntiSpam(v);
+        break;
+      }
+      case R.id.btn_toggleHideMembers: {
+        toggleHideMembers(v);
         break;
       }
       case R.id.btn_toggleProtection: {
@@ -6142,6 +6212,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
             updateValuedItem(R.id.btn_channelType);
             updateValuedItem(R.id.btn_linkedChat);
             updateValuedItem(R.id.btn_toggleAggressiveAntiSpam);
+            updateValuedItem(R.id.btn_toggleHideMembers);
             if (mode == MODE_EDIT_CHANNEL || mode == MODE_EDIT_SUPERGROUP) {
               int i = baseAdapter.indexOfViewById(R.id.btn_linkedChat);
               boolean hasLinkedChat = i != -1;

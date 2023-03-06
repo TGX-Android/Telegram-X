@@ -4553,6 +4553,9 @@
   <string name="ReportFalsePositiveOk">Telegram moderators will review your report. Thank you!</string>
   <string name="AggressiveAntiSpamBot">You can manage anti-spam settings on Manage Group screen</string>
 
+  <string name="HideMembers">Hide Members</string>
+  <string name="HideMembersDesc">Switch on to hide the list of members in this group. Admins will remain visible.</string>
+
   <string name="MultiUsernamePrefix">also</string>
   <string name="MultiLinkPrefix">also</string>
 

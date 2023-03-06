@@ -1085,6 +1085,7 @@
   <item type="id" name="btn_discard_record" />
 
   <item type="id" name="btn_toggleAggressiveAntiSpam" />
+  <item type="id" name="btn_toggleHideMembers" />
   <item type="id" name="btn_reportFalsePositive" />
 
   <item type="id" name="btn_approveChatRequest" />

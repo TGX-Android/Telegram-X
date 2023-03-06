@@ -340,7 +340,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         success = false;
       }
       TGMessage msg = view instanceof MessageProvider ? ((MessageProvider) view).getMessage() : null;
-      if (msg != null) {
+      if (msg != null && msg.getChatId() == loader.getChatId()) {
         if (!msg.canBeSaved() && !msg.isSponsored()) {
           hasProtectedContent = true;
         }
