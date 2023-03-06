@@ -81,7 +81,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
 
   @Override
   protected CharSequence buildTotalCount (ArrayList<DoubleTextWrapper> data) {
-    int res = R.string.xMembers;
+    int res = forceAdmins ? R.string.xAdmins : R.string.xMembers;
     if (specificFilter != null) {
       switch (specificFilter.getConstructor()) {
         case TdApi.SupergroupMembersFilterAdministrators.CONSTRUCTOR:
