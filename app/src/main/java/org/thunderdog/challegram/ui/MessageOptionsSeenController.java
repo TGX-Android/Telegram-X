@@ -9,6 +9,7 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.popups.MessageSeenController;
 import org.thunderdog.challegram.component.user.UserView;
+import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.support.ViewSupport;
@@ -19,6 +20,7 @@ import org.thunderdog.challegram.widget.ListInfoView;
 import org.thunderdog.challegram.widget.PopupLayout;
 
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 
 public class MessageOptionsSeenController extends BottomSheetViewController.BottomSheetBaseRecyclerViewController<Void> implements View.OnClickListener {
   private SettingsAdapter adapter;
@@ -42,7 +44,17 @@ public class MessageOptionsSeenController extends BottomSheetViewController.Bott
     adapter = new SettingsAdapter(this) {
       @Override
       protected void setUser (ListItem item, int position, UserView userView, boolean isUpdate) {
-        userView.setUser(new TGUser(tdlib, tdlib.chatUser(item.getLongId())));
+        TGUser user = new TGUser(tdlib, tdlib.chatUser(item.getLongId()));
+        int viewDateSeconds = item.getIntValue();
+        if (viewDateSeconds != 0) {
+          long elapsedSeconds = tdlib.currentTime(TimeUnit.SECONDS) - viewDateSeconds;
+          // Allow "X minutes ago"
+          boolean allowDuration =
+            elapsedSeconds < TimeUnit.MINUTES.toSeconds(60) &&
+            elapsedSeconds >= -TimeUnit.MINUTES.toSeconds(1);
+          user.setCustomStatus(Lang.getViewed(tdlib, item.getIntValue(), TimeUnit.SECONDS, allowDuration, message.getMessage().content));
+        }
+        userView.setUser(user);
       }
 
       @Override

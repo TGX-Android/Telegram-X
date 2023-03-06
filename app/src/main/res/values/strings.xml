@@ -4564,4 +4564,41 @@
   <string name="AnonymousNumbers">&#127988;&#8205;&#9760;&#65039; Anonymous Numbers</string>
 
   <string name="login_DeadEnd">We could not send an SMS with a confirmation code to your phone number. __Contact us__, if you need help.</string>
+
+  <string name="viewed_now">viewed just now</string>
+  <string name="viewed_today">viewed today at %1$s</string>
+  <string name="viewed_yesterday">viewed yesterday at %1$s</string>
+  <string name="viewed_weekday">viewed on %1$s at %2$s</string>
+  <string name="viewed_date">viewed on %1$s at %2$s</string>
+  <string name="viewed_seconds_one">viewed %1$s second ago</string>
+  <string name="viewed_seconds_other">viewed %1$s seconds ago</string>
+  <string name="viewed_minutes_one">viewed %1$s minute ago</string>
+  <string name="viewed_minutes_other">viewed %1$s minutes ago</string>
+  <string name="viewed_hours_one">viewed %1$s hour ago</string>
+  <string name="viewed_hours_other">viewed %1$s hours ago</string>
+
+  <string name="opened_voice_now">listened just now</string>
+  <string name="opened_voice_today">listened today at %1$s</string>
+  <string name="opened_voice_yesterday">listened yesterday at %1$s</string>
+  <string name="opened_voice_weekday">listened on %1$s at %2$s</string>
+  <string name="opened_voice_date">listened on %1$s at %2$s</string>
+  <string name="opened_voice_seconds_one">listened %1$s second ago</string>
+  <string name="opened_voice_seconds_other">listened %1$s seconds ago</string>
+  <string name="opened_voice_minutes_one">listened %1$s minute ago</string>
+  <string name="opened_voice_minutes_other">listened %1$s minutes ago</string>
+  <string name="opened_voice_hours_one">listened %1$s hour ago</string>
+  <string name="opened_voice_hours_other">listened %1$s hours ago</string>
+
+  <string name="opened_round_now">watched just now</string>
+  <string name="opened_round_today">watched today at %1$s</string>
+  <string name="opened_round_yesterday">watched yesterday at %1$s</string>
+  <string name="opened_round_weekday">watched on %1$s at %2$s</string>
+  <string name="opened_round_date">watched on %1$s at %2$s</string>
+  <string name="opened_round_seconds_one">watched %1$s second ago</string>
+  <string name="opened_round_seconds_other">watched %1$s seconds ago</string>
+  <string name="opened_round_minutes_one">watched %1$s minute ago</string>
+  <string name="opened_round_minutes_other">watched %1$s minutes ago</string>
+  <string name="opened_round_hours_one">watched %1$s hour ago</string>
+  <string name="opened_round_hours_other">watched %1$s hours ago</string>
+
 </resources>
