@@ -2052,7 +2052,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   // Reading messages
 
   boolean viewMessagesInternal (final long chatId, final long messageThreadId, final LongSet viewed) {
-    if (allowReadMessages()) {
+    if (allowReadMessages() && !viewed.isEmpty()) {
       final long[] messageIds = viewed.toArray();
       if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
         Log.i(Log.TAG_MESSAGES_LOADER, "Reading %d messages: %s", messageIds.length, Arrays.toString(messageIds));

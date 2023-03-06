@@ -792,7 +792,7 @@ public class TdlibUi extends Handler {
   public boolean updateTTLButton (int menuId, HeaderView headerView, TdApi.Chat chat, boolean force) {
     boolean isVisible = false;
     if (headerView != null) {
-      headerView.updateMenuStopwatch(menuId, R.id.menu_btn_stopwatch, getTTLShort(chat != null ? chat.id : 0), isVisible = tdlib.canChangeMessageAutoDeleteTime(chat.id), force);
+      headerView.updateMenuStopwatch(menuId, R.id.menu_btn_stopwatch, getTTLShort(chat != null ? chat.id : 0), isVisible = tdlib.canChangeMessageAutoDeleteTime(chat != null ? chat.id : 0), force);
     }
     return isVisible;
   }

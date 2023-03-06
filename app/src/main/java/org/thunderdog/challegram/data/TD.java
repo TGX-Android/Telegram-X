@@ -4180,14 +4180,6 @@ public class TD {
         U.set(isTranslatable, false);
         return ((TdApi.MessageCustomServiceAction) m.content).text;
       }
-      case TdApi.MessagePassportDataSent.CONSTRUCTOR:
-      case TdApi.MessageForumTopicCreated.CONSTRUCTOR:
-      case TdApi.MessageForumTopicEdited.CONSTRUCTOR:
-      case TdApi.MessageForumTopicIsClosedToggled.CONSTRUCTOR:
-      case TdApi.MessageForumTopicIsHiddenToggled.CONSTRUCTOR: { // TODO
-        U.set(isTranslatable, true);
-        return Lang.getString(R.string.UnsupportedMessage);
-      }
       case TdApi.MessageUnsupported.CONSTRUCTOR: {
         U.set(isTranslatable, true);
         return Lang.getString(R.string.UnsupportedMessageType);
@@ -4199,15 +4191,27 @@ public class TD {
       case TdApi.MessageVideoChatEnded.CONSTRUCTOR:
       case TdApi.MessageVideoChatScheduled.CONSTRUCTOR:
       case TdApi.MessageVideoChatStarted.CONSTRUCTOR:
-        break;
+        throw new IllegalArgumentException(m.content.toString());
       // Bots only. Unused
       case TdApi.MessagePassportDataReceived.CONSTRUCTOR:
       case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
       case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
-        break;
+        throw new IllegalStateException(m.content.toString());
+      // TODO
+      case TdApi.MessagePassportDataSent.CONSTRUCTOR:
+      case TdApi.MessageForumTopicCreated.CONSTRUCTOR:
+      case TdApi.MessageForumTopicEdited.CONSTRUCTOR:
+      case TdApi.MessageForumTopicIsClosedToggled.CONSTRUCTOR:
+      case TdApi.MessageForumTopicIsHiddenToggled.CONSTRUCTOR:
+      case TdApi.MessageBotWriteAccessAllowed.CONSTRUCTOR:
+      case TdApi.MessageChatShared.CONSTRUCTOR:
+      case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
+      case TdApi.MessageUserShared.CONSTRUCTOR:
+      default: {
+        U.set(isTranslatable, true);
+        return Lang.getString(R.string.UnsupportedMessage);
+      }
     }
-    U.set(isTranslatable, false);
-    return "(null)";
   }
 
   public static String getFirstName (TdApi.User user) {

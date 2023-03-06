@@ -4095,10 +4095,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (msg.content.getConstructor() == TdApiExt.MessageChatEvent.CONSTRUCTOR) {
       return true;
     }
-    if (isSponsored()) {
-      return true;
-    }
-    return false;
+    return isSponsored() || isDemoChat();
   }
 
   public final void getIds (@NonNull LongSet ids, long afterMessageId, long beforeMessageId) {
