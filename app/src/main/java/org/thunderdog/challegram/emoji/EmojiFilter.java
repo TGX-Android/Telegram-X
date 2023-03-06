@@ -58,6 +58,11 @@ public class EmojiFilter implements InputFilter {
   }
 
   private CharSequence replaceEmojiOrNull (CharSequence source, int start, int end) {
+    if (end < start) {
+      int temp = start;
+      start = end;
+      end = temp;
+    }
     if (end - start == 0) {
       return null;
     }
@@ -78,7 +83,7 @@ public class EmojiFilter implements InputFilter {
           final int emojiStart = spanned.getSpanStart(span);
           final int emojiEnd = spanned.getSpanEnd(span);
 
-          if (emojiStart == -1 || emojiEnd == -1)
+          if (emojiStart == -1 || emojiEnd == -1 || emojiEnd - emojiStart <= 0)
             continue;
 
           if (emojiStart > cend) {
@@ -95,10 +100,10 @@ public class EmojiFilter implements InputFilter {
             cend = emojiStart;
           }
 
-          if (emojiEnd <= cend)
+          if (emojiEnd < cend)
             throw new IllegalStateException();
 
-          if (b != null) {
+          if (emojiEnd > cend && b != null) {
             b.append(source, cend, emojiEnd);
           }
           cend = emojiEnd;
