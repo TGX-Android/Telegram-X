@@ -299,7 +299,7 @@ public class SearchManager {
     this.lastQuery = null;
     this.lastChatList = null;
     this.scheduledShowHideTop = false;
-    this.canLoadMoreMessages = false;
+    clearMessages();
     setLoadingMessages(false);
     this.isEndReached = false;
     this.isHeavyPartReached = false;
@@ -958,7 +958,7 @@ public class SearchManager {
     }
 
     public boolean isEmpty () {
-      return !messages.isEmpty();
+      return messages.isEmpty();
     }
 
     public int size () {
@@ -967,7 +967,6 @@ public class SearchManager {
   }
 
   private MessagesList messageList;
-  private boolean canLoadMoreMessages;
 
   private void setLoadingMessages (boolean areLoading) {
     if (this.isLoadingMessages != areLoading) {
@@ -977,8 +976,9 @@ public class SearchManager {
 
   private void clearMessages () {
     if (messageList != null && !messageList.isEmpty()) {
-      listener.onRemoveMessages(messageList.size());
+      int size = messageList.size();
       messageList = null;
+      listener.onRemoveMessages(size);
     }
   }
 
@@ -1063,7 +1063,6 @@ public class SearchManager {
           }
           tdlib.ui().post(() -> {
             if (contextId == currentContextId) {
-              canLoadMoreMessages = !StringUtils.isEmpty(nextOffset);
               setMessages(currentContextId, query, loadCount, messages, isMore, nextOffset);
             }
           });
@@ -1093,7 +1092,6 @@ public class SearchManager {
     }
 
     if (addedMessagesCount == 0) {
-      canLoadMoreMessages = false;
       if (!isMore) {
         clearMessages();
       }
@@ -1106,6 +1104,7 @@ public class SearchManager {
     }
     this.messageList.messages.ensureCapacity(this.messageList.messages.size() + foundMessages.length);
     Collections.addAll(this.messageList.messages, foundMessages);
+    this.messageList.nextOffset = nextOffset;
 
     if (isMore) {
       listener.onAddMoreMessages(oldMessagesCount, messageList.messages);
@@ -1115,7 +1114,7 @@ public class SearchManager {
       listener.onUpdateMessages(oldMessagesCount, this.messageList.messages);
     }
 
-    if (!canLoadMoreMessages) {
+    if (StringUtils.isEmpty(nextOffset)) {
       onEndReached();
     }
   }
@@ -1123,7 +1122,7 @@ public class SearchManager {
   private boolean isLoadingMessages;
 
   public void loadMoreMessages () {
-    if (!isLoadingMessages && canLoadMoreMessages && messageList != null && !messageList.isEmpty()) {
+    if (!isLoadingMessages && messageList != null && !messageList.isEmpty() && !StringUtils.isEmpty(messageList.nextOffset)) {
       searchMessages(contextId, lastChatList, lastQuery, true);
     }
   }
