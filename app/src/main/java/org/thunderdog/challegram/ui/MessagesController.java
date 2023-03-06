@@ -4661,20 +4661,18 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
 
     int selectedCount = 0;
-    LongList ids = new LongList(TdConstants.MAX_MESSAGE_GROUP_SIZE);
+    LongSet ids = new LongSet(TdConstants.MAX_MESSAGE_GROUP_SIZE);
     for (int i = secondContainerIndex; i <= firstContainerIndex; i++) {
       TGMessage container = manager.getAdapter().getMessage(i);
       if (!container.canBeSelected()) {
         continue;
       }
       container.getIds(ids, firstMessageId, secondMessageId);
-      int size = ids.size();
-      for (int j = 0; j < size; j++) {
-        long id = ids.get(j);
+      for (long id : ids) {
         container.setSelected(id, true, true, -1, -1, null);
         putSelectedMessageId(id, container);
       }
-      selectedCount += size;
+      selectedCount += ids.size();
       ids.clear();
     }
 

@@ -4090,54 +4090,47 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return new MessageId(msg.chatId, msg.id, getOtherMessageIds(msg.id));
   }
 
-  public final void getIds (@NonNull LongList ids, long afterMessageId, long beforeMessageId) {
-    synchronized (this) {
-      if (combinedMessages != null && !combinedMessages.isEmpty()) {
-        for (TdApi.Message msg : combinedMessages) {
-          if (msg.id > afterMessageId && msg.id < beforeMessageId) {
-            ids.append(msg.id);
-          }
-        }
-        return;
-      }
-    }
-    if (msg.id > afterMessageId && msg.id < beforeMessageId) {
-      ids.append(msg.id);
-    }
-  }
-
-  public final void getIds (@NonNull LongSet ids) {
+  protected boolean isFakeMessage () {
     //noinspection WrongConstant
     if (msg.content.getConstructor() == TdApiExt.MessageChatEvent.CONSTRUCTOR) {
+      return true;
+    }
+    if (isSponsored()) {
+      return true;
+    }
+    return false;
+  }
+
+  public final void getIds (@NonNull LongSet ids, long afterMessageId, long beforeMessageId) {
+    if (isFakeMessage()) {
       return;
     }
     synchronized (this) {
       if (combinedMessages != null && !combinedMessages.isEmpty()) {
         ids.ensureCapacity(ids.size() + combinedMessages.size());
         for (TdApi.Message msg : combinedMessages) {
-          ids.add(msg.id);
+          if (msg.id != 0 && ((afterMessageId == 0 && beforeMessageId == 0) || (msg.id > afterMessageId && msg.id < beforeMessageId))) {
+            ids.add(msg.id);
+          }
         }
         return;
       }
     }
-    ids.add(msg.id);
+    if (msg.id != 0 && ((afterMessageId == 0 && beforeMessageId == 0) || (msg.id > afterMessageId && msg.id < beforeMessageId))) {
+      ids.add(msg.id);
+    }
+  }
+
+  public final void getIds (@NonNull LongSet ids) {
+    getIds(ids, 0, 0);
   }
 
   public final long[] getIds () {
-    synchronized (this) {
-      if (combinedMessages != null) {
-        long[] ids = new long[combinedMessages.size()];
-        int i = 0;
-        for (TdApi.Message msg : combinedMessages) {
-          ids[i] = msg.id;
-          i++;
-        }
-        Arrays.sort(ids);
-        return ids;
-      } else {
-        return new long[] {msg.id};
-      }
-    }
+    LongSet ids = new LongSet(getMessageCount());
+    getIds(ids, 0, 0);
+    long[] result = ids.toArray();
+    Arrays.sort(result);
+    return result;
   }
 
   public final boolean isMessageThreadRoot () {
