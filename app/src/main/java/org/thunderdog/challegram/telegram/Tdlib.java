@@ -9390,6 +9390,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       return false;
     }
     TdApi.ChatMemberStatus status = chatStatus(chatId);
+    TdApi.Chat chat = chat(chatId);
     if (status != null) {
       switch (status.getConstructor()) {
         case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
@@ -9407,9 +9408,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         case TdApi.ChatMemberStatusLeft.CONSTRUCTOR:
           return false;
       }
+      return chat != null && chat.permissions.canChangeInfo;
     }
-    TdApi.Chat chat = chat(chatId);
-    return chat != null && chat.permissions.canChangeInfo;
+    return chat != null && chat.permissions.canSendBasicMessages;
   }
 
   public boolean canPinMessages (TdApi.Chat chat) {
