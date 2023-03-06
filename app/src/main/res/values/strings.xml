@@ -663,6 +663,7 @@
   <string name="GlobalSearch">Global Search</string>
   <string name="Global">Global</string>
   <string name="Recent">Recent</string>
+  <string name="RecentAdmins">Admins</string>
   <string name="ClearRecentsHint">Clear recent searches?</string>
   <string name="YoutubeRotateHint">PS: Rotate your screen to minimize player</string>
   <string name="PublicLinkTooShort">Public link is too short</string>

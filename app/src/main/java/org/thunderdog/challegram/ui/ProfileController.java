@@ -5521,8 +5521,20 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         default: {
           String restrictionReason = tdlib.chatRestrictionReason(chat);
 
-          if (mode == MODE_GROUP || mode == MODE_SUPERGROUP) {
+          if (mode == MODE_GROUP) {
             controllers.add(new SharedMembersController(context, tdlib));
+          } else if (mode == MODE_SUPERGROUP) {
+            TdApi.SupergroupFullInfo supergroupFull = tdlib.cache().supergroupFull(supergroup.id);
+            if (supergroupFull != null && supergroupFull.canGetMembers) {
+              SharedMembersController c = new SharedMembersController(context, tdlib);
+              if (supergroupFull.hasHiddenMembers) {
+                TdApi.ChatMemberStatus status = tdlib.chatStatus(chat.id);
+                if (!TD.isAdmin(status)) {
+                  c.setForceAdmins(true);
+                }
+              }
+              controllers.add(c);
+            }
           }
 
           if (restrictionReason == null) {

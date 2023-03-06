@@ -58,6 +58,12 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
     return R.drawable.baseline_group_20;
   }*/
 
+  private boolean forceAdmins;
+
+  public void setForceAdmins (boolean forceAdmins) {
+    this.forceAdmins = forceAdmins;
+  }
+
   @Override
   public CharSequence getName () {
     if (specificFilter != null) {
@@ -70,7 +76,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
           return Lang.getString(R.string.TabRestricted);
       }
     }
-    return Lang.getString(R.string.TabMembers);
+    return Lang.getString(forceAdmins ? R.string.TabAdmins : R.string.TabMembers);
   }
 
   @Override
@@ -608,7 +614,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
           return Lang.getString(isChannel() ? R.string.MembersDetailBannedChannel : R.string.MembersDetailBannedGroup);
       }
     }
-    return Lang.getString(R.string.Recent);
+    return Lang.getString(forceAdmins ? R.string.RecentAdmins : R.string.Recent);
   }
 
   @Override
