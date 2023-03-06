@@ -684,7 +684,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
 
   private static ArrayList<InlineResult<?>> parseInlineResults (BaseActivity context, Tdlib tdlib, long inlineBotUserId, String inlineQuery, TdApi.InlineQueryResults results, TdApi.GetInlineQueryResults queryResults, String inlineNextOffset) {
     // TODO support other button types
-    boolean hasButton = results.button != null && results.button.getConstructor() == TdApi.InlineQueryResultsButtonTypeStartBot.CONSTRUCTOR;
+    boolean hasButton = results.button != null && results.button.type.getConstructor() == TdApi.InlineQueryResultsButtonTypeStartBot.CONSTRUCTOR;
     final ArrayList<InlineResult<?>> items = new ArrayList<>(results.results.length + (hasButton ? 1 : 0));
     if (hasButton) {
       items.add(new InlineResultButton(context, tdlib, inlineBotUserId, results.button));
