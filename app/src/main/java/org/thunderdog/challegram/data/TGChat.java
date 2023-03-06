@@ -940,7 +940,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
           }
         }
       } else {
-        int date = chat.draftMessage != null ? chat.draftMessage.date : chat.lastMessage != null ? chat.lastMessage.date : 0;
+        int date = chat.draftMessage != null && showDraft() ? chat.draftMessage.date : chat.lastMessage != null ? chat.lastMessage.date : 0;
         time = date != 0 ? Lang.timeOrDateShort(date, TimeUnit.SECONDS) : "";
       }
     }
