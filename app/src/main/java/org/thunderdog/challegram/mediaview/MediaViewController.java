@@ -2022,7 +2022,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     switch (mode) {
       case MODE_MESSAGES: {
         long chatId = stack.getCurrent().getSourceChatId();
-        if (chatId == 0) {
+        if (chatId == 0 || getArgumentsStrict().areOnlyScheduled) {
           return;
         }
         if (!loadedInitialChunk || (reverseMode ? (edgeReached && isEnd) || stack.getCurrentIndex() >= stack.getCurrentSize() - LOAD_THRESHOLD : (edgeReached && !isEnd) || stack.getCurrentIndex() <= LOAD_THRESHOLD)) {
@@ -8300,6 +8300,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       ((MediaCollectorDelegate) context).modifyMediaArguments(message, args);
     }
     args.noLoadMore = message.isEventLog();
+    args.areOnlyScheduled = message.isScheduled();
 
     openWithArgs(context, args);
   }
@@ -8345,6 +8346,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     args.customSubtitle = subtitle;
     args.copyLink = webPage.url;
     args.forceThumbs = true;
+    args.areOnlyScheduled = msg.isScheduled();
     if (context instanceof MediaCollectorDelegate) {
       ((MediaCollectorDelegate) context).modifyMediaArguments(msg, args);
     }
@@ -8410,6 +8412,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     }
     args.setFilter(filter);
     args.setMessageThreadId(messageContainer.messagesController().getMessageThreadId());
+    args.areOnlyScheduled = TD.isScheduled(msg);
 
     openWithArgs(context, args);
   }
