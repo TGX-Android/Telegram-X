@@ -64,6 +64,7 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
@@ -968,7 +969,15 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
         cellLeft, cellTop, cellRight, cellBottom,
         Paints.fillingPaint(ColorUtils.alphaColor(spoilerFactor, Theme.getColor(R.id.theme_color_spoilerMediaOverlay)))
       );
-      // TODO draw particles
+      DrawAlgorithms.drawParticles(c,
+        BitwiseUtils.getFlag(roundings, ROUND_TOP_LEFT) ? radius : 0,
+        BitwiseUtils.getFlag(roundings, ROUND_TOP_RIGHT) ? radius : 0,
+        BitwiseUtils.getFlag(roundings, ROUND_BOTTOM_RIGHT) ? radius : 0,
+        BitwiseUtils.getFlag(roundings, ROUND_BOTTOM_LEFT) ? radius : 0,
+        cellLeft, cellTop, cellRight, cellBottom,
+        PorterDuffPaint.get(R.id.theme_color_white, spoilerFactor),
+        spoilerFactor
+      );
     }
 
     if (selectionPadding > 0) {

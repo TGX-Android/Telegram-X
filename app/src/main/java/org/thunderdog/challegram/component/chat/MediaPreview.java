@@ -43,7 +43,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
     }
   }*/
 
-  public static MediaPreview valueOf (Tdlib tdlib, TdApi.Video video, int size, int cornerRadius) {
+  public static MediaPreview valueOf (Tdlib tdlib, TdApi.Video video, int size, int cornerRadius, boolean hasSpoiler) {
     if (video.thumbnail != null || video.minithumbnail != null) {
       return new MediaPreviewSimple(tdlib, size, cornerRadius, video.thumbnail, video.minithumbnail);
     }
@@ -149,7 +149,7 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
         if (webPage != null) {
           if (webPage.video != null) {
             // video preview
-            return valueOf(tdlib, webPage.video, size, cornerRadius);
+            return valueOf(tdlib, webPage.video, size, cornerRadius, false);
           } else if (webPage.sticker != null) {
             // sticker preview
             return new MediaPreviewSimple(tdlib, cornerRadius, size, webPage.sticker);
@@ -175,10 +175,11 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
         break;
       }
       case TdApi.MessagePhoto.CONSTRUCTOR: {
-        TdApi.Photo photo = ((TdApi.MessagePhoto) message.content).photo;
+        TdApi.MessagePhoto messagePhoto = (TdApi.MessagePhoto) message.content;
+        TdApi.Photo photo = messagePhoto.photo;
         TdApi.PhotoSize thumbnail = Td.findSmallest(photo);
         if (thumbnail != null || photo.minithumbnail != null) {
-          return new MediaPreviewSimple(tdlib, size, cornerRadius, TD.toThumbnail(thumbnail), photo.minithumbnail);
+          return new MediaPreviewSimple(tdlib, size, cornerRadius, TD.toThumbnail(thumbnail), photo.minithumbnail, messagePhoto.hasSpoiler);
         }
         break;
       }
@@ -200,13 +201,14 @@ public abstract class MediaPreview implements ListAnimator.Measurable {
         break;
       }
       case TdApi.MessageVideo.CONSTRUCTOR: {
-        TdApi.Video video = ((TdApi.MessageVideo) message.content).video;
-        return valueOf(tdlib, video, size, cornerRadius);
+        TdApi.MessageVideo messageVideo = (TdApi.MessageVideo) message.content;
+        return valueOf(tdlib, messageVideo.video, size, cornerRadius, messageVideo.hasSpoiler);
       }
       case TdApi.MessageAnimation.CONSTRUCTOR: {
-        TdApi.Animation animation = ((TdApi.MessageAnimation) message.content).animation;
+        TdApi.MessageAnimation messageAnimation = (TdApi.MessageAnimation) message.content;
+        TdApi.Animation animation = messageAnimation.animation;
         if (animation.minithumbnail != null || animation.thumbnail != null) {
-          return new MediaPreviewSimple(tdlib, size, cornerRadius, animation.thumbnail, animation.minithumbnail);
+          return new MediaPreviewSimple(tdlib, size, cornerRadius, animation.thumbnail, animation.minithumbnail, messageAnimation.hasSpoiler);
         }
         break;
       }

@@ -107,6 +107,26 @@ public class DrawAlgorithms {
       c.drawRect(left, top, right, bottom, paint);
     }
   }
+
+  public static void drawParticles (Canvas c, float radius, float left, float top, float right, float bottom, Paint paint, float alpha) {
+    drawParticles(c, radius, radius, radius, radius, left, top, right, bottom, paint, alpha);
+  }
+
+  public static void drawParticles (Canvas c, float topLeftRadius, float topRightRadius, float bottomRightRadius, float bottomLeftRadius, float left, float top, float right, float bottom, Paint paint, float alpha) {
+    // TODO
+
+    float centerX = left + (right - left) / 2f;
+    float centerY = top + (bottom - top) / 2f;
+
+    Drawable drawable = Drawables.get(R.drawable.deproko_baseline_whatshot_16);
+
+    c.drawCircle(centerX, centerY,
+      Math.max(drawable.getMinimumWidth(), drawable.getMinimumHeight()) / 2f * 1.65f,
+      Paints.fillingPaint(ColorUtils.alphaColor(alpha, 0x44000000))
+    );
+
+    Drawables.drawCentered(c, drawable, centerX, centerY, paint);
+  }
   public static void drawReceiver (Canvas c, Receiver preview, Receiver receiver, boolean clearPreview, boolean needPlaceholder, int left, int top, int right, int bottom) {
     drawReceiver(c, preview, receiver, clearPreview, needPlaceholder, left, top, right, bottom, 1f, 1f);
   }
