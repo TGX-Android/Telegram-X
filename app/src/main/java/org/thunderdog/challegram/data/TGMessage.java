@@ -7350,13 +7350,16 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           return new TGMessageCall(context, msg, nonNull(((TdApi.MessageCall) content)));
         }
         case TdApi.MessagePhoto.CONSTRUCTOR: {
-          return new TGMessageMedia(context, msg, nonNull(((TdApi.MessagePhoto) content).photo), ((TdApi.MessagePhoto) content).caption);
+          TdApi.MessagePhoto messagePhoto = (TdApi.MessagePhoto) content;
+          return new TGMessageMedia(context, msg, messagePhoto, messagePhoto.caption);
         }
         case TdApi.MessageVideo.CONSTRUCTOR: {
-          return new TGMessageMedia(context, msg, nonNull(((TdApi.MessageVideo) content).video), ((TdApi.MessageVideo) content).caption);
+          TdApi.MessageVideo messageVideo = (TdApi.MessageVideo) content;
+          return new TGMessageMedia(context, msg, messageVideo, messageVideo.caption);
         }
         case TdApi.MessageAnimation.CONSTRUCTOR: {
-          return new TGMessageMedia(context, msg, nonNull(((TdApi.MessageAnimation) content).animation), ((TdApi.MessageAnimation) content).caption);
+          TdApi.MessageAnimation messageAnimation = (TdApi.MessageAnimation) content;
+          return new TGMessageMedia(context, msg, messageAnimation, messageAnimation.caption);
         }
         case TdApi.MessageVideoNote.CONSTRUCTOR: {
           return new TGMessageVideo(context, msg, nonNull(((TdApi.MessageVideoNote) content).videoNote), ((TdApi.MessageVideoNote) content).isViewed);

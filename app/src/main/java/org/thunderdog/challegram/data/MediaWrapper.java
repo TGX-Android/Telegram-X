@@ -76,6 +76,7 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.util.ViewProvider;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
@@ -122,6 +123,12 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
 
   private @Nullable OnClickListener onClickListener;
   private final boolean useHotStuff;
+  private boolean revealOnTap;
+  private final BoolAnimator spoilerOverlayVisible = new BoolAnimator(0, (id, factor, fraction, callee) -> {
+    if (source != null) {
+      source.postInvalidate();
+    }
+  }, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
 
   private boolean hideLoader;
 
@@ -130,6 +137,11 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       source.postInvalidate();
     }
   }, AnimatorUtils.DECELERATE_INTERPOLATOR, 230l);
+
+  public MediaWrapper (BaseActivity context, Tdlib tdlib, @NonNull TdApi.MessagePhoto photo, long chatId, long messageId, @Nullable TGMessage source, boolean useHotStuff) {
+    this(context, tdlib, photo.photo, chatId, messageId, source, useHotStuff, false);
+    setRevealOnTap(photo.hasSpoiler);
+  }
 
   public MediaWrapper (BaseActivity context, Tdlib tdlib, @NonNull TdApi.Photo photo, long chatId, long messageId, @Nullable TGMessage source, boolean useHotStuff) {
     this(context, tdlib, photo, chatId, messageId, source, useHotStuff, false);
@@ -141,7 +153,6 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
 
   public MediaWrapper (BaseActivity context, Tdlib tdlib, @NonNull TdApi.Photo photo, long chatId, long messageId, @Nullable TGMessage source, boolean useHotStuff, boolean isWebp, @Nullable EmbeddedService nativeEmbed) {
     this.tdlib = tdlib;
-    this.photo = photo;
     this.source = source;
     this.sourceMessageId = messageId;
     this.useHotStuff = useHotStuff;
@@ -222,12 +233,34 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     }
   }
 
+  public MediaWrapper (BaseActivity context, Tdlib tdlib, @NonNull TdApi.MessageVideo video, long chatId, long messageId, @Nullable TGMessage source, boolean useHotStuff) {
+    this(context, tdlib, video.video, chatId, messageId, source, useHotStuff);
+    setRevealOnTap(video.hasSpoiler);
+  }
+
   public MediaWrapper (BaseActivity context, Tdlib tdlib, @NonNull TdApi.Video video, long chatId, long messageId, @Nullable TGMessage source, boolean useHotStuff) {
     this.tdlib = tdlib;
-    this.video = video;
     this.source = source;
     this.sourceMessageId = messageId;
     this.useHotStuff = useHotStuff;
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+      this.path = new Path();
+    }
+
+    this.fileProgress = new FileProgressComponent(context, tdlib, TdlibFilesManager.DOWNLOAD_FLAG_VIDEO, !isHot(), chatId, messageId);
+    this.fileProgress.setDownloadedIconRes(isHot() ? (source != null && source.isHotDone() ? R.drawable.baseline_check_24 : R.drawable.deproko_baseline_whatshot_24) : FileProgressComponent.PLAY_ICON);
+    this.fileProgress.setSimpleListener(this);
+
+    if (source != null && source.isHotTimerStarted() && !source.isOutgoing()) {
+      fileProgress.setHideDownloadedIcon(true);
+    }
+
+    setVideo(messageId, video);
+  }
+
+  private void setVideo (long messageId, TdApi.Video video) {
+    this.video = video;
 
     if ((video.width == 0 || video.height == 0) && video.thumbnail != null) {
       video.width = video.thumbnail.width;
@@ -239,10 +272,6 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       video.width = video.height;
       video.height = temp;
     }*/
-
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-      this.path = new Path();
-    }
 
     setPreviewFile(video.minithumbnail, video.thumbnail);
 
@@ -258,14 +287,6 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       contentWidth = contentHeight = Screen.dp(100f);
     }
 
-    this.fileProgress = new FileProgressComponent(context, tdlib, TdlibFilesManager.DOWNLOAD_FLAG_VIDEO, !isHot(), chatId, messageId);
-    this.fileProgress.setDownloadedIconRes(isHot() ? (source != null && source.isHotDone() ? R.drawable.baseline_check_24 : R.drawable.deproko_baseline_whatshot_24) : FileProgressComponent.PLAY_ICON);
-    this.fileProgress.setSimpleListener(this);
-
-    if (source != null && source.isHotTimerStarted() && !source.isOutgoing()) {
-      fileProgress.setHideDownloadedIcon(true);
-    }
-
     updateVideoStreamingState();
 
     this.fileProgress.setFile(video.video, source != null ? source.getMessage(messageId) : null);
@@ -277,13 +298,17 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     updateDuration();
   }
 
+  public MediaWrapper (BaseActivity context, Tdlib tdlib, @NonNull TdApi.MessageAnimation animation, long chatId, long messageId, @Nullable TGMessage source, boolean useHotStuff) {
+    this(context, tdlib, animation.animation, chatId, messageId, source, useHotStuff, false, false, null);
+    setRevealOnTap(animation.hasSpoiler);
+  }
+
   public MediaWrapper (BaseActivity context, Tdlib tdlib, @NonNull TdApi.Animation animation, long chatId, long messageId, @Nullable TGMessage source, boolean useHotStuff) {
     this(context, tdlib, animation, chatId, messageId, source, useHotStuff, false, false, null);
   }
 
   public MediaWrapper (BaseActivity context, Tdlib tdlib, @NonNull TdApi.Animation animation, long chatId, long messageId, @Nullable TGMessage source, boolean useHotStuff, boolean customAutoplay, boolean noAutoplay, EmbeddedService nativeEmbed) {
     this.tdlib = tdlib;
-    this.animation = animation;
     this.useHotStuff = useHotStuff;
     this.source = source;
     this.sourceMessageId = messageId;
@@ -291,6 +316,22 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
       this.path = new Path();
     }
+
+    this.fileProgress = new FileProgressComponent(context, tdlib, TdlibFilesManager.DOWNLOAD_FLAG_GIF, true, chatId, messageId);
+    this.fileProgress.setSimpleListener(this);
+    setNativeEmbed(nativeEmbed, true);
+    if (isHot()) {
+      fileProgress.setDownloadedIconRes(R.drawable.deproko_baseline_whatshot_24);
+    } else if ((customAutoplay && noAutoplay) || (!customAutoplay && !Settings.instance().needAutoplayGIFs())) {
+      this.targetGifFile.setIsStill(true);
+      this.fileProgress.setDownloadedIconRes(R.drawable.deproko_baseline_gif_24);
+    }
+
+    setAnimation(messageId, animation);
+  }
+
+  private void setAnimation (long messageId, TdApi.Animation animation) {
+    this.animation = animation;
 
     if (animation.thumbnail != null) {
       setPreviewFile(animation.minithumbnail, animation.thumbnail);
@@ -309,22 +350,23 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     if (contentWidth == 0 || contentHeight == 0) {
       contentWidth = contentHeight = Screen.dp(100f);
     }
-
-    this.fileProgress = new FileProgressComponent(context, tdlib, TdlibFilesManager.DOWNLOAD_FLAG_GIF, true, chatId, messageId);
-    this.fileProgress.setSimpleListener(this);
-    setNativeEmbed(nativeEmbed, true);
-    if (isHot()) {
-      fileProgress.setDownloadedIconRes(R.drawable.deproko_baseline_whatshot_24);
-    } else if ((customAutoplay && noAutoplay) || (!customAutoplay && !Settings.instance().needAutoplayGIFs())) {
-      this.targetGifFile.setIsStill(true);
-      this.fileProgress.setDownloadedIconRes(R.drawable.deproko_baseline_gif_24);
-    }
     this.fileProgress.setFile(targetFile, source != null ? source.getMessage(messageId) : null);
     updateDuration();
   }
 
   public void setOnClickListener (@Nullable OnClickListener onClickListener) {
     this.onClickListener = onClickListener;
+  }
+
+  public void resetState () {
+    spoilerOverlayVisible.forceValue(revealOnTap, revealOnTap ? 1f : 0f);
+  }
+
+  public void setRevealOnTap (boolean revealOnTap) {
+    if (this.revealOnTap != revealOnTap) {
+      this.revealOnTap = revealOnTap;
+      spoilerOverlayVisible.forceValue(revealOnTap, revealOnTap ? 1f : 0f);
+    }
   }
 
   public void setNoRoundedCorners () {
@@ -912,6 +954,22 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     fileProgress.setBounds(cellLeft, cellTop, cellRight, cellBottom);
 
     DrawAlgorithms.drawReceiver(c, preview, receiver, false, true, cellLeft, cellTop, cellRight, cellBottom);
+    float spoilerFactor = spoilerOverlayVisible.getFloatValue();
+    if (spoilerFactor > 0f) {
+      preview.setPaintAlpha(spoilerFactor);
+      preview.draw(c);
+      preview.restorePaintAlpha();
+      int radius = getRadius();
+      DrawAlgorithms.drawRoundRect(c,
+        BitwiseUtils.getFlag(roundings, ROUND_TOP_LEFT) ? radius : 0,
+        BitwiseUtils.getFlag(roundings, ROUND_TOP_RIGHT) ? radius : 0,
+        BitwiseUtils.getFlag(roundings, ROUND_BOTTOM_RIGHT) ? radius : 0,
+        BitwiseUtils.getFlag(roundings, ROUND_BOTTOM_LEFT) ? radius : 0,
+        cellLeft, cellTop, cellRight, cellBottom,
+        Paints.fillingPaint(ColorUtils.alphaColor(spoilerFactor, Theme.getColor(R.id.theme_color_spoilerMediaOverlay)))
+      );
+      // TODO draw particles
+    }
 
     if (selectionPadding > 0) {
       cellLeft -= selectionPadding;
@@ -1115,6 +1173,10 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     if (onClickListener != null && onClickListener.onClick(view, this)) {
       return true;
     }
+    if (revealOnTap && spoilerOverlayVisible.getValue()) {
+      spoilerOverlayVisible.setValue(false, true);
+      return true;
+    }
     if (source != null) {
       if (source instanceof TGMessageMedia) {
         MediaViewController.openFromMessage((TGMessageMedia) source, messageId);
@@ -1152,15 +1214,26 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       return false;
     }
     setPhoto(sourceMessageId, newPhoto.photo, isPhotoWebp);
+    setRevealOnTap(newPhoto.hasSpoiler);
     return true;
-    /*if (photo == null || photo.sizes.length == 0 || newPhoto.photo.sizes.length == 0 ||
-      (source != null && (source.getMessage().viaBotUserId != 0 || (source.isOutgoing() && photo.sizes.length == 1 && photo.sizes[0].type.equals("i") && !TD.isFileLoadedAndExists(photo.sizes[0].photo))))
-      ) {
-      setPhoto(sourceMessageId, newPhoto.photo, isPhotoWebp);
-      return true;
+  }
+
+  public boolean updateVideo (long sourceMessageId, TdApi.MessageVideo newVideo) {
+    if (this.sourceMessageId != sourceMessageId) {
+      return false;
     }
-    setPhotoSilently(newPhoto.photo);
-    return false;*/
+    setVideo(sourceMessageId, newVideo.video);
+    setRevealOnTap(newVideo.hasSpoiler);
+    return true;
+  }
+
+  public boolean updateAnimation (long sourceMessageId, TdApi.MessageAnimation newAnimation) {
+    if (this.sourceMessageId != sourceMessageId) {
+      return false;
+    }
+    setAnimation(sourceMessageId, newAnimation.animation);
+    setRevealOnTap(newAnimation.hasSpoiler);
+    return true;
   }
 
   private boolean destroyed;

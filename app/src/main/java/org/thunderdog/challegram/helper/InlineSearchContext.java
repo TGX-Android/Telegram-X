@@ -682,9 +682,9 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
     }
   }
 
-  private static ArrayList<InlineResult<?>> parseInlineResults (BaseActivity context, Tdlib tdlib, long inlineBotUserId, String inlineQuery, TdApi.InlineQueryResults results, TdApi.GetInlineQueryResults queryResults, String inlineNextOffset) {
+  private static ArrayList<InlineResult<?>> parseInlineResults (BaseActivity context, Tdlib tdlib, long inlineBotUserId, String inlineQuery, TdApi.InlineQueryResults results, TdApi.GetInlineQueryResults queryResults, String inlineNextOffset, boolean isMore) {
     // TODO support other button types
-    boolean hasButton = results.button != null && results.button.type.getConstructor() == TdApi.InlineQueryResultsButtonTypeStartBot.CONSTRUCTOR;
+    boolean hasButton = !isMore && results.button != null && results.button.type.getConstructor() == TdApi.InlineQueryResultsButtonTypeStartBot.CONSTRUCTOR;
     final ArrayList<InlineResult<?>> items = new ArrayList<>(results.results.length + (hasButton ? 1 : 0));
     if (hasButton) {
       items.add(new InlineResultButton(context, tdlib, inlineBotUserId, results.button));
@@ -716,7 +716,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
           case TdApi.InlineQueryResults.CONSTRUCTOR: {
             final TdApi.InlineQueryResults results = (TdApi.InlineQueryResults) object;
             final long elapsed = SystemClock.uptimeMillis() - queryStartTime;
-            final ArrayList<InlineResult<?>> inlineResults = parseInlineResults(context, tdlib, inlineBot != null ? inlineBot.id : 0, inlineQuery, results, function, results.nextOffset);
+            final ArrayList<InlineResult<?>> inlineResults = parseInlineResults(context, tdlib, inlineBot != null ? inlineBot.id : 0, inlineQuery, results, function, results.nextOffset, false);
             tdlib.ui().postDelayed(() -> {
               if (!isCancelled() && getInlineUsername() != null) {
                 showInlineResults(inlineQuery, location, results.nextOffset, inlineResults);
@@ -773,7 +773,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
         switch (object.getConstructor()) {
           case TdApi.InlineQueryResults.CONSTRUCTOR: {
             final TdApi.InlineQueryResults results = (TdApi.InlineQueryResults) object;
-            final ArrayList<InlineResult<?>> inlineResults = parseInlineResults(context, tdlib, inlineBot != null ? inlineBot.id : 0, queryFinal, results, query, results.nextOffset);
+            final ArrayList<InlineResult<?>> inlineResults = parseInlineResults(context, tdlib, inlineBot != null ? inlineBot.id : 0, queryFinal, results, query, results.nextOffset, true);
             tdlib.ui().post(() -> {
               if (!isCancelled() && currentNextOffset != null && lastNextOffset.equals(currentNextOffset)) {
                 cancelInlineQueryMoreRequest();

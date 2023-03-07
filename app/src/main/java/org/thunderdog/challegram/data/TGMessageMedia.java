@@ -61,21 +61,21 @@ public class TGMessageMedia extends TGMessage {
   private int timerWidth;
   // private int pTimerRight, pTimerTop;
 
-  protected TGMessageMedia (MessagesManager context, TdApi.Message msg, @NonNull TdApi.Photo photo, TdApi.FormattedText caption) {
+  protected TGMessageMedia (MessagesManager context, TdApi.Message msg, @NonNull TdApi.MessagePhoto photo, TdApi.FormattedText caption) {
     super(context, msg);
     MediaWrapper mediaWrapper = new MediaWrapper(context(), tdlib, photo, msg.chatId, msg.id, this, true);
     mediaWrapper.setViewProvider(currentViews);
     init(mediaWrapper, caption);
   }
 
-  protected TGMessageMedia (MessagesManager context, TdApi.Message msg, @NonNull TdApi.Video video, TdApi.FormattedText caption) {
+  protected TGMessageMedia (MessagesManager context, TdApi.Message msg, @NonNull TdApi.MessageVideo video, TdApi.FormattedText caption) {
     super(context, msg);
     MediaWrapper mediaWrapper = new MediaWrapper(context(), tdlib, video, msg.chatId, msg.id, this, true);
     mediaWrapper.setViewProvider(currentViews);
     init(mediaWrapper, caption);
   }
 
-  protected TGMessageMedia (MessagesManager context, TdApi.Message msg, @NonNull TdApi.Animation animation, TdApi.FormattedText caption) {
+  protected TGMessageMedia (MessagesManager context, TdApi.Message msg, @NonNull TdApi.MessageAnimation animation, TdApi.FormattedText caption) {
     super(context, msg);
     MediaWrapper mediaWrapper = new MediaWrapper(context(), tdlib, animation, msg.chatId, msg.id, this, true);
     mediaWrapper.setViewProvider(currentViews);
@@ -95,18 +95,19 @@ public class TGMessageMedia extends TGMessage {
 
   private MediaWrapper createMediaWrapper (TdApi.Message message, TdApi.MessageContent content) {
     MediaWrapper mediaWrapper;
+    //noinspection SwitchIntDef
     switch (content.getConstructor()) {
       case TdApi.MessagePhoto.CONSTRUCTOR:
-        mediaWrapper = new MediaWrapper(context(), tdlib, ((TdApi.MessagePhoto) content).photo, message.chatId, message.id, this, true);
+        mediaWrapper = new MediaWrapper(context(), tdlib, (TdApi.MessagePhoto) content, message.chatId, message.id, this, true);
         break;
       case TdApi.MessageVideo.CONSTRUCTOR:
-        mediaWrapper = new MediaWrapper(context(), tdlib, ((TdApi.MessageVideo) content).video, message.chatId, message.id, this, true);
+        mediaWrapper = new MediaWrapper(context(), tdlib, (TdApi.MessageVideo) content, message.chatId, message.id, this, true);
         break;
       case TdApi.MessageAnimation.CONSTRUCTOR:
-        mediaWrapper = new MediaWrapper(context(), tdlib, ((TdApi.MessageAnimation) content).animation, message.chatId, message.id, this, true);
+        mediaWrapper = new MediaWrapper(context(), tdlib, (TdApi.MessageAnimation) content, message.chatId, message.id, this, true);
         break;
       default:
-        throw new IllegalArgumentException("message.content == " + content);
+        throw new UnsupportedOperationException(content.toString());
     }
     mediaWrapper.setViewProvider(currentViews);
     mediaWrapper.setSelectionAnimator(findSelectionAnimator(message.id));
@@ -321,6 +322,7 @@ public class TGMessageMedia extends TGMessage {
   // Photo
 
   private static boolean isAcceptedMessageContent (TdApi.MessageContent content) {
+    //noinspection SwitchIntDef
     switch (content.getConstructor()) {
       case TdApi.MessageAnimation.CONSTRUCTOR:
       case TdApi.MessageVideo.CONSTRUCTOR:
@@ -361,19 +363,34 @@ public class TGMessageMedia extends TGMessage {
     } else {
       MediaWrapper wrapper = mosaicWrapper.findMediaWrapperByMessageId(message.id);
       if (wrapper != null) {
+        int oldContentWidth = wrapper.getContentWidth();
+        int oldContentHeight = wrapper.getContentHeight();
+        boolean updated;
+        //noinspection SwitchIntDef
         switch (newContent.getConstructor()) {
           case TdApi.MessagePhoto.CONSTRUCTOR: {
             TdApi.MessagePhoto newPhoto = (TdApi.MessagePhoto) newContent;
-            int oldContentWidth = wrapper.getContentWidth();
-            int oldContentHeight = wrapper.getContentHeight();
-            if (wrapper.updatePhoto(message.id, newPhoto)) {
-              if (oldContentWidth != wrapper.getContentWidth() || oldContentHeight != wrapper.getContentHeight()) {
-                mosaicWrapper.rebuild();
-              }
-              changed |= FLAG_CHANGED_RECEIVERS;
-            }
+            updated = wrapper.updatePhoto(message.id, newPhoto);
             break;
           }
+          case TdApi.MessageVideo.CONSTRUCTOR: {
+            TdApi.MessageVideo newVideo = (TdApi.MessageVideo) newContent;
+            updated = wrapper.updateVideo(message.id, newVideo);
+            break;
+          }
+          case TdApi.MessageAnimation.CONSTRUCTOR: {
+            TdApi.MessageAnimation newAnimation = (TdApi.MessageAnimation) newContent;
+            updated = wrapper.updateAnimation(message.id, newAnimation);
+            break;
+          }
+          default:
+            throw new UnsupportedOperationException(newContent.toString());
+        }
+        if (updated) {
+          if (oldContentWidth != wrapper.getContentWidth() || oldContentHeight != wrapper.getContentHeight()) {
+            mosaicWrapper.rebuild();
+          }
+          changed |= FLAG_CHANGED_RECEIVERS;
         }
       }
     }

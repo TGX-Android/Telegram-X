@@ -45,6 +45,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibSender;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
@@ -83,6 +84,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
   private ImageFile miniThumbnail;
   private ImageFile preview;
   private Path contour;
+  private boolean hasSpoiler;
   private boolean previewCircle;
 
   private Text trimmedTitle, trimmedContent;
@@ -270,7 +272,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
 
   public void requestPreview (DoubleImageReceiver receiver, ComplexReceiver textMediaReceiver) {
     int imageHeight = isMessageComponent() ? mHeight : height;
-    receiver.setRadius(previewCircle ? imageHeight / 2 : 0);
+    receiver.setRadius(previewCircle ? imageHeight / 2f : 0);
     receiver.requestFile(miniThumbnail, preview);
     requestTextContent(textMediaReceiver);
   }
@@ -409,6 +411,11 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
       if (Config.DEBUG_STICKER_OUTLINES) {
         receiver.drawPlaceholderContour(c, contour);
       }
+      if (hasSpoiler) {
+        float radius = Theme.getBubbleMergeRadius();
+        DrawAlgorithms.drawRoundRect(c, radius, receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom(), Paints.fillingPaint(Theme.getColor(R.id.theme_color_spoilerMediaOverlay)));
+        // TODO draw particles
+      }
       ViewSupport.restoreClipPath(c, restoreToCount);
     }
 
@@ -428,7 +435,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
       } else {
         rectF.set(startX, startY, startX + lineWidth, startY + mHeight);
       }
-      c.drawRoundRect(rectF, lineWidth / 2, lineWidth / 2, Paints.fillingPaint(isWhite ? parent.getBubbleMediaReplyTextColor() : isOutBubble ? Theme.getColor(R.id.theme_color_bubbleOut_chatVerticalLine) : nameColorId != 0 ? Theme.getColor(nameColorId) : Theme.getColor(R.id.theme_color_messageVerticalLine)));
+      c.drawRoundRect(rectF, lineWidth / 2f, lineWidth / 2f, Paints.fillingPaint(isWhite ? parent.getBubbleMediaReplyTextColor() : isOutBubble ? Theme.getColor(R.id.theme_color_bubbleOut_chatVerticalLine) : nameColorId != 0 ? Theme.getColor(nameColorId) : Theme.getColor(R.id.theme_color_messageVerticalLine)));
 
       return;
     }
@@ -444,7 +451,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     }
 
     Paints.getRectF().set(startX, startY, startX + lineWidth, startY + height);
-    c.drawRoundRect(Paints.getRectF(), lineWidth / 2, lineWidth / 2, Paints.fillingPaint(Theme.getColor(R.id.theme_color_messageVerticalLine)));
+    c.drawRoundRect(Paints.getRectF(), lineWidth / 2f, lineWidth / 2f, Paints.fillingPaint(Theme.getColor(R.id.theme_color_messageVerticalLine)));
   }
 
   // Data workers
@@ -495,7 +502,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
       preview = null;
     }
 
-    setContent(title, content, null, preview, image, false, false);
+    setContent(title, content, false, null, preview, image, false, false);
   }
 
   private @Nullable TdApi.Function<TdApi.Message> retryFunction;
@@ -546,7 +553,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     });
   }
 
-  private void setContent (final String title, final TD.ContentPreview content, final Path contour, final ImageFile miniThumbnail, final ImageFile preview, final boolean previewCircle, final boolean forceRequest) {
+  private void setContent (final String title, final TD.ContentPreview content, boolean hasSpoiler, final Path contour, final ImageFile miniThumbnail, final ImageFile preview, final boolean previewCircle, final boolean forceRequest) {
     Background.instance().post(() -> {
       ReplyComponent.this.currentMessage = null;
       ReplyComponent.this.content = content;
@@ -554,6 +561,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
       ReplyComponent.this.contour = contour;
       ReplyComponent.this.miniThumbnail = miniThumbnail;
       ReplyComponent.this.preview = preview;
+      ReplyComponent.this.hasSpoiler = hasSpoiler;
       ReplyComponent.this.previewCircle = previewCircle;
       buildLayout();
       invalidate(!isMessageComponent() || preview != null || miniThumbnail != null || forceRequest);
@@ -577,7 +585,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
 
   public boolean deleteMessageContent (long messageId) {
     if (currentMessage != null && currentMessage.id == messageId) {
-      setContent(Lang.getString(R.string.Error), new TD.ContentPreview(null, R.string.DeletedMessage), null, null, null, false,true);
+      setContent(Lang.getString(R.string.Error), new TD.ContentPreview(null, R.string.DeletedMessage), false, null, null, null, false, true);
       return true;
     }
     return false;
@@ -598,15 +606,19 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     TdApi.PhotoSize photoSize = null;
     TdApi.Minithumbnail miniThumbnail = null;
     boolean previewCircle = false;
+    boolean hasSpoiler = false;
+    //noinspection SwitchIntDef
     switch (msg.content.getConstructor()) {
       case TdApi.MessagePhoto.CONSTRUCTOR: {
-        TdApi.Photo photo = ((TdApi.MessagePhoto) msg.content).photo;
+        TdApi.MessagePhoto messagePhoto = (TdApi.MessagePhoto) msg.content;
+        TdApi.Photo photo = messagePhoto.photo;
         photoSize = MediaWrapper.pickDisplaySize(tdlib, photo.sizes, msg.chatId);
         TdApi.PhotoSize smallest = Td.findSmallest(photo);
         if (smallest != null && smallest != photoSize) {
           thumbnail = TD.toThumbnail(photoSize);
         }
         miniThumbnail = photo.minithumbnail;
+        hasSpoiler = messagePhoto.hasSpoiler;
         break;
       }
       case TdApi.MessageChatChangePhoto.CONSTRUCTOR: {
@@ -636,18 +648,22 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
         break;
       }
       case TdApi.MessageVideo.CONSTRUCTOR: {
-        TdApi.Video video = ((TdApi.MessageVideo) msg.content).video;
+        TdApi.MessageVideo messageVideo = (TdApi.MessageVideo) msg.content;
+        TdApi.Video video = messageVideo.video;
         if (video == null) {
           return;
         }
         miniThumbnail = video.minithumbnail;
         thumbnail = video.thumbnail;
+        hasSpoiler = messageVideo.hasSpoiler;
         break;
       }
       case TdApi.MessageAnimation.CONSTRUCTOR: {
-        TdApi.Animation animation = ((TdApi.MessageAnimation) msg.content).animation;
+        TdApi.MessageAnimation messageAnimation = (TdApi.MessageAnimation) msg.content;
+        TdApi.Animation animation = messageAnimation.animation;
         miniThumbnail = animation.minithumbnail;
         thumbnail = animation.thumbnail;
+        hasSpoiler = messageAnimation.hasSpoiler;
         break;
       }
       case TdApi.MessageVideoNote.CONSTRUCTOR: {
@@ -701,7 +717,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
       if (webp) {
         preview.setWebp();
       }
-      if (isPrivate) {
+      if (isPrivate || hasSpoiler) {
         preview.setIsPrivate();
         preview.setNeedBlur();
       }
@@ -762,11 +778,12 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
       this.miniThumbnail = miniPreview;
       this.contour = contour;
       this.preview = preview;
+      this.hasSpoiler = hasSpoiler;
       this.previewCircle = previewCircle;
       buildLayout();
       invalidate(forceRequestImage || !isMessageComponent() || miniPreview != null || preview != null);
     } else {
-      setContent(title, contentPreview, contour, miniPreview, preview, previewCircle, false);
+      setContent(title, contentPreview, hasSpoiler, contour, miniPreview, preview, previewCircle, false);
     }
   }
 
@@ -794,7 +811,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
           tdlib.client().send(function, this);
           return;
         }
-        setContent(Lang.getString(R.string.Error), TD.errorCode(object) == 404 ? new TD.ContentPreview(null, R.string.DeletedMessage) : new TD.ContentPreview(null, 0, TD.toErrorString(object), true), null, null, null, false, false);
+        setContent(Lang.getString(R.string.Error), TD.errorCode(object) == 404 ? new TD.ContentPreview(null, R.string.DeletedMessage) : new TD.ContentPreview(null, 0, TD.toErrorString(object), true), false, null, null, null, false, false);
         currentMessage = null;
         break;
       }
