@@ -47,7 +47,6 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
-import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.text.Text;
@@ -415,7 +414,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
       if (hasSpoiler) {
         float radius = Theme.getBubbleMergeRadius();
         DrawAlgorithms.drawRoundRect(c, radius, receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom(), Paints.fillingPaint(Theme.getColor(R.id.theme_color_spoilerMediaOverlay)));
-        DrawAlgorithms.drawParticles(c, radius, receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom(), PorterDuffPaint.get(R.id.theme_color_white), 1f);
+        DrawAlgorithms.drawParticles(c, radius, receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom(), 1f);
       }
       ViewSupport.restoreClipPath(c, restoreToCount);
     }

@@ -35,7 +35,6 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
-import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.TGMimeType;
 import org.thunderdog.challegram.unsorted.Settings;
@@ -336,7 +335,7 @@ public class MediaPreviewSimple extends MediaPreview {
 
     if (hasSpoiler) {
       DrawAlgorithms.drawRoundRect(c, cornerRadius, target.getLeft(), target.getTop(), target.getRight(), target.getBottom(), Paints.fillingPaint(Theme.getColor(R.id.theme_color_spoilerMediaOverlay)));
-      DrawAlgorithms.drawParticles(c, cornerRadius, target.getLeft(), target.getTop(), target.getRight(), target.getBottom(), PorterDuffPaint.get(R.id.theme_color_white), 1f);
+      DrawAlgorithms.drawParticles(c, cornerRadius, target.getLeft(), target.getTop(), target.getRight(), target.getBottom(), 1f);
     }
 
     if (alpha != 1f) {
