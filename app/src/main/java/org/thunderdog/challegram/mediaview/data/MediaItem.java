@@ -86,7 +86,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
   private ImageFile miniThumbnail;
 
   // Remote stuff
-  private ImageFile previewImageFile;
+  private ImageFile previewImageFile, blurredPreviewImageFile;
   private TdApi.File targetFile;
   private FileProgressComponent fileProgress;
   private boolean needCreateGalleryFileProgress;
@@ -111,6 +111,8 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
   private ImageFile targetImage;
   private GifFile targetGif;
 
+  private boolean hasSpoiler;
+
   public static MediaItem copyOf (MediaItem item) {
     return copyOf(item, true);
   }
@@ -126,13 +128,18 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
         copy.sourceDate = item.sourceDate;
         copy.caption = item.caption;
         copy.msg = item.msg;
+        copy.setHasSpoiler(item.hasSpoiler);
         return copy;
       }
       case TYPE_GIF: {
-        return new MediaItem(item.context, item.tdlib, item.sourceChatId, item.sourceMessageId, item.sourceSender, item.sourceDate, item.sourceAnimation, item.caption).setMessage(item.msg);
+        MediaItem copy = new MediaItem(item.context, item.tdlib, item.sourceChatId, item.sourceMessageId, item.sourceSender, item.sourceDate, item.sourceAnimation, item.caption).setMessage(item.msg);
+        copy.setHasSpoiler(item.hasSpoiler);
+        return copy;
       }
       case TYPE_VIDEO: {
-        return new MediaItem(item.context, item.tdlib, item.sourceChatId, item.sourceMessageId, item.sourceSender, item.sourceDate, item.sourceVideo, item.caption, allowIcon).setMessage(item.msg);
+        MediaItem copy = new MediaItem(item.context, item.tdlib, item.sourceChatId, item.sourceMessageId, item.sourceSender, item.sourceDate, item.sourceVideo, item.caption, allowIcon).setMessage(item.msg);
+        copy.setHasSpoiler(item.hasSpoiler);
+        return copy;
       }
       case TYPE_USER_PROFILE: {
         return new MediaItem(item.context, item.tdlib, ((TdApi.MessageSenderUser) item.sourceSender).userId, item.profilePhoto);
@@ -343,6 +350,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     this.sourceSender = sourceSender;
     this.sourceDate = sourceDate;
     this.caption = photo.caption;
+    setHasSpoiler(photo.hasSpoiler);
   }
 
   private MediaItem (BaseActivity context, Tdlib tdlib, long sourceChatId, long sourceMessageId, TdApi.MessageSender sourceSender, int sourceDate, TdApi.MessageDocument document) {
@@ -354,6 +362,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
 
   private MediaItem (BaseActivity context, Tdlib tdlib, long sourceChatId, long sourceMessageId, TdApi.MessageSender sourceSender, int sourceDate, TdApi.MessageAnimation animation) {
     this(context, tdlib, sourceChatId, sourceMessageId, sourceSender, sourceDate, animation.animation, animation.caption);
+    setHasSpoiler(animation.hasSpoiler);
   }
 
   public MediaItem (BaseActivity context, Tdlib tdlib, TdApi.Animation animation, TdApi.FormattedText caption) {
@@ -372,16 +381,26 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     setAnimation(animation, false);
   }
 
-  private void setAnimation (TdApi.Animation animation, boolean isDocument) {
-    this.sourceAnimation = animation;
-
-    setMiniThumbnail(animation.minithumbnail);
-    this.previewImageFile = TD.toImageFile(tdlib, animation.thumbnail); // TODO MPEG4 thumbnail support
+  private void setThumbnail (TdApi.Thumbnail thumbnail) {
+    this.previewImageFile = TD.toImageFile(tdlib, thumbnail); // TODO MPEG4 thumbnail support
     if (previewImageFile != null) {
       this.previewImageFile.setScaleType(ImageFile.FIT_CENTER);
       this.previewImageFile.setNeedCancellation(true);
     }
+    this.blurredPreviewImageFile = TD.toImageFile(tdlib, thumbnail);
+    if (this.blurredPreviewImageFile != null) {
+      this.blurredPreviewImageFile.setScaleType(ImageFile.FIT_CENTER);
+      this.blurredPreviewImageFile.setNeedCancellation(true);
+      this.blurredPreviewImageFile.setIsPrivate();
+    }
+  }
+
+  private void setAnimation (TdApi.Animation animation, boolean isDocument) {
+    this.sourceAnimation = animation;
     this.targetFile = animation.animation;
+
+    setMiniThumbnail(animation.minithumbnail);
+    setThumbnail(animation.thumbnail);
 
     this.targetGif = new GifFile(tdlib, animation);
     this.targetGif.setScaleType(GifFile.FIT_CENTER);
@@ -462,11 +481,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     this.sourceVideo = video;
 
     setMiniThumbnail(video.minithumbnail);
-    this.previewImageFile = TD.toImageFile(tdlib, video.thumbnail); // TODO MPEG4 support
-    if (previewImageFile != null) {
-      this.previewImageFile.setScaleType(ImageFile.FIT_CENTER);
-      this.previewImageFile.setNeedCancellation(true);
-    }
+    setThumbnail(video.thumbnail);
     this.targetFile = video.video;
 
     // TODO: remove this targetImage at all, when video.thumbnail is available?
@@ -505,6 +520,9 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     if (previewImageFile != null) {
       previewImageFile.setScaleType(scaleType);
     }
+    if (blurredPreviewImageFile != null) {
+      blurredPreviewImageFile.setScaleType(scaleType);
+    }
     if (targetImage != null) {
       targetImage.setScaleType(scaleType);
     }
@@ -533,6 +551,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
 
   private MediaItem (BaseActivity context, Tdlib tdlib, long sourceChatId, long sourceMessageId, TdApi.MessageSender sourceSender, int sourceDate, TdApi.MessageVideo video, boolean allowIcon) {
     this(context, tdlib, sourceChatId, sourceMessageId, sourceSender, sourceDate, video.video, video.caption, allowIcon);
+    setHasSpoiler(video.hasSpoiler);
   }
 
   public MediaItem (BaseActivity context, Tdlib tdlib, long userId, TdApi.ProfilePhoto profilePhoto) {
@@ -607,7 +626,6 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     }
     throw new UnsupportedOperationException();
   }
-
   public int getBigFileId () {
     return targetFile != null ? targetFile.id : 0;
   }
@@ -621,6 +639,7 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
         new TdApi.PhotoSize("s", chatPhoto.small, 160, 160, null),
         new TdApi.PhotoSize("m", chatPhoto.big, 640, 640, null)
       },
+      null,
       null,
       null
     ), false);
@@ -1375,6 +1394,9 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
   public <T extends View & DrawableProvider> void drawComponents (T view, Canvas c, int left, int top, int right, int bottom) {
     if (fileProgress != null) {
       fileProgress.setBounds(left, top, right, bottom);
+      if (hasSpoiler) {
+        fileProgress.setRequestedAlpha(0f, 1f);
+      }
       fileProgress.draw(view, c);
     }
   }
@@ -1519,6 +1541,10 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     return previewImageFile;
   }
 
+  public @Nullable ImageFile getBlurredPreviewImageFile () {
+    return blurredPreviewImageFile;
+  }
+
   public TdApi.File getTargetFile () {
     return targetFile;
   }
@@ -1628,16 +1654,16 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
         if (isAnimatedAvatar()) {
           TdApi.AnimatedChatPhoto targetFile = chatPhoto.animation != null ? chatPhoto.animation : chatPhoto.smallAnimation;
           if (targetFile != null) {
-            return new TdApi.InputMessageAnimation(file, null, null, 3, targetFile.length, targetFile.length, null);
+            return new TdApi.InputMessageAnimation(file, null, null, 3, targetFile.length, targetFile.length, null, false);
           }
         }
-        return new TdApi.InputMessagePhoto(file, null, null, 640, 640, caption, 0);
+        return new TdApi.InputMessagePhoto(file, null, null, 640, 640, caption, 0, false);
       case TYPE_PHOTO:
-        return new TdApi.InputMessagePhoto(file, null, null, width, height, caption, 0);
+        return new TdApi.InputMessagePhoto(file, null, null, width, height, caption, 0, false);
       case TYPE_VIDEO:
-        return new TdApi.InputMessageVideo(file, null, null, sourceVideo.duration, sourceVideo.width, sourceVideo.height, sourceVideo.supportsStreaming, caption, 0);
+        return new TdApi.InputMessageVideo(file, null, null, sourceVideo.duration, sourceVideo.width, sourceVideo.height, sourceVideo.supportsStreaming, caption, 0, false);
       case TYPE_GIF:
-        return new TdApi.InputMessageAnimation(file, null, null, sourceAnimation.duration, sourceAnimation.width, sourceAnimation.height, caption);
+        return new TdApi.InputMessageAnimation(file, null, null, sourceAnimation.duration, sourceAnimation.width, sourceAnimation.height, caption, false);
     }
     return null;
   }
@@ -1724,5 +1750,16 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
 
   public int getCropRotateBy () {
     return sourceGalleryFile != null && sourceGalleryFile.getCropState() != null ? sourceGalleryFile.getCropState().getRotateBy() : 0;
+  }
+
+  public void setHasSpoiler (boolean hasSpoiler) {
+    if (this.hasSpoiler != hasSpoiler) {
+      this.hasSpoiler = hasSpoiler;
+      // TODO need change any imageFile?
+    }
+  }
+
+  public boolean hasSpoiler () {
+    return hasSpoiler;
   }
 }

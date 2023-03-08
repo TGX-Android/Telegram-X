@@ -76,7 +76,7 @@ public class TdlibNotificationMediaFile {
         switch (message.content.getConstructor()) {
           case TdApi.MessagePhoto.CONSTRUCTOR: {
             TdApi.MessagePhoto photo = (TdApi.MessagePhoto) message.content;
-            if (!photo.isSecret) {
+            if (!photo.isSecret && !photo.hasSpoiler) {
               TdApi.PhotoSize target = MediaWrapper.buildTargetFile(photo.photo);
               if (target != null && (TD.isFileLoaded(target.photo) || tdlib.files().canAutomaticallyDownload(target.photo, TdlibFilesManager.DOWNLOAD_FLAG_PHOTO, chat.type))) {
                 photoFile = target.photo;

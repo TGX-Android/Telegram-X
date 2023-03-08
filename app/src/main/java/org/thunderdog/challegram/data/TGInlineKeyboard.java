@@ -1222,7 +1222,7 @@ public class TGInlineKeyboard {
             context.context.tdlib().ui()
               .openUrl(context.context.controller(), open.url, openParameters(currentContextId, view)
               .disableInstantView()
-              .requireOpenPrompt(!open.skipConfirm));
+              .requireOpenPrompt(!open.skipConfirmation));
             break;
           }
           case TdApi.LoginUrlInfoRequestConfirmation.CONSTRUCTOR:

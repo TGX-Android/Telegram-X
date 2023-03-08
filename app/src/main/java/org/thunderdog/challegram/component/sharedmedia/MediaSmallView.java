@@ -29,6 +29,7 @@ import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
@@ -101,10 +102,16 @@ public class MediaSmallView extends SparseDrawableView implements Destroyable, F
     }
     this.item = item;
     if (item != null) {
-      miniThumbnail.requestFile(item.getMiniThumbnail());;
-      preview.requestFile(item.isLoaded() && item.getTargetGifFile() == null ? null : item.getPreviewImageFile());
-      imageReceiver.requestFile(item.isLoaded() ? item.getTargetImageFile(false) : null);
-      gifReceiver.requestFile(item.isLoaded() ? item.getTargetGifFile() : null);
+      miniThumbnail.requestFile(item.getMiniThumbnail());
+      if (item.hasSpoiler()) {
+        imageReceiver.clear();
+        gifReceiver.clear();
+        preview.requestFile(item.getBlurredPreviewImageFile());
+      } else {
+        preview.requestFile(item.isLoaded() && item.getTargetGifFile() == null ? null : item.getPreviewImageFile());
+        imageReceiver.requestFile(item.isLoaded() ? item.getTargetImageFile(false) : null);
+        gifReceiver.requestFile(item.isLoaded() ? item.getTargetGifFile() : null);
+      }
       downloadedAnimator.setValue(item.isLoaded(), false);
       item.attachToView(this);
       item.setSimpleListener(listener);
@@ -207,8 +214,8 @@ public class MediaSmallView extends SparseDrawableView implements Destroyable, F
 
   public void invalidateContent (MediaItem item) {
     if (this.item == item) {
-      this.imageReceiver.requestFile(item != null ? item.getTargetImage() : null);
-      this.gifReceiver.requestFile(item != null ? item.getTargetGifFile() : null);
+      this.imageReceiver.requestFile(item != null && !item.hasSpoiler() ? item.getTargetImage() : null);
+      this.gifReceiver.requestFile(item != null && !item.hasSpoiler() ? item.getTargetGifFile() : null);
     }
   }
 
@@ -272,6 +279,11 @@ public class MediaSmallView extends SparseDrawableView implements Destroyable, F
     receiver.draw(c);
     if (scaled) {
       c.restore();
+    }
+
+    if (item.hasSpoiler()) {
+      DrawAlgorithms.drawRoundRect(c, 0, preview.getLeft(), preview.getTop(), preview.getRight(), preview.getBottom(), Paints.fillingPaint(Theme.getColor(R.id.theme_color_spoilerMediaOverlay)));
+      DrawAlgorithms.drawParticles(c, 0, preview.getLeft(), preview.getTop(), preview.getRight(), preview.getBottom(), 1f);
     }
 
     boolean isStreamingUI = item.isVideo() && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE;

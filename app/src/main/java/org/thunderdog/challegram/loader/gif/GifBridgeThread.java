@@ -26,7 +26,6 @@ public class GifBridgeThread extends BaseThread {
   private static final int REMOVE_WATCHER = 2;
   private static final int LOAD_COMPLETE = 3;
   private static final int GIF_LOADED = 4;
-  private static final int GIF_NEXT_FRAME_READY = 6;
 
   public GifBridgeThread () {
     super("GifThread");
@@ -66,14 +65,13 @@ public class GifBridgeThread extends BaseThread {
   @Override
   protected Handler createCustomHandler () {
     return new Handler(Looper.myLooper(), message -> {
-      ((GifActor) message.obj).onNextFrame(true);
+      ((GifActor) message.obj).onNextFrame(true, false);
       return true;
     });
   }
 
-  public void nextFrameReady (GifActor actor) {
-    // sendMessage(Message.obtain(getHandler(), GIF_NEXT_FRAME_READY, actor), 0);
-    actor.nextFrameReady();
+  public void nextFrameReady (GifActor actor, boolean restarted) {
+    actor.nextFrameReady(restarted);
   }
 
   @Override
@@ -108,10 +106,6 @@ public class GifBridgeThread extends BaseThread {
         obj[0] = null;
         obj[1] = null;
 
-        break;
-      }
-      case GIF_NEXT_FRAME_READY: {
-        ((GifActor) msg.obj).nextFrameReady();
         break;
       }
     }

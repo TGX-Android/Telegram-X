@@ -80,8 +80,6 @@ public class Config {
 
   public static final boolean NEED_NETWORK_SYNC_REQUEST = false;
 
-  public static final boolean VIEW_MESSAGES_BEFORE_SCROLL = false;
-
   // Fields from default config.
 
   public static final int STATUS_BAR_COLOR_ID = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? R.id.theme_color_statusBar : R.id.theme_color_statusBarLegacy;
@@ -294,4 +292,6 @@ public class Config {
   public static final boolean NEED_TEMPORARY_TOPICS_WORKAROUND = true;
 
   public static final boolean USE_HARDWARE_PHOTO_VIEWER_CONFIG = false;
+
+  public static final boolean REQUIRE_FIREBASE_SERVICES_FOR_SAFETYNET = false;
 }

@@ -88,7 +88,7 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
     }
     this.description = b.toString();
 
-    setMediaPreview(MediaPreview.valueOf(tdlib, data.video, Screen.dp(50f), Screen.dp(3f)));
+    setMediaPreview(MediaPreview.valueOf(tdlib, data.video, Screen.dp(50f), Screen.dp(3f), false));
     if (getMediaPreview() == null) {
       int placeholderColorId = TD.getColorIdForString(data.video.fileName.isEmpty() ? data.id : data.video.fileName);
       avatarPlaceholder = new AvatarPlaceholder(AVATAR_PLACEHOLDER_RADIUS, new AvatarPlaceholder.Metadata(placeholderColorId, TD.getLetters(title)), null);

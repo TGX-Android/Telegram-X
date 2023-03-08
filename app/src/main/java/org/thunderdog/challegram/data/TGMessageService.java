@@ -277,7 +277,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
             case TdApi.MessageChatJoinByLink.CONSTRUCTOR:
             case TdApi.MessageChatJoinByRequest.CONSTRUCTOR:
             case TdApi.MessageChatSetTheme.CONSTRUCTOR:
-            case TdApi.MessageChatSetTtl.CONSTRUCTOR:
+            case TdApi.MessageChatSetMessageAutoDeleteTime.CONSTRUCTOR:
             case TdApi.MessageChatUpgradeFrom.CONSTRUCTOR:
             case TdApi.MessageChatUpgradeTo.CONSTRUCTOR:
             case TdApi.MessageContactRegistered.CONSTRUCTOR:
@@ -607,11 +607,11 @@ public final class TGMessageService extends TGMessageServiceImpl {
     );
   }
 
-  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageChatSetTtl setTtl) {
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.MessageChatSetMessageAutoDeleteTime setMessageAutoDeleteTime) {
     super(context, msg);
     setTextCreator(() -> {
       boolean isUserChat = ChatId.isUserChat(msg.chatId);
-      if (setTtl.ttl == 0) {
+      if (setMessageAutoDeleteTime.messageAutoDeleteTime == 0) {
         if (msg.isOutgoing) {
           return getText(
             isUserChat ?
@@ -632,12 +632,12 @@ public final class TGMessageService extends TGMessageServiceImpl {
         if (msg.isOutgoing) {
           return getDuration(
             R.string.YouSetTimerSeconds, R.string.YouSetTimerMinutes, R.string.YouSetTimerHours, R.string.YouSetTimerDays, R.string.YouSetTimerWeeks, R.string.YouSetTimerMonths,
-            setTtl.ttl, TimeUnit.SECONDS
+            setMessageAutoDeleteTime.messageAutoDeleteTime, TimeUnit.SECONDS
           );
         } else {
           return getDuration(
             R.string.XSetTimerSeconds, R.string.XSetTimerMinutes, R.string.XSetTimerHours, R.string.XSetTimerDays, R.string.XSetTimerWeeks, R.string.XSetTimerMonths,
-            setTtl.ttl, TimeUnit.SECONDS,
+            setMessageAutoDeleteTime.messageAutoDeleteTime, TimeUnit.SECONDS,
             new SenderArgument(sender, true)
           );
         }
@@ -645,12 +645,12 @@ public final class TGMessageService extends TGMessageServiceImpl {
         if (msg.isOutgoing) {
           return getDuration(
             R.string.YouSetAutoDeletePostsSeconds, R.string.YouSetAutoDeletePostsMinutes, R.string.YouSetAutoDeletePostsHours, R.string.YouSetAutoDeletePostsDays, R.string.YouSetAutoDeletePostsWeeks, R.string.YouSetAutoDeletePostsMonths,
-            setTtl.ttl, TimeUnit.SECONDS
+            setMessageAutoDeleteTime.messageAutoDeleteTime, TimeUnit.SECONDS
           );
         } else {
           return getDuration(
             R.string.XSetAutoDeletePostsSeconds, R.string.XSetAutoDeletePostsMinutes, R.string.XSetAutoDeletePostsHours, R.string.XSetAutoDeletePostsDays, R.string.XSetAutoDeletePostsWeeks, R.string.XSetAutoDeletePostsMonths,
-            setTtl.ttl, TimeUnit.SECONDS,
+            setMessageAutoDeleteTime.messageAutoDeleteTime, TimeUnit.SECONDS,
             new SenderArgument(sender, true)
           );
         }
@@ -658,12 +658,12 @@ public final class TGMessageService extends TGMessageServiceImpl {
         if (msg.isOutgoing) {
           return getDuration(
             R.string.YouSetAutoDeleteSeconds, R.string.YouSetAutoDeleteMinutes, R.string.YouSetAutoDeleteHours, R.string.YouSetAutoDeleteDays, R.string.YouSetAutoDeleteWeeks, R.string.YouSetAutoDeleteMonths,
-            setTtl.ttl, TimeUnit.SECONDS
+            setMessageAutoDeleteTime.messageAutoDeleteTime, TimeUnit.SECONDS
           );
         } else {
           return getDuration(
             R.string.XSetAutoDeleteSeconds, R.string.XSetAutoDeleteMinutes, R.string.XSetAutoDeleteHours, R.string.XSetAutoDeleteDays, R.string.XSetAutoDeleteWeeks, R.string.XSetAutoDeleteMonths,
-            setTtl.ttl, TimeUnit.SECONDS,
+            setMessageAutoDeleteTime.messageAutoDeleteTime, TimeUnit.SECONDS,
             new SenderArgument(sender, true)
           );
         }
@@ -1081,16 +1081,16 @@ public final class TGMessageService extends TGMessageServiceImpl {
     });
   }
 
-  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventIsAggressiveAntiSpamEnabledToggled isAggressiveAntiSpamEnabledToggled) {
+  public TGMessageService (MessagesManager context, TdApi.Message msg, TdApi.ChatEventHasAggressiveAntiSpamEnabledToggled hasAggressiveAntiSpamEnabledToggled) {
     super(context, msg);
     setTextCreator(() -> {
       if (msg.isOutgoing) {
-        return getText(isAggressiveAntiSpamEnabledToggled.isAggressiveAntiSpamEnabled ?
+        return getText(hasAggressiveAntiSpamEnabledToggled.hasAggressiveAntiSpamEnabled ?
           R.string.EventLogAntiSpamEnabledYou :
           R.string.EventLogAntiSpamDisabledYou
         );
       } else {
-        return getText(isAggressiveAntiSpamEnabledToggled.isAggressiveAntiSpamEnabled ?
+        return getText(hasAggressiveAntiSpamEnabledToggled.hasAggressiveAntiSpamEnabled ?
           R.string.EventLogAntiSpamEnabled :
           R.string.EventLogAntiSpamDisabled,
           new SenderArgument(sender)

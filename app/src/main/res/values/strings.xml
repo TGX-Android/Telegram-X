@@ -663,6 +663,7 @@
   <string name="GlobalSearch">Global Search</string>
   <string name="Global">Global</string>
   <string name="Recent">Recent</string>
+  <string name="RecentAdmins">Admins</string>
   <string name="ClearRecentsHint">Clear recent searches?</string>
   <string name="YoutubeRotateHint">PS: Rotate your screen to minimize player</string>
   <string name="PublicLinkTooShort">Public link is too short</string>
@@ -811,8 +812,8 @@
   <string name="NoCameraAccess">This feature requires access to camera.</string>
   <string name="NoGalleryAccess">Permission error</string>
   <string name="ResolveNoGalleryAccess">Open settings</string>
-  <string name="MissingGalleryPermission">You have restricted an access to images and videos. Allow access in system settings.</string>
-  <string name="MissingAudioPermission">You have restricted an access to audio files. Allow access in system settings.</string>
+  <string name="MissingGalleryPermission">You have restricted access to images and videos. Allow access in system settings.</string>
+  <string name="MissingAudioPermission">You have restricted access to audio files. Allow access in system settings.</string>
   <string name="Install">Install</string>
   <string name="ChatWithYourself">Chat with yourself</string>
   <string name="YouWereKicked">you were kicked</string>
@@ -1231,8 +1232,9 @@
   <string name="RegionNotFound">Country code not found</string>
   <string name="ConfirmationCode">Confirmation Code</string>
   <string name="SentSmsCode">We\'ve sent an SMS with an activation code to your phone **%1$s**.</string>
+  <string name="SendingSmsCode">We are sending an SMS with an activation code to your phone **%1$s**…</string>
   <string name="SentAppCode">We\'ve sent the code to the **Telegram** app on your other device.</string>
-  <string name="SentEmailCode">We\'ve sent the code to your email **%1$s**.</string>
+  <string name="SentEmailCode">We\'ve sent the code to your email %1$s.</string>
   <string name="SentCallOnly">We\'ve sent an activation call to your phone **%1$s**.\n\nDon\'t accept the call, Telegram will process everything automatically.</string>
   <string name="SentCallCode">Calling your phone **%1$s** to dictate the code.</string>
   <string name="SentMissedCall">Within next few seconds you should receive a short call from a phone number which starts with **%1$s**.</string>
@@ -1758,6 +1760,12 @@
   <string name="UserRestrictionsRead">Read Messages</string>
   <string name="UserRestrictionsSend">Send Messages</string>
   <string name="RightSendMedia">Send Media</string>
+  <string name="RightSendAudio">Send Music</string>
+  <string name="RightSendDocs">Send Docs</string>
+  <string name="RightSendPhoto">Send Photos</string>
+  <string name="RightSendVideo">Send Videos</string>
+  <string name="RightSendVoiceNote">Send Voice Messages</string>
+  <string name="RightSendVideoNote">Send Video Messages</string>
   <string name="UserRestrictionsSendStickers">Send Stickers &amp; GIFs</string>
   <string name="UserRestrictionsSendPolls">Send Polls</string>
   <string name="UserRestrictionsEmbedLinks">Embed Links</string>
@@ -1912,6 +1920,12 @@
   <string name="EventLogPermissions">changed default permissions</string>
   <string name="EventLogPermissionSendMessages">Send messages</string>
   <string name="EventLogPermissionSendMedia">Send media</string>
+  <string name="EventLogPermissionSendPhoto">Send photos</string>
+  <string name="EventLogPermissionSendVideo">Send videos</string>
+  <string name="EventLogPermissionSendAudio">Send music</string>
+  <string name="EventLogPermissionSendDocs">Send documents</string>
+  <string name="EventLogPermissionSendVoiceNotes">Send voice messages</string>
+  <string name="EventLogPermissionSendVideoNotes">Send video messages</string>
   <string name="EventLogRestrictedNew">restricted %1$s\n\nDuration: %2$s</string>
   <string name="EventLogRestrictedUntil">changed restrictions for %1$s\n\nDuration: %2$s</string>
   <string name="EventLogRestrictedDeleted">removed restrictions from %1$s</string>
@@ -1926,6 +1940,12 @@
   <string name="EventLogRestrictedAddUsers">Add users</string>
   <string name="EventLogPermissionAddUsers">Add users</string>
   <string name="EventLogRestrictedSendMedia">Send media</string>
+  <string name="EventLogRestrictedSendAudio">Send music</string>
+  <string name="EventLogRestrictedSendDocs">Send documents</string>
+  <string name="EventLogRestrictedSendPhoto">Send photos</string>
+  <string name="EventLogRestrictedSendVideo">Send videos</string>
+  <string name="EventLogRestrictedSendVoiceNotes">Send voice messages</string>
+  <string name="EventLogRestrictedSendVideoNotes">Send video messages</string>
   <string name="EventLogRestrictedSendMessages">Send messages</string>
   <string name="EventLogRestrictedSendEmbed">Embed links</string>
   <string name="EventLogPermissionSendEmbed">Embed links</string>
@@ -2088,7 +2108,7 @@
   <string name="OpenMessage">View Message</string>
   <string name="SavedMessages">Saved Messages</string>
   <string name="Saved">Saved</string>
-  <string name="channel_create_somebody">Channel created "%1$s"</string>
+  <string name="channel_create_somebody">Channel "%1$s" created</string>
   <string name="channel_user_add">%1$s joined the channel</string>
   <string name="channel_user_add_self">You joined the channel</string>
   <string name="channel_user_remove">%1$s left the channel</string>
@@ -2689,11 +2709,14 @@
 
   <string name="HelpEmailError">Please send an email to %1$s and tell us about your problem</string>
 
-  <string name="email_SmsHelp">sms@stel.com</string>
-  <string name="email_LoginHelp">login@stel.com</string>
+  <string name="email_SmsHelp">sms@telegram.org</string>
+  <string name="email_LoginHelp">login@telegram.org</string>
 
   <string name="email_LoginTooLong_subject">Telegram X connection issue</string>
   <string name="email_LoginTooLong_text">My Internet service provider is: (please enter the name)\n\nI\'ve just installed the application and tried to start messaging, but Telegram X is unable to connect to the server. Please help.\n\nApp version: %1$s\nLanguage: %2$s\nAwait time: %3$s\nSystem Language: %4$s\nSystem Version: %5$s</string>
+
+  <string name="email_LoginDeadEnd_subject">Telegram X SMS not sent: %1$s</string>
+  <string name="email_LoginDeadEnd_text">My Internet service provider is: (please enter the name)\n\nI\'m trying to use my mobile phone number: %1$s\nBut Telegram could not send me SMS with the confirmation code. Please help.\n\nBelow are all details that might help understanding the issue.\nError: %3$s\n%2$s</string>
 
   <string name="email_InvalidNumber_subject">Invalid phone number: %1$s</string>
   <string name="email_InvalidNumber_text">My mobile phone operator: (please enter the name)\nI\'m trying to use my mobile phone number: %1$s\nBut Telegram says it\'s invalid. Please help.</string>
@@ -3058,7 +3081,7 @@
   <string name="error_PEER_ID_INVALID">Sorry, you don\'t have access to this chat or channel.</string>
   <string name="error_STICKERSET_INVALID">Sticker set not found or no longer exists.</string>
   <string name="error_CHANNELS_TOO_MUCH">Sorry, you are a member of too many groups or channels. Please leave some before joining a new one.</string>
-  <string name="error_PHONE_NUMBER_BANNED">Sorry, this phone number is banned. Contact us at login@stel.com if you need help.</string>
+  <string name="error_PHONE_NUMBER_BANNED">Sorry, this phone number is banned. Contact us at login@telegram.org if you need help.</string>
   <string name="error_CHANNELS_ADMIN_LOCATED_TOO_MUCH">Sorry, you have too many location-based groups already. Please delete one of your existing ones first.</string>
   <string name="error_PREMIUM_ACCOUNT_REQUIRED">This feature requires Telegram Premium subscription.</string>
   <string name="error_INVITE_REQUEST_SENT">Request to join this chat has been sent.</string>
@@ -3103,7 +3126,7 @@
   <string name="NotificationsGuideBlockedApp">Notifications from Telegram are blocked in system settings. Tap System Notification Settings to unblock them.</string>
   <string name="NotificationsGuideBlockedCategory">Notifications for the current account are disabled in system settings.\n\nTo enable notifications:\n• Tap System Notification Settings\n• Find the "%1$s" notification category\n• Turn the toggle on to unblock notifications.</string>
   <string name="NotificationsGuideBlockedAll">Notifications from Telegram are blocked in your device settings.\n\nTo enable notifications:\n• Tap System Notification Settings.\n• Turn on Show Notifications.</string>
-  <string name="NotificationsGuidePermission">Notifications from Telegram are blocked in your system settings.\n\nTo enable notifications:\n• Go to system settings – Applications – Telegram X.\n• Tap Permissions – Notifications – Allow notifications.</string>
+  <string name="NotificationsGuidePermission">Notifications from Telegram are blocked in your system settings.\n\nTo enable notifications:\n• Go to system settings – Applications – Telegram X.\n• Tap Notifications – Allow notifications.</string>
   <string name="NotificationsGuideSyncGlobalOff">You have data sync turned off in system settings. Notifications may not arrive when app is closed.\n\nData sync may be implicitly turned off by the battery optimization mode on your device.</string>
   <string name="NotificationsGuideSyncAppOff">You have data sync turned off for Telegram X. Notifications may not arrive when app is closed.\n\nData sync may be implicitly turned off by the battery optimization mode on your device.</string>
   <string name="NotificationsGuideFirebaseUnavailable">Google Play Services are unavailable. Please check you have them installed and up-to-date.\n\nNotifications may arrive with big delays or not arrive at all without them.</string>
@@ -3344,9 +3367,15 @@
   <string name="ChatDisabledGifs">Only admins can send GIFs in this group</string>
   <string name="ChatDisabledBots">Only admins can use inline bots in this group</string>
   <string name="ChatDisabledStickers">Only admins can send stickers in this group</string>
+  <string name="ChatDisabledGames">Only admins can send stickers in this group</string>
   <string name="ChatDisabledDice">Only admins can roll a die in this group. Hold to send it as an emoji.</string>
   <string name="ChatDisabledDart">Only admins can play darts in this group. Hold to send it as an emoji.</string>
   <string name="ChatDisabledMedia">Only admins can send media in this group</string>
+  <string name="ChatDisabledAudio">Only admins can send music in this group</string>
+  <string name="ChatDisabledDocs">Only admins can send documents in this group</string>
+  <string name="ChatDisabledPhoto">Only admins can send photos in this group</string>
+  <string name="ChatDisabledVideo">Only admins can send videos in this group</string>
+  <string name="ChatDisabledOther">Only admins can send stickers and GIFs in this group</string>
   <string name="ChatDisabledVoice">Only admins can send voice messages in this group</string>
   <string name="ChatDisabledVideoNotes">Only admins can send video messages in this group</string>
   <string name="ChatDisabledPolls">Only admins can create polls in this group</string>
@@ -3356,6 +3385,8 @@
   <string name="ChatRestrictedGifsUntil">Admins have restricted you from sending GIFs in this group until %1$s</string>
   <string name="ChatRestrictedBots">The admins of this group have restricted your ability to send inline content.</string>
   <string name="ChatRestrictedBotsUntil">The admins of this group have restricted your ability to send inline content until %1$s</string>
+  <string name="ChatRestrictedGames">The admins of this group have restricted your ability to start games here.</string>
+  <string name="ChatRestrictedGamesUntil">The admins of this group have restricted your ability to start games here until %1$s</string>
   <string name="ChatRestrictedStickers">Admins have restricted you from sending stickers in this group</string>
   <string name="ChatRestrictedStickersUntil">Admins have restricted you from sending stickers in this group until %1$s</string>
   <string name="ChatRestrictedDice">Admins have restricted you from rolling a die in this group. Hold to send it as an emoji.</string>
@@ -3363,11 +3394,21 @@
   <string name="ChatRestrictedDart">Admins have restricted you from playing darts in this group. Hold to send it as an emoji.</string>
   <string name="ChatRestrictedDartUntil">Admins have restricted you from playing darts in this group until %1$s. Hold to send it as an emoji.</string>
   <string name="ChatRestrictedVoice">Admins have restricted you from sending voice messages in this group</string>
-  <string name="ChatRestrictedVideoNotes">Admins have restricted you from sending video messages in this group</string>
   <string name="ChatRestrictedVoiceUntil">Admins have restricted you from sending voice messages in this group until %1$s</string>
+  <string name="ChatRestrictedVideoNotes">Admins have restricted you from sending video messages in this group</string>
   <string name="ChatRestrictedVideoNotesUntil">The admins of this group have restricted your ability to send video messages until %1$s.</string>
   <string name="ChatRestrictedMedia">The admins of this group have restricted your ability to send media.</string>
   <string name="ChatRestrictedMediaUntil">Admins have restricted you from sending media in this group until %1$s</string>
+  <string name="ChatRestrictedAudio">The admins of this group have restricted your ability to send music.</string>
+  <string name="ChatRestrictedAudioUntil">Admins have restricted you from sending audio in this group until %1$s</string>
+  <string name="ChatRestrictedDocs">The admins of this group have restricted your ability to send documents.</string>
+  <string name="ChatRestrictedDocsUntil">Admins have restricted you from sending documents in this group until %1$s</string>
+  <string name="ChatRestrictedPhoto">The admins of this group have restricted your ability to send photos.</string>
+  <string name="ChatRestrictedPhotoUntil">Admins have restricted you from sending photos in this group until %1$s</string>
+  <string name="ChatRestrictedVideo">The admins of this group have restricted your ability to send videos.</string>
+  <string name="ChatRestrictedVideoUntil">Admins have restricted you from sending videos in this group until %1$s</string>
+  <string name="ChatRestrictedOther">The admins of this group have restricted your ability to send stickers and GIFs.</string>
+  <string name="ChatRestrictedOtherUntil">Admins have restricted you from sending stickers and GIFs in this group until %1$s</string>
   <string name="ChatRestrictedPolls">The admins of this group have restricted your ability to send polls.</string>
   <string name="ChatRestrictedPollsUntil">Admins have restricted you from sending polls in this group until %1$s</string>
   <string name="ChatRestrictedMessages">Admins have restricted you from sending messages in this group</string>
@@ -3538,6 +3579,7 @@
   <string name="FindingByPhoneNumber">Finding by Phone Number</string>
   <string name="WhoCanFindByPhone">Who can find me by my number?</string>
   <string name="WhoCanFindByPhoneInfoEveryone">Users who have your number saved in the contacts list will also see it on Telegram.</string>
+  <string name="WhoCanFindByPhoneInfoEveryoneLink">Users who have your number saved in the contacts list will also see it on Telegram.\n\nThis public link opens a chat with you: %1$s</string>
   <string name="WhoCanFindByPhoneInfoContacts">Users who add your number to their contacts will see it on Telegram only if they are your contacts.</string>
 
   <string name="NumberHidden">Number is unknown</string>
@@ -4512,6 +4554,67 @@
   <string name="ReportFalsePositiveOk">Telegram moderators will review your report. Thank you!</string>
   <string name="AggressiveAntiSpamBot">You can manage anti-spam settings on Manage Group screen</string>
 
+  <string name="HideMembers">Hide Members</string>
+  <string name="HideMembersDesc">Switch on to hide the list of members in this group. Admins will remain visible.</string>
+
   <string name="MultiUsernamePrefix">also</string>
   <string name="MultiLinkPrefix">also</string>
+
+  <string name="SentFragmentCode">Get the code in the Anonymous Numbers section on Fragment.</string>
+  <string name="OpenFragment">Open Fragment</string>
+  <string name="AnonymousNumbers">&#127988;&#8205;&#9760;&#65039; Anonymous Numbers</string>
+
+  <string name="login_DeadEnd">We could not send an SMS with a confirmation code to your phone number. __Contact us__, if you need help.</string>
+
+  <string name="viewed_now">viewed just now</string>
+  <string name="viewed_today">viewed today at %1$s</string>
+  <string name="viewed_yesterday">viewed yesterday at %1$s</string>
+  <string name="viewed_weekday">viewed on %1$s at %2$s</string>
+  <string name="viewed_date">viewed on %1$s at %2$s</string>
+  <string name="viewed_seconds_one">viewed %1$s second ago</string>
+  <string name="viewed_seconds_other">viewed %1$s seconds ago</string>
+  <string name="viewed_minutes_one">viewed %1$s minute ago</string>
+  <string name="viewed_minutes_other">viewed %1$s minutes ago</string>
+  <string name="viewed_hours_one">viewed %1$s hour ago</string>
+  <string name="viewed_hours_other">viewed %1$s hours ago</string>
+
+  <string name="opened_voice_now">listened just now</string>
+  <string name="opened_voice_today">listened today at %1$s</string>
+  <string name="opened_voice_yesterday">listened yesterday at %1$s</string>
+  <string name="opened_voice_weekday">listened on %1$s at %2$s</string>
+  <string name="opened_voice_date">listened on %1$s at %2$s</string>
+  <string name="opened_voice_seconds_one">listened %1$s second ago</string>
+  <string name="opened_voice_seconds_other">listened %1$s seconds ago</string>
+  <string name="opened_voice_minutes_one">listened %1$s minute ago</string>
+  <string name="opened_voice_minutes_other">listened %1$s minutes ago</string>
+  <string name="opened_voice_hours_one">listened %1$s hour ago</string>
+  <string name="opened_voice_hours_other">listened %1$s hours ago</string>
+
+  <string name="opened_round_now">watched just now</string>
+  <string name="opened_round_today">watched today at %1$s</string>
+  <string name="opened_round_yesterday">watched yesterday at %1$s</string>
+  <string name="opened_round_weekday">watched on %1$s at %2$s</string>
+  <string name="opened_round_date">watched on %1$s at %2$s</string>
+  <string name="opened_round_seconds_one">watched %1$s second ago</string>
+  <string name="opened_round_seconds_other">watched %1$s seconds ago</string>
+  <string name="opened_round_minutes_one">watched %1$s minute ago</string>
+  <string name="opened_round_minutes_other">watched %1$s minutes ago</string>
+  <string name="opened_round_hours_one">watched %1$s hour ago</string>
+  <string name="opened_round_hours_other">watched %1$s hours ago</string>
+
+  <string name="reacted_now">reacted just now</string>
+  <string name="reacted_today">reacted today at %1$s</string>
+  <string name="reacted_yesterday">reacted yesterday at %1$s</string>
+  <string name="reacted_weekday">reacted on %1$s at %2$s</string>
+  <string name="reacted_date">reacted on %1$s at %2$s</string>
+  <string name="reacted_seconds_one">reacted %1$s second ago</string>
+  <string name="reacted_seconds_other">reacted %1$s seconds ago</string>
+  <string name="reacted_minutes_one">reacted %1$s minute ago</string>
+  <string name="reacted_minutes_other">reacted %1$s minutes ago</string>
+  <string name="reacted_hours_one">reacted %1$s hour ago</string>
+  <string name="reacted_hours_other">reacted %1$s hours ago</string>
+
+  <string name="MediaSpoilerHint">Media will be blurred inside the chat and reveal after additional tap.</string>
+  <string name="HideMedia">Hide media</string>
+
 </resources>

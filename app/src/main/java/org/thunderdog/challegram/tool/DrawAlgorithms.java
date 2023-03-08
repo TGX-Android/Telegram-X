@@ -86,6 +86,47 @@ public class DrawAlgorithms {
     }
   }
 
+  public static void drawRoundRect (Canvas c, float radius, float left, float top, float right, float bottom, Paint paint) {
+    drawRoundRect(c, radius, radius, radius, radius, left, top, right, bottom, paint);
+  }
+  public static void drawRoundRect (Canvas c, float topLeftRadius, float topRightRadius, float bottomRightRadius, float bottomLeftRadius, float left, float top, float right, float bottom, Paint paint) {
+    float radius = Math.max(topLeftRadius, Math.max(topRightRadius, Math.max(bottomRightRadius, bottomLeftRadius)));
+    if (radius > 0) {
+      RectF rectF = Paints.getRectF();
+      rectF.set(left, top, right, bottom);
+      if (topLeftRadius != radius || topRightRadius != radius || bottomRightRadius != radius || bottomLeftRadius != radius) {
+        Path path = Paints.getPath();
+        path.reset();
+        buildPath(path, rectF, topLeftRadius, topRightRadius, bottomRightRadius, bottomLeftRadius);
+        c.drawPath(path, paint);
+        path.reset();
+      } else {
+        c.drawRoundRect(rectF, radius, radius, paint);
+      }
+    } else {
+      c.drawRect(left, top, right, bottom, paint);
+    }
+  }
+
+  public static void drawParticles (Canvas c, float radius, float left, float top, float right, float bottom, float alpha) {
+    drawParticles(c, radius, radius, radius, radius, left, top, right, bottom, alpha);
+  }
+
+  public static void drawParticles (Canvas c, float topLeftRadius, float topRightRadius, float bottomRightRadius, float bottomLeftRadius, float left, float top, float right, float bottom, float alpha) {
+    // TODO
+
+    float centerX = left + (right - left) / 2f;
+    float centerY = top + (bottom - top) / 2f;
+
+    Drawable drawable = Drawables.get(R.drawable.deproko_baseline_whatshot_16);
+
+    c.drawCircle(centerX, centerY,
+      Math.max(drawable.getMinimumWidth(), drawable.getMinimumHeight()) / 2f * 1.65f,
+      Paints.fillingPaint(ColorUtils.alphaColor(alpha, 0x44000000))
+    );
+
+    Drawables.drawCentered(c, drawable, centerX, centerY, PorterDuffPaint.get(R.id.theme_color_white, alpha));
+  }
   public static void drawReceiver (Canvas c, Receiver preview, Receiver receiver, boolean clearPreview, boolean needPlaceholder, int left, int top, int right, int bottom) {
     drawReceiver(c, preview, receiver, clearPreview, needPlaceholder, left, top, right, bottom, 1f, 1f);
   }
@@ -107,8 +148,11 @@ public class DrawAlgorithms {
         if (needScale) {
           Views.restore(c, saveCount);
         }
-      } else if (clearPreview) {
-        preview.clear();
+      } else {
+        preview.setBounds(left, top, right, bottom);
+        if (clearPreview) {
+          preview.clear();
+        }
       }
     }
     if (receiver != null) {

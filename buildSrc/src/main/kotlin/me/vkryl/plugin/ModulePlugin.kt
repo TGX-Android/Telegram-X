@@ -75,6 +75,11 @@ open class ModulePlugin : Plugin<Project> {
     } else {
       null
     }
+    val safetyNetToken = if (keystore != null) {
+      properties.getProperty("safetynet.api_key", "")
+    } else {
+      null
+    }
     fun getOrSample (key: String): String {
       return properties.getProperty(key, null) ?: sampleProperties.getOrThrow(key)
     }
@@ -216,6 +221,8 @@ open class ModulePlugin : Plugin<Project> {
 
               buildConfigString("PROJECT_NAME", appName)
               buildConfigString("MARKET_URL", "https://play.google.com/store/apps/details?id=${appId}")
+
+              buildConfigString("SAFETYNET_API_KEY", safetyNetToken)
 
               buildConfigString("DOWNLOAD_URL", appDownloadUrl)
 

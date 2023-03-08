@@ -85,6 +85,10 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
 
   // Settings
 
+  public boolean allowSpoiler () {
+    return false;
+  }
+
   @Override
   protected final int getHeaderTextColorId () {
     return R.id.theme_color_text;
@@ -716,11 +720,11 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
     // Do all heavy work like layout or etc, no animation will lag
   }
 
-  protected void onMultiSendPress (@NonNull TdApi.MessageSendOptions options, boolean disableMarkdown) {
+  protected void onMultiSendPress (View view, @NonNull TdApi.MessageSendOptions options, boolean disableMarkdown) {
     // Send all selected shit
   }
 
-  protected void addCustomItems (@NonNull List<HapticMenuHelper.MenuItem> hapticItems) {
+  protected void addCustomItems (View view, @NonNull List<HapticMenuHelper.MenuItem> hapticItems) {
     // Add specific items
   }
 

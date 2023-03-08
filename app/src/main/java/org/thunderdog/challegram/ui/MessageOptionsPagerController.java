@@ -265,14 +265,14 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Voi
 
   //
 
-  private TdApi.Users messageViewers;
+  private TdApi.MessageViewers messageViewers;
   private void getMessageOptions () {
     tdlib.client().send(new TdApi.GetMessageViewers(message.getChatId(), message.getId()), (obj) -> {
-      if (obj.getConstructor() != TdApi.Users.CONSTRUCTOR) return;
+      if (obj.getConstructor() != TdApi.MessageViewers.CONSTRUCTOR) return;
       runOnUiThreadOptional(() -> {
-        messageViewers = (TdApi.Users) obj;
+        messageViewers = (TdApi.MessageViewers) obj;
         if (SEEN_POSITION != -1) {
-          counters[SEEN_POSITION].counter.setCount(messageViewers.totalCount, false);
+          counters[SEEN_POSITION].counter.setCount(messageViewers.viewers.length, false);
         }
       });
     });

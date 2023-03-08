@@ -159,6 +159,10 @@ public class MessageListManager extends ListManager<TdApi.Message> implements Me
             count = ((TdApi.Messages) result).totalCount;
             break;
           }
+          case TdApi.FoundChatMessages.CONSTRUCTOR: {
+            count = ((TdApi.FoundChatMessages) result).totalCount;
+            break;
+          }
           case TdApi.Error.CONSTRUCTOR: {
             Log.e("%s: %s, chatId: %d", function.getClass().getSimpleName(), TD.toErrorString(result), chatId);
             count = -1;
@@ -223,7 +227,7 @@ public class MessageListManager extends ListManager<TdApi.Message> implements Me
       if (reverse) {
         return new TdApi.SearchChatMessages(chatId, query, sender, fromMessageId, -loadCount, loadCount + 1, filter, messageThreadId);
       } else {
-        return new TdApi.SearchChatMessages(chatId, query, sender, fromMessageId, 0, loadCount, filter, messageThreadId);
+        return new TdApi.SearchChatMessages(chatId, query, sender, nextSearchFromMessageId != null && nextSearchFromMessageId != 0 ? nextSearchFromMessageId : fromMessageId, 0, loadCount, filter, messageThreadId);
       }
     } else {
       if (reverse) {
@@ -234,10 +238,29 @@ public class MessageListManager extends ListManager<TdApi.Message> implements Me
     }
   }
 
+  private Long nextSearchFromMessageId;
+
   @Override
   protected ListManager.Response<TdApi.Message> processResponse (TdApi.Object response, Client.ResultHandler retryHandler, int retryLoadCount, boolean reverse) {
-    TdApi.Messages result = (TdApi.Messages) response;
-    List<TdApi.Message> messages = Arrays.asList(result.messages);
+    List<TdApi.Message> messages;
+    int totalCount;
+    switch (response.getConstructor()) {
+      case TdApi.FoundChatMessages.CONSTRUCTOR: {
+        TdApi.FoundChatMessages foundChatMessages = (TdApi.FoundChatMessages) response;
+        messages = Arrays.asList(foundChatMessages.messages);
+        nextSearchFromMessageId = foundChatMessages.nextFromMessageId;
+        totalCount = foundChatMessages.totalCount;
+        break;
+      }
+      case TdApi.Messages.CONSTRUCTOR: {
+        TdApi.Messages result = (TdApi.Messages) response;
+        messages = Arrays.asList(result.messages);
+        totalCount = result.totalCount;
+        break;
+      }
+      default:
+        throw new UnsupportedOperationException(response.toString());
+    }
     if (!hasFilter() && messages.isEmpty()) {
       if (reverse) {
         onlyLocalReverseEndReached = true;
@@ -247,7 +270,7 @@ public class MessageListManager extends ListManager<TdApi.Message> implements Me
       tdlib.client().send(nextLoadFunction(reverse, this.items.size(), retryLoadCount), retryHandler);
       return null;
     }
-    return new Response<>(messages, result.totalCount);
+    return new Response<>(messages, totalCount);
   }
 
   // Chat Listeners

@@ -70,29 +70,24 @@ data class AppBuildInfo(
     }
   }
 
-  fun commitUrl (): String {
-    return "${BuildConfig.REMOTE_URL}/tree/${commitFull}"
-  }
+  fun commitUrl (): String? =
+    commitUrl(BuildConfig.REMOTE_URL, commitFull)
 
   fun changesUrlFrom (previousBuild: AppBuildInfo): String? {
     return if (this.commitDate > previousBuild.commitDate) {
-      "${BuildConfig.REMOTE_URL}/compare/${previousBuild.commit}...${this.commit}"
+      changesUrl(BuildConfig.REMOTE_URL, previousBuild.commit, this.commit)
     } else {
       null
     }
   }
 
   fun tdlibCommitUrl (): String? {
-    return if (!this.tdlibCommitFull.isNullOrEmpty()) {
-      return "${BuildConfig.TDLIB_REMOTE_URL}/tree/${tdlibCommitFull}"
-    } else {
-      null
-    }
+    return tdlibCommitUrl(this.tdlibCommitFull)
   }
 
   fun tdlibChangesUrlFrom (previousBuild: AppBuildInfo): String? {
-    return if (this.commitDate > previousBuild.commitDate && !this.tdlibCommitFull.isNullOrEmpty() && !previousBuild.tdlibCommitFull.isNullOrEmpty()) {
-      "${BuildConfig.TDLIB_REMOTE_URL}/compare/${previousBuild.tdlibCommit()}...${this.tdlibCommit()}"
+    return if (this.commitDate > previousBuild.commitDate) {
+      tdlibChangesUrl(previousBuild.tdlibCommit(), this.tdlibCommit())
     } else {
       null
     }
@@ -169,6 +164,27 @@ data class AppBuildInfo(
 
     @JvmStatic fun maxBuiltInCommitDate (): Long {
       return max(BuildConfig.COMMIT_DATE, BuildConfig.PULL_REQUEST_COMMIT_DATE.maxOrNull() ?: 0)
+    }
+
+    @JvmStatic fun tdlibCommitUrl (commitHashFull: String?): String? =
+      commitUrl(BuildConfig.TDLIB_REMOTE_URL, commitHashFull)
+    @JvmStatic fun tdlibChangesUrl (olderCommitHash: String?, newerCommitHash: String?): String? =
+      changesUrl(BuildConfig.TDLIB_REMOTE_URL, olderCommitHash, newerCommitHash)
+
+    @JvmStatic fun commitUrl (remoteUrl: String, commitHashFull: String?): String? {
+      return if (!commitHashFull.isNullOrEmpty()) {
+        return "${remoteUrl}/tree/${commitHashFull}"
+      } else {
+        null
+      }
+    }
+
+    @JvmStatic fun changesUrl (remoteUrl: String, olderCommitHash: String?, newerCommitHash: String?): String? {
+      return if (!olderCommitHash.isNullOrEmpty() && !newerCommitHash.isNullOrEmpty()) {
+        "${remoteUrl}/compare/${olderCommitHash}...${newerCommitHash}"
+      } else {
+        null
+      }
     }
   }
 }

@@ -42,7 +42,7 @@ public class CameraAccessImageView extends InvisibleImageView {
       if (!hasAnyCamera) {
         hasAnyCamera = U.deviceHasAnyCamera(getContext());
       }
-      if (hasAnyCamera && c.canSendMedia()) {
+      if (hasAnyCamera && c.canSendPhotosAndVideos()) {
         if (cameraOpenOptions == null)
           cameraOpenOptions = new ViewController.CameraOpenOptions();
         UI.getContext(getContext()).prepareCameraDragByTouchDown(cameraOpenOptions, true);

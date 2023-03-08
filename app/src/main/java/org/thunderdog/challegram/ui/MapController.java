@@ -485,7 +485,7 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
         // hasChangedFocus = true;
 
         TdApi.Message sharingMessage = tdlib.cache().findOutputLiveLocationMessage(args.chatId);
-        if (sharingMessage != null || tdlib.hasWritePermission(args.chatId)) {
+        if (sharingMessage != null || tdlib.canSendBasicMessage(args.chatId)) {
           items.add(newShareLiveLocationCell());
         }
         if (sharingMessage != null) {
@@ -1517,7 +1517,7 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
       items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.LiveLocations));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-      if (tdlib.hasWritePermission(getArgumentsStrict().chatId)) {
+      if (tdlib.canSendBasicMessage(getArgumentsStrict().chatId)) {
         items.add(newShareLiveLocationCell());
       }
     } else {
@@ -1630,7 +1630,7 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
     } else {
       int startSize = items.size();
       int headerItemCount = 3;
-      boolean hasWritePermission = tdlib.hasWritePermission(args.chatId);
+      boolean hasWritePermission = tdlib.canSendBasicMessage(args.chatId);
       if (hasWritePermission) {
         headerItemCount++;
       }

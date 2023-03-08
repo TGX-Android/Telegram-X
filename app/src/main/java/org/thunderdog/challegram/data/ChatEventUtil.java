@@ -98,7 +98,7 @@ public class ChatEventUtil {
       case TdApi.ChatEventInviteLinkDeleted.CONSTRUCTOR:
       case TdApi.ChatEventVideoChatParticipantVolumeLevelChanged.CONSTRUCTOR:
       case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR:
-      case TdApi.ChatEventIsAggressiveAntiSpamEnabledToggled.CONSTRUCTOR:
+      case TdApi.ChatEventHasAggressiveAntiSpamEnabledToggled.CONSTRUCTOR:
       case TdApi.ChatEventIsForumToggled.CONSTRUCTOR:
       case TdApi.ChatEventActiveUsernamesChanged.CONSTRUCTOR:
       case TdApi.ChatEventForumTopicCreated.CONSTRUCTOR:
@@ -109,7 +109,7 @@ public class ChatEventUtil {
       case TdApi.ChatEventForumTopicToggleIsHidden.CONSTRUCTOR:
         return ActionMessageMode.ONLY_SERVICE;
       // only full (native)
-      case TdApi.ChatEventMessageTtlChanged.CONSTRUCTOR:
+      case TdApi.ChatEventMessageAutoDeleteTimeChanged.CONSTRUCTOR:
       case TdApi.ChatEventVideoChatCreated.CONSTRUCTOR:
       case TdApi.ChatEventVideoChatEnded.CONSTRUCTOR:
       case TdApi.ChatEventMemberJoined.CONSTRUCTOR:
@@ -178,8 +178,8 @@ public class ChatEventUtil {
         return new TGMessageService(context, msg, (TdApi.ChatEventVideoChatParticipantVolumeLevelChanged) action);
       case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR:
         return new TGMessageService(context, msg, (TdApi.ChatEventVideoChatParticipantIsMutedToggled) action);
-      case TdApi.ChatEventIsAggressiveAntiSpamEnabledToggled.CONSTRUCTOR:
-        return new TGMessageService(context, msg, (TdApi.ChatEventIsAggressiveAntiSpamEnabledToggled) action);
+      case TdApi.ChatEventHasAggressiveAntiSpamEnabledToggled.CONSTRUCTOR:
+        return new TGMessageService(context, msg, (TdApi.ChatEventHasAggressiveAntiSpamEnabledToggled) action);
       case TdApi.ChatEventActiveUsernamesChanged.CONSTRUCTOR:
         return new TGMessageService(context, msg, (TdApi.ChatEventActiveUsernamesChanged) action);
       case TdApi.ChatEventIsForumToggled.CONSTRUCTOR:
@@ -197,7 +197,7 @@ public class ChatEventUtil {
       case TdApi.ChatEventForumTopicToggleIsHidden.CONSTRUCTOR:
         return new TGMessageService(context, msg, (TdApi.ChatEventForumTopicToggleIsHidden) action);
       // only full (native)
-      case TdApi.ChatEventMessageTtlChanged.CONSTRUCTOR:
+      case TdApi.ChatEventMessageAutoDeleteTimeChanged.CONSTRUCTOR:
       case TdApi.ChatEventVideoChatCreated.CONSTRUCTOR:
       case TdApi.ChatEventVideoChatEnded.CONSTRUCTOR:
       case TdApi.ChatEventMemberJoined.CONSTRUCTOR:
@@ -221,7 +221,7 @@ public class ChatEventUtil {
     final Tdlib tdlib = context.controller().tdlib();
     final TGMessage fullMessage;
     switch (action.getConstructor()) {
-      case TdApi.ChatEventMessageTtlChanged.CONSTRUCTOR:
+      case TdApi.ChatEventMessageAutoDeleteTimeChanged.CONSTRUCTOR:
       case TdApi.ChatEventVideoChatCreated.CONSTRUCTOR:
       case TdApi.ChatEventVideoChatEnded.CONSTRUCTOR:
       case TdApi.ChatEventMemberJoined.CONSTRUCTOR:
@@ -547,8 +547,13 @@ public class ChatEventUtil {
           if (memberId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR) {
             appendRight(b, R.string.EventLogRestrictedReadMessages, oldCanReadMessages, newCanReadMessages, false);
           }
-          appendRight(b, R.string.EventLogRestrictedSendMessages, oldBan != null ? oldBan.permissions.canSendMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canSendMessages : newCanReadMessages, false);
-          appendRight(b, R.string.EventLogRestrictedSendMedia, oldBan != null ? oldBan.permissions.canSendMediaMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canSendMediaMessages : newCanReadMessages, false);
+          appendRight(b, R.string.EventLogRestrictedSendMessages, oldBan != null ? oldBan.permissions.canSendBasicMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canSendBasicMessages : newCanReadMessages, false);
+          appendRight(b, R.string.EventLogRestrictedSendPhoto, oldBan != null ? oldBan.permissions.canSendPhotos : oldCanReadMessages, newBan != null ? newBan.permissions.canSendPhotos : newCanReadMessages, false);
+          appendRight(b, R.string.EventLogRestrictedSendVideo, oldBan != null ? oldBan.permissions.canSendVideos : oldCanReadMessages, newBan != null ? newBan.permissions.canSendVideos : newCanReadMessages, false);
+          appendRight(b, R.string.EventLogRestrictedSendAudio, oldBan != null ? oldBan.permissions.canSendAudios : oldCanReadMessages, newBan != null ? newBan.permissions.canSendAudios : newCanReadMessages, false);
+          appendRight(b, R.string.EventLogRestrictedSendDocs, oldBan != null ? oldBan.permissions.canSendDocuments : oldCanReadMessages, newBan != null ? newBan.permissions.canSendDocuments : newCanReadMessages, false);
+          appendRight(b, R.string.EventLogRestrictedSendVoiceNotes, oldBan != null ? oldBan.permissions.canSendVoiceNotes : oldCanReadMessages, newBan != null ? newBan.permissions.canSendVoiceNotes : newCanReadMessages, false);
+          appendRight(b, R.string.EventLogRestrictedSendVideoNotes, oldBan != null ? oldBan.permissions.canSendVideoNotes : oldCanReadMessages, newBan != null ? newBan.permissions.canSendVideoNotes : newCanReadMessages, false);
           appendRight(b, R.string.EventLogRestrictedSendStickers, oldBan != null ? oldBan.permissions.canSendOtherMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canSendOtherMessages : newCanReadMessages, false);
           appendRight(b, R.string.EventLogRestrictedSendPolls, oldBan != null ? oldBan.permissions.canSendOtherMessages : oldCanReadMessages, newBan != null ? newBan.permissions.canSendOtherMessages : newCanReadMessages, false);
           appendRight(b, R.string.EventLogRestrictedSendEmbed, oldBan != null ? oldBan.permissions.canAddWebPagePreviews : oldCanReadMessages, newBan != null ? newBan.permissions.canAddWebPagePreviews : newCanReadMessages, false);
@@ -582,7 +587,7 @@ public class ChatEventUtil {
       case TdApi.ChatEventInviteLinkDeleted.CONSTRUCTOR:
       case TdApi.ChatEventVideoChatParticipantVolumeLevelChanged.CONSTRUCTOR:
       case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR:
-      case TdApi.ChatEventIsAggressiveAntiSpamEnabledToggled.CONSTRUCTOR:
+      case TdApi.ChatEventHasAggressiveAntiSpamEnabledToggled.CONSTRUCTOR:
       case TdApi.ChatEventActiveUsernamesChanged.CONSTRUCTOR:
       case TdApi.ChatEventIsForumToggled.CONSTRUCTOR:
       case TdApi.ChatEventForumTopicCreated.CONSTRUCTOR:
@@ -629,8 +634,8 @@ public class ChatEventUtil {
 
   private static TdApi.MessageContent convertToNativeMessageContent (TdApi.ChatEvent event) {
     switch (event.action.getConstructor()) {
-      case TdApi.ChatEventMessageTtlChanged.CONSTRUCTOR:
-        return new TdApi.MessageChatSetTtl(((TdApi.ChatEventMessageTtlChanged) event.action).newMessageTtl, 0);
+      case TdApi.ChatEventMessageAutoDeleteTimeChanged.CONSTRUCTOR:
+        return new TdApi.MessageChatSetMessageAutoDeleteTime(((TdApi.ChatEventMessageAutoDeleteTimeChanged) event.action).newMessageAutoDeleteTime, 0);
       case TdApi.ChatEventVideoChatCreated.CONSTRUCTOR:
         return new TdApi.MessageVideoChatStarted(((TdApi.ChatEventVideoChatCreated) event.action).groupCallId);
       case TdApi.ChatEventVideoChatEnded.CONSTRUCTOR:
@@ -663,8 +668,13 @@ public class ChatEventUtil {
 
         TdApi.ChatEventPermissionsChanged permissions = (TdApi.ChatEventPermissionsChanged) event.action;
 
-        appendRight(b, R.string.EventLogPermissionSendMessages, permissions.oldPermissions.canSendMessages, permissions.newPermissions.canSendMessages, true);
-        appendRight(b, R.string.EventLogPermissionSendMedia, permissions.oldPermissions.canSendMediaMessages, permissions.newPermissions.canSendMediaMessages, true);
+        appendRight(b, R.string.EventLogPermissionSendMessages, permissions.oldPermissions.canSendBasicMessages, permissions.newPermissions.canSendBasicMessages, true);
+        appendRight(b, R.string.EventLogPermissionSendPhoto, permissions.oldPermissions.canSendPhotos, permissions.newPermissions.canSendPhotos, true);
+        appendRight(b, R.string.EventLogPermissionSendVideo, permissions.oldPermissions.canSendVideos, permissions.newPermissions.canSendVideos, true);
+        appendRight(b, R.string.EventLogPermissionSendAudio, permissions.oldPermissions.canSendAudios, permissions.newPermissions.canSendAudios, true);
+        appendRight(b, R.string.EventLogPermissionSendDocs, permissions.oldPermissions.canSendDocuments, permissions.newPermissions.canSendDocuments, true);
+        appendRight(b, R.string.EventLogPermissionSendVoiceNotes, permissions.oldPermissions.canSendVoiceNotes, permissions.newPermissions.canSendVoiceNotes, true);
+        appendRight(b, R.string.EventLogPermissionSendVideoNotes, permissions.oldPermissions.canSendVideoNotes, permissions.newPermissions.canSendVideoNotes, true);
         appendRight(b, R.string.EventLogPermissionSendStickers, permissions.oldPermissions.canSendOtherMessages, permissions.newPermissions.canSendOtherMessages, true);
         appendRight(b, R.string.EventLogPermissionSendPolls, permissions.oldPermissions.canSendPolls, permissions.newPermissions.canSendPolls, true);
         appendRight(b, R.string.EventLogPermissionSendEmbed, permissions.oldPermissions.canAddWebPagePreviews, permissions.newPermissions.canAddWebPagePreviews, true);
@@ -857,7 +867,7 @@ public class ChatEventUtil {
       case TdApi.ChatEventVideoChatMuteNewParticipantsToggled.CONSTRUCTOR:
       case TdApi.ChatEventVideoChatParticipantIsMutedToggled.CONSTRUCTOR:
       case TdApi.ChatEventVideoChatParticipantVolumeLevelChanged.CONSTRUCTOR:
-      case TdApi.ChatEventIsAggressiveAntiSpamEnabledToggled.CONSTRUCTOR:
+      case TdApi.ChatEventHasAggressiveAntiSpamEnabledToggled.CONSTRUCTOR:
       case TdApi.ChatEventActiveUsernamesChanged.CONSTRUCTOR:
       case TdApi.ChatEventIsForumToggled.CONSTRUCTOR:
       case TdApi.ChatEventForumTopicCreated.CONSTRUCTOR:

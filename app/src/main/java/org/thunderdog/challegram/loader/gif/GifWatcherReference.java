@@ -42,10 +42,10 @@ public class GifWatcherReference {
   }
 
   @UiThread
-  public void gifFrameChanged (GifFile file) {
+  public void gifFrameChanged (GifFile file, boolean isRestart) {
     GifWatcher watcher = reference.get();
     if (watcher != null) {
-      watcher.gifFrameChanged(file);
+      watcher.gifFrameChanged(file, isRestart);
     }
   }
 

@@ -19,6 +19,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.util.text.TextMedia;
 
 import me.vkryl.core.lambda.RunnableData;
+import me.vkryl.td.Td;
 
 public class TGReaction {
   private final Tdlib tdlib;
@@ -49,7 +50,7 @@ public class TGReaction {
   public TGReaction (@NonNull Tdlib tdlib, @NonNull TdApi.Sticker customReaction) {
     this.tdlib = tdlib;
     this.customReaction = customReaction;
-    this.type = new TdApi.ReactionTypeCustomEmoji(customReaction.customEmojiId);
+    this.type = new TdApi.ReactionTypeCustomEmoji(Td.customEmojiId(customReaction));
     this.key = TD.makeReactionKey(type);
     this.emojiReaction = null;
 
@@ -104,7 +105,7 @@ public class TGReaction {
     } else {
       tdlib.pickRandomGenericOverlaySticker(sticker -> {
         if (sticker != null) {
-          TGStickerObj effectAnimation = new TGStickerObj(tdlib, sticker, null, sticker.type)
+          TGStickerObj effectAnimation = new TGStickerObj(tdlib, sticker, null, sticker.fullType)
             .setReactionType(type);
           tdlib.ui().execute(() ->
             after.runWithData(effectAnimation)
@@ -160,16 +161,16 @@ public class TGReaction {
 
   private TGStickerObj newStaticIconSicker () {
     if (emojiReaction != null) {
-      return new TGStickerObj(tdlib, emojiReaction.staticIcon, emojiReaction.emoji, emojiReaction.staticIcon.type).setReactionType(type).setDisplayScale(.5f);
+      return new TGStickerObj(tdlib, emojiReaction.staticIcon, emojiReaction.emoji, emojiReaction.staticIcon.fullType).setReactionType(type).setDisplayScale(.5f);
     } else {
       float displayScale = TextMedia.getScale(customReaction, 0) * .5f;
-      return new TGStickerObj(tdlib, customReaction, null, customReaction.type).setReactionType(type).setDisplayScale(displayScale).setPreviewOptimizationMode(GifFile.OptimizationMode.EMOJI);
+      return new TGStickerObj(tdlib, customReaction, null, customReaction.fullType).setReactionType(type).setDisplayScale(displayScale).setPreviewOptimizationMode(GifFile.OptimizationMode.EMOJI);
     }
   }
 
   private TGStickerObj newActivateAnimationSicker () {
     if (emojiReaction != null && !Config.TEST_STATIC_REACTIONS) {
-      return new TGStickerObj(tdlib, emojiReaction.activateAnimation, emojiReaction.emoji, emojiReaction.activateAnimation.type).setReactionType(type);
+      return new TGStickerObj(tdlib, emojiReaction.activateAnimation, emojiReaction.emoji, emojiReaction.activateAnimation.fullType).setReactionType(type);
     } else {
       return newStaticIconSicker();
     }
@@ -177,7 +178,7 @@ public class TGReaction {
 
   private TGStickerObj newEffectAnimationSicker () {
     if (emojiReaction != null) {
-      return new TGStickerObj(tdlib, emojiReaction.effectAnimation, emojiReaction.emoji, emojiReaction.effectAnimation.type).setReactionType(type);
+      return new TGStickerObj(tdlib, emojiReaction.effectAnimation, emojiReaction.emoji, emojiReaction.effectAnimation.fullType).setReactionType(type);
     } else {
       return null;
     }
@@ -185,14 +186,14 @@ public class TGReaction {
 
   public TGStickerObj newAroundAnimationSicker () {
     if (emojiReaction != null && emojiReaction.aroundAnimation != null) {
-      return new TGStickerObj(tdlib, emojiReaction.aroundAnimation, emojiReaction.emoji, emojiReaction.aroundAnimation.type).setReactionType(type);
+      return new TGStickerObj(tdlib, emojiReaction.aroundAnimation, emojiReaction.emoji, emojiReaction.aroundAnimation.fullType).setReactionType(type);
     }
     return newEffectAnimationSicker();
   }
 
   public TGStickerObj newCenterAnimationSicker () {
     if (emojiReaction != null && emojiReaction.centerAnimation != null && !Config.TEST_STATIC_REACTIONS) {
-      return new TGStickerObj(tdlib, emojiReaction.centerAnimation, emojiReaction.emoji, emojiReaction.centerAnimation.type).setReactionType(type);
+      return new TGStickerObj(tdlib, emojiReaction.centerAnimation, emojiReaction.emoji, emojiReaction.centerAnimation.fullType).setReactionType(type);
     }
     return newStaticIconSicker();
   }

@@ -172,6 +172,7 @@ seekDone: #5FA5D9
 seekEmpty: #ECEDEE
 seekReady: #D4DDE2
 sliderInactive: #B1B5BA
+spoilerMediaOverlay: #00000040
 statusBar, statusBarLegacy: #0000002C
 textLight: #838C96
 textNegative: #E45356

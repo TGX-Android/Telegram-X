@@ -161,7 +161,7 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
       @Override
       protected void setEmbedSticker (ListItem item, int position, EmbeddableStickerView userView, boolean isUpdate) {
         TdApi.Sticker sticker = (TdApi.Sticker) item.getData();
-        userView.setSticker(new TGStickerObj(tdlib(), sticker, UTYAN_EMOJI, sticker.type));
+        userView.setSticker(new TGStickerObj(tdlib(), sticker, UTYAN_EMOJI, sticker.fullType));
         userView.setCaptionText(Strings.buildMarkdown(controller, Lang.getString(isChannel ? R.string.InviteLinkRequestsHintChannel : R.string.InviteLinkRequestsHint, "tg://need_update_for_some_feature"), (view, span, clickedText) -> {
           ChatLinksController linksController = new ChatLinksController(context(), tdlib());
           linksController.setArguments(new ChatLinksController.Args(chatId, tdlib().myUserId(), null, null, tdlib().chatStatus(chatId).getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR));

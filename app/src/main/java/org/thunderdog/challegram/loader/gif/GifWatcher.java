@@ -19,7 +19,7 @@ import android.view.View;
 public interface GifWatcher {
   void gifLoaded (GifFile file, GifState state);
   default void gifProgress (GifFile file, float progress) { }
-  default void gifFrameChanged (GifFile file) { }
+  default void gifFrameChanged (GifFile file, boolean isRestart) { }
   default View findTargetView (GifFile file) {
     return null;
   }

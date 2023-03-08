@@ -74,6 +74,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.ChatListListener;
+import org.thunderdog.challegram.telegram.RightId;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibChatList;
@@ -1163,7 +1164,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
       return items;
     }, (view, parentView, item) -> {
       if (selectedChats == null || selectedChats.size() == 0)
-        return;
+        return false;
       TdApi.MessageSendOptions defaultSendOptions = getArgumentsStrict().defaultSendOptions;
       boolean needHideKeyboard = parentView.getId() == R.id.btn_done;
       switch (view.getId()) {
@@ -1183,6 +1184,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
           performSend(needHideKeyboard, Td.newSendOptions(defaultSendOptions), true);
           break;
       }
+      return true;
     }, getThemeListeners(), null).attachToView(sendButton.getChildAt(0));
 
     // Bottom wrap
@@ -1695,10 +1697,10 @@ public class ShareController extends TelegramViewController<ShareController.Args
     TdApi.Chat chat = tdlib.chatStrict(chatId);
     switch (mode) {
       case MODE_TEXT: {
-        return tdlib.getMessageRestrictionText(chat);
+        return tdlib.getBasicMessageRestrictionText(chat);
       }
       case MODE_FILE: {
-        return tdlib.getMediaRestrictionText(chat);
+        return tdlib.getDefaultRestrictionText(chat, RightId.SEND_DOCS);
       }
       case MODE_STICKER: {
         return tdlib.getStickerRestrictionText(chat);

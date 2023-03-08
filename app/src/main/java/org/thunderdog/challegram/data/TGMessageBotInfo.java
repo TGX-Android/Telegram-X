@@ -93,6 +93,11 @@ public class TGMessageBotInfo extends TGMessage {
   }
 
   @Override
+  protected boolean isFakeMessage () {
+    return true;
+  }
+
+  @Override
   protected void buildContent (int maxWidth) {
     int maxTextWidth = width - xPaddingRight - xContentLeft;
     if (titleWrapper != null) {

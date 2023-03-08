@@ -26,6 +26,7 @@ import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.telegram.TdlibAccount;
+import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.AppState;
 
@@ -249,6 +250,8 @@ public class Crash {
     result.put("cpu", U.getCpuArchitecture());
     result.put("crash_id", id);
     result.put("package_id", UI.getAppContext().getPackageName());
+    result.put("device", TdlibManager.deviceInformation());
+    result.put("fingerprint", U.getApkFingerprint("SHA1"));
     result.put("device_id", crashDeviceId);
     return result;
   }

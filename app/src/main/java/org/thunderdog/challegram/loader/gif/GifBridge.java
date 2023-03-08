@@ -257,8 +257,8 @@ public class GifBridge {
   }
 
   // Decoder thread
-  void nextFrameReady (GifActor actor) {
-    thread.nextFrameReady(actor);
+  void nextFrameReady (GifActor actor, boolean restarted) {
+    thread.nextFrameReady(actor, restarted);
   }
 
   // Decoder thread
@@ -281,23 +281,21 @@ public class GifBridge {
   }
 
   @AnyThread
-  void dispatchGifFrameChanged (GifFile file, GifState gif) {
+  void dispatchGifFrameChanged (GifFile file, GifState gif, boolean isRestart) {
     GifReceiver.getHandler().post(() -> {
-      onGifFrameDeadlineReached(file, gif);
+      onGifFrameDeadlineReached(file, gif, isRestart);
     });
   }
 
   @UiThread
-  void onGifFrameDeadlineReached (GifFile file, GifState gif) {
+  void onGifFrameDeadlineReached (GifFile file, GifState gif, boolean isRestart) {
     synchronized (records) {
-      if (!gif.setCanApplyNext())
-        return;
-
-      GifRecord record = records.get(file.toString());
-
-      if (record != null) {
-        for (GifWatcherReference reference : record.getWatchers()) {
-          reference.gifFrameChanged(file);
+      if (gif.setCanApplyNext()) {
+        GifRecord record = records.get(file.toString());
+        if (record != null) {
+          for (GifWatcherReference reference : record.getWatchers()) {
+            reference.gifFrameChanged(file, isRestart);
+          }
         }
       }
     }

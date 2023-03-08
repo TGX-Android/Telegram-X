@@ -771,7 +771,11 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
             return;
           }
           long[] messageIds = {messageThread.getLastMessageId()};
-          c.tdlib().send(new TdApi.ViewMessages(messageThread.getChatId(), messageThread.getMessageThreadId(), messageIds, true), c.tdlib().okHandler());
+          c.tdlib().send(new TdApi.ViewMessages(
+            messageThread.getChatId(), messageIds,
+            new TdApi.MessageSourceMessageThreadHistory(),
+            true
+          ), c.tdlib().okHandler());
         }
       };
       forceTouchContext.setButtons(actionListener, controller, ids, icons, hints);

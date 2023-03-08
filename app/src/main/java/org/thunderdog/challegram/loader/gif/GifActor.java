@@ -43,19 +43,23 @@ import java.io.File;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.ViewUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.td.Td;
 
 @SuppressWarnings ("JniMissingFunction")
 public class GifActor implements GifState.Callback, TGPlayerController.TrackChangeListener {
-  private static final int FLAG_CANCELLED = 0x01;
-  private static final int FLAG_LOADING_FILE = 0x02;
-  private static final int FLAG_AWAITING = 0x04;
+  private static final int FLAG_CANCELLED = 1;
+  private static final int FLAG_LOADING_FILE = 1 << 1;
+  private static final int FLAG_AWAITING = 1 << 2;
+  private static final int FLAG_AWAITING_FROM_RESTART = 1 << 3;
 
   private static final int LOTTIE_CACHE_NONE = 0;
   private static final int LOTTIE_CACHE_CREATING = 1;
@@ -412,7 +416,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
       thread.prepareNextFrame(this);
       scheduleNext(false);
     } else {
-      GifBridge.instance().dispatchGifFrameChanged(file, gif);
+      GifBridge.instance().dispatchGifFrameChanged(file, gif, false);
     }
   }
 
@@ -425,11 +429,13 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
     return frameNo;
   }
 
-  public void seekToStart () {
+  public boolean seekToStart () {
     if (!seekToStart && lastTimeStamp != 0) {
       seekToStart = true;
       onRequestNextFrame();
+      return true;
     }
+    return seekToStart;
   }
 
   // Decoder thread
@@ -469,6 +475,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
     if (gif == null) {
       return;
     }
+    boolean gifRestarted = false;
     boolean success = false;
     boolean async = false;
     final GifState.Frame free = gif.takeFree();
@@ -490,7 +497,6 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
       } else {
         desiredNextFrameNo = 0;
       }
-      boolean gifRestarted = false;
       if (seekToStart && !isLottie) {
         gif.clearBusy();
         seekToStart = false;
@@ -559,7 +565,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
                       }
                     }
                     gif.addBusy(free);
-                    GifBridge.instance().nextFrameReady(this);
+                    GifBridge.instance().nextFrameReady(this, false);
                   } else {
                     gif.addFree(free);
                   }
@@ -609,16 +615,18 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
       return;
     }
     if (success) {
-      GifBridge.instance().nextFrameReady(this);
+      GifBridge.instance().nextFrameReady(this, gifRestarted);
     }
   }
 
   // GifStage thread
-  public void nextFrameReady () {
+  public void nextFrameReady (boolean restarted) {
     synchronized (this) {
-      if ((flags & FLAG_AWAITING) != 0) {
+      if (BitwiseUtils.getFlag(flags, FLAG_AWAITING)) {
+        boolean fromRestart = BitwiseUtils.getFlag(flags, FLAG_AWAITING_FROM_RESTART);
         flags &= ~FLAG_AWAITING;
-        onNextFrame(false);
+        flags &= ~FLAG_AWAITING_FROM_RESTART;
+        onNextFrame(false, fromRestart || restarted);
       }
     }
   }
@@ -682,13 +690,16 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
   }
 
   // GifStage thread
-  public void onNextFrame (boolean allowAwait) {
+  public void onNextFrame (boolean allowAwait, boolean restarted) {
     synchronized (this) {
       if ((flags & FLAG_CANCELLED) == 0 && gif != null) {
         if (gif.hasNext()) {
-          GifBridge.instance().dispatchGifFrameChanged(file, gif);
+          GifBridge.instance().dispatchGifFrameChanged(file, gif, restarted);
         } else if (allowAwait) {
           flags |= FLAG_AWAITING;
+          if (restarted) {
+            flags |= FLAG_AWAITING_FROM_RESTART;
+          }
         }
       }
     }
@@ -753,18 +764,18 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
 
   @UiThread
   @Override
-  public void onRequestNextFrame () {
+  public boolean onRequestNextFrame () {
     synchronized (this) {
       if ((flags & FLAG_CANCELLED) == 0) {
         if (seekToStart && lastTimeStamp == 0) {
           seekToStart = false;
         }
         if (isPlaybackFrozen && !seekToStart) {
-          return;
+          return false;
         }
         if (isPlayOnce && file.hasLooped()) {
           awaitingResume = true;
-          return;
+          return false;
         }
         if (isPlayingRoundVideo) {
           if (TdlibManager.instance().player().isPlayingMessage(file.getChatId(), file.getMessageId())) {
@@ -773,14 +784,16 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
               scheduleNext(true);
             }
           }
-          return;
+          return false;
         }
         if (GifBridge.instance().canScheduleNextFrame(this, file.getFileId())) {
           thread.prepareNextFrame(this);
           scheduleNext(false);
+          return true;
         }
       }
     }
+    return false;
   }
 
   // Decoder thread
@@ -882,20 +895,80 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
   }
 
   public static void restartGif (@NonNull GifFile gifFile) {
+    restartGif(gifFile, null);
+  }
+
+  private static Map<String, List<Runnable>> restartCallbacks = null;
+
+  public static void restartGif (@NonNull GifFile gifFile, @Nullable Runnable after) {
     if (gifFile.isStill() || gifFile.isRoundVideo() || gifFile.isLottie()) {
+      U.run(after);
       return;
     }
+    boolean fail = false;
     if (activeActors == null) {
       synchronized (GifActor.class) {
         if (activeActors == null) {
-          return;
+          fail = true;
         }
       }
     }
+    if (fail) {
+      U.run(after);
+      return;
+    }
+    boolean seekToStart = false;
     String key = gifFile.toString();
+    List<Runnable> callbacks = null;
+    if (after != null) {
+      synchronized (GifActor.class) {
+        callbacks = restartCallbacks != null ? restartCallbacks.get(key) : null;
+        if (callbacks == null) {
+          callbacks = new ArrayList<>();
+          if (restartCallbacks == null) {
+            restartCallbacks = new HashMap<>();
+          }
+          restartCallbacks.put(key, callbacks);
+        }
+        callbacks.add(after);
+      }
+    }
     for (GifActor actor : activeActors) {
       if (actor.file.toString().equals(key)) {
-        actor.seekToStart();
+        if (actor.seekToStart()) {
+          seekToStart = true;
+        }
+      }
+    }
+    if (after != null && !seekToStart) {
+      synchronized (GifActor.class) {
+        callbacks.remove(after);
+        if (callbacks.isEmpty()) {
+          restartCallbacks.remove(key);
+          if (restartCallbacks.isEmpty()) {
+            restartCallbacks = null;
+          }
+        }
+      }
+      U.run(after);
+    }
+  }
+
+  static void onGifRestarted (@NonNull GifFile gifFile) {
+    String key = gifFile.toString();
+    List<Runnable> callbacks;
+    synchronized (GifActor.class) {
+      if (restartCallbacks == null) {
+        return;
+      }
+      callbacks = restartCallbacks.remove(key);
+      if (restartCallbacks.isEmpty()) {
+        restartCallbacks = null;
+      }
+    }
+    if (callbacks != null) {
+      for (Runnable callback : callbacks) {
+        callback.run();
       }
     }
   }
