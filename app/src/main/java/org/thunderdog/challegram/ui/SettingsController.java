@@ -965,8 +965,20 @@ public class SettingsController extends ViewController<Void> implements
   }
 
   private void viewSourceCode (boolean isTdlib) {
-    AppBuildInfo appBuildInfo = Settings.instance().getCurrentBuildInformation();
-    tdlib.ui().openUrl(this, isTdlib ? appBuildInfo.tdlibCommitUrl() : appBuildInfo.commitUrl(), new TdlibUi.UrlOpenParameters().disableInstantView());
+    String url;
+    if (isTdlib) {
+      String tdlibCommitHash = Td.tdlibCommitHashFull();
+      url = AppBuildInfo.tdlibCommitUrl(tdlibCommitHash);
+    } else {
+      AppBuildInfo appBuildInfo = Settings.instance().getCurrentBuildInformation();
+      url = appBuildInfo.commitUrl();
+    }
+    if (!StringUtils.isEmpty(url)) {
+      tdlib.ui().openUrl(this,
+        url,
+        new TdlibUi.UrlOpenParameters().disableInstantView()
+      );
+    }
   }
 
   @Override
@@ -1024,7 +1036,7 @@ public class SettingsController extends ViewController<Void> implements
           }
           b.item(new OptionItem(R.id.btn_sourceCode, Lang.getString(R.string.format_commit, Lang.getString(R.string.ViewSourceCode), appBuildInfo.getCommit()), OPTION_COLOR_NORMAL, R.drawable.baseline_github_24));
           if (appBuildInfo.getTdlibCommitFull() != null) {
-            b.item(new OptionItem(R.id.btn_tdlib, Lang.getCharSequence(R.string.format_commit, "TDLib " + Td.tdlibVersion(), appBuildInfo.tdlibCommit()), OPTION_COLOR_NORMAL, R.drawable.baseline_tdlib_24));
+            b.item(new OptionItem(R.id.btn_tdlib, Lang.getCharSequence(R.string.format_commit, "TDLib " + Td.tdlibVersion(), Td.tdlibCommitHash()), OPTION_COLOR_NORMAL, R.drawable.baseline_tdlib_24));
           }
           int i = 0;
           for (PullRequest pullRequest : appBuildInfo.getPullRequests()) {
