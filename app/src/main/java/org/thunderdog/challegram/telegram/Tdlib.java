@@ -1354,7 +1354,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   private static boolean checkVersion (int version, int checkVersion, boolean isTest) {
-    return version < checkVersion && (checkVersion <= BuildConfig.ORIGINAL_VERSION_CODE || isTest || BuildConfig.DEBUG);
+    return version < checkVersion && (checkVersion <= BuildConfig.ORIGINAL_VERSION_CODE || isTest);
   }
 
   private static int getStatus (TdApi.AuthorizationState state) {
@@ -1428,6 +1428,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       if (checkVersion(prevVersion, APP_RELEASE_VERSION_2022_OCTOBER, test)) {
         makeUpdateText(0, 25, 1, APP_RELEASE_VERSION_2022_OCTOBER, "https://telegra.ph/Telegram-X-10-06", functions, updates, true);
       }
+      if (checkVersion(prevVersion, APP_RELEASE_VERSION_2023_MARCH, test)) {
+        makeUpdateText(0, 25, 6, APP_RELEASE_VERSION_2023_MARCH, "https://telegra.ph/Telegram-X-03-08", functions, updates, true);
+      }
       if (!updates.isEmpty()) {
         incrementReferenceCount(REFERENCE_TYPE_JOB); // starting task
         functions.add(new TdApi.CreatePrivateChat(TdConstants.TELEGRAM_ACCOUNT_ID, false));
@@ -1481,6 +1484,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private static final int APP_RELEASE_VERSION_2022_JUNE = 1530; // Going open source. 16 June, 2022: https://telegra.ph/Telegram-X-06-11
 
   private static final int APP_RELEASE_VERSION_2022_OCTOBER = 1560; // Reactions. 7 October, 2022: https://telegra.ph/Telegram-X-10-06
+
+  private static final int APP_RELEASE_VERSION_2023_MARCH = Integer.MAX_VALUE; // Dozens of stuff. 8 March, 2023: https://telegra.ph/Telegram-X-03-08
 
   // Startup
 
