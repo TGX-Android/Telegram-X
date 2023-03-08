@@ -335,9 +335,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
   private void setAnimation (long messageId, TdApi.Animation animation) {
     this.animation = animation;
 
-    if (animation.thumbnail != null) {
-      setPreviewFile(animation.minithumbnail, animation.thumbnail);
-    }
+    setPreviewFile(animation.minithumbnail, animation.thumbnail);
     this.targetFile = animation.animation;
 
     this.targetGifFile = new GifFile(tdlib, animation);
@@ -961,9 +959,15 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     DrawAlgorithms.drawReceiver(c, preview, receiver, false, true, cellLeft, cellTop, cellRight, cellBottom);
     float spoilerFactor = spoilerOverlayVisible.getFloatValue();
     if (spoilerFactor > 0f) {
-      preview.setPaintAlpha(spoilerFactor);
-      preview.draw(c);
-      preview.restorePaintAlpha();
+      Receiver spoilerReceiver;
+      if (preview instanceof DoubleImageReceiver && (animation != null || video != null)) {
+        spoilerReceiver = ((DoubleImageReceiver) preview).getPreview();
+      } else {
+        spoilerReceiver = preview;
+      }
+      spoilerReceiver.setPaintAlpha(spoilerFactor);
+      spoilerReceiver.draw(c);
+      spoilerReceiver.restorePaintAlpha();
       int radius = getRadius();
       DrawAlgorithms.drawRoundRect(c,
         BitwiseUtils.getFlag(roundings, ROUND_TOP_LEFT) ? radius : 0,
@@ -1073,6 +1077,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       } else {
         paint = Paints.whiteMediumPaint(13f, false, false);
       }
+      int existingAlpha = paint.getAlpha();
 
       paint.setAlpha((int) (255f * alpha * (1f - selectionFactor)));
 
@@ -1102,7 +1107,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       }
 
       c.restore();
-      paint.setAlpha(255);
+      paint.setAlpha(existingAlpha);
     } else if (isVideo() && Config.VIDEO_CLOUD_PLAYBACK_AVAILABLE) {
       getFileProgress().setVideoStreamingOptions(needTopOffset, true, isSmallStreamingUI ? FileProgressComponent.STREAMING_UI_MODE_SMALL : FileProgressComponent.STREAMING_UI_MODE_LARGE, durationRect, downloadedAnimator);
     }
@@ -1114,7 +1119,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     }
 
     if (!hideLoader) {
-      getFileProgress().setRequestedAlpha(alpha * (1f - selectionFactor));
+      getFileProgress().setRequestedAlpha(alpha * (1f - selectionFactor) * (1f - spoilerFactor));
       if (isStreamingUI) {
         fileProgress.drawClipped(view, c, durationRect, (-durationDx) * downloadedAnimator.getFloatValue());
       } else {
