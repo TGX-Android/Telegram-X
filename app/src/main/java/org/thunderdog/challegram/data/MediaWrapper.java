@@ -373,7 +373,12 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     if (this.revealOnTap != revealOnTap) {
       this.revealOnTap = revealOnTap;
       spoilerOverlayVisible.forceValue(revealOnTap, revealOnTap ? 1f : 0f);
+      updateIgnoreLoaderClicks();
     }
+  }
+
+  private void updateIgnoreLoaderClicks () {
+    fileProgress.setIgnoreLoaderClicks(spoilerOverlayVisible.getValue() || this.fileProgress.isVideoStreaming() || hideLoader);
   }
 
   public void setNoRoundedCorners () {
@@ -1123,7 +1128,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     }
 
     if (!hideLoader) {
-      getFileProgress().setRequestedAlpha(alpha * (1f - selectionFactor) * (1f - spoilerFactor));
+      getFileProgress().setRequestedAlpha(alpha * (1f - selectionFactor) * (1f - spoilerFactor), alpha * (1f - selectionFactor));
       if (isStreamingUI) {
         fileProgress.drawClipped(view, c, durationRect, (-durationDx) * downloadedAnimator.getFloatValue());
       } else {
@@ -1195,19 +1200,20 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       return true;
     }
     if (revealOnTap && spoilerOverlayVisible.getValue()) {
+      AtomicBoolean startedPlaying = new AtomicBoolean(false);
+      Runnable revealSpoiler = () -> {
+        if (!startedPlaying.getAndSet(true)) {
+          spoilerOverlayVisible.setValue(false, true);
+          updateIgnoreLoaderClicks();
+        }
+      };
       if (source != null && animation != null && targetGifFile != null && !targetGifFile.isStill()) {
-        AtomicBoolean startedPlaying = new AtomicBoolean(false);
-        Runnable startPlaying = () -> {
-          if (!startedPlaying.getAndSet(true)) {
-            spoilerOverlayVisible.setValue(false, true);
-          }
-        };
         GifActor.restartGif(targetGifFile, () -> {
-          source.runOnUiThreadOptional(startPlaying);
+          source.runOnUiThreadOptional(revealSpoiler);
         });
-        source.runOnUiThread(startPlaying, 750);
+        source.runOnUiThread(revealSpoiler, 750);
       } else {
-        spoilerOverlayVisible.setValue(false, true);
+        revealSpoiler.run();
       }
       return true;
     }
