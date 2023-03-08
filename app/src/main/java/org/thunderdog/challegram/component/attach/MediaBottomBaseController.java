@@ -85,6 +85,10 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
 
   // Settings
 
+  public boolean allowSpoiler () {
+    return false;
+  }
+
   @Override
   protected final int getHeaderTextColorId () {
     return R.id.theme_color_text;

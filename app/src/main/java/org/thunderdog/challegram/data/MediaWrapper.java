@@ -372,9 +372,13 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
   public void setRevealOnTap (boolean revealOnTap) {
     if (this.revealOnTap != revealOnTap) {
       this.revealOnTap = revealOnTap;
-      spoilerOverlayVisible.forceValue(revealOnTap, revealOnTap ? 1f : 0f);
-      updateIgnoreLoaderClicks();
+      updateRevealOnTap();
     }
+  }
+
+  private void updateRevealOnTap () {
+    spoilerOverlayVisible.setValue(this.revealOnTap && !(source != null && source.isNotSent()), source != null && source.needAnimateChanges());
+    updateIgnoreLoaderClicks();
   }
 
   private void updateIgnoreLoaderClicks () {
@@ -726,6 +730,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     }
     getFileProgress().updateMessageId(oldMessageId, newMessageId, success);
     updateDuration();
+    updateRevealOnTap();
   }
 
   public @Nullable TdApi.Photo getPhoto () {

@@ -55,6 +55,7 @@ import org.thunderdog.challegram.navigation.BackListener;
 import org.thunderdog.challegram.navigation.CounterHeaderView;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.NavigationController;
+import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.RightId;
@@ -628,6 +629,8 @@ public class MediaLayout extends FrameLayoutFix implements
       }
     }
 
+    setNeedSpoiler(false);
+
     MediaBottomBaseController<?> to;
 
     from = controllers[fromIndex];
@@ -1180,7 +1183,7 @@ public class MediaLayout extends FrameLayoutFix implements
         ImageGalleryFile[] result = new ImageGalleryFile[galleryFiles.size()];
         galleryFiles.toArray(result);
         Settings.instance().setNeedGroupMedia(needGroupMedia);
-        target.sendPhotosAndVideosCompressed(result, needGroupMedia, options, disableMarkdown, asFiles);
+        target.sendPhotosAndVideosCompressed(result, needGroupMedia, options, disableMarkdown, asFiles, allowSpoiler && needSpoiler);
       }
     }
 
@@ -1227,6 +1230,8 @@ public class MediaLayout extends FrameLayoutFix implements
     UI.openGalleryDelayed(UI.getContext(getContext()), sendAsFile);
   }
 
+  private TooltipOverlayView.TooltipInfo tooltipInfo;
+
   @Override
   public void onClick (View v) {
     switch (v.getId()) {
@@ -1234,6 +1239,22 @@ public class MediaLayout extends FrameLayoutFix implements
         pickDateOrProceed((sendOptions, disableMarkdown) ->
           getCurrentController().onMultiSendPress(v, sendOptions, false)
         );
+        break;
+      }
+      case R.id.btn_spoiler: {
+        if (allowSpoiler) {
+          setNeedSpoiler(!needSpoiler);
+          if (needSpoiler) {
+            tooltipInfo = UI.getContext(getContext()).tooltipManager().builder(v)
+              .icon(R.drawable.baseline_whatshot_24)
+              .offset(rect -> rect.offset(0, Screen.dp(12f))).show(tdlib(), R.string.MediaSpoilerHint).hideDelayed();
+          } else {
+            if (tooltipInfo != null) {
+              tooltipInfo.hideNow();
+              tooltipInfo = null;
+            }
+          }
+        }
         break;
       }
       case R.id.btn_mosaic: {
@@ -1261,11 +1282,11 @@ public class MediaLayout extends FrameLayoutFix implements
   private HapticMenuHelper sendMenu;
   private BackHeaderButton closeButton;
   private TextView counterHintView;
-  private ImageView groupMediaView;
+  private ImageView groupMediaView, hotMediaView;
   private @Nullable SenderSendIcon senderSendIcon;
 
   private float groupMediaFactor;
-  private boolean needGroupMedia;
+  private boolean needGroupMedia, needSpoiler;
   private FactorAnimator groupMediaAnimator;
   private static final int ANIMATOR_GROUP_MEDIA = 1;
 
@@ -1395,6 +1416,24 @@ public class MediaLayout extends FrameLayoutFix implements
 
       params = FrameLayoutFix.newParams(Screen.dp(55f), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.RIGHT);
       params.rightMargin = Screen.dp(55f);
+      hotMediaView = new ImageView(getContext()) {
+        @Override
+        public boolean onTouchEvent (MotionEvent e) {
+          return isEnabled() && Views.isValid(this) && super.onTouchEvent(e);
+        }
+      };
+      hotMediaView.setOnClickListener(this);
+      hotMediaView.setId(R.id.btn_spoiler);
+      hotMediaView.setScaleType(ImageView.ScaleType.CENTER);
+      hotMediaView.setImageResource(R.drawable.baseline_whatshot_24);
+      hotMediaView.setColorFilter(Theme.getColor(R.id.theme_color_icon));
+      hotMediaView.setAlpha(0f);
+      themeListeners.addThemeFilterListener(hotMediaView, R.id.theme_color_icon);
+      hotMediaView.setLayoutParams(params);
+      bottomBar.addView(hotMediaView);
+
+      params = FrameLayoutFix.newParams(Screen.dp(55f), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.RIGHT);
+      params.rightMargin = Screen.dp(55f);
       groupMediaView = new ImageView(getContext()) {
         @Override
         public boolean onTouchEvent (MotionEvent e) {
@@ -1434,13 +1473,39 @@ public class MediaLayout extends FrameLayoutFix implements
       closeButton.setAlpha(0f);
       counterHintView.setAlpha(0f);
       groupMediaView.setAlpha(0f);
+      hotMediaView.setAlpha(0f);
 
       setCounterEnabled(false);
     }
+    setNeedSpoiler(false);
+    setAllowSpoiler(getCurrentController().allowSpoiler());
+    hotMediaView.setAlpha(counterFactor * (allowSpoiler ? 1f : 0f));
     if (counterView != null) {
       counterView.setTranslationY(0f);
       checkSuffix(false);
       // setNeedGroupMedia(TGSettingsManager.instance().needGroupMedia(), false);
+    }
+  }
+
+  private boolean allowSpoiler;
+
+  private void setAllowSpoiler (boolean allowSpoiler) {
+    if (this.allowSpoiler != allowSpoiler) {
+      this.allowSpoiler = allowSpoiler;
+      if (allowSpoiler) {
+        setNeedSpoiler(false);
+      }
+      hotMediaView.setAlpha(allowSpoiler ? counterFactor : 0f);
+      Views.setRightMargin(groupMediaView, allowSpoiler ? Screen.dp(55f) + Screen.dp(48f) : Screen.dp(55f));
+    }
+  }
+
+  private void setNeedSpoiler (boolean needSpoiler) {
+    if (this.needSpoiler != needSpoiler) {
+      this.needSpoiler = needSpoiler;
+      hotMediaView.setColorFilter(Theme.getColor(needSpoiler ? R.id.theme_color_iconActive : R.id.theme_color_icon));
+      themeListeners.removeThemeListenerByTarget(hotMediaView);
+      themeListeners.addThemeFilterListener(hotMediaView, needSpoiler ? R.id.theme_color_iconActive : R.id.theme_color_icon);
     }
   }
 
@@ -1554,6 +1619,7 @@ public class MediaLayout extends FrameLayoutFix implements
       if (translateFactor > 0f && (counterFactor == 0f || !getCurrentController().supportsMediaGrouping())) {
         translateFactor = 0f;
       }
+      hotMediaView.setAlpha(counterFactor * (allowSpoiler ? 1f : 0f));
       float alpha = counterFactor * translateFactor;
       groupMediaView.setAlpha(alpha);
       counterHintView.setAlpha(alpha);
@@ -1584,6 +1650,7 @@ public class MediaLayout extends FrameLayoutFix implements
   private void __setCounterFactor (float factor) {
     if (this.counterFactor != factor) {
       this.counterFactor = factor;
+      hotMediaView.setAlpha(factor * (allowSpoiler ? 1f : 0f));
       setAddExtraSpacing(factor == 1f);
     }
   }

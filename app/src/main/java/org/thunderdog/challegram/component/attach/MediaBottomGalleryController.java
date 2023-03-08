@@ -247,6 +247,11 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   }
 
   @Override
+  public boolean allowSpoiler () {
+    return true;
+  }
+
+  @Override
   protected void onUpdateBottomBarFactor (float bottomBarFactor, float counterFactor, float y) {
     float factor = Math.min(bottomBarFactor, 1f - counterFactor);
     if (cameraBadgeView != null) {
