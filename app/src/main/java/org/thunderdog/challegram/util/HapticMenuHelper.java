@@ -381,7 +381,7 @@ public class HapticMenuHelper implements View.OnTouchListener, View.OnLongClickL
       if (item.onClickListener != null && !item.onClickListener.onHapticMenuItemClick(view, parentView, item)) {
         res = false;
       }
-      if (!item.isCheckbox && !res) {
+      if (!item.isCheckbox && res) {
         hideMenu();
       }
     }
