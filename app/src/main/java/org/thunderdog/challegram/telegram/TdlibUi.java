@@ -162,6 +162,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.CancellableRunnable;
+import me.vkryl.core.lambda.Future;
 import me.vkryl.core.lambda.FutureBool;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
@@ -1419,12 +1420,22 @@ public class TdlibUi extends Handler {
     }
   }
 
-  public void shareProxyUrl (TdlibDelegate context, String url) {
+  public void shareUrl (TdlibDelegate context, String url, String internalShareText, String externalShareText, String externalShareButton) {
     if (!StringUtils.isEmpty(url)) {
       ShareController c = new ShareController(context.context(), context.tdlib());
-      c.setArguments(new ShareController.Args(Lang.getString(R.string.ShareTextProxyLink2, url)).setShare(Lang.getString(R.string.ShareTextProxyLink, url), Lang.getString(R.string.ShareBtnProxy)));
+      c.setArguments(new ShareController.Args(!StringUtils.isEmpty(internalShareText) ? internalShareText : url)
+        .setShare(externalShareText, externalShareButton)
+      );
       c.show();
     }
+  }
+
+  public void shareProxyUrl (TdlibDelegate context, String url) {
+    shareUrl(context, url,
+      Lang.getString(R.string.ShareTextProxyLink2, url),
+      Lang.getString(R.string.ShareTextProxyLink, url),
+      Lang.getString(R.string.ShareBtnProxy)
+    );
   }
 
   public void shareLanguageUrl (TdlibDelegate context, TdApi.LanguagePackInfo languagePackInfo) {
@@ -3666,6 +3677,39 @@ public class TdlibUi extends Handler {
     desc.append(name);
     desc.append(":</b> ");
     desc.append(value);
+  }
+
+  public void showUrlOptions (TdlibDelegate context, String url, Future<UrlOpenParameters> openParametersFuture) {
+    ViewController<?> c = context.context().navigation().getCurrentStackItem();
+    if (c == null)
+      return;
+
+    c.showOptions(url, new int[] {
+      R.id.btn_open,
+      R.id.btn_copyLink,
+      R.id.btn_share
+    }, new String[] {
+      Lang.getString(R.string.Open),
+      Lang.getString(R.string.Copy),
+      Lang.getString(R.string.Share)
+    }, null, new int[] {
+      R.drawable.baseline_open_in_browser_24,
+      R.drawable.baseline_content_copy_24,
+      R.drawable.baseline_forward_24
+    }, (optionItemView, id) -> {
+      switch (id) {
+        case R.id.btn_open:
+          openUrl(context, url, openParametersFuture != null ? openParametersFuture.get() : null);
+          break;
+        case R.id.btn_copyLink:
+          UI.copyText(url, R.string.CopiedLink);
+          break;
+        case R.id.btn_share:
+          shareUrl(context, url, null, url, null);
+          break;
+      }
+      return true;
+    });
   }
 
   public void openProxyAlert (TdlibDelegate context, String server, int port, TdApi.ProxyType type, String proxyDescription) {

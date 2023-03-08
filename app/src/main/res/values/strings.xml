@@ -3579,6 +3579,7 @@
   <string name="FindingByPhoneNumber">Finding by Phone Number</string>
   <string name="WhoCanFindByPhone">Who can find me by my number?</string>
   <string name="WhoCanFindByPhoneInfoEveryone">Users who have your number saved in the contacts list will also see it on Telegram.</string>
+  <string name="WhoCanFindByPhoneInfoEveryoneLink">Users who have your number saved in the contacts list will also see it on Telegram.\n\nThis public link opens a chat with you: %1$s</string>
   <string name="WhoCanFindByPhoneInfoContacts">Users who add your number to their contacts will see it on Telegram only if they are your contacts.</string>
 
   <string name="NumberHidden">Number is unknown</string>

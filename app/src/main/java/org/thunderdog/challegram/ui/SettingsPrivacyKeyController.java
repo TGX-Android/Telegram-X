@@ -22,6 +22,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
@@ -31,16 +34,19 @@ import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.telegram.PrivacySettings;
 import org.thunderdog.challegram.telegram.PrivacySettingsListener;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
+import org.thunderdog.challegram.util.NoUnderlineClickableSpan;
 import org.thunderdog.challegram.util.UserPickerMultiDelegate;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.LongList;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
@@ -139,7 +145,9 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
     if (this.privacyRules == null) {
       this.privacyRules = PrivacySettings.valueOf(rules);
       buildCells();
-      executeScheduledAnimation();
+      if (!needAsynchronousAnimation()) {
+        executeScheduledAnimation();
+      }
     } else {
       int prevMode = currentRules().getMode();
       this.privacyRules = PrivacySettings.valueOf(rules);
@@ -190,6 +198,8 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
     return true;
   }
 
+  private boolean loadingLink;
+
   private void buildCells () {
     if (privacyRules == null) {
       return;
@@ -197,6 +207,8 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
 
     final ListItem headerItem;
     final ListItem hintItem;
+
+    TdApi.InternalLinkType internalLinkType = null;
 
     final int rulesType = privacyRules.getMode();
 
@@ -229,6 +241,10 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
       case TdApi.UserPrivacySettingAllowFindingByPhoneNumber.CONSTRUCTOR: {
         headerItem = new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.WhoCanFindByPhone);
         hintItem = new ListItem(ListItem.TYPE_DESCRIPTION, R.id.btn_description, 0, rulesType == PrivacySettings.MODE_EVERYBODY ? R.string.WhoCanFindByPhoneInfoEveryone : R.string.WhoCanFindByPhoneInfoContacts);
+        TdApi.User user = tdlib.myUser();
+        if (user != null) {
+          internalLinkType = new TdApi.InternalLinkTypeUserPhoneNumber(user.phoneNumber);
+        }
         break;
       }
       case TdApi.UserPrivacySettingAllowPeerToPeerCalls.CONSTRUCTOR: {
@@ -258,6 +274,22 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
       default: {
         throw new IllegalStateException("privacyKey == " + getArgumentsStrict());
       }
+    }
+
+    if (!loadingLink && StringUtils.isEmpty(additionalLink) && internalLinkType != null) {
+      loadingLink = true;
+      tdlib.client().send(new TdApi.GetInternalLink(internalLinkType, true), result -> runOnUiThreadOptional(() -> {
+        if (loadingLink) {
+          loadingLink = false;
+          if (result.getConstructor() == TdApi.HttpUrl.CONSTRUCTOR) {
+            additionalLink = ((TdApi.HttpUrl) result).url;
+            updateHints();
+          }
+          if (!needAsynchronousAnimation()) {
+            executeScheduledAnimation();
+          }
+        }
+      }));
     }
 
     ArrayList<ListItem> items = new ArrayList<>();
@@ -313,18 +345,39 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
     restorePersistentScrollPosition();
   }
 
+  private String additionalLink;
+
+  private void updateHints () {
+    int mode = currentRules().getMode();
+    switch (getArgumentsStrict().getConstructor()) {
+      case TdApi.UserPrivacySettingAllowFindingByPhoneNumber.CONSTRUCTOR:  {
+        int i = adapter.indexOfViewById(R.id.btn_description);
+        if (i != -1) {
+          boolean changed;
+          ListItem item = adapter.getItems().get(i);
+          if (mode == PrivacySettings.MODE_EVERYBODY && !StringUtils.isEmpty(additionalLink)) {
+            changed = item.setStringIfChanged(Lang.getString(R.string.WhoCanFindByPhoneInfoEveryoneLink, (target, argStart, argEnd, argIndex, needFakeBold) -> new NoUnderlineClickableSpan() {
+              @Override
+              public void onClick (@NonNull View widget) {
+                tdlib.ui().showUrlOptions(SettingsPrivacyKeyController.this, additionalLink, () -> new TdlibUi.UrlOpenParameters().disableInstantView());
+              }
+            }, additionalLink));
+          } else {
+            changed = item.setStringIfChanged(mode == PrivacySettings.MODE_EVERYBODY ? R.string.WhoCanFindByPhoneInfoEveryone : R.string.WhoCanFindByPhoneInfoContacts);
+          }
+          if (changed) {
+            adapter.notifyItemChanged(i);
+          }
+        }
+        break;
+      }
+    }
+  }
+
   private void updateRulesState (PrivacySettings newPrivacySettings) {
     int newRules = newPrivacySettings.getMode();
     if (!needExceptions()) {
-      switch (getArgumentsStrict().getConstructor()) {
-        case TdApi.UserPrivacySettingAllowFindingByPhoneNumber.CONSTRUCTOR:  {
-          int i = adapter.indexOfViewById(R.id.btn_description);
-          if (i != -1 && adapter.getItems().get(i).setStringIfChanged(newRules == PrivacySettings.MODE_EVERYBODY ? R.string.WhoCanFindByPhoneInfoEveryone : R.string.WhoCanFindByPhoneInfoContacts)) {
-            adapter.notifyItemChanged(i);
-          }
-          break;
-        }
-      }
+      updateHints();
       return;
     }
 
@@ -374,7 +427,7 @@ public class SettingsPrivacyKeyController extends RecyclerViewController<TdApi.U
 
   @Override
   public boolean needAsynchronousAnimation () {
-    return privacyRules == null;
+    return privacyRules == null || loadingLink;
   }
 
   @Override
