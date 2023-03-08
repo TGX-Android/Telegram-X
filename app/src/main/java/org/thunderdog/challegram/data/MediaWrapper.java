@@ -307,6 +307,8 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     this(context, tdlib, animation, chatId, messageId, source, useHotStuff, false, false, null);
   }
 
+  private boolean forceNoAutoPlay;
+
   public MediaWrapper (BaseActivity context, Tdlib tdlib, @NonNull TdApi.Animation animation, long chatId, long messageId, @Nullable TGMessage source, boolean useHotStuff, boolean customAutoplay, boolean noAutoplay, EmbeddedService nativeEmbed) {
     this.tdlib = tdlib;
     this.useHotStuff = useHotStuff;
@@ -323,7 +325,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     if (isHot()) {
       fileProgress.setDownloadedIconRes(R.drawable.deproko_baseline_whatshot_24);
     } else if ((customAutoplay && noAutoplay) || (!customAutoplay && !Settings.instance().needAutoplayGIFs())) {
-      this.targetGifFile.setIsStill(true);
+      this.forceNoAutoPlay = true;
       this.fileProgress.setDownloadedIconRes(R.drawable.deproko_baseline_gif_24);
     }
 
@@ -342,6 +344,9 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
     this.targetGifFile.setScaleType(ImageFile.CENTER_CROP);
     if (Math.max(animation.width, animation.height) > 1280) {
       this.targetGifFile.setRequestedSize(1280);
+    }
+    if (forceNoAutoPlay) {
+      this.targetGifFile.setIsStill(true);
     }
 
     this.contentWidth = animation.width;
