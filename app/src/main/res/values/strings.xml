@@ -4602,6 +4602,18 @@
   <string name="opened_round_hours_one">watched %1$s hour ago</string>
   <string name="opened_round_hours_other">watched %1$s hours ago</string>
 
+  <string name="reacted_now">reacted just now</string>
+  <string name="reacted_today">reacted today at %1$s</string>
+  <string name="reacted_yesterday">reacted yesterday at %1$s</string>
+  <string name="reacted_weekday">reacted on %1$s at %2$s</string>
+  <string name="reacted_date">reacted on %1$s at %2$s</string>
+  <string name="reacted_seconds_one">reacted %1$s second ago</string>
+  <string name="reacted_seconds_other">reacted %1$s seconds ago</string>
+  <string name="reacted_minutes_one">reacted %1$s minute ago</string>
+  <string name="reacted_minutes_other">reacted %1$s minutes ago</string>
+  <string name="reacted_hours_one">reacted %1$s hour ago</string>
+  <string name="reacted_hours_other">reacted %1$s hours ago</string>
+
   <string name="MediaSpoilerHint">Media will be blurred inside the chat and reveal after additional tap.</string>
   <string name="HideMedia">Hide media</string>
 

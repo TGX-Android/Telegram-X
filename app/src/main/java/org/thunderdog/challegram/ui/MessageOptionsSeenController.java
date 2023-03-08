@@ -52,7 +52,12 @@ public class MessageOptionsSeenController extends BottomSheetViewController.Bott
           boolean allowDuration =
             elapsedSeconds < TimeUnit.MINUTES.toSeconds(60) &&
             elapsedSeconds >= -TimeUnit.MINUTES.toSeconds(1);
-          user.setCustomStatus(Lang.getViewed(tdlib, item.getIntValue(), TimeUnit.SECONDS, allowDuration, message.getMessage().content));
+          user.setCustomStatus(
+            Lang.getViewed(tdlib,
+              viewDateSeconds, TimeUnit.SECONDS, allowDuration,
+              message.getMessage().content
+            )
+          );
         }
         userView.setUser(user);
       }
