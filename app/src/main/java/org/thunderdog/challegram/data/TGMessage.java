@@ -328,7 +328,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       @Override
       public void onRebuildRequested () {
         runOnUiThreadOptional(() -> {
-          updateInteractionInfo(true);
+          if (isLayoutBuilt()) {
+            updateInteractionInfo(true);
+          }
         });
       }
     });

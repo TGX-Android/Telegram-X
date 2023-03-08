@@ -761,12 +761,18 @@ public class TGMessageMedia extends TGMessage {
 
   @Override
   protected int getContentWidth () {
-    return wrapper == null ? mosaicWrapper.getWidth() : Math.max(mosaicWrapper.getWidth(), wrapper.getWidth());
+    int mosaicWidth = mosaicWrapper != null ? mosaicWrapper.getWidth() : 0;
+    return wrapper == null ?
+      mosaicWidth :
+      Math.max(mosaicWidth, wrapper.getWidth());
   }
 
   @Override
   protected int getContentHeight () {
-    return wrapper == null ? mosaicWrapper.getHeight() : mosaicWrapper.getHeight() + wrapper.getHeight() + Screen.dp(TEXT_MARGIN) + (useBubbles() && !useForward() ? Screen.dp(TEXT_MARGIN) - getBubbleContentPadding() : 0);
+    int mosaicHeight = mosaicWrapper != null ? mosaicWrapper.getHeight() : 0;
+    return wrapper == null ?
+      mosaicHeight :
+      mosaicHeight + wrapper.getHeight() + Screen.dp(TEXT_MARGIN) + (useBubbles() && !useForward() ? Screen.dp(TEXT_MARGIN) - getBubbleContentPadding() : 0);
   }
 
   // Touch
