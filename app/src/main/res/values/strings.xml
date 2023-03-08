@@ -464,7 +464,7 @@
   <string name="passcode_fingerprint">Unlock with Fingerprint</string>
   <string name="LoadingInformation">Loading information…</string>
   <string name="BlockContact">Block</string>
-  <string name="BlockBot">Block and Stop</string>
+  <string name="BlockBot">Stop and Block</string>
   <string name="Unblock">Unblock</string>
   <string name="UnblockBot">Unblock</string>
   <string name="RestartBot">Restart</string>
@@ -580,7 +580,7 @@
   <string name="MessageSearchFilterRound">Video messages</string>
   <string name="MessageSearchFilterFiles">Files</string>
   <string name="MessageSearchFilterMusic">Music</string>
-  <string name="MessageSearchFilterGif">Gifs</string>
+  <string name="MessageSearchFilterGif">GIFs</string>
 
   <string name="VoiceChatInviteOther">You invited %1$s to the video chat</string>
   <string name="VoiceChatInviteSelf">%1$s invited you to the video chat</string>
@@ -949,7 +949,7 @@
   <string name="ReEnterAPassword">Re-enter a password</string>
   <string name="EnterANewPassword">Enter a new password</string>
   <string name="EnterANewEmail">Enter a new email address</string>
-  <string name="EnterEmail">Enter an email address</string>
+  <string name="EnterEmail">Enter your email address</string>
   <string name="ForgotPassword">Forgot password?</string>
   <string name="RestorePasswordNoEmailTitle">Sorry</string>
   <string name="SinceNotProvided">Since you didn\'t provide a recovery email when setting up your password, your remaining options are either to remember your password or to reset your account.</string>
@@ -1625,7 +1625,7 @@
   <string name="SelectMessagesInBetween">Select messages in between</string>
   <string name="ProcessingFile">Processing…</string>
   <string name="ProcessingFileWait">Processing files. Please wait…</string>
-  <string name="AreYouSureDeleteThisChat">Are you sure you want to delete this chat?</string>
+  <string name="AreYouSureDeleteThisChat">Do you want to permanently delete this chat?</string>
   <string name="UserRestricted">Sorry, you were restricted by chat admins from performing this action.</string>
   <string name="HashtagDeleteHint">Remove this hashtag from suggestions?</string>
   <string name="ReportChatSpam">Are you sure you want to report %1$s for spam?</string>
@@ -1761,7 +1761,7 @@
   <string name="UserRestrictionsSend">Send Messages</string>
   <string name="RightSendMedia">Send Media</string>
   <string name="RightSendAudio">Send Music</string>
-  <string name="RightSendDocs">Send Docs</string>
+  <string name="RightSendDocs">Send Files</string>
   <string name="RightSendPhoto">Send Photos</string>
   <string name="RightSendVideo">Send Videos</string>
   <string name="RightSendVoiceNote">Send Voice Messages</string>
@@ -1843,7 +1843,7 @@
   <string name="LoadingActions">Loading actions…</string>
   <string name="JoinChat">Join Chat</string>
   <string name="RequestJoinChannel">Request to Join Channel</string>
-  <string name="RequestJoinGroup">Request to Join Chat</string>
+  <string name="RequestJoinGroup">Request to Join Group</string>
   <string name="MemberCanJoinGroup">%1$s will be able to return to the group.</string>
   <string name="MemberCannotJoinGroup">%1$s will not be able to return to the group unless added back by admin.</string>
   <string name="MemberCanJoinChannel">%1$s will be able to return to the channel.</string>
@@ -1859,7 +1859,7 @@
   <string name="XCannotAssignAdmins">%1$s will not be able to add new admins.</string>
   <string name="ShareMyContactInfo">Share my contact</string>
   <string name="BanXChannel">%1$s will be banned and removed from the channel.</string>
-  <string name="BanXGroup">%1$s will be banned and removed from the group.</string>
+  <string name="BanXGroup">%1$s will be removed and banned from the group.</string>
   <string name="RestrictXChannel">%1$s will not be removed from the channel.</string>
   <string name="RestrictXGroup">%1$s will not be removed from the group.</string>
   <string name="YouCantBanX">You do not have enough admin rights to ban %1$s in this chat.</string>
@@ -1923,7 +1923,7 @@
   <string name="EventLogPermissionSendPhoto">Send photos</string>
   <string name="EventLogPermissionSendVideo">Send videos</string>
   <string name="EventLogPermissionSendAudio">Send music</string>
-  <string name="EventLogPermissionSendDocs">Send documents</string>
+  <string name="EventLogPermissionSendDocs">Send files</string>
   <string name="EventLogPermissionSendVoiceNotes">Send voice messages</string>
   <string name="EventLogPermissionSendVideoNotes">Send video messages</string>
   <string name="EventLogRestrictedNew">restricted %1$s\n\nDuration: %2$s</string>
@@ -1941,7 +1941,7 @@
   <string name="EventLogPermissionAddUsers">Add users</string>
   <string name="EventLogRestrictedSendMedia">Send media</string>
   <string name="EventLogRestrictedSendAudio">Send music</string>
-  <string name="EventLogRestrictedSendDocs">Send documents</string>
+  <string name="EventLogRestrictedSendDocs">Send files</string>
   <string name="EventLogRestrictedSendPhoto">Send photos</string>
   <string name="EventLogRestrictedSendVideo">Send videos</string>
   <string name="EventLogRestrictedSendVoiceNotes">Send voice messages</string>
@@ -2477,7 +2477,7 @@
   <string name="BotDeleteHint">Remove bot from suggestions?</string>
   <string name="BotHelp">Help</string>
   <string name="BotSettings">Settings</string>
-  <string name="TextFormatClear">Plain text</string>
+  <string name="TextFormatClear">Clear formatting</string>
   <string name="TextFormatBold">Bold</string>
   <string name="TextFormatItalic">Italic</string>
   <string name="TextFormatMonospace">Monospace</string>
@@ -2766,7 +2766,7 @@
   <string name="ThemeEdit">Edit</string>
   <string name="ThemeRemove">Delete</string>
   <string name="ThemeRemoveConfirm">Delete Theme</string>
-  <string name="ThemeRemoveInfo">Delete this theme? It will be permanently deleted and can\'t be undone.</string>
+  <string name="ThemeRemoveInfo">Permanently delete this theme? This action can\'t be undone.</string>
   <string name="ThemeMinimize">Minimize</string>
   <string name="ThemeClose">Close</string>
 
@@ -3372,7 +3372,7 @@
   <string name="ChatDisabledDart">Only admins can play darts in this group. Hold to send it as an emoji.</string>
   <string name="ChatDisabledMedia">Only admins can send media in this group</string>
   <string name="ChatDisabledAudio">Only admins can send music in this group</string>
-  <string name="ChatDisabledDocs">Only admins can send documents in this group</string>
+  <string name="ChatDisabledDocs">Only admins can send files in this group</string>
   <string name="ChatDisabledPhoto">Only admins can send photos in this group</string>
   <string name="ChatDisabledVideo">Only admins can send videos in this group</string>
   <string name="ChatDisabledOther">Only admins can send stickers and GIFs in this group</string>
@@ -3400,9 +3400,9 @@
   <string name="ChatRestrictedMedia">The admins of this group have restricted your ability to send media.</string>
   <string name="ChatRestrictedMediaUntil">Admins have restricted you from sending media in this group until %1$s</string>
   <string name="ChatRestrictedAudio">The admins of this group have restricted your ability to send music.</string>
-  <string name="ChatRestrictedAudioUntil">Admins have restricted you from sending audio in this group until %1$s</string>
-  <string name="ChatRestrictedDocs">The admins of this group have restricted your ability to send documents.</string>
-  <string name="ChatRestrictedDocsUntil">Admins have restricted you from sending documents in this group until %1$s</string>
+  <string name="ChatRestrictedAudioUntil">Admins have restricted you from sending music in this group until %1$s</string>
+  <string name="ChatRestrictedDocs">The admins of this group have restricted your ability to send files.</string>
+  <string name="ChatRestrictedDocsUntil">Admins have restricted you from sending files in this group until %1$s</string>
   <string name="ChatRestrictedPhoto">The admins of this group have restricted your ability to send photos.</string>
   <string name="ChatRestrictedPhotoUntil">Admins have restricted you from sending photos in this group until %1$s</string>
   <string name="ChatRestrictedVideo">The admins of this group have restricted your ability to send videos.</string>
@@ -3995,7 +3995,7 @@
   <string name="TakeVideoError">Error capturing video</string>
   <string name="TakePhotoError">Error taking picture</string>
 
-  <string name="MessageInputEmpty">Message must be non-empty</string>
+  <string name="MessageInputEmpty">Message cannot be empty</string>
 
   <string name="QuizOptionHint">Tap to choose the correct answer.</string>
 
