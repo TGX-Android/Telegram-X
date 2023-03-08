@@ -1760,7 +1760,7 @@
   <string name="UserRestrictionsRead">Read Messages</string>
   <string name="UserRestrictionsSend">Send Messages</string>
   <string name="RightSendMedia">Send Media</string>
-  <string name="RightSendAudio">Send Audio</string>
+  <string name="RightSendAudio">Send Music</string>
   <string name="RightSendDocs">Send Docs</string>
   <string name="RightSendPhoto">Send Photos</string>
   <string name="RightSendVideo">Send Videos</string>
@@ -1922,7 +1922,7 @@
   <string name="EventLogPermissionSendMedia">Send media</string>
   <string name="EventLogPermissionSendPhoto">Send photos</string>
   <string name="EventLogPermissionSendVideo">Send videos</string>
-  <string name="EventLogPermissionSendAudio">Send audio</string>
+  <string name="EventLogPermissionSendAudio">Send music</string>
   <string name="EventLogPermissionSendDocs">Send documents</string>
   <string name="EventLogPermissionSendVoiceNotes">Send voice messages</string>
   <string name="EventLogPermissionSendVideoNotes">Send video messages</string>
@@ -1940,7 +1940,7 @@
   <string name="EventLogRestrictedAddUsers">Add users</string>
   <string name="EventLogPermissionAddUsers">Add users</string>
   <string name="EventLogRestrictedSendMedia">Send media</string>
-  <string name="EventLogRestrictedSendAudio">Send audio</string>
+  <string name="EventLogRestrictedSendAudio">Send music</string>
   <string name="EventLogRestrictedSendDocs">Send documents</string>
   <string name="EventLogRestrictedSendPhoto">Send photos</string>
   <string name="EventLogRestrictedSendVideo">Send videos</string>
@@ -3371,7 +3371,7 @@
   <string name="ChatDisabledDice">Only admins can roll a die in this group. Hold to send it as an emoji.</string>
   <string name="ChatDisabledDart">Only admins can play darts in this group. Hold to send it as an emoji.</string>
   <string name="ChatDisabledMedia">Only admins can send media in this group</string>
-  <string name="ChatDisabledAudio">Only admins can send audio in this group</string>
+  <string name="ChatDisabledAudio">Only admins can send music in this group</string>
   <string name="ChatDisabledDocs">Only admins can send documents in this group</string>
   <string name="ChatDisabledPhoto">Only admins can send photos in this group</string>
   <string name="ChatDisabledVideo">Only admins can send videos in this group</string>
@@ -3385,8 +3385,8 @@
   <string name="ChatRestrictedGifsUntil">Admins have restricted you from sending GIFs in this group until %1$s</string>
   <string name="ChatRestrictedBots">The admins of this group have restricted your ability to send inline content.</string>
   <string name="ChatRestrictedBotsUntil">The admins of this group have restricted your ability to send inline content until %1$s</string>
-  <string name="ChatRestrictedGames">The admins of this group have restricted your ability to start games.</string>
-  <string name="ChatRestrictedGamesUntil">The admins of this group have restricted your ability to start games until %1$s</string>
+  <string name="ChatRestrictedGames">The admins of this group have restricted your ability to start games here.</string>
+  <string name="ChatRestrictedGamesUntil">The admins of this group have restricted your ability to start games here until %1$s</string>
   <string name="ChatRestrictedStickers">Admins have restricted you from sending stickers in this group</string>
   <string name="ChatRestrictedStickersUntil">Admins have restricted you from sending stickers in this group until %1$s</string>
   <string name="ChatRestrictedDice">Admins have restricted you from rolling a die in this group. Hold to send it as an emoji.</string>
@@ -3399,7 +3399,7 @@
   <string name="ChatRestrictedVideoNotesUntil">The admins of this group have restricted your ability to send video messages until %1$s.</string>
   <string name="ChatRestrictedMedia">The admins of this group have restricted your ability to send media.</string>
   <string name="ChatRestrictedMediaUntil">Admins have restricted you from sending media in this group until %1$s</string>
-  <string name="ChatRestrictedAudio">The admins of this group have restricted your ability to send audio.</string>
+  <string name="ChatRestrictedAudio">The admins of this group have restricted your ability to send music.</string>
   <string name="ChatRestrictedAudioUntil">Admins have restricted you from sending audio in this group until %1$s</string>
   <string name="ChatRestrictedDocs">The admins of this group have restricted your ability to send documents.</string>
   <string name="ChatRestrictedDocsUntil">Admins have restricted you from sending documents in this group until %1$s</string>
@@ -4560,7 +4560,7 @@
   <string name="MultiUsernamePrefix">also</string>
   <string name="MultiLinkPrefix">also</string>
 
-  <string name="SentFragmentCode">Check the Anonymous Numbers section on Fragment to get the code.</string>
+  <string name="SentFragmentCode">Get the code in the Anonymous Numbers section on Fragment.</string>
   <string name="OpenFragment">Open Fragment</string>
   <string name="AnonymousNumbers">&#127988;&#8205;&#9760;&#65039; Anonymous Numbers</string>
 
