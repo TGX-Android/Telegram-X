@@ -221,6 +221,9 @@ public class MediaLayout extends FrameLayoutFix implements
 
     currentController = getControllerForIndex(index);
     View controllerView = currentController.get();
+    if (currentController != null) {
+      setAllowSpoiler(currentController.allowSpoiler());
+    }
 
     addView(controllerView);
     if (mode == MODE_DEFAULT) {
@@ -1427,14 +1430,14 @@ public class MediaLayout extends FrameLayoutFix implements
       hotMediaView.setId(R.id.btn_spoiler);
       hotMediaView.setScaleType(ImageView.ScaleType.CENTER);
       hotMediaView.setImageResource(R.drawable.baseline_whatshot_24);
-      hotMediaView.setColorFilter(Theme.getColor(R.id.theme_color_icon));
-      hotMediaView.setAlpha(0f);
-      themeListeners.addThemeFilterListener(hotMediaView, R.id.theme_color_icon);
+      hotMediaView.setAlpha(allowSpoiler ? 1f : 0f);
+      hotMediaView.setColorFilter(Theme.getColor(needSpoiler ? R.id.theme_color_iconActive : R.id.theme_color_icon));
+      themeListeners.addThemeFilterListener(hotMediaView, needSpoiler ? R.id.theme_color_iconActive : R.id.theme_color_icon);
       hotMediaView.setLayoutParams(params);
       bottomBar.addView(hotMediaView);
 
       params = FrameLayoutFix.newParams(Screen.dp(55f), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.RIGHT);
-      params.rightMargin = Screen.dp(55f);
+      params.rightMargin = allowSpoiler ? Screen.dp(55f) + Screen.dp(48f) : Screen.dp(55f);
       groupMediaView = new ImageView(getContext()) {
         @Override
         public boolean onTouchEvent (MotionEvent e) {
@@ -1505,17 +1508,23 @@ public class MediaLayout extends FrameLayoutFix implements
       if (allowSpoiler) {
         setNeedSpoiler(false);
       }
-      hotMediaView.setAlpha(allowSpoiler ? counterFactor : 0f);
-      Views.setRightMargin(groupMediaView, allowSpoiler ? Screen.dp(55f) + Screen.dp(48f) : Screen.dp(55f));
+      if (hotMediaView != null) {
+        hotMediaView.setAlpha(allowSpoiler ? counterFactor : 0f);
+      }
+      if (groupMediaView != null) {
+        Views.setRightMargin(groupMediaView, allowSpoiler ? Screen.dp(55f) + Screen.dp(48f) : Screen.dp(55f));
+      }
     }
   }
 
   public void setNeedSpoiler (boolean needSpoiler) {
     if (this.needSpoiler != needSpoiler) {
       this.needSpoiler = needSpoiler;
-      hotMediaView.setColorFilter(Theme.getColor(needSpoiler ? R.id.theme_color_iconActive : R.id.theme_color_icon));
-      themeListeners.removeThemeListenerByTarget(hotMediaView);
-      themeListeners.addThemeFilterListener(hotMediaView, needSpoiler ? R.id.theme_color_iconActive : R.id.theme_color_icon);
+      if (hotMediaView != null) {
+        hotMediaView.setColorFilter(Theme.getColor(needSpoiler ? R.id.theme_color_iconActive : R.id.theme_color_icon));
+        themeListeners.removeThemeListenerByTarget(hotMediaView);
+        themeListeners.addThemeFilterListener(hotMediaView, needSpoiler ? R.id.theme_color_iconActive : R.id.theme_color_icon);
+      }
     }
   }
 
