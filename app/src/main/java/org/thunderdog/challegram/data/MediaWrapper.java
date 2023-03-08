@@ -43,6 +43,7 @@ import androidx.core.content.res.ResourcesCompat;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
+import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
@@ -53,6 +54,7 @@ import org.thunderdog.challegram.loader.ImageFileLocal;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.ImageVideoThumbFile;
 import org.thunderdog.challegram.loader.Receiver;
+import org.thunderdog.challegram.loader.gif.GifActor;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.mediaview.MediaViewController;
@@ -71,6 +73,8 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.widget.FileProgressComponent;
 import org.thunderdog.challegram.widget.SimplestCheckBox;
+
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
@@ -1191,7 +1195,20 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       return true;
     }
     if (revealOnTap && spoilerOverlayVisible.getValue()) {
-      spoilerOverlayVisible.setValue(false, true);
+      if (source != null && animation != null && targetGifFile != null && !targetGifFile.isStill()) {
+        AtomicBoolean startedPlaying = new AtomicBoolean(false);
+        Runnable startPlaying = () -> {
+          if (!startedPlaying.getAndSet(true)) {
+            spoilerOverlayVisible.setValue(false, true);
+          }
+        };
+        GifActor.restartGif(targetGifFile, () -> {
+          source.runOnUiThreadOptional(startPlaying);
+        });
+        source.runOnUiThread(startPlaying, 750);
+      } else {
+        spoilerOverlayVisible.setValue(false, true);
+      }
       return true;
     }
     if (source != null) {

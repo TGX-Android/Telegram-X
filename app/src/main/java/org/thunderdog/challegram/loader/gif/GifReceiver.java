@@ -411,7 +411,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
 
   @UiThread
   @Override
-  public void gifFrameChanged (GifFile file) {
+  public void gifFrameChanged (GifFile file, boolean isRestart) {
     int fileId = this.file == null ? 0 : this.file.getFileId();
     if (file.getFileId() == fileId) {
       invalidate();
@@ -724,7 +724,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
     if (gif != null && BitwiseUtils.getFlag(flags, DRAW_BATCH_STARTED) && BitwiseUtils.getFlag(flags, DRAW_BATCH_DRAWN)) {
       synchronized (gif.getBusyList()) {
         if (gif.hasBitmap()) {
-          gif.getBitmap(true);
+          gif.getDrawFrame(true);
         }
       }
     }
@@ -737,6 +737,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
     }
 
     if (gif != null) {
+      boolean isFirstFrame = false;
       synchronized (gif.getBusyList()) {
         if (gif.hasBitmap()) {
           final boolean inBatch = BitwiseUtils.getFlag(drawBatchFlags, DRAW_BATCH_STARTED);
@@ -753,7 +754,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
             bitmapPaint.setAlpha(alpha);
           }
           int scaleType = file.getScaleType();
-          Bitmap bitmap = gif.getBitmap(!inBatch);
+          GifState.Frame frame = gif.getDrawFrame(!inBatch);
           if (radius != 0) {
             boolean clip = scaleType != 0;
             int restoreToCount;
@@ -763,7 +764,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
             } else {
               restoreToCount = -1;
             }
-            c.drawRoundRect(croppedDrawRegion, radius, radius, shaderPaint(bitmap, bitmapPaint.getAlpha()));
+            c.drawRoundRect(croppedDrawRegion, radius, radius, shaderPaint(frame.bitmap, bitmapPaint.getAlpha()));
             if (clip) {
               Views.restore(c, restoreToCount);
             }
@@ -787,18 +788,22 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
             }
 
             c.concat(bitmapMatrix);
-            c.drawBitmap(bitmap, 0f, 0f, bitmapPaint);
+            c.drawBitmap(frame.bitmap, 0f, 0f, bitmapPaint);
 
             c.restore();
           } else {
             Rect rect = Paints.getRect();
             rect.set((int) bitmapRect.left, (int) bitmapRect.top, (int) bitmapRect.right, (int) bitmapRect.bottom);
-            c.drawBitmap(bitmap, rect, drawRegion, bitmapPaint);
+            c.drawBitmap(frame.bitmap, rect, drawRegion, bitmapPaint);
           }
           if (alpha != restoreAlpha) {
             bitmapPaint.setAlpha(restoreAlpha);
           }
+          isFirstFrame = frame.no == 0;
         }
+      }
+      if (isFirstFrame) {
+        GifActor.onGifRestarted(file);
       }
     }
   }

@@ -7703,6 +7703,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     tdlib.ui().post(act);
   }
 
+  public void runOnUiThread (Runnable act, long delayMillis) {
+    tdlib.ui().postDelayed(act, delayMillis);
+  }
+
   public void runOnUiThreadOptional (Runnable act) {
     runOnUiThread(() -> {
       if (!isDestroyed()) {
