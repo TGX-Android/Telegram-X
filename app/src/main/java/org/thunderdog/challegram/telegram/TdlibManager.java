@@ -1741,20 +1741,24 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     reportEvent("PUSH_SERVICE_RECOVERED", event);
   }
 
-  private void reportEvent (String type, Map<String, Object> event) {
-    AppBuildInfo appBuildInfo = Settings.instance().getCurrentBuildInformation();
+  public static Map<String, Object> deviceInformation () {
     Map<String, Object> device = new LinkedHashMap<>();
     device.put("manufacturer", Build.MANUFACTURER);
     device.put("brand", Build.BRAND);
     device.put("model", Build.MODEL);
     device.put("display", Build.DISPLAY);
     device.put("release", Build.VERSION.RELEASE);
+    return device;
+  }
+
+  private void reportEvent (String type, Map<String, Object> event) {
+    AppBuildInfo appBuildInfo = Settings.instance().getCurrentBuildInformation();
 
     event.put("sdk", Build.VERSION.SDK_INT);
     event.put("app", appBuildInfo.toMap());
     event.put("cpu", U.getCpuArchitecture());
     event.put("package_id", UI.getAppContext().getPackageName());
-    event.put("device", device);
+    event.put("device", deviceInformation());
     event.put("fingerprint", U.getApkFingerprint("SHA1"));
     event.put("device_id", Settings.instance().crashDeviceId());
 

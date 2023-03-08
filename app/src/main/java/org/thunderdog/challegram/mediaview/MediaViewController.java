@@ -4930,20 +4930,61 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         }
 
         if (chat != null) {
-          tdlib.ui().createSimpleHapticMenu(this, chat.id, () -> currentActiveButton == 0, this::canDisableMarkdown, hapticItems -> {
+          tdlib.ui().createSimpleHapticMenu(this, chat.id, () -> currentActiveButton == 0, this::canDisableMarkdown, () -> true, hapticItems -> {
+            if (sendDelegate != null && sendDelegate.allowHideMedia()) {
+              hapticItems.add(0,
+                new HapticMenuHelper.MenuItem(R.id.btn_spoiler, Lang.getString(R.string.HideMedia), R.drawable.deproko_baseline_whatshot_24)
+                  .setIsCheckbox(true, sendDelegate.isHideMediaEnabled())
+                  .setOnClickListener(new HapticMenuHelper.OnItemClickListener() {
+                    private TooltipOverlayView.TooltipInfo hotTooltipInfo;
+
+                    @Override
+                    public boolean onHapticMenuItemClick (View view, View parentView, HapticMenuHelper.MenuItem item) {
+                      if (view.getId() == R.id.btn_spoiler) {
+                        if (item.isCheckboxSelected) {
+                          hotTooltipInfo = context().tooltipManager().builder(view)
+                            .icon(R.drawable.baseline_whatshot_24)
+                            .color(context().tooltipManager().overrideColorProvider(getForcedTheme()))
+                            .locate((targetView, outRect) -> {
+                              int centerX = outRect.left + Screen.dp(29f);
+                              int centerY = outRect.centerY();
+                              int radius = Screen.dp(11f);
+                              outRect.left = centerX - radius;
+                              outRect.right = centerX + radius;
+                              outRect.top = centerY - radius;
+                              outRect.bottom = centerY + radius;
+                            })
+                            .show(tdlib, R.string.MediaSpoilerHint)
+                            .hideDelayed();
+                        } else {
+                          if (hotTooltipInfo != null) {
+                            hotTooltipInfo.hideNow();
+                            hotTooltipInfo = null;
+                          }
+                        }
+                        sendDelegate.onHideMediaStateChanged(item.isCheckboxSelected);
+                        return true;
+                      }
+                      return false;
+                    }
+                  })
+              );
+            }
             int sendAsFile = canSendAsFile();
             if (sendAsFile != SEND_MODE_NONE) {
               boolean onlyVideos = sendAsFile == SEND_MODE_VIDEOS;
               int count = selectDelegate != null ? selectDelegate.getSelectedMediaCount() : 1;
-              hapticItems.add(new HapticMenuHelper.MenuItem(R.id.btn_sendAsFile, count <= 1 ? Lang.getString(onlyVideos ? R.string.SendOriginal : R.string.SendAsFile) : Lang.plural(onlyVideos ? R.string.SendXOriginals : R.string.SendAsXFiles, count), R.drawable.baseline_insert_drive_file_24).setOnClickListener(v -> {
-                if (v.getId() == R.id.btn_sendAsFile) {
+              hapticItems.add(new HapticMenuHelper.MenuItem(R.id.btn_sendAsFile, count <= 1 ? Lang.getString(onlyVideos ? R.string.SendOriginal : R.string.SendAsFile) : Lang.plural(onlyVideos ? R.string.SendXOriginals : R.string.SendAsXFiles, count), R.drawable.baseline_insert_drive_file_24).setOnClickListener((view, parentView, item) -> {
+                if (view.getId() == R.id.btn_sendAsFile) {
                   send(sendButton, Td.newSendOptions(), false, true);
                 }
+                return true;
               }).bindTutorialFlag(Settings.TUTORIAL_SEND_AS_FILE));
             }
             if (senderSendIcon != null) {
-              hapticItems.add(0, senderSendIcon.createHapticSenderItem(chat).setOnClickListener(v -> {
+              hapticItems.add(0, senderSendIcon.createHapticSenderItem(chat).setOnClickListener((view, parentView, item) -> {
                 openSetSenderPopup(chat);
+                return true;
               }));
             }
           }, (sendOptions, disableMarkdown) -> {
@@ -8159,7 +8200,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
       imageFiles.add(stack.getCurrent().getSourceGalleryFile());
     }
 
-    if (sendDelegate.sendSelectedItems(view, imageFiles, initialSendOptions, disableMarkdown, asFiles)) {
+    if (sendDelegate.sendSelectedItems(view, imageFiles, initialSendOptions, disableMarkdown, asFiles, sendDelegate.isHideMediaEnabled())) {
       forceAnimationType = ANIMATION_TYPE_FADE;
       isMediaSent = true;
       setUIBlocked(true);

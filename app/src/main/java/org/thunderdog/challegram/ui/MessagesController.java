@@ -148,9 +148,11 @@ import org.thunderdog.challegram.filegen.VideoGenerationInfo;
 import org.thunderdog.challegram.helper.BotHelper;
 import org.thunderdog.challegram.helper.LiveLocationHelper;
 import org.thunderdog.challegram.helper.Recorder;
+import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
 import org.thunderdog.challegram.loader.ImageReader;
 import org.thunderdog.challegram.loader.ImageStrictCache;
+import org.thunderdog.challegram.mediaview.MediaSpoilerSendDelegate;
 import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.mediaview.MediaViewDelegate;
 import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
@@ -245,6 +247,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
@@ -373,7 +376,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   @Override
-  public void onHapticMenuItemClick (View view, View parentView, HapticMenuHelper.MenuItem item) {
+  public boolean onHapticMenuItemClick (View view, View parentView, HapticMenuHelper.MenuItem item) {
     switch (view.getId()) {
       case R.id.btn_setMsgSender: {
         if (item.isLocked) {
@@ -432,6 +435,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         break;
       }
     }
+    return true;
   }
 
   public void pickDateOrProceed (@NonNull TdApi.MessageSendOptions initialSendOptions, TdlibUi.SimpleSendCallback sendCallback) {
@@ -9409,7 +9413,19 @@ public class MessagesController extends ViewController<MessagesController.Argume
             MediaStack stack = new MediaStack(context, tdlib);
             stack.set(new MediaItem(context, tdlib, galleryFile));
             MediaViewController controller = new MediaViewController(context, tdlib);
-            controller.setArguments(MediaViewController.Args.fromGallery(this, null, null, (view, images, options, disableMarkdown, asFiles) -> sendPhotosAndVideosCompressed(new ImageGalleryFile[] {galleryFile}, false, options, disableMarkdown, asFiles, false), stack, areScheduledOnly()).setReceiverChatId(getChatId()).setDeleteOnExit(isSecretChat() || !Settings.instance().getNewSetting(Settings.SETTING_FLAG_CAMERA_KEEP_DISCARDED_MEDIA)));
+            AtomicBoolean hideMedia = new AtomicBoolean(false);
+            controller.setArguments(
+              MediaViewController.Args.fromGallery(this, null, null,
+                new MediaSpoilerSendDelegate() {
+                  @Override
+                  public boolean sendSelectedItems (View view, ArrayList<ImageFile> images, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles, boolean hasSpoiler) {
+                    sendPhotosAndVideosCompressed(new ImageGalleryFile[] {galleryFile}, false, options, disableMarkdown, asFiles, hasSpoiler);
+                    return true;
+                  }
+                },
+                stack, areScheduledOnly()
+              ).setReceiverChatId(getChatId())
+               .setDeleteOnExit(isSecretChat() || !Settings.instance().getNewSetting(Settings.SETTING_FLAG_CAMERA_KEEP_DISCARDED_MEDIA)));
             controller.open();
           });
         }
@@ -9537,10 +9553,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
         tdlib.sendMessage(chatId, getMessageThreadId(), replyToMessageId, Td.newSendOptions(silent), photo);
       });
     }
-  }
-
-  public boolean sendCompressed (final ImageGalleryFile image, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles) {
-    return sendPhotosAndVideosCompressed(new ImageGalleryFile[] {image}, false, options, disableMarkdown, asFiles, false);
   }
 
   public boolean sendPhotosAndVideosCompressed (final ImageGalleryFile[] files, final boolean needGroupMedia, final TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles, boolean hasSpoiler) {

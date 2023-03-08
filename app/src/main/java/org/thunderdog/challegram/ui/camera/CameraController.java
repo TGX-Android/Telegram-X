@@ -52,6 +52,7 @@ import org.thunderdog.challegram.loader.ImageGalleryFile;
 import org.thunderdog.challegram.loader.ImageReader;
 import org.thunderdog.challegram.loader.ImageStrictCache;
 import org.thunderdog.challegram.mediaview.MediaSelectDelegate;
+import org.thunderdog.challegram.mediaview.MediaSpoilerSendDelegate;
 import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.mediaview.MediaViewDelegate;
 import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
@@ -1435,11 +1436,11 @@ public class CameraController extends ViewController<Void> implements CameraDele
     return m != null && m.isSecretChat();
   }
 
-  private boolean onSendMedia (ImageGalleryFile file, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles) {
+  private boolean onSendMedia (ImageGalleryFile file, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles, boolean hasSpoiler) {
     MessagesController m = findOutputController();
     if (m != null) {
       context.forceCloseCamera();
-      return m.sendCompressed(file, options, disableMarkdown, asFiles);
+      return m.sendPhotosAndVideosCompressed(new ImageGalleryFile[] {file}, false, options, disableMarkdown, asFiles, hasSpoiler);
     }
     return false;
   }
@@ -1504,9 +1505,12 @@ public class CameraController extends ViewController<Void> implements CameraDele
         public ArrayList<ImageFile> getSelectedMediaItems (boolean copy) {
           return null;
         }
-      }, (view, images, options, disableMarkdown, asFiles) -> {
-        ImageGalleryFile galleryFile = (ImageGalleryFile) images.get(0);
-        return onSendMedia(galleryFile, options, disableMarkdown, asFiles);
+      }, new MediaSpoilerSendDelegate() {
+        @Override
+        public boolean sendSelectedItems (View view, ArrayList<ImageFile> images, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles, boolean hasSpoiler) {
+          ImageGalleryFile galleryFile = (ImageGalleryFile) images.get(0);
+          return onSendMedia(galleryFile, options, disableMarkdown, asFiles, hasSpoiler);
+        }
       }, stack).setOnlyScheduled(m != null && m.areScheduledOnly());
       if (m != null) {
         args.setReceiverChatId(m.getChatId());

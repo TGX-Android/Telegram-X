@@ -496,12 +496,13 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
         }
       }
       int count = files != null ? files.size() : 0;
-      hapticItems.add(new HapticMenuHelper.MenuItem(R.id.btn_sendAsFile, count <= 1 ? Lang.getString(allVideo ? R.string.SendOriginal : R.string.SendAsFile) : Lang.plural(allVideo ? R.string.SendXOriginals : R.string.SendAsXFiles, count), R.drawable.baseline_insert_drive_file_24).setOnClickListener(v -> {
-        if (v.getId() == R.id.btn_sendAsFile) {
+      hapticItems.add(new HapticMenuHelper.MenuItem(R.id.btn_sendAsFile, count <= 1 ? Lang.getString(allVideo ? R.string.SendOriginal : R.string.SendAsFile) : Lang.plural(allVideo ? R.string.SendXOriginals : R.string.SendAsXFiles, count), R.drawable.baseline_insert_drive_file_24).setOnClickListener((view1, parentView, item) -> {
+        if (view1.getId() == R.id.btn_sendAsFile) {
           mediaLayout.pickDateOrProceed((sendOptions, disableMarkdown) ->
-            mediaLayout.sendPhotosOrVideos(view, adapter.getSelectedPhotosAndVideosAsList(true), showingFoundImages, sendOptions, disableMarkdown, true, false)
+            mediaLayout.sendPhotosOrVideos(view1, adapter.getSelectedPhotosAndVideosAsList(true), showingFoundImages, sendOptions, disableMarkdown, true, false)
           );
         }
+        return true;
       }));
     }
   }
@@ -537,9 +538,24 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   }
 
   @Override
-  public boolean sendSelectedItems (View view, ArrayList<ImageFile> images, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles) {
+  public boolean sendSelectedItems (View view, ArrayList<ImageFile> images, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles, boolean hasSpoiler) {
     // TODO delete other
     return mediaLayout.sendPhotosOrVideos(view, images, false, options, disableMarkdown, asFiles, true);
+  }
+
+  @Override
+  public boolean allowHideMedia () {
+    return mediaLayout.allowSpoiler();
+  }
+
+  @Override
+  public boolean isHideMediaEnabled () {
+    return mediaLayout.needSpoiler();
+  }
+
+  @Override
+  public void onHideMediaStateChanged (boolean hideMedia) {
+    mediaLayout.setNeedSpoiler(hideMedia);
   }
 
   @Override
@@ -557,7 +573,10 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
       Log.i("stack.set complete for %d files in %dms", stack.getCurrentSize(), SystemClock.elapsedRealtime() - time);
 
       MediaViewController controller = new MediaViewController(context, tdlib);
-      controller.setArguments(MediaViewController.Args.fromGallery(this, this, this, this, stack, mediaLayout.areScheduledOnly()).setReceiverChatId(mediaLayout.getTargetChatId()));
+      controller.setArguments(
+        MediaViewController.Args.fromGallery(this, this, this, this, stack, mediaLayout.areScheduledOnly())
+          .setReceiverChatId(mediaLayout.getTargetChatId())
+      );
       controller.open();
 
       return true;

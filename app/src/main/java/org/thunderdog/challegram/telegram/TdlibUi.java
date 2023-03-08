@@ -6207,7 +6207,7 @@ public class TdlibUi extends Handler {
     void onSendRequested (TdApi.MessageSendOptions sendOptions, boolean disableMarkdown);
   }
 
-  public HapticMenuHelper createSimpleHapticMenu (ViewController<?> context, long chatId, @Nullable FutureBool availabilityCallback, @Nullable FutureBool canDisableMarkdownCallback, RunnableData<List<HapticMenuHelper.MenuItem>> customItemProvider, SimpleSendCallback sendCallback, @Nullable ThemeDelegate forcedTheme) {
+  public HapticMenuHelper createSimpleHapticMenu (ViewController<?> context, long chatId, @Nullable FutureBool availabilityCallback, @Nullable FutureBool canDisableMarkdownCallback, @Nullable FutureBool canHideMedia, RunnableData<List<HapticMenuHelper.MenuItem>> customItemProvider, SimpleSendCallback sendCallback, @Nullable ThemeDelegate forcedTheme) {
     return new HapticMenuHelper(list -> {
       if (availabilityCallback == null || availabilityCallback.get()) {
         List<HapticMenuHelper.MenuItem> items = fillDefaultHapticMenu(chatId, false, canDisableMarkdownCallback != null && canDisableMarkdownCallback.get(), true);
@@ -6239,6 +6239,7 @@ public class TdlibUi extends Handler {
           sendCallback.onSendRequested(Td.newSendOptions(new TdApi.MessageSchedulingStateSendWhenOnline()), false);
           break;
       }
+      return true;
     }, context != null ? context.getThemeListeners() : null, forcedTheme);
   }
 

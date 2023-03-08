@@ -1164,7 +1164,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
       return items;
     }, (view, parentView, item) -> {
       if (selectedChats == null || selectedChats.size() == 0)
-        return;
+        return false;
       TdApi.MessageSendOptions defaultSendOptions = getArgumentsStrict().defaultSendOptions;
       boolean needHideKeyboard = parentView.getId() == R.id.btn_done;
       switch (view.getId()) {
@@ -1184,6 +1184,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
           performSend(needHideKeyboard, Td.newSendOptions(defaultSendOptions), true);
           break;
       }
+      return true;
     }, getThemeListeners(), null).attachToView(sendButton.getChildAt(0));
 
     // Bottom wrap

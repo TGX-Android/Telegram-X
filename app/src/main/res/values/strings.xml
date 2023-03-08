@@ -4603,5 +4603,6 @@
   <string name="opened_round_hours_other">watched %1$s hours ago</string>
 
   <string name="MediaSpoilerHint">Media will be blurred inside the chat and reveal after additional tap.</string>
+  <string name="HideMedia">Hide media</string>
 
 </resources>

@@ -1412,6 +1412,7 @@ public class MediaLayout extends FrameLayoutFix implements
             }
             break;
         }
+        return true;
       }, themeListeners, null).attachToView(sendButton);
 
       params = FrameLayoutFix.newParams(Screen.dp(55f), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.RIGHT);
@@ -1477,7 +1478,8 @@ public class MediaLayout extends FrameLayoutFix implements
 
       setCounterEnabled(false);
     }
-    setNeedSpoiler(false);
+    // No need to reset, right?
+    // setNeedSpoiler(false);
     setAllowSpoiler(getCurrentController().allowSpoiler());
     hotMediaView.setAlpha(counterFactor * (allowSpoiler ? 1f : 0f));
     if (counterView != null) {
@@ -1488,6 +1490,14 @@ public class MediaLayout extends FrameLayoutFix implements
   }
 
   private boolean allowSpoiler;
+
+  public boolean allowSpoiler () {
+    return allowSpoiler;
+  }
+
+  public boolean needSpoiler () {
+    return needSpoiler;
+  }
 
   private void setAllowSpoiler (boolean allowSpoiler) {
     if (this.allowSpoiler != allowSpoiler) {
@@ -1500,7 +1510,7 @@ public class MediaLayout extends FrameLayoutFix implements
     }
   }
 
-  private void setNeedSpoiler (boolean needSpoiler) {
+  public void setNeedSpoiler (boolean needSpoiler) {
     if (this.needSpoiler != needSpoiler) {
       this.needSpoiler = needSpoiler;
       hotMediaView.setColorFilter(Theme.getColor(needSpoiler ? R.id.theme_color_iconActive : R.id.theme_color_icon));

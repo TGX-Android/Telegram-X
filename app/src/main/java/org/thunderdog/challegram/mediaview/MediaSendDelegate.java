@@ -20,5 +20,10 @@ import org.thunderdog.challegram.loader.ImageFile;
 import java.util.ArrayList;
 
 public interface MediaSendDelegate {
-  boolean sendSelectedItems (View view, ArrayList<ImageFile> images, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles);
+  boolean sendSelectedItems (View view, ArrayList<ImageFile> images, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles, boolean hasSpoiler);
+
+  boolean allowHideMedia ();
+  boolean isHideMediaEnabled ();
+  void onHideMediaStateChanged (boolean hideMedia);
+
 }
