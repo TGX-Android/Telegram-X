@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,6 +16,10 @@ package org.thunderdog.challegram.ui;
 
 import android.content.Context;
 import android.text.InputType;
+import android.text.Spannable;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.method.LinkMovementMethod;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -30,9 +34,13 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 
+import com.google.android.gms.safetynet.SafetyNet;
+
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.TDLib;
+import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
@@ -45,11 +53,14 @@ import org.thunderdog.challegram.telegram.AuthorizationListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
+import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.util.CustomTypefaceSpan;
+import org.thunderdog.challegram.util.NoUnderlineClickableSpan;
 import org.thunderdog.challegram.widget.CircleButton;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 import org.thunderdog.challegram.widget.NoScrollTextView;
@@ -512,6 +523,11 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     params.topMargin = topMargin + Screen.dp(60f) + Screen.dp(14f);
 
     hintView = new NoScrollTextView(context);
+    hintView.setMovementMethod(LinkMovementMethod.getInstance());
+    hintView.setLinkTextColor(Theme.textLinkColor());
+    hintView.setHighlightColor(Theme.textLinkHighlightColor());
+    addThemeLinkTextColorListener(hintView, R.id.theme_color_textLink);
+    addThemeHighlightColorListener(hintView, R.id.theme_color_textLinkPressHighlight);
     hintView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
     hintView.setTextColor(Theme.textDecentColor());
     addThemeTextColorListener(hintView, R.id.theme_color_textLight);
@@ -540,13 +556,77 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       }
     }
 
+    sendFirebaseSmsIfNeeded(false);
+
     return contentView;
+  }
+
+  private String lastSafetyNetError;
+
+  private void sendFirebaseSmsIfNeeded (boolean forced) {
+    TdApi.AuthenticationCodeType codeType = authenticationCodeType();
+    if (codeType == null || codeType.getConstructor() != TdApi.AuthenticationCodeTypeFirebaseAndroid.CONSTRUCTOR || isFirebaseSmsSent) {
+      return;
+    }
+    TdApi.AuthenticationCodeTypeFirebaseAndroid firebase = (TdApi.AuthenticationCodeTypeFirebaseAndroid) codeType;
+    String safetyNetApiKey = tdlib.safetyNetApiKey();
+    if (StringUtils.isEmpty(safetyNetApiKey)) {
+      TDLib.Tag.safetyNet("Requesting next code type, because SafetyNet API_KEY is unavailable");
+      requestNextCodeType(false, false);
+      return;
+    }
+    if (Config.REQUIRE_FIREBASE_SERVICES_FOR_SAFETYNET && !U.isGooglePlayServicesAvailable(context)) {
+      TDLib.Tag.safetyNet("Requesting next code type, because Firebase services are unavailable");
+      requestNextCodeType(false, false);
+      return;
+    }
+    Runnable onAttestationFailure = () -> {
+      if (forced) {
+        TDLib.Tag.safetyNet("Avoiding infinite loop, because attestation failed twice");
+        onDeadEndReached();
+      } else {
+        TDLib.Tag.safetyNet("Force resend code, ignoring whether codeInfo.nextCodeType is null or not");
+        requestNextCodeType(false, true);
+      }
+    };
+    //noinspection ConstantConditions
+    SafetyNet.getClient(context)
+      .attest(firebase.nonce, safetyNetApiKey)
+      .addOnSuccessListener(attestationSuccess -> {
+        String attestationResult = attestationSuccess.getJwsResult();
+        if (StringUtils.isEmpty(attestationResult)) {
+          TDLib.Tag.safetyNet("Attestation success, but result is empty");
+          lastSafetyNetError = "EMPTY_JWS_RESULT";
+          executeOnUiThreadOptional(onAttestationFailure);
+        } else {
+          TDLib.Tag.safetyNet("Attestation success: %s", attestationResult);
+          tdlib.client().send(new TdApi.SendAuthenticationFirebaseSms(attestationResult), result -> {
+            runOnUiThreadOptional(() -> {
+              if (result.getConstructor() == TdApi.Ok.CONSTRUCTOR) {
+                isFirebaseSmsSent = true;
+                updateAuthState();
+                TDLib.Tag.safetyNet("Attestation finished successfully");
+              } else {
+                lastSafetyNetError = TD.toErrorString(result);
+                TDLib.Tag.safetyNet("Attestation failed by server, retrying once: %s", TD.toErrorString(result));
+                requestNextCodeType(false, true);
+              }
+            });
+          });
+        }
+      })
+      .addOnFailureListener(attestationError -> {
+        lastSafetyNetError = attestationError.getMessage();
+        TDLib.Tag.safetyNet("Attestation failed with error: %s", attestationError.getMessage());
+        executeOnUiThreadOptional(onAttestationFailure);
+      });
   }
 
   @Override
   public void onAuthorizationStateChanged (TdApi.AuthorizationState authorizationState) {
     runOnUiThreadOptional(() -> {
       this.authState = authorizationState;
+      this.isFirebaseSmsSent = false;
       updateAuthState();
     });
   }
@@ -563,6 +643,8 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     }
   }
 
+  private boolean isFirebaseSmsSent;
+
   private CharSequence getCodeHint (TdApi.AuthenticationCodeType type, String formattedPhone) {
     if (mode == MODE_CODE_PHONE_CONFIRM) {
       return Strings.replaceBoldTokens(Lang.getString(R.string.CancelAccountResetInfo, formattedPhone));
@@ -578,16 +660,40 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       case TdApi.AuthenticationCodeTypeTelegramMessage.CONSTRUCTOR: {
         return Strings.replaceBoldTokens(Lang.getString(R.string.SentAppCode), R.id.theme_color_textLight);
       }
-      case TdApi.AuthenticationCodeTypeSms.CONSTRUCTOR: {
-        return Strings.replaceBoldTokens(Lang.getString(R.string.SentSmsCode, formattedPhone), R.id.theme_color_textLight);
+      case TdApi.AuthenticationCodeTypeSms.CONSTRUCTOR:
+      case TdApi.AuthenticationCodeTypeFirebaseAndroid.CONSTRUCTOR: {
+        int resId = R.string.SentSmsCode;
+        if (type.getConstructor() == TdApi.AuthenticationCodeTypeFirebaseAndroid.CONSTRUCTOR && !isFirebaseSmsSent) {
+          resId = R.string.SendingSmsCode;
+        }
+        return Strings.replaceBoldTokens(Lang.getString(resId, formattedPhone), R.id.theme_color_textLight);
       }
       case TdApi.AuthenticationCodeTypeMissedCall.CONSTRUCTOR: {
         TdApi.AuthenticationCodeTypeMissedCall missedCall = (TdApi.AuthenticationCodeTypeMissedCall) type;
         editText.setHint(Lang.pluralBold(R.string.login_LastDigits, missedCall.length));
         return Strings.replaceBoldTokens(Lang.getString(R.string.format_doubleLines, Lang.getString(R.string.SentMissedCall, Strings.formatPhone(missedCall.phoneNumberPrefix)), Lang.plural(R.string.SentMissedCallXDigits, missedCall.length)), R.id.theme_color_textLight);
       }
+      case TdApi.AuthenticationCodeTypeFragment.CONSTRUCTOR: {
+        TdApi.AuthenticationCodeTypeFragment fragment = (TdApi.AuthenticationCodeTypeFragment) type;
+        SpannableStringBuilder b = new SpannableStringBuilder();
+        b.append(Strings.replaceBoldTokens(Lang.getStringSecure(R.string.SentFragmentCode)));
+        if (!StringUtils.isEmpty(fragment.url)) {
+          b.append(" ");
+          int start = b.length();
+          b.append(Lang.getStringSecure(R.string.OpenFragment));
+          b.setSpan(new NoUnderlineClickableSpan() {
+            @Override
+            public void onClick (@NonNull View widget) {
+              UI.openUrl(fragment.url);
+            }
+          }, start, b.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+        return b;
+      }
+      case TdApi.AuthenticationCodeTypeFirebaseIos.CONSTRUCTOR:
+        break; // Unreachable
     }
-    return Strings.replaceBoldTokens(Lang.getString(R.string.SentSmsCode), R.id.theme_color_textLight);
+    throw new UnsupportedOperationException(type.toString());
   }
 
   @Override
@@ -683,7 +789,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       }
       case HINT_ANIMATOR: {
         if (finalFactor == 0f) {
-          if (pendingHint != null && !pendingHint.isEmpty()) {
+          if (!StringUtils.isEmpty(pendingHint)) {
             setHint(pendingHint, pendingHintIsError);
             pendingHint = null;
             pendingHintIsError = false;
@@ -711,16 +817,16 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     setHintText(Lang.getString(res), isError);
   }
 
-  private void setHint (String text, boolean isError) {
+  private void setHint (CharSequence text, boolean isError) {
     hintView.setText(text);
     hintView.setTextColor(isError ? Theme.textRedColor() : Theme.textDecentColor());
     removeThemeListenerByTarget(hintView);
-    addThemeTextColorListener(hintView, isError ? R.id.theme_color_textNegative : R.id.theme_color_textLight);
+    addOrUpdateThemeTextColorListener(hintView, isError ? R.id.theme_color_textNegative : R.id.theme_color_textLight);
     editText.setInErrorState(isError);
   }
 
-  private void setHintText (@Nullable String text, boolean isError) {
-    if (text == null || text.isEmpty()) {
+  private void setHintText (@Nullable CharSequence text, boolean isError) {
+    if (StringUtils.isEmpty(text)) {
       animateHint(0f);
       if (hintView.getAlpha() == 0f) {
         setHint("", false);
@@ -735,7 +841,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     }
   }
 
-  private String pendingHint;
+  private CharSequence pendingHint;
   private boolean pendingHintIsError;
 
   private static final int FORGET_ANIMATOR = 1;
@@ -786,21 +892,67 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     return authState != null && authState.getConstructor() == TdApi.AuthorizationStateWaitCode.CONSTRUCTOR && ((TdApi.AuthorizationStateWaitCode) authState).codeInfo.nextType != null;
   }
 
-  private void updateAuthState () {
+  private TdApi.AuthenticationCodeType authenticationCodeType () {
     if (authState != null && authState.getConstructor() == TdApi.AuthorizationStateWaitCode.CONSTRUCTOR) {
-      hintView.setText(getCodeHint(((TdApi.AuthorizationStateWaitCode) authState).codeInfo.type, formattedPhone));
+      return ((TdApi.AuthorizationStateWaitCode) authState).codeInfo.type;
+    }
+    return null;
+  }
+
+  private void updateAuthState () {
+    TdApi.AuthenticationCodeType authenticationCodeType = authenticationCodeType();
+    if (authenticationCodeType != null) {
+      hintView.setText(getCodeHint(authenticationCodeType, formattedPhone));
       if (!hasNextCodeType()) {
         setForgetText(null);
       }
     }
+    sendFirebaseSmsIfNeeded(false);
   }
 
-  private void requestNextCodeType () {
-    if (!hasNextCodeType() || inRecoveryProgress) {
+  private void onDeadEndReached () {
+    TDLib.Tag.safetyNet("Dead end reached: attestation failed and codeInfo.nextType is null");
+    CharSequence message = Lang.getMarkdownString(this, R.string.login_DeadEnd);
+    if (message instanceof Spannable) {
+      CustomTypefaceSpan[] spans = ((Spannable) message).getSpans(0, message.length(), CustomTypefaceSpan.class);
+      for (CustomTypefaceSpan span : spans) {
+        if (span.getEntityType() != null && span.getEntityType().getConstructor() == TdApi.TextEntityTypeItalic.CONSTRUCTOR) {
+          span.setTypeface(null);
+          span.setColorId(R.id.theme_color_textLink);
+          span.setEntityType(new TdApi.TextEntityTypeEmailAddress());
+          int start = ((Spannable) message).getSpanStart(span);
+          int end = ((Spannable) message).getSpanEnd(span);
+          ((Spannable) message).setSpan(new NoUnderlineClickableSpan() {
+            @Override
+            public void onClick (@NonNull View widget) {
+              Intents.sendEmail(
+                Lang.getStringSecure(R.string.email_SmsHelp),
+                Lang.getStringSecure(R.string.email_LoginDeadEnd_subject, formattedPhone),
+                Lang.getStringSecure(R.string.email_LoginDeadEnd_text, formattedPhone, U.getUsefulMetadata(tdlib)),
+                StringUtils.isEmpty(lastSafetyNetError) ? "none" : lastSafetyNetError
+              );
+            }
+          }, start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+          break;
+        }
+      }
+    }
+    setHint(message, true);
+  }
+
+  private void requestNextCodeType (boolean byUser, boolean force) {
+    if (inRecoveryProgress) {
       return;
     }
 
-    if (tdlib.context().watchDog().isOffline()) {
+    if (!hasNextCodeType() && !force) {
+      if (!byUser) {
+        onDeadEndReached();
+      }
+      return;
+    }
+
+    if (byUser && tdlib.context().watchDog().isOffline()) {
       UI.showNetworkPrompt();
       return;
     }
@@ -827,7 +979,9 @@ public class PasswordController extends ViewController<PasswordController.Args> 
           }
           case TdApi.AuthenticationCodeInfo.CONSTRUCTOR: {
             ((TdApi.AuthorizationStateWaitCode) authState).codeInfo = (TdApi.AuthenticationCodeInfo) object;
+            isFirebaseSmsSent = false;
             updateAuthState();
+            sendFirebaseSmsIfNeeded(force);
             break;
           }
           case TdApi.Error.CONSTRUCTOR: {
@@ -1104,6 +1258,15 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     if (this.inProgress != inProgress) {
       this.inProgress = inProgress;
       nextButton.setInProgress(inProgress);
+      if (needStackLocking()) {
+        if (isFocused()) {
+          setStackLocked(inProgress);
+        } else {
+          addOneShotFocusListener(() ->
+            setStackLocked(this.inProgress)
+          );
+        }
+      }
     }
   }
 
@@ -1325,9 +1488,6 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     }
 
     setInProgress(true);
-    if (needStackLocking()) {
-      setStackLocked(true);
-    }
 
     TdApi.Function<?> function;
     switch (mode) {
@@ -1349,9 +1509,6 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     tdlib.client().send(function, object -> tdlib.ui().post(() -> {
       if (!isDestroyed()) {
         setInProgress(false);
-        if (needStackLocking()) {
-          setStackLocked(false);
-        }
         switch (object.getConstructor()) {
           case TdApi.Ok.CONSTRUCTOR: {
             switch (mode) {
@@ -1541,7 +1698,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       case MODE_CODE_CHANGE:
       case MODE_CODE_PHONE_CONFIRM:
       case MODE_CODE_EMAIL: {
-        requestNextCodeType();
+        requestNextCodeType(true, false);
         break;
       }
       case MODE_CONFIRM:

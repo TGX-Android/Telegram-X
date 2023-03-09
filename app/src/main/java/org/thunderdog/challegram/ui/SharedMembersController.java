@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -58,6 +58,12 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
     return R.drawable.baseline_group_20;
   }*/
 
+  private boolean forceAdmins;
+
+  public void setForceAdmins (boolean forceAdmins) {
+    this.forceAdmins = forceAdmins;
+  }
+
   @Override
   public CharSequence getName () {
     if (specificFilter != null) {
@@ -70,12 +76,12 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
           return Lang.getString(R.string.TabRestricted);
       }
     }
-    return Lang.getString(R.string.TabMembers);
+    return Lang.getString(forceAdmins ? R.string.TabAdmins : R.string.TabMembers);
   }
 
   @Override
   protected CharSequence buildTotalCount (ArrayList<DoubleTextWrapper> data) {
-    int res = R.string.xMembers;
+    int res = forceAdmins ? R.string.xAdmins : R.string.xMembers;
     if (specificFilter != null) {
       switch (specificFilter.getConstructor()) {
         case TdApi.SupergroupMembersFilterAdministrators.CONSTRUCTOR:
@@ -608,7 +614,7 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
           return Lang.getString(isChannel() ? R.string.MembersDetailBannedChannel : R.string.MembersDetailBannedGroup);
       }
     }
-    return Lang.getString(R.string.Recent);
+    return Lang.getString(forceAdmins ? R.string.RecentAdmins : R.string.Recent);
   }
 
   @Override

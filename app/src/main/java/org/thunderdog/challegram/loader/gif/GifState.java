@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -73,7 +73,7 @@ public class GifState {
   }
 
   public interface Callback {
-    void onRequestNextFrame ();
+    boolean onRequestNextFrame ();
     void onApplyNextFrame (long frameNo);
     boolean onDraw (long frameNo);
   }
@@ -119,6 +119,14 @@ public class GifState {
     return busy;
   }
 
+  public void addBusyPrioritized (Frame free) {
+    synchronized (busy) {
+      while (!busy.isEmpty()) {
+        this.free.offer(busy.removeLast());
+      }
+      busy.offer(free);
+    }
+  }
   public void addBusy (Frame free) {
     synchronized (busy) {
       busy.offer(free);
@@ -223,12 +231,17 @@ public class GifState {
   }
 
   public Bitmap getBitmap (boolean willDraw) {
+    Frame frame = getDrawFrame(willDraw);
+    return frame != null ? frame.bitmap : null;
+  }
+
+  public Frame getDrawFrame (boolean willDraw) {
     Frame frame = getFrame();
     if (frame != null) {
       if (willDraw) {
         onDraw(frame.no);
       }
-      return frame.bitmap;
+      return frame;
     }
     return null;
   }

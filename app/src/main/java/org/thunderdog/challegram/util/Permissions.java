@@ -224,7 +224,12 @@ public class Permissions {
   }
 
   public boolean requestWriteExternalStorage (@WriteType int type, @Nullable RunnableBool after) {
-    return requestPermissions(after, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      // WRITE_EXTERNAL_STORAGE no longer gives any effect
+      return false;
+    } else {
+      return requestPermissions(after, Manifest.permission.WRITE_EXTERNAL_STORAGE);
+    }
   }
 
   public boolean requestPostNotifications (@Nullable RunnableBool after) {

@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,15 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 
 import androidx.annotation.Nullable;
+
+import org.thunderdog.challegram.BuildConfig;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import me.vkryl.core.lambda.Destroyable;
+import me.vkryl.core.util.LocalVar;
 
 public class EmojiFilter implements InputFilter {
   private final CustomEmojiSurfaceProvider customEmojiSurfaceProvider;
@@ -57,7 +66,16 @@ public class EmojiFilter implements InputFilter {
     }
   }
 
+  private final LocalVar<List<EmojiSpan>> newSpansList = new LocalVar<>();
+
+  private static final boolean SORT_FOUND_SPANS = false;
+
   private CharSequence replaceEmojiOrNull (CharSequence source, int start, int end) {
+    if (end < start) {
+      int temp = start;
+      start = end;
+      end = temp;
+    }
     if (end - start == 0) {
       return null;
     }
@@ -65,6 +83,24 @@ public class EmojiFilter implements InputFilter {
       Spanned spanned = (Spanned) source;
       EmojiSpan[] alreadyFoundEmojis = spanned.getSpans(start, end, EmojiSpan.class);
       if (alreadyFoundEmojis != null && alreadyFoundEmojis.length > 0) {
+        final int restoreToCount = emojiCount;
+
+        if (SORT_FOUND_SPANS) {
+          // Make sure emojis are sorted
+          Arrays.sort(alreadyFoundEmojis, (o1, o2) -> {
+            int start1 = spanned.getSpanStart(o1);
+            int start2 = spanned.getSpanStart(o2);
+            int cmp = Integer.compare(start1, start2);
+            if (cmp == 0) {
+              int end1 = spanned.getSpanEnd(o1);
+              int end2 = spanned.getSpanEnd(o2);
+              // Longer spans come first
+              return Integer.compare(end2, end1);
+            }
+            return cmp;
+          });
+        }
+
         if (countLimiter != null) {
           emojiCount += alreadyFoundEmojis.length;
         }
@@ -74,11 +110,16 @@ public class EmojiFilter implements InputFilter {
 
         int cend = start;
 
+        int lastEmojiEnd = -1;
+        boolean abort = false;
+
+        List<EmojiSpan> newSpansList = null;
+
         for (EmojiSpan span : alreadyFoundEmojis) {
           final int emojiStart = spanned.getSpanStart(span);
           final int emojiEnd = spanned.getSpanEnd(span);
 
-          if (emojiStart == -1 || emojiEnd == -1)
+          if (emojiStart == -1 || emojiEnd == -1 || emojiEnd - emojiStart <= 0 || emojiEnd < start || emojiStart >= end)
             continue;
 
           if (emojiStart > cend) {
@@ -95,10 +136,18 @@ public class EmojiFilter implements InputFilter {
             cend = emojiStart;
           }
 
-          if (emojiEnd <= cend)
-            throw new IllegalStateException();
+          if (emojiStart < lastEmojiEnd || emojiEnd < cend) {
+            // Seems to be a bug in TextView on some Android versions.
+            // Reverting attempt to re-use existing spans
+            if (BuildConfig.DEBUG) {
+              throw new IllegalStateException(emojiStart + " < " + lastEmojiEnd + " || " + emojiEnd + " < " + cend);
+            }
+            abort = true;
+            break;
+          }
+          lastEmojiEnd = emojiEnd;
 
-          if (b != null) {
+          if (emojiEnd > cend && b != null) {
             b.append(source, cend, emojiEnd);
           }
           cend = emojiEnd;
@@ -114,6 +163,16 @@ public class EmojiFilter implements InputFilter {
 
             if (customEmojiSurfaceProvider != null) {
               newSpan = customEmojiSurfaceProvider.onCreateNewSpan(emojiCode, info, span.getCustomEmojiId());
+              if (newSpan != null) {
+                if (newSpansList == null) {
+                  newSpansList = this.newSpansList.get();
+                  if (newSpansList == null) {
+                    newSpansList = new ArrayList<>();
+                    this.newSpansList.set(newSpansList);
+                  }
+                }
+                newSpansList.add(newSpan);
+              }
             }
             if (newSpan == null) {
               // Drop custom emoji information and
@@ -128,21 +187,37 @@ public class EmojiFilter implements InputFilter {
             }
           }
         }
-        if (cend < end) {
-          // replaceEmoji for cend .. end
-          CharSequence foundEmoji = Emoji.instance().replaceEmoji(source, cend, end, countLimiter);
-          if (foundEmoji != source) {
-            if (b == null) {
-              b = new SpannableStringBuilder(source, start, cend);
+
+        if (!abort) {
+          if (cend < end) {
+            // replaceEmoji for cend .. end
+            CharSequence foundEmoji = Emoji.instance().replaceEmoji(source, cend, end, countLimiter);
+            if (foundEmoji != source) {
+              if (b == null) {
+                b = new SpannableStringBuilder(source, start, cend);
+              }
+              b.append(foundEmoji);
+            } else if (b != null) {
+              b.append(source, cend, end);
             }
-            b.append(foundEmoji);
-          } else if (b != null) {
-            b.append(source, cend, end);
+            cend = end;
           }
-          cend = end;
+          if (newSpansList != null) {
+            newSpansList.clear();
+          }
+          return b;
         }
 
-        return b;
+        // Restore state
+        emojiCount = restoreToCount;
+        if (newSpansList != null) {
+          for (EmojiSpan span : newSpansList) {
+            if (span instanceof Destroyable) {
+              ((Destroyable) span).performDestroy();
+            }
+          }
+          newSpansList.clear();
+        }
       }
     }
 

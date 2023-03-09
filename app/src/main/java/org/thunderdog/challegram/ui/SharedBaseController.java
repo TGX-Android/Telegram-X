@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -602,6 +602,22 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
           }
         }
         nextSearchOffset = messages.nextOffset;
+        modifyResultIfNeeded(items, true);
+        break;
+      }
+      case TdApi.FoundChatMessages.CONSTRUCTOR: {
+        TdApi.FoundChatMessages messages = (TdApi.FoundChatMessages) object;
+        nextOffset = messages.nextFromMessageId;
+        items = new ArrayList<>(messages.messages.length);
+        for (TdApi.Message message : messages.messages) {
+          if (message == null) {
+            continue;
+          }
+          T parsedItem = parseObject(message);
+          if (parsedItem != null) {
+            items.add(parsedItem);
+          }
+        }
         modifyResultIfNeeded(items, true);
         break;
       }

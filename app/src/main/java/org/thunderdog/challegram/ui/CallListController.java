@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -55,6 +55,7 @@ import java.util.Collections;
 import java.util.List;
 
 import me.vkryl.android.AnimatorUtils;
+import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 
 public class CallListController extends RecyclerViewController<Void> implements
@@ -162,7 +163,7 @@ public class CallListController extends RecyclerViewController<Void> implements
       }
     });
 
-    tdlib.client().send(new TdApi.SearchCallMessages(0, Screen.calculateLoadingItems(Screen.dp(72f), 20), false), this);
+    tdlib.client().send(new TdApi.SearchCallMessages(null, Screen.calculateLoadingItems(Screen.dp(72f), 20), false), this);
     tdlib.client().send(new TdApi.GetTopChats(new TdApi.TopChatCategoryCalls(), 30), this);
     tdlib.listeners().subscribeForAnyUpdates(this);
   }
@@ -395,9 +396,12 @@ public class CallListController extends RecyclerViewController<Void> implements
     adapter.updateValuedSettingById(R.id.btn_calls);
   }
 
-  private void addMessages (TdApi.Messages messages) {
-    if (messages.messages.length == 0) {
+  private void addMessages (TdApi.FoundMessages messages) {
+    nextOffset = messages.nextOffset;
+    if (StringUtils.isEmpty(nextOffset)) {
       endReached = true;
+    }
+    if (messages.messages.length == 0) {
       adapter.updateValuedSettingById(R.id.btn_calls);
       return;
     }
@@ -528,12 +532,17 @@ public class CallListController extends RecyclerViewController<Void> implements
   }
 
   private ArrayList<TdApi.Message> messages;
+  private String nextOffset;
 
-  private void setMessages (TdApi.Messages messages) {
+  private void setMessages (TdApi.FoundMessages messages) {
     this.messages = new ArrayList<>(messages.messages.length);
     Collections.addAll(this.messages, messages.messages);
+    this.nextOffset = messages.nextOffset;
     buildSections();
     removeItemAnimatorDelayed();
+    if (StringUtils.isEmpty(nextOffset)) {
+      endReached = true;
+    }
   }
 
   private boolean isLoadingMore;
@@ -542,14 +551,25 @@ public class CallListController extends RecyclerViewController<Void> implements
   private void loadMore () {
     if (!isLoadingMore && messages != null && !messages.isEmpty() && !endReached && sections != null && !sections.isEmpty() && !isDestroyed()) {
       isLoadingMore = true;
-      tdlib.client().send(new TdApi.SearchCallMessages(messages.get(messages.size() - 1).id, 40, false), object -> tdlib.ui().post(() -> {
-        if (!isDestroyed()) {
-          isLoadingMore = false;
-          if (object.getConstructor() == TdApi.Messages.CONSTRUCTOR) {
-            addMessages((TdApi.Messages) object);
+      tdlib.client().send(new TdApi.SearchCallMessages(nextOffset, 40, false), new Client.ResultHandler() {
+        @Override
+        public void onResult (TdApi.Object object) {
+          if (object.getConstructor() == TdApi.FoundMessages.CONSTRUCTOR) {
+            TdApi.FoundMessages foundMessages = (TdApi.FoundMessages) object;
+            if (foundMessages.messages.length == 0 && !StringUtils.isEmpty(foundMessages.nextOffset) && !foundMessages.nextOffset.equals(nextOffset)) {
+              nextOffset = foundMessages.nextOffset;
+              tdlib.client().send(new TdApi.SearchCallMessages(foundMessages.nextOffset, 40, false), this);
+              return;
+            }
           }
+          runOnUiThreadOptional(() -> {
+            isLoadingMore = false;
+            if (object.getConstructor() == TdApi.FoundMessages.CONSTRUCTOR) {
+              addMessages((TdApi.FoundMessages) object);
+            }
+          });
         }
-      }));
+      });
     }
   }
 
@@ -704,14 +724,12 @@ public class CallListController extends RecyclerViewController<Void> implements
   @Override
   public void onResult (final TdApi.Object object) {
     switch (object.getConstructor()) {
-      case TdApi.Messages.CONSTRUCTOR: {
-        tdlib.ui().post(() -> {
-          if (!isDestroyed()) {
-            if (Log.isEnabled(Log.TAG_MESSAGES_LOADER) && Log.checkLogLevel(Log.LEVEL_VERBOSE)) {
-              Log.i(Log.TAG_MESSAGES_LOADER, "Calls list: %s", object);
-            }
-            setMessages((TdApi.Messages) object);
+      case TdApi.FoundMessages.CONSTRUCTOR: {
+        runOnUiThreadOptional(() -> {
+          if (Log.isEnabled(Log.TAG_MESSAGES_LOADER) && Log.checkLogLevel(Log.LEVEL_VERBOSE)) {
+            Log.i(Log.TAG_MESSAGES_LOADER, "Calls list: %s", object);
           }
+          setMessages((TdApi.FoundMessages) object);
         });
         break;
       }

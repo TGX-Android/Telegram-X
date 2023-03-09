@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,6 @@ import android.graphics.Bitmap;
 import android.os.Build;
 import android.os.SystemClock;
 import android.util.Rational;
-import android.util.Size;
 import android.view.TextureView;
 import android.view.View;
 
@@ -129,10 +128,10 @@ public class CameraManagerX extends CameraManager<PreviewView> {
     }
   }
 
-  private static Size toSize (Rational rational, int surfaceRotation) {
+  private static android.util.Size toSize (Rational rational, int surfaceRotation) {
     double maxSize = 1920;
     double minSize = maxSize * rational.doubleValue();
-    return new Size((int) maxSize, (int) minSize - ((int) minSize) % 2);
+    return new android.util.Size((int) maxSize, (int) minSize - ((int) minSize) % 2);
   }
 
   @SuppressWarnings("RestrictedApi")

@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -76,7 +76,7 @@ public class TdlibNotificationMediaFile {
         switch (message.content.getConstructor()) {
           case TdApi.MessagePhoto.CONSTRUCTOR: {
             TdApi.MessagePhoto photo = (TdApi.MessagePhoto) message.content;
-            if (!photo.isSecret) {
+            if (!photo.isSecret && !photo.hasSpoiler) {
               TdApi.PhotoSize target = MediaWrapper.buildTargetFile(photo.photo);
               if (target != null && (TD.isFileLoaded(target.photo) || tdlib.files().canAutomaticallyDownload(target.photo, TdlibFilesManager.DOWNLOAD_FLAG_PHOTO, chat.type))) {
                 photoFile = target.photo;

@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -453,7 +453,7 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
           } else {
             tdlib.pickRandomGenericOverlaySticker(genericOverlayEffectSticker -> {
               if (genericOverlayEffectSticker != null) {
-                TGStickerObj stickerObj = new TGStickerObj(tdlib, genericOverlayEffectSticker, null, genericOverlayEffectSticker.type)
+                TGStickerObj stickerObj = new TGStickerObj(tdlib, genericOverlayEffectSticker, null, genericOverlayEffectSticker.fullType)
                   .setReactionType(tgReaction.type);
                 executeOnUiThreadOptional(() ->
                   act.runWithData(stickerObj)

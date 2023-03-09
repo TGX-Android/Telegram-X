@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@ import android.content.ClipDescription;
 import android.content.Context;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.net.Uri;
 import android.os.Build;
@@ -90,9 +89,9 @@ import org.thunderdog.challegram.navigation.LocaleChanger;
 import org.thunderdog.challegram.navigation.RtlCheckListener;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.receiver.RefreshRateLimiter;
+import org.thunderdog.challegram.telegram.RightId;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -838,7 +837,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
   @Override
   public boolean needsInlineBots () {
-    return !isCaptionEditing() && tdlib.canSendOtherMessages(controller.getChat());
+    return !isCaptionEditing() && tdlib.canSendMessage(controller.getChat(), RightId.SEND_OTHER_MESSAGES);
   }
 
   @Override
@@ -1014,7 +1013,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   public void setChat (TdApi.Chat chat, @Nullable ThreadInfo messageThread, boolean isSilent) {
     textChangedSinceChatOpened = false;
     updateMessageHint(chat, messageThread, isSilent);
-    setDraft(!tdlib.hasWritePermission(chat) ? null :
+    setDraft(!tdlib.canSendBasicMessage(chat) ? null :
       messageThread != null ? messageThread.getDraftContent() :
       chat.draftMessage != null ? chat.draftMessage.inputMessageText : null
     );
@@ -1357,13 +1356,13 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
           final boolean isSecretChat = ChatId.isSecret(chatId);
           if (mediaType == MediaType.GIF && isAnimatedGif) {
             TdApi.InputFileGenerated generated = TD.newGeneratedFile(null, path, 0, timestamp);
-            content = tdlib.filegen().createThumbnail(new TdApi.InputMessageAnimation(generated, null, null, 0, imageWidth, imageHeight, null), isSecretChat);
+            content = tdlib.filegen().createThumbnail(new TdApi.InputMessageAnimation(generated, null, null, 0, imageWidth, imageHeight, null, false), isSecretChat);
           } else if ((mediaType != MediaType.JPEG && (mediaType == MediaType.WEBP || path.contains("sticker") || Math.max(imageWidth, imageHeight) <= 512))) {
             TdApi.InputFileGenerated generated = PhotoGenerationInfo.newFile(path, 0, timestamp, true, 512);
             content = tdlib.filegen().createThumbnail(new TdApi.InputMessageSticker(generated, null, imageWidth, imageHeight, null), isSecretChat);
           } else {
             TdApi.InputFileGenerated generated = PhotoGenerationInfo.newFile(path, 0, timestamp, false, 0);
-            content = tdlib.filegen().createThumbnail(new TdApi.InputMessagePhoto(generated, null, null, imageWidth, imageHeight, null, 0), isSecretChat);
+            content = tdlib.filegen().createThumbnail(new TdApi.InputMessagePhoto(generated, null, null, imageWidth, imageHeight, null, 0, false), isSecretChat);
           }
           if (needMenu) {
             tdlib.ui().post(() -> {

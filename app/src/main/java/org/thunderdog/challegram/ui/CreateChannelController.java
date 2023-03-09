@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -295,7 +295,7 @@ public class CreateChannelController extends ViewController<String[]> implements
 
     UI.showProgress(Lang.getString(R.string.ProgressCreateChannel), null, 300l);
 
-    tdlib.client().send(new TdApi.CreateNewSupergroupChat(title, true, desc, null, 0, false), this);
+    tdlib.client().send(new TdApi.CreateNewSupergroupChat(title, false, true, desc, null, 0, false), this);
   }
 
   public void channelCreated (TdApi.Chat chat) {

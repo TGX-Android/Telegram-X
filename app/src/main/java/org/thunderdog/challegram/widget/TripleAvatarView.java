@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -61,8 +61,12 @@ public class TripleAvatarView extends View implements Destroyable {
     return receiver;
   }
 
-  public void setUsers (Tdlib tdlib, TdApi.Users users) {
-    long[] ids = users.userIds;
+  public void setUsers (Tdlib tdlib, TdApi.MessageViewers viewers) {
+    long[] ids = new long[viewers.viewers.length];
+    for (int i = 0; i < viewers.viewers.length; i++) {
+      TdApi.MessageViewer viewer = viewers.viewers[i];
+      ids[i] = viewer.userId;
+    }
 
     for (int i = 0; i < receivers.length; i++) {
       requestUserFile(ids, i, tdlib, receivers[i]);

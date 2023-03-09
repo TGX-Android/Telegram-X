@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -2088,7 +2088,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     if (((c instanceof MessagesController && ((MessagesController) c).compareChat(sentMessage.chatId)) || (c instanceof MainController)) && !c.isPaused()) {
       switch (sentMessage.content.getConstructor()) {
         case TdApi.MessageScreenshotTaken.CONSTRUCTOR:
-        case TdApi.MessageChatSetTtl.CONSTRUCTOR: {
+        case TdApi.MessageChatSetMessageAutoDeleteTime.CONSTRUCTOR: {
           break;
         }
         default: {

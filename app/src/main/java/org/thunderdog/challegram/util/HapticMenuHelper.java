@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,7 +33,9 @@ import org.thunderdog.challegram.widget.PopupLayout;
 
 import java.util.List;
 
+import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.core.lambda.Destroyable;
+import me.vkryl.core.lambda.RunnableBool;
 
 public class HapticMenuHelper implements View.OnTouchListener, View.OnLongClickListener {
   public interface Provider {
@@ -42,7 +44,7 @@ public class HapticMenuHelper implements View.OnTouchListener, View.OnLongClickL
   }
 
   public interface OnItemClickListener {
-    void onHapticMenuItemClick (View view, View parentView, MenuItem item);
+    boolean onHapticMenuItemClick (View view, View parentView, MenuItem item);
   }
 
   public interface OnItemMenuListener {
@@ -59,11 +61,14 @@ public class HapticMenuHelper implements View.OnTouchListener, View.OnLongClickL
     public final @Nullable TdApi.MessageSender messageSenderId;
     public final boolean isLocked;
 
+    public boolean isCheckbox, isCheckboxSelected;
+    public BoolAnimator isCheckboxSelectedAnimated;
+
     private Tdlib tdlib;
     private long userId;
     private TdlibCache.UserStatusChangeListener userStatusChangeListener;
 
-    private View.OnClickListener onClickListener;
+    private OnItemClickListener onClickListener;
 
     private long tutorialFlag;
 
@@ -118,7 +123,16 @@ public class HapticMenuHelper implements View.OnTouchListener, View.OnLongClickL
       this.tdlib = tdlib;
     }
 
-    public MenuItem setOnClickListener (View.OnClickListener onClickListener) {
+    public MenuItem setIsCheckbox (boolean isCheckbox, boolean checkboxSelected) {
+      this.isCheckbox = isCheckbox;
+      this.isCheckboxSelected = checkboxSelected;
+      if (isCheckboxSelectedAnimated != null) {
+        isCheckboxSelectedAnimated.forceValue(checkboxSelected, checkboxSelected ? 1f : 0f);
+      }
+      return this;
+    }
+
+    public MenuItem setOnClickListener (OnItemClickListener onClickListener) {
       this.onClickListener = onClickListener;
       return this;
     }
@@ -363,11 +377,13 @@ public class HapticMenuHelper implements View.OnTouchListener, View.OnLongClickL
 
   private void onMenuItemClick (MenuItem item, View view, View parentView) {
     if (hapticMenu != null && !hapticMenu.isWindowHidden()) {
-      onItemClickListener.onHapticMenuItemClick(view, parentView, item);
-      if (item.onClickListener != null) {
-        item.onClickListener.onClick(view);
+      boolean res = onItemClickListener.onHapticMenuItemClick(view, parentView, item);
+      if (item.onClickListener != null && !item.onClickListener.onHapticMenuItemClick(view, parentView, item)) {
+        res = false;
       }
-      hideMenu();
+      if (!item.isCheckbox && res) {
+        hideMenu();
+      }
     }
   }
 }

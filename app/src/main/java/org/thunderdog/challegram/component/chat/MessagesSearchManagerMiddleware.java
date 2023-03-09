@@ -374,6 +374,9 @@ public class MessagesSearchManagerMiddleware {
       case TdApi.Messages.CONSTRUCTOR:
         onSearchSecretMessagesResultImpl(context, messagesToFoundMessages((TdApi.Messages) object));
         break;
+      case TdApi.FoundChatMessages.CONSTRUCTOR:
+        onSearchSecretMessagesResultImpl(context, messagesToFoundMessages((TdApi.FoundChatMessages) object));
+        break;
       case TdApi.Error.CONSTRUCTOR: {
         context.resultHandler.onResult(object);
         break;
@@ -514,17 +517,34 @@ public class MessagesSearchManagerMiddleware {
     return new TdApi.SearchChatMessages(query.chatId, query.query, query.senderId, query.fromMessageId, query.offset, query.limit, query.filter, query.messageThreadId);
   }
 
+  private static TdApi.FoundMessages messagesToFoundMessages (TdApi.FoundChatMessages messages) {
+    String nextOffset = messages.nextFromMessageId != 0 ? Long.toString(messages.nextFromMessageId) : "";
+    return new TdApi.FoundMessages(messages.totalCount, messages.messages, nextOffset);
+  }
+
   private static TdApi.FoundMessages messagesToFoundMessages (TdApi.Messages messages) {
     String nextOffset = (messages.messages != null && messages.messages.length > 0) ? Long.toString(messages.messages[messages.messages.length - 1].id) : "";
     return new TdApi.FoundMessages(messages.totalCount, messages.messages, nextOffset);
   }
 
   private static @Nullable TdApi.Messages getMessages (TdApi.Object object, Client.ResultHandler handler) {
-    if (object.getConstructor() != TdApi.Messages.CONSTRUCTOR) {
-      handler.onResult(object);
-      return null;
+    switch (object.getConstructor()) {
+      case TdApi.FoundChatMessages.CONSTRUCTOR: {
+        TdApi.FoundChatMessages foundChatMessages = (TdApi.FoundChatMessages) object;
+        // TODO use foundChatMessages.nextFromMessageId
+        return new TdApi.Messages(foundChatMessages.totalCount, foundChatMessages.messages);
+      }
+      case TdApi.FoundMessages.CONSTRUCTOR: {
+        TdApi.FoundMessages foundMessages = (TdApi.FoundMessages) object;
+        // TODO use foundMessages.nextOffset
+        return new TdApi.Messages(foundMessages.totalCount, foundMessages.messages);
+      }
+      case TdApi.Messages.CONSTRUCTOR: {
+        return ((TdApi.Messages) object);
+      }
     }
-    return (TdApi.Messages) object;
+    handler.onResult(object);
+    return null;
   }
 
   private static TdApi.Message[] mergeMessageArrays (TdApi.Message[] arr1, TdApi.Message[] arr2) {

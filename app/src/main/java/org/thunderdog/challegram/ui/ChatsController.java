@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1254,7 +1254,8 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
           }
         }
         if ((cloudPinCount + secretPinCount) == 1 && tdlib.chatPinned(chatList, lastChatId)) {
-          tdlib.ui().processChatAction(this, chatList(), selectedChats.keyAt(0), null, R.id.btn_pinUnpinChat, this::onSelectionActionComplete);
+          tdlib.ui().processChatAction(this, chatList(), selectedChats.keyAt(0), null, new TdApi.MessageSourceChatList(), R.id.btn_pinUnpinChat,
+          this::onSelectionActionComplete);
           return;
         }
         if (cloudPinCount > 0 || secretPinCount > 0) {
@@ -1450,7 +1451,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       }
     }
     if (count == 1) {
-      tdlib.ui().processChatAction(this, chatList(), lastChatId, null, clearHistory ? R.id.btn_clearChatHistory : R.id.btn_removeChatFromList, this::onSelectionActionComplete);
+      tdlib.ui().processChatAction(this, chatList(), lastChatId, null, new TdApi.MessageSourceChatList(), clearHistory ? R.id.btn_clearChatHistory : R.id.btn_removeChatFromList, this::onSelectionActionComplete);
       return;
     }
 
@@ -1631,7 +1632,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
               return;
           }
           if (simpleActionId != 0) {
-            tdlib.ui().processChatAction(this, chatList(), selectedChats.keyAt(0), null, simpleActionId, onDone);
+            tdlib.ui().processChatAction(this, chatList(), selectedChats.keyAt(0), null, new TdApi.MessageSourceChatList(), simpleActionId, onDone);
             return;
           }
         }
@@ -1706,7 +1707,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
             for (int i = 0; i < selectedChats.size(); i++) {
               switch (id) {
                 case R.id.more_btn_markAsRead:
-                  tdlib.markChatAsRead(selectedChats.keyAt(i), 0, after);
+                  tdlib.markChatAsRead(selectedChats.keyAt(i), new TdApi.MessageSourceChatList(), true, after);
                   break;
                 case R.id.more_btn_markAsUnread:
                   tdlib.markChatAsUnread(selectedChats.valueAt(i), after);
@@ -2103,7 +2104,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       };
     }
 
-    return tdlib.ui().createSimpleChatActions(this, ((BaseView) v).getPreviewChatList(), ((BaseView) v).getPreviewChatId(), null, ids, icons, strings, getSelectedChatCount() == 0, canSelectChat(chat), isChatSelected(chat), () -> selectUnselectChat(chat, true));
+    return tdlib.ui().createSimpleChatActions(this, ((BaseView) v).getPreviewChatList(), ((BaseView) v).getPreviewChatId(), null, new TdApi.MessageSourceChatList(), ids, icons, strings, getSelectedChatCount() == 0, canSelectChat(chat), isChatSelected(chat), () -> selectUnselectChat(chat, true));
   }
 
   @Override
@@ -2127,7 +2128,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
               tdlib.ui().showArchiveOptions(this, tdlib.chatList(ChatPosition.CHAT_LIST_ARCHIVE));
             }
           } else {
-            tdlib.ui().showChatOptions(this, chatList(), chat.getChatId(), null, canSelectChat(chat), isChatSelected(chat), () -> selectUnselectChat(chat, true));
+            tdlib.ui().showChatOptions(this, chatList(), chat.getChatId(), null, new TdApi.MessageSourceChatList(), canSelectChat(chat), isChatSelected(chat), () -> selectUnselectChat(chat, true));
           }
           return true;
         }

@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -84,6 +84,10 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
   }
 
   // Settings
+
+  public boolean allowSpoiler () {
+    return false;
+  }
 
   @Override
   protected final int getHeaderTextColorId () {
@@ -716,11 +720,11 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
     // Do all heavy work like layout or etc, no animation will lag
   }
 
-  protected void onMultiSendPress (@NonNull TdApi.MessageSendOptions options, boolean disableMarkdown) {
+  protected void onMultiSendPress (View view, @NonNull TdApi.MessageSendOptions options, boolean disableMarkdown) {
     // Send all selected shit
   }
 
-  protected void addCustomItems (@NonNull List<HapticMenuHelper.MenuItem> hapticItems) {
+  protected void addCustomItems (View view, @NonNull List<HapticMenuHelper.MenuItem> hapticItems) {
     // Add specific items
   }
 

@@ -519,6 +519,7 @@
 
     <item name="white" porterDuff="true" /> <!-- Just white -->
     <item name="black" />
+    <item name="spoilerMediaOverlay" />
 
     <item name="photoShadowTint1" />
     <item name="photoShadowTint2" />

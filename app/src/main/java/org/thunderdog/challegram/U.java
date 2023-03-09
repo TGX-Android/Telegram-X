@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -2409,6 +2409,8 @@ public class U {
 
   public static String getUsefulMetadata (@Nullable Tdlib tdlib) {
     AppBuildInfo buildInfo = org.thunderdog.challegram.unsorted.Settings.instance().getCurrentBuildInformation();
+    String locale = UI.getAppContext().getResources().getConfiguration().locale.toString();
+    String appLocale = Lang.locale().toString();
     String metadata = Lang.getAppBuildAndVersion(tdlib) + " (" + BuildConfig.COMMIT + ")\n" +
       (!buildInfo.getPullRequests().isEmpty() ? "PRs: " + buildInfo.pullRequestsList() + "\n" : "") +
       "TDLib: " + Td.tdlibVersion() + " (tdlib/td@" + Td.tdlibCommitHash() + ")\n" +
@@ -2416,14 +2418,15 @@ public class U {
       "Device: " + Build.MANUFACTURER + " " + Build.BRAND + " " + Build.MODEL + " (" + Build.DISPLAY + ")\n" +
       "Screen: " + Screen.widestSide() + "x" + Screen.smallestSide() + " (density: " + Screen.density() + ", fps: " + Screen.refreshRate() + ")" + "\n" +
       "Build: `" + Build.FINGERPRINT + "`\n" +
-      "Package: " + UI.getAppContext().getPackageName();
+      "Package: " + UI.getAppContext().getPackageName() + "\n" +
+      "Locale: " + locale + (!locale.equals(appLocale) ? " (app: " + appLocale + ")" : "");
     String installerName = U.getInstallerPackageName();
     if (!StringUtils.isEmpty(installerName)) {
       metadata += "\nInstaller: " + (U.VENDOR_GOOGLE_PLAY.equals(installerName) ? "Google Play" : installerName);
     }
     String fingerprint = U.getApkFingerprint("SHA1");
     if (!StringUtils.isEmpty(fingerprint)) {
-      metadata += "\nFingerprint: `" + fingerprint + "`";
+      metadata += "\nAPK Fingerprint: `" + fingerprint + "`";
     }
     return metadata;
   }

@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -247,6 +247,11 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   }
 
   @Override
+  public boolean allowSpoiler () {
+    return true;
+  }
+
+  @Override
   protected void onUpdateBottomBarFactor (float bottomBarFactor, float counterFactor, float y) {
     float factor = Math.min(bottomBarFactor, 1f - counterFactor);
     if (cameraBadgeView != null) {
@@ -259,7 +264,7 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
     MessagesController c = mediaLayout.parentMessageController();
     if (c == null) return;
 
-    if (!c.showRestriction(v, R.id.right_sendMedia, R.string.ChatDisabledMedia, R.string.ChatRestrictedMedia, R.string.ChatRestrictedMediaUntil)) {
+    if (!c.showPhotoVideoRestriction(v)) {
       mediaLayout.hidePopupAndOpenCamera(new CameraOpenOptions().anchor(v).noTrace(c.isSecretChat()));
     }
   }
@@ -472,13 +477,13 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   }
 
   @Override
-  protected void onMultiSendPress (@NonNull TdApi.MessageSendOptions options, boolean disableMarkdown) {
+  protected void onMultiSendPress (View view, @NonNull TdApi.MessageSendOptions options, boolean disableMarkdown) {
     // TODO delete other
-    mediaLayout.sendPhotosOrVideos(adapter.getSelectedPhotosAndVideosAsList(true), showingFoundImages, options, disableMarkdown, false);
+    mediaLayout.sendPhotosOrVideos(view, adapter.getSelectedPhotosAndVideosAsList(true), showingFoundImages, options, disableMarkdown, false, false);
   }
 
   @Override
-  protected void addCustomItems (@NonNull List<HapticMenuHelper.MenuItem> hapticItems) {
+  protected void addCustomItems (View view, @NonNull List<HapticMenuHelper.MenuItem> hapticItems) {
     if (canSendAsFile()) {
       List<ImageFile> files = adapter.getSelectedPhotosAndVideosAsList(false);
       boolean allVideo = files != null;
@@ -491,12 +496,13 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
         }
       }
       int count = files != null ? files.size() : 0;
-      hapticItems.add(new HapticMenuHelper.MenuItem(R.id.btn_sendAsFile, count <= 1 ? Lang.getString(allVideo ? R.string.SendOriginal : R.string.SendAsFile) : Lang.plural(allVideo ? R.string.SendXOriginals : R.string.SendAsXFiles, count), R.drawable.baseline_insert_drive_file_24).setOnClickListener(v -> {
-        if (v.getId() == R.id.btn_sendAsFile) {
+      hapticItems.add(new HapticMenuHelper.MenuItem(R.id.btn_sendAsFile, count <= 1 ? Lang.getString(allVideo ? R.string.SendOriginal : R.string.SendAsFile) : Lang.plural(allVideo ? R.string.SendXOriginals : R.string.SendAsXFiles, count), R.drawable.baseline_insert_drive_file_24).setOnClickListener((view1, parentView, item) -> {
+        if (view1.getId() == R.id.btn_sendAsFile) {
           mediaLayout.pickDateOrProceed((sendOptions, disableMarkdown) ->
-            mediaLayout.sendPhotosOrVideos(adapter.getSelectedPhotosAndVideosAsList(true), showingFoundImages, sendOptions, disableMarkdown, true)
+            mediaLayout.sendPhotosOrVideos(view1, adapter.getSelectedPhotosAndVideosAsList(true), showingFoundImages, sendOptions, disableMarkdown, true, false)
           );
         }
+        return true;
       }));
     }
   }
@@ -532,10 +538,24 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
   }
 
   @Override
-  public void sendSelectedItems (ArrayList<ImageFile> images, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles) {
+  public boolean sendSelectedItems (View view, ArrayList<ImageFile> images, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles, boolean hasSpoiler) {
     // TODO delete other
-    mediaLayout.forceHide();
-    mediaLayout.sendPhotosOrVideos(images, false, options, disableMarkdown, asFiles);
+    return mediaLayout.sendPhotosOrVideos(view, images, false, options, disableMarkdown, asFiles, true);
+  }
+
+  @Override
+  public boolean allowHideMedia () {
+    return mediaLayout.allowSpoiler();
+  }
+
+  @Override
+  public boolean isHideMediaEnabled () {
+    return mediaLayout.needSpoiler();
+  }
+
+  @Override
+  public void onHideMediaStateChanged (boolean hideMedia) {
+    mediaLayout.setNeedSpoiler(hideMedia);
   }
 
   @Override
@@ -553,7 +573,10 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
       Log.i("stack.set complete for %d files in %dms", stack.getCurrentSize(), SystemClock.elapsedRealtime() - time);
 
       MediaViewController controller = new MediaViewController(context, tdlib);
-      controller.setArguments(MediaViewController.Args.fromGallery(this, this, this, this, stack, mediaLayout.areScheduledOnly()).setReceiverChatId(mediaLayout.getTargetChatId()));
+      controller.setArguments(
+        MediaViewController.Args.fromGallery(this, this, this, this, stack, mediaLayout.areScheduledOnly())
+          .setReceiverChatId(mediaLayout.getTargetChatId())
+      );
       controller.open();
 
       return true;

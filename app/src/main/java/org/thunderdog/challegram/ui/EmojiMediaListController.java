@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1061,7 +1061,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
       }
       stickers = new ArrayList<>(rawStickers.length);
       for (TdApi.Sticker rawSticker : rawStickers) {
-        TGStickerObj sticker = new TGStickerObj(tdlib, rawSticker, null, rawSticker.type);
+        TGStickerObj sticker = new TGStickerObj(tdlib, rawSticker, null, rawSticker.fullType);
         if (areFavorite) {
           sticker.setIsFavorite();
         } else {
@@ -1252,7 +1252,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
 
             int i = 0;
             for (TdApi.Sticker sticker : stickers) {
-              TGStickerObj parsed = new TGStickerObj(tdlib, sticker, sticker.type, rawStickerSet.emojis[i].emojis);
+              TGStickerObj parsed = new TGStickerObj(tdlib, sticker, sticker.fullType, rawStickerSet.emojis[i].emojis);
               items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, parsed));
               i++;
             }
@@ -1705,7 +1705,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
             MediaStickersAdapter.StickerItem item = trendingAdapter.getItem(j);
             if (item.sticker != null) {
               TdApi.Sticker sticker = stickerSet.stickers[stickerIndex];
-              item.sticker.set(tdlib, sticker, sticker.type, stickerSet.emojis[stickerIndex].emojis);
+              item.sticker.set(tdlib, sticker, sticker.fullType, stickerSet.emojis[stickerIndex].emojis);
             }
 
             View view = hotView != null ? hotView.getLayoutManager().findViewByPosition(j) : null;
@@ -1781,7 +1781,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
                 ArrayList<MediaStickersAdapter.StickerItem> items = new ArrayList<>(actualSize - oldSize);
                 for (int j = oldSize; j < actualSize; j++) {
                   TdApi.Sticker sticker = stickerSet.stickers[j];
-                  TGStickerObj obj = new TGStickerObj(tdlib, sticker, sticker.type, stickerSet.emojis[j].emojis);
+                  TGStickerObj obj = new TGStickerObj(tdlib, sticker, sticker.fullType, stickerSet.emojis[j].emojis);
                   obj.setStickerSetId(stickerSet.id, stickerSet.emojis[j].emojis);
                   obj.setDataProvider(this);
                   items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, obj));
@@ -1798,7 +1798,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
           for (int stickerIndex = oldStickerSet.getCoverCount(), j = oldStickerSet.getStartIndex() + 1 + oldStickerSet.getCoverCount(); stickerIndex < stickerSet.stickers.length; stickerIndex++, j++) {
             MediaStickersAdapter.StickerItem item = stickersAdapter.getItem(j);
             TdApi.Sticker sticker = stickerSet.stickers[stickerIndex];
-            item.sticker.set(tdlib, sticker, sticker.type, stickerSet.emojis[stickerIndex].emojis);
+            item.sticker.set(tdlib, sticker, sticker.fullType, stickerSet.emojis[stickerIndex].emojis);
 
             View view = stickersView != null ? stickersView.getLayoutManager().findViewByPosition(j) : null;
             if (view != null && view instanceof StickerSmallView) {
@@ -1875,7 +1875,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
             info.setStartIndex(startIndex);
             stickerSets.add(info);
             for (TdApi.Sticker favoriteSticker : favoriteStickers) {
-              TGStickerObj sticker = new TGStickerObj(tdlib, favoriteSticker, null, favoriteSticker.type);
+              TGStickerObj sticker = new TGStickerObj(tdlib, favoriteSticker, null, favoriteSticker.fullType);
               sticker.setIsFavorite();
               items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, sticker));
             }
@@ -1891,7 +1891,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
               items.add(new MediaStickersAdapter.StickerItem(favoriteStickers.length > 0 ? MediaStickersAdapter.StickerHolder.TYPE_HEADER : MediaStickersAdapter.StickerHolder.TYPE_EMPTY, info));
             }
             for (TdApi.Sticker recentSticker : recentStickers) {
-              TGStickerObj sticker = new TGStickerObj(tdlib, recentSticker, null, recentSticker.type);
+              TGStickerObj sticker = new TGStickerObj(tdlib, recentSticker, null, recentSticker.fullType);
               sticker.setIsRecent();
               items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, sticker));
             }
