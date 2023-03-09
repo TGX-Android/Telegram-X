@@ -224,8 +224,8 @@ public class Log {
     }
   }
 
-  private static void deleteAllImpl (LogFiles list, @Nullable RunnableData<LogFiles> after, @Nullable RunnableData<LogFiles> onProgress) {
-    final int count = list.files.size();
+  private static void deleteAllImpl (@Nullable LogFiles list, @Nullable RunnableData<LogFiles> after, @Nullable RunnableData<LogFiles> onProgress) {
+    final int count = list != null ? list.files.size() : 0;
     for (int i = count - 1; i >= 0; i--) {
       File file = list.files.get(i);
       long size = file.length();
