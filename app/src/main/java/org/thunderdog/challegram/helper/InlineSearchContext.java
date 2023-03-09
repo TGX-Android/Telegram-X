@@ -150,6 +150,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
     this.tdlib = tdlib;
     this.callback = callback;
     this.currentText = "";
+    this.currentCs = "";
   }
 
   public void setIsCaption (boolean isCaption) {
@@ -215,6 +216,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
       return;
     }
     this.currentText = newText;
+    this.currentCs = newCs;
     this.canHandlePositionChange = false;
     cancelPendingQueries();
 
@@ -1289,7 +1291,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
             case 'S': // :S
             case 'O': // :O
               query = null;
-            break;
+              break;
           }
         }
         final ArrayList<InlineResult<?>> inlineResults;

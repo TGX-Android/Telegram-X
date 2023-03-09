@@ -540,6 +540,9 @@ public class Emoji {
   }
 
   public boolean isSingleEmoji (CharSequence cs, boolean allowCustom) {
+    if (StringUtils.isEmpty(cs)) {
+      return false;
+    }
     if (cs instanceof Spanned) {
       Spanned spanned = (Spanned) cs;
       EmojiSpan[] spans = spanned.getSpans(0, cs.length(), EmojiSpan.class);
