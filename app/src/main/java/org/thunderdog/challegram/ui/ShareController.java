@@ -117,6 +117,7 @@ import me.vkryl.android.util.SingleViewProvider;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.ColorUtils;
+import me.vkryl.core.FileUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.collection.LongList;
@@ -621,10 +622,10 @@ public class ShareController extends TelegramViewController<ShareController.Args
 
     Background.instance().post(() -> {
       try {
-        File dir = new File(UI.getAppContext().getFilesDir(), "vcf");
-        if (!dir.exists() && !dir.mkdir())
+        File vcfCacheDirectory = new File(UI.getAppContext().getFilesDir(), "vcf");
+        if (!FileUtils.createDirectory(vcfCacheDirectory))
           return;
-        File file = new File(dir, "temp.vcf");
+        File file = new File(vcfCacheDirectory, "temp.vcf");
         if (!file.exists() && !file.createNewFile())
           return;
         try (FileWriter fw = new FileWriter(file)) {

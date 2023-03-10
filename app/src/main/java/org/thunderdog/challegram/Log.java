@@ -66,12 +66,12 @@ public class Log {
    * @return Log storage directory. @null in case of error
    */
   public static @Nullable File getLogDir () {
-    File file = new File(UI.getAppContext().getFilesDir(), "logs");
-    if (!(file.exists() ? file.isDirectory() : FileUtils.mkdirs(file))) {
-      android.util.Log.e(LOG_TAG, "Couldn't open logs directory: " + file.getAbsolutePath());
+    File logsDirectory = new File(UI.getAppContext().getFilesDir(), "logs");
+    if (!FileUtils.createDirectory(logsDirectory)) {
+      android.util.Log.e(LOG_TAG, "Couldn't open logs directory: " + logsDirectory.getAbsolutePath());
       return null;
     }
-    return file;
+    return logsDirectory;
   }
 
   /**

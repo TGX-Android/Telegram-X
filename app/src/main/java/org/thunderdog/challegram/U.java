@@ -1779,7 +1779,8 @@ public class U {
     }
   }
 
-  public static File getAppDir (boolean allowExternal) {
+  @Deprecated
+  public static File getFilesDir (boolean allowExternal) {
     File file = null;
     if (allowExternal) {
       file = UI.getContext().getExternalFilesDir(null);
@@ -1788,8 +1789,8 @@ public class U {
   }
 
   public static File getRingtonesDir () {
-    File ringtonesDir = new File(getAppDir(false), "ringtones");
-    if (!ringtonesDir.exists() && !ringtonesDir.mkdir())
+    File ringtonesDir = new File(getFilesDir(false), "ringtones");
+    if (!FileUtils.createDirectory(ringtonesDir))
       throw new IllegalStateException();
     return ringtonesDir;
   }
@@ -1831,30 +1832,30 @@ public class U {
     return path.startsWith(privateDir);
   }
 
-  private static boolean moveFiles (File fromDirectory, File toDirectory) {
-    File[] mediaFiles = fromDirectory.listFiles();
-    if (mediaFiles == null || mediaFiles.length == 0) {
-      if (!fromDirectory.delete()) {
+  private static boolean moveDir (File fromDir, File toDir) {
+    if (!fromDir.exists() || !fromDir.isDirectory()) {
+      Log.w("Source directory does not exist or is not a directory");
+      return false;
+    }
+    File[] innerFiles = fromDir.listFiles();
+    if (innerFiles == null || innerFiles.length == 0) {
+      if (!fromDir.delete()) {
         Log.w("Unable to delete media directory");
         return false;
       }
       return true;
     }
-    if (!toDirectory.mkdirs() && !toDirectory.exists()) {
+    if (!FileUtils.createDirectory(toDir)) {
       Log.w("Failed to create output directory");
       return false;
     }
-    if (!toDirectory.isDirectory()) {
-      Log.w("Output directory is not a directory");
-      return false;
-    }
     int successCount = 0;
-    for (File fromFile : mediaFiles) {
-      File toFile = new File(toDirectory, fromFile.getName());
+    for (File fromFile : innerFiles) {
+      File toFile = new File(toDir, fromFile.getName());
       if (moveFile(fromFile, toFile))
         successCount++;
     }
-    return successCount == mediaFiles.length && fromDirectory.delete();
+    return successCount == innerFiles.length && fromDir.delete();
   }
 
   private static boolean moveFile (File fromFile, File toFile) {
@@ -1862,7 +1863,7 @@ public class U {
       return true;
     }
     if (fromFile.isDirectory()) {
-      return moveFiles(fromFile, toFile);
+      return moveDir(fromFile, toFile);
     }
     if (!FileUtils.copy(fromFile, toFile)) {
       Log.w("Cannot copy file");
@@ -1879,11 +1880,11 @@ public class U {
     if (toDirectory == null || toDirectory.equals(fromDirectory)) {
       return;
     }
-    moveFiles(fromDirectory, toDirectory);
+    moveDir(fromDirectory, toDirectory);
   }
 
   private static File getUnsecurePrivateAlbumDir () {
-    return new File(getAppDir(true), "media");
+    return new File(getFilesDir(true), "media");
   }
 
   public static File getAlbumDir (boolean isPrivate) {
@@ -1896,9 +1897,9 @@ public class U {
       }
     }
     if (isPrivate || storageDir == null) {
-      storageDir = new File(getAppDir(!isPrivate), "media");
+      storageDir = new File(getFilesDir(!isPrivate), "media");
     }
-    if (!storageDir.mkdirs() && !storageDir.exists()) {
+    if (!FileUtils.createDirectory(storageDir)) {
       Log.w("Failed to create album directory");
       // return null;
     }

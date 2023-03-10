@@ -750,7 +750,7 @@ public class Settings {
     File pmcDir = new File(UI.getAppContext().getFilesDir(), "pmc");
     boolean fatalError;
     try {
-      fatalError = !pmcDir.exists() && !FileUtils.mkdirs(pmcDir);
+      fatalError = !FileUtils.createDirectory(pmcDir);
     } catch (SecurityException e) {
       e.printStackTrace();
       fatalError = true;

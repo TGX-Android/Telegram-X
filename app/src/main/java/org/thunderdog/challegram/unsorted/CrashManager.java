@@ -78,8 +78,8 @@ public class CrashManager {
   }
 
   private File getNewFile () {
-    File logsDir = new File(UI.getAppContext().getFilesDir(), "logs");
-    if (!logsDir.exists() && !logsDir.mkdirs()) {
+    File logsDir = Log.getLogDir();
+    if (logsDir == null) {
       return null;
     }
     int index = 0;

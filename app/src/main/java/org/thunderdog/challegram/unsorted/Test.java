@@ -264,7 +264,7 @@ public class Test {
 
   public static File getTestDBDir () {
     File pmcDir = new File(UI.getAppContext().getFilesDir(), "pmc");
-    if (!pmcDir.exists() && !pmcDir.mkdir()) {
+    if (!FileUtils.createDirectory(pmcDir)) {
       throw new IllegalStateException("Unable to create working directory");
     }
     return new File(pmcDir, "test");

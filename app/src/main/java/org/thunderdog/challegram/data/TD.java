@@ -3344,10 +3344,8 @@ public class TD {
       dir = new File(UI.getAppContext().getFilesDir().getPath() + "/Challegram");
     }
 
-    if (!dir.exists()) {
-      if (!dir.mkdirs()) {
-        return null;
-      }
+    if (!FileUtils.createDirectory(dir)) {
+      return null;
     }
 
     File noMedia = new File(dir, ".nomedia");
@@ -5060,7 +5058,7 @@ public class TD {
       }
     }
 
-    if (!destDir.exists() && !destDir.mkdir()) {
+    if (!FileUtils.createDirectory(destDir)) {
       return null;
     }
 
@@ -5115,7 +5113,7 @@ public class TD {
       return;
     }
     final File destDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-    if (!destDir.exists() && !destDir.mkdir()) {
+    if (!FileUtils.createDirectory(destDir)) {
       return;
     }
     String extension = U.getExtension(sourceFile.getName());

@@ -2289,7 +2289,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     }
     if (file != null) {
       try {
-        if (!(file.exists() ? file.isDirectory() : FileUtils.mkdirs(file)) || !file.canWrite()) {
+        if (!FileUtils.createDirectory(file) || !file.canWrite()) {
           file = null;
         }
       } catch (SecurityException e) {
@@ -2327,21 +2327,21 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   }
 
   public static File getTgvoipDirectory () {
-    File file = new File(UI.getContext().getFilesDir(), "tgvoip");
-    if (!file.exists() && !file.mkdir()) {
-      throw new IllegalStateException("Cannot create working directory: " + file.getPath());
+    File tgvoipDir = new File(UI.getContext().getFilesDir(), "tgvoip");
+    if (!FileUtils.createDirectory(tgvoipDir)) {
+      throw new IllegalStateException("Cannot create working directory: " + tgvoipDir.getPath());
     }
-    return file;
+    return tgvoipDir;
   }
 
   // Lang pack
 
   public static String getLanguageDatabasePath () {
-    File file = new File(UI.getContext().getFilesDir(), "langpack");
-    if (!file.exists() && !file.mkdir()) {
-      throw new IllegalStateException("Cannot create working directory: " + file.getPath());
+    File languageDatabaseDir = new File(UI.getContext().getFilesDir(), "langpack");
+    if (!FileUtils.createDirectory(languageDatabaseDir)) {
+      throw new IllegalStateException("Cannot create working directory: " + languageDatabaseDir.getPath());
     }
-    return new File(file, "main").getPath();
+    return new File(languageDatabaseDir, "main").getPath();
   }
 
   // Wake lock

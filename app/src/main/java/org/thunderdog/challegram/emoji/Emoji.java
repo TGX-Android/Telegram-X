@@ -183,7 +183,7 @@ public class Emoji {
       return false;
     }
     File targetDir = new File(getEmojiPackDirectory(), identifier);
-    if (!targetDir.exists() && !targetDir.mkdirs()) {
+    if (!FileUtils.createDirectory(targetDir)) {
       Log.i("Cannot create emoji dir:%s", identifier);
       return false;
     }

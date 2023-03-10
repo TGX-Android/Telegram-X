@@ -30,6 +30,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import me.vkryl.core.FileUtils;
 import me.vkryl.core.StringUtils;
 
 public class GesturePassword {
@@ -58,7 +59,7 @@ public class GesturePassword {
     }
     File file = new File(path);
     File parent = file.getParentFile();
-    if (!parent.exists() && !parent.mkdirs()) {
+    if (parent == null || !FileUtils.createDirectory(parent)) {
       return null;
     }
     return file;
