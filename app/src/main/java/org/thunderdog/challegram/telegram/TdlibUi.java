@@ -1631,21 +1631,20 @@ public class TdlibUi extends Handler {
     tdlib.client().send(new TdApi.DeleteProfilePhoto(photoId), tdlib.profilePhotoHandler());
   }
 
-  public static void sendLogs (final ViewController<?> context, final boolean old, final boolean export) {
-    String path = TdlibManager.getLogFilePath(old);
-    File file = new File(path);
-    if (!file.exists()) {
+  public static void sendTdlibLogs (final ViewController<?> context, final boolean old, final boolean export) {
+    File tdlibLogFile = TdlibManager.getLogFile(old);
+    if (tdlibLogFile == null || !tdlibLogFile.exists()) {
       UI.showToast("Log does not exist", Toast.LENGTH_SHORT);
       return;
     }
-    long size = file.length();
+    long size = tdlibLogFile.length();
     if (size == 0) {
       UI.showToast("Log is empty", Toast.LENGTH_SHORT);
       return;
     }
 
     ShareController share = new ShareController(context.context(), export ? null : context.tdlib());
-    share.setArguments(new ShareController.Args(path, "text/plain"));
+    share.setArguments(new ShareController.Args(tdlibLogFile.getPath(), "text/plain"));
     share.show();
   }
 
@@ -1668,7 +1667,7 @@ public class TdlibUi extends Handler {
             UI.showToast(msg, Toast.LENGTH_SHORT);
           }
           if (after != null) {
-            after.runWithLong(new File(TdlibManager.getLogFilePath(old)).length());
+            after.runWithLong(TdlibManager.getLogFileSize(old));
           }
         });
       } catch (Throwable t) {

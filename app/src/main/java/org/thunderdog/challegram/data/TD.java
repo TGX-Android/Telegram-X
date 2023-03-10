@@ -3294,36 +3294,6 @@ public class TD {
     return new TdApi.File(id, size, size, new TdApi.LocalFile(path, false, false, false, true, 0, size, size), new TdApi.RemoteFile(remoteId, "", false, false, 0));
   }
 
-  public static String getFolder (boolean allowExternal, String dirName) {
-    File file = allowExternal ? UI.getContext().getExternalFilesDir(null) : null;
-    if (file != null) {
-      file = new File(file, dirName);
-      if (!file.exists() && !file.mkdir()) {
-        Log.e("Cannot create %s dir", dirName);
-      }
-      return normalizePath(file.getPath());
-    } else {
-      file = new File(UI.getContext().getFilesDir(), dirName);
-      if (!file.exists() && !file.mkdir()) {
-        Log.e("Cannot create %s dir", dirName);
-      }
-      return normalizePath(file.getPath());
-    }
-  }
-
-  public static String getTGDir (boolean allowExternal) {
-    File file = allowExternal ? UI.getContext().getExternalFilesDir(null) : null;
-    if (file != null) {
-      return normalizePath(file.getPath());
-    } else {
-      file = new File(UI.getContext().getFilesDir(), "tdlib");
-      if (!file.exists() && !file.mkdir()) {
-        throw new IllegalStateException("Cannot create tdlib dir");
-      }
-      return normalizePath(file.getPath());
-    }
-  }
-
   public static String normalizePath (String path) {
     return StringUtils.isEmpty(path) || path.charAt(path.length() - 1) == '/' ? path : path + '/';
   }

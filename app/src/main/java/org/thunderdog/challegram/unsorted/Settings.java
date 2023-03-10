@@ -501,7 +501,7 @@ public class Settings {
 
     private int getSettings () {
       if (_settings == null) {
-        _settings = pmc.getInt(settingsKey, BuildConfig.DEBUG || BuildConfig.EXPERIMENTAL ? FLAG_TDLIB_OTHER_ENABLE_ANDROID_LOG : 0);
+        _settings = pmc.getInt(settingsKey, UI.isTestLab() ? FLAG_TDLIB_OTHER_ENABLE_ANDROID_LOG : 0);
       }
       return _settings;
     }
@@ -646,7 +646,7 @@ public class Settings {
     }
 
     public void apply (boolean async) {
-      if (UI.TEST_MODE == UI.TEST_MODE_AUTO)
+      if (UI.isTestLab())
         return;
       int globalVerbosityLevel = DEFAULT_LOG_GLOBAL_VERBOSITY_LEVEL;
       if (_modules == null)
@@ -676,7 +676,12 @@ public class Settings {
       if (needAndroidLog()) {
         stream = new TdApi.LogStreamDefault();
       } else {
-        stream = new TdApi.LogStreamFile(TdlibManager.getLogFilePath(false), getLogMaxFileSize(), false);
+        File logFile = TdlibManager.getLogFile(false);
+        if (logFile != null) {
+          stream = new TdApi.LogStreamFile(logFile.getPath(), getLogMaxFileSize(), false);
+        } else {
+          stream = new TdApi.LogStreamEmpty();
+        }
       }
       TdApi.Object result = Client.execute(new TdApi.SetLogStream(stream));
       if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {

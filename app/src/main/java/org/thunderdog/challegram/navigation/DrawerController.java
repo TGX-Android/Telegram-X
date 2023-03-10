@@ -824,7 +824,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
         break;
       }
       case R.id.btn_tdlib_shareLogs: {
-        TdlibUi.sendLogs(context.navigation().getCurrentStackItem(), false, false);
+        TdlibUi.sendTdlibLogs(context.navigation().getCurrentStackItem(), false, false);
         break;
       }
       case R.id.btn_wallet: {

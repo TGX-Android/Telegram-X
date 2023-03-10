@@ -114,6 +114,10 @@ public class UI {
     }
   }
 
+  public static boolean isTestLab () {
+    return UI.TEST_MODE == UI.TEST_MODE_AUTO;
+  }
+
   public static Handler getProgressHandler () {
     if (_progressHandler == null) {
       synchronized (UI.class) {
