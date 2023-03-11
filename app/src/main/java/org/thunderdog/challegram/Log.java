@@ -43,10 +43,11 @@ import java.util.List;
 import java.util.Locale;
 
 import me.vkryl.android.SdkVersion;
+import me.vkryl.core.BitwiseUtils;
+import me.vkryl.core.FileUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.reference.ReferenceList;
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.util.Blob;
 
 public class Log {
@@ -65,12 +66,12 @@ public class Log {
    * @return Log storage directory. @null in case of error
    */
   public static @Nullable File getLogDir () {
-    File file = new File(UI.getAppContext().getFilesDir(), "logs");
-    if (!file.exists() && !file.mkdir()) {
-      android.util.Log.e(LOG_TAG, "Couldn't open logs directory: " + file.getAbsolutePath());
+    File logsDirectory = new File(UI.getAppContext().getFilesDir(), "logs");
+    if (!FileUtils.createDirectory(logsDirectory)) {
+      android.util.Log.e(LOG_TAG, "Couldn't open logs directory: " + logsDirectory.getAbsolutePath());
       return null;
     }
-    return file;
+    return logsDirectory;
   }
 
   /**

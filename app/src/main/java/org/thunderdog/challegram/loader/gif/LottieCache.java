@@ -229,16 +229,16 @@ public class LottieCache {
 
   public static File getCacheDir (int accountId, int size, boolean optimize, String colorKey) {
     File cacheDir = getCacheDir();
-    if (!cacheDir.exists() && !cacheDir.mkdir())
+    if (!FileUtils.createDirectory(cacheDir))
       return null;
     cacheDir = new File(cacheDir, Integer.toString(accountId));
-    if (!cacheDir.exists() && !cacheDir.mkdir())
+    if (!FileUtils.createDirectory(cacheDir))
       return null;
     String folderName = optimize ? "thumbs" + size : Integer.toString(size);
     if (!StringUtils.isEmpty(colorKey))
       folderName += "_" + colorKey;
     cacheDir = new File(cacheDir, folderName);
-    if (!cacheDir.exists() && !cacheDir.mkdir())
+    if (!FileUtils.createDirectory(cacheDir))
       return null;
     return cacheDir;
   }

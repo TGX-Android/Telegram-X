@@ -30,6 +30,7 @@ import java.lang.ref.Reference;
 import java.util.ArrayList;
 import java.util.List;
 
+import me.vkryl.core.FileUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.reference.ReferenceUtils;
 import me.vkryl.core.util.Blob;
@@ -175,13 +176,13 @@ public class PaintState {
 
     if (size >= 256) {
       int paintId = Settings.instance().getPaintId();
-      File dir = new File(UI.getAppContext().getFilesDir(), "paints");
-      if (dir.exists() || dir.mkdir()) {
+      File paintCacheDirectory = new File(UI.getAppContext().getFilesDir(), "paints");
+      if (FileUtils.createDirectory(paintCacheDirectory)) {
         File file;
         do {
           paintId++;
           Settings.instance().setPaintId(paintId);
-          file = new File(dir, paintId + ".bin");
+          file = new File(paintCacheDirectory, paintId + ".bin");
         } while (file.exists());
 
         b = new Blob(Blob.sizeOf(paintId));

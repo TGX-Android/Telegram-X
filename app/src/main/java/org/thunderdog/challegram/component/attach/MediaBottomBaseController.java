@@ -359,7 +359,7 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
   }
 
   protected final void showError (@StringRes int errorRes, @StringRes int resolveErrorButtonRes, View.OnClickListener onResolveButtonClick, boolean animated) {
-    showError(Lang.getString(errorRes), Lang.getString(resolveErrorButtonRes), onResolveButtonClick, animated);
+    showError(Lang.getString(errorRes), resolveErrorButtonRes != 0 ? Lang.getString(resolveErrorButtonRes) : null, onResolveButtonClick, animated);
   }
 
   protected void hideError () {

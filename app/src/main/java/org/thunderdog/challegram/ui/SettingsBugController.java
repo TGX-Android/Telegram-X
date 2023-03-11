@@ -200,11 +200,8 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
           @Override
           public void run () {
             if (isFocused()) {
-              File file;
-              file = new File(TdlibManager.getLogFilePath(false));
-              setLogSize(file.length(), false);
-              file = new File(TdlibManager.getLogFilePath(true));
-              setLogSize(file.length(), true);
+              checkLogSize(false);
+              checkLogSize(true);
               UI.post(this, 1500);
             }
           }
@@ -228,7 +225,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
 
   private void checkLogSize (boolean old) {
     try {
-      setLogSize(new java.io.File(TdlibManager.getLogFilePath(old)).length(), old);
+      setLogSize(TdlibManager.getLogFileSize(old), old);
     } catch (Throwable ignored) { }
   }
 
@@ -1517,8 +1514,13 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
   }
 
   private void viewTdlibLog (View view, final boolean old) {
-    checkLogSize(old);
-    final int i = old ? 1 : 0;
+    File tdlibLogFile = TdlibManager.getLogFile(old);
+    if (tdlibLogFile == null || !tdlibLogFile.exists() || !tdlibLogFile.isFile()) {
+      UI.showToast("Log does not exists", Toast.LENGTH_SHORT);
+      return;
+    }
+    setLogSize(tdlibLogFile.length(), old);
+    int i = old ? 1 : 0;
     if (logSize[i] == 0) {
       UI.showToast("Log is empty", Toast.LENGTH_SHORT);
       return;
@@ -1550,22 +1552,22 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
     colors.append(OPTION_COLOR_RED);
     strings.append(R.string.Delete);
 
-    showOptions(U.getFileName(TdlibManager.getLogFilePath(old)) + " (" + Strings.buildSize(logSize[i]) + ")", ids.get(), strings.get(), colors.get(), icons.get(), (itemView, id) -> {
+    showOptions(tdlibLogFile.getName() + " (" + Strings.buildSize(logSize[i]) + ")", ids.get(), strings.get(), colors.get(), icons.get(), (itemView, id) -> {
       switch (id) {
         case R.id.btn_tdlib_viewLogs: {
           TextController textController = new TextController(context, tdlib);
-          textController.setArguments(TextController.Arguments.fromFile("TDLib Log", TdlibManager.getLogFilePath(old), "text/plain"));
+          textController.setArguments(TextController.Arguments.fromFile("TDLib Log", tdlibLogFile.getPath(), "text/plain"));
           navigateTo(textController);
           break;
         }
         case R.id.btn_saveFile: {
-          TD.saveToDownloads(new File(TdlibManager.getLogFilePath(old)), "text/plain");
+          TD.saveToDownloads(tdlibLogFile, "text/plain");
           break;
         }
         case R.id.btn_tdlib_shareLogs: {
           int verbosity = Settings.instance().getTdlibLogSettings().getVerbosity(null);
           if (verbosity == 0) {
-            TdlibUi.sendLogs(SettingsBugController.this, old, tdlib == null || tdlib.context().inRecoveryMode());
+            TdlibUi.sendTdlibLogs(SettingsBugController.this, old, tdlib == null || tdlib.context().inRecoveryMode());
           } else {
             context().tooltipManager().builder(view).show(this, tdlib, R.drawable.baseline_warning_24, Lang.getMarkdownString(this, R.string.DebugShareError));
           }
