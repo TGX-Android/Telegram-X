@@ -1938,6 +1938,16 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     String time = item.getSourceDate() != 0 ? Lang.getMessageTimestamp(item.getSourceDate(), TimeUnit.SECONDS) : null;
     switch (mode) {
       case MODE_MESSAGES: {
+        TdApi.Message message = item.getMessage();
+        if (message != null && message.content.getConstructor() == TdApi.MessageText.CONSTRUCTOR) {
+          TdApi.MessageText messageText = (TdApi.MessageText) message.content;
+          if (messageText.webPage != null) {
+            if (!StringUtils.isEmpty(messageText.webPage.author)) {
+              return messageText.webPage.author;
+            }
+            return messageText.webPage.displayUrl;
+          }
+        }
         String authorText = getAuthorText(item);
         if (authorText != null) {
           SpannableStringBuilder b = new SpannableStringBuilder(authorText);
@@ -2264,6 +2274,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         MediaItem newItem = MediaItem.valueOf(context(), tdlib, message);
         if (newItem != null) {
           replaceMedia(index, oldItem, newItem);
+          headerCell.setSubtitle(genSubtitle());
         } else if (stack.getCurrentIndex() == index) {
           forceClose();
         } else {
@@ -8360,31 +8371,20 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     MediaStack stack;
 
     stack = new MediaStack(context.context(), context.tdlib());
-    String subtitle = webPage.displayUrl;
-    TdApi.Message m = msg.getMessage();
-    TdApi.FormattedText text = msg.getText();
 
     ArrayList<MediaItem> items = parsedWebPage.getInstantItems();
     if (items != null) {
       stack.set(parsedWebPage.getInstantPosition(), items);
-      if (!StringUtils.isEmpty(webPage.author)) {
-        subtitle = webPage.author;
-      }
-    } else if (webPage.sticker != null) {
-      stack.set(new MediaItem(context.context(), context.tdlib(), msg.getChatId(), msg.getId(), TD.convertToPhoto(webPage.sticker), true, false).setSourceMessageId(m.chatId, m.id));
-    } else if (webPage.video != null) {
-      stack.set(new MediaItem(context.context(), context.tdlib(), webPage.video, new TdApi.FormattedText("", null), true).setSourceMessageId(m.chatId, m.id));
-    } else if (webPage.animation != null) {
-      stack.set(new MediaItem(context.context(), context.tdlib(), webPage.animation, null).setSourceMessageId(m.chatId, m.id));
-    } else if (webPage.photo != null) {
-      stack.set(new MediaItem(context.context(), context.tdlib(), msg.getChatId(), msg.getId(), webPage.photo).setSourceMessageId(m.chatId, m.id));
     } else {
-      return;
+      MediaItem item = MediaItem.valueOf(context.context(), context.tdlib(), msg.getMessage());
+      if (item == null) {
+        return;
+      }
+      stack.set(item);
     }
 
     Args args = new Args(context, MODE_MESSAGES, stack);
     args.noLoadMore = true;
-    args.customSubtitle = subtitle;
     args.copyLink = webPage.url;
     args.forceThumbs = true;
     args.areOnlyScheduled = msg.isScheduled();
