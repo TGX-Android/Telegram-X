@@ -4234,7 +4234,7 @@ public class TdlibUi extends Handler {
             ListItem.TYPE_CHECKBOX_OPTION,
             R.id.btn_clearChatHistory,
             0,
-            ChatId.isPrivate(chatId) ? Lang.getString(R.string.DeleteSecretChatHistoryForOtherParty, tdlib.cache().userFirstName(ChatId.toUserId(chatId))) : Lang.getString(R.string.DeleteChatHistoryForAllUsers),
+            ChatId.isUserChat(chatId) ? Lang.getStringBold(R.string.DeleteSecretChatHistoryForOtherParty, tdlib.cache().userFirstName(tdlib.chatUserId(chatId))) : Lang.getString(R.string.DeleteChatHistoryForAllUsers),
             R.id.btn_clearChatHistory,
             tdlib.canRevokeChat(chatId) && tdlib.isUserChat(chatId) && tdlib.cache().userDeleted(tdlib.chatUserId(chatId))
           )
@@ -4389,11 +4389,11 @@ public class TdlibUi extends Handler {
               .setIntDelegate((id, result) -> {
                 boolean clearHistory = result.get(R.id.btn_clearChatHistory) == R.id.btn_clearChatHistory;
                 if (clearHistory) {
-                  tdlib.client().send(new TdApi.DeleteChatHistory(chatId, false, false), object -> {
+                  tdlib.client().send(new TdApi.DeleteChatHistory(chatId, true, true), object -> {
                     if (object.getConstructor() == TdApi.Error.CONSTRUCTOR) {
                       Log.e("Cannot clear secret chat history, secretChatId:%d, error: %s", ChatId.toSecretChatId(chatId), TD.toErrorString(object));
                     }
-                    deleter.runWithBool(false);
+                    deleter.runWithBool(true);
                   });
                 } else {
                   deleter.runWithBool(false);
