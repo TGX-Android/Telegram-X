@@ -115,7 +115,9 @@ public class MessageSeenController extends MediaBottomBaseController<Void> imple
 
       @Override
       protected void setUser (ListItem item, int position, UserView userView, boolean isUpdate) {
-        userView.setUser(new TGUser(tdlib, tdlib.chatUser(item.getLongId())));
+        TGUser user = new TGUser(tdlib, tdlib.chatUser(item.getLongId()));
+        user.setActionDateStatus(item.getIntValue(), msg.getMessage());
+        userView.setUser(user);
       }
     };
 

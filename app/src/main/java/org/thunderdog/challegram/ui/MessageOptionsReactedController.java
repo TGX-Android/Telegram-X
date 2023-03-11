@@ -55,21 +55,7 @@ public class MessageOptionsReactedController extends BottomSheetViewController.B
       protected void setUser (ListItem item, int position, UserView userView, boolean isUpdate) {
         final TGReaction reactionObj = tdlib.getReaction(TD.toReactionType(item.getStringValue()));
         TGUser user = new TGUser(tdlib, tdlib.chatUser(item.getLongId()));
-        int reactedDateSeconds = item.getIntValue();
-        if (reactedDateSeconds != 0) {
-          long elapsedSeconds = tdlib.currentTime(TimeUnit.SECONDS) - reactedDateSeconds;
-          // Allow "X minutes ago"
-          boolean allowDuration =
-            elapsedSeconds < TimeUnit.MINUTES.toSeconds(60) &&
-              elapsedSeconds >= -TimeUnit.MINUTES.toSeconds(1);
-          user.setCustomStatus(
-            Lang.getRelativeDate(
-              reactedDateSeconds, TimeUnit.SECONDS,
-              tdlib.currentTimeMillis(), TimeUnit.MILLISECONDS,
-              allowDuration, 60, R.string.reacted, false
-            )
-          );
-        }
+        user.setActionDateStatus(item.getIntValue(), R.string.reacted);
         userView.setUser(user);
         if (item.getStringValue().length() > 0 && reactionObj != null && reactionType == null) {
           userView.setDrawModifier(new ReactionModifier(userView.getComplexReceiver(), 8, reactionObj));

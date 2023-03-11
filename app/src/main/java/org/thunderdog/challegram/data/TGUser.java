@@ -16,6 +16,7 @@ package org.thunderdog.challegram.data;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
@@ -31,6 +32,7 @@ import org.thunderdog.challegram.util.UserProvider;
 import org.thunderdog.challegram.util.text.Text;
 
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.BitwiseUtils;
@@ -158,6 +160,37 @@ public class TGUser implements UserProvider {
       this.role = role;
       updateStatus();
     }
+  }
+
+  public void setActionDateStatus (int actionDateSeconds, TdApi.Message viewedMessage) {
+    int stringRes = R.string.viewed;
+    if (viewedMessage != null) {
+      switch (viewedMessage.content.getConstructor()) {
+        case TdApi.MessageVoiceNote.CONSTRUCTOR:
+          stringRes = R.string.opened_voice;
+          break;
+        case TdApi.MessageVideoNote.CONSTRUCTOR:
+          stringRes = R.string.opened_round;
+          break;
+      }
+    }
+    setActionDateStatus(actionDateSeconds, stringRes);
+  }
+
+  public void setActionDateStatus (int actionDateSeconds, @StringRes int stringRes) {
+    if (actionDateSeconds == 0) {
+      return;
+    }
+    long elapsedSeconds = tdlib.currentTime(TimeUnit.SECONDS) - actionDateSeconds;
+    // Allow "X minutes ago"
+    boolean allowDuration =
+      elapsedSeconds < TimeUnit.MINUTES.toSeconds(60) &&
+      elapsedSeconds >= -TimeUnit.MINUTES.toSeconds(1);
+    setCustomStatus(Lang.getRelativeDate(
+      actionDateSeconds, TimeUnit.SECONDS,
+      tdlib.currentTimeMillis(), TimeUnit.MILLISECONDS,
+      allowDuration, 60, stringRes, false
+    ));
   }
 
   public void setCustomStatus (String statusText) {
