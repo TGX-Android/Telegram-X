@@ -250,6 +250,10 @@ public class TGUser implements UserProvider {
     updateStatus();
   }
 
+  public boolean isChat () {
+    return user == null && chatId != 0;
+  }
+
   public void setUser (@Nullable TdApi.User user, int creatorId) {
     this.user = user;
     if (creatorId != 0 && userId == creatorId) {
