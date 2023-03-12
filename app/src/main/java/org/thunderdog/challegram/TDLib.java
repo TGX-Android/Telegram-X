@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -86,6 +86,10 @@ public final class TDLib {
   }
 
   public static final class Tag {
+    public static void safetyNet (String format, Object... formatArgs) {
+      i("[safetynet]: %s", format(format, formatArgs));
+    }
+
     public static void td_init (String format, Object... formatArgs) {
       logModule("td_init", format, formatArgs);
     }

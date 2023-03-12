@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -299,7 +299,7 @@ public class SearchManager {
     this.lastQuery = null;
     this.lastChatList = null;
     this.scheduledShowHideTop = false;
-    this.canLoadMoreMessages = false;
+    clearMessages();
     setLoadingMessages(false);
     this.isEndReached = false;
     this.isHeavyPartReached = false;
@@ -544,7 +544,7 @@ public class SearchManager {
         if (noSecret && ChatId.isSecret(chat.id)) {
           continue;
         }
-        if (onlyWritable && !tdlib.hasWritePermission(chat)) {
+        if (onlyWritable && !tdlib.canSendBasicMessage(chat)) {
           continue;
         }
         if (noBots && tdlib.isBotChat(chat)) {
@@ -945,8 +945,28 @@ public class SearchManager {
 
   // Messages
 
-  private ArrayList<TGFoundMessage> messages;
-  private boolean canLoadMoreMessages;
+  private static class MessagesList {
+    private final ArrayList<TGFoundMessage> messages;
+    private String nextOffset;
+
+    public MessagesList (int initialCapacity) {
+      this.messages = new ArrayList<>(initialCapacity);
+    }
+
+    public boolean canLoadMore () {
+      return !StringUtils.isEmpty(nextOffset);
+    }
+
+    public boolean isEmpty () {
+      return messages.isEmpty();
+    }
+
+    public int size () {
+      return messages.size();
+    }
+  }
+
+  private MessagesList messageList;
 
   private void setLoadingMessages (boolean areLoading) {
     if (this.isLoadingMessages != areLoading) {
@@ -955,11 +975,10 @@ public class SearchManager {
   }
 
   private void clearMessages () {
-    if (messages != null && messages.size() > 0) {
-      listener.onRemoveMessages(messages.size());
-      messages.clear();
-      /*canLoadMoreMessages = false;
-      setLoadingMessages(false);*/
+    if (messageList != null && !messageList.isEmpty()) {
+      int size = messageList.size();
+      messageList = null;
+      listener.onRemoveMessages(size);
     }
   }
 
@@ -996,16 +1015,11 @@ public class SearchManager {
       if (contextId != currentContextId) {
         return;
       }
-      int offsetDate = 0;
-      long offsetChatId = 0;
-      long offsetMessageId = 0;
+      String offset = null;
       if (isMore) {
-        TdApi.Message lastMessage = messages.get(messages.size() - 1).getMessage();
-        offsetDate = lastMessage.date;
-        offsetChatId = lastMessage.chatId;
-        offsetMessageId = lastMessage.id;
+        offset = messageList.nextOffset;
       }
-      tdlib.client().send(new TdApi.SearchMessages(chatList, query, offsetDate, offsetChatId, offsetMessageId, loadCount, null, 0, 0), new Client.ResultHandler() {
+      tdlib.client().send(new TdApi.SearchMessages(chatList, query, offset, loadCount, null, 0, 0), new Client.ResultHandler() {
         @Override
         public void onResult (TdApi.Object object) {
           if (contextId != currentContextId) {
@@ -1014,41 +1028,42 @@ public class SearchManager {
           if (runnable != null) {
             runnable.cancel();
           }
-          final TGFoundMessage[] foundMessages;
+          final TGFoundMessage[] messages;
+          final String nextOffset;
           switch (object.getConstructor()) {
-            case TdApi.Messages.CONSTRUCTOR: {
-              TdApi.Messages messages = (TdApi.Messages) object;
-              List<TGFoundMessage> foundMessageList = new ArrayList<>(messages.messages.length);
+            case TdApi.FoundMessages.CONSTRUCTOR: {
+              TdApi.FoundMessages foundMessages = (TdApi.FoundMessages) object;
+              List<TGFoundMessage> foundMessageList = new ArrayList<>(foundMessages.messages.length);
               TdApi.Chat chat = null;
-              for (TdApi.Message message : messages.messages) {
+              for (TdApi.Message message : foundMessages.messages) {
                 if (chat == null || chat.id != message.chatId)
                   chat = tdlib.chat(message.chatId);
                 if (listener.filterMessageSearchResultSource(chat)) {
                   foundMessageList.add(new TGFoundMessage(tdlib, chatList, chat, message, query));
                 }
               }
-              if (foundMessageList.isEmpty() && messages.messages.length > 0) {
-                TdApi.Message lastMessage = messages.messages[messages.messages.length - 1];
-                tdlib.client().send(new TdApi.SearchMessages(chatList, query, lastMessage.date, lastMessage.chatId, lastMessage.id, loadCount, null, 0, 0), this);
+              if (foundMessageList.isEmpty() && !StringUtils.isEmpty(foundMessages.nextOffset)) {
+                tdlib.client().send(new TdApi.SearchMessages(chatList, query, foundMessages.nextOffset, loadCount, null, 0, 0), this);
                 return;
               }
-              foundMessages = foundMessageList.toArray(new TGFoundMessage[0]);
+              messages = foundMessageList.toArray(new TGFoundMessage[0]);
+              nextOffset = foundMessages.nextOffset;
               break;
             }
             case TdApi.Error.CONSTRUCTOR: {
               Log.w("SearchMessages returned error, displaying no results: %s", TD.toErrorString(object));
-              foundMessages = null;
+              messages = null;
+              nextOffset = null;
               break;
             }
             default: {
-              Log.unexpectedTdlibResponse(object, TdApi.SearchMessages.class, TdApi.Messages.class, TdApi.Error.class);
+              Log.unexpectedTdlibResponse(object, TdApi.SearchMessages.class, TdApi.FoundMessages.class, TdApi.Error.class);
               return;
             }
           }
           tdlib.ui().post(() -> {
             if (contextId == currentContextId) {
-              canLoadMoreMessages = foundMessages != null && foundMessages.length > 0;
-              setMessages(currentContextId, query, loadCount, foundMessages, isMore);
+              setMessages(currentContextId, query, loadCount, messages, isMore, nextOffset);
             }
           });
         }
@@ -1062,13 +1077,13 @@ public class SearchManager {
     }
   }
 
-  private void setMessages (final int currentContextId, final @Nullable String query, final int loadCount, final TGFoundMessage[] foundMessages, final boolean isMore) {
+  private void setMessages (final int currentContextId, final @Nullable String query, final int loadCount, final TGFoundMessage[] foundMessages, final boolean isMore, final String nextOffset) {
     if (this.contextId != currentContextId || !isLoadingMessages) {
       return;
     }
     setLoadingMessages(false);
 
-    final int oldMessagesCount = this.messages != null ? this.messages.size() : 0;
+    final int oldMessagesCount = this.messageList != null ? this.messageList.size() : 0;
     final int addedMessagesCount = foundMessages != null ? foundMessages.length : 0;
     final int newMessagesCount = isMore ? oldMessagesCount + addedMessagesCount : addedMessagesCount;
 
@@ -1077,7 +1092,6 @@ public class SearchManager {
     }
 
     if (addedMessagesCount == 0) {
-      canLoadMoreMessages = false;
       if (!isMore) {
         clearMessages();
       }
@@ -1085,21 +1099,22 @@ public class SearchManager {
       return;
     }
 
-    if (this.messages == null) {
-      this.messages = new ArrayList<>(foundMessages.length);
+    if (this.messageList == null) {
+      this.messageList = new MessagesList(foundMessages.length);
     }
-    this.messages.ensureCapacity(this.messages.size() + foundMessages.length);
-    Collections.addAll(this.messages, foundMessages);
+    this.messageList.messages.ensureCapacity(this.messageList.messages.size() + foundMessages.length);
+    Collections.addAll(this.messageList.messages, foundMessages);
+    this.messageList.nextOffset = nextOffset;
 
     if (isMore) {
-      listener.onAddMoreMessages(oldMessagesCount, this.messages);
+      listener.onAddMoreMessages(oldMessagesCount, messageList.messages);
     } else if (oldMessagesCount == 0) {
-      listener.onAddMessages(this.messages);
+      listener.onAddMessages(this.messageList.messages);
     } else if (oldMessagesCount == newMessagesCount || (oldMessagesCount > 0 && newMessagesCount > 0)) {
-      listener.onUpdateMessages(oldMessagesCount, this.messages);
+      listener.onUpdateMessages(oldMessagesCount, this.messageList.messages);
     }
 
-    if (!canLoadMoreMessages) {
+    if (StringUtils.isEmpty(nextOffset)) {
       onEndReached();
     }
   }
@@ -1107,17 +1122,13 @@ public class SearchManager {
   private boolean isLoadingMessages;
 
   public void loadMoreMessages () {
-    if (!isLoadingMessages && canLoadMoreMessages && messages != null && !messages.isEmpty()) {
+    if (!isLoadingMessages && messageList != null && !messageList.isEmpty() && !StringUtils.isEmpty(messageList.nextOffset)) {
       searchMessages(contextId, lastChatList, lastQuery, true);
     }
   }
 
-  public @Nullable ArrayList<TGFoundMessage> getFoundMessages () {
-    return messages;
-  }
-
   public int getFoundMessagesCount () {
-    return messages != null ? messages.size() : 0;
+    return messageList != null ? messageList.size() : 0;
   }
 
   private boolean isEndReached;

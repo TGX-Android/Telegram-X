@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -340,7 +340,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         success = false;
       }
       TGMessage msg = view instanceof MessageProvider ? ((MessageProvider) view).getMessage() : null;
-      if (msg != null) {
+      if (msg != null && msg.getChatId() == loader.getChatId()) {
         if (!msg.canBeSaved() && !msg.isSponsored()) {
           hasProtectedContent = true;
         }
@@ -348,21 +348,23 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           headerVisible = true;
         }
         maxDate = Math.max(msg.getDate(), maxDate);
-        if (msg.markAsViewed() || msg.containsUnreadReactions()) {
-          long id = msg.getBiggestId();
-          if (msg.containsUnreadMention() && id > lastViewedMention) {
-            lastViewedMention = id;
+        if (!inSpecialMode()) {
+          if (msg.markAsViewed() || msg.containsUnreadReactions()) {
+            long id = msg.getBiggestId();
+            if (msg.containsUnreadMention() && id > lastViewedMention) {
+              lastViewedMention = id;
+            }
+            if (msg.containsUnreadReactions() && id > lastViewedReaction) {
+              lastViewedReaction = id;
+            }
           }
-          if (msg.containsUnreadReactions() && id > lastViewedReaction) {
-            lastViewedReaction = id;
-          }
-          if (list == null) {
-            list = new LongSet(last - first);
-          } else {
-            list.ensureCapacity(last - first);
-          }
-          msg.getIds(list);
         }
+        if (list == null) {
+          list = new LongSet(last - first);
+        } else {
+          list.ensureCapacity(last - first);
+        }
+        msg.getIds(list);
         if (msg.needRefreshViewCount()) {
           if (refreshMap == null) {
             refreshMap = new LongSparseArray<>();
@@ -402,7 +404,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     setHeaderVisible(headerVisible);
 
     if (list != null) {
-      viewMessagesInternal(loader.getChatId(), loader.getMessageThreadId(), list, true);
+      viewMessagesInternal(loader.getChatId(), loader.getMessageThreadId(), list);
     }
 
     return true;
@@ -1586,11 +1588,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       boolean atBottom = manager.findFirstVisibleItemPosition() == 0;
       TGMessage bottomMessage = adapter.getBottomMessage();
       if (bottomMessage != null && bottomMessage.combineWith(message.getMessage(), true)) {
-        if (atBottom) {
-          if (Config.VIEW_MESSAGES_BEFORE_SCROLL && message.markAsViewed()) {
-            viewMessageInternal(message.getChatId(), messageThreadId, message.getId());
-          }
-        } else {
+        if (!atBottom) {
           bottomMessage.markAsUnread();
         }
         bottomMessage.invalidateContentReceiver(message.getId(), -1);
@@ -1601,9 +1599,6 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       // message.mergeWith(bottomMessage, true);
       if (scrollToBottom) {
         boolean hasScrolled = adapter.addMessage(message, false, scrollToBottom);
-        if (Config.VIEW_MESSAGES_BEFORE_SCROLL && message.markAsViewed()) {
-          viewMessageInternal(message.getChatId(), messageThreadId, message.getId());
-        }
         if (!hasScrolled)
           scrollToBottom(false);
         if (message.isSending()) {
@@ -2056,18 +2051,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   // Reading messages
 
-  boolean viewMessageInternal (final long chatId, final long messageThreadId, final long messageId) {
-    if (allowReadMessages()) {
-      LongSet set = new LongSet(1);
-      set.add(messageId);
-      return viewMessagesInternal(chatId, messageThreadId, set, true);
-    } else {
-      return false;
-    }
-  }
-
-  boolean viewMessagesInternal (final long chatId, final long messageThreadId, final LongSet viewed, boolean append) {
-    if (allowReadMessages() && tdlib.isChatOpen(chatId)) {
+  boolean viewMessagesInternal (final long chatId, final long messageThreadId, final LongSet viewed) {
+    if (allowReadMessages() && !viewed.isEmpty()) {
       final long[] messageIds = viewed.toArray();
       if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
         Log.i(Log.TAG_MESSAGES_LOADER, "Reading %d messages: %s", messageIds.length, Arrays.toString(messageIds));
@@ -2076,11 +2061,21 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         Log.i(Log.TAG_FCM, "Reading %d messages from MessagesManager: %s", messageIds.length, Arrays.toString(messageIds));
       }
 
-      if (BuildConfig.DEBUG && Settings.instance().dontReadMessages()) {
-
+      TdApi.MessageSource source;
+      boolean forceRead = !inSpecialMode();
+      if (controller.isInForceTouchMode() || (BuildConfig.DEBUG && Settings.instance().dontReadMessages())) {
+        source = new TdApi.MessageSourceHistoryPreview();
+        forceRead = false;
+      } else if (isEventLog()) {
+        source = new TdApi.MessageSourceChatEventLog();
+      } else if (isSearchPreview()) {
+        source = new TdApi.MessageSourceSearch();
+      } else if (messageThreadId != 0) {
+        source = new TdApi.MessageSourceMessageThreadHistory();
       } else {
-        tdlib.client().send(new TdApi.ViewMessages(chatId, messageThreadId, messageIds, true), loader);
+        source = new TdApi.MessageSourceChatHistory();
       }
+      tdlib.client().send(new TdApi.ViewMessages(chatId, messageIds, source, forceRead), loader);
       return true;
     }
     return false;
@@ -2187,7 +2182,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   private void scheduleRefresh () {
     cancelRefresh();
-    if (refreshChatId != 0 && refreshMessageIds != null && refreshMessageIds.size() > 0 && allowReadMessages()) {
+    if (refreshChatId != 0 && refreshMessageIds != null && refreshMessageIds.size() > 0) {
       long ms = refreshMaxDate != 0 ? timeTillNextRefresh(tdlib.currentTimeMillis() - TimeUnit.SECONDS.toMillis(refreshMaxDate)) : 60000;
       refreshViewsRunnable = new CancellableRunnable() {
         @Override
@@ -2197,7 +2192,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
             for (int i = 0; i < refreshMessageIds.size(); i++) {
               long chatId = refreshMessageIds.keyAt(i);
               long[] messageIds = refreshMessageIds.valueAt(i);
-              functions.add(new TdApi.ViewMessages(chatId, chatId == refreshChatId ? refreshMessageThreadId : 0, messageIds, false));
+              functions.add(new TdApi.ViewMessages(chatId, messageIds, new TdApi.MessageSourceHistoryPreview(), false));
             }
             tdlib.sendAll(functions.toArray(new TdApi.Function<?>[0]), tdlib.okHandler(), () -> tdlib.ui().post(MessagesManager.this::scheduleRefresh));
           } else {
@@ -2349,7 +2344,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   private boolean allowReadMessages () {
-    return isFocused && !controller.isInForceTouchMode() && !inSpecialMode();
+    return isFocused && !inSpecialMode(); //  && !controller.isInForceTouchMode() && !inSpecialMode();
   }
 
   private void onFocus () {
@@ -2451,17 +2446,16 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
     final long chatId = loader.getChatId();
     final long messageThreadId = loader.getMessageThreadId();
-    final boolean[] isRetry = new boolean[1];
+    final AtomicBoolean isRetry = new AtomicBoolean();
     mentionsHandler = new CancellableResultHandler() {
       @Override
       public void processResult (final TdApi.Object object) {
-        if (object.getConstructor() == TdApi.Messages.CONSTRUCTOR) {
-          TdApi.Messages messages = (TdApi.Messages) object;
-          if (messages.totalCount > 0 && messages.messages.length == 0 && !isRetry[0]) {
-            isRetry[0] = true;
+        if (object.getConstructor() == TdApi.FoundChatMessages.CONSTRUCTOR) {
+          TdApi.FoundChatMessages messages = (TdApi.FoundChatMessages) object;
+          if (messages.totalCount > 0 && messages.messages.length == 0 && isRetry.getAndSet(true)) {
             tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, null, 0, 0, 10, new TdApi.SearchMessagesFilterUnreadMention(), messageThreadId), this);
           } else {
-            setMentions(this, messages, isRetry[0] ? 0 : fromMessageId);
+            setMentions(this, messages, isRetry.get() ? 0 : fromMessageId);
           }
         } else {
           setMentions(this, null, fromMessageId);
@@ -2471,7 +2465,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, null, fromMessageId, -9, 10, new TdApi.SearchMessagesFilterUnreadMention(), messageThreadId), mentionsHandler);
   }
 
-  private void setMentions (final CancellableResultHandler handler, final TdApi.Messages messages, final long fromMessageId) {
+  private void setMentions (final CancellableResultHandler handler, final TdApi.FoundChatMessages messages, final long fromMessageId) {
     tdlib.ui().post(() -> {
       if (handler == mentionsHandler) {
         mentionsHandler = null;
@@ -2499,7 +2493,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   private CancellableResultHandler reactionsHandler;
   private long lastViewedReaction = 0;
 
-  private void setUnreadReactions (final CancellableResultHandler handler, final TdApi.Messages messages, final long fromMessageId) {
+  private void setUnreadReactions (final CancellableResultHandler handler, final TdApi.FoundChatMessages messages, final long fromMessageId) {
     tdlib.ui().post(() -> {
       if (handler == reactionsHandler) {
         reactionsHandler = null;
@@ -2540,17 +2534,16 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
     final long chatId = loader.getChatId();
     final long messageThreadId = loader.getMessageThreadId();
-    final boolean[] isRetry = new boolean[1];
+    final AtomicBoolean isRetry = new AtomicBoolean();
     reactionsHandler = new CancellableResultHandler() {
       @Override
       public void processResult (final TdApi.Object object) {
-        if (object.getConstructor() == TdApi.Messages.CONSTRUCTOR) {
-          TdApi.Messages messages = (TdApi.Messages) object;
-          if (messages.totalCount > 0 && messages.messages.length == 0 && !isRetry[0]) {
-            isRetry[0] = true;
+        if (object.getConstructor() == TdApi.FoundChatMessages.CONSTRUCTOR) {
+          TdApi.FoundChatMessages messages = (TdApi.FoundChatMessages) object;
+          if (messages.totalCount > 0 && messages.messages.length == 0 && !isRetry.getAndSet(true)) {
             tdlib.client().send(new TdApi.SearchChatMessages(chatId, null, null, 0, 0, 10, new TdApi.SearchMessagesFilterUnreadReaction(), messageThreadId), this);
           } else {
-            setUnreadReactions(this, messages, isRetry[0] ? 0 : fromMessageId);
+            setUnreadReactions(this, messages, isRetry.get() ? 0 : fromMessageId);
           }
         } else {
           setUnreadReactions(this, null, fromMessageId);

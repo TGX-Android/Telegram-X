@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -149,7 +149,13 @@ public class MessagesSearchManager {
       final boolean isMore = (fromMessageId != 0) && direction != SEARCH_DIRECTION_AROUND;
       switch (object.getConstructor()) {
         case TdApi.Messages.CONSTRUCTOR: {
-          dispatchMessages(contextId, isMore, direction, (TdApi.Messages) object);
+          TdApi.Messages messages = (TdApi.Messages) object;
+          dispatchMessages(contextId, isMore, direction, messages.messages, messages.totalCount);
+          break;
+        }
+        case TdApi.FoundChatMessages.CONSTRUCTOR: {
+          TdApi.FoundChatMessages foundChatMessages = (TdApi.FoundChatMessages) object;
+          dispatchMessages(contextId, isMore, direction, foundChatMessages.messages, foundChatMessages.totalCount);
           break;
         }
         case TdApi.FoundMessages.CONSTRUCTOR: {
@@ -158,7 +164,7 @@ public class MessagesSearchManager {
         }
         case TdApi.Error.CONSTRUCTOR: {
           UI.showError(object);
-          dispatchMessages(contextId, isMore, direction, null);
+          dispatchMessages(contextId, isMore, direction, null, 0);
           break;
         }
         default: {
@@ -188,9 +194,9 @@ public class MessagesSearchManager {
     }
   }
 
-  private void dispatchMessages (final int contextId, final boolean isMore, final int direction, final TdApi.Messages messages) {
+  private void dispatchMessages (final int contextId, final boolean isMore, final int direction, final TdApi.Message[] messages, int totalCount) {
     if (this.contextId == contextId) {
-      UI.post(() -> parseMessages(contextId, isMore, direction, messages));
+      UI.post(() -> parseMessages(contextId, isMore, direction, messages, totalCount));
     }
   }
 
@@ -231,21 +237,21 @@ public class MessagesSearchManager {
     delegate.showSearchResult(0, currentTotalCount = currentSearchResults.size(), true, true,  new MessageId(messages.messages[0].chatId, messages.messages[0].id));
   }
 
-  private void parseMessages (final int contextId, final boolean isMore, final int direction, final TdApi.Messages messages) {
+  private void parseMessages (final int contextId, final boolean isMore, final int direction, final TdApi.Message[] messages, int totalCount) {
     if (this.contextId != contextId) {
       return;
     }
     flags &= ~FLAG_LOADING;
     if (isMore) {
       TdApi.Message currentMessage = currentSearchResultsArr.get(currentDisplayedMessage);
-      if (messages == null || messages.messages.length == 0) {
+      if (messages == null || messages.length == 0) {
         flags &= ~(direction == SEARCH_DIRECTION_TOP ? FLAG_CAN_LOAD_MORE_TOP: FLAG_CAN_LOAD_MORE_BOTTOM);
         if (currentMessage != null) {
           delegate.showSearchResult(getMessageIndex(currentMessage.id), currentTotalCount, knownIndex(), knownTotalCount(), new MessageId(currentMessage.chatId, currentMessage.id));
         }
         return;
       }
-      addAllMessages(messages.messages, direction);
+      addAllMessages(messages, direction);
       TdApi.Message message = getNextMessage(direction == SEARCH_DIRECTION_TOP);
       if (message == null) {
         flags &= ~(direction == SEARCH_DIRECTION_TOP ? FLAG_CAN_LOAD_MORE_TOP: FLAG_CAN_LOAD_MORE_BOTTOM);
@@ -258,16 +264,16 @@ public class MessagesSearchManager {
       delegate.showSearchResult(getMessageIndex(message.id), currentTotalCount, knownIndex(), knownTotalCount(), new MessageId(message.chatId, message.id));
       return;
     }
-    if (messages == null || messages.messages.length == 0) {
+    if (messages == null || messages.length == 0) {
       delegate.showSearchResult(STATE_NO_RESULTS, 0, true, true, null);
       return;
     }
     if (direction != SEARCH_DIRECTION_AROUND) {
-      newestFoundMessageId = messages.messages[0].id;
+      newestFoundMessageId = messages[0].id;
     }
     currentSearchResults.clear();
-    addAllMessages(messages.messages, direction);
-    if (currentSearchResults.size() < messages.totalCount) {
+    addAllMessages(messages, direction);
+    if (currentSearchResults.size() < totalCount) {
       flags |= FLAG_CAN_LOAD_MORE_TOP;
     }
     if (!currentSearchResultsArr.containsKey(newestFoundMessageId)) {
@@ -276,7 +282,7 @@ public class MessagesSearchManager {
     if (foundTargetMessageId != null) {
       int index = getMessageIndex(foundTargetMessageId.getMessageId());
       if (index != -1) {
-        delegate.showSearchResult(index, currentTotalCount = messages.totalCount, knownIndex(), knownTotalCount(), foundTargetMessageId);
+        delegate.showSearchResult(index, currentTotalCount = totalCount, knownIndex(), knownTotalCount(), foundTargetMessageId);
         currentDisplayedMessage = foundTargetMessageId.getMessageId();
         foundTargetMessageId = null;
         return;
@@ -288,8 +294,8 @@ public class MessagesSearchManager {
         return;
       }
     }
-    currentDisplayedMessage = messages.messages[0].id;
-    delegate.showSearchResult(0, currentTotalCount = messages.totalCount, knownIndex(), knownTotalCount(), new MessageId(messages.messages[0].chatId, messages.messages[0].id));
+    currentDisplayedMessage = messages[0].id;
+    delegate.showSearchResult(0, currentTotalCount = totalCount, knownIndex(), knownTotalCount(), new MessageId(messages[0].chatId, messages[0].id));
   }
 
   public void moveToNext (boolean next) {

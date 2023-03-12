@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,6 +16,7 @@ package org.thunderdog.challegram.data;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
@@ -31,6 +32,7 @@ import org.thunderdog.challegram.util.UserProvider;
 import org.thunderdog.challegram.util.text.Text;
 
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.BitwiseUtils;
@@ -160,6 +162,46 @@ public class TGUser implements UserProvider {
     }
   }
 
+  public static String getActionDateStatus (Tdlib tdlib, int actionDateSeconds, TdApi.Message viewedMessage) {
+    int stringRes = R.string.viewed;
+    if (viewedMessage != null) {
+      switch (viewedMessage.content.getConstructor()) {
+        case TdApi.MessageVoiceNote.CONSTRUCTOR:
+          stringRes = R.string.opened_voice;
+          break;
+        case TdApi.MessageVideoNote.CONSTRUCTOR:
+          stringRes = R.string.opened_round;
+          break;
+      }
+    }
+    return getActionDateStatus(tdlib, actionDateSeconds, stringRes);
+  }
+
+  public static String getActionDateStatus (Tdlib tdlib, int actionDateSeconds, @StringRes int stringRes) {
+    long elapsedSeconds = tdlib.currentTime(TimeUnit.SECONDS) - actionDateSeconds;
+    // Allow "X minutes ago"
+    boolean allowDuration =
+      elapsedSeconds < TimeUnit.MINUTES.toSeconds(60) &&
+      elapsedSeconds >= -TimeUnit.MINUTES.toSeconds(1);
+    return Lang.getRelativeDate(
+      actionDateSeconds, TimeUnit.SECONDS,
+      tdlib.currentTimeMillis(), TimeUnit.MILLISECONDS,
+      allowDuration, 60, stringRes, false
+    );
+  }
+
+  public void setActionDateStatus (int actionDateSeconds, TdApi.Message viewedMessage) {
+    if (actionDateSeconds != 0) {
+      setCustomStatus(getActionDateStatus(tdlib, actionDateSeconds, viewedMessage));
+    }
+  }
+
+  public void setActionDateStatus (int actionDateSeconds, @StringRes int stringRes) {
+    if (actionDateSeconds != 0) {
+      setCustomStatus(getActionDateStatus(tdlib, actionDateSeconds, stringRes));
+    }
+  }
+
   public void setCustomStatus (String statusText) {
     if (!StringUtils.equalsOrBothEmpty(this.statusText, statusText)) {
       if (StringUtils.isEmpty(statusText)) {
@@ -206,6 +248,10 @@ public class TGUser implements UserProvider {
     this.nameFake = Text.needFakeBold(nameText);
     this.nameWidth = U.measureText(nameText, Paints.getTitleBigPaint());
     updateStatus();
+  }
+
+  public boolean isChat () {
+    return user == null && chatId != 0;
   }
 
   public void setUser (@Nullable TdApi.User user, int creatorId) {

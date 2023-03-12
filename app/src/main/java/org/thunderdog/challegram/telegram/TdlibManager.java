@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1741,20 +1741,24 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     reportEvent("PUSH_SERVICE_RECOVERED", event);
   }
 
-  private void reportEvent (String type, Map<String, Object> event) {
-    AppBuildInfo appBuildInfo = Settings.instance().getCurrentBuildInformation();
+  public static Map<String, Object> deviceInformation () {
     Map<String, Object> device = new LinkedHashMap<>();
     device.put("manufacturer", Build.MANUFACTURER);
     device.put("brand", Build.BRAND);
     device.put("model", Build.MODEL);
     device.put("display", Build.DISPLAY);
     device.put("release", Build.VERSION.RELEASE);
+    return device;
+  }
+
+  private void reportEvent (String type, Map<String, Object> event) {
+    AppBuildInfo appBuildInfo = Settings.instance().getCurrentBuildInformation();
 
     event.put("sdk", Build.VERSION.SDK_INT);
     event.put("app", appBuildInfo.toMap());
     event.put("cpu", U.getCpuArchitecture());
     event.put("package_id", UI.getAppContext().getPackageName());
-    event.put("device", device);
+    event.put("device", deviceInformation());
     event.put("fingerprint", U.getApkFingerprint("SHA1"));
     event.put("device_id", Settings.instance().crashDeviceId());
 
@@ -2077,13 +2081,19 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
 
   public static final String LOG_FILE = "tdlib_log.txt";
 
-  public static String getLogFilePath (boolean old) {
-    String fileName = LOG_FILE;
-    return new File(Log.getLogDir(), old ? fileName + ".old" : fileName).getPath();
+  public static long getLogFileSize (boolean old) {
+    File tdlibLog = getLogFile(old);
+    return tdlibLog != null && tdlibLog.exists() && tdlibLog.isFile() ? tdlibLog.length() : 0;
   }
 
+  @Nullable
   public static File getLogFile (boolean old) {
-    return new File(getLogFilePath(old));
+    String fileName = old ? LOG_FILE + ".old" : LOG_FILE;
+    File logDir = Log.getLogDir();
+    if (logDir != null) {
+      return new File(logDir, fileName);
+    }
+    return null;
   }
 
   public static File getLegacyLogFile (boolean old) {
@@ -2240,17 +2250,17 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
         return -1;
     }
 
-    Settings.instance().applyLogSettings();
+    Settings.instance().applyLogSettings(false);
 
     return removedSize;
   }
 
   private static long deleteLogFileImpl (boolean old) {
-    final File logFile = new File(getLogFilePath(old));
-    final long fileSize = logFile.length();
+    final File tdlibLogFile = getLogFile(old);
+    final long fileSize = tdlibLogFile != null ? tdlibLogFile.length() : 0;
     long removedSize;
     if (fileSize > 0) {
-      try (RandomAccessFile f = new RandomAccessFile(logFile, "rw")) {
+      try (RandomAccessFile f = new RandomAccessFile(tdlibLogFile, "rw")) {
         f.setLength(0);
         removedSize = fileSize;
       } catch (IOException e) {
@@ -2279,7 +2289,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     }
     if (file != null) {
       try {
-        if (!(file.exists() ? file.isDirectory() : FileUtils.mkdirs(file)) || !file.canWrite()) {
+        if (!FileUtils.createDirectory(file) || !file.canWrite()) {
           file = null;
         }
       } catch (SecurityException e) {
@@ -2317,21 +2327,21 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   }
 
   public static File getTgvoipDirectory () {
-    File file = new File(UI.getContext().getFilesDir(), "tgvoip");
-    if (!file.exists() && !file.mkdir()) {
-      throw new IllegalStateException("Cannot create working directory: " + file.getPath());
+    File tgvoipDir = new File(UI.getContext().getFilesDir(), "tgvoip");
+    if (!FileUtils.createDirectory(tgvoipDir)) {
+      throw new IllegalStateException("Cannot create working directory: " + tgvoipDir.getPath());
     }
-    return file;
+    return tgvoipDir;
   }
 
   // Lang pack
 
   public static String getLanguageDatabasePath () {
-    File file = new File(UI.getContext().getFilesDir(), "langpack");
-    if (!file.exists() && !file.mkdir()) {
-      throw new IllegalStateException("Cannot create working directory: " + file.getPath());
+    File languageDatabaseDir = new File(UI.getContext().getFilesDir(), "langpack");
+    if (!FileUtils.createDirectory(languageDatabaseDir)) {
+      throw new IllegalStateException("Cannot create working directory: " + languageDatabaseDir.getPath());
     }
-    return new File(file, "main").getPath();
+    return new File(languageDatabaseDir, "main").getPath();
   }
 
   // Wake lock

@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -328,7 +328,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       @Override
       public void onRebuildRequested () {
         runOnUiThreadOptional(() -> {
-          updateInteractionInfo(true);
+          if (isLayoutBuilt()) {
+            updateInteractionInfo(true);
+          }
         });
       }
     });
@@ -452,7 +454,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       loadReply();
     }
 
-    if (isHot() && needHotTimer() && msg.ttlExpiresIn < msg.ttl) {
+    if (isHot() && needHotTimer() && msg.selfDestructIn < msg.selfDestructTime) {
       startHotTimer(false);
     }
 
@@ -4090,50 +4092,44 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return new MessageId(msg.chatId, msg.id, getOtherMessageIds(msg.id));
   }
 
-  public final void getIds (@NonNull LongList ids, long afterMessageId, long beforeMessageId) {
+  protected boolean isFakeMessage () {
+    //noinspection WrongConstant
+    if (msg.content.getConstructor() == TdApiExt.MessageChatEvent.CONSTRUCTOR) {
+      return true;
+    }
+    return isSponsored() || isDemoChat();
+  }
+
+  public final void getIds (@NonNull LongSet ids, long afterMessageId, long beforeMessageId) {
+    if (isFakeMessage()) {
+      return;
+    }
     synchronized (this) {
       if (combinedMessages != null && !combinedMessages.isEmpty()) {
+        ids.ensureCapacity(ids.size() + combinedMessages.size());
         for (TdApi.Message msg : combinedMessages) {
-          if (msg.id > afterMessageId && msg.id < beforeMessageId) {
-            ids.append(msg.id);
+          if (msg.id != 0 && ((afterMessageId == 0 && beforeMessageId == 0) || (msg.id > afterMessageId && msg.id < beforeMessageId))) {
+            ids.add(msg.id);
           }
         }
         return;
       }
     }
-    if (msg.id > afterMessageId && msg.id < beforeMessageId) {
-      ids.append(msg.id);
+    if (msg.id != 0 && ((afterMessageId == 0 && beforeMessageId == 0) || (msg.id > afterMessageId && msg.id < beforeMessageId))) {
+      ids.add(msg.id);
     }
   }
 
   public final void getIds (@NonNull LongSet ids) {
-    synchronized (this) {
-      if (combinedMessages != null && !combinedMessages.isEmpty()) {
-        ids.ensureCapacity(ids.size() + combinedMessages.size());
-        for (TdApi.Message msg : combinedMessages) {
-          ids.add(msg.id);
-        }
-        return;
-      }
-    }
-    ids.add(msg.id);
+    getIds(ids, 0, 0);
   }
 
   public final long[] getIds () {
-    synchronized (this) {
-      if (combinedMessages != null) {
-        long[] ids = new long[combinedMessages.size()];
-        int i = 0;
-        for (TdApi.Message msg : combinedMessages) {
-          ids[i] = msg.id;
-          i++;
-        }
-        Arrays.sort(ids);
-        return ids;
-      } else {
-        return new long[] {msg.id};
-      }
-    }
+    LongSet ids = new LongSet(getMessageCount());
+    getIds(ids, 0, 0);
+    long[] result = ids.toArray();
+    Arrays.sort(result);
+    return result;
   }
 
   public final boolean isMessageThreadRoot () {
@@ -4269,7 +4265,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   @AnyThread
   public final boolean wouldCombineWith (TdApi.Message message) {
-    if (msg.mediaAlbumId == 0 || msg.mediaAlbumId != message.mediaAlbumId || msg.ttl != message.ttl || isHot() || isEventLog() || isSponsored()) {
+    if (msg.mediaAlbumId == 0 || msg.mediaAlbumId != message.mediaAlbumId || msg.selfDestructTime != message.selfDestructTime || isHot() || isEventLog() || isSponsored()) {
       return false;
     }
     int combineMode = TD.getCombineMode(msg);
@@ -4974,7 +4970,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public boolean isHotDone () {
-    return isOutgoing() && msg.ttlExpiresIn < msg.ttl;
+    return isOutgoing() && msg.selfDestructIn < msg.selfDestructTime;
   }
 
   protected boolean needHotTimer () {
@@ -5041,26 +5037,26 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private void checkHotTimer () {
     long now = System.currentTimeMillis();
     long elapsed = now - hotTimerStart;
-    double prevTtl = msg.ttlExpiresIn;
+    double prevTtl = msg.selfDestructIn;
     hotTimerStart = now;
-    msg.ttlExpiresIn = Math.max(0, prevTtl - (double) elapsed / 1000.0d);
-    boolean secondsChanged = Math.round(prevTtl) != Math.round(msg.ttlExpiresIn);
+    msg.selfDestructIn = Math.max(0, prevTtl - (double) elapsed / 1000.0d);
+    boolean secondsChanged = Math.round(prevTtl) != Math.round(msg.selfDestructIn);
     onHotInvalidate(secondsChanged);
     if (hotListener != null) {
       hotListener.onHotInvalidate(secondsChanged);
     }
-    if (needHotTimer() && hotTimerStart != 0 && msg.ttlExpiresIn > 0) {
+    if (needHotTimer() && hotTimerStart != 0 && msg.selfDestructIn > 0) {
       HotHandler hotHandler = getHotHandler();
       hotHandler.sendMessageDelayed(Message.obtain(hotHandler, HotHandler.MSG_HOT_CHECK, this), HOT_CHECK_DELAY);
     }
   }
 
   public float getHotExpiresFactor () {
-    return (float) (msg.ttlExpiresIn / msg.ttl);
+    return (float) (msg.selfDestructIn / msg.selfDestructTime);
   }
 
   public String getHotTimerText () {
-    return TdlibUi.getDuration((int) Math.round(msg.ttlExpiresIn), TimeUnit.SECONDS, false);
+    return TdlibUi.getDuration((int) Math.round(msg.selfDestructIn), TimeUnit.SECONDS, false);
   }
 
   public interface HotListener {
@@ -7356,13 +7352,16 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           return new TGMessageCall(context, msg, nonNull(((TdApi.MessageCall) content)));
         }
         case TdApi.MessagePhoto.CONSTRUCTOR: {
-          return new TGMessageMedia(context, msg, nonNull(((TdApi.MessagePhoto) content).photo), ((TdApi.MessagePhoto) content).caption);
+          TdApi.MessagePhoto messagePhoto = (TdApi.MessagePhoto) content;
+          return new TGMessageMedia(context, msg, messagePhoto, messagePhoto.caption);
         }
         case TdApi.MessageVideo.CONSTRUCTOR: {
-          return new TGMessageMedia(context, msg, nonNull(((TdApi.MessageVideo) content).video), ((TdApi.MessageVideo) content).caption);
+          TdApi.MessageVideo messageVideo = (TdApi.MessageVideo) content;
+          return new TGMessageMedia(context, msg, messageVideo, messageVideo.caption);
         }
         case TdApi.MessageAnimation.CONSTRUCTOR: {
-          return new TGMessageMedia(context, msg, nonNull(((TdApi.MessageAnimation) content).animation), ((TdApi.MessageAnimation) content).caption);
+          TdApi.MessageAnimation messageAnimation = (TdApi.MessageAnimation) content;
+          return new TGMessageMedia(context, msg, messageAnimation, messageAnimation.caption);
         }
         case TdApi.MessageVideoNote.CONSTRUCTOR: {
           return new TGMessageVideo(context, msg, nonNull(((TdApi.MessageVideoNote) content).videoNote), ((TdApi.MessageVideoNote) content).isViewed);
@@ -7412,8 +7411,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         case TdApi.MessageChatSetTheme.CONSTRUCTOR: {
           return new TGMessageService(context, msg, (TdApi.MessageChatSetTheme) content);
         }
-        case TdApi.MessageChatSetTtl.CONSTRUCTOR: {
-          return new TGMessageService(context, msg, (TdApi.MessageChatSetTtl) content);
+        case TdApi.MessageChatSetMessageAutoDeleteTime.CONSTRUCTOR: {
+          return new TGMessageService(context, msg, (TdApi.MessageChatSetMessageAutoDeleteTime) content);
         }
         case TdApi.MessageGameScore.CONSTRUCTOR: {
           return new TGMessageService(context, msg, (TdApi.MessageGameScore) content);
@@ -7702,6 +7701,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public void runOnUiThread (Runnable act) {
     tdlib.ui().post(act);
+  }
+
+  public void runOnUiThread (Runnable act, long delayMillis) {
+    tdlib.ui().postDelayed(act, delayMillis);
   }
 
   public void runOnUiThreadOptional (Runnable act) {
@@ -8188,7 +8191,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     } else {
       tdlib.pickRandomGenericOverlaySticker(sticker -> {
         if (sticker != null) {
-          TGStickerObj genericOverlaySticker = new TGStickerObj(tdlib, sticker, null, sticker.type)
+          TGStickerObj genericOverlaySticker = new TGStickerObj(tdlib, sticker, null, sticker.fullType)
             .setReactionType(tgReaction.type);
           executeOnUiThreadOptional(() ->
             act.runWithData(genericOverlaySticker)

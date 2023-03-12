@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -183,7 +183,7 @@ public class Emoji {
       return false;
     }
     File targetDir = new File(getEmojiPackDirectory(), identifier);
-    if (!targetDir.exists() && !targetDir.mkdirs()) {
+    if (!FileUtils.createDirectory(targetDir)) {
       Log.i("Cannot create emoji dir:%s", identifier);
       return false;
     }
@@ -540,6 +540,9 @@ public class Emoji {
   }
 
   public boolean isSingleEmoji (CharSequence cs, boolean allowCustom) {
+    if (StringUtils.isEmpty(cs)) {
+      return false;
+    }
     if (cs instanceof Spanned) {
       Spanned spanned = (Spanned) cs;
       EmojiSpan[] spans = spanned.getSpans(0, cs.length(), EmojiSpan.class);

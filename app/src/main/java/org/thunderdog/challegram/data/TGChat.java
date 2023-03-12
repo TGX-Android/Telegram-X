@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -278,7 +278,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
       if (viewedMessageId != chat.lastMessage.id || time - lastSyncTime > 60000 * 5 + (1f - MathUtils.clamp((float) TD.getViewCount(chat.lastMessage.interactionInfo) / 1000.0f)) * 1800000 ) {
         lastSyncTime = time;
         viewedMessageId = chat.lastMessage.id;
-        tdlib.client().send(new TdApi.ViewMessages(chat.id, 0, new long[] {viewedMessageId}, false), tdlib.okHandler());
+        tdlib.client().send(new TdApi.ViewMessages(chat.id, new long[] {viewedMessageId}, new TdApi.MessageSourceChatList(), false), tdlib.okHandler());
       }
     }
   }
@@ -940,7 +940,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
           }
         }
       } else {
-        int date = chat.draftMessage != null ? chat.draftMessage.date : chat.lastMessage != null ? chat.lastMessage.date : 0;
+        int date = chat.draftMessage != null && showDraft() ? chat.draftMessage.date : chat.lastMessage != null ? chat.lastMessage.date : 0;
         time = date != 0 ? Lang.timeOrDateShort(date, TimeUnit.SECONDS) : "";
       }
     }

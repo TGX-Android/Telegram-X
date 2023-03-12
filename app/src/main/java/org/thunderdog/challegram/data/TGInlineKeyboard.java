@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1222,7 +1222,7 @@ public class TGInlineKeyboard {
             context.context.tdlib().ui()
               .openUrl(context.context.controller(), open.url, openParameters(currentContextId, view)
               .disableInstantView()
-              .requireOpenPrompt(!open.skipConfirm));
+              .requireOpenPrompt(!open.skipConfirmation));
             break;
           }
           case TdApi.LoginUrlInfoRequestConfirmation.CONSTRUCTOR:

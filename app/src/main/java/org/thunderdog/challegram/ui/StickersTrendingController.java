@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -317,7 +317,7 @@ public class StickersTrendingController extends ViewController<Void> implements 
           MediaStickersAdapter.StickerItem item = adapter.getItem(j);
           if (item.sticker != null) {
             TdApi.Sticker sticker = stickerSet.stickers[stickerIndex];
-            item.sticker.set(tdlib, sticker, sticker.type, stickerSet.emojis[stickerIndex].emojis);
+            item.sticker.set(tdlib, sticker, sticker.fullType, stickerSet.emojis[stickerIndex].emojis);
           }
 
           View view = recyclerView != null ? recyclerView.getLayoutManager().findViewByPosition(j) : null;

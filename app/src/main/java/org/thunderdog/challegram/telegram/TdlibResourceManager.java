@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -88,8 +88,8 @@ public class TdlibResourceManager {
       tdlib.openChat(chatId, null, () -> {
         tdlib.client().send(new TdApi.SearchChatMessages(chatId, query, null, 0, 0, 1, new TdApi.SearchMessagesFilterDocument(), 0), result -> {
           switch (result.getConstructor()) {
-            case TdApi.Messages.CONSTRUCTOR: {
-              TdApi.Messages messages = (TdApi.Messages) result;
+            case TdApi.FoundChatMessages.CONSTRUCTOR: {
+              TdApi.FoundChatMessages messages = (TdApi.FoundChatMessages) result;
               if (messages.messages.length > 0 && TimeUnit.SECONDS.toMillis(messages.messages[0].date) > afterDateMs) {
                 onDone.runWithData(messages.messages[0]);
               } else {

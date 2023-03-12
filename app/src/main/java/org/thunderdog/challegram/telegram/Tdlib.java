@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,6 +14,7 @@
  */
 package org.thunderdog.challegram.telegram;
 
+import android.content.Context;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Looper;
@@ -92,6 +93,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import me.vkryl.core.ArrayUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.FileUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
@@ -103,7 +105,6 @@ import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.lambda.RunnableInt;
 import me.vkryl.core.lambda.RunnableLong;
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.util.ConditionalExecutor;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.ChatPosition;
@@ -447,7 +448,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private int groupMaxSize = 200;
   private int pinnedChatsMaxCount = 5, pinnedArchivedChatsMaxCount = 100;
   private int favoriteStickersMaxCount = 5;
-  private long themedEmojiStatusesStickerSetId;
   private double emojiesAnimatedZoom = .75f;
   private boolean youtubePipDisabled, qrLoginCamera, dialogFiltersTooltip, dialogFiltersEnabled;
   private String qrLoginCode;
@@ -510,8 +510,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   private int[] favoriteStickerIds;
   private int unreadTrendingStickerSetsCount;
-
-  private int aggressiveAntiSpamSupergroupMinimumMemberCount = 200;
 
   private @Mode int instanceMode;
   private boolean instancePaused;
@@ -1356,7 +1354,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   private static boolean checkVersion (int version, int checkVersion, boolean isTest) {
-    return version < checkVersion && (checkVersion <= BuildConfig.ORIGINAL_VERSION_CODE || isTest || BuildConfig.DEBUG);
+    return version < checkVersion && (checkVersion <= BuildConfig.ORIGINAL_VERSION_CODE || isTest || BuildConfig.DEBUG) && checkVersion < Integer.MAX_VALUE;
   }
 
   private static int getStatus (TdApi.AuthorizationState state) {
@@ -1425,10 +1423,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         makeUpdateText(0, 24, 2, APP_RELEASE_VERSION_2021_NOVEMBER, "https://telegra.ph/Telegram-X-11-08", functions, updates, false);
       }
       if (checkVersion(prevVersion, APP_RELEASE_VERSION_2022_JUNE, test)) {
-        makeUpdateText(0, 24, 9, APP_RELEASE_VERSION_2022_JUNE, "https://telegra.ph/Telegram-X-06-11", functions, updates, true);
+        makeUpdateText(0, 24, 9, APP_RELEASE_VERSION_2022_JUNE, "https://telegra.ph/Telegram-X-06-11", functions, updates, false);
       }
       if (checkVersion(prevVersion, APP_RELEASE_VERSION_2022_OCTOBER, test)) {
-        makeUpdateText(0, 25, 1, APP_RELEASE_VERSION_2022_OCTOBER, "https://telegra.ph/Telegram-X-10-06", functions, updates, true);
+        makeUpdateText(0, 25, 1, APP_RELEASE_VERSION_2022_OCTOBER, "https://telegra.ph/Telegram-X-10-06", functions, updates, false);
+      }
+      if (checkVersion(prevVersion, APP_RELEASE_VERSION_2023_MARCH, test)) {
+        makeUpdateText(0, 25, 6, APP_RELEASE_VERSION_2023_MARCH, "https://telegra.ph/Telegram-X-03-08", functions, updates, true);
       }
       if (!updates.isEmpty()) {
         incrementReferenceCount(REFERENCE_TYPE_JOB); // starting task
@@ -1483,6 +1484,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private static final int APP_RELEASE_VERSION_2022_JUNE = 1530; // Going open source. 16 June, 2022: https://telegra.ph/Telegram-X-06-11
 
   private static final int APP_RELEASE_VERSION_2022_OCTOBER = 1560; // Reactions. 7 October, 2022: https://telegra.ph/Telegram-X-10-06
+
+  private static final int APP_RELEASE_VERSION_2023_MARCH = 1605; // Dozens of stuff. 8 March, 2023: https://telegra.ph/Telegram-X-03-08
 
   // Startup
 
@@ -1751,7 +1754,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     getAllChats(chatList, chat -> {
       boolean read = false;
       if (chat.unreadCount != 0 && chat.lastMessage != null) {
-        readMessages(chat.id, 0, new long[] {chat.lastMessage.id});
+        readMessages(chat.id, new long[] {chat.lastMessage.id}, new TdApi.MessageSourceChatList());
         read = true;
       }
       if (chat.isMarkedAsUnread) {
@@ -2623,13 +2626,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return false;
   }
 
-  public boolean hasWritePermission (long chatId) {
+  /*public boolean hasWritePermission (long chatId) {
     return chatId != 0 && hasWritePermission(chat(chatId));
   }
 
   public boolean hasWritePermission (TdApi.Chat chat) {
     return getRestrictionStatus(chat, R.id.right_sendMessages) == null;
-  }
+  }*/
 
   public @Nullable TdApi.SecretChat chatToSecretChat (long chatId) {
     int secretChatId = ChatId.toSecretChatId(chatId);
@@ -3235,7 +3238,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public int chatTTL (long chatId) {
     TdApi.Chat chat = chat(chatId);
-    return chat != null ? chat.messageTtl : 0;
+    return chat != null ? chat.messageAutoDeleteTime : 0;
   }
 
   public boolean chatSupportsRoundVideos (long chatId) {
@@ -3411,14 +3414,28 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return false;
   }
 
-  public void markChatAsRead (long chatId, long messageThreadId, @Nullable Runnable after) {
+  public void markChatAsRead (long chatId, TdApi.MessageSource source, boolean allowRemoveMarkedAsUnrad, @Nullable Runnable after) {
     TdApi.Chat chat = chat(chatId);
     if (chat != null) {
-      if (messageThreadId == 0 && chat.isMarkedAsUnread) {
-        client().send(new TdApi.ToggleChatIsMarkedAsUnread(chat.id, false), okHandler(after));
+      if (chat.isMarkedAsUnread && allowRemoveMarkedAsUnrad) {
+        switch (source.getConstructor()) {
+          case TdApi.MessageSourceChatHistory.CONSTRUCTOR:
+          case TdApi.MessageSourceHistoryPreview.CONSTRUCTOR:
+          case TdApi.MessageSourceChatList.CONSTRUCTOR:
+          case TdApi.MessageSourceSearch.CONSTRUCTOR:
+          case TdApi.MessageSourceChatEventLog.CONSTRUCTOR:
+          case TdApi.MessageSourceNotification.CONSTRUCTOR:
+          case TdApi.MessageSourceOther.CONSTRUCTOR:
+            client().send(new TdApi.ToggleChatIsMarkedAsUnread(chat.id, false), okHandler(after));
+            break;
+          case TdApi.MessageSourceMessageThreadHistory.CONSTRUCTOR:
+          case TdApi.MessageSourceForumTopicHistory.CONSTRUCTOR:
+            // No need to remove marked as unread mark
+            break;
+        }
       }
-      if (!hasPasscode(chat) && chat.lastMessage != null && (messageThreadId != 0 || chat.unreadCount > 0)) {
-        client().send(new TdApi.ViewMessages(chatId, messageThreadId, new long[] {chat.lastMessage.id}, true), okHandler(after));
+      if (!hasPasscode(chat) && chat.lastMessage != null) {
+        client().send(new TdApi.ViewMessages(chatId, new long[] {chat.lastMessage.id}, source, true), okHandler(after));
       }
     }
   }
@@ -4049,7 +4066,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       return false;
     synchronized (dataLock) {
       if (diceEmoji != null) {
-        return ArrayUtils.contains(diceEmoji, emoji);
+        return ArrayUtils.contains(diceEmoji, text);
       }
     }
     return false;
@@ -4129,7 +4146,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         if (timeSeconds >= openTime) {
           final long chatId = openedChatsTimes.keyAt(i);
           TdApi.Chat chat = chat(chatId);
-          if (hasWritePermission(chat) && (ChatId.isSecret(chatId) || ui().shouldSendScreenshotHint(chat))) {
+          if (/*hasWritePermission(chat) && */(ChatId.isSecret(chatId) || ui().shouldSendScreenshotHint(chat))) {
             sendScreenshotMessage(chatId);
           }
         }
@@ -4194,7 +4211,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public void sendMessage (long chatId, long messageThreadId, long replyToMessageId, TdApi.MessageSendOptions options, TdApi.Animation animation) {
-    TdApi.InputMessageContent inputMessageContent = new TdApi.InputMessageAnimation(new TdApi.InputFileId(animation.animation.id), null, null, animation.duration, animation.width, animation.height, null);
+    TdApi.InputMessageContent inputMessageContent = new TdApi.InputMessageAnimation(new TdApi.InputFileId(animation.animation.id), null, null, animation.duration, animation.width, animation.height, null, false);
     sendMessage(chatId, messageThreadId, replyToMessageId, options, inputMessageContent);
   }
 
@@ -4459,8 +4476,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     client().send(new TdApi.SendBotStartMessage(botUserId, chatId, parameter), messageHandler());
   }
 
-  public void setChatMessageTtlSetting (long chatId, int ttl) {
-    client().send(new TdApi.SetChatMessageTtl(chatId, ttl), okHandler());
+  public void setChatMessageAutoDeleteTime (long chatId, int ttl) {
+    client().send(new TdApi.SetChatMessageAutoDeleteTime(chatId, ttl), okHandler());
   }
 
   public void getPrimaryChatInviteLink (long chatId, Client.ResultHandler handler) {
@@ -5072,11 +5089,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     client().send(new TdApi.DeleteMessages(chatId, messageIds, revoke), okHandler);
   }
 
-  public void readMessages (long chatId, long messageThreadId, long[] messageIds) {
+  public void readMessages (long chatId, long[] messageIds, TdApi.MessageSource source) {
     if (Log.isEnabled(Log.TAG_FCM)) {
       Log.i(Log.TAG_FCM, "Reading messages chatId:%d messageIds:%s", Log.generateSingleLineException(2), chatId, Arrays.toString(messageIds));
     }
-    client().send(new TdApi.ViewMessages(chatId, messageThreadId, messageIds, true), okHandler);
+    client().send(new TdApi.ViewMessages(chatId, messageIds, source, true), okHandler);
   }
 
   // TDLib config
@@ -5285,7 +5302,33 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return deviceToken == null ? Settings.instance().getDeviceToken() : deviceToken;
   }
 
-  private void checkConnectionParams (Client client, boolean force) {
+  public String safetyNetApiKey () {
+    // TODO: server config
+    return BuildConfig.SAFETYNET_API_KEY;
+  }
+
+  public TdApi.PhoneNumberAuthenticationSettings phoneNumberAuthenticationSettings (Context context) {
+    TdApi.FirebaseAuthenticationSettings firebaseAuthenticationSettings = null;
+    String safetyNetApiKey = safetyNetApiKey();
+    if (StringUtils.isEmpty(safetyNetApiKey)) {
+      TDLib.Tag.safetyNet("Ignoring Firebase authentication, because SafetyNet API_KEY is unset");
+    } else if (Config.REQUIRE_FIREBASE_SERVICES_FOR_SAFETYNET && !U.isGooglePlayServicesAvailable(context)) {
+      TDLib.Tag.safetyNet("Ignoring Firebase authentication, because Firebase services are unavailable");
+    } else {
+      TDLib.Tag.safetyNet("Enabling Firebase authentication for the next request");
+      firebaseAuthenticationSettings = new TdApi.FirebaseAuthenticationSettingsAndroid();
+    }
+    return new TdApi.PhoneNumberAuthenticationSettings(
+      false, // TODO transparently request permission & enter flash call
+      true,
+      false, // TODO check if passed phone number is inserted in the current phone
+      false, // TODO for faster login when SMS method is chosen
+      firebaseAuthenticationSettings,
+      Settings.instance().getAuthenticationTokens()
+    );
+  }
+
+  private Map<String, Object> newConnectionParams () {
     Map<String, Object> params = new LinkedHashMap<>();
     if (isServiceInstance()) {
       params.put("device_token", "HIDDEN");
@@ -5323,7 +5366,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           break;
         }
         case TdlibManager.TokenState.NONE:
-          return;
+          break;
         default:
           throw new IllegalStateException(Integer.toString(state));
       }
@@ -5355,6 +5398,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       pr.put("id", BuildConfig.PULL_REQUEST_ID[i]);
       pr.put("commit", BuildConfig.PULL_REQUEST_COMMIT[i]);
       pr.put("date", BuildConfig.PULL_REQUEST_COMMIT_DATE[i]);
+      //noinspection ConstantConditions
       if (pullRequests == null) {
         pullRequests = new ArrayList<>();
       }
@@ -5366,6 +5410,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
     params.put("git", git);
 
+    return params;
+  }
+
+  private void checkConnectionParams (Client client, boolean force) {
+    Map<String, Object> params = newConnectionParams();
     String connectionParams = JSON.stringify(JSON.toObject(params));
     if (connectionParams != null && (force || !StringUtils.equalsOrBothEmpty(lastReportedConnectionParams, connectionParams))) {
       this.lastReportedConnectionParams = connectionParams;
@@ -6105,10 +6154,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return favoriteStickersMaxCount;
   }
 
-  public boolean isThemedEmojiStatusesStickerSet (long stickerSetId) {
-    return stickerSetId != 0 && this.themedEmojiStatusesStickerSetId == stickerSetId;
-  }
-
   public double emojiesAnimatedZoom () {
     return emojiesAnimatedZoom;
   }
@@ -6360,10 +6405,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public int maxMessageTextLength () {
     return maxMessageTextLength;
-  }
-
-  public int aggressiveAntiSpamSupergroupMinimumMemberCount () {
-    return aggressiveAntiSpamSupergroupMinimumMemberCount;
   }
 
   public long telegramAntiSpamUserId () {
@@ -6748,7 +6789,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   private void updateNewMessage (TdApi.UpdateNewMessage update, boolean isUpdate) {
-    if (update.message.sendingState instanceof TdApi.MessageSendingStatePending && update.message.content.getConstructor() != TdApi.MessageChatSetTtl.CONSTRUCTOR) {
+    if (update.message.sendingState instanceof TdApi.MessageSendingStatePending && update.message.content.getConstructor() != TdApi.MessageChatSetMessageAutoDeleteTime.CONSTRUCTOR) {
       addRemoveSendingMessage(update.message.chatId, update.message.id, true);
       if (isUpdate)
         return;
@@ -7452,15 +7493,15 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   @TdlibThread
-  private void updateChatMessageTtlSetting (TdApi.UpdateChatMessageTtl update) {
+  private void updateChatMessageAutoDeleteTime (TdApi.UpdateChatMessageAutoDeleteTime update) {
     synchronized (dataLock) {
       final TdApi.Chat chat = chats.get(update.chatId);
       if (TdlibUtils.assertChat(update.chatId, chat, update)) {
         return;
       }
-      chat.messageTtl = update.messageTtl;
+      chat.messageAutoDeleteTime = update.messageAutoDeleteTime;
     }
-    listeners.updateChatMessageTtlSetting(update);
+    listeners.updateChatMessageAutoDeleteTime(update);
   }
 
   @TdlibThread
@@ -7507,6 +7548,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
 
     listeners.updateChatIsMarkedAsUnread(update);
+  }
+
+  @TdlibThread
+  private void updateChatIsTranslatable (TdApi.UpdateChatIsTranslatable update) {
+    synchronized (dataLock) {
+      final TdApi.Chat chat = chats.get(update.chatId);
+      if (TdlibUtils.assertChat(update.chatId, chat, update)) {
+        return;
+      }
+      chat.isTranslatable = update.isTranslatable;
+    }
+
+    listeners.updateChatIsTranslatable(update);
   }
 
   @TdlibThread
@@ -7819,6 +7873,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     ui().sendMessage(ui().obtainMessage(MSG_ACTION_DISPATCH_TERMS_OF_SERVICE, update));
   }
 
+  @TdlibThread
+  private void updateAutosaveSettings (TdApi.UpdateAutosaveSettings update) {
+    // TODO?
+  }
+
   private final List<TdApi.SuggestedAction> suggestedActions = new ArrayList<>();
 
   @TdlibThread
@@ -7998,9 +8057,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           case "message_text_length_max":
             this.maxMessageTextLength = (int) longValue;
             break;
-          case "aggressive_anti_spam_supergroup_member_count_min":
-            this.aggressiveAntiSpamSupergroupMinimumMemberCount = (int) longValue;
-            break;
           case "anti_spam_bot_user_id":
             this.antiSpamBotUserId = longValue;
             break;
@@ -8015,9 +8071,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
             break;
           case "favorite_stickers_limit":
             this.favoriteStickersMaxCount = (int) longValue;
-            break;
-          case "themed_emoji_statuses_sticker_set_id":
-            this.themedEmojiStatusesStickerSetId = longValue;
             break;
         }
 
@@ -8497,8 +8550,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         updateChatOnlineMemberCount((TdApi.UpdateChatOnlineMemberCount) update);
         break;
       }
-      case TdApi.UpdateChatMessageTtl.CONSTRUCTOR: {
-        updateChatMessageTtlSetting((TdApi.UpdateChatMessageTtl) update);
+      case TdApi.UpdateChatMessageAutoDeleteTime.CONSTRUCTOR: {
+        updateChatMessageAutoDeleteTime((TdApi.UpdateChatMessageAutoDeleteTime) update);
         break;
       }
       case TdApi.UpdateChatFilters.CONSTRUCTOR: {
@@ -8511,6 +8564,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
       case TdApi.UpdateChatIsMarkedAsUnread.CONSTRUCTOR: {
         updateChatIsMarkedAsUnread((TdApi.UpdateChatIsMarkedAsUnread) update);
+        break;
+      }
+      case TdApi.UpdateChatIsTranslatable.CONSTRUCTOR: {
+        updateChatIsTranslatable((TdApi.UpdateChatIsTranslatable) update);
         break;
       }
       case TdApi.UpdateChatIsBlocked.CONSTRUCTOR: {
@@ -8769,6 +8826,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         updateTermsOfService((TdApi.UpdateTermsOfService) update);
         break;
       }
+      case TdApi.UpdateAutosaveSettings.CONSTRUCTOR: {
+        updateAutosaveSettings((TdApi.UpdateAutosaveSettings) update);
+        break;
+      }
       case TdApi.UpdateSuggestedActions.CONSTRUCTOR: {
         updateSuggestedActions((TdApi.UpdateSuggestedActions) update);
         break;
@@ -8975,6 +9036,17 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       @Override
       public void onResult (TdApi.Object result) {
         switch (result.getConstructor()) {
+          case TdApi.FoundChatMessages.CONSTRUCTOR: {
+            TdApi.FoundChatMessages fetchedMessages = (TdApi.FoundChatMessages) result;
+            Collections.addAll(messages, fetchedMessages.messages);
+            if (fetchedMessages.nextFromMessageId == 0) {
+              callback.runWithData(messages);
+            } else {
+              ((TdApi.SearchChatMessages) function).fromMessageId = fetchedMessages.nextFromMessageId;
+              client().send(function, this);
+            }
+            break;
+          }
           case TdApi.Messages.CONSTRUCTOR: {
             TdApi.Messages fetchedMessages = (TdApi.Messages) result;
             if (fetchedMessages.messages.length == 0) {
@@ -8982,18 +9054,15 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
             } else {
               Collections.addAll(messages, fetchedMessages.messages);
               long fromMessageId = messages.get(messages.size() - 1).id;
-              if (needFilter) {
-                ((TdApi.SearchChatMessages) function).fromMessageId = fromMessageId;
-              } else {
-                ((TdApi.GetChatHistory) function).fromMessageId = fromMessageId;
-              }
+              ((TdApi.GetChatHistory) function).fromMessageId = fromMessageId;
               client().send(function, this);
             }
             break;
           }
           case TdApi.Error.CONSTRUCTOR: {
-            if (messages.isEmpty())
+            if (messages.isEmpty()) {
               UI.showError(result);
+            }
             callback.runWithData(messages);
             break;
           }
@@ -9318,8 +9387,39 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return ChatId.isBasicGroup(chatId) && TD.isCreator(chatStatus(chatId));
   }
 
+  public boolean canChangeMessageAutoDeleteTime (long chatId) {
+    // Changes the message auto-delete or self-destruct (for secret chats) time in a chat.
+    // Requires changeInfo administrator right in basic groups, supergroups and channels
+    // Message auto-delete time can't be changed in a chat with the current user (Saved Messages) and the chat 777000 (Telegram).
+    if (chatId == 0 || isSelfChat(chatId) || chatUserId(chatId) == TdConstants.TELEGRAM_ACCOUNT_ID) {
+      return false;
+    }
+    TdApi.ChatMemberStatus status = chatStatus(chatId);
+    TdApi.Chat chat = chat(chatId);
+    if (status != null) {
+      switch (status.getConstructor()) {
+        case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
+          return true;
+        case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
+          return ((TdApi.ChatMemberStatusAdministrator) status).rights.canChangeInfo;
+        case TdApi.ChatMemberStatusMember.CONSTRUCTOR:
+          break;
+        case TdApi.ChatMemberStatusRestricted.CONSTRUCTOR:
+          if (!((TdApi.ChatMemberStatusRestricted) status).isMember || !((TdApi.ChatMemberStatusRestricted) status).permissions.canChangeInfo) {
+            return false;
+          }
+          break;
+        case TdApi.ChatMemberStatusBanned.CONSTRUCTOR:
+        case TdApi.ChatMemberStatusLeft.CONSTRUCTOR:
+          return false;
+      }
+      return chat != null && chat.permissions.canChangeInfo;
+    }
+    return chat != null && chat.permissions.canSendBasicMessages;
+  }
+
   public boolean canPinMessages (TdApi.Chat chat) {
-    if (chat == null || chat.id == 0 || !hasWritePermission(chat) || ChatId.isSecret(chat.id))
+    if (chat == null || chat.id == 0 || ChatId.isSecret(chat.id))
       return false;
     if (isUserChat(chat.id))
       return true;
@@ -9371,7 +9471,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
     return member.inviterUserId == myUserId();
   }
-
   public static final int RESTRICTION_STATUS_EVERYONE = 0;
   public static final int RESTRICTION_STATUS_RESTRICTED = 1;
   public static final int RESTRICTION_STATUS_BANNED = 2;
@@ -9447,7 +9546,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         }
         if (isUnavailable)
           return new RestrictionStatus(chat.id, RESTRICTION_STATUS_UNAVAILABLE, 0);
-        if (rightId == R.id.right_sendVoiceVideo) {
+        if (rightId == RightId.SEND_VOICE_NOTES || rightId == RightId.SEND_VIDEO_NOTES) {
           TdApi.UserFullInfo userFullInfo = cache().userFull(userId);
           if (userFullInfo != null && userFullInfo.hasRestrictedVoiceAndVideoNoteMessages) {
             return new RestrictionStatus(chat.id, RESTRICTION_STATUS_RESTRICTED, 0);
@@ -9468,7 +9567,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
             }
             return null;
           }
-          if (rightId == R.id.right_sendVoiceVideo) {
+          if (rightId == RightId.SEND_VOICE_NOTES || rightId == RightId.SEND_VIDEO_NOTES) {
             TdApi.UserFullInfo userFullInfo = cache().userFull(secretChat.userId);
             if (userFullInfo != null && userFullInfo.hasRestrictedVoiceAndVideoNoteMessages) {
               return new RestrictionStatus(chat.id, RESTRICTION_STATUS_RESTRICTED, 0);
@@ -9492,99 +9591,278 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         case TdApi.MessageAnimation.CONSTRUCTOR:
           return getGifRestrictionText(chat);
         case TdApi.MessageSticker.CONSTRUCTOR:
+        case TdApi.MessageDice.CONSTRUCTOR:
           return getStickerRestrictionText(chat);
         case TdApi.MessagePoll.CONSTRUCTOR:
-          return getPollRestrictionText(chat);
+          return getDefaultRestrictionText(chat, RightId.SEND_POLLS);
         case TdApi.MessageAudio.CONSTRUCTOR:
+          return getDefaultRestrictionText(chat, RightId.SEND_AUDIO);
         case TdApi.MessageDocument.CONSTRUCTOR:
+          return getDefaultRestrictionText(chat, RightId.SEND_DOCS);
         case TdApi.MessagePhoto.CONSTRUCTOR:
+        case TdApi.MessageExpiredPhoto.CONSTRUCTOR:
+          return getDefaultRestrictionText(chat, RightId.SEND_PHOTOS);
         case TdApi.MessageVideo.CONSTRUCTOR:
+        case TdApi.MessageExpiredVideo.CONSTRUCTOR:
+          return getDefaultRestrictionText(chat, RightId.SEND_VIDEOS);
         case TdApi.MessageVideoNote.CONSTRUCTOR:
+          return getDefaultRestrictionText(chat, RightId.SEND_VIDEO_NOTES);
         case TdApi.MessageVoiceNote.CONSTRUCTOR:
-          return getMediaRestrictionText(chat);
+          return getDefaultRestrictionText(chat, RightId.SEND_VOICE_NOTES);
+        // RightId.SEND_BASIC_MESSAGES
+        case TdApi.MessageText.CONSTRUCTOR:
+        case TdApi.MessageAnimatedEmoji.CONSTRUCTOR:
+        case TdApi.MessageVenue.CONSTRUCTOR:
+        case TdApi.MessageLocation.CONSTRUCTOR:
+        case TdApi.MessageProximityAlertTriggered.CONSTRUCTOR:
+        case TdApi.MessageContact.CONSTRUCTOR:
+        case TdApi.MessageInvoice.CONSTRUCTOR:
+        case TdApi.MessagePaymentSuccessful.CONSTRUCTOR:
+        case TdApi.MessagePaymentSuccessfulBot.CONSTRUCTOR:
+          return getBasicMessageRestrictionText(chat);
+
+        case TdApi.MessageGame.CONSTRUCTOR:
+        case TdApi.MessageGameScore.CONSTRUCTOR:
+          return getGameRestrictionText(chat);
+
+        // None of these
+        case TdApi.MessageCall.CONSTRUCTOR:
+        case TdApi.MessageBasicGroupChatCreate.CONSTRUCTOR:
+        case TdApi.MessageBotWriteAccessAllowed.CONSTRUCTOR:
+        case TdApi.MessageChatAddMembers.CONSTRUCTOR:
+        case TdApi.MessageChatChangePhoto.CONSTRUCTOR:
+        case TdApi.MessageChatChangeTitle.CONSTRUCTOR:
+        case TdApi.MessageChatDeleteMember.CONSTRUCTOR:
+        case TdApi.MessageChatDeletePhoto.CONSTRUCTOR:
+        case TdApi.MessageChatJoinByLink.CONSTRUCTOR:
+        case TdApi.MessageChatJoinByRequest.CONSTRUCTOR:
+        case TdApi.MessageChatSetMessageAutoDeleteTime.CONSTRUCTOR:
+        case TdApi.MessageChatSetTheme.CONSTRUCTOR:
+        case TdApi.MessageChatShared.CONSTRUCTOR:
+        case TdApi.MessageChatUpgradeFrom.CONSTRUCTOR:
+        case TdApi.MessageChatUpgradeTo.CONSTRUCTOR:
+        case TdApi.MessageContactRegistered.CONSTRUCTOR:
+        case TdApi.MessageCustomServiceAction.CONSTRUCTOR:
+        case TdApi.MessageForumTopicCreated.CONSTRUCTOR:
+        case TdApi.MessageForumTopicEdited.CONSTRUCTOR:
+        case TdApi.MessageForumTopicIsClosedToggled.CONSTRUCTOR:
+        case TdApi.MessageForumTopicIsHiddenToggled.CONSTRUCTOR:
+        case TdApi.MessageGiftedPremium.CONSTRUCTOR:
+        case TdApi.MessageInviteVideoChatParticipants.CONSTRUCTOR:
+        case TdApi.MessagePassportDataReceived.CONSTRUCTOR:
+        case TdApi.MessagePassportDataSent.CONSTRUCTOR:
+        case TdApi.MessagePinMessage.CONSTRUCTOR:
+        case TdApi.MessageScreenshotTaken.CONSTRUCTOR:
+        case TdApi.MessageSuggestProfilePhoto.CONSTRUCTOR:
+        case TdApi.MessageSupergroupChatCreate.CONSTRUCTOR:
+        case TdApi.MessageUnsupported.CONSTRUCTOR:
+        case TdApi.MessageUserShared.CONSTRUCTOR:
+        case TdApi.MessageVideoChatEnded.CONSTRUCTOR:
+        case TdApi.MessageVideoChatScheduled.CONSTRUCTOR:
+        case TdApi.MessageVideoChatStarted.CONSTRUCTOR:
+        case TdApi.MessageWebAppDataReceived.CONSTRUCTOR:
+        case TdApi.MessageWebAppDataSent.CONSTRUCTOR:
+        case TdApi.MessageWebsiteConnected.CONSTRUCTOR:
+          // None of these messages ever passed to this method,
+          // assuming we want to check RightId.SEND_BASIC_MESSAGES
+          return getBasicMessageRestrictionText(chat);
       }
+      throw new UnsupportedOperationException(message.content.toString());
     }
-    return getMessageRestrictionText(chat);
+    // Assuming if null is passed, we want to check if we can write text messages
+    return getBasicMessageRestrictionText(chat);
   }
 
-  public CharSequence getRestrictionText (TdApi.Chat chat, TdApi.InputMessageContent message) {
-    if (message != null) {
-      switch (message.getConstructor()) {
+  public CharSequence getRestrictionText (TdApi.Chat chat, TdApi.InputMessageContent content) {
+    if (content != null) {
+      switch (content.getConstructor()) {
+        case TdApi.InputMessageAudio.CONSTRUCTOR:
+          return getDefaultRestrictionText(chat, RightId.SEND_AUDIO);
+        case TdApi.InputMessageDocument.CONSTRUCTOR:
+          return getDefaultRestrictionText(chat, RightId.SEND_DOCS);
+        case TdApi.InputMessagePhoto.CONSTRUCTOR:
+          return getDefaultRestrictionText(chat, RightId.SEND_PHOTOS);
+        case TdApi.InputMessageVideo.CONSTRUCTOR:
+          return getDefaultRestrictionText(chat, RightId.SEND_VIDEOS);
+        case TdApi.InputMessageVideoNote.CONSTRUCTOR:
+          return getDefaultRestrictionText(chat, RightId.SEND_VIDEO_NOTES);
+        case TdApi.InputMessageVoiceNote.CONSTRUCTOR:
+          return getDefaultRestrictionText(chat, RightId.SEND_VOICE_NOTES);
+        case TdApi.InputMessagePoll.CONSTRUCTOR:
+          return getDefaultRestrictionText(chat, RightId.SEND_POLLS);
+        // RightId.SEND_OTHER_MESSAGES
         case TdApi.InputMessageAnimation.CONSTRUCTOR:
           return getGifRestrictionText(chat);
         case TdApi.InputMessageSticker.CONSTRUCTOR:
           return getStickerRestrictionText(chat);
-        case TdApi.InputMessageAudio.CONSTRUCTOR:
-        case TdApi.InputMessageDocument.CONSTRUCTOR:
-        case TdApi.InputMessagePhoto.CONSTRUCTOR:
-        case TdApi.InputMessageVideo.CONSTRUCTOR:
-          return getMediaRestrictionText(chat);
-        case TdApi.InputMessageVideoNote.CONSTRUCTOR:
-        case TdApi.InputMessageVoiceNote.CONSTRUCTOR:
-          return getVoiceVideoRestricitonText(chat, message.getConstructor() == TdApi.InputMessageVideoNote.CONSTRUCTOR);
+        case TdApi.InputMessageDice.CONSTRUCTOR:
+          return getDiceRestrictionText(chat, ((TdApi.InputMessageDice) content).emoji);
+        case TdApi.InputMessageGame.CONSTRUCTOR:
+          return getGameRestrictionText(chat);
+
+        // RightId.SEND_BASIC_MESSAGES
+        case TdApi.InputMessageForwarded.CONSTRUCTOR: // TODO tdlib.getMessageLocally?
+        case TdApi.InputMessageInvoice.CONSTRUCTOR:
+        case TdApi.InputMessageLocation.CONSTRUCTOR:
+        case TdApi.InputMessageText.CONSTRUCTOR:
+        case TdApi.InputMessageVenue.CONSTRUCTOR:
+        case TdApi.InputMessageContact.CONSTRUCTOR:
+          return getBasicMessageRestrictionText(chat);
       }
+      throw new UnsupportedOperationException(content.toString());
     }
-    return getMessageRestrictionText(chat);
+    // Assuming if null is passed, we want to check if we can write text messages
+    return getBasicMessageRestrictionText(chat);
   }
 
-  public CharSequence getMessageRestrictionText (TdApi.Chat chat) {
-    return getRestrictionText(chat, R.id.right_sendMessages, R.string.ChatDisabledMessages, R.string.ChatRestrictedMessages, R.string.ChatRestrictedMessagesUntil);
+  public CharSequence getBasicMessageRestrictionText (TdApi.Chat chat) {
+    return getDefaultRestrictionText(chat, RightId.SEND_BASIC_MESSAGES);
   }
 
-  public CharSequence getMediaRestrictionText (TdApi.Chat chat) {
-    return getRestrictionText(chat, R.id.right_sendMedia, R.string.ChatDisabledMedia, R.string.ChatRestrictedMedia, R.string.ChatRestrictedMediaUntil);
-  }
-
-  public CharSequence getVoiceVideoRestricitonText (TdApi.Chat chat, boolean needVideo) {
-    return getRestrictionText(chat, R.id.right_sendVoiceVideo,
-      needVideo ? R.string.ChatDisabledVideoNotes : R.string.ChatDisabledVoice,
-      needVideo ? R.string.ChatRestrictedVideoNotes : R.string.ChatRestrictedVoice,
-      needVideo ? R.string.ChatRestrictedVideoNotesUntil : R.string.ChatRestrictedVoiceUntil,
-      R.string.UserDisabledMessages,
-      needVideo ? R.string.XRestrictedVideoMessages : R.string.XRestrictedVoiceMessages
+  public CharSequence getDefaultRestrictionText (TdApi.Chat chat, @RightId int rightId) {
+    final @StringRes int disabledMediaRes, restrictedMediaRes, restrictedMediaUntilRes;
+    @StringRes int specificRes = R.string.UserDisabledMessages, specificUserRes = 0;
+    //noinspection SwitchIntDef
+    switch (rightId) {
+      case RightId.SEND_BASIC_MESSAGES:
+        disabledMediaRes = R.string.ChatDisabledMessages;
+        restrictedMediaRes = R.string.ChatRestrictedMessages;
+        restrictedMediaUntilRes = R.string.ChatRestrictedMessagesUntil;
+        break;
+      case RightId.SEND_AUDIO:
+        disabledMediaRes = R.string.ChatDisabledAudio;
+        restrictedMediaRes = R.string.ChatRestrictedAudio;
+        restrictedMediaUntilRes = R.string.ChatRestrictedAudioUntil;
+        break;
+      case RightId.SEND_DOCS:
+        disabledMediaRes = R.string.ChatDisabledDocs;
+        restrictedMediaRes = R.string.ChatRestrictedDocs;
+        restrictedMediaUntilRes = R.string.ChatRestrictedDocsUntil;
+        break;
+      case RightId.SEND_PHOTOS:
+        disabledMediaRes = R.string.ChatDisabledPhoto;
+        restrictedMediaRes = R.string.ChatRestrictedPhoto;
+        restrictedMediaUntilRes = R.string.ChatRestrictedPhotoUntil;
+        break;
+      case RightId.SEND_VIDEOS:
+        disabledMediaRes = R.string.ChatDisabledVideo;
+        restrictedMediaRes = R.string.ChatRestrictedVideo;
+        restrictedMediaUntilRes = R.string.ChatRestrictedVideoUntil;
+        break;
+      case RightId.SEND_VOICE_NOTES:
+        disabledMediaRes = R.string.ChatDisabledVoice;
+        restrictedMediaRes = R.string.ChatRestrictedVoice;
+        restrictedMediaUntilRes = R.string.ChatRestrictedVoiceUntil;
+        specificUserRes = R.string.XRestrictedVoiceMessages;
+        break;
+      case RightId.SEND_VIDEO_NOTES:
+        disabledMediaRes = R.string.ChatDisabledVideoNotes;
+        restrictedMediaRes = R.string.ChatRestrictedVideoNotes;
+        restrictedMediaUntilRes = R.string.ChatRestrictedVideoNotesUntil;
+        specificUserRes = R.string.XRestrictedVideoMessages;
+        break;
+      case RightId.SEND_OTHER_MESSAGES:
+        disabledMediaRes = R.string.ChatDisabledOther;
+        restrictedMediaRes = R.string.ChatRestrictedOther;
+        restrictedMediaUntilRes = R.string.ChatRestrictedOtherUntil;
+        break;
+      case RightId.SEND_POLLS:
+        disabledMediaRes = R.string.ChatDisabledPolls;
+        restrictedMediaRes = R.string.ChatRestrictedPolls;
+        restrictedMediaUntilRes = R.string.ChatRestrictedPollsUntil;
+        break;
+      default:
+        throw new IllegalArgumentException(Lang.getResourceEntryName(rightId));
+    }
+    return buildRestrictionText(chat,
+      rightId,
+      disabledMediaRes, restrictedMediaRes, restrictedMediaUntilRes,
+      specificRes, specificUserRes
     );
   }
 
+  public CharSequence getVoiceVideoRestricitonText (TdApi.Chat chat, boolean needVideo) {
+    return getDefaultRestrictionText(chat, needVideo ? RightId.SEND_VIDEO_NOTES : RightId.SEND_VOICE_NOTES);
+  }
+
   public CharSequence getGifRestrictionText (TdApi.Chat chat) {
-    return getRestrictionText(chat, R.id.right_sendStickersAndGifs, R.string.ChatDisabledGifs, R.string.ChatRestrictedGifs, R.string.ChatRestrictedGifsUntil);
+    return buildRestrictionText(chat, RightId.SEND_OTHER_MESSAGES, R.string.ChatDisabledGifs, R.string.ChatRestrictedGifs, R.string.ChatRestrictedGifsUntil);
   }
 
   public CharSequence getStickerRestrictionText (TdApi.Chat chat) {
-    return getRestrictionText(chat, R.id.right_sendStickersAndGifs, R.string.ChatDisabledStickers, R.string.ChatRestrictedStickers, R.string.ChatRestrictedStickersUntil);
+    return buildRestrictionText(chat, RightId.SEND_OTHER_MESSAGES, R.string.ChatDisabledStickers, R.string.ChatRestrictedStickers, R.string.ChatRestrictedStickersUntil);
+  }
+
+  public CharSequence getGameRestrictionText (TdApi.Chat chat) {
+    return buildRestrictionText(chat, RightId.SEND_OTHER_MESSAGES, R.string.ChatDisabledGames, R.string.ChatRestrictedGames, R.string.ChatRestrictedGamesUntil);
   }
 
   public CharSequence getInlineRestrictionText (TdApi.Chat chat) {
-    return getRestrictionText(chat, R.id.right_sendStickersAndGifs, R.string.ChatDisabledBots, R.string.ChatRestrictedBots, R.string.ChatRestrictedBotsUntil);
+    return buildRestrictionText(chat, RightId.SEND_OTHER_MESSAGES, R.string.ChatDisabledBots, R.string.ChatRestrictedBots, R.string.ChatRestrictedBotsUntil);
   }
 
   public CharSequence getPollRestrictionText (TdApi.Chat chat) {
-    return getRestrictionText(chat, R.id.right_sendPolls, R.string.ChatDisabledPolls, R.string.ChatRestrictedPolls, R.string.ChatRestrictedPollsUntil);
+    return getDefaultRestrictionText(chat, RightId.SEND_POLLS);
   }
 
-  public CharSequence getRestrictionText (TdApi.Chat chat, @RightId int rightId, @StringRes int defaultRes, @StringRes int specificRes, @StringRes int specificUntilRes) {
-    return getRestrictionText(chat, rightId, defaultRes, specificRes, specificUntilRes, R.string.UserDisabledMessages, 0);
+  public CharSequence getDiceRestrictionText (TdApi.Chat chat, String emoji) {
+    int disabledRes, restrictedRes, restrictedUntilRes;
+    if (TD.EMOJI_DART.textRepresentation.equals(emoji)) {
+      disabledRes = R.string.ChatDisabledDart;
+      restrictedRes = R.string.ChatRestrictedDart;
+      restrictedUntilRes = R.string.ChatRestrictedDartUntil;
+    } else if (TD.EMOJI_DICE.textRepresentation.equals(emoji)) {
+      disabledRes = R.string.ChatDisabledDice;
+      restrictedRes = R.string.ChatRestrictedDice;
+      restrictedUntilRes = R.string.ChatRestrictedDiceUntil;
+    } else {
+      disabledRes = R.string.ChatDisabledStickers;
+      restrictedRes = R.string.ChatRestrictedStickers;
+      restrictedUntilRes = R.string.ChatRestrictedStickersUntil;
+    }
+    return buildRestrictionText(chat, RightId.SEND_OTHER_MESSAGES, disabledRes, restrictedRes, restrictedUntilRes);
   }
 
-  public CharSequence getRestrictionText (TdApi.Chat chat, @RightId int rightId,
-                                          @StringRes int defaultRes, @StringRes int specificRes, @StringRes int specificUntilRes,
-                                          @StringRes int defaultUserRes, @StringRes int specificUserRes) {
+  public CharSequence buildRestrictionText (TdApi.Chat chat, @RightId int rightId, @StringRes int defaultRes, @StringRes int specificRes, @StringRes int specificUntilRes) {
+    return buildRestrictionText(chat, rightId, defaultRes, specificRes, specificUntilRes, R.string.UserDisabledMessages, 0);
+  }
+
+  public CharSequence buildRestrictionText (TdApi.Chat chat, @RightId int rightId,
+                                            @StringRes int defaultRes, @StringRes int specificRes, @StringRes int specificUntilRes,
+                                            @StringRes int defaultUserRes, @StringRes int specificUserRes) {
     RestrictionStatus status = getRestrictionStatus(chat, rightId);
     if (status != null) {
       switch (rightId) {
-        case R.id.right_sendStickersAndGifs:
-        case R.id.right_sendVoiceVideo: {
-          CharSequence restriction = getMediaRestrictionText(chat);
+        case RightId.SEND_BASIC_MESSAGES:
+        case RightId.SEND_AUDIO:
+        case RightId.SEND_DOCS:
+        case RightId.SEND_PHOTOS:
+        case RightId.SEND_VIDEOS:
+        case RightId.SEND_VOICE_NOTES:
+        case RightId.SEND_VIDEO_NOTES:
+        case RightId.SEND_OTHER_MESSAGES:
+        case RightId.SEND_POLLS: {
+          break;
+        }
+        case RightId.EMBED_LINKS: {
+          // check if there is any restriction text for RightId.SEND_BASIC_MESSAGES
+          CharSequence restriction = getBasicMessageRestrictionText(chat);
           if (restriction != null)
             return restriction;
           break;
         }
-        case R.id.right_sendMedia:
-        case R.id.right_sendPolls: {
-          CharSequence restriction = getMessageRestrictionText(chat);
-          if (restriction != null)
-            return restriction;
+        // admin rights
+        case RightId.ADD_NEW_ADMINS:
+        case RightId.BAN_USERS:
+        case RightId.CHANGE_CHAT_INFO:
+        case RightId.DELETE_MESSAGES:
+        case RightId.EDIT_MESSAGES:
+        case RightId.INVITE_USERS:
+        case RightId.MANAGE_VIDEO_CHATS:
+        case RightId.PIN_MESSAGES:
+        case RightId.READ_MESSAGES:
+        case RightId.REMAIN_ANONYMOUS:
           break;
-        }
       }
       if (status.isUserChat()) {
         switch (status.status) {
@@ -9613,7 +9891,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public boolean showRestriction (TdApi.Chat chat, @RightId int rightId, @StringRes int defaultRes, @StringRes int specificRes, @StringRes int specificUntilRes) {
-    CharSequence res = getRestrictionText(chat, rightId, defaultRes, specificRes, specificUntilRes);
+    CharSequence res = buildRestrictionText(chat, rightId, defaultRes, specificRes, specificUntilRes);
     if (res != null) {
       UI.showToast(res, Toast.LENGTH_SHORT);
       return true;
@@ -9622,19 +9900,42 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public boolean canAddWebPagePreviews (TdApi.Chat chat) {
-    return getRestrictionStatus(chat, R.id.right_embedLinks) == null;
+    return getRestrictionStatus(chat, RightId.EMBED_LINKS) == null;
   }
 
-  public boolean canSendOtherMessages (TdApi.Chat chat) {
-    return getRestrictionStatus(chat, R.id.right_sendStickersAndGifs) == null;
+  public boolean canSendBasicMessage (long chatId) {
+    return chatId != 0 && canSendBasicMessage(chat(chatId));
   }
-
-  public boolean canSendMessages (TdApi.Chat chat) {
-    return getRestrictionStatus(chat, R.id.right_sendMessages) == null;
+  public boolean canSendBasicMessage (TdApi.Chat chat) {
+    return canSendMessage(chat, RightId.SEND_BASIC_MESSAGES);
   }
-
-  public boolean canSendMedia (TdApi.Chat chat) {
-    return getRestrictionStatus(chat, R.id.right_sendMedia) == null;
+  public boolean canSendMessage (TdApi.Chat chat, @RightId int kindResId) {
+    switch (kindResId) {
+      case RightId.SEND_BASIC_MESSAGES:
+      case RightId.SEND_AUDIO:
+      case RightId.SEND_DOCS:
+      case RightId.SEND_PHOTOS:
+      case RightId.SEND_VIDEOS:
+      case RightId.SEND_VOICE_NOTES:
+      case RightId.SEND_VIDEO_NOTES:
+      case RightId.SEND_OTHER_MESSAGES:
+      case RightId.SEND_POLLS:
+        break;
+      case RightId.EMBED_LINKS:
+      case RightId.ADD_NEW_ADMINS:
+      case RightId.BAN_USERS:
+      case RightId.CHANGE_CHAT_INFO:
+      case RightId.DELETE_MESSAGES:
+      case RightId.EDIT_MESSAGES:
+      case RightId.INVITE_USERS:
+      case RightId.MANAGE_VIDEO_CHATS:
+      case RightId.PIN_MESSAGES:
+      case RightId.READ_MESSAGES:
+      case RightId.REMAIN_ANONYMOUS:
+      default:
+        throw new IllegalArgumentException(Lang.getResourceEntryName(kindResId));
+    }
+    return getRestrictionStatus(chat, kindResId) == null;
   }
 
   public boolean isSettingSuggestion (TdApi.SuggestedAction action) {

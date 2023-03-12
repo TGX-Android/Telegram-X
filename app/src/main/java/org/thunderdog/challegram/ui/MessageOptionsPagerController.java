@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -265,14 +265,14 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Voi
 
   //
 
-  private TdApi.Users messageViewers;
+  private TdApi.MessageViewers messageViewers;
   private void getMessageOptions () {
     tdlib.client().send(new TdApi.GetMessageViewers(message.getChatId(), message.getId()), (obj) -> {
-      if (obj.getConstructor() != TdApi.Users.CONSTRUCTOR) return;
+      if (obj.getConstructor() != TdApi.MessageViewers.CONSTRUCTOR) return;
       runOnUiThreadOptional(() -> {
-        messageViewers = (TdApi.Users) obj;
+        messageViewers = (TdApi.MessageViewers) obj;
         if (SEEN_POSITION != -1) {
-          counters[SEEN_POSITION].counter.setCount(messageViewers.totalCount, false);
+          counters[SEEN_POSITION].counter.setCount(messageViewers.viewers.length, false);
         }
       });
     });

@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,6 +46,10 @@ public class TGStickerObj {
   private static final int FLAG_FAVORITE = 1 << 3;
   private static final int FLAG_NO_VIEW_PACK = 1 << 4;
 
+  public TGStickerObj (Tdlib tdlib, @Nullable TdApi.Sticker sticker, @Nullable String foundByEmoji, TdApi.StickerFullType stickerType) {
+    this(tdlib, sticker, foundByEmoji, Td.toType(stickerType));
+  }
+
   public TGStickerObj (Tdlib tdlib, @Nullable TdApi.Sticker sticker, @Nullable String foundByEmoji, TdApi.StickerType stickerType) {
     set(tdlib, sticker, stickerType, null);
     this.foundByEmoji = foundByEmoji;
@@ -75,6 +79,10 @@ public class TGStickerObj {
     set(tdlib, sticker, stickerType, emojis);
   }
 
+  public TGStickerObj (Tdlib tdlib, @Nullable TdApi.Sticker sticker, TdApi.StickerFullType stickerFullType, String[] emojis) {
+    set(tdlib, sticker, stickerFullType, emojis);
+  }
+
   public TGStickerObj setReactionType (TdApi.ReactionType reactionType) {
     this.reactionType = reactionType;
     return this;
@@ -84,12 +92,16 @@ public class TGStickerObj {
     return reactionType;
   }
 
+  public boolean set (Tdlib tdlib, @Nullable TdApi.Sticker sticker, TdApi.StickerFullType stickerType, String[] emojis) {
+    return set(tdlib, sticker, Td.toType(stickerType), emojis);
+  }
+
   public boolean set (Tdlib tdlib, @Nullable TdApi.Sticker sticker, TdApi.StickerType stickerType, String[] emojis) {
     if (this.sticker == null && sticker == null) {
       return false;
     }
     setEmojiImpl(emojis);
-    if (this.sticker == null || sticker == null || this.tdlib != tdlib || this.sticker.sticker.id != sticker.sticker.id || !Td.equalsTo(this.sticker.type, sticker.type)) {
+    if (this.sticker == null || sticker == null || this.tdlib != tdlib || !Td.equalsTo(this.sticker, sticker)) {
       this.tdlib = tdlib;
       this.sticker = sticker;
       this.fullImage = null;
@@ -117,7 +129,7 @@ public class TGStickerObj {
   }
 
   public boolean isPremium () {
-    return sticker != null && sticker.isPremium;
+    return Td.isPremium(sticker);
   }
 
   public boolean needViewPackButton () {
@@ -137,11 +149,7 @@ public class TGStickerObj {
 
     TGStickerObj b = (TGStickerObj) obj;
     return (b.sticker == null && sticker == null && b.flags == flags) ||
-           (b.sticker != null && sticker != null && b.flags == flags &&
-             b.sticker.setId == sticker.setId &&
-             b.sticker.sticker.id == sticker.sticker.id &&
-             Td.equalsTo(b.sticker.type, sticker.type)
-           );
+           (b.sticker != null && sticker != null && b.flags == flags && Td.equalsTo(b.sticker, sticker));
   }
 
   public String getAllEmoji () {
@@ -214,8 +222,8 @@ public class TGStickerObj {
   }
 
   public GifFile getPremiumFullAnimation () {
-    if (premiumFullAnimation == null && sticker != null && Td.isAnimated(sticker.format) && tdlib != null && sticker.premiumAnimation != null) {
-      this.premiumFullAnimation = new GifFile(tdlib, sticker.premiumAnimation, sticker.format);
+    if (premiumFullAnimation == null && sticker != null && Td.isAnimated(sticker.format) && tdlib != null && Td.isPremium(sticker)) {
+      this.premiumFullAnimation = new GifFile(tdlib, ((TdApi.StickerFullTypeRegular) sticker.fullType).premiumAnimation, sticker.format);
       this.premiumFullAnimation.setScaleType(ImageFile.FIT_CENTER);
       this.premiumFullAnimation.setUnique(true);
     }

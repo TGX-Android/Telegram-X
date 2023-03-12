@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -824,7 +824,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
         break;
       }
       case R.id.btn_tdlib_shareLogs: {
-        TdlibUi.sendLogs(context.navigation().getCurrentStackItem(), false, false);
+        TdlibUi.sendTdlibLogs(context.navigation().getCurrentStackItem(), false, false);
         break;
       }
       case R.id.btn_wallet: {

@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -72,6 +72,11 @@ open class ModulePlugin : Plugin<Project> {
     val disableSigning = properties.getProperty("app.disable_signing", "false") == "true"
     val keystore = if (keystoreFilePath.isNotEmpty() && !disableSigning) {
       Keystore(keystoreFilePath)
+    } else {
+      null
+    }
+    val safetyNetToken = if (keystore != null) {
+      properties.getProperty("safetynet.api_key", "")
     } else {
       null
     }
@@ -216,6 +221,8 @@ open class ModulePlugin : Plugin<Project> {
 
               buildConfigString("PROJECT_NAME", appName)
               buildConfigString("MARKET_URL", "https://play.google.com/store/apps/details?id=${appId}")
+
+              buildConfigString("SAFETYNET_API_KEY", safetyNetToken)
 
               buildConfigString("DOWNLOAD_URL", appDownloadUrl)
 

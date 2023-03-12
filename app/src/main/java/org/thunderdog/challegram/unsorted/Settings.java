@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -501,7 +501,7 @@ public class Settings {
 
     private int getSettings () {
       if (_settings == null) {
-        _settings = pmc.getInt(settingsKey, BuildConfig.DEBUG || BuildConfig.EXPERIMENTAL ? FLAG_TDLIB_OTHER_ENABLE_ANDROID_LOG : 0);
+        _settings = pmc.getInt(settingsKey, UI.isTestLab() ? FLAG_TDLIB_OTHER_ENABLE_ANDROID_LOG : 0);
       }
       return _settings;
     }
@@ -516,7 +516,7 @@ public class Settings {
       if (flags != newFlags) {
         _settings = newFlags;
         pmc.putInt(settingsKey, newFlags);
-        apply();
+        apply(false);
         return true;
       }
       return false;
@@ -539,7 +539,7 @@ public class Settings {
         pmc.remove(maxSizeKey);
       else
         pmc.putLong(maxSizeKey, bytes);
-      apply();
+      apply(false);
     }
 
     public List<String> getModules () {
@@ -645,8 +645,8 @@ public class Settings {
       return TDLIB_LOG_VERBOSITY_UNKNOWN;
     }
 
-    public void apply () {
-      if (UI.TEST_MODE == UI.TEST_MODE_AUTO)
+    public void apply (boolean async) {
+      if (UI.isTestLab())
         return;
       int globalVerbosityLevel = DEFAULT_LOG_GLOBAL_VERBOSITY_LEVEL;
       if (_modules == null)
@@ -676,11 +676,23 @@ public class Settings {
       if (needAndroidLog()) {
         stream = new TdApi.LogStreamDefault();
       } else {
-        stream = new TdApi.LogStreamFile(TdlibManager.getLogFilePath(false), getLogMaxFileSize(), false);
+        File logFile = TdlibManager.getLogFile(false);
+        if (logFile != null) {
+          stream = new TdApi.LogStreamFile(logFile.getPath(), getLogMaxFileSize(), false);
+        } else {
+          stream = new TdApi.LogStreamEmpty();
+        }
       }
       TdApi.Object result = Client.execute(new TdApi.SetLogStream(stream));
       if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
-        Tracer.onTdlibFatalError(null, TdApi.SetLogStream.class, (TdApi.Error) result, new RuntimeException().getStackTrace());
+        Runnable act = () -> {
+          Tracer.onTdlibFatalError(null, TdApi.SetLogStream.class, (TdApi.Error) result, new RuntimeException().getStackTrace());
+        };
+        if (async) {
+          UI.post(act);
+        } else {
+          act.run();
+        }
       }
     }
   }
@@ -738,7 +750,7 @@ public class Settings {
     File pmcDir = new File(UI.getAppContext().getFilesDir(), "pmc");
     boolean fatalError;
     try {
-      fatalError = !pmcDir.exists() && !FileUtils.mkdirs(pmcDir);
+      fatalError = !FileUtils.createDirectory(pmcDir);
     } catch (SecurityException e) {
       e.printStackTrace();
       fatalError = true;
@@ -793,7 +805,7 @@ public class Settings {
     trackInstalledApkVersion();
     Log.i("Opened database in %dms", SystemClock.uptimeMillis() - ms);
     checkPendingPasscodeLocks();
-    applyLogSettings();
+    applyLogSettings(true);
   }
 
   // Schedule
@@ -3165,8 +3177,8 @@ public class Settings {
     return tdlibLogSettings.isEnabled() || Log.getLogLevel() > Log.LEVEL_ASSERT;
   }
 
-  public void applyLogSettings () {
-    tdlibLogSettings.apply();
+  public void applyLogSettings (boolean async) {
+    tdlibLogSettings.apply(async);
   }
 
   public void disableAllLogs () {

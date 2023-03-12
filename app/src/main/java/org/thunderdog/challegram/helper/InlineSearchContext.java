@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -14,7 +14,6 @@
  */
 package org.thunderdog.challegram.helper;
 
-import android.Manifest;
 import android.content.Context;
 import android.content.res.Resources;
 import android.location.Location;
@@ -51,6 +50,7 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.player.TGPlayerController;
+import org.thunderdog.challegram.telegram.RightId;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Strings;
@@ -150,6 +150,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
     this.tdlib = tdlib;
     this.callback = callback;
     this.currentText = "";
+    this.currentCs = "";
   }
 
   public void setIsCaption (boolean isCaption) {
@@ -215,6 +216,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
       return;
     }
     this.currentText = newText;
+    this.currentCs = newCs;
     this.canHandlePositionChange = false;
     cancelPendingQueries();
 
@@ -446,7 +448,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
     final long chatId = callback.provideInlineSearchChatId();
     TdApi.Function<?> function;
     if (more) {
-      function = new TdApi.SearchStickers(emoji, 1000);
+      function = new TdApi.SearchStickers(new TdApi.StickerTypeRegular(), emoji, 1000);
     } else {
       function = new TdApi.GetStickers(new TdApi.StickerTypeRegular(), emoji, 1000, chatId);
     }
@@ -457,7 +459,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
   private void displayStickers (TdApi.Sticker[] stickers, String foundByEmoji, boolean isMore) {
     ArrayList<TGStickerObj> list = new ArrayList<>(stickers.length);
     for (TdApi.Sticker sticker : stickers) {
-      list.add(new TGStickerObj(tdlib, sticker, foundByEmoji, sticker.type));
+      list.add(new TGStickerObj(tdlib, sticker, foundByEmoji, sticker.fullType));
     }
     callback.showInlineStickers(list, isMore);
   }
@@ -482,7 +484,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
 
       if (user != null) {
         if (user.type.getConstructor() == TdApi.UserTypeBot.CONSTRUCTOR && ((TdApi.UserTypeBot) user.type).isInline) {
-          if (tdlib.showRestriction(callback.provideInlineSearchChat(), R.id.right_sendStickersAndGifs, R.string.ChatDisabledBots, R.string.ChatRestrictedBots, R.string.ChatRestrictedBotsUntil)) {
+          if (tdlib.showRestriction(callback.provideInlineSearchChat(), RightId.SEND_OTHER_MESSAGES, R.string.ChatDisabledBots, R.string.ChatRestrictedBots, R.string.ChatRestrictedBotsUntil)) {
             searchOther(cursorPosition);
           } else {
             applyInlineBot(user);
@@ -682,10 +684,12 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
     }
   }
 
-  private static ArrayList<InlineResult<?>> parseInlineResults (BaseActivity context, Tdlib tdlib, long inlineBotUserId, String inlineQuery, TdApi.InlineQueryResults results, @Nullable String switchPmText, @Nullable String switchPmParameter, TdApi.GetInlineQueryResults queryResults, String inlineNextOffset) {
-    final ArrayList<InlineResult<?>> items = new ArrayList<>(results.results.length + (switchPmText != null && !switchPmText.isEmpty() ? 1 : 0));
-    if (switchPmText != null && !switchPmText.isEmpty()) {
-      items.add(new InlineResultButton(context, tdlib, inlineBotUserId, switchPmText, switchPmParameter));
+  private static ArrayList<InlineResult<?>> parseInlineResults (BaseActivity context, Tdlib tdlib, long inlineBotUserId, String inlineQuery, TdApi.InlineQueryResults results, TdApi.GetInlineQueryResults queryResults, String inlineNextOffset, boolean isMore) {
+    // TODO support other button types
+    boolean hasButton = !isMore && results.button != null && results.button.type.getConstructor() == TdApi.InlineQueryResultsButtonTypeStartBot.CONSTRUCTOR;
+    final ArrayList<InlineResult<?>> items = new ArrayList<>(results.results.length + (hasButton ? 1 : 0));
+    if (hasButton) {
+      items.add(new InlineResultButton(context, tdlib, inlineBotUserId, results.button));
     }
     TGPlayerController.PlayListBuilder builder = new CommonPlayListBuilder(items, queryResults, inlineNextOffset);
     for (TdApi.InlineQueryResult result : results.results) {
@@ -714,7 +718,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
           case TdApi.InlineQueryResults.CONSTRUCTOR: {
             final TdApi.InlineQueryResults results = (TdApi.InlineQueryResults) object;
             final long elapsed = SystemClock.uptimeMillis() - queryStartTime;
-            final ArrayList<InlineResult<?>> inlineResults = parseInlineResults(context, tdlib, inlineBot != null ? inlineBot.id : 0, inlineQuery, results, results.switchPmText, results.switchPmParameter, function, results.nextOffset);
+            final ArrayList<InlineResult<?>> inlineResults = parseInlineResults(context, tdlib, inlineBot != null ? inlineBot.id : 0, inlineQuery, results, function, results.nextOffset, false);
             tdlib.ui().postDelayed(() -> {
               if (!isCancelled() && getInlineUsername() != null) {
                 showInlineResults(inlineQuery, location, results.nextOffset, inlineResults);
@@ -771,7 +775,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
         switch (object.getConstructor()) {
           case TdApi.InlineQueryResults.CONSTRUCTOR: {
             final TdApi.InlineQueryResults results = (TdApi.InlineQueryResults) object;
-            final ArrayList<InlineResult<?>> inlineResults = parseInlineResults(context, tdlib, inlineBot != null ? inlineBot.id : 0, queryFinal, results, null, null, query, results.nextOffset);
+            final ArrayList<InlineResult<?>> inlineResults = parseInlineResults(context, tdlib, inlineBot != null ? inlineBot.id : 0, queryFinal, results, query, results.nextOffset, true);
             tdlib.ui().post(() -> {
               if (!isCancelled() && currentNextOffset != null && lastNextOffset.equals(currentNextOffset)) {
                 cancelInlineQueryMoreRequest();
@@ -1287,7 +1291,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
             case 'S': // :S
             case 'O': // :O
               query = null;
-            break;
+              break;
           }
         }
         final ArrayList<InlineResult<?>> inlineResults;

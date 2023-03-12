@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,7 +44,7 @@ public class MessageSeenController extends MediaBottomBaseController<Void> imple
   private SettingsAdapter adapter;
 
   private final TGMessage msg;
-  private final long[] userIds;
+  private final TdApi.MessageViewers viewers;
 
   public static CharSequence getViewString (TGMessage msg, int count) {
     switch (msg.getMessage().content.getConstructor()) {
@@ -85,10 +85,10 @@ public class MessageSeenController extends MediaBottomBaseController<Void> imple
     return true;
   }
 
-  public MessageSeenController (MediaLayout context, TGMessage msg, long[] users) {
-    super(context, getViewString(msg, users.length).toString());
+  public MessageSeenController (MediaLayout context, TGMessage msg, TdApi.MessageViewers viewers) {
+    super(context, getViewString(msg, viewers.viewers.length).toString());
     this.msg = msg;
-    this.userIds = users;
+    this.viewers = viewers;
   }
 
   private boolean allowExpand;
@@ -110,12 +110,14 @@ public class MessageSeenController extends MediaBottomBaseController<Void> imple
 
       @Override
       protected void setInfo (ListItem item, int position, ListInfoView infoView) {
-        infoView.showInfo(getViewString(msg, userIds.length));
+        infoView.showInfo(getViewString(msg, viewers.viewers.length));
       }
 
       @Override
       protected void setUser (ListItem item, int position, UserView userView, boolean isUpdate) {
-        userView.setUser(new TGUser(tdlib, tdlib.chatUser(item.getLongId())));
+        TGUser user = new TGUser(tdlib, tdlib.chatUser(item.getLongId()));
+        user.setActionDateStatus(item.getIntValue(), msg.getMessage());
+        userView.setUser(user);
       }
     };
 
@@ -123,8 +125,8 @@ public class MessageSeenController extends MediaBottomBaseController<Void> imple
 
     ArrayList<ListItem> items = new ArrayList<>();
 
-    for (long userId : userIds) {
-      items.add(new ListItem(ListItem.TYPE_USER, R.id.user).setLongId(userId));
+    for (TdApi.MessageViewer viewer : viewers.viewers) {
+      items.add(new ListItem(ListItem.TYPE_USER, R.id.user).setLongId(viewer.userId).setIntValue(viewer.viewDate));
     }
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     items.add(new ListItem(ListItem.TYPE_DESCRIPTION, R.id.description, 0, R.string.MessageSeenPrivacy));
@@ -145,9 +147,9 @@ public class MessageSeenController extends MediaBottomBaseController<Void> imple
 
   @Override
   protected int getInitialContentHeight () {
-    if (userIds != null) {
-      int initialContentHeight = SettingHolder.measureHeightForType(ListItem.TYPE_USER) * userIds.length;
-      for (int i = userIds.length; i < adapter.getItemCount(); i++) {
+    if (viewers != null) {
+      int initialContentHeight = SettingHolder.measureHeightForType(ListItem.TYPE_USER) * viewers.viewers.length;
+      for (int i = viewers.viewers.length; i < adapter.getItemCount(); i++) {
         ListItem item = adapter.getItems().get(i);
         if (item.getViewType() == ListItem.TYPE_DESCRIPTION) {
           initialContentHeight += Screen.dp(24f);

@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -142,15 +142,18 @@ import org.thunderdog.challegram.data.TGMessageMedia;
 import org.thunderdog.challegram.data.TGMessageSticker;
 import org.thunderdog.challegram.data.TGRecord;
 import org.thunderdog.challegram.data.TGSwitchInline;
+import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.data.ThreadInfo;
 import org.thunderdog.challegram.filegen.PhotoGenerationInfo;
 import org.thunderdog.challegram.filegen.VideoGenerationInfo;
 import org.thunderdog.challegram.helper.BotHelper;
 import org.thunderdog.challegram.helper.LiveLocationHelper;
 import org.thunderdog.challegram.helper.Recorder;
+import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
 import org.thunderdog.challegram.loader.ImageReader;
 import org.thunderdog.challegram.loader.ImageStrictCache;
+import org.thunderdog.challegram.mediaview.MediaSpoilerSendDelegate;
 import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.mediaview.MediaViewDelegate;
 import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
@@ -186,6 +189,7 @@ import org.thunderdog.challegram.telegram.GlobalAccountListener;
 import org.thunderdog.challegram.telegram.ListManager;
 import org.thunderdog.challegram.telegram.MessageThreadListener;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
+import org.thunderdog.challegram.telegram.RightId;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
@@ -211,8 +215,8 @@ import org.thunderdog.challegram.unsorted.Test;
 import org.thunderdog.challegram.util.CancellableResultHandler;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.util.OptionDelegate;
-import org.thunderdog.challegram.util.SenderPickerDelegate;
 import org.thunderdog.challegram.util.Permissions;
+import org.thunderdog.challegram.util.SenderPickerDelegate;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.Unlockable;
 import org.thunderdog.challegram.v.HeaderEditText;
@@ -244,6 +248,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
@@ -323,6 +328,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private VoiceVideoButtonView recordButton;
   private SendButton sendButton;
   private HapticMenuHelper sendMenu;
+  private CameraAccessImageView mediaButton;
   private InvisibleImageView cameraButton, scheduleButton;
   private InvisibleImageView commandButton;
   private @Nullable SilentButton silentButton;
@@ -371,7 +377,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   @Override
-  public void onHapticMenuItemClick (View view, View parentView, HapticMenuHelper.MenuItem item) {
+  public boolean onHapticMenuItemClick (View view, View parentView, HapticMenuHelper.MenuItem item) {
     switch (view.getId()) {
       case R.id.btn_setMsgSender: {
         if (item.isLocked) {
@@ -394,14 +400,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case R.id.btn_sendOnceOnline: {
         TdApi.MessageSendOptions sendOptions = Td.newSendOptions(new TdApi.MessageSchedulingStateSendWhenOnline());
-        if (!sendShowingVoice(sendOptions)) {
+        if (!sendShowingVoice(sendButton, sendOptions)) {
           sendText(true, sendOptions);
         }
         break;
       }
       case R.id.btn_sendScheduled: {
         tdlib.ui().pickSchedulingState(this, sendOptions -> {
-          if (!sendShowingVoice(sendOptions)) {
+          if (!sendShowingVoice(sendButton, sendOptions)) {
             sendText(true, sendOptions);
           }
         }, getChatId(), false, false, null, null);
@@ -423,13 +429,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case R.id.btn_sendNoSound: {
         pickDateOrProceed(Td.newSendOptions(true), (modifiedSendOptions, disableMarkdown) -> {
-          if (!sendShowingVoice(modifiedSendOptions)) {
+          if (!sendShowingVoice(sendButton, modifiedSendOptions)) {
             sendText(true, modifiedSendOptions);
           }
         });
         break;
       }
     }
+    return true;
   }
 
   public void pickDateOrProceed (@NonNull TdApi.MessageSendOptions initialSendOptions, TdlibUi.SimpleSendCallback sendCallback) {
@@ -1060,7 +1067,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(Screen.dp(ATTACH_BUTTONS_WIDTH), Screen.dp(49f));
 
-    ImageView mediaButton = new CameraAccessImageView(context, this);
+    mediaButton = new CameraAccessImageView(context, this);
     mediaButton.setId(R.id.msg_attach);
     mediaButton.setScaleType(ImageView.ScaleType.CENTER);
     mediaButton.setImageResource(R.drawable.deproko_baseline_attach_26);
@@ -1739,7 +1746,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private boolean isInputLess () {
-    return tdlib.isChannel(getChatId()) && !tdlib.hasWritePermission(chat);
+    return tdlib.isChannel(getChatId()) && !tdlib.canSendBasicMessage(chat);
   }
 
   @Override
@@ -1890,7 +1897,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
     switch (v.getId()) {
       case R.id.btn_camera: {
-        if (!showRestriction(v, R.id.right_sendMedia, R.string.ChatDisabledMedia, R.string.ChatRestrictedMedia, R.string.ChatRestrictedMediaUntil)) {
+        if (!showPhotoVideoRestriction(v)) {
           openInAppCamera(new CameraOpenOptions().anchor(v).noTrace(isSecretChat()));
         }
         break;
@@ -2047,7 +2054,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void send (TdApi.MessageSendOptions sendOptions) {
-    if (!sendShowingVoice(sendOptions)) {
+    if (!sendShowingVoice(sendButton, sendOptions)) {
       if (isEditingMessage()) {
         saveMessage(true);
       } else {
@@ -2643,7 +2650,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void shareItem (Object item) {
-    if (!hasWritePermission()) {
+    if (!hasWritePermission()) { // FIXME right
       return;
     }
 
@@ -2779,7 +2786,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return;
     }
 
-    setLockFocusView(chat != null && tdlib.hasWritePermission(chat) ? inputView : null, false);
+    setLockFocusView(chat != null && tdlib.canSendBasicMessage(chat) ? inputView : null, false);
 
     if (chat == null) {
       return;
@@ -2798,7 +2805,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
     }
 
-    if (tdlib.hasWritePermission(chat)) {
+    if (tdlib.canSendBasicMessage(chat)) {
       TdApi.DraftMessage draftMessage = getDraftMessage();
       if (draftMessage != null && draftMessage.replyToMessageId != 0) {
         if (!ignoreDraftLoad) {
@@ -3102,7 +3109,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         if (tdlib.isSupergroupChat(chat) && status != null && TD.canReturnToChat(status)) {
           showActionJoinChatButton();
         } else if (messageThread != null) {
-          CharSequence restrictionStatus = tdlib.getMessageRestrictionText(chat);
+          CharSequence restrictionStatus = tdlib.getBasicMessageRestrictionText(chat);
           if (restrictionStatus != null) {
             showActionButton(restrictionStatus, ACTION_EMPTY, false);
           } else {
@@ -3114,7 +3121,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       } else if (tdlib.isBotChat(chat) && chat.lastMessage == null) {
         showActionBotButton();
       } else {
-        CharSequence restrictionStatus = tdlib.getMessageRestrictionText(chat);
+        CharSequence restrictionStatus = tdlib.getBasicMessageRestrictionText(chat);
         if (restrictionStatus != null) {
           showActionButton(restrictionStatus, ACTION_EMPTY, false);
         } else {
@@ -3468,7 +3475,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case R.id.menu_secretChat: {
         StopwatchHeaderButton headerButton = header.addStopwatchButton(menu, this);
-        headerButton.forceValue(tdlib.ui().getTTLShort(getChatId()), isSecretChat() && tdlib.hasWritePermission(chat));
+        headerButton.forceValue(tdlib.ui().getTTLShort(getChatId()), isSecretChat() && tdlib.canChangeMessageAutoDeleteTime(chat.id));
         header.addMoreButton(menu, this);
         break;
       }
@@ -4516,14 +4523,34 @@ public class MessagesController extends ViewController<MessagesController.Argume
     OptionsLayout optionsLayout = (OptionsLayout) layout.getChildAt(1);
 
     LinearLayout receiptWrap = new LinearLayout(layout.getContext());
+    receiptWrap.setOrientation(LinearLayout.HORIZONTAL);
 
-    TextView receiptText = OptionsLayout.genOptionView(layout.getContext(), R.id.more_btn_openReadReceipts, Lang.getString(R.string.LoadingMessageSeen), ViewController.OPTION_COLOR_NORMAL, R.drawable.baseline_visibility_24, null, null, null);
+    FrameLayout frameLayout = new FrameLayoutFix(layout.getContext());
+    frameLayout.setLayoutParams(new LinearLayout.LayoutParams(0, Screen.dp(54f), 1f));
+    TextView receiptText = OptionsLayout.genOptionView(layout.getContext(), R.id.more_btn_openReadReceipts, Lang.getString(R.string.LoadingMessageSeen), ViewController.OPTION_COLOR_NORMAL, 0, null, getThemeListeners(), null);
+
     TripleAvatarView tav = new TripleAvatarView(layout.getContext());
 
-    receiptText.setLayoutParams(new LinearLayout.LayoutParams(0, Screen.dp(54f), 1f));
+    receiptText.setLayoutParams(FrameLayoutFix.newParams(
+      ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
+      Gravity.CENTER_VERTICAL,
+      Screen.dp(18f) + Screen.dp(24f), 0, 0, 0
+    ));
+    ImageView iconView = new ImageView(context);
+    iconView.setScaleType(ImageView.ScaleType.CENTER);
+    iconView.setLayoutParams(FrameLayoutFix.newParams(
+      ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
+      Gravity.CENTER_VERTICAL,
+      Screen.dp(17f), 0, 0, 0
+    ));
+    iconView.setImageResource(R.drawable.baseline_visibility_24);
+    iconView.setColorFilter(Theme.iconColor());
+    addThemeFilterListener(iconView, R.id.theme_color_icon);
+    frameLayout.addView(iconView);
     receiptText.setClickable(false);
+    frameLayout.addView(receiptText);
     tav.setLayoutParams(new LinearLayout.LayoutParams(Screen.dp(TripleAvatarView.AVATAR_SIZE * 3 + Screen.dp(6)), Screen.dp(54f)));
-    receiptWrap.addView(receiptText);
+    receiptWrap.addView(frameLayout);
     receiptWrap.addView(tav);
 
     Views.setClickable(receiptWrap);
@@ -4531,26 +4558,54 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     optionsLayout.addView(receiptWrap, 2);
 
-    tdlib.client().send(new TdApi.GetMessageViewers(message.getChatId(), message.getId()), (obj) -> {
-      if (obj.getConstructor() != TdApi.Users.CONSTRUCTOR) return;
-      runOnUiThreadOptional(() -> {
-        TdApi.Users users = (TdApi.Users) obj;
+    TextView subtitleView = OptionsLayout.genOptionView(layout.getContext(), 0, null, OPTION_COLOR_NORMAL, 0, null, getThemeListeners(), null);
 
-        if (users.userIds.length > 1) {
-          receiptText.setText(MessageSeenController.getViewString(message, users.totalCount).toString());
-        } else if (users.userIds.length == 1) {
-          receiptText.setText(tdlib.senderName(new TdApi.MessageSenderUser(users.userIds[0])));
+    BoolAnimator isSubtitleVisible = new BoolAnimator(0, (id, factor, fraction, callee) -> {
+      receiptText.setTranslationY(-Screen.dp(10f) * factor);
+      subtitleView.setTranslationY(Screen.dp(10f) + Screen.dp(10f) * (1f - factor));
+      subtitleView.setAlpha(factor);
+    }, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
+
+    RunnableData<CharSequence> viewSubtitle = subtitleText -> {
+      subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13f);
+      subtitleView.setTextColor(Theme.textDecentColor());
+      subtitleView.setLayoutParams(FrameLayoutFix.newParams(
+        ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
+        Gravity.CENTER_VERTICAL,
+        Screen.dp(18f) + Screen.dp(24f), 0, 0, 0
+      ));
+      subtitleView.setClickable(false);
+      subtitleView.setText(subtitleText);
+      subtitleView.setAlpha(0f);
+      frameLayout.addView(subtitleView);
+      isSubtitleVisible.setValue(true, true);
+    };
+
+    tdlib.client().send(new TdApi.GetMessageViewers(message.getChatId(), message.getId()), (obj) -> {
+      if (obj.getConstructor() != TdApi.MessageViewers.CONSTRUCTOR) return;
+      runOnUiThreadOptional(() -> {
+        TdApi.MessageViewers viewers = (TdApi.MessageViewers) obj;
+
+        if (viewers.viewers.length > 1) {
+          receiptText.setText(MessageSeenController.getViewString(message, viewers.viewers.length).toString());
+        } else if (viewers.viewers.length == 1) {
+          TdApi.MessageViewer viewer = viewers.viewers[0];
+          receiptText.setText(tdlib.senderName(new TdApi.MessageSenderUser(viewer.userId)));
+          if (viewer.viewDate != 0) {
+            String viewedText = TGUser.getActionDateStatus(tdlib, viewer.viewDate, message.getMessage());
+            viewSubtitle.runWithData(viewedText);
+          }
         } else {
           receiptText.setText(MessageSeenController.getNobodyString(message));
         }
 
-        tav.setUsers(tdlib, users);
+        tav.setUsers(tdlib, viewers);
         receiptWrap.setOnClickListener((v) -> {
           layout.hideWindow(true);
-          if (users.userIds.length > 1) {
-            ModernActionedLayout.showMessageSeen(this, message, users.userIds);
-          } else if (users.userIds.length == 1) {
-            tdlib.ui().openPrivateProfile(this, users.userIds[0], new TdlibUi.UrlOpenParameters().tooltip(context().tooltipManager().builder(v)));
+          if (viewers.viewers.length > 1) {
+            ModernActionedLayout.showMessageSeen(this, message, viewers);
+          } else if (viewers.viewers.length == 1) {
+            tdlib.ui().openPrivateProfile(this, viewers.viewers[0].userId, new TdlibUi.UrlOpenParameters().tooltip(context().tooltipManager().builder(v)));
           }
         });
       });
@@ -4659,20 +4714,18 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
 
     int selectedCount = 0;
-    LongList ids = new LongList(TdConstants.MAX_MESSAGE_GROUP_SIZE);
+    LongSet ids = new LongSet(TdConstants.MAX_MESSAGE_GROUP_SIZE);
     for (int i = secondContainerIndex; i <= firstContainerIndex; i++) {
       TGMessage container = manager.getAdapter().getMessage(i);
       if (!container.canBeSelected()) {
         continue;
       }
       container.getIds(ids, firstMessageId, secondMessageId);
-      int size = ids.size();
-      for (int j = 0; j < size; j++) {
-        long id = ids.get(j);
+      for (long id : ids) {
         container.setSelected(id, true, true, -1, -1, null);
         putSelectedMessageId(id, container);
       }
-      selectedCount += size;
+      selectedCount += ids.size();
       ids.clear();
     }
 
@@ -5146,12 +5199,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return chat != null && tdlib.isSelfChat(chat.id);
   }
 
+  @Deprecated
   public boolean hasWritePermission () {
-    return chat != null && tdlib.hasWritePermission(chat) && !isEventLog();
+    // FIXME: this check is outdated and no longer correct
+    return chat != null && tdlib.canSendBasicMessage(chat) && !isEventLog();
   }
 
-  public boolean canSendMedia () {
-    return tdlib.canSendMedia(chat);
+  public boolean canSendPhotosAndVideos () { // FIXME separate photos and videos
+    return
+      tdlib.canSendMessage(chat, RightId.SEND_PHOTOS) &&
+      tdlib.canSendMessage(chat, RightId.SEND_VIDEOS);
   }
 
   // test
@@ -7689,7 +7746,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private void processSwitchPm (InlineResultButton button) {
     currentSwitchPmButton = button;
-    tdlib.sendBotStartMessage(button.getUserId(), getChatId(), button.data());
+    tdlib.sendBotStartMessage(button.getUserId(), getChatId(), button.botStartParameter());
   }
 
   public void switchBackToSourcePmIfNeeded (TdApi.InlineKeyboardButtonTypeSwitchInline button) {
@@ -7721,7 +7778,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void onSwitchPm (InlineResultButton button) {
-    tdlib.sendBotStartMessage(button.getUserId(), getChatId(), button.data());
+    tdlib.sendBotStartMessage(button.getUserId(), getChatId(), button.botStartParameter());
     inputView.setText("");
   }
 
@@ -7746,7 +7803,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     final String username = Td.primaryUsername(user);
 
-    if (switchInline.inCurrentChat && canWriteMessages() && hasWritePermission()) {
+    if (switchInline.inCurrentChat && canWriteMessages() && hasWritePermission()) { // FIXME rightId.SEND_OTHER_MESSAGES
       if (inputView != null) {
         inputView.setInput("@" + username + " " + switchInline.query, true, true);
       }
@@ -8148,7 +8205,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return getForcePreviewHeight(/* hasHeader */ true, /* hasFooter */ true);
   }
 
-  public int getForceTouchModeOffset () {
+  /*public int getForceTouchModeOffset () {
     int height = Screen.currentHeight() - HeaderView.getSize(true);
 
     if (tdlib.hasWritePermission(chat) || (tdlib.isChannel(chat.id) && !TD.isMember(tdlib.chatStatus(chat.id)))) {
@@ -8156,7 +8213,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
 
     return (height - makeGuessAboutForcePreviewHeight());
-  }
+  }*/
 
   // Commands
 
@@ -8466,39 +8523,65 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return showRestriction(view, R.id.right_sendStickersAndGifs, R.string.ChatDisabledStickers, R.string.ChatRestrictedStickers, R.string.ChatRestrictedStickersUntil);
   }
 
-  public boolean showRestriction (View view, int rightId, int defaultRes, int specificRes, int specificUntilRes) {
-    if (view != null) {
-      CharSequence restrictionText = tdlib.getRestrictionText(chat, rightId, defaultRes, specificRes, specificUntilRes);
-      if (restrictionText != null) {
-        if (view == sendButton || view == recordButton) {
-          showBottomHint(restrictionText, true);
-        } else {
-          context().tooltipManager().builder(view).icon(R.drawable.baseline_warning_24).controller(this).show(tdlib, restrictionText).hideDelayed();
-        }
-        return true;
-      }
+  public boolean showPhotoVideoRestriction (View view) { // TODO separate photos & videos
+    return showPhotoVideoRestriction(view, true, true);
+  }
+
+  public boolean showPhotoVideoRestriction (View view, boolean checkPhotos, boolean checkVideos) { // TODO separate photos & videos
+    Tdlib.RestrictionStatus photosStatus = checkPhotos ? tdlib.getRestrictionStatus(chat, RightId.SEND_PHOTOS) : null;
+    Tdlib.RestrictionStatus videosStatus = checkVideos ? tdlib.getRestrictionStatus(chat, RightId.SEND_VIDEOS) : null;
+    if (photosStatus == null && videosStatus == null) {
       return false;
     }
-    return tdlib.showRestriction(chat, rightId, defaultRes, specificRes, specificUntilRes);
+    if (videosStatus == null || (videosStatus.isGlobal() && photosStatus != null && !photosStatus.isGlobal())) {
+      // photo
+      return showRestriction(view, RightId.SEND_PHOTOS, R.string.ChatDisabledPhoto, R.string.ChatRestrictedPhoto, R.string.ChatRestrictedPhotoUntil);
+    }
+    if (photosStatus == null || (photosStatus.isGlobal() && videosStatus != null && !videosStatus.isGlobal())) {
+      // video
+      return showRestriction(view, RightId.SEND_PHOTOS, R.string.ChatDisabledVideo, R.string.ChatRestrictedVideo, R.string.ChatRestrictedVideoUntil);
+    }
+    return showRestriction(view, RightId.SEND_PHOTOS, R.string.ChatDisabledMedia, R.string.ChatRestrictedMedia, R.string.ChatRestrictedMediaUntil);
+  }
+
+  public boolean showRestriction (View view, @RightId int rightId) {
+    CharSequence text = tdlib.getDefaultRestrictionText(chat, rightId);
+    return showRestriction(view, text);
+  }
+
+  public boolean showRestriction (View view, CharSequence restrictionText) {
+    if (restrictionText != null) {
+      if (view == sendButton || view == recordButton) {
+        showBottomHint(restrictionText, true);
+      } else if (view == null) {
+        UI.showToast(restrictionText, Toast.LENGTH_SHORT);
+      } else {
+        context().tooltipManager().builder(view).icon(R.drawable.baseline_warning_24).controller(this).show(tdlib, restrictionText).hideDelayed();
+      }
+      return true;
+    }
+    return false;
+  }
+
+  public boolean showRestriction (View view, int rightId, int defaultRes, int specificRes, int specificUntilRes) {
+    CharSequence restrictionText = tdlib.buildRestrictionText(chat, rightId, defaultRes, specificRes, specificUntilRes);
+    return showRestriction(view, restrictionText);
   }
 
   private boolean sendContent (View view, int rightId, int defaultRes, int specificRes, int specificUntilRes, FutureLong replyToMessageId, TdApi.MessageSendOptions initialSendOptions, Future<TdApi.InputMessageContent> content) {
     if (showRestriction(view, rightId, defaultRes, specificRes, specificUntilRes))
       return false;
-    if (hasWritePermission()) {
-      pickDateOrProceed(initialSendOptions, (modifiedSendOptions, disableMarkdown) -> {
-        tdlib.sendMessage(chat.id, getMessageThreadId(), replyToMessageId != null ? replyToMessageId.get() : 0, Td.newSendOptions(modifiedSendOptions, obtainSilentMode()), content.get(), null);
-      });
-      return true;
-    }
-    return false;
+    pickDateOrProceed(initialSendOptions, (modifiedSendOptions, disableMarkdown) -> {
+      tdlib.sendMessage(chat.id, getMessageThreadId(), replyToMessageId != null ? replyToMessageId.get() : 0, Td.newSendOptions(modifiedSendOptions, obtainSilentMode()), content.get(), null);
+    });
+    return true;
   }
 
   private boolean sendSticker (View view, TdApi.Sticker sticker, String emoji, boolean allowReply, TdApi.MessageSendOptions initialSendOptions) {
     if (sticker == null) {
       return false;
     }
-    if (sticker.isPremium && tdlib.ui().showPremiumAlert(this, view, TdlibUi.PremiumFeature.STICKER)) {
+    if (Td.isPremium(sticker) && tdlib.ui().showPremiumAlert(this, view, TdlibUi.PremiumFeature.STICKER)) {
       return false;
     }
     return sendContent(view, R.id.right_sendStickersAndGifs, R.string.ChatDisabledStickers, R.string.ChatRestrictedStickers, R.string.ChatRestrictedStickersUntil, allowReply, initialSendOptions, () -> new TdApi.InputMessageSticker(new TdApi.InputFileId(sticker.sticker.id), null, 0, 0, emoji));
@@ -8704,7 +8787,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
         if (tdlib.isSupergroupChat(chat)) {
           TdApi.SupergroupFullInfo fullInfo = tdlib.cache().supergroupFull(ChatId.toSupergroupId(chat.id));
-          if (fullInfo != null && fullInfo.isAggressiveAntiSpamEnabled) {
+          if (fullInfo != null && fullInfo.hasAggressiveAntiSpamEnabled) {
             long userId = tdlib.telegramAntiSpamUserId();
             if (userId != 0) {
               items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
@@ -8961,6 +9044,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return sendButton;
   }
 
+  public View getAttachButton () {
+    return mediaButton;
+  }
+
   private float sendFactor;
 
   private void setSendFactor (float factor) {
@@ -9205,7 +9292,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void send (TdApi.InputMessageContent content, boolean allowReply, TdApi.MessageSendOptions initialSendOptions, RunnableData<TdApi.Message> after) {
-    if (hasWritePermission()) {
+    if (hasWritePermission()) { // FIXME RightId.SEND_POLLS
       pickDateOrProceed(initialSendOptions, (modifiedSendOptions, disableMarkdown) -> {
         tdlib.sendMessage(chat.id, getMessageThreadId(), allowReply ? obtainReplyId() : 0, Td.newSendOptions(modifiedSendOptions, obtainSilentMode()), content, after);
       });
@@ -9213,7 +9300,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void sendInlineQueryResult (long inlineQueryId, String id, boolean allowReply, boolean clearInput, TdApi.MessageSendOptions initialSendOptions) {
-    if (hasWritePermission()) {
+    if (hasWritePermission()) { // FIXME RightId.SEND_OTHER
       pickDateOrProceed(initialSendOptions, (modifiedSendOptions, disableMarkdown) -> {
         tdlib.sendInlineQueryResult(chat.id, getMessageThreadId(), allowReply ? obtainReplyId() : 0, Td.newSendOptions(modifiedSendOptions, obtainSilentMode()), inlineQueryId, id);
         if (clearInput) {
@@ -9232,8 +9319,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
-  public void sendMusic (List<MediaBottomFilesController.MusicEntry> musicFiles, boolean needGroupMedia, boolean allowReply, TdApi.MessageSendOptions initialSendOptions) {
-    if (hasWritePermission()) {
+  public void sendMusic (View view, List<MediaBottomFilesController.MusicEntry> musicFiles, boolean needGroupMedia, boolean allowReply, TdApi.MessageSendOptions initialSendOptions) {
+    if (!showRestriction(view, RightId.SEND_AUDIO)) {
       TdApi.InputMessageContent[] content = new TdApi.InputMessageContent[musicFiles.size()];
       for (int i = 0; i < content.length; i++) {
         MediaBottomFilesController.MusicEntry musicFile = musicFiles.get(i);
@@ -9247,9 +9334,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
-  public void sendRecord (final TGRecord record, boolean allowReply, TdApi.MessageSendOptions initialSendOptions) {
-    if (!hasWritePermission()) {
-      return;
+  public boolean sendRecord (View view, final TGRecord record, boolean allowReply, TdApi.MessageSendOptions initialSendOptions) {
+    if (showRestriction(view, RightId.SEND_VOICE_NOTES)) {
+      return false;
     }
     final long chatId = chat.id;
     final long replyMessageId = allowReply ? obtainReplyId() : 0;
@@ -9262,6 +9349,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     } else {
       tdlib.sendMessage(chatId, getMessageThreadId(), replyMessageId, finalSendOptions, new TdApi.InputMessageVoiceNote(record.toInputFile(), record.getDuration(), record.getWaveform(), null), null);
     }
+    return true;
   }
 
   public void forwardMessage (TdApi.Message message) { // TODO remove all related to Forward stuff to replace with ShareLayout
@@ -9354,11 +9442,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
       case Intents.ACTIVITY_RESULT_IMAGE_CAPTURE:
       case Intents.ACTIVITY_RESULT_VIDEO_CAPTURE: {
         File file = Intents.takeLastOutputMedia();
+        boolean isVideo = requestCode == Intents.ACTIVITY_RESULT_VIDEO_CAPTURE;
+        if (showRestriction(mediaButton, isVideo ? RightId.SEND_VIDEOS : RightId.SEND_PHOTOS)) {
+          return;
+        }
         if (file != null) {
           if (!isSecretChat()) {
             U.addToGallery(file);
           }
-          U.toGalleryFile(file, requestCode == Intents.ACTIVITY_RESULT_VIDEO_CAPTURE, galleryFile -> {
+          U.toGalleryFile(file, isVideo, galleryFile -> {
             if (isDestroyed()) {
               ImageStrictCache.instance().forget(galleryFile);
               return;
@@ -9370,7 +9462,19 @@ public class MessagesController extends ViewController<MessagesController.Argume
             MediaStack stack = new MediaStack(context, tdlib);
             stack.set(new MediaItem(context, tdlib, galleryFile));
             MediaViewController controller = new MediaViewController(context, tdlib);
-            controller.setArguments(MediaViewController.Args.fromGallery(this, null, null, (images, options, disableMarkdown, asFiles) -> sendPhotosAndVideosCompressed(new ImageGalleryFile[] {galleryFile}, false, options, disableMarkdown, asFiles), stack, areScheduledOnly()).setReceiverChatId(getChatId()).setDeleteOnExit(isSecretChat() || !Settings.instance().getNewSetting(Settings.SETTING_FLAG_CAMERA_KEEP_DISCARDED_MEDIA)));
+            AtomicBoolean hideMedia = new AtomicBoolean(false);
+            controller.setArguments(
+              MediaViewController.Args.fromGallery(this, null, null,
+                new MediaSpoilerSendDelegate() {
+                  @Override
+                  public boolean sendSelectedItems (View view, ArrayList<ImageFile> images, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles, boolean hasSpoiler) {
+                    sendPhotosAndVideosCompressed(new ImageGalleryFile[] {galleryFile}, false, options, disableMarkdown, asFiles, hasSpoiler);
+                    return true;
+                  }
+                },
+                stack, areScheduledOnly()
+              ).setReceiverChatId(getChatId())
+               .setDeleteOnExit(isSecretChat() || !Settings.instance().getNewSetting(Settings.SETTING_FLAG_CAMERA_KEEP_DISCARDED_MEDIA)));
             controller.open();
           });
         }
@@ -9391,10 +9495,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
           return;
         }
 
-        if (imagePath != null && imagePath.endsWith(".webp")) {
+        if (imagePath != null && imagePath.endsWith(".webp") && tdlib.getRestrictionStatus(chat, RightId.SEND_OTHER_MESSAGES) == null) {
           sendSticker(imagePath, true, Td.newSendOptions());
         } else if (requestCode == Intents.ACTIVITY_RESULT_GALLERY_FILE) {
-          sendFiles(Collections.singletonList(imagePath), false, true, Td.newSendOptions());
+          sendFiles(mediaButton, Collections.singletonList(imagePath), false, true, Td.newSendOptions());
         } else {
           sendPhotoCompressed(imagePath, 0, true);
         }
@@ -9404,6 +9508,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
       case Intents.ACTIVITY_RESULT_AUDIO: {
         final Uri path = data.getData();
         if (path == null) break;
+        if (showRestriction(mediaButton, RightId.SEND_AUDIO)) {
+          return;
+        }
         final String audioPath = U.tryResolveFilePath(path);
         if (audioPath != null) {
           final long chatId = chat.id;
@@ -9423,30 +9530,54 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
-  public void sendFiles (final List<String> paths, boolean needGroupMedia, boolean allowReply, TdApi.MessageSendOptions initialSendOptions) {
-    if (hasWritePermission()) {
-      final long chatId = chat.id;
-      final boolean isSecretChat = isSecretChat();
-      final TdApi.MessageSendOptions finalSendOptions = Td.newSendOptions(initialSendOptions, obtainSilentMode());
-      final long replyMessageId = allowReply ? obtainReplyId() : 0;
-      Media.instance().post(() -> {
-        List<TdApi.InputMessageContent> content = new ArrayList<>();
-        for (String path : paths) {
-          TD.FileInfo info = new TD.FileInfo();
-          TdApi.InputFile inputFile = TD.createInputFile(path, null, info);
-          TdApi.InputMessageContent inputMessageContent = tdlib.filegen().createThumbnail(TD.toInputMessageContent(path, inputFile, info, null), isSecretChat);
-          content.add(inputMessageContent);
+  public void sendFiles (View view, final List<String> paths, boolean needGroupMedia, boolean allowReply, TdApi.MessageSendOptions initialSendOptions) {
+    final long chatId = chat.id;
+    final boolean isSecretChat = isSecretChat();
+    final TdApi.MessageSendOptions finalSendOptions = Td.newSendOptions(initialSendOptions, obtainSilentMode());
+    final long replyMessageId = allowReply ? obtainReplyId() : 0;
+    boolean allowAudio = tdlib.getRestrictionStatus(chat, RightId.SEND_AUDIO) == null;
+    boolean allowDocs = tdlib.getRestrictionStatus(chat, RightId.SEND_DOCS) == null;
+    boolean allowVideos = tdlib.getRestrictionStatus(chat, RightId.SEND_VIDEOS) == null;
+    boolean allowGifs = tdlib.getRestrictionStatus(chat, RightId.SEND_OTHER_MESSAGES) == null;
+    Media.instance().post(() -> {
+      boolean restrictionFailed = false;
+      List<TdApi.InputMessageContent> content = new ArrayList<>();
+      for (String path : paths) {
+        TD.FileInfo info = new TD.FileInfo();
+        TdApi.InputFile inputFile = TD.createInputFile(path, null, info);
+        TdApi.InputMessageContent inputMessageContent = TD.toInputMessageContent(path, inputFile, info, null, allowAudio, allowGifs, allowVideos, allowDocs, false);
+        if (inputMessageContent == null) {
+          restrictionFailed = true;
+          break;
         }
-        List<TdApi.Function<?>> functions = TD.toFunctions(chatId, getMessageThreadId(), replyMessageId, finalSendOptions, content.toArray(new TdApi.InputMessageContent[0]), needGroupMedia);
-        for (TdApi.Function<?> function : functions) {
-          tdlib.client().send(function, tdlib.messageHandler());
-        }
-      });
-    }
+        content.add(inputMessageContent);
+      }
+      if (restrictionFailed) {
+        runOnUiThreadOptional(() -> {
+          showRestriction(view, RightId.SEND_DOCS);
+        });
+        return;
+      }
+      for (int i = 0; i < content.size(); i++) {
+        TdApi.InputMessageContent inputMessageContent = content.get(i);
+        content.set(i, tdlib.filegen().createThumbnail(inputMessageContent, isSecretChat));
+      }
+
+      List<TdApi.Function<?>> functions = TD.toFunctions(chatId, getMessageThreadId(), replyMessageId, finalSendOptions, content.toArray(new TdApi.InputMessageContent[0]), needGroupMedia);
+      for (TdApi.Function<?> function : functions) {
+        tdlib.client().send(function, tdlib.messageHandler());
+      }
+    });
   }
 
   public void sendPhotoCompressed (final String path, final int ttl, final boolean allowReply) {
-    if (path != null && hasWritePermission()) {
+    if (showRestriction(mediaButton, RightId.SEND_PHOTOS)) {
+      return;
+    }
+    if (StringUtils.isEmpty(path)) {
+      return;
+    }
+    if (path != null) {
       final long chatId = chat.id;
       final long replyToMessageId = allowReply ? obtainReplyId() : 0;
       final boolean silent = obtainSilentMode();
@@ -9467,20 +9598,18 @@ public class MessagesController extends ViewController<MessagesController.Argume
           height = sampledHeight;
         }
         TdApi.InputFileGenerated inputFile = PhotoGenerationInfo.newFile(path, U.getRotationForExifOrientation(orientation));
-        TdApi.InputMessagePhoto photo = tdlib.filegen().createThumbnail(new TdApi.InputMessagePhoto(inputFile, null, null, width, height, null, ttl), isSecret);
+        TdApi.InputMessagePhoto photo = tdlib.filegen().createThumbnail(new TdApi.InputMessagePhoto(inputFile, null, null, width, height, null, ttl, false), isSecret);
         tdlib.sendMessage(chatId, getMessageThreadId(), replyToMessageId, Td.newSendOptions(silent), photo);
       });
     }
   }
 
-  public void sendCompressed (final ImageGalleryFile image, TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles) {
-    sendPhotosAndVideosCompressed(new ImageGalleryFile[] {image}, false, options, disableMarkdown, asFiles);
-  }
-
-  public void sendPhotosAndVideosCompressed (final ImageGalleryFile[] files, final boolean needGroupMedia, final TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles) {
-    if (files == null || files.length == 0 || !hasWritePermission()) {
-      return;
+  public boolean sendPhotosAndVideosCompressed (final ImageGalleryFile[] files, final boolean needGroupMedia, final TdApi.MessageSendOptions options, boolean disableMarkdown, boolean asFiles, boolean hasSpoiler) {
+    if (files == null || files.length == 0) {
+      return false;
     }
+
+    // TODO check RightId.SEND_PHOTOS / RightId.SEND_VIDEOS
 
     final long chatId = chat.id;
     final long replyToMessageId = obtainReplyId();
@@ -9526,11 +9655,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
           final TdApi.InputFile inputVideo = forceVideo ? VideoGenerationInfo.newFile(file.getFilePath(), file, asFiles) : TD.createInputFile(file.getFilePath(), null, fileInfo);
           TdApi.FormattedText caption = file.getCaption(true, !disableMarkdown);
           if (asFiles && !forceVideo) {
-            content = tdlib.filegen().createThumbnail(TD.toInputMessageContent(file.getFilePath(), inputVideo, fileInfo, caption), isSecretChat);
+            content = tdlib.filegen().createThumbnail(TD.toInputMessageContent(file.getFilePath(), inputVideo, fileInfo, caption, hasSpoiler), isSecretChat);
           } else if (sendAsAnimation && file.getTTL() == 0 && (files.length == 1 || !needGroupMedia)) {
-            content = tdlib.filegen().createThumbnail(new TdApi.InputMessageAnimation(inputVideo, null, null, file.getVideoDuration(true), width, height, caption), isSecretChat);
+            content = tdlib.filegen().createThumbnail(new TdApi.InputMessageAnimation(inputVideo, null, null, file.getVideoDuration(true), width, height, caption, hasSpoiler), isSecretChat);
           } else {
-            content = tdlib.filegen().createThumbnail(new TdApi.InputMessageVideo(inputVideo, null, null, file.getVideoDuration(true), width, height, U.canStreamVideo(inputVideo), caption, file.getTTL()), isSecretChat);
+            content = tdlib.filegen().createThumbnail(new TdApi.InputMessageVideo(inputVideo, null, null, file.getVideoDuration(true), width, height, U.canStreamVideo(inputVideo), caption, file.getTTL(), hasSpoiler), isSecretChat);
           }
         } else {
           int[] size = new int[2];
@@ -9551,7 +9680,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           if (asFiles) {
             content = tdlib.filegen().createThumbnail(new TdApi.InputMessageDocument(inputFile, null, false, caption), isSecretChat);
           } else {
-            content = tdlib.filegen().createThumbnail(new TdApi.InputMessagePhoto(inputFile, null, null, width, height, caption, file.getTTL()), isSecretChat);
+            content = tdlib.filegen().createThumbnail(new TdApi.InputMessagePhoto(inputFile, null, null, width, height, caption, file.getTTL(), hasSpoiler), isSecretChat);
           }
         }
         inputContent[i] = content;
@@ -9562,6 +9691,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
         tdlib.client().send(function, tdlib.messageHandler());
       }
     });
+
+    return true;
   }
 
   /*private void uploadFile (boolean isSecretChat, TdApi.InputMessageContent content) {
@@ -9624,6 +9755,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   public void setBroadcastAction (@TdApi.ChatAction.Constructors int action) {
     if (action == TdApi.ChatActionCancel.CONSTRUCTOR) {
+      //noinspection WrongConstant
       action = 0;
     }
     boolean hadAction = this.broadcastingAction != 0;
@@ -9647,7 +9779,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private SparseIntArray actions;
 
-  public void setChatAction (int action, boolean set, boolean force) {
+  public void setChatAction (@TdApi.ChatAction.Constructors int action, boolean set, boolean force) {
     if (chat == null) {
       return;
     }
@@ -10191,7 +10323,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     checkSendButton(false);
   }
 
-  private boolean sendShowingVoice (TdApi.MessageSendOptions sendOptions) {
+  private boolean sendShowingVoice (View view, TdApi.MessageSendOptions sendOptions) {
     if (!isVoiceShowing) {
       return false;
     }
@@ -10199,8 +10331,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (record != null) {
       voiceInputView.ignoreStop();
       // Player.instance().destroy();
-      sendRecord(record, true, sendOptions);
-      closeVoicePreview(false);
+      if (sendRecord(view, record, true, sendOptions)) {
+        closeVoicePreview(false);
+      }
     }
     return true;
   }
@@ -10245,7 +10378,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       isVoiceReceived = true;
       voiceInputView.processRecord(record);
     } else {
-      sendRecord(record, true, Td.newSendOptions());
+      sendRecord(sendButton, record, true, Td.newSendOptions());
     }
   }
 

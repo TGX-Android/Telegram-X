@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1228,7 +1228,7 @@ public class TdlibListeners {
 
   // updateMessageTtlSetting
 
-  private static void updateChatMessageTtlSetting (long chatId, int messageTtlSetting, @Nullable Iterator<ChatListener> list) {
+  private static void updateChatMessageAutoDeleteTime (long chatId, int messageTtlSetting, @Nullable Iterator<ChatListener> list) {
     if (list != null) {
       while (list.hasNext()) {
         list.next().onChatMessageTtlSettingChanged(chatId, messageTtlSetting);
@@ -1236,9 +1236,9 @@ public class TdlibListeners {
     }
   }
 
-  void updateChatMessageTtlSetting (TdApi.UpdateChatMessageTtl update) {
-    updateChatMessageTtlSetting(update.chatId, update.messageTtl, chatListeners.iterator());
-    updateChatMessageTtlSetting(update.chatId, update.messageTtl, specificChatListeners.iterator(update.chatId));
+  void updateChatMessageAutoDeleteTime (TdApi.UpdateChatMessageAutoDeleteTime update) {
+    updateChatMessageAutoDeleteTime(update.chatId, update.messageAutoDeleteTime, chatListeners.iterator());
+    updateChatMessageAutoDeleteTime(update.chatId, update.messageAutoDeleteTime, specificChatListeners.iterator(update.chatId));
   }
 
   // updateChatVoiceChat
@@ -1314,6 +1314,21 @@ public class TdlibListeners {
   void updateChatIsMarkedAsUnread (TdApi.UpdateChatIsMarkedAsUnread update) {
     updateChatIsMarkedAsUnread(update.chatId, update.isMarkedAsUnread, chatListeners.iterator());
     updateChatIsMarkedAsUnread(update.chatId, update.isMarkedAsUnread, specificChatListeners.iterator(update.chatId));
+  }
+
+  // updateChatIsTranslatable
+
+  private static void updateChatIsTranslatable (long chatId, boolean isTranslatable, @Nullable Iterator<ChatListener> list) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onChatIsTranslatableChanged(chatId, isTranslatable);
+      }
+    }
+  }
+
+  void updateChatIsTranslatable (TdApi.UpdateChatIsTranslatable update) {
+    updateChatIsTranslatable(update.chatId, update.isTranslatable, chatListeners.iterator());
+    updateChatIsTranslatable(update.chatId, update.isTranslatable, specificChatListeners.iterator(update.chatId));
   }
 
   // updateChatIsBlocked

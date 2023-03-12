@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -88,7 +88,7 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
     }
     this.description = b.toString();
 
-    setMediaPreview(MediaPreview.valueOf(tdlib, data.video, Screen.dp(50f), Screen.dp(3f)));
+    setMediaPreview(MediaPreview.valueOf(tdlib, data.video, Screen.dp(50f), Screen.dp(3f), false));
     if (getMediaPreview() == null) {
       int placeholderColorId = TD.getColorIdForString(data.video.fileName.isEmpty() ? data.id : data.video.fileName);
       avatarPlaceholder = new AvatarPlaceholder(AVATAR_PLACEHOLDER_RADIUS, new AvatarPlaceholder.Metadata(placeholderColorId, TD.getLetters(title)), null);

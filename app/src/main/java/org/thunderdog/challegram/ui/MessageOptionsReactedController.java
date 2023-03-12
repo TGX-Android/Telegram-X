@@ -24,6 +24,7 @@ import org.thunderdog.challegram.widget.ListInfoView;
 import org.thunderdog.challegram.widget.PopupLayout;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.StringUtils;
 
@@ -53,7 +54,9 @@ public class MessageOptionsReactedController extends BottomSheetViewController.B
       @Override
       protected void setUser (ListItem item, int position, UserView userView, boolean isUpdate) {
         final TGReaction reactionObj = tdlib.getReaction(TD.toReactionType(item.getStringValue()));
-        userView.setUser(new TGUser(tdlib, tdlib.chatUser(item.getLongId())));
+        TGUser user = new TGUser(tdlib, tdlib.chatUser(item.getLongId()));
+        user.setActionDateStatus(item.getIntValue(), R.string.reacted);
+        userView.setUser(user);
         if (item.getStringValue().length() > 0 && reactionObj != null && reactionType == null) {
           userView.setDrawModifier(new ReactionModifier(userView.getComplexReceiver(), 8, reactionObj));
         } else {
@@ -111,6 +114,7 @@ public class MessageOptionsReactedController extends BottomSheetViewController.B
       }
       ListItem item = new ListItem(ListItem.TYPE_USER_SMALL, R.id.user)
         .setLongId(((TdApi.MessageSenderUser) reaction.senderId).userId)
+        .setIntValue(reaction.date)
         .setStringValue(TD.makeReactionKey(reaction.type));
       items.add(item);
     }

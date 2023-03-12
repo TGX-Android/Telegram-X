@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,6 +33,8 @@ import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.tool.DrawAlgorithms;
+import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.TGMimeType;
 import org.thunderdog.challegram.unsorted.Settings;
@@ -47,6 +49,7 @@ public class MediaPreviewSimple extends MediaPreview {
   private TdApi.Sticker sticker;
   private Path outline;
   private int outlineWidth, outlineHeight;
+  private boolean hasSpoiler;
 
   private ImageFile previewImage;
   private GifFile previewGif;
@@ -162,12 +165,20 @@ public class MediaPreviewSimple extends MediaPreview {
   }
 
   public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, TdApi.Thumbnail thumbnail, TdApi.Minithumbnail minithumbnail) {
+    this(tdlib, size, cornerRadius, thumbnail, minithumbnail, false);
+  }
+
+  public MediaPreviewSimple (Tdlib tdlib, int size, int cornerRadius, TdApi.Thumbnail thumbnail, TdApi.Minithumbnail minithumbnail, boolean hasSpoiler) {
     super(size, cornerRadius);
+    this.hasSpoiler = hasSpoiler;
     if (minithumbnail != null) {
       this.previewImage = new ImageFileLocal(minithumbnail);
       this.previewImage.setSize(size);
       this.previewImage.setScaleType(ImageFile.CENTER_CROP);
       this.previewImage.setDecodeSquare(true);
+      if (hasSpoiler) {
+        this.previewImage.setIsPrivate();
+      }
     }
     if (thumbnail != null) {
       this.targetImage = TD.toImageFile(tdlib, thumbnail);
@@ -176,13 +187,18 @@ public class MediaPreviewSimple extends MediaPreview {
         this.targetImage.setScaleType(ImageFile.CENTER_CROP);
         this.targetImage.setDecodeSquare(true);
         this.targetImage.setNoBlur();
+        if (hasSpoiler) {
+          this.targetImage.setIsPrivate();
+        }
       }
-      this.targetGif = TD.toGifFile(tdlib, thumbnail);
-      if (this.targetGif != null) {
-        this.targetGif.setOptimizationMode(GifFile.OptimizationMode.STICKER_PREVIEW);
-        this.targetGif.setRequestedSize(size);
-        this.targetGif.setScaleType(GifFile.CENTER_CROP);
-        this.targetGif.setPlayOnce();
+      if (!hasSpoiler) {
+        this.targetGif = TD.toGifFile(tdlib, thumbnail);
+        if (this.targetGif != null) {
+          this.targetGif.setOptimizationMode(GifFile.OptimizationMode.STICKER_PREVIEW);
+          this.targetGif.setRequestedSize(size);
+          this.targetGif.setScaleType(GifFile.CENTER_CROP);
+          this.targetGif.setPlayOnce();
+        }
       }
     }
   }
@@ -315,6 +331,11 @@ public class MediaPreviewSimple extends MediaPreview {
 
     if (Config.DEBUG_STICKER_OUTLINES) {
       preview.drawPlaceholderContour(c, outline);
+    }
+
+    if (hasSpoiler) {
+      DrawAlgorithms.drawRoundRect(c, cornerRadius, target.getLeft(), target.getTop(), target.getRight(), target.getBottom(), Paints.fillingPaint(Theme.getColor(R.id.theme_color_spoilerMediaOverlay)));
+      DrawAlgorithms.drawParticles(c, cornerRadius, target.getLeft(), target.getTop(), target.getRight(), target.getBottom(), 1f);
     }
 
     if (alpha != 1f) {

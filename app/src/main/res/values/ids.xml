@@ -1085,6 +1085,7 @@
   <item type="id" name="btn_discard_record" />
 
   <item type="id" name="btn_toggleAggressiveAntiSpam" />
+  <item type="id" name="btn_toggleHideMembers" />
   <item type="id" name="btn_reportFalsePositive" />
 
   <item type="id" name="btn_approveChatRequest" />
@@ -1196,8 +1197,12 @@
 
   <item type="id" name="right_readMessages" />
   <item type="id" name="right_sendMessages" />
-  <item type="id" name="right_sendMedia" />
-  <item type="id" name="right_sendVoiceVideo" />
+  <item type="id" name="right_sendAudio" />
+  <item type="id" name="right_sendDocument" />
+  <item type="id" name="right_sendPhoto" />
+  <item type="id" name="right_sendVideo" />
+  <item type="id" name="right_sendVoiceNote" />
+  <item type="id" name="right_sendVideoNote" />
   <item type="id" name="right_sendStickersAndGifs" />
   <item type="id" name="right_sendPolls" />
   <item type="id" name="right_embedLinks" />

@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -50,10 +51,12 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.HapticMenuHelper;
 import org.thunderdog.challegram.widget.NoScrollTextView;
+import org.thunderdog.challegram.widget.SimplestCheckBox;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.Animated;
+import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
@@ -177,7 +180,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
   }
 
   public View addItem (@Nullable Tdlib tdlib, HapticMenuHelper.MenuItem menuItem, OnClickListener listener) {
-    if ((StringUtils.isEmpty(menuItem.subtitle) && menuItem.messageSenderId == null) || tdlib == null) {
+    if (!menuItem.isCheckbox && ((StringUtils.isEmpty(menuItem.subtitle) && menuItem.messageSenderId == null) || tdlib == null)) {
       return addItem(menuItem.id, menuItem.title, menuItem.iconResId, menuItem.icon, listener);
     }
 
@@ -191,7 +194,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     }
 
     FrameLayout.LayoutParams lp = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(ITEM_HEIGHT), Gravity.LEFT);
-    FrameLayout frameLayout = new FrameLayout(getContext()) {
+    FrameLayout frameLayout = new FrameLayoutFix(getContext()) {
       @Override
       protected void onDraw (Canvas canvas) {
         super.onDraw(canvas);
@@ -208,7 +211,41 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
           }
         }
 
-        if (finalIcon != null) {
+        if (menuItem.isCheckbox) {
+          int fillingColor, checkColor, outlineColor;
+          if (forcedTheme != null) {
+            fillingColor = forcedTheme.getColor(R.id.theme_color_checkActive);
+            checkColor = forcedTheme.getColor(R.id.theme_color_checkContent);
+            outlineColor = forcedTheme.getColor(R.id.theme_color_icon);
+          } else {
+            fillingColor = Theme.checkFillingColor();
+            checkColor = Theme.checkCheckColor();
+            outlineColor = Theme.getColor(R.id.theme_color_icon);
+          }
+
+          // TODO move into SimplestCheckbox
+          int checkBoxCenterX = Screen.dp(29f);
+          int progressCy = getMeasuredHeight() / 2;
+          int progressRadius = Screen.dp(9f);
+          RectF rectF = Paints.getRectF();
+          progressRadius -= Screen.dp(1f);
+          rectF.set(checkBoxCenterX - progressRadius, progressCy - progressRadius, checkBoxCenterX + progressRadius, progressCy + progressRadius);
+          int outlineRadius = Screen.dp(3f);
+          canvas.drawRoundRect(rectF, outlineRadius, outlineRadius, Paints.getProgressPaint(outlineColor, Screen.dp(1f)));
+
+          float selectionFactor = menuItem.isCheckboxSelectedAnimated != null ?
+            menuItem.isCheckboxSelectedAnimated.getFloatValue() :
+            menuItem.isCheckboxSelected ? 1f :
+            0f;
+
+          SimplestCheckBox.draw(
+            canvas,
+            Screen.dp(29f), getMeasuredHeight() / 2,
+            selectionFactor, null, null,
+            fillingColor, checkColor,
+            false, 1f
+          );
+        } else if (finalIcon != null) {
           canvas.save();
           canvas.translate(Screen.dp(29) - finalIcon.getMinimumWidth() / 2f, (getMeasuredHeight() - finalIcon.getMinimumHeight()) / 2f);
           if (menuItem.iconResId == 0) {
@@ -223,7 +260,15 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
 
     frameLayout.setLayoutParams(lp);
     frameLayout.setId(menuItem.id);
-    frameLayout.setOnClickListener(listener);
+    if (menuItem.isCheckbox) {
+      menuItem.isCheckboxSelectedAnimated = new BoolAnimator(frameLayout, AnimatorUtils.DECELERATE_INTERPOLATOR, 165l, menuItem.isCheckboxSelected);
+      frameLayout.setOnClickListener(v -> {
+        menuItem.isCheckboxSelected = menuItem.isCheckboxSelectedAnimated.toggleValue(true);
+        listener.onClick(v);
+      });
+    } else {
+      frameLayout.setOnClickListener(listener);
+    }
     frameLayout.setWillNotDraw(false);
     if (receiver != null) {
       receiver.setBounds(Screen.dp(19), Screen.dp(ITEM_HEIGHT / 2f - 10), Screen.dp(39), Screen.dp(ITEM_HEIGHT / 2f + 10));
@@ -234,33 +279,50 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     titleTextItem.setTypeface(Fonts.getRobotoRegular());
     titleTextItem.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16f);
     titleTextItem.setText(menuItem.title);
-    titleTextItem.setGravity(Gravity.TOP | Lang.gravity());
     titleTextItem.setSingleLine(true);
     titleTextItem.setEllipsize(TextUtils.TruncateAt.END);
     titleTextItem.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(ITEM_HEIGHT)));
-    titleTextItem.setPadding(Screen.dp(59f), Screen.dp(5f), textRightOffset, 0);
+    if (!StringUtils.isEmpty(menuItem.subtitle)) {
+      titleTextItem.setGravity(Gravity.TOP | Lang.gravity());
+      titleTextItem.setPadding(Screen.dp(59f), Screen.dp(5f), textRightOffset, 0);
+    } else {
+      titleTextItem.setGravity(Gravity.CENTER_HORIZONTAL | Lang.gravity());
+      titleTextItem.setPadding(Screen.dp(59f), 0, textRightOffset, 0);
+      titleTextItem.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Lang.gravity()));
+    }
     titleTextItem.setMaxWidth(maxWidth);
 
-    TextView subtitleTextItem = new NoScrollTextView(getContext());
-    subtitleTextItem.setTypeface(Fonts.getRobotoRegular());
-    subtitleTextItem.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11f);
-    subtitleTextItem.setText(menuItem.subtitle);
-    subtitleTextItem.setGravity(Gravity.BOTTOM | Lang.gravity());
-    subtitleTextItem.setSingleLine(true);
-    subtitleTextItem.setEllipsize(TextUtils.TruncateAt.END);
-    subtitleTextItem.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(ITEM_HEIGHT)));
-    subtitleTextItem.setPadding(Screen.dp(59f), 0, textRightOffset, Screen.dp(8f));
-    subtitleTextItem.setMaxWidth(maxWidth);
+    TextView subtitleTextItem;
+    if (!StringUtils.isEmpty(menuItem.subtitle)) {
+      subtitleTextItem = new NoScrollTextView(getContext());
+      subtitleTextItem.setTypeface(Fonts.getRobotoRegular());
+      subtitleTextItem.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11f);
+      subtitleTextItem.setText(menuItem.subtitle);
+      subtitleTextItem.setGravity(Gravity.BOTTOM | Lang.gravity());
+      subtitleTextItem.setSingleLine(true);
+      subtitleTextItem.setEllipsize(TextUtils.TruncateAt.END);
+      subtitleTextItem.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(ITEM_HEIGHT)));
+      subtitleTextItem.setPadding(Screen.dp(59f), 0, textRightOffset, Screen.dp(8f));
+      subtitleTextItem.setMaxWidth(maxWidth);
+
+      if (forcedTheme != null) {
+        subtitleTextItem.setTextColor(forcedTheme.getColor(R.id.theme_color_textLight));
+      } else {
+        subtitleTextItem.setTextColor(Theme.getColor(R.id.theme_color_textLight));
+        if (themeListeners != null) {
+          themeListeners.addThemeTextDecentColorListener(subtitleTextItem);
+        }
+      }
+    } else {
+      subtitleTextItem = null;
+    }
 
     if (forcedTheme != null) {
       titleTextItem.setTextColor(forcedTheme.getColor(R.id.theme_color_text));
-      subtitleTextItem.setTextColor(forcedTheme.getColor(R.id.theme_color_textLight));
     } else {
       titleTextItem.setTextColor(Theme.textAccentColor());
-      subtitleTextItem.setTextColor(Theme.getColor(R.id.theme_color_textLight));
       if (themeListeners != null) {
         themeListeners.addThemeTextAccentColorListener(titleTextItem);
-        themeListeners.addThemeTextAccentColorListener(subtitleTextItem);
       }
     }
 
@@ -269,7 +331,9 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     }
 
     frameLayout.addView(titleTextItem);
-    frameLayout.addView(subtitleTextItem);
+    if (subtitleTextItem != null) {
+      frameLayout.addView(subtitleTextItem);
+    }
 
     Views.setClickable(frameLayout);
     RippleSupport.setTransparentSelector(frameLayout);

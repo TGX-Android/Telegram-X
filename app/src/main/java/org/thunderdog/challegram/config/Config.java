@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -79,8 +79,6 @@ public class Config {
   public static final boolean ALLOW_SEEK_ANYTIME = true;
 
   public static final boolean NEED_NETWORK_SYNC_REQUEST = false;
-
-  public static final boolean VIEW_MESSAGES_BEFORE_SCROLL = false;
 
   // Fields from default config.
 
@@ -294,4 +292,6 @@ public class Config {
   public static final boolean NEED_TEMPORARY_TOPICS_WORKAROUND = true;
 
   public static final boolean USE_HARDWARE_PHOTO_VIEWER_CONFIG = false;
+
+  public static final boolean REQUIRE_FIREBASE_SERVICES_FOR_SAFETYNET = false;
 }

@@ -1,6 +1,6 @@
 /*
  * This file is a part of Telegram X
- * Copyright © 2014-2022 (tgx-android@pm.me)
+ * Copyright © 2014 (tgx-android@pm.me)
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@ import android.view.View;
 public interface GifWatcher {
   void gifLoaded (GifFile file, GifState state);
   default void gifProgress (GifFile file, float progress) { }
-  default void gifFrameChanged (GifFile file) { }
+  default void gifFrameChanged (GifFile file, boolean isRestart) { }
   default View findTargetView (GifFile file) {
     return null;
   }

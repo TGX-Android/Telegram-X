@@ -208,6 +208,7 @@ dependencies {
     exclude(group = "com.google.firebase", module = "firebase-analytics")
     exclude(group = "com.google.firebase", module = "firebase-measurement-connector")
   }
+  implementation("com.google.firebase:firebase-appcheck-safetynet:16.1.2")
   // Play In-App Updates: https://developer.android.com/reference/com/google/android/play/core/release-notes-in_app_updates
   implementation("com.google.android.play:app-update:2.0.1")
   // ExoPlayer: https://github.com/google/ExoPlayer/blob/release-v2/RELEASENOTES.md
