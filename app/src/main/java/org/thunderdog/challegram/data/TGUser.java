@@ -162,7 +162,7 @@ public class TGUser implements UserProvider {
     }
   }
 
-  public void setActionDateStatus (int actionDateSeconds, TdApi.Message viewedMessage) {
+  public static String getActionDateStatus (Tdlib tdlib, int actionDateSeconds, TdApi.Message viewedMessage) {
     int stringRes = R.string.viewed;
     if (viewedMessage != null) {
       switch (viewedMessage.content.getConstructor()) {
@@ -174,23 +174,32 @@ public class TGUser implements UserProvider {
           break;
       }
     }
-    setActionDateStatus(actionDateSeconds, stringRes);
+    return getActionDateStatus(tdlib, actionDateSeconds, stringRes);
   }
 
-  public void setActionDateStatus (int actionDateSeconds, @StringRes int stringRes) {
-    if (actionDateSeconds == 0) {
-      return;
-    }
+  public static String getActionDateStatus (Tdlib tdlib, int actionDateSeconds, @StringRes int stringRes) {
     long elapsedSeconds = tdlib.currentTime(TimeUnit.SECONDS) - actionDateSeconds;
     // Allow "X minutes ago"
     boolean allowDuration =
       elapsedSeconds < TimeUnit.MINUTES.toSeconds(60) &&
       elapsedSeconds >= -TimeUnit.MINUTES.toSeconds(1);
-    setCustomStatus(Lang.getRelativeDate(
+    return Lang.getRelativeDate(
       actionDateSeconds, TimeUnit.SECONDS,
       tdlib.currentTimeMillis(), TimeUnit.MILLISECONDS,
       allowDuration, 60, stringRes, false
-    ));
+    );
+  }
+
+  public void setActionDateStatus (int actionDateSeconds, TdApi.Message viewedMessage) {
+    if (actionDateSeconds != 0) {
+      setCustomStatus(getActionDateStatus(tdlib, actionDateSeconds, viewedMessage));
+    }
+  }
+
+  public void setActionDateStatus (int actionDateSeconds, @StringRes int stringRes) {
+    if (actionDateSeconds != 0) {
+      setCustomStatus(getActionDateStatus(tdlib, actionDateSeconds, stringRes));
+    }
   }
 
   public void setCustomStatus (String statusText) {

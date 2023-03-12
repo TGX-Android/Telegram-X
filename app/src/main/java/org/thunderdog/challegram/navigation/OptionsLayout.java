@@ -173,7 +173,9 @@ public class OptionsLayout extends LinearLayout implements Animated {
       }
     }
     Views.setClickable(text);
-    text.setText(string);
+    if (!StringUtils.isEmpty(string)) {
+      text.setText(string);
+    }
 
     return text;
   }

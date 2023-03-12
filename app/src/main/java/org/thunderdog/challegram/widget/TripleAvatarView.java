@@ -33,6 +33,7 @@ import org.thunderdog.challegram.tool.Screen;
 
 import me.vkryl.core.lambda.Destroyable;
 
+// TODO complete rework, similar to avatars in TGMessagePoll
 public class TripleAvatarView extends View implements Destroyable {
   public static final int AVATAR_SIZE = 24;
   public static final int AVATAR_PADDING = 2;
@@ -166,7 +167,7 @@ public class TripleAvatarView extends View implements Destroyable {
   @Override
   public void performDestroy () {
     for (ImageReceiver receiver : receivers) {
-      receiver.detach();
+      receiver.destroy();
     }
   }
 }

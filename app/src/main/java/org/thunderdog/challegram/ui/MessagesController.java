@@ -142,6 +142,7 @@ import org.thunderdog.challegram.data.TGMessageMedia;
 import org.thunderdog.challegram.data.TGMessageSticker;
 import org.thunderdog.challegram.data.TGRecord;
 import org.thunderdog.challegram.data.TGSwitchInline;
+import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.data.ThreadInfo;
 import org.thunderdog.challegram.filegen.PhotoGenerationInfo;
 import org.thunderdog.challegram.filegen.VideoGenerationInfo;
@@ -4522,20 +4523,63 @@ public class MessagesController extends ViewController<MessagesController.Argume
     OptionsLayout optionsLayout = (OptionsLayout) layout.getChildAt(1);
 
     LinearLayout receiptWrap = new LinearLayout(layout.getContext());
+    receiptWrap.setOrientation(LinearLayout.HORIZONTAL);
 
-    TextView receiptText = OptionsLayout.genOptionView(layout.getContext(), R.id.more_btn_openReadReceipts, Lang.getString(R.string.LoadingMessageSeen), ViewController.OPTION_COLOR_NORMAL, R.drawable.baseline_visibility_24, null, null, null);
+    FrameLayout frameLayout = new FrameLayoutFix(layout.getContext());
+    frameLayout.setLayoutParams(new LinearLayout.LayoutParams(0, Screen.dp(54f), 1f));
+    TextView receiptText = OptionsLayout.genOptionView(layout.getContext(), R.id.more_btn_openReadReceipts, Lang.getString(R.string.LoadingMessageSeen), ViewController.OPTION_COLOR_NORMAL, 0, null, getThemeListeners(), null);
+
     TripleAvatarView tav = new TripleAvatarView(layout.getContext());
 
-    receiptText.setLayoutParams(new LinearLayout.LayoutParams(0, Screen.dp(54f), 1f));
+    receiptText.setLayoutParams(FrameLayoutFix.newParams(
+      ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
+      Gravity.CENTER_VERTICAL,
+      Screen.dp(18f) + Screen.dp(24f), 0, 0, 0
+    ));
+    ImageView iconView = new ImageView(context);
+    iconView.setScaleType(ImageView.ScaleType.CENTER);
+    iconView.setLayoutParams(FrameLayoutFix.newParams(
+      ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
+      Gravity.CENTER_VERTICAL,
+      Screen.dp(17f), 0, 0, 0
+    ));
+    iconView.setImageResource(R.drawable.baseline_visibility_24);
+    iconView.setColorFilter(Theme.iconColor());
+    addThemeFilterListener(iconView, R.id.theme_color_icon);
+    frameLayout.addView(iconView);
     receiptText.setClickable(false);
+    frameLayout.addView(receiptText);
     tav.setLayoutParams(new LinearLayout.LayoutParams(Screen.dp(TripleAvatarView.AVATAR_SIZE * 3 + Screen.dp(6)), Screen.dp(54f)));
-    receiptWrap.addView(receiptText);
+    receiptWrap.addView(frameLayout);
     receiptWrap.addView(tav);
 
     Views.setClickable(receiptWrap);
     RippleSupport.setSimpleWhiteBackground(receiptWrap);
 
     optionsLayout.addView(receiptWrap, 2);
+
+    TextView subtitleView = OptionsLayout.genOptionView(layout.getContext(), 0, null, OPTION_COLOR_NORMAL, 0, null, getThemeListeners(), null);
+
+    BoolAnimator isSubtitleVisible = new BoolAnimator(0, (id, factor, fraction, callee) -> {
+      receiptText.setTranslationY(-Screen.dp(10f) * factor);
+      subtitleView.setTranslationY(Screen.dp(10f) + Screen.dp(10f) * (1f - factor));
+      subtitleView.setAlpha(factor);
+    }, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
+
+    RunnableData<CharSequence> viewSubtitle = subtitleText -> {
+      subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13f);
+      subtitleView.setTextColor(Theme.textDecentColor());
+      subtitleView.setLayoutParams(FrameLayoutFix.newParams(
+        ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
+        Gravity.CENTER_VERTICAL,
+        Screen.dp(18f) + Screen.dp(24f), 0, 0, 0
+      ));
+      subtitleView.setClickable(false);
+      subtitleView.setText(subtitleText);
+      subtitleView.setAlpha(0f);
+      frameLayout.addView(subtitleView);
+      isSubtitleVisible.setValue(true, true);
+    };
 
     tdlib.client().send(new TdApi.GetMessageViewers(message.getChatId(), message.getId()), (obj) -> {
       if (obj.getConstructor() != TdApi.MessageViewers.CONSTRUCTOR) return;
@@ -4545,7 +4589,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
         if (viewers.viewers.length > 1) {
           receiptText.setText(MessageSeenController.getViewString(message, viewers.viewers.length).toString());
         } else if (viewers.viewers.length == 1) {
-          receiptText.setText(tdlib.senderName(new TdApi.MessageSenderUser(viewers.viewers[0].userId)));
+          TdApi.MessageViewer viewer = viewers.viewers[0];
+          receiptText.setText(tdlib.senderName(new TdApi.MessageSenderUser(viewer.userId)));
+          if (viewer.viewDate != 0) {
+            String viewedText = TGUser.getActionDateStatus(tdlib, viewer.viewDate, message.getMessage());
+            viewSubtitle.runWithData(viewedText);
+          }
         } else {
           receiptText.setText(MessageSeenController.getNobodyString(message));
         }
