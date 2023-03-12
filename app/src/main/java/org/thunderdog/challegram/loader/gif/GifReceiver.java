@@ -78,7 +78,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
   private Matrix bitmapMatrix;
   private final Matrix shaderMatrix;
   private final RectF bitmapRect;
-  private final RectF drawRegion, croppedDrawRegion;
+  private final RectF drawRegion, croppedDrawRegion, croppedClipRegion;
 
   private final int progressOffset, progressRadius;
 
@@ -93,6 +93,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
     this.drawRegion = new RectF();
     this.progressRect = new RectF();
     this.croppedDrawRegion = new RectF();
+    this.croppedClipRegion = new RectF();
   }
 
   @Override
@@ -591,6 +592,12 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
             centerY + bitmapHeight / 2f
           );
           shaderMatrix.setRectToRect(bitmapRect, croppedDrawRegion, Matrix.ScaleToFit.FILL);
+          croppedClipRegion.set(
+            centerX - Math.min(targetWidth, bitmapWidth) / 2f,
+            centerY - Math.min(targetHeight, bitmapHeight) / 2f,
+            centerX + Math.min(targetWidth, bitmapWidth) / 2f,
+            centerY + Math.min(targetHeight, bitmapHeight) / 2f
+          );
 
           break;
         }
@@ -599,6 +606,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
       }
     } else {
       croppedDrawRegion.set(drawRegion);
+      croppedClipRegion.set(drawRegion);
       shaderMatrix.setRectToRect(bitmapRect, drawRegion, Matrix.ScaleToFit.FILL);
     }
     if (lastShader != null) {
@@ -760,11 +768,11 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
             int restoreToCount;
             if (clip) {
               restoreToCount = Views.save(c);
-              c.clipRect(croppedDrawRegion);
+              c.clipRect(croppedClipRegion);
             } else {
               restoreToCount = -1;
             }
-            c.drawRoundRect(croppedDrawRegion, radius, radius, shaderPaint(frame.bitmap, bitmapPaint.getAlpha()));
+            c.drawRoundRect(croppedClipRegion, radius, radius, shaderPaint(frame.bitmap, bitmapPaint.getAlpha()));
             if (clip) {
               Views.restore(c, restoreToCount);
             }
