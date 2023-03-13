@@ -461,10 +461,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
     if (view instanceof BetterChatView) {
       ((BetterChatView) view).setIsChecked(!selected, true);
     } else {
-      int index = adapter.indexOfViewByLongId(chatId);
-      if (index != RecyclerView.NO_POSITION) {
-        adapter.updateSimpleItemByPosition(index);
-      }
+      adapter.updateCheckOptionByLongId(chatId, !selected);
     }
     adapter.updateSimpleItemById(R.id.input);
     return !selected;
@@ -483,7 +480,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
     if (view instanceof BetterChatView) {
       ((BetterChatView) view).setIsChecked(!selected, true);
     } else {
-      adapter.updateSimpleItemById(chatType);
+      adapter.updateCheckOptionById(chatType, !selected);
     }
     updateDoneButton();
     adapter.updateSimpleItemById(R.id.input);
@@ -542,7 +539,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
 
   private void modifyChatView (TGFoundChat chat, BetterChatView chatView) {
     chatView.setAllowMaximizePreview(false);
-    chatView.setIsChecked(selectedChatIds.contains(chat.getChatId()), ViewCompat.isLaidOut(chatView));
+    chatView.setIsChecked(selectedChatIds.contains(chat.getChatId()), false);
     if (mode == MODE_FOLDER_INCLUDE_CHATS || mode == MODE_FOLDER_EXCLUDE_CHATS) {
       chatView.setNoSubtitle(StringUtils.isEmpty(chat.getForcedSubtitle()));
     }
@@ -635,7 +632,7 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
         chatView.setSubtitle(null);
         chatView.setNoSubtitle(true);
         chatView.setAvatar(null, new AvatarPlaceholder.Metadata(item.getIntValue(), item.getIconResource()));
-        chatView.setIsChecked(selectedChatTypes.contains(item.getId()), ViewCompat.isLaidOut(chatView));
+        chatView.setIsChecked(selectedChatTypes.contains(item.getId()), false);
         chatView.clearPreviewChat();
       } else {
         throw new IllegalArgumentException();
