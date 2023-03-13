@@ -45,20 +45,7 @@ public class MessageOptionsSeenController extends BottomSheetViewController.Bott
       @Override
       protected void setUser (ListItem item, int position, UserView userView, boolean isUpdate) {
         TGUser user = new TGUser(tdlib, tdlib.chatUser(item.getLongId()));
-        int viewDateSeconds = item.getIntValue();
-        if (viewDateSeconds != 0) {
-          long elapsedSeconds = tdlib.currentTime(TimeUnit.SECONDS) - viewDateSeconds;
-          // Allow "X minutes ago"
-          boolean allowDuration =
-            elapsedSeconds < TimeUnit.MINUTES.toSeconds(60) &&
-            elapsedSeconds >= -TimeUnit.MINUTES.toSeconds(1);
-          user.setCustomStatus(
-            Lang.getViewed(tdlib,
-              viewDateSeconds, TimeUnit.SECONDS, allowDuration,
-              message.getMessage().content
-            )
-          );
-        }
+        user.setActionDateStatus(item.getIntValue(), message.getMessage());
         userView.setUser(user);
       }
 

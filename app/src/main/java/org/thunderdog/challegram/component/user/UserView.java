@@ -230,7 +230,6 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
       this.user = user;
       this.unregisteredContact = null;
       buildLayout();
-      avatarReceiver.requestUser(tdlib, user.getUserId(), AvatarReceiver.Options.SHOW_ONLINE);
     } else {
       if (sourceName == null || user.updateName() || !sourceName.equals(user.getName())) {
         updateName();
@@ -238,6 +237,10 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
       if (sourceStatus == null || user.updateStatus() || !sourceStatus.equals(user.getStatus())) {
         updateSubtext();
       }
+    }
+    if (user.isChat()) {
+      avatarReceiver.requestChat(tdlib, user.getChatId(), AvatarReceiver.Options.SHOW_ONLINE);
+    } else {
       avatarReceiver.requestUser(tdlib, user.getUserId(), AvatarReceiver.Options.SHOW_ONLINE);
     }
   }

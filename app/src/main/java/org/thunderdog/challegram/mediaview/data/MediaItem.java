@@ -962,6 +962,21 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
       case TdApi.MessageVideoNote.CONSTRUCTOR: {
         return new MediaItem(context, tdlib, msg.chatId, msg.id, msg.senderId, msg.date, (TdApi.MessageVideoNote) msg.content).setMessage(msg);
       }
+      case TdApi.MessageText.CONSTRUCTOR: {
+        TdApi.WebPage webPage = ((TdApi.MessageText) msg.content).webPage;
+        if (webPage != null) {
+          if (webPage.sticker != null) {
+            return new MediaItem(context, tdlib, msg.chatId, msg.id, TD.convertToPhoto(webPage.sticker), true, false).setSourceMessage(msg);
+          } else if (webPage.video != null) {
+            return new MediaItem(context, tdlib, webPage.video, new TdApi.FormattedText("", null), true).setSourceMessage(msg);
+          } else if (webPage.animation != null) {
+            return new MediaItem(context, tdlib, webPage.animation, null).setSourceMessage(msg);
+          } else if (webPage.photo != null) {
+            return new MediaItem(context, tdlib, msg.chatId, msg.id, webPage.photo).setSourceMessage(msg);
+          }
+        }
+        break;
+      }
     }
     return null;
   }

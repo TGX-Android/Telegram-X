@@ -1884,23 +1884,6 @@ public class Lang {
 
   // Relative date
 
-  public static String getViewed (Tdlib tdlib, long unixTime, TimeUnit unit, boolean allowDuration, TdApi.MessageContent content) {
-    int resId = R.string.viewed;
-    switch (content.getConstructor()) {
-      case TdApi.MessageVoiceNote.CONSTRUCTOR:
-        resId = R.string.opened_voice;
-        break;
-      case TdApi.MessageVideoNote.CONSTRUCTOR:
-        resId = R.string.opened_round;
-        break;
-    }
-    return getRelativeDate(
-      unixTime, unit,
-      tdlib.currentTimeMillis(), TimeUnit.MILLISECONDS,
-      allowDuration, 60, resId, false
-    );
-  }
-
   public static String getLastSeen (Tdlib tdlib, long unixTime, TimeUnit unit, boolean allowDuration) {
     return getRelativeDate(
       unixTime, unit,
