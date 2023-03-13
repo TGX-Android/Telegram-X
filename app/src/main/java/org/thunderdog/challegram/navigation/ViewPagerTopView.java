@@ -507,12 +507,13 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     int selectionWidth, selectionLeft;
     if (shouldWrapContent()) {
       float remainFactor = selectionFactor - (float) ((int) selectionFactor);
+      int selectionIndex = MathUtils.clamp((int) selectionFactor, 0, items.size() - 1);
       if (remainFactor == 0f) {
-        int selectionIndex = Math.max(0, Math.min(items.size() - 1, (int) selectionFactor));
         selectionWidth = items.get(selectionIndex).actualWidth + textPadding * 2;
       } else {
-        int fromWidth = items.get((int) selectionFactor).actualWidth + textPadding * 2;
-        int toWidth = items.get((int) selectionFactor + 1).actualWidth + textPadding * 2;
+        int fromWidth = items.get(selectionIndex).actualWidth + textPadding * 2;
+        int nextIndex = MathUtils.clamp((int) selectionFactor + 1, 0, items.size() - 1);
+        int toWidth = items.get(nextIndex).actualWidth + textPadding * 2;
         selectionWidth = fromWidth + (int) ((float) (toWidth - fromWidth) * remainFactor);
       }
       selectionLeft = 0;

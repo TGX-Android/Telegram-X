@@ -695,6 +695,13 @@ public class UI {
     getAppHandler().navigateDelayed(controller, delay);
   }
 
+  public static void execute (Runnable r) {
+    if (inUiThread()) {
+      r.run();
+    } else {
+      post(r);
+    }
+  }
   public static void post (Runnable r) {
     getAppHandler().post(r);
   }

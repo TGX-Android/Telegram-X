@@ -926,7 +926,7 @@ public class RoundVideoController extends BasePlaybackController implements
   @Override
   public void onPlayerError (@NonNull PlaybackException e) {
     super.onPlayerError(e);
-    stopPlayback();
+    UI.execute(this::stopPlayback);
   }
 
   @Override
