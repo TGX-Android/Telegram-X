@@ -1295,6 +1295,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       listeners().performCleanup();
     } else if (newStatus == STATUS_READY) {
       onPerformStartup();
+      TdApi.User myUser = cache().myUser();
+      if (myUser != null) {
+        context().onUpdateAccountProfile(id(), myUser, true);
+      }
     }
     if (newStatus == STATUS_UNAUTHORIZED)
       checkChangeLogs(false, false);
