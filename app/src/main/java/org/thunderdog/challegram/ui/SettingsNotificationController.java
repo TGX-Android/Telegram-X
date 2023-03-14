@@ -64,6 +64,7 @@ import org.thunderdog.challegram.telegram.NotificationSettingsListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibManager;
+import org.thunderdog.challegram.telegram.TdlibNotificationChannelGroup;
 import org.thunderdog.challegram.telegram.TdlibNotificationManager;
 import org.thunderdog.challegram.telegram.TdlibNotificationUtils;
 import org.thunderdog.challegram.telegram.TdlibOptionListener;
@@ -1807,7 +1808,12 @@ public class SettingsNotificationController extends RecyclerViewController<Setti
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
           String channelId = tdlib.notifications().getSystemChannelId(getScope(item), customChatId);
           if (customChatId == 0) {
-            tdlib.notifications().createChannels();
+            try {
+              tdlib.notifications().createChannels();
+            } catch (TdlibNotificationChannelGroup.ChannelCreationFailureException e) {
+              context.tooltipManager().builder(v).icon(R.drawable.baseline_error_24).show(tdlib, Log.toString(e));
+              return;
+            }
           }
           Intent intent = new Intent(android.provider.Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS);
           intent.putExtra(android.provider.Settings.EXTRA_CHANNEL_ID, channelId);

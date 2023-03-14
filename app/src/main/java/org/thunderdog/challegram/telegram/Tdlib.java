@@ -162,15 +162,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private TdlibUi _handler;
 
   private final TdApi.SetTdlibParameters parameters;
-  private final Client.ResultHandler okHandler = object -> {
-    switch (object.getConstructor()) {
-      case TdApi.Ok.CONSTRUCTOR:
-        break;
-      case TdApi.Error.CONSTRUCTOR:
-        UI.showError(object);
-        break;
-    }
-  };
   private final Client.ResultHandler configHandler = object -> {
     if (object instanceof TdApi.JsonValue) {
       TdApi.JsonValue json = (TdApi.JsonValue) object;
@@ -271,7 +262,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       tdlib.updateParameters(client);
       if (Config.NEED_ONLINE) {
         if (tdlib.isOnline) {
-          client.send(new TdApi.SetOption("online", new TdApi.OptionValueBoolean(true)), tdlib.okHandler);
+          client.send(new TdApi.SetOption("online", new TdApi.OptionValueBoolean(true)), tdlib.okHandler());
         }
       }
       tdlib.context.modifyClient(tdlib, client);
@@ -384,7 +375,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
 
     public void sendClose () {
-      client.send(new TdApi.Close(), tdlib.okHandler);
+      client.send(new TdApi.Close(), tdlib.okHandler());
     }
 
     public void close () {
@@ -1133,7 +1124,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public void destroy () {
-    client().send(new TdApi.Destroy(), okHandler);
+    client().send(new TdApi.Destroy(), okHandler());
   }
 
   public boolean isCurrent () {
@@ -1642,11 +1633,30 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return clientHolder();
   }
 
-  public void checkDeadlocks () {
-    if (!Config.PROFILE_DEADLOCKS)
+  public void checkDeadlocks (@Nullable Runnable after) {
+    if (!Config.PROFILE_DEADLOCKS) {
+      if (after != null) {
+        after.run();
+      }
       return;
-    // Force ANR to cause system report
-    clientExecute(new TdApi.SetAlarm(0), 0);
+    }
+    CancellationSignal crashSignal = new CancellationSignal();
+    Runnable forceAnr = () -> {
+      if (!crashSignal.isCanceled()) {
+        // Force ANR to cause system report, because TDLib thread is unavailable at least for 7 seconds
+        clientExecute(new TdApi.SetAlarm(0), 0, false);
+      }
+    };
+    crashSignal.setOnCancelListener(() ->
+      ui().removeCallbacks(forceAnr)
+    );
+    client().send(new TdApi.SetAlarm(0), ignored -> {
+      crashSignal.cancel();
+      if (after != null) {
+        after.run();
+      }
+    });
+    ui().postDelayed(forceAnr, 7500);
   }
 
   public Client client () { // TODO migrate all tdlib.client().send(..) to tdlib.send(..)
@@ -1772,11 +1782,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         read = true;
       }
       if (chat.isMarkedAsUnread) {
-        client().send(new TdApi.ToggleChatIsMarkedAsUnread(chat.id, false), okHandler);
+        client().send(new TdApi.ToggleChatIsMarkedAsUnread(chat.id, false), okHandler());
         read = true;
       }
       if (chat.unreadMentionCount > 0) {
-        client().send(new TdApi.ReadAllChatMentions(chat.id), okHandler);
+        client().send(new TdApi.ReadAllChatMentions(chat.id), okHandler());
         read = true;
       }
       if (read) {
@@ -1881,10 +1891,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   @Nullable
   public TdApi.Message getMessageLocally (long chatId, long messageId) {
+    return getMessageLocally(chatId, messageId, 0);
+  }
+  @Nullable
+  public TdApi.Message getMessageLocally (long chatId, long messageId, long timeoutMs) {
     if (inTdlibThread()) {
       return null;
     }
-    TdApi.Object result = clientExecute(new TdApi.GetMessageLocally(chatId, messageId), 0);
+    TdApi.Object result = clientExecute(new TdApi.GetMessageLocally(chatId, messageId), timeoutMs);
     if (result instanceof TdApi.Message)
       return (TdApi.Message) result;
     if (result instanceof TdApi.Error)
@@ -2058,20 +2072,28 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return Thread.currentThread() == client().getThread();
   }
 
-  @Nullable
   public TdApi.Object clientExecute (TdApi.Function<?> function, long timeoutMs) {
+    return clientExecute(function, timeoutMs, true);
+  }
+
+  @Nullable
+  private TdApi.Object clientExecute (TdApi.Function<?> function, long timeoutMs, boolean requiresTdlibInitialization) {
     if (inTdlibThread())
       throw new IllegalStateException("Cannot call from TDLib thread: " + function);
     final CountDownLatch latch = new CountDownLatch(1);
     final AtomicReference<TdApi.Object> response = new AtomicReference<>();
     Runnable act = () -> {
-      incrementReferenceCount(REFERENCE_TYPE_REQUEST_EXECUTION);
+      if (requiresTdlibInitialization) {
+        incrementReferenceCount(REFERENCE_TYPE_REQUEST_EXECUTION);
+      }
       client().send(function, object -> {
         synchronized (response) {
           response.set(object);
           latch.countDown();
         }
-        decrementReferenceCount(REFERENCE_TYPE_REQUEST_EXECUTION);
+        if (requiresTdlibInitialization) {
+          decrementReferenceCount(REFERENCE_TYPE_REQUEST_EXECUTION);
+        }
       });
     };
     //noinspection SwitchIntDef
@@ -2085,7 +2107,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         break;
       // Require TDLib initialization in case of all other methods
       default:
-        awaitInitialization(act);
+        if (requiresTdlibInitialization) {
+          awaitInitialization(act);
+        } else {
+          act.run();
+        }
         break;
     }
     try {
@@ -2189,7 +2215,15 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public Client.ResultHandler okHandler () {
-    return okHandler;
+    return object -> {
+      switch (object.getConstructor()) {
+        case TdApi.Ok.CONSTRUCTOR:
+          break;
+        case TdApi.Error.CONSTRUCTOR:
+          UI.showError(object);
+          break;
+      }
+    };
   }
 
   public Client.ResultHandler okHandler (@Nullable Runnable after) {
@@ -4137,6 +4171,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public void openChat (long chatId, @Nullable ViewController<?> controller, @Nullable Runnable after) {
+    Client.ResultHandler okHandler = okHandler();
     synchronized (chatOpenMutex) {
       ArrayList<ViewController<?>> controllers = openedChats.get(chatId);
       if (controllers == null) {
@@ -4187,7 +4222,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         if (Log.isEnabled(Log.TAG_MESSAGES_LOADER)) {
           Log.v(Log.TAG_MESSAGES_LOADER, "closeChat, chatId=%d", chatId);
         }
-        client().send(new TdApi.CloseChat(chatId), okHandler);
+        client().send(new TdApi.CloseChat(chatId), okHandler());
       }
     }
   }
@@ -4651,7 +4686,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public void setScopeNotificationSettings (TdApi.NotificationSettingsScope scope, TdApi.ScopeNotificationSettings settings) {
-    client().send(new TdApi.SetScopeNotificationSettings(scope, settings), okHandler);
+    client().send(new TdApi.SetScopeNotificationSettings(scope, settings), okHandler());
   }
 
   public TdApi.ScopeNotificationSettings scopeNotificationSettings (long chatId) {
@@ -4667,7 +4702,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public void setChatNotificationSettings (long chatId, TdApi.ChatNotificationSettings settings) {
-    client().send(new TdApi.SetChatNotificationSettings(chatId, settings), okHandler);
+    client().send(new TdApi.SetChatNotificationSettings(chatId, settings), okHandler());
   }
 
   public void setMuteForSync (long chatId, int muteFor) {
@@ -5136,18 +5171,18 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public void deleteMessages (long chatId, long[] messageIds, boolean revoke) {
-    client().send(new TdApi.DeleteMessages(chatId, messageIds, revoke), okHandler);
+    client().send(new TdApi.DeleteMessages(chatId, messageIds, revoke), okHandler());
   }
 
   public void deleteMessagesIfOk (final long chatId, final long[] messageIds, boolean revoke) {
-    client().send(new TdApi.DeleteMessages(chatId, messageIds, revoke), okHandler);
+    client().send(new TdApi.DeleteMessages(chatId, messageIds, revoke), okHandler());
   }
 
   public void readMessages (long chatId, long[] messageIds, TdApi.MessageSource source) {
     if (Log.isEnabled(Log.TAG_FCM)) {
       Log.i(Log.TAG_FCM, "Reading messages chatId:%d messageIds:%s", Log.generateSingleLineException(2), chatId, Arrays.toString(messageIds));
     }
-    client().send(new TdApi.ViewMessages(chatId, messageIds, source, true), okHandler);
+    client().send(new TdApi.ViewMessages(chatId, messageIds, source, true), okHandler());
   }
 
   // TDLib config
@@ -5293,10 +5328,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private void updateLanguageParameters (Client client, boolean isInitialization) {
     if (isInitialization) {
       this.languagePackId = Settings.instance().getLanguagePackInfo().id;
-      client.send(new TdApi.SetOption("language_pack_database_path", new TdApi.OptionValueString(context.languageDatabasePath())), okHandler);
-      client.send(new TdApi.SetOption("localization_target", new TdApi.OptionValueString(BuildConfig.LANGUAGE_PACK)), okHandler);
+      client.send(new TdApi.SetOption("language_pack_database_path", new TdApi.OptionValueString(context.languageDatabasePath())), okHandler());
+      client.send(new TdApi.SetOption("localization_target", new TdApi.OptionValueString(BuildConfig.LANGUAGE_PACK)), okHandler());
     }
-    client.send(new TdApi.SetOption("language_pack_id", new TdApi.OptionValueString(languagePackId)), okHandler);
+    client.send(new TdApi.SetOption("language_pack_id", new TdApi.OptionValueString(languagePackId)), okHandler());
   }
 
   public void applyLanguage (TdApi.LanguagePackInfo languagePack, RunnableBool callback, boolean needSync) {
@@ -5341,6 +5376,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       notificationGroupSizeMax = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R ? 7 : 10;
     }
 
+    Client.ResultHandler okHandler = okHandler();
     client.send(new TdApi.SetOption("notification_group_count_max", new TdApi.OptionValueInteger(notificationGroupCountMax)), okHandler);
     client.send(new TdApi.SetOption("notification_group_size_max", new TdApi.OptionValueInteger(notificationGroupSizeMax)), okHandler);
   }
@@ -5472,11 +5508,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     String connectionParams = JSON.stringify(JSON.toObject(params));
     if (connectionParams != null && (force || !StringUtils.equalsOrBothEmpty(lastReportedConnectionParams, connectionParams))) {
       this.lastReportedConnectionParams = connectionParams;
-      client.send(new TdApi.SetOption("connection_parameters", new TdApi.OptionValueString(connectionParams)), okHandler);
+      client.send(new TdApi.SetOption("connection_parameters", new TdApi.OptionValueString(connectionParams)), okHandler());
     }
   }
 
   private void updateParameters (Client client) {
+    Client.ResultHandler okHandler = okHandler();
     final boolean isService = isServiceInstance();
     client.send(new TdApi.SetOption("use_quick_ack", new TdApi.OptionValueBoolean(true)), okHandler);
     client.send(new TdApi.SetOption("use_pfs", new TdApi.OptionValueBoolean(true)), okHandler);
@@ -5678,7 +5715,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           TdApi.Proxies proxies = (TdApi.Proxies) result;
           for (TdApi.Proxy proxy : proxies.proxies) {
             if (!proxy.isEnabled) {
-              client().send(new TdApi.RemoveProxy(proxy.id), okHandler);
+              client().send(new TdApi.RemoveProxy(proxy.id), okHandler());
             }
           }
           break;
@@ -5694,7 +5731,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           TdApi.Proxy[] proxies = ((TdApi.Proxies) result).proxies;
           for (TdApi.Proxy proxy : proxies) {
             if (proxy.id != excludeProxyId) {
-              client().send(new TdApi.RemoveProxy(proxy.id), okHandler);
+              client().send(new TdApi.RemoveProxy(proxy.id), okHandler());
             }
           }
           break;
@@ -5751,7 +5788,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   public void setNetworkType (TdApi.NetworkType networkType) {
     this.networkType = networkType;
     performOptional(client ->
-      client.send(new TdApi.SetNetworkType(networkType), okHandler), null);
+      client.send(new TdApi.SetNetworkType(networkType), okHandler()), null);
     listeners().updateConnectionType(networkType);
   }
 
@@ -5968,7 +6005,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       this.isOnline = isOnline;
       Log.i("SetOnline accountId:%d -> %b", accountId, isOnline);
       if (Config.NEED_ONLINE) {
-        performOptional(client -> client.send(new TdApi.SetOption("online", new TdApi.OptionValueBoolean(isOnline)), okHandler), null);
+        performOptional(client -> client.send(new TdApi.SetOption("online", new TdApi.OptionValueBoolean(isOnline)), okHandler()), null);
       }
       // cache().setPauseStatusRefreshers(!isOnline);
     }
@@ -5979,7 +6016,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   public void setIsEmulator (boolean isEmulator) {
     if (this.isEmulator != isEmulator) {
       this.isEmulator = isEmulator;
-      performOptional(client -> client.send(new TdApi.SetOption("is_emulator", new TdApi.OptionValueBoolean(isEmulator)), okHandler), null);
+      performOptional(client -> client.send(new TdApi.SetOption("is_emulator", new TdApi.OptionValueBoolean(isEmulator)), okHandler()), null);
     }
   }
 
@@ -6102,7 +6139,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   public void setDisableContactRegisteredNotifications (boolean disable) {
     if (this.disableContactRegisteredNotifications != disable) {
       this.disableContactRegisteredNotifications = disable;
-      client().send(new TdApi.SetOption("disable_contact_registered_notifications", new TdApi.OptionValueBoolean(disable)), okHandler);
+      client().send(new TdApi.SetOption("disable_contact_registered_notifications", new TdApi.OptionValueBoolean(disable)), okHandler());
       listeners().updateContactRegisteredNotificationsDisabled(disable);
     }
   }
@@ -6143,7 +6180,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public void setLocationVisible (boolean isLocationVisible) {
     this.isLocationVisible = isLocationVisible;
-    client().send(new TdApi.SetOption("is_location_visible", new TdApi.OptionValueBoolean(isLocationVisible)), okHandler);
+    client().send(new TdApi.SetOption("is_location_visible", new TdApi.OptionValueBoolean(isLocationVisible)), okHandler());
   }
 
   public boolean canIgnoreSensitiveContentRestriction () {
@@ -6157,7 +6194,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   public void setIgnoreSensitiveContentRestrictions (boolean ignoreSensitiveContentRestrictions) {
     if (this.ignoreSensitiveContentRestrictions != ignoreSensitiveContentRestrictions) {
       this.ignoreSensitiveContentRestrictions = ignoreSensitiveContentRestrictions;
-      client().send(new TdApi.SetOption("ignore_sensitive_content_restrictions", new TdApi.OptionValueBoolean(ignoreSensitiveContentRestrictions)), okHandler);
+      client().send(new TdApi.SetOption("ignore_sensitive_content_restrictions", new TdApi.OptionValueBoolean(ignoreSensitiveContentRestrictions)), okHandler());
     }
   }
 
@@ -6168,7 +6205,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   public void setAutoArchiveEnabled (boolean enabled) {
     if (this.archiveAndMuteNewChatsFromUnknownUsers != enabled) {
       this.archiveAndMuteNewChatsFromUnknownUsers = enabled;
-      client().send(new TdApi.SetOption("archive_and_mute_new_chats_from_unknown_users", new TdApi.OptionValueBoolean(enabled)), okHandler);
+      client().send(new TdApi.SetOption("archive_and_mute_new_chats_from_unknown_users", new TdApi.OptionValueBoolean(enabled)), okHandler());
     }
   }
 
@@ -6302,7 +6339,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public void setDisableTopChats (boolean disable) {
     this.disableTopChats = disable ? 1 : 0;
-    client().send(new TdApi.SetOption("disable_top_chats", new TdApi.OptionValueBoolean(disable)), okHandler);
+    client().send(new TdApi.SetOption("disable_top_chats", new TdApi.OptionValueBoolean(disable)), okHandler());
   }
 
   public boolean areSentScheduledMessageNotificationsDisabled () {
@@ -6311,7 +6348,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public void setDisableSentScheduledMessageNotifications (boolean disable) {
     this.disableSentScheduledMessageNotifications = disable;
-    client().send(new TdApi.SetOption("disable_sent_scheduled_message_notifications", new TdApi.OptionValueBoolean(disable)), okHandler);
+    client().send(new TdApi.SetOption("disable_sent_scheduled_message_notifications", new TdApi.OptionValueBoolean(disable)), okHandler());
   }
 
   public String getAnimationSearchBotUsername () {
@@ -7411,7 +7448,15 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       long myUserId = myUserId();
       if (myUserId != 0) {
-        TdlibNotificationChannelGroup.updateChat(this, myUserId, chat);
+        try {
+          TdlibNotificationChannelGroup.updateChat(this, myUserId, chat);
+        } catch (TdlibNotificationChannelGroup.ChannelCreationFailureException e) {
+          TDLib.Tag.notifications("Unable to update notification channel title for chat %d:\n%s",
+            update.chatId,
+            Log.toString(e)
+          );
+          settings().trackNotificationChannelProblem(e, chat.id);
+        }
       }
     }
   }
