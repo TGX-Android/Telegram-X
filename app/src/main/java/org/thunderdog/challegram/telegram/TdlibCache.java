@@ -32,6 +32,7 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.TDLib;
 import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
@@ -52,7 +53,6 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.core.ArrayUtils;
-import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.LongSparseIntArray;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.RunnableData;
@@ -616,7 +616,15 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && updateMode == UPDATE_MODE_IMPORTANT) {
       if (chat != null) {
-        TdlibNotificationChannelGroup.updateChat(tdlib, myUserId, chat);
+        try {
+          TdlibNotificationChannelGroup.updateChat(tdlib, myUserId, chat);
+        } catch (TdlibNotificationChannelGroup.ChannelCreationFailureException e) {
+          TDLib.Tag.notifications("Unable to update notification channel for supergroup %d:\n%s",
+            update.supergroup.id,
+            Log.toString(e)
+          );
+          tdlib.settings().trackNotificationChannelProblem(e, ChatId.fromSupergroupId(update.supergroup.id));
+        }
       }
     }
   }

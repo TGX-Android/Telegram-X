@@ -356,7 +356,7 @@ public class TdlibNotificationHelper implements Iterable<TdlibNotificationGroup>
   }
 
   @TargetApi(Build.VERSION_CODES.O)
-  public String findCommonChannelId (int category) {
+  public String findCommonChannelId (int category) throws TdlibNotificationChannelGroup.ChannelCreationFailureException {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       TdlibNotificationChannelGroup channelGroup = tdlib.notifications().getChannelCache();
       android.app.NotificationChannel channel = null;

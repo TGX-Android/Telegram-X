@@ -7374,7 +7374,15 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       long myUserId = myUserId();
       if (myUserId != 0) {
-        TdlibNotificationChannelGroup.updateChat(this, myUserId, chat);
+        try {
+          TdlibNotificationChannelGroup.updateChat(this, myUserId, chat);
+        } catch (TdlibNotificationChannelGroup.ChannelCreationFailureException e) {
+          TDLib.Tag.notifications("Unable to update notification channel title for chat %d:\n%s",
+            update.chatId,
+            Log.toString(e)
+          );
+          settings().trackNotificationChannelProblem(e, chat.id);
+        }
       }
     }
   }

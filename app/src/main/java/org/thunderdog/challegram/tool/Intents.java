@@ -48,6 +48,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.receiver.LiveLocationReceiver;
 import org.thunderdog.challegram.receiver.TGShareBroadcastReceiver;
+import org.thunderdog.challegram.telegram.TdlibNotificationChannelGroup;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.util.Permissions;
 
@@ -120,7 +121,11 @@ public class Intents {
       channel.enableVibration(false);
       channel.enableLights(false);
       channel.setSound(null, null);
-      m.createNotificationChannel(channel);
+      try {
+        m.createNotificationChannel(channel);
+      } catch (Throwable t) {
+        Log.v("Unable to create simple notification channel for id: %s", new TdlibNotificationChannelGroup.ChannelCreationFailureException(t), channelId);
+      }
     }
     return channelId;
   }
