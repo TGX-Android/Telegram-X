@@ -1181,6 +1181,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     final int newStatus = authorizationStatus();
 
     closeListeners.notifyConditionChanged(true);
+    readyOrWaitingForDataListeners.notifyConditionChanged(true);
 
     if (prevStatus == STATUS_UNKNOWN && newStatus != STATUS_UNKNOWN) {
       synchronized (dataLock) {
@@ -8994,6 +8995,30 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   private final ConditionalExecutor
+    readyOrWaitingForDataListeners = new ConditionalExecutor(() -> {
+      TdApi.AuthorizationState state = authorizationState;
+      if (state != null) {
+        switch (state.getConstructor()) {
+          case TdApi.AuthorizationStateWaitTdlibParameters.CONSTRUCTOR:
+          case TdApi.AuthorizationStateLoggingOut.CONSTRUCTOR:
+          case TdApi.AuthorizationStateClosing.CONSTRUCTOR:
+          case TdApi.AuthorizationStateClosed.CONSTRUCTOR:
+            return false;
+          case TdApi.AuthorizationStateWaitPhoneNumber.CONSTRUCTOR:
+          case TdApi.AuthorizationStateWaitEmailAddress.CONSTRUCTOR:
+          case TdApi.AuthorizationStateWaitEmailCode.CONSTRUCTOR:
+          case TdApi.AuthorizationStateWaitCode.CONSTRUCTOR:
+          case TdApi.AuthorizationStateWaitOtherDeviceConfirmation.CONSTRUCTOR:
+          case TdApi.AuthorizationStateWaitRegistration.CONSTRUCTOR:
+          case TdApi.AuthorizationStateWaitPassword.CONSTRUCTOR:
+          case TdApi.AuthorizationStateReady.CONSTRUCTOR:
+            return true;
+          default:
+            throw new UnsupportedOperationException(state.toString());
+        }
+      }
+      return false;
+    }).onAddRemove(this::onJobAdded, this::onJobRemoved),
     initializationListeners = new ConditionalExecutor(() -> authorizationStatus() != STATUS_UNKNOWN).onAddRemove(this::onJobAdded, this::onJobRemoved), // Executed once received authorization state
     connectionListeners = new ConditionalExecutor(() -> authorizationStatus() != STATUS_UNKNOWN && connectionState == STATE_CONNECTED).onAddRemove(this::onJobAdded, this::onJobRemoved), // Executed once connected
     notificationInitListeners = new ConditionalExecutor(() -> {
@@ -9012,6 +9037,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   @AnyThread
   public void awaitNotificationInitialization (@NonNull Runnable after) {
     notificationInitListeners.executeOrPostponeTask(after);
+  }
+
+  public void awaitReadyOrWaitingForData (@NonNull Runnable after) {
+    readyOrWaitingForDataListeners.executeOrPostponeTask(after);
   }
 
   public void awaitClose (@NonNull Runnable after, boolean force) {
