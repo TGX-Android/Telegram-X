@@ -1636,11 +1636,30 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return clientHolder();
   }
 
-  public void checkDeadlocks () {
-    if (!Config.PROFILE_DEADLOCKS)
+  public void checkDeadlocks (@Nullable Runnable after) {
+    if (!Config.PROFILE_DEADLOCKS) {
+      if (after != null) {
+        after.run();
+      }
       return;
-    // Force ANR to cause system report
-    clientExecute(new TdApi.SetAlarm(0), 0);
+    }
+    CancellationSignal crashSignal = new CancellationSignal();
+    Runnable forceAnr = () -> {
+      if (!crashSignal.isCanceled()) {
+        // Force ANR to cause system report, because TDLib thread is unavailable at least for 7 seconds
+        clientExecute(new TdApi.SetAlarm(0), 0, false);
+      }
+    };
+    crashSignal.setOnCancelListener(() ->
+      ui().removeCallbacks(forceAnr)
+    );
+    client().send(new TdApi.SetAlarm(0), ignored -> {
+      crashSignal.cancel();
+      if (after != null) {
+        after.run();
+      }
+    });
+    ui().postDelayed(forceAnr, 7500);
   }
 
   public Client client () { // TODO migrate all tdlib.client().send(..) to tdlib.send(..)
@@ -2048,20 +2067,28 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return Thread.currentThread() == client().getThread();
   }
 
-  @Nullable
   public TdApi.Object clientExecute (TdApi.Function<?> function, long timeoutMs) {
+    return clientExecute(function, timeoutMs, true);
+  }
+
+  @Nullable
+  private TdApi.Object clientExecute (TdApi.Function<?> function, long timeoutMs, boolean requiresTdlibInitialization) {
     if (inTdlibThread())
       throw new IllegalStateException("Cannot call from TDLib thread: " + function);
     final CountDownLatch latch = new CountDownLatch(1);
     final AtomicReference<TdApi.Object> response = new AtomicReference<>();
     Runnable act = () -> {
-      incrementReferenceCount(REFERENCE_TYPE_REQUEST_EXECUTION);
+      if (requiresTdlibInitialization) {
+        incrementReferenceCount(REFERENCE_TYPE_REQUEST_EXECUTION);
+      }
       client().send(function, object -> {
         synchronized (response) {
           response.set(object);
           latch.countDown();
         }
-        decrementReferenceCount(REFERENCE_TYPE_REQUEST_EXECUTION);
+        if (requiresTdlibInitialization) {
+          decrementReferenceCount(REFERENCE_TYPE_REQUEST_EXECUTION);
+        }
       });
     };
     //noinspection SwitchIntDef
@@ -2075,7 +2102,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         break;
       // Require TDLib initialization in case of all other methods
       default:
-        awaitInitialization(act);
+        if (requiresTdlibInitialization) {
+          awaitInitialization(act);
+        } else {
+          act.run();
+        }
         break;
     }
     try {

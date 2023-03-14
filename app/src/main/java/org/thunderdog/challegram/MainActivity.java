@@ -97,6 +97,7 @@ import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.td.MessageId;
 
@@ -233,10 +234,17 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
     stack.replace(0, chats);
   }
 
+  private CancellableRunnable lastAccountSwitchTask;
+
   @Override
   public void onAccountSwitched (final TdlibAccount newAccount, TdApi.User profile, @AccountSwitchReason int reason, TdlibAccount oldAccount) {
     if (this.account.id == newAccount.id) {
       return;
+    }
+
+    if (lastAccountSwitchTask != null) {
+      lastAccountSwitchTask.cancel();
+      lastAccountSwitchTask = null;
     }
 
     this.account = newAccount;
@@ -277,13 +285,22 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
 
       return;
     }
-    newAccount.tdlib().checkDeadlocks();
-    MainController c = new MainController(this, newAccount.tdlib());
-    if (navigation.isEmpty()) {
-      navigation.setController(c);
-    } else {
-      navigation.setControllerAnimated(c, false, false);
-    }
+    Tdlib tdlib = newAccount.tdlib();
+    CancellableRunnable accountSwitchTask = new CancellableRunnable() {
+      @Override
+      public void act () {
+        if (!navigation.isDestroyed()) {
+          MainController c = new MainController(MainActivity.this, tdlib);
+          if (navigation.isEmpty()) {
+            navigation.setController(c);
+          } else {
+            navigation.setControllerAnimated(c, false, false);
+          }
+        }
+      }
+    };
+    lastAccountSwitchTask = accountSwitchTask;
+    tdlib.checkDeadlocks(() -> tdlib.ui().post(accountSwitchTask));
   }
 
   private void processAuthorizationStateChange (TdlibAccount account, TdApi.AuthorizationState authorizationState, int status) {
