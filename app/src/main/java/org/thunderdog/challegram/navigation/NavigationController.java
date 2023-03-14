@@ -922,7 +922,10 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
       prepareFactorAnimation(left = controller, right = getStack().getCurrent(), false, direction);
     }
 
+    final boolean[] isDone = new boolean[1];
     Runnable onDone = () -> {
+      setFactor(forward ? 0f : 1f);
+      isDone[0] = true;
       if (forward) {
         removeFadeView();
         if (rebase != 0) {
@@ -943,7 +946,6 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
     };
 
     if (!isAttachedToWindow) {
-      setFactor(forward ? 0f : 1f);
       onDone.run();
       return;
     }
@@ -954,9 +956,17 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
 
     animator = AnimatorUtils.simpleValueAnimator();
     if (forward) {
-      animator.addUpdateListener(animation -> setFactor(1f - AnimatorUtils.getFraction(animation)));
+      animator.addUpdateListener(animation -> {
+        if (!isDone[0]) {
+          setFactor(1f - AnimatorUtils.getFraction(animation));
+        }
+      });
     } else {
-      animator.addUpdateListener(animation -> setFactor(AnimatorUtils.getFraction(animation)));
+      animator.addUpdateListener(animation -> {
+        if (!isDone[0]) {
+          setFactor(AnimatorUtils.getFraction(animation));
+        }
+      });
     }
 
     switch (direction) {

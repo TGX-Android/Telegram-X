@@ -255,7 +255,7 @@ public class Config {
 
   public static final boolean REVEAL_ANIMATION_AVAILABLE = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP;
 
-  public static final boolean REMOVE_INTRO = !BuildConfig.DEBUG; // true;
+  public static final boolean REMOVE_INTRO = true;
 
   public static final boolean TEST_CHAT_COUNTERS = false;
 
