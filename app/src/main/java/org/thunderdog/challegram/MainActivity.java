@@ -220,9 +220,6 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
 
   // Account management
 
-  @Override
-  public void onAccountProfileChanged (TdlibAccount account, TdApi.User profile, boolean isCurrent, boolean isLoaded) { }
-
   private void cleanupStack (ViewController<?> c, int accountId) {
     if (this.account.id != accountId) {
       return;
