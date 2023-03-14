@@ -87,7 +87,7 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
     this.flags = FLAG_UNAUTHORIZED;
     Settings.instance().setAllowSpecialTdlibInstanceMode(id, instanceMode);
     if (instanceMode == Tdlib.Mode.DEBUG) {
-      this.flags |= Tdlib.Mode.DEBUG;
+      this.flags |= FLAG_DEBUG;
     } else if (instanceMode == Tdlib.Mode.SERVICE) {
       this.flags |= FLAG_SERVICE | FLAG_NO_PRIVATE_DATA;
     }
