@@ -1867,10 +1867,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   @Nullable
   public TdApi.Message getMessageLocally (long chatId, long messageId) {
+    return getMessageLocally(chatId, messageId, 0);
+  }
+  @Nullable
+  public TdApi.Message getMessageLocally (long chatId, long messageId, long timeoutMs) {
     if (inTdlibThread()) {
       return null;
     }
-    TdApi.Object result = clientExecute(new TdApi.GetMessageLocally(chatId, messageId), 0);
+    TdApi.Object result = clientExecute(new TdApi.GetMessageLocally(chatId, messageId), timeoutMs);
     if (result instanceof TdApi.Message)
       return (TdApi.Message) result;
     if (result instanceof TdApi.Error)

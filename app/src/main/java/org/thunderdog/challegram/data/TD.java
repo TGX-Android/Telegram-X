@@ -6006,6 +6006,17 @@ public class TD {
   private static final int ARG_CALL_MISSED = -2;
   private static final int ARG_RECURRING_PAYMENT = -3;
 
+  private static final long ADDITIONAL_MESSAGE_UI_LOAD_TIMEOUT_MS = -1; // Always async
+  private static final long ADDITIONAL_MESSAGE_LOAD_TIMEOUT_MS = 0;
+
+  private static long additionalMessageLoadTimeoutMs () {
+    if (UI.inUiThread()) {
+      return ADDITIONAL_MESSAGE_UI_LOAD_TIMEOUT_MS;
+    } else {
+      return ADDITIONAL_MESSAGE_LOAD_TIMEOUT_MS;
+    }
+  }
+
   @NonNull
   private static ContentPreview getContentPreview (Tdlib tdlib, long chatId, TdApi.Message message, boolean allowContent, boolean isChatList) {
     if (Settings.instance().needRestrictContent()) {
@@ -6148,7 +6159,15 @@ public class TD {
         break;
       case TdApi.MessagePinMessage.CONSTRUCTOR: {
         long pinnedMessageId = ((TdApi.MessagePinMessage) message.content).messageId;
-        TdApi.Message pinnedMessage = pinnedMessageId != 0 ? tdlib.getMessageLocally(message.chatId, pinnedMessageId) : null;
+        TdApi.Message pinnedMessage;
+        long loadTimeoutMs = additionalMessageLoadTimeoutMs();
+        if (pinnedMessageId != 0 && loadTimeoutMs >= 0) {
+          pinnedMessage = tdlib.getMessageLocally(
+            message.chatId, pinnedMessageId, loadTimeoutMs
+          );
+        } else {
+          pinnedMessage = null;
+        }
         if (pinnedMessage != null) {
           return new ContentPreview(EMOJI_PIN, getContentPreview(tdlib, chatId, pinnedMessage, allowContent, isChatList));
         } else {
@@ -6164,7 +6183,12 @@ public class TD {
       }
       case TdApi.MessageGameScore.CONSTRUCTOR: {
         TdApi.MessageGameScore score = (TdApi.MessageGameScore) message.content;
-        TdApi.Message gameMessage = tdlib.getMessageLocally(message.chatId, score.gameMessageId);
+        long timeoutMs = additionalMessageLoadTimeoutMs();
+        TdApi.Message gameMessage = timeoutMs >= 0 ?
+          tdlib.getMessageLocally(
+            message.chatId, score.gameMessageId,
+            timeoutMs
+          ) : null;
         String gameTitle = gameMessage != null && gameMessage.content.getConstructor() == TdApi.MessageGame.CONSTRUCTOR ? TD.getGameName(((TdApi.MessageGame) gameMessage.content).game, false) : null;
         if (!StringUtils.isEmpty(gameTitle)) {
           return new ContentPreview(EMOJI_GAME, 0, Lang.plural(message.isOutgoing ? R.string.game_ActionYouScoredInGame : R.string.game_ActionScoredInGame, score.score, gameTitle), true);
