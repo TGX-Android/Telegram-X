@@ -56,7 +56,7 @@ import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.StringUtils;
 import me.vkryl.td.Td;
 
-public class MessageOptionsPagerController extends BottomSheetViewController<Void> implements
+public class MessageOptionsPagerController extends BottomSheetViewController<OptionDelegate> implements
   FactorAnimator.Target, View.OnClickListener, Menu, DrawableProvider,
   Counter.Callback, ReactionsSelectorRecyclerView.ReactionSelectDelegate, TextColorSet {
 
@@ -72,8 +72,11 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Voi
   private int baseCountersWidth;
   private int startPage = 0;
 
-  public MessageOptionsPagerController (Context context, Tdlib tdlib, Options options, TGMessage message, TdApi.ReactionType defaultReactionType) {
+  public MessageOptionsPagerController (Context context, Tdlib tdlib, Options options, TGMessage message, TdApi.ReactionType defaultReactionType, OptionDelegate optionDelegate) {
     super(context, tdlib);
+    if (optionDelegate == null)
+      throw new IllegalArgumentException();
+    setArguments(optionDelegate);
     this.options = options;
     this.message = message;
 
@@ -327,8 +330,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Voi
 
     if (position == OPTIONS_POSITION) {
       View.OnClickListener onClickListener = view -> {
-        ViewController<?> c = context().navigation().getCurrentStackItem();
-        if (c instanceof OptionDelegate && ((OptionDelegate) c).onOptionItemPressed(view, view.getId())) {
+        if (getArgumentsStrict().onOptionItemPressed(view, view.getId())) {
           hidePopupWindow(true);
         }
       };
