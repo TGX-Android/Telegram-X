@@ -153,6 +153,21 @@ public class NavigationStack {
     return c;
   }
 
+  public boolean destroy (ViewController<?> c) {
+    boolean found = false;
+    for (int index = size() - 1; index >= 0; index--) {
+      if (stack.get(index) == c) {
+        remove(index);
+        found = true;
+      }
+    }
+    if (found) {
+      c.destroy();
+      return true;
+    }
+    return false;
+  }
+
   public void destroyAllButSaveLast (int lastSaveCount) {
     while (size() > lastSaveCount)
       destroy(0);

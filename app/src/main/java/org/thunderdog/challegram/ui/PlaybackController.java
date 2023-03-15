@@ -776,7 +776,11 @@ public class PlaybackController extends ViewController<Void> implements Menu, Mo
     tracks.add(headerItem);
     int foundIndex = buildList(tracks, tdlib, currentTrack, trackList, playListChatId, playFlags);
     if (foundIndex == -1) {
-      throw new IllegalStateException();
+      if (isAttachedToNavigationController()) {
+        throw new IllegalStateException();
+      }
+      context.navigation().getStack().destroy(this);
+      return;
     }
     tracks.add(footerItem);
 
