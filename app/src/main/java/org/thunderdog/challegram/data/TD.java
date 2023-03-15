@@ -2270,7 +2270,15 @@ public class TD {
   }
 
   public static boolean isFileLoadedAndExists (TdApi.File file) {
-    return isFileLoaded(file) && !isFileRedownloadNeeded(file);
+    if (isFileLoaded(file)) {
+      File check = new File(file.local.path);
+      if (!check.exists()) {
+        return false;
+      }
+      long length = check.length();
+      return !(length < file.local.downloadedSize && length > 0); // FIXME: length = file.local.downloadedSize?
+    }
+    return false;
   }
 
   public static TdApi.SearchMessagesFilter makeFilter (TdApi.Message message, boolean isCommon) {
@@ -2319,18 +2327,6 @@ public class TD {
         return TdApi.SearchMessagesFilterPhoto.CONSTRUCTOR;
     }
     return TdApi.SearchMessagesFilterEmpty.CONSTRUCTOR;
-  }
-
-  public static boolean isFileRedownloadNeeded (TdApi.File file) {
-    if (isFileLoaded(file)) {
-      File check = new File(file.local.path);
-      if (!check.exists()) {
-        return true;
-      }
-      long length = check.length();
-      return length < file.local.downloadedSize && length > 0;
-    }
-    return false;
   }
 
   public static TdApi.InputMessageAnimation toInputMessageContent (TdApi.Animation animation) {

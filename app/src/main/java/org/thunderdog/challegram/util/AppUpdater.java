@@ -55,6 +55,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.td.Td;
 
@@ -306,23 +307,30 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
       onUpdateUnavailable();
       return;
     }
-    tdlib.findUpdateFile(updateFile -> tdlib.ui().post(() -> {
+    tdlib.findUpdateFile(updateFile -> {
+      RunnableBool act = updateFileLoadedAndExists -> tdlib.ui().post(() -> {
+        if (updateFile != null) {
+          this.telegramChannelTdlib = tdlib;
+          this.telegramChannelFile = updateFile;
+          TdApi.File file = updateFile.document.document;
+          tdlib.listeners().addFileListener(file.id, this);
+          onUpdateAvailable(FlowType.TELEGRAM_CHANNEL,
+            file.local.downloadedSize,
+            file.expectedSize,
+            updateFile.version,
+            updateFile.commit,
+            updateFileLoadedAndExists
+          );
+        } else {
+          onUpdateUnavailable();
+        }
+      });
       if (updateFile != null) {
-        this.telegramChannelTdlib = tdlib;
-        this.telegramChannelFile = updateFile;
-        TdApi.File file = updateFile.document.document;
-        tdlib.listeners().addFileListener(file.id, this);
-        onUpdateAvailable(FlowType.TELEGRAM_CHANNEL,
-          file.local.downloadedSize,
-          file.expectedSize,
-          updateFile.version,
-          updateFile.commit,
-          TD.isFileLoadedAndExists(file)
-        );
+        tdlib.files().isFileLoadedAndExists(updateFile.document.document, act);
       } else {
-        onUpdateUnavailable();
+        act.runWithBool(false);
       }
-    }));
+    });
   }
 
   private boolean offerTelegramChannelUpdate () {

@@ -150,9 +150,11 @@ public class TGReaction {
   }
 
   private void loadAnimationAndCache (TdApi.File file) {
-    if (!TD.isFileLoadedAndExists(file)) {
-      tdlib.files().downloadFile(file);
-    }
+    tdlib.files().isFileLoadedAndExists(file, loadedAndExists -> {
+      if (!loadedAndExists) {
+        tdlib.files().downloadFile(file);
+      }
+    });
   }
 
   public int getId () {
