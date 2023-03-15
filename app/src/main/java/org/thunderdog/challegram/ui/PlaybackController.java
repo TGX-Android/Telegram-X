@@ -768,6 +768,8 @@ public class PlaybackController extends ViewController<Void> implements Menu, Mo
     ListItem footerItem = tracks.get(tracks.size() - 1);
     int prevSize = tracks.size() - 2;
 
+    canRestoreList = false;
+
     tracks.clear();
     ArrayUtils.ensureCapacity(tracks, trackList.size() + 1);
 
