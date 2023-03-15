@@ -1181,7 +1181,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     final int newStatus = authorizationStatus();
 
     closeListeners.notifyConditionChanged(true);
-    readyOrWaitingForDataListeners.notifyConditionChanged(true);
+    readyOrWaitingForDataListeners.notifyConditionChanged(false);
 
     if (prevStatus == STATUS_UNKNOWN && newStatus != STATUS_UNKNOWN) {
       synchronized (dataLock) {
