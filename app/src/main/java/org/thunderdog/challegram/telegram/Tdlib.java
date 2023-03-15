@@ -1424,8 +1424,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       if (checkVersion(prevVersion, APP_RELEASE_VERSION_2022_OCTOBER, test)) {
         makeUpdateText(0, 25, 1, APP_RELEASE_VERSION_2022_OCTOBER, "https://telegra.ph/Telegram-X-10-06", functions, updates, false);
       }
+      boolean haveMarch2023ChangeLog = false;
       if (checkVersion(prevVersion, APP_RELEASE_VERSION_2023_MARCH, test)) {
         makeUpdateText(0, 25, 6, APP_RELEASE_VERSION_2023_MARCH, "https://telegra.ph/Telegram-X-03-08", functions, updates, true);
+        haveMarch2023ChangeLog = true;
+      }
+      if (checkVersion(prevVersion, APP_RELEASE_VERSION_2023_MARCH_2, test) && !haveMarch2023ChangeLog) {
+        makeUpdateText(0, 25, 6, APP_RELEASE_VERSION_2023_MARCH_2, "https://t.me/tgx_android/305", functions, updates, true);
       }
       if (!updates.isEmpty()) {
         incrementReferenceCount(REFERENCE_TYPE_JOB); // starting task
@@ -1482,6 +1487,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private static final int APP_RELEASE_VERSION_2022_OCTOBER = 1560; // Reactions. 7 October, 2022: https://telegra.ph/Telegram-X-10-06
 
   private static final int APP_RELEASE_VERSION_2023_MARCH = 1605; // Dozens of stuff. 8 March, 2023: https://telegra.ph/Telegram-X-03-08
+  private static final int APP_RELEASE_VERSION_2023_MARCH_2 = 1614; // Bugfixes to the previous release. 15 March, 2023: https://t.me/tgx_android/305
 
   // Startup
 
