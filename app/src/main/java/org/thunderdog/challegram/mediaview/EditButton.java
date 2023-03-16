@@ -141,8 +141,6 @@ public class EditButton extends View implements FactorAnimator.Target {
     invalidate();
   }
 
-  private float iconFactor;
-
   private void setIconInternal (int iconRes) {
     this.icon = Drawables.get(getResources(), iconRes);
     this.iconRes = iconRes;
@@ -183,14 +181,11 @@ public class EditButton extends View implements FactorAnimator.Target {
   }
 
   private void setIconFactor (float factor) {
-    if (this.iconFactor != factor) {
-      this.iconFactor = factor;
-      if (factor >= .5f && pendingIcon != 0) {
-        setIconInternal(pendingIcon);
-        pendingIcon = 0;
-      }
-      invalidate();
+    if (factor >= .5f && pendingIcon != 0) {
+      setIconInternal(pendingIcon);
+      pendingIcon = 0;
     }
+    invalidate();
   }
 
   private Drawable secondIcon;
@@ -296,6 +291,7 @@ public class EditButton extends View implements FactorAnimator.Target {
 
     float alpha;
 
+    float iconFactor = iconAnimator != null ? iconAnimator.getFactor() : 0f;
     if (iconFactor <= STEP_FACTOR) {
       alpha = 1f - AnimatorUtils.DECELERATE_INTERPOLATOR.getInterpolation(iconFactor / STEP_FACTOR);
     } else if (iconFactor < .5f) {
