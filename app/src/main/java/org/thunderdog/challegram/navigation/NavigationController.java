@@ -254,6 +254,9 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
   }
 
   public void removeChildWrapper (ViewController<?> controller) {
+    if (controller == null)
+      throw new NullPointerException();
+
     if (childWrappers != null) {
       childWrappers.remove(controller);
     }

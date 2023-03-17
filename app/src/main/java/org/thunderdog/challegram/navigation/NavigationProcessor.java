@@ -19,6 +19,8 @@ import android.os.Looper;
 import android.os.Message;
 import android.view.View;
 
+import androidx.annotation.NonNull;
+
 public class NavigationProcessor extends Handler {
   private static final int CLEAR_ANIMATION = 0;
   private static final int SET_CONTROLLER = 1;
@@ -132,10 +134,13 @@ public class NavigationProcessor extends Handler {
     }
   }
 
-  public void rebaseStack (ViewController<?> controller, boolean saveFirst) {
+  public void rebaseStack (@NonNull ViewController<?> controller, boolean saveFirst) {
     if (checkUiThread()) {
       if (navigation.isAnimating()) {
-        navigation.removeChildWrapper(stack.getPrevious());
+        ViewController<?> previous = stack.getPrevious();
+        if (previous != null) {
+          navigation.removeChildWrapper(previous);
+        }
         stack.reset(navigation, saveFirst);
         clearAnimationDelayed();
         controller.onFocus();
@@ -167,7 +172,7 @@ public class NavigationProcessor extends Handler {
     }
   }
 
-  public void removePrevious (ViewController<?> controller) {
+  public void removePrevious (@NonNull ViewController<?> controller) {
     if (checkUiThread()) {
       if (navigation.isAnimating()) {
         navigation.removeChildWrapper(controller);
