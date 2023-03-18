@@ -2618,7 +2618,7 @@ public class TdlibUi extends Handler {
     public TdApi.WebPage sourceWebPage;
 
     public MessageId messageId;
-    public String refererUrl, instantViewFallbackUrl;
+    public String refererUrl, instantViewFallbackUrl, originalUrl;
     public TooltipOverlayView.TooltipBuilder tooltip;
     public boolean requireOpenPrompt;
     public String displayUrl;
@@ -2639,6 +2639,7 @@ public class TdlibUi extends Handler {
         this.requireOpenPrompt = options.requireOpenPrompt;
         this.displayUrl = options.displayUrl;
         this.parentController = options.parentController;
+        this.originalUrl = options.originalUrl;
         if (options.sourceMessage != null) {
           sourceMessage(options.sourceMessage);
         }
@@ -2749,6 +2750,11 @@ public class TdlibUi extends Handler {
 
     public UrlOpenParameters referer (String refererUrl) {
       this.refererUrl = refererUrl;
+      return this;
+    }
+
+    public UrlOpenParameters originalUrl (String originalUrl) {
+      this.originalUrl = originalUrl;
       return this;
     }
 
@@ -3021,7 +3027,7 @@ public class TdlibUi extends Handler {
       @Override
       public void act () {
         if (!signal.getAndSet(true)) {
-          if (options != null && !StringUtils.isEmpty(options.instantViewFallbackUrl) && !options.instantViewFallbackUrl.equals(url)) {
+          if (options != null && !StringUtils.isEmpty(options.instantViewFallbackUrl) && !options.instantViewFallbackUrl.equals(url) && !options.instantViewFallbackUrl.equals(options.originalUrl)) {
             openUrl(context, options.instantViewFallbackUrl, new UrlOpenParameters(options).instantViewMode(INSTANT_VIEW_UNSPECIFIED));
             return;
           }
@@ -3041,7 +3047,7 @@ public class TdlibUi extends Handler {
               return;
             }
           }
-          if (!externalUrl.equals(url)) {
+          if (!externalUrl.equals(url) && !(options != null && externalUrl.equals(options.originalUrl))) {
             openUrl(context, externalUrl, new UrlOpenParameters(options).instantViewMode(INSTANT_VIEW_UNSPECIFIED));
           } else {
             UI.openUrl(externalUrl);
@@ -3367,7 +3373,7 @@ public class TdlibUi extends Handler {
     tdlib.client().send(new TdApi.GetInternalLinkType(url.get()), new Client.ResultHandler() {
       @Override
       public void onResult (TdApi.Object result) {
-        String currentUrl = url.get();
+        final String currentUrl = url.get();
         TdApi.InternalLinkType linkType;
         if (result instanceof TdApi.InternalLinkTypeUnknownDeepLink) {
           TdApi.InternalLinkType parsedType = parseTelegramUrl(rawUrl);
@@ -3464,15 +3470,6 @@ public class TdlibUi extends Handler {
               openChatProfile(context, 0, null, new TdApi.SearchUserByToken(token), openParameters);
               break;
             }
-            case TdApi.InternalLinkTypePublicChat.CONSTRUCTOR: {
-              TdApi.InternalLinkTypePublicChat publicChat = (TdApi.InternalLinkTypePublicChat) linkType;
-              if (TdConstants.IV_PREVIEW_USERNAME.equals(publicChat.chatUsername)) {
-                openExternalUrl(context, currentUrl, new UrlOpenParameters(openParameters).forceInstantView());
-              } else {
-                openPublicChat(context, publicChat.chatUsername, openParameters);
-              }
-              break;
-            }
             case TdApi.InternalLinkTypeVideoChat.CONSTRUCTOR: {
               TdApi.InternalLinkTypeVideoChat voiceChatInvitation = (TdApi.InternalLinkTypeVideoChat) linkType;
               openVideoChatOrLiveStream(context, voiceChatInvitation, openParameters);
@@ -3545,9 +3542,22 @@ public class TdlibUi extends Handler {
               context.context().navigation().navigateTo(c);
               break;
             }
+            case TdApi.InternalLinkTypePublicChat.CONSTRUCTOR: {
+              TdApi.InternalLinkTypePublicChat publicChat = (TdApi.InternalLinkTypePublicChat) linkType;
+              if (TdConstants.IV_PREVIEW_USERNAME.equals(publicChat.chatUsername)) {
+                openExternalUrl(context, currentUrl, new UrlOpenParameters(openParameters).forceInstantView());
+              } else {
+                openPublicChat(context, publicChat.chatUsername, openParameters);
+              }
+              break;
+            }
             case TdApi.InternalLinkTypeInstantView.CONSTRUCTOR: {
               TdApi.InternalLinkTypeInstantView instantView = (TdApi.InternalLinkTypeInstantView) linkType;
-              openExternalUrl(context, instantView.url, new UrlOpenParameters(openParameters).forceInstantView().instantViewFallbackUrl(instantView.fallbackUrl));
+              openExternalUrl(context, instantView.url, new UrlOpenParameters(openParameters)
+                .forceInstantView()
+                .originalUrl(currentUrl)
+                .instantViewFallbackUrl(instantView.fallbackUrl)
+              );
               break;
             }
             case TdApi.InternalLinkTypeActiveSessions.CONSTRUCTOR: {
