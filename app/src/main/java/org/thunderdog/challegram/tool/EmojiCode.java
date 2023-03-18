@@ -118,6 +118,9 @@ public class EmojiCode {
     "\uD83E\uDEE5" /* 🫥 */,
     "\uD83E\uDEE4" /* 🫤 */,
     "\uD83E\uDD79" /* 🥹 */,
+    // NEW 2023
+    "\uD83E\uDEE8" /* 🫨 */,
+    // NEW 2023 END
     "\uD83D\uDE08" /* 😈 */,
     "\uD83D\uDC7F" /* 👿 */,
     "\uD83D\uDC79" /* 👹 */,
@@ -396,6 +399,20 @@ public class EmojiCode {
     "\uD83E\uDD0F\uD83C\uDFFE" /* 🤏🏾 */,
     "\uD83E\uDD0F\uD83C\uDFFF" /* 🤏🏿 */,
     // NEW 2019 END
+    // NEW 2023
+    "\uD83E\uDEF7" /* 🫷 */,
+    "\uD83E\uDEF7\uD83C\uDFFB" /* 🫷🏻 */,
+    "\uD83E\uDEF7\uD83C\uDFFC" /* 🫷🏼 */,
+    "\uD83E\uDEF7\uD83C\uDFFD" /* 🫷🏽 */,
+    "\uD83E\uDEF7\uD83C\uDFFE" /* 🫷🏾 */,
+    "\uD83E\uDEF7\uD83C\uDFFF" /* 🫷🏿 */,
+    "\uD83E\uDEF8" /* 🫸 */,
+    "\uD83E\uDEF8\uD83C\uDFFB" /* 🫸🏻 */,
+    "\uD83E\uDEF8\uD83C\uDFFC" /* 🫸🏼 */,
+    "\uD83E\uDEF8\uD83C\uDFFD" /* 🫸🏽 */,
+    "\uD83E\uDEF8\uD83C\uDFFE" /* 🫸🏾 */,
+    "\uD83E\uDEF8\uD83C\uDFFF" /* 🫸🏿 */,
+    // NEW 2023 END
     "\uD83D\uDE4F" /* 🙏 */,
     "\uD83D\uDE4F\uD83C\uDFFB" /* 🙏🏻 */,
     "\uD83D\uDE4F\uD83C\uDFFC" /* 🙏🏼 */,
@@ -1676,6 +1693,7 @@ public class EmojiCode {
     "\uD83D\uDC6B" /* 👫 */,
     "\uD83D\uDC6D" /* 👭 */,
     "\uD83D\uDC6C" /* 👬 */,
+
     "\uD83D\uDC8F" /* 💏 */,
     "\uD83D\uDC8F\uD83C\uDFFB" /* 💏🏻 */,
     "\uD83D\uDC8F\uD83C\uDFFC" /* 💏🏼 */,
@@ -1702,6 +1720,7 @@ public class EmojiCode {
     "\uD83E\uDDD1\uD83C\uDFFF\u200D\u2764\u200D\uD83D\uDC8B\u200D\uD83E\uDDD1\uD83C\uDFFC" /* 🧑🏿‍❤‍💋‍🧑🏼 */,
     "\uD83E\uDDD1\uD83C\uDFFF\u200D\u2764\u200D\uD83D\uDC8B\u200D\uD83E\uDDD1\uD83C\uDFFD" /* 🧑🏿‍❤‍💋‍🧑🏽 */,
     "\uD83E\uDDD1\uD83C\uDFFF\u200D\u2764\u200D\uD83D\uDC8B\u200D\uD83E\uDDD1\uD83C\uDFFE" /* 🧑🏿‍❤‍💋‍🧑🏾 */,
+
     "\uD83D\uDC69\u200D\u2764\u200D\uD83D\uDC8B\u200D\uD83D\uDC69" /* 👩‍❤‍💋‍👩 */,
     "\uD83D\uDC69\uD83C\uDFFB\u200D\u2764\u200D\uD83D\uDC8B\u200D\uD83D\uDC69\uD83C\uDFFB" /* 👩🏻‍❤‍💋‍👩🏻 */,
     "\uD83D\uDC69\uD83C\uDFFB\u200D\u2764\u200D\uD83D\uDC8B\u200D\uD83D\uDC69\uD83C\uDFFC" /* 👩🏻‍❤‍💋‍👩🏼 */,
@@ -1728,6 +1747,7 @@ public class EmojiCode {
     "\uD83D\uDC69\uD83C\uDFFF\u200D\u2764\u200D\uD83D\uDC8B\u200D\uD83D\uDC69\uD83C\uDFFD" /* 👩🏿‍❤‍💋‍👩🏽 */,
     "\uD83D\uDC69\uD83C\uDFFF\u200D\u2764\u200D\uD83D\uDC8B\u200D\uD83D\uDC69\uD83C\uDFFE" /* 👩🏿‍❤‍💋‍👩🏾 */,
     "\uD83D\uDC69\uD83C\uDFFF\u200D\u2764\u200D\uD83D\uDC8B\u200D\uD83D\uDC69\uD83C\uDFFF" /* 👩🏿‍❤‍💋‍👩🏿 */,
+
     "\uD83D\uDC68\u200D\u2764\u200D\uD83D\uDC8B\u200D\uD83D\uDC68" /* 👨‍❤‍💋‍👨 */,
     "\uD83D\uDC68\uD83C\uDFFB\u200D\u2764\u200D\uD83D\uDC8B\u200D\uD83D\uDC68\uD83C\uDFFB" /* 👨🏻‍❤‍💋‍👨🏻 */,
     "\uD83D\uDC68\uD83C\uDFFB\u200D\u2764\u200D\uD83D\uDC8B\u200D\uD83D\uDC68\uD83C\uDFFC" /* 👨🏻‍❤‍💋‍👨🏼 */,
@@ -1754,6 +1774,7 @@ public class EmojiCode {
     "\uD83D\uDC68\uD83C\uDFFF\u200D\u2764\u200D\uD83D\uDC8B\u200D\uD83D\uDC68\uD83C\uDFFD" /* 👨🏿‍❤‍💋‍👨🏽 */,
     "\uD83D\uDC68\uD83C\uDFFF\u200D\u2764\u200D\uD83D\uDC8B\u200D\uD83D\uDC68\uD83C\uDFFE" /* 👨🏿‍❤‍💋‍👨🏾 */,
     "\uD83D\uDC68\uD83C\uDFFF\u200D\u2764\u200D\uD83D\uDC8B\u200D\uD83D\uDC68\uD83C\uDFFF" /* 👨🏿‍❤‍💋‍👨🏿 */,
+
     "\uD83D\uDC69\u200D\u2764\u200D\uD83D\uDC8B\u200D\uD83D\uDC68" /* 👩‍❤‍💋‍👨 */,
     "\uD83D\uDC69\uD83C\uDFFB\u200D\u2764\u200D\uD83D\uDC8B\u200D\uD83D\uDC68\uD83C\uDFFB" /* 👩🏻‍❤‍💋‍👨🏻 */,
     "\uD83D\uDC69\uD83C\uDFFB\u200D\u2764\u200D\uD83D\uDC8B\u200D\uD83D\uDC68\uD83C\uDFFC" /* 👩🏻‍❤‍💋‍👨🏼 */,
@@ -1780,6 +1801,7 @@ public class EmojiCode {
     "\uD83D\uDC69\uD83C\uDFFF\u200D\u2764\u200D\uD83D\uDC8B\u200D\uD83D\uDC68\uD83C\uDFFD" /* 👩🏿‍❤‍💋‍👨🏽 */,
     "\uD83D\uDC69\uD83C\uDFFF\u200D\u2764\u200D\uD83D\uDC8B\u200D\uD83D\uDC68\uD83C\uDFFE" /* 👩🏿‍❤‍💋‍👨🏾 */,
     "\uD83D\uDC69\uD83C\uDFFF\u200D\u2764\u200D\uD83D\uDC8B\u200D\uD83D\uDC68\uD83C\uDFFF" /* 👩🏿‍❤‍💋‍👨🏿 */,
+
     "\uD83D\uDC91" /* 💑 */,
     "\uD83D\uDC91\uD83C\uDFFB" /* 💑🏻 */,
     "\uD83D\uDC91\uD83C\uDFFC" /* 💑🏼 */,
@@ -1806,6 +1828,7 @@ public class EmojiCode {
     "\uD83E\uDDD1\uD83C\uDFFF\u200D\u2764\u200D\uD83E\uDDD1\uD83C\uDFFC" /* 🧑🏿‍❤‍🧑🏼 */,
     "\uD83E\uDDD1\uD83C\uDFFF\u200D\u2764\u200D\uD83E\uDDD1\uD83C\uDFFD" /* 🧑🏿‍❤‍🧑🏽 */,
     "\uD83E\uDDD1\uD83C\uDFFF\u200D\u2764\u200D\uD83E\uDDD1\uD83C\uDFFE" /* 🧑🏿‍❤‍🧑🏾 */,
+
     "\uD83D\uDC69\u200D\u2764\u200D\uD83D\uDC69" /* 👩‍❤‍👩 */,
     "\uD83D\uDC69\uD83C\uDFFB\u200D\u2764\u200D\uD83D\uDC69\uD83C\uDFFB" /* 👩🏻‍❤‍👩🏻 */,
     "\uD83D\uDC69\uD83C\uDFFB\u200D\u2764\u200D\uD83D\uDC69\uD83C\uDFFC" /* 👩🏻‍❤‍👩🏼 */,
@@ -1832,6 +1855,7 @@ public class EmojiCode {
     "\uD83D\uDC69\uD83C\uDFFF\u200D\u2764\u200D\uD83D\uDC69\uD83C\uDFFD" /* 👩🏿‍❤‍👩🏽 */,
     "\uD83D\uDC69\uD83C\uDFFF\u200D\u2764\u200D\uD83D\uDC69\uD83C\uDFFE" /* 👩🏿‍❤‍👩🏾 */,
     "\uD83D\uDC69\uD83C\uDFFF\u200D\u2764\u200D\uD83D\uDC69\uD83C\uDFFF" /* 👩🏿‍❤‍👩🏿 */,
+
     "\uD83D\uDC68\u200D\u2764\u200D\uD83D\uDC68" /* 👨‍❤‍👨 */,
     "\uD83D\uDC68\uD83C\uDFFB\u200D\u2764\u200D\uD83D\uDC68\uD83C\uDFFB" /* 👨🏻‍❤‍👨🏻 */,
     "\uD83D\uDC68\uD83C\uDFFB\u200D\u2764\u200D\uD83D\uDC68\uD83C\uDFFC" /* 👨🏻‍❤‍👨🏼 */,
@@ -1858,6 +1882,7 @@ public class EmojiCode {
     "\uD83D\uDC68\uD83C\uDFFF\u200D\u2764\u200D\uD83D\uDC68\uD83C\uDFFD" /* 👨🏿‍❤‍👨🏽 */,
     "\uD83D\uDC68\uD83C\uDFFF\u200D\u2764\u200D\uD83D\uDC68\uD83C\uDFFE" /* 👨🏿‍❤‍👨🏾 */,
     "\uD83D\uDC68\uD83C\uDFFF\u200D\u2764\u200D\uD83D\uDC68\uD83C\uDFFF" /* 👨🏿‍❤‍👨🏿 */,
+
     "\uD83D\uDC69\u200D\u2764\u200D\uD83D\uDC68" /* 👩‍❤‍👨 */,
     "\uD83D\uDC69\uD83C\uDFFB\u200D\u2764\u200D\uD83D\uDC68\uD83C\uDFFB" /* 👩🏻‍❤‍👨🏻 */,
     "\uD83D\uDC69\uD83C\uDFFB\u200D\u2764\u200D\uD83D\uDC68\uD83C\uDFFC" /* 👩🏻‍❤‍👨🏼 */,
@@ -1884,6 +1909,7 @@ public class EmojiCode {
     "\uD83D\uDC69\uD83C\uDFFF\u200D\u2764\u200D\uD83D\uDC68\uD83C\uDFFD" /* 👩🏿‍❤‍👨🏽 */,
     "\uD83D\uDC69\uD83C\uDFFF\u200D\u2764\u200D\uD83D\uDC68\uD83C\uDFFE" /* 👩🏿‍❤‍👨🏾 */,
     "\uD83D\uDC69\uD83C\uDFFF\u200D\u2764\u200D\uD83D\uDC68\uD83C\uDFFF" /* 👩🏿‍❤‍👨🏿 */,
+
     "\uD83D\uDC6A" /* 👪 */,
     "\uD83D\uDC68\u200D\uD83D\uDC69\u200D\uD83D\uDC67" /* 👨‍👩‍👧 */,
     "\uD83D\uDC68\u200D\uD83D\uDC69\u200D\uD83D\uDC67\u200D\uD83D\uDC66" /* 👨‍👩‍👧‍👦 */,
@@ -2064,6 +2090,11 @@ public class EmojiCode {
     "\uD83E\uDD0E" /* 🤎 */,
     "\uD83E\uDD0D" /* 🤍 */,
     // NEW 2019 END
+    // NEW 2023
+    "\uD83E\uDE77" /* 🩷 */,
+    "\uD83E\uDE75" /* 🩵 */,
+    "\uD83E\uDE76" /* 🩶 */,
+    // NEW 2023 END
     "\uD83D\uDDA4" /* 🖤 */,
     "\uD83D\uDC94" /* 💔 */,
     "\u2764\u200D\uD83D\uDD25" /* ❤‍🔥 */,
@@ -2107,6 +2138,9 @@ public class EmojiCode {
     "\uD83E\uDD86" /* 🦆 */,
     "\uD83E\uDD85" /* 🦅 */,
     "\uD83E\uDD89" /* 🦉 */,
+    // NEW 2023
+    "\uD83D\uDC26\u200D\u2B1B" /* 🐦‍⬛ */,
+    // NEW 2023 END
     "\uD83E\uDD87" /* 🦇 */,
     "\uD83D\uDC3A" /* 🐺 */,
     "\uD83D\uDC17" /* 🐗 */,
@@ -2203,6 +2237,13 @@ public class EmojiCode {
     "\uD83E\uDDA8" /* 🦨 */,
     "\uD83E\uDDA9" /* 🦩 */,
     // NEW 2019 END
+    // NEW 2023
+    "\uD83E\uDECF" /* 🫏 */,
+    "\uD83E\uDECE" /* 🫎 */,
+    "\uD83E\uDEBF" /* 🪿 */,
+    "\uD83E\uDEBD" /* 🪽 */,
+    "\uD83E\uDEBC" /* 🪼 */,
+    // NEW 2023 END
     "\uD83E\uDEB8" /* 🪸 */,
     "\uD83E\uDEB7" /* 🪷 */,
     "\uD83E\uDEB9" /* 🪹 */,
@@ -2233,6 +2274,11 @@ public class EmojiCode {
     "\uD83C\uDF38" /* 🌸 */,
     "\uD83C\uDF3C" /* 🌼 */,
     "\uD83C\uDF3B" /* 🌻 */,
+    // NEW 2023
+    "\uD83E\uDEBB" /* 🪻 */,
+    "\uD83E\uDEDB" /* 🫛 */,
+    "\uD83E\uDEDA" /* 🫚 */,
+    // NEW 2023 END
     "\uD83C\uDF1E" /* 🌞 */,
     "\uD83C\uDF1D" /* 🌝 */,
     "\uD83C\uDF1B" /* 🌛 */,
@@ -2453,6 +2499,12 @@ public class EmojiCode {
     "\uD83E\uDE95" /* 🪕 */,
     "\uD83E\uDE94" /* 🪔 */,
     // NEW 2019 END
+    // NEW 2023
+    "\uD83E\uDEAD" /* 🪭 */,
+    "\uD83E\uDEAE" /* 🪮 */,
+    "\uD83E\uDE88" /* 🪈 */,
+    "\uD83E\uDE87" /* 🪇 */,
+    // NEW 2023 END
     "\uD83E\uDED7" /* 🫗 */,
     "\uD83E\uDED9" /* 🫙 */,
     "\uD83D\uDEDD" /* 🛝 */,
@@ -3191,6 +3243,9 @@ public class EmojiCode {
     "\u2653" /* ♓ */,
     "\uD83C\uDD94" /* 🆔 */,
     "\u269B" /* ⚛ */,
+    // NEW 2023
+    "\uD83E\uDEAF" /* 🪯 */,
+    // NEW 2023 END
     "\uD83C\uDE51" /* 🉑 */,
     "\u2622" /* ☢ */,
     "\u2623" /* ☣ */,
@@ -3273,6 +3328,9 @@ public class EmojiCode {
     "\uD83D\uDEB9" /* 🚹 */,
     "\uD83D\uDEBA" /* 🚺 */,
     "\uD83D\uDEBC" /* 🚼 */,
+    // NEW 2023
+    "\uD83D\uDEDC" /* 🛜 */,
+    // NEW 2023 END
     "\u26A7" /* ⚧ */,
     "\uD83D\uDEBB" /* 🚻 */,
     "\uD83D\uDEAE" /* 🚮 */,

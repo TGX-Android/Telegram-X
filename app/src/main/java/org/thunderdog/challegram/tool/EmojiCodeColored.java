@@ -89,6 +89,7 @@ public class EmojiCodeColored {
       "\uD83E\uDEE5" /* 🫥 */,
       "\uD83E\uDEE4" /* 🫤 */,
       "\uD83E\uDD79" /* 🥹 */,
+      "\uD83E\uDEE8" /* 🫨 */,
       "\uD83D\uDE31",
       "\uD83D\uDE28",
       "\uD83D\uDE30",
@@ -186,6 +187,8 @@ public class EmojiCodeColored {
       "\uD83E\uDEF6",
       "\u270D",
       "\uD83E\uDD0F", // Pinching Hand
+      "\uD83E\uDEF7" /* 🫷 */,
+      "\uD83E\uDEF8" /* 🫸 */,
       "\uD83D\uDE4F",
       "\uD83E\uDDB6",
       "\uD83E\uDDB5",
@@ -778,6 +781,9 @@ public class EmojiCodeColored {
       "\uD83D\uDC9C",
       "\uD83E\uDD0E", // Brown Heart
       "\uD83E\uDD0D", // White Heart
+      "\uD83E\uDE77" /* 🩷 */,
+      "\uD83E\uDE75" /* 🩵 */,
+      "\uD83E\uDE76" /* 🩶 */,
       "\uD83D\uDDA4",
       "\uD83D\uDC94",
       "\u2764\u200D\uD83D\uDD25",
@@ -871,6 +877,10 @@ public class EmojiCodeColored {
       "\uD83E\uDE70", // Ballet Shoes
       "\uD83E\uDE95", // Banjo
       "\uD83E\uDE94", // Diya Lamp
+      "\uD83E\uDEAD" /* 🪭 */,
+      "\uD83E\uDEAE" /* 🪮 */,
+      "\uD83E\uDE88" /* 🪈 */,
+      "\uD83E\uDE87" /* 🪇 */,
       "\uD83E\uDED7",
       "\uD83E\uDED9",
       "\uD83D\uDEDD",
@@ -944,6 +954,7 @@ public class EmojiCodeColored {
       "\u2653",
       "\uD83C\uDD94",
       "\u269B",
+      "\uD83E\uDEAF" /* 🪯 */,
       "\uD83C\uDE51",
       "\u2622",
       "\u2623",
@@ -1026,6 +1037,7 @@ public class EmojiCodeColored {
       "\uD83D\uDEB9",
       "\uD83D\uDEBA",
       "\uD83D\uDEBC",
+      "\uD83D\uDEDC" /* 🛜 */,
       "\u26A7",
       "\uD83D\uDEBB",
       "\uD83D\uDEAE",
