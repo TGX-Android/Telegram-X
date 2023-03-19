@@ -1576,9 +1576,13 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     switch (id) {
       case R.id.btn_saveToGallery: {
         TdApi.File file = item.getTargetFile();
-        if (TD.isFileLoadedAndExists(file)) {
-          U.copyToGallery(context, file.local.path, item.isAnimatedAvatar() || item.isGifType() ? U.TYPE_GIF : item.isVideo() ? U.TYPE_VIDEO : U.TYPE_PHOTO);
-        }
+        tdlib.files().isFileLoadedAndExists(file, isLoadedAndExists -> {
+          if (isLoadedAndExists) {
+            runOnUiThreadOptional(() -> {
+              U.copyToGallery(context, file.local.path, item.isAnimatedAvatar() || item.isGifType() ? U.TYPE_GIF : item.isVideo() ? U.TYPE_VIDEO : U.TYPE_PHOTO);
+            });
+          }
+        });
         break;
       }
       case R.id.btn_saveGif: {

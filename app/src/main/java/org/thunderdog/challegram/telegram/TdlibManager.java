@@ -1272,8 +1272,8 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     }
   }
 
-  void onUpdateAccountProfile (int accountId, TdApi.User user, boolean isLoaded) {
-    handler.sendMessage(Message.obtain(handler, ACTION_DISPATCH_ACCOUNT_PROFILE, accountId, isLoaded ? 1 : 0, user));
+  void onUpdateAccountProfile (int accountId, @NonNull TdApi.User user, boolean isFirstTimeLoaded) {
+    handler.sendMessage(Message.obtain(handler, ACTION_DISPATCH_ACCOUNT_PROFILE, accountId, isFirstTimeLoaded ? 1 : 0, user));
   }
 
   void onUpdateAccountProfilePhoto (int accountId, boolean big) {
@@ -1985,11 +1985,11 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     return activeAccounts.size() > 1;
   }
 
-  private void onAccountProfileChanged (TdlibAccount account, TdApi.User user, boolean isCurrent, boolean isLoaded) {
+  private void onAccountProfileChanged (TdlibAccount account, TdApi.User user, boolean isCurrent, boolean isFirstTimeLoaded) {
     if (account.isUnauthorized())
       return;
-    global().notifyAccountProfileChanged(account, user, isCurrent, isLoaded);
-    if (isLoaded || user == null) {
+    global().notifyAccountProfileChanged(account, user, isCurrent, isFirstTimeLoaded);
+    if (isFirstTimeLoaded || user == null) {
       if (checkAliveAccount(account)) {
         checkPauseTimeouts(null);
       }

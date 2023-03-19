@@ -1458,9 +1458,9 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         return R.string.RightSendPhoto;
       case RightId.SEND_VIDEOS:
         return R.string.RightSendVideo;
-      case RightId.SEND_VIDEO_NOTES:
-        return R.string.RightSendVoiceNote;
       case RightId.SEND_VOICE_NOTES:
+        return R.string.RightSendVoiceNote;
+      case RightId.SEND_VIDEO_NOTES:
         return R.string.RightSendVideoNote;
       case RightId.SEND_OTHER_MESSAGES:
         return R.string.UserRestrictionsSendStickers;
