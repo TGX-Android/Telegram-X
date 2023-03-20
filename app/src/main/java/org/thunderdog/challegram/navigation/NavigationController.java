@@ -505,6 +505,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
 
   public void setControllerAnimated (ViewController<?> controller, boolean asForward, boolean saveFirst) {
     if (controller != null) {
+      clearStackLock();
       if (getStack().isEmpty()) {
         initController(controller);
       } else {
@@ -570,9 +571,16 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
     }
   }
 
+  private void clearStackLock () {
+    if (getStack().isLocked()) {
+      getStack().setIsLocked(false);
+    }
+  }
+
   public final boolean navigateTo (ViewController<?> controller) {
     if (!isAnimating && getStackSize() > 0 && controller != null && !isCurrentControllerAnimating()) {
       isAnimating = true;
+      clearStackLock();
       processor.navigateTo(controller);
       return true;
     } else {
