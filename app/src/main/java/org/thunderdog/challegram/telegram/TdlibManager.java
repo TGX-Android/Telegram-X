@@ -286,11 +286,11 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   private final CallManager calls = new CallManager(this);
   private final Settings.ProxyChangeListener proxyChangeListener = new Settings.ProxyChangeListener() {
     @Override
-    public void onProxyConfigurationChanged (int proxyId, @Nullable String server, int port, @Nullable TdApi.ProxyType type, String description, boolean isCurrent, boolean isNewAdd) {
+    public void onProxyConfigurationChanged (int proxyId, @Nullable TdApi.InternalLinkTypeProxy proxy, String description, boolean isCurrent, boolean isNewAdd) {
       if (isCurrent) {
         for (TdlibAccount account : TdlibManager.this) {
           if (account.tdlib != null) {
-            account.tdlib.setProxy(proxyId, server, port, type);
+            account.tdlib.setProxy(proxyId, proxy);
           }
         }
       }
@@ -640,11 +640,15 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   private static final int ACTION_DISPATCH_ACCOUNT_PROFILE_PHOTO = 5;
   private static final int ACTION_DISPATCH_TOTAL_UNREAD_COUNT = 6;
   private static final int ACTION_RESET_UNREAD_COUNTERS = 7;
+  private static final int ACTION_DISPATCH_NETWORK_DISPLAY_STATUS_CHANGED = 8;
 
   private void handleUiMessage (Message msg) {
     switch (msg.what) {
       case ACTION_DISPATCH_NETWORK_STATE:
         global().notifyConnectionStateChanged((Tdlib) msg.obj, msg.arg2, currentAccount.id == msg.arg1);
+        break;
+      case ACTION_DISPATCH_NETWORK_DISPLAY_STATUS_CHANGED:
+        global().notifyConnectionDisplayStatusChanged((Tdlib) msg.obj, currentAccount.id == msg.arg1);
         break;
       case ACTION_DISPATCH_NETWORK_TYPE:
         global().notifyConnectionTypeChanged(msg.arg1, msg.arg2);
@@ -690,9 +694,13 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   }
 
   void onConnectionStateChanged (Tdlib tdlib, @ConnectionState int newState) {
-    if (newState != Tdlib.STATE_UNKNOWN) {
-      handler.sendMessage(Message.obtain(handler, ACTION_DISPATCH_NETWORK_STATE, tdlib.id(), newState));
+    if (newState != ConnectionState.UNKNOWN) {
+      handler.sendMessage(Message.obtain(handler, ACTION_DISPATCH_NETWORK_STATE, tdlib.id(), newState, tdlib));
     }
+  }
+
+  void onConnectionDisplayStatusChanged (Tdlib tdlib) {
+    handler.sendMessage(Message.obtain(handler, ACTION_DISPATCH_NETWORK_DISPLAY_STATUS_CHANGED, tdlib.id(), 0, tdlib));
   }
 
   public void onConnectionTypeChanged (int oldConnectionType, int newConnectionType) {
@@ -1265,8 +1273,10 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     if (oldAccount != null)
       oldAccount.markAsUsed();
     account.markAsUsed();
-    global().notifyAccountSwitched(account, account.tdlib().myUser(), reason, oldAccount);
-    onConnectionStateChanged(account.tdlib(), account.tdlib().connectionState());
+    Tdlib tdlib = account.tdlib();
+    global().notifyAccountSwitched(account, tdlib.myUser(), reason, oldAccount);
+    onConnectionStateChanged(tdlib, tdlib.connectionState());
+    onConnectionDisplayStatusChanged(tdlib);
     if (Settings.instance().checkNotificationFlag(Settings.NOTIFICATION_FLAG_ONLY_ACTIVE_ACCOUNT)) {
       onUpdateNotifications(null, notificationAccount -> notificationAccount.id == account.id || (oldAccount != null && notificationAccount.id == oldAccount.id));
     }
@@ -2041,12 +2051,12 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   }
 
   @TdlibThread
-  void onAuthStateChanged (Tdlib tdlib, TdApi.AuthorizationState authState, int status, long userId) {
-    if (status == Tdlib.STATUS_UNKNOWN) {
+  void onAuthStateChanged (Tdlib tdlib, TdApi.AuthorizationState authState, @Tdlib.Status int status, long userId) {
+    if (status == Tdlib.Status.UNKNOWN) {
       return;
     }
     int accountId = tdlib.id();
-    boolean isUnauthorized = status == Tdlib.STATUS_UNAUTHORIZED;
+    boolean isUnauthorized = status == Tdlib.Status.UNAUTHORIZED;
     TdlibAccount account = accounts.get(accountId);
     boolean changed = account.isUnauthorized() != isUnauthorized;
     if (account.setUnauthorized(isUnauthorized, userId)) {

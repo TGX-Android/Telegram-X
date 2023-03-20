@@ -15,7 +15,8 @@
 package org.thunderdog.challegram.telegram;
 
 public interface GlobalConnectionListener {
-  void onConnectionStateChanged (Tdlib tdlib, @ConnectionState int newState, boolean isCurrent);
-  void onConnectionTypeChanged (int oldType, int newType);
-  void onSystemDataSaverStateChanged (boolean isEnabled);
+  default void onConnectionStateChanged (Tdlib tdlib, @ConnectionState int newState, boolean isCurrent) { }
+  default void onConnectionTypeChanged (int oldType, int newType) { }
+  default void onSystemDataSaverStateChanged (boolean isEnabled) { }
+  default void onConnectionDisplayStatusChanged (Tdlib tdlib, boolean isCurrent) { }
 }

@@ -1530,6 +1530,12 @@ public class TdlibListeners {
     }
   }
 
+  void updateConnectionDisplayStatusChanged () {
+    for (ConnectionListener listener : connectionListeners) {
+      listener.onConnectionDisplayStatusChanged();
+    }
+  }
+
   // updateInstalledStickerSets
 
   void updateInstalledStickerSets (TdApi.UpdateInstalledStickerSets update) {

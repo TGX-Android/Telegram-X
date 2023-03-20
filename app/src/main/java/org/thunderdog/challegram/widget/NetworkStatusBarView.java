@@ -22,6 +22,7 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.StringRes;
 
 import org.thunderdog.challegram.BaseActivity;
@@ -85,7 +86,7 @@ public class NetworkStatusBarView extends FrameLayoutFix implements Destroyable,
 
 
     TdlibManager.instance().global().addConnectionListener(this);
-    setNetworkState(TdlibManager.instance().current().connectionState());
+    updateNetworkState(TdlibManager.instance().current());
     setFactor(this.isVisible ? 1f : 0f);
 
     UI.getContext(getContext()).addActivityListener(this);
@@ -125,84 +126,39 @@ public class NetworkStatusBarView extends FrameLayoutFix implements Destroyable,
     Screen.removeStatusBarHeightListener(this);
   }
 
-  private @ConnectionState int state = Tdlib.STATE_UNKNOWN;
+  private Tdlib tdlib;
+  private @ConnectionState int state = ConnectionState.UNKNOWN;
 
   public void updateText (@StringRes int resId) {
-    if (state != Tdlib.STATE_UNKNOWN && getVisibilityFactor() > 0f) {
-      int stringRes = TdlibUi.stringForConnectionState(state);
+    if (tdlib != null && getVisibilityFactor() > 0f) {
+      int stringRes = TdlibUi.stringForConnectionState(state); // FIXME
       if (resId == 0 || resId == stringRes) {
-        textView.setText(Lang.getString(stringRes));
+        updateNetworkState(tdlib);
       }
     }
   }
 
-  private void setNetworkState (final @ConnectionState int state) {
-    if (this.state != state) {
-      this.state = state;
-      progressView.setVisibility(state != Tdlib.STATE_CONNECTED && state != Tdlib.STATE_WAITING ? View.VISIBLE : View.GONE);
-      textView.setText(Lang.getString(TdlibUi.stringForConnectionState(state)));
-      updateVisible();
-    }
+  private void updateNetworkState (final @NonNull Tdlib tdlib) {
+    this.tdlib = tdlib;
+    this.state = tdlib.connectionState();
+    progressView.setVisibility(state != ConnectionState.CONNECTED && state != ConnectionState.WAITING_FOR_NETWORK ? View.VISIBLE : View.GONE);
+    textView.setText(tdlib.connectionStateText());
+    updateVisible();
   }
 
   private boolean ignoreTranslation;
 
   public void updateVisible () {
     boolean isKeyboardVisible = UI.getContext(getContext()).isKeyboardVisible();
-    setIsVisible(state != Tdlib.STATE_CONNECTED && !isKeyboardVisible, ignoreTranslation = ignoreTranslation || isKeyboardVisible);
-    /*int color;
-    switch (state) {
-      case WatchDog.STATE_WAITING: {
-        color = R.id.theme_color_statusBarUnreachable;
-        break;
-      }
-      default:
-        color = state != WatchDog.STATE_CONNECTED ? R.id.theme_color_statusBarConnecting : R.id.theme_color_statusBar;
-        break;
-    }
-    setColor(isKeyboardVisible ? color : R.id.theme_color_statusBar);*/
+    setIsVisible(state != ConnectionState.CONNECTED && !isKeyboardVisible, ignoreTranslation = ignoreTranslation || isKeyboardVisible);
   }
 
-  // private ColorChanger statusChanger;
-  // private int currentColorId = R.id.theme_color_statusBarConnecting;
-
-  /*private int getCurrentStatusBarColor () {
-    return *//*statusChanger != null ? statusChanger.getColor(colorFactor) :*//* Theme.getColor(R.id.theme_color_statusBar);
-  }*/
-
-  /*private FactorAnimator colorAnimator;
-
-  private void setColor (@ThemeColorId int colorId) {
-    if (this.currentColorId != colorId) {
-      if (statusChanger == null) {
-        statusChanger = new ColorChanger();
-      }
-      statusChanger.setFrom(getCurrentStatusBarColor());
-      this.currentColorId = colorId;
-      statusChanger.setTo(Theme.getColor(colorId));
-      if (colorAnimator == null) {
-        colorAnimator = new FactorAnimator(1, this, Anim.DECELERATE_INTERPOLATOR, 300l, 0f);
-      } else {
-        colorAnimator.forceFactor(0f);
-      }
-      this.colorFactor = 0f;
-      colorAnimator.animateTo(1f);
-    }
-  }*/
-
   @Override
-  public void onConnectionStateChanged (Tdlib tdlib, int newState, boolean isCurrent) {
+  public void onConnectionDisplayStatusChanged (Tdlib tdlib, boolean isCurrent) {
     if (isCurrent) {
-      setNetworkState(newState);
-      updateVisible();
+      updateNetworkState(tdlib);
     }
   }
-
-  @Override
-  public void onConnectionTypeChanged (int oldConnectionType, int connectionType) { }
-
-  @Override
-  public void onSystemDataSaverStateChanged (boolean isEnabled) { }
 
   private boolean isVisible;
 

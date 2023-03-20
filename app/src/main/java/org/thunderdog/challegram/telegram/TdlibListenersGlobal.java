@@ -18,6 +18,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.voip.gui.CallSettings;
 
 import me.vkryl.core.reference.ReferenceList;
@@ -31,6 +32,7 @@ public class TdlibListenersGlobal {
   private final ReferenceList<GlobalCallListener> callListeners = new ReferenceList<>(true);
   private final ReferenceList<GlobalCountersListener> countersListeners = new ReferenceList<>();
   private final ReferenceList<GlobalTokenStateListener> tokenStateListeners = new ReferenceList<>(true);
+  private final ReferenceList<GlobalProxyPingListener> proxyPingListeners = new ReferenceList<>();
 
   /*package*/ TdlibListenersGlobal (TdlibManager context) {
     this.context = context;
@@ -157,6 +159,28 @@ public class TdlibListenersGlobal {
   void notifyConnectionStateChanged (Tdlib tdlib, @ConnectionState int newState, boolean isCurrent) {
     for (GlobalConnectionListener listener : connectionListeners) {
       listener.onConnectionStateChanged(tdlib, newState, isCurrent);
+    }
+  }
+
+  void notifyConnectionDisplayStatusChanged (Tdlib tdlib, boolean isCurrent) {
+    for (GlobalConnectionListener listener : connectionListeners) {
+      listener.onConnectionDisplayStatusChanged(tdlib, isCurrent);
+    }
+  }
+
+  // Proxy
+
+  public void addProxyListener (GlobalProxyPingListener listener) {
+    proxyPingListeners.add(listener);
+  }
+
+  public void removeProxyListener (GlobalProxyPingListener listener) {
+    proxyPingListeners.remove(listener);
+  }
+
+  void notifyProxyPingChanged (@NonNull Settings.Proxy proxy, long pingMs) {
+    for (GlobalProxyPingListener listener : proxyPingListeners) {
+      listener.onProxyPingChanged(proxy, pingMs);
     }
   }
 

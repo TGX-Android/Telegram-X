@@ -3760,10 +3760,10 @@ public class TdlibUi extends Handler {
     c.showOptions(msg, ids.get(), strings.get(), colors.get(), icons.get(), (itemView, id) -> {
       switch (id) {
         case R.id.btn_addProxy:
-          Settings.instance().addOrUpdateProxy(server, port, type, null, true);
+          Settings.instance().addOrUpdateProxy(new TdApi.InternalLinkTypeProxy(server, port, type), null, true);
           break;
         case R.id.btn_save:
-          Settings.instance().addOrUpdateProxy(server, port, type, null, false);
+          Settings.instance().addOrUpdateProxy(new TdApi.InternalLinkTypeProxy(server, port, type), null, false);
           break;
       }
       return true;
@@ -3801,16 +3801,16 @@ public class TdlibUi extends Handler {
 
   public static int stringForConnectionState (@ConnectionState int state) {
     switch (state) {
-      case Tdlib.STATE_CONNECTED:
+      case ConnectionState.CONNECTED:
         return R.string.Connected;
-      case Tdlib.STATE_CONNECTING:
-      case Tdlib.STATE_UNKNOWN:
+      case ConnectionState.CONNECTING:
+      case ConnectionState.UNKNOWN:
         return R.string.network_Connecting;
-      case Tdlib.STATE_CONNECTING_TO_PROXY:
+      case ConnectionState.CONNECTING_TO_PROXY:
         return R.string.ConnectingToProxy;
-      case Tdlib.STATE_WAITING:
+      case ConnectionState.WAITING_FOR_NETWORK:
         return R.string.network_WaitingForNetwork;
-      case Tdlib.STATE_UPDATING:
+      case ConnectionState.UPDATING:
         return R.string.network_Updating;
     }
     throw new RuntimeException();

@@ -88,6 +88,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -138,16 +139,18 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       SERVICE = 2;
   }
 
-  public static final int STATE_UNKNOWN = -1;
-  public static final int STATE_CONNECTED = 0;
-  public static final int STATE_CONNECTING_TO_PROXY = 1;
-  public static final int STATE_CONNECTING = 2;
-  public static final int STATE_UPDATING = 3;
-  public static final int STATE_WAITING = 4;
-
-  public static final int STATUS_UNKNOWN = 0;
-  public static final int STATUS_UNAUTHORIZED = 1;
-  public static final int STATUS_READY = 2;
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    Status.UNKNOWN,
+    Status.UNAUTHORIZED,
+    Status.READY
+  })
+  public @interface Status {
+    int
+      UNKNOWN = 0,
+      UNAUTHORIZED = 1,
+      READY = 2;
+  }
 
   public static final int CHAT_ACCESS_TEMPORARY = 1;
   public static final int CHAT_ACCESS_OK = 0;
@@ -315,18 +318,24 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         if (result.getConstructor() == TdApi.Proxies.CONSTRUCTOR) {
           TdApi.Proxy[] proxies = ((TdApi.Proxies) result).proxies;
           for (TdApi.Proxy proxy : proxies) {
-            int proxyId = Settings.instance().addOrUpdateProxy(proxy.server, proxy.port, proxy.type, null, proxy.isEnabled);
+            TdApi.InternalLinkTypeProxy proxyDetails = new TdApi.InternalLinkTypeProxy(
+              proxy.server,
+              proxy.port,
+              proxy.type
+            );
+            int proxyId = Settings.instance().addOrUpdateProxy(proxyDetails, null, proxy.isEnabled);
             if (proxy.isEnabled) {
-              tdlib.setProxy(proxyId, proxy.server, proxy.port, proxy.type);
+              tdlib.setEffectiveProxyId(proxyId);
+              tdlib.setProxy(proxyId, proxyDetails);
             }
           }
         } else {
           int proxyId = Settings.instance().getEffectiveProxyId();
           Settings.Proxy proxy = Settings.instance().getProxyConfig(proxyId);
           if (proxy != null) {
-            tdlib.setProxy(proxyId, proxy.server, proxy.port, proxy.type);
+            tdlib.setProxy(proxyId, proxy.proxy);
           } else {
-            tdlib.setProxy(Settings.PROXY_ID_NONE, null, 0, null);
+            tdlib.disableProxy();
           }
         }
       });
@@ -400,7 +409,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private final int accountId;
 
   private ClientHolder client;
-  private @ConnectionState int connectionState = STATE_UNKNOWN;
+  private @ConnectionState int connectionState = ConnectionState.UNKNOWN;
 
   private final Object clientLock = new Object();
   private final Object dataLock = new Object();
@@ -654,7 +663,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   synchronized void checkDeviceTokenImpl (@Nullable Runnable onDone) {
     final TdApi.DeviceToken deviceToken = context.getToken();
-    if (deviceToken == null || authorizationStatus() != STATUS_READY)
+    if (deviceToken == null || authorizationStatus() != Status.READY)
       return;
     long myUserId = myUserId();
     if (myUserId == 0)
@@ -924,7 +933,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private boolean shouldPause () {
     if (instancePaused)
       return false; // Instance already paused
-    if (authorizationStatus() == STATUS_UNKNOWN)
+    if (authorizationStatus() == Status.UNKNOWN)
       return false; // TDLib takes too long to launch. Give it a chance to initialize
     if ((authorizationState != null && authorizationState.getConstructor() != TdApi.AuthorizationStateWaitPhoneNumber.CONSTRUCTOR))
       return false; // User has started authorization process. Give them a chance to complete it.
@@ -1166,7 +1175,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return false;
   }
 
-  public int authorizationStatus () {
+  public @Status int authorizationStatus () {
     synchronized (dataLock) {
       return getStatus(authorizationState);
     }
@@ -1174,23 +1183,23 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   @TdlibThread
   private void updateAuthState (ClientHolder context, TdApi.AuthorizationState newAuthState) {
-    final int prevStatus = authorizationStatus();
+    final @Status int prevStatus = authorizationStatus();
     synchronized (dataLock) {
       this.authorizationState = newAuthState;
     }
-    final int newStatus = authorizationStatus();
+    final @Status int newStatus = authorizationStatus();
 
     closeListeners.notifyConditionChanged(true);
     readyOrWaitingForDataListeners.notifyConditionChanged(false);
 
-    if (prevStatus == STATUS_UNKNOWN && newStatus != STATUS_UNKNOWN) {
+    if (prevStatus == Status.UNKNOWN && newStatus != Status.UNKNOWN) {
       synchronized (dataLock) {
         resetChatsData();
       }
     }
 
     switch (newStatus) {
-      case STATUS_UNKNOWN: {
+      case Status.UNKNOWN: {
         if (newAuthState.getConstructor() == TdApi.AuthorizationStateClosed.CONSTRUCTOR) {
           RunnableBool eraseActor;
           boolean eraseSuccess;
@@ -1249,7 +1258,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         }
         break;
       }
-      case STATUS_UNAUTHORIZED: {
+      case Status.UNAUTHORIZED: {
         if (newAuthState.getConstructor() == TdApi.AuthorizationStateLoggingOut.CONSTRUCTOR) {
           setLoggingOut(true);
         } else {
@@ -1259,51 +1268,51 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         }
         break;
       }
-      case STATUS_READY: {
+      case Status.READY: {
         setLoggingOut(false);
         break;
       }
       default:
         throw new IllegalStateException(Integer.toString(newStatus));
     }
-    if (newStatus != STATUS_UNKNOWN && Log.needMeasureLaunchSpeed() && !context.hasLogged()) {
+    if (newStatus != Status.UNKNOWN && Log.needMeasureLaunchSpeed() && !context.hasLogged()) {
       long timeSinceInitialization = context.timeSinceInitializationMs();
       long timeWasted = context.timeWasted();
       Log.v("INITIALIZATION: TDLIB FINISHED INITIALIZATION & SENT VALID AUTH STATE IN %dMS, WASTED: %dMS", timeSinceInitialization - timeWasted, timeWasted);
     }
     Log.i(Log.TAG_ACCOUNTS, "updateAuthState accountId:%d %s", accountId, newAuthState.getClass().getSimpleName());
-    if (newStatus == STATUS_READY) {
+    if (newStatus == Status.READY) {
       setNeedPeriodicSync(true);
-    } else if (newStatus == STATUS_UNAUTHORIZED) {
+    } else if (newStatus == Status.UNAUTHORIZED) {
       setNeedPeriodicSync(false);
     }
 
     final long myUserId = myUserId();
     context().onAuthStateChanged(this, newAuthState, newStatus, myUserId);
     listeners().updateAuthorizationState(newAuthState);
-    if (newStatus != STATUS_READY) {
+    if (newStatus != Status.READY) {
       startupPerformed = false;
     }
-    if (prevStatus == STATUS_UNKNOWN && newStatus != prevStatus) {
+    if (prevStatus == Status.UNKNOWN && newStatus != prevStatus) {
       onInitialized();
     }
-    if (prevStatus != STATUS_READY && newStatus == STATUS_READY) {
+    if (prevStatus != Status.READY && newStatus == Status.READY) {
       runStartupChecks();
     }
-    if (prevStatus != STATUS_UNAUTHORIZED && newStatus == STATUS_UNAUTHORIZED) {
+    if (prevStatus != Status.UNAUTHORIZED && newStatus == Status.UNAUTHORIZED) {
       Log.i("Performing account cleanup for accountId:%d", accountId);
       listeners().performCleanup();
-    } else if (newStatus == STATUS_READY) {
+    } else if (newStatus == Status.READY) {
       onPerformStartup();
       TdApi.User myUser = cache().myUser();
       if (myUser != null) {
         context().onUpdateAccountProfile(id(), myUser, true);
       }
     }
-    if (newStatus == STATUS_UNAUTHORIZED)
+    if (newStatus == Status.UNAUTHORIZED)
       checkChangeLogs(false, false);
 
-    if (newStatus == STATUS_READY && stressTest > 0) {
+    if (newStatus == Status.READY && stressTest > 0) {
       clientHolder().sendClose();
     }
   }
@@ -1353,14 +1362,14 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return version < checkVersion && (checkVersion <= BuildConfig.ORIGINAL_VERSION_CODE || isTest || BuildConfig.DEBUG) && checkVersion < Integer.MAX_VALUE;
   }
 
-  private static int getStatus (TdApi.AuthorizationState state) {
+  private static @Status int getStatus (TdApi.AuthorizationState state) {
     if (state == null)
-      return STATUS_UNKNOWN;
+      return Status.UNKNOWN;
     switch (state.getConstructor()) {
       case TdApi.AuthorizationStateWaitTdlibParameters.CONSTRUCTOR:
       case TdApi.AuthorizationStateClosing.CONSTRUCTOR:
       case TdApi.AuthorizationStateClosed.CONSTRUCTOR:
-        return STATUS_UNKNOWN;
+        return Status.UNKNOWN;
       case TdApi.AuthorizationStateWaitPhoneNumber.CONSTRUCTOR:
       case TdApi.AuthorizationStateWaitEmailAddress.CONSTRUCTOR:
       case TdApi.AuthorizationStateWaitCode.CONSTRUCTOR:
@@ -1369,20 +1378,20 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       case TdApi.AuthorizationStateWaitPassword.CONSTRUCTOR:
       case TdApi.AuthorizationStateLoggingOut.CONSTRUCTOR:
       case TdApi.AuthorizationStateWaitOtherDeviceConfirmation.CONSTRUCTOR:
-        return STATUS_UNAUTHORIZED;
+        return Status.UNAUTHORIZED;
       case TdApi.AuthorizationStateReady.CONSTRUCTOR:
-        return STATUS_READY;
+        return Status.READY;
     }
-    throw new IllegalArgumentException(state.toString());
+    throw new UnsupportedOperationException(state.toString());
   }
 
   public boolean checkChangeLogs (boolean alreadySent, boolean test) {
     final int status = authorizationStatus();
-    if (status != STATUS_READY && status != STATUS_UNAUTHORIZED) {
+    if (status != Status.READY && status != Status.UNAUTHORIZED) {
       return false;
     }
     final String key = accountId + "_app_version";
-    if (status == STATUS_UNAUTHORIZED || alreadySent) {
+    if (status == Status.UNAUTHORIZED || alreadySent) {
       Settings.instance().putInt(key, BuildConfig.ORIGINAL_VERSION_CODE);
       return alreadySent;
     }
@@ -5644,27 +5653,42 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return unit.toMillis(tdlibTime) + (System.currentTimeMillis() - currentTimeMillis());
   }
 
-  public void setProxy (int proxyId, @Nullable String server, int port, @Nullable TdApi.ProxyType type) {
-    // setProxyId(Settings.PROXY_ID_UNKNOWN);
+  private int effectiveProxyId = Settings.PROXY_ID_UNKNOWN;
+
+  @TdlibThread
+  private void setEffectiveProxyId (int proxyId) {
+    if (this.effectiveProxyId != proxyId) {
+      boolean hadProxy = this.effectiveProxyId > Settings.PROXY_ID_NONE;
+      boolean hasProxy = proxyId > Settings.PROXY_ID_NONE;
+      this.effectiveProxyId = proxyId;
+      if (hadProxy != hasProxy && connectionState == ConnectionState.CONNECTING) {
+        notifyConnectionDisplayStatusChanged();
+      }
+    }
+  }
+
+  public void disableProxy () {
+    setProxy(Settings.PROXY_ID_NONE, null);
+  }
+
+  public void setProxy (int proxyId, @Nullable TdApi.InternalLinkTypeProxy proxy) {
     final TdApi.Function<?> function;
-    if (server != null)
-      function = new TdApi.AddProxy(server, port, true, type);
-    else
+    if (proxy != null) {
+      function = new TdApi.AddProxy(proxy.server, proxy.port, true, proxy.type);
+    } else {
       function = new TdApi.DisableProxy();
+    }
     client().send(function, (result) -> {
       switch (result.getConstructor()) {
         case TdApi.Ok.CONSTRUCTOR:
+          setEffectiveProxyId(Settings.PROXY_ID_NONE);
           break;
         case TdApi.Proxy.CONSTRUCTOR:
-          // removeProxies(((TdApi.Proxy) result).id);
+          setEffectiveProxyId(proxyId);
           break;
-        default:
-          return;
       }
-      // setProxyId(proxyId);
     });
   }
-
   public void cleanupProxies () {
     client().send(new TdApi.GetProxies(), result -> {
       switch (result.getConstructor()) {
@@ -5680,7 +5704,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
     });
   }
-
   public void removeProxies (int excludeProxyId) {
     client().send(new TdApi.GetProxies(), (result) -> {
       switch (result.getConstructor()) {
@@ -5696,9 +5719,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
     });
   }
-
   public void getProxyLink (@NonNull Settings.Proxy proxy, RunnableData<String> callback) {
-    client().send(new TdApi.AddProxy(proxy.server, proxy.port, false, proxy.type), object -> {
+    if (proxy.proxy == null)
+      throw new IllegalArgumentException();
+    client().send(new TdApi.AddProxy(proxy.proxy.server, proxy.proxy.port, false, proxy.proxy.type), object -> {
       switch (object.getConstructor()) {
         case TdApi.Proxy.CONSTRUCTOR: {
           int tdlibProxyId = ((TdApi.Proxy) object).id;
@@ -5720,8 +5744,81 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           });
           break;
         }
+        case TdApi.Error.CONSTRUCTOR: {
+          UI.showError(object);
+          ui().post(() -> callback.runWithData(null));
+          break;
+        }
       }
     });
+  }
+
+  @AnyThread
+  private void notifyPingValueChanged (@NonNull Settings.Proxy proxy) {
+    long pingMs = proxy.pingMs;
+    ui().post(() ->
+      context().global().notifyProxyPingChanged(proxy, pingMs)
+    );
+  }
+  public void pingProxy (@NonNull Settings.Proxy proxy, @Nullable RunnableLong after) {
+    int proxyId = proxy.id;
+    int pingId = ++proxy.pingCount;
+    proxy.pingMs = Settings.PROXY_TIME_LOADING;
+    proxy.pingErrorCount = 0;
+    notifyPingValueChanged(proxy);
+    TdApi.Function<?> function = proxyId != Settings.PROXY_ID_NONE ?
+      new TdApi.AddProxy(proxy.proxy.server, proxy.proxy.port, false, proxy.proxy.type) :
+      new TdApi.PingProxy(0);
+    AtomicLong uptimeMillis = new AtomicLong(SystemClock.uptimeMillis());
+    client().send(function, new Client.ResultHandler() {
+      @Override
+      public void onResult (TdApi.Object result) {
+        if (pingId != proxy.pingCount) {
+          return;
+        }
+        long now = SystemClock.uptimeMillis();
+        long elapsed = now - uptimeMillis.getAndSet(now);
+        long pingMs;
+        switch (result.getConstructor()) {
+          case TdApi.Ok.CONSTRUCTOR: {
+            client().send(function, this);
+            return;
+          }
+          case TdApi.Proxy.CONSTRUCTOR: {
+            int tdlibProxyId = ((TdApi.Proxy) result).id;
+            client().send(new TdApi.PingProxy(tdlibProxyId), this);
+            return;
+          }
+          case TdApi.Seconds.CONSTRUCTOR: {
+            long timestampMs = currentTimeMillis();
+            pingMs = Math.round(((TdApi.Seconds) result).seconds * 1000.0);
+            proxy.pingErrorCount = 0;
+            Settings.instance().trackSuccessfulConnection(proxyId, timestampMs, pingMs, true);
+            if (routeSelector != null) {
+              routeSelector.markAsSuccessful(proxyId);
+            }
+            break;
+          }
+          case TdApi.Error.CONSTRUCTOR: {
+            if (++proxy.pingErrorCount < 3 && elapsed <= 1000) {
+              client().send(new TdApi.SetAlarm(0.35 * proxy.pingErrorCount), this);
+              return;
+            }
+            pingMs = Settings.PROXY_TIME_EMPTY;
+            proxy.pingError = (TdApi.Error) result;
+            break;
+          }
+          default:
+            throw new UnsupportedOperationException(result.toString());
+        }
+        proxy.pingMs = pingMs;
+        notifyPingValueChanged(proxy);
+        if (after != null) {
+          after.runWithLong(pingMs);
+        }
+      }
+    });
+    // return pingId;
   }
 
   private ClientHolder newClient () {
@@ -5754,7 +5851,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public void resendNetworkTypeIfNeeded (TdApi.NetworkType networkType) {
-    if (connectionState != STATE_CONNECTED) {
+    if (connectionState != ConnectionState.CONNECTED) {
       setNetworkType(networkType);
     }
   }
@@ -6463,12 +6560,63 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return connectionState;
   }
 
+  public String connectionStateText () {
+    switch (connectionState) {
+      case ConnectionState.UNKNOWN:
+        return Lang.getString(R.string.Initializing);
+      case ConnectionState.CONNECTED:
+        return Lang.getString(R.string.Connected);
+      case ConnectionState.WAITING_FOR_NETWORK:
+        return Lang.getString(R.string.network_WaitingForNetwork);
+      case ConnectionState.CONNECTING: {
+        if (routeSelector != null) {
+          if (routeSelector.isLookingUpForRoute()) {
+            return Lang.getString(R.string.network_Lookup);
+          } else if (routeSelector.isEmpty()) {
+            return Lang.getString(effectiveProxyId > Settings.PROXY_ID_NONE ?
+              R.string.network_LookupFailedProxy :
+              R.string.network_LookupFailed
+            );
+          } else if (routeSelector.isPending(effectiveProxyId)) {
+            return Lang.getString(effectiveProxyId > Settings.PROXY_ID_NONE ?
+              R.string.network_LookupAttemptProxy :
+              R.string.network_LookupAttempt
+            );
+          }
+        }
+        return Lang.getString(effectiveProxyId > Settings.PROXY_ID_NONE ?
+          R.string.ConnectingWithProxy :
+          R.string.network_Connecting
+        );
+      }
+      case ConnectionState.CONNECTING_TO_PROXY:
+        return Lang.getString(R.string.ConnectingToProxy);
+      case ConnectionState.UPDATING:
+        return Lang.getString(R.string.network_Updating);
+    }
+    throw new UnsupportedOperationException(Integer.toString(connectionState));
+  }
+
   public @Nullable TdApi.NetworkType networkType () {
     return networkType;
   }
 
   public boolean isConnected () {
-    return connectionState == STATE_CONNECTED;
+    return connectionState == ConnectionState.CONNECTED;
+  }
+
+  public boolean isConnectingOrUpdating () {
+    switch (connectionState) {
+      case ConnectionState.CONNECTING:
+      case ConnectionState.CONNECTING_TO_PROXY:
+      case ConnectionState.UPDATING:
+        return true;
+      case ConnectionState.CONNECTED:
+      case ConnectionState.WAITING_FOR_NETWORK:
+      case ConnectionState.UNKNOWN:
+        break;
+    }
+    return false;
   }
 
   public void scheduleUiMessageAction (TGMessage msg, int action, int arg1, int arg2, long delay) {
@@ -7854,19 +8002,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     final int state;
     switch (update.state.getConstructor()) {
       case TdApi.ConnectionStateWaitingForNetwork.CONSTRUCTOR:
-        state = STATE_WAITING;
+        state = ConnectionState.WAITING_FOR_NETWORK;
         break;
       case TdApi.ConnectionStateConnectingToProxy.CONSTRUCTOR:
-        state = STATE_CONNECTING_TO_PROXY;
+        state = ConnectionState.CONNECTING_TO_PROXY;
         break;
       case TdApi.ConnectionStateConnecting.CONSTRUCTOR:
-        state = STATE_CONNECTING;
+        state = ConnectionState.CONNECTING;
         break;
       case TdApi.ConnectionStateUpdating.CONSTRUCTOR:
-        state = STATE_UPDATING;
+        state = ConnectionState.UPDATING;
         break;
       case TdApi.ConnectionStateReady.CONSTRUCTOR:
-        state = STATE_CONNECTED;
+        state = ConnectionState.CONNECTED;
         break;
       default:
         throw new UnsupportedOperationException(update.toString());
@@ -7875,19 +8023,129 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     if (this.connectionState != state) {
       int prevState = this.connectionState;
       this.connectionState = state;
-      if (state == STATE_CONNECTED || state == STATE_WAITING) {
-        connectionLossTime = 0;
-      } else if (connectionLossTime == 0) {
-        connectionLossTime = SystemClock.uptimeMillis();
+      if (state == ConnectionState.CONNECTED || state == ConnectionState.WAITING_FOR_NETWORK) {
+        final long connectionLossTime = this.connectionLossTime;
+        this.connectionLossTime = 0;
+        cancelConnectionResolver();
+        if (state == ConnectionState.CONNECTED && connectionLossTime != 0) {
+          long connectedWithinMs = SystemClock.uptimeMillis() - connectionLossTime;
+          Settings.instance().trackSuccessfulConnection(
+            effectiveProxyId,
+            currentTimeMillis(),
+            connectedWithinMs,
+            false
+          );
+        }
+      } else {
+        if (connectionLossTime == 0 || connectionResolver == null) {
+          scheduleConnectionResolver();
+        }
+        if (connectionLossTime == 0) {
+          connectionLossTime = SystemClock.uptimeMillis();
+        }
       }
       listeners.updateConnectionState(state, prevState);
       context.onConnectionStateChanged(this, state);
-      if (state == STATE_CONNECTED) {
+      notifyConnectionDisplayStatusChanged();
+      if (state == ConnectionState.CONNECTED) {
         onConnected();
-      } else if (prevState == STATE_CONNECTED) {
+      } else if (prevState == ConnectionState.CONNECTED) {
         context().watchDog().helpDogeIfInBackground();
       }
     }
+  }
+  private void notifyConnectionDisplayStatusChanged () {
+    listeners.updateConnectionDisplayStatusChanged();
+    context.onConnectionDisplayStatusChanged(this);
+  }
+  private CancellableRunnable connectionResolver;
+
+  private static final double CONNECTION_TIMEOUT_PROXY = 5.0;
+  private static final double CONNECTION_TIMEOUT_DIRECT = 5.0;
+  private static final double CONNECTION_TIMEOUT_DIRECT_CENSORED = 9.0;
+
+  @TdlibThread
+  private void scheduleConnectionResolver () {
+    cancelConnectionResolver();
+    connectionResolver = new CancellableRunnable() {
+      @Override
+      public void act () {
+        resolveConnectionIssues(false);
+      }
+    };
+    double timeoutSeconds;
+    if (effectiveProxyId == Settings.PROXY_ID_NONE) {
+      timeoutSeconds = expectBlocking ? CONNECTION_TIMEOUT_DIRECT_CENSORED : CONNECTION_TIMEOUT_DIRECT;
+    } else {
+      timeoutSeconds = CONNECTION_TIMEOUT_PROXY;
+    }
+    runOnTdlibThread(connectionResolver, timeoutSeconds);
+  }
+
+  @TdlibThread
+  private void cancelConnectionResolver () {
+    if (routeSelector != null) {
+      routeSelector.cancel();
+      routeSelector = null;
+    }
+    if (connectionResolver != null) {
+      connectionResolver.cancel();
+      connectionResolver = null;
+    }
+  }
+
+  public void resolveConnectionIssues () {
+    runOnTdlibThread(() -> resolveConnectionIssues(true));
+  }
+
+  private TdlibRouteSelector routeSelector;
+
+  @TdlibThread
+  private void resolveConnectionIssues (boolean byUserRequest) {
+    Settings settings = Settings.instance();
+    if ((!byUserRequest && !settings.checkProxySetting(Settings.PROXY_FLAG_SWITCH_AUTOMATICALLY)) || !settings.hasProxyConfiguration()) {
+      return;
+    }
+    if (routeSelector != null && !byUserRequest) {
+      routeSelector.markAsFailed(effectiveProxyId);
+    }
+    TdlibRouteSelector routeSelector;
+    if (this.routeSelector == null || this.routeSelector.isEmpty()) {
+      this.routeSelector = routeSelector = new TdlibRouteSelector(this,
+        settings.checkProxySetting(Settings.PROXY_FLAG_SWITCH_ALLOW_DIRECT),
+        !byUserRequest ? effectiveProxyId : Settings.PROXY_ID_UNKNOWN
+      );
+    } else {
+      routeSelector = this.routeSelector;
+    }
+    if (routeSelector.isEmpty()) {
+      notifyConnectionDisplayStatusChanged();
+      return;
+    }
+    routeSelector.findBestRoute(suggestedProxy -> {
+      if (!isConnectingOrUpdating()) {
+        return;
+      }
+      if (suggestedProxy == null) {
+        // dispatch "No better route, connecting…"
+        notifyConnectionDisplayStatusChanged();
+        return;
+      }
+      ui().post(() -> {
+        if (!routeSelector.isCanceled() && isConnectingOrUpdating()) {
+          routeSelector.markAsPending(suggestedProxy.id);
+          if (suggestedProxy.isDirect()) {
+            Settings.instance().disableProxy();
+          } else {
+            Settings.instance().addOrUpdateProxy(suggestedProxy.proxy, suggestedProxy.description, true, suggestedProxy.id);
+          }
+          // dispatch "Trying better route…"
+          runOnTdlibThread(this::notifyConnectionDisplayStatusChanged);
+        }
+      });
+    });
+    // dispatch "Finding better route…"
+    notifyConnectionDisplayStatusChanged();
   }
 
   public long calculateConnectionTimeoutMs (long timeoutMs) {
@@ -7896,7 +8154,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   /**
-   * @return Zero if connection is stablished or network is unavailable and amount of milliseconds otherwise.
+   * @return Zero if connection is established or network is unavailable and amount of milliseconds otherwise.
    */
   public long timeSinceFirstConnectionAttemptMs () {
     long time = connectionLossTime;
@@ -9029,11 +9287,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
       return false;
     }).onAddRemove(this::onJobAdded, this::onJobRemoved),
-    initializationListeners = new ConditionalExecutor(() -> authorizationStatus() != STATUS_UNKNOWN).onAddRemove(this::onJobAdded, this::onJobRemoved), // Executed once received authorization state
-    connectionListeners = new ConditionalExecutor(() -> authorizationStatus() != STATUS_UNKNOWN && connectionState == STATE_CONNECTED).onAddRemove(this::onJobAdded, this::onJobRemoved), // Executed once connected
+    initializationListeners = new ConditionalExecutor(() -> authorizationStatus() != Status.UNKNOWN).onAddRemove(this::onJobAdded, this::onJobRemoved), // Executed once received authorization state
+    connectionListeners = new ConditionalExecutor(() -> authorizationStatus() != Status.UNKNOWN && connectionState == ConnectionState.CONNECTED).onAddRemove(this::onJobAdded, this::onJobRemoved), // Executed once connected
     notificationInitListeners = new ConditionalExecutor(() -> {
       final int status = authorizationStatus();
-      return status == STATUS_UNAUTHORIZED || (status == STATUS_READY && haveInitializedNotifications);
+      return status == Status.UNAUTHORIZED || (status == Status.READY && haveInitializedNotifications);
     }).onAddRemove(this::onJobAdded, this::onJobRemoved),
     notificationListeners = new ConditionalExecutor(() -> !havePendingNotifications).onAddRemove(this::onJobAdded, this::onJobRemoved),
     notificationConsistencyListeners = new ConditionalExecutor(() -> false),

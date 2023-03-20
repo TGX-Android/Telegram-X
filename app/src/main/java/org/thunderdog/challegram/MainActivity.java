@@ -300,7 +300,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
     tdlib.checkDeadlocks(() -> tdlib.ui().post(accountSwitchTask));
   }
 
-  private void processAuthorizationStateChange (TdlibAccount account, TdApi.AuthorizationState authorizationState, int status) {
+  private void processAuthorizationStateChange (TdlibAccount account, TdApi.AuthorizationState authorizationState, @Tdlib.Status int status) {
     if (this.account.id != account.id) {
       if (navigation.isEmpty() || !navigation.getCurrentStackItem().isSameAccount(account)) {
         return;
@@ -313,7 +313,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
 
     ViewController<?> current = navigation.getStack().getCurrent();
 
-    if (status == Tdlib.STATUS_READY) {
+    if (status == Tdlib.Status.READY) {
       ViewController<?> first = navigation.getStack().get(0);
       boolean needThemeSwitch = this.account.id != account.id && isUnauthorizedController(current) && !isUnauthorizedController(first) && first.tdlibId() != account.id && current.tdlibId() == account.id;
 
@@ -327,7 +327,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
       return;
     }
 
-    if (status == Tdlib.STATUS_UNAUTHORIZED && this.account.id == account.id) {
+    if (status == Tdlib.Status.UNAUTHORIZED && this.account.id == account.id) {
       int nextAccountId = tdlib.context().findNextAccountId(this.account.id);
       if (nextAccountId != TdlibAccount.NO_ID) {
         tdlib.context().changePreferredAccountId(nextAccountId, TdlibManager.SWITCH_REASON_UNAUTHORIZED);
@@ -460,12 +460,12 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
 
   // Stack initialization
 
-  private void initController (Tdlib tdlib, int status) {
+  private void initController (Tdlib tdlib, @Tdlib.Status int status) {
     switch (status) {
-      case Tdlib.STATUS_UNKNOWN:
+      case Tdlib.Status.UNKNOWN:
         // setBlankViewVisible(true, false);
         break;
-      case Tdlib.STATUS_UNAUTHORIZED:
+      case Tdlib.Status.UNAUTHORIZED:
         int nextAccountId = tdlib.context().findNextAccountId(tdlib.id());
         if (nextAccountId == TdlibAccount.NO_ID) {
           initUnauthorizedController();
@@ -473,7 +473,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
           tdlib.context().changePreferredAccountId(nextAccountId, TdlibManager.SWITCH_REASON_NAVIGATION);
         }
         break;
-      case Tdlib.STATUS_READY:
+      case Tdlib.Status.READY:
         initAuthorizedController();
         break;
     }

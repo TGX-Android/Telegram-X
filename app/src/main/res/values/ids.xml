@@ -538,6 +538,7 @@
   <item type="id" name="btn_proxy" />
   <item type="id" name="occupiedChats" />
   <item type="id" name="btn_noProxy" />
+  <item type="id" name="btn_proxyAutoSwitch" />
   <item type="id" name="btn_addProxy" />
   <item type="id" name="btn_proxySocks5" />
   <item type="id" name="btn_proxyTelegram" />
