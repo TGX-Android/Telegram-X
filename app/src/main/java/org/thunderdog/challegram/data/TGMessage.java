@@ -7609,7 +7609,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   //
 
   public final void checkAvailableReactions (Runnable after) {
-    tdlib().client().send(new TdApi.GetMessageAvailableReactions(msg.chatId, getSmallestId(), 5), result -> {
+    tdlib().client().send(new TdApi.GetMessageAvailableReactions(msg.chatId, getSmallestId(), 25), result -> {
       switch (result.getConstructor()) {
         case TdApi.AvailableReactions.CONSTRUCTOR: {
           TdApi.AvailableReactions availableReactions = (TdApi.AvailableReactions) result;
