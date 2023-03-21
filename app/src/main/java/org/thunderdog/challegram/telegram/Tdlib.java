@@ -277,8 +277,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       runOnTdlibThread(after, 0);
     }
 
-    public void runOnTdlibThread (Runnable after, double timeout) {
-      runOnTdlibThread(after, timeout, null);
+    public void runOnTdlibThread (Runnable after, double timeoutSeconds) {
+      runOnTdlibThread(after, timeoutSeconds, null);
     }
 
     public void runOnTdlibThread (Runnable after, double timeout, @Nullable CancellationSignal cancellationSignal) {
@@ -766,8 +766,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   private void incrementReferenceCount (int type) {
     boolean wakeup;
+    int referenceCount;
     synchronized (clientLock) {
-      int referenceCount = this.referenceCount.incrementAndGet();
+      referenceCount = this.referenceCount.incrementAndGet();
       wakeup = referenceCount == 1;
       Log.v(Log.TAG_ACCOUNTS, "accountId:%d, referenceCount:%d, type:%d", accountId, referenceCount, type);
       if (type == REFERENCE_TYPE_UI)
@@ -779,11 +780,15 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       if (type == REFERENCE_TYPE_UI)
         context.checkPauseTimeouts(account());
     }
+    if (wakeup) {
+
+    }
   }
 
   private void decrementReferenceCount (int type) {
+    int referenceCount;
     synchronized (clientLock) {
-      int referenceCount = this.referenceCount.decrementAndGet();
+      referenceCount = this.referenceCount.decrementAndGet();
       if (referenceCount < 0) {
         RuntimeException e = new IllegalStateException("type == " + type);
         Tracer.onOtherError(e);
@@ -791,6 +796,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
       Log.v(Log.TAG_ACCOUNTS, "accountId:%d, referenceCount:%d, type:%d", accountId, referenceCount, type);
       schedulePause();
+    }
+    if (referenceCount == 0) {
+
     }
   }
 
@@ -1745,30 +1753,33 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     runOnUiThread(runnable, 0);
   }
 
-  public void runOnUiThread (@NonNull Runnable runnable, long timeout) {
+  public void runOnUiThread (@NonNull Runnable runnable, long timeoutMs) {
     incrementUiReferenceCount();
-    ui().post(() -> {
+    Runnable act = () -> {
       runnable.run();
       decrementUiReferenceCount();
-    });
+    };
+    if (timeoutMs > 0) {
+      ui().postDelayed(act, timeoutMs);
+    } else {
+      ui().post(act);
+    }
   }
 
   public void runOnTdlibThread (@NonNull Runnable runnable) {
-    runOnTdlibThread(runnable, 0, null);
+    runOnTdlibThread(runnable, 0, true);
   }
 
-  public void runOnTdlibThread (@NonNull Runnable runnable, double timeout) {
-    runOnTdlibThread(runnable, timeout, null);
-  }
-
-  public void runOnTdlibThread (@NonNull Runnable runnable, double timeout, @Nullable CancellationSignal cancellationSignal) {
-    incrementReferenceCount(REFERENCE_TYPE_JOB);
+  public void runOnTdlibThread (@NonNull Runnable runnable, double timeoutSeconds, boolean acquireReference) {
+    if (acquireReference) {
+      incrementReferenceCount(REFERENCE_TYPE_JOB);
+    }
     clientHolder().runOnTdlibThread(() -> {
-      if (cancellationSignal == null || !cancellationSignal.isCanceled()) {
-        runnable.run();
+      runnable.run();
+      if (acquireReference) {
+        decrementReferenceCount(REFERENCE_TYPE_JOB);
       }
-      decrementReferenceCount(REFERENCE_TYPE_JOB);
-    }, timeout);
+    }, timeoutSeconds);
   }
 
   public void searchContacts (@Nullable String searchQuery, int limit, Client.ResultHandler handler) {
@@ -8079,7 +8090,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     } else {
       timeoutSeconds = CONNECTION_TIMEOUT_PROXY;
     }
-    runOnTdlibThread(connectionResolver, timeoutSeconds);
+    runOnTdlibThread(connectionResolver, timeoutSeconds, false);
   }
 
   @TdlibThread

@@ -181,7 +181,7 @@ public class TdlibRouteSelector implements Comparator<Settings.Proxy> {
             sortAndSelectRoute(false);
           }
         };
-        tdlib.runOnTdlibThread(onTimeout, Math.min(5.0, Math.max(1.5, (double) time / 1000.0)));
+        tdlib.runOnTdlibThread(onTimeout, Math.min(5.0, Math.max(1.5, (double) time / 1000.0)), false);
       }
     }
   }
