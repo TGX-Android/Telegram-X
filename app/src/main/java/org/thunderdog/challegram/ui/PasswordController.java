@@ -970,24 +970,22 @@ public class PasswordController extends ViewController<PasswordController.Args> 
         function = new TdApi.ResendAuthenticationCode();
         break;
     }
-    tdlib.client().send(function, object -> tdlib.ui().post(() -> {
-      if (!isDestroyed()) {
-        setInRecoveryProgress(false);
-        switch (object.getConstructor()) {
-          case TdApi.Ok.CONSTRUCTOR: {
-            break;
-          }
-          case TdApi.AuthenticationCodeInfo.CONSTRUCTOR: {
-            ((TdApi.AuthorizationStateWaitCode) authState).codeInfo = (TdApi.AuthenticationCodeInfo) object;
-            isFirebaseSmsSent = false;
-            updateAuthState();
-            sendFirebaseSmsIfNeeded(force);
-            break;
-          }
-          case TdApi.Error.CONSTRUCTOR: {
-            UI.showError(object);
-            break;
-          }
+    tdlib.client().send(function, object -> runOnUiThreadOptional(() -> {
+      setInRecoveryProgress(false);
+      switch (object.getConstructor()) {
+        case TdApi.Ok.CONSTRUCTOR: {
+          break;
+        }
+        case TdApi.AuthenticationCodeInfo.CONSTRUCTOR: {
+          ((TdApi.AuthorizationStateWaitCode) authState).codeInfo = (TdApi.AuthenticationCodeInfo) object;
+          isFirebaseSmsSent = false;
+          updateAuthState();
+          sendFirebaseSmsIfNeeded(force);
+          break;
+        }
+        case TdApi.Error.CONSTRUCTOR: {
+          setHint(TD.toErrorString(object), true);
+          break;
         }
       }
     }));
