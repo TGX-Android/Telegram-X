@@ -8102,7 +8102,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     } else {
       timeoutSeconds = CONNECTION_TIMEOUT_PROXY;
     }
-    runOnTdlibThread(connectionResolver, timeoutSeconds, BuildConfig.DEBUG);
+    runOnTdlibThread(connectionResolver, timeoutSeconds, false);
   }
 
   @TdlibThread

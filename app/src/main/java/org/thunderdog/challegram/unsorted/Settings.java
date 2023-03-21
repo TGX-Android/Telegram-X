@@ -50,6 +50,7 @@ import org.thunderdog.challegram.emoji.RecentEmoji;
 import org.thunderdog.challegram.emoji.RecentInfo;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.player.TGPlayerController;
+import org.thunderdog.challegram.telegram.EmojiMediaType;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibFilesManager;
@@ -3230,14 +3231,11 @@ public class Settings {
 
   // EmojiLayout
 
-  public static final int EMOJI_MEDIA_SECTION_STICKERS = 0;
-  public static final int EMOJI_MEDIA_SECTION_GIFS = 1;
-
   public int getEmojiPosition () {
     return getInt(KEY_EMOJI_POSITION, 0);
   }
   public int getEmojiMediaSection () {
-    return getInt(KEY_EMOJI_MEDIA_SECTION, EMOJI_MEDIA_SECTION_STICKERS);
+    return getInt(KEY_EMOJI_MEDIA_SECTION, EmojiMediaType.STICKER);
   }
   public void setEmojiPosition (int position) {
     putInt(KEY_EMOJI_POSITION, position);

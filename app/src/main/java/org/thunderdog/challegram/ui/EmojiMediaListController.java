@@ -45,6 +45,7 @@ import org.thunderdog.challegram.mediaview.MediaCellView;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.AnimationsListener;
+import org.thunderdog.challegram.telegram.EmojiMediaType;
 import org.thunderdog.challegram.telegram.StickersListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Screen;
@@ -124,14 +125,14 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
 
     int currentSection = Settings.instance().getEmojiMediaSection();
     switch (currentSection) {
-      case Settings.EMOJI_MEDIA_SECTION_STICKERS: {
+      case EmojiMediaType.STICKER: {
         initStickers();
         this.currentSection = SECTION_STICKERS;
         this.currentSectionView = stickersView;
         this.contentView.addView(stickersView);
         break;
       }
-      case Settings.EMOJI_MEDIA_SECTION_GIFS: {
+      case EmojiMediaType.GIF: {
         initGIFs();
         if (getArguments() != null) {
           getArguments().setCurrentStickerSectionByPosition(1, false, false);
@@ -237,18 +238,19 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
 
         @Override
         public void onScrolled (RecyclerView recyclerView, int dx, int dy) {
-          onStickersScroll(false);
+          onStickersScroll(false, dy);
         }
       });
     }
   }
 
-  private void onStickersScroll (boolean force) {
+  private void onStickersScroll (boolean force, int movedDy) {
     if (ignoreStickersScroll == 0) {
       if ((sectionAnimator == null || sectionAnimator.getFactor() == 0f) && currentSection == SECTION_STICKERS && getArguments() != null && getArguments().isWatchingMovements() && getArguments().getCurrentItem() == 1) {
         int y = getStickersScrollY();
         getArguments().onScroll(y);
         getArguments().setCurrentStickerSectionByPosition(getStickerSetSection(), true, true);
+        getArguments().onSectionScroll(EmojiMediaType.STICKER, movedDy != 0);
       }
     }
   }
@@ -314,6 +316,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
         public void onScrolled (RecyclerView recyclerView, int dx, int dy) {
           if ((sectionAnimator == null || sectionAnimator.getFactor() == 0f) && currentSection == SECTION_GIFS && getArguments() != null && getArguments().getCurrentItem() == 1) {
             getArguments().moveHeaderFull(getGIFsScrollY());
+            getArguments().onSectionScroll(EmojiMediaType.GIF, dy != 0);
           }
         }
       });
@@ -625,6 +628,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
         public void onScrolled (RecyclerView recyclerView, int dx, int dy) {
           if ((sectionAnimator == null || sectionAnimator.getFactor() == 0f) && currentSection == SECTION_TRENDING && getArguments() != null && getArguments().getCurrentItem() == 1) {
             getArguments().onScroll(getTrendingScrollY());
+            getArguments().onSectionScroll(EmojiMediaType.STICKER, dy != 0);
             if (!trendingLoading && canLoadMoreTrending) {
               int lastVisiblePosition = ((LinearLayoutManager) recyclerView.getLayoutManager()).findLastVisibleItemPosition();
               if (lastVisiblePosition != -1) {
@@ -825,13 +829,25 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
   }
 
   @Override
-  public void onStickerPreviewOpened (StickerSmallView view, TGStickerObj sticker) { }
+  public void onStickerPreviewOpened (StickerSmallView view, TGStickerObj sticker) {
+    if (getArguments() != null) {
+      getArguments().onSectionInteracted(EmojiMediaType.STICKER, false);
+    }
+  }
 
   @Override
-  public void onStickerPreviewChanged (StickerSmallView view, TGStickerObj otherOrThisSticker) { }
+  public void onStickerPreviewChanged (StickerSmallView view, TGStickerObj otherOrThisSticker) {
+    if (getArguments() != null) {
+      getArguments().onSectionInteracted(EmojiMediaType.STICKER, false);
+    }
+  }
 
   @Override
-  public void onStickerPreviewClosed (StickerSmallView view, TGStickerObj thisSticker) { }
+  public void onStickerPreviewClosed (StickerSmallView view, TGStickerObj thisSticker) {
+    if (getArguments() != null) {
+      getArguments().onSectionInteracted(EmojiMediaType.STICKER, true);
+    }
+  }
 
   @Override
   public boolean needsLongDelay (StickerSmallView view) {
@@ -870,6 +886,16 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
   @Override
   public int getStickersListTop () {
     return Views.getLocationInWindow(currentSection == SECTION_TRENDING ? hotView : stickersView)[1];
+  }
+
+  @EmojiMediaType
+  public int getMediaSection () {
+    int currentSection = this.nextSection != -1 ? this.nextSection : this.currentSection;
+    if (currentSection == SECTION_GIFS) {
+      return EmojiMediaType.GIF;
+    } else {
+      return EmojiMediaType.STICKER;
+    }
   }
 
   // Stickers logic
@@ -1996,7 +2022,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
   // Section changer
 
   private View currentSectionView;
-  private int nextSection;
+  private int nextSection = -1;
   private View nextSectionView;
   private boolean sectionIsLeft;
 
@@ -2031,7 +2057,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
       }
       getArguments().setCurrentStickerSectionByPosition(
         nextSection == SECTION_STICKERS ? (stickerSetSection != -1 ? stickerSetSection : getStickerSetSection()) :
-          nextSection == SECTION_TRENDING ? 2 : 1
+        nextSection == SECTION_TRENDING ? 2 : 1
       , nextSection == SECTION_STICKERS,true);
     }
 
@@ -2059,11 +2085,13 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
   private void applySection () {
     contentView.removeView(currentSectionView);
 
+    int oldSection = this.currentSection;
+
     if (getArguments() != null) {
       if (currentSection == SECTION_GIFS && (nextSection == SECTION_STICKERS || nextSection == SECTION_TRENDING)) {
-        getArguments().setPreferredSection(Settings.EMOJI_MEDIA_SECTION_STICKERS);
+        getArguments().setPreferredSection(EmojiMediaType.STICKER);
       } else if (nextSection == SECTION_GIFS && (currentSection == SECTION_STICKERS || currentSection == SECTION_TRENDING)) {
-        getArguments().setPreferredSection(Settings.EMOJI_MEDIA_SECTION_GIFS);
+        getArguments().setPreferredSection(EmojiMediaType.GIF);
       }
     }
 
@@ -2072,10 +2100,20 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
     }
 
     currentSection = nextSection;
+    nextSection = -1;
     currentSectionView = nextSectionView;
     nextSectionView = null;
     sectionAnimator.forceFactor(0f);
     sectionChangeFactor = 0f;
+
+    if (getArguments() != null) {
+      EmojiLayout.Listener listener = getArguments().getListener();
+      if (listener != null) {
+        int prevSection = oldSection == SECTION_GIFS ? EmojiMediaType.GIF : EmojiMediaType.STICKER;
+        int newSection = currentSection == SECTION_GIFS ? EmojiMediaType.GIF : EmojiMediaType.STICKER;
+        listener.onSectionSwitched(getArguments(), newSection, prevSection);
+      }
+    }
 
     if (getArguments() != null) {
       getArguments().resetScrollState();
