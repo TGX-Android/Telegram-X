@@ -281,6 +281,9 @@ public class NavigationStack {
   }
 
   public void reset (NavigationController navigation, boolean saveFirst) {
+    if (isEmpty()) {
+      return;
+    }
     ViewController<?> last = removeLast();
     if (saveFirst) {
       if (stack.size() > 1) {
@@ -301,7 +304,9 @@ public class NavigationStack {
     } else {
       clear(navigation);
     }
-    push(last, true);
+    if (last != null) {
+      push(last, true);
+    }
   }
 
   public void resetSilently (ViewController<?> initial) {
