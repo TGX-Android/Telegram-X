@@ -781,7 +781,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         context.checkPauseTimeouts(account());
     }
     if (wakeup) {
-
+      noReferenceListeners.notifyConditionChanged();
     }
   }
 
@@ -798,7 +798,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       schedulePause();
     }
     if (referenceCount == 0) {
-
+      noReferenceListeners.notifyConditionChanged();
     }
   }
 
@@ -948,7 +948,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     /*if (context().hasUi()) {
         // TODO limit couple most recent used accounts?
       }*/
-    return !checkKeepAlive() && !account().keepAlive() && account().isDeviceRegistered() && referenceCount.get() == 0;
+    return !checkKeepAlive() && !account().keepAlive() && account().isDeviceRegistered() && getReferenceCount() == 0;
   }
 
   void checkPauseTimeout () {
@@ -1002,7 +1002,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
     } else if (restartScheduledTime != 0) {
       restartScheduledTime = 0;
-      Log.i(Log.TAG_ACCOUNTS, "Canceling TDLib restart, accountId:%d, referenceCount:%d, keepAlive:%b", accountId, referenceCount.get(), account().keepAlive());
+      Log.i(Log.TAG_ACCOUNTS, "Canceling TDLib restart, accountId:%d, referenceCount:%d, keepAlive:%b", accountId, getReferenceCount(), account().keepAlive());
       ui().removeMessages(MSG_ACTION_PAUSE);
     }
   }
@@ -1016,7 +1016,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
     restartScheduledTime = 0;
     if (!shouldPause()) {
-      Log.i(Log.TAG_ACCOUNTS, "Cannot restart TDLib, because it is in use. referenceCount:%d, accountId:%d", referenceCount.get(), accountId);
+      Log.i(Log.TAG_ACCOUNTS, "Cannot restart TDLib, because it is in use. referenceCount:%d, accountId:%d", getReferenceCount(), accountId);
       return;
     }
     Log.i(Log.TAG_ACCOUNTS, "Pausing TDLib instance, because it is unused, accountId:%d", accountId);
@@ -1603,14 +1603,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
+  private int getReferenceCount () {
+    return this.referenceCount.get();
+  }
+
+  public boolean hasActiveReferences () {
+    return getReferenceCount() > 0;
+  }
+
   private void setInstanceModeImpl (@Mode int mode) {
     if (this.instanceMode != mode) {
       this.instanceMode = mode;
       if (instancePaused)
         return;
-      int referenceCount = this.referenceCount.get();
-      if (referenceCount > 0)
-        throw new IllegalStateException("referenceCount == " + referenceCount);
       client.sendClose();
     }
   }
@@ -8090,7 +8095,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     } else {
       timeoutSeconds = CONNECTION_TIMEOUT_PROXY;
     }
-    runOnTdlibThread(connectionResolver, timeoutSeconds, false);
+    runOnTdlibThread(connectionResolver, timeoutSeconds, BuildConfig.DEBUG);
   }
 
   @TdlibThread
@@ -9306,11 +9311,17 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }).onAddRemove(this::onJobAdded, this::onJobRemoved),
     notificationListeners = new ConditionalExecutor(() -> !havePendingNotifications).onAddRemove(this::onJobAdded, this::onJobRemoved),
     notificationConsistencyListeners = new ConditionalExecutor(() -> false),
-    closeListeners = new ConditionalExecutor(() -> authorizationState != null && authorizationState.getConstructor() == TdApi.AuthorizationStateClosed.CONSTRUCTOR); // Executed once no pending notifications remaining
+    closeListeners = new ConditionalExecutor(() -> authorizationState != null && authorizationState.getConstructor() == TdApi.AuthorizationStateClosed.CONSTRUCTOR), // Executed once no pending notifications remaining
+    noReferenceListeners = new ConditionalExecutor(() -> !hasActiveReferences());
 
   @AnyThread
   public void awaitInitialization (@NonNull Runnable after) {
     initializationListeners.executeOrPostponeTask(after);
+  }
+
+  @AnyThread
+  public void awaitAllReferencesReleased (@NonNull Runnable after) {
+    noReferenceListeners.executeOrPostponeTask(after);
   }
 
   @AnyThread
