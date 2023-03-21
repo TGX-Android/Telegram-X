@@ -25,6 +25,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.StringRes;
 
+import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
@@ -32,8 +33,10 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.ConnectionState;
+import org.thunderdog.challegram.telegram.GlobalAccountListener;
 import org.thunderdog.challegram.telegram.GlobalConnectionListener;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.Theme;
@@ -46,7 +49,7 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.lambda.Destroyable;
 
-public class NetworkStatusBarView extends FrameLayoutFix implements Destroyable, Screen.StatusBarHeightChangeListener, GlobalConnectionListener, FactorAnimator.Target, PopupLayout.TouchSectionProvider, Runnable, BaseActivity.ActivityListener {
+public class NetworkStatusBarView extends FrameLayoutFix implements Destroyable, Screen.StatusBarHeightChangeListener, GlobalConnectionListener, FactorAnimator.Target, PopupLayout.TouchSectionProvider, Runnable, BaseActivity.ActivityListener, GlobalAccountListener {
   private ProgressComponentView progressView;
   private TextView textView;
   private LinearLayout statusWrap;
@@ -85,6 +88,7 @@ public class NetworkStatusBarView extends FrameLayoutFix implements Destroyable,
     ViewSupport.setThemedBackground(this, R.id.theme_color_statusBar);
 
 
+    TdlibManager.instance().global().addAccountListener(this);
     TdlibManager.instance().global().addConnectionListener(this);
     updateNetworkState(TdlibManager.instance().current());
     setFactor(this.isVisible ? 1f : 0f);
@@ -119,8 +123,17 @@ public class NetworkStatusBarView extends FrameLayoutFix implements Destroyable,
   }
 
   @Override
+  public void onAccountSwitched (TdlibAccount newAccount, TdApi.User profile, int reason, TdlibAccount oldAccount) {
+    Tdlib tdlib = newAccount.activeTdlib();
+    if (tdlib != null) {
+      updateNetworkState(tdlib);
+    }
+  }
+
+  @Override
   public void performDestroy () {
     TdlibManager.instance().global().removeConnectionListener(this);
+    TdlibManager.instance().global().removeAccountListener(this);
     UI.getContext(getContext()).removeActivityListener(this);
     removeCallbacks(this);
     Screen.removeStatusBarHeightListener(this);

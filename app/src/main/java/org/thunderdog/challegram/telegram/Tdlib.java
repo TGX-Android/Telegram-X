@@ -1195,6 +1195,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     synchronized (dataLock) {
       this.authorizationState = newAuthState;
     }
+    //noinspection SwitchIntDef
+    switch (newAuthState.getConstructor()) {
+      case TdApi.AuthorizationStateWaitTdlibParameters.CONSTRUCTOR:
+      case TdApi.AuthorizationStateClosed.CONSTRUCTOR:
+        this.connectionState = ConnectionState.UNKNOWN;
+        break;
+    }
     final @Status int newStatus = authorizationStatus();
 
     closeListeners.notifyConditionChanged(true);

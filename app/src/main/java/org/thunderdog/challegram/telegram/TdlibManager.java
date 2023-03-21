@@ -1268,6 +1268,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     });
   }
 
+  @UiThread
   private void onAccountSwitched (TdlibAccount account, @AccountSwitchReason int reason, TdlibAccount oldAccount) {
     this.currentAccount = account;
     if (oldAccount != null)
