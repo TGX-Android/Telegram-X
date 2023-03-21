@@ -765,6 +765,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       this.lastPlaceholderAvailWidth = 0;
       checkPlaceholderWidth();
     }
+    invalidate();
   }
 
   public void checkPlaceholderWidth () {
@@ -1010,9 +1011,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
   private boolean textChangedSinceChatOpened, ignoreFirstLinkPreview;
 
-  public void setChat (TdApi.Chat chat, @Nullable ThreadInfo messageThread, boolean isSilent) {
+  public void setChat (TdApi.Chat chat, @Nullable ThreadInfo messageThread, @Nullable String customInputField, boolean isSilent) {
     textChangedSinceChatOpened = false;
-    updateMessageHint(chat, messageThread, isSilent);
+    updateMessageHint(chat, messageThread, customInputField, isSilent);
     setDraft(!tdlib.canSendBasicMessage(chat) ? null :
       messageThread != null ? messageThread.getDraftContent() :
       chat.draftMessage != null ? chat.draftMessage.inputMessageText : null
@@ -1033,7 +1034,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     }
   }
 
-  public void updateMessageHint (TdApi.Chat chat, @Nullable ThreadInfo messageThread, boolean isSilent) {
+  public void updateMessageHint (TdApi.Chat chat, @Nullable ThreadInfo messageThread, @Nullable String customInputField, boolean isSilent) {
     if (chat == null) {
       setInputPlaceholder(R.string.Message);
       return;
@@ -1057,7 +1058,13 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     } else if (!tdlib.isChannel(chat.id) && chat.messageSenderId != null && !tdlib.isSelfSender(chat.messageSenderId)) {
       subplaceholder = Lang.getStringBold(R.string.AnyAsX, tdlib.senderName(chat.messageSenderId));
     }
-    setInputPlaceholder(Lang.getString(resource), subplaceholder);
+    String text;
+    if (StringUtils.isEmpty(customInputField)) {
+      text = Lang.getString(resource);
+    } else {
+      text = customInputField;
+    }
+    setInputPlaceholder(text, subplaceholder);
   }
 
   public void setDraft (@Nullable TdApi.InputMessageContent draftContent) {

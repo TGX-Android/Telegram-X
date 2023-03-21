@@ -2606,6 +2606,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     super.setArguments(args);
 
     this.chat = args.chat;
+    this.customBotPlaceholder = null;
     this.messageThread = args.messageThread;
     this.openedFromChatList = args.chatList;
     this.linkedChatId = 0;
@@ -2819,7 +2820,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       checkJoinRequests(chat.pendingJoinRequests);
     }
     if (inputView != null) {
-      inputView.setChat(chat, messageThread, silentButton != null && silentButton.getIsSilent());
+      inputView.setChat(chat, messageThread, customBotPlaceholder, silentButton != null && silentButton.getIsSilent());
     }
     ignoreDraftLoad = false;
     updateBottomBar(false);
@@ -3060,7 +3061,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   public void updateInputHint () {
     if (inputView != null) {
-      inputView.updateMessageHint(chat, messageThread, Config.NEED_SILENT_BROADCAST && silentButton != null ? silentButton.getIsSilent() : tdlib.chatDefaultDisableNotifications(getChatId()));
+      inputView.updateMessageHint(chat, messageThread, customBotPlaceholder, Config.NEED_SILENT_BROADCAST && silentButton != null ? silentButton.getIsSilent() : tdlib.chatDefaultDisableNotifications(getChatId()));
     }
   }
 
@@ -7174,10 +7175,20 @@ public class MessagesController extends ViewController<MessagesController.Argume
     clearScheduledKeyboard();
     closeCommandsKeyboardImpl(true, false);
     updateCommandButton(BOT_CMD_RES);
-    if (commandsMessageId != 0)
+    if (commandsMessageId != 0) {
       botHelper.onDestroyKeyboard(commandsMessageId);
+    }
+    setCustomBotPlaceholder(null);
   }
 
+  private String customBotPlaceholder;
+
+  public void setCustomBotPlaceholder (@Nullable String customPlaceholder) {
+    if (!StringUtils.equalsOrBothEmpty(this.customBotPlaceholder, customPlaceholder)) {
+      this.customBotPlaceholder = customPlaceholder;
+      updateInputHint();
+    }
+  }
   @Override
   protected void onTranslationChanged (float newTranslationX) {
     context().reactionsOverlayManager().setControllerTranslationX((int) newTranslationX);

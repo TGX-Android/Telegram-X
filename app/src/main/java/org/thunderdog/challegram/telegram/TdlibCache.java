@@ -65,7 +65,7 @@ import me.vkryl.td.Td;
 
 public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupStartupDelegate, UI.StateListener {
   public interface UserDataChangeListener {
-    void onUserUpdated (TdApi.User user);
+    default void onUserUpdated (TdApi.User user) { }
     default void onUserFullUpdated (long userId, TdApi.UserFullInfo userFull) { }
   }
 
