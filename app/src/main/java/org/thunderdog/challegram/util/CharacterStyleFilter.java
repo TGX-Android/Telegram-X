@@ -76,7 +76,7 @@ public class CharacterStyleFilter implements InputFilter {
       span instanceof SuggestionSpan ||
       span instanceof NoCopySpan ||
       span instanceof EmojiSpan ||
-      BitwiseUtils.getFlag(spanned.getSpanFlags(span), Spanned.SPAN_COMPOSING);
+      BitwiseUtils.hasFlag(spanned.getSpanFlags(span), Spanned.SPAN_COMPOSING);
   }
 
   protected boolean shouldRemoveSpan (Spanned spanned, CharacterStyle span) {

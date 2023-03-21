@@ -246,11 +246,11 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
   private int anchorX, anchorY;
 
   private boolean isCaught () {
-    return BitwiseUtils.getFlag(flags, FLAG_CAUGHT);
+    return BitwiseUtils.hasFlag(flags, FLAG_CAUGHT);
   }
 
   private boolean isBlocked () {
-    return BitwiseUtils.getFlag(flags, FLAG_BLOCKED);
+    return BitwiseUtils.hasFlag(flags, FLAG_BLOCKED);
   }
 
   public boolean onTouchEvent (View view, MotionEvent event) {

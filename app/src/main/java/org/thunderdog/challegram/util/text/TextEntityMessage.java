@@ -179,7 +179,7 @@ public class TextEntityMessage extends TextEntity {
     if (onClickListener != null) {
       copy.setOnClickListener(onClickListener);
     }
-    if (BitwiseUtils.getFlag(flags, FLAG_BOLD) && !BitwiseUtils.getFlag(copy.flags, FLAG_BOLD)) {
+    if (BitwiseUtils.hasFlag(flags, FLAG_BOLD) && !BitwiseUtils.hasFlag(copy.flags, FLAG_BOLD)) {
       copy.makeBold(needFakeBold);
     }
     return copy;
@@ -218,7 +218,7 @@ public class TextEntityMessage extends TextEntity {
 
   @Override
   public boolean isCustomEmoji () {
-    return BitwiseUtils.getFlag(flags, FLAG_CUSTOM_EMOJI);
+    return BitwiseUtils.hasFlag(flags, FLAG_CUSTOM_EMOJI);
   }
 
   @Override
@@ -279,7 +279,7 @@ public class TextEntityMessage extends TextEntity {
 
   @Override
   public boolean isFullWidth () {
-    return BitwiseUtils.getFlag(flags, FLAG_FULL_WIDTH);
+    return BitwiseUtils.hasFlag(flags, FLAG_FULL_WIDTH);
   }
 
   private static boolean isMonospace (TdApi.TextEntityType type) {
@@ -368,22 +368,22 @@ public class TextEntityMessage extends TextEntity {
 
   @Override
   public boolean isBold () {
-    return BitwiseUtils.getFlag(flags, FLAG_BOLD);
+    return BitwiseUtils.hasFlag(flags, FLAG_BOLD);
   }
 
   @Override
   public boolean isItalic () {
-    return BitwiseUtils.getFlag(flags, FLAG_ITALIC);
+    return BitwiseUtils.hasFlag(flags, FLAG_ITALIC);
   }
 
   @Override
   public boolean isUnderline () {
-    return BitwiseUtils.getFlag(flags, FLAG_UNDERLINE);
+    return BitwiseUtils.hasFlag(flags, FLAG_UNDERLINE);
   }
 
   @Override
   public boolean isStrikethrough () {
-    return BitwiseUtils.getFlag(flags, FLAG_STRIKETHROUGH);
+    return BitwiseUtils.hasFlag(flags, FLAG_STRIKETHROUGH);
   }
 
   @Override

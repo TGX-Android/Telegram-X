@@ -132,7 +132,7 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
     this.order            = r.readInt();
     boolean integrityCheckFailed = false;
     if (allowIntegrityChecks) {
-      if (BitwiseUtils.getFlag(flags, FLAG_SERVICE | FLAG_DEBUG) && !Settings.instance().allowSpecialTdlibInstanceMode(id)) {
+      if (BitwiseUtils.hasFlag(flags, FLAG_SERVICE | FLAG_DEBUG) && !Settings.instance().allowSpecialTdlibInstanceMode(id)) {
         int flags = this.flags & ~FLAG_DEBUG;
         flags &= ~FLAG_SERVICE;
         this.flags = flags;
@@ -189,10 +189,10 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
     if (isLoggingOut())
       return true;
     if (isService())
-      return BitwiseUtils.getFlag(flags, FLAG_HAVE_UNFINISHED_SERVICE_WORK);
+      return BitwiseUtils.hasFlag(flags, FLAG_HAVE_UNFINISHED_SERVICE_WORK);
     if (isUnauthorized())
       return false;
-    return !BitwiseUtils.getFlag(flags, FLAG_NO_KEEP_ALIVE) || hasUnprocessedPushes() || !hasUserInformation() /*|| !isDeviceRegistered()*/;
+    return !BitwiseUtils.hasFlag(flags, FLAG_NO_KEEP_ALIVE) || hasUnprocessedPushes() || !hasUserInformation() /*|| !isDeviceRegistered()*/;
   }
 
   boolean setHasUnprocessedPushes (boolean hasUnprocessedPushes) {
@@ -200,7 +200,7 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
   }
 
   boolean hasUnprocessedPushes () {
-    return BitwiseUtils.getFlag(flags, FLAG_HAS_UNPROCESSED_PUSHES);
+    return BitwiseUtils.hasFlag(flags, FLAG_HAS_UNPROCESSED_PUSHES);
   }
 
   boolean setLoggingOut (boolean isLoggingOut) {
@@ -216,7 +216,7 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
   }
 
   boolean isLoggingOut () {
-    return BitwiseUtils.getFlag(flags, FLAG_LOGGING_OUT);
+    return BitwiseUtils.hasFlag(flags, FLAG_LOGGING_OUT);
   }
 
   boolean markNoPrivateData () {
@@ -224,7 +224,7 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
   }
 
   boolean hasPrivateData () {
-    return !BitwiseUtils.getFlag(flags, FLAG_NO_PRIVATE_DATA);
+    return !BitwiseUtils.hasFlag(flags, FLAG_NO_PRIVATE_DATA);
   }
 
   // notifications
@@ -234,7 +234,7 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
   }
 
   public boolean forceEnableNotifications () {
-    return !BitwiseUtils.getFlag(flags, FLAG_FORCE_DISABLE_NOTIFICATIONS);
+    return !BitwiseUtils.hasFlag(flags, FLAG_FORCE_DISABLE_NOTIFICATIONS);
   }
 
   public boolean allowNotifications () {
@@ -255,7 +255,7 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
   }
 
   public boolean haveVisibleNotifications () {
-    return !BitwiseUtils.getFlag(flags, FLAG_NO_PENDING_NOTIFICATIONS);
+    return !BitwiseUtils.hasFlag(flags, FLAG_NO_PENDING_NOTIFICATIONS);
   }
 
   // is_debug
@@ -282,8 +282,8 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
   }
 
   public int tdlibInstanceMode () {
-    if (BitwiseUtils.getFlag(flags, FLAG_SERVICE | FLAG_DEBUG)) {
-      if (BitwiseUtils.getFlag(flags, FLAG_SERVICE)) {
+    if (BitwiseUtils.hasFlag(flags, FLAG_SERVICE | FLAG_DEBUG)) {
+      if (BitwiseUtils.hasFlag(flags, FLAG_SERVICE)) {
         return Tdlib.Mode.SERVICE;
       } else {
         return Tdlib.Mode.DEBUG;
@@ -300,7 +300,7 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
   }
 
   public boolean isDeviceRegistered () {
-    return BitwiseUtils.getFlag(flags, FLAG_DEVICE_REGISTERED);
+    return BitwiseUtils.hasFlag(flags, FLAG_DEVICE_REGISTERED);
   }
 
   // user_id
@@ -441,7 +441,7 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
   // Convenience
 
   public boolean isUnauthorized () {
-    return BitwiseUtils.getFlag(flags, FLAG_UNAUTHORIZED);
+    return BitwiseUtils.hasFlag(flags, FLAG_UNAUTHORIZED);
   }
 
   boolean setUnauthorized (boolean isUnauthorized, long knownUserId) {

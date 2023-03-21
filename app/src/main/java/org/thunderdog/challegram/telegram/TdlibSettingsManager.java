@@ -728,7 +728,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   }
 
   private boolean getUserPreference (long key) {
-    return BitwiseUtils.getFlag(getUserPreferences(), key);
+    return BitwiseUtils.hasFlag(getUserPreferences(), key);
   }
 
   public boolean setUserPreference (long key, boolean value) {
@@ -892,11 +892,11 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     }
 
     public boolean isDisplayError () {
-      return BitwiseUtils.getFlag(flags, FLAG_DISPLAY);
+      return BitwiseUtils.hasFlag(flags, FLAG_DISPLAY);
     }
 
     public boolean isChannelError () {
-      return BitwiseUtils.getFlag(flags, FLAG_CHANNELS);
+      return BitwiseUtils.hasFlag(flags, FLAG_CHANNELS);
     }
 
     public long getChatId () {

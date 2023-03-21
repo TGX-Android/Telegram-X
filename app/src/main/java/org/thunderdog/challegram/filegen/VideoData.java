@@ -149,7 +149,7 @@ public class VideoData {
             long firstSampleTime = extractor.getSampleTime();
             if (extractor.advance()) {
               long nextSampleTime = extractor.getSampleTime();
-              if (!BitwiseUtils.getFlag(extractor.getSampleFlags(), MediaExtractor.SAMPLE_FLAG_SYNC)) {
+              if (!BitwiseUtils.hasFlag(extractor.getSampleFlags(), MediaExtractor.SAMPLE_FLAG_SYNC)) {
                 extractor.seekTo(nextSampleTime, MediaExtractor.SEEK_TO_NEXT_SYNC);
                 nextSampleTime = extractor.getSampleTime();
               }
@@ -435,7 +435,7 @@ public class VideoData {
               long nextSampleTime = extractor.getSampleTime();
               if (nextSampleTime == -1)
                 return accurateDuration;
-              if (!BitwiseUtils.getFlag(extractor.getSampleFlags(), MediaExtractor.SAMPLE_FLAG_SYNC)) {
+              if (!BitwiseUtils.hasFlag(extractor.getSampleFlags(), MediaExtractor.SAMPLE_FLAG_SYNC)) {
                 extractor.seekTo(nextSampleTime, MediaExtractor.SEEK_TO_NEXT_SYNC);
                 nextSampleTime = extractor.getSampleTime();
                 if (nextSampleTime == -1)

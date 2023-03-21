@@ -2506,7 +2506,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   @Override
   public void onChatListChanged (TdlibChatList chatList, @ChangeFlags int changeFlags) {
     runOnUiThreadOptional(() -> {
-      if (BitwiseUtils.getFlag(changeFlags, ChangeFlags.ITEM_MOVED | ChangeFlags.ITEM_ADDED)) {
+      if (BitwiseUtils.hasFlag(changeFlags, ChangeFlags.ITEM_MOVED | ChangeFlags.ITEM_ADDED)) {
         checkListState();
       }
     });

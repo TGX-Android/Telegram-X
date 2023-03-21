@@ -215,7 +215,7 @@ public class CustomTypefaceSpan extends MetricAffectingSpan {
 
   private void apply (final TextPaint paint) {
     paint.setFakeBoldText((flags & FLAG_FAKE_BOLD) != 0);
-    if (BitwiseUtils.getFlag(flags, FLAG_NEED_REVEAL_ON_TAP)) {
+    if (BitwiseUtils.hasFlag(flags, FLAG_NEED_REVEAL_ON_TAP)) {
       // TODO paint.bgColor = ...;
     }
     if (backgroundColorId != 0) {

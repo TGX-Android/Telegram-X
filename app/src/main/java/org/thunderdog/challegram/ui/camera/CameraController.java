@@ -264,7 +264,7 @@ public class CameraController extends ViewController<Void> implements CameraDele
 
   @Override
   public void onSettingsChanged (long newSettings, long oldSettings) {
-    cameraOverlayView.setGridVisible(cameraMode == MODE_MAIN && BitwiseUtils.getFlag(newSettings, Settings.SETTING_FLAG_CAMERA_SHOW_GRID), isFocused());
+    cameraOverlayView.setGridVisible(cameraMode == MODE_MAIN && BitwiseUtils.hasFlag(newSettings, Settings.SETTING_FLAG_CAMERA_SHOW_GRID), isFocused());
   }
 
   public boolean isLegacy () {

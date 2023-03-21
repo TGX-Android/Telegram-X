@@ -459,7 +459,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   }
 
   private static boolean isComposingSpan (Spanned spanned, Object span) {
-    return BitwiseUtils.getFlag(spanned.getSpanFlags(span), Spanned.SPAN_COMPOSING);
+    return BitwiseUtils.hasFlag(spanned.getSpanFlags(span), Spanned.SPAN_COMPOSING);
   }
 
   private boolean setSpanImpl (int start, int end, TdApi.TextEntityType newType) {

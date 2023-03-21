@@ -88,11 +88,11 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
   }
 
   public boolean isEdited () {
-    return BitwiseUtils.getFlag(this.flags, FLAG_EDITED);
+    return BitwiseUtils.hasFlag(this.flags, FLAG_EDITED);
   }
 
   public boolean isEditedVisible () {
-    return BitwiseUtils.getFlag(this.flags, FLAG_EDITED_VISIBLE);
+    return BitwiseUtils.hasFlag(this.flags, FLAG_EDITED_VISIBLE);
   }
 
   public static CharSequence wrapEdited (CharSequence content, boolean isEdited, boolean isEditedVisible) {

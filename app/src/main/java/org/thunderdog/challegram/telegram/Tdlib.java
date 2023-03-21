@@ -646,8 +646,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   @Override
   public void onSettingsChanged (long newSettings, long oldSettings) {
-    if (BitwiseUtils.getFlag(newSettings, Settings.SETTING_FLAG_EXPLICIT_DICE) != BitwiseUtils.getFlag(oldSettings, Settings.SETTING_FLAG_EXPLICIT_DICE) && !isDebugInstance()) {
-      if (BitwiseUtils.getFlag(newSettings, Settings.SETTING_FLAG_EXPLICIT_DICE) && !animatedDiceExplicit.isLoaded()) {
+    if (BitwiseUtils.hasFlag(newSettings, Settings.SETTING_FLAG_EXPLICIT_DICE) != BitwiseUtils.hasFlag(oldSettings, Settings.SETTING_FLAG_EXPLICIT_DICE) && !isDebugInstance()) {
+      if (BitwiseUtils.hasFlag(newSettings, Settings.SETTING_FLAG_EXPLICIT_DICE) && !animatedDiceExplicit.isLoaded()) {
         animatedDiceExplicit.load(this);
       } else {
         listeners().notifyAnimatedEmojiListeners(AnimatedEmojiListener.TYPE_DICE);
@@ -7317,7 +7317,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
 
     public boolean orderChanged () {
-      return BitwiseUtils.getFlag(flags, ORDER);
+      return BitwiseUtils.hasFlag(flags, ORDER);
     }
 
     public boolean metadataChanged () {
@@ -7325,11 +7325,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
 
     public boolean sourceChanged () {
-      return BitwiseUtils.getFlag(flags, SOURCE);
+      return BitwiseUtils.hasFlag(flags, SOURCE);
     }
 
     public boolean pinStateChanged () {
-      return BitwiseUtils.getFlag(flags, PIN_STATE);
+      return BitwiseUtils.hasFlag(flags, PIN_STATE);
     }
   }
 

@@ -216,7 +216,7 @@ public class GifFile {
   }
 
   public boolean isPlayOnce () {
-    return BitwiseUtils.getFlag(flags, FLAG_PLAY_ONCE);
+    return BitwiseUtils.hasFlag(flags, FLAG_PLAY_ONCE);
   }
 
   public void setDecodeLastFrame (boolean decodeLastFrame) {
@@ -250,7 +250,7 @@ public class GifFile {
   }
 
   public boolean needDecodeLastFrame () {
-    return BitwiseUtils.getFlag(flags, FLAG_DECODE_LAST_FRAME);
+    return BitwiseUtils.hasFlag(flags, FLAG_DECODE_LAST_FRAME);
   }
 
   public boolean hasLooped () {
@@ -262,7 +262,7 @@ public class GifFile {
   }
 
   public boolean isUnique () {
-    return BitwiseUtils.getFlag(flags, FLAG_UNIQUE);
+    return BitwiseUtils.hasFlag(flags, FLAG_UNIQUE);
   }
 
   public boolean isStill () {

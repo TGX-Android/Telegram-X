@@ -507,7 +507,7 @@ public class Settings {
     }
 
     private boolean checkLogSetting (int flag) {
-      return BitwiseUtils.getFlag(getSettings(), flag);
+      return BitwiseUtils.hasFlag(getSettings(), flag);
     }
 
     private boolean setLogSetting (int flag, boolean enabled) {
@@ -1062,7 +1062,7 @@ public class Settings {
   }
 
   public boolean getNewSetting (long key) {
-    return BitwiseUtils.getFlag(getNewSettings(), key);
+    return BitwiseUtils.hasFlag(getNewSettings(), key);
   }
 
   private boolean setNewSettings (long newSettings) {
@@ -1132,7 +1132,7 @@ public class Settings {
   }
 
   private boolean checkSetting (int flag) {
-    return BitwiseUtils.getFlag(getSettings(), flag);
+    return BitwiseUtils.hasFlag(getSettings(), flag);
   }
 
   private boolean checkNegativeSetting (int flag) {
@@ -2223,7 +2223,7 @@ public class Settings {
   }
 
   public boolean needTutorial (long flag) {
-    return !BitwiseUtils.getFlag(getTutorialFlags(), flag) && !BitwiseUtils.getFlag(shownTutorials, flag);
+    return !BitwiseUtils.hasFlag(getTutorialFlags(), flag) && !BitwiseUtils.hasFlag(shownTutorials, flag);
   }
 
   public boolean needTutorial (@NonNull TdApi.ChatSource source) {
@@ -2454,7 +2454,7 @@ public class Settings {
   private int getNotificationFlags () {
     if (_notificationFlags == null) {
       int flags = pmc.getInt(KEY_NOTIFICATION_FLAGS, NOTIFICATION_FLAGS_DEFAULT);
-      if (BitwiseUtils.getFlag(flags, NOTIFICATION_FLAG_ONLY_ACTIVE_ACCOUNT) && BitwiseUtils.getFlag(flags, NOTIFICATION_FLAG_ONLY_SELECTED_ACCOUNTS)) {
+      if (BitwiseUtils.hasFlag(flags, NOTIFICATION_FLAG_ONLY_ACTIVE_ACCOUNT) && BitwiseUtils.hasFlag(flags, NOTIFICATION_FLAG_ONLY_SELECTED_ACCOUNTS)) {
         flags = BitwiseUtils.setFlag(flags, NOTIFICATION_FLAG_ONLY_ACTIVE_ACCOUNT, false);
         flags = BitwiseUtils.setFlag(flags, NOTIFICATION_FLAG_ONLY_SELECTED_ACCOUNTS, false);
       }
@@ -2464,7 +2464,7 @@ public class Settings {
   }
 
   public boolean checkNotificationFlag (int flag) {
-    return BitwiseUtils.getFlag(getNotificationFlags(), flag);
+    return BitwiseUtils.hasFlag(getNotificationFlags(), flag);
   }
 
   public boolean setNotificationFlag (int flag, boolean enabled) {
@@ -3989,7 +3989,7 @@ public class Settings {
    *         Returns {@link #PROXY_ID_NONE} in case {@link #PROXY_FLAG_ENABLED} is not set.
    */
   public int getEffectiveProxyId () {
-    if (BitwiseUtils.getFlag(getProxySettings(), PROXY_FLAG_ENABLED)) {
+    if (BitwiseUtils.hasFlag(getProxySettings(), PROXY_FLAG_ENABLED)) {
       return getAvailableProxyId();
     }
     return PROXY_ID_NONE;
@@ -4000,7 +4000,7 @@ public class Settings {
    */
   public int getEffectiveCallsProxyId () {
     int settings = getProxySettings();
-    if (BitwiseUtils.getFlag(settings, PROXY_FLAG_ENABLED) && BitwiseUtils.getFlag(settings, PROXY_FLAG_USE_FOR_CALLS)) {
+    if (BitwiseUtils.hasFlag(settings, PROXY_FLAG_ENABLED) && BitwiseUtils.hasFlag(settings, PROXY_FLAG_USE_FOR_CALLS)) {
       return getAvailableProxyId();
     }
     return PROXY_ID_NONE;
@@ -4074,14 +4074,10 @@ public class Settings {
     }
   }
 
-  private boolean setProxySettingImpl (int settings, int setting, boolean enabled) {
-    if (enabled == ((settings & setting) != 0)) {
+  private boolean setProxySettingImpl (final int oldSettings, int setting, boolean enabled) {
+    int newSettings = BitwiseUtils.setFlag(oldSettings, setting, enabled);
+    if (newSettings == oldSettings) {
       return enabled;
-    }
-    if (enabled) {
-      settings |= setting;
-    } else {
-      settings &= ~setting;
     }
     if (setting == PROXY_FLAG_ENABLED) {
       int proxyId; Proxy proxy;
@@ -4098,14 +4094,14 @@ public class Settings {
         proxyId = PROXY_ID_NONE;
         proxy = null;
       }
-      pmc.putByte(KEY_PROXY_SETTINGS, (byte) settings);
+      pmc.putByte(KEY_PROXY_SETTINGS, (byte) newSettings);
       if (proxy != null) {
         dispatchProxyConfiguration(proxyId, proxy.proxy, proxy.description, true, false);
       } else {
         dispatchProxyConfiguration(PROXY_ID_NONE, null, null, true, false);
       }
     } else {
-      pmc.putByte(KEY_PROXY_SETTINGS, (byte) settings);
+      pmc.putByte(KEY_PROXY_SETTINGS, (byte) newSettings);
     }
     return enabled;
   }
@@ -5707,7 +5703,7 @@ public class Settings {
   }
 
   public boolean checkUtilityFeature (int feature) {
-    return BitwiseUtils.getFlag(getUtilityFeatures(), feature);
+    return BitwiseUtils.hasFlag(getUtilityFeatures(), feature);
   }
 
   public boolean forceDisableNetwork () {
@@ -5893,14 +5889,14 @@ public class Settings {
         String crashedTdlibCommit = crashedBuildInfo != null ? crashedBuildInfo.getTdlibCommitFull() : null;
         if (StringUtils.isEmpty(crashedTdlibCommit) ||
           !crashedTdlibCommit.equalsIgnoreCase(getCurrentBuildInformation().getTdlibCommitFull()) ||
-          !BitwiseUtils.getFlag(flags, Crash.Flags.SOURCE_TDLIB | Crash.Flags.SOURCE_TDLIB_PARAMETERS)) {
+          !BitwiseUtils.hasFlag(flags, Crash.Flags.SOURCE_TDLIB | Crash.Flags.SOURCE_TDLIB_PARAMETERS)) {
           break;
         }
       }
-      if (!BitwiseUtils.getFlag(flags, Crash.Flags.SAVE_APPLICATION_LOG_EVENT)) {
+      if (!BitwiseUtils.hasFlag(flags, Crash.Flags.SAVE_APPLICATION_LOG_EVENT)) {
         continue;
       }
-      if (BitwiseUtils.getFlag(flags, Crash.Flags.APPLICATION_LOG_EVENT_SAVED)) {
+      if (BitwiseUtils.hasFlag(flags, Crash.Flags.APPLICATION_LOG_EVENT_SAVED)) {
         break;
       }
       Crash crash = getCrash(crashId, false);
@@ -5926,7 +5922,7 @@ public class Settings {
     final String keyPrefix = makeCrashPrefix(crashId);
     if (forApplicationStart) {
       @Crash.Flags int flags = Crash.restoreFlags(pmc, keyPrefix);
-      if (BitwiseUtils.getFlag(flags, Crash.Flags.RESOLVED)) {
+      if (BitwiseUtils.hasFlag(flags, Crash.Flags.RESOLVED)) {
         // Do not attempt to read any other fields, if user pressed "Launch App"
         return null;
       }

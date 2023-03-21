@@ -15,7 +15,6 @@
 package org.thunderdog.challegram.util.text;
 
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.view.Gravity;
 import android.view.View;
@@ -301,7 +300,7 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
   }
 
   public float getWidth () {
-    return DrawAlgorithms.getCounterWidth(textSize, BitwiseUtils.getFlag(flags, FLAG_NEED_BACKGROUND), counter, getDrawableWidth());
+    return DrawAlgorithms.getCounterWidth(textSize, BitwiseUtils.hasFlag(flags, FLAG_NEED_BACKGROUND), counter, getDrawableWidth());
   }
 
   public float getTargetWidth () {
@@ -310,7 +309,7 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
       targetTotalWidth += entry.isAffectingList() ? entry.item.getWidth() : 0f;
     }
 
-    return DrawAlgorithms.getCounterWidth(textSize, BitwiseUtils.getFlag(flags, FLAG_NEED_BACKGROUND), targetTotalWidth, getDrawableWidth());
+    return DrawAlgorithms.getCounterWidth(textSize, BitwiseUtils.hasFlag(flags, FLAG_NEED_BACKGROUND), targetTotalWidth, getDrawableWidth());
   }
 
   public float getScaledWidth (int addWidth) {
@@ -344,7 +343,7 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
   public void draw (Canvas c, float cx, float cy, int gravity, float alpha, float drawableAlpha, DrawableProvider drawableProvider, @PorterDuffThemeColorId int drawableColorId) {
     if (alpha * getVisibility() > 0f) {
       Drawable drawable = getDrawable(drawableProvider, drawableColorId);
-      DrawAlgorithms.drawCounter(c, cx, cy, gravity, counter, textSize, BitwiseUtils.getFlag(flags, FLAG_NEED_BACKGROUND),this, drawable, drawableGravity, drawableColorId, Screen.dp(drawableMarginDp), alpha * getVisibility(), drawableAlpha * getVisibility(), isVisible.getFloatValue());
+      DrawAlgorithms.drawCounter(c, cx, cy, gravity, counter, textSize, BitwiseUtils.hasFlag(flags, FLAG_NEED_BACKGROUND),this, drawable, drawableGravity, drawableColorId, Screen.dp(drawableMarginDp), alpha * getVisibility(), drawableAlpha * getVisibility(), isVisible.getFloatValue());
     }
   }
 
@@ -362,7 +361,7 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
 
   @Override
   public Text onCreateTextDrawable (String text) {
-    return new Text.Builder(text, Integer.MAX_VALUE, Paints.robotoStyleProvider(textSize), this).noSpacing().allBold(BitwiseUtils.getFlag(flags, FLAG_ALL_BOLD)).build();
+    return new Text.Builder(text, Integer.MAX_VALUE, Paints.robotoStyleProvider(textSize), this).noSpacing().allBold(BitwiseUtils.hasFlag(flags, FLAG_ALL_BOLD)).build();
   }
 
   @Override

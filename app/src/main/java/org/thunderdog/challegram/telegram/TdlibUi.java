@@ -1846,7 +1846,7 @@ public class TdlibUi extends Handler {
     }
 
     public ChatOpenParameters messageThread (ThreadInfo threadInfo) {
-      if (threadInfo != null && BitwiseUtils.getFlag(options, CHAT_OPTION_SCHEDULED_MESSAGES)) {
+      if (threadInfo != null && BitwiseUtils.hasFlag(options, CHAT_OPTION_SCHEDULED_MESSAGES)) {
         throw new IllegalArgumentException();
       }
       this.threadInfo = threadInfo;

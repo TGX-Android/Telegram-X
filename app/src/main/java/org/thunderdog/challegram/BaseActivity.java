@@ -755,8 +755,8 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     int flags = BitwiseUtils.setFlag(this.fullScreenFlags, flag, enabled);
     if (this.fullScreenFlags != flags) {
       this.fullScreenFlags = flags;
-      setFullScreen(flags != 0 && !BitwiseUtils.getFlag(flags, FULLSCREEN_FLAG_PASSCODE) && !BitwiseUtils.getFlag(flags, FULLSCREEN_FLAG_HAS_NO_FULLSCREEN_VIEWS));
-      setHideNavigation(isFullscreen && BitwiseUtils.getFlag(flags, FULLSCREEN_FLAG_HIDE_NAVIGATION));
+      setFullScreen(flags != 0 && !BitwiseUtils.hasFlag(flags, FULLSCREEN_FLAG_PASSCODE) && !BitwiseUtils.hasFlag(flags, FULLSCREEN_FLAG_HAS_NO_FULLSCREEN_VIEWS));
+      setHideNavigation(isFullscreen && BitwiseUtils.hasFlag(flags, FULLSCREEN_FLAG_HIDE_NAVIGATION));
       updateNavigationBarColor();
     }
   }
@@ -804,8 +804,8 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       if (this.isFullscreen != isFullscreen) {
         this.isFullscreen = isFullscreen;
-        this.hideNavigation = BitwiseUtils.getFlag(fullScreenFlags, FULLSCREEN_FLAG_HIDE_NAVIGATION);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && isFullscreen && (Config.CUTOUT_ENABLED || BitwiseUtils.getFlag(fullScreenFlags, FULLSCREEN_FLAG_CAMERA))) {
+        this.hideNavigation = BitwiseUtils.hasFlag(fullScreenFlags, FULLSCREEN_FLAG_HIDE_NAVIGATION);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && isFullscreen && (Config.CUTOUT_ENABLED || BitwiseUtils.hasFlag(fullScreenFlags, FULLSCREEN_FLAG_CAMERA))) {
           cutoutIgnored = true;
           Window w = getWindow();
           WindowManager.LayoutParams params = w.getAttributes();

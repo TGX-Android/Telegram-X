@@ -349,7 +349,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
         }
       };
     }
-    if (BitwiseUtils.getFlag(flags, FLAG_ALLOW_TOUCH_EVENTS)) {
+    if (BitwiseUtils.hasFlag(flags, FLAG_ALLOW_TOUCH_EVENTS)) {
       return TextColorSets.Regular.NORMAL;
     }
     return new TextColorSet() {
@@ -768,7 +768,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
       sender = msg.senderId;
       senderName = tdlib.isFromAnonymousGroupAdmin(msg) ? msg.authorSignature : null;
     }
-    String title = BitwiseUtils.getFlag(flags, FLAG_FORCE_TITLE) ? this.title :
+    String title = BitwiseUtils.hasFlag(flags, FLAG_FORCE_TITLE) ? this.title :
       sender == null ? senderName :
       StringUtils.isEmpty(senderName) ? tdlib.senderName(sender, isMessageComponent()) :
       Lang.getString(isChannel() ? R.string.format_channelAndSignature : R.string.format_chatAndSignature, tdlib.senderName(sender, isMessageComponent()), senderName);

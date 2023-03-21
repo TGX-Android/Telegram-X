@@ -222,7 +222,7 @@ public class TextWrapper implements ListAnimator.Measurable, Destroyable, Text.T
 
     boolean sizeChanged = textSizes[index] != textSizePx || (texts[index] != null && texts[index].getMaxLineCount() != maxLines);
     if (sizeChanged || texts[index] == null || sizes[index] != maxWidth) {
-      boolean needBigEmoji = BitwiseUtils.getFlag(textFlags, Text.FLAG_BIG_EMOJI) && Settings.instance().useBigEmoji();
+      boolean needBigEmoji = BitwiseUtils.hasFlag(textFlags, Text.FLAG_BIG_EMOJI) && Settings.instance().useBigEmoji();
       final Text oldText = texts[index];
       Text text = oldText;
       if (text != null && !sizeChanged && !needBigEmoji) {
