@@ -8272,8 +8272,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     counter.messageCount = unreadMessageCount;
     counter.messageUnmutedCount = unreadUnmutedCount;
 
-    context.incrementBadgeCounters(chatList, unreadMessageCount - oldUnreadCount, unreadUnmutedCount - oldUnreadUnmutedCount, false);
     account().storeCounter(chatList, counter, false);
+    context.incrementBadgeCounters(chatList, unreadMessageCount - oldUnreadCount, unreadUnmutedCount - oldUnreadUnmutedCount, false);
     listeners().notifyMessageCountersChanged(chatList, unreadMessageCount, unreadUnmutedCount);
 
     return true;
@@ -8293,8 +8293,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     int oldTotalChatCount = counter.totalChatCount;
 
     if (counter.setChatCounters(totalCount, unreadChatCount, unreadUnmutedCount, markedAsUnreadCount, markedAsUnreadUnmutedCount)) {
-      context.incrementBadgeCounters(chatList, unreadChatCount - oldUnreadCount, unreadUnmutedCount - oldUnreadUnmutedCount, true);
       account().storeCounter(chatList, counter, true);
+      context.incrementBadgeCounters(chatList, unreadChatCount - oldUnreadCount, unreadUnmutedCount - oldUnreadUnmutedCount, true);
       listeners().notifyChatCountersChanged(chatList, (totalCount > 0) != (oldTotalChatCount > 0), totalCount, unreadChatCount, unreadUnmutedCount);
       return true;
     }

@@ -247,7 +247,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
     if (problemType != Tdlib.ResolvableProblem.NONE) {
       backButton.setMenuBadge(R.id.theme_color_headerBadgeFailed, animated);
     } else {
-      TdlibBadgeCounter counter = TdlibManager.instance().getTotalUnreadBadgeCounter(tdlib.id());
+      TdlibBadgeCounter counter = TdlibManager.instance().getTotalUnreadBadgeCounter(tdlib.accountId());
       if (counter.getCount() > 0) {
         backButton.setMenuBadge(
           counter.isMuted() ? R.id.theme_color_headerBadgeMuted : R.id.theme_color_headerBadge,
