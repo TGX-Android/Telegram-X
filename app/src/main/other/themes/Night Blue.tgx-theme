@@ -9,7 +9,7 @@ attachContact, attachFile, attachInlineBot, attachLocation, attachPhoto, bubble_
 background, chatBackground, chatKeyboard, iv_chatLinkBackground, iv_preBlockBackground, iv_textCodeBackground, iv_textCodeBackgroundPressed: #151D26
 background_icon, badgeMuted, bubbleIn_time, circleButtonChatIcon, circleButtonOverlayIcon, icon, iv_caption, iv_icon, iv_pageAuthor, iv_pageFooter, textLight, textPlaceholder: #7D8E98
 background_text, background_textLight: #7A8992
-badge, bubbleOut_ticksRead, chatListAction, chatListVerify, checkActive, iconActive, seekDone, sliderActive, ticks, ticksRead: #59A8E2
+badge, bubbleOut_ticksRead, chatListAction, chatListVerify, checkActive, iconActive, seekDone, sliderActive, ticks, ticksRead, headerBadge: #59A8E2
 badgeMutedText: #000
 bubble_button_noWallpaper, bubble_buttonRipple_noWallpaper: #00000030
 bubble_chatSeparator, bubbleIn_outline, bubbleIn_separator, bubbleOut_outline, chatSeparator, inputInactive, iv_separator, separator, shareSeparator: #10171E
@@ -33,6 +33,7 @@ drawer, statusBar: #00000040
 fileAttach, playerCoverPlaceholder: #161F28
 fillingPressed: #202020
 headerBackground, headerLightBackground, notification, notificationPlayer, passcode: #222E3C
+headerBadgeMuted: #7D8E98
 headerPlaceholder: #FFFFFF10
 iconLight: #545B63
 inlineIcon, inlineOutline, inlineText: #5FA8DC

@@ -18,6 +18,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.voip.gui.CallSettings;
 
@@ -33,6 +34,7 @@ public class TdlibListenersGlobal {
   private final ReferenceList<GlobalCountersListener> countersListeners = new ReferenceList<>();
   private final ReferenceList<GlobalTokenStateListener> tokenStateListeners = new ReferenceList<>(true);
   private final ReferenceList<GlobalProxyPingListener> proxyPingListeners = new ReferenceList<>();
+  private final ReferenceList<GlobalResolvableProblemListener> resolvableProblemListeners = new ReferenceList<>();
 
   /*package*/ TdlibListenersGlobal (TdlibManager context) {
     this.context = context;
@@ -181,6 +183,26 @@ public class TdlibListenersGlobal {
   void notifyProxyPingChanged (@NonNull Settings.Proxy proxy, long pingMs) {
     for (GlobalProxyPingListener listener : proxyPingListeners) {
       listener.onProxyPingChanged(proxy, pingMs);
+    }
+  }
+
+  // Problem availability
+
+  public void addResolvableProblemAvailabilityListener (GlobalResolvableProblemListener listener) {
+    resolvableProblemListeners.add(listener);
+  }
+
+  public void removeResolvableProblemAvailabilityListener (GlobalResolvableProblemListener listener) {
+    resolvableProblemListeners.remove(listener);
+  }
+
+  public void notifyResolvableProblemAvailabilityMightHaveChanged () {
+    if (!UI.inUiThread()) {
+      UI.post(this::notifyResolvableProblemAvailabilityMightHaveChanged);
+      return;
+    }
+    for (GlobalResolvableProblemListener listener : resolvableProblemListeners) {
+      listener.onResolvableProblemAvailabilityMightHaveChanged();
     }
   }
 

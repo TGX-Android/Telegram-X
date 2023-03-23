@@ -8230,6 +8230,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       Collections.addAll(suggestedActions, update.addedActions);
     }
     listeners().updateSuggestedActions(update);
+    context().global().notifyResolvableProblemAvailabilityMightHaveChanged();
   }
 
   @AnyThread
@@ -10349,6 +10350,46 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
       return suggestedAction;
     }
+  }
+
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    ResolvableProblem.NONE,
+    ResolvableProblem.MIXED,
+    ResolvableProblem.NOTIFICATIONS,
+    ResolvableProblem.CHECK_PASSWORD,
+    ResolvableProblem.CHECK_PHONE_NUMBER
+  })
+  public @interface ResolvableProblem {
+    int
+      NONE = 0,
+      MIXED = 1,
+      NOTIFICATIONS = 2,
+      CHECK_PASSWORD = 3,
+      CHECK_PHONE_NUMBER = 4;
+  }
+
+  @ResolvableProblem
+  public int findResolvableProblem () {
+    final boolean haveNotificationsProblem = notifications().hasLocalNotificationProblem();
+    final TdApi.SuggestedAction singleAction = singleSettingsSuggestion();
+    final boolean haveSuggestions = singleAction != null || haveAnySettingsSuggestions();
+    final int totalCount = (singleAction != null ? 1 : haveSuggestions ? 2 : 0) + (haveNotificationsProblem ? 1 : 0);
+    if (totalCount > 1) {
+      return ResolvableProblem.MIXED;
+    } else if (haveNotificationsProblem) {
+      return ResolvableProblem.NOTIFICATIONS;
+    } else if (singleAction != null) {
+      switch (singleAction.getConstructor()) {
+        case TdApi.SuggestedActionCheckPassword.CONSTRUCTOR:
+          return ResolvableProblem.CHECK_PASSWORD;
+        case TdApi.SuggestedActionCheckPhoneNumber.CONSTRUCTOR:
+          return ResolvableProblem.CHECK_PHONE_NUMBER;
+        default:
+          throw new UnsupportedOperationException(singleAction.toString());
+      }
+    }
+    return ResolvableProblem.NONE;
   }
 
   public String getMessageSenderTitle (TdApi.MessageSender sender) {

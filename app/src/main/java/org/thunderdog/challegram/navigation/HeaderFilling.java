@@ -306,6 +306,10 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
     this.color = color;
   }
 
+  public int getColor () {
+    return color;
+  }
+
   private float radiusFactor;
   private int radiusColor;
 

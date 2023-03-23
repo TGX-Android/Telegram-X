@@ -14,6 +14,7 @@
  */
 package org.thunderdog.challegram.theme;
 
+import android.view.View;
 import android.view.animation.Interpolator;
 
 import androidx.annotation.Nullable;
@@ -33,19 +34,39 @@ public class ThemedColorAnimator extends ColorAnimator {
     }
   }
 
+  public ThemedColorAnimator (View target, Interpolator interpolator, long duration, @ThemeColorId int startColorId) {
+    this((animator, newValue) -> target.invalidate(), interpolator, duration, startColorId, null);
+  }
+
   public ThemedColorAnimator (Target<FutureColor> target, Interpolator interpolator, long duration, @ThemeColorId int startColorId) {
     this(target, interpolator, duration, startColorId, null);
   }
 
+  private @ThemeColorId int currentColorId;
+  private @Nullable ThemeDelegate forcedTheme;
+
   public ThemedColorAnimator (Target<FutureColor> target, Interpolator interpolator, long duration, @ThemeColorId int startColorId, @Nullable ThemeDelegate forcedTheme) {
     super(target, interpolator, duration, futureForColorId(startColorId, forcedTheme));
+    this.currentColorId = startColorId;
+    this.forcedTheme = forcedTheme;
   }
 
-  public void setValue (@ThemeColorId int colorId, boolean animated) {
+  public final void setValue (@ThemeColorId int colorId, boolean animated) {
     setValue(colorId, null, animated);
   }
 
-  public void setValue (@ThemeColorId int colorId, @Nullable ThemeDelegate forcedTheme, boolean animated) {
-    setValue(futureForColorId(colorId, forcedTheme), animated);
+  public final void setValue (@ThemeColorId int colorId, @Nullable ThemeDelegate forcedTheme, boolean animated) {
+    if (this.currentColorId != colorId || this.forcedTheme != forcedTheme) {
+      this.currentColorId = colorId;
+      this.forcedTheme = forcedTheme;
+      setValue(futureForColorId(colorId, forcedTheme), animated);
+    } else if (!animated) {
+      applyCurrentValue(true);
+    }
+  }
+
+  @ThemeColorId
+  public int getColorIdValue () {
+    return currentColorId;
   }
 }

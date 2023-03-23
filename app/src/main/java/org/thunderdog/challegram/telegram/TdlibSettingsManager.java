@@ -855,10 +855,13 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     editor.apply();
 
     _notificationErrorCount = id;
-    if (isFirst && notificationProblemListeners != null) {
-      for (NotificationProblemListener listener : notificationProblemListeners) {
-        listener.onNotificationProblemsAvailabilityChanged(tdlib, true);
+    if (isFirst) {
+      if (notificationProblemListeners != null) {
+        for (NotificationProblemListener listener : notificationProblemListeners) {
+          listener.onNotificationProblemsAvailabilityChanged(tdlib, true);
+        }
       }
+      tdlib.context().global().notifyResolvableProblemAvailabilityMightHaveChanged();
     }
   }
 

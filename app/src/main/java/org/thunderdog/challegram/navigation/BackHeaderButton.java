@@ -20,11 +20,24 @@ import android.graphics.Paint;
 import android.view.MotionEvent;
 import android.view.View;
 
+import androidx.annotation.Nullable;
+
 import org.thunderdog.challegram.BaseActivity;
+import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ThemeDelegate;
+import org.thunderdog.challegram.theme.ThemedColorAnimator;
+import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+
+import me.vkryl.android.AnimatorUtils;
+import me.vkryl.android.animator.BounceAnimator;
+import me.vkryl.android.util.SingleViewProvider;
+import me.vkryl.core.ColorUtils;
+import me.vkryl.core.MathUtils;
 
 public class BackHeaderButton extends HeaderButton implements View.OnClickListener {
   public static final int TYPE_NONE = 1;
@@ -130,6 +143,26 @@ public class BackHeaderButton extends HeaderButton implements View.OnClickListen
     }
   }
 
+  private final ThemedColorAnimator menuHintBadgeColor = new ThemedColorAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l, R.id.theme_color_headerBadgeFailed);
+  private final BounceAnimator menuHintBadgeVisible = new BounceAnimator(new SingleViewProvider(this));
+
+  public void hideMenuBadge (boolean animated) {
+    setMenuBadge(ThemeColorId.NONE, null, animated);
+  }
+
+  public void setMenuBadge (@ThemeColorId int colorId, boolean animated) {
+    setMenuBadge(colorId, null, animated);
+  }
+
+  public void setMenuBadge (@ThemeColorId int colorId, @Nullable ThemeDelegate forcedTheme, boolean animated) {
+    animated = animated && (factor >= 0f && factor < 1f);
+    boolean needShow = colorId != ThemeColorId.NONE;
+    if (needShow) {
+      menuHintBadgeColor.setValue(colorId, forcedTheme, animated && menuHintBadgeVisible.getFloatValue() > 0f);
+    }
+    menuHintBadgeVisible.setValue(needShow, animated);
+  }
+
   @Override
   public void onDraw (Canvas c) {
     super.onDraw(c);
@@ -165,6 +198,16 @@ public class BackHeaderButton extends HeaderButton implements View.OnClickListen
 
       c.drawLine(startX, -startY, endX, -endY, paint);
       c.drawLine(startX, startY, endX, endY, paint);
+
+      float badgeCenterX = endX;
+      float badgeCenterY = -endY - Screen.dp(1.5f);
+      float badgeVisibility = MathUtils.clamp(1f - factor); // * menuHintBadgeVisible.getFloatValue();
+      if (badgeVisibility > 0f) {
+        int cutoutColor = parentHeader.getFilling().getColor();
+        int badgeColor = ColorUtils.alphaColor(MathUtils.clamp(badgeVisibility), menuHintBadgeColor.getIntValue());
+        c.drawCircle(badgeCenterX, badgeCenterY, Screen.dp(4.5f) * badgeVisibility, Paints.fillingPaint(cutoutColor));
+        c.drawCircle(badgeCenterX, badgeCenterY, Screen.dp(3f) * badgeVisibility, Paints.fillingPaint(badgeColor));
+      }
     } else {
       float factor = this.factor - 1f;
 

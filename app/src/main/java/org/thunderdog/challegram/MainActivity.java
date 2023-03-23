@@ -36,6 +36,7 @@ import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.helper.LiveLocationHelper;
 import org.thunderdog.challegram.loader.gif.LottieCache;
+import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.NavigationStack;
 import org.thunderdog.challegram.navigation.SettingsWrap;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
@@ -43,9 +44,12 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.AccountSwitchReason;
 import org.thunderdog.challegram.telegram.GlobalAccountListener;
+import org.thunderdog.challegram.telegram.GlobalCountersListener;
+import org.thunderdog.challegram.telegram.GlobalResolvableProblemListener;
 import org.thunderdog.challegram.telegram.LiveLocationManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
+import org.thunderdog.challegram.telegram.TdlibBadgeCounter;
 import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
@@ -102,7 +106,7 @@ import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.td.MessageId;
 
 @SuppressWarnings(value = "SpellCheckingInspection")
-public class MainActivity extends BaseActivity implements GlobalAccountListener {
+public class MainActivity extends BaseActivity implements GlobalAccountListener, GlobalCountersListener, GlobalResolvableProblemListener {
   private Bundle tempSavedInstanceState;
 
   private TdlibAccount account;
@@ -118,6 +122,8 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
     handler = new Handler();
 
     TdlibManager.instance().global().addAccountListener(this);
+    TdlibManager.instance().global().addCountersListener(this);
+    TdlibManager.instance().global().addResolvableProblemAvailabilityListener(this);
     reloadTdlib();
 
     createMessagesController(tdlib).getValue();
@@ -233,11 +239,43 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
 
   private CancellableRunnable lastAccountSwitchTask;
 
+  private void updateCounter () {
+    Tdlib tdlib = currentTdlib();
+    boolean animated = getActivityState() == UI.STATE_RESUMED;
+    @Tdlib.ResolvableProblem int problemType = tdlib.findResolvableProblem();
+    BackHeaderButton backButton = navigation.getHeaderView().getBackButton();
+    if (problemType != Tdlib.ResolvableProblem.NONE) {
+      backButton.setMenuBadge(R.id.theme_color_headerBadgeFailed, animated);
+    } else {
+      TdlibBadgeCounter counter = TdlibManager.instance().getTotalUnreadBadgeCounter(tdlib.id());
+      if (counter.getCount() > 0) {
+        backButton.setMenuBadge(
+          counter.isMuted() ? R.id.theme_color_headerBadgeMuted : R.id.theme_color_headerBadge,
+          animated
+        );
+      } else {
+        backButton.hideMenuBadge(animated);
+      }
+    }
+  }
+
+  @Override
+  public void onResolvableProblemAvailabilityMightHaveChanged () {
+    updateCounter();
+  }
+
+  @Override
+  public void onTotalUnreadCounterChanged (@NonNull TdApi.ChatList chatList, boolean isReset) {
+    updateCounter();
+  }
+
   @Override
   public void onAccountSwitched (final TdlibAccount newAccount, TdApi.User profile, @AccountSwitchReason int reason, TdlibAccount oldAccount) {
     if (this.account.id == newAccount.id) {
       return;
     }
+
+    updateCounter();
 
     if (lastAccountSwitchTask != null) {
       lastAccountSwitchTask.cancel();
@@ -384,7 +422,10 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
 
   @Override
   protected void onTdlibChanged () {
-    setShowOptimizing(currentTdlib().isOptimizing());
+    Tdlib tdlib = currentTdlib();
+    setShowOptimizing(tdlib.isOptimizing());
+    tdlib.context().global().notifyResolvableProblemAvailabilityMightHaveChanged();
+    updateCounter();
   }
 
   private BoolAnimator optimizeAnimator;
@@ -1412,6 +1453,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
     Log.i("MainActivity.onResume");
     // Log.e("%s", Strings.getHexColor(U.compositeColor(Theme.headerColor(), Theme.getColor(R.id.theme_color_statusBar)), false));
     tdlib.contacts().makeSilentPermissionCheck(this);
+    tdlib.context().global().notifyResolvableProblemAvailabilityMightHaveChanged();
     UI.startNotificationService();
     if (!madeEmulatorChecks && !Settings.instance().isEmulator()) {
       madeEmulatorChecks = true;
@@ -1427,6 +1469,8 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
   @Override
   public void onDestroy () {
     TdlibManager.instance().global().removeAccountListener(this);
+    TdlibManager.instance().global().removeCountersListener(this);
+    TdlibManager.instance().global().removeResolvableProblemAvailabilityListener(this);
     destroyMessageControllers();
 
     Log.i("MainActivity.onDestroy");

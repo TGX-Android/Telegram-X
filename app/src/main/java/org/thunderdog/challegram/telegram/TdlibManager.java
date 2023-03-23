@@ -1276,6 +1276,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     account.markAsUsed();
     Tdlib tdlib = account.tdlib();
     global().notifyAccountSwitched(account, tdlib.myUser(), reason, oldAccount);
+    global().notifyResolvableProblemAvailabilityMightHaveChanged();
     onConnectionStateChanged(tdlib, tdlib.connectionState());
     onConnectionDisplayStatusChanged(tdlib);
     if (Settings.instance().checkNotificationFlag(Settings.NOTIFICATION_FLAG_ONLY_ACTIVE_ACCOUNT)) {

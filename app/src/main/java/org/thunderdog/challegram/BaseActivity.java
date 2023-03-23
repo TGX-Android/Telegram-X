@@ -192,23 +192,18 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     // It's located here for future display inside header menu button
     if (hasTdlib()) {
       Tdlib tdlib = currentTdlib();
-      final boolean haveNotificationsProblem = tdlib.notifications().hasLocalNotificationProblem();
-      final TdApi.SuggestedAction singleAction = tdlib.singleSettingsSuggestion();
-      final boolean haveSuggestions = singleAction != null || tdlib.haveAnySettingsSuggestions();
-      final int totalCount = (singleAction != null ? 1 : haveSuggestions ? 2 : 0) + (haveNotificationsProblem ? 1 : 0);
-      if (totalCount > 1) {
-        return Tdlib.CHAT_FAILED;
-      } else if (haveNotificationsProblem) {
-        return R.drawable.baseline_notification_important_14;
-      } else if (singleAction != null) {
-        switch (singleAction.getConstructor()) {
-          case TdApi.SuggestedActionCheckPassword.CONSTRUCTOR:
-            return R.drawable.baseline_gpp_maybe_14;
-          case TdApi.SuggestedActionCheckPhoneNumber.CONSTRUCTOR:
-            return R.drawable.baseline_sim_card_alert_14;
-          default:
-            throw new UnsupportedOperationException(singleAction.toString());
-        }
+      @Tdlib.ResolvableProblem int problemType = tdlib.findResolvableProblem();
+      switch (problemType) {
+        case Tdlib.ResolvableProblem.NONE:
+          break;
+        case Tdlib.ResolvableProblem.MIXED:
+          return Tdlib.CHAT_FAILED;
+        case Tdlib.ResolvableProblem.NOTIFICATIONS:
+          return R.drawable.baseline_notification_important_14;
+        case Tdlib.ResolvableProblem.CHECK_PASSWORD:
+          return R.drawable.baseline_gpp_maybe_14;
+        case Tdlib.ResolvableProblem.CHECK_PHONE_NUMBER:
+          return R.drawable.baseline_sim_card_alert_14;
       }
     }
     return 0;
