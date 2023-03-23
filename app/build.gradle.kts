@@ -205,7 +205,7 @@ dependencies {
   // Play In-App Updates: https://developer.android.com/reference/com/google/android/play/core/release-notes-in_app_updates
   implementation("com.google.android.play:app-update:2.0.1")
   // ExoPlayer: https://github.com/google/ExoPlayer/blob/release-v2/RELEASENOTES.md
-  implementation("com.google.android.exoplayer:exoplayer-core:2.18.4")
+  implementation("com.google.android.exoplayer:exoplayer-core:2.18.5")
   // The Checker Framework: https://checkerframework.org/CHANGELOG.md
   compileOnly("org.checkerframework:checker-qual:3.32.0")
   // OkHttp: https://github.com/square/okhttp/blob/master/CHANGELOG.md
