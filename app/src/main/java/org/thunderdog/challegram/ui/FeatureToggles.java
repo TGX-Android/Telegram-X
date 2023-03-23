@@ -56,7 +56,7 @@ public final class FeatureToggles {
           if (view.getToggler() != null) {
             FutureBool valueSupplier = valueSuppliers.get(view.getId());
             if (valueSupplier != null) {
-              view.getToggler().setRadioEnabled(valueSupplier.get(), isUpdate);
+              view.getToggler().setRadioEnabled(valueSupplier.getBoolValue(), isUpdate);
             }
           }
         }

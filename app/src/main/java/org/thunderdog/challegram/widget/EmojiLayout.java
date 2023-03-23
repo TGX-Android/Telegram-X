@@ -1672,7 +1672,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
 
     @Override
     public void destroyItem (ViewGroup container, int position, @NonNull Object object) {
-      container.removeView(((ViewController<?>) object).get());
+      container.removeView(((ViewController<?>) object).getValue());
     }
 
     @Override
@@ -1695,13 +1695,13 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
           c.bindThemeListeners(themeProvider);
         }
       }
-      container.addView(c.get());
+      container.addView(c.getValue());
       return c;
     }
 
     @Override
     public boolean isViewFromObject (@NonNull View view, @NonNull Object object) {
-      return object instanceof ViewController && ((ViewController<?>) object).get() == view;
+      return object instanceof ViewController && ((ViewController<?>) object).getValue() == view;
     }
   }
 

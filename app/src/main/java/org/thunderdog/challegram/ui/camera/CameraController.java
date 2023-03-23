@@ -302,13 +302,13 @@ public class CameraController extends ViewController<Void> implements CameraDele
   }
 
   public void takeCameraLayout (ViewGroup toGroup, int index) {
-    get();
+    getValue();
     Views.moveView(contentView, toGroup, index);
     manager.getView().requestLayout();
   }
 
   public void releaseCameraLayout () {
-    get();
+    getValue();
     Views.moveView(contentView, rootLayout, 0);
     manager.getView().requestLayout();
   }

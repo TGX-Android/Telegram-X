@@ -120,7 +120,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
     TdlibManager.instance().global().addAccountListener(this);
     reloadTdlib();
 
-    createMessagesController(tdlib).get();
+    createMessagesController(tdlib).getValue();
 
     tempSavedInstanceState = savedInstanceState;
 
@@ -227,7 +227,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
     NavigationStack stack = navigation.getStack();
     stack.destroyAllButSaveLast(2);
     MainController chats = new MainController(c.context(), c.tdlib());
-    chats.get();
+    chats.getValue();
     stack.replace(0, chats);
   }
 
@@ -601,7 +601,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
       navigation.initController(c);
       return;
     }
-    c.get();
+    c.getValue();
     ViewController<?> child = c.getPreparedControllerForPosition(0);
     if (child != null && child.needAsynchronousAnimation()) {
       setBlankViewVisible(true, false);
@@ -618,7 +618,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
 
   private void insertMainController () {
     MainController c = new MainController(this, account.tdlib());
-    c.get();
+    c.getValue();
     navigation.insertController(c, 0);
   }
 
@@ -1139,7 +1139,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
         if (c == null) {
           continue;
         }
-        c.get();
+        c.getValue();
         if (restoredCount == 0) {
           navigation.initController(c);
         } else {
@@ -1259,7 +1259,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
   private MessagesController createMessagesController (Tdlib tdlib) {
     MessagesController m = new MessagesController(this, tdlib);
     m.setReuseEnabled(true);
-    m.get();
+    m.getValue();
     messageControllers.put(tdlib.id(), m);
     return m;
   }
@@ -1378,7 +1378,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
 
   public void navigateToSafely (@NonNull ViewController<?> c) {
     if (isActivityBusyWithSomething()) {
-      c.get();
+      c.getValue();
       c.destroy();
       return;
     }

@@ -1092,7 +1092,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
           if (i >= itemCount - addSize) {
             int rowCount = (int) Math.ceil((float) itemCount / (float) spanCount);
             int itemsHeight = rowCount * Screen.dp(86f) + Screen.dp(HORIZONTAL_PADDING_SIZE) + Screen.dp(VERTICAL_PADDING_SIZE);
-            outRect.bottom = Math.max(0, get().getMeasuredHeight() == 0 ? Screen.currentHeight() : get().getMeasuredHeight() - HeaderView.getSize(true) - itemsHeight - (canShareLink ? Screen.dp(56f) : 0));
+            outRect.bottom = Math.max(0, getValue().getMeasuredHeight() == 0 ? Screen.currentHeight() : getValue().getMeasuredHeight() - HeaderView.getSize(true) - itemsHeight - (canShareLink ? Screen.dp(56f) : 0));
           }
         }
       }
@@ -2198,7 +2198,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     popupLayout.setNeedRootInsets();
     popupLayout.setTouchProvider(this);
     popupLayout.setIgnoreHorizontal();
-    get();
+    getValue();
     context().addFullScreenView(this, false);
   }
 
@@ -2212,7 +2212,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
   private void launchOpenAnimation () {
     if (!openLaunched) {
       openLaunched = true;
-      popupLayout.showSimplePopupView(get(), calculateTotalHeight());
+      popupLayout.showSimplePopupView(getValue(), calculateTotalHeight());
     }
   }
 

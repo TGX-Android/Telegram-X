@@ -2100,7 +2100,7 @@ public class TdlibUi extends Handler {
       if (navigation.isEmpty()) {
         navigation.initController(c);
         MainController main = new MainController(context.context(), context.tdlib());
-        main.get();
+        main.getValue();
         navigation.getStack().insert(main, 0);
       } else {
         navigation.navigateTo(c);
@@ -2263,7 +2263,7 @@ public class TdlibUi extends Handler {
       .voiceChatInvitation(voiceChatInvitation)
     );
 
-    View view = controller.get();
+    View view = controller.getValue();
     if (controller.context().isNavigationBusy()) {
       if (params != null) {
         params.onDone();
@@ -2271,13 +2271,13 @@ public class TdlibUi extends Handler {
       return;
     }
     if (view.getParent() != null) {
-      ((ViewGroup) view.getParent()).removeView(controller.get());
+      ((ViewGroup) view.getParent()).removeView(controller.getValue());
     }
 
     if (navigation.isEmpty()) {
       navigation.initController(controller);
       MainController c = new MainController(context.context(), context.tdlib());
-      c.get();
+      c.getValue();
       navigation.getStack().insert(c, 0);
     } else if (navigation.getStackSize() > 1 && (options & CHAT_OPTION_KEEP_STACK) == 0) {
       navigation.setControllerAnimated(controller, true, true);
@@ -2314,14 +2314,14 @@ public class TdlibUi extends Handler {
     if (navigation.isEmpty()) {
       navigation.initController(profileController);
       MainController c = new MainController(context.context(), context.tdlib());
-      c.get();
+      c.getValue();
       navigation.getStack().insert(c, 0);
     } else {
       ViewController<?> c = navigation.getCurrentStackItem();
       if (c instanceof MessagesController && !tdlib.isSelfChat(chat) && ((MessagesController) c).getHeaderChatId() == chat.id && !((MessagesController) c).inPreviewMode()) {
         profileController.setShareCustomHeaderView(true);
       } else if (c instanceof ProfileController && ((ProfileController) c).isSameProfile(profileController)) {
-        profileController.get();
+        profileController.getValue();
         profileController.destroy();
         return;
       }
@@ -3708,7 +3708,7 @@ public class TdlibUi extends Handler {
     }, (optionItemView, id) -> {
       switch (id) {
         case R.id.btn_open:
-          openUrl(context, url, openParametersFuture != null ? openParametersFuture.get() : null);
+          openUrl(context, url, openParametersFuture != null ? openParametersFuture.getValue() : null);
           break;
         case R.id.btn_copyLink:
           UI.copyText(url, R.string.CopiedLink);
@@ -6218,8 +6218,8 @@ public class TdlibUi extends Handler {
 
   public HapticMenuHelper createSimpleHapticMenu (ViewController<?> context, long chatId, @Nullable FutureBool availabilityCallback, @Nullable FutureBool canDisableMarkdownCallback, @Nullable FutureBool canHideMedia, RunnableData<List<HapticMenuHelper.MenuItem>> customItemProvider, SimpleSendCallback sendCallback, @Nullable ThemeDelegate forcedTheme) {
     return new HapticMenuHelper(list -> {
-      if (availabilityCallback == null || availabilityCallback.get()) {
-        List<HapticMenuHelper.MenuItem> items = fillDefaultHapticMenu(chatId, false, canDisableMarkdownCallback != null && canDisableMarkdownCallback.get(), true);
+      if (availabilityCallback == null || availabilityCallback.getBoolValue()) {
+        List<HapticMenuHelper.MenuItem> items = fillDefaultHapticMenu(chatId, false, canDisableMarkdownCallback != null && canDisableMarkdownCallback.getBoolValue(), true);
         if (customItemProvider != null) {
           if (items == null)
             items = new ArrayList<>();

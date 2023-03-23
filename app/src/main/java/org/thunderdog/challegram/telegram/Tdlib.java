@@ -2486,7 +2486,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         if (chat != null) {
           callback.runWithData(chat);
         } else {
-          client().send(createFunction.get(), ignored -> {
+          client().send(createFunction.getValue(), ignored -> {
             TdApi.Chat createdChat = chat(chatId);
             callback.runWithData(createdChat);
           });
@@ -9516,7 +9516,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       Map<String, TdApi.File> pendingPreviews = new HashMap<>();
 
         boolean foundBuiltIn = false;
-        T currentSetting = currentSettingProvider.get();
+        T currentSetting = currentSettingProvider.getValue();
         boolean foundCurrent = currentSetting.isBuiltIn();
 
         for (TdApi.Message message : messages) {
@@ -9537,7 +9537,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         }
 
         if (!foundBuiltIn)
-          settings.add(0, builtinItemProvider.get());
+          settings.add(0, builtinItemProvider.getValue());
         if (!foundCurrent)
           settings.add(currentSetting);
 

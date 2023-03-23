@@ -1234,8 +1234,8 @@ public class RoundVideoController extends BasePlaybackController implements
     if (m != null) {
       int bottomOffset = m.getInputOffset(true);
       if (!m.isFocused()) {
-        totalX += m.get().getTranslationX();
-        abort = m.get().getAlpha() == 0f;
+        totalX += m.getValue().getTranslationX();
+        abort = m.getValue().getAlpha() == 0f;
       }
       if (m.needTabs()) {
         totalX -= m.getPagerScrollOffsetInPixels();
@@ -1273,8 +1273,8 @@ public class RoundVideoController extends BasePlaybackController implements
 
     int playerSize = TGMessageVideo.getVideoSize();
 
-    int navigationWidth = navigation.get().getMeasuredWidth();
-    int navigationHeight = navigation.get().getMeasuredHeight();
+    int navigationWidth = navigation.getValue().getMeasuredWidth();
+    int navigationHeight = navigation.getValue().getMeasuredHeight();
 
     return totalX > -playerSize && totalX < navigationWidth && totalY >= -playerSize + HeaderView.getPlayerSize() && totalY < navigationHeight;
   }

@@ -4300,16 +4300,16 @@ public class TD {
     if (string != null && string.value instanceof TdApi.LanguagePackStringValueOrdinary) {
       return ((TdApi.LanguagePackStringValueOrdinary) string.value).value;
     }
-    return defaultValue != null ? defaultValue.get() : null;
+    return defaultValue != null ? defaultValue.getValue() : null;
   }
 
   public static @Nullable String findOrdinary (TdApi.LanguagePackString[] strings, String key, Future<String> defaultValue) {
     for (TdApi.LanguagePackString string : strings) {
       if (key.equals(string.key)) {
-        return string.value instanceof TdApi.LanguagePackStringValueOrdinary ? ((TdApi.LanguagePackStringValueOrdinary) string.value).value : defaultValue != null ? defaultValue.get() : null;
+        return string.value instanceof TdApi.LanguagePackStringValueOrdinary ? ((TdApi.LanguagePackStringValueOrdinary) string.value).value : defaultValue != null ? defaultValue.getValue() : null;
       }
     }
-    return defaultValue != null ? defaultValue.get() : null;
+    return defaultValue != null ? defaultValue.getValue() : null;
   }
 
   public static TdApi.PhotoSize findClosest (TdApi.PhotoSize[] sizes, int width, int height) {

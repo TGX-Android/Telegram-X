@@ -337,7 +337,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
 
       MessageOptionsController c = new MessageOptionsController(context, this.tdlib, getThemeListeners());
       c.setArguments(new MessageOptionsController.Args(options, onClickListener));
-      c.get();
+      c.getValue();
       setHeaderPosition(getContentOffset() + HeaderView.getTopOffset());
       setDefaultListenersAndDecorators(c);
       return c;
@@ -345,21 +345,21 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
 
     if (position == ALL_REACTED_POSITION) {
       MessageOptionsReactedController c = new MessageOptionsReactedController(context, this.tdlib, getPopupLayout(), message, null);
-      c.get();
+      c.getValue();
       setDefaultListenersAndDecorators(c);
       return c;
     }
 
     if (position == SEEN_POSITION) {
       MessageOptionsSeenController c = new MessageOptionsSeenController(context, this.tdlib, getPopupLayout(), message);
-      c.get();
+      c.getValue();
       setDefaultListenersAndDecorators(c);
       return c;
     }
 
     if (position >= REACTED_START_POSITION && REACTED_START_POSITION != -1) {
       MessageOptionsReactedController c = new MessageOptionsReactedController(context, this.tdlib, getPopupLayout(), message, reactions[position - REACTED_START_POSITION].type);
-      c.get();
+      c.getValue();
       if (isFirstCreation && !needShowOptions) {
         setHeaderPosition(getContentOffset() + HeaderView.getTopOffset());
         isFirstCreation = false;

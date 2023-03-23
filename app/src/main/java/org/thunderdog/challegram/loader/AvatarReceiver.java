@@ -462,7 +462,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   @AnyThread
   private void runOnUiThread (FutureBool condition, Runnable act) {
     UI.post(() -> {
-      if (condition.get()) {
+      if (condition.getBoolValue()) {
         act.run();
       }
     });

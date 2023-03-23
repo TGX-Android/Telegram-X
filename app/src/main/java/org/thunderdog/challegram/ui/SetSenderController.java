@@ -36,7 +36,7 @@ public class SetSenderController extends BottomSheetViewController<SetSenderCont
   @Override
   protected void onBeforeCreateView () {
     setSenderControllerPage.setArguments(getArguments());
-    setSenderControllerPage.get();
+    setSenderControllerPage.getValue();
   }
 
   @Override

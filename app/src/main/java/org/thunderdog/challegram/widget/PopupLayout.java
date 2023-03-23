@@ -630,7 +630,7 @@ public class PopupLayout extends RootFrameLayout implements FactorAnimator.Targe
 
   @Override
   protected View getMeasureTarget () {
-    return boundController != null ? boundController.get() : this;
+    return boundController != null ? boundController.getValue() : this;
   }
 
   private static final int ANIMATION_TYPE_NONE = -1;

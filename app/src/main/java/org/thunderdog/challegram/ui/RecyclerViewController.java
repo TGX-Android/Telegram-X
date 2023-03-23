@@ -365,7 +365,7 @@ public abstract class RecyclerViewController<T> extends TelegramViewController<T
         }
       });
       doneButton.setLayoutParams(params);
-      ((ViewGroup) get()).addView(doneButton);
+      ((ViewGroup) getValue()).addView(doneButton);
     }
     return doneButton;
   }

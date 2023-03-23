@@ -720,7 +720,7 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
     };
     pendingPreviewTask.removeOnCancel(UI.getAppHandler());
     controller.scheduleAnimation(pendingPreviewTask, 600l);
-    controller.get();
+    controller.getValue();
   }
 
   private void cancelAsyncPreview () {
@@ -748,7 +748,7 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
     int[] location = Views.getLocationOnScreen(sourceView);
     int sourceX = location[0] + x;
     int sourceY = location[1] + y;
-    ForceTouchView.ForceTouchContext forceTouchContext = new ForceTouchView.ForceTouchContext(tdlib, sourceView, controller.get(), controller);
+    ForceTouchView.ForceTouchContext forceTouchContext = new ForceTouchView.ForceTouchContext(tdlib, sourceView, controller.getValue(), controller);
     forceTouchContext.setAnimationSourcePoint(sourceX, sourceY);
     forceTouchContext.setStateListener(controller);
     forceTouchContext.setStateListenerArgument(controller);
