@@ -546,6 +546,7 @@
   <item type="id" name="btn_proxyQr" />
   <item type="id" name="btn_showAdvanced" />
   <item type="id" name="btn_autoplayGIFs" />
+  <item type="id" name="btn_toggleCollapseRecentStickers" />
   <item type="id" name="btn_stickerSuggestions" />
   <item type="id" name="btn_stickerSuggestionsAll" />
   <item type="id" name="btn_stickerSuggestionsInstalled" />

@@ -4627,4 +4627,9 @@
   <string name="MediaSpoilerHint">Media will be blurred inside the chat and reveal after additional tap.</string>
   <string name="HideMedia">Hide media</string>
 
+  <string name="ShowXMoreStickers_one">show %1$s more</string>
+  <string name="ShowXMoreStickers_other">show %1$s more</string>
+
+  <string name="ShowLessStickers">show less</string>
+
 </resources>
