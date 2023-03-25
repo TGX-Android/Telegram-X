@@ -18,6 +18,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
+import android.os.SystemClock;
 import android.text.Layout;
 import android.text.TextPaint;
 import android.text.TextUtils;
@@ -32,6 +33,7 @@ import androidx.annotation.DrawableRes;
 import androidx.annotation.FloatRange;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.Px;
 
 import org.thunderdog.challegram.R;
@@ -348,8 +350,12 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   @Override
   public boolean onLongClick (View v) {
     if (listener != null && v instanceof BackgroundView) {
-      int i = ((BackgroundView) v).index;
-      return listener.onPagerItemLongClick(i);
+      BackgroundView backgroundView = (BackgroundView) v;
+      if (backgroundView.inSlideOff()) {
+        return false;
+      }
+      backgroundView.cancelSlideOff();
+      return listener.onPagerItemLongClick(backgroundView.index);
     }
     return false;
   }
@@ -990,7 +996,10 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       Views.setClickable(this);
     }
 
+    private long touchDownTime;
     private float touchDownY;
+    private float touchX;
+    private float touchY;
     private boolean inSlideOff;
     private ViewParent lockedParent;
 
@@ -1003,15 +1012,19 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
       super.onTouchEvent(e);
       switch (e.getAction()) {
         case MotionEvent.ACTION_DOWN:
+          touchX = e.getX();
+          touchY = e.getY();
           touchDownY = e.getY();
+          touchDownTime = e.getDownTime();
           break;
         case MotionEvent.ACTION_MOVE: {
+          if (touchDownTime < 0L) {
+            break;
+          }
+          touchX = e.getX();
+          touchY = e.getY();
           if (lockedParent == null) {
-            if (Math.abs(e.getY() - touchDownY) > Screen.getTouchSlop()) {
-              if (lockedParent != null) {
-                lockedParent.requestDisallowInterceptTouchEvent(false);
-                lockedParent = null;
-              }
+            if (Math.abs(touchY - touchDownY) > Screen.getTouchSlop()) {
               boolean needSlideOff = slideOffListener.onSlideOffPrepare(this, e, index);
               if (needSlideOff) {
                 lockedParent = getParent();
@@ -1022,7 +1035,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
             }
           } else {
             int start = getMeasuredHeight();
-            boolean inSlideOff = topView.slideOffDirection == SLIDE_OFF_DIRECTION_TOP ? e.getY() <= start : e.getY() >= start;
+            boolean inSlideOff = topView.slideOffDirection == SLIDE_OFF_DIRECTION_TOP ? touchY <= start : touchY >= start;
             if (this.inSlideOff != inSlideOff) {
               this.inSlideOff = inSlideOff;
               if (inSlideOff) {
@@ -1038,27 +1051,37 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
           break;
         }
         case MotionEvent.ACTION_CANCEL:
-          if (inSlideOff) {
-            inSlideOff = false;
-            slideOffListener.onSlideOffFinish(this, e, index, false);
-          }
-          if (lockedParent != null) {
-            lockedParent.requestDisallowInterceptTouchEvent(false);
-            lockedParent = null;
-          }
+          finishSlideOff(e, slideOffListener, /* apply */ false);
           break;
         case MotionEvent.ACTION_UP:
-          if (inSlideOff) {
-            inSlideOff = false;
-            slideOffListener.onSlideOffFinish(this, e, index, true);
-          }
-          if (lockedParent != null) {
-            lockedParent.requestDisallowInterceptTouchEvent(false);
-            lockedParent = null;
-          }
+          finishSlideOff(e, slideOffListener, /* apply */ true);
           break;
       }
       return true;
+    }
+
+    public boolean inSlideOff() {
+      return inSlideOff;
+    }
+
+    public void cancelSlideOff () {
+      MotionEvent e = MotionEvent.obtain(touchDownTime, SystemClock.uptimeMillis(), MotionEvent.ACTION_CANCEL, touchX, touchY, /* metaState */ 0);
+      OnSlideOffListener slideOffListener = topView != null ? topView.onSlideOffListener : null;
+      finishSlideOff(e, slideOffListener, /* apply */ false);
+    }
+
+    public void finishSlideOff (MotionEvent e, @Nullable OnSlideOffListener slideOffListener, boolean apply) {
+      touchDownTime = Long.MIN_VALUE;
+      if (inSlideOff) {
+        inSlideOff = false;
+        if (slideOffListener != null) {
+          slideOffListener.onSlideOffFinish(this, e, index, apply);
+        }
+      }
+      if (lockedParent != null) {
+        lockedParent.requestDisallowInterceptTouchEvent(false);
+        lockedParent = null;
+      }
     }
 
     private ViewPagerTopView topView;
