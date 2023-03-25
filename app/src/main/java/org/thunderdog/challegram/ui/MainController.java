@@ -432,16 +432,16 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     if (hasFolders()) {
       int chatFolderStyle = tdlib.settings().chatFolderStyle();
       if (pagerItemId == MAIN_PAGER_ITEM_ID) {
-        item = buildMainSectionItem(chatFolderStyle);
+        item = buildMainSectionItem(pagerItemPosition, chatFolderStyle);
       } else if (pagerItemId == ARCHIVE_PAGER_ITEM_ID) {
-        item = buildArchiveSectionItem(chatFolderStyle);
+        item = buildArchiveSectionItem(pagerItemPosition, chatFolderStyle);
       } else {
         TdApi.ChatList chatList = pagerChatLists.get(pagerItemPosition);
         if (TD.isChatListFilter(chatList)) {
           TdApi.ChatListFilter chatListFilter = (TdApi.ChatListFilter) chatList;
           TdApi.ChatFilterInfo chatFilterInfo = tdlib.chatFilterInfo(chatListFilter.chatFilterId);
           if (chatFilterInfo != null) {
-            item = buildSectionItem(pagerItemId, chatList, chatFilterInfo, chatFolderStyle);
+            item = buildSectionItem(pagerItemId, pagerItemPosition, chatList, chatFilterInfo, chatFolderStyle);
           } else {
             chatsController.destroy();
             return NO_POSITION;
@@ -451,7 +451,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         }
       }
     } else {
-      String sectionName = getMenuSectionName(pagerItemId, /* hasFolders */ false, CHAT_FOLDER_STYLE_LABEL_ONLY);
+      String sectionName = getMenuSectionName(pagerItemId, pagerItemPosition, /* hasFolders */ false, CHAT_FOLDER_STYLE_LABEL_ONLY);
       item = new ViewPagerTopView.Item(sectionName.toUpperCase());
     }
     headerCell.getTopView().setItemAt(pagerItemPosition, item);
@@ -1369,11 +1369,11 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     return chats;
   }
 
-  private String getMenuSectionName (long pagerItemId, boolean hasFolders, @ChatFolderStyle int chatFolderStyle) {
-    return Lang.getString(getMenuSectionNameRes(pagerItemId, hasFolders, chatFolderStyle));
+  private String getMenuSectionName (long pagerItemId, int pagerItemPosition, boolean hasFolders, @ChatFolderStyle int chatFolderStyle) {
+    return Lang.getString(getMenuSectionNameRes(pagerItemId, pagerItemPosition, hasFolders, chatFolderStyle));
   }
 
-  private int getMenuSectionNameRes (long pagerItemId, boolean hasFolders, @ChatFolderStyle int chatFolderStyle) {
+  private int getMenuSectionNameRes (long pagerItemId, int pagerItemPosition, boolean hasFolders, @ChatFolderStyle int chatFolderStyle) {
     int selectedFilter = getSelectedFilter(pagerItemId);
     boolean isMain = pagerItemId == MAIN_PAGER_ITEM_ID;
     boolean isArchive = pagerItemId == ARCHIVE_PAGER_ITEM_ID;
@@ -1381,7 +1381,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       throw new UnsupportedOperationException();
     }
     //noinspection ConstantConditions
-    if (isArchive || (isMain && menuNeedArchive && !hasFolders)) {
+    if (isArchive || (isMain && menuNeedArchive && (!hasFolders || pagerItemPosition > 0))) {
       return getArchiveSectionName(selectedFilter, chatFolderStyle);
     }
     if (selectedFilter != FILTER_NONE) {
@@ -1507,7 +1507,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     if (hasFolders()) {
       throw new UnsupportedOperationException();
     }
-    return new String[] {getMenuSectionName(MAIN_PAGER_ITEM_ID, /* hasFolders */ false, CHAT_FOLDER_STYLE_LABEL_ONLY).toUpperCase(), Lang.getString(R.string.Calls).toUpperCase()/*, UI.getString(R.string.Contacts).toUpperCase()*/};
+    return new String[] {getMenuSectionName(MAIN_PAGER_ITEM_ID, /* pagerItemPosition */ 0, /* hasFolders */ false, CHAT_FOLDER_STYLE_LABEL_ONLY).toUpperCase(), Lang.getString(R.string.Calls).toUpperCase()/*, UI.getString(R.string.Contacts).toUpperCase()*/};
   }
 
   @Override
@@ -2305,16 +2305,16 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         ViewPagerTopView.Item sectionItem;
         if (position == mainChatListPosition) {
           chatList = ChatPosition.CHAT_LIST_MAIN;
-          sectionItem = buildMainSectionItem(chatFolderStyle);
+          sectionItem = buildMainSectionItem(position, chatFolderStyle);
         } else if (position == archiveChatListPosition) {
           chatList = ChatPosition.CHAT_LIST_ARCHIVE;
-          sectionItem = buildArchiveSectionItem(chatFolderStyle);
+          sectionItem = buildArchiveSectionItem(position, chatFolderStyle);
         } else {
           TdApi.ChatFilterInfo chatFilter = chatFilters[chatFilterIndex++];
           if (!tdlib.settings().isChatFilterEnabled(chatFilter.id))
             continue;
           chatList = new TdApi.ChatListFilter(chatFilter.id);
-          sectionItem = buildSectionItem(getPagerItemId(chatList), chatList, chatFilter, chatFolderStyle);
+          sectionItem = buildSectionItem(getPagerItemId(chatList), position, chatList, chatFilter, chatFolderStyle);
         }
         chatLists.add(chatList);
         sections.add(sectionItem);
@@ -2352,25 +2352,25 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     }
   }
 
-  private ViewPagerTopView.Item buildMainSectionItem (@ChatFolderStyle int chatFolderStyle) {
-    CharSequence sectionName = getMenuSectionName(MAIN_PAGER_ITEM_ID, /* hasFolders */ true, chatFolderStyle);
+  private ViewPagerTopView.Item buildMainSectionItem (int pagerItemPosition, @ChatFolderStyle int chatFolderStyle) {
+    CharSequence sectionName = getMenuSectionName(MAIN_PAGER_ITEM_ID, pagerItemPosition, /* hasFolders */ true, chatFolderStyle);
     int iconResource = menuNeedArchive ? R.drawable.baseline_archive_24 : R.drawable.baseline_forum_24;
-    return buildSectionItem(MAIN_PAGER_ITEM_ID, ChatPosition.CHAT_LIST_MAIN, sectionName, iconResource, chatFolderStyle);
+    return buildSectionItem(MAIN_PAGER_ITEM_ID, pagerItemPosition, ChatPosition.CHAT_LIST_MAIN, sectionName, iconResource, chatFolderStyle);
   }
 
-  private ViewPagerTopView.Item buildArchiveSectionItem (@ChatFolderStyle int chatFolderStyle) {
-    CharSequence sectionName = getMenuSectionName(ARCHIVE_PAGER_ITEM_ID, /* hasFolders */ true, chatFolderStyle);
+  private ViewPagerTopView.Item buildArchiveSectionItem (int pagerItemPosition, @ChatFolderStyle int chatFolderStyle) {
+    CharSequence sectionName = getMenuSectionName(ARCHIVE_PAGER_ITEM_ID, pagerItemPosition, /* hasFolders */ true, chatFolderStyle);
     int iconResource = R.drawable.baseline_archive_24;
-    return buildSectionItem(ARCHIVE_PAGER_ITEM_ID, ChatPosition.CHAT_LIST_ARCHIVE, sectionName, iconResource, chatFolderStyle);
+    return buildSectionItem(ARCHIVE_PAGER_ITEM_ID, pagerItemPosition, ChatPosition.CHAT_LIST_ARCHIVE, sectionName, iconResource, chatFolderStyle);
   }
 
-  private ViewPagerTopView.Item buildSectionItem (long pagerItemId, TdApi.ChatList chatList, TdApi.ChatFilterInfo chatFilterInfo, @ChatFolderStyle int chatFolderStyle) {
+  private ViewPagerTopView.Item buildSectionItem (long pagerItemId, int pagerItemPosition, TdApi.ChatList chatList, TdApi.ChatFilterInfo chatFilterInfo, @ChatFolderStyle int chatFolderStyle) {
     CharSequence sectionName = Emoji.instance().replaceEmoji(getMenuSectionName(pagerItemId, chatFilterInfo.title, chatFolderStyle));
     int iconResource = TD.iconByName(chatFilterInfo.iconName, R.drawable.baseline_folder_24);
-    return buildSectionItem(pagerItemId, chatList, sectionName, iconResource, chatFolderStyle);
+    return buildSectionItem(pagerItemId, pagerItemPosition, chatList, sectionName, iconResource, chatFolderStyle);
   }
 
-  private ViewPagerTopView.Item buildSectionItem (long pagerItemId, TdApi.ChatList chatList, CharSequence sectionName, @DrawableRes int iconResource, @ChatFolderStyle int chatFolderStyle) {
+  private ViewPagerTopView.Item buildSectionItem (long pagerItemId, int pagerItemPosition, TdApi.ChatList chatList, CharSequence sectionName, @DrawableRes int iconResource, @ChatFolderStyle int chatFolderStyle) {
     int selectedFilter = getSelectedFilter(pagerItemId);
     Counter unreadCounter = buildUnreadCounter(pagerItemId, selectedFilter);
     if (unreadCounter != null) {
@@ -2380,7 +2380,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       updateCounter(unreadCounter, unreadCount, unreadUnmutedCount, /* animated */ false);
     }
     ViewPagerTopView.Item item;
-    if (pagerItemId == MAIN_PAGER_ITEM_ID) {
+    if (pagerItemId == MAIN_PAGER_ITEM_ID && pagerItemPosition == 0) {
       if (selectedFilter != FILTER_NONE && selectedFilter != FILTER_ARCHIVE) {
         item = new ViewPagerTopView.Item(sectionName, iconResource, unreadCounter);
       } else {
