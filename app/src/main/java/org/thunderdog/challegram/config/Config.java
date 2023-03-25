@@ -165,7 +165,7 @@ public class Config {
   public static final boolean USE_GROUP_NAMES = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O;
 
   public static final boolean FORCE_SHOW_RECENTS_STICKERS_TITLE = false;
-  public static final int DEFAULT_SHOW_RECENT_STICKERS_COUNT = BuildConfig.DEBUG ? 5 : 20;
+  public static final int DEFAULT_SHOW_RECENT_STICKERS_COUNT = 10;
 
   public static final boolean USE_TEXT_ADVANCE = true; // Build.VERSION.SDK_INT >= Build.VERSION_CODES.M;
 
