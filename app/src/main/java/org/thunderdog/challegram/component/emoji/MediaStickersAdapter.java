@@ -234,7 +234,14 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
     }
   }
 
-  private void updateCollapseView (TextView collapseView, TGStickerSetInfo stickerSet) {
+  public void updateCollapseView (ViewGroup viewGroup, TGStickerSetInfo stickerSet) {
+    View collapseView = viewGroup.findViewById(R.id.btn_toggleCollapseRecentStickers);
+    if (collapseView instanceof TextView) {
+      updateCollapseView((TextView) collapseView, stickerSet);
+    }
+  }
+
+  public void updateCollapseView (TextView collapseView, TGStickerSetInfo stickerSet) {
     if (stickerSet != null && stickerSet.getFullSize() > Config.DEFAULT_SHOW_RECENT_STICKERS_COUNT) {
       if (stickerSet.isCollapsed()) {
         int moreSize = stickerSet.getFullSize() - stickerSet.getSize();

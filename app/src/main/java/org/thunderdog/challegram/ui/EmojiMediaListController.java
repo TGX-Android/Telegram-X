@@ -1137,6 +1137,13 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
         if (prevRecentStickers != null && prevRecentStickers.length > 0 && items != null && !items.isEmpty()) {
           if (smartUpdateStickerPack(existingIndex, recentSet, recentStickers, items, visibleRecentCount)) {
             setShowRecentTitle(showRecentTitle, allowCollapseRecent);
+            if (showRecentTitle && allowCollapseRecent && stickersView != null && recentSet.isCollapsed()) {
+              // direct update of show X more
+              View view = stickersView.getLayoutManager().findViewByPosition(recentSet.getStartIndex());
+              if (view instanceof ViewGroup) {
+                stickersAdapter.updateCollapseView((ViewGroup) view, recentSet);
+              }
+            }
             return;
           }
         }
