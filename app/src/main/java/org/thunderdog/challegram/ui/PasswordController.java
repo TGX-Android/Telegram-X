@@ -15,6 +15,8 @@
 package org.thunderdog.challegram.ui;
 
 import android.content.Context;
+import android.os.Handler;
+import android.os.Message;
 import android.text.InputType;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
@@ -27,8 +29,6 @@ import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-import android.os.Handler;
-import android.os.Message;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -970,24 +970,22 @@ public class PasswordController extends ViewController<PasswordController.Args> 
         function = new TdApi.ResendAuthenticationCode();
         break;
     }
-    tdlib.client().send(function, object -> tdlib.ui().post(() -> {
-      if (!isDestroyed()) {
-        setInRecoveryProgress(false);
-        switch (object.getConstructor()) {
-          case TdApi.Ok.CONSTRUCTOR: {
-            break;
-          }
-          case TdApi.AuthenticationCodeInfo.CONSTRUCTOR: {
-            ((TdApi.AuthorizationStateWaitCode) authState).codeInfo = (TdApi.AuthenticationCodeInfo) object;
-            isFirebaseSmsSent = false;
-            updateAuthState();
-            sendFirebaseSmsIfNeeded(force);
-            break;
-          }
-          case TdApi.Error.CONSTRUCTOR: {
-            UI.showError(object);
-            break;
-          }
+    tdlib.client().send(function, object -> runOnUiThreadOptional(() -> {
+      setInRecoveryProgress(false);
+      switch (object.getConstructor()) {
+        case TdApi.Ok.CONSTRUCTOR: {
+          break;
+        }
+        case TdApi.AuthenticationCodeInfo.CONSTRUCTOR: {
+          ((TdApi.AuthorizationStateWaitCode) authState).codeInfo = (TdApi.AuthenticationCodeInfo) object;
+          isFirebaseSmsSent = false;
+          updateAuthState();
+          sendFirebaseSmsIfNeeded(force);
+          break;
+        }
+        case TdApi.Error.CONSTRUCTOR: {
+          setHint(TD.toErrorString(object), true);
+          break;
         }
       }
     }));
@@ -1130,9 +1128,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
         openAlert(R.string.RestorePasswordNoEmailTitle, R.string.SinceNotProvided);
         return;
       }
-      setStackLocked(true);
       tdlib.client().send(new TdApi.RequestAuthenticationPasswordRecovery(), object -> runOnUiThreadOptional(() -> {
-        setStackLocked(false);
         setInRecoveryProgress(false);
         switch (object.getConstructor()) {
           case TdApi.Ok.CONSTRUCTOR: {
@@ -1259,7 +1255,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       this.inProgress = inProgress;
       nextButton.setInProgress(inProgress);
       if (needStackLocking()) {
-        if (isFocused()) {
+        if (isFocused() || (!inProgress && isStackLocked())) {
           setStackLocked(inProgress);
         } else {
           addOneShotFocusListener(() ->
@@ -1474,7 +1470,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
   }
 
   private boolean needStackLocking () {
-    return mode == MODE_CODE || mode == MODE_CODE_EMAIL;
+    return mode == MODE_CODE || mode == MODE_CODE_EMAIL || mode == MODE_LOGIN_EMAIL_RECOVERY;
   }
 
   private void sendCode (String code) {
@@ -1551,15 +1547,8 @@ public class PasswordController extends ViewController<PasswordController.Args> 
 
     setInProgress(true);
 
-    if (mode == MODE_LOGIN_EMAIL_RECOVERY) {
-      setStackLocked(true);
-    }
-
     tdlib.client().send(mode == MODE_LOGIN_EMAIL_RECOVERY ? new TdApi.RecoverAuthenticationPassword(recoveryCode, null, null) : new TdApi.RecoverPassword(recoveryCode, null, null), object -> tdlib.ui().post(() -> {
       if (!isDestroyed()) {
-        if (mode == MODE_LOGIN_EMAIL_RECOVERY) {
-          setStackLocked(false);
-        }
         setInProgress(false);
         switch (object.getConstructor()) {
           case TdApi.Ok.CONSTRUCTOR: {
@@ -1594,28 +1583,24 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     }
 
     setInProgress(true);
-    setStackLocked(true);
 
-    tdlib.client().send(function, object -> tdlib.ui().post(() -> {
-      if (!isDestroyed()) {
-        setInProgress(false);
-        setStackLocked(false);
+    tdlib.client().send(function, object -> runOnUiThreadOptional(() -> {
+      setInProgress(false);
 
-        switch (object.getConstructor()) {
-          case TdApi.Ok.CONSTRUCTOR: {
-            break;
+      switch (object.getConstructor()) {
+        case TdApi.Ok.CONSTRUCTOR: {
+          break;
+        }
+        case TdApi.Error.CONSTRUCTOR: {
+          TdApi.Error error = (TdApi.Error) object;
+          if (error.code == 400 && "PASSWORD_HASH_INVALID".equals(error.message)) {
+            Views.selectAll(editText.getEditText());
+            Keyboard.show(editText);
+            setHintText(R.string.InvalidPasswordTryAgain, true);
+          } else {
+            setHintText(TD.toErrorString(object), true);
           }
-          case TdApi.Error.CONSTRUCTOR: {
-            TdApi.Error error = (TdApi.Error) object;
-            if (error.code == 400 && "PASSWORD_HASH_INVALID".equals(error.message)) {
-              Views.selectAll(editText.getEditText());
-              Keyboard.show(editText);
-              setHintText(R.string.InvalidPasswordTryAgain, true);
-            } else {
-              setHintText(TD.toErrorString(object), true);
-            }
-            break;
-          }
+          break;
         }
       }
     }));

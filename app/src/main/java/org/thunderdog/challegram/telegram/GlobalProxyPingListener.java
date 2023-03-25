@@ -10,14 +10,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
- * File created on 15/02/2018
+ * File created on 20/03/2023
  */
 package org.thunderdog.challegram.telegram;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import androidx.annotation.NonNull;
 
-public interface ConnectionListener {
-  default void onConnectionStateChanged (@ConnectionState int newState, int oldState) { }
-  default void onConnectionTypeChanged (TdApi.NetworkType type) { }
-  default void onConnectionDisplayStatusChanged () { }
+import org.thunderdog.challegram.unsorted.Settings;
+public interface GlobalProxyPingListener {
+  void onProxyPingChanged (@NonNull Settings.Proxy proxy, long pingMs);
 }

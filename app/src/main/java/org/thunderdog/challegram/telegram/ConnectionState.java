@@ -20,5 +20,20 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
 @Retention(RetentionPolicy.SOURCE)
-@IntDef({Tdlib.STATE_UNKNOWN, Tdlib.STATE_CONNECTED, Tdlib.STATE_CONNECTING_TO_PROXY, Tdlib.STATE_CONNECTING, Tdlib.STATE_UPDATING, Tdlib.STATE_WAITING})
-public @interface ConnectionState { }
+@IntDef({
+  ConnectionState.UNKNOWN,
+  ConnectionState.CONNECTED,
+  ConnectionState.CONNECTING_TO_PROXY,
+  ConnectionState.CONNECTING,
+  ConnectionState.UPDATING,
+  ConnectionState.WAITING_FOR_NETWORK
+})
+public @interface ConnectionState {
+  int
+    UNKNOWN = -1,
+    CONNECTED = 0,
+    CONNECTING_TO_PROXY = 1,
+    CONNECTING = 2,
+    UPDATING = 3,
+    WAITING_FOR_NETWORK = 4;
+}

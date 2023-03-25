@@ -130,7 +130,7 @@ public class ImageFile {
   }
 
   public boolean needPalette () {
-    return BitwiseUtils.getFlag(flags, FLAG_NEED_PALETTE);
+    return BitwiseUtils.hasFlag(flags, FLAG_NEED_PALETTE);
   }
 
   public void setNeedPalette (boolean needPalette) {

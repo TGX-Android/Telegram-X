@@ -56,7 +56,6 @@ import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.tool.TGMimeType;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.DrawableProvider;
@@ -548,11 +547,11 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
             case TdApi.File.CONSTRUCTOR: {
               TdApi.File downloadedFile = (TdApi.File) result;
               if (TD.isFileLoaded(downloadedFile)) {
-                if (BitwiseUtils.getFlag(flags, FLAG_THEME)) {
+                if (BitwiseUtils.hasFlag(flags, FLAG_THEME)) {
                   runOnUiThreadOptional(c, () -> {
                     c.tdlib().ui().readCustomTheme(c, file, null, defaultOpen);
                   });
-                } else if (BitwiseUtils.getFlag(flags, FLAG_MEDIA_DOCUMENT)) {
+                } else if (BitwiseUtils.hasFlag(flags, FLAG_MEDIA_DOCUMENT)) {
                   Background.instance().post(() -> {
                     MediaItem item = MediaItem.valueOf(context, tdlib, originalDocument, null);
                     if (item != null) {

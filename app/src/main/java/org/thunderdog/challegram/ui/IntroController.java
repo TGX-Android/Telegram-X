@@ -58,6 +58,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.ConnectionListener;
+import org.thunderdog.challegram.telegram.ConnectionState;
 import org.thunderdog.challegram.telegram.GlobalAccountListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibContext;
@@ -352,7 +353,7 @@ public class IntroController extends ViewController<Void> implements GLSurfaceVi
 
   @Override
   public void onConnectionStateChanged (int newState, int oldState) {
-    if (newState != oldState && (oldState == Tdlib.STATE_WAITING || newState == Tdlib.STATE_WAITING)) {
+    if (newState != oldState && (oldState == ConnectionState.WAITING_FOR_NETWORK || newState == ConnectionState.WAITING_FOR_NETWORK)) {
       getTdlib().ui().post(() -> {
         if (!isDestroyed()) {
           performRequest(loginRequest);

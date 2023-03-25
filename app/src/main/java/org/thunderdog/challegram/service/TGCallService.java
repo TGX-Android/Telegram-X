@@ -1185,17 +1185,12 @@ public class TGCallService extends Service implements
     int proxyId = Settings.instance().getEffectiveCallsProxyId();
     if (proxyId != Settings.PROXY_ID_NONE) {
       Settings.Proxy proxy = Settings.instance().getProxyConfig(proxyId);
-      if (proxy != null && proxy.canUseForCalls()) {
-        switch (proxy.type.getConstructor()) {
-          case TdApi.ProxyTypeSocks5.CONSTRUCTOR: {
-            TdApi.ProxyTypeSocks5 socks5 = (TdApi.ProxyTypeSocks5) proxy.type;
-            controller.setProxy(proxy.server, proxy.port, socks5.username, socks5.password);
-            break;
-          }
-          default: {
-            Log.e("Unsupported proxy type for calls: %s", proxy.type);
-            break;
-          }
+      if (proxy != null && proxy.proxy != null && proxy.canUseForCalls()) {
+        if (proxy.proxy.type.getConstructor() == TdApi.ProxyTypeSocks5.CONSTRUCTOR) {
+          TdApi.ProxyTypeSocks5 socks5 = (TdApi.ProxyTypeSocks5) proxy.proxy.type;
+          controller.setProxy(proxy.proxy.server, proxy.proxy.port, socks5.username, socks5.password);
+        } else {
+          Log.e("Unsupported proxy type for calls: %s", proxy.proxy.type);
         }
       }
     }

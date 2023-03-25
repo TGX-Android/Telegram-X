@@ -386,7 +386,7 @@ public final class TdlibFileGenerationManager {
       String[] args = arg.split(",");
       final int themeId = StringUtils.parseInt(args[0]);
       final int flags = args.length > 1 ? StringUtils.parseInt(args[1]) : 0;
-      if (ThemeManager.isCustomTheme(themeId) || BitwiseUtils.getFlag(flags, Theme.EXPORT_FLAG_INCLUDE_DEFAULT_VALUES) || ThemeSet.getProperty(themeId, ThemeProperty.PARENT_THEME) != 0) {
+      if (ThemeManager.isCustomTheme(themeId) || BitwiseUtils.hasFlag(flags, Theme.EXPORT_FLAG_INCLUDE_DEFAULT_VALUES) || ThemeSet.getProperty(themeId, ThemeProperty.PARENT_THEME) != 0) {
         String author = args.length > 2 ? args[2] : null;
         exportTheme(generationId, themeId, flags, author, destinationPath);
       } else {

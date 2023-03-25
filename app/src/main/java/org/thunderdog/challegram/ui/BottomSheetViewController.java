@@ -380,7 +380,7 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
     };
 
     setupPopupLayout(popupLayout);
-    get();
+    getValue();
     context().addFullScreenView(this, false);
   }
 
@@ -394,7 +394,7 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
   protected void launchOpenAnimation () {
     if (!openLaunched) {
       openLaunched = true;
-      popupLayout.showSimplePopupView(get(), calculateTotalHeight());
+      popupLayout.showSimplePopupView(getValue(), calculateTotalHeight());
     }
   }
 

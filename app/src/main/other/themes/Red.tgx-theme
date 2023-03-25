@@ -15,6 +15,7 @@ bubbleOut_inlineOutline, bubbleOut_inlineText, bubbleOut_messageAuthor, checkAct
 bubbleOut_progress, bubbleOut_separator, bubbleOut_time: #BE8081
 bubbleOut_ticks, bubbleOut_ticksRead, iconActive, ticks, ticksRead: #EA3935
 bubbleOut_waveformInactive: #FABDC2
+headerBadgeFailed: #ffd307
 headerBackground, notification, notificationLink, notificationPlayer, passcode: #C62828
 messageSelection: #B71C1C10
 seekReady: #FBD4D3

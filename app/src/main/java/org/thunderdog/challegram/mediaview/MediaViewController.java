@@ -8098,7 +8098,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   // Etc
 
   public void open () {
-    get();
+    getValue();
     popupView.showAnimatedPopupView(contentView, this);
   }
 

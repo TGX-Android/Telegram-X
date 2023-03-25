@@ -230,7 +230,7 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
   }
 
   public void fadeOut (Animator.AnimatorListener listener) {
-    Views.animateAlpha(get(), 0f, 100l, AnimatorUtils.DECELERATE_INTERPOLATOR, listener);
+    Views.animateAlpha(getValue(), 0f, 100l, AnimatorUtils.DECELERATE_INTERPOLATOR, listener);
   }
 
   private void setMode (int mode) {

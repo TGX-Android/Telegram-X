@@ -163,7 +163,7 @@ public class GifState {
   }
 
   public boolean setCanApplyNext () {
-    if (!BitwiseUtils.getFlag(flags, FLAG_APPLY_NEXT)) {
+    if (!BitwiseUtils.hasFlag(flags, FLAG_APPLY_NEXT)) {
       flags |= FLAG_APPLY_NEXT;
       return true;
     }

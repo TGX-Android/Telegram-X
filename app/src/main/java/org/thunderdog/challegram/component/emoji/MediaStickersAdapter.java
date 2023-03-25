@@ -20,6 +20,7 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
@@ -32,6 +33,7 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -83,7 +85,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
     return StickerHolder.create(context.context(), context.tdlib(), viewType, isTrending, this, callback, isBig, themeProvider);
   }
 
-  public int measureScrollTop (int position, int spanCount, int sectionIndex, ArrayList<TGStickerSetInfo> sections) {
+  public int measureScrollTop (int position, int spanCount, int sectionIndex, ArrayList<TGStickerSetInfo> sections, boolean haveRecentsTitle) {
     if (position == 0 || sections == null || sectionIndex == -1) {
       return 0;
     }
@@ -108,9 +110,9 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
       } else if (stickerSet.isFavorite()) {
         // position--;
         hadFavorite = true;
-      } if (stickerSet.isRecent()) {
+      } else if (stickerSet.isRecent()) {
         position--;
-        if (hadFavorite) {
+        if (haveRecentsTitle) {
           scrollY += Screen.dp(32f);
         }
       }
@@ -204,6 +206,10 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
     }));
   }
 
+  protected void onToggleCollapseRecentStickers (TextView collapseView, TGStickerSetInfo recentSet) {
+    // override in children
+  }
+
   @Override
   public void onClick (View v) {
     Object tag = v.getTag();
@@ -215,11 +221,37 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
           installStickerSet(stickerSet);
           break;
         }
+        case R.id.btn_toggleCollapseRecentStickers: {
+          onToggleCollapseRecentStickers((TextView) v, stickerSet);
+          updateCollapseView((TextView) v, stickerSet);
+          break;
+        }
         default: {
           stickerSet.show(context);
           break;
         }
       }
+    }
+  }
+
+  public void updateCollapseView (ViewGroup viewGroup, TGStickerSetInfo stickerSet) {
+    View collapseView = viewGroup.findViewById(R.id.btn_toggleCollapseRecentStickers);
+    if (collapseView instanceof TextView) {
+      updateCollapseView((TextView) collapseView, stickerSet);
+    }
+  }
+
+  public void updateCollapseView (TextView collapseView, TGStickerSetInfo stickerSet) {
+    if (stickerSet != null && stickerSet.getFullSize() > Config.DEFAULT_SHOW_RECENT_STICKERS_COUNT) {
+      if (stickerSet.isCollapsed()) {
+        int moreSize = stickerSet.getFullSize() - stickerSet.getSize();
+        collapseView.setText(Lang.pluralBold(R.string.ShowXMoreStickers, moreSize));
+      } else {
+        collapseView.setText(R.string.ShowLessStickers);
+      }
+      collapseView.setVisibility(View.VISIBLE);
+    } else {
+      collapseView.setVisibility(View.GONE);
     }
   }
 
@@ -238,6 +270,17 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
         TGStickerSetInfo stickerSet = getStickerSet(position);
         Views.setMediumText(((TextView) holder.itemView), stickerSet != null ? stickerSet.getTitle() : "");
         Views.setTextGravity((TextView) holder.itemView, Lang.gravity());
+        break;
+      }
+      case StickerHolder.TYPE_HEADER_COLLAPSABLE: {
+        TGStickerSetInfo stickerSet = getStickerSet(position);
+        TextView titleView = (TextView) ((ViewGroup) holder.itemView).getChildAt(0);
+        Views.setMediumText(titleView, stickerSet != null ? stickerSet.getTitle() : "");
+        Views.setTextGravity(titleView, Lang.gravity());
+
+        TextView collapseView = (TextView) ((ViewGroup) holder.itemView).getChildAt(1);
+        updateCollapseView(collapseView, stickerSet);
+        collapseView.setTag(stickerSet);
         break;
       }
       case StickerHolder.TYPE_HEADER_TRENDING: {
@@ -355,15 +398,27 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
   }
 
   public void insertRange (int index, ArrayList<StickerItem> items) {
-    this.items.addAll(index, items);
-    notifyItemRangeInserted(index, items.size());
+    insertRange(index, items, true);
   }
 
-  public void removeRange (int startIndex, int count) {
+  public void insertRange (int index, ArrayList<StickerItem> items, boolean notify) {
+    this.items.addAll(index, items);
+    if (notify) {
+      notifyItemRangeInserted(index, items.size());
+    }
+  }
+
+  public void removeRange (int startIndex, int count, boolean notify) {
     for (int i = startIndex + count - 1; i >= startIndex; i--) {
       items.remove(i);
     }
-    notifyItemRangeRemoved(startIndex, count);
+    if (notify) {
+      notifyItemRangeRemoved(startIndex, count);
+    }
+  }
+
+  public void removeRange (int startIndex, int count) {
+    removeRange(startIndex, count, true);
   }
 
   public void moveRange (int fromIndex, int itemCount, int toIndex) {
@@ -496,11 +551,12 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
     public static final int TYPE_STICKER = 0;
     public static final int TYPE_EMPTY = 1;
     public static final int TYPE_HEADER = 2;
-    public static final int TYPE_KEYBOARD_TOP = 3;
-    public static final int TYPE_NO_STICKERSETS = 4;
-    public static final int TYPE_PROGRESS = 5;
-    public static final int TYPE_COME_AGAIN_LATER = 6;
-    public static final int TYPE_HEADER_TRENDING = 7;
+    public static final int TYPE_HEADER_COLLAPSABLE = 3;
+    public static final int TYPE_KEYBOARD_TOP = 4;
+    public static final int TYPE_NO_STICKERSETS = 5;
+    public static final int TYPE_PROGRESS = 6;
+    public static final int TYPE_COME_AGAIN_LATER = 7;
+    public static final int TYPE_HEADER_TRENDING = 8;
     public static final int TYPE_SEPARATOR = 10;
 
     public StickerHolder (View itemView) {
@@ -532,13 +588,43 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
           if (themeProvider != null) {
             themeProvider.addThemeTextDecentColorListener(textView);
           }
-          textView.setGravity(Lang.gravity());
+          textView.setGravity(Lang.gravity() | Gravity.CENTER_VERTICAL);
           textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
           textView.setSingleLine(true);
           textView.setEllipsize(TextUtils.TruncateAt.END);
           textView.setPadding(Screen.dp(14f), Screen.dp(5f), Screen.dp(14f), Screen.dp(5f));
           textView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(32f)));
           return new StickerHolder(textView);
+        }
+        case TYPE_HEADER_COLLAPSABLE: {
+          LinearLayout viewGroup = new LinearLayout(context);
+          viewGroup.setOrientation(LinearLayout.HORIZONTAL);
+          viewGroup.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(32f)));
+          for (int i = 0; i < 2; i++) {
+            TextView textView = new NoScrollTextView(context);
+            textView.setTextColor(Theme.textDecentColor());
+            if (themeProvider != null) {
+              themeProvider.addThemeTextDecentColorListener(textView);
+            }
+            textView.setGravity(Lang.gravity() | Gravity.CENTER_VERTICAL);
+            textView.setSingleLine(true);
+            textView.setEllipsize(TextUtils.TruncateAt.END);
+            textView.setPadding(Screen.dp(14f), Screen.dp(5f), Screen.dp(14f), Screen.dp(5f));
+            if (i == 0) {
+              textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
+              textView.setTypeface(Fonts.getRobotoMedium());
+              textView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT, 1f));
+            } else {
+              textView.setId(R.id.btn_toggleCollapseRecentStickers);
+              textView.setOnClickListener(onClickListener);
+              textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13f);
+              textView.setTypeface(Fonts.getRobotoRegular());
+              textView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            }
+            viewGroup.addView(textView);
+          }
+
+          return new StickerHolder(viewGroup);
         }
         case TYPE_HEADER_TRENDING: {
           RelativeLayout contentView = new RelativeLayout(context);

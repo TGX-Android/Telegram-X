@@ -36,6 +36,7 @@ import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.helper.LiveLocationHelper;
 import org.thunderdog.challegram.loader.gif.LottieCache;
+import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.NavigationStack;
 import org.thunderdog.challegram.navigation.SettingsWrap;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
@@ -43,9 +44,12 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.AccountSwitchReason;
 import org.thunderdog.challegram.telegram.GlobalAccountListener;
+import org.thunderdog.challegram.telegram.GlobalCountersListener;
+import org.thunderdog.challegram.telegram.GlobalResolvableProblemListener;
 import org.thunderdog.challegram.telegram.LiveLocationManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
+import org.thunderdog.challegram.telegram.TdlibBadgeCounter;
 import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
@@ -104,7 +108,7 @@ import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.td.MessageId;
 
 @SuppressWarnings(value = "SpellCheckingInspection")
-public class MainActivity extends BaseActivity implements GlobalAccountListener {
+public class MainActivity extends BaseActivity implements GlobalAccountListener, GlobalCountersListener, GlobalResolvableProblemListener {
   private Bundle tempSavedInstanceState;
 
   private TdlibAccount account;
@@ -120,9 +124,11 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
     handler = new Handler();
 
     TdlibManager.instance().global().addAccountListener(this);
+    TdlibManager.instance().global().addCountersListener(this);
+    TdlibManager.instance().global().addResolvableProblemAvailabilityListener(this);
     reloadTdlib();
 
-    createMessagesController(tdlib).get();
+    createMessagesController(tdlib).getValue();
 
     tempSavedInstanceState = savedInstanceState;
 
@@ -229,17 +235,49 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
     NavigationStack stack = navigation.getStack();
     stack.destroyAllButSaveLast(2);
     MainController chats = new MainController(c.context(), c.tdlib());
-    chats.get();
+    chats.getValue();
     stack.replace(0, chats);
   }
 
   private CancellableRunnable lastAccountSwitchTask;
+
+  private void updateCounter () {
+    Tdlib tdlib = currentTdlib();
+    boolean animated = getActivityState() == UI.STATE_RESUMED;
+    @Tdlib.ResolvableProblem int problemType = tdlib.findResolvableProblem();
+    BackHeaderButton backButton = navigation.getHeaderView().getBackButton();
+    if (problemType != Tdlib.ResolvableProblem.NONE) {
+      backButton.setMenuBadge(R.id.theme_color_headerBadgeFailed, animated);
+    } else {
+      TdlibBadgeCounter counter = TdlibManager.instance().getTotalUnreadBadgeCounter(tdlib.accountId());
+      if (counter.getCount() > 0) {
+        backButton.setMenuBadge(
+          counter.isMuted() ? R.id.theme_color_headerBadgeMuted : R.id.theme_color_headerBadge,
+          animated
+        );
+      } else {
+        backButton.hideMenuBadge(animated);
+      }
+    }
+  }
+
+  @Override
+  public void onResolvableProblemAvailabilityMightHaveChanged () {
+    updateCounter();
+  }
+
+  @Override
+  public void onTotalUnreadCounterChanged (@NonNull TdApi.ChatList chatList, boolean isReset) {
+    updateCounter();
+  }
 
   @Override
   public void onAccountSwitched (final TdlibAccount newAccount, TdApi.User profile, @AccountSwitchReason int reason, TdlibAccount oldAccount) {
     if (this.account.id == newAccount.id) {
       return;
     }
+
+    updateCounter();
 
     if (lastAccountSwitchTask != null) {
       lastAccountSwitchTask.cancel();
@@ -302,7 +340,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
     tdlib.checkDeadlocks(() -> tdlib.ui().post(accountSwitchTask));
   }
 
-  private void processAuthorizationStateChange (TdlibAccount account, TdApi.AuthorizationState authorizationState, int status) {
+  private void processAuthorizationStateChange (TdlibAccount account, TdApi.AuthorizationState authorizationState, @Tdlib.Status int status) {
     if (this.account.id != account.id) {
       if (navigation.isEmpty() || !navigation.getCurrentStackItem().isSameAccount(account)) {
         return;
@@ -315,7 +353,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
 
     ViewController<?> current = navigation.getStack().getCurrent();
 
-    if (status == Tdlib.STATUS_READY) {
+    if (status == Tdlib.Status.READY) {
       ViewController<?> first = navigation.getStack().get(0);
       boolean needThemeSwitch = this.account.id != account.id && isUnauthorizedController(current) && !isUnauthorizedController(first) && first.tdlibId() != account.id && current.tdlibId() == account.id;
 
@@ -329,7 +367,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
       return;
     }
 
-    if (status == Tdlib.STATUS_UNAUTHORIZED && this.account.id == account.id) {
+    if (status == Tdlib.Status.UNAUTHORIZED && this.account.id == account.id) {
       int nextAccountId = tdlib.context().findNextAccountId(this.account.id);
       if (nextAccountId != TdlibAccount.NO_ID) {
         tdlib.context().changePreferredAccountId(nextAccountId, TdlibManager.SWITCH_REASON_UNAUTHORIZED);
@@ -386,7 +424,10 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
 
   @Override
   protected void onTdlibChanged () {
-    setShowOptimizing(currentTdlib().isOptimizing());
+    Tdlib tdlib = currentTdlib();
+    setShowOptimizing(tdlib.isOptimizing());
+    tdlib.context().global().notifyResolvableProblemAvailabilityMightHaveChanged();
+    updateCounter();
   }
 
   private BoolAnimator optimizeAnimator;
@@ -462,12 +503,12 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
 
   // Stack initialization
 
-  private void initController (Tdlib tdlib, int status) {
+  private void initController (Tdlib tdlib, @Tdlib.Status int status) {
     switch (status) {
-      case Tdlib.STATUS_UNKNOWN:
+      case Tdlib.Status.UNKNOWN:
         // setBlankViewVisible(true, false);
         break;
-      case Tdlib.STATUS_UNAUTHORIZED:
+      case Tdlib.Status.UNAUTHORIZED:
         int nextAccountId = tdlib.context().findNextAccountId(tdlib.id());
         if (nextAccountId == TdlibAccount.NO_ID) {
           initUnauthorizedController();
@@ -475,7 +516,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
           tdlib.context().changePreferredAccountId(nextAccountId, TdlibManager.SWITCH_REASON_NAVIGATION);
         }
         break;
-      case Tdlib.STATUS_READY:
+      case Tdlib.Status.READY:
         initAuthorizedController();
         break;
     }
@@ -603,7 +644,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
       navigation.initController(c);
       return;
     }
-    c.get();
+    c.getValue();
     ViewController<?> child = c.getPreparedControllerForPosition(0);
     if (child != null && child.needAsynchronousAnimation()) {
       setBlankViewVisible(true, false);
@@ -620,7 +661,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
 
   private void insertMainController () {
     MainController c = new MainController(this, account.tdlib());
-    c.get();
+    c.getValue();
     navigation.insertController(c, 0);
   }
 
@@ -1141,7 +1182,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
         if (c == null) {
           continue;
         }
-        c.get();
+        c.getValue();
         if (restoredCount == 0) {
           navigation.initController(c);
         } else {
@@ -1267,7 +1308,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
   private MessagesController createMessagesController (Tdlib tdlib) {
     MessagesController m = new MessagesController(this, tdlib);
     m.setReuseEnabled(true);
-    m.get();
+    m.getValue();
     messageControllers.put(tdlib.id(), m);
     return m;
   }
@@ -1386,7 +1427,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
 
   public void navigateToSafely (@NonNull ViewController<?> c) {
     if (isActivityBusyWithSomething()) {
-      c.get();
+      c.getValue();
       c.destroy();
       return;
     }
@@ -1420,6 +1461,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
     Log.i("MainActivity.onResume");
     // Log.e("%s", Strings.getHexColor(U.compositeColor(Theme.headerColor(), Theme.getColor(R.id.theme_color_statusBar)), false));
     tdlib.contacts().makeSilentPermissionCheck(this);
+    tdlib.context().global().notifyResolvableProblemAvailabilityMightHaveChanged();
     UI.startNotificationService();
     if (!madeEmulatorChecks && !Settings.instance().isEmulator()) {
       madeEmulatorChecks = true;
@@ -1435,6 +1477,8 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener 
   @Override
   public void onDestroy () {
     TdlibManager.instance().global().removeAccountListener(this);
+    TdlibManager.instance().global().removeCountersListener(this);
+    TdlibManager.instance().global().removeResolvableProblemAvailabilityListener(this);
     destroyMessageControllers();
 
     Log.i("MainActivity.onDestroy");

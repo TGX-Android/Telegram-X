@@ -1448,7 +1448,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
   private void modifyNewPagerItemController (final ViewController<?> c) {
     if (c instanceof RecyclerViewProvider) {
-      c.get();
+      c.getValue();
       ((RecyclerViewProvider) c).provideRecyclerView().addOnScrollListener(new RecyclerView.OnScrollListener() {
         private float lastY;
         private float lastShowY;

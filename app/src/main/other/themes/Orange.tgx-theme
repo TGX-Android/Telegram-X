@@ -14,6 +14,7 @@ bubbleOut_chatCorrectFilling, bubbleOut_chatCorrectChosenFilling, bubbleOut_chat
 bubbleOut_inlineIcon, bubbleOut_inlineText, inlineIcon, inlineText, profileSectionActive: #E64A19
 bubbleOut_progress, bubbleOut_separator, bubbleOut_time: #BF9081
 bubbleOut_waveformInactive, textSelectionHighlight, waveformInactive: #FFCCBC
+headerBadgeFailed: #ffd307
 headerBackground, notification, notificationLink, notificationPlayer, passcode: #D84315
 messageSelection: #FF572210
 seekReady: #FFDBD0

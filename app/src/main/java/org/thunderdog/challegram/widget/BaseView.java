@@ -15,7 +15,6 @@
 package org.thunderdog.challegram.widget;
 
 import android.content.Context;
-import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
@@ -540,7 +539,7 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
     };
     pendingTask.removeOnCancel(UI.getAppHandler());
     controller.scheduleAnimation(pendingTask, 600l);
-    controller.get();
+    controller.getValue();
   }
 
   private void cancelAsyncPreview () {
@@ -564,7 +563,7 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
     int[] location = Views.getLocationOnScreen(this);
     int sourceX = location[0] + Math.round(x);
     int sourceY = location[1] + Math.round(y);
-    ForceTouchView.ForceTouchContext context = new ForceTouchView.ForceTouchContext(tdlib, this, controller.get(), controller);
+    ForceTouchView.ForceTouchContext context = new ForceTouchView.ForceTouchContext(tdlib, this, controller.getValue(), controller);
     context.setStateListener(controller);
     context.setAnimationSourcePoint(sourceX, sourceY);
 

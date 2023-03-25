@@ -23,12 +23,14 @@ import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.widget.LinearLayout;
 
+import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.Menu;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -37,7 +39,6 @@ import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
-import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.widget.FillingDecoration;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
@@ -63,7 +64,7 @@ public class EditProxyController extends EditBaseController<EditProxyController.
     }
 
     public Args (Settings.Proxy proxy) {
-      switch (proxy.type.getConstructor()) {
+      switch (proxy.proxy.type.getConstructor()) {
         case TdApi.ProxyTypeSocks5.CONSTRUCTOR:
           this.mode = MODE_SOCKS5;
           break;
@@ -74,7 +75,7 @@ public class EditProxyController extends EditBaseController<EditProxyController.
           this.mode = MODE_HTTP;
           break;
         default:
-          throw new IllegalArgumentException("proxy.type == " + proxy.type);
+          throw new UnsupportedOperationException(proxy.proxy.toString());
       }
       this.existingProxy = proxy;
     }
@@ -156,7 +157,8 @@ public class EditProxyController extends EditBaseController<EditProxyController.
     adapter.setLockFocusOn(this, getArgumentsStrict().existingProxy == null);
     adapter.setTextChangeListener(this);
 
-    final Settings.Proxy proxy = getArgumentsStrict().existingProxy;
+    final Settings.Proxy localProxy = getArgumentsStrict().existingProxy;
+    final TdApi.InternalLinkTypeProxy proxy = localProxy != null ? localProxy.proxy : null;
     final int mode = getArgumentsStrict().mode;
 
     int baseFillCount = 2;
@@ -302,7 +304,11 @@ public class EditProxyController extends EditBaseController<EditProxyController.
     switch (id) {
       case R.id.menu_btn_forward: {
         Keyboard.hide(getLockFocusView());
-        tdlib.getProxyLink(getArgumentsStrict().existingProxy, url -> tdlib.ui().shareProxyUrl(new TdlibContext(context, context.currentTdlib()), url));
+        tdlib.getProxyLink(getArgumentsStrict().existingProxy, url -> {
+          if (!StringUtils.isEmpty(url)) {
+            tdlib.ui().shareProxyUrl(new TdlibContext(context, context.currentTdlib()), url);
+          }
+        });
         break;
       }
       case R.id.menu_btn_delete: {
@@ -314,28 +320,16 @@ public class EditProxyController extends EditBaseController<EditProxyController.
     }
   }
 
-  private void addProxy (String server, int port, final TdApi.ProxyType type) {
+  private void addProxy (@NonNull TdApi.InternalLinkTypeProxy proxy) {
     setInProgress(true);
     // Calling TDLib method just to validate input
-    tdlib.client().send(new TdApi.AddProxy(server, port, false, type), result -> {
-      final boolean ok;
+    tdlib.client().send(new TdApi.AddProxy(proxy.server, proxy.port, false, proxy.type), result -> runOnUiThreadOptional(() -> {
+      setInProgress(false);
       switch (result.getConstructor()) {
-        case TdApi.Error.CONSTRUCTOR:
-          UI.showError(result);
-          ok = false;
-          break;
-        case TdApi.Proxy.CONSTRUCTOR:
-          ok = true;
-          break;
-        default:
-          ok = false;
-          break;
-      }
-      tdlib.ui().post(() -> {
-        setInProgress(false);
-        if (!isDestroyed() && ok) {
+        case TdApi.Proxy.CONSTRUCTOR: {
           int proxyId = getArgumentsStrict().existingProxy != null ? getArgumentsStrict().existingProxy.id : Settings.PROXY_ID_NONE;
-          Settings.instance().addOrUpdateProxy(server, port, type, null, true, proxyId);
+          // Assuming values passed to AddProxy do not differ from the received TdApi.Proxy object
+          Settings.instance().addOrUpdateProxy(proxy, null, true, proxyId);
           if (navigationController != null) {
             ViewController<?> c = navigationController.getPreviousStackItem();
             if (c != null && c.getId() != R.id.controller_proxyList) {
@@ -343,9 +337,19 @@ public class EditProxyController extends EditBaseController<EditProxyController.
             }
           }
           navigateBack();
+          break;
         }
-      });
-    });
+        case TdApi.Error.CONSTRUCTOR: {
+          String errorText = TD.toErrorString(result);
+          context.tooltipManager()
+            .builder(getDoneButton())
+            .icon(R.drawable.baseline_warning_24)
+            .show(tdlib, errorText)
+            .hideDelayed();
+          break;
+        }
+      }
+    }));
   }
 
   @Override
@@ -383,7 +387,7 @@ public class EditProxyController extends EditBaseController<EditProxyController.
       default:
         throw new IllegalStateException();
     }
-    addProxy(server, StringUtils.parseInt(port), type);
+    addProxy(new TdApi.InternalLinkTypeProxy(server, StringUtils.parseInt(port), type));
     return true;
   }
 }

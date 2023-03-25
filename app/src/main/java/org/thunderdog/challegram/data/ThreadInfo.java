@@ -360,7 +360,7 @@ public class ThreadInfo {
           int newIndex = 0;
           for (int index = 0; index < messageCount; index++) {
             TdApi.Message message = threadInfo.messages[index];
-            if (!BitwiseUtils.getFlag(deleted, 1 << index)) {
+            if (!BitwiseUtils.hasFlag(deleted, 1 << index)) {
               newMessages[newIndex++] = message;
             } else if (message.canGetMessageThread) {
               isMessageThreadDeleted = true;

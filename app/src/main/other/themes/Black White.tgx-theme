@@ -6,8 +6,9 @@ time: 1601809487
 bubbleOutline, replaceShadowsWithSeparators: 1
 parentTheme: 2
 #
-badgeFailed: #7070A0
-badgeMuted, togglerInactiveBackground: #707070
+badgeFailed, headerBadgeFailed: #FF6060
+badgeMuted, togglerInactiveBackground, headerBadgeMuted: #707070
+headerBadge: #FFF
 bubble_chatSeparator, bubbleIn_outline, bubbleIn_separator, bubbleOut_outline, chatSeparator, inputInactive, separator, shareSeparator: #272727
 bubbleIn_textLink, bubbleOut_textLink, iv_textLink, iv_textMarkedLink, textLink: #A0A0A0
 bubbleIn_textLinkPressHighlight, iv_textLinkPressHighlight, textLinkPressHighlight: #A0A0A077

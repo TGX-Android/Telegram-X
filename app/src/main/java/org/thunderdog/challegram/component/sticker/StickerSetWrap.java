@@ -25,8 +25,6 @@ import android.view.ViewGroup;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-import androidx.annotation.Nullable;
-
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.R;
@@ -473,7 +471,7 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
 
   private void addViews () {
     headerView.initWithSingleController(stickersController, false);
-    addView(stickersController.get());
+    addView(stickersController.getValue());
     addView(topShadow);
     if (topLick != null) {
       addView(topLick);

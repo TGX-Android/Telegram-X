@@ -20,11 +20,15 @@ import android.os.Build;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.collection.LongSparseArray;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.ListUpdateCallback;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.td.libcore.telegram.Client;
@@ -45,6 +49,7 @@ import org.thunderdog.challegram.mediaview.MediaCellView;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.AnimationsListener;
+import org.thunderdog.challegram.telegram.EmojiMediaType;
 import org.thunderdog.challegram.telegram.StickersListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Screen;
@@ -70,7 +75,6 @@ import me.vkryl.core.collection.LongSparseIntArray;
 import me.vkryl.core.lambda.CancellableRunnable;
 
 public class EmojiMediaListController extends ViewController<EmojiLayout> implements
-  Client.ResultHandler,
   StickerSmallView.StickerMovementCallback,
   StickersListener,
   AnimationsListener,
@@ -114,7 +118,33 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
     };
     contentView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-    stickersAdapter = new MediaStickersAdapter(this, this, false, this);
+    stickersAdapter = new MediaStickersAdapter(this, this, false, this) {
+      @Override
+      protected void onToggleCollapseRecentStickers (TextView collapseView, TGStickerSetInfo recentSet) {
+        boolean needExpand = recentSet.isCollapsed();
+        int endIndex = recentSet.getEndIndex();
+        int existingIndex = findRecentStickerSet();
+        int visibleItemCount = recentSet.getSize();
+        if (needExpand) {
+          TdApi.Sticker[] allStickers = recentSet.getAllStickers();
+          recentSet.setSize(allStickers.length);
+          shiftStickerSets(existingIndex, recentSet.getStartIndex());
+
+          ArrayList<MediaStickersAdapter.StickerItem> stickers = new ArrayList<>();
+          for (int i = visibleItemCount; i < allStickers.length; i++) {
+            TdApi.Sticker rawSticker = allStickers[i];
+            TGStickerObj sticker = valueOf(rawSticker, recentSet.isFavorite());
+            stickers.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, sticker));
+          }
+          stickersAdapter.addRange(endIndex, stickers);
+        } else {
+          recentSet.setSize(Config.DEFAULT_SHOW_RECENT_STICKERS_COUNT);
+          stickersAdapter.removeRange(recentSet.getEndIndex(), endIndex - recentSet.getEndIndex());
+          shiftStickerSets(existingIndex, recentSet.getStartIndex());
+        }
+        Settings.instance().setNewSetting(Settings.SETTING_FLAG_EXPAND_RECENT_STICKERS, needExpand);
+      }
+    };
     trendingAdapter = new MediaStickersAdapter(this, this, true, this);
     trendingAdapter.setItem(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_PROGRESS));
     gifsAdapter = new MediaGifsAdapter(context, this);
@@ -124,14 +154,14 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
 
     int currentSection = Settings.instance().getEmojiMediaSection();
     switch (currentSection) {
-      case Settings.EMOJI_MEDIA_SECTION_STICKERS: {
+      case EmojiMediaType.STICKER: {
         initStickers();
         this.currentSection = SECTION_STICKERS;
         this.currentSectionView = stickersView;
         this.contentView.addView(stickersView);
         break;
       }
-      case Settings.EMOJI_MEDIA_SECTION_GIFS: {
+      case EmojiMediaType.GIF: {
         initGIFs();
         if (getArguments() != null) {
           getArguments().setCurrentStickerSectionByPosition(1, false, false);
@@ -195,7 +225,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
       View v = stickersView.getLayoutManager().findViewByPosition(i);
       int additional = v != null ? -v.getTop() : 0;
       int stickerSet = indexOfStickerSetByAdapterPosition(i);
-      return additional + stickersAdapter.measureScrollTop(i, spanCount, stickerSet, stickerSets);
+      return additional + stickersAdapter.measureScrollTop(i, spanCount, stickerSet, stickerSets, showRecentTitle);
     }
     return 0;
   }
@@ -237,18 +267,19 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
 
         @Override
         public void onScrolled (RecyclerView recyclerView, int dx, int dy) {
-          onStickersScroll(false);
+          onStickersScroll(false, dy);
         }
       });
     }
   }
 
-  private void onStickersScroll (boolean force) {
+  private void onStickersScroll (boolean force, int movedDy) {
     if (ignoreStickersScroll == 0) {
       if ((sectionAnimator == null || sectionAnimator.getFactor() == 0f) && currentSection == SECTION_STICKERS && getArguments() != null && getArguments().isWatchingMovements() && getArguments().getCurrentItem() == 1) {
         int y = getStickersScrollY();
         getArguments().onScroll(y);
         getArguments().setCurrentStickerSectionByPosition(getStickerSetSection(), true, true);
+        getArguments().onSectionScroll(EmojiMediaType.STICKER, movedDy != 0);
       }
     }
   }
@@ -314,6 +345,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
         public void onScrolled (RecyclerView recyclerView, int dx, int dy) {
           if ((sectionAnimator == null || sectionAnimator.getFactor() == 0f) && currentSection == SECTION_GIFS && getArguments() != null && getArguments().getCurrentItem() == 1) {
             getArguments().moveHeaderFull(getGIFsScrollY());
+            getArguments().onSectionScroll(EmojiMediaType.GIF, dy != 0);
           }
         }
       });
@@ -574,10 +606,8 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
           unreadItemCount = 0;
         }
 
-        tdlib.ui().post(() -> {
-          if (!isDestroyed()) {
-            addTrendingStickers(parsedStickerSets, items, unreadItemCount > 0, offset);
-          }
+        runOnUiThreadOptional(() -> {
+          addTrendingStickers(parsedStickerSets, items, unreadItemCount > 0, offset);
         });
       });
     }
@@ -591,7 +621,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
     if (i != -1) {
       View v = hotView.getLayoutManager().findViewByPosition(i);
       int additional = v != null ? -v.getTop() : 0;
-      return additional + trendingAdapter.measureScrollTop(i, 5, indexOfTrendingStickerSetByAdapterPosition(i), trendingSets);
+      return additional + trendingAdapter.measureScrollTop(i, 5, indexOfTrendingStickerSetByAdapterPosition(i), trendingSets, showRecentTitle);
     }
     return 0;
   }
@@ -625,6 +655,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
         public void onScrolled (RecyclerView recyclerView, int dx, int dy) {
           if ((sectionAnimator == null || sectionAnimator.getFactor() == 0f) && currentSection == SECTION_TRENDING && getArguments() != null && getArguments().getCurrentItem() == 1) {
             getArguments().onScroll(getTrendingScrollY());
+            getArguments().onSectionScroll(EmojiMediaType.STICKER, dy != 0);
             if (!trendingLoading && canLoadMoreTrending) {
               int lastVisiblePosition = ((LinearLayoutManager) recyclerView.getLayoutManager()).findLastVisibleItemPosition();
               if (lastVisiblePosition != -1) {
@@ -825,13 +856,25 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
   }
 
   @Override
-  public void onStickerPreviewOpened (StickerSmallView view, TGStickerObj sticker) { }
+  public void onStickerPreviewOpened (StickerSmallView view, TGStickerObj sticker) {
+    if (getArguments() != null) {
+      getArguments().onSectionInteracted(EmojiMediaType.STICKER, false);
+    }
+  }
 
   @Override
-  public void onStickerPreviewChanged (StickerSmallView view, TGStickerObj otherOrThisSticker) { }
+  public void onStickerPreviewChanged (StickerSmallView view, TGStickerObj otherOrThisSticker) {
+    if (getArguments() != null) {
+      getArguments().onSectionInteracted(EmojiMediaType.STICKER, false);
+    }
+  }
 
   @Override
-  public void onStickerPreviewClosed (StickerSmallView view, TGStickerObj thisSticker) { }
+  public void onStickerPreviewClosed (StickerSmallView view, TGStickerObj thisSticker) {
+    if (getArguments() != null) {
+      getArguments().onSectionInteracted(EmojiMediaType.STICKER, true);
+    }
+  }
 
   @Override
   public boolean needsLongDelay (StickerSmallView view) {
@@ -870,6 +913,16 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
   @Override
   public int getStickersListTop () {
     return Views.getLocationInWindow(currentSection == SECTION_TRENDING ? hotView : stickersView)[1];
+  }
+
+  @EmojiMediaType
+  public int getMediaSection () {
+    int currentSection = this.nextSection != -1 ? this.nextSection : this.currentSection;
+    if (currentSection == SECTION_GIFS) {
+      return EmojiMediaType.GIF;
+    } else {
+      return EmojiMediaType.STICKER;
+    }
   }
 
   // Stickers logic
@@ -960,34 +1013,159 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
     return 1;
   }
 
+  private boolean needExpandRecentStickers () {
+    return Settings.instance().getNewSetting(Settings.SETTING_FLAG_EXPAND_RECENT_STICKERS);
+  }
+
+  private boolean smartUpdateStickerPack (
+    int stickerSetIndex, TGStickerSetInfo stickerSet, TdApi.Sticker[] newStickers,
+    @NonNull ArrayList<MediaStickersAdapter.StickerItem> newItems, int visibleItemCount
+  ) {
+    if (stickersView == null || stickersAdapter == null) {
+      return false;
+    }
+    LinearLayoutManager manager = (LinearLayoutManager) stickersView.getLayoutManager();
+    if (manager == null) {
+      return false;
+    }
+    int firstVisiblePosition = manager.findFirstVisibleItemPosition();
+    View firstView = manager.findViewByPosition(firstVisiblePosition);
+    int firstViewOffset = firstView != null ? firstView.getTop() : 0;
+
+    int oldSize = stickerSet.getSize();
+    int newSize = newItems.size();
+    int headerItemCount = stickerSet.isFavorite() ? 0 : 1; /*title*/
+    int positionStartIndex = stickerSet.getStartIndex() + headerItemCount;
+
+    ArrayList<MediaStickersAdapter.StickerItem> oldItems = new ArrayList<>();
+    for (int index = positionStartIndex; index < stickerSet.getEndIndex(); index++) {
+      oldItems.add(stickersAdapter.getItem(index));
+    }
+
+    DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffUtil.Callback() {
+      @Override
+      public int getOldListSize () {
+        return oldSize;
+      }
+
+      @Override
+      public int getNewListSize () {
+        return newSize;
+      }
+
+      @Override
+      public boolean areItemsTheSame (int oldItemPosition, int newItemPosition) {
+        TGStickerObj oldSticker = oldItems.get(oldItemPosition).sticker;
+        TGStickerObj newSticker = newItems.get(newItemPosition).sticker;
+        return oldSticker.equals(newSticker);
+      }
+
+      @Override
+      public boolean areContentsTheSame (int oldItemPosition, int newItemPosition) {
+        return areItemsTheSame(oldItemPosition, newItemPosition);
+      }
+    });
+    if (newStickers != null) {
+      stickerSet.setStickers(newStickers, visibleItemCount);
+    } else {
+      stickerSet.setSize(visibleItemCount);
+    }
+    stickersAdapter.removeRange(positionStartIndex, oldItems.size(), false);
+    stickersAdapter.insertRange(positionStartIndex, newItems, false);
+    shiftStickerSets(stickerSetIndex, stickerSet.getStartIndex());
+    diffResult.dispatchUpdatesTo(new ListUpdateCallback() {
+      @Override
+      public void onInserted (int position, int count) {
+        stickersAdapter.notifyItemRangeInserted(positionStartIndex + position, count);
+      }
+
+      @Override
+      public void onRemoved (int position, int count) {
+        stickersAdapter.notifyItemRangeRemoved(positionStartIndex + position, count);
+      }
+
+      @Override
+      public void onMoved (int fromPosition, int toPosition) {
+        stickersAdapter.notifyItemMoved(positionStartIndex + fromPosition, positionStartIndex + toPosition);
+      }
+
+      @Override
+      public void onChanged (int position, int count, @Nullable Object payload) {
+        stickersAdapter.notifyItemRangeChanged(positionStartIndex + position, count, payload);
+      }
+    });
+    manager.scrollToPositionWithOffset(firstVisiblePosition, firstViewOffset);
+    return true;
+  }
+
   private void setRecentStickers (@Nullable TdApi.Sticker[] recentStickers, @Nullable ArrayList<MediaStickersAdapter.StickerItem> items) {
+    boolean haveRecentStickers = recentStickers != null && recentStickers.length > 0;
     if (getArguments() != null) {
-      getArguments().setShowRecents(recentStickers != null && recentStickers.length > 0);
+      getArguments().setShowRecents(haveRecentStickers);
     }
 
     TGStickerSetInfo recentSet;
     int existingIndex = findRecentStickerSet();
 
+    int totalRecentCount = items != null ? items.size() : 0;
+    int visibleRecentCount = recentStickers != null ? Math.min(
+      totalRecentCount,
+      !needExpandRecentStickers() ?
+        Math.min(totalRecentCount, Config.DEFAULT_SHOW_RECENT_STICKERS_COUNT) :
+        totalRecentCount
+    ) : 0;
+
+    boolean haveFavorites = findFavoriteStickerSet() != -1;
+
+    allowCollapseRecent = totalRecentCount > Config.DEFAULT_SHOW_RECENT_STICKERS_COUNT;
+    showRecentTitle = haveRecentStickers && (
+      Config.FORCE_SHOW_RECENTS_STICKERS_TITLE ||
+        allowCollapseRecent ||
+        haveFavorites
+    );
+
+    if (visibleRecentCount > 0) {
+      for (int i = items.size() - 1; i >= visibleRecentCount; i--) {
+        items.remove(i);
+      }
+    }
+
     if (existingIndex != -1) {
+      if (haveRecentStickers) {
+        recentSet = stickerSets.get(existingIndex);
+        TdApi.Sticker[] prevRecentStickers = recentSet.getAllStickers();
+        if (prevRecentStickers != null && prevRecentStickers.length > 0 && items != null && !items.isEmpty()) {
+          if (smartUpdateStickerPack(existingIndex, recentSet, recentStickers, items, visibleRecentCount)) {
+            setShowRecentTitle(showRecentTitle, allowCollapseRecent);
+            if (showRecentTitle && allowCollapseRecent && stickersView != null && recentSet.isCollapsed()) {
+              // direct update of show X more
+              View view = stickersView.getLayoutManager().findViewByPosition(recentSet.getStartIndex());
+              if (view instanceof ViewGroup) {
+                stickersAdapter.updateCollapseView((ViewGroup) view, recentSet);
+              }
+            }
+            return;
+          }
+        }
+      }
+
+      // Too many changes for simple animation update
       recentSet = stickerSets.remove(existingIndex);
       shiftStickerSets(existingIndex, recentSet.getStartIndex());
       stickersAdapter.removeRange(recentSet.getStartIndex(), recentSet.getItemCount());
-    } else if (recentStickers != null && recentStickers.length > 0) {
-      recentSet = new TGStickerSetInfo(tdlib, recentStickers);
-      recentSet.setIsRecent();
+    } else if (visibleRecentCount > 0) {
+      recentSet = new TGStickerSetInfo(tdlib, recentStickers, false, visibleRecentCount);
     } else {
       recentSet = null;
     }
 
-    if (recentSet != null && recentStickers != null && recentStickers.length > 0 && items != null) {
-      if (!Config.HEADLESS_RECENT_PACK) {
-        items.add(0, new MediaStickersAdapter.StickerItem(getRecentTitleViewType(), recentSet));
-      }
+    if (visibleRecentCount > 0) {
+      items.add(0, new MediaStickersAdapter.StickerItem(getRecentTitleViewType(), recentSet));
 
       int startIndex = getRecentStartIndex();
-      recentSet.setSize(recentStickers.length);
+      recentSet.setStickers(recentStickers, visibleRecentCount);
       recentSet.setStartIndex(startIndex);
-      int stickerSetIndex = findFavoriteStickerSet() != -1 ? 1 : 0;
+      int stickerSetIndex = haveFavorites ? 1 : 0;
       stickerSets.add(stickerSetIndex, recentSet);
       shiftStickerSets(stickerSetIndex + 1, recentSet.getEndIndex());
       stickersAdapter.insertRange(startIndex, items);
@@ -995,39 +1173,57 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
   }
 
   private int getRecentTitleViewType () {
-    return showRecentTitle ? MediaStickersAdapter.StickerHolder.TYPE_HEADER : MediaStickersAdapter.StickerHolder.TYPE_EMPTY;
+    return showRecentTitle ? (allowCollapseRecent ? MediaStickersAdapter.StickerHolder.TYPE_HEADER_COLLAPSABLE : MediaStickersAdapter.StickerHolder.TYPE_HEADER) : MediaStickersAdapter.StickerHolder.TYPE_EMPTY;
   }
 
-  private boolean showRecentTitle;
+  private boolean showRecentTitle, allowCollapseRecent;
 
-  private void setShowRecentTitle (boolean show) {
+  private void setShowRecentTitle (boolean show, boolean allowToggleCollapse) {
     this.showRecentTitle = show;
+    boolean prevAllowCollapseRecent = this.allowCollapseRecent;
+    this.allowCollapseRecent = allowToggleCollapse;
     int i = findRecentStickerSet();
     if (i != -1) {
       int index = stickerSets.get(i).getStartIndex();
-      if (stickersAdapter.getItem(index).setViewType(getRecentTitleViewType())) {
+      if (stickersAdapter.getItem(index).setViewType(getRecentTitleViewType()) || prevAllowCollapseRecent != allowToggleCollapse) {
         stickersAdapter.notifyItemChanged(index);
       }
     }
   }
 
   private void setFavoriteStickers (@Nullable TdApi.Sticker[] favoriteStickers, @Nullable ArrayList<MediaStickersAdapter.StickerItem> items) {
+    boolean haveFavoriteStickers = favoriteStickers != null && favoriteStickers.length > 0;
     if (getArguments() != null) {
-      getArguments().setShowFavorite(favoriteStickers != null && favoriteStickers.length > 0);
+      getArguments().setShowFavorite(haveFavoriteStickers);
     }
 
-    setShowRecentTitle(favoriteStickers != null && favoriteStickers.length > 0);
+    int recentStickerSetIndex = findRecentStickerSet();
+    if (recentStickerSetIndex != -1) {
+      TGStickerSetInfo recentSet = stickerSets.get(recentStickerSetIndex);
+      setShowRecentTitle(
+        Config.FORCE_SHOW_RECENTS_STICKERS_TITLE ||
+        recentSet.getFullSize() > Config.DEFAULT_SHOW_RECENT_STICKERS_COUNT ||
+        (favoriteStickers != null && favoriteStickers.length > 0),
+        recentSet.getFullSize() > Config.DEFAULT_SHOW_RECENT_STICKERS_COUNT
+      );
+    }
 
     TGStickerSetInfo favoriteSet;
     int existingIndex = findFavoriteStickerSet();
 
     if (existingIndex != -1) {
+      favoriteSet = stickerSets.get(existingIndex);
+      if (haveFavoriteStickers && items != null && !items.isEmpty()) {
+        if (smartUpdateStickerPack(existingIndex, favoriteSet, null, items, items.size())) {
+          return;
+        }
+      }
+
       favoriteSet = stickerSets.remove(existingIndex);
       shiftStickerSets(existingIndex, favoriteSet.getStartIndex());
       stickersAdapter.removeRange(favoriteSet.getStartIndex(), favoriteSet.getItemCount());
     } else if (favoriteStickers != null && favoriteStickers.length > 0) {
-      favoriteSet = new TGStickerSetInfo(tdlib, favoriteStickers);
-      favoriteSet.setIsFavorite();
+      favoriteSet = new TGStickerSetInfo(tdlib, favoriteStickers, true, 0);
     } else {
       favoriteSet = null;
     }
@@ -1043,51 +1239,43 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
     }
   }
 
-  private int getMaxCount (boolean areFavorite) {
-    return areFavorite ? tdlib.favoriteStickersMaxCount() : 20;
+  private TGStickerObj valueOf (TdApi.Sticker rawSticker, boolean isFavorite) {
+    TGStickerObj sticker = new TGStickerObj(tdlib, rawSticker, null, rawSticker.fullType);
+    if (isFavorite) {
+      sticker.setIsFavorite();
+    } else {
+      sticker.setIsRecent();
+    }
+    return sticker;
   }
 
   private void processStickersImpl (final TdApi.Object object, final boolean areFavorite) {
     final ArrayList<MediaStickersAdapter.StickerItem> stickers;
     final TdApi.Sticker[] rawStickers;
-    final int maxCount = getMaxCount(areFavorite);
     if (object.getConstructor() == TdApi.Stickers.CONSTRUCTOR) {
-      TdApi.Sticker[] untrimmedStickers = ((TdApi.Stickers) object).stickers;
-      if (untrimmedStickers.length > maxCount) {
-        rawStickers = new TdApi.Sticker[maxCount];
-        System.arraycopy(untrimmedStickers, 0, rawStickers, 0, maxCount);
-      } else {
-        rawStickers = untrimmedStickers;
-      }
+      rawStickers = ((TdApi.Stickers) object).stickers;
       stickers = new ArrayList<>(rawStickers.length);
       for (TdApi.Sticker rawSticker : rawStickers) {
-        TGStickerObj sticker = new TGStickerObj(tdlib, rawSticker, null, rawSticker.fullType);
-        if (areFavorite) {
-          sticker.setIsFavorite();
-        } else {
-          sticker.setIsRecent();
-        }
+        TGStickerObj sticker = valueOf(rawSticker, areFavorite);
         stickers.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, sticker));
       }
     } else {
       stickers = null;
       rawStickers = null;
     }
-    tdlib.ui().post(() -> {
-      if (!isDestroyed()) {
-        if (areFavorite) {
-          if (loadingFavoriteStickers) {
-            loadingFavoriteStickers = false;
-            if (stickers != null) {
-              setFavoriteStickers(rawStickers, stickers);
-            }
+    runOnUiThreadOptional(() -> {
+      if (areFavorite) {
+        if (loadingFavoriteStickers) {
+          loadingFavoriteStickers = false;
+          if (stickers != null) {
+            setFavoriteStickers(rawStickers, stickers);
           }
-        } else {
-          if (loadingRecentStickers) {
-            loadingRecentStickers = false;
-            if (stickers != null) {
-              setRecentStickers(rawStickers, stickers);
-            }
+        }
+      } else {
+        if (loadingRecentStickers) {
+          loadingRecentStickers = false;
+          if (stickers != null) {
+            setRecentStickers(rawStickers, stickers);
           }
         }
       }
@@ -1257,20 +1445,16 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
               i++;
             }
 
-            tdlib.ui().post(() -> {
-              if (!isDestroyed()) {
-                addStickerSet(stickerSet, items, insertIndex + getSystemSetsCount());
-              }
+            runOnUiThreadOptional(() -> {
+              addStickerSet(stickerSet, items, insertIndex + getSystemSetsCount());
             });
           }
 
           if (++index[0] < addedCount) {
             tdlib.client().send(new TdApi.GetStickerSet(setIds[index[0]]), this);
           } else {
-            tdlib.ui().post(() -> {
-              if (!isDestroyed()) {
-                setApplyingChanges(false);
-              }
+            runOnUiThreadOptional(() -> {
+              setApplyingChanges(false);
             });
           }
         }
@@ -1419,8 +1603,8 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
   @Override
   public void onRecentStickersUpdated (final int[] stickerIds, boolean isAttached) {
     if (!isAttached) {
-      tdlib.ui().post(() -> {
-        if (!isDestroyed() && !loadingStickers) {
+      runOnUiThreadOptional(() -> {
+        if (!loadingStickers) {
           applyRecentStickers(stickerIds);
         }
       });
@@ -1432,8 +1616,8 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
 
   @Override
   public void onFavoriteStickersUpdated (final int[] stickerIds) {
-    tdlib.ui().post(() -> {
-      if (!isDestroyed() && !loadingStickers) {
+    runOnUiThreadOptional(() -> {
+      if (!loadingStickers) {
         if (ignoreNextFavoritesUpdate) {
           ignoreNextFavoritesUpdate = false;
           scheduledFavoriteStickerIds = stickerIds;
@@ -1558,7 +1742,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
     }
     if (currentFlags == 0) {
       loadingStickerSets.put(stickerSetId, stickerObj.isTrending() ? FLAG_TRENDING : FLAG_REGULAR);
-      tdlib.client().send(new TdApi.GetStickerSet(stickerSetId), this);
+      tdlib.client().send(new TdApi.GetStickerSet(stickerSetId), singleStickerSetHandler());
     } else if ((currentFlags & FLAG_TRENDING) == 0 && stickerObj.isTrending()) {
       currentFlags |= FLAG_TRENDING;
       loadingStickerSets.put(stickerSetId, currentFlags);
@@ -1568,6 +1752,126 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
     }
   }
 
+  private Client.ResultHandler singleStickerSetHandler () {
+    return object -> {
+      switch (object.getConstructor()) {
+        case TdApi.StickerSet.CONSTRUCTOR: {
+          final TdApi.StickerSet stickerSet = (TdApi.StickerSet) object;
+          runOnUiThreadOptional(() -> {
+            applyStickerSet(stickerSet);
+          });
+          break;
+        }
+        case TdApi.Error.CONSTRUCTOR: {
+          UI.showError(object);
+          break;
+        }
+      }
+    };
+  }
+
+  private Client.ResultHandler stickerSetsHandler () {
+    return object -> {
+      switch (object.getConstructor()) {
+        case TdApi.StickerSets.CONSTRUCTOR: {
+          TdApi.StickerSetInfo[] rawStickerSets = ((TdApi.StickerSets) object).sets;
+
+          final TdApi.Sticker[] favoriteStickers = pendingFavoriteStickers;
+          final TdApi.Sticker[] recentStickers = pendingRecentStickers;
+          final ArrayList<TGStickerSetInfo> stickerSets = new ArrayList<>(rawStickerSets.length);
+          final ArrayList<MediaStickersAdapter.StickerItem> items = new ArrayList<>();
+          final boolean showRecentTitle, allowCollapseRecents;
+
+          pendingFavoriteStickers = null;
+          pendingRecentStickers = null;
+
+          if (rawStickerSets.length == 0 && recentStickers.length == 0 && favoriteStickers.length == 0) {
+            items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_NO_STICKERSETS));
+            showRecentTitle = allowCollapseRecents = false;
+          } else {
+            items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_KEYBOARD_TOP));
+            int startIndex = 1;
+
+            if (favoriteStickers.length > 0) {
+              TGStickerSetInfo info = new TGStickerSetInfo(tdlib, favoriteStickers, true, 0);
+              info.setStartIndex(startIndex);
+              stickerSets.add(info);
+              for (TdApi.Sticker favoriteSticker : favoriteStickers) {
+                TGStickerObj sticker = new TGStickerObj(tdlib, favoriteSticker, null, favoriteSticker.fullType);
+                sticker.setIsFavorite();
+                items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, sticker));
+              }
+              startIndex += favoriteStickers.length;
+            }
+
+            final int totalRecentCount = recentStickers.length;
+
+            showRecentTitle = totalRecentCount > 0 && (
+              Config.FORCE_SHOW_RECENTS_STICKERS_TITLE ||
+              totalRecentCount > Config.DEFAULT_SHOW_RECENT_STICKERS_COUNT ||
+              favoriteStickers.length > 0
+            );
+            allowCollapseRecents = totalRecentCount > Config.DEFAULT_SHOW_RECENT_STICKERS_COUNT;
+            int visibleRecentCount = allowCollapseRecents && !needExpandRecentStickers() ?
+              Config.DEFAULT_SHOW_RECENT_STICKERS_COUNT :
+              totalRecentCount;
+
+            if (totalRecentCount > 0) {
+              TGStickerSetInfo info = new TGStickerSetInfo(tdlib, recentStickers, false, visibleRecentCount);
+              info.setStartIndex(startIndex);
+              stickerSets.add(info);
+              items.add(new MediaStickersAdapter.StickerItem(showRecentTitle ?
+                (allowCollapseRecents ? MediaStickersAdapter.StickerHolder.TYPE_HEADER_COLLAPSABLE : MediaStickersAdapter.StickerHolder.TYPE_HEADER) :
+                MediaStickersAdapter.StickerHolder.TYPE_EMPTY, info
+              ));
+              int remainingCount = visibleRecentCount;
+              for (TdApi.Sticker recentSticker : recentStickers) {
+                TGStickerObj sticker = new TGStickerObj(tdlib, recentSticker, null, recentSticker.fullType);
+                sticker.setIsRecent();
+                items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, sticker));
+                if (--remainingCount == 0) {
+                  break;
+                }
+              }
+              startIndex += visibleRecentCount + 1;
+            }
+
+            for (TdApi.StickerSetInfo rawInfo : rawStickerSets) {
+              TGStickerSetInfo info = new TGStickerSetInfo(tdlib, rawInfo);
+              if (info.getSize() == 0) {
+                continue;
+              }
+              stickerSets.add(info);
+              info.setStartIndex(startIndex);
+              items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_HEADER, info));
+              for (int i = 0; i < rawInfo.size; i++) {
+                TGStickerObj sticker = new TGStickerObj(tdlib, i < rawInfo.covers.length ? rawInfo.covers[i] : null, null, rawInfo.stickerType);
+                sticker.setStickerSetId(rawInfo.id, null);
+                sticker.setDataProvider(this);
+                items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, sticker));
+              }
+              startIndex += rawInfo.size + 1;
+            }
+          }
+
+          runOnUiThreadOptional(() -> {
+            if (getArguments() != null) {
+              getArguments().setStickerSets(stickerSets, favoriteStickers.length > 0, recentStickers.length > 0);
+            }
+            setShowRecentTitle(showRecentTitle, allowCollapseRecents);
+            setStickers(stickerSets, items);
+          });
+
+          break;
+        }
+        case TdApi.Error.CONSTRUCTOR: {
+          UI.showError(object);
+          break;
+        }
+      }
+    };
+  }
+
   private boolean loadingStickers;
 
   private void loadStickers () {
@@ -1575,8 +1879,30 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
       loadingStickers = true;
       loadingRecentStickers = false;
       loadingFavoriteStickers = false;
-      tdlib.client().send(new TdApi.GetFavoriteStickers(), this);
+      tdlib.client().send(new TdApi.GetFavoriteStickers(), serviceStickersHandler(true));
     }
+  }
+
+  private Client.ResultHandler serviceStickersHandler (boolean areFavorite) {
+    return object -> {
+      switch (object.getConstructor()) {
+        case TdApi.Stickers.CONSTRUCTOR: {
+          TdApi.Sticker[] stickers = ((TdApi.Stickers) object).stickers;
+          if (areFavorite) {
+            pendingFavoriteStickers = stickers;
+            tdlib.client().send(new TdApi.GetRecentStickers(false), serviceStickersHandler(false));
+          } else {
+            pendingRecentStickers = stickers;
+            tdlib.client().send(new TdApi.GetInstalledStickerSets(new TdApi.StickerTypeRegular()), stickerSetsHandler());
+          }
+          break;
+        }
+        case TdApi.Error.CONSTRUCTOR: {
+          UI.showError(object);
+          break;
+        }
+      }
+    };
   }
 
   private void scrollToSystemStickers (boolean animated) {
@@ -1614,7 +1940,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
       if (stickerSetIndex == 0) {
         scrollTop = 0;
       } else {
-        scrollTop = Math.max(0, stickersAdapter.measureScrollTop(stickerSetIndex, spanCount, futureSection, stickerSets) - EmojiLayout.getHeaderSize() - EmojiLayout.getHeaderPadding());
+        scrollTop = Math.max(0, stickersAdapter.measureScrollTop(stickerSetIndex, spanCount, futureSection, stickerSets, showRecentTitle) - EmojiLayout.getHeaderSize() - EmojiLayout.getHeaderPadding());
       }
 
       final int currentScrollTop = getStickersScrollY();
@@ -1831,143 +2157,12 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
 
   private TdApi.Sticker[] pendingFavoriteStickers, pendingRecentStickers;
 
-  @Override
-  public void onResult (TdApi.Object object) {
-    switch (object.getConstructor()) {
-      case TdApi.Stickers.CONSTRUCTOR: {
-        TdApi.Sticker[] stickers = ((TdApi.Stickers) object).stickers;
-        boolean areFavorite = pendingFavoriteStickers == null;
-        int maxCount = getMaxCount(areFavorite);
-        if (stickers.length > maxCount) {
-          TdApi.Sticker[] trimmed = new TdApi.Sticker[maxCount];
-          System.arraycopy(stickers, 0, trimmed, 0, maxCount);
-          stickers = trimmed;
-        }
-        if (areFavorite) {
-          pendingFavoriteStickers = stickers;
-          tdlib.client().send(new TdApi.GetRecentStickers(false), this);
-        } else {
-          pendingRecentStickers = stickers;
-          tdlib.client().send(new TdApi.GetInstalledStickerSets(new TdApi.StickerTypeRegular()), this);
-        }
-        break;
-      }
-      case TdApi.StickerSets.CONSTRUCTOR: {
-        TdApi.StickerSetInfo[] rawStickerSets = ((TdApi.StickerSets) object).sets;
-
-        final TdApi.Sticker[] favoriteStickers = pendingFavoriteStickers;
-        final TdApi.Sticker[] recentStickers = pendingRecentStickers;
-        final ArrayList<TGStickerSetInfo> stickerSets = new ArrayList<>(rawStickerSets.length);
-        final ArrayList<MediaStickersAdapter.StickerItem> items = new ArrayList<>();
-
-        pendingFavoriteStickers = null;
-        pendingRecentStickers = null;
-
-        if (rawStickerSets.length == 0 && recentStickers.length == 0 && favoriteStickers.length == 0) {
-          items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_NO_STICKERSETS));
-        } else {
-          items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_KEYBOARD_TOP));
-          int startIndex = 1;
-
-          if (favoriteStickers.length > 0) {
-            TGStickerSetInfo info = new TGStickerSetInfo(tdlib, favoriteStickers);
-            info.setIsFavorite();
-            info.setStartIndex(startIndex);
-            stickerSets.add(info);
-            for (TdApi.Sticker favoriteSticker : favoriteStickers) {
-              TGStickerObj sticker = new TGStickerObj(tdlib, favoriteSticker, null, favoriteSticker.fullType);
-              sticker.setIsFavorite();
-              items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, sticker));
-            }
-            startIndex += favoriteStickers.length;
-          }
-
-          if (recentStickers.length > 0) {
-            TGStickerSetInfo info = new TGStickerSetInfo(tdlib, recentStickers);
-            info.setIsRecent();
-            info.setStartIndex(startIndex);
-            stickerSets.add(info);
-            if (!Config.HEADLESS_RECENT_PACK) {
-              items.add(new MediaStickersAdapter.StickerItem(favoriteStickers.length > 0 ? MediaStickersAdapter.StickerHolder.TYPE_HEADER : MediaStickersAdapter.StickerHolder.TYPE_EMPTY, info));
-            }
-            for (TdApi.Sticker recentSticker : recentStickers) {
-              TGStickerObj sticker = new TGStickerObj(tdlib, recentSticker, null, recentSticker.fullType);
-              sticker.setIsRecent();
-              items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, sticker));
-            }
-            if (Config.HEADLESS_RECENT_PACK) {
-              startIndex += recentStickers.length;
-            } else {
-              startIndex += recentStickers.length + 1;
-            }
-          }
-
-          for (TdApi.StickerSetInfo rawInfo : rawStickerSets) {
-            TGStickerSetInfo info = new TGStickerSetInfo(tdlib, rawInfo);
-            if (info.getSize() == 0) {
-              continue;
-            }
-            stickerSets.add(info);
-            info.setStartIndex(startIndex);
-            items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_HEADER, info));
-            for (int i = 0; i < rawInfo.size; i++) {
-              TGStickerObj sticker = new TGStickerObj(tdlib, i < rawInfo.covers.length ? rawInfo.covers[i] : null, null, rawInfo.stickerType);
-              sticker.setStickerSetId(rawInfo.id, null);
-              sticker.setDataProvider(this);
-              items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, sticker));
-            }
-            startIndex += rawInfo.size + 1;
-          }
-        }
-
-        tdlib.ui().post(() -> {
-          if (!isDestroyed()) {
-            if (getArguments() != null) {
-              getArguments().setStickerSets(stickerSets, favoriteStickers.length > 0, recentStickers.length > 0);
-            }
-            setShowRecentTitle(favoriteStickers.length > 0);
-            setStickers(stickerSets, items);
-          }
-        });
-
-        break;
-      }
-      case TdApi.StickerSet.CONSTRUCTOR: {
-        final TdApi.StickerSet stickerSet = (TdApi.StickerSet) object;
-        tdlib.ui().post(() -> {
-          if (!isDestroyed()) {
-            applyStickerSet(stickerSet);
-          }
-        });
-
-        break;
-      }
-      case TdApi.Animations.CONSTRUCTOR: {
-        TdApi.Animation[] animations = ((TdApi.Animations) object).animations;
-        final ArrayList<TGGif> gifs = new ArrayList<>(animations.length);
-        for (TdApi.Animation animation : animations) {
-          gifs.add(new TGGif(tdlib, animation));
-        }
-        tdlib.ui().post(() -> {
-          if (!isDestroyed()) {
-            setGIFs(gifs);
-          }
-        });
-        break;
-      }
-      case TdApi.Error.CONSTRUCTOR: {
-        UI.showError(object);
-        break;
-      }
-    }
-  }
-
   // GIFs logic
 
   @Override
   public void onSavedAnimationsUpdated (int[] animationIds) {
-    tdlib.ui().post(() -> {
-      if (!isDestroyed() && gifsView != null) {
+    runOnUiThreadOptional(() -> {
+      if (gifsView != null) {
         loadGIFs();
       }
     });
@@ -1979,7 +2174,25 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
   private void loadGIFs () {
     if (!loadingGIFs) {
       loadingGIFs = true;
-      tdlib.client().send(new TdApi.GetSavedAnimations(), this);
+      tdlib.client().send(new TdApi.GetSavedAnimations(), result -> {
+        switch (result.getConstructor()) {
+          case TdApi.Animations.CONSTRUCTOR: {
+            TdApi.Animation[] animations = ((TdApi.Animations) result).animations;
+            final ArrayList<TGGif> gifs = new ArrayList<>(animations.length);
+            for (TdApi.Animation animation : animations) {
+              gifs.add(new TGGif(tdlib, animation));
+            }
+            runOnUiThreadOptional(() -> {
+              setGIFs(gifs);
+            });
+            break;
+          }
+          case TdApi.Error.CONSTRUCTOR: {
+            UI.showError(result);
+            break;
+          }
+        }
+      });
     }
   }
 
@@ -1996,7 +2209,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
   // Section changer
 
   private View currentSectionView;
-  private int nextSection;
+  private int nextSection = -1;
   private View nextSectionView;
   private boolean sectionIsLeft;
 
@@ -2031,7 +2244,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
       }
       getArguments().setCurrentStickerSectionByPosition(
         nextSection == SECTION_STICKERS ? (stickerSetSection != -1 ? stickerSetSection : getStickerSetSection()) :
-          nextSection == SECTION_TRENDING ? 2 : 1
+        nextSection == SECTION_TRENDING ? 2 : 1
       , nextSection == SECTION_STICKERS,true);
     }
 
@@ -2059,11 +2272,13 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
   private void applySection () {
     contentView.removeView(currentSectionView);
 
+    int oldSection = this.currentSection;
+
     if (getArguments() != null) {
       if (currentSection == SECTION_GIFS && (nextSection == SECTION_STICKERS || nextSection == SECTION_TRENDING)) {
-        getArguments().setPreferredSection(Settings.EMOJI_MEDIA_SECTION_STICKERS);
+        getArguments().setPreferredSection(EmojiMediaType.STICKER);
       } else if (nextSection == SECTION_GIFS && (currentSection == SECTION_STICKERS || currentSection == SECTION_TRENDING)) {
-        getArguments().setPreferredSection(Settings.EMOJI_MEDIA_SECTION_GIFS);
+        getArguments().setPreferredSection(EmojiMediaType.GIF);
       }
     }
 
@@ -2072,10 +2287,20 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
     }
 
     currentSection = nextSection;
+    nextSection = -1;
     currentSectionView = nextSectionView;
     nextSectionView = null;
     sectionAnimator.forceFactor(0f);
     sectionChangeFactor = 0f;
+
+    if (getArguments() != null) {
+      EmojiLayout.Listener listener = getArguments().getListener();
+      if (listener != null) {
+        int prevSection = oldSection == SECTION_GIFS ? EmojiMediaType.GIF : EmojiMediaType.STICKER;
+        int newSection = currentSection == SECTION_GIFS ? EmojiMediaType.GIF : EmojiMediaType.STICKER;
+        listener.onSectionSwitched(getArguments(), newSection, prevSection);
+      }
+    }
 
     if (getArguments() != null) {
       getArguments().resetScrollState();

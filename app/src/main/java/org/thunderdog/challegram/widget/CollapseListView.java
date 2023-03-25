@@ -58,7 +58,7 @@ public class CollapseListView extends FrameLayoutFix implements Destroyable {
     }
 
     @Override
-    public View get () {
+    public View getValue () {
       return view;
     }
   }
@@ -110,7 +110,7 @@ public class CollapseListView extends FrameLayoutFix implements Destroyable {
         themeProvider.addThemeInvalidateListener(shadowView);
       }
 
-      View view = item.get();
+      View view = item.getValue();
       view.setVisibility(View.GONE);
       addView(view, 0);
 

@@ -56,7 +56,6 @@ import org.thunderdog.challegram.data.TGChat;
 import org.thunderdog.challegram.data.TGFoundChat;
 import org.thunderdog.challegram.helper.LiveLocationHelper;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
-import org.thunderdog.challegram.navigation.ComplexHeaderView;
 import org.thunderdog.challegram.navigation.ContentFrameLayout;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.Menu;
@@ -74,6 +73,7 @@ import org.thunderdog.challegram.telegram.ChatFilter;
 import org.thunderdog.challegram.telegram.ChatListListener;
 import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.ConnectionListener;
+import org.thunderdog.challegram.telegram.ConnectionState;
 import org.thunderdog.challegram.telegram.CounterChangeListener;
 import org.thunderdog.challegram.telegram.MessageEditListener;
 import org.thunderdog.challegram.telegram.MessageListener;
@@ -115,13 +115,13 @@ import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ArrayUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.Filter;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableInt;
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.ChatPosition;
 import me.vkryl.td.Td;
@@ -957,11 +957,11 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   }
 
   public void updateNetworkStatus (int state) {
-    if (state == Tdlib.STATE_CONNECTED) {
+    if (state == ConnectionState.CONNECTED) {
       shareIntentIfReady();
       setName(getHeaderText());
     } else {
-      setName(TdlibUi.stringForConnectionState(state));
+      setName(tdlib.connectionStateText());
     }
   }
 
@@ -2560,7 +2560,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   @Override
   public void onChatListChanged (TdlibChatList chatList, @ChangeFlags int changeFlags) {
     runOnUiThreadOptional(() -> {
-      if (BitwiseUtils.getFlag(changeFlags, ChangeFlags.ITEM_MOVED | ChangeFlags.ITEM_ADDED)) {
+      if (BitwiseUtils.hasFlag(changeFlags, ChangeFlags.ITEM_MOVED | ChangeFlags.ITEM_ADDED)) {
         checkListState();
       }
     });
@@ -2783,6 +2783,16 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
   @Override
   public void onConnectionStateChanged (int newState, int oldState) {
     runOnUiThreadOptional(() -> updateNetworkStatus(newState));
+  }
+
+  @Override
+  public void onConnectionDisplayStatusChanged () {
+    int connectionState = tdlib.connectionState();
+    if (connectionState != ConnectionState.CONNECTED) {
+      runOnUiThreadOptional(() -> {
+        updateNetworkStatus(connectionState);
+      });
+    }
   }
 
   // Setting updates

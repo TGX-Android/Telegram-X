@@ -94,7 +94,7 @@ public class YouTubePreviewLayout extends PreviewLayout implements YouTubePlayer
 
     int playerWidth, playerHeight;
     final NavigationController navigation = UI.getNavigation();
-    int navigationHeight = navigation != null ? navigation.get().getMeasuredHeight() : 0;
+    int navigationHeight = navigation != null ? navigation.getValue().getMeasuredHeight() : 0;
     int fullHeight = navigationHeight == 0 || inFullscreen ? Screen.currentActualHeight() : navigationHeight;
 
     if (minimized) {

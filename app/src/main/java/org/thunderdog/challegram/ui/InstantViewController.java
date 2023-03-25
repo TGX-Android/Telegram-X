@@ -114,8 +114,8 @@ public class InstantViewController extends ViewController<InstantViewController.
 
   @Override
   public boolean canSlideBackFrom (NavigationController navigationController, final float originalX, final float originalY) {
-    float x = originalX - (Views.getLocationInWindow(recyclerView)[0] - Views.getLocationInWindow(navigationController.get())[0]);
-    float y = originalY - (Views.getLocationInWindow(recyclerView)[1] - Views.getLocationInWindow(navigationController.get())[1]);
+    float x = originalX - (Views.getLocationInWindow(recyclerView)[0] - Views.getLocationInWindow(navigationController.getValue())[0]);
+    float y = originalY - (Views.getLocationInWindow(recyclerView)[1] - Views.getLocationInWindow(navigationController.getValue())[1]);
 
     View view = recyclerView.findChildViewUnder(x, y);
     if (view instanceof PageBlockWrapView) {
@@ -592,7 +592,7 @@ public class InstantViewController extends ViewController<InstantViewController.
     if (context.navigation().isEmpty()) {
       destroy();
     } else {
-      get();
+      getValue();
       context.navigation().navigateTo(this);
     }
   }

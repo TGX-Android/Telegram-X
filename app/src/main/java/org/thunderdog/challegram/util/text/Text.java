@@ -866,7 +866,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   }
 
   private void setImpl (final String in) {
-    if (BitwiseUtils.getFlag(textFlags, FLAG_DESTROYED))
+    if (BitwiseUtils.hasFlag(textFlags, FLAG_DESTROYED))
       throw new IllegalStateException();
 
     reset();
@@ -912,8 +912,8 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
         index += length;
 
         if (indexOfNewLine != -1) {
-          if (!prevIsNewLine || !BitwiseUtils.getFlag(textFlags, Text.FLAG_IGNORE_CONTINUOUS_NEWLINES)) {
-            if (BitwiseUtils.getFlag(textFlags, Text.FLAG_IGNORE_NEWLINES)) {
+          if (!prevIsNewLine || !BitwiseUtils.hasFlag(textFlags, Text.FLAG_IGNORE_CONTINUOUS_NEWLINES)) {
+            if (BitwiseUtils.hasFlag(textFlags, Text.FLAG_IGNORE_NEWLINES)) {
               if (currentX > 0 && !out.isEmpty()) {
                 currentX += makeSpaceSize(getTextPaint(null));
                 if (currentX > getLineMaxWidth(out.get(out.size() - 1).getLineIndex(), currentY)) {
@@ -963,7 +963,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     }
 
     out.trimToSize();
-    if (BitwiseUtils.getFlag(textFlags, FLAG_ANIMATED_EMOJI) && out.size() == 1 && out.get(0).isRecognizedEmoji()) {
+    if (BitwiseUtils.hasFlag(textFlags, FLAG_ANIMATED_EMOJI) && out.size() == 1 && out.get(0).isRecognizedEmoji()) {
       out.get(0).setAnimateEmoji(true);
     }
     this.parts = out;
@@ -1140,7 +1140,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     for (int i = start; i < end; ) {
       int codePoint = in.codePointAt(i);
       int size = Character.charCount(codePoint);
-      if (codePoint == '\n' && !BitwiseUtils.getFlag(textFlags, FLAG_IGNORE_NEWLINES)) {
+      if (codePoint == '\n' && !BitwiseUtils.hasFlag(textFlags, FLAG_IGNORE_NEWLINES)) {
         break;
       }
       boolean isSpace = size == 1 && (codePoint == '\n' || Character.getType(codePoint) == Character.SPACE_SEPARATOR);
@@ -1842,7 +1842,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       int currentX = getLineWidth(getLineCount() - 1);
       int lineMaxWidth = getLineMaxWidth(getLineCount() - 1, currentY);
       String ellipsis = Strings.ELLIPSIS;
-      if (!StringUtils.isEmpty(in) && end > start && !BitwiseUtils.getFlag(this.textFlags, FLAG_ELLIPSIZE_NO_FILL)) {
+      if (!StringUtils.isEmpty(in) && end > start && !BitwiseUtils.hasFlag(this.textFlags, FLAG_ELLIPSIZE_NO_FILL)) {
         int ellipsisMaxWidth = lineMaxWidth - currentX;
         String ellipsized = TextUtils.ellipsize(
           in.substring(start, end).replace('\n', ' '),
@@ -2126,7 +2126,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   }
 
   public int getLineSpacing () {
-    return BitwiseUtils.getFlag(textFlags, FLAG_NO_SPACING) ? 0 : textStyleProvider.convertUnit((textFlags & FLAG_ARTICLE) != 0 ? 3f : 2f);
+    return BitwiseUtils.hasFlag(textFlags, FLAG_NO_SPACING) ? 0 : textStyleProvider.convertUnit((textFlags & FLAG_ARTICLE) != 0 ? 3f : 2f);
   }
 
   private Paint lastSpacePaint;
@@ -2183,7 +2183,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   }
 
   public boolean invalidateMediaContent (ComplexReceiver textMediaReceiver, @Nullable TextMedia specificMedia) {
-    if (BitwiseUtils.getFlag(textFlags, FLAG_DESTROYED)) {
+    if (BitwiseUtils.hasFlag(textFlags, FLAG_DESTROYED)) {
       return false;
     }
     if (specificMedia == null) {
@@ -2373,7 +2373,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     if (parts == null || alpha == 0f)
       return;
 
-    final boolean needRestore = BitwiseUtils.getFlag(textFlags, FLAG_NEED_CLIP_TEXT_AREA);
+    final boolean needRestore = BitwiseUtils.hasFlag(textFlags, FLAG_NEED_CLIP_TEXT_AREA);
     final int saveCount;
     if (needRestore) {
       saveCount = Views.save(c);
@@ -2905,7 +2905,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   }
 
   public final boolean isClickable (TextEntity entity) {
-    return (BitwiseUtils.getFlag(textFlags, FLAG_ALL_CLICKABLE) || (entity != null && entity.isClickable())) && !BitwiseUtils.getFlag(textFlags, FLAG_NO_CLICKABLE);
+    return (BitwiseUtils.hasFlag(textFlags, FLAG_ALL_CLICKABLE) || (entity != null && entity.isClickable())) && !BitwiseUtils.hasFlag(textFlags, FLAG_NO_CLICKABLE);
   }
 
   @ColorInt
@@ -2917,7 +2917,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
 
   @ColorInt
   public int getTextColor () {
-    return getTextColor(null, null, BitwiseUtils.getFlag(textFlags, FLAG_ALL_CLICKABLE), false);
+    return getTextColor(null, null, BitwiseUtils.hasFlag(textFlags, FLAG_ALL_CLICKABLE), false);
   }
 
   @ColorInt
@@ -2968,7 +2968,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   }
 
   public boolean isDestroyed () {
-    return BitwiseUtils.getFlag(textFlags, FLAG_DESTROYED);
+    return BitwiseUtils.hasFlag(textFlags, FLAG_DESTROYED);
   }
 
   @Override

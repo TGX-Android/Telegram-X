@@ -100,6 +100,9 @@ fileRed: #E67172
 fillingPositive: #61A7E0
 fillingPressed: #F3F3F3
 headerBackground, notification, notificationLink, notificationPlayer, passcode: #3F83B1
+headerBadge: #94FCFC
+headerBadgeFailed: #D32F2F
+headerBadgeMuted: #FFFFFF7F
 headerBarCallActive: #79C1FA
 headerBarCallIncoming: #0BC35B
 headerBarCallMuted: #8E969E

@@ -72,7 +72,7 @@ public class Fonts {
       firstFont = true;
     }
     if (needSystemFonts) {
-      Typeface typeface = fallback.get();
+      Typeface typeface = fallback.getValue();
       if (typeface != null) {
         return typeface;
       }
@@ -83,7 +83,7 @@ public class Fonts {
       if (firstFont)
         needSystemFonts = true;
       Log.e("Unable to load built-in font", t);
-      return fallback.get();
+      return fallback.getValue();
     }
   }
 

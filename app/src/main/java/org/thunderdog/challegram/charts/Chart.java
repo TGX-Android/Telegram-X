@@ -182,7 +182,7 @@ public class Chart implements BaseChartView.DateChangeListener {
   }
 
   public boolean isNoDate () {
-    return BitwiseUtils.getFlag(flags, FLAG_NO_DATE);
+    return BitwiseUtils.hasFlag(flags, FLAG_NO_DATE);
   }
 
   public void attach (DateListener listener) {

@@ -38,7 +38,7 @@ public class ModernActionedLayout extends MediaLayout {
   }
 
   public void setController (MediaBottomBaseController<?> controller) {
-    controller.get();
+    controller.getValue();
     curController = controller;
   }
 
