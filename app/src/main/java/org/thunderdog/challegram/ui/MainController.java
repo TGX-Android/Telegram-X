@@ -2290,7 +2290,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
       if (tdlib.settings().isArchiveChatListEnabled()) {
         archiveChatListPosition = MathUtils.clamp(archiveChatListPosition, 0, chatListCount);
         chatListCount++;
-        if (mainChatListPosition == archiveChatListPosition) {
+        if (mainChatListPosition >= archiveChatListPosition) {
           mainChatListPosition++;
         }
       } else {

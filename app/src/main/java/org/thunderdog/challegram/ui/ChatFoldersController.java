@@ -630,16 +630,16 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
   }
 
   private List<ListItem> buildChatFilterItemList (TdApi.ChatFilterInfo[] chatFilters, int mainChatListPosition, int archiveChatListPosition) {
-    List<ListItem> itemList = new ArrayList<>(chatFilters.length + 6);
-    itemList.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.ChatFolders));
-    itemList.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     int chatFilterCount = chatFilters.length + 2; /* All Chats, Archived */
     int chatFilterIndex = 0;
     mainChatListPosition = MathUtils.clamp(mainChatListPosition, 0, chatFilters.length);
     archiveChatListPosition = MathUtils.clamp(archiveChatListPosition, 0, chatFilterCount - 1);
-    if (mainChatListPosition == archiveChatListPosition) {
+    if (mainChatListPosition >= archiveChatListPosition) {
       mainChatListPosition++;
     }
+    List<ListItem> itemList = new ArrayList<>(chatFilterCount + 5);
+    itemList.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.ChatFolders));
+    itemList.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     for (int position = 0; position < chatFilterCount; position++) {
       if (position == mainChatListPosition) {
         itemList.add(mainChatFilterItem());
