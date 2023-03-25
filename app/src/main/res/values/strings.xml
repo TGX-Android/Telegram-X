@@ -4688,6 +4688,7 @@
   <string name="RemoveFromFolder">Remove from folder</string>
   <string name="ChooseFolder">Choose a folder</string>
   <string name="LocalFolderBadge">local folder</string>
+  <string name="MainListBadge">main list</string>
   <string name="IconOnly">Icon only</string>
   <string name="LabelOnly">Label only</string>
   <string name="LabelAndIcon">Label with icon</string>

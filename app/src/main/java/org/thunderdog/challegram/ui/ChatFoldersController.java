@@ -680,6 +680,7 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
     item.setString(R.string.CategoryMain);
     item.setLongId(MAIN_CHAT_FILTER_ID);
     item.setIconRes(tdlib.hasPremium() ? R.drawable.baseline_drag_handle_24 : R.drawable.deproko_baseline_lock_24);
+    item.setDrawModifier(new FolderBadge(Lang.getString(R.string.MainListBadge)));
     return item;
   }
 
@@ -688,7 +689,7 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
     item.setString(R.string.CategoryArchive);
     item.setLongId(ARCHIVE_CHAT_FILTER_ID);
     item.setIconRes(R.drawable.baseline_drag_handle_24);
-    item.setDrawModifier(new LocalFolderBadge());
+    item.setDrawModifier(new FolderBadge(Lang.getString(R.string.LocalFolderBadge)));
     return item;
   }
 
@@ -892,11 +893,11 @@ public class ChatFoldersController extends RecyclerViewController<Void> implemen
     }
   }
 
-  private static class LocalFolderBadge implements DrawModifier {
+  private static class FolderBadge implements DrawModifier {
     private final Text text;
 
-    public LocalFolderBadge () {
-      text = new Text.Builder(Lang.getString(R.string.LocalFolderBadge), Integer.MAX_VALUE, Paints.robotoStyleProvider(12f), Theme::textDecentColor)
+    public FolderBadge (String badgeText) {
+      text = new Text.Builder(badgeText, Integer.MAX_VALUE, Paints.robotoStyleProvider(12f), Theme::textDecentColor)
         .allBold()
         .singleLine()
         .noClickable()
