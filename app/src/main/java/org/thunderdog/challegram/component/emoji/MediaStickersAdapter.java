@@ -391,15 +391,27 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
   }
 
   public void insertRange (int index, ArrayList<StickerItem> items) {
-    this.items.addAll(index, items);
-    notifyItemRangeInserted(index, items.size());
+    insertRange(index, items, true);
   }
 
-  public void removeRange (int startIndex, int count) {
+  public void insertRange (int index, ArrayList<StickerItem> items, boolean notify) {
+    this.items.addAll(index, items);
+    if (notify) {
+      notifyItemRangeInserted(index, items.size());
+    }
+  }
+
+  public void removeRange (int startIndex, int count, boolean notify) {
     for (int i = startIndex + count - 1; i >= startIndex; i--) {
       items.remove(i);
     }
-    notifyItemRangeRemoved(startIndex, count);
+    if (notify) {
+      notifyItemRangeRemoved(startIndex, count);
+    }
+  }
+
+  public void removeRange (int startIndex, int count) {
+    removeRange(startIndex, count, true);
   }
 
   public void moveRange (int fromIndex, int itemCount, int toIndex) {

@@ -22,10 +22,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.collection.LongSparseArray;
+import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.ListUpdateCallback;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.td.libcore.telegram.Client;
@@ -61,7 +64,6 @@ import org.thunderdog.challegram.widget.EmojiLayout;
 import org.thunderdog.challegram.widget.ForceTouchView;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
@@ -1015,9 +1017,91 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
     return Settings.instance().getNewSetting(Settings.SETTING_FLAG_EXPAND_RECENT_STICKERS);
   }
 
+  private boolean smartUpdateStickerPack (
+    int stickerSetIndex, TGStickerSetInfo stickerSet, TdApi.Sticker[] newStickers,
+    @NonNull ArrayList<MediaStickersAdapter.StickerItem> newItems, int visibleItemCount
+  ) {
+    if (stickersView == null || stickersAdapter == null) {
+      return false;
+    }
+    LinearLayoutManager manager = (LinearLayoutManager) stickersView.getLayoutManager();
+    if (manager == null) {
+      return false;
+    }
+    int firstVisiblePosition = manager.findFirstVisibleItemPosition();
+    View firstView = manager.findViewByPosition(firstVisiblePosition);
+    int firstViewOffset = firstView != null ? firstView.getTop() : 0;
+
+    int oldSize = stickerSet.getSize();
+    int newSize = newItems.size();
+    int headerItemCount = stickerSet.isFavorite() ? 0 : 1; /*title*/
+    int positionStartIndex = stickerSet.getStartIndex() + headerItemCount;
+
+    ArrayList<MediaStickersAdapter.StickerItem> oldItems = new ArrayList<>();
+    for (int index = positionStartIndex; index < stickerSet.getEndIndex(); index++) {
+      oldItems.add(stickersAdapter.getItem(index));
+    }
+
+    DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffUtil.Callback() {
+      @Override
+      public int getOldListSize () {
+        return oldSize;
+      }
+
+      @Override
+      public int getNewListSize () {
+        return newSize;
+      }
+
+      @Override
+      public boolean areItemsTheSame (int oldItemPosition, int newItemPosition) {
+        TGStickerObj oldSticker = oldItems.get(oldItemPosition).sticker;
+        TGStickerObj newSticker = newItems.get(newItemPosition).sticker;
+        return oldSticker.equals(newSticker);
+      }
+
+      @Override
+      public boolean areContentsTheSame (int oldItemPosition, int newItemPosition) {
+        return areItemsTheSame(oldItemPosition, newItemPosition);
+      }
+    });
+    if (newStickers != null) {
+      stickerSet.setStickers(newStickers, visibleItemCount);
+    } else {
+      stickerSet.setSize(visibleItemCount);
+    }
+    stickersAdapter.removeRange(positionStartIndex, oldItems.size(), false);
+    stickersAdapter.insertRange(positionStartIndex, newItems, false);
+    shiftStickerSets(stickerSetIndex, stickerSet.getStartIndex());
+    diffResult.dispatchUpdatesTo(new ListUpdateCallback() {
+      @Override
+      public void onInserted (int position, int count) {
+        stickersAdapter.notifyItemRangeInserted(positionStartIndex + position, count);
+      }
+
+      @Override
+      public void onRemoved (int position, int count) {
+        stickersAdapter.notifyItemRangeRemoved(positionStartIndex + position, count);
+      }
+
+      @Override
+      public void onMoved (int fromPosition, int toPosition) {
+        stickersAdapter.notifyItemMoved(positionStartIndex + fromPosition, positionStartIndex + toPosition);
+      }
+
+      @Override
+      public void onChanged (int position, int count, @Nullable Object payload) {
+        stickersAdapter.notifyItemRangeChanged(positionStartIndex + position, count, payload);
+      }
+    });
+    manager.scrollToPositionWithOffset(firstVisiblePosition, firstViewOffset);
+    return true;
+  }
+
   private void setRecentStickers (@Nullable TdApi.Sticker[] recentStickers, @Nullable ArrayList<MediaStickersAdapter.StickerItem> items) {
+    boolean haveRecentStickers = recentStickers != null && recentStickers.length > 0;
     if (getArguments() != null) {
-      getArguments().setShowRecents(recentStickers != null && recentStickers.length > 0);
+      getArguments().setShowRecents(haveRecentStickers);
     }
 
     TGStickerSetInfo recentSet;
@@ -1031,9 +1115,34 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
         totalRecentCount
     ) : 0;
 
-    // TODO instead of deleteRange + addRange replacement, do diff match patch
+    boolean haveFavorites = findFavoriteStickerSet() != -1;
+
+    allowCollapseRecent = totalRecentCount > Config.DEFAULT_SHOW_RECENT_STICKERS_COUNT;
+    showRecentTitle = haveRecentStickers && (
+      Config.FORCE_SHOW_RECENTS_STICKERS_TITLE ||
+        allowCollapseRecent ||
+        haveFavorites
+    );
+
+    if (visibleRecentCount > 0) {
+      for (int i = items.size() - 1; i >= visibleRecentCount; i--) {
+        items.remove(i);
+      }
+    }
 
     if (existingIndex != -1) {
+      if (haveRecentStickers) {
+        recentSet = stickerSets.get(existingIndex);
+        TdApi.Sticker[] prevRecentStickers = recentSet.getAllStickers();
+        if (prevRecentStickers != null && prevRecentStickers.length > 0 && items != null && !items.isEmpty()) {
+          if (smartUpdateStickerPack(existingIndex, recentSet, recentStickers, items, visibleRecentCount)) {
+            setShowRecentTitle(showRecentTitle, allowCollapseRecent);
+            return;
+          }
+        }
+      }
+
+      // Too many changes for simple animation update
       recentSet = stickerSets.remove(existingIndex);
       shiftStickerSets(existingIndex, recentSet.getStartIndex());
       stickersAdapter.removeRange(recentSet.getStartIndex(), recentSet.getItemCount());
@@ -1043,18 +1152,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
       recentSet = null;
     }
 
-    boolean haveFavorites = findFavoriteStickerSet() != -1;
-
-    allowCollapseRecent = totalRecentCount > Config.DEFAULT_SHOW_RECENT_STICKERS_COUNT;
-    showRecentTitle = Config.FORCE_SHOW_RECENTS_STICKERS_TITLE ||
-      allowCollapseRecent ||
-      haveFavorites;
-
     if (visibleRecentCount > 0) {
-      for (int i = items.size() - 1; i >= visibleRecentCount; i--) {
-        items.remove(i);
-      }
-
       items.add(0, new MediaStickersAdapter.StickerItem(getRecentTitleViewType(), recentSet));
 
       int startIndex = getRecentStartIndex();
@@ -1087,8 +1185,9 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
   }
 
   private void setFavoriteStickers (@Nullable TdApi.Sticker[] favoriteStickers, @Nullable ArrayList<MediaStickersAdapter.StickerItem> items) {
+    boolean haveFavoriteStickers = favoriteStickers != null && favoriteStickers.length > 0;
     if (getArguments() != null) {
-      getArguments().setShowFavorite(favoriteStickers != null && favoriteStickers.length > 0);
+      getArguments().setShowFavorite(haveFavoriteStickers);
     }
 
     int recentStickerSetIndex = findRecentStickerSet();
@@ -1106,6 +1205,13 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
     int existingIndex = findFavoriteStickerSet();
 
     if (existingIndex != -1) {
+      favoriteSet = stickerSets.get(existingIndex);
+      if (haveFavoriteStickers && items != null && !items.isEmpty()) {
+        if (smartUpdateStickerPack(existingIndex, favoriteSet, null, items, items.size())) {
+          return;
+        }
+      }
+
       favoriteSet = stickerSets.remove(existingIndex);
       shiftStickerSets(existingIndex, favoriteSet.getStartIndex());
       stickersAdapter.removeRange(favoriteSet.getStartIndex(), favoriteSet.getItemCount());
