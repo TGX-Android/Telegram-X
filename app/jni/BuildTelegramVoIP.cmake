@@ -362,7 +362,15 @@ target_include_directories(tgvoip PRIVATE
   "${TGVOIP_DIR}/webrtc_dsp"
   .
 )
+target_include_directories(tgvoip PUBLIC
+  "${TGVOIP_DIR}"
+)
 target_compile_options(tgvoip PRIVATE
   -frtti -fexceptions -finline-functions -ffast-math -fno-strict-aliasing -Wno-unknown-pragmas
 )
-target_link_libraries(tgvoip PUBLIC log OpenSLES opus)
+target_link_libraries(tgvoip PUBLIC
+  log
+  OpenSLES
+  opus
+  ssl
+)

@@ -94,8 +94,8 @@
 	path = app/jni/third_party/webrtc
 	url = https://github.com/ali-fareed/webrtc
 	shallow = true
-[submodule "rnnoise"]
-	path = app/jni/third_party/rnnoise
+[submodule "webrtc_rnnoise"]
+	path = app/jni/third_party/webrtc_deps/third_party/rnnoise
 	url = https://github.com/TGX-Android/rnnoise
 	shallow = true
 [submodule "pffft"]
@@ -114,3 +114,9 @@
 	path = app/jni/third_party/crc32c
 	url = https://github.com/google/crc32c
 	shallow = true
+[submodule "openssl"]
+	path = app/jni/third_party/openssl
+	url = https://github.com/openssl/openssl
+[submodule "rnnoise"]
+	path = app/jni/third_party/rnnoise
+	url = https://github.com/xiph/rnnoise

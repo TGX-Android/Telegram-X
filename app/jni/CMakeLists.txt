@@ -13,9 +13,9 @@ set(STUB_DIR "${CMAKE_HOME_DIRECTORY}/stub")
 set(TDLIB_DIR "${CMAKE_HOME_DIRECTORY}/../../tdlib")
 set(UTILS_DIR "${THIRDPARTY_DIR}/jni-utils")
 
-set(SSL_DIR "${THIRDPARTY_DIR}/boringssl")
-set(SSL_LIB_PATH "${SSL_DIR}/build/${ANDROID_ABI}/ssl/libssl.a")
-set(CRYPTO_LIB_PATH "${SSL_DIR}/build/${ANDROID_ABI}/crypto/libcrypto.a")
+set(SSL_DIR "${THIRDPARTY_DIR}/openssl/android_static/${ANDROID_ABI}")
+set(SSL_LIB_PATH "${SSL_DIR}/lib/libssl.a")
+set(CRYPTO_LIB_PATH "${SSL_DIR}/lib/libcrypto.a")
 
 # Using webp only if building for 32-bit platform
 if (${ANDROID_ABI} STREQUAL "armeabi-v7a" OR ${ANDROID_ABI} STREQUAL "x86")
@@ -106,6 +106,7 @@ set(EXCLUDE_LIBS
   libopenh264.a
   libabsl.a
   libwebrtc.a
+  libtgcalls.a
 )
 if (${USE_WEBP})
   list(APPEND EXCLUDE_LIBS
@@ -178,6 +179,9 @@ include("${CMAKE_HOME_DIRECTORY}/BuildTgCalls.cmake")
 
 # yuv
 include("${CMAKE_HOME_DIRECTORY}/BuildYuv.cmake")
+
+# rnnoise
+include("${CMAKE_HOME_DIRECTORY}/BuildRNNoise.cmake")
 
 # vpx
 add_library(vpx STATIC IMPORTED)
@@ -281,13 +285,7 @@ target_link_libraries(${NATIVE_LIB}
   opus
   rlottie
   lz4
-  ssl
-  crypto
-  usrsctp
-  srtp
-  openh264
-  absl
-  webrtc
+  tgcalls
 )
 if (${USE_WEBP})
   target_link_libraries(${NATIVE_LIB} webpdecoder_static)

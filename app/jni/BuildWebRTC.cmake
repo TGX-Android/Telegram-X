@@ -1431,7 +1431,7 @@ set(WEBRTC_DIR "${THIRDPARTY_DIR}/webrtc")
 # "${WEBRTC_DIR}/rtc_base/task_queue_gcd.cc"
 
 add_library(webrtc STATIC
-  "${THIRDPARTY_DIR}/rnnoise/src/rnn_vad_weights.cc"
+  "${THIRDPARTY_DIR}/webrtc_deps/third_party/rnnoise/src/rnn_vad_weights.cc"
 
   "${THIRDPARTY_DIR}/pffft/src/fftpack.c"
   "${THIRDPARTY_DIR}/pffft/src/pffft.c"
@@ -2452,7 +2452,6 @@ add_library(webrtc STATIC
   "${WEBRTC_DIR}/modules/audio_processing/aec3/transparent_mode.cc"
   "${WEBRTC_DIR}/modules/audio_processing/agc2/cpu_features.cc"
   "${WEBRTC_DIR}/modules/congestion_controller/goog_cc/inter_arrival_delta.cc"
-  "${WEBRTC_DIR}/rtc_base/boringssl_identity.cc"
   "${WEBRTC_DIR}/rtc_base/network_monitor_factory.cc"
   "${WEBRTC_DIR}/rtc_base/openssl_key_pair.cc"
   "${WEBRTC_DIR}/rtc_base/deprecated/recursive_critical_section.cc"
@@ -2472,7 +2471,6 @@ add_library(webrtc STATIC
   "${WEBRTC_DIR}/modules/video_coding/svc/scalability_structure_l2t2_key_shift.cc"
   "${WEBRTC_DIR}/pc/connection_context.cc"
   "${WEBRTC_DIR}/pc/data_channel_utils.cc"
-  "${WEBRTC_DIR}/rtc_base/boringssl_certificate.cc"
   "${WEBRTC_DIR}/rtc_base/strings/string_format.cc"
   "${WEBRTC_DIR}/call/adaptation/adaptation_constraint.cc"
   "${WEBRTC_DIR}/modules/audio_processing/optionally_built_submodule_creators.cc"
@@ -2608,6 +2606,10 @@ add_library(webrtc STATIC
   "${WEBRTC_DIR}/api/video_codecs/simulcast_stream.cc"
 )
 
+# intentionally removed:
+# "${WEBRTC_DIR}/rtc_base/boringssl_identity.cc" (before network_monitor_factory)
+# "${WEBRTC_DIR}/rtc_base/boringssl_certificate.cc" (before string_format)
+
 target_sources(webrtc PRIVATE
   "${WEBRTC_DIR}/rtc_base/system/warn_current_thread_is_deadlocked.cc"
   "${WEBRTC_DIR}/rtc_base/task_queue_libevent.cc"
@@ -2728,6 +2730,7 @@ target_sources(webrtc PRIVATE
   "${THIRDPARTY_DIR}/crc32c/src/crc32c.cc"
 )
 target_include_directories(webrtc PRIVATE
+  "${THIRDPARTY_DIR}/webrtc_deps"
   "${THIRDPARTY_DIR}/crc32c/include"
 )
 
@@ -2860,7 +2863,7 @@ target_sources(webrtc PRIVATE
 # "${WEBRTC_DIR}/modules/audio_processing/agc2/speech_level_estimator.cc"
 # "${WEBRTC_DIR}/modules/audio_processing/agc2/input_volume_stats_reporter.cc"
 
-target_compile_definitions(webrtc PRIVATE
+target_compile_definitions(webrtc PUBLIC
   RTC_DISABLE_TRACE_EVENTS
   WEBRTC_OPUS_SUPPORT_120MS_PTIME=1
   BWE_TEST_LOGGING_COMPILE_TIME_ENABLE=0
