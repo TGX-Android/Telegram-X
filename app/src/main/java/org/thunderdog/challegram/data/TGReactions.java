@@ -827,8 +827,8 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
     }
 
     public void drawReactionInBubble (MessageView view, Canvas c, float x, float y, float visibility, int appearTypeFlags) {
-      final boolean hasScaleSaved = visibility != 1f && (BitwiseUtils.getFlag(appearTypeFlags, TYPE_APPEAR_SCALE_FLAG));
-      final float alpha = BitwiseUtils.getFlag(appearTypeFlags, TYPE_APPEAR_OPACITY_FLAG) ? visibility : 1f;
+      final boolean hasScaleSaved = visibility != 1f && (BitwiseUtils.hasFlag(appearTypeFlags, TYPE_APPEAR_SCALE_FLAG));
+      final float alpha = BitwiseUtils.hasFlag(appearTypeFlags, TYPE_APPEAR_OPACITY_FLAG) ? visibility : 1f;
 
       c.save();
       c.translate(x, y);

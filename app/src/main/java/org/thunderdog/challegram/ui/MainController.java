@@ -905,12 +905,13 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
     }
     showSuggestions();
     checkSyncAlert();
-    tdlib.checkDeadlocks();
-    context().permissions().requestPostNotifications(granted -> {
-      if (granted) {
-        tdlib.notifications().onNotificationPermissionGranted();
-      }
-    });
+    tdlib.checkDeadlocks(() -> runOnUiThreadOptional(() ->
+      context().permissions().requestPostNotifications(granted -> {
+        if (granted) {
+          tdlib.notifications().onNotificationPermissionGranted();
+        }
+      })
+    ));
   }
 
   @Override
@@ -1052,7 +1053,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
   private void modifyNewPagerItemController (final ViewController<?> c, final int position) {
     if (c instanceof RecyclerViewProvider) {
-      c.get();
+      c.getValue();
       ((RecyclerViewProvider) c).provideRecyclerView().addOnScrollListener(new RecyclerView.OnScrollListener() {
         private float lastY;
         private float lastShowY;
@@ -1131,8 +1132,11 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
   public void onMenuItemPressed (int id, View view) {
     switch (id) {
       case R.id.menu_btn_search: {
-        tdlib.checkDeadlocks();
-        openSearchMode();
+        tdlib.checkDeadlocks(() -> runOnUiThreadOptional(() -> {
+          if (isFocused()) {
+            openSearchMode();
+          }
+        }));
         break;
       }
       /*case R.id.menu_btn_more: {

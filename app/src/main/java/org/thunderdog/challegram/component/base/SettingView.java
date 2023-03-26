@@ -249,7 +249,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
   }
 
   public void setDataColorId (int dataColorId, boolean isSubtitle) {
-    if (this.dataColorId != dataColorId || isSubtitle != BitwiseUtils.getFlag(flags, FLAG_DATA_SUBTITLE)) {
+    if (this.dataColorId != dataColorId || isSubtitle != BitwiseUtils.hasFlag(flags, FLAG_DATA_SUBTITLE)) {
       this.dataColorId = dataColorId;
       this.flags = BitwiseUtils.setFlag(flags, FLAG_DATA_SUBTITLE, isSubtitle);
       invalidate();

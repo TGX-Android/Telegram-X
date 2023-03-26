@@ -29,11 +29,13 @@ import androidx.collection.SparseArrayCompat;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.TDLib;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -80,7 +82,7 @@ public class TdlibNotificationChannelGroup {
     return accountUserId + "_" + globalVersion;
   }
 
-  public TdlibNotificationChannelGroup (Tdlib tdlib, long accountUserId, boolean isDebugAccount, @Nullable TdApi.User account) {
+  public TdlibNotificationChannelGroup (Tdlib tdlib, long accountUserId, boolean isDebugAccount, @Nullable TdApi.User account) throws ChannelCreationFailureException {
     this.tdlib = tdlib;
     this.accountUserId = accountUserId;
     this.isDebug = isDebugAccount;
@@ -89,17 +91,21 @@ public class TdlibNotificationChannelGroup {
     create(account);
   }
 
-  public void create (@Nullable TdApi.User account) {
+  public void create (@Nullable TdApi.User account) throws ChannelCreationFailureException {
     NotificationManager m = (NotificationManager) UI.getAppContext().getSystemService(Context.NOTIFICATION_SERVICE);
     if (m == null)
-      throw new IllegalStateException();
-    m.createNotificationChannelGroup(new android.app.NotificationChannelGroup(this.groupId, Lang.getDebugString(TD.getUserName(accountUserId, account), isDebug)));
+      throw new ChannelCreationFailureException("Notification service unavailable");
+    try {
+      m.createNotificationChannelGroup(new android.app.NotificationChannelGroup(this.groupId, Lang.getDebugString(TD.getUserName(accountUserId, account), isDebug)));
+    } catch (Throwable t) {
+      throw new ChannelCreationFailureException(t);
+    }
     createCommonChannel(tdlib, m, tdlib.notifications().scopePrivate());
     createCommonChannel(tdlib, m, tdlib.notifications().scopeGroup());
     createCommonChannel(tdlib, m, tdlib.notifications().scopeChannel());
   }
 
-  private Object createCommonChannel (Tdlib tdlib, NotificationManager m, TdApi.NotificationSettingsScope scope) {
+  private Object createCommonChannel (Tdlib tdlib, NotificationManager m, TdApi.NotificationSettingsScope scope) throws ChannelCreationFailureException {
     int importance, vibrateMode, ledColor;
     String sound;
 
@@ -133,7 +139,11 @@ public class TdlibNotificationChannelGroup {
 
     channel = (android.app.NotificationChannel) newChannel(makeChannelId(accountUserId, globalVersion, scope, 0, channelVersion), title, groupId, importance, vibrateMode, sound, ledColor);
     channel.setDescription(description);
-    m.createNotificationChannel(channel);
+    try {
+      m.createNotificationChannel(channel);
+    } catch (Throwable t) {
+      throw new ChannelCreationFailureException(t);
+    }
 
     commonChannels.put(scope.getConstructor(), channel);
     versions.put(scope.getConstructor(), channelVersion);
@@ -156,7 +166,7 @@ public class TdlibNotificationChannelGroup {
   }
 
   @NonNull
-  private Object getCustomChannel (long chatId) {
+  private Object getCustomChannel (long chatId) throws ChannelCreationFailureException {
     if (chatId == 0)
       throw new IllegalArgumentException();
     android.app.NotificationChannel channel;
@@ -173,7 +183,7 @@ public class TdlibNotificationChannelGroup {
   }
 
   @NonNull
-  private Object ensureChannelVersion (Tdlib tdlib, TdApi.NotificationSettingsScope scope, @Nullable ChannelEntry customEntry) {
+  private Object ensureChannelVersion (Tdlib tdlib, TdApi.NotificationSettingsScope scope, @Nullable ChannelEntry customEntry) throws ChannelCreationFailureException {
     final long newVersion = tdlib.notifications().getChannelVersion(scope, customEntry != null ? customEntry.chatId : 0);
     final long oldVersion;
     android.app.NotificationChannel channel;
@@ -186,7 +196,7 @@ public class TdlibNotificationChannelGroup {
     }
     NotificationManager m = (NotificationManager) UI.getAppContext().getSystemService(Context.NOTIFICATION_SERVICE);
     if (m == null)
-      throw new IllegalStateException();
+      throw new ChannelCreationFailureException("Notification service unavailable");
     if (oldVersion != newVersion) {
       if (customEntry != null) {
         channel = (android.app.NotificationChannel) makeCustomChannel(tdlib, accountUserId, isDebug, globalVersion, customEntry.chatId, newVersion);
@@ -206,12 +216,12 @@ public class TdlibNotificationChannelGroup {
   }
 
   @TargetApi(Build.VERSION_CODES.O)
-  public Object getChannel (TdlibNotificationGroup group, boolean allowDisabled) {
+  public Object getChannel (TdlibNotificationGroup group, boolean allowDisabled) throws ChannelCreationFailureException {
     return getChannel(group.getChatId(), group.isMention(), group.singleSenderId(), allowDisabled);
   }
 
   @TargetApi(Build.VERSION_CODES.O)
-  private Object getChannel (long chatId, boolean areMentions, long singleSenderId, boolean allowDisabled) {
+  private Object getChannel (long chatId, boolean areMentions, long singleSenderId, boolean allowDisabled) throws ChannelCreationFailureException {
     android.app.NotificationChannel channel = (android.app.NotificationChannel) getChannelImpl(chatId, areMentions, singleSenderId);
     if (channel == null) {
       throw new IllegalStateException("Could not create channel, chatId:" + chatId + ", areMentions:" + areMentions + ", singleSenderId:" + singleSenderId);
@@ -224,7 +234,7 @@ public class TdlibNotificationChannelGroup {
 
   @TargetApi(Build.VERSION_CODES.O)
   @NonNull
-  private Object getChannelImpl (long chatId, boolean areMentions, long singleAuthorChatId) {
+  private Object getChannelImpl (long chatId, boolean areMentions, long singleAuthorChatId) throws ChannelCreationFailureException {
     // android.app.NotificationChannel channel;
     if (areMentions) {
       if (tdlib.notifications().hasCustomChatSettings(singleAuthorChatId)) {
@@ -468,7 +478,7 @@ public class TdlibNotificationChannelGroup {
     }
   }
 
-  public static void updateChannelSettings (Tdlib tdlib, long accountUserId, boolean isDebug, int globalVersion, TdApi.NotificationSettingsScope scope, long customChatId, long channelVersion) {
+  public static void updateChannelSettings (Tdlib tdlib, long accountUserId, boolean isDebug, int globalVersion, TdApi.NotificationSettingsScope scope, long customChatId, long channelVersion) throws ChannelCreationFailureException {
     if (accountUserId == 0) {
       return;
     }
@@ -479,7 +489,11 @@ public class TdlibNotificationChannelGroup {
         if (chat != null) {
           android.app.NotificationChannel channel = (android.app.NotificationChannel) makeCustomChannel(tdlib, accountUserId, isDebug, globalVersion, chat.id, channelVersion);
           if (tdlib.notifications().hasCustomChatSettings(customChatId)) {
-            m.createNotificationChannel(channel);
+            try {
+              m.createNotificationChannel(channel);
+            } catch (Throwable t) {
+              throw new ChannelCreationFailureException(t);
+            }
           }
         }
       } else {
@@ -491,7 +505,7 @@ public class TdlibNotificationChannelGroup {
     }
   }
 
-  public static void updateChat (Tdlib tdlib, long accountUserId, TdApi.Chat chat) {
+  public static void updateChat (Tdlib tdlib, long accountUserId, TdApi.Chat chat) throws ChannelCreationFailureException {
     if (accountUserId == 0) {
       return;
     }
@@ -503,7 +517,11 @@ public class TdlibNotificationChannelGroup {
       if (channel != null) {
         channel.setName(tdlib.chatTitle(chat));
         setChannelDescription(tdlib, channel, chat.id);
-        m.createNotificationChannel(channel);
+        try {
+          m.createNotificationChannel(channel);
+        } catch (Throwable t) {
+          throw new ChannelCreationFailureException(t);
+        }
       }
     }
   }
@@ -533,9 +551,24 @@ public class TdlibNotificationChannelGroup {
         }
       }
       if (recreate) {
-        tdlib.notifications().createChannels();
+        try {
+          tdlib.notifications().createChannels();
+        } catch (ChannelCreationFailureException e) {
+          TDLib.Tag.notifications("Unable to recreate notification channels:\n%s", Log.toString(e));
+          tdlib.settings().trackNotificationChannelProblem(e, 0);
+        }
       }
       tdlib.notifications().onUpdateNotificationChannels(accountUserId);
+    }
+  }
+
+  public static class ChannelCreationFailureException extends IOException {
+    public ChannelCreationFailureException (String message) {
+      super(message);
+    }
+
+    public ChannelCreationFailureException (Throwable cause) {
+      super(cause);
     }
   }
 }

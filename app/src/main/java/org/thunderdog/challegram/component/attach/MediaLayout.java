@@ -220,7 +220,7 @@ public class MediaLayout extends FrameLayoutFix implements
     }
 
     currentController = getControllerForIndex(index);
-    View controllerView = currentController.get();
+    View controllerView = currentController.getValue();
     if (currentController != null) {
       setAllowSpoiler(currentController.allowSpoiler());
     }
@@ -238,7 +238,7 @@ public class MediaLayout extends FrameLayoutFix implements
         @TargetApi(value = 21)
         @Override
         public void getOutline (View view, android.graphics.Outline outline) {
-          int top = currentController.getCurrentHeight() + (int) currentController.get().getTranslationY();
+          int top = currentController.getCurrentHeight() + (int) currentController.getValue().getTranslationY();
           int bottom = getMeasuredHeight();
 
           int left = 0;
@@ -259,7 +259,7 @@ public class MediaLayout extends FrameLayoutFix implements
     mode = MODE_CUSTOM_POPUP;
     controllers = new MediaBottomBaseController[1];
     currentController = getControllerForIndex(0);
-    View controllerView = currentController.get();
+    View controllerView = currentController.getValue();
 
     addView(controllerView);
 
@@ -638,11 +638,11 @@ public class MediaLayout extends FrameLayoutFix implements
 
     from = controllers[fromIndex];
     fromHeight = from.getCurrentHeight();
-    fromView = from.get();
+    fromView = from.getValue();
     fromY = fromView.getTranslationY();
 
     to = getControllerForIndex(toIndex);
-    toView = to.get();
+    toView = to.getValue();
     toHeight = to.getStartHeight();
     toView.setTranslationY(toHeight);
     if (to.isPaused()) {
@@ -789,7 +789,7 @@ public class MediaLayout extends FrameLayoutFix implements
 
   private void prepareRevealAnimation () {
     currentStartHeight = currentController.getStartHeight();
-    currentController.get().setTranslationY(currentStartHeight);
+    currentController.getValue().setTranslationY(currentStartHeight);
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       invalidateOutline();
     }
@@ -801,7 +801,7 @@ public class MediaLayout extends FrameLayoutFix implements
       popupLayout.setRevealFactor(factor);
     }
     setBottomBarFactor(factor);
-    currentController.get().setTranslationY(currentStartHeight - (int) ((float) currentStartHeight * factor));
+    currentController.getValue().setTranslationY(currentStartHeight - (int) ((float) currentStartHeight * factor));
   }
 
   public void onContentHeightChanged () {
@@ -965,7 +965,7 @@ public class MediaLayout extends FrameLayoutFix implements
     onCurrentColorChanged();
     for (ViewController<?> controller : controllers) {
       if (controller != null) {
-        removeView(controller.get());
+        removeView(controller.getValue());
         if (!controller.isDestroyed())
           controller.destroy();
       }
@@ -1789,7 +1789,7 @@ public class MediaLayout extends FrameLayoutFix implements
       this.visible = visible;
       NavigationController c = UI.getNavigation();
       if (c != null) {
-        c.get().setVisibility(visible ? View.VISIBLE : View.INVISIBLE);
+        c.getValue().setVisibility(visible ? View.VISIBLE : View.INVISIBLE);
       }
     }
   }

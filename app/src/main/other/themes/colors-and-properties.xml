@@ -239,6 +239,10 @@
     <item name="headerText" porterDuff="true" />
     <item name="headerIcon" porterDuff="true" />
 
+    <item name="headerBadge" />
+    <item name="headerBadgeMuted" />
+    <item name="headerBadgeFailed" />
+
     <item name="drawer" />
     <item name="drawerText" />
 

@@ -64,7 +64,7 @@ public class TdlibSingleton<T extends TdApi.Object> implements CleanupStartupDel
       return;
     }
     if (needRequest) {
-      TdApi.Function<T> request = getterCreator.get();
+      TdApi.Function<T> request = getterCreator.getValue();
       tdlib.client().send(request, result -> {
         if (result.getConstructor() == TdApi.Error.CONSTRUCTOR) {
           Log.e("TdlibSingleton failed for request: %s, error: %s", request, TD.toErrorString(result));

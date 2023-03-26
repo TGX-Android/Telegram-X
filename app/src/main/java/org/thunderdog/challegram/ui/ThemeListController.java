@@ -3363,7 +3363,7 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
           setChildAlpha(view);
         }
         FillingDrawable drawable;
-        drawable = Theme.findFillingDrawable(get());
+        drawable = Theme.findFillingDrawable(getValue());
         if (drawable != null)
           drawable.setAlphaFactor(1f - factor);
         setForcePreview(factor > 0f);

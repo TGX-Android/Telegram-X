@@ -14,6 +14,7 @@ bubbleOut_inlineIcon, bubbleOut_inlineText, bubbleOut_progress, bubbleOut_separa
 bubbleOut_messageAuthor, chatListAction, messageAuthor, online: #D81B60
 bubbleOut_waveformInactive, textSelectionHighlight, togglerActiveBackground, waveformInactive: #F8BBD0
 messageSelection: #EC407A10
+headerBadgeFailed: #ffd307
 seekReady: #FBD8E4
 bubble_messageSelection, bubble_messageSelectionNoWallpaper: #E91E6333
 bubbleOut_fillingActive: #D954801A

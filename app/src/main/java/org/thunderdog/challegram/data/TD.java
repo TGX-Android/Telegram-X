@@ -2270,7 +2270,15 @@ public class TD {
   }
 
   public static boolean isFileLoadedAndExists (TdApi.File file) {
-    return isFileLoaded(file) && !isFileRedownloadNeeded(file);
+    if (isFileLoaded(file)) {
+      File check = new File(file.local.path);
+      if (!check.exists()) {
+        return false;
+      }
+      long length = check.length();
+      return !(length < file.local.downloadedSize && length > 0); // FIXME: length = file.local.downloadedSize?
+    }
+    return false;
   }
 
   public static TdApi.SearchMessagesFilter makeFilter (TdApi.Message message, boolean isCommon) {
@@ -2319,18 +2327,6 @@ public class TD {
         return TdApi.SearchMessagesFilterPhoto.CONSTRUCTOR;
     }
     return TdApi.SearchMessagesFilterEmpty.CONSTRUCTOR;
-  }
-
-  public static boolean isFileRedownloadNeeded (TdApi.File file) {
-    if (isFileLoaded(file)) {
-      File check = new File(file.local.path);
-      if (!check.exists()) {
-        return true;
-      }
-      long length = check.length();
-      return length < file.local.downloadedSize && length > 0;
-    }
-    return false;
   }
 
   public static TdApi.InputMessageAnimation toInputMessageContent (TdApi.Animation animation) {
@@ -4304,16 +4300,16 @@ public class TD {
     if (string != null && string.value instanceof TdApi.LanguagePackStringValueOrdinary) {
       return ((TdApi.LanguagePackStringValueOrdinary) string.value).value;
     }
-    return defaultValue != null ? defaultValue.get() : null;
+    return defaultValue != null ? defaultValue.getValue() : null;
   }
 
   public static @Nullable String findOrdinary (TdApi.LanguagePackString[] strings, String key, Future<String> defaultValue) {
     for (TdApi.LanguagePackString string : strings) {
       if (key.equals(string.key)) {
-        return string.value instanceof TdApi.LanguagePackStringValueOrdinary ? ((TdApi.LanguagePackStringValueOrdinary) string.value).value : defaultValue != null ? defaultValue.get() : null;
+        return string.value instanceof TdApi.LanguagePackStringValueOrdinary ? ((TdApi.LanguagePackStringValueOrdinary) string.value).value : defaultValue != null ? defaultValue.getValue() : null;
       }
     }
-    return defaultValue != null ? defaultValue.get() : null;
+    return defaultValue != null ? defaultValue.getValue() : null;
   }
 
   public static TdApi.PhotoSize findClosest (TdApi.PhotoSize[] sizes, int width, int height) {
@@ -6006,6 +6002,17 @@ public class TD {
   private static final int ARG_CALL_MISSED = -2;
   private static final int ARG_RECURRING_PAYMENT = -3;
 
+  private static final long ADDITIONAL_MESSAGE_UI_LOAD_TIMEOUT_MS = -1; // Always async
+  private static final long ADDITIONAL_MESSAGE_LOAD_TIMEOUT_MS = 0;
+
+  private static long additionalMessageLoadTimeoutMs () {
+    if (UI.inUiThread()) {
+      return ADDITIONAL_MESSAGE_UI_LOAD_TIMEOUT_MS;
+    } else {
+      return ADDITIONAL_MESSAGE_LOAD_TIMEOUT_MS;
+    }
+  }
+
   @NonNull
   private static ContentPreview getContentPreview (Tdlib tdlib, long chatId, TdApi.Message message, boolean allowContent, boolean isChatList) {
     if (Settings.instance().needRestrictContent()) {
@@ -6148,7 +6155,15 @@ public class TD {
         break;
       case TdApi.MessagePinMessage.CONSTRUCTOR: {
         long pinnedMessageId = ((TdApi.MessagePinMessage) message.content).messageId;
-        TdApi.Message pinnedMessage = pinnedMessageId != 0 ? tdlib.getMessageLocally(message.chatId, pinnedMessageId) : null;
+        TdApi.Message pinnedMessage;
+        long loadTimeoutMs = additionalMessageLoadTimeoutMs();
+        if (pinnedMessageId != 0 && loadTimeoutMs >= 0) {
+          pinnedMessage = tdlib.getMessageLocally(
+            message.chatId, pinnedMessageId, loadTimeoutMs
+          );
+        } else {
+          pinnedMessage = null;
+        }
         if (pinnedMessage != null) {
           return new ContentPreview(EMOJI_PIN, getContentPreview(tdlib, chatId, pinnedMessage, allowContent, isChatList));
         } else {
@@ -6164,7 +6179,12 @@ public class TD {
       }
       case TdApi.MessageGameScore.CONSTRUCTOR: {
         TdApi.MessageGameScore score = (TdApi.MessageGameScore) message.content;
-        TdApi.Message gameMessage = tdlib.getMessageLocally(message.chatId, score.gameMessageId);
+        long timeoutMs = additionalMessageLoadTimeoutMs();
+        TdApi.Message gameMessage = timeoutMs >= 0 ?
+          tdlib.getMessageLocally(
+            message.chatId, score.gameMessageId,
+            timeoutMs
+          ) : null;
         String gameTitle = gameMessage != null && gameMessage.content.getConstructor() == TdApi.MessageGame.CONSTRUCTOR ? TD.getGameName(((TdApi.MessageGame) gameMessage.content).game, false) : null;
         if (!StringUtils.isEmpty(gameTitle)) {
           return new ContentPreview(EMOJI_GAME, 0, Lang.plural(message.isOutgoing ? R.string.game_ActionYouScoredInGame : R.string.game_ActionScoredInGame, score.score, gameTitle), true);

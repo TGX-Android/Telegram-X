@@ -223,12 +223,12 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
     controller.applyPlayerOffset(currentPlayerFactor, currentPlayerOffset);
     if (controller.usePopupMode()) {
       if (controller.preventRootInteractions()) {
-        rootView.addView(controller.get(), 0);
+        rootView.addView(controller.getValue(), 0);
       } else {
-        rootView.addView(controller.get(), rootView.getChildCount() - 2);
+        rootView.addView(controller.getValue(), rootView.getChildCount() - 2);
       }
     } else {
-      contentWrapper.addView(controller.get());
+      contentWrapper.addView(controller.getValue());
     }
     controller.attachNavigationController(this);
     controller.onPrepareToShow();
@@ -243,9 +243,9 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
     childWrappers.add(index, controller);
 
     if (controller.usePopupMode()) {
-      rootView.addView(controller.get(), 0);
+      rootView.addView(controller.getValue(), 0);
     } else {
-      contentWrapper.addView(controller.get(), index);
+      contentWrapper.addView(controller.getValue(), index);
     }
     controller.attachNavigationController(this);
     controller.onPrepareToShow();
@@ -254,14 +254,17 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
   }
 
   public void removeChildWrapper (ViewController<?> controller) {
+    if (controller == null)
+      throw new NullPointerException();
+
     if (childWrappers != null) {
       childWrappers.remove(controller);
     }
 
     if (controller.usePopupMode()) {
-      rootView.removeView(controller.get());
+      rootView.removeView(controller.getValue());
     } else {
-      contentWrapper.removeView(controller.get());
+      contentWrapper.removeView(controller.getValue());
     }
     controller.onCleanAfterHide();
     controller.detachNavigationController();
@@ -300,7 +303,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
   private boolean isAttachedToWindow;
 
   @Override
-  public View get () {
+  public View getValue () {
     if (wrap == null) {
       wrap = onCreateView(context);
       wrap.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
@@ -470,7 +473,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
     if (!isAnimating && with != null) {
       NavigationStack stack = getStack();
 
-      with.get();
+      with.getValue();
 
       stack.clear(this);
       stack.push(with, true);
@@ -502,6 +505,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
 
   public void setControllerAnimated (ViewController<?> controller, boolean asForward, boolean saveFirst) {
     if (controller != null) {
+      clearStackLock();
       if (getStack().isEmpty()) {
         initController(controller);
       } else {
@@ -567,9 +571,16 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
     }
   }
 
+  private void clearStackLock () {
+    if (getStack().isLocked()) {
+      getStack().setIsLocked(false);
+    }
+  }
+
   public final boolean navigateTo (ViewController<?> controller) {
     if (!isAnimating && getStackSize() > 0 && controller != null && !isCurrentControllerAnimating()) {
       isAnimating = true;
+      clearStackLock();
       processor.navigateTo(controller);
       return true;
     } else {
@@ -601,16 +612,16 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
 
   private void preventPopupMode (ViewController<?> current) {
     if (!current.preventRootInteractions()) {
-      rootView.removeView(current.get());
-      rootView.addView(current.get(), 0);
+      rootView.removeView(current.getValue());
+      rootView.addView(current.getValue(), 0);
     }
     headerView.getFilling().setCollapsed(false);
   }
 
   private void applyPopupMode (ViewController<?> current) {
     if (!current.preventRootInteractions()) {
-      rootView.removeView(current.get());
-      rootView.addView(current.get(), rootView.getChildCount() - 2);
+      rootView.removeView(current.getValue());
+      rootView.addView(current.getValue(), rootView.getChildCount() - 2);
     }
     headerView.getFilling().setCollapsed(true);
   }
@@ -670,8 +681,8 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
 
     currentLeft = left;
     currentRight = right;
-    leftWrap = left.get();
-    rightWrap = right.get();
+    leftWrap = left.getValue();
+    rightWrap = right.getValue();
     translationMode = direction;
     translatingForward = forward;
 
@@ -922,7 +933,10 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
       prepareFactorAnimation(left = controller, right = getStack().getCurrent(), false, direction);
     }
 
+    final boolean[] isDone = new boolean[1];
     Runnable onDone = () -> {
+      setFactor(forward ? 0f : 1f);
+      isDone[0] = true;
       if (forward) {
         removeFadeView();
         if (rebase != 0) {
@@ -943,7 +957,6 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
     };
 
     if (!isAttachedToWindow) {
-      setFactor(forward ? 0f : 1f);
       onDone.run();
       return;
     }
@@ -954,9 +967,17 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
 
     animator = AnimatorUtils.simpleValueAnimator();
     if (forward) {
-      animator.addUpdateListener(animation -> setFactor(1f - AnimatorUtils.getFraction(animation)));
+      animator.addUpdateListener(animation -> {
+        if (!isDone[0]) {
+          setFactor(1f - AnimatorUtils.getFraction(animation));
+        }
+      });
     } else {
-      animator.addUpdateListener(animation -> setFactor(AnimatorUtils.getFraction(animation)));
+      animator.addUpdateListener(animation -> {
+        if (!isDone[0]) {
+          setFactor(AnimatorUtils.getFraction(animation));
+        }
+      });
     }
 
     switch (direction) {
@@ -999,12 +1020,12 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
         public void run () {
           if (controller.getScheduledAnimation() == this) {
             controller.resetScheduledAnimation();
-            AnimatorUtils.startAnimator(right.get(), animator);
+            AnimatorUtils.startAnimator(right.getValue(), animator);
           }
         }
       }, timeout);
     } else {
-      AnimatorUtils.startAnimator(forward ? right.get() : left.get(), animator);
+      AnimatorUtils.startAnimator(forward ? right.getValue() : left.getValue(), animator);
     }
   }
 
@@ -1173,10 +1194,10 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
       Views.setLayerType(floatingButton, type == View.LAYER_TYPE_HARDWARE && SimpleShapeDrawable.USE_SOFTWARE_SHADOW ? View.LAYER_TYPE_SOFTWARE : type);
     }
     if (left != null && left.allowLayerTypeChanges()) {
-      Views.setLayerType(left.get(), type);
+      Views.setLayerType(left.getValue(), type);
     }
     if (right != null && right.allowLayerTypeChanges()) {
-      Views.setLayerType(right.get(), type);
+      Views.setLayerType(right.getValue(), type);
     }
   }
 
@@ -1310,7 +1331,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
           currentRight.onTranslationChanged(-px);
 
           if (USE_PREVIEW_TRANSLATION) {
-            currentLeft.get().setTranslationX(-px2);
+            currentLeft.getValue().setTranslationX(-px2);
             currentLeft.onTranslationChanged(-px2);
           }
         } else {
@@ -1318,7 +1339,7 @@ public class NavigationController implements Future<View>, ThemeChangeListener, 
           currentRight.onTranslationChanged(px);
 
           if (USE_PREVIEW_TRANSLATION) {
-            currentLeft.get().setTranslationX(px2);
+            currentLeft.getValue().setTranslationX(px2);
             currentLeft.onTranslationChanged(px2);
           }
         }

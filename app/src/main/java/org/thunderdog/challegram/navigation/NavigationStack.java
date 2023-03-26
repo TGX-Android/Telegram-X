@@ -153,6 +153,21 @@ public class NavigationStack {
     return c;
   }
 
+  public boolean destroy (ViewController<?> c) {
+    boolean found = false;
+    for (int index = size() - 1; index >= 0; index--) {
+      if (stack.get(index) == c) {
+        remove(index);
+        found = true;
+      }
+    }
+    if (found) {
+      c.destroy();
+      return true;
+    }
+    return false;
+  }
+
   public void destroyAllButSaveLast (int lastSaveCount) {
     while (size() > lastSaveCount)
       destroy(0);
@@ -266,6 +281,9 @@ public class NavigationStack {
   }
 
   public void reset (NavigationController navigation, boolean saveFirst) {
+    if (isEmpty()) {
+      return;
+    }
     ViewController<?> last = removeLast();
     if (saveFirst) {
       if (stack.size() > 1) {
@@ -286,7 +304,9 @@ public class NavigationStack {
     } else {
       clear(navigation);
     }
-    push(last, true);
+    if (last != null) {
+      push(last, true);
+    }
   }
 
   public void resetSilently (ViewController<?> initial) {

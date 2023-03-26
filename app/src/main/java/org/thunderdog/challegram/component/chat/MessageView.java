@@ -92,7 +92,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   private static final int FLAG_DISABLE_MEASURE = 1 << 6;
   private static final int FLAG_USE_COMPLEX_RECEIVER = 1 << 7;
 
-  private TGMessage msg;
+  private @Nullable TGMessage msg;
 
   private int flags;
 
@@ -186,7 +186,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   @Override
   public void invalidate () {
     super.invalidate();
-    if (msg.needViewGroup()) {
+    if (msg != null && msg.needViewGroup()) {
       msg.invalidateOverlay();
     }
   }
@@ -194,7 +194,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   @Override
   public void invalidate (int l, int t, int r, int b) {
     super.invalidate(l, t, r, b);
-    if (msg.needViewGroup()) {
+    if (msg != null && msg.needViewGroup()) {
       msg.invalidateOverlay();
     }
   }

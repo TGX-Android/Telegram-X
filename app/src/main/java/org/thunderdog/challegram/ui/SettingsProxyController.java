@@ -15,7 +15,6 @@
 package org.thunderdog.challegram.ui;
 
 import android.content.Context;
-import android.os.SystemClock;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -26,14 +25,16 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.ListUpdateCallback;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.user.RemoveHelper;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.MoreDelegate;
 import org.thunderdog.challegram.telegram.ConnectionListener;
+import org.thunderdog.challegram.telegram.ConnectionState;
+import org.thunderdog.challegram.telegram.GlobalProxyPingListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.theme.ThemeColorId;
@@ -53,7 +54,7 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.lambda.CancellableRunnable;
 
-public class SettingsProxyController extends RecyclerViewController<Void> implements View.OnLongClickListener, View.OnClickListener, Settings.ProxyChangeListener, ConnectionListener, MoreDelegate {
+public class SettingsProxyController extends RecyclerViewController<Void> implements View.OnLongClickListener, View.OnClickListener, Settings.ProxyChangeListener, ConnectionListener, MoreDelegate, GlobalProxyPingListener {
   public SettingsProxyController (Context context, Tdlib tdlib) {
     super(context, tdlib);
   }
@@ -89,6 +90,11 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
       }
     }
 
+    if (BuildConfig.DEBUG) {
+      ids.append(R.id.btn_test);
+      strings.append("Auto-select proxy");
+    }
+
     showMore(ids.get(), strings.get(), 0);
   }
 
@@ -99,10 +105,17 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
       if (p1 != p2) {
         return Long.compare(p1, p2);
       }
-      int t1 = Settings.getProxyDefaultOrder(a.type);
-      int t2 = Settings.getProxyDefaultOrder(b.type);
-      if (t1 != t2) {
-        return Integer.compare(t1, t2);
+      boolean h1 = a.proxy != null;
+      boolean h2 = b.proxy != null;
+      if (h1 != h2) {
+        return h1 ? -1 : 1;
+      }
+      if (h1) {
+        int t1 = Settings.getProxyDefaultOrder(a.proxy.type);
+        int t2 = Settings.getProxyDefaultOrder(b.proxy.type);
+        if (t1 != t2) {
+          return Integer.compare(t1, t2);
+        }
       }
       return a.compareTo(b);
     });
@@ -111,6 +124,10 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
   @Override
   public void onMoreItemPressed (int id) {
     switch (id) {
+      case R.id.btn_test: {
+        tdlib.resolveConnectionIssues();
+        break;
+      }
       case R.id.btn_toggleErrors: {
         Settings.instance().toggleProxySetting(Settings.PROXY_FLAG_SHOW_ERRORS);
         if (noProxy.pingError != null) {
@@ -204,7 +221,7 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
 
   private SettingsAdapter adapter;
   private List<Settings.Proxy> proxies;
-  private Settings.Proxy noProxy = new Settings.Proxy(Settings.PROXY_ID_NONE, null, 0, null, null);
+  private final Settings.Proxy noProxy = Settings.Proxy.noProxy(false);
   private int effectiveProxyId;
 
   private int calculatePongs () {
@@ -265,7 +282,7 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
     }
     if (proxyId == effectiveProxyId) {
       switch (tdlib.connectionState()) {
-        case Tdlib.STATE_CONNECTED: {
+        case ConnectionState.CONNECTED: {
           if (proxyLocked) {
             out.value = Lang.getString(R.string.network_Connecting);
           } else if (info.pingMs == Settings.PROXY_TIME_UNSET || info.pingMs == Settings.PROXY_TIME_LOADING) {
@@ -287,17 +304,20 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
           }
           break;
         }
-        case Tdlib.STATE_UPDATING:
+        case ConnectionState.UPDATING:
           out.value = Lang.getString(R.string.network_Updating);
           break;
-        case Tdlib.STATE_WAITING:
+        case ConnectionState.WAITING_FOR_NETWORK:
           out.value = Lang.getString(R.string.network_WaitingForNetwork);
           break;
+        case ConnectionState.CONNECTING:
+        case ConnectionState.CONNECTING_TO_PROXY:
+        case ConnectionState.UNKNOWN:
         default:
           out.value = Lang.getString(R.string.network_Connecting);
           break;
       }
-    } else if (tdlib.connectionState() == Tdlib.STATE_WAITING) {
+    } else if (tdlib.connectionState() == ConnectionState.WAITING_FOR_NETWORK) {
       out.value = Lang.getString(R.string.ProxyChecking);
     } else if (info.pingMs >= 0) {
       out.colorId = R.id.theme_color_textSecure;
@@ -321,54 +341,13 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
   }
 
   private void pingProxy (@NonNull Settings.Proxy info, boolean allowNotify) {
-    int proxyId = info.id;
-    int pingId = ++info.pingCount;
-    info.pingMs = Settings.PROXY_TIME_LOADING;
-    info.pingErrorCount = 0;
-    if (allowNotify) {
-      if (adapter != null) {
-        adapter.updateValuedSettingByPosition(indexOfProxy(proxyId));
+    int nextPingId = info.pingCount + 1;
+    tdlib.pingProxy(info, pingMs -> runOnUiThreadOptional(() -> {
+      if (info.pingCount == nextPingId) {
+        checkWinners();
+        adapter.updateValuedSettingByPosition(indexOfProxy(info.id));
       }
-    }
-    TdApi.Function<?> function = proxyId != Settings.PROXY_ID_NONE ? new TdApi.AddProxy(info.server, info.port, false, info.type) : new TdApi.PingProxy(0);
-    long[] step = new long[1];
-    step[0] = SystemClock.uptimeMillis();
-    tdlib.client().send(function, new Client.ResultHandler() {
-      @Override
-      public void onResult (TdApi.Object result) {
-        if (pingId != info.pingCount) {
-          return;
-        }
-        long elapsed = SystemClock.uptimeMillis() - step[0];
-        step[0] = SystemClock.uptimeMillis();
-        switch (result.getConstructor()) {
-          case TdApi.Ok.CONSTRUCTOR:
-            tdlib.client().send(function, this);
-            return;
-          case TdApi.Proxy.CONSTRUCTOR:
-            tdlib.client().send(new TdApi.PingProxy(((TdApi.Proxy) result).id), this);
-            return;
-          case TdApi.Seconds.CONSTRUCTOR:
-            info.pingMs = Math.round(((TdApi.Seconds) result).seconds * 1000.0);
-            info.pingErrorCount = 0;
-            break;
-          case TdApi.Error.CONSTRUCTOR:
-            if (++info.pingErrorCount < 3 && elapsed <= 1000) {
-              tdlib.client().send(new TdApi.SetAlarm(0.35 * info.pingErrorCount), this);
-              return;
-            }
-            info.pingMs = Settings.PROXY_TIME_EMPTY;
-            info.pingError = (TdApi.Error) result;
-            break;
-        }
-        tdlib.ui().post(() -> {
-          if (!isDestroyed() && info.pingCount == pingId) {
-            checkWinners();
-            adapter.updateValuedSettingByPosition(indexOfProxy(proxyId));
-          }
-        });
-      }
-    });
+    }));
   }
 
   private static class DisplayInfo {
@@ -379,11 +358,11 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
     void reset () {
       value = null;
       connected = false;
-      colorId = 0;
+      colorId = ThemeColorId.NONE;
     }
   }
 
-  private DisplayInfo displayInfo = new DisplayInfo();
+  private final DisplayInfo displayInfo = new DisplayInfo();
   private boolean canUseForCalls;
 
   private void setCanUseForCalls (boolean canUseForCalls) {
@@ -400,7 +379,7 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
     }
   }
 
-  private ListItem proxyCallsItem = new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_useProxyForCalls, 0, R.string.UseProxyForCalls);
+  private final ListItem proxyCallsItem = new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_useProxyForCalls, 0, R.string.UseProxyForCalls);
 
   private static ListItem newProxyItem (@NonNull Settings.Proxy proxy) {
     return new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO, R.id.btn_proxy).setLongId(proxy.id).setData(proxy);
@@ -414,12 +393,41 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
     items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.UseProxyForCallsInfo));
   }
 
+  private static ListItem[] newAutoSwitchItems () {
+    return new ListItem[] {
+      new ListItem(ListItem.TYPE_SHADOW_TOP),
+      new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_proxyAutoSwitch, 0, R.string.ProxyAutoSwitch),
+      new ListItem(ListItem.TYPE_SHADOW_BOTTOM),
+      new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.ProxyAutoSwitchHint)
+    };
+  }
+
+  private void checkAutoSwitchItems () {
+    boolean canSwitchAutomatically = !proxies.isEmpty();
+    if (this.hasProxyAutoSwitchSettings != canSwitchAutomatically) {
+      this.hasProxyAutoSwitchSettings = canSwitchAutomatically;
+      if (canSwitchAutomatically) {
+        int i = adapter.indexOfViewById(R.id.btn_addProxy);
+        if (i != -1) {
+          adapter.addItems(i + 2, newAutoSwitchItems());
+        }
+      } else {
+        int i = adapter.indexOfViewById(R.id.btn_proxyAutoSwitch);
+        if (i != -1) {
+          adapter.removeRange(i - 1, 4);
+        }
+      }
+    }
+  }
+
   private ItemTouchHelper touchHelper;
 
   @Override
   protected boolean needPersistentScrollPosition () {
     return true;
   }
+
+  private boolean hasProxyAutoSwitchSettings;
 
   @Override
   protected void onCreateView (Context context, CustomRecyclerView recyclerView) {
@@ -439,6 +447,11 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_addProxy, 0, R.string.ProxyAdd)); // TODO design: icon
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.ProxyInfo));
+
+    hasProxyAutoSwitchSettings = !proxies.isEmpty();
+    if (hasProxyAutoSwitchSettings) {
+      Collections.addAll(items, newAutoSwitchItems());
+    }
 
     items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.ProxyConnections));
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
@@ -460,6 +473,10 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
       @Override
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
         switch (item.getId()) {
+          case R.id.btn_proxyAutoSwitch: {
+            view.getToggler().setRadioEnabled(Settings.instance().checkProxySetting(Settings.PROXY_FLAG_SWITCH_AUTOMATICALLY), isUpdate);
+            break;
+          }
           case R.id.btn_noProxy:
           case R.id.btn_proxy: {
             Settings.Proxy proxy = (Settings.Proxy) item.getData();
@@ -544,6 +561,7 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
 
     Settings.instance().addProxyListener(this);
     tdlib.listeners().subscribeToConnectivityUpdates(this);
+    tdlib.context().global().addProxyListener(this);
   }
 
   private void removeProxy (Settings.Proxy proxy) {
@@ -574,6 +592,7 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
         if (i != -1) {
           proxies.remove(i);
         }
+        checkAutoSwitchItems();
       }
     }
   }
@@ -583,6 +602,7 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
     super.destroy();
     Settings.instance().removeProxyListener(this);
     tdlib.listeners().unsubscribeFromConnectivityUpdates(this);
+    tdlib.context().global().removeProxyListener(this);
   }
 
   @Override
@@ -593,6 +613,22 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
         Settings.instance().disableProxy();
         break;
       }
+      case R.id.btn_proxyAutoSwitch: {
+        boolean res = adapter.toggleView(v);
+        if (res) {
+          Settings.instance().setProxySetting(
+            Settings.PROXY_FLAG_SWITCH_AUTOMATICALLY |
+            Settings.PROXY_FLAG_SWITCH_ALLOW_DIRECT,
+            true
+          );
+          if (tdlib.isConnectingOrUpdating()) {
+            tdlib.resolveConnectionIssues();
+          }
+        } else {
+          Settings.instance().setProxySetting(Settings.PROXY_FLAG_SWITCH_AUTOMATICALLY, false);
+        }
+        break;
+      }
       case R.id.btn_addProxy: {
         tdlib.ui().addNewProxy(this, false);
         break;
@@ -601,8 +637,8 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
         Settings.Proxy proxy = (Settings.Proxy) item.getData();
         if (proxy.id == effectiveProxyId) {
           showProxyOptions(proxy);
-        } else {
-          Settings.instance().addOrUpdateProxy(proxy.server, proxy.port, proxy.type, null, true);
+        } else if (proxy.proxy != null) {
+          Settings.instance().addOrUpdateProxy(proxy.proxy, null, true);
         }
         break;
       }
@@ -658,7 +694,7 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
     icons.append(R.drawable.baseline_edit_24);
     colors.append(OPTION_COLOR_NORMAL);
 
-    if (proxy.type.getConstructor() != TdApi.ProxyTypeHttp.CONSTRUCTOR) {
+    if (proxy.proxy.type.getConstructor() != TdApi.ProxyTypeHttp.CONSTRUCTOR) {
       ids.append(R.id.btn_share);
       strings.append(R.string.Share);
       icons.append(R.drawable.baseline_forward_24);
@@ -678,7 +714,11 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
     showOptions(proxy.getName().toString(), ids.get(), strings.get(), colors.get(), icons.get(), (itemView, id) -> {
       switch (id) {
         case R.id.btn_share: {
-          tdlib.getProxyLink(proxy, url -> tdlib.ui().shareProxyUrl(new TdlibContext(context, context.currentTdlib()), url));
+          tdlib.getProxyLink(proxy, url -> {
+            if (!StringUtils.isEmpty(url)) {
+              tdlib.ui().shareProxyUrl(new TdlibContext(context, context.currentTdlib()), url);
+            }
+          });
           break;
         }
         case R.id.btn_copyLink: {
@@ -736,9 +776,9 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
   @Override
   public void onConnectionStateChanged (int newState, int oldState) {
     tdlib.ui().post(() -> {
-      if (newState == Tdlib.STATE_CONNECTED && proxyLocked) {
+      if (newState == ConnectionState.CONNECTED && proxyLocked) {
         setProxyLocked(false);
-      } else if (oldState == Tdlib.STATE_WAITING || newState == Tdlib.STATE_WAITING) {
+      } else if (oldState == ConnectionState.WAITING_FOR_NETWORK || newState == ConnectionState.WAITING_FOR_NETWORK) {
         pingProxies();
       } else {
         adapter.updateValuedSettingByPosition(indexOfProxy(effectiveProxyId));
@@ -751,10 +791,24 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
     tdlib.ui().post(this::pingProxies);
   }
 
+  @Override
+  public void onProxyPingChanged (@NonNull Settings.Proxy proxy, long pingMs) {
+    if (adapter != null) {
+      int index = indexOfProxy(proxy.id);
+      if (index != -1) {
+        adapter.updateValuedSettingByPosition(index);
+      }
+    }
+  }
+
   private int cellIndexToProxyIndex (int cellIndex) {
-    if (cellIndex < 7)
+    int headerItemCount = 7;
+    if (hasProxyAutoSwitchSettings) {
+      headerItemCount += 4;
+    }
+    if (cellIndex < headerItemCount)
       return -1;
-    cellIndex -= 7;
+    cellIndex -= headerItemCount;
     if (cellIndex > 0)
       cellIndex /= 2;
     if (cellIndex >= proxies.size() || cellIndex < 0)
@@ -763,7 +817,11 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
   }
 
   private int indexOfProxyCellByProxyIndex (int proxyIndex, int proxyId) {
-    int index = 7 + proxyIndex * 2;
+    int headerItemCount = 7;
+    if (hasProxyAutoSwitchSettings) {
+      headerItemCount += 4;
+    }
+    int index = headerItemCount + proxyIndex * 2;
     if (proxyId != -1 && indexOfProxy(proxyId) != index)
       throw new IllegalStateException("index: " + index + ", proxyIndex: " + indexOfProxy(proxyId));
     return index;
@@ -771,7 +829,7 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
 
   private int indexOfProxy (int proxyId) {
     if (proxyId == Settings.PROXY_ID_NONE) {
-      return 5; // adapter.indexOfViewById(R.id.btn_noProxy);
+      return 5 + (hasProxyAutoSwitchSettings ? 4 : 0); // adapter.indexOfViewById(R.id.btn_noProxy);
     } else {
       return adapter.indexOfViewByLongId(proxyId);
     }
@@ -781,7 +839,7 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
   public void onProxyAvailabilityChanged (boolean isAvailable) { }
 
   @Override
-  public void onProxyConfigurationChanged (int proxyId, @Nullable String server, int port, @Nullable TdApi.ProxyType type, String description, boolean isCurrent, boolean isNewAdd) {
+  public void onProxyConfigurationChanged (int proxyId, @Nullable TdApi.InternalLinkTypeProxy proxy, String description, boolean isCurrent, boolean isNewAdd) {
     int oldIndex = indexOfProxy(effectiveProxyId);
     // resetProxyConnection(oldIndex);
     if (!isCurrent) {
@@ -795,12 +853,10 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
     int newIndex = proxyId != effectiveProxyId ? indexOfProxy(proxyId) : oldIndex;
     this.effectiveProxyId = proxyId;
 
-    Settings.Proxy proxy = findProxyById(proxyId);
-    if (proxy != null) {
-      proxy.server = server;
-      proxy.port = port;
-      proxy.type = type;
-      proxy.description = description;
+    Settings.Proxy localProxy = findProxyById(proxyId);
+    if (localProxy != null) {
+      localProxy.proxy = proxy;
+      localProxy.description = description;
     }
 
     adapter.updateValuedSettingByPosition(oldIndex);
@@ -809,7 +865,7 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
       setProxyLocked(true);
       adapter.updateValuedSettingByPosition(newIndex);
     }
-    setCanUseForCalls(Settings.Proxy.canUseForCalls(type));
+    setCanUseForCalls(proxy != null && Settings.Proxy.canUseForCalls(proxy.type));
   }
 
   private Settings.Proxy findProxyById (int proxyId) {
@@ -851,6 +907,8 @@ public class SettingsProxyController extends RecyclerViewController<Void> implem
         adapter.getItems().add(i, new ListItem(ListItem.TYPE_SEPARATOR_FULL));
         adapter.notifyItemRangeInserted(i, 2);
       }
+
+      checkAutoSwitchItems();
     }
   }
 }

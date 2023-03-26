@@ -264,7 +264,7 @@ public class CameraController extends ViewController<Void> implements CameraDele
 
   @Override
   public void onSettingsChanged (long newSettings, long oldSettings) {
-    cameraOverlayView.setGridVisible(cameraMode == MODE_MAIN && BitwiseUtils.getFlag(newSettings, Settings.SETTING_FLAG_CAMERA_SHOW_GRID), isFocused());
+    cameraOverlayView.setGridVisible(cameraMode == MODE_MAIN && BitwiseUtils.hasFlag(newSettings, Settings.SETTING_FLAG_CAMERA_SHOW_GRID), isFocused());
   }
 
   public boolean isLegacy () {
@@ -302,13 +302,13 @@ public class CameraController extends ViewController<Void> implements CameraDele
   }
 
   public void takeCameraLayout (ViewGroup toGroup, int index) {
-    get();
+    getValue();
     Views.moveView(contentView, toGroup, index);
     manager.getView().requestLayout();
   }
 
   public void releaseCameraLayout () {
-    get();
+    getValue();
     Views.moveView(contentView, rootLayout, 0);
     manager.getView().requestLayout();
   }

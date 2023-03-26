@@ -867,7 +867,7 @@ public class SettingsController extends ViewController<Void> implements
     if (tdlib.isConnected()) {
       return Lang.lowercase(Lang.getString(tdlib.myUser() != null ? R.string.status_Online : R.string.network_Connecting));
     } else {
-      return Lang.lowercase(Lang.getString(TdlibUi.stringForConnectionState(tdlib.connectionState())));
+      return Lang.lowercase(tdlib.connectionStateText());
     }
   }
 
@@ -936,7 +936,7 @@ public class SettingsController extends ViewController<Void> implements
   }
 
   @Override
-  public void onConnectionStateChanged (int newState, int oldState) {
+  public void onConnectionDisplayStatusChanged () {
     runOnUiThreadOptional(() -> {
       if (headerCell != null) {
         headerCell.setSubtitle(getSubtext());

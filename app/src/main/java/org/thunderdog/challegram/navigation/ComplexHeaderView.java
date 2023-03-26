@@ -282,7 +282,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
     if (this.scaleFactor != scaleFactor) {
       int oldTextMaxWidth = getCheckTextMaxWidth();
       this.scaleFactor = scaleFactor;
-      if (!BitwiseUtils.getFlag(flags, FLAG_NO_EXPAND)) {
+      if (!BitwiseUtils.hasFlag(flags, FLAG_NO_EXPAND)) {
         if (!byScroll) {
           if (wouldCollapse(fromFactor) == wouldCollapse(toScaleFactor)) {
             setAvatarAllowanceFactor(1f);
@@ -416,7 +416,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
   private int innerLeftMargin, innerRightMargin, innerRightMarginStart = -1;
 
   private int getInnerRightMargin () {
-    return !BitwiseUtils.getFlag(flags, FLAG_HAD_FULL_EXPAND) && innerRightMarginStart != -1 ? innerRightMarginStart : innerRightMargin;
+    return !BitwiseUtils.hasFlag(flags, FLAG_HAD_FULL_EXPAND) && innerRightMarginStart != -1 ? innerRightMarginStart : innerRightMargin;
   }
 
   public void setInnerRightMarginStart (int rightMarginStart) {
@@ -560,7 +560,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
   }
 
   private int getExpandedMaxTextWidth () {
-    return (int) ((float) (getMeasuredWidth() - Screen.dp(11f) * 2) / avatarTextScale) - (BitwiseUtils.getFlag(flags, FLAG_SHOW_VERIFY) ? Screen.dp(20f) : 0);
+    return (int) ((float) (getMeasuredWidth() - Screen.dp(11f) * 2) / avatarTextScale) - (BitwiseUtils.hasFlag(flags, FLAG_SHOW_VERIFY) ? Screen.dp(20f) : 0);
   }
 
   /*private int calculateTextMaxWidth (boolean allowScale) {
@@ -695,7 +695,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
   public void setMuteFadeFactor (float factor) {
     if (this.muteFadeFactor != factor) {
       this.muteFadeFactor = factor;
-      if (BitwiseUtils.getFlag(flags, FLAG_SHOW_MUTE) && !BitwiseUtils.getFlag(flags, FLAG_IGNORE_MUTE)) {
+      if (BitwiseUtils.hasFlag(flags, FLAG_SHOW_MUTE) && !BitwiseUtils.hasFlag(flags, FLAG_IGNORE_MUTE)) {
         invalidate();
       }
     }
@@ -714,7 +714,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
   }
 
   public void setIgnoreMute (boolean ignoreMute) {
-    if (setFlags(BitwiseUtils.setFlag(flags, FLAG_IGNORE_MUTE, ignoreMute)) && BitwiseUtils.getFlag(flags, FLAG_SHOW_MUTE)) {
+    if (setFlags(BitwiseUtils.setFlag(flags, FLAG_IGNORE_MUTE, ignoreMute)) && BitwiseUtils.hasFlag(flags, FLAG_SHOW_MUTE)) {
       layoutTitle();
       invalidate();
     }

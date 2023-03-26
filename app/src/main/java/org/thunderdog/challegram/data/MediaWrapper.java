@@ -43,7 +43,6 @@ import androidx.core.content.res.ResourcesCompat;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
-import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
@@ -984,18 +983,18 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
       spoilerReceiver.restorePaintAlpha();
       int radius = getRadius();
       DrawAlgorithms.drawRoundRect(c,
-        BitwiseUtils.getFlag(roundings, ROUND_TOP_LEFT) ? radius : 0,
-        BitwiseUtils.getFlag(roundings, ROUND_TOP_RIGHT) ? radius : 0,
-        BitwiseUtils.getFlag(roundings, ROUND_BOTTOM_RIGHT) ? radius : 0,
-        BitwiseUtils.getFlag(roundings, ROUND_BOTTOM_LEFT) ? radius : 0,
+        BitwiseUtils.hasFlag(roundings, ROUND_TOP_LEFT) ? radius : 0,
+        BitwiseUtils.hasFlag(roundings, ROUND_TOP_RIGHT) ? radius : 0,
+        BitwiseUtils.hasFlag(roundings, ROUND_BOTTOM_RIGHT) ? radius : 0,
+        BitwiseUtils.hasFlag(roundings, ROUND_BOTTOM_LEFT) ? radius : 0,
         cellLeft, cellTop, cellRight, cellBottom,
         Paints.fillingPaint(ColorUtils.alphaColor(spoilerFactor, Theme.getColor(R.id.theme_color_spoilerMediaOverlay)))
       );
       DrawAlgorithms.drawParticles(c,
-        BitwiseUtils.getFlag(roundings, ROUND_TOP_LEFT) ? radius : 0,
-        BitwiseUtils.getFlag(roundings, ROUND_TOP_RIGHT) ? radius : 0,
-        BitwiseUtils.getFlag(roundings, ROUND_BOTTOM_RIGHT) ? radius : 0,
-        BitwiseUtils.getFlag(roundings, ROUND_BOTTOM_LEFT) ? radius : 0,
+        BitwiseUtils.hasFlag(roundings, ROUND_TOP_LEFT) ? radius : 0,
+        BitwiseUtils.hasFlag(roundings, ROUND_TOP_RIGHT) ? radius : 0,
+        BitwiseUtils.hasFlag(roundings, ROUND_BOTTOM_RIGHT) ? radius : 0,
+        BitwiseUtils.hasFlag(roundings, ROUND_BOTTOM_LEFT) ? radius : 0,
         cellLeft, cellTop, cellRight, cellBottom,
         spoilerFactor
       );

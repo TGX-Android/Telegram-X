@@ -192,23 +192,18 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     // It's located here for future display inside header menu button
     if (hasTdlib()) {
       Tdlib tdlib = currentTdlib();
-      final boolean haveNotificationsProblem = tdlib.notifications().hasLocalNotificationProblem();
-      final TdApi.SuggestedAction singleAction = tdlib.singleSettingsSuggestion();
-      final boolean haveSuggestions = singleAction != null || tdlib.haveAnySettingsSuggestions();
-      final int totalCount = (singleAction != null ? 1 : haveSuggestions ? 2 : 0) + (haveNotificationsProblem ? 1 : 0);
-      if (totalCount > 1) {
-        return Tdlib.CHAT_FAILED;
-      } else if (haveNotificationsProblem) {
-        return R.drawable.baseline_notification_important_14;
-      } else if (singleAction != null) {
-        switch (singleAction.getConstructor()) {
-          case TdApi.SuggestedActionCheckPassword.CONSTRUCTOR:
-            return R.drawable.baseline_gpp_maybe_14;
-          case TdApi.SuggestedActionCheckPhoneNumber.CONSTRUCTOR:
-            return R.drawable.baseline_sim_card_alert_14;
-          default:
-            throw new UnsupportedOperationException(singleAction.toString());
-        }
+      @Tdlib.ResolvableProblem int problemType = tdlib.findResolvableProblem();
+      switch (problemType) {
+        case Tdlib.ResolvableProblem.NONE:
+          break;
+        case Tdlib.ResolvableProblem.MIXED:
+          return Tdlib.CHAT_FAILED;
+        case Tdlib.ResolvableProblem.NOTIFICATIONS:
+          return R.drawable.baseline_notification_important_14;
+        case Tdlib.ResolvableProblem.CHECK_PASSWORD:
+          return R.drawable.baseline_gpp_maybe_14;
+        case Tdlib.ResolvableProblem.CHECK_PHONE_NUMBER:
+          return R.drawable.baseline_sim_card_alert_14;
       }
     }
     return 0;
@@ -223,7 +218,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   public void addToRoot (View view, boolean ignoreStatusBar) {
-    int i = passcodeController != null && isPasscodeShowing ? rootView.indexOfChild(passcodeController.get()) : -1;
+    int i = passcodeController != null && isPasscodeShowing ? rootView.indexOfChild(passcodeController.getValue()) : -1;
 
     // TODO make some overlay for PiPs
     if (i == -1) {
@@ -262,7 +257,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   public void removeFromNavigation (View view) {
-    ((ViewGroup) navigation.get()).removeView(view);
+    ((ViewGroup) navigation.getValue()).removeView(view);
   }
 
   public RoundVideoController getRoundVideoController () {
@@ -362,7 +357,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
     if (needDrawer()) {
       drawer = new DrawerController(this);
-      drawer.get();
+      drawer.getValue();
     }
 
     navigation = new NavigationController(this);
@@ -389,10 +384,10 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     focusView.setLayoutParams(FrameLayoutFix.newParams(1, 1, Gravity.CENTER));
 
     contentView.addView(focusView);
-    contentView.addView(navigation.get());
+    contentView.addView(navigation.getValue());
     contentView.addView(recordAudioVideoController.prepareViews());
     if (drawer != null) {
-      contentView.addView(drawer.get());
+      contentView.addView(drawer.getValue());
     }
 
     rootView.addView(contentView);
@@ -755,8 +750,8 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     int flags = BitwiseUtils.setFlag(this.fullScreenFlags, flag, enabled);
     if (this.fullScreenFlags != flags) {
       this.fullScreenFlags = flags;
-      setFullScreen(flags != 0 && !BitwiseUtils.getFlag(flags, FULLSCREEN_FLAG_PASSCODE) && !BitwiseUtils.getFlag(flags, FULLSCREEN_FLAG_HAS_NO_FULLSCREEN_VIEWS));
-      setHideNavigation(isFullscreen && BitwiseUtils.getFlag(flags, FULLSCREEN_FLAG_HIDE_NAVIGATION));
+      setFullScreen(flags != 0 && !BitwiseUtils.hasFlag(flags, FULLSCREEN_FLAG_PASSCODE) && !BitwiseUtils.hasFlag(flags, FULLSCREEN_FLAG_HAS_NO_FULLSCREEN_VIEWS));
+      setHideNavigation(isFullscreen && BitwiseUtils.hasFlag(flags, FULLSCREEN_FLAG_HIDE_NAVIGATION));
       updateNavigationBarColor();
     }
   }
@@ -804,8 +799,8 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       if (this.isFullscreen != isFullscreen) {
         this.isFullscreen = isFullscreen;
-        this.hideNavigation = BitwiseUtils.getFlag(fullScreenFlags, FULLSCREEN_FLAG_HIDE_NAVIGATION);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && isFullscreen && (Config.CUTOUT_ENABLED || BitwiseUtils.getFlag(fullScreenFlags, FULLSCREEN_FLAG_CAMERA))) {
+        this.hideNavigation = BitwiseUtils.hasFlag(fullScreenFlags, FULLSCREEN_FLAG_HIDE_NAVIGATION);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && isFullscreen && (Config.CUTOUT_ENABLED || BitwiseUtils.hasFlag(fullScreenFlags, FULLSCREEN_FLAG_CAMERA))) {
           cutoutIgnored = true;
           Window w = getWindow();
           WindowManager.LayoutParams params = w.getAttributes();
@@ -1405,7 +1400,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     passcodeController.setPasscodeMode(PasscodeController.MODE_UNLOCK);
     passcodeController.onPrepareToShow();
     rootView.removeView(contentView);
-    rootView.addView(passcodeController.get());
+    rootView.addView(passcodeController.getValue());
     passcodeController.onActivityResume();
     passcodeController.onFocus();
 
@@ -1495,13 +1490,13 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       FactorAnimator animator = new FactorAnimator(0, new FactorAnimator.Target() {
         @Override
         public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
-          passcodeController.get().setAlpha(1f - factor);
+          passcodeController.getValue().setAlpha(1f - factor);
           updateNavigationBarColor();
         }
 
         @Override
         public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
-          rootView.removeView(passcodeController.get());
+          rootView.removeView(passcodeController.getValue());
           passcodeController.destroy();
           if (dismissingPasscodeController == passcodeController) {
             dismissingPasscodeController = null;
@@ -1543,7 +1538,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     }
     overlayView.setVisibility(View.VISIBLE);
     Views.setLayerTypeOptionally(overlayView, View.LAYER_TYPE_HARDWARE);
-    int i = drawer != null ? contentView.indexOfChild(drawer.get()) : -1;
+    int i = drawer != null ? contentView.indexOfChild(drawer.getValue()) : -1;
     if (i == -1) {
       contentView.addView(overlayView);
     } else {
@@ -1813,7 +1808,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
   public int getControllerWidth (View view) {
     int viewWidth = view.getMeasuredWidth();
-    return viewWidth != 0 ? viewWidth : navigation.get().getMeasuredWidth();
+    return viewWidth != 0 ? viewWidth : navigation.getValue().getMeasuredWidth();
   }
 
   // StickerPreview
@@ -2079,7 +2074,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       rootDrawable.setDisabled(isHidden);
     }
     final int visibility = isHidden ? View.GONE : View.VISIBLE;
-    navigation.get().setVisibility(visibility);
+    navigation.getValue().setVisibility(visibility);
     for (int i = 0; i < windows.size() - 1; i++) {
       windows.get(i).setVisibility(visibility);
     }
@@ -2963,7 +2958,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       camera = new CameraController(this);
       camera.setMode(options.mode, options.readyListener);
       camera.setQrListener(options.qrCodeListener, options.qrModeSubtitle, options.qrModeDebug);
-      camera.get(); // Ensure view creation
+      camera.getValue(); // Ensure view creation
       addActivityListener(camera);
     } else {
       camera.setMode(options.mode, options.readyListener);
@@ -2992,12 +2987,12 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   private boolean isOwningCamera () {
-    return camera != null && !isCameraOwnershipTaken && camera.get().getParent() != null;
+    return camera != null && !isCameraOwnershipTaken && camera.getValue().getParent() != null;
   }
 
   private void replaceContentWithCamera (final boolean launchAnimation) { // prepare camera
     initializeCamera(cameraOptions);
-    if (camera.get().getParent() == null) {
+    if (camera.getValue().getParent() == null) {
       if (launchAnimation) {
         camera.scheduleAnimation(() -> cameraAnimator.animateTo(1f), -1);
       }
@@ -3005,7 +3000,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       camera.setOutputController(navigation.getCurrentStackItem());
       camera.onPrepareToShow();
       setIsCameraPrepared(true);
-      rootView.addView(camera.get(), 0);
+      rootView.addView(camera.getValue(), 0);
       ViewController<?> v = navigation.getCurrentStackItem();
       if (v != null) {
         v.onBlur();
@@ -3017,7 +3012,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
   private void onCameraCompletelyClosed () { // contentView is fully visible & user is not dragging
     camera.onCleanAfterHide();
-    rootView.removeView(camera.get());
+    rootView.removeView(camera.getValue());
     setIsCameraPrepared(false);
     ViewController<?> v = navigation.getCurrentStackItem();
     if (v != null) {
@@ -3074,14 +3069,14 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
         isLight = !Theme.isDark();
       }
       if (desiredIntensityFactor != 0f) {
-        color = ColorUtils.fromToArgb(color, ColorUtils.compositeColor(desiredColor != null ? desiredColor.get() : 0, 0x1E000000), desiredIntensityFactor);
+        color = ColorUtils.fromToArgb(color, ColorUtils.compositeColor(desiredColor != null ? desiredColor.getIntValue() : 0, 0x1E000000), desiredIntensityFactor);
         isLight = isLight && desiredAllowLight;
       }
       if (photoRevealFactor != 0f) {
         color = ColorUtils.fromToArgb(color, UI.NAVIGATION_BAR_COLOR, photoRevealFactor);
         isLight = false;
       }
-      float passcodeFactor = isPasscodeShowing ? 1f : dismissingPasscodeController != null ? dismissingPasscodeController.get().getAlpha() : 0f;
+      float passcodeFactor = isPasscodeShowing ? 1f : dismissingPasscodeController != null ? dismissingPasscodeController.getValue().getAlpha() : 0f;
       if (passcodeFactor != 0f) {
         color = ColorUtils.fromToArgb(color, Theme.getColor(R.id.theme_color_passcode), passcodeFactor);
         isLight = isLight && passcodeFactor < .5f;

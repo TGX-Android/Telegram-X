@@ -538,6 +538,7 @@
   <item type="id" name="btn_proxy" />
   <item type="id" name="occupiedChats" />
   <item type="id" name="btn_noProxy" />
+  <item type="id" name="btn_proxyAutoSwitch" />
   <item type="id" name="btn_addProxy" />
   <item type="id" name="btn_proxySocks5" />
   <item type="id" name="btn_proxyTelegram" />
@@ -545,6 +546,7 @@
   <item type="id" name="btn_proxyQr" />
   <item type="id" name="btn_showAdvanced" />
   <item type="id" name="btn_autoplayGIFs" />
+  <item type="id" name="btn_toggleCollapseRecentStickers" />
   <item type="id" name="btn_stickerSuggestions" />
   <item type="id" name="btn_stickerSuggestionsAll" />
   <item type="id" name="btn_stickerSuggestionsInstalled" />

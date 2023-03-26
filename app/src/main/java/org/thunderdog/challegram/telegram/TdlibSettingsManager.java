@@ -728,7 +728,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   }
 
   private boolean getUserPreference (long key) {
-    return BitwiseUtils.getFlag(getUserPreferences(), key);
+    return BitwiseUtils.hasFlag(getUserPreferences(), key);
   }
 
   public boolean setUserPreference (long key, boolean value) {
@@ -799,15 +799,23 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     }
   }
 
+  public void trackNotificationChannelProblem (TdlibNotificationChannelGroup.ChannelCreationFailureException e, long specificChatId) {
+    trackNotificationProblem(e, NotificationError.FLAG_CHANNELS, specificChatId);
+  }
+
   public synchronized void trackNotificationProblem (Throwable t, boolean isDisplayError, long chatId) {
+    final byte flags = (byte) (
+      (isDisplayError ? NotificationError.FLAG_DISPLAY : 0)
+    );
+    trackNotificationProblem(t, flags, chatId);
+  }
+
+  public synchronized void trackNotificationProblem (Throwable t, int flags, long chatId) {
     final int id = getNotificationProblemCount() + 1;
     final boolean isFirst = id == 1;
 
-    final byte flags = (byte) (
-      (isDisplayError ? 1 : 0)
-    );
     Blob b = new Blob(1 + Log.blobSize(t));
-    b.writeByte(flags);
+    b.writeByte((byte) flags);
     Log.toBlob(t, b);
     final byte[] value = b.toByteArray();
 
@@ -847,10 +855,13 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     editor.apply();
 
     _notificationErrorCount = id;
-    if (isFirst && notificationProblemListeners != null) {
-      for (NotificationProblemListener listener : notificationProblemListeners) {
-        listener.onNotificationProblemsAvailabilityChanged(tdlib, true);
+    if (isFirst) {
+      if (notificationProblemListeners != null) {
+        for (NotificationProblemListener listener : notificationProblemListeners) {
+          listener.onNotificationProblemsAvailabilityChanged(tdlib, true);
+        }
       }
+      tdlib.context().global().notifyResolvableProblemAvailabilityMightHaveChanged();
     }
   }
 
@@ -867,6 +878,9 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   }
 
   private static class NotificationError {
+    public static final int FLAG_DISPLAY = 1 << 1;
+    public static final int FLAG_CHANNELS = 1 << 2;
+
     public final long id;
 
     public int eventCount = 1;
@@ -881,7 +895,11 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     }
 
     public boolean isDisplayError () {
-      return BitwiseUtils.getFlag(flags, 1);
+      return BitwiseUtils.hasFlag(flags, FLAG_DISPLAY);
+    }
+
+    public boolean isChannelError () {
+      return BitwiseUtils.hasFlag(flags, FLAG_CHANNELS);
     }
 
     public long getChatId () {
@@ -1003,7 +1021,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
       if (error.lastEventTime != 0) {
         b.append("Date: ").append(Lang.getTimestamp(error.lastEventTime, TimeUnit.MILLISECONDS)).append("\n");
       }
-      b.append("Step: ").append(error.isDisplayError() ? "display" : "build").append("\n");
+      b.append("Step: ").append(error.isChannelError() ? "channel" : error.isDisplayError() ? "display" : "build").append("\n");
       if (error.chatId != 0) {
         TdApi.Chat chat = tdlib.chatSync(error.chatId, 500);
         if (chat != null) {

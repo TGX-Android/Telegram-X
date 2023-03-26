@@ -532,7 +532,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     if (runnable == null)
       return;
     runOnUiThread(() -> {
-      if (!isDestroyed() && (condition == null || condition.get())) {
+      if (!isDestroyed() && (condition == null || condition.getBoolValue())) {
         runnable.run();
       }
     });
@@ -2113,7 +2113,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
           break;
         }
         case R.id.btn_openLink: {
-          if (openCallback == null || !openCallback.get()) {
+          if (openCallback == null || !openCallback.getBoolValue()) {
             tdlib.ui().openUrl(ViewController.this, url, options);
           }
           break;
@@ -2549,7 +2549,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
         return c.getTimeInMillis();
       };
       InfiniteRecyclerView.ItemChangeListener<SimpleStringItem> listener = (v, index) -> {
-        updateSendButton.runWithLong(calculateDate.get());
+        updateSendButton.runWithLong(calculateDate.getLongValue());
       };
       dayPicker.setNeedSeparators(false);
       dayPicker.setMinMaxProvider((v, index) -> {
@@ -2565,7 +2565,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
         return index;
       });
       dayPicker.setItemChangeListener((v, index) -> {
-        long millis = calculateDate.get();
+        long millis = calculateDate.getLongValue();
         if (millis < tdlib.currentTimeMillis()) {
           c.setTimeInMillis(tdlib.currentTimeMillis());
           c.add(Calendar.MINUTE, minAddMinutes);
@@ -2654,7 +2654,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       }
       contentHeight += Screen.dp(56f);
       sendView.setOnClickListener(v -> {
-        long millis = calculateDate.get();
+        long millis = calculateDate.getLongValue();
         if (tdlib.currentTimeMillis() < millis) {
           callback.runWithLong(millis);
           popupLayout.hideWindow(true);
@@ -2735,7 +2735,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   }
 
   @Override
-  public final View get () {
+  public final View getValue () {
     if (contentView == null) {
       contentView = onCreateView(context());
       contentView.setTag(this);
@@ -3035,7 +3035,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
         UI.showKeyboardDelayed(lockFocusView);
       }
     } else {
-      get().requestFocus();
+      getValue().requestFocus();
     }
     trackUserActivity();
     onFocusStateChanged();
@@ -3343,7 +3343,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   public final void maximizeFromPreview () {
     if (isInForceTouchMode() && (flags & FLAG_MAXIMIZING) == 0) {
       flags |= FLAG_MAXIMIZING;
-      UI.forceVibrate(get(), false);
+      UI.forceVibrate(getValue(), false);
       context.closeForceTouch();
     }
   }

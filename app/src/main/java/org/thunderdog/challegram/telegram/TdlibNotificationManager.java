@@ -41,6 +41,7 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.FileProvider;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.TDLib;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.BaseThread;
@@ -330,7 +331,12 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Tdlib tdlib = ((TdlibNotificationManager) msg.obj).tdlib;
             TdlibNotificationChannelGroup.cleanupChannelGroups(context);
-            tdlib.notifications().createChannels();
+            try {
+              tdlib.notifications().createChannels();
+            } catch (TdlibNotificationChannelGroup.ChannelCreationFailureException e) {
+              TDLib.Tag.notifications("Unable to create notification channels:\n%s", Log.toString(e));
+              tdlib.settings().trackNotificationChannelProblem(e, 0);
+            }
             TdlibNotificationChannelGroup.cleanupChannels(tdlib);
           }
           break;
@@ -1120,7 +1126,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
 
   private TdlibNotificationChannelGroup channelGroupCache;
 
-  public void createChannels () {
+  public void createChannels () throws TdlibNotificationChannelGroup.ChannelCreationFailureException {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       long accountUserId = tdlib.myUserId(true);
       if (accountUserId != 0) {
@@ -1129,7 +1135,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     }
   }
 
-  public TdlibNotificationChannelGroup getChannelCache () {
+  public TdlibNotificationChannelGroup getChannelCache () throws TdlibNotificationChannelGroup.ChannelCreationFailureException {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       long accountUserId = tdlib.myUserId(true);
       TdApi.User account = myUser();
@@ -1146,7 +1152,7 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
     return null;
   }
 
-  public Object getSystemChannel (TdlibNotificationGroup group) {
+  public Object getSystemChannel (TdlibNotificationGroup group) throws TdlibNotificationChannelGroup.ChannelCreationFailureException {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       return getChannelCache().getChannel(group, false);
     }
@@ -1188,7 +1194,12 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
       settings.setChannelVersion(newVersion);
     }
     editor.apply();
-    TdlibNotificationChannelGroup.updateChannelSettings(tdlib, selfUserId, tdlib.account().isDebug(), getChannelsGlobalVersion(), scope, chatId, newVersion);
+    try {
+      TdlibNotificationChannelGroup.updateChannelSettings(tdlib, selfUserId, tdlib.account().isDebug(), getChannelsGlobalVersion(), scope, chatId, newVersion);
+    } catch (TdlibNotificationChannelGroup.ChannelCreationFailureException e) {
+      TDLib.Tag.notifications("Unable to increment notification channel version for chat %d:\n%s", chatId, Log.toString(e));
+      tdlib.settings().trackNotificationChannelProblem(e, chatId);
+    }
     onUpdateNotificationChannels(selfUserId);
     if (chatId != 0) {
       tdlib.listeners().updateNotificationChannel(chatId);

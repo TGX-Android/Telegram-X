@@ -238,7 +238,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private FactorAnimator timeExpandValue = new FactorAnimator(0, new FactorAnimator.Target() {
     @Override
     public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
-      if (BitwiseUtils.getFlag(flags, FLAG_LAYOUT_BUILT)) {
+      if (BitwiseUtils.hasFlag(flags, FLAG_LAYOUT_BUILT)) {
         if (useBubbles() && !useReactionBubbles()) {
           int height = getHeight();
           buildBubble(false);
@@ -820,7 +820,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       if (useForward() && !msg.isChannelPost && msg.forwardInfo != null && msg.forwardInfo.origin.getConstructor() == TdApi.MessageForwardOriginChannel.CONSTRUCTOR) {
         return VIEW_COUNT_FORWARD;
       }
-      if (useBubbles() || BitwiseUtils.getFlag(flags, FLAG_HEADER_ENABLED)) {
+      if (useBubbles() || BitwiseUtils.hasFlag(flags, FLAG_HEADER_ENABLED)) {
         return VIEW_COUNT_MAIN;
       }
     }
@@ -1927,7 +1927,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (!useBubbles) {
       // Plain mode time part
 
-      boolean needMetadata = BitwiseUtils.getFlag(flags, FLAG_HEADER_ENABLED);
+      boolean needMetadata = BitwiseUtils.hasFlag(flags, FLAG_HEADER_ENABLED);
       int top = getHeaderPadding() + xViewsOffset + Screen.dp(7f);
 
       // Time
@@ -2430,11 +2430,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
    * @return false, when layout must be updated immediately
    */
   protected final boolean needAnimateChanges () {
-    return hasAnyTargetToInvalidate() && controller().getParentOrSelf().isAttachedToNavigationController() && BitwiseUtils.getFlag(flags, FLAG_LAYOUT_BUILT) && UI.inUiThread();
+    return hasAnyTargetToInvalidate() && controller().getParentOrSelf().isAttachedToNavigationController() && BitwiseUtils.hasFlag(flags, FLAG_LAYOUT_BUILT) && UI.inUiThread();
   }
 
   public final boolean isLayoutBuilt () {
-    return BitwiseUtils.getFlag(flags, FLAG_LAYOUT_BUILT);
+    return BitwiseUtils.hasFlag(flags, FLAG_LAYOUT_BUILT);
   }
 
   public final void invalidate () {
@@ -2840,7 +2840,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public final boolean forceForwardedInfo () {
     return msg.forwardInfo != null && !isOutgoing() && (
-      BitwiseUtils.getFlag(flags, FLAG_SELF_CHAT) ||
+      BitwiseUtils.hasFlag(flags, FLAG_SELF_CHAT) ||
       (isChannelAutoForward() && msg.forwardInfo.origin.getConstructor() == TdApi.MessageForwardOriginChannel.CONSTRUCTOR &&
         msg.forwardInfo.fromChatId == ((TdApi.MessageForwardOriginChannel) msg.forwardInfo.origin).chatId) ||
       msg.forwardInfo.origin.getConstructor() == TdApi.MessageForwardOriginMessageImport.CONSTRUCTOR ||
@@ -4675,7 +4675,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public final boolean isBeingAdded () {
-    return BitwiseUtils.getFlag(flags, FLAG_BEING_ADDED);
+    return BitwiseUtils.hasFlag(flags, FLAG_BEING_ADDED);
   }
 
   public boolean canMarkAsViewed () {
@@ -4693,7 +4693,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       result = true;
     }
     if (containsUnreadReactions()) {
-      if (!BitwiseUtils.getFlag(flags, FLAG_IGNORE_REACTIONS_VIEW)) {
+      if (!BitwiseUtils.hasFlag(flags, FLAG_IGNORE_REACTIONS_VIEW)) {
         highlightUnreadReactions();
         highlight(true);
         tdlib.ui().postDelayed(() -> {
@@ -4908,7 +4908,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   protected boolean shouldHideMedia () {
-    return BitwiseUtils.getFlag(flags, FLAG_HIDE_MEDIA);
+    return BitwiseUtils.hasFlag(flags, FLAG_HIDE_MEDIA);
   }
 
   public final void setMediaVisible (MediaItem media, boolean isVisible) {
@@ -5456,7 +5456,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     flags = BitwiseUtils.setFlag(flags, MESSAGE_FLAG_FIRST_UNREAD, show);
     updateShowBadge();
     updateBadgeText();
-    if (BitwiseUtils.getFlag(flags, FLAG_LAYOUT_BUILT)) {
+    if (BitwiseUtils.hasFlag(flags, FLAG_LAYOUT_BUILT)) {
       rebuildLayout();
       requestLayout();
       invalidate();
@@ -5464,7 +5464,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public boolean hasBadge () {
-    return BitwiseUtils.getFlag(flags, FLAG_SHOW_BADGE);
+    return BitwiseUtils.hasFlag(flags, FLAG_SHOW_BADGE);
   }
 
   public boolean hasUnreadBadge () {
@@ -5472,11 +5472,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public boolean isFirstUnread () {
-    return BitwiseUtils.getFlag(flags, MESSAGE_FLAG_FIRST_UNREAD);
+    return BitwiseUtils.hasFlag(flags, MESSAGE_FLAG_FIRST_UNREAD);
   }
 
   public boolean isBelowHeader () {
-    return BitwiseUtils.getFlag(flags, MESSAGE_FLAG_BELOW_HEADER);
+    return BitwiseUtils.hasFlag(flags, MESSAGE_FLAG_BELOW_HEADER);
   }
 
   private boolean isBottomMessage () {
@@ -5958,7 +5958,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   @Override
   public void onCounterAppearanceChanged (Counter counter, boolean sizeChanged) {
-    if (sizeChanged && BitwiseUtils.getFlag(flags, FLAG_LAYOUT_BUILT)) {
+    if (sizeChanged && BitwiseUtils.hasFlag(flags, FLAG_LAYOUT_BUILT)) {
       if (counter == viewCounter) {
         switch (getViewCountMode()) {
           case VIEW_COUNT_FORWARD:
@@ -6621,7 +6621,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public final boolean isThreadHeader () {
-    return BitwiseUtils.getFlag(flags, MESSAGE_FLAG_IS_THREAD_HEADER);
+    return BitwiseUtils.hasFlag(flags, MESSAGE_FLAG_IS_THREAD_HEADER);
   }
 
   protected String footerTitle;
@@ -7609,7 +7609,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   //
 
   public final void checkAvailableReactions (Runnable after) {
-    tdlib().client().send(new TdApi.GetMessageAvailableReactions(msg.chatId, getSmallestId(), 5), result -> {
+    tdlib().client().send(new TdApi.GetMessageAvailableReactions(msg.chatId, getSmallestId(), 25), result -> {
       switch (result.getConstructor()) {
         case TdApi.AvailableReactions.CONSTRUCTOR: {
           TdApi.AvailableReactions availableReactions = (TdApi.AvailableReactions) result;
@@ -7884,7 +7884,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       return REACTIONS_DRAW_MODE_BUBBLE;
     }
 
-    boolean headerEnabled = BitwiseUtils.getFlag(flags, FLAG_HEADER_ENABLED);
+    boolean headerEnabled = BitwiseUtils.hasFlag(flags, FLAG_HEADER_ENABLED);
     boolean isUserChat = tdlib.isUserChat(getChatId());
 
     if (!useBubbles() && (isChannel() || (!headerEnabled && !isUserChat))) {

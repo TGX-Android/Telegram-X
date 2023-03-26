@@ -14,6 +14,7 @@ bubbleOut_file, controlActive, file, playerButtonActive, profileSectionActive, p
 bubbleOut_progress, bubbleOut_separator, bubbleOut_time: #81A4BE
 bubbleOut_waveformInactive, togglerActiveBackground, waveformInactive: #B2EBF2
 chatSendButton, online: #00ACC1
+headerBadge: #07ff36
 headerBackground, notification, notificationLink, notificationPlayer, passcode: #0097A7
 messageSelection: #4DD0E110
 seekReady: #C9F0F5

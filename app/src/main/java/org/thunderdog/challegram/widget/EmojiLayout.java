@@ -51,6 +51,7 @@ import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.telegram.EmojiMediaType;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeId;
 import org.thunderdog.challegram.tool.Drawables;
@@ -84,6 +85,9 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     void onDeleteEmoji ();
     void onSearchRequested (EmojiLayout layout, boolean areStickers);
     default long getOutputChatId () { return 0; }
+
+    default void onSectionSwitched (EmojiLayout layout, @EmojiMediaType int section, @EmojiMediaType int prevSection) { }
+    default void onSectionInteracted (EmojiLayout layout, @EmojiMediaType int section, boolean interactionFinished) { }
   }
 
   private ViewController<?> parentController;
@@ -1117,7 +1121,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
           outRect.right = position == mediaAdapter.getItemCount() - 1 ? getHorizontalPadding() : 0;
         }
       });
-      mediaSectionsView.setAdapter(mediaAdapter = new MediaAdapter(getContext(), this, this, emojiSections.size(), Settings.instance().getEmojiMediaSection() == Settings.EMOJI_MEDIA_SECTION_GIFS, themeProvider));
+      mediaSectionsView.setAdapter(mediaAdapter = new MediaAdapter(getContext(), this, this, emojiSections.size(), Settings.instance().getEmojiMediaSection() == EmojiMediaType.GIF, themeProvider));
       mediaSectionsView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, headerSize));
 
       headerView.addView(mediaSectionsView);
@@ -1377,11 +1381,16 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
       case R.id.btn_section: {
         EmojiSection section = ((EmojiSectionView) v).getSection();
 
+        int prevSection = getCurrentEmojiSection();
+        int newSection = -1;
+
         if (section.index >= 0) {
           if (allowMedia && section.index == emojiSections.size() - 1) {
             pager.setCurrentItem(1, true);
+            newSection = getCurrentMediaEmojiSection();
           } else {
             scrollToEmojiSection(section.index);
+            newSection = EmojiMediaType.EMOJI;
           }
         } else {
           int index = -(section.index) - 1;
@@ -1389,12 +1398,14 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
           switch (index) {
             case 0: {
               pager.setCurrentItem(0, true);
+              newSection = EmojiMediaType.EMOJI;
               break;
             }
             case 1: {
               ViewController<?> c = adapter.getCachedItem(1);
               if (c != null) {
-                if (!((EmojiMediaListController) c).showGIFs() && listener != null) {
+                boolean shownGifs = ((EmojiMediaListController) c).showGIFs();
+                if (!shownGifs && listener != null) {
                   listener.onSearchRequested(this, false);
                 }
               }
@@ -1416,6 +1427,11 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
             }
           }
         }
+
+        if (listener != null && newSection != -1) {
+          listener.onSectionSwitched(this, newSection, prevSection);
+        }
+
         break;
       }
     }
@@ -1584,37 +1600,17 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     moveHeader(totalDy);
   }
 
-  /*@Override
-  public void onFactorChangeFinished (int id, float finalFactor) { }
+  public void onSectionInteracted (@EmojiMediaType int mediaType, boolean interactionFinished) {
+    if (listener != null) {
+      listener.onSectionInteracted(this, mediaType, interactionFinished);
+    }
+  }
 
-  public void modifyRecyclerView (RecyclerView recyclerView) {
-    recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-
-      private int totalDy;
-      private boolean lastIsScrolling;
-
-      @Override
-      public void onScrollStateChanged (RecyclerView recyclerView, int newState) {
-        boolean isScrolling = newState == RecyclerView.SCROLL_STATE_DRAGGING || newState == RecyclerView.SCROLL_STATE_SETTLING;
-
-
-        if (lastIsScrolling != isScrolling) {
-          lastIsScrolling = isScrolling;
-
-          if (!isScrolling) {
-            applyHeaderVisibleY();
-            showOrHideHeader();
-          }
-        }
-      }
-
-      @Override
-      public void onScrolled (RecyclerView recyclerView, int dx, int dy) {
-        totalDy += dy;
-        moveHeader(totalDy);
-      }
-    });
-  }*/
+  public void onSectionScroll (@EmojiMediaType int mediaType, boolean moved) {
+    if (moved) {
+      onSectionInteracted(mediaType, false);
+    }
+  }
 
   private static class Adapter extends PagerAdapter {
     private final ViewController<?> context;
@@ -1676,7 +1672,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
 
     @Override
     public void destroyItem (ViewGroup container, int position, @NonNull Object object) {
-      container.removeView(((ViewController<?>) object).get());
+      container.removeView(((ViewController<?>) object).getValue());
     }
 
     @Override
@@ -1699,13 +1695,13 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
           c.bindThemeListeners(themeProvider);
         }
       }
-      container.addView(c.get());
+      container.addView(c.getValue());
       return c;
     }
 
     @Override
     public boolean isViewFromObject (@NonNull View view, @NonNull Object object) {
-      return object instanceof ViewController && ((ViewController<?>) object).get() == view;
+      return object instanceof ViewController && ((ViewController<?>) object).getValue() == view;
     }
   }
 
@@ -1824,17 +1820,47 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
 
   // Icon
 
-  public void setPreferredSection (int section) {
+  private int getCurrentMediaEmojiSection () {
+    ViewController<?> c = adapter.getCachedItem(1);
+    if (c instanceof EmojiMediaListController) {
+      return ((EmojiMediaListController) c).getMediaSection();
+    }
+    return Settings.instance().getEmojiMediaSection();
+  }
+
+  public @EmojiMediaType int getCurrentEmojiSection () {
+    if (allowMedia) {
+      int currentItem = pager.getCurrentItem();
+      if (currentItem == 1) {
+        return getCurrentMediaEmojiSection();
+      }
+    }
+    return EmojiMediaType.EMOJI;
+  }
+
+  public void setPreferredSection (@EmojiMediaType int section) {
     if (allowMedia) {
       Settings.instance().setEmojiMediaSection(section);
-      setMediaSection(section == Settings.EMOJI_MEDIA_SECTION_GIFS);
+      setMediaSection(section == EmojiMediaType.GIF);
     }
+  }
+
+  public Listener getListener () {
+    return listener;
   }
 
   public void setMediaSection (boolean isGif) {
     if (emojiSections.size() > 7) {
       emojiSections.get(7).changeIcon(isGif ? R.drawable.deproko_baseline_gif_24 : R.drawable.deproko_baseline_stickers_24);
     }
+  }
+
+  public static @EmojiMediaType int getTargetSection () {
+    int position = Settings.instance().getEmojiPosition();
+    if (position == 0) {
+      return EmojiMediaType.EMOJI;
+    }
+    return Settings.instance().getEmojiMediaSection();
   }
 
   public static @DrawableRes int getTargetIcon (boolean isMessage) {
@@ -1846,9 +1872,9 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
 
     int section = Settings.instance().getEmojiMediaSection();
     if (isMessage) {
-      return section == Settings.EMOJI_MEDIA_SECTION_GIFS ? R.drawable.deproko_baseline_gif_24 : R.drawable.deproko_baseline_insert_sticker_26;
+      return section == EmojiMediaType.GIF ? R.drawable.deproko_baseline_gif_24 : R.drawable.deproko_baseline_insert_sticker_26;
     } else {
-      return section == Settings.EMOJI_MEDIA_SECTION_GIFS ? R.drawable.deproko_baseline_gif_24 : R.drawable.deproko_baseline_stickers_24;
+      return section == EmojiMediaType.GIF ? R.drawable.deproko_baseline_gif_24 : R.drawable.deproko_baseline_stickers_24;
     }
   }
 

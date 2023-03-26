@@ -768,13 +768,19 @@ public class PlaybackController extends ViewController<Void> implements Menu, Mo
     ListItem footerItem = tracks.get(tracks.size() - 1);
     int prevSize = tracks.size() - 2;
 
+    canRestoreList = false;
+
     tracks.clear();
     ArrayUtils.ensureCapacity(tracks, trackList.size() + 1);
 
     tracks.add(headerItem);
     int foundIndex = buildList(tracks, tdlib, currentTrack, trackList, playListChatId, playFlags);
     if (foundIndex == -1) {
-      throw new IllegalStateException();
+      if (isAttachedToNavigationController()) {
+        throw new IllegalStateException();
+      }
+      context.navigation().getStack().destroy(this);
+      return;
     }
     tracks.add(footerItem);
 

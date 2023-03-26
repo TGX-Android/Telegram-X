@@ -50,6 +50,7 @@ import org.thunderdog.challegram.emoji.RecentEmoji;
 import org.thunderdog.challegram.emoji.RecentInfo;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.player.TGPlayerController;
+import org.thunderdog.challegram.telegram.EmojiMediaType;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibFilesManager;
@@ -379,6 +380,7 @@ public class Settings {
 
   public static final long SETTING_FLAG_NO_EMBEDS = 1 << 13;
   public static final long SETTING_FLAG_LIMIT_STICKERS_FPS = 1 << 14;
+  public static final long SETTING_FLAG_EXPAND_RECENT_STICKERS = 1 << 15;
 
   private static final @Deprecated int DISABLED_FLAG_OTHER_NEED_RAISE_TO_SPEAK = 1 << 2;
   private static final @Deprecated int DISABLED_FLAG_OTHER_AUTODOWNLOAD_IN_BACKGROUND = 1 << 3;
@@ -507,7 +509,7 @@ public class Settings {
     }
 
     private boolean checkLogSetting (int flag) {
-      return BitwiseUtils.getFlag(getSettings(), flag);
+      return BitwiseUtils.hasFlag(getSettings(), flag);
     }
 
     private boolean setLogSetting (int flag, boolean enabled) {
@@ -1062,7 +1064,7 @@ public class Settings {
   }
 
   public boolean getNewSetting (long key) {
-    return BitwiseUtils.getFlag(getNewSettings(), key);
+    return BitwiseUtils.hasFlag(getNewSettings(), key);
   }
 
   private boolean setNewSettings (long newSettings) {
@@ -1132,7 +1134,7 @@ public class Settings {
   }
 
   private boolean checkSetting (int flag) {
-    return BitwiseUtils.getFlag(getSettings(), flag);
+    return BitwiseUtils.hasFlag(getSettings(), flag);
   }
 
   private boolean checkNegativeSetting (int flag) {
@@ -2141,14 +2143,14 @@ public class Settings {
     File proxyFile = getProxyConfigFile();
     if (proxyFile.exists()) {
       if (proxyFile.length() > 0) {
-        TdApi.Proxy proxy = null;
+        TdApi.InternalLinkTypeProxy proxy = null;
         try (RandomAccessFile r = new RandomAccessFile(proxyFile, "r")) {
           proxy = readProxy(r);
         } catch (IOException e) {
           Log.e(e);
         }
         if (proxy != null) {
-          addOrUpdateProxy(proxy.server, proxy.port, proxy.type,null, true);
+          addOrUpdateProxy(proxy, null, true);
         }
       }
       if (!proxyFile.delete()) {
@@ -2165,7 +2167,7 @@ public class Settings {
   }
 
   @Deprecated
-  private static TdApi.Proxy readProxy (RandomAccessFile file) throws IOException {
+  private static TdApi.InternalLinkTypeProxy readProxy (RandomAccessFile file) throws IOException {
     switch (Blob.readVarint(file)) {
       case 1456461592: {
         String server = Blob.readString(file);
@@ -2173,7 +2175,11 @@ public class Settings {
         byte flags = Blob.readByte(file);
         String username = (flags & 1) != 0 ? Blob.readString(file) : "";
         String password = (flags & 2) != 0 ? Blob.readString(file) : "";
-        return new TdApi.Proxy(0, server, port, 0, false, new TdApi.ProxyTypeSocks5(username, password));
+        return new TdApi.InternalLinkTypeProxy(
+          server,
+          port,
+          new TdApi.ProxyTypeSocks5(username, password)
+        );
       }
       default:
         return null;
@@ -2219,7 +2225,7 @@ public class Settings {
   }
 
   public boolean needTutorial (long flag) {
-    return !BitwiseUtils.getFlag(getTutorialFlags(), flag) && !BitwiseUtils.getFlag(shownTutorials, flag);
+    return !BitwiseUtils.hasFlag(getTutorialFlags(), flag) && !BitwiseUtils.hasFlag(shownTutorials, flag);
   }
 
   public boolean needTutorial (@NonNull TdApi.ChatSource source) {
@@ -2450,7 +2456,7 @@ public class Settings {
   private int getNotificationFlags () {
     if (_notificationFlags == null) {
       int flags = pmc.getInt(KEY_NOTIFICATION_FLAGS, NOTIFICATION_FLAGS_DEFAULT);
-      if (BitwiseUtils.getFlag(flags, NOTIFICATION_FLAG_ONLY_ACTIVE_ACCOUNT) && BitwiseUtils.getFlag(flags, NOTIFICATION_FLAG_ONLY_SELECTED_ACCOUNTS)) {
+      if (BitwiseUtils.hasFlag(flags, NOTIFICATION_FLAG_ONLY_ACTIVE_ACCOUNT) && BitwiseUtils.hasFlag(flags, NOTIFICATION_FLAG_ONLY_SELECTED_ACCOUNTS)) {
         flags = BitwiseUtils.setFlag(flags, NOTIFICATION_FLAG_ONLY_ACTIVE_ACCOUNT, false);
         flags = BitwiseUtils.setFlag(flags, NOTIFICATION_FLAG_ONLY_SELECTED_ACCOUNTS, false);
       }
@@ -2460,7 +2466,7 @@ public class Settings {
   }
 
   public boolean checkNotificationFlag (int flag) {
-    return BitwiseUtils.getFlag(getNotificationFlags(), flag);
+    return BitwiseUtils.hasFlag(getNotificationFlags(), flag);
   }
 
   public boolean setNotificationFlag (int flag, boolean enabled) {
@@ -3226,14 +3232,11 @@ public class Settings {
 
   // EmojiLayout
 
-  public static final int EMOJI_MEDIA_SECTION_STICKERS = 0;
-  public static final int EMOJI_MEDIA_SECTION_GIFS = 1;
-
   public int getEmojiPosition () {
     return getInt(KEY_EMOJI_POSITION, 0);
   }
   public int getEmojiMediaSection () {
-    return getInt(KEY_EMOJI_MEDIA_SECTION, EMOJI_MEDIA_SECTION_STICKERS);
+    return getInt(KEY_EMOJI_MEDIA_SECTION, EmojiMediaType.STICKER);
   }
   public void setEmojiPosition (int position) {
     putInt(KEY_EMOJI_POSITION, position);
@@ -3956,13 +3959,22 @@ public class Settings {
   // type:byte[] description: Proxy configuration (constructor, server, port, ?username, ?password)
   private static final String KEY_PROXY_PREFIX_CONFIG = KEY_PROXY_ITEM_PREFIX + "config_"; // + proxy_id
   // type:long   description: Last connection time (in milliseconds)
+  @Deprecated
   private static final String KEY_PROXY_PREFIX_CONNECTION_TIME = KEY_PROXY_ITEM_PREFIX + "time_"; // + proxy_id + "_" + accountId
   // type:string description: Proxy description
   private static final String KEY_PROXY_PREFIX_DESCRIPTION = KEY_PROXY_ITEM_PREFIX + "desc_";
+  // type:int description: Amount of times proxy was connected
+  private static final String KEY_PROXY_PREFIX_CONNECTED_COUNT = KEY_PROXY_ITEM_PREFIX + "success_";
+  // type:long[] description: {time proxy connected, time elapsed since connection attempted}
+  private static final String KEY_PROXY_PREFIX_LAST_CONNECTION = KEY_PROXY_ITEM_PREFIX + "connect_";
+  // type:long[] description: {time pong received, ping value}
+  private static final String KEY_PROXY_PREFIX_LAST_PING = KEY_PROXY_ITEM_PREFIX + "ping_";
 
   public static final int PROXY_FLAG_ENABLED = 1;
   public static final int PROXY_FLAG_USE_FOR_CALLS = 1 << 1;
   public static final int PROXY_FLAG_SHOW_ERRORS = 1 << 2;
+  public static final int PROXY_FLAG_SWITCH_AUTOMATICALLY = 1 << 3;
+  public static final int PROXY_FLAG_SWITCH_ALLOW_DIRECT = 1 << 4;
 
   public static final int PROXY_ID_UNKNOWN = -1;
   public static final int PROXY_ID_NONE = 0;
@@ -3976,7 +3988,7 @@ public class Settings {
    *         Returns {@link #PROXY_ID_NONE} in case {@link #PROXY_FLAG_ENABLED} is not set.
    */
   public int getEffectiveProxyId () {
-    if ((getProxySettings() & PROXY_FLAG_ENABLED) != 0) {
+    if (BitwiseUtils.hasFlag(getProxySettings(), PROXY_FLAG_ENABLED)) {
       return getAvailableProxyId();
     }
     return PROXY_ID_NONE;
@@ -3987,7 +3999,7 @@ public class Settings {
    */
   public int getEffectiveCallsProxyId () {
     int settings = getProxySettings();
-    if ((settings & PROXY_FLAG_ENABLED) != 0 && (settings & PROXY_FLAG_USE_FOR_CALLS) != 0) {
+    if (BitwiseUtils.hasFlag(settings, PROXY_FLAG_ENABLED) && BitwiseUtils.hasFlag(settings, PROXY_FLAG_USE_FOR_CALLS)) {
       return getAvailableProxyId();
     }
     return PROXY_ID_NONE;
@@ -4061,14 +4073,10 @@ public class Settings {
     }
   }
 
-  private boolean setProxySettingImpl (int settings, int setting, boolean enabled) {
-    if (enabled == ((settings & setting) != 0)) {
+  private boolean setProxySettingImpl (final int oldSettings, int setting, boolean enabled) {
+    int newSettings = BitwiseUtils.setFlag(oldSettings, setting, enabled);
+    if (newSettings == oldSettings) {
       return enabled;
-    }
-    if (enabled) {
-      settings |= setting;
-    } else {
-      settings &= ~setting;
     }
     if (setting == PROXY_FLAG_ENABLED) {
       int proxyId; Proxy proxy;
@@ -4085,14 +4093,14 @@ public class Settings {
         proxyId = PROXY_ID_NONE;
         proxy = null;
       }
-      pmc.putByte(KEY_PROXY_SETTINGS, (byte) settings);
+      pmc.putByte(KEY_PROXY_SETTINGS, (byte) newSettings);
       if (proxy != null) {
-        dispatchProxyConfiguration(proxyId, proxy.server, proxy.port, proxy.type, proxy.description, true, false);
+        dispatchProxyConfiguration(proxyId, proxy.proxy, proxy.description, true, false);
       } else {
-        dispatchProxyConfiguration(PROXY_ID_NONE, null, 0, null, null, true, false);
+        dispatchProxyConfiguration(PROXY_ID_NONE, null, null, true, false);
       }
     } else {
-      pmc.putByte(KEY_PROXY_SETTINGS, (byte) settings);
+      pmc.putByte(KEY_PROXY_SETTINGS, (byte) newSettings);
     }
     return enabled;
   }
@@ -4166,7 +4174,7 @@ public class Settings {
           throw new UnsupportedOperationException(Integer.toString(typeId));
       }
 
-      return new Proxy(proxyId, server, port, type, null);
+      return new Proxy(proxyId, new TdApi.InternalLinkTypeProxy(server, port, type), null);
     } catch (Throwable t) {
       Log.w("Unable to read proxy configuration", t);
     }
@@ -4179,8 +4187,10 @@ public class Settings {
         return ((TdApi.ProxyTypeSocks5) type).username;
       case TdApi.ProxyTypeHttp.CONSTRUCTOR:
         return ((TdApi.ProxyTypeHttp) type).username;
+      case TdApi.ProxyTypeMtproto.CONSTRUCTOR:
+        return null;
     }
-    return null;
+    throw new UnsupportedOperationException(type.toString());
   }
 
   public static String getProxyPassword (@NonNull TdApi.ProxyType type) {
@@ -4189,8 +4199,10 @@ public class Settings {
         return ((TdApi.ProxyTypeSocks5) type).password;
       case TdApi.ProxyTypeHttp.CONSTRUCTOR:
         return ((TdApi.ProxyTypeHttp) type).password;
+      case TdApi.ProxyTypeMtproto.CONSTRUCTOR:
+        return null;
     }
-    return null;
+    throw new UnsupportedOperationException(type.toString());
   }
 
   public static int getProxyDefaultOrder (@NonNull TdApi.ProxyType type) {
@@ -4202,7 +4214,7 @@ public class Settings {
       case TdApi.ProxyTypeHttp.CONSTRUCTOR:
         return 3;
     }
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException(type.toString());
   }
 
   private static @Proxy.Type int getProxyType (@NonNull TdApi.ProxyType type) {
@@ -4214,35 +4226,35 @@ public class Settings {
       case TdApi.ProxyTypeHttp.CONSTRUCTOR:
         return Proxy.TYPE_HTTP;
     }
-    throw new UnsupportedOperationException();
+    throw new UnsupportedOperationException(type.toString());
   }
 
-  private static byte[] serializeProxy (@NonNull String server, int port, @NonNull TdApi.ProxyType type) {
-    @Proxy.Type int typeId = getProxyType(type);
+  private static byte[] serializeProxy (@NonNull TdApi.InternalLinkTypeProxy proxy) {
+    @Proxy.Type int typeId = getProxyType(proxy.type);
 
     final Blob blob;
     int size = 0;
 
-    size += Blob.sizeOf(server, false);
+    size += Blob.sizeOf(proxy.server, false);
     size += 4 /*port*/ + 1 /*typeId*/;
 
     switch (typeId) {
       case Proxy.TYPE_SOCKS5: {
-        TdApi.ProxyTypeSocks5 socks5 = (TdApi.ProxyTypeSocks5) type;
+        TdApi.ProxyTypeSocks5 socks5 = (TdApi.ProxyTypeSocks5) proxy.type;
 
         size += calculateProxyCredentialsSize(socks5.username, socks5.password);
 
         break;
       }
       case Proxy.TYPE_MTPROTO: {
-        TdApi.ProxyTypeMtproto mtproto = (TdApi.ProxyTypeMtproto) type;
+        TdApi.ProxyTypeMtproto mtproto = (TdApi.ProxyTypeMtproto) proxy.type;
 
         size += Blob.sizeOf(mtproto.secret != null ? mtproto.secret : "", true);
 
         break;
       }
       case Proxy.TYPE_HTTP: {
-        TdApi.ProxyTypeHttp http = (TdApi.ProxyTypeHttp) type;
+        TdApi.ProxyTypeHttp http = (TdApi.ProxyTypeHttp) proxy.type;
 
         size += calculateProxyCredentialsSize(http.username, http.password);
         size += 1;
@@ -4252,25 +4264,25 @@ public class Settings {
     }
 
     blob = new Blob(size);
-    blob.writeString(server);
-    blob.writeInt(port);
+    blob.writeString(proxy.server);
+    blob.writeInt(proxy.port);
     blob.writeByte((byte) typeId);
 
     switch (typeId) {
       case Proxy.TYPE_SOCKS5: {
-        TdApi.ProxyTypeSocks5 socks5 = (TdApi.ProxyTypeSocks5) type;
+        TdApi.ProxyTypeSocks5 socks5 = (TdApi.ProxyTypeSocks5) proxy.type;
         writeProxyCredentials(blob, socks5.username, socks5.password);
         break;
       }
       case Proxy.TYPE_MTPROTO: {
-        TdApi.ProxyTypeMtproto mtproto = (TdApi.ProxyTypeMtproto) type;
+        TdApi.ProxyTypeMtproto mtproto = (TdApi.ProxyTypeMtproto) proxy.type;
 
         blob.writeString(mtproto.secret != null ? mtproto.secret : "");
 
         break;
       }
       case Proxy.TYPE_HTTP: {
-        TdApi.ProxyTypeHttp http = (TdApi.ProxyTypeHttp) type;
+        TdApi.ProxyTypeHttp http = (TdApi.ProxyTypeHttp) proxy.type;
 
         writeProxyCredentials(blob, http.username, http.password);
         blob.writeByte((byte) (http.httpOnly ? 1 : 0));
@@ -4302,13 +4314,11 @@ public class Settings {
   /**
    * Get existing proxy identifier
    *
-   * @param server Proxy server
-   * @param port   Proxy port
-   * @param type   Proxy type
+   * @param proxy Proxy information
    * @return Proxy identifier, or {@link #PROXY_ID_NONE} if not found
    */
-  public int getExistingProxyId (@NonNull String server, int port, @NonNull TdApi.ProxyType type) {
-    final byte[] data = serializeProxy(server, port, type);
+  public int getExistingProxyId (@NonNull TdApi.InternalLinkTypeProxy proxy) {
+    final byte[] data = serializeProxy(proxy);
     if (data != null) {
       String existingKey = pmc.findByValue(KEY_PROXY_PREFIX_CONFIG, data);
       if (existingKey != null) {
@@ -4318,23 +4328,37 @@ public class Settings {
     return PROXY_ID_NONE;
   }
 
-  public int addOrUpdateProxy (@NonNull String server, int port, @NonNull TdApi.ProxyType type, @Nullable String proxyDescription, boolean setAsCurrent) {
-    return addOrUpdateProxy(server, port, type, proxyDescription, setAsCurrent, PROXY_ID_NONE);
+  public void trackSuccessfulConnection (int proxyId, long timestampMs, long resultMs, boolean isPing) {
+    if (proxyId <= Settings.PROXY_ID_UNKNOWN)
+      throw new IllegalArgumentException(Integer.toString(proxyId));
+    if (isPing) {
+      pmc.putLongArray(KEY_PROXY_PREFIX_LAST_PING + proxyId, new long[] {timestampMs, resultMs});
+    } else {
+      int connectedCount =
+        pmc.getInt(KEY_PROXY_PREFIX_CONNECTED_COUNT + proxyId, 0)
+          + 1;
+      pmc.edit()
+        .putLongArray(KEY_PROXY_PREFIX_LAST_CONNECTION + proxyId, new long[] {timestampMs, resultMs})
+        .putInt(KEY_PROXY_PREFIX_CONNECTED_COUNT + proxyId, connectedCount)
+        .apply();
+    }
+  }
+
+  public int addOrUpdateProxy (@NonNull TdApi.InternalLinkTypeProxy proxy, @Nullable String proxyDescription, boolean setAsCurrent) {
+    return addOrUpdateProxy(proxy, proxyDescription, setAsCurrent, PROXY_ID_NONE);
   }
 
   /**
    * Adds proxy configuration or returns identifier of existing one.
    *
-   * @param server Proxy server
-   * @param port   Proxy port
-   * @param type   Proxy type
+   * @param proxy Proxy server
    * @param proxyDescription Nullable alias for the proxy.
    * @param setAsCurrent If set to false, proxy will be saved for later use.
    * @param existingProxyId Existing proxy identifier to be modified or {@link #PROXY_ID_NONE}
    * @return proxy identifier
    */
-  public int addOrUpdateProxy (@NonNull String server, int port, @NonNull TdApi.ProxyType type, @Nullable String proxyDescription, boolean setAsCurrent, int existingProxyId) {
-    final byte[] data = serializeProxy(server, port, type);
+  public int addOrUpdateProxy (@NonNull TdApi.InternalLinkTypeProxy proxy, @Nullable String proxyDescription, boolean setAsCurrent, int existingProxyId) {
+    final byte[] data = serializeProxy(proxy);
     final int proxyId;
     if (proxyDescription != null) {
       proxyDescription = proxyDescription.trim();
@@ -4395,9 +4419,9 @@ public class Settings {
     editor.apply();
 
     if (isNewAdd) {
-      dispatchProxyAdded(new Proxy(proxyId, server, port, type, proxyDescription), setAsCurrent);
+      dispatchProxyAdded(new Proxy(proxyId, proxy, proxyDescription), setAsCurrent);
     }
-    dispatchProxyConfiguration(proxyId, server, port, type, proxyDescription, setAsCurrent || (availableProxyId == proxyId && (proxySettings & PROXY_FLAG_ENABLED) != 0), isNewAdd);
+    dispatchProxyConfiguration(proxyId, proxy, proxyDescription, setAsCurrent || (availableProxyId == proxyId && (proxySettings & PROXY_FLAG_ENABLED) != 0), isNewAdd);
     if (availableProxyId == PROXY_ID_NONE) {
       dispatchProxyAvailabilityChanged(true);
     }
@@ -4495,12 +4519,13 @@ public class Settings {
 
     public final int id;
 
-    public String server;
-    public int port;
-    public TdApi.ProxyType type;
+    public @Nullable TdApi.InternalLinkTypeProxy proxy;
 
     public int order = ORDER_UNSET;
     public @Nullable String description;
+    public int successfulConnectionsCount;
+    public long lastConnectionTime, lastConnectionDuration;
+    public long lastPingTime, lastPingResult;
 
     public int pingCount;
     public long pingMs = PROXY_TIME_UNSET;
@@ -4508,14 +4533,17 @@ public class Settings {
     public int pingErrorCount;
     public int winState;
 
-    public Proxy (int id, String server, int port, TdApi.ProxyType type, @Nullable String description) {
+    public Proxy (int id, @Nullable TdApi.InternalLinkTypeProxy proxy, @Nullable String description) {
+      if (id != PROXY_ID_NONE && proxy == null)
+        throw new IllegalArgumentException();
       this.id = id;
-      this.server = server;
-      this.port = port;
-      this.type = type;
+      this.proxy = proxy;
       this.description = description;
     }
 
+    public boolean hasPong () {
+      return pingMs >= 0;
+    }
     public static boolean canUseForCalls (@Nullable TdApi.ProxyType type) {
       if (type != null) {
         switch (type.getConstructor()) {
@@ -4527,19 +4555,19 @@ public class Settings {
     }
 
     public boolean canUseForCalls () {
-      return canUseForCalls(type);
+      return proxy != null && canUseForCalls(proxy.type);
     }
 
     public CharSequence getName () {
-      if (type == null) {
+      if (proxy == null) {
         return null;
       }
-      final String name = StringUtils.isEmpty(description) ? server + ":" + port : description;
+      final String name = StringUtils.isEmpty(description) ? proxy.server + ":" + proxy.port : description;
       int stringRes;
-      switch (type.getConstructor()) {
+      switch (proxy.type.getConstructor()) {
         case TdApi.ProxyTypeSocks5.CONSTRUCTOR: {
-          TdApi.ProxyTypeSocks5 socks5 = (TdApi.ProxyTypeSocks5) type;
-          if (port == 9050 && StringUtils.isEmpty(socks5.username) && StringUtils.isEmpty(socks5.password) && U.isLocalhost(server.toLowerCase())) {
+          TdApi.ProxyTypeSocks5 socks5 = (TdApi.ProxyTypeSocks5) proxy.type;
+          if (proxy.port == 9050 && StringUtils.isEmpty(socks5.username) && StringUtils.isEmpty(socks5.password) && U.isLocalhost(proxy.server.toLowerCase())) {
             stringRes = R.string.ProxyTorNetwork;
           } else {
             stringRes = R.string.ProxySocks5;
@@ -4553,7 +4581,7 @@ public class Settings {
           stringRes = R.string.ProxyHttp;
           break;
         default:
-          throw new UnsupportedOperationException(type.toString());
+          throw new UnsupportedOperationException(proxy.type.toString());
       }
       return Lang.getString(stringRes, (target, argStart, argEnd, argIndex, needFakeBold) -> new CustomTypefaceSpan(null, R.id.theme_color_textLight), name);
     }
@@ -4566,10 +4594,42 @@ public class Settings {
         return Integer.compare(o.id, id);
     }
 
+    public int defaultOrder () {
+      return proxy != null ? Settings.getProxyDefaultOrder(proxy.type) : -1;
+    }
+
+    public boolean isDirect () {
+      return proxy == null;
+    }
+
     @Override
     public String toString () {
       CharSequence name = getName();
       return name != null ? name.toString() : super.toString();
+    }
+
+    public static Proxy noProxy (boolean loadStats) {
+      Proxy proxy = new Proxy(Settings.PROXY_ID_NONE, null, null);
+      if (loadStats) {
+        proxy.successfulConnectionsCount = Settings.instance().getInt(
+          KEY_PROXY_PREFIX_CONNECTED_COUNT + Settings.PROXY_ID_NONE, 0
+        );
+        long[] lastPingResult = Settings.instance().getLongArray(
+          KEY_PROXY_PREFIX_LAST_PING + Settings.PROXY_ID_NONE
+        );
+        if (lastPingResult != null) {
+          proxy.lastPingTime = lastPingResult.length > 0 ? lastPingResult[0] : 0;
+          proxy.lastPingResult = lastPingResult.length > 1 ? lastPingResult[1] : 0;
+        }
+        long[] lastConnectionInfo = Settings.instance().getLongArray(
+          KEY_PROXY_PREFIX_LAST_CONNECTION + Settings.PROXY_ID_NONE
+        );
+        if (lastConnectionInfo != null) {
+          proxy.lastConnectionTime = lastConnectionInfo.length > 0 ? lastConnectionInfo[0] : 0;
+          proxy.lastConnectionDuration = lastConnectionInfo.length > 0 ? lastConnectionInfo[1] : 0;
+        }
+      }
+      return proxy;
     }
   }
 
@@ -4594,6 +4654,11 @@ public class Settings {
    * @return list of available proxy configurations
    */
   public @NonNull List<Proxy> getAvailableProxies () {
+    // TODO cache
+    return loadAvailableProxies();
+  }
+
+  private @NonNull List<Proxy> loadAvailableProxies () {
     List<Proxy> proxies = new ArrayList<>();
     Blob blob = null;
     int[] order = pmc.getIntArray(KEY_PROXY_ORDER);
@@ -4603,6 +4668,7 @@ public class Settings {
       if (i == -1) {
         continue;
       }
+      String subKey = key.substring(0, i + 1);
       int proxyId = StringUtils.parseInt(key.substring(i + 1));
       if (proxyId < PROXY_ID_NONE) {
         Log.w("Unknown proxy id entry:%d", proxyId);
@@ -4611,7 +4677,7 @@ public class Settings {
       if (proxyId == PROXY_ID_NONE) {
         continue;
       }
-      if (key.startsWith(KEY_PROXY_PREFIX_CONFIG)) {
+      if (subKey.equals(KEY_PROXY_PREFIX_CONFIG)) {
         // Config itself
         byte[] data = entry.asByteArray();
         if (blob == null)
@@ -4628,14 +4694,27 @@ public class Settings {
         Proxy lastProxy = proxies.get(proxies.size() - 1);
         if (lastProxy.id == proxyId) {
           try {
-            /*if (key.startsWith(KEY_PROXY_PREFIX_CONNECTION_TIME)) {
-              int split = key.indexOf('_', KEY_PROXY_PREFIX_CONNECTION_TIME.length());
-              if (split != -1) {
-                int accountId = U.parseInt(key.substring(split + 1));
-                lastProxy.connectionTime.put(accountId, entry.asInt());
+            switch (key) {
+              case KEY_PROXY_PREFIX_DESCRIPTION: {
+                lastProxy.description = entry.asString();
+                break;
               }
-            } else*/if (key.startsWith(KEY_PROXY_PREFIX_DESCRIPTION)) {
-              lastProxy.description = entry.asString();
+              case KEY_PROXY_PREFIX_CONNECTED_COUNT: {
+                lastProxy.successfulConnectionsCount = entry.asInt();
+                break;
+              }
+              case KEY_PROXY_PREFIX_LAST_CONNECTION: {
+                long[] lastConnectionInfo = entry.asLongArray();
+                lastProxy.lastConnectionTime = lastConnectionInfo.length > 0 ? lastConnectionInfo[0] : 0;
+                lastProxy.lastConnectionDuration = lastConnectionInfo.length > 1 ? lastConnectionInfo[1] : 0;
+                break;
+              }
+              case KEY_PROXY_PREFIX_LAST_PING: {
+                long[] lastPingInfo = entry.asLongArray();
+                lastProxy.lastPingTime = lastPingInfo.length > 0 ? lastPingInfo[0] : 0;
+                lastProxy.lastPingResult = lastPingInfo.length > 1 ? lastPingInfo[1] : 0;
+                break;
+              }
             }
           } catch (IllegalArgumentException ignored) { }
         }
@@ -4646,7 +4725,7 @@ public class Settings {
   }
 
   public interface ProxyChangeListener {
-    void onProxyConfigurationChanged (int proxyId, @Nullable String server, int port, @Nullable TdApi.ProxyType type, @Nullable String description, boolean isCurrent, boolean isNewAdd);
+    void onProxyConfigurationChanged (int proxyId, @Nullable TdApi.InternalLinkTypeProxy proxy, @Nullable String description, boolean isCurrent, boolean isNewAdd);
     void onProxyAvailabilityChanged (boolean isAvailable);
     void onProxyAdded (Proxy proxy, boolean isCurrent);
   }
@@ -4663,16 +4742,14 @@ public class Settings {
 
   /**
    * Notifies that all TDLib instances must change proxy configuration.
-   *  @param id     Proxy identifier
-   * @param server Proxy server
-   * @param port   Proxy port
-   * @param type   Proxy type
+   * @param id Proxy identifier
+   * @param proxy Proxy details
    * @param isCurrent True when this proxy is applied to TDLib instances
    * @param isNewAdd
    */
-  private void dispatchProxyConfiguration (int id, @Nullable String server, int port, @Nullable TdApi.ProxyType type, @Nullable String description, boolean isCurrent, boolean isNewAdd) {
+  private void dispatchProxyConfiguration (int id, @Nullable TdApi.InternalLinkTypeProxy proxy, @Nullable String description, boolean isCurrent, boolean isNewAdd) {
     for (ProxyChangeListener listener : proxyListeners) {
-      listener.onProxyConfigurationChanged(id, server, port, type, description, isCurrent, isNewAdd);
+      listener.onProxyConfigurationChanged(id, proxy, description, isCurrent, isNewAdd);
     }
   }
 
@@ -5625,7 +5702,7 @@ public class Settings {
   }
 
   public boolean checkUtilityFeature (int feature) {
-    return BitwiseUtils.getFlag(getUtilityFeatures(), feature);
+    return BitwiseUtils.hasFlag(getUtilityFeatures(), feature);
   }
 
   public boolean forceDisableNetwork () {
@@ -5811,14 +5888,14 @@ public class Settings {
         String crashedTdlibCommit = crashedBuildInfo != null ? crashedBuildInfo.getTdlibCommitFull() : null;
         if (StringUtils.isEmpty(crashedTdlibCommit) ||
           !crashedTdlibCommit.equalsIgnoreCase(getCurrentBuildInformation().getTdlibCommitFull()) ||
-          !BitwiseUtils.getFlag(flags, Crash.Flags.SOURCE_TDLIB | Crash.Flags.SOURCE_TDLIB_PARAMETERS)) {
+          !BitwiseUtils.hasFlag(flags, Crash.Flags.SOURCE_TDLIB | Crash.Flags.SOURCE_TDLIB_PARAMETERS)) {
           break;
         }
       }
-      if (!BitwiseUtils.getFlag(flags, Crash.Flags.SAVE_APPLICATION_LOG_EVENT)) {
+      if (!BitwiseUtils.hasFlag(flags, Crash.Flags.SAVE_APPLICATION_LOG_EVENT)) {
         continue;
       }
-      if (BitwiseUtils.getFlag(flags, Crash.Flags.APPLICATION_LOG_EVENT_SAVED)) {
+      if (BitwiseUtils.hasFlag(flags, Crash.Flags.APPLICATION_LOG_EVENT_SAVED)) {
         break;
       }
       Crash crash = getCrash(crashId, false);
@@ -5844,7 +5921,7 @@ public class Settings {
     final String keyPrefix = makeCrashPrefix(crashId);
     if (forApplicationStart) {
       @Crash.Flags int flags = Crash.restoreFlags(pmc, keyPrefix);
-      if (BitwiseUtils.getFlag(flags, Crash.Flags.RESOLVED)) {
+      if (BitwiseUtils.hasFlag(flags, Crash.Flags.RESOLVED)) {
         // Do not attempt to read any other fields, if user pressed "Launch App"
         return null;
       }

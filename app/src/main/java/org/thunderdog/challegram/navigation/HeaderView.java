@@ -307,6 +307,7 @@ public class HeaderView extends FrameLayoutFix implements View.OnClickListener, 
     if (!animating || preview.getHeaderColorId() == c.getHeaderColorId()) {
       filling.setColor(getHeaderColor(c, true));
       invalidateHeader();
+      backButton.invalidate();
     }
   }
 

@@ -729,7 +729,7 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
 
   public void finishDrawBatch () {
     int flags = drawBatchFlags;
-    if (gif != null && BitwiseUtils.getFlag(flags, DRAW_BATCH_STARTED) && BitwiseUtils.getFlag(flags, DRAW_BATCH_DRAWN)) {
+    if (gif != null && BitwiseUtils.hasFlag(flags, DRAW_BATCH_STARTED) && BitwiseUtils.hasFlag(flags, DRAW_BATCH_DRAWN)) {
       synchronized (gif.getBusyList()) {
         if (gif.hasBitmap()) {
           gif.getDrawFrame(true);
@@ -748,8 +748,8 @@ public class GifReceiver implements GifWatcher, Runnable, Receiver {
       boolean isFirstFrame = false;
       synchronized (gif.getBusyList()) {
         if (gif.hasBitmap()) {
-          final boolean inBatch = BitwiseUtils.getFlag(drawBatchFlags, DRAW_BATCH_STARTED);
-          if (!inBatch || !BitwiseUtils.getFlag(drawBatchFlags, DRAW_BATCH_DRAWN)) {
+          final boolean inBatch = BitwiseUtils.hasFlag(drawBatchFlags, DRAW_BATCH_STARTED);
+          if (!inBatch || !BitwiseUtils.hasFlag(drawBatchFlags, DRAW_BATCH_DRAWN)) {
             gif.applyNext();
             if (inBatch) {
               drawBatchFlags |= DRAW_BATCH_DRAWN;

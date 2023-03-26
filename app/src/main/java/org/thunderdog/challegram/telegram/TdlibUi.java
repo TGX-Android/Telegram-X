@@ -1846,7 +1846,7 @@ public class TdlibUi extends Handler {
     }
 
     public ChatOpenParameters messageThread (ThreadInfo threadInfo) {
-      if (threadInfo != null && BitwiseUtils.getFlag(options, CHAT_OPTION_SCHEDULED_MESSAGES)) {
+      if (threadInfo != null && BitwiseUtils.hasFlag(options, CHAT_OPTION_SCHEDULED_MESSAGES)) {
         throw new IllegalArgumentException();
       }
       this.threadInfo = threadInfo;
@@ -2100,7 +2100,7 @@ public class TdlibUi extends Handler {
       if (navigation.isEmpty()) {
         navigation.initController(c);
         MainController main = new MainController(context.context(), context.tdlib());
-        main.get();
+        main.getValue();
         navigation.getStack().insert(main, 0);
       } else {
         navigation.navigateTo(c);
@@ -2263,7 +2263,7 @@ public class TdlibUi extends Handler {
       .voiceChatInvitation(voiceChatInvitation)
     );
 
-    View view = controller.get();
+    View view = controller.getValue();
     if (controller.context().isNavigationBusy()) {
       if (params != null) {
         params.onDone();
@@ -2271,13 +2271,13 @@ public class TdlibUi extends Handler {
       return;
     }
     if (view.getParent() != null) {
-      ((ViewGroup) view.getParent()).removeView(controller.get());
+      ((ViewGroup) view.getParent()).removeView(controller.getValue());
     }
 
     if (navigation.isEmpty()) {
       navigation.initController(controller);
       MainController c = new MainController(context.context(), context.tdlib());
-      c.get();
+      c.getValue();
       navigation.getStack().insert(c, 0);
     } else if (navigation.getStackSize() > 1 && (options & CHAT_OPTION_KEEP_STACK) == 0) {
       navigation.setControllerAnimated(controller, true, true);
@@ -2314,14 +2314,14 @@ public class TdlibUi extends Handler {
     if (navigation.isEmpty()) {
       navigation.initController(profileController);
       MainController c = new MainController(context.context(), context.tdlib());
-      c.get();
+      c.getValue();
       navigation.getStack().insert(c, 0);
     } else {
       ViewController<?> c = navigation.getCurrentStackItem();
       if (c instanceof MessagesController && !tdlib.isSelfChat(chat) && ((MessagesController) c).getHeaderChatId() == chat.id && !((MessagesController) c).inPreviewMode()) {
         profileController.setShareCustomHeaderView(true);
       } else if (c instanceof ProfileController && ((ProfileController) c).isSameProfile(profileController)) {
-        profileController.get();
+        profileController.getValue();
         profileController.destroy();
         return;
       }
@@ -2618,7 +2618,7 @@ public class TdlibUi extends Handler {
     public TdApi.WebPage sourceWebPage;
 
     public MessageId messageId;
-    public String refererUrl, instantViewFallbackUrl;
+    public String refererUrl, instantViewFallbackUrl, originalUrl;
     public TooltipOverlayView.TooltipBuilder tooltip;
     public boolean requireOpenPrompt;
     public String displayUrl;
@@ -2639,6 +2639,7 @@ public class TdlibUi extends Handler {
         this.requireOpenPrompt = options.requireOpenPrompt;
         this.displayUrl = options.displayUrl;
         this.parentController = options.parentController;
+        this.originalUrl = options.originalUrl;
         if (options.sourceMessage != null) {
           sourceMessage(options.sourceMessage);
         }
@@ -2749,6 +2750,11 @@ public class TdlibUi extends Handler {
 
     public UrlOpenParameters referer (String refererUrl) {
       this.refererUrl = refererUrl;
+      return this;
+    }
+
+    public UrlOpenParameters originalUrl (String originalUrl) {
+      this.originalUrl = originalUrl;
       return this;
     }
 
@@ -3021,7 +3027,7 @@ public class TdlibUi extends Handler {
       @Override
       public void act () {
         if (!signal.getAndSet(true)) {
-          if (options != null && !StringUtils.isEmpty(options.instantViewFallbackUrl) && !options.instantViewFallbackUrl.equals(url)) {
+          if (options != null && !StringUtils.isEmpty(options.instantViewFallbackUrl) && !options.instantViewFallbackUrl.equals(url) && !options.instantViewFallbackUrl.equals(options.originalUrl)) {
             openUrl(context, options.instantViewFallbackUrl, new UrlOpenParameters(options).instantViewMode(INSTANT_VIEW_UNSPECIFIED));
             return;
           }
@@ -3041,7 +3047,7 @@ public class TdlibUi extends Handler {
               return;
             }
           }
-          if (!externalUrl.equals(url)) {
+          if (!externalUrl.equals(url) && !(options != null && externalUrl.equals(options.originalUrl))) {
             openUrl(context, externalUrl, new UrlOpenParameters(options).instantViewMode(INSTANT_VIEW_UNSPECIFIED));
           } else {
             UI.openUrl(externalUrl);
@@ -3367,7 +3373,7 @@ public class TdlibUi extends Handler {
     tdlib.client().send(new TdApi.GetInternalLinkType(url.get()), new Client.ResultHandler() {
       @Override
       public void onResult (TdApi.Object result) {
-        String currentUrl = url.get();
+        final String currentUrl = url.get();
         TdApi.InternalLinkType linkType;
         if (result instanceof TdApi.InternalLinkTypeUnknownDeepLink) {
           TdApi.InternalLinkType parsedType = parseTelegramUrl(rawUrl);
@@ -3464,15 +3470,6 @@ public class TdlibUi extends Handler {
               openChatProfile(context, 0, null, new TdApi.SearchUserByToken(token), openParameters);
               break;
             }
-            case TdApi.InternalLinkTypePublicChat.CONSTRUCTOR: {
-              TdApi.InternalLinkTypePublicChat publicChat = (TdApi.InternalLinkTypePublicChat) linkType;
-              if (TdConstants.IV_PREVIEW_USERNAME.equals(publicChat.chatUsername)) {
-                openExternalUrl(context, currentUrl, new UrlOpenParameters(openParameters).forceInstantView());
-              } else {
-                openPublicChat(context, publicChat.chatUsername, openParameters);
-              }
-              break;
-            }
             case TdApi.InternalLinkTypeVideoChat.CONSTRUCTOR: {
               TdApi.InternalLinkTypeVideoChat voiceChatInvitation = (TdApi.InternalLinkTypeVideoChat) linkType;
               openVideoChatOrLiveStream(context, voiceChatInvitation, openParameters);
@@ -3545,9 +3542,22 @@ public class TdlibUi extends Handler {
               context.context().navigation().navigateTo(c);
               break;
             }
+            case TdApi.InternalLinkTypePublicChat.CONSTRUCTOR: {
+              TdApi.InternalLinkTypePublicChat publicChat = (TdApi.InternalLinkTypePublicChat) linkType;
+              if (TdConstants.IV_PREVIEW_USERNAME.equals(publicChat.chatUsername)) {
+                openExternalUrl(context, currentUrl, new UrlOpenParameters(openParameters).forceInstantView());
+              } else {
+                openPublicChat(context, publicChat.chatUsername, openParameters);
+              }
+              break;
+            }
             case TdApi.InternalLinkTypeInstantView.CONSTRUCTOR: {
               TdApi.InternalLinkTypeInstantView instantView = (TdApi.InternalLinkTypeInstantView) linkType;
-              openExternalUrl(context, instantView.url, new UrlOpenParameters(openParameters).forceInstantView().instantViewFallbackUrl(instantView.fallbackUrl));
+              openExternalUrl(context, instantView.url, new UrlOpenParameters(openParameters)
+                .forceInstantView()
+                .originalUrl(currentUrl)
+                .instantViewFallbackUrl(instantView.fallbackUrl)
+              );
               break;
             }
             case TdApi.InternalLinkTypeActiveSessions.CONSTRUCTOR: {
@@ -3698,7 +3708,7 @@ public class TdlibUi extends Handler {
     }, (optionItemView, id) -> {
       switch (id) {
         case R.id.btn_open:
-          openUrl(context, url, openParametersFuture != null ? openParametersFuture.get() : null);
+          openUrl(context, url, openParametersFuture != null ? openParametersFuture.getValue() : null);
           break;
         case R.id.btn_copyLink:
           UI.copyText(url, R.string.CopiedLink);
@@ -3750,10 +3760,10 @@ public class TdlibUi extends Handler {
     c.showOptions(msg, ids.get(), strings.get(), colors.get(), icons.get(), (itemView, id) -> {
       switch (id) {
         case R.id.btn_addProxy:
-          Settings.instance().addOrUpdateProxy(server, port, type, null, true);
+          Settings.instance().addOrUpdateProxy(new TdApi.InternalLinkTypeProxy(server, port, type), null, true);
           break;
         case R.id.btn_save:
-          Settings.instance().addOrUpdateProxy(server, port, type, null, false);
+          Settings.instance().addOrUpdateProxy(new TdApi.InternalLinkTypeProxy(server, port, type), null, false);
           break;
       }
       return true;
@@ -3791,16 +3801,16 @@ public class TdlibUi extends Handler {
 
   public static int stringForConnectionState (@ConnectionState int state) {
     switch (state) {
-      case Tdlib.STATE_CONNECTED:
+      case ConnectionState.CONNECTED:
         return R.string.Connected;
-      case Tdlib.STATE_CONNECTING:
-      case Tdlib.STATE_UNKNOWN:
+      case ConnectionState.CONNECTING:
+      case ConnectionState.UNKNOWN:
         return R.string.network_Connecting;
-      case Tdlib.STATE_CONNECTING_TO_PROXY:
+      case ConnectionState.CONNECTING_TO_PROXY:
         return R.string.ConnectingToProxy;
-      case Tdlib.STATE_WAITING:
+      case ConnectionState.WAITING_FOR_NETWORK:
         return R.string.network_WaitingForNetwork;
-      case Tdlib.STATE_UPDATING:
+      case ConnectionState.UPDATING:
         return R.string.network_Updating;
     }
     throw new RuntimeException();
@@ -6208,8 +6218,8 @@ public class TdlibUi extends Handler {
 
   public HapticMenuHelper createSimpleHapticMenu (ViewController<?> context, long chatId, @Nullable FutureBool availabilityCallback, @Nullable FutureBool canDisableMarkdownCallback, @Nullable FutureBool canHideMedia, RunnableData<List<HapticMenuHelper.MenuItem>> customItemProvider, SimpleSendCallback sendCallback, @Nullable ThemeDelegate forcedTheme) {
     return new HapticMenuHelper(list -> {
-      if (availabilityCallback == null || availabilityCallback.get()) {
-        List<HapticMenuHelper.MenuItem> items = fillDefaultHapticMenu(chatId, false, canDisableMarkdownCallback != null && canDisableMarkdownCallback.get(), true);
+      if (availabilityCallback == null || availabilityCallback.getBoolValue()) {
+        List<HapticMenuHelper.MenuItem> items = fillDefaultHapticMenu(chatId, false, canDisableMarkdownCallback != null && canDisableMarkdownCallback.getBoolValue(), true);
         if (customItemProvider != null) {
           if (items == null)
             items = new ArrayList<>();

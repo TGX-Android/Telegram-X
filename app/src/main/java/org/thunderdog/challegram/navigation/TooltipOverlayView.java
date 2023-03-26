@@ -562,7 +562,7 @@ public class TooltipOverlayView extends ViewGroup {
 
     private void setIsVisible (boolean isVisible, boolean animated) {
       if (this.isVisible.getValue() != isVisible) {
-        if (isVisible && this.isVisible.getFloatValue() == 0f && !BitwiseUtils.getFlag(flags, FLAG_NO_PIVOT)) {
+        if (isVisible && this.isVisible.getFloatValue() == 0f && !BitwiseUtils.hasFlag(flags, FLAG_NO_PIVOT)) {
           this.isVisible.setInterpolator(AnimatorUtils.OVERSHOOT_INTERPOLATOR);
           this.isVisible.setDuration(BubbleLayout.REVEAL_DURATION);
         } else {
@@ -616,7 +616,7 @@ public class TooltipOverlayView extends ViewGroup {
       backgroundPath.reset();
       backgroundPath.setFillType(Path.FillType.EVEN_ODD);
       RectF rectF = Paints.getRectF();
-      if (BitwiseUtils.getFlag(flags, FLAG_NO_PIVOT)) {
+      if (BitwiseUtils.hasFlag(flags, FLAG_NO_PIVOT)) {
         backgroundPath.addRoundRect(contentRect, backgroundRadius, backgroundRadius, Path.Direction.CW);
       } else if (alignBottom) {
         backgroundPath.moveTo(contentRect.left, contentRect.top + backgroundRadius);
@@ -766,7 +766,7 @@ public class TooltipOverlayView extends ViewGroup {
           int scaledHeight = (int) ((float) height * scaleY);
           int diffX = (int) ((float) (width - scaledWidth) * (pivotX / (float) width));
           int diffY = (int) ((float) (height - scaledHeight) * (pivotY / (float) height));
-          if (!BitwiseUtils.getFlag(flags, FLAG_IGNORE_VIEW_SCALE)) {
+          if (!BitwiseUtils.hasFlag(flags, FLAG_IGNORE_VIEW_SCALE)) {
             innerRect.set(0, 0, scaledWidth, scaledHeight);
             innerRect.offset(diffX, diffY);
           }
@@ -789,7 +789,7 @@ public class TooltipOverlayView extends ViewGroup {
       int verticalOffset = 0;
       int horizontalMargin = Screen.dp(8f);
       int iconOffset = hasIcon ? Screen.dp(ICON_SIZE) + Screen.dp(ICON_HORIZONTAL_MARGIN) : 0;
-      boolean fillWidth = BitwiseUtils.getFlag(flags, FLAG_FILL_WIDTH);
+      boolean fillWidth = BitwiseUtils.hasFlag(flags, FLAG_FILL_WIDTH);
 
       int maxWidth = Math.min(parentWidth - horizontalMargin * 2, parentHeight - horizontalMargin * 2);
       if (!fillWidth && this.maxWidthDp > 0) {
@@ -804,7 +804,7 @@ public class TooltipOverlayView extends ViewGroup {
       this.pivotX = position[0] + innerRect.centerX();
       this.pivotY = alignBottom ? position[1] + innerRect.bottom : position[1] + innerRect.top;
 
-      int pivotHeight = BitwiseUtils.getFlag(flags, FLAG_NO_PIVOT) ? horizontalMargin : Screen.dp(PIVOT_HEIGHT);
+      int pivotHeight = BitwiseUtils.hasFlag(flags, FLAG_NO_PIVOT) ? horizontalMargin : Screen.dp(PIVOT_HEIGHT);
 
       int contentWidth = innerPaddingLeft + innerPaddingRight + popupView.getWidth() + iconOffset;
       int contentHeight = innerPaddingVertical * 2 + popupView.getHeight();
@@ -865,7 +865,7 @@ public class TooltipOverlayView extends ViewGroup {
       final int saveCount;
       if (needSave) {
         saveCount = c.save();
-        if (BitwiseUtils.getFlag(flags, FLAG_NO_PIVOT)) {
+        if (BitwiseUtils.hasFlag(flags, FLAG_NO_PIVOT)) {
           c.scale(scale, scale, contentRect.centerX(), contentRect.centerY());
         } else {
           c.scale(scale, scale, pivotX, pivotY);
@@ -917,7 +917,7 @@ public class TooltipOverlayView extends ViewGroup {
         if (icon != null) {
           Drawables.draw(c, icon, iconLeft, iconTop, Paints.getPorterDuffPaint(ColorUtils.alphaColor(alpha, colorProvider.defaultTextColor())));
         }
-        if (BitwiseUtils.getFlag(flags, FLAG_NEED_BLINK)) {
+        if (BitwiseUtils.hasFlag(flags, FLAG_NEED_BLINK)) {
           // TODO
         }
       } else {
@@ -1259,7 +1259,7 @@ public class TooltipOverlayView extends ViewGroup {
       TooltipInfo info = activePopups.get(i);
       boolean handled = info.wontHideDelayed();
       info.hide(true);
-      if (handled || BitwiseUtils.getFlag(info.flags, FLAG_HANDLE_BACK_PRESS)) {
+      if (handled || BitwiseUtils.hasFlag(info.flags, FLAG_HANDLE_BACK_PRESS)) {
         return true;
       }
     }
@@ -1348,9 +1348,9 @@ public class TooltipOverlayView extends ViewGroup {
           TooltipInfo info = activePopups.get(i);
           if (touchingInfo == null && info.onTouchEvent(this, e)) {
             touchingInfo = activePopups.get(i);
-          } else if (BitwiseUtils.getFlag(info.flags, FLAG_INTERCEPT_TOUCH_EVENTS) && info.isInside(e.getX(), e.getY())) {
+          } else if (BitwiseUtils.hasFlag(info.flags, FLAG_INTERCEPT_TOUCH_EVENTS) && info.isInside(e.getX(), e.getY())) {
             waitUp = true;
-          } else if (!BitwiseUtils.getFlag(info.flags, FLAG_PREVENT_HIDE_ON_TOUCH)) {
+          } else if (!BitwiseUtils.hasFlag(info.flags, FLAG_PREVENT_HIDE_ON_TOUCH)) {
             info.hide(info.shallBeHidden);
           }
         }

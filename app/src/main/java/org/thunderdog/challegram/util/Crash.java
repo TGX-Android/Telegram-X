@@ -149,15 +149,15 @@ public class Crash {
   }
 
   public boolean isTdlibLogicError () {
-    return BitwiseUtils.getFlag(flags, Flags.SOURCE_TDLIB | Flags.SOURCE_TDLIB_PARAMETERS);
+    return BitwiseUtils.hasFlag(flags, Flags.SOURCE_TDLIB | Flags.SOURCE_TDLIB_PARAMETERS);
   }
 
   public boolean shouldShowAtApplicationStart () {
-    if (appVersionCode != BuildConfig.ORIGINAL_VERSION_CODE || BitwiseUtils.getFlag(flags, Flags.RESOLVED)) {
+    if (appVersionCode != BuildConfig.ORIGINAL_VERSION_CODE || BitwiseUtils.hasFlag(flags, Flags.RESOLVED)) {
       // User has installed a new APK or pressed "Launch App". Forgetting the last error.
       return false;
     }
-    if (BitwiseUtils.getFlag(flags, Flags.INTERACTED)) {
+    if (BitwiseUtils.hasFlag(flags, Flags.INTERACTED)) {
       // User has seen the "Aw, snap!" screen, but didn't press "Launch App" afterwards.
       return true;
     }
@@ -175,7 +175,7 @@ public class Crash {
   }
 
   public @Type int getType () {
-    if (BitwiseUtils.getFlag(flags, Flags.SOURCE_TDLIB)) {
+    if (BitwiseUtils.hasFlag(flags, Flags.SOURCE_TDLIB)) {
       if (Client.isDiskFullError(message)) {
         return Type.DISK_FULL;
       } else if (Client.isDatabaseBrokenError(message)) {
@@ -187,10 +187,10 @@ public class Crash {
         return Type.TDLIB;
       }
     }
-    if (BitwiseUtils.getFlag(flags, Flags.SOURCE_TDLIB_PARAMETERS)) {
+    if (BitwiseUtils.hasFlag(flags, Flags.SOURCE_TDLIB_PARAMETERS)) {
       return Type.TDLIB_INITIALIZATION_FAILURE;
     }
-    if (BitwiseUtils.getFlag(flags, Flags.SOURCE_UNCAUGHT_EXCEPTION)) {
+    if (BitwiseUtils.hasFlag(flags, Flags.SOURCE_UNCAUGHT_EXCEPTION)) {
       return Type.UNCAUGHT_EXCEPTION;
     }
     return Type.UNKNOWN;

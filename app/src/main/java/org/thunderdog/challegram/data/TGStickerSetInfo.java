@@ -22,9 +22,7 @@ import androidx.annotation.Nullable;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.sticker.StickerSetWrap;
-import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -52,15 +50,26 @@ public class TGStickerSetInfo {
   private @Nullable TdApi.StickerSet stickerSet;
 
   private @Nullable ArrayList<TGStickerSetInfo> boundList;
+  private TdApi.Sticker[] allStickers;
 
-  public TGStickerSetInfo (Tdlib tdlib, TdApi.Sticker[] recentStickers) {
+  public TGStickerSetInfo (Tdlib tdlib, TdApi.Sticker[] stickers, boolean areFavorite, int trimToSize) {
     this.tdlib = tdlib;
-    this.size = recentStickers.length;
+    this.allStickers = stickers;
+    if (trimToSize > 0 && stickers.length > trimToSize) {
+      this.size = trimToSize;
+    } else {
+      this.size = stickers.length;
+    }
     this.info = null;
     this.previewImage = null;
     this.previewAnimation = null;
     this.previewOutline = null;
     this.previewWidth = this.previewHeight = 0;
+    if (areFavorite) {
+      setIsFavorite();
+    } else {
+      setIsRecent();
+    }
   }
 
   public TGStickerSetInfo (Tdlib tdlib, @NonNull TdApi.StickerSetInfo info) {
@@ -232,10 +241,19 @@ public class TGStickerSetInfo {
     if (info != null) {
       return info.size + 1;
     }
-    if (isFavorite() || (Config.HEADLESS_RECENT_PACK && isRecent())) {
+    if (isFavorite()) {
       return size;
     }
     return size + 1;
+  }
+
+  public void setStickers (TdApi.Sticker[] stickers, int visibleSize) {
+    this.allStickers = stickers;
+    setSize(visibleSize);
+  }
+
+  public TdApi.Sticker[] getAllStickers () {
+    return allStickers;
   }
 
   public void setSize (int size) {
@@ -334,6 +352,14 @@ public class TGStickerSetInfo {
 
   public int getSize () {
     return info != null ? info.size : size;
+  }
+
+  public int getFullSize () {
+    return allStickers != null ? allStickers.length : getSize();
+  }
+
+  public boolean isCollapsed () {
+    return getFullSize() > getSize();
   }
 
   public String getName () {

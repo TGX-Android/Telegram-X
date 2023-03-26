@@ -46,7 +46,7 @@ public class ComplexMediaHolder<T> implements Destroyable {
     }
 
     @Override
-    public List<T> get () {
+    public List<T> getValue () {
       return usages;
     }
   }

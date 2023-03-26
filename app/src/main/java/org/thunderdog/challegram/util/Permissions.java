@@ -296,7 +296,7 @@ public class Permissions {
   }
 
   private boolean requestExternalStoragePermission (@ReadType int readType, @NonNull FutureBoolWithArg<RunnableBool> mainPermissionRequest, @Nullable RunnableBool after) {
-    if (mainPermissionRequest.get((granted) -> {
+    if (mainPermissionRequest.getBoolValue((granted) -> {
       if (granted) {
         requestExternalStoragePermission(readType, mainPermissionRequest, after);
       } else if (after != null) {
