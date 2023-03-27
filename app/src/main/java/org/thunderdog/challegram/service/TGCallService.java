@@ -103,6 +103,8 @@ public class TGCallService extends Service implements
   private @Nullable String callChannelId;
   private TdApi.User user;
 
+  private boolean callInitialized;
+
   @Override
   public int onStartCommand (Intent intent, int flags, int startId) {
     if (Log.isEnabled(Log.TAG_VOIP)) {
@@ -127,7 +129,7 @@ public class TGCallService extends Service implements
       stopSelf();
       return START_NOT_STICKY;
     }
-    if (controller != null) {
+    if (callInitialized) {
       if (oldCallId != 0 && oldCallId != callId)
         throw new IllegalStateException();
     } else {
@@ -146,7 +148,7 @@ public class TGCallService extends Service implements
   }
 
   public long getCallDuration () {
-    return controller != null ? controller.getCallDuration() : -1;
+    return tgcalls != null ? tgcalls.getCallDuration() : -1;
   }
 
   private void setCallId (Tdlib tdlib, int callId) {
@@ -171,7 +173,7 @@ public class TGCallService extends Service implements
 
   private SoundPoolMap soundPoolMap;
   private @Nullable
-  VoIPController controller;
+  VoIPController tgcalls;
   private PowerManager.WakeLock cpuWakelock;
   private BluetoothAdapter btAdapter;
 
@@ -244,11 +246,20 @@ public class TGCallService extends Service implements
 
   private static volatile WeakReference<TGCallService> reference;
 
+  private boolean audioGainControlEnabled;
+  private int echoCancellationStrength;
+  private boolean awaitingGainControlStateUpdate;
+
   public void updateOutputGainControlState(){
     AudioManager am=(AudioManager) getSystemService(AUDIO_SERVICE);
-    if (controller != null) {
-      controller.setAudioOutputGainControlEnabled(hasEarpiece() && am != null && !am.isSpeakerphoneOn() && !am.isBluetoothScoOn() && !isHeadsetPlugged);
-      controller.setEchoCancellationStrength(isHeadsetPlugged || (hasEarpiece() && am != null && !am.isSpeakerphoneOn() && !am.isBluetoothScoOn() && !isHeadsetPlugged) ? 0 : 1);
+    this.audioGainControlEnabled = hasEarpiece() && am != null && !am.isSpeakerphoneOn() && !am.isBluetoothScoOn() && !isHeadsetPlugged;
+    this.echoCancellationStrength = isHeadsetPlugged || (hasEarpiece() && am != null && !am.isSpeakerphoneOn() && !am.isBluetoothScoOn() && !isHeadsetPlugged) ? 0 : 1;
+    if (tgcalls != null) {
+      awaitingGainControlStateUpdate = false;
+      tgcalls.setAudioOutputGainControlEnabled(audioGainControlEnabled);
+      tgcalls.setEchoCancellationStrength(echoCancellationStrength);
+    } else {
+      awaitingGainControlStateUpdate = true;
     }
   }
 
@@ -269,16 +280,13 @@ public class TGCallService extends Service implements
   }
 
   private void initCall (Tdlib tdlib, TdApi.Call call) {
-    if (controller != null) {
+    if (callInitialized) {
       throw new IllegalStateException();
     }
     Log.v(Log.TAG_VOIP, "TGCallService.onCreate");
+    callInitialized = true;
     AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
     try {
-      controller = new VoIPController();
-      controller.setConnectionStateListener(this);
-      controller.setConfig(tdlib.callPacketTimeoutMs(), tdlib.callConnectTimeoutMs(), tdlib.files().getVoipDataSavingOption(), call.id);
-
       if (cpuWakelock == null) {
         cpuWakelock = ((PowerManager) getSystemService(POWER_SERVICE)).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "tgx:voip");
         cpuWakelock.acquire();
@@ -516,10 +524,15 @@ public class TGCallService extends Service implements
     }
   }
 
+  private CallSettings postponedCallSettings;
+
   @Override
   public void onCallSettingsChanged (int callId, CallSettings settings) {
-    if (controller != null) {
-      controller.setMicMute(settings != null && settings.isMicMuted());
+    if (tgcalls != null) {
+      tgcalls.setMicMute(settings != null && settings.isMicMuted());
+      postponedCallSettings = null;
+    } else {
+      postponedCallSettings = settings;
     }
     setAudioMode(settings != null ? settings.getSpeakerMode() : CallSettings.SPEAKER_MODE_NONE);
   }
@@ -542,7 +555,7 @@ public class TGCallService extends Service implements
   }
 
   public long getConnectionId () {
-    return controller != null && isInitiated ? controller.getPreferredRelayID() : 0;
+    return tgcalls != null && isInitiated ? tgcalls.getPreferredRelayID() : 0;
   }
 
   private void hangUp () {
@@ -1103,8 +1116,8 @@ public class TGCallService extends Service implements
           break;
       }
     }
-    if (controller != null && (force || controller.getNetworkType() != type)) {
-      controller.setNetworkType(type);
+    if (tgcalls != null && (force || tgcalls.getNetworkType() != type)) {
+      tgcalls.setNetworkType(type);
     }
   }
 
@@ -1112,10 +1125,10 @@ public class TGCallService extends Service implements
   private long prevDuration;
 
   private void updateStats () {
-    if (controller == null) {
+    if (tgcalls == null) {
       return;
     }
-    controller.getStats(stats);
+    tgcalls.getStats(stats);
 
     long newDuration = getCallDuration();
 
@@ -1145,14 +1158,19 @@ public class TGCallService extends Service implements
   private boolean isInitiated;
   private String lastDebugLog;
 
+  private void releaseTgCalls () {
+    if (tgcalls != null) {
+      lastDebugLog = tgcalls.getDebugLog();
+      tgcalls.release();
+      tgcalls = null;
+    }
+    callInitialized = false; // FIXME?
+  }
+
   private void checkInitiated () {
     if (isInitiated || TD.isFinished(call)) {
       if (TD.isFinished(call)) {
-        if (controller != null) {
-          lastDebugLog = controller.getDebugLog();
-          controller.release();
-          controller = null;
-        }
+        releaseTgCalls();
         cleanupChannels((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE));
         U.stopForeground(this, true, TdlibNotificationManager.ID_ONGOING_CALL_NOTIFICATION, TdlibNotificationManager.ID_INCOMING_CALL_NOTIFICATION);
         incomingNotification = ongoingCallNotification = null;
@@ -1161,15 +1179,30 @@ public class TGCallService extends Service implements
       return;
     }
 
-    if (call == null || call.state.getConstructor() != TdApi.CallStateReady.CONSTRUCTOR || isInitiated || controller == null) {
+    if (call == null || call.state.getConstructor() != TdApi.CallStateReady.CONSTRUCTOR || isInitiated || !callInitialized || tdlib == null) {
       return;
     }
 
     TdApi.CallStateReady state = (TdApi.CallStateReady) call.state;
 
-    controller.setEncryptionKey(state.encryptionKey, call.isOutgoing);
+    if (tgcalls == null) {
+      tgcalls = new VoIPController();
+      tgcalls.setConnectionStateListener(this);
+      tgcalls.setConfig(tdlib.callPacketTimeoutMs(), tdlib.callConnectTimeoutMs(), tdlib.files().getVoipDataSavingOption(), call.id);
+      if (awaitingGainControlStateUpdate) {
+        tgcalls.setAudioOutputGainControlEnabled(audioGainControlEnabled);
+        tgcalls.setEchoCancellationStrength(echoCancellationStrength);
+        awaitingGainControlStateUpdate = false;
+      }
+      if (postponedCallSettings != null) {
+        tgcalls.setMicMute(postponedCallSettings.isMicMuted());
+        postponedCallSettings = null;
+      }
+    }
+
+    tgcalls.setEncryptionKey(state.encryptionKey, call.isOutgoing);
     try {
-      controller.setRemoteEndpoints(state.servers, state.protocol.udpP2p && state.allowP2p, Settings.instance().forceTcpInCalls(), state.protocol.maxLayer);
+      tgcalls.setRemoteEndpoints(state.servers, state.protocol.udpP2p && state.allowP2p, Settings.instance().forceTcpInCalls(), state.protocol.maxLayer);
     } catch (IllegalArgumentException e) {
       hangUp();
       return;
@@ -1180,15 +1213,15 @@ public class TGCallService extends Service implements
       if (proxy != null && proxy.proxy != null && proxy.canUseForCalls()) {
         if (proxy.proxy.type.getConstructor() == TdApi.ProxyTypeSocks5.CONSTRUCTOR) {
           TdApi.ProxyTypeSocks5 socks5 = (TdApi.ProxyTypeSocks5) proxy.proxy.type;
-          controller.setProxy(proxy.proxy.server, proxy.proxy.port, socks5.username, socks5.password);
+          tgcalls.setProxy(proxy.proxy.server, proxy.proxy.port, socks5.username, socks5.password);
         } else {
           Log.e("Unsupported proxy type for calls: %s", proxy.proxy.type);
         }
       }
     }
-    controller.start();
+    tgcalls.start();
     updateNetworkType(false);
-    controller.connect();
+    tgcalls.connect();
 
     isInitiated = true;
   }
@@ -1245,19 +1278,10 @@ public class TGCallService extends Service implements
   }
 
   public String getLibraryVersion () {
-    return controller != null ? controller.getUsedVersion() : VoIP.getPrimaryVersion();
+    return tgcalls != null ? tgcalls.getUsedVersion() : VoIP.getPrimaryVersion();
   }
 
   public String getDebugString () {
-    return controller != null ? controller.getDebugString() : "unitialized";
-  }
-
-  public static String getLog () {
-    TGCallService service = currentInstance();
-    if (service != null && service.controller != null) {
-      return service.controller.getDebugString();
-    } else {
-      return "instance not found";
-    }
+    return tgcalls != null ? tgcalls.getDebugString() : "unitialized";
   }
 }
