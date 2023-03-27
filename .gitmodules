@@ -104,7 +104,7 @@
 	shallow = true
 [submodule "tgcalls"]
 	path = app/jni/third_party/tgcalls
-	url = https://github.com/TelegramMessenger/tgcalls
+	url = https://github.com/TGX-Android/tgcalls
 	shallow = true
 [submodule "libevent"]
 	path = app/jni/third_party/libevent
