@@ -31,9 +31,7 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.media.AudioFormat;
 import android.media.AudioManager;
-import android.media.AudioTrack;
 import android.media.MediaPlayer;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
@@ -72,7 +70,12 @@ import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.SoundPoolMap;
+import org.thunderdog.challegram.voip.ConnectionStateListener;
+import org.thunderdog.challegram.voip.NetworkStats;
+import org.thunderdog.challegram.voip.VoIP;
 import org.thunderdog.challegram.voip.VoIPController;
+import org.thunderdog.challegram.voip.annotation.CallNetworkType;
+import org.thunderdog.challegram.voip.annotation.CallState;
 import org.thunderdog.challegram.voip.gui.CallSettings;
 import org.thunderdog.challegram.voip.gui.VoIPFeedbackActivity;
 
@@ -89,7 +92,7 @@ public class TGCallService extends Service implements
   TdlibCache.CallStateChangeListener,
   AudioManager.OnAudioFocusChangeListener,
   SensorEventListener,
-  VoIPController.ConnectionStateListener, UI.StateListener {
+  ConnectionStateListener, UI.StateListener {
   @Override
   public IBinder onBind (Intent intent) {
     return null;
@@ -262,18 +265,7 @@ public class TGCallService extends Service implements
     soundPoolMap = new SoundPoolMap(AudioManager.STREAM_VOICE_CALL);
     soundPoolMap.prepare(R.raw.voip_connecting, R.raw.voip_ringback, R.raw.voip_fail, R.raw.voip_end, R.raw.voip_busy);
 
-    AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
-    boolean success = false;
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1 && am.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER) != null) {
-      int outFramesPerBuffer = StringUtils.parseInt(am.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER));
-      if (outFramesPerBuffer != 0) {
-        VoIPController.setNativeBufferSize(outFramesPerBuffer);
-        success = true;
-      }
-    }
-    if (!success) {
-      VoIPController.setNativeBufferSize(AudioTrack.getMinBufferSize(48000, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT) / 2);
-    }
+    VoIP.initialize(this);
   }
 
   private void initCall (Tdlib tdlib, TdApi.Call call) {
@@ -1071,21 +1063,21 @@ public class TGCallService extends Service implements
     ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
     NetworkInfo info = cm.getActiveNetworkInfo();
     lastNetInfo = info;
-    int type = VoIPController.NET_TYPE_UNKNOWN;
+    @CallNetworkType int type = CallNetworkType.UNKNOWN;
     if (info != null) {
       switch (info.getType()) {
         case ConnectivityManager.TYPE_MOBILE:
           switch (info.getSubtype()) {
             case TelephonyManager.NETWORK_TYPE_GPRS:
-              type = VoIPController.NET_TYPE_GPRS;
+              type = CallNetworkType.MOBILE_GPRS;
               break;
             case TelephonyManager.NETWORK_TYPE_EDGE:
             case TelephonyManager.NETWORK_TYPE_1xRTT:
-              type = VoIPController.NET_TYPE_EDGE;
+              type = CallNetworkType.MOBILE_EDGE;
               break;
             case TelephonyManager.NETWORK_TYPE_UMTS:
             case TelephonyManager.NETWORK_TYPE_EVDO_0:
-              type = VoIPController.NET_TYPE_3G;
+              type = CallNetworkType.MOBILE_3G;
               break;
             case TelephonyManager.NETWORK_TYPE_HSDPA:
             case TelephonyManager.NETWORK_TYPE_HSPA:
@@ -1093,21 +1085,21 @@ public class TGCallService extends Service implements
             case TelephonyManager.NETWORK_TYPE_HSUPA:
             case TelephonyManager.NETWORK_TYPE_EVDO_A:
             case TelephonyManager.NETWORK_TYPE_EVDO_B:
-              type = VoIPController.NET_TYPE_HSPA;
+              type = CallNetworkType.MOBILE_HSPA;
               break;
             case TelephonyManager.NETWORK_TYPE_LTE:
-              type = VoIPController.NET_TYPE_LTE;
+              type = CallNetworkType.MOBILE_LTE;
               break;
             default:
-              type = VoIPController.NET_TYPE_OTHER_MOBILE;
+              type = CallNetworkType.OTHER_MOBILE;
               break;
           }
           break;
         case ConnectivityManager.TYPE_WIFI:
-          type = VoIPController.NET_TYPE_WIFI;
+          type = CallNetworkType.WIFI;
           break;
         case ConnectivityManager.TYPE_ETHERNET:
-          type = VoIPController.NET_TYPE_ETHERNET;
+          type = CallNetworkType.ETHERNET;
           break;
       }
     }
@@ -1116,7 +1108,7 @@ public class TGCallService extends Service implements
     }
   }
 
-  private VoIPController.Stats stats = new VoIPController.Stats(), prevStats = new VoIPController.Stats();
+  private NetworkStats stats = new NetworkStats(), prevStats = new NetworkStats();
   private long prevDuration;
 
   private void updateStats () {
@@ -1133,7 +1125,7 @@ public class TGCallService extends Service implements
     long mobileReceivedDiff = stats.bytesRecvdMobile - prevStats.bytesRecvdMobile;
     double durationDiff = (double) Math.max(0, newDuration - prevDuration) / 1000d;
 
-    VoIPController.Stats tmp = stats;
+    NetworkStats tmp = stats;
     stats = prevStats;
     prevStats = tmp;
     prevDuration = newDuration;
@@ -1202,17 +1194,17 @@ public class TGCallService extends Service implements
   }
 
   @Override
-  public void onConnectionStateChanged (int newState) {
+  public void onConnectionStateChanged (@CallState int newState) {
     try {
       if (tdlib == null || call == null) {
         return;
       }
       switch (newState) {
-        case VoIPController.STATE_ESTABLISHED: {
+        case CallState.ESTABLISHED: {
           tdlib.dispatchCallStateChanged(call.id, newState);
           break;
         }
-        case VoIPController.STATE_FAILED: {
+        case CallState.FAILED: {
           tdlib.context().calls().hangUp(tdlib, call.id, true, getConnectionId());
           break;
         }
@@ -1250,6 +1242,14 @@ public class TGCallService extends Service implements
     if (service != null) {
       service.logViewed = true;
     }
+  }
+
+  public String getLibraryVersion () {
+    return controller != null ? controller.getUsedVersion() : VoIP.getPrimaryVersion();
+  }
+
+  public String getDebugString () {
+    return controller != null ? controller.getDebugString() : "unitialized";
   }
 
   public static String getLog () {

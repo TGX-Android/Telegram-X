@@ -30,7 +30,7 @@ import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Test;
-import org.thunderdog.challegram.voip.VoIPController;
+import org.thunderdog.challegram.voip.VoIPPersistentConfig;
 
 import java.io.File;
 
@@ -73,7 +73,7 @@ public class TGStorageStatsFast {
     this.pmcSize = prevStats != null ? prevStats.pmcSize : Settings.instance().pmc().length();
     this.paintsSize = FileUtils.getSize(PaintState.getPaintsDir());
     this.accountsConfigSize = TdlibManager.getAccountConfigFileSize();
-    this.voipConfigSize = VoIPController.getVoipConfigFileSize();
+    this.voipConfigSize = VoIPPersistentConfig.getVoipConfigFileSize();
 
     this.lottieFiles = FileUtils.getAllFiles(LottieCache.getCacheDir());
     long lottieSize = 0;

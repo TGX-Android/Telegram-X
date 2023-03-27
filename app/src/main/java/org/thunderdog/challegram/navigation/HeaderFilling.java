@@ -53,7 +53,7 @@ import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.util.text.TextColorSets;
-import org.thunderdog.challegram.voip.VoIPController;
+import org.thunderdog.challegram.voip.annotation.CallState;
 import org.thunderdog.challegram.voip.gui.CallSettings;
 import org.thunderdog.challegram.widget.ShadowView;
 
@@ -745,7 +745,7 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
 
   @Override
   public void onCallStateChanged (final int callId, final int newState) {
-    if (getCallId() == callId && newState == VoIPController.STATE_ESTABLISHED) {
+    if (getCallId() == callId && newState == CallState.ESTABLISHED) {
       buildCall();
       invalidateOngoingBar();
     }

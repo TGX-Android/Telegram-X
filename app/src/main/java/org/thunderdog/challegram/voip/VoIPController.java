@@ -8,7 +8,9 @@ import android.os.SystemClock;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
-import org.thunderdog.challegram.telegram.TdlibManager;
+import org.thunderdog.challegram.voip.annotation.CallNetworkType;
+import org.thunderdog.challegram.voip.annotation.CallState;
+import org.thunderdog.challegram.voip.annotation.DataSavingOption;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -19,59 +21,15 @@ import java.util.Locale;
 
 import me.vkryl.core.StringUtils;
 
-@Deprecated
 public class VoIPController{
-
-  public static final int NET_TYPE_UNKNOWN=0;
-  public static final int NET_TYPE_GPRS=1;
-  public static final int NET_TYPE_EDGE=2;
-  public static final int NET_TYPE_3G=3;
-  public static final int NET_TYPE_HSPA=4;
-  public static final int NET_TYPE_LTE=5;
-  public static final int NET_TYPE_WIFI=6;
-  public static final int NET_TYPE_ETHERNET=7;
-  public static final int NET_TYPE_OTHER_HIGH_SPEED=8;
-  public static final int NET_TYPE_OTHER_LOW_SPEED=9;
-  public static final int NET_TYPE_DIALUP=10;
-  public static final int NET_TYPE_OTHER_MOBILE=11;
-
-  public static final int STATE_WAIT_INIT=1;
-  public static final int STATE_WAIT_INIT_ACK=2;
-  public static final int STATE_ESTABLISHED=3;
-  public static final int STATE_FAILED=4;
-  public static final int STATE_RECONNECTING=5;
-
-  public static final int DATA_SAVING_NEVER=0;
-  public static final int DATA_SAVING_MOBILE=1;
-  public static final int DATA_SAVING_ALWAYS=2;
-  public static final int DATA_SAVING_ROAMING=3;
-
-  public static final int ERROR_CONNECTION_SERVICE=-5;
-  public static final int ERROR_INSECURE_UPGRADE=-4;
-  public static final int ERROR_LOCALIZED=-3;
-  public static final int ERROR_PRIVACY=-2;
-  public static final int ERROR_PEER_OUTDATED=-1;
-  public static final int ERROR_UNKNOWN=0;
-  public static final int ERROR_INCOMPATIBLE=1;
-  public static final int ERROR_TIMEOUT=2;
-  public static final int ERROR_AUDIO_IO=3;
-
   public static final int PEER_CAP_GROUP_CALLS=1;
 
   protected long nativeInst=0;
   protected long callStartTime;
   protected ConnectionStateListener listener;
 
-  public static long getVoipConfigFileSize () {
-    return getVoipConfigFile().length();
-  }
-
-  private static File getVoipConfigFile () {
-    return new File(TdlibManager.getTgvoipDirectory(), "voip_persistent_state.json");
-  }
-
   public VoIPController(){
-    nativeInst=nativeInit(getVoipConfigFile().getAbsolutePath());
+    nativeInst=nativeInit(VoIPPersistentConfig.getVoipConfigFile().getAbsolutePath());
   }
 
   public void start(){
@@ -140,6 +98,10 @@ public class VoIPController{
     return nativeGetDebugString(nativeInst);
   }
 
+  public String getUsedVersion(){
+    return getVersion();
+  }
+
   protected void ensureNativeInstance(){
     if(nativeInst==0){
       throw new IllegalStateException("Native instance is not valid");
@@ -151,8 +113,8 @@ public class VoIPController{
   }
 
   // called from native code
-  private void handleStateChange(int state){
-    if(state==STATE_ESTABLISHED && callStartTime==0)
+  private void handleStateChange(@CallState int state){
+    if(state== CallState.ESTABLISHED && callStartTime==0)
       callStartTime=SystemClock.elapsedRealtime();
     if(listener!=null){
       listener.onConnectionStateChanged(state);
@@ -183,13 +145,13 @@ public class VoIPController{
       listener.onCallUpgradeRequestReceived();
   }
 
-  private int netType = NET_TYPE_UNKNOWN;
+  private int netType = CallNetworkType.UNKNOWN;
 
-  public int getNetworkType () {
+  public @CallNetworkType int getNetworkType () {
     return netType;
   }
 
-  public void setNetworkType(int type){
+  public void setNetworkType(@CallNetworkType int type){
     ensureNativeInstance();
     nativeSetNetworkType(nativeInst, netType = type);
   }
@@ -203,7 +165,7 @@ public class VoIPController{
     nativeSetMicMute(nativeInst, mute);
   }
 
-  public void setConfig(double recvTimeout, double initTimeout, int dataSavingOption, long callID){
+  public void setConfig(double recvTimeout, double initTimeout, @DataSavingOption int dataSavingOption, long callID){
     ensureNativeInstance();
     boolean sysAecAvailable=false, sysNsAvailable=false;
     if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN){
@@ -214,7 +176,7 @@ public class VoIPController{
         sysNsAvailable=NoiseSuppressor.isAvailable();
       } catch (Throwable x) { }
     }
-    nativeSetConfig(nativeInst, recvTimeout, initTimeout, dataSavingOption == DATA_SAVING_ROAMING ? (U.isRoaming() ? DATA_SAVING_MOBILE : DATA_SAVING_NEVER) : dataSavingOption,
+    nativeSetConfig(nativeInst, recvTimeout, initTimeout, dataSavingOption == DataSavingOption.ROAMING ? (U.isRoaming() ? DataSavingOption.MOBILE : DataSavingOption.NEVER) : dataSavingOption,
       !(sysAecAvailable && VoIPServerConfig.getBoolean("use_system_aec", true)),
       !(sysNsAvailable && VoIPServerConfig.getBoolean("use_system_ns", true)),
       true, getLogFilePath(), null,
@@ -236,7 +198,7 @@ public class VoIPController{
     return nativeGetLastError(nativeInst);
   }
 
-  public void getStats(Stats stats){
+  public void getStats(NetworkStats stats){
     ensureNativeInstance();
     if(stats==null)
       throw new NullPointerException("You're not supposed to pass null here");
@@ -330,7 +292,7 @@ public class VoIPController{
   private native void nativeSetNetworkType(long inst, int type);
   private native void nativeSetMicMute(long inst, boolean mute);
   private native void nativeDebugCtl(long inst, int request, int param);
-  private native void nativeGetStats(long inst, Stats stats);
+  private native void nativeGetStats(long inst, NetworkStats stats);
   private native void nativeSetConfig(long inst, double recvTimeout, double initTimeout, int dataSavingOption, boolean enableAEC, boolean enableNS, boolean enableAGC, String logFilePath, String statsDumpPath, boolean logPacketStats);
   private native void nativeSetEncryptionKey(long inst, byte[] key, boolean isOutgoing);
   private native void nativeSetProxy(long inst, String address, int port, String username, String password);
@@ -348,28 +310,4 @@ public class VoIPController{
 
   public static native int getConnectionMaxLayer();
 
-  public interface ConnectionStateListener{
-    void onConnectionStateChanged(int newState);
-    void onSignalBarCountChanged(int newCount);
-    void onGroupCallKeyReceived(byte[] key);
-    void onGroupCallKeySent();
-    void onCallUpgradeRequestReceived();
-  }
-
-  public static class Stats{
-    public long bytesSentWifi;
-    public long bytesRecvdWifi;
-    public long bytesSentMobile;
-    public long bytesRecvdMobile;
-
-    @Override
-    public String toString(){
-      return "Stats{"+
-        "bytesRecvdMobile="+bytesRecvdMobile+
-        ", bytesSentWifi="+bytesSentWifi+
-        ", bytesRecvdWifi="+bytesRecvdWifi+
-        ", bytesSentMobile="+bytesSentMobile+
-        '}';
-    }
-  }
 }

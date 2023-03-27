@@ -65,6 +65,7 @@ import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.UserProvider;
 import org.thunderdog.challegram.util.WrapperProvider;
 import org.thunderdog.challegram.util.text.Letters;
+import org.thunderdog.challegram.voip.annotation.CallState;
 
 import java.io.File;
 import java.lang.annotation.Retention;
@@ -6717,7 +6718,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   @AnyThread
-  public void dispatchCallStateChanged (final int callId, final int newState) {
+  public void dispatchCallStateChanged (final int callId, final @CallState int newState) {
     ui().sendMessage(ui().obtainMessage(MSG_ACTION_CALL_STATE, callId, newState));
   }
 

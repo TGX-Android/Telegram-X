@@ -42,8 +42,7 @@ import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.CallController;
 import org.thunderdog.challegram.unsorted.Settings;
-import org.thunderdog.challegram.util.ActivityPermissionResult;
-import org.thunderdog.challegram.voip.VoIPController;
+import org.thunderdog.challegram.voip.VoIP;
 import org.thunderdog.challegram.voip.VoIPServerConfig;
 import org.thunderdog.challegram.voip.gui.CallSettings;
 
@@ -456,7 +455,7 @@ debugCall id:long debug:string = Ok;
       return;
     }
     context.context().closeAllMedia(false);
-    context.tdlib().client().send(new TdApi.CreateCall(userId, new TdApi.CallProtocol(true, true, 65, VoIPController.getConnectionMaxLayer(), new String[] {VoIPController.getVersion()}), false), object -> {
+    context.tdlib().client().send(new TdApi.CreateCall(userId, VoIP.getProtocol(), false), object -> {
       switch (object.getConstructor()) {
         case TdApi.CallId.CONSTRUCTOR:
           Log.v(Log.TAG_VOIP, "#%d: call created, user_id:%d", ((TdApi.CallId) object).id, userId);
@@ -507,7 +506,7 @@ debugCall id:long debug:string = Ok;
         return;
       }
       Log.v(Log.TAG_VOIP, "#%d: AcceptCall requested", callId);
-      tdlib.client().send(new TdApi.AcceptCall(callId, new TdApi.CallProtocol(true, true, 65, VoIPController.getConnectionMaxLayer(), new String[] {VoIPController.getVersion()})), object -> Log.v(Log.TAG_VOIP, "#%d: AcceptCall completed: %s", callId, object));
+      tdlib.client().send(new TdApi.AcceptCall(callId, VoIP.getProtocol()), object -> Log.v(Log.TAG_VOIP, "#%d: AcceptCall completed: %s", callId, object));
     }
   }
 

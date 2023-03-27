@@ -36,7 +36,7 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.StringList;
-import org.thunderdog.challegram.voip.VoIPController;
+import org.thunderdog.challegram.voip.annotation.DataSavingOption;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -1007,24 +1007,24 @@ public class TdlibFilesManager implements GlobalConnectionListener {
     return (datasaverFlags & DATASAVER_FLAG_ENABLED) != 0;
   }
 
-  public int getVoipDataSavingOption () {
+  public @DataSavingOption int getVoipDataSavingOption () {
     if ((datasaverFlags & DATASAVER_FLAG_CALLS_ALWAYS) != 0)
-      return VoIPController.DATA_SAVING_ALWAYS;
+      return DataSavingOption.ALWAYS;
     if ((datasaverFlags & DATASAVER_FLAG_CALLS_MOBILE) != 0)
-      return VoIPController.DATA_SAVING_MOBILE;
+      return DataSavingOption.MOBILE;
     if ((datasaverFlags & DATASAVER_FLAG_CALLS_ROAMING) != 0)
-      return VoIPController.DATA_SAVING_ROAMING;
-    return VoIPController.DATA_SAVING_NEVER;
+      return DataSavingOption.ROAMING;
+    return DataSavingOption.NEVER;
   }
 
-  public boolean setVoipDataSavingOption (int option) {
+  public boolean setVoipDataSavingOption (@DataSavingOption int option) {
     int flags = datasaverFlags;
     flags &= ~DATASAVER_FLAG_CALLS_MOBILE;
     flags &= ~DATASAVER_FLAG_CALLS_ALWAYS;
     flags &= ~DATASAVER_FLAG_CALLS_ROAMING;
-    flags |= option == VoIPController.DATA_SAVING_ALWAYS ? DATASAVER_FLAG_CALLS_ALWAYS :
-             option == VoIPController.DATA_SAVING_MOBILE ? DATASAVER_FLAG_CALLS_MOBILE :
-             option == VoIPController.DATA_SAVING_ROAMING ? DATASAVER_FLAG_CALLS_ROAMING : 0;
+    flags |= option == DataSavingOption.ALWAYS ? DATASAVER_FLAG_CALLS_ALWAYS :
+             option == DataSavingOption.MOBILE ? DATASAVER_FLAG_CALLS_MOBILE :
+             option == DataSavingOption.ROAMING ? DATASAVER_FLAG_CALLS_ROAMING : 0;
     if (this.datasaverFlags != flags) {
       this.datasaverFlags = flags;
       saveDataSaverSettings();

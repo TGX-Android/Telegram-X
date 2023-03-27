@@ -57,7 +57,6 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
-import org.thunderdog.challegram.voip.VoIPController;
 import org.thunderdog.challegram.voip.gui.CallSettings;
 import org.thunderdog.challegram.widget.AvatarView;
 import org.thunderdog.challegram.widget.EmojiTextView;
@@ -453,12 +452,19 @@ public class CallController extends ViewController<CallController.Arguments> imp
             view.post(new Runnable() {
               @Override
               public void run () {
+                TGCallService service = TGCallService.currentInstance();
+
                 SpannableStringBuilder b = new SpannableStringBuilder();
-                b.append("libtgvoip ");
-                b.append(VoIPController.getVersion());
+                if (service != null) {
+                  b.append(service.getLibraryVersion());
+                } else {
+                  b.append("service unavailable");
+                }
                 b.setSpan(new CustomTypefaceSpan(Fonts.getRobotoBold(), 0), 0, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                b.append("\n\n");
-                b.append(TGCallService.getLog());
+                if (service != null) {
+                  b.append("\n\n");
+                  b.append(service.getDebugString());
+                }
                 view.setText(b);
                 if (view.getParent() != null) {
                   view.postDelayed(this, 500l);
