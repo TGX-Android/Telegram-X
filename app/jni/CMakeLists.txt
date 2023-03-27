@@ -17,6 +17,9 @@ set(SSL_DIR "${THIRDPARTY_DIR}/openssl/android_static/${ANDROID_ABI}")
 set(SSL_LIB_PATH "${SSL_DIR}/lib/libssl.a")
 set(CRYPTO_LIB_PATH "${SSL_DIR}/lib/libcrypto.a")
 
+set(LINK_TDLIB yes)
+set(USE_TDLIB_CRYPTO no)
+
 # Using webp only if building for 32-bit platform
 if (${ANDROID_ABI} STREQUAL "armeabi-v7a" OR ${ANDROID_ABI} STREQUAL "x86")
   set(USE_WEBP yes)
@@ -129,14 +132,18 @@ set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${ADD_LINKER_FLAGS}"
 # == Libraries ==
 
 # tdjni
-add_library(tdjni SHARED IMPORTED)
-set_target_properties(tdjni PROPERTIES IMPORTED_LOCATION
-  "${TDLIB_DIR}/src/main/libs/${ANDROID_ABI}/libtdjni.so"
-)
-if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.11.0")
-  target_include_directories(tdjni INTERFACE
-    "${TDLIB_DIR}/include"
+if (${LINK_TDLIB})
+  add_library(tdjni SHARED IMPORTED)
+  set_target_properties(tdjni PROPERTIES IMPORTED_LOCATION
+    "${TDLIB_DIR}/src/main/libs/${ANDROID_ABI}/libtdjni.so"
   )
+  if (${USE_TDLIB_CRYPTO})
+    if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.11.0")
+      target_include_directories(tdjni INTERFACE
+        "${TDLIB_DIR}/include"
+      )
+    endif()
+  endif()
 endif()
 
 # crypto
@@ -250,10 +257,12 @@ target_include_directories(${NATIVE_LIB} PRIVATE
   "${THIRDPARTY_DIR}"
   .
 )
-if(${CMAKE_VERSION} VERSION_LESS "3.11.0")
-  target_include_directories(${NATIVE_LIB} PRIVATE
-    "${TDLIB_DIR}/include"
-  )
+if (${LINK_TDLIB} AND ${USE_TDLIB_CRYPTO})
+  if(${CMAKE_VERSION} VERSION_LESS "3.11.0")
+    target_include_directories(${NATIVE_LIB} PRIVATE
+      "${TDLIB_DIR}/include"
+    )
+  endif()
 endif()
 
 target_compile_definitions(${NATIVE_LIB} PUBLIC
@@ -273,8 +282,14 @@ target_compile_options(${NATIVE_LIB} PUBLIC
 
 # == Linking dependencies ==
 
+if(${LINK_TDLIB})
+  target_link_libraries(${NATIVE_LIB} tdjni)
+  if (${USE_TDLIB_CRYPTO})
+    target_compile_definitions(${NATIVE_LIB} PRIVATE HAVE_TDLIB_CRYPTO)
+  endif()
+endif()
+
 target_link_libraries(${NATIVE_LIB}
-  tdjni
   jni-utils
   flac
   tgvoip

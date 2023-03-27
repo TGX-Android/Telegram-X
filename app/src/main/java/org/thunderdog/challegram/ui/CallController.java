@@ -38,6 +38,7 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
+import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
@@ -433,7 +434,7 @@ public class CallController extends ViewController<CallController.Arguments> imp
     brandView.setEllipsize(TextUtils.TruncateAt.END);
     brandView.setLayoutParams(lp);
     brandView.setText(Lang.getString(R.string.VoipBranding).toUpperCase());
-    if (Log.checkLogLevel(Log.LEVEL_INFO)) {
+    if (Log.checkLogLevel(Log.LEVEL_INFO) || BuildConfig.EXPERIMENTAL) {
       brandView.setOnClickListener(new View.OnClickListener() {
         @Override
         public void onClick (View v) {
