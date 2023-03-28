@@ -73,7 +73,6 @@ import org.thunderdog.challegram.util.SoundPoolMap;
 import org.thunderdog.challegram.voip.ConnectionStateListener;
 import org.thunderdog.challegram.voip.NetworkStats;
 import org.thunderdog.challegram.voip.VoIP;
-import org.thunderdog.challegram.voip.VoIPController;
 import org.thunderdog.challegram.voip.VoIPInstance;
 import org.thunderdog.challegram.voip.annotation.CallNetworkType;
 import org.thunderdog.challegram.voip.annotation.CallState;
@@ -428,7 +427,7 @@ public class TGCallService extends Service implements
   private boolean sentRating;
 
   private void updateCurrentState () {
-    if (call != null && call.state.getConstructor() == TdApi.CallStateDiscarded.CONSTRUCTOR && isInitiated) {
+    if (call != null && call.state.getConstructor() == TdApi.CallStateDiscarded.CONSTRUCTOR) {
       updateStats();
       if (!sentDebugLog && ((TdApi.CallStateDiscarded) call.state).needDebugInformation && !StringUtils.isEmpty(lastDebugLog)) {
         sentDebugLog = true;
@@ -555,7 +554,7 @@ public class TGCallService extends Service implements
   }
 
   public long getConnectionId () {
-    return tgcalls != null && isInitiated ? tgcalls.getConnectionId() : 0;
+    return tgcalls != null ? tgcalls.getConnectionId() : 0;
   }
 
   private void hangUp () {
@@ -1160,7 +1159,6 @@ public class TGCallService extends Service implements
 
   // VoIP
 
-  private boolean isInitiated;
   private CharSequence lastDebugLog;
 
   private void releaseTgCalls () {
@@ -1172,8 +1170,12 @@ public class TGCallService extends Service implements
     callInitialized = false; // FIXME?
   }
 
+  private boolean isInitiated () {
+    return tgcalls != null;
+  }
+
   private void checkInitiated () {
-    if (isInitiated || TD.isFinished(call)) {
+    if (isInitiated() || TD.isFinished(call)) {
       if (TD.isFinished(call)) {
         releaseTgCalls();
         cleanupChannels((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE));
@@ -1184,21 +1186,19 @@ public class TGCallService extends Service implements
       return;
     }
 
-    if (call == null || call.state.getConstructor() != TdApi.CallStateReady.CONSTRUCTOR || isInitiated || !callInitialized || tdlib == null) {
+    if (call == null || call.state.getConstructor() != TdApi.CallStateReady.CONSTRUCTOR || !callInitialized || tdlib == null) {
       return;
     }
 
     TdApi.CallStateReady state = (TdApi.CallStateReady) call.state;
 
-    if (tgcalls == null) {
-      tgcalls = new VoIPController(); // TODO tgcalls
-
-      tgcalls.setConnectionStateListener(this);
-      tgcalls.setConfiguration(
-        tdlib.callPacketTimeoutMs(),
-        tdlib.callConnectTimeoutMs(),
-        tdlib.files().getVoipDataSavingOption()
-      );
+    VoIPInstance tgcalls = null;
+    try {
+      tgcalls = VoIP.newInstance(tdlib, state, this);
+      if (tgcalls == null) {
+        hangUp();
+        return;
+      }
       if (awaitingGainControlStateUpdate) {
         tgcalls.setAudioOutputGainControlEnabled(audioGainControlEnabled);
         tgcalls.setEchoCancellationStrength(echoCancellationStrength);
@@ -1208,27 +1208,26 @@ public class TGCallService extends Service implements
         tgcalls.setMicDisabled(postponedCallSettings.isMicMuted());
         postponedCallSettings = null;
       }
-    }
 
-    TdApi.InternalLinkTypeProxy callProxy = null;
-    int proxyId = Settings.instance().getEffectiveCallsProxyId();
-    if (proxyId != Settings.PROXY_ID_NONE) {
-      Settings.Proxy proxy = Settings.instance().getProxyConfig(proxyId);
-      if (proxy != null && proxy.proxy != null && proxy.canUseForCalls()) {
-        callProxy = proxy.proxy;
+      TdApi.InternalLinkTypeProxy callProxy = null;
+      int proxyId = Settings.instance().getEffectiveCallsProxyId();
+      if (proxyId != Settings.PROXY_ID_NONE) {
+        Settings.Proxy proxy = Settings.instance().getProxyConfig(proxyId);
+        if (proxy != null && proxy.proxy != null && proxy.canUseForCalls()) {
+          callProxy = proxy.proxy;
+        }
       }
-    }
 
-    try {
       tgcalls.initialize(state, call.isOutgoing, Settings.instance().forceTcpInCalls(), callProxy);
-    } catch (IllegalArgumentException e) {
+      updateNetworkType(false);
+      tgcalls.startAndConnect(lastNetworkType);
+      this.tgcalls = tgcalls;
+    } catch (Throwable t) {
+      if (tgcalls != null) {
+        tgcalls.performDestroy();
+      }
       hangUp();
-      return;
     }
-    updateNetworkType(false);
-    tgcalls.startAndConnect(lastNetworkType);
-
-    isInitiated = true;
   }
 
   @Override
