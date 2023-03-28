@@ -29,6 +29,9 @@ extern "C" {
 #include <openssl/rand.h>
 }
 
+#include <jni_utils.h>
+#include "bridge.h"
+
 void telegram_aes_ige_encrypt(uint8_t* in, uint8_t* out, size_t length, uint8_t* key, uint8_t* iv){
   AES_KEY akey;
   AES_set_encrypt_key(key, 32*8, &akey);
@@ -91,4 +94,18 @@ int voipOnJNILoad(JavaVM *vm, JNIEnv *env) {
   tgvoipRegisterNatives(env);
   return 0;
 }
+}
+
+JNI_FUNC(jlong, newTgCallsInstance,
+         jstring jVersion,
+         jobject jConfiguration,
+         jobject jOptions) {
+
+  std::string version = jni::from_jstring(env, jVersion);
+  jni::Object configuration (env, jConfiguration);
+  jni::Object options (env, jOptions);
+
+  // TODO create tgcalls instance
+
+  return 0;
 }

@@ -6,10 +6,16 @@ import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.os.Build;
 
+import androidx.annotation.Nullable;
+
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.voip.annotation.CallNetworkType;
 import org.webrtc.ContextUtils;
+
+import java.io.File;
 
 import me.vkryl.core.StringUtils;
 
@@ -26,67 +32,107 @@ public class VoIP {
      );
   }
 
-  public static void initialize (Context context) {
-    ContextUtils.initialize(context);
+  private static int getNativeBufferSize (Context context) {
     AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
-    boolean success = false;
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1 && am.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER) != null) {
       int outFramesPerBuffer = StringUtils.parseInt(am.getProperty(AudioManager.PROPERTY_OUTPUT_FRAMES_PER_BUFFER));
       if (outFramesPerBuffer != 0) {
-        VoIPController.setNativeBufferSize(outFramesPerBuffer);
-        success = true;
+        return outFramesPerBuffer;
       }
     }
-    if (!success) {
-      VoIPController.setNativeBufferSize(AudioTrack.getMinBufferSize(48000, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT) / 2);
-    }
+    return AudioTrack.getMinBufferSize(48000, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT) / 2;
   }
 
-  public static VoIPInstance newInstance (Tdlib tdlib, TdApi.CallStateReady stateReady, ConnectionStateListener connectionStateListener) {
+  public static void initialize (Context context) {
+    ContextUtils.initialize(context);
+    int bufferSize = getNativeBufferSize(context);
+    VoIPController.setNativeBufferSize(bufferSize);
+  }
+
+  public static VoIPInstance instantiateAndConnect (
+    Tdlib tdlib,
+    TdApi.Call call,
+    TdApi.CallStateReady stateReady,
+    ConnectionStateListener connectionStateListener,
+    boolean forceTcp,
+    @Nullable Socks5Proxy proxy,
+    @CallNetworkType int networkType,
+    boolean audioGainControlEnabled,
+    int echoCancellationStrength,
+    boolean isMicDisabled
+  ) throws IllegalArgumentException {
+    final String libtgvoipVersion = VoIPController.getVersion();
+
+    final File persistentStateFile = VoIPPersistentConfig.getVoipConfigFile();
+    final File callLogFile = VoIPLogs.getNewFile(true);
+
+    // These do not change during the call
+    final CallConfiguration configuration = new CallConfiguration(
+      stateReady,
+      call.isOutgoing,
+
+      persistentStateFile,
+      callLogFile,
+
+      tdlib.callPacketTimeoutMs(),
+      tdlib.callConnectTimeoutMs(),
+      tdlib.files().getEffectiveVoipDataSavingOption(),
+      forceTcp,
+      proxy,
+
+      VoIPServerConfig.getBoolean("use_system_aec", true),
+      VoIPServerConfig.getBoolean("use_system_ns", true)
+    );
+
+    // These options may change during call
+    final CallOptions options = new CallOptions(
+      networkType,
+      audioGainControlEnabled,
+      echoCancellationStrength,
+      isMicDisabled
+    );
+
     VoIPInstance tgcalls = null;
-    String libtgvoipVersion = VoIPController.getVersion();
     for (String version : stateReady.protocol.libraryVersions) {
       if (StringUtils.isEmpty(version)) {
         continue;
       }
-      switch (version) {
-        case "2.4.4":
-          tgcalls = new VoIPController();
-          // TODO? InstanceImplLegacy.cpp
-          break;
-        case "2.7.7":
-        case "5.0.0":
-          // TODO InstanceImpl.cpp
-          break;
-        case "6.0.0":
-          // TODO InstanceV2_4_0_0Impl.cpp
-          break;
-        case "7.0.0":
-        case "8.0.0":
-        case "9.0.0":
-          // TODO InstanceV2Impl.cpp
-          break;
-        case "10.0.0":
-        case "11.0.0":
-          // TODO InstanceV2ReferenceImpl.cpp
-          break;
-        default:
-          if (version.equals(libtgvoipVersion)) {
-            tgcalls = new VoIPController();
-          } else {
-            // Unknown version: version
-          }
-          break;
+      if (version.equals(libtgvoipVersion)) {
+        tgcalls = new VoIPController(
+          configuration,
+          options,
+          connectionStateListener
+        );
+      } else {
+        try {
+          tgcalls = new TgCallsController(
+            configuration,
+            options,
+            connectionStateListener,
+            version
+          );
+        } catch (TgCallsController.UnknownVersionException e) {
+          Log.i("Unknown tgcalls version: %s", version);
+        }
+      }
+      if (tgcalls != null) {
+        break;
       }
     }
     if (tgcalls != null) {
-      tgcalls.setConnectionStateListener(connectionStateListener);
-      tgcalls.setConfiguration(
-        tdlib.callPacketTimeoutMs(),
-        tdlib.callConnectTimeoutMs(),
-        tdlib.files().getVoipDataSavingOption()
-      );
+      try {
+        tgcalls.initializeAndConnect();
+        return tgcalls;
+      } catch (Throwable t) {
+        Log.e("%s %s initialization failed", t,
+          tgcalls.getLibraryName(),
+          tgcalls.getLibraryVersion()
+        );
+      }
+      // Make sure resources are released,
+      // when call initialization has failed
+      tgcalls.performDestroy();
     }
-    return tgcalls;
+    return null;
   }
 }

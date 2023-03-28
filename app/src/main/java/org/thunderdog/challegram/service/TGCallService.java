@@ -72,6 +72,7 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.SoundPoolMap;
 import org.thunderdog.challegram.voip.ConnectionStateListener;
 import org.thunderdog.challegram.voip.NetworkStats;
+import org.thunderdog.challegram.voip.Socks5Proxy;
 import org.thunderdog.challegram.voip.VoIP;
 import org.thunderdog.challegram.voip.VoIPInstance;
 import org.thunderdog.challegram.voip.annotation.CallNetworkType;
@@ -247,18 +248,14 @@ public class TGCallService extends Service implements
 
   private boolean audioGainControlEnabled;
   private int echoCancellationStrength;
-  private boolean awaitingGainControlStateUpdate;
 
-  public void updateOutputGainControlState(){
+  public void updateOutputGainControlState () {
     AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
     this.audioGainControlEnabled = hasEarpiece() && am != null && !am.isSpeakerphoneOn() && !am.isBluetoothScoOn() && !isHeadsetPlugged;
     this.echoCancellationStrength = isHeadsetPlugged || (hasEarpiece() && am != null && !am.isSpeakerphoneOn() && !am.isBluetoothScoOn() && !isHeadsetPlugged) ? 0 : 1;
     if (tgcalls != null) {
-      awaitingGainControlStateUpdate = false;
       tgcalls.setAudioOutputGainControlEnabled(audioGainControlEnabled);
       tgcalls.setEchoCancellationStrength(echoCancellationStrength);
-    } else {
-      awaitingGainControlStateUpdate = true;
     }
   }
 
@@ -433,8 +430,9 @@ public class TGCallService extends Service implements
         sentDebugLog = true;
         tdlib.client().send(new TdApi.SendCallDebugInformation(call.id, lastDebugLog.toString()), tdlib.okHandler());
       }
-      if (!sentRating && (((TdApi.CallStateDiscarded) call.state).needRating || (BuildConfig.DEBUG && logViewed))) {
+      if (!sentRating && (((TdApi.CallStateDiscarded) call.state).needRating || BuildConfig.EXPERIMENTAL)) {
         sentRating = true;
+        // TODO new feedback pop-up
         startRatingActivity();
       }
     }
@@ -527,11 +525,9 @@ public class TGCallService extends Service implements
 
   @Override
   public void onCallSettingsChanged (int callId, CallSettings settings) {
+    this.postponedCallSettings = settings;
     if (tgcalls != null) {
       tgcalls.setMicDisabled(settings != null && settings.isMicMuted());
-      postponedCallSettings = null;
-    } else {
-      postponedCallSettings = settings;
     }
     setAudioMode(settings != null ? settings.getSpeakerMode() : CallSettings.SPEAKER_MODE_NONE);
   }
@@ -1190,42 +1186,41 @@ public class TGCallService extends Service implements
       return;
     }
 
+    updateOutputGainControlState();
+    updateNetworkType(false);
+    Socks5Proxy callProxy = null;
+    int proxyId = Settings.instance().getEffectiveCallsProxyId();
+    if (proxyId != Settings.PROXY_ID_NONE) {
+      Settings.Proxy proxy = Settings.instance().getProxyConfig(proxyId);
+      if (proxy != null && proxy.proxy != null && proxy.canUseForCalls()) {
+        callProxy = new Socks5Proxy(proxy.proxy);
+      }
+    }
+    boolean isMicDisabled = postponedCallSettings != null && postponedCallSettings.isMicMuted();
+    boolean forceTcp = Settings.instance().forceTcpInCalls();
+
     TdApi.CallStateReady state = (TdApi.CallStateReady) call.state;
 
-    VoIPInstance tgcalls = null;
+    VoIPInstance tgcalls;
     try {
-      tgcalls = VoIP.newInstance(tdlib, state, this);
-      if (tgcalls == null) {
-        hangUp();
-        return;
-      }
-      if (awaitingGainControlStateUpdate) {
-        tgcalls.setAudioOutputGainControlEnabled(audioGainControlEnabled);
-        tgcalls.setEchoCancellationStrength(echoCancellationStrength);
-        awaitingGainControlStateUpdate = false;
-      }
-      if (postponedCallSettings != null) {
-        tgcalls.setMicDisabled(postponedCallSettings.isMicMuted());
-        postponedCallSettings = null;
-      }
-
-      TdApi.InternalLinkTypeProxy callProxy = null;
-      int proxyId = Settings.instance().getEffectiveCallsProxyId();
-      if (proxyId != Settings.PROXY_ID_NONE) {
-        Settings.Proxy proxy = Settings.instance().getProxyConfig(proxyId);
-        if (proxy != null && proxy.proxy != null && proxy.canUseForCalls()) {
-          callProxy = proxy.proxy;
-        }
-      }
-
-      tgcalls.initialize(state, call.isOutgoing, Settings.instance().forceTcpInCalls(), callProxy);
-      updateNetworkType(false);
-      tgcalls.startAndConnect(lastNetworkType);
-      this.tgcalls = tgcalls;
+      tgcalls = VoIP.instantiateAndConnect(
+        tdlib,
+        call,
+        state,
+        this,
+        forceTcp,
+        callProxy,
+        lastNetworkType,
+        audioGainControlEnabled,
+        echoCancellationStrength,
+        isMicDisabled
+      );
     } catch (Throwable t) {
-      if (tgcalls != null) {
-        tgcalls.performDestroy();
-      }
+      tgcalls = null;
+    }
+    if (tgcalls != null) {
+      this.tgcalls = tgcalls;
+    } else {
       hangUp();
     }
   }

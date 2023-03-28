@@ -29,6 +29,7 @@ import org.drinkless.td.libcore.telegram.Client;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.core.WatchDog;
@@ -1015,6 +1016,18 @@ public class TdlibFilesManager implements GlobalConnectionListener {
     if ((datasaverFlags & DATASAVER_FLAG_CALLS_ROAMING) != 0)
       return DataSavingOption.ROAMING;
     return DataSavingOption.NEVER;
+  }
+
+  public @DataSavingOption int getEffectiveVoipDataSavingOption () {
+    @DataSavingOption int dataSavingOption = getVoipDataSavingOption();
+    if (dataSavingOption == DataSavingOption.ROAMING) {
+      if (U.isRoaming()) {
+        return DataSavingOption.MOBILE;
+      } else {
+        return DataSavingOption.NEVER;
+      }
+    }
+    return dataSavingOption;
   }
 
   public boolean setVoipDataSavingOption (@DataSavingOption int option) {
