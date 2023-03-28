@@ -74,6 +74,7 @@ import org.thunderdog.challegram.voip.ConnectionStateListener;
 import org.thunderdog.challegram.voip.NetworkStats;
 import org.thunderdog.challegram.voip.VoIP;
 import org.thunderdog.challegram.voip.VoIPController;
+import org.thunderdog.challegram.voip.VoIPInstance;
 import org.thunderdog.challegram.voip.annotation.CallNetworkType;
 import org.thunderdog.challegram.voip.annotation.CallState;
 import org.thunderdog.challegram.voip.gui.CallSettings;
@@ -148,7 +149,7 @@ public class TGCallService extends Service implements
   }
 
   public long getCallDuration () {
-    return tgcalls != null ? tgcalls.getCallDuration() : -1;
+    return tgcalls != null ? tgcalls.getCallDuration() : VoIPInstance.DURATION_UNKNOWN;
   }
 
   private void setCallId (Tdlib tdlib, int callId) {
@@ -172,8 +173,7 @@ public class TGCallService extends Service implements
   }
 
   private SoundPoolMap soundPoolMap;
-  private @Nullable
-  VoIPController tgcalls;
+  private @Nullable VoIPInstance tgcalls;
   private PowerManager.WakeLock cpuWakelock;
   private BluetoothAdapter btAdapter;
 
@@ -251,7 +251,7 @@ public class TGCallService extends Service implements
   private boolean awaitingGainControlStateUpdate;
 
   public void updateOutputGainControlState(){
-    AudioManager am=(AudioManager) getSystemService(AUDIO_SERVICE);
+    AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
     this.audioGainControlEnabled = hasEarpiece() && am != null && !am.isSpeakerphoneOn() && !am.isBluetoothScoOn() && !isHeadsetPlugged;
     this.echoCancellationStrength = isHeadsetPlugged || (hasEarpiece() && am != null && !am.isSpeakerphoneOn() && !am.isBluetoothScoOn() && !isHeadsetPlugged) ? 0 : 1;
     if (tgcalls != null) {
@@ -432,7 +432,7 @@ public class TGCallService extends Service implements
       updateStats();
       if (!sentDebugLog && ((TdApi.CallStateDiscarded) call.state).needDebugInformation && !StringUtils.isEmpty(lastDebugLog)) {
         sentDebugLog = true;
-        tdlib.client().send(new TdApi.SendCallDebugInformation(call.id, lastDebugLog), tdlib.okHandler());
+        tdlib.client().send(new TdApi.SendCallDebugInformation(call.id, lastDebugLog.toString()), tdlib.okHandler());
       }
       if (!sentRating && (((TdApi.CallStateDiscarded) call.state).needRating || (BuildConfig.DEBUG && logViewed))) {
         sentRating = true;
@@ -529,7 +529,7 @@ public class TGCallService extends Service implements
   @Override
   public void onCallSettingsChanged (int callId, CallSettings settings) {
     if (tgcalls != null) {
-      tgcalls.setMicMute(settings != null && settings.isMicMuted());
+      tgcalls.setMicDisabled(settings != null && settings.isMicMuted());
       postponedCallSettings = null;
     } else {
       postponedCallSettings = settings;
@@ -555,7 +555,7 @@ public class TGCallService extends Service implements
   }
 
   public long getConnectionId () {
-    return tgcalls != null && isInitiated ? tgcalls.getPreferredRelayID() : 0;
+    return tgcalls != null && isInitiated ? tgcalls.getConnectionId() : 0;
   }
 
   private void hangUp () {
@@ -1071,12 +1071,13 @@ public class TGCallService extends Service implements
   // Network type
 
   private NetworkInfo lastNetInfo;
+  private @CallNetworkType int lastNetworkType = CallNetworkType.UNKNOWN;
 
-  private void updateNetworkType (boolean force) {
+  private void updateNetworkType (boolean dispatchToTgCalls) {
     ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
     NetworkInfo info = cm.getActiveNetworkInfo();
     lastNetInfo = info;
-    @CallNetworkType int type = CallNetworkType.UNKNOWN;
+    @CallNetworkType int type = lastNetworkType;
     if (info != null) {
       switch (info.getType()) {
         case ConnectivityManager.TYPE_MOBILE:
@@ -1116,7 +1117,8 @@ public class TGCallService extends Service implements
           break;
       }
     }
-    if (tgcalls != null && (force || tgcalls.getNetworkType() != type)) {
+    this.lastNetworkType = type;
+    if (dispatchToTgCalls && tgcalls != null) {
       tgcalls.setNetworkType(type);
     }
   }
@@ -1128,9 +1130,12 @@ public class TGCallService extends Service implements
     if (tgcalls == null) {
       return;
     }
-    tgcalls.getStats(stats);
+    tgcalls.getNetworkStats(stats);
 
     long newDuration = getCallDuration();
+    if (newDuration == VoIPInstance.DURATION_UNKNOWN) {
+      newDuration = 0;
+    }
 
     long wifiSentDiff = stats.bytesSentWifi - prevStats.bytesSentWifi;
     long wifiReceivedDiff = stats.bytesRecvdWifi - prevStats.bytesRecvdWifi;
@@ -1156,12 +1161,12 @@ public class TGCallService extends Service implements
   // VoIP
 
   private boolean isInitiated;
-  private String lastDebugLog;
+  private CharSequence lastDebugLog;
 
   private void releaseTgCalls () {
     if (tgcalls != null) {
-      lastDebugLog = tgcalls.getDebugLog();
-      tgcalls.release();
+      lastDebugLog = tgcalls.collectDebugLog();
+      tgcalls.performDestroy();
       tgcalls = null;
     }
     callInitialized = false; // FIXME?
@@ -1186,42 +1191,42 @@ public class TGCallService extends Service implements
     TdApi.CallStateReady state = (TdApi.CallStateReady) call.state;
 
     if (tgcalls == null) {
-      tgcalls = new VoIPController();
+      tgcalls = new VoIPController(); // TODO tgcalls
+
       tgcalls.setConnectionStateListener(this);
-      tgcalls.setConfig(tdlib.callPacketTimeoutMs(), tdlib.callConnectTimeoutMs(), tdlib.files().getVoipDataSavingOption(), call.id);
+      tgcalls.setConfiguration(
+        tdlib.callPacketTimeoutMs(),
+        tdlib.callConnectTimeoutMs(),
+        tdlib.files().getVoipDataSavingOption()
+      );
       if (awaitingGainControlStateUpdate) {
         tgcalls.setAudioOutputGainControlEnabled(audioGainControlEnabled);
         tgcalls.setEchoCancellationStrength(echoCancellationStrength);
         awaitingGainControlStateUpdate = false;
       }
       if (postponedCallSettings != null) {
-        tgcalls.setMicMute(postponedCallSettings.isMicMuted());
+        tgcalls.setMicDisabled(postponedCallSettings.isMicMuted());
         postponedCallSettings = null;
       }
     }
 
-    tgcalls.setEncryptionKey(state.encryptionKey, call.isOutgoing);
-    try {
-      tgcalls.setRemoteEndpoints(state.servers, state.protocol.udpP2p && state.allowP2p, Settings.instance().forceTcpInCalls(), state.protocol.maxLayer);
-    } catch (IllegalArgumentException e) {
-      hangUp();
-      return;
-    }
+    TdApi.InternalLinkTypeProxy callProxy = null;
     int proxyId = Settings.instance().getEffectiveCallsProxyId();
     if (proxyId != Settings.PROXY_ID_NONE) {
       Settings.Proxy proxy = Settings.instance().getProxyConfig(proxyId);
       if (proxy != null && proxy.proxy != null && proxy.canUseForCalls()) {
-        if (proxy.proxy.type.getConstructor() == TdApi.ProxyTypeSocks5.CONSTRUCTOR) {
-          TdApi.ProxyTypeSocks5 socks5 = (TdApi.ProxyTypeSocks5) proxy.proxy.type;
-          tgcalls.setProxy(proxy.proxy.server, proxy.proxy.port, socks5.username, socks5.password);
-        } else {
-          Log.e("Unsupported proxy type for calls: %s", proxy.proxy.type);
-        }
+        callProxy = proxy.proxy;
       }
     }
-    tgcalls.start();
+
+    try {
+      tgcalls.initialize(state, call.isOutgoing, Settings.instance().forceTcpInCalls(), callProxy);
+    } catch (IllegalArgumentException e) {
+      hangUp();
+      return;
+    }
     updateNetworkType(false);
-    tgcalls.connect();
+    tgcalls.startAndConnect(lastNetworkType);
 
     isInitiated = true;
   }
@@ -1277,11 +1282,15 @@ public class TGCallService extends Service implements
     }
   }
 
-  public String getLibraryVersion () {
-    return tgcalls != null ? tgcalls.getUsedVersion() : VoIP.getPrimaryVersion();
+  public CharSequence getLibraryNameAndVersion () {
+    return tgcalls != null ?
+      tgcalls.getLibraryName() + " " + tgcalls.getLibraryVersion() :
+      "unknown";
   }
 
-  public String getDebugString () {
-    return tgcalls != null ? tgcalls.getDebugString() : "unitialized";
+  public CharSequence getDebugString () {
+    return tgcalls != null ?
+      tgcalls.collectDebugLog() :
+      "";
   }
 }

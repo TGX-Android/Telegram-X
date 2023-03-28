@@ -3,7 +3,8 @@ package org.thunderdog.challegram.voip;
 import android.media.audiofx.AcousticEchoCanceler;
 import android.media.audiofx.NoiseSuppressor;
 import android.os.Build;
-import android.os.SystemClock;
+
+import androidx.annotation.Keep;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.Log;
@@ -21,15 +22,20 @@ import java.util.Locale;
 
 import me.vkryl.core.StringUtils;
 
-public class VoIPController{
+public final class VoIPController extends VoIPInstance {
   public static final int PEER_CAP_GROUP_CALLS=1;
 
   protected long nativeInst=0;
-  protected long callStartTime;
-  protected ConnectionStateListener listener;
 
   public VoIPController(){
     nativeInst=nativeInit(VoIPPersistentConfig.getVoipConfigFile().getAbsolutePath());
+  }
+
+  @Override
+  public void startAndConnect (@CallNetworkType int networkType) {
+    start();
+    setNetworkType(networkType);
+    connect();
   }
 
   public void start(){
@@ -75,6 +81,21 @@ public class VoIPController{
     nativeSetRemoteEndpoints(nativeInst, endpoints, allowP2p, tcp, connectionMaxLayer);
   }
 
+  @Override
+  public void initialize (TdApi.CallStateReady state, boolean isOutgoing, boolean forceTcp, TdApi.InternalLinkTypeProxy proxy) {
+    setEncryptionKey(state.encryptionKey, isOutgoing);
+    setRemoteEndpoints(
+      state.servers,
+      state.protocol.udpP2p && state.allowP2p,
+      forceTcp,
+      state.protocol.maxLayer
+    );
+    if (proxy != null && proxy.type.getConstructor() == TdApi.ProxyTypeSocks5.CONSTRUCTOR) {
+      TdApi.ProxyTypeSocks5 socks5 = (TdApi.ProxyTypeSocks5) proxy.type;
+      setProxy(proxy.server, proxy.port, socks5.username, socks5.password);
+    }
+  }
+
   public void setEncryptionKey(byte[] key, boolean isOutgoing){
     if(key.length!=256){
       throw new IllegalArgumentException("key length must be exactly 256 bytes but is "+key.length);
@@ -93,79 +114,75 @@ public class VoIPController{
     nativeInst=0;
   }
 
-  public String getDebugString(){
+  @Override
+  public void performDestroy () {
+    release();
+  }
+
+  @Override
+  public CharSequence collectDebugLog () {
     ensureNativeInstance();
     return nativeGetDebugString(nativeInst);
   }
 
-  public String getUsedVersion(){
-    return getVersion();
-  }
-
-  protected void ensureNativeInstance(){
-    if(nativeInst==0){
+  protected void ensureNativeInstance () {
+    if (nativeInst == 0) {
       throw new IllegalStateException("Native instance is not valid");
     }
   }
 
-  public void setConnectionStateListener(ConnectionStateListener connectionStateListener){
-    listener=connectionStateListener;
+  // called from native code
+  @Keep
+  private void handleStateChange (@CallState int state){
+    dispatchCallStateChanged(state);
   }
 
   // called from native code
-  private void handleStateChange(@CallState int state){
-    if(state== CallState.ESTABLISHED && callStartTime==0)
-      callStartTime=SystemClock.elapsedRealtime();
-    if(listener!=null){
-      listener.onConnectionStateChanged(state);
+  @Keep
+  private void handleSignalBarsChange (int count){
+    if (connectionStateListener != null) {
+      connectionStateListener.onSignalBarCountChanged(count);
     }
   }
 
   // called from native code
-  private void handleSignalBarsChange(int count){
-    if(listener!=null)
-      listener.onSignalBarCountChanged(count);
+  @Keep
+  private void groupCallKeyReceived (byte[] key){
+    if (connectionStateListener != null) {
+      connectionStateListener.onGroupCallKeyReceived(key);
+    }
   }
 
   // called from native code
-  private void groupCallKeyReceived(byte[] key){
-    if(listener!=null)
-      listener.onGroupCallKeyReceived(key);
-  }
-
-  // called from native code
+  @Keep
   private void groupCallKeySent(){
-    if(listener!=null)
-      listener.onGroupCallKeySent();
+    if (connectionStateListener != null) {
+      connectionStateListener.onGroupCallKeySent();
+    }
   }
 
   // called from native code
+  @Keep
   private void callUpgradeRequestReceived(){
-    if(listener!=null)
-      listener.onCallUpgradeRequestReceived();
+    if (connectionStateListener != null) {
+      connectionStateListener.onCallUpgradeRequestReceived();
+    }
   }
 
-  private int netType = CallNetworkType.UNKNOWN;
-
-  public @CallNetworkType int getNetworkType () {
-    return netType;
-  }
-
-  public void setNetworkType(@CallNetworkType int type){
+  @Override
+  protected void handleNetworkTypeChange (@CallNetworkType int type){
     ensureNativeInstance();
-    nativeSetNetworkType(nativeInst, netType = type);
+    nativeSetNetworkType(nativeInst, type);
   }
 
-  public long getCallDuration () {
-    return callStartTime != 0 ? SystemClock.elapsedRealtime() - callStartTime : -1;
-  }
-
-  public void setMicMute(boolean mute){
+  @Override
+  public void setMicDisabled (boolean isDisabled){
     ensureNativeInstance();
-    nativeSetMicMute(nativeInst, mute);
+    nativeSetMicMute(nativeInst, isDisabled);
   }
 
-  public void setConfig(double recvTimeout, double initTimeout, @DataSavingOption int dataSavingOption, long callID){
+  @Override
+  public void handleConfigurationChange (long recvTimeout, long initTimeout, @DataSavingOption int dataSavingOption) {
     ensureNativeInstance();
     boolean sysAecAvailable=false, sysNsAvailable=false;
     if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN){
@@ -193,19 +210,34 @@ public class VoIPController{
     return nativeGetPreferredRelayID(nativeInst);
   }
 
+  @Override
+  public long getConnectionId () {
+    return getPreferredRelayID();
+  }
+
   public int getLastError(){
     ensureNativeInstance();
     return nativeGetLastError(nativeInst);
   }
 
-  public void getStats(NetworkStats stats){
-    ensureNativeInstance();
-    if(stats==null)
+  public void getNetworkStats (NetworkStats stats){
+    if(stats == null)
       throw new NullPointerException("You're not supposed to pass null here");
+    ensureNativeInstance();
     nativeGetStats(nativeInst, stats);
   }
 
-  public static String getVersion(){
+  @Override
+  public String getLibraryName () {
+    return "libtgvoip";
+  }
+
+  @Override
+  public String getLibraryVersion () {
+    return getVersion();
+  }
+
+  public static String getVersion () {
     return nativeGetVersion();
   }
 
@@ -249,7 +281,8 @@ public class VoIPController{
     nativeSetProxy(nativeInst, address, port, username, password);
   }
 
-  public void setAudioOutputGainControlEnabled(boolean enabled){
+  @Override
+  public void setAudioOutputGainControlEnabled (boolean enabled) {
     ensureNativeInstance();
     nativeSetAudioOutputGainControlEnabled(nativeInst, enabled);
   }
@@ -273,7 +306,8 @@ public class VoIPController{
     nativeRequestCallUpgrade(nativeInst);
   }
 
-  public void setEchoCancellationStrength(int strength){
+  @Override
+  public void setEchoCancellationStrength (int strength){
     ensureNativeInstance();
     nativeSetEchoCancellationStrength(nativeInst, strength);
   }

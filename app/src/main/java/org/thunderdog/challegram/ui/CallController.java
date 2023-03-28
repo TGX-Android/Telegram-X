@@ -456,7 +456,7 @@ public class CallController extends ViewController<CallController.Arguments> imp
 
                 SpannableStringBuilder b = new SpannableStringBuilder();
                 if (service != null) {
-                  b.append(service.getLibraryVersion());
+                  b.append(service.getLibraryNameAndVersion());
                 } else {
                   b.append("service unavailable");
                 }
