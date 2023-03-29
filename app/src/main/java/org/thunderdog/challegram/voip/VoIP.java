@@ -10,25 +10,31 @@ import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.Log;
+import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.voip.annotation.CallNetworkType;
 import org.webrtc.ContextUtils;
 
 import java.io.File;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
+import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.StringUtils;
 
 public class VoIP {
   public static TdApi.CallProtocol getProtocol () {
+    Set<String> versions = new LinkedHashSet<>();
+    versions.add(VoIPController.getVersion());
+    Collections.addAll(versions, N.getTgCallsVersions());
     return new TdApi.CallProtocol(
       true,
       true,
       Config.VOIP_CONNECTION_MIN_LAYER,
       VoIPController.getConnectionMaxLayer(),
-      new String[] {
-        VoIPController.getVersion()
-      }
+      versions.toArray(new String[0])
      );
   }
 
@@ -62,6 +68,7 @@ public class VoIP {
     boolean isMicDisabled
   ) throws IllegalArgumentException {
     final String libtgvoipVersion = VoIPController.getVersion();
+    final String[] tgCallsVersions = N.getTgCallsVersions();
 
     final File persistentStateFile = VoIPPersistentConfig.getVoipConfigFile();
     final File callLogFile = VoIPLogs.getNewFile(true);
@@ -103,7 +110,7 @@ public class VoIP {
           options,
           connectionStateListener
         );
-      } else {
+      } else if (ArrayUtils.contains(tgCallsVersions, version)) {
         try {
           tgcalls = new TgCallsController(
             configuration,
@@ -111,8 +118,8 @@ public class VoIP {
             connectionStateListener,
             version
           );
-        } catch (TgCallsController.UnknownVersionException e) {
-          Log.i("Unknown tgcalls version: %s", version);
+        } catch (Throwable t) {
+          Log.i("Unknown tgcalls %s", t, version);
         }
       }
       if (tgcalls != null) {

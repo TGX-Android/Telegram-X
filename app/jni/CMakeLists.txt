@@ -163,9 +163,6 @@ add_subdirectory(
   "${UTILS_DIR}"
 )
 
-# libtgvoip
-include("${CMAKE_HOME_DIRECTORY}/BuildTelegramVoIP.cmake")
-
 # usrsctp
 include("${CMAKE_HOME_DIRECTORY}/BuildUsrSCTP.cmake")
 
@@ -180,6 +177,9 @@ include("${CMAKE_HOME_DIRECTORY}/BuildAbsl.cmake")
 
 # webrtc
 include("${CMAKE_HOME_DIRECTORY}/BuildWebRTC.cmake")
+
+# libtgvoip
+include("${CMAKE_HOME_DIRECTORY}/BuildTelegramVoIP.cmake")
 
 # tgcalls
 include("${CMAKE_HOME_DIRECTORY}/BuildTgCalls.cmake")
@@ -278,6 +278,7 @@ target_compile_definitions(${NATIVE_LIB} PUBLIC
 )
 target_compile_options(${NATIVE_LIB} PUBLIC
   -Wall -Werror -fno-math-errno -fno-strict-aliasing -ffast-math -funroll-loops
+  -error-limit=0
 )
 
 # == Linking dependencies ==

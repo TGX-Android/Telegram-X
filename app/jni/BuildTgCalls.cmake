@@ -74,11 +74,11 @@ add_library(tgcalls STATIC
 )
 
 target_include_directories(tgcalls PRIVATE
-  "${TGCALLS_DIR}/tgcalls"
   "${CMAKE_HOME_DIRECTORY}"
 )
 target_include_directories(tgcalls PUBLIC
   "${TGCALLS_DIR}"
+  "${TGCALLS_DIR}/tgcalls"
 )
 
 target_compile_options(tgcalls PUBLIC
@@ -87,6 +87,7 @@ target_compile_options(tgcalls PUBLIC
 
 target_link_libraries(tgcalls PRIVATE
   rnnoise
+  z
 )
 
 target_link_libraries(tgcalls PUBLIC

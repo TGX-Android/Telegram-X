@@ -130,4 +130,5 @@ public final class N {
     @NonNull CallConfiguration configuration,
     @NonNull CallOptions options
   );
+  public static native String[] getTgCallsVersions ();
 }
