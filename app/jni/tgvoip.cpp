@@ -20,6 +20,12 @@
 #include <libtgvoip/client/android/tg_voip_jni.h>
 
 #ifndef DISABLE_TGCALLS
+#include <modules/utility/include/jvm_android.h>
+#include <sdk/android/native_api/video/wrapper.h>
+#include <sdk/android/native_api/base/init.h>
+#include <rtc_base/ssl_adapter.h>
+#include <webrtc/media/base/media_constants.h>
+
 #include <libtgvoip/os/android/JNIUtilities.h>
 
 #include <tgcalls/legacy/InstanceImplLegacy.h>
@@ -139,6 +145,24 @@ namespace tgcalls {
 #undef REGISTER
 #endif
 
+    if (env->ExceptionCheck()) {
+      return false;
+    }
+
+    JavaVM* vm;
+    env->GetJavaVM(&vm);
+
+    webrtc::InitAndroid(vm);
+    if (env->ExceptionCheck()) {
+      return false;
+    }
+
+    webrtc::JVM::Initialize(vm);
+    if (env->ExceptionCheck()) {
+      return false;
+    }
+
+    rtc::InitializeSSL();
     if (env->ExceptionCheck()) {
       return false;
     }
