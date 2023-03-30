@@ -14,9 +14,7 @@ package org.thunderdog.challegram.telegram;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 
-public interface CallsListener {
-  void onCallUpdated (TdApi.Call call);
-  void onNewCallSignallingDataArrived (int callId, byte[] data);
-  void onGroupCallUpdated (TdApi.GroupCall groupCall);
-  void onGroupCallParticipantUpdated (int groupCallId, TdApi.GroupCallParticipant groupCallParticipant);
+public interface PrivateCallListener {
+  default void onCallUpdated (TdApi.Call call)                         { }
+  default void onNewCallSignalingDataArrived (int callId, byte[] data) { }
 }

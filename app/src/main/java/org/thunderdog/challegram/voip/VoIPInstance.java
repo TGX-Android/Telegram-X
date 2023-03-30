@@ -2,6 +2,7 @@ package org.thunderdog.challegram.voip;
 
 import android.os.SystemClock;
 
+import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 
 import org.thunderdog.challegram.voip.annotation.CallNetworkType;
@@ -43,7 +44,7 @@ public abstract class VoIPInstance implements Destroyable {
     if (state == CallState.ESTABLISHED && callStartTime == 0) {
       callStartTime = SystemClock.elapsedRealtime();
     }
-    connectionStateListener.onConnectionStateChanged(state);
+    connectionStateListener.onConnectionStateChanged(this, state);
   }
 
   public static long DURATION_UNKNOWN = -1;
@@ -87,4 +88,25 @@ public abstract class VoIPInstance implements Destroyable {
 
   public abstract String getLibraryName ();
   public abstract String getLibraryVersion ();
+
+  // called from native code
+
+  @Keep
+  protected final void handleStateChange (@CallState int state) {
+    dispatchCallStateChanged(state);
+  }
+
+  @Keep
+  protected final void handleSignalBarsChange (int count) {
+    connectionStateListener.onSignalBarCountChanged(count);
+  }
+
+  @Keep
+  protected final void handleEmittedSignalingData (byte[] buffer) {
+    connectionStateListener.onSignallingDataEmitted(buffer);
+  }
+
+  // called from TDLib
+
+  public abstract void handleIncomingSignalingData (byte[] buffer);
 }

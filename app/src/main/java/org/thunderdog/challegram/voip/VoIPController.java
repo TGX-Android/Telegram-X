@@ -5,7 +5,6 @@ import androidx.annotation.NonNull;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.voip.annotation.CallNetworkType;
-import org.thunderdog.challegram.voip.annotation.CallState;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -79,7 +78,7 @@ public final class VoIPController extends VoIPInstance {
       !configuration.useSystemAcousticEchoCanceler,
       !configuration.useSystemNoiseSuppressor,
       true,
-      configuration.callLogFilePath,
+      configuration.logFilePath,
       null,
       false
     );
@@ -144,18 +143,6 @@ public final class VoIPController extends VoIPInstance {
     if (nativeInst == 0) {
       throw new IllegalStateException("Native instance is not valid");
     }
-  }
-
-  // called from native code
-  @Keep
-  private void handleStateChange (@CallState int state) {
-    dispatchCallStateChanged(state);
-  }
-
-  // called from native code
-  @Keep
-  private void handleSignalBarsChange (int count) {
-    connectionStateListener.onSignalBarCountChanged(count);
   }
 
   // called from native code
@@ -227,6 +214,11 @@ public final class VoIPController extends VoIPInstance {
 
   public static String getVersion () {
     return nativeGetVersion();
+  }
+
+  @Override
+  public void handleIncomingSignalingData (byte[] buffer) {
+    // Not implemented
   }
 
   public String getDebugLog () {

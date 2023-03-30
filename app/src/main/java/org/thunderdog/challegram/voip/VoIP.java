@@ -35,7 +35,7 @@ public class VoIP {
       Config.VOIP_CONNECTION_MIN_LAYER,
       VoIPController.getConnectionMaxLayer(),
       versions.toArray(new String[0])
-     );
+   );
   }
 
   private static int getNativeBufferSize (Context context) {
@@ -70,8 +70,9 @@ public class VoIP {
     final String libtgvoipVersion = VoIPController.getVersion();
     final String[] tgCallsVersions = N.getTgCallsVersions();
 
+    final VoIPLogs.Pair logFiles = VoIPLogs.getNewFile(true);
+
     final File persistentStateFile = VoIPPersistentConfig.getVoipConfigFile();
-    final File callLogFile = VoIPLogs.getNewFile(true);
 
     // These do not change during the call
     final CallConfiguration configuration = new CallConfiguration(
@@ -79,7 +80,8 @@ public class VoIP {
       call.isOutgoing,
 
       persistentStateFile,
-      callLogFile,
+      logFiles != null ? logFiles.logFile : null,
+      logFiles != null ? logFiles.statsLogFile : null,
 
       tdlib.callPacketTimeoutMs(),
       tdlib.callConnectTimeoutMs(),
@@ -88,7 +90,12 @@ public class VoIP {
       proxy,
 
       VoIPServerConfig.getBoolean("use_system_aec", true),
-      VoIPServerConfig.getBoolean("use_system_ns", true)
+      VoIPServerConfig.getBoolean("use_system_ns", true),
+      VoIPServerConfig.getBoolean("voip_enable_stun_marking", false),
+      VoIPServerConfig.getBoolean("enable_h265_encoder", true),
+      VoIPServerConfig.getBoolean("enable_h265_decoder", true),
+      VoIPServerConfig.getBoolean("enable_h264_encoder", true),
+      VoIPServerConfig.getBoolean("enable_h264_decoder", true)
     );
 
     // These options may change during call

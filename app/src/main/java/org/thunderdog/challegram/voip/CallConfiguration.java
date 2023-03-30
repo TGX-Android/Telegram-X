@@ -16,7 +16,8 @@ public class CallConfiguration {
   public final boolean isOutgoing;
 
   public final @NonNull String persistentStateFilePath;
-  public final @Nullable String callLogFilePath;
+  public final @Nullable String logFilePath;
+  public final @Nullable String statsLogFilePath;
 
   public final long packetTimeoutMs;
   public final long connectTimeoutMs;
@@ -27,23 +28,33 @@ public class CallConfiguration {
 
   public final boolean useSystemAcousticEchoCanceler;
   public final boolean useSystemNoiseSuppressor;
+  public final boolean enableStunMarking;
+  public final boolean enableH265Encoder, enableH265Decoder;
+  public final boolean enableH264Encoder, enableH264Decoder;
 
   public CallConfiguration (
     @NonNull TdApi.CallStateReady state,
     boolean isOutgoing,
     @NonNull File persistentStateFile,
-    @Nullable File callLogFile,
+    @Nullable File logFile,
+    @Nullable File statsLogFile,
     long packetTimeoutMs, long connectTimeoutMs, int dataSavingOption,
     boolean forceTcp,
     @Nullable Socks5Proxy proxy,
-    boolean useSystemAcousticEchoCanceler,
-    boolean useSystemNoiseSuppressor
+    boolean allowSystemAcousticEchoCanceler,
+    boolean allowSystemNoiseSuppressor,
+    boolean enableStunMarking,
+    boolean enableH265Encoder,
+    boolean enableH265Decoder,
+    boolean enableH264Encoder,
+    boolean enableH264Decoder
   ) {
     this.state = state;
     this.isOutgoing = isOutgoing;
 
     this.persistentStateFilePath = persistentStateFile.getAbsolutePath();
-    this.callLogFilePath = callLogFile != null ? callLogFile.getAbsolutePath() : null;
+    this.logFilePath = logFile != null ? logFile.getAbsolutePath() : null;
+    this.statsLogFilePath = statsLogFile != null ? statsLogFile.getAbsolutePath() : null;
 
     this.packetTimeoutMs = packetTimeoutMs;
     this.connectTimeoutMs = connectTimeoutMs;
@@ -51,8 +62,13 @@ public class CallConfiguration {
     this.forceTcp = forceTcp;
     this.proxy = proxy;
 
-    this.useSystemAcousticEchoCanceler = useSystemAcousticEchoCanceler && isSystemAcousticEchoCancelerAvailable();
-    this.useSystemNoiseSuppressor = useSystemNoiseSuppressor && isSystemNoiseSuppressorAvailable();
+    this.useSystemAcousticEchoCanceler = allowSystemAcousticEchoCanceler && isSystemAcousticEchoCancelerAvailable();
+    this.useSystemNoiseSuppressor = allowSystemNoiseSuppressor && isSystemNoiseSuppressorAvailable();
+    this.enableStunMarking = enableStunMarking;
+    this.enableH265Encoder = enableH265Encoder;
+    this.enableH265Decoder = enableH265Decoder;
+    this.enableH264Encoder = enableH264Encoder;
+    this.enableH264Decoder = enableH264Decoder;
   }
 
   public static boolean isSystemAcousticEchoCancelerAvailable () {

@@ -58,6 +58,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.receiver.VoIPMediaButtonReceiver;
+import org.thunderdog.challegram.telegram.PrivateCallListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibCache;
@@ -92,8 +93,7 @@ import me.vkryl.td.ChatId;
 public class TGCallService extends Service implements
   TdlibCache.CallStateChangeListener,
   AudioManager.OnAudioFocusChangeListener,
-  SensorEventListener,
-  ConnectionStateListener, UI.StateListener {
+  SensorEventListener, UI.StateListener {
   @Override
   public IBinder onBind (Intent intent) {
     return null;
@@ -174,6 +174,7 @@ public class TGCallService extends Service implements
 
   private SoundPoolMap soundPoolMap;
   private @Nullable VoIPInstance tgcalls;
+  private @Nullable PrivateCallListener callListener;
   private PowerManager.WakeLock cpuWakelock;
   private BluetoothAdapter btAdapter;
 
@@ -310,6 +311,7 @@ public class TGCallService extends Service implements
       am.registerMediaButtonEventReceiver(new ComponentName(this, VoIPMediaButtonReceiver.class));
 
       if (btAdapter != null && btAdapter.isEnabled()) {
+        //noinspection MissingPermission
         int headsetState = btAdapter.getProfileConnectionState(BluetoothProfile.HEADSET);
         updateBluetoothHeadsetState(headsetState == BluetoothProfile.STATE_CONNECTED);
         if (headsetState == BluetoothProfile.STATE_CONNECTED) {
@@ -471,21 +473,6 @@ public class TGCallService extends Service implements
     if (this.call != null && this.call.id == callId) {
       this.callBarsCount = barsCount;
     }
-  }
-
-  @Override
-  public void onCallUpgradeRequestReceived () {
-
-  }
-
-  @Override
-  public void onGroupCallKeyReceived (byte[] key) {
-
-  }
-
-  @Override
-  public void onGroupCallKeySent () {
-
   }
 
   private int lastAudioMode;
@@ -1157,11 +1144,15 @@ public class TGCallService extends Service implements
 
   private CharSequence lastDebugLog;
 
-  private void releaseTgCalls () {
+  private void releaseTgCalls (Tdlib tdlib, TdApi.Call call) {
     if (tgcalls != null) {
       lastDebugLog = tgcalls.collectDebugLog();
       tgcalls.performDestroy();
       tgcalls = null;
+    }
+    if (callListener != null) {
+      tdlib.listeners().unsubscribeFromCallUpdates(call.id, callListener);
+      callListener = null;
     }
     callInitialized = false; // FIXME?
   }
@@ -1173,7 +1164,7 @@ public class TGCallService extends Service implements
   private void checkInitiated () {
     if (isInitiated() || TD.isFinished(call)) {
       if (TD.isFinished(call)) {
-        releaseTgCalls();
+        releaseTgCalls(tdlib, call);
         cleanupChannels((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE));
         U.stopForeground(this, true, TdlibNotificationManager.ID_ONGOING_CALL_NOTIFICATION, TdlibNotificationManager.ID_INCOMING_CALL_NOTIFICATION);
         incomingNotification = ongoingCallNotification = null;
@@ -1199,15 +1190,39 @@ public class TGCallService extends Service implements
     boolean isMicDisabled = postponedCallSettings != null && postponedCallSettings.isMicMuted();
     boolean forceTcp = Settings.instance().forceTcpInCalls();
 
+    Tdlib tdlib = this.tdlib;
+    TdApi.Call call = this.call;
     TdApi.CallStateReady state = (TdApi.CallStateReady) call.state;
 
-    VoIPInstance tgcalls;
+    ConnectionStateListener stateListener = new ConnectionStateListener() {
+      @Override
+      public void onConnectionStateChanged (VoIPInstance context, @CallState int newState) {
+        if (newState == CallState.ESTABLISHED) {
+          tdlib.dispatchCallStateChanged(call.id, newState);
+        } else if (newState == CallState.FAILED) {
+          long connectionId = context.getConnectionId();
+          tdlib.context().calls().hangUp(tdlib, call.id, true, connectionId);
+        }
+      }
+
+      @Override
+      public void onSignalBarCountChanged (int newCount) {
+        tdlib.dispatchCallBarsCount(call.id, newCount);
+      }
+
+      @Override
+      public void onSignallingDataEmitted (byte[] data) {
+        tdlib.client().send(new TdApi.SendCallSignalingData(call.id, data), tdlib.silentHandler());
+      }
+    };
+
+    VoIPInstance tgcallsTemp;
     try {
-      tgcalls = VoIP.instantiateAndConnect(
+      tgcallsTemp = VoIP.instantiateAndConnect(
         tdlib,
         call,
         state,
-        this,
+        stateListener,
         forceTcp,
         callProxy,
         lastNetworkType,
@@ -1216,44 +1231,21 @@ public class TGCallService extends Service implements
         isMicDisabled
       );
     } catch (Throwable t) {
-      tgcalls = null;
+      tgcallsTemp = null;
     }
+    final VoIPInstance tgcalls = tgcallsTemp;
+
     if (tgcalls != null) {
+      this.callListener = new PrivateCallListener() {
+        @Override
+        public void onNewCallSignalingDataArrived (int callId, byte[] data) {
+          tgcalls.handleIncomingSignalingData(data);
+        }
+      };
+      tdlib.listeners().subscribeToCallUpdates(call.id, callListener);
       this.tgcalls = tgcalls;
     } else {
       hangUp();
-    }
-  }
-
-  @Override
-  public void onConnectionStateChanged (@CallState int newState) {
-    try {
-      if (tdlib == null || call == null) {
-        return;
-      }
-      switch (newState) {
-        case CallState.ESTABLISHED: {
-          tdlib.dispatchCallStateChanged(call.id, newState);
-          break;
-        }
-        case CallState.FAILED: {
-          tdlib.context().calls().hangUp(tdlib, call.id, true, getConnectionId());
-          break;
-        }
-      }
-    } catch (Throwable t) {
-      Log.e(Log.TAG_VOIP, "Error", t);
-    }
-  }
-
-  @Override
-  public void onSignalBarCountChanged (int newCount) {
-    try {
-      if (tdlib != null && call != null) {
-        tdlib.dispatchCallBarsCount(call.id, newCount);
-      }
-    } catch (Throwable t) {
-      Log.e(Log.TAG_VOIP, "Error", t);
     }
   }
 
