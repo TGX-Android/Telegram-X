@@ -111,7 +111,7 @@ public class VoIP {
       if (StringUtils.isEmpty(version)) {
         continue;
       }
-      if (version.equals(libtgvoipVersion)) {
+      if (version.equals(libtgvoipVersion) && (Config.ALLOW_DIRECT_TGVOIP || !ArrayUtils.contains(tgCallsVersions, version))) {
         tgcalls = new VoIPController(
           configuration,
           options,

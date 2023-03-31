@@ -300,8 +300,60 @@ void savePersistentState (const char *filePath, const tgcalls::PersistentState &
   }
 }
 
+class JniWrapper {
+public:
+  jobject thiz;
+  jclass clazz;
+  bool releaseClazz;
+
+  JniWrapper(JNIEnv *env, jobject thiz, jclass clazz) : thiz(env->NewGlobalRef(thiz)), clazz(clazz), releaseClazz(false) { }
+  JniWrapper(JNIEnv *env, jobject thiz) : thiz(env->NewGlobalRef(thiz)), clazz((jclass) env->NewGlobalRef(env->GetObjectClass(thiz))), releaseClazz(true) { }
+
+  void releaseReference (JNIEnv *env) {
+    if (releaseClazz && clazz != nullptr) {
+      env->DeleteGlobalRef(clazz);
+      clazz = nullptr;
+    }
+    if (thiz != nullptr) {
+      env->DeleteGlobalRef(thiz);
+      thiz = nullptr;
+    }
+  }
+
+  jobject getObject (JNIEnv *env, const char *fieldName, const char *sig) {
+    jfieldID fieldId = env->GetFieldID(clazz, fieldName, sig);
+    return env->GetObjectField(thiz, fieldId);
+  }
+
+  void callVoid (JNIEnv *env, const char *methodName) {
+    jmethodID methodId = env->GetMethodID(clazz, methodName, "()V");
+    env->CallVoidMethod(thiz, methodId);
+  }
+
+  void callVoid (JNIEnv *env, const char *methodName, jint arg1) {
+    jmethodID methodId = env->GetMethodID(clazz, methodName, "(I)V");
+    env->CallVoidMethod(thiz, methodId, arg1);
+  }
+
+  void callVoid (JNIEnv *env, const char *methodName, jfloat arg1) {
+    jmethodID methodId = env->GetMethodID(clazz, methodName, "(F)V");
+    env->CallVoidMethod(thiz, methodId, arg1);
+  }
+
+  void callVoid (JNIEnv *env, const char *methodName, jboolean arg1) {
+    jmethodID methodId = env->GetMethodID(clazz, methodName, "(Z)V");
+    env->CallVoidMethod(thiz, methodId, arg1);
+  }
+
+  void callVoid (JNIEnv *env, const char *methodName, jbyteArray arg1) {
+    jmethodID methodId = env->GetMethodID(clazz, methodName, "([B)V");
+    env->CallVoidMethod(thiz, methodId, arg1);
+  }
+};
+
 struct TgCallsContext {
   std::unique_ptr<tgcalls::Instance> tgcalls;
+  std::shared_ptr<JniWrapper> javaController;
 };
 
 jbyteArray toJavaByteArray (JNIEnv *env, const std::vector<uint8_t> &data) {
@@ -459,7 +511,7 @@ JNI_OBJECT_FUNC(jlong, voip_TgCallsController, newInstance,
     env->DeleteLocalRef(jServer);
   }
 
-  std::shared_ptr<jni::Object> javaController = std::make_shared<jni::Object>(env, thiz, true);
+  std::shared_ptr<JniWrapper> javaController = std::make_shared<JniWrapper>(env, thiz, tgcalls::javaTgCallsController);
 
   tgcalls::Descriptor descriptor = {
     .version = version,
@@ -494,30 +546,30 @@ JNI_OBJECT_FUNC(jlong, voip_TgCallsController, newInstance,
     .stateUpdated = [javaController](tgcalls::State state) {
       tgvoip::jni::DoWithJNI([javaController, state](JNIEnv *env) {
         jint javaState = toJavaState(env, state);
-        javaController->callVoid("handleStateChange", javaState);
+        javaController->callVoid(env, "handleStateChange", javaState);
       });
     },
     .signalBarsUpdated = [javaController](int count) {
       tgvoip::jni::DoWithJNI([javaController, count](JNIEnv *env) {
-        javaController->callVoid("handleSignalBarsChange", (jint) count);
+        javaController->callVoid(env, "handleSignalBarsChange", (jint) count);
       });
     },
     .audioLevelUpdated = [javaController](float audioLevel) {
       tgvoip::jni::DoWithJNI([javaController, audioLevel](JNIEnv *env) {
-        javaController->callVoid("handleAudioLevelChange", (jfloat) audioLevel);
+        javaController->callVoid(env, "handleAudioLevelChange", (jfloat) audioLevel);
       });
     },
     .remoteMediaStateUpdated = [javaController](tgcalls::AudioState audioState, tgcalls::VideoState videoState) {
       tgvoip::jni::DoWithJNI([javaController, audioState](JNIEnv *env) {
         jboolean isMuted = audioState == tgcalls::AudioState::Muted ? JNI_TRUE : JNI_FALSE;
-        javaController->callVoid("handleRemoteMediaStateChange", isMuted);
+        javaController->callVoid(env, "handleRemoteMediaStateChange", isMuted);
       });
     },
     .signalingDataEmitted = [javaController](const std::vector<uint8_t> &data) {
       tgvoip::jni::DoWithJNI([javaController, data](JNIEnv *env) {
         jbyteArray jBuffer = toJavaByteArray(env, data);
         if (jBuffer != nullptr) {
-          javaController->callVoid("handleEmittedSignalingData", jBuffer);
+          javaController->callVoid(env, "handleEmittedSignalingData", jBuffer);
           env->DeleteLocalRef(jBuffer);
         }
       });
@@ -548,6 +600,7 @@ JNI_OBJECT_FUNC(jlong, voip_TgCallsController, newInstance,
   }
 
   auto *context = new TgCallsContext;
+  context->javaController = javaController;
   context->tgcalls = tgcalls::Meta::Create(version, std::move(descriptor));
   context->tgcalls->setNetworkType(networkType);
   context->tgcalls->setAudioOutputGainControlEnabled(audioOutputGainControlEnabled);
@@ -651,12 +704,10 @@ JNI_OBJECT_FUNC(void, voip_TgCallsController, destroyInstance, jlong ptr) {
     delete context;
     return;
   }
-  jobject jController = env->NewGlobalRef(thiz);
-  context->tgcalls->stop([context, jController](const tgcalls::FinalState& finalState) {
-    tgvoip::jni::DoWithJNI([context, finalState, jController](JNIEnv *env) {
+  context->tgcalls->stop([context](const tgcalls::FinalState& finalState) {
+    tgvoip::jni::DoWithJNI([context, finalState](JNIEnv *env) {
 
-      jni::Object controller (env, jController, tgcalls::javaTgCallsController);
-      jobject jConfiguration = controller.getRawObject("configuration");
+      jobject jConfiguration = context->javaController->getObject(env, "configuration", "Lorg/thunderdog/challegram/voip/CallConfiguration;");
       jni::Object configuration (env, jConfiguration, tgcalls::javaCallConfiguration);
       std::string persistentStateFilePath = jni::from_jstring(env, configuration.getString("persistentStateFilePath"));
 
@@ -676,7 +727,7 @@ JNI_OBJECT_FUNC(void, voip_TgCallsController, destroyInstance, jlong ptr) {
         tgcalls::javaTgCallsController, "handleStop",
         "(Lorg/thunderdog/challegram/voip/NetworkStats;Ljava/lang/String;)V"
       );
-      env->CallVoidMethod(jController, methodId, jTrafficStats, jDebugLog);
+      env->CallVoidMethod(context->javaController->thiz, methodId, jTrafficStats, jDebugLog);
 
       if (jDebugLog != nullptr) {
         env->DeleteLocalRef(jDebugLog);
@@ -685,7 +736,9 @@ JNI_OBJECT_FUNC(void, voip_TgCallsController, destroyInstance, jlong ptr) {
         env->DeleteLocalRef(jTrafficStats);
       }
 
-      env->DeleteGlobalRef(jController);
+      if (context->javaController != nullptr) {
+        context->javaController->releaseReference(env);
+      }
 
       delete context;
     });

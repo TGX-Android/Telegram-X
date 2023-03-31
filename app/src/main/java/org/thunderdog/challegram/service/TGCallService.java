@@ -46,6 +46,7 @@ import android.text.style.ForegroundColorSpan;
 import android.view.KeyEvent;
 
 import androidx.annotation.DrawableRes;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationManagerCompat;
 
@@ -1268,15 +1269,21 @@ public class TGCallService extends Service implements
     }
   }
 
+  @NonNull
   public CharSequence getLibraryNameAndVersion () {
     return tgcalls != null ?
       tgcalls.getLibraryName() + " " + tgcalls.getLibraryVersion() :
       "unknown";
   }
 
+  @NonNull
   public CharSequence getDebugString () {
-    return tgcalls != null ?
-      tgcalls.collectDebugLog() :
-      "";
+    if (tgcalls != null) {
+      CharSequence log = tgcalls.collectDebugLog();
+      if (log != null) {
+        return log;
+      }
+    }
+    return "";
   }
 }

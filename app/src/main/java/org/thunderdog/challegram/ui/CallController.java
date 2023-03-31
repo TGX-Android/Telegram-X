@@ -462,8 +462,11 @@ public class CallController extends ViewController<CallController.Arguments> imp
                 }
                 b.setSpan(new CustomTypefaceSpan(Fonts.getRobotoBold(), 0), 0, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                 if (service != null) {
-                  b.append("\n\n");
-                  b.append(service.getDebugString());
+                  CharSequence log = service.getDebugString();
+                  if (!StringUtils.isEmpty(log)) {
+                    b.append("\n\n");
+                    b.append(log);
+                  }
                 }
                 view.setText(b);
                 if (view.getParent() != null) {
