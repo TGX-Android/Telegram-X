@@ -115,6 +115,10 @@ public class TgCallsController extends VoIPInstance {
   }
 
   @Keep
+  protected final void handleAudioLevelChange (float audioLevel) {
+    // TODO
+  }
+  @Keep
   protected final void handleStop (@NonNull NetworkStats totalStats, @Nullable String debugLog) {
     connectionStateListener.onStopped(this, totalStats, debugLog);
   }

@@ -222,7 +222,7 @@ tgcalls::NetworkType toNetworkType (JNIEnv *env, jint jNetworkType) {
   return tgcalls::NetworkType::Unknown;
 }
 
-jint toJavaState (tgcalls::State state) {
+jint toJavaState (JNIEnv *env, tgcalls::State state) {
   // Match with voip/annotation/CallState.java
   switch (state) {
     case tgcalls::State::WaitInit:
@@ -236,6 +236,7 @@ jint toJavaState (tgcalls::State state) {
     case tgcalls::State::Reconnecting:
       return /*CallState.RECONNECTING*/ 5;
   }
+  jni::throw_new(env, "Unknown state: " + std::to_string((int) state), jni_class::IllegalArgumentException(env));
   return 0;
 }
 
@@ -491,8 +492,8 @@ JNI_OBJECT_FUNC(jlong, voip_TgCallsController, newInstance,
     },
     .videoCapture = nullptr,
     .stateUpdated = [javaController](tgcalls::State state) {
-      jint javaState = toJavaState(state);
-      tgvoip::jni::DoWithJNI([javaController, javaState](JNIEnv *env) {
+      tgvoip::jni::DoWithJNI([javaController, state](JNIEnv *env) {
+        jint javaState = toJavaState(env, state);
         javaController->callVoid("handleStateChange", javaState);
       });
     },
