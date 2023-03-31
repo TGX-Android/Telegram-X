@@ -33,8 +33,6 @@ import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.voip.VoIPController;
-import org.webrtc.BuiltinAudioDecoderFactoryFactory;
-import org.webrtc.HardwareVideoEncoderFactory;
 import org.webrtc.SoftwareVideoEncoderFactory;
 import org.webrtc.VideoCodecInfo;
 
@@ -42,7 +40,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import me.vkryl.core.StringUtils;
 import me.vkryl.leveldb.LevelDB;
 
 public class NLoader implements ReLinker.Logger {
