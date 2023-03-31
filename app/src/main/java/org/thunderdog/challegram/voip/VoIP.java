@@ -17,7 +17,7 @@ import org.thunderdog.challegram.voip.annotation.CallNetworkType;
 import org.webrtc.ContextUtils;
 
 import java.io.File;
-import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -25,16 +25,85 @@ import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.StringUtils;
 
 public class VoIP {
-  public static TdApi.CallProtocol getProtocol () {
+  public static class Version implements Comparable<Version> {
+    public final int major, minor, patch;
+
+    public Version (String version) {
+      int firstDot = version.indexOf('.');
+      if (firstDot == -1) {
+        this.major = StringUtils.parseInt(version);
+        this.minor = this.patch = 0;
+        return;
+      }
+      this.major = StringUtils.parseInt(version.substring(0, firstDot));
+      int secondDot = version.indexOf('.', firstDot + 1);
+      if (secondDot == -1) {
+        this.minor = StringUtils.parseInt(version.substring(firstDot + 1));
+        this.patch = 0;
+      } else {
+        this.minor = StringUtils.parseInt(version.substring(firstDot + 1, secondDot));
+        this.patch = StringUtils.parseInt(version.substring(secondDot + 1));
+      }
+    }
+
+    @Override
+    public int compareTo (Version o) {
+      return
+        this.major != o.major ? Integer.compare(this.major, o.major) :
+        this.minor != o.minor ? Integer.compare(this.minor, o.minor) :
+        Integer.compare(this.patch, o.patch);
+    }
+
+    public Version (int major, int minor, int patch) {
+      this.major = major;
+      this.minor = minor;
+      this.patch = patch;
+    }
+  }
+
+  private static Set<String> forceDisabledVersions;
+
+  public static void setForceDisableVersion (String version, boolean isForceDisabled) {
+    if (isForceDisabled) {
+      if (forceDisabledVersions == null) {
+        forceDisabledVersions = new HashSet<>();
+      }
+      forceDisabledVersions.add(version);
+    } else if (forceDisabledVersions != null) {
+      forceDisabledVersions.remove(version);
+    }
+  }
+
+  public static boolean isForceDisabled (String version) {
+    return forceDisabledVersions != null && forceDisabledVersions.contains(version);
+  }
+
+  public static String[] getAvailableVersions (boolean allowFilter) {
+    String tgVoipVersion = VoIPController.getVersion();
+    String[] tgCallsVersions = N.getTgCallsVersions();
+
     Set<String> versions = new LinkedHashSet<>();
-    versions.add(VoIPController.getVersion());
-    Collections.addAll(versions, N.getTgCallsVersions());
+    if (!allowFilter || !isForceDisabled(tgVoipVersion)) {
+      versions.add(tgVoipVersion);
+    }
+    for (String tgCallsVersion : tgCallsVersions) {
+      if (!allowFilter || !isForceDisabled(tgCallsVersion)) {
+        versions.add(tgCallsVersion);
+      }
+    }
+    if (versions.isEmpty()) {
+      versions.add(tgVoipVersion);
+    }
+    return versions.toArray(new String[0]);
+  }
+
+  public static TdApi.CallProtocol getProtocol () {
     return new TdApi.CallProtocol(
       true,
       true,
       Config.VOIP_CONNECTION_MIN_LAYER,
       VoIPController.getConnectionMaxLayer(),
-      versions.toArray(new String[0])
+      getAvailableVersions(true)
    );
   }
 
@@ -111,7 +180,7 @@ public class VoIP {
       if (StringUtils.isEmpty(version)) {
         continue;
       }
-      if (version.equals(libtgvoipVersion) && (Config.ALLOW_DIRECT_TGVOIP || !ArrayUtils.contains(tgCallsVersions, version))) {
+      if (version.equals(libtgvoipVersion) && (Config.FORCE_DIRECT_TGVOIP || !ArrayUtils.contains(tgCallsVersions, version) || isForceDisabled(version))) {
         tgcalls = new VoIPController(
           configuration,
           options,

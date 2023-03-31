@@ -16,9 +16,11 @@ package org.thunderdog.challegram.ui;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.icu.util.VersionInfo;
 import android.os.SystemClock;
 import android.util.SparseIntArray;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.IdRes;
@@ -60,11 +62,15 @@ import org.thunderdog.challegram.unsorted.Test;
 import org.thunderdog.challegram.util.Crash;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.CustomRecyclerView;
+import org.thunderdog.challegram.voip.VoIP;
+import org.thunderdog.challegram.voip.VoIPController;
 import org.thunderdog.challegram.widget.BetterChatView;
+import org.thunderdog.challegram.widget.CheckBoxView;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -721,6 +727,8 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
           // items.add(new SettingItem(SettingItem.TYPE_SEPARATOR_FULL));
           items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_secret_readAllChats, 0, R.string.ReadAllChats, false));
           items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+          items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_secret_tgcalls, 0, "tgcalls versions (not persistent)", false));
+          items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
           items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_secret_tdlibDatabaseStats, 0, "TDLib database statistics", false));
           items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
           items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_secret_databaseStats, 0, "Other internal statistics", false));
@@ -1303,6 +1311,51 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
             adapter.updateValuedSettingById(R.id.btn_secret_dontReadMessages);
           }
         }
+        break;
+      }
+      case R.id.btn_secret_tgcalls: {
+        String[] versions = VoIP.getAvailableVersions(false);
+        Arrays.sort(versions, (a, b) -> {
+          VoIP.Version aVersion = new VoIP.Version(a);
+          VoIP.Version bVersion = new VoIP.Version(b);
+          return bVersion.compareTo(aVersion);
+        });
+
+        SettingsWrapBuilder b = new SettingsWrapBuilder(R.id.btn_secret_tgcalls);
+
+        List<ListItem> items = new ArrayList<>();
+        for (String version : versions) {
+          items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_secret_tgcalls, 0, version, !VoIP.isForceDisabled(version)).setStringValue(version));
+        }
+
+        b.addHeaderItem("Disabling all tgcalls versions enables libtgvoip " + VoIPController.getVersion() + " without tgcalls wrapper.");
+        b.setRawItems(items);
+        b.setDisableToggles(true);
+        b.setOnSettingItemClick((view, settingsId, item, doneButton, settingsAdapter) -> {
+          if (item.getViewType() == ListItem.TYPE_CHECKBOX_OPTION && item.getId() == R.id.btn_secret_tgcalls) {
+            final boolean isSelect = settingsAdapter.toggleView(view);
+            item.setSelected(isSelect);
+          }
+        });
+        b.setOnActionButtonClick((wrap, view, isCancel) -> {
+          if (isCancel) {
+            return false;
+          }
+
+          for (ListItem item : wrap.adapter.getItems()) {
+            if (item.getViewType() == ListItem.TYPE_CHECKBOX_OPTION && item.getId() == R.id.btn_secret_tgcalls) {
+              String version = item.getStringValue();
+              boolean isEnabled = item.isSelected();
+              VoIP.setForceDisableVersion(version, !isEnabled);
+            }
+          }
+
+          return false;
+        });
+        b.setSaveStr(R.string.Save);
+
+        showSettings(b);
+
         break;
       }
       case R.id.btn_secret_stressTest: {
