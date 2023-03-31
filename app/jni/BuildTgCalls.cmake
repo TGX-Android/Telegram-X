@@ -10,7 +10,6 @@ set(TGCALLS_DIR "${THIRDPARTY_DIR}/tgcalls")
 
 add_library(tgcalls STATIC
   "${TGCALLS_DIR}/tgcalls/utils/gzip.cpp"
-  "${TGCALLS_DIR}/tgcalls/third-party/json11.cpp"
 
   "${TGCALLS_DIR}/tgcalls/FieldTrialsConfig.cpp"
 
@@ -87,6 +86,7 @@ target_compile_options(tgcalls PUBLIC
 
 target_link_libraries(tgcalls PRIVATE
   rnnoise
+  json11
   z
 )
 

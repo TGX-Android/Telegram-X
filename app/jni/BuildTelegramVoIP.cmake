@@ -30,7 +30,6 @@ add_library(tgvoip STATIC
   "${TGVOIP_DIR}/os/posix/NetworkSocketPosix.cpp"
   "${TGVOIP_DIR}/PacketReassembler.cpp"
   "${TGVOIP_DIR}/MessageThread.cpp"
-  "${TGVOIP_DIR}/json11.cpp"
   "${TGVOIP_DIR}/audio/AudioIO.cpp"
   "${TGVOIP_DIR}/video/VideoRenderer.cpp"
   "${TGVOIP_DIR}/video/VideoSource.cpp"
@@ -53,6 +52,7 @@ endif()
 if (${NEED_WEBRTC})
   set(CC_NEON "cc")
   target_sources(tgvoip PRIVATE
+    "${TGVOIP_DIR}/json/json11.cpp"
     "${TGVOIP_DIR}/webrtc_dsp/system_wrappers/source/field_trial.cc"
     "${TGVOIP_DIR}/webrtc_dsp/system_wrappers/source/metrics.cc"
     "${TGVOIP_DIR}/webrtc_dsp/system_wrappers/source/cpu_features.cc"
@@ -345,8 +345,12 @@ if (${NEED_WEBRTC})
       "${TGVOIP_DIR}/webrtc_dsp/common_audio/resampler/sinc_resampler_sse.cc"
     )
   endif()
+  target_include_directories(tgvoip PUBLIC
+    ${TGVOIP_DIR}/json
+  )
 else()
   target_link_libraries(tgvoip PUBLIC
+    json11
     webrtc
   )
 endif()

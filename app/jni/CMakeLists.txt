@@ -51,9 +51,6 @@ set(VPX_LIB_PATH "${VPX_DIR}/lib/libvpx.a")
 
 # == Setup ==
 
-set(CMAKE_C_VISIBILITY_PRESET hidden)
-set(CMAKE_CXX_VISIBILITY_PRESET hidden)
-
 if (${ANDROID_ABI} STREQUAL "armeabi-v7a" OR ${ANDROID_ABI} STREQUAL "arm64-v8a")
   enable_language(ASM)
 else()
@@ -65,6 +62,9 @@ set(ADD_COMMON_FLAGS
   -w -Werror=return-type
 )
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+  set(CMAKE_C_VISIBILITY_PRESET hidden)
+  set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+
   list(APPEND ADD_COMMON_FLAGS
     -O3
     -fvisibility=hidden
@@ -163,6 +163,9 @@ add_subdirectory(
   "${UTILS_DIR}"
 )
 
+# yuv
+include("${CMAKE_HOME_DIRECTORY}/BuildYuv.cmake")
+
 # usrsctp
 include("${CMAKE_HOME_DIRECTORY}/BuildUsrSCTP.cmake")
 
@@ -175,6 +178,9 @@ include("${CMAKE_HOME_DIRECTORY}/BuildOpenH264.cmake")
 # absl
 include("${CMAKE_HOME_DIRECTORY}/BuildAbsl.cmake")
 
+# json11
+include("${CMAKE_HOME_DIRECTORY}/BuildJson11.cmake")
+
 # webrtc
 include("${CMAKE_HOME_DIRECTORY}/BuildWebRTC.cmake")
 
@@ -183,9 +189,6 @@ include("${CMAKE_HOME_DIRECTORY}/BuildTelegramVoIP.cmake")
 
 # tgcalls
 include("${CMAKE_HOME_DIRECTORY}/BuildTgCalls.cmake")
-
-# yuv
-include("${CMAKE_HOME_DIRECTORY}/BuildYuv.cmake")
 
 # rnnoise
 include("${CMAKE_HOME_DIRECTORY}/BuildRNNoise.cmake")
@@ -291,6 +294,7 @@ if(${LINK_TDLIB})
 endif()
 
 target_link_libraries(${NATIVE_LIB}
+  -Wl,--whole-archive webrtc_android -Wl,--no-whole-archive
   jni-utils
   flac
   tgvoip
@@ -316,6 +320,7 @@ target_link_libraries(${NATIVE_LIB}
   jnigraphics
   log
   GLESv2
+  EGL
   android
   cpufeatures
 )

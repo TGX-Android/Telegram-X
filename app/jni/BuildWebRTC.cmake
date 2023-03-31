@@ -2755,7 +2755,134 @@ target_sources(webrtc PRIVATE
 
 # sdk
 
-target_sources(webrtc PRIVATE
+# Deprecated non-existent files:
+
+# "${WEBRTC_DIR}/modules/audio_device/android/audio_screen_record_jni.cc"
+# "${WEBRTC_DIR}/modules/audio_device/android/audio_merged_screen_record_jni.cc"
+# "${WEBRTC_DIR}/sdk/android/src/jni/h264_codec.cc"
+# "${WEBRTC_DIR}/video/rtp_video_stream_receiver.cc"
+# "${WEBRTC_DIR}/common_video/h264/prefix_parser.cc"
+# "${WEBRTC_DIR}/api/field_trials_registry.cc"
+# "${WEBRTC_DIR}/modules/audio_processing/agc2/speech_level_estimator.cc"
+# "${WEBRTC_DIR}/modules/audio_processing/agc2/input_volume_stats_reporter.cc"
+
+set(WEBRTC_OPTIONS
+  RTC_DISABLE_TRACE_EVENTS
+  WEBRTC_OPUS_SUPPORT_120MS_PTIME=1
+  BWE_TEST_LOGGING_COMPILE_TIME_ENABLE=0
+  ABSL_ALLOCATOR_NOTHROW=1
+  WEBRTC_NS_FLOAT
+  HAVE_PTHREAD
+  RTC_ENABLE_VP9
+  WEBRTC_POSIX
+  WEBRTC_LINUX
+  WEBRTC_ANDROID
+  WEBRTC_USE_H264
+  NDEBUG
+  WEBRTC_HAVE_USRSCTP
+  WEBRTC_HAVE_DCSCTP
+  WEBRTC_HAVE_SCTP
+  WEBRTC_APM_DEBUG_DUMP=0
+  WEBRTC_USE_BUILTIN_ISAC_FLOAT
+  WEBRTC_OPUS_VARIABLE_COMPLEXITY=0
+  HAVE_NETINET_IN_H
+  WEBRTC_INCLUDE_INTERNAL_AUDIO_DEVICE
+  HAVE_WEBRTC_VIDEO
+  DYNAMIC_ANNOTATIONS_ENABLED=0
+  WEBRTC_ENABLE_PROTOBUF=0
+  WEBRTC_ENABLE_AVX2
+  WEBRTC_NON_STATIC_TRACE_EVENT_HANDLERS=0
+)
+
+target_compile_definitions(webrtc PUBLIC ${WEBRTC_OPTIONS})
+
+#[[target_compile_options(webrtc INTERFACE
+  "$<$<COMPILE_LANGUAGE:C>:-std=c20>"
+  "$<$<COMPILE_LANGUAGE:CXX>:-std=c++20>"
+)]]
+
+target_compile_options(webrtc PRIVATE
+  -Wno-shorten-64-to-32
+  -Wno-macro-redefined
+)
+
+# platform-specific
+
+if(${ANDROID_ABI} STREQUAL "armeabi-v7a" OR ${ANDROID_ABI} STREQUAL "arm64-v8a")
+  target_sources(webrtc PRIVATE
+    "${WEBRTC_DIR}/modules/audio_coding/codecs/isac/fix/source/entropy_coding_neon.c"
+    "${WEBRTC_DIR}/modules/audio_coding/codecs/isac/fix/source/filterbanks_neon.c"
+    "${WEBRTC_DIR}/modules/audio_coding/codecs/isac/fix/source/filters_neon.c"
+    "${WEBRTC_DIR}/modules/audio_coding/codecs/isac/fix/source/lattice_neon.c"
+    "${WEBRTC_DIR}/modules/audio_coding/codecs/isac/fix/source/transform_neon.c"
+    "${WEBRTC_DIR}/modules/audio_processing/aecm/aecm_core_neon.cc"
+    "${WEBRTC_DIR}/common_audio/fir_filter_neon.cc"
+    "${WEBRTC_DIR}/common_audio/signal_processing/cross_correlation_neon.c"
+    "${WEBRTC_DIR}/common_audio/signal_processing/downsample_fast_neon.c"
+    "${WEBRTC_DIR}/common_audio/signal_processing/min_max_operations_neon.c"
+    "${WEBRTC_DIR}/common_audio/resampler/sinc_resampler_neon.cc"
+    "${WEBRTC_DIR}/common_audio/third_party/ooura/fft_size_128/ooura_fft_neon.cc"
+  )
+  if(${ANDROID_ABI} STREQUAL "armeabi-v7a")
+    target_sources(webrtc PRIVATE
+      "${WEBRTC_DIR}/common_audio/signal_processing/complex_bit_reverse_arm.S"
+      "${WEBRTC_DIR}/common_audio/signal_processing/filter_ar_fast_q12_armv7.S"
+    )
+    target_compile_definitions(webrtc PRIVATE
+      WEBRTC_ARCH_ARM
+      WEBRTC_ARCH_ARM_V7
+      WEBRTC_HAS_NEON
+      LIBYUV_NEON
+    )
+  elseif(${ANDROID_ABI} STREQUAL "arm64-v8a")
+    target_sources(webrtc PRIVATE
+      "${WEBRTC_DIR}/common_audio/signal_processing/complex_bit_reverse.c"
+      "${WEBRTC_DIR}/common_audio/signal_processing/filter_ar_fast_q12.c"
+    )
+    target_compile_definitions(webrtc PRIVATE
+      WEBRTC_ARCH_ARM64
+      WEBRTC_HAS_NEON
+      LIBYUV_NEON
+    )
+  endif()
+elseif(${ANDROID_ABI} STREQUAL "x86_64" OR ${ANDROID_ABI} STREQUAL "x86")
+  target_sources(webrtc PRIVATE
+    "${WEBRTC_DIR}/common_audio/fir_filter_sse.cc"
+    "${WEBRTC_DIR}/common_audio/resampler/sinc_resampler_sse.cc"
+    "${WEBRTC_DIR}/common_audio/signal_processing/complex_bit_reverse.c"
+    "${WEBRTC_DIR}/common_audio/signal_processing/filter_ar_fast_q12.c"
+    "${WEBRTC_DIR}/common_audio/third_party/ooura/fft_size_128/ooura_fft_sse2.cc"
+  )
+  target_compile_definitions(webrtc PRIVATE
+    HAVE_SSE2
+  )
+else()
+  message(FATAL_ERROR "Unknown abi: ${ANDROID_ABI}")
+endif()
+
+target_link_libraries(webrtc PUBLIC
+  ssl
+  crypto
+  usrsctp
+  srtp
+  openh264
+  absl
+  avcodec
+  yuv
+  opus
+  vpx
+)
+
+target_include_directories(webrtc PRIVATE
+  .
+  "${STUB_DIR}"
+)
+
+target_include_directories(webrtc PUBLIC
+  "${WEBRTC_DIR}"
+)
+
+add_library(webrtc_android STATIC
   "${WEBRTC_DIR}/modules/audio_device/android/audio_manager.cc"
 
   "${WEBRTC_DIR}/modules/audio_device/android/build_info.cc"
@@ -2851,129 +2978,38 @@ target_sources(webrtc PRIVATE
   "${WEBRTC_DIR}/sdk/android/src/jni/video_encoder_factory_wrapper.cc"
   "${WEBRTC_DIR}/sdk/android/src/jni/video_encoder_wrapper.cc"
 )
-
-# Deprecated non-existent files:
-
-# "${WEBRTC_DIR}/modules/audio_device/android/audio_screen_record_jni.cc"
-# "${WEBRTC_DIR}/modules/audio_device/android/audio_merged_screen_record_jni.cc"
-# "${WEBRTC_DIR}/sdk/android/src/jni/h264_codec.cc"
-# "${WEBRTC_DIR}/video/rtp_video_stream_receiver.cc"
-# "${WEBRTC_DIR}/common_video/h264/prefix_parser.cc"
-# "${WEBRTC_DIR}/api/field_trials_registry.cc"
-# "${WEBRTC_DIR}/modules/audio_processing/agc2/speech_level_estimator.cc"
-# "${WEBRTC_DIR}/modules/audio_processing/agc2/input_volume_stats_reporter.cc"
-
-target_compile_definitions(webrtc PUBLIC
-  RTC_DISABLE_TRACE_EVENTS
-  WEBRTC_OPUS_SUPPORT_120MS_PTIME=1
-  BWE_TEST_LOGGING_COMPILE_TIME_ENABLE=0
-  ABSL_ALLOCATOR_NOTHROW=1
-  WEBRTC_NS_FLOAT
-  HAVE_PTHREAD
-  RTC_ENABLE_VP9
-  WEBRTC_POSIX
-  WEBRTC_LINUX
-  WEBRTC_ANDROID
-  WEBRTC_USE_H264
-  NDEBUG
-  WEBRTC_HAVE_USRSCTP
-  WEBRTC_HAVE_DCSCTP
-  WEBRTC_HAVE_SCTP
-  WEBRTC_APM_DEBUG_DUMP=0
-  WEBRTC_USE_BUILTIN_ISAC_FLOAT
-  WEBRTC_OPUS_VARIABLE_COMPLEXITY=0
-  HAVE_NETINET_IN_H
-  WEBRTC_INCLUDE_INTERNAL_AUDIO_DEVICE
-  HAVE_WEBRTC_VIDEO
-  DYNAMIC_ANNOTATIONS_ENABLED=0
-  WEBRTC_ENABLE_PROTOBUF=0
-  WEBRTC_ENABLE_AVX2
-  WEBRTC_NON_STATIC_TRACE_EVENT_HANDLERS=0
-)
-
-#[[target_compile_options(webrtc INTERFACE
-  "$<$<COMPILE_LANGUAGE:C>:-std=c20>"
-  "$<$<COMPILE_LANGUAGE:CXX>:-std=c++20>"
-)]]
-
-target_compile_options(webrtc PRIVATE
-  -Wno-shorten-64-to-32
-  -Wno-macro-redefined
-)
-
-# platform-specific
-
-if(${ANDROID_ABI} STREQUAL "armeabi-v7a" OR ${ANDROID_ABI} STREQUAL "arm64-v8a")
-  target_sources(webrtc PRIVATE
-    "${WEBRTC_DIR}/modules/audio_coding/codecs/isac/fix/source/entropy_coding_neon.c"
-    "${WEBRTC_DIR}/modules/audio_coding/codecs/isac/fix/source/filterbanks_neon.c"
-    "${WEBRTC_DIR}/modules/audio_coding/codecs/isac/fix/source/filters_neon.c"
-    "${WEBRTC_DIR}/modules/audio_coding/codecs/isac/fix/source/lattice_neon.c"
-    "${WEBRTC_DIR}/modules/audio_coding/codecs/isac/fix/source/transform_neon.c"
-    "${WEBRTC_DIR}/modules/audio_processing/aecm/aecm_core_neon.cc"
-    "${WEBRTC_DIR}/common_audio/fir_filter_neon.cc"
-    "${WEBRTC_DIR}/common_audio/signal_processing/cross_correlation_neon.c"
-    "${WEBRTC_DIR}/common_audio/signal_processing/downsample_fast_neon.c"
-    "${WEBRTC_DIR}/common_audio/signal_processing/min_max_operations_neon.c"
-    "${WEBRTC_DIR}/common_audio/resampler/sinc_resampler_neon.cc"
-    "${WEBRTC_DIR}/common_audio/third_party/ooura/fft_size_128/ooura_fft_neon.cc"
-  )
-  if(${ANDROID_ABI} STREQUAL "armeabi-v7a")
-    target_sources(webrtc PRIVATE
-      "${WEBRTC_DIR}/common_audio/signal_processing/complex_bit_reverse_arm.S"
-      "${WEBRTC_DIR}/common_audio/signal_processing/filter_ar_fast_q12_armv7.S"
-    )
-    target_compile_definitions(webrtc PRIVATE
-      WEBRTC_ARCH_ARM
-      WEBRTC_ARCH_ARM_V7
-      WEBRTC_HAS_NEON
-      LIBYUV_NEON
-    )
-  elseif(${ANDROID_ABI} STREQUAL "arm64-v8a")
-    target_sources(webrtc PRIVATE
-      "${WEBRTC_DIR}/common_audio/signal_processing/complex_bit_reverse.c"
-      "${WEBRTC_DIR}/common_audio/signal_processing/filter_ar_fast_q12.c"
-    )
-    target_compile_definitions(webrtc PRIVATE
-      WEBRTC_ARCH_ARM64
-      WEBRTC_HAS_NEON
-      LIBYUV_NEON
-    )
-  endif()
-elseif(${ANDROID_ABI} STREQUAL "x86_64" OR ${ANDROID_ABI} STREQUAL "x86")
-  target_sources(webrtc PRIVATE
-    "${WEBRTC_DIR}/common_audio/fir_filter_sse.cc"
-    "${WEBRTC_DIR}/common_audio/resampler/sinc_resampler_sse.cc"
-    "${WEBRTC_DIR}/common_audio/signal_processing/complex_bit_reverse.c"
-    "${WEBRTC_DIR}/common_audio/signal_processing/filter_ar_fast_q12.c"
-    "${WEBRTC_DIR}/common_audio/third_party/ooura/fft_size_128/ooura_fft_sse2.cc"
-  )
-  target_compile_definitions(webrtc PRIVATE
-    HAVE_SSE2
-  )
-else()
-  message(FATAL_ERROR "Unknown abi: ${ANDROID_ABI}")
-endif()
-
-target_link_libraries(webrtc PUBLIC
-  ssl
-  crypto
-  usrsctp
-  srtp
-  openh264
-  absl
-  avcodec
-  yuv
-  opus
-  vpx
-)
-
-target_include_directories(webrtc PRIVATE
-  .
+target_include_directories(webrtc_android PRIVATE
   "${WEBRTC_DIR}/generated"
+  .
+  "${THIRDPARTY_DIR}/abseil-cpp"
+  "${YUV_DIR}/include"
   "${STUB_DIR}"
 )
-
-target_include_directories(webrtc PUBLIC
+set_target_properties(webrtc_android PROPERTIES
+  ANDROID_ARM_MODE arm
+)
+target_compile_definitions(webrtc_android PUBLIC ${WEBRTC_OPTIONS})
+target_include_directories(webrtc_android PUBLIC
   "${WEBRTC_DIR}"
 )
+
+if (${ANDROID_ABI} STREQUAL "armeabi-v7a")
+  target_compile_definitions(webrtc_android PUBLIC
+    WEBRTC_ARCH_ARM
+    WEBRTC_ARCH_ARM_V7
+    WEBRTC_HAS_NEON
+  )
+elseif(${ANDROID_ABI} STREQUAL "arm64-v8a")
+  target_compile_definitions(webrtc_android PUBLIC
+    WEBRTC_ARCH_ARM64
+    WEBRTC_HAS_NEON
+  )
+elseif(${ANDROID_ABI} STREQUAL "x86")
+  target_compile_definitions(webrtc_android PUBLIC
+    HAVE_SSE2
+  )
+elseif(${ANDROID_ABI} STREQUAL "x86_64")
+  target_compile_definitions(webrtc_android PUBLIC
+    HAVE_SSE2
+  )
+endif()
