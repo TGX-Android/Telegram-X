@@ -75,7 +75,11 @@ if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
 else()
   list(APPEND ADD_COMMON_FLAGS
     -O2
+    -fno-omit-frame-pointer
+    -g
   )
+  set(CMAKE_C_VISIBILITY_PRESET default)
+  set(CMAKE_CXX_VISIBILITY_PRESET default)
 endif()
 set(ADD_C_FLAGS ${ADD_COMMON_FLAGS}
   -D_LARGEFILE_SOURCE=1

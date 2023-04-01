@@ -92,7 +92,7 @@
 	shallow = true
 [submodule "webrtc"]
 	path = app/jni/third_party/webrtc
-	url = https://github.com/ali-fareed/webrtc
+	url = https://github.com/TGX-Android/webrtc
 	shallow = true
 [submodule "webrtc_rnnoise"]
 	path = app/jni/third_party/webrtc_deps/third_party/rnnoise
