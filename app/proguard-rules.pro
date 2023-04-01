@@ -59,6 +59,18 @@
 
 # WebRTC
 
+# Keep items annotated with @CalledByNative
+-keep @org.webrtc.CalledByNative public class *
+-keepclassmembers class * {
+    @org.webrtc.CalledByNative *;
+}
+
+# Keep items annotated with @CalledByNativeUnchecked
+-keep @org.webrtc.CalledByNativeUnchecked public class *
+-keepclassmembers class * {
+    @org.webrtc.CalledByNativeUnchecked *;
+}
+
 -keep class org.webrtc.Histogram { *; }
 -keepclassmembers class org.webrtc.Histogram { *; }
 -keep class org.webrtc.JniCommon { *; }
