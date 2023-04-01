@@ -305,11 +305,25 @@ public:
   jobject thiz;
   jclass clazz;
   bool releaseClazz;
+  pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
   JniWrapper(JNIEnv *env, jobject thiz, jclass clazz) : thiz(env->NewGlobalRef(thiz)), clazz(clazz), releaseClazz(false) { }
   JniWrapper(JNIEnv *env, jobject thiz) : thiz(env->NewGlobalRef(thiz)), clazz((jclass) env->NewGlobalRef(env->GetObjectClass(thiz))), releaseClazz(true) { }
 
+  ~JniWrapper() {
+    pthread_mutex_destroy(&mutex);
+  }
+
+  void runSafe (std::function<void()> act) {
+    pthread_mutex_lock(&mutex);
+    if (thiz != nullptr) {
+      act();
+    }
+    pthread_mutex_unlock(&mutex);
+  }
+
   void releaseReference (JNIEnv *env) {
+    pthread_mutex_lock(&mutex);
     if (releaseClazz && clazz != nullptr) {
       env->DeleteGlobalRef(clazz);
       clazz = nullptr;
@@ -318,6 +332,7 @@ public:
       env->DeleteGlobalRef(thiz);
       thiz = nullptr;
     }
+    pthread_mutex_unlock(&mutex);
   }
 
   jobject getObject (JNIEnv *env, const char *fieldName, const char *sig) {
@@ -570,7 +585,11 @@ JNI_OBJECT_FUNC(jlong, voip_TgCallsController, newInstance,
       tgvoip::jni::DoWithJNI([javaController, data](JNIEnv *env) {
         jbyteArray jBuffer = toJavaByteArray(env, data);
         if (jBuffer != nullptr) {
-          javaController->callVoid(env, "handleEmittedSignalingData", jBuffer);
+          // FIXME: tgcalls 9.0.0 & 11.0.0 invokes signalingDataEmitted after callback from tgcalls->stop(callback).
+          // Once it's fixed in tgcalls, there won't be any need in runSafe here
+          javaController->runSafe([env, javaController, jBuffer] {
+            javaController->callVoid(env, "handleEmittedSignalingData", jBuffer);
+          });
           env->DeleteLocalRef(jBuffer);
         }
       });
