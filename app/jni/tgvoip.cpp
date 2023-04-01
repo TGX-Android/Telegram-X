@@ -389,8 +389,9 @@ JNI_OBJECT_FUNC(jlong, voip_TgCallsController, newInstance,
   std::string logFilePath = jni::from_jstring(env, configuration.getString("logFilePath"));
   std::string statsLogFilePath = jni::from_jstring(env, configuration.getString("statsLogFilePath"));
   std::string persistentStateFilePath = jni::from_jstring(env, configuration.getString("persistentStateFilePath"));
-  bool useBuiltInAcousticEchoCancellation = configuration.getBoolean("useSystemAcousticEchoCanceler") == JNI_FALSE;
-  bool useBuiltInNoiseSuppressor = configuration.getBoolean("useSystemNoiseSuppressor") == JNI_FALSE;
+  bool useBuiltInAcousticEchoCancellation = configuration.getBoolean("enableAcousticEchoCanceler") == JNI_TRUE;
+  bool useBuiltInNoiseSuppressor = configuration.getBoolean("enableNoiseSuppressor") == JNI_TRUE;
+  bool useBuiltInAutomaticGainControl = configuration.getBoolean("enableAutomaticGainControl") == JNI_TRUE;
   bool enableStunMarking = configuration.getBoolean("enableStunMarking") == JNI_TRUE;
 
   // tgcalls::EncryptionKey
@@ -528,7 +529,7 @@ JNI_OBJECT_FUNC(jlong, voip_TgCallsController, newInstance,
       .dataSaving = dataSaving,
 
       .enableP2P = allowP2p && udpP2p,
-      .enableAGC = true,
+      .enableAGC = useBuiltInAutomaticGainControl,
       .enableAEC = useBuiltInAcousticEchoCancellation,
       .enableNS = useBuiltInNoiseSuppressor,
       .enableStunMarking = enableStunMarking,

@@ -78,6 +78,32 @@ public class VoIP {
     return forceDisabledVersions != null && forceDisabledVersions.contains(version);
   }
 
+  private static boolean forceDisableAcousticEchoCancellation, forceDisableNoiseSuppressor, forceDisableAutomaticGainControl;
+
+  public static void setForceDisableAcousticEchoCancellation (boolean forceDisableAcousticEchoCancellation) {
+    VoIP.forceDisableAcousticEchoCancellation = forceDisableAcousticEchoCancellation;
+  }
+
+  public static void setForceDisableNoiseSuppressor (boolean forceDisableNoiseSuppressor) {
+    VoIP.forceDisableNoiseSuppressor = forceDisableNoiseSuppressor;
+  }
+
+  public static void setForceDisableAutomaticGainControl (boolean forceDisableAutomaticGainControl) {
+    VoIP.forceDisableAutomaticGainControl = forceDisableAutomaticGainControl;
+  }
+
+  public static boolean needDisableAcousticEchoCancellation () {
+    return forceDisableAcousticEchoCancellation;
+  }
+
+  public static boolean needDisableNoiseSuppressor () {
+    return forceDisableNoiseSuppressor;
+  }
+
+  public static boolean needDisableAutomaticGainControl () {
+    return forceDisableAutomaticGainControl;
+  }
+
   public static String[] getAvailableVersions (boolean allowFilter) {
     String tgVoipVersion = VoIPController.getVersion();
     String[] tgCallsVersions = N.getTgCallsVersions();
@@ -143,6 +169,9 @@ public class VoIP {
 
     final File persistentStateFile = VoIPPersistentConfig.getVoipConfigFile();
 
+    final boolean preferSystemAcousticEchoCanceler = VoIPServerConfig.getBoolean("use_system_aec", true);
+    final boolean preferSystemNoiseSuppressor = VoIPServerConfig.getBoolean("use_system_ns", true);
+
     // These do not change during the call
     final CallConfiguration configuration = new CallConfiguration(
       stateReady,
@@ -158,8 +187,9 @@ public class VoIP {
       forceTcp,
       proxy,
 
-      VoIPServerConfig.getBoolean("use_system_aec", true),
-      VoIPServerConfig.getBoolean("use_system_ns", true),
+      !preferSystemAcousticEchoCanceler,
+      !preferSystemNoiseSuppressor,
+      true,
       VoIPServerConfig.getBoolean("voip_enable_stun_marking", false),
       VoIPServerConfig.getBoolean("enable_h265_encoder", true),
       VoIPServerConfig.getBoolean("enable_h265_decoder", true),

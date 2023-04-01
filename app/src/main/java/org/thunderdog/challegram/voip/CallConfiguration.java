@@ -1,8 +1,5 @@
 package org.thunderdog.challegram.voip;
 
-import android.media.audiofx.AcousticEchoCanceler;
-import android.media.audiofx.NoiseSuppressor;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -26,8 +23,10 @@ public class CallConfiguration {
   public final boolean forceTcp;
   public final @Nullable Socks5Proxy proxy;
 
-  public final boolean useSystemAcousticEchoCanceler;
-  public final boolean useSystemNoiseSuppressor;
+  public final boolean enableAcousticEchoCanceler;
+  public final boolean enableNoiseSuppressor;
+  public final boolean enableAutomaticGainControl;
+
   public final boolean enableStunMarking;
   public final boolean enableH265Encoder, enableH265Decoder;
   public final boolean enableH264Encoder, enableH264Decoder;
@@ -41,8 +40,9 @@ public class CallConfiguration {
     long packetTimeoutMs, long connectTimeoutMs, int dataSavingOption,
     boolean forceTcp,
     @Nullable Socks5Proxy proxy,
-    boolean allowSystemAcousticEchoCanceler,
-    boolean allowSystemNoiseSuppressor,
+    boolean enableAcousticEchoCanceler,
+    boolean enableNoiseSuppressor,
+    boolean enableAutomaticGainControl,
     boolean enableStunMarking,
     boolean enableH265Encoder,
     boolean enableH265Decoder,
@@ -62,28 +62,14 @@ public class CallConfiguration {
     this.forceTcp = forceTcp;
     this.proxy = proxy;
 
-    this.useSystemAcousticEchoCanceler = allowSystemAcousticEchoCanceler && isSystemAcousticEchoCancelerAvailable();
-    this.useSystemNoiseSuppressor = allowSystemNoiseSuppressor && isSystemNoiseSuppressorAvailable();
+    this.enableAcousticEchoCanceler = enableAcousticEchoCanceler;
+    this.enableNoiseSuppressor = enableNoiseSuppressor;
+    this.enableAutomaticGainControl = enableAutomaticGainControl;
+
     this.enableStunMarking = enableStunMarking;
     this.enableH265Encoder = enableH265Encoder;
     this.enableH265Decoder = enableH265Decoder;
     this.enableH264Encoder = enableH264Encoder;
     this.enableH264Decoder = enableH264Decoder;
-  }
-
-  public static boolean isSystemAcousticEchoCancelerAvailable () {
-    try {
-      return AcousticEchoCanceler.isAvailable();
-    } catch (Throwable ignored) {
-      return false;
-    }
-  }
-
-  public static boolean isSystemNoiseSuppressorAvailable () {
-    try {
-      return NoiseSuppressor.isAvailable();
-    } catch (Throwable ignored) {
-      return false;
-    }
   }
 }

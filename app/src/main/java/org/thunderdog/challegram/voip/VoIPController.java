@@ -1,5 +1,9 @@
 package org.thunderdog.challegram.voip;
 
+import android.media.audiofx.AcousticEchoCanceler;
+import android.media.audiofx.AutomaticGainControl;
+import android.media.audiofx.NoiseSuppressor;
+
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 
@@ -69,15 +73,31 @@ public final class VoIPController extends VoIPInstance {
     nativeSetRemoteEndpoints(nativeInst, endpoints, allowP2p, tcp, connectionMaxLayer);
   }
 
+  private static boolean isSystemAcousticEchoCancelerAvailable () {
+    try {
+      return AcousticEchoCanceler.isAvailable();
+    } catch (Throwable ignored) {
+      return false;
+    }
+  }
+
+  private static boolean isSystemNoiseSuppressorAvailable () {
+    try {
+      return NoiseSuppressor.isAvailable();
+    } catch (Throwable ignored) {
+      return false;
+    }
+  }
+
   private void setConfiguration (CallConfiguration configuration) {
     ensureNativeInstance();
     nativeSetConfig(nativeInst,
       configuration.packetTimeoutMs,
       configuration.connectTimeoutMs,
       configuration.dataSavingOption,
-      !configuration.useSystemAcousticEchoCanceler,
-      !configuration.useSystemNoiseSuppressor,
-      true,
+      configuration.enableAcousticEchoCanceler || (!isSystemAcousticEchoCancelerAvailable() && !VoIP.needDisableAcousticEchoCancellation()),
+      configuration.enableNoiseSuppressor || (!isSystemNoiseSuppressorAvailable() && !VoIP.needDisableNoiseSuppressor()),
+      configuration.enableAutomaticGainControl && !VoIP.needDisableAutomaticGainControl(),
       configuration.logFilePath,
       null,
       false
