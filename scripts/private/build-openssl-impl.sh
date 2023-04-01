@@ -1,4 +1,5 @@
-#!/usr/bin/env bash
+#!/bin/bash
+set -e
 
 # Credits:
 # https://github.com/tdlib/td/blob/master/example/android/build-openssl.sh
