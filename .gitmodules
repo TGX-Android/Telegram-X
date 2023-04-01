@@ -117,6 +117,9 @@
 [submodule "openssl"]
 	path = app/jni/third_party/openssl
 	url = https://github.com/openssl/openssl
+	shallow = true
 [submodule "rnnoise"]
 	path = app/jni/third_party/rnnoise
 	url = https://github.com/xiph/rnnoise
+	shallow = true
+
