@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# shellcheck source=set-env.sh
+source "$(pwd)/scripts/set-env.sh"
+
 echo "Clearing build files..."
 
 validate_dir "$THIRDPARTY_LIBRARIES"
