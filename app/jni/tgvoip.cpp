@@ -38,6 +38,8 @@
 #include <platform/android/AndroidInterface.h>
 #include <platform/android/AndroidContext.h>
 
+#include <utility>
+
 #else
 
 #ifdef HAVE_TDLIB_CRYPTO
@@ -341,10 +343,13 @@ public:
     pthread_mutex_destroy(&mutex);
   }
 
-  void runSafe (std::function<void()> act) {
+  void runSafely (std::function<void(JNIEnv *env)> act) {
+    // tgcalls 9.0.0 & 11.0.0 invokes signalingDataEmitted after callback from tgcalls->stop(callback).
+    // Once it'll be guaranteed by tgcalls that none of the callbacks are invoked after stop(...),
+    // there won't be need in mutex here.
     pthread_mutex_lock(&mutex);
     if (thiz != nullptr) {
-      act();
+      tgvoip::jni::DoWithJNI(std::move(act));
     }
     pthread_mutex_unlock(&mutex);
   }
@@ -592,37 +597,33 @@ JNI_OBJECT_FUNC(jlong, voip_TgCallsController, newInstance,
     },
     .videoCapture = nullptr,
     .stateUpdated = [javaController](tgcalls::State state) {
-      tgvoip::jni::DoWithJNI([javaController, state](JNIEnv *env) {
+      javaController->runSafely([javaController, state](JNIEnv *env) {
         jint javaState = toJavaCallState(env, state);
         javaController->callVoid(env, "handleStateChange", javaState);
       });
     },
     .signalBarsUpdated = [javaController](int count) {
-      tgvoip::jni::DoWithJNI([javaController, count](JNIEnv *env) {
+      javaController->runSafely([javaController, count](JNIEnv *env) {
         javaController->callVoid(env, "handleSignalBarsChange", (jint) count);
       });
     },
     .audioLevelUpdated = [javaController](float audioLevel) {
-      tgvoip::jni::DoWithJNI([javaController, audioLevel](JNIEnv *env) {
+      javaController->runSafely([javaController, audioLevel](JNIEnv *env) {
         javaController->callVoid(env, "handleAudioLevelChange", (jfloat) audioLevel);
       });
     },
     .remoteMediaStateUpdated = [javaController](tgcalls::AudioState audioState, tgcalls::VideoState videoState) {
-      tgvoip::jni::DoWithJNI([javaController, audioState, videoState](JNIEnv *env) {
+      javaController->runSafely([javaController, audioState, videoState](JNIEnv *env) {
         jint jAudioState = toJavaAudioState(env, audioState);
         jint jVideoState = toJavaVideoState(env, videoState);
         javaController->callVoid(env, "handleRemoteMediaStateChange", jAudioState, jVideoState);
       });
     },
     .signalingDataEmitted = [javaController](const std::vector<uint8_t> &data) {
-      tgvoip::jni::DoWithJNI([javaController, data](JNIEnv *env) {
+      javaController->runSafely([javaController, data](JNIEnv *env) {
         jbyteArray jBuffer = toJavaByteArray(env, data);
         if (jBuffer != nullptr) {
-          // FIXME: tgcalls 9.0.0 & 11.0.0 invokes signalingDataEmitted after callback from tgcalls->stop(callback).
-          // Once it's fixed in tgcalls, there won't be any need in runSafe here
-          javaController->runSafe([env, javaController, jBuffer] {
-            javaController->callVoid(env, "handleEmittedSignalingData", jBuffer);
-          });
+          javaController->callVoid(env, "handleEmittedSignalingData", jBuffer);
           env->DeleteLocalRef(jBuffer);
         }
       });
