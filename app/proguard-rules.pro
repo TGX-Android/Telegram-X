@@ -304,6 +304,17 @@
 -keep class org.webrtc.YuvHelper { *; }
 -keepclassmembers class org.webrtc.YuvHelper { *; }
 
+# WebRTC's jvm_android.cc
+
+-keep class org.webrtc.voiceengine.BuildInfo { *; }
+-keepclassmembers class org.webrtc.voiceengine.BuildInfo { *; }
+-keep class org.webrtc.voiceengine.WebRtcAudioManager { *; }
+-keepclassmembers class org.webrtc.voiceengine.WebRtcAudioManager { *; }
+-keep class org.webrtc.voiceengine.WebRtcAudioRecord { *; }
+-keepclassmembers class org.webrtc.voiceengine.WebRtcAudioRecord { *; }
+-keep class org.webrtc.voiceengine.WebRtcAudioTrack { *; }
+-keepclassmembers class org.webrtc.voiceengine.WebRtcAudioTrack { *; }
+
 # WebRTC's native_unittests. Currently unused
 
 #-keep class org.webrtc.ApplicationContextProvider { *; }
