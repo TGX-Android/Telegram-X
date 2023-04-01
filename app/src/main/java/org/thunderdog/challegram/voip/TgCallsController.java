@@ -4,7 +4,9 @@ import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import org.thunderdog.challegram.voip.annotation.AudioState;
 import org.thunderdog.challegram.voip.annotation.CallNetworkType;
+import org.thunderdog.challegram.voip.annotation.VideoState;
 
 @SuppressWarnings("JavaJniMissingFunction")
 public class TgCallsController extends VoIPInstance {
@@ -110,8 +112,8 @@ public class TgCallsController extends VoIPInstance {
   // Called from tgvoip.cpp
 
   @Keep
-  protected final void handleRemoteMediaStateChange (boolean isRemoteAudioMuted) {
-    connectionStateListener.onRemoteMediaStateChanged(this, isRemoteAudioMuted);
+  protected final void handleRemoteMediaStateChange (@AudioState int audioState, @VideoState int videoState) {
+    connectionStateListener.onRemoteMediaStateChanged(this, audioState, videoState);
   }
 
   @Keep

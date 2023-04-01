@@ -34,6 +34,7 @@
 #include <tgcalls/v2_4_0_0/InstanceV2_4_0_0Impl.h>
 #include <tgcalls/v2/InstanceV2ReferenceImpl.h>
 
+#include <tgcalls/VideoCaptureInterface.h>
 #include <platform/android/AndroidInterface.h>
 #include <platform/android/AndroidContext.h>
 
@@ -222,7 +223,7 @@ tgcalls::NetworkType toNetworkType (JNIEnv *env, jint jNetworkType) {
   return tgcalls::NetworkType::Unknown;
 }
 
-jint toJavaState (JNIEnv *env, tgcalls::State state) {
+jint toJavaCallState (JNIEnv *env, tgcalls::State state) {
   // Match with voip/annotation/CallState.java
   switch (state) {
     case tgcalls::State::WaitInit:
@@ -237,7 +238,33 @@ jint toJavaState (JNIEnv *env, tgcalls::State state) {
       return /*CallState.RECONNECTING*/ 5;
   }
   jni::throw_new(env, "Unknown state: " + std::to_string((int) state), jni_class::IllegalArgumentException(env));
-  return 0;
+  return -1;
+}
+
+jint toJavaAudioState (JNIEnv *env, tgcalls::AudioState state) {
+  // Match with voip/annotation/AudioState.java
+  switch (state) {
+    case tgcalls::AudioState::Muted:
+      return /*AudioState.MUTED*/ 0;
+    case tgcalls::AudioState::Active:
+      return /*AudioState.ACTIVE*/ 1;
+  }
+  jni::throw_new(env, "Unknown state: " + std::to_string((int) state), jni_class::IllegalArgumentException(env));
+  return -1;
+}
+
+jint toJavaVideoState (JNIEnv *env, tgcalls::VideoState state) {
+  // Match with voip/annotation/VideoState.java
+  switch (state) {
+    case tgcalls::VideoState::Inactive:
+      return /*VideoState.INACTIVE*/ 0;
+    case tgcalls::VideoState::Paused:
+      return /*VideoState.PAUSED*/ 1;
+    case tgcalls::VideoState::Active:
+      return /*VideoState.ACTIVE*/ 2;
+  }
+  jni::throw_new(env, "Unknown state: " + std::to_string((int) state), jni_class::IllegalArgumentException(env));
+  return -1;
 }
 
 jint findTdApiConstructor (JNIEnv *env, const std::string& name) {
@@ -348,6 +375,11 @@ public:
   void callVoid (JNIEnv *env, const char *methodName, jint arg1) {
     jmethodID methodId = env->GetMethodID(clazz, methodName, "(I)V");
     env->CallVoidMethod(thiz, methodId, arg1);
+  }
+
+  void callVoid (JNIEnv *env, const char *methodName, jint arg1, jint arg2) {
+    jmethodID methodId = env->GetMethodID(clazz, methodName, "(II)V");
+    env->CallVoidMethod(thiz, methodId, arg1, arg2);
   }
 
   void callVoid (JNIEnv *env, const char *methodName, jfloat arg1) {
@@ -561,7 +593,7 @@ JNI_OBJECT_FUNC(jlong, voip_TgCallsController, newInstance,
     .videoCapture = nullptr,
     .stateUpdated = [javaController](tgcalls::State state) {
       tgvoip::jni::DoWithJNI([javaController, state](JNIEnv *env) {
-        jint javaState = toJavaState(env, state);
+        jint javaState = toJavaCallState(env, state);
         javaController->callVoid(env, "handleStateChange", javaState);
       });
     },
@@ -576,9 +608,10 @@ JNI_OBJECT_FUNC(jlong, voip_TgCallsController, newInstance,
       });
     },
     .remoteMediaStateUpdated = [javaController](tgcalls::AudioState audioState, tgcalls::VideoState videoState) {
-      tgvoip::jni::DoWithJNI([javaController, audioState](JNIEnv *env) {
-        jboolean isMuted = audioState == tgcalls::AudioState::Muted ? JNI_TRUE : JNI_FALSE;
-        javaController->callVoid(env, "handleRemoteMediaStateChange", isMuted);
+      tgvoip::jni::DoWithJNI([javaController, audioState, videoState](JNIEnv *env) {
+        jint jAudioState = toJavaAudioState(env, audioState);
+        jint jVideoState = toJavaVideoState(env, videoState);
+        javaController->callVoid(env, "handleRemoteMediaStateChange", jAudioState, jVideoState);
       });
     },
     .signalingDataEmitted = [javaController](const std::vector<uint8_t> &data) {
