@@ -86,7 +86,7 @@
 	path = app/jni/third_party/openh264
 	url = https://github.com/cisco/openh264
 	shallow = true
-[submodule "abseil-cpp"]
+[submodule "abseil"]
 	path = app/jni/third_party/abseil-cpp
 	url = https://github.com/abseil/abseil-cpp
 	shallow = true
