@@ -298,7 +298,6 @@ if(${LINK_TDLIB})
 endif()
 
 target_link_libraries(${NATIVE_LIB}
-  -Wl,--whole-archive webrtc_android -Wl,--no-whole-archive
   jni-utils
   flac
   tgvoip
@@ -310,6 +309,7 @@ target_link_libraries(${NATIVE_LIB}
   rlottie
   lz4
   tgcalls
+  -Wl,--whole-archive webrtc_android -Wl,--no-whole-archive
 )
 if (${USE_WEBP})
   target_link_libraries(${NATIVE_LIB} webpdecoder_static)

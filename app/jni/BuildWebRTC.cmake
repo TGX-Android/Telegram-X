@@ -2790,7 +2790,6 @@ set(WEBRTC_OPTIONS
   HAVE_WEBRTC_VIDEO
   DYNAMIC_ANNOTATIONS_ENABLED=0
   WEBRTC_ENABLE_PROTOBUF=0
-  WEBRTC_ENABLE_AVX2
   WEBRTC_NON_STATIC_TRACE_EVENT_HANDLERS=0
 )
 
@@ -2852,10 +2851,25 @@ elseif(${ANDROID_ABI} STREQUAL "x86_64" OR ${ANDROID_ABI} STREQUAL "x86")
     "${WEBRTC_DIR}/common_audio/signal_processing/complex_bit_reverse.c"
     "${WEBRTC_DIR}/common_audio/signal_processing/filter_ar_fast_q12.c"
     "${WEBRTC_DIR}/common_audio/third_party/ooura/fft_size_128/ooura_fft_sse2.cc"
+
+    "${WEBRTC_DIR}/common_audio/resampler/sinc_resampler_avx2.cc"
+    "${WEBRTC_DIR}/common_audio/fir_filter_avx2.cc"
+
+    "${WEBRTC_DIR}/modules/audio_processing/agc2/rnn_vad/vector_math_avx2.cc"
+    "${WEBRTC_DIR}/modules/audio_processing/aec3/vector_math_avx2.cc"
+    "${WEBRTC_DIR}/modules/audio_processing/aec3/adaptive_fir_filter_avx2.cc"
+    "${WEBRTC_DIR}/modules/audio_processing/aec3/adaptive_fir_filter_erl_avx2.cc"
+    "${WEBRTC_DIR}/modules/audio_processing/aec3/matched_filter_avx2.cc"
+    "${WEBRTC_DIR}/modules/audio_processing/aec3/fft_data_avx2.cc"
   )
   target_compile_definitions(webrtc PRIVATE
     HAVE_SSE2
   )
+  foreach(feature avx avx2 fma)
+    if(NOT CMAKE_CXX_FLAGS MATCHES "-m${feature}")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m${feature}")
+    endif()
+  endforeach()
 else()
   message(FATAL_ERROR "Unknown abi: ${ANDROID_ABI}")
 endif()
