@@ -10,7 +10,8 @@ include("${CMAKE_HOME_DIRECTORY}/cmake/Join.cmake")
 
 set(THIRDPARTY_DIR "${CMAKE_HOME_DIRECTORY}/third_party")
 set(STUB_DIR "${CMAKE_HOME_DIRECTORY}/stub")
-set(TDLIB_DIR "${CMAKE_HOME_DIRECTORY}/../../tdlib")
+set(TGX_ROOT_DIR "${CMAKE_HOME_DIRECTORY}/../..")
+set(TDLIB_DIR "${TGX_ROOT_DIR}/tdlib")
 set(UTILS_DIR "${THIRDPARTY_DIR}/jni-utils")
 
 set(SSL_DIR "${THIRDPARTY_DIR}/openssl/android_static/${ANDROID_ABI}")
@@ -61,6 +62,7 @@ set(ORIGINAL_CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS}")
 set(ADD_COMMON_FLAGS
   -w -Werror=return-type
 )
+
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
   set(CMAKE_C_VISIBILITY_PRESET hidden)
   set(CMAKE_CXX_VISIBILITY_PRESET hidden)
@@ -90,6 +92,17 @@ foreach(lang C CXX)
   Join(ADD_${lang}_FLAGS "${ADD_${lang}_FLAGS}" " ")
   set(CMAKE_${lang}_FLAGS "${CMAKE_${lang}_FLAGS} ${ADD_${lang}_FLAGS}")
 endforeach()
+
+set(CMAKE_SKIP_RPATH ON)
+set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
+
+file(READ "${TGX_ROOT_DIR}/build-id.txt" TGX_BUILD_ID)
+string(LENGTH "${TGX_BUILD_ID}" TGX_BUILD_ID_LENGTH)
+
+if(${TGX_BUILD_ID_LENGTH} EQUAL 0)
+  message(FATAL_ERROR "Build-Id is empty or doesn't exist, check: ${TGX_ROOT_DIR}/build-id.txt")
+endif()
+
 
 set(ADD_LINKER_FLAGS
   -Wl,--gc-sections,--icf=safe

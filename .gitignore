@@ -8,6 +8,8 @@ build
 .externalNativeBuild
 obj
 
+build-id.txt
+
 *.apk
 *.iml
 

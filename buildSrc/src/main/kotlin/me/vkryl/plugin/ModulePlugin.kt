@@ -22,9 +22,12 @@ import com.android.build.gradle.AppExtension
 import com.android.build.gradle.BaseExtension
 import com.android.build.gradle.LibraryExtension
 import com.android.build.gradle.ProguardFiles
+import com.android.build.gradle.internal.cxx.hashing.sha256Of
+import getIntOrThrow
 import getLongOrThrow
 import getOrThrow
 import loadProperties
+import me.vkryl.task.writeToFile
 import monthYears
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -35,6 +38,7 @@ import org.gradle.kotlin.dsl.get
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.io.File
 import java.net.URI
+import java.security.MessageDigest
 import java.util.*
 
 open class ModulePlugin : Plugin<Project> {
@@ -213,6 +217,22 @@ open class ModulePlugin : Plugin<Project> {
             val pullRequests: List<PullRequest> = properties.getProperty("pr.ids", "").split(',').filter { it.matches(Regex("^[0-9]+$")) }.map {
               PullRequest(it.toLong(), properties)
             }.sortedBy { it.id }
+
+            val buildIdContents = commitHashLong + "+" + (
+              versions.getIntOrThrow("version.jni") +
+              versions.getIntOrThrow("version.tdlib") +
+              versions.getIntOrThrow("version.leveldb")
+            ) + (if (pullRequests.isEmpty()) {
+              ""
+            } else {
+              "+" + pullRequests.joinToString(",") { it.commitShort }
+            })
+            val buildId = sha256Of(
+              buildIdContents
+            )
+            writeToFile("build-id.txt") {
+              it.append(buildId)
+            }
 
             namespace = "org.thunderdog.challegram"
 

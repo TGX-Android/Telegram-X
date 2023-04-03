@@ -33,12 +33,7 @@ open class CMakePlugin : Plugin<Project> {
             cmake {
               arguments(
                 "-DANDROID_STL=c++_shared",
-                "-DANDROID_PLATFORM=android-${Config.MIN_SDK_VERSION}",
-                "-DCMAKE_BUILD_WITH_INSTALL_RPATH=ON",
-                "-DCMAKE_SKIP_RPATH=ON",
-                "-DCMAKE_C_VISIBILITY_PRESET=hidden",
-                "-DCMAKE_CXX_VISIBILITY_PRESET=hidden",
-                "-DCMAKE_BUILD_PARALLEL_LEVEL=${Runtime.getRuntime().availableProcessors()}"
+                "-DANDROID_PLATFORM=android-${Config.MIN_SDK_VERSION}"
               )
             }
           }

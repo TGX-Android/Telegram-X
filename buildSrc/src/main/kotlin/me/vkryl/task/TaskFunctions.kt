@@ -18,24 +18,31 @@ import java.io.Writer
 import java.nio.channels.FileChannel
 import java.nio.file.StandardOpenOption
 import java.util.*
-import kotlin.contracts.ExperimentalContracts
-import kotlin.contracts.InvocationKind
-import kotlin.contracts.contract
 
-@ExperimentalContracts
-fun writeToFile(path: String, mkdirs: Boolean = true, isRelativePath: Boolean = true, block: (Writer) -> Unit) {
-  contract {
-    callsInPlace(block, InvocationKind.EXACTLY_ONCE)
-  }
+fun isWindowsHost(): Boolean {
+  return System.getProperty("os.name").startsWith("Windows")
+}
 
-  val isWindows = System.getProperty("os.name").startsWith("Windows")
+fun writeToFile(path: String, block: (Writer) -> Unit) {
+  val isWindows = isWindowsHost()
+  // TODO proper detection, but it isn't needed for now,
+  // because all paths passed to this method are relative.
+  val isRelativePath = !path.startsWith("/")
+  val isRootFolder = !path.contains("/")
   val file = if (isRelativePath && isWindows) {
     File("${System.getProperty("user.dir")}${File.separator}$path")
   } else {
     File(path)
   }
+  writeToFile(file, mkdirs = !isRootFolder, block)
+}
 
-  if (!file.parentFile.exists()) {
+fun writeToFile(file: File, mkdirs: Boolean = true, block: (Writer) -> Unit) {
+  if (file.parentFile == null) {
+    if (mkdirs) {
+      error("Invalid file path: ${file.absolutePath}")
+    }
+  } else if (!file.parentFile.exists()) {
     if (mkdirs) {
       if (!file.parentFile.mkdirs())
         error("Could not create folder: ${file.parentFile.absolutePath}")
@@ -62,7 +69,7 @@ fun writeToFile(path: String, mkdirs: Boolean = true, isRelativePath: Boolean = 
 
   if (file.exists()) {
     if (!areFileContentsIdentical(file, outFile)) {
-      if (isWindows) {
+      if (isWindowsHost()) {
         Thread.sleep(300)
         System.gc()
       }
