@@ -5490,6 +5490,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
           }
           return true;
         }
+        case R.id.btn_chatTranslate: {
+          startTranslateMessages(selectedMessage);
+          return true;
+        }
+        case R.id.btn_chatTranslateOff: {
+          stopTranslateMessages(selectedMessage);
+          return true;
+        }
         case R.id.btn_saveGif: {
           if (selectedMessageTag != null) {
             if (!selectedMessage.canBeSaved()) {
@@ -11565,4 +11573,21 @@ public class MessagesController extends ViewController<MessagesController.Argume
     new TdApi.SearchMessagesFilterAudio(),
     new TdApi.SearchMessagesFilterAnimation()
   };
+
+  // Translate
+
+  public void startTranslateMessages (TGMessage message) {
+    if (message.translationStyleMode() == Settings.TRANSLATE_MODE_INLINE) {
+      message.startTranslated();
+    } else {
+      final TranslationController c = new TranslationController(context, tdlib);
+      c.setArguments(new TranslationController.Args(message));
+      c.show();
+    }
+  }
+
+  public void stopTranslateMessages (TGMessage message) {
+    message.stopTranslated();
+  }
+
 }

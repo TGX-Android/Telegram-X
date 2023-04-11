@@ -155,6 +155,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     };
 
     this.useReactionBubblesValue = checkReactionBubbles();
+    this.usedTranslateStyleMode = checkTranslateStyleMode();
   }
 
   public int getKnownTotalMessageCount () {
@@ -733,6 +734,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
     subscribeForUpdates();
     this.useReactionBubblesValue = checkReactionBubbles();
+    this.usedTranslateStyleMode = checkTranslateStyleMode();
     this.wasScrollByUser = false;
   }
 
@@ -954,7 +956,14 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     return useReactionBubblesValue;
   }
 
+  private int usedTranslateStyleMode;
+  private int checkTranslateStyleMode () {
+    return Settings.instance().getChatTranslateMode();
+  }
 
+  public int getUsedTranslateStyleMode () {
+    return usedTranslateStyleMode;
+  }
 
   @Nullable
   @Override

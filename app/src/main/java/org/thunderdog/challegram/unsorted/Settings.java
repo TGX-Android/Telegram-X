@@ -218,6 +218,7 @@ public class Settings {
   private static final String KEY_TUTORIAL_PSA = "settings_tutorial_psa";
   private static final String KEY_CHAT_FONT_SIZE = "settings_font_size";
   private static final String KEY_CHAT_LIST_MODE = "settings_chat_list_mode";
+  private static final String KEY_CHAT_TRANSLATE_MODE = "settings_chat_translate_mode";
   private static final String KEY_INSTANT_VIEW = "settings_iv_mode";
   private static final String KEY_RESTRICT_CONTENT = "settings_restrict_content";
   private static final String KEY_CAMERA_ASPECT_RATIO = "settings_camera_ratio";
@@ -1006,6 +1007,25 @@ public class Settings {
         }
         break;
       }
+    }
+  }
+
+
+  public static final int TRANSLATE_MODE_NONE = 1;
+  public static final int TRANSLATE_MODE_POPUP = 2;
+  public static final int TRANSLATE_MODE_INLINE = 3;
+  private Integer _chatTranslateMode;
+
+  public int getChatTranslateMode () {
+    if (_chatTranslateMode == null) {
+      _chatTranslateMode = pmc.getInt(KEY_CHAT_TRANSLATE_MODE, TRANSLATE_MODE_POPUP);
+    }
+    return _chatTranslateMode;
+  }
+
+  public void setChatTranslateMode (int mode) {
+    if (getChatTranslateMode() != mode) {
+      pmc.putInt(KEY_CHAT_TRANSLATE_MODE, _chatTranslateMode = mode);
     }
   }
 

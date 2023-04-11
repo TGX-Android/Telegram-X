@@ -54,6 +54,7 @@ import me.vkryl.android.animator.VariableFloat;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
+import me.vkryl.core.StringUtils;
 import me.vkryl.td.Td;
 import me.vkryl.td.TdConstants;
 
@@ -66,6 +67,7 @@ public class TGMessageFile extends TGMessage {
     public FileComponent component;
     public TdApi.FormattedText serverCaption;
     public TdApi.FormattedText pendingCaption;
+    public TdApi.FormattedText translatedCaption;
 
     public FactorAnimator checkAnimator;
 
@@ -116,7 +118,7 @@ public class TGMessageFile extends TGMessage {
     }
 
     private boolean updateCaption (boolean animated, boolean force) {
-      TdApi.FormattedText caption = this.pendingCaption != null ? this.pendingCaption : this.serverCaption;
+      TdApi.FormattedText caption = translatedCaption != null ? translatedCaption: (this.pendingCaption != null ? this.pendingCaption : this.serverCaption);
       if (!Td.equalsTo(this.effectiveCaption, caption) || force) {
         this.effectiveCaption = Td.isEmpty(caption) ? null : caption;
         if (this.captionWrapper != null) {
@@ -475,6 +477,8 @@ public class TGMessageFile extends TGMessage {
 
   @Override
   protected void drawContent (MessageView view, Canvas c, final int startX, final int startY, int maxWidth, ComplexReceiver receiver) {
+    float alpha = getTranslationLoadingAlphaValue();
+
     final int backgroundColor = getContentBackgroundColor();
     final int contentReplaceColor = getContentReplaceColor();
     final boolean clip = useBubbles();
@@ -511,7 +515,7 @@ public class TGMessageFile extends TGMessage {
       entry.item.component.draw(view, c, startX, contentStartY, previewReceiver, imageReceiver, backgroundColor, useBubbles() ? ColorUtils.compositeColor(contentReplaceColor, pressColor) : contentReplaceColor, entry.getVisibility(), entry.item.getCheckFactor());
       for (ListAnimator.Entry<TextWrapper> caption : entry.item.caption) {
         int right = useBubbles() ? startX + getContentWidth() : startX + Math.max(entry.item.component.getWidth(), caption.item.getWidth());
-        caption.item.draw(c, startX, right, 0, contentStartY + entry.item.component.getHeight() + Screen.dp(TEXT_MARGIN), null, entry.getVisibility() * caption.getVisibility(), view.getTextMediaReceiver());
+        caption.item.draw(c, startX, right, 0, contentStartY + entry.item.component.getHeight() + Screen.dp(TEXT_MARGIN), null, entry.getVisibility() * caption.getVisibility() * alpha, view.getTextMediaReceiver());
       }
     }
     if (clip) {
@@ -694,5 +698,41 @@ public class TGMessageFile extends TGMessage {
       changed = entry.item.component.onLocaleChange() || changed;
     }
     return changed;
+  }
+
+  @Nullable
+  @Override
+  public TdApi.FormattedText getTextToTranslateImpl () {
+    StringBuilder text = new StringBuilder();
+    int filesWithCaption = 0;
+    for (CaptionedFile file : filesList) {
+      if (file.hasCaption()) {
+        if (text.length() > 0) {
+          text.append("\n");
+        }
+        text.append("\uD83D\uDCC4 ").append(file.serverCaption.text.replace("\uD83D\uDCC4", " "));
+        filesWithCaption++;
+      } else {
+        text.append("\uD83D\uDCC4 -");
+      }
+    }
+
+    return filesWithCaption > 0? new TdApi.FormattedText(text.toString(), new TdApi.TextEntity[0]): null;
+  }
+
+  @Override
+  protected void setTranslationResult (@Nullable TdApi.FormattedText text) {
+    String[] translatedCaptions = text != null ? text.text.split("\uD83D\uDCC4") : null;
+    if (translatedCaptions != null && translatedCaptions.length != filesList.size() + 1) {
+      translatedCaptions = null;
+    }
+
+    for (int a = 0; a < filesList.size(); a++) {
+      CaptionedFile file = filesList.get(a);
+      String caption = translatedCaptions != null ? StringUtils.trim(translatedCaptions[a + 1]): null;
+      file.translatedCaption = !StringUtils.isEmpty(caption) && !"-".equals(caption) ? new TdApi.FormattedText(caption, new TdApi.TextEntity[0]): null;
+      file.updateCaption(needAnimateChanges(), true);
+    }
+    rebuildAndUpdateContent();
   }
 }

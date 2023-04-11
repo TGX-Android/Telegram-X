@@ -114,6 +114,7 @@
   <item type="id" name="edit_proxy_password" />
   <item type="id" name="edit_proxy_secret" />
 
+  <item type="id" name="controller_msgTranslate" />
   <item type="id" name="controller_simplePager" />
   <item type="id" name="controller_logOut" />
   <item type="id" name="controller_editLanguage" />
@@ -286,6 +287,12 @@
   <item type="id" name="contact" />
   <item type="id" name="call" />
   <item type="id" name="bucket" />
+  <item type="id" name="btn_chatTranslate" />
+  <item type="id" name="btn_chatTranslateOff" />
+  <item type="id" name="btn_chatTranslateStyle" />
+  <item type="id" name="btn_chatTranslateStyle1" />
+  <item type="id" name="btn_chatTranslateStyle2" />
+  <item type="id" name="btn_chatTranslateStyle3" />
   <item type="id" name="btn_pinUnpinChat" />
   <item type="id" name="btn_unpinAll" />
   <item type="id" name="btn_reportLocation" />
