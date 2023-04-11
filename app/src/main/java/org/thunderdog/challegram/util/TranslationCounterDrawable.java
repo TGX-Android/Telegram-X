@@ -11,6 +11,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
+import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 
 import me.vkryl.android.AnimatorUtils;
@@ -33,6 +34,7 @@ public class TranslationCounterDrawable extends Drawable implements FactorAnimat
   private final BoolAnimator offsetAnimator = new BoolAnimator(ANIMATOR_OFFSET, this, AnimatorUtils.LINEAR_INTERPOLATOR, 750L);
 
   private final Drawable drawable;
+  private final Drawable drawableBg;
   private final int width, height;
   private Runnable invalidateCallback;
 
@@ -41,6 +43,7 @@ public class TranslationCounterDrawable extends Drawable implements FactorAnimat
 
   public TranslationCounterDrawable (Drawable drawable) {
     this.drawable = drawable;
+    this.drawableBg = drawable.getConstantState().newDrawable().mutate();
     this.width = drawable.getMinimumWidth();
     this.height = drawable.getMinimumHeight();
 
@@ -89,7 +92,7 @@ public class TranslationCounterDrawable extends Drawable implements FactorAnimat
     if (loadedProgress == 1f) {
       Drawables.draw(canvas, drawable, 0, 0, Paints.getPorterDuffPaint(iconColor));
     } else {
-      Drawables.draw(canvas, drawable, 0, 0, Paints.getPorterDuffPaint(Theme.getColor(backgroundColorId)));
+      Drawables.draw(canvas, drawableBg, 0, 0, Paints.getPorterDuffPaint(Theme.getColor(backgroundColorId)));
 
       float lineWidth = MathUtils.fromTo(0.571f, 1f, loadedProgress) * width;
       float offset = MathUtils.fromTo(MathUtils.fromTo(-lineWidth - width * 0.5f, width * 1.5f, offsetAnimator.getFloatValue()), 0, loadedProgress);

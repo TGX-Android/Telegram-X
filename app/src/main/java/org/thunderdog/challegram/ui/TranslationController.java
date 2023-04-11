@@ -266,10 +266,10 @@ public class TranslationController extends TelegramViewController<TranslationCon
     translationCounterDrawable.setStatus(status, animated);
     if (status == TranslationCounterDrawable.TRANSLATE_STATUS_SUCCESS) {
       headerCell.setTitle(Lang.getLanguageName(mTranslationsManager.getCurrentTranslatedLanguage(), Lang.getString(R.string.TranslateLangUnknown)), animated);
-      if (StringUtils.equalsTo(mTranslationsManager.getCurrentTranslatedLanguage(), messageOriginalLanguage)) {
+      if (StringUtils.equalsOrBothEmpty(mTranslationsManager.getCurrentTranslatedLanguage(), messageOriginalLanguage)) {
         headerCell.setSubtitle(Lang.getString(R.string.TranslateOriginal), animated);
       } else {
-        headerCell.setSubtitle(Lang.getString(R.string.TranslatedFrom, Lang.getLanguageName(messageOriginalLanguage, messageOriginalLanguage)), animated);
+        headerCell.setSubtitle(Lang.getString(R.string.TranslatedFrom, Lang.getLanguageName(messageOriginalLanguage, Lang.getString(R.string.TranslateLangUnknown))), animated);
       }
     } else if (status == TranslationCounterDrawable.TRANSLATE_STATUS_LOADING) {
       headerCell.setTitle(Lang.getString(R.string.TranslatingTo, Lang.getLanguageName(mTranslationsManager.getCurrentTranslatedLanguage(), Lang.getString(R.string.TranslateLangUnknown))), animated);
@@ -447,7 +447,7 @@ public class TranslationController extends TelegramViewController<TranslationCon
 
     private int getPosition (String language) {
       for (int a = 0; a < languages.size(); a++) {
-        if (StringUtils.equalsTo(language, languages.get(a))) {
+        if (StringUtils.equalsOrBothEmpty(language, languages.get(a))) {
           return a;
         }
       }
