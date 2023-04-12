@@ -78,6 +78,7 @@ public class TranslationController extends TelegramViewController<TranslationCon
   public TranslationController (Context context, Tdlib tdlib) {
     super(context, tdlib);
     translationCounterDrawable = new TranslationCounterDrawable(Drawables.get(R.drawable.baseline_translate_24));
+    translationCounterDrawable.setColors(R.id.theme_color_background ,R.id.theme_color_iconActive);
   }
 
   @Override
@@ -297,6 +298,7 @@ public class TranslationController extends TelegramViewController<TranslationCon
     popupLayout.setPopupHeightProvider(this);
     popupLayout.init(true);
     popupLayout.setTouchProvider(this);
+    popupLayout.setTouchDownInterceptor(this::onBackgroundTouchDown);
 
     if (originalText == null) {
       destroy();
@@ -320,6 +322,12 @@ public class TranslationController extends TelegramViewController<TranslationCon
   @Override
   public boolean shouldTouchOutside (float x, float y) {
     return headerView != null && y < headerView.getTranslationY() - HeaderView.getSize(true);
+  }
+
+  private boolean onBackgroundTouchDown (PopupLayout popupLayout, MotionEvent e) {
+    float y = e.getY();
+    float y2 = (headerView != null ? headerView.getTranslationY(): 0); // - HeaderView.getTopOffset();
+    return y > y2;
   }
 
   @Override

@@ -37,26 +37,27 @@ public class ToggleHeaderView2 extends View {
   }
 
   public void setTitle (String title, boolean animated) {
-    titleR.replace(new TrimmedText(title, Paints.getMediumTextPaint(18f, textColor, false)), animated);
-    triangleTop = Screen.dp(4f + 8.5f);
-    textTop = Screen.dp(18f + 8.5f);
+    titleR.replace(new TrimmedText(title), animated);
+    triangleTop = Screen.dp(3f + 8.5f);
+    textTop = Screen.dp(17f + 8.5f);
     textPadding = Screen.dp(10f);
     trimTexts();
-    requestLayout();
     invalidate();
   }
 
   public void setSubtitle (String subtitle, boolean animated) {
-    subtitleR.replace(new TrimmedText(subtitle, Paints.getRegularTextPaint(14f, Theme.getColor(R.id.theme_color_textLight))), animated);
+    subtitleR.replace(new TrimmedText(subtitle), animated);
+    trimTexts();
+    invalidate();
   }
 
   private void trimTexts () {
     int avail = getMeasuredWidth() - textPadding - Screen.dp(12f);
     for (ListAnimator.Entry<TrimmedText> entry: titleR) {
-      entry.item.measure(avail);
+      entry.item.measure(avail, Paints.getMediumTextPaint(18f, textColor, false));
     }
     for (ListAnimator.Entry<TrimmedText> entry: subtitleR) {
-      entry.item.measure(avail);
+      entry.item.measure(avail, Paints.getRegularTextPaint(14f, Theme.getColor(R.id.theme_color_textLight)));
     }
   }
 
@@ -88,13 +89,13 @@ public class ToggleHeaderView2 extends View {
       final int offset2 = (int) ((!entry.isAffectingList() ?
         ((entry.getVisibility() - 1f) * Screen.dp(18)):
         ((1f - entry.getVisibility()) * Screen.dp(18))));
-      entry.item.draw(c, getPaddingLeft(), textTop + offset2, entry.getVisibility());
+      entry.item.draw(c, getPaddingLeft(), textTop + offset2, entry.getVisibility(), Paints.getMediumTextPaint(18f, textColor, false));
     }
     for (ListAnimator.Entry<TrimmedText> entry: subtitleR) {
       final int offset2 = (int) ((!entry.isAffectingList() ?
         ((entry.getVisibility() - 1f) * Screen.dp(14)):
         ((1f - entry.getVisibility()) * Screen.dp(14))));
-      entry.item.draw(c, getPaddingLeft(), textTop + Screen.dp(18) + offset2, entry.getVisibility());
+      entry.item.draw(c, getPaddingLeft(), textTop + Screen.dp(19) + offset2, entry.getVisibility(), Paints.getRegularTextPaint(14f, Theme.getColor(R.id.theme_color_textLight)));
     }
 
     Drawables.draw(c, arrowDrawable, getTitleWidth() + Screen.dp(2), triangleTop, Paints.getPorterDuffPaint(Theme.getColor(R.id.theme_color_icon)));
@@ -102,19 +103,17 @@ public class ToggleHeaderView2 extends View {
 
 
   private static class TrimmedText {
-    private final TextPaint paint;
     private final String text;
     private String textTrimmed;
     private float textTrimmedWidth;
-    private final float textWidth;
+    private float textWidth;
 
-    public TrimmedText (String text, TextPaint paint) {
-      this.paint = paint;
+    public TrimmedText (String text) {
       this.text = text;
-      this.textWidth = U.measureText(text, paint);
     }
 
-    public void measure (int width) {
+    public void measure (int width, TextPaint paint) {
+      textWidth = U.measureText(text, paint);
       if (textWidth <= width) {
         textTrimmed = null;
         textTrimmedWidth = 0;
@@ -128,7 +127,7 @@ public class ToggleHeaderView2 extends View {
       return textTrimmed != null ? textTrimmedWidth: textWidth;
     }
 
-    public void draw (Canvas canvas, int x, int y, float alpha) {
+    public void draw (Canvas canvas, int x, int y, float alpha, TextPaint paint) {
       paint.setAlpha((int) (alpha * 255));
       canvas.drawText(textTrimmed != null ? textTrimmed : text, x, y, paint);
     }
