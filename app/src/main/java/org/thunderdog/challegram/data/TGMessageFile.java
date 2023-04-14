@@ -37,6 +37,7 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.text.Highlight;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextEntity;
@@ -700,39 +701,64 @@ public class TGMessageFile extends TGMessage {
     return changed;
   }
 
+  private TdApi.FormattedText getTranslationSafeText (TdApi.FormattedText text) {
+    if (translationStyleMode() == Settings.TRANSLATE_MODE_POPUP) return text;
+    return new TdApi.FormattedText(text.text.replaceAll("\uD83D\uDCC4", "\uD83D\uDCD1"), text.entities);
+  }
+
   @Nullable
   @Override
   public TdApi.FormattedText getTextToTranslateImpl () {
-    StringBuilder text = new StringBuilder();
+    if (filesList.size() == 1) {
+      CaptionedFile file = filesList.get(0);
+      return file.hasCaption() ? getTranslationSafeText(file.serverCaption): null;
+    }
+
+    TdApi.FormattedText resultText = new TdApi.FormattedText("", new TdApi.TextEntity[0]);
+    TdApi.FormattedText sep = new TdApi.FormattedText(translationStyleMode() == Settings.TRANSLATE_MODE_POPUP ? "\n\n": "\n\n\uD83D\uDCC4\n", new TdApi.TextEntity[0]);
     int filesWithCaption = 0;
+
     for (CaptionedFile file : filesList) {
       if (file.hasCaption()) {
-        if (text.length() > 0) {
-          text.append("\n");
-        }
-        text.append("\uD83D\uDCC4 ").append(file.serverCaption.text.replace("\uD83D\uDCC4", " "));
+        resultText = Td.concat(resultText, sep, getTranslationSafeText(file.serverCaption));
         filesWithCaption++;
       } else {
-        text.append("\uD83D\uDCC4 -");
+        resultText = Td.concat(resultText, sep);
       }
     }
 
-    return filesWithCaption > 0? new TdApi.FormattedText(text.toString(), new TdApi.TextEntity[0]): null;
+    return filesWithCaption > 0? Td.trim(resultText): null;
   }
 
   @Override
   protected void setTranslationResult (@Nullable TdApi.FormattedText text) {
-    String[] translatedCaptions = text != null ? text.text.split("\uD83D\uDCC4") : null;
-    if (translatedCaptions != null && translatedCaptions.length != filesList.size() + 1) {
-      translatedCaptions = null;
+    ArrayList<TdApi.FormattedText> translatedParts = null;
+    if (text != null) {
+      translatedParts = new ArrayList<>(filesList.size());
+      String sep = "\uD83D\uDCC4";
+      int indexStart = text.text.startsWith(sep) ? sep.length(): 0;
+      while (true) {
+        int index = text.text.indexOf(sep, indexStart);
+        TdApi.FormattedText part = (index == -1) ? Td.substring(text, indexStart): Td.substring(text, indexStart, index);
+        translatedParts.add(Td.trim(part));
+        if (index == -1) {
+          break;
+        };
+        indexStart = index + sep.length();
+      }
+    }
+
+    if (translatedParts != null && translatedParts.size() != filesList.size()) {
+      translatedParts = null;
     }
 
     for (int a = 0; a < filesList.size(); a++) {
       CaptionedFile file = filesList.get(a);
-      String caption = translatedCaptions != null ? StringUtils.trim(translatedCaptions[a + 1]): null;
-      file.translatedCaption = !StringUtils.isEmpty(caption) && !"-".equals(caption) ? new TdApi.FormattedText(caption, new TdApi.TextEntity[0]): null;
+      TdApi.FormattedText caption = translatedParts != null ? translatedParts.get(a): null;
+      file.translatedCaption = !Td.isEmpty(caption) ? caption: null;
       file.updateCaption(needAnimateChanges(), true);
     }
     rebuildAndUpdateContent();
+    invalidateTextMediaReceiver();
   }
 }

@@ -642,5 +642,6 @@ public class TGMessageText extends TGMessage {
     translatedText = text;
     setText(this.text, false, true);
     rebuildAndUpdateContent();
+    invalidateTextMediaReceiver();
   }
 }

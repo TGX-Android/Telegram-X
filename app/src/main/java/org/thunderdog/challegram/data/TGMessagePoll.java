@@ -1579,9 +1579,9 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
   @Nullable
   @Override
   public TdApi.FormattedText getTextToTranslateImpl () {
-    StringBuilder pollText = new StringBuilder(state.poll.question.replace("\uD83D\uDD18", " ")).append("\n");
+    StringBuilder pollText = new StringBuilder(state.poll.question.replaceAll("•", " "));
     for (TdApi.PollOption option : state.poll.options) {
-      pollText.append("\n\uD83D\uDD18 ").append(option.text.replace("\uD83D\uDD18", " "));
+      pollText.append("\n\n• ").append(option.text.replaceAll("•", " "));
     }
 
     return new TdApi.FormattedText(pollText.toString(), new TdApi.TextEntity[0]);
@@ -1590,7 +1590,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
   @Override
   protected void setTranslationResult (@Nullable TdApi.FormattedText text) {
     if (text != null) {
-      translatedTexts = text.text.split("\uD83D\uDD18");
+      translatedTexts = text.text.split("•");
       if (translatedTexts.length != state.options.length + 1) {
         translatedTexts = null;
       }
@@ -1599,5 +1599,6 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     }
     applyPoll(getPoll(), true);
     rebuildAndUpdateContent();
+    invalidateTextMediaReceiver();
   }
 }
