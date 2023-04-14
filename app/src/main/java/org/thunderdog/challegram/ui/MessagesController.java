@@ -11580,9 +11580,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (message.translationStyleMode() == Settings.TRANSLATE_MODE_INLINE) {
       message.startTranslated();
     } else {
-      final TranslationController c = new TranslationController(context, tdlib);
-      c.setArguments(new TranslationController.Args(message));
+      final TranslationControllerV2.Wrapper c = new TranslationControllerV2.Wrapper(context, tdlib);
+      c.setArguments(new TranslationControllerV2.Args(message));
       c.show();
+
+      /*final TranslationController c = new TranslationController(context, tdlib);
+      c.setArguments(new TranslationController.Args(message));
+      c.show();*/
     }
   }
 

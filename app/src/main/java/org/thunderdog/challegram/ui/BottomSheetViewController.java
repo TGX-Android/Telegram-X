@@ -3,6 +3,7 @@ package org.thunderdog.challegram.ui;
 import android.animation.Animator;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Rect;
 import android.view.MotionEvent;
 import android.view.View;
@@ -79,7 +80,7 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
       @Override
       protected void onDraw (Canvas canvas) {
         if (headerView != null) {
-          canvas.drawRect(0, headerView.getTranslationY(), getMeasuredWidth(), getMeasuredHeight(), Paints.fillingPaint(Theme.backgroundColor()));
+          canvas.drawRect(0, headerView.getTranslationY(), getMeasuredWidth(), getMeasuredHeight(), Paints.fillingPaint(Theme.getColor(getBackgroundColorId())));
         }
         super.onDraw(canvas);
       }
@@ -188,6 +189,9 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
   }
 
 
+  protected int getBackgroundColorId () {
+    return R.id.theme_color_background;
+  }
 
   private boolean ignoreAnyPagerScrollEventsBecauseOfMovements;
 

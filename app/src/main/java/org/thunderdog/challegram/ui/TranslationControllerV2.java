@@ -14,13 +14,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.td.libcore.telegram.TdApi;
+import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGMessage;
@@ -30,15 +30,14 @@ import org.thunderdog.challegram.navigation.HeaderButton;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.Menu;
 import org.thunderdog.challegram.navigation.MenuMoreWrap;
-import org.thunderdog.challegram.navigation.TelegramViewController;
 import org.thunderdog.challegram.navigation.ToggleHeaderView2;
+import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
-import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
@@ -48,9 +47,9 @@ import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.util.text.TextWrapper;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.AvatarView;
-import org.thunderdog.challegram.widget.LickView;
 import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.TextView;
+import org.thunderdog.challegram.widget.ViewPager;
 
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
@@ -62,76 +61,42 @@ import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 
-public class TranslationController extends TelegramViewController<TranslationController.Args> implements PopupLayout.TouchSectionProvider, PopupLayout.PopupHeightProvider, Menu {
-  private final ReplaceAnimator<TextWrapper> text = new ReplaceAnimator<>(this::updateTexts, AnimatorUtils.DECELERATE_INTERPOLATOR, 300L);
-
-  private PopupLayout popupLayout;
-  private boolean openLaunched;
+public class TranslationControllerV2 extends BottomSheetViewController.BottomSheetBaseRecyclerViewController<TranslationControllerV2.Args>
+ implements BottomSheetViewController.BottomSheetBaseControllerPage, Menu {
 
   private final TranslationCounterDrawable translationCounterDrawable;
-  private FrameLayoutFix wrapView;
-  private MessageTextView messageTextView;
+  private final ReplaceAnimator<TextWrapper> text;
   private ComplexReceiver textMediaReceiver;
-  private ToggleHeaderView2 headerCell;
-  private CustomRecyclerView recyclerView;
+  private final Wrapper parent;
 
   private TGMessage.TranslationsManager mTranslationsManager;
   private TGMessage messageToTranslate;
   private TdApi.FormattedText originalText;
   private String messageOriginalLanguage;
-  private LickView lickView;
 
-  public TranslationController (Context context, Tdlib tdlib) {
+  private FrameLayoutFix wrapView;
+  private CustomRecyclerView recyclerView;
+  private LinearLayoutManager linearLayoutManager;
+  private MessageTextView messageTextView;
+  private ToggleHeaderView2 headerCell;
+  private HeaderButton translationHeaderButton;
+  private AvatarView senderAvatarView;
+  private TextView senderTextView;
+  private TextView dateTextView;
+
+  private TranslationControllerV2 (Context context, Tdlib tdlib, Wrapper parent) {
     super(context, tdlib);
+    this.parent = parent;
+
+    text = new ReplaceAnimator<>(this::updateTexts, AnimatorUtils.DECELERATE_INTERPOLATOR, 300L);
     translationCounterDrawable = new TranslationCounterDrawable(Drawables.get(R.drawable.baseline_translate_24));
     translationCounterDrawable.setColors(R.id.theme_color_icon, R.id.theme_color_background ,R.id.theme_color_iconActive);
+    translationCounterDrawable.setInvalidateCallback(this::updateAnimations);
   }
 
-  @Override
   protected View onCreateView (Context context) {
-    wrapView = new FrameLayoutFix(context) {
-      @Override
-      protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
-        int width = MeasureSpec.getSize(widthMeasureSpec);
-        int height = MeasureSpec.getSize(heightMeasureSpec);
-
-        measureText(width - Screen.dp(36));
-
-        int textHeight = getTextStaticHeight();
-        LayoutParams layoutParams = (LayoutParams) recyclerView.getLayoutParams();
-        layoutParams.topMargin = Screen.dp(67 - 6) + HeaderView.getTopOffset();
-        layoutParams.bottomMargin = Screen.dp(48 - 6);
-        int scrollViewHeight = height - layoutParams.bottomMargin - layoutParams.topMargin - Screen.dp(12);
-
-        lickView.setVisibility(textHeight >= scrollViewHeight ? VISIBLE: GONE);
-        recyclerView.setPadding(0, Math.max(scrollViewHeight / 3, scrollViewHeight - textHeight), 0, 0);
-
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-      }
-
-      @Override
-      protected void onLayout (boolean changed, int left, int top, int right, int bottom) {
-        super.onLayout(changed, left, top, right, bottom);
-        updateLayout();
-      }
-
-      @Override
-      protected void dispatchDraw (Canvas canvas) {
-        float top = headerView != null ? headerView.getTranslationY(): 0;
-        canvas.drawRect(0, top, getMeasuredWidth(), getMeasuredHeight(), Paints.fillingPaint(Theme.getColor(R.id.theme_color_filling)));
-
-        super.dispatchDraw(canvas);
-      }
-    };
-
-    translationCounterDrawable.setInvalidateCallback(this::updateAnimations);
-
-    lickView = new LickView(context);
-    lickView.setHeaderBackground(Theme.getColor(R.id.theme_color_filling));
-    lickView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, HeaderView.getTopOffset()));
-    wrapView.addView(lickView);
-
     headerView = new HeaderView(context);
+
     headerCell = new ToggleHeaderView2(context);
     headerCell.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(67f), Gravity.TOP, Screen.dp(56), 0, Screen.dp(60), 0));
     headerCell.setTitle(Lang.getLanguageName(messageOriginalLanguage, Lang.getString(R.string.TranslateLangUnknown)), false);
@@ -143,39 +108,36 @@ public class TranslationController extends TelegramViewController<TranslationCon
     headerView.getFilling().setShadowAlpha(0f);
     headerView.getBackButton().setIsReverse(true);
     headerView.setBackgroundHeight(Screen.dp(67));
+    headerView.setWillNotDraw(false);
+    addThemeInvalidateListener(headerView);
 
-    AvatarView senderAvatarView = new AvatarView(context);
+    wrapView = (FrameLayoutFix) super.onCreateView(context);
+    wrapView.setBackgroundColor(0);
+    wrapView.setBackground(null);
+
+    senderAvatarView = new AvatarView(context);
     senderAvatarView.setMessageSender(tdlib, messageToTranslate.getSender().toSender());
     wrapView.addView(senderAvatarView, FrameLayoutFix.newParams(Screen.dp(20), Screen.dp(20), Gravity.LEFT | Gravity.BOTTOM, Screen.dp(18), 0, 0, Screen.dp(16)));
 
-    TextView senderTextView = new TextView(context);
+    senderTextView = new TextView(context);
     senderTextView.setText(messageToTranslate.getSender().getName());
     senderTextView.setTextColor(Theme.getColor(R.id.theme_color_textLight));
     senderTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
     senderTextView.setTypeface(Fonts.getRobotoMedium());
     wrapView.addView(senderTextView, FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, Screen.dp(44), 0, 0, Screen.dp(19)));
 
-    TextView dateTextView = new TextView(context);
+    dateTextView = new TextView(context);
     dateTextView.setText(Lang.dateYearShortTime(messageToTranslate.getComparingDate(), TimeUnit.SECONDS));
     dateTextView.setTextColor(Theme.getColor(R.id.theme_color_textLight));
     dateTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
     wrapView.addView(dateTextView, FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, Screen.dp(18), Screen.dp(19)));
 
-    tdlib.ui().post(this::launchOpenAnimation);
-
     messageTextView = new MessageTextView(context);
     textMediaReceiver = new ComplexReceiver(messageTextView);
 
-    recyclerView = new CustomRecyclerView(context) {
-      @Override
-      public boolean onTouchEvent (MotionEvent e) {
-        return !(e.getAction() == MotionEvent.ACTION_DOWN && headerView != null && e.getY() < headerView.getTranslationY() - HeaderView.getSize(true)) && super.onTouchEvent(e);
-      }
-    };
-    recyclerView.setClipToPadding(false);
-    recyclerView.setVerticalScrollBarEnabled(false);
+    recyclerView.setItemAnimator(null);
     recyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
-    recyclerView.setLayoutManager(new LinearLayoutManager(context, RecyclerView.VERTICAL, false));
+    recyclerView.setLayoutManager(linearLayoutManager = new LinearLayoutManager(context, RecyclerView.VERTICAL, false));
     recyclerView.setAdapter(new RecyclerView.Adapter<>() {
       @NonNull
       @Override
@@ -195,100 +157,36 @@ public class TranslationController extends TelegramViewController<TranslationCon
         return 1;
       }
     });
-    recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-      @Override
-      public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {
-        super.onScrollStateChanged(recyclerView, newState);
-        if (newState != RecyclerView.SCROLL_STATE_IDLE) return;
-        if (lickView.getVisibility() != View.VISIBLE) return;
-        if (lickView.getFactor() == 0f || lickView.getFactor() == 1f) return;
 
-        LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
-        if (manager == null) return;
-
-        recyclerView.stopScroll();
-        int firstVisiblePosition = manager.findFirstVisibleItemPosition();
-        if (firstVisiblePosition == RecyclerView.NO_POSITION) {
-          return;
-        }
-        int scrollTop = 0;
-        View view = manager.findViewByPosition(firstVisiblePosition);
-        if (view != null) {
-          scrollTop -= view.getTop();
-        }
-        recyclerView.smoothScrollBy(0, -scrollTop);
-      }
-
-      @Override
-      public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
-        super.onScrolled(recyclerView, dx, dy);
-        updateLayout();
-      }
-    });
-    // recyclerView.addView(messageTextView, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-
-    wrapView.addView(recyclerView, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.BOTTOM));
-    wrapView.addView(headerView, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(67f)));
-
-    addThemeInvalidateListener(lickView);
-    addThemeInvalidateListener(headerView);
-    addThemeInvalidateListener(headerCell);
-    addThemeInvalidateListener(wrapView);
-    addThemeInvalidateListener(messageTextView);
+    FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) recyclerView.getLayoutParams();
+    layoutParams.bottomMargin = Screen.dp(48 - 6);
 
     text.replace(makeTextWrapper(originalText), false);
+    mTranslationsManager.requestTranslation(Lang.getDefaultLanguageToTranslate());
     return wrapView;
   }
 
-  HeaderButton translationHeaderButton;
-
   @Override
-  public void onThemeColorsChanged (boolean areTemp, ColorState state) {
-    super.onThemeColorsChanged(areTemp, state);
-    lickView.setHeaderBackground(Theme.getColor(R.id.theme_color_filling));
-    if (headerView != null) {
-      headerView.resetColors(this, null);
-    }
+  protected void onCreateView (Context context, CustomRecyclerView recyclerView) {
+    this.recyclerView = recyclerView;
   }
 
-  @Override
-  protected int getMenuId () {
-    return R.id.menu_done;
-  }
+  public void setHeaderPosition (float y) {
+    float y2 = parent.getTargetHeight() - Screen.dp(48);
+    float y3 = y + parent.getHeaderHeight();
+    float translation = Math.max(y3 - y2, 0);
 
-  @Override
-  public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
-    if (headerView == null) return;
-
-    translationHeaderButton =  headerView.addButton(menu, R.id.menu_done, getHeaderIconColorId(), this, 0, Screen.dp(60), R.drawable.bg_btn_header);
-    translationHeaderButton.setCustomDrawable(translationCounterDrawable);
-    headerView.getBackButton().setTranslationY(Screen.dp(7.5f));
-    translationHeaderButton.setTranslationY(Screen.dp(7.5f));
-  }
-
-  public void onMenuItemPressed (int id, View view) {
-    if (id != R.id.menu_done) return;
-    if (mTranslationsManager.getCurrentTranslatedLanguage() != null) {
-      mTranslationsManager.stopTranslation();
-    } else {
-      mTranslationsManager.requestTranslation(mTranslationsManager.getLastTranslatedLanguage());
-    }
+    if (senderAvatarView != null) senderAvatarView.setTranslationY(translation);
+    if (senderTextView != null) senderTextView.setTranslationY(translation);
+    if (dateTextView != null) dateTextView.setTranslationY(translation);
   }
 
   private void showTranslateOptions () {
-    int y = (int) MathUtils.clamp(headerView != null ? headerView.getTranslationY(): 0, 0, wrapView.getMeasuredHeight() - Screen.dp(280 + 16));
+    int y = (int) MathUtils.clamp(headerView != null ? headerView.getTranslationY(): 0, 0, parent.getTargetHeight() - Screen.dp(280 + 16));
 
-    LanguageSelectorPopup languagePopupLayout = new LanguageSelectorPopup(context, mTranslationsManager::requestTranslation, mTranslationsManager.getCurrentTranslatedLanguage(), messageOriginalLanguage);
+    TranslationController.LanguageSelectorPopup languagePopupLayout = new TranslationController.LanguageSelectorPopup(context, mTranslationsManager::requestTranslation, mTranslationsManager.getCurrentTranslatedLanguage(), messageOriginalLanguage);
     languagePopupLayout.languageRecyclerWrap.setTranslationY(y);
     languagePopupLayout.show();
-  }
-
-  private void updateTexts (ReplaceAnimator animator) {
-    messageTextView.invalidate();
-    if (messageTextView.getMeasuredHeight() != getTextStaticHeight()) {
-      messageTextView.requestLayout();
-    }
-    updateLayout();
   }
 
   private void updateAnimations () {
@@ -299,27 +197,13 @@ public class TranslationController extends TelegramViewController<TranslationCon
     }
   }
 
-  private void updateLayout () {
-    if (headerView == null) {
-      return;
+  private void updateTexts (ReplaceAnimator animator) {
+    messageTextView.invalidate();
+    int diff = getTextAnimatedHeight() - messageTextView.getMeasuredHeight();
+    if (diff != 0) {
+      messageTextView.requestLayout();
     }
-
-    int addTop = Math.min(recyclerView.getMeasuredHeight(), getTextStaticHeight()) - Math.min(recyclerView.getMeasuredHeight(), getTextAnimatedHeight());
-    int y = Math.max(0, messageTextView.getTop() - recyclerView.getScrollY()) + HeaderView.getTopOffset() + addTop;
-    headerView.setTranslationY(y);
-
-    if (lickView != null) {
-      final int topOffset = HeaderView.getTopOffset();
-      final float top = y - topOffset;
-      lickView.setTranslationY(top);
-      float factor = top > topOffset ? 0f : 1f - ((float) top / (float) topOffset);
-      lickView.setFactor(factor);
-    }
-
-    wrapView.invalidate();
   }
-
-
 
   private int currentTextWidth = -1;
 
@@ -339,16 +223,6 @@ public class TranslationController extends TelegramViewController<TranslationCon
     return (int) height;
   }
 
-  private int getTextStaticHeight () {
-    int height = 0;
-    for (ListAnimator.Entry<TextWrapper> entry: text) {
-      if (entry.getVisibility() > 0f || entry.isAffectingList()) {
-        height = Math.max(height, entry.item.getHeight());
-      }
-    }
-    return height;
-  }
-
   private TextWrapper makeTextWrapper (TdApi.FormattedText formattedText) {
     TextWrapper textWrapper = new TextWrapper(formattedText.text, TGMessage.getTextStyleProvider(), messageToTranslate.getTextColorSet())
       .setEntities(TextEntity.valueOf(tdlib, formattedText, null), (wrapper, text, specificMedia) -> messageTextView.invalidate())
@@ -361,8 +235,6 @@ public class TranslationController extends TelegramViewController<TranslationCon
 
     return textWrapper;
   }
-
-  /**/
 
   private void setTranslatedStatus (int status, boolean animated) {
     translationCounterDrawable.setStatus(status, animated);
@@ -387,55 +259,61 @@ public class TranslationController extends TelegramViewController<TranslationCon
     messageTextView.requestLayout();
   }
 
-  /**/
-
-  public void show () {
-    if (tdlib == null) {
-      return;
-    }
-    popupLayout = new PopupLayout(context());
-    popupLayout.setBoundController(this);
-    popupLayout.setPopupHeightProvider(this);
-    popupLayout.init(true);
-    popupLayout.setTouchProvider(this);
-    popupLayout.setTouchDownInterceptor(this::onBackgroundTouchDown);
-
-    if (originalText == null) {
-      destroy();
-      return;
-    }
-
-    getValue();
-
-    mTranslationsManager.requestTranslation(Lang.getDefaultLanguageToTranslate());
-
-    context().addFullScreenView(this, false);
-  }
-
-  protected void launchOpenAnimation () {
-    if (!openLaunched) {
-      openLaunched = true;
-      popupLayout.showSimplePopupView(getValue(), Screen.currentHeight());
+  @Override
+  public void onScrollToTopRequested () {
+    if (recyclerView.getAdapter() != null) {
+      try {
+        LinearLayoutManager manager = (LinearLayoutManager) getRecyclerView().getLayoutManager();
+        getRecyclerView().stopScroll();
+        int firstVisiblePosition = manager.findFirstVisibleItemPosition();
+        if (firstVisiblePosition == RecyclerView.NO_POSITION) {
+          return;
+        }
+        int scrollTop = 0;
+        View view = manager.findViewByPosition(firstVisiblePosition);
+        if (view != null) {
+          scrollTop -= view.getTop();
+        }
+        getRecyclerView().smoothScrollBy(0, -scrollTop);
+      } catch (Throwable t) {
+        Log.w("Cannot scroll to top", t);
+      }
     }
   }
 
   @Override
-  public boolean shouldTouchOutside (float x, float y) {
-    return headerView != null && y < headerView.getTranslationY() - HeaderView.getSize(true);
-  }
-
-  private boolean onBackgroundTouchDown (PopupLayout popupLayout, MotionEvent e) {
-    float y = e.getY();
-    float y2 = (headerView != null ? headerView.getTranslationY(): 0); // - HeaderView.getTopOffset();
-    return y > y2;
+  protected int getMenuId () {
+    return R.id.menu_done;
   }
 
   @Override
-  public int getCurrentPopupHeight () {
-    return wrapView.getMeasuredHeight();
+  public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
+    if (headerView == null) return;
+
+    translationHeaderButton =  headerView.addButton(menu, R.id.menu_done, getHeaderIconColorId(), this, 0, Screen.dp(60), R.drawable.bg_btn_header);
+    translationHeaderButton.setCustomDrawable(translationCounterDrawable);
+    headerView.getBackButton().setTranslationY(Screen.dp(7.5f));
+    translationHeaderButton.setTranslationY(Screen.dp(7.5f));
   }
 
-  /**/
+  @Override
+  public void onMenuItemPressed (int id, View view) {
+    if (id != R.id.menu_done) return;
+    if (mTranslationsManager.getCurrentTranslatedLanguage() != null) {
+      mTranslationsManager.stopTranslation();
+    } else {
+      mTranslationsManager.requestTranslation(mTranslationsManager.getLastTranslatedLanguage());
+    }
+  }
+
+  @Override
+  public int getItemsHeight (RecyclerView parent) {
+    return -1;
+  }
+
+  public HeaderView getHeaderView () {
+    return headerView;
+  }
 
   @Override
   public View getCustomHeaderCell () {
@@ -443,8 +321,13 @@ public class TranslationController extends TelegramViewController<TranslationCon
   }
 
   @Override
-  public int getId () {
-    return R.id.controller_msgTranslate;
+  public boolean needBottomDecorationOffsets (RecyclerView parent) {
+    return false;
+  }
+
+  @Override
+  public CustomRecyclerView getRecyclerView () {
+    return recyclerView;
   }
 
   @Override
@@ -468,6 +351,11 @@ public class TranslationController extends TelegramViewController<TranslationCon
   }
 
   @Override
+  public int getId () {
+    return R.id.controller_msgTranslate;
+  }
+
+  @Override
   public void setArguments (Args args) {
     super.setArguments(args);
     messageToTranslate = args.message;
@@ -483,18 +371,157 @@ public class TranslationController extends TelegramViewController<TranslationCon
     }
   }
 
-  /**/
+  public static class Wrapper extends BottomSheetViewController<TranslationControllerV2.Args> {
+    private final TranslationControllerV2 translationControllerFragment;
+
+    public Wrapper (Context context, Tdlib tdlib) {
+      super(context, tdlib);
+      translationControllerFragment = new TranslationControllerV2(context, tdlib, this);
+    }
+
+    @Override
+    protected void onBeforeCreateView () {
+      translationControllerFragment.setArguments(getArguments());
+      translationControllerFragment.getValue();
+    }
+
+    @Override
+    protected HeaderView onCreateHeaderView () {
+      return translationControllerFragment.getHeaderView();
+    }
+
+    @Override
+    protected void onCreateView (Context context, FrameLayoutFix contentView, ViewPager pager) {
+      pager.setOffscreenPageLimit(1);
+      tdlib.ui().post(this::launchOpenAnimation);
+    }
+
+    @Override
+    protected void onAfterCreateView () {
+      setLickViewColor(Theme.getColor(R.id.theme_color_headerLightBackground));
+    }
+
+    @Override
+    public void onThemeColorsChanged (boolean areTemp, ColorState state) {
+      super.onThemeColorsChanged(areTemp, state);
+      setLickViewColor(Theme.getColor(R.id.theme_color_headerLightBackground));
+    }
+
+    @Override
+    protected void setupPopupLayout (PopupLayout popupLayout) {
+      popupLayout.setBoundController(translationControllerFragment);
+      popupLayout.setPopupHeightProvider(this);
+      popupLayout.init(true);
+      popupLayout.setTouchProvider(this);
+    }
+
+    @Override
+    protected void setHeaderPosition (float y) {
+      int t = 0; //Math.max(translationControllerFragment.getAnimationTranslationY(), 0);
+      super.setHeaderPosition(y + t);
+      translationControllerFragment.setHeaderPosition(y + t);
+    }
+
+    @Override
+    public int getId () {
+      return translationControllerFragment.getId();
+    }
+
+    @Override
+    protected int getPagerItemCount () {
+      return 1;
+    }
+
+    @Override
+    protected ViewController<?> onCreatePagerItemForPosition (Context context, int position) {
+      if (position != 0) return null;
+      setHeaderPosition(getContentOffset() + HeaderView.getTopOffset());
+      setDefaultListenersAndDecorators(translationControllerFragment);
+      return translationControllerFragment;
+    }
+
+    @Override
+    protected int getContentOffset () {
+      return (getTargetHeight() - getHeaderHeight(true)) / 3;
+    }
+
+    @Override
+    protected int getHeaderHeight () {
+      return Screen.dp(67);
+    }
+
+    @Override
+    protected boolean canHideByScroll () {
+      return true;
+    }
+
+    @Override
+    protected int getHideByScrollBorder () {
+      return Math.min(translationControllerFragment.getTextAnimatedHeight() / 2 + Screen.dp(48), getTargetHeight() / 3);
+    }
+
+    @Override
+    protected int getBackgroundColorId () {
+      return R.id.theme_color_filling;
+    }
+  }
+
+  private class MessageTextView extends View {
+    public MessageTextView (Context context) {
+      super(context);
+    }
+
+    @Override
+    protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
+      measureText(MeasureSpec.getSize(widthMeasureSpec) - Screen.dp(36));
+      int textHeight = getTextAnimatedHeight() + Screen.dp(12);
+      super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(textHeight, MeasureSpec.EXACTLY));
+    }
+
+    @Override
+    protected void onDraw (Canvas canvas) {
+      float alpha = translationCounterDrawable.getLoadingTextAlpha();
+      for (ListAnimator.Entry<TextWrapper> entry: text) {
+        entry.item.draw(canvas, Screen.dp(18), Screen.dp(6), null, alpha * entry.getVisibility(), textMediaReceiver);
+      }
+      invalidate();
+    }
+
+    @Override
+    protected void onAttachedToWindow () {
+      super.onAttachedToWindow();
+      textMediaReceiver.attach();
+    }
+
+    @Override
+    protected void onDetachedFromWindow () {
+      super.onDetachedFromWindow();
+      textMediaReceiver.detach();
+    }
+
+    @Override
+    public boolean onTouchEvent (MotionEvent event) {
+      if (super.onTouchEvent(event)) return true;
+      for (ListAnimator.Entry<TextWrapper> entry: text) {
+        if (entry.getVisibility() == 1f && entry.item.onTouchEvent(this, event)) {
+          return true;
+        }
+      }
+
+      return false;
+    }
+  }
 
   @SuppressLint("ViewConstructor")
   public static class LanguageSelectorPopup extends PopupLayout {
     public final MenuMoreWrap languageRecyclerWrap;
-    private final OnLanguageSelectListener delegate;
+    private final LanguageSelectorPopup.OnLanguageSelectListener delegate;
 
     public interface OnLanguageSelectListener {
       void onSelect (String langCode);
     }
 
-    public LanguageSelectorPopup (Context context, OnLanguageSelectListener delegate, String selected, String original) {
+    public LanguageSelectorPopup (Context context, LanguageSelectorPopup.OnLanguageSelectListener delegate, String selected, String original) {
       super(context);
       this.delegate = delegate;
 
@@ -662,54 +689,6 @@ public class TranslationController extends TelegramViewController<TranslationCon
       if (isSelected) {
         Drawables.draw(canvas, check, getMeasuredWidth() - Screen.dp(40), Screen.dp(13), null);
       }
-    }
-  }
-
-  /**/
-
-  private class MessageTextView extends View {
-    public MessageTextView (Context context) {
-      super(context);
-    }
-
-    @Override
-    protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
-      int textHeight = getTextStaticHeight() + Screen.dp(12);
-      super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(textHeight, MeasureSpec.EXACTLY));
-    }
-
-    @Override
-    protected void onDraw (Canvas canvas) {
-      int addTop = Screen.dp(6) + Math.min(recyclerView.getMeasuredHeight(), getTextStaticHeight()) - Math.min(recyclerView.getMeasuredHeight(), getTextAnimatedHeight());
-      float alpha = translationCounterDrawable.getLoadingTextAlpha();
-      for (ListAnimator.Entry<TextWrapper> entry: text) {
-        entry.item.draw(canvas, Screen.dp(18), addTop, null, alpha * entry.getVisibility(), textMediaReceiver);
-      }
-      invalidate();
-    }
-
-    @Override
-    protected void onAttachedToWindow () {
-      super.onAttachedToWindow();
-      textMediaReceiver.attach();
-    }
-
-    @Override
-    protected void onDetachedFromWindow () {
-      super.onDetachedFromWindow();
-      textMediaReceiver.detach();
-    }
-
-    @Override
-    public boolean onTouchEvent (MotionEvent event) {
-      if (super.onTouchEvent(event)) return true;
-      for (ListAnimator.Entry<TextWrapper> entry: text) {
-        if (entry.getVisibility() == 1f && entry.item.onTouchEvent(this, event)) {
-          return true;
-        }
-      }
-
-      return false;
     }
   }
 }

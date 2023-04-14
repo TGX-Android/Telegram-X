@@ -112,6 +112,11 @@ public class HeaderButton extends View {
     }
   }
 
+  public void setCustomDrawable (Drawable drawable) {
+    this.drawable = drawable;
+    this.drawableRes = 0;
+  }
+
   public Drawable getDrawable () {
     return drawable;
   }
@@ -144,6 +149,11 @@ public class HeaderButton extends View {
       }
     }
     if (drawable != null) {
+      if (drawableRes == 0) {
+        Drawables.draw(c, drawable, getMeasuredWidth() / 2f - drawable.getMinimumWidth() / 2f, getMeasuredHeight() / 2f - drawable.getMinimumHeight() / 2f, null);
+        return;
+      }
+
       Paint paint;
       if (themeColorId == 0) {
         paint = Paints.getBitmapPaint();

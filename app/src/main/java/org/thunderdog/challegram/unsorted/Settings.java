@@ -219,6 +219,7 @@ public class Settings {
   private static final String KEY_CHAT_FONT_SIZE = "settings_font_size";
   private static final String KEY_CHAT_LIST_MODE = "settings_chat_list_mode";
   private static final String KEY_CHAT_TRANSLATE_MODE = "settings_chat_translate_mode";
+  private static final String KEY_CHAT_TRANSLATE_RECENTS = "language_recents";
   private static final String KEY_INSTANT_VIEW = "settings_iv_mode";
   private static final String KEY_RESTRICT_CONTENT = "settings_restrict_content";
   private static final String KEY_CAMERA_ASPECT_RATIO = "settings_camera_ratio";
@@ -1010,7 +1011,6 @@ public class Settings {
     }
   }
 
-
   public static final int TRANSLATE_MODE_NONE = 1;
   public static final int TRANSLATE_MODE_POPUP = 2;
   public static final int TRANSLATE_MODE_INLINE = 3;
@@ -1027,6 +1027,31 @@ public class Settings {
     if (getChatTranslateMode() != mode) {
       pmc.putInt(KEY_CHAT_TRANSLATE_MODE, _chatTranslateMode = mode);
     }
+  }
+
+  public void setTranslateLanguageRecents (String[] recents) {
+    pmc.putStringArray(KEY_CHAT_TRANSLATE_RECENTS, recents);
+  }
+
+  public void setTranslateLanguageRecents (List<String> recents) {
+    String[] out = new String[recents.size()];
+    int i = 0;
+    for (String recent : recents) {
+      out[i++] = recent;
+    }
+    setTranslateLanguageRecents(out);
+  }
+
+  public ArrayList<String> getTranslateLanguageRecents () {
+    String[] result = pmc.getStringArray(KEY_CHAT_TRANSLATE_RECENTS);
+    if (result != null) {
+      return new ArrayList<>(Arrays.asList(result));
+    }
+    return new ArrayList<>();
+  }
+
+  public void clearTranslateLanguageRecents () {
+    pmc.edit().remove(KEY_CHAT_TRANSLATE_RECENTS).apply();
   }
 
   public static final int CHAT_MODE_2LINE = 1;

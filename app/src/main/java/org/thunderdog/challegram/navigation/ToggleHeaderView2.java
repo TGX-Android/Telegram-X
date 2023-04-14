@@ -28,11 +28,8 @@ public class ToggleHeaderView2 extends View {
 
   private float triangleTop;
 
-  private int textColor;
-
   public ToggleHeaderView2(Context context) {
     super(context);
-    textColor = Theme.headerTextColor();
     arrowDrawable = Drawables.get(R.drawable.baseline_keyboard_arrow_down_20);
   }
 
@@ -54,17 +51,10 @@ public class ToggleHeaderView2 extends View {
   private void trimTexts () {
     int avail = getMeasuredWidth() - textPadding - Screen.dp(12f);
     for (ListAnimator.Entry<TrimmedText> entry: titleR) {
-      entry.item.measure(avail, Paints.getMediumTextPaint(18f, textColor, false));
+      entry.item.measure(avail, Paints.getMediumTextPaint(18f, Theme.headerTextColor(), false));
     }
     for (ListAnimator.Entry<TrimmedText> entry: subtitleR) {
       entry.item.measure(avail, Paints.getRegularTextPaint(14f, Theme.getColor(R.id.theme_color_textLight)));
-    }
-  }
-
-  public void setTextColor (int color) {
-    if (this.textColor != color) {
-      this.textColor  = color;
-      invalidate();
     }
   }
 
@@ -89,7 +79,7 @@ public class ToggleHeaderView2 extends View {
       final int offset2 = (int) ((!entry.isAffectingList() ?
         ((entry.getVisibility() - 1f) * Screen.dp(18)):
         ((1f - entry.getVisibility()) * Screen.dp(18))));
-      entry.item.draw(c, getPaddingLeft(), textTop + offset2, entry.getVisibility(), Paints.getMediumTextPaint(18f, textColor, false));
+      entry.item.draw(c, getPaddingLeft(), textTop + offset2, entry.getVisibility(), Paints.getMediumTextPaint(18f, Theme.getColor(R.id.theme_color_text), false));
     }
     for (ListAnimator.Entry<TrimmedText> entry: subtitleR) {
       final int offset2 = (int) ((!entry.isAffectingList() ?

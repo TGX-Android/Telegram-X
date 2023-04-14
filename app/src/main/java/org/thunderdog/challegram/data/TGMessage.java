@@ -437,6 +437,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     this.isTranslatedCounterDrawable = new TranslationCounterDrawable(Drawables.get(R.drawable.baseline_translate_14));
     this.isTranslatedCounterDrawable.setColors(
       msg.isOutgoing ? R.id.theme_color_bubbleOut_time: R.id.theme_color_bubbleIn_time,
+      msg.isOutgoing ? R.id.theme_color_bubbleOut_time: R.id.theme_color_bubbleIn_time,
       msg.isOutgoing ? R.id.theme_color_bubbleOut_textLink: R.id.theme_color_bubbleIn_textLink
     );
     this.isTranslatedCounter = new Counter.Builder()
@@ -8585,10 +8586,17 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private final TranslationsManager mTranslationsManager = new TranslationsManager(this, this::setTranslatedStatus, this::setTranslationResult);
 
   public static final class TranslationsManager {
+    private static ArrayList<String> recentsLanguages;
+
+    static {
+      recentsLanguages = Settings.instance().getTranslateLanguageRecents();
+    }
+
     private final TGMessage message;
     private final OnChangeTranslatedStatus statusDelegate;
     private final OnChangeTranslatedResult resultDelegate;
     private String currentTranslatedLanguage;
+    private String lastTranslatedLanguage;
 
     public interface OnChangeTranslatedStatus {
       void setTranslatedStatus (int status, boolean animated);
@@ -8613,7 +8621,26 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       if (language == null || StringUtils.equalsOrBothEmpty(language, message.getOriginalMessageLanguage())) {
         statusDelegate.setTranslatedStatus(TranslationCounterDrawable.TRANSLATE_STATUS_DEFAULT, true);
         resultDelegate.setTranslationResult(null);
+        currentTranslatedLanguage = null;
         return;
+      }
+
+      if (currentTranslatedLanguage != null) {
+        lastTranslatedLanguage = currentTranslatedLanguage;
+        boolean needAddToRecent = true;
+        for (String lang: recentsLanguages) {
+          if (StringUtils.equalsOrBothEmpty(lang, currentTranslatedLanguage)) {
+            needAddToRecent = false;
+            break;
+          }
+        }
+        if (needAddToRecent) {
+          recentsLanguages.add(0, currentTranslatedLanguage);
+          while (recentsLanguages.size() > 3) {
+            recentsLanguages.remove(3);
+          }
+        }
+        Settings.instance().setTranslateLanguageRecents(recentsLanguages);
       }
 
       TdApi.FormattedText textToTranslate = message.getTextToTranslate();
@@ -8627,26 +8654,32 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       }
 
       statusDelegate.setTranslatedStatus(TranslationCounterDrawable.TRANSLATE_STATUS_LOADING, true);
-      message.tdlib().ui().postDelayed(() -> {
-        requestTranslationImpl(textToTranslate, language, object -> message.tdlib().ui().post(() -> {
-          if (object instanceof TdApi.FormattedText) {
-            TdApi.FormattedText text = (TdApi.FormattedText) object;
-            message.saveCachedTextTranslation(textToTranslate.text, language, text);
-            if (StringUtils.equalsOrBothEmpty(currentTranslatedLanguage, language)) {
-              statusDelegate.setTranslatedStatus(TranslationCounterDrawable.TRANSLATE_STATUS_SUCCESS, true);
-              resultDelegate.setTranslationResult(text);
-            }
-          } else {
-            if (StringUtils.equalsOrBothEmpty(currentTranslatedLanguage, language)) {
-              statusDelegate.setTranslatedStatus(TranslationCounterDrawable.TRANSLATE_STATUS_ERROR, true);
-            }
+      message.tdlib().ui().post(() -> requestTranslationImpl(textToTranslate, language, object -> message.tdlib().ui().post(() -> {
+        if (object instanceof TdApi.FormattedText) {
+          TdApi.FormattedText text = (TdApi.FormattedText) object;
+          message.saveCachedTextTranslation(textToTranslate.text, language, text);
+          if (StringUtils.equalsOrBothEmpty(currentTranslatedLanguage, language)) {
+            statusDelegate.setTranslatedStatus(TranslationCounterDrawable.TRANSLATE_STATUS_SUCCESS, true);
+            resultDelegate.setTranslationResult(text);
           }
-        }));
-      }, 1000);
+        } else {
+          if (StringUtils.equalsOrBothEmpty(currentTranslatedLanguage, language)) {
+            statusDelegate.setTranslatedStatus(TranslationCounterDrawable.TRANSLATE_STATUS_ERROR, true);
+          }
+        }
+      })));
+    }
+
+    public static ArrayList<String> getRecentsLanguages () {
+      return recentsLanguages;
     }
 
     public String getCurrentTranslatedLanguage () {
       return currentTranslatedLanguage;
+    }
+
+    public String getLastTranslatedLanguage () {
+      return lastTranslatedLanguage;
     }
 
     private void requestTranslationImpl (TdApi.FormattedText originalText, String toLanguage, Client.ResultHandler callback) {

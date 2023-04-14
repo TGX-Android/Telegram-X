@@ -26,11 +26,10 @@ public class TranslationCounterDrawable extends Drawable implements FactorAnimat
   public static final int TRANSLATE_STATUS_SUCCESS = 2;
   public static final int TRANSLATE_STATUS_ERROR = 3;
 
-  private final static int ANIMATOR_LOADING = 0;
-  private final static int ANIMATOR_ERROR = 1;
-  private final static int ANIMATOR_OFFSET = 2;
-  private final BoolAnimator isLoading = new BoolAnimator(ANIMATOR_LOADING, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
-  private final BoolAnimator isError = new BoolAnimator(ANIMATOR_ERROR, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
+  private final static int ANIMATOR_OFFSET = 4;
+  private final BoolAnimator isSuccess = new BoolAnimator(TRANSLATE_STATUS_SUCCESS, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
+  private final BoolAnimator isLoading = new BoolAnimator(TRANSLATE_STATUS_LOADING, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
+  private final BoolAnimator isError = new BoolAnimator(TRANSLATE_STATUS_ERROR, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
   private final BoolAnimator offsetAnimator = new BoolAnimator(ANIMATOR_OFFSET, this, AnimatorUtils.LINEAR_INTERPOLATOR, 750L);
 
   private final Drawable drawable;
@@ -38,6 +37,7 @@ public class TranslationCounterDrawable extends Drawable implements FactorAnimat
   private final int width, height;
   private Runnable invalidateCallback;
 
+  private int defaultColorId = R.id.theme_color_icon;
   private int backgroundColorId = R.id.theme_color_bubbleIn_time;
   private int loadingColorId = R.id.theme_color_bubbleIn_textLink;
 
@@ -50,7 +50,8 @@ public class TranslationCounterDrawable extends Drawable implements FactorAnimat
     UI.post(this::checkStatus);
   }
 
-  public void setColors (int backgroundColorId, int loadingColorId) {
+  public void setColors (int defaultColorId, int backgroundColorId, int loadingColorId) {
+    this.defaultColorId = defaultColorId;
     this.backgroundColorId = backgroundColorId;
     this.loadingColorId = loadingColorId;
   }
@@ -60,10 +61,11 @@ public class TranslationCounterDrawable extends Drawable implements FactorAnimat
   }
 
   public void setStatus (int status, boolean animated) {
-    setStatus(status == TRANSLATE_STATUS_LOADING, status == TRANSLATE_STATUS_ERROR, animated);
+    setStatus(status == TRANSLATE_STATUS_SUCCESS, status == TRANSLATE_STATUS_LOADING, status == TRANSLATE_STATUS_ERROR, animated);
   }
 
-  private void setStatus (boolean isLoading, boolean isError, boolean animated) {
+  private void setStatus (boolean isSuccess, boolean isLoading, boolean isError, boolean animated) {
+    this.isSuccess.setValue(isSuccess, animated);
     this.isLoading.setValue(isLoading, animated);
     this.isError.setValue(isError, animated);
     if (animated) {
@@ -72,7 +74,7 @@ public class TranslationCounterDrawable extends Drawable implements FactorAnimat
   }
 
   private void checkStatus () {
-    if (isLoading.getValue() && !isError.getValue() && !offsetAnimator.isAnimating()) {
+    if (isLoading.getValue() && !isSuccess.getValue() && !isError.getValue() && !offsetAnimator.isAnimating()) {
       offsetAnimator.setValue(!offsetAnimator.getValue(), true);
     }
   }
@@ -86,7 +88,9 @@ public class TranslationCounterDrawable extends Drawable implements FactorAnimat
   public void draw (@NonNull Canvas canvas) {
     final float loadedProgress = 1f - isLoading.getFloatValue();
     final float errorProgress = isError.getFloatValue();
-    final int iconColor1 = ColorUtils.fromToArgb(Theme.getColor(loadingColorId), Theme.getColor(R.id.theme_color_iconActive), loadedProgress);
+    final float successProgress = isSuccess.getFloatValue();
+    final int iconColor2 = ColorUtils.fromToArgb(Theme.getColor(defaultColorId), Theme.getColor(R.id.theme_color_iconActive), successProgress);
+    final int iconColor1 = ColorUtils.fromToArgb(Theme.getColor(loadingColorId), iconColor2, loadedProgress);
     final int iconColor = ColorUtils.fromToArgb(iconColor1, Theme.getColor(R.id.theme_color_iconNegative), errorProgress);
 
     if (loadedProgress == 1f) {
