@@ -8654,8 +8654,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         }
         if (needAddToRecent) {
           recentsLanguages.add(0, currentTranslatedLanguage);
-          while (recentsLanguages.size() > 3) {
-            recentsLanguages.remove(3);
+          while (recentsLanguages.size() > 4) {
+            recentsLanguages.remove(4);
           }
         }
         Settings.instance().setTranslateLanguageRecents(recentsLanguages);

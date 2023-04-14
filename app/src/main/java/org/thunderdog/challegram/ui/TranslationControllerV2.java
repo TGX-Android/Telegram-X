@@ -3,6 +3,7 @@ package org.thunderdog.challegram.ui;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
@@ -39,6 +40,7 @@ import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
+import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
@@ -565,15 +567,15 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     private final ArrayList<String> languages;
     private final View.OnClickListener listener;
     private final Context context;
+    private final ArrayList<String> recents;
     private final int selectedPosition;
     private final int originalPosition;
 
     public LanguageAdapter (Context context, View.OnClickListener listener, String selected, String original) {
+      this.recents = Settings.instance().getTranslateLanguageRecents();
       this.languages = new ArrayList<>(Lang.supportedLanguagesForTranslate.length);
       this.listener = listener;
       this.context = context;
-
-      ArrayList<String> recents = Settings.instance().getTranslateLanguageRecents();
 
       addLanguage(selected);
       addLanguage(original);
@@ -617,7 +619,8 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
 
     @Override
     public void onBindViewHolder (@NonNull LanguageViewHolder holder, int position) {
-      holder.bind(languages.get(position), position == originalPosition, position == selectedPosition);
+      String lang = languages.get(position);
+      holder.bind(lang, position == originalPosition, position == selectedPosition, recents.contains(lang));
     }
 
     @Override
@@ -639,14 +642,17 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
       return new LanguageViewHolder(view);
     }
 
-    public void bind (String language, boolean isOriginal, boolean isSelected) {
+    public void bind (String language, boolean isOriginal, boolean isSelected, boolean isRecent) {
       LanguageView languageView = (LanguageView) itemView;
       languageView.langCode = language;
       languageView.isSelected = isSelected;
+      languageView.isOriginal = isOriginal;
+      languageView.isRecent = isRecent;
       languageView.titleView.setText(Lang.getLanguageName(language, language));
-      languageView.titleView.setTranslationY(isOriginal ? -Screen.dp(9.5f): 0);
-      languageView.subtitleView.setVisibility(isOriginal ? View.VISIBLE: View.GONE);
-      languageView.setPadding(Screen.dp(16), 0, Screen.dp(isSelected ? 40: 16), 0);
+      /*languageView.titleView.setTranslationY(isOriginal ? -Screen.dp(9.5f): 0);*/
+      languageView.subtitleView.setVisibility(/*isOriginal ? View.VISIBLE: */ View.GONE);
+      languageView.setPadding(Screen.dp(16), 0, Screen.dp((isSelected || isOriginal || isRecent) ? 40: 16), 0);
+      languageView.updateDrawable();
       languageView.invalidate();
     }
   }
@@ -655,17 +661,13 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     private final TextView titleView;
     private final TextView subtitleView;
     private String langCode;
+    private Drawable drawable;
     private boolean isSelected;
-
-    private static Drawable check;
+    private boolean isOriginal;
+    private boolean isRecent;
 
     public LanguageView (@NonNull Context context) {
       super(context);
-
-      if (check == null) {
-        check = Drawables.get(R.drawable.baseline_check_24);
-        check.setColorFilter(new PorterDuffColorFilter(Theme.getColor(R.id.theme_color_iconActive), PorterDuff.Mode.SRC_IN));
-      }
 
       titleView = new TextView(context);
       titleView.setTextColor(Theme.getColor(R.id.theme_color_text));
@@ -683,6 +685,18 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
       addView(subtitleView, FrameLayoutFix.newParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 0, 0, 0, Screen.dp(6)));
     }
 
+    public void updateDrawable () {
+      if (isSelected) {
+        drawable = Drawables.get(R.drawable.baseline_check_24);
+      } else if (isOriginal) {
+        drawable = Drawables.get(R.drawable.baseline_translate_off_24);
+      } else if (isRecent) {
+        drawable = Drawables.get(R.drawable.baseline_recent_24);
+      } else {
+        drawable = null;
+      }
+    }
+
     @Override
     protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
       super.onMeasure(MeasureSpec.makeMeasureSpec(Screen.dp(178), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(Screen.dp(50), MeasureSpec.EXACTLY));
@@ -691,8 +705,8 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     @Override
     protected void dispatchDraw (Canvas canvas) {
       super.dispatchDraw(canvas);
-      if (isSelected) {
-        Drawables.draw(canvas, check, getMeasuredWidth() - Screen.dp(40), Screen.dp(13), null);
+      if (drawable != null) {
+        Drawables.draw(canvas, drawable, getMeasuredWidth() - Screen.dp(40), Screen.dp(13), Paints.getPorterDuffPaint(Theme.getColor(isSelected ? R.id.theme_color_iconActive: R.id.theme_color_icon)));
       }
     }
   }
