@@ -503,6 +503,10 @@ public class TooltipOverlayView extends ViewGroup {
       return contentRect.bottom;
     }
 
+    public float getContentTop () {
+      return contentRect.top;
+    }
+
     public void hideNow () {
       hide(true);
     }

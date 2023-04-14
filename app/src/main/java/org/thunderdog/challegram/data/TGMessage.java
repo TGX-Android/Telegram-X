@@ -97,7 +97,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.FeatureToggles;
 import org.thunderdog.challegram.ui.MessagesController;
-import org.thunderdog.challegram.ui.TranslationController;
+import org.thunderdog.challegram.ui.TranslationControllerV2;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.LanguageDetector;
 import org.thunderdog.challegram.util.ReactionsCounterDrawable;
@@ -8443,17 +8443,29 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     languageSelectorTooltip = tooltipBuilder.show(this, this::showLanguageSelectorInlineMode);//.hideDelayed(3500, TimeUnit.MILLISECONDS);
   }
 
+  private void showTranslateErrorMessageBubbleMode (String message) {
+    TooltipOverlayView.TooltipBuilder tooltipBuilder = context().tooltipManager().builder(findCurrentView()).locate((targetView, outRect) -> {
+      outRect.left = (int) (isTranslatedCounterX - Screen.dp(7));
+      outRect.top = (int) (isTranslatedCounterY - Screen.dp(7));
+      outRect.right = (int) (isTranslatedCounterX + Screen.dp(7));
+      outRect.bottom = (int) (isTranslatedCounterY + Screen.dp(7));
+    });
+    languageSelectorTooltip = tooltipBuilder.show(tdlib, message).hideDelayed(3500, TimeUnit.MILLISECONDS);
+  }
+
   private void showLanguageSelectorInlineMode (View v) {
     if (languageSelectorTooltip == null) return;
 
     float x = Math.max(languageSelectorTooltip.getContentRight() - Screen.dp(178 + 16), 0);
-    float y = Math.max(languageSelectorTooltip.getContentBottom() - Screen.dp(280 + 16), HeaderView.getSize(true));
+    float y = useBubbles() ?
+      Math.max(languageSelectorTooltip.getContentBottom() - Screen.dp(280 + 16), HeaderView.getSize(true)):
+      Math.min(languageSelectorTooltip.getContentTop(), Screen.currentHeight() - Screen.dp(280 + 16));
 
-    TranslationController.LanguageSelectorPopup languagePopupLayout = new TranslationController.LanguageSelectorPopup(v.getContext(), this::onLanguageChanged, mTranslationsManager.getCurrentTranslatedLanguage(), getOriginalMessageLanguage());
+    TranslationControllerV2.LanguageSelectorPopup languagePopupLayout = new TranslationControllerV2.LanguageSelectorPopup(v.getContext(), this::onLanguageChanged, mTranslationsManager.getCurrentTranslatedLanguage(), getOriginalMessageLanguage());
     languagePopupLayout.languageRecyclerWrap.setAnchorMode(MenuMoreWrap.ANCHOR_MODE_RIGHT);
     languagePopupLayout.languageRecyclerWrap.setTranslationX(x);
     languagePopupLayout.languageRecyclerWrap.setTranslationY(y);
-    languagePopupLayout.languageRecyclerWrap.setShouldPivotBottom(true);
+    languagePopupLayout.languageRecyclerWrap.setShouldPivotBottom(useBubbles());
 
     FrameLayoutFix.LayoutParams params = (FrameLayoutFix.LayoutParams) languagePopupLayout.languageRecyclerWrap.getLayoutParams();
     params.gravity = Gravity.TOP | Gravity.LEFT;
@@ -8583,7 +8595,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   // translations manager
 
-  private final TranslationsManager mTranslationsManager = new TranslationsManager(this, this::setTranslatedStatus, this::setTranslationResult);
+  private final TranslationsManager mTranslationsManager = new TranslationsManager(this, this::setTranslatedStatus, this::setTranslationResult, this::showTranslateErrorMessageBubbleMode);
 
   public static final class TranslationsManager {
     private static ArrayList<String> recentsLanguages;
@@ -8595,8 +8607,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     private final TGMessage message;
     private final OnChangeTranslatedStatus statusDelegate;
     private final OnChangeTranslatedResult resultDelegate;
+    private final OnNewTranslatedError errorDelegate;
     private String currentTranslatedLanguage;
     private String lastTranslatedLanguage;
+
+    public interface OnNewTranslatedError {
+      void onError (String string);
+    }
 
     public interface OnChangeTranslatedStatus {
       void setTranslatedStatus (int status, boolean animated);
@@ -8606,10 +8623,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       void setTranslationResult (TdApi.FormattedText translationResult);
     }
 
-    public TranslationsManager (TGMessage message, OnChangeTranslatedStatus statusDelegate, OnChangeTranslatedResult resultDelegate) {
+    public TranslationsManager (TGMessage message, OnChangeTranslatedStatus statusDelegate, OnChangeTranslatedResult resultDelegate, OnNewTranslatedError errorDelegate) {
       this.message = message;
       this.statusDelegate = statusDelegate;
       this.resultDelegate = resultDelegate;
+      this.errorDelegate = errorDelegate;
     }
 
     public void stopTranslation () {
@@ -8665,6 +8683,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         } else {
           if (StringUtils.equalsOrBothEmpty(currentTranslatedLanguage, language)) {
             statusDelegate.setTranslatedStatus(TranslationCounterDrawable.TRANSLATE_STATUS_ERROR, true);
+            if (object instanceof TdApi.Error) {
+              errorDelegate.onError(TD.toErrorString(object));
+            }
           }
         }
       })));

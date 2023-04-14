@@ -31,6 +31,7 @@ import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.Menu;
 import org.thunderdog.challegram.navigation.MenuMoreWrap;
 import org.thunderdog.challegram.navigation.ToggleHeaderView2;
+import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -137,7 +138,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
 
     recyclerView.setItemAnimator(null);
     recyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
-    recyclerView.setLayoutManager(linearLayoutManager = new LinearLayoutManager(context, RecyclerView.VERTICAL, false));
+    recyclerView.setLayoutManager(linearLayoutManager = new LinearLayoutManager(context, RecyclerView.VERTICAL, true));
     recyclerView.setAdapter(new RecyclerView.Adapter<>() {
       @NonNull
       @Override
@@ -184,7 +185,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
   private void showTranslateOptions () {
     int y = (int) MathUtils.clamp(headerView != null ? headerView.getTranslationY(): 0, 0, parent.getTargetHeight() - Screen.dp(280 + 16));
 
-    TranslationController.LanguageSelectorPopup languagePopupLayout = new TranslationController.LanguageSelectorPopup(context, mTranslationsManager::requestTranslation, mTranslationsManager.getCurrentTranslatedLanguage(), messageOriginalLanguage);
+    LanguageSelectorPopup languagePopupLayout = new LanguageSelectorPopup(context, mTranslationsManager::requestTranslation, mTranslationsManager.getCurrentTranslatedLanguage(), messageOriginalLanguage);
     languagePopupLayout.languageRecyclerWrap.setTranslationY(y);
     languagePopupLayout.show();
   }
@@ -257,6 +258,10 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     TdApi.FormattedText textToSet = translated != null ? translated : originalText;
     text.replace(makeTextWrapper(textToSet), true);
     messageTextView.requestLayout();
+  }
+
+  private void onTranslationError (String message) {
+    parent.tooltipManager().builder(translationHeaderButton).show(tdlib, message).hideDelayed(3500, TimeUnit.MILLISECONDS);
   }
 
   @Override
@@ -361,7 +366,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     messageToTranslate = args.message;
     originalText = args.message.getTextToTranslate();
     messageOriginalLanguage = args.message.getOriginalMessageLanguage();
-    mTranslationsManager = new TGMessage.TranslationsManager(messageToTranslate, this::setTranslatedStatus, this::setTranslationResult);
+    mTranslationsManager = new TGMessage.TranslationsManager(messageToTranslate, this::setTranslatedStatus, this::setTranslationResult, this::onTranslationError);
   }
 
   public static class Args {
