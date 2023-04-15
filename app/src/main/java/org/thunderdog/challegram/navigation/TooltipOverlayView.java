@@ -266,7 +266,7 @@ public class TooltipOverlayView extends ViewGroup {
     public TooltipLanguageSelectorView (TooltipOverlayView parentView, TGMessage message, View.OnClickListener listener) {
       super(parentView);
       this.listener = listener;
-      originalLanguage = Lang.getLanguageName(message.getOriginalMessageLanguage(), message.getOriginalMessageLanguage());
+      originalLanguage = Lang.getLanguageName(message.getOriginalMessageLanguage(), Lang.getString(R.string.TranslateLangUnknown));
       translatedLanguage = Lang.getLanguageName(message.getCurrentTranslatedLanguage(), message.getCurrentTranslatedLanguage());
       arrowX = (int) U.measureText(originalLanguage, Paints.getRegularTextPaint(14));
       width = (int)(arrowX + U.measureText(translatedLanguage, Paints.getRegularTextPaint(14)) + Screen.dp(18));

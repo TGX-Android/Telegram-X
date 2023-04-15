@@ -3,9 +3,6 @@ package org.thunderdog.challegram.ui;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Paint;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -25,6 +22,8 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGMessage;
+import org.thunderdog.challegram.data.TGSource;
+import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.HeaderButton;
@@ -32,7 +31,6 @@ import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.Menu;
 import org.thunderdog.challegram.navigation.MenuMoreWrap;
 import org.thunderdog.challegram.navigation.ToggleHeaderView2;
-import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -49,7 +47,6 @@ import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.util.text.TextWrapper;
 import org.thunderdog.challegram.v.CustomRecyclerView;
-import org.thunderdog.challegram.widget.AvatarView;
 import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.TextView;
 import org.thunderdog.challegram.widget.ViewPager;
@@ -83,7 +80,8 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
   private MessageTextView messageTextView;
   private ToggleHeaderView2 headerCell;
   private HeaderButton translationHeaderButton;
-  private AvatarView senderAvatarView;
+  private View senderAvatarView;
+  private AvatarReceiver avatarReceiver;
   private TextView senderTextView;
   private TextView dateTextView;
 
@@ -118,21 +116,58 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     wrapView.setBackgroundColor(0);
     wrapView.setBackground(null);
 
-    senderAvatarView = new AvatarView(context);
-    senderAvatarView.setMessageSender(tdlib, messageToTranslate.getSender().toSender());
+    senderAvatarView = new View(context) {
+      @Override
+      protected void onAttachedToWindow () {
+        super.onAttachedToWindow();
+        avatarReceiver.attach();
+      }
+
+      @Override
+      protected void onDetachedFromWindow () {
+        super.onDetachedFromWindow();
+        avatarReceiver.detach();
+      }
+
+      @Override
+      protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        avatarReceiver.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
+      }
+
+      @Override
+      protected void onDraw (Canvas canvas) {
+        super.onDraw(canvas);
+        if (avatarReceiver.needPlaceholder())
+          avatarReceiver.drawPlaceholder(canvas);
+        avatarReceiver.draw(canvas);
+      }
+    };
+    avatarReceiver = new AvatarReceiver(senderAvatarView);
+    messageToTranslate.requestAvatar(avatarReceiver, true);
     wrapView.addView(senderAvatarView, FrameLayoutFix.newParams(Screen.dp(20), Screen.dp(20), Gravity.LEFT | Gravity.BOTTOM, Screen.dp(18), 0, 0, Screen.dp(16)));
 
     senderTextView = new TextView(context);
-    senderTextView.setText(messageToTranslate.getSender().getName());
     senderTextView.setTextColor(Theme.getColor(R.id.theme_color_textLight));
     senderTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
     senderTextView.setTypeface(Fonts.getRobotoMedium());
+
+    TGSource forwardInfo = messageToTranslate.getForwardInfo();
+    int forwardTime = messageToTranslate.getForwardTimeStamp();
+
+    if (forwardInfo != null) {
+      senderTextView.setText(forwardInfo.getAuthorName());
+    } else {
+      senderTextView.setText(messageToTranslate.getSender().getName());
+    }
+
     wrapView.addView(senderTextView, FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, Screen.dp(44), 0, 0, Screen.dp(19)));
 
     dateTextView = new TextView(context);
-    dateTextView.setText(Lang.dateYearShortTime(messageToTranslate.getComparingDate(), TimeUnit.SECONDS));
     dateTextView.setTextColor(Theme.getColor(R.id.theme_color_textLight));
     dateTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+    dateTextView.setText(Lang.dateYearShortTime(forwardTime > 0 ? forwardTime: messageToTranslate.getComparingDate(), TimeUnit.SECONDS));
+
     wrapView.addView(dateTextView, FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, Screen.dp(18), Screen.dp(19)));
 
     messageTextView = new MessageTextView(context);

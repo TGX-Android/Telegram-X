@@ -599,6 +599,14 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return Lang.getRelativeTimestampShort(msg.forwardInfo.date, TimeUnit.SECONDS);
   }
 
+  public int getForwardTimeStamp () {
+    if (msg.forwardInfo == null) {
+      return -1;
+    }
+
+    return msg.forwardInfo.date;
+  }
+
   // Other
 
   private String genDate () {
@@ -3805,7 +3813,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public final void requestAvatar (AvatarReceiver receiver) {
-    if (hasAvatar) {
+    requestAvatar(receiver, false);
+  }
+
+  public final void requestAvatar (AvatarReceiver receiver, boolean force) {
+    if (hasAvatar || force) {
       final float avatarRadiusDp = useBubbles() ? BUBBLE_AVATAR_RADIUS : AVATAR_RADIUS;
       if (forceForwardedInfo()) {
         forwardInfo.requestAvatar(receiver);
@@ -6022,7 +6034,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
             }
             break;
         }
-      } else if (counter == replyCounter || counter == shareCounter || counter == shrinkedReactionsCounter || counter == isPinned) {
+      } else if (counter == replyCounter || counter == shareCounter || counter == shrinkedReactionsCounter || counter == isPinned || counter == isTranslatedCounter) {
         if (useBubbles() || (flags & FLAG_HEADER_ENABLED) != 0) {
           layoutInfo();
         }
@@ -8520,7 +8532,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public void checkTranslatableText (Runnable after) {
-    final TdApi.FormattedText textToTranslate = getTextToTranslateImpl();
+    final TdApi.FormattedText textToTranslate = prepareTextToTranslate(getTextToTranslateImpl());
     this.textToTranslate = textToTranslate;
     textToTranslateOriginalLanguage = textToTranslate != null ? getCachedTextLanguage(textToTranslate.text): null;
     if (textToTranslate != null && textToTranslateOriginalLanguage == null && translationStyleMode() != Settings.TRANSLATE_MODE_NONE) {
@@ -8533,6 +8545,29 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       });
     } else {
       after.run();
+    }
+  }
+
+  private TdApi.FormattedText prepareTextToTranslate (TdApi.FormattedText text) {
+    if (text == null || text.entities == null || text.entities.length == 0) {
+      return text;
+    }
+    try {
+      TdApi.TextEntity[] entities = new TdApi.TextEntity[text.entities.length];
+      for (int a = 0; a < entities.length; a++) {
+        TdApi.TextEntity entity = text.entities[a];
+        if (entity.type instanceof TdApi.TextEntityTypeUrl) {
+          String url = text.text.substring(entity.offset, entity.offset + entity.length);
+          TdApi.TextEntityTypeTextUrl newEntityTypeUrl = new TdApi.TextEntityTypeTextUrl(url);
+          entities[a] = new TdApi.TextEntity(entity.offset, entity.length, newEntityTypeUrl);
+        } else {
+          entities[a] = entity;
+        }
+      }
+
+      return new TdApi.FormattedText(text.text, entities);
+    } catch (Exception e) {
+      return text;
     }
   }
 
