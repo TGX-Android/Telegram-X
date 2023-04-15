@@ -20,6 +20,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGSource;
@@ -175,7 +176,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
 
     recyclerView.setItemAnimator(null);
     recyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
-    recyclerView.setLayoutManager(linearLayoutManager = new LinearLayoutManager(context, RecyclerView.VERTICAL, true));
+    recyclerView.setLayoutManager(linearLayoutManager = new LinearLayoutManager(context, RecyclerView.VERTICAL, false));
     recyclerView.setAdapter(new RecyclerView.Adapter<>() {
       @NonNull
       @Override
@@ -235,12 +236,32 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     }
   }
 
+  int currentHeight = -1;
+  int prevHeight = -1;
+
   private void updateTexts (ReplaceAnimator animator) {
     messageTextView.invalidate();
-    int diff = getTextAnimatedHeight() - messageTextView.getMeasuredHeight();
-    if (diff != 0) {
+    if (prevHeight <= 0) {
+      return;
+    }
+
+    currentHeight = getTextAnimatedHeight();
+    int contentOffset = parent.getContentOffset();
+    int topEdge = parent.getTopEdge();
+
+    int diff = currentHeight - prevHeight;
+    if (diff != 0 || currentHeight != messageTextView.getMeasuredHeight()) {
       messageTextView.requestLayout();
     }
+    if (diff > 0 && (topEdge > contentOffset)) {
+      scrollCompensation(diff);
+    }
+    prevHeight = currentHeight;
+  }
+
+  private void scrollCompensation (int heightDiff) {
+    MessagesManager.OnGlobalLayoutListener listener = new MessagesManager.OnGlobalLayoutListener(recyclerView, messageTextView, heightDiff);
+    listener.add();
   }
 
   private int currentTextWidth = -1;
@@ -294,7 +315,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
   private void setTranslationResult (TdApi.FormattedText translated) {
     TdApi.FormattedText textToSet = translated != null ? translated : originalText;
     text.replace(makeTextWrapper(textToSet), true);
-    messageTextView.requestLayout();
+    updateTexts(text);
   }
 
   private void onTranslationError (String message) {
@@ -516,8 +537,13 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     @Override
     protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
       measureText(MeasureSpec.getSize(widthMeasureSpec) - Screen.dp(36));
-      int textHeight = getTextAnimatedHeight() + Screen.dp(12);
-      super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(textHeight, MeasureSpec.EXACTLY));
+      int textHeight = getTextAnimatedHeight();
+      if (prevHeight <= 0) {
+        currentHeight = textHeight;
+        prevHeight = currentHeight;
+      }
+
+      super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(textHeight + Screen.dp(12), MeasureSpec.EXACTLY));
     }
 
     @Override

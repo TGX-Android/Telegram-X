@@ -1519,12 +1519,12 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     // manager.scrollToPositionWithOffset(index, recyclerHeight - bottom + heightDiff);
   }
 
-  private static class OnGlobalLayoutListener implements ViewTreeObserver.OnGlobalLayoutListener {
-    private MessagesRecyclerView recyclerView;
-    private ViewTreeObserver observer;
+  public static class OnGlobalLayoutListener implements ViewTreeObserver.OnGlobalLayoutListener {
+    private final RecyclerView recyclerView;
+    private final ViewTreeObserver observer;
     private int offset;
 
-    OnGlobalLayoutListener (MessagesRecyclerView r, View v, int offset) {
+    public OnGlobalLayoutListener (RecyclerView r, View v, int offset) {
       this.recyclerView = r;
       this.observer = v.getViewTreeObserver();
       this.offset = offset;
