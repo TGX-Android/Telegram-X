@@ -4089,6 +4089,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
     unregisterRaiseListener();
     manager.setParentFocused(false);
 
+    if (translationPopup != null) {
+      translationPopup.hidePopupWindow(true);
+    }
     // closeEmojiKeyboard();
     // Media.instance().stopVoice();
   }
@@ -11576,17 +11579,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   // Translate
 
+  TranslationControllerV2.Wrapper translationPopup;
+
   public void startTranslateMessages (TGMessage message) {
     if (message.translationStyleMode() == Settings.TRANSLATE_MODE_INLINE) {
       message.startTranslated();
     } else {
-      final TranslationControllerV2.Wrapper c = new TranslationControllerV2.Wrapper(context, tdlib);
-      c.setArguments(new TranslationControllerV2.Args(message));
-      c.show();
-
-      /*final TranslationController c = new TranslationController(context, tdlib);
-      c.setArguments(new TranslationController.Args(message));
-      c.show();*/
+      translationPopup = new TranslationControllerV2.Wrapper(context, tdlib, this);
+      translationPopup.setArguments(new TranslationControllerV2.Args(message));
+      translationPopup.show();
+      translationPopup.setDismissListener(popup -> translationPopup = null);
     }
   }
 

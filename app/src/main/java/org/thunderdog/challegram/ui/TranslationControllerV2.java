@@ -20,6 +20,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.charts.LayoutHelper;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGMessage;
@@ -148,10 +149,16 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     messageToTranslate.requestAvatar(avatarReceiver, true);
     wrapView.addView(senderAvatarView, FrameLayoutFix.newParams(Screen.dp(20), Screen.dp(20), Gravity.LEFT | Gravity.BOTTOM, Screen.dp(18), 0, 0, Screen.dp(16)));
 
+    LinearLayout linearLayout = new LinearLayout(context);
+    linearLayout.setOrientation(LinearLayout.HORIZONTAL);
+
     senderTextView = new TextView(context);
     senderTextView.setTextColor(Theme.getColor(R.id.theme_color_textLight));
     senderTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
     senderTextView.setTypeface(Fonts.getRobotoMedium());
+    senderTextView.setGravity(Gravity.CENTER_VERTICAL | Gravity.LEFT);
+    senderTextView.setMaxLines(1);
+    senderTextView.setEllipsize(TextUtils.TruncateAt.END);
 
     TGSource forwardInfo = messageToTranslate.getForwardInfo();
     int forwardTime = messageToTranslate.getForwardTimeStamp();
@@ -162,14 +169,16 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
       senderTextView.setText(messageToTranslate.getSender().getName());
     }
 
-    wrapView.addView(senderTextView, FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, Screen.dp(44), 0, 0, Screen.dp(19)));
-
+    linearLayout.addView(senderTextView, LayoutHelper.createLinear(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, 2, Gravity.LEFT | Gravity.CENTER_VERTICAL));
     dateTextView = new TextView(context);
     dateTextView.setTextColor(Theme.getColor(R.id.theme_color_textLight));
     dateTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+    dateTextView.setGravity(Gravity.CENTER_VERTICAL | Gravity.RIGHT);
     dateTextView.setText(Lang.dateYearShortTime(forwardTime > 0 ? forwardTime: messageToTranslate.getComparingDate(), TimeUnit.SECONDS));
+    dateTextView.setMaxLines(1);
 
-    wrapView.addView(dateTextView, FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.RIGHT | Gravity.BOTTOM, 0, 0, Screen.dp(18), Screen.dp(19)));
+    linearLayout.addView(dateTextView, LayoutHelper.createLinear(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0, Gravity.RIGHT | Gravity.CENTER_VERTICAL, Screen.dp(12), 0, 0, 0));
+    wrapView.addView(linearLayout, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(20), Gravity.BOTTOM, Screen.dp(44), 0, Screen.dp(18), Screen.dp(16)));
 
     messageTextView = new MessageTextView(context);
     textMediaReceiver = new ComplexReceiver(messageTextView);
@@ -436,9 +445,11 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
 
   public static class Wrapper extends BottomSheetViewController<TranslationControllerV2.Args> {
     private final TranslationControllerV2 translationControllerFragment;
+    private final ViewController<?> parent;
 
-    public Wrapper (Context context, Tdlib tdlib) {
+    public Wrapper (Context context, Tdlib tdlib, ViewController<?> parent) {
       super(context, tdlib);
+      this.parent = parent;
       translationControllerFragment = new TranslationControllerV2(context, tdlib, this);
     }
 
@@ -476,6 +487,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
       popupLayout.setPopupHeightProvider(this);
       popupLayout.init(true);
       popupLayout.setTouchProvider(this);
+      popupLayout.setTag(parent);
     }
 
     @Override
