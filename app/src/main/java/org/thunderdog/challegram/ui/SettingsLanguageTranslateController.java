@@ -52,6 +52,7 @@ public class SettingsLanguageTranslateController extends RecyclerViewController<
             TdApi.LanguagePackInfo languageInfo = (TdApi.LanguagePackInfo) item.getData();
             item.setSelected(Settings.instance().containsInNotTranslatableLanguageList(languageInfo.id));
             view.findCheckBox().setChecked(item.isSelected(), isUpdate);
+            view.setData(languageInfo.name);
             break;
           }
         }
@@ -98,7 +99,7 @@ public class SettingsLanguageTranslateController extends RecyclerViewController<
       languageInfo.id = Lang.supportedLanguagesForTranslateFiltred[a];
       Lang.fixLanguageCode(languageInfo.id, languageInfo);
       if (a != 0) items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-      items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.language, 0, languageInfo.nativeName, false).setData(languageInfo));
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_CHECKBOX, R.id.language, 0, languageInfo.nativeName, false).setData(languageInfo));
     }
   }
 
