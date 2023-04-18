@@ -371,6 +371,7 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
         super.onCustomShowComplete();
         isFirstCreation = false;
         if (!isDestroyed()) {
+          BottomSheetViewController.this.onCustomShowComplete();
           ViewController<?> c = getCurrentPagerItem();
           if (c instanceof BottomSheetViewController.BottomSheetBaseControllerPage) {
             RecyclerView r = ((BottomSheetBaseControllerPage) c).getRecyclerView();
@@ -386,6 +387,10 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
     setupPopupLayout(popupLayout);
     getValue();
     context().addFullScreenView(this, false);
+  }
+
+  protected void onCustomShowComplete () {
+
   }
 
   protected void setupPopupLayout (PopupLayout popupLayout) {

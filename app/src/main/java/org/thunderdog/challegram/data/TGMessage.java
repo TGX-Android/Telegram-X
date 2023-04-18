@@ -227,6 +227,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private Counter isChannelHeaderCounter;
   private float isChannelHeaderCounterX, isChannelHeaderCounterY;
 
+  private boolean translatedCounterForceShow;
   private final Counter isTranslatedCounter;
   private final TranslationCounterDrawable isTranslatedCounterDrawable;
   private float isTranslatedCounterX, isTranslatedCounterY;
@@ -6042,6 +6043,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         layoutInfo();
       }
     }
+    if (counter == isTranslatedCounter && isTranslatedCounter.getVisibility() == 1f) {
+      boolean force = !useBubbles() && Settings.instance().needTutorial(Settings.TUTORIAL_SELECT_LANGUAGE_INLINE_MODE);
+      if (force) {
+        Settings.instance().markTutorialAsShown(Settings.TUTORIAL_SELECT_LANGUAGE_INLINE_MODE);
+      }
+      checkSelectLanguageWarning(force);
+    }
     if (UI.inUiThread()) { // FIXME remove this after reworking combineWith method
       invalidate();
     } else {
@@ -8497,10 +8505,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public void startTranslated () {
-    mTranslationsManager.requestTranslation(Lang.getDefaultLanguageToTranslate());
+    translatedCounterForceShow = true;
+    mTranslationsManager.requestTranslation(Lang.getDefaultLanguageToTranslateV2(textToTranslateOriginalLanguage));
   }
 
   public void stopTranslated () {
+    translatedCounterForceShow = false;
     mTranslationsManager.stopTranslation();
   }
 
@@ -8520,11 +8530,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public boolean isTranslated () {
-    return mTranslationsManager.getCurrentTranslatedLanguage() != null;
+    return mTranslationsManager.getCurrentTranslatedLanguage() != null || translatedCounterForceShow;
   }
 
   public boolean isTranslatable () {
-    return !Td.isEmpty(textToTranslate) && !StringUtils.equalsOrBothEmpty(textToTranslateOriginalLanguage, Lang.getDefaultLanguageToTranslate());
+    return !Td.isEmpty(textToTranslate) && !Settings.instance().isNotTranslatableLanguage(textToTranslateOriginalLanguage);
   }
 
   public @Nullable TdApi.FormattedText getTextToTranslate () {
@@ -8576,13 +8586,25 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   private void setTranslatedStatus (int status, boolean animated) {
-    boolean show = status != TranslationCounterDrawable.TRANSLATE_STATUS_DEFAULT;
+    boolean show = status != TranslationCounterDrawable.TRANSLATE_STATUS_DEFAULT || translatedCounterForceShow;
     isTranslatedCounterDrawable.setInvalidateCallback(show? this::invalidate: null);
     isTranslatedCounterDrawable.setStatus(status, animated);
     if (show) {
       isTranslatedCounter.show(animated);
     } else {
       isTranslatedCounter.hide(animated);
+    }
+  }
+
+  private void checkSelectLanguageWarning (boolean force) {
+    String current = mTranslationsManager.getCurrentTranslatedLanguage();
+    if (current == null || StringUtils.equalsOrBothEmpty(current, getOriginalMessageLanguage()) || force) {
+      context().tooltipManager().builder(findCurrentView()).locate((targetView, outRect) -> {
+        outRect.left = (int) (isTranslatedCounterX - Screen.dp(7));
+        outRect.top = (int) (isTranslatedCounterY - Screen.dp(7));
+        outRect.right = (int) (isTranslatedCounterX + Screen.dp(7));
+        outRect.bottom = (int) (isTranslatedCounterY + Screen.dp(7));
+      }).show(tdlib, Lang.getString(R.string.TapToSelectLanguage)).hideDelayed(3500, TimeUnit.MILLISECONDS);;
     }
   }
 
@@ -8633,11 +8655,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private final TranslationsManager mTranslationsManager = new TranslationsManager(this, this::setTranslatedStatus, this::setTranslationResult, this::showTranslateErrorMessageBubbleMode);
 
   public static final class TranslationsManager {
-    private static ArrayList<String> recentsLanguages;
-
-    static {
-      recentsLanguages = Settings.instance().getTranslateLanguageRecents();
-    }
 
     private final TGMessage message;
     private final OnChangeTranslatedStatus statusDelegate;
@@ -8680,20 +8697,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
       if (currentTranslatedLanguage != null) {
         lastTranslatedLanguage = currentTranslatedLanguage;
-        boolean needAddToRecent = true;
-        for (String lang: recentsLanguages) {
-          if (StringUtils.equalsOrBothEmpty(lang, currentTranslatedLanguage)) {
-            needAddToRecent = false;
-            break;
-          }
-        }
-        if (needAddToRecent) {
-          recentsLanguages.add(0, currentTranslatedLanguage);
-          while (recentsLanguages.size() > 4) {
-            recentsLanguages.remove(4);
-          }
-        }
-        Settings.instance().setTranslateLanguageRecents(recentsLanguages);
       }
 
       TdApi.FormattedText textToTranslate = message.getTextToTranslate();
@@ -8724,10 +8727,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           }
         }
       })));
-    }
-
-    public static ArrayList<String> getRecentsLanguages () {
-      return recentsLanguages;
     }
 
     public String getCurrentTranslatedLanguage () {

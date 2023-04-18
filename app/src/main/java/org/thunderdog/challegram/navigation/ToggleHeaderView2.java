@@ -64,7 +64,7 @@ public class ToggleHeaderView2 extends View {
     trimTexts();
   }
 
-  private float getTitleWidth () {
+  public float getTitleWidth () {
     float width = 0f;
     for (ListAnimator.Entry<TrimmedText> entry: titleR) {
       width += entry.item.getWidth() * entry.getVisibility();

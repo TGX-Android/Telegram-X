@@ -80,6 +80,7 @@ import org.thunderdog.challegram.util.Crash;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
 import org.thunderdog.challegram.util.DeviceStorageError;
 import org.thunderdog.challegram.util.DeviceTokenType;
+import org.thunderdog.challegram.util.StringList;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -219,6 +220,8 @@ public class Settings {
   private static final String KEY_CHAT_FONT_SIZE = "settings_font_size";
   private static final String KEY_CHAT_LIST_MODE = "settings_chat_list_mode";
   private static final String KEY_CHAT_TRANSLATE_MODE = "settings_chat_translate_mode";
+  private static final String KEY_CHAT_DO_NOT_TRANSLATE_MODE = "settings_chat_do_not_translate_mode";
+  private static final String KEY_CHAT_DO_NOT_TRANSLATE_LIST = "settings_chat_do_not_translate_list";
   private static final String KEY_CHAT_TRANSLATE_RECENTS = "language_recents";
   private static final String KEY_INSTANT_VIEW = "settings_iv_mode";
   private static final String KEY_RESTRICT_CONTENT = "settings_restrict_content";
@@ -458,6 +461,7 @@ public class Settings {
   public static final long TUTORIAL_PROXY_SPONSOR = 1 << 16;
   public static final long TUTORIAL_BRUSH_COLOR_TONE = 1 << 17;
   public static final long TUTORIAL_QR_SCAN = 1 << 18;
+  public static final long TUTORIAL_SELECT_LANGUAGE_INLINE_MODE = 1 << 19;
 
   @Nullable
   private Long _tutorialFlags;
@@ -1008,6 +1012,71 @@ public class Settings {
         }
         break;
       }
+    }
+  }
+
+  public HashMap<String, Boolean> _chatDoNotTranslateLanguages;
+
+  private void loadNotTranslatableLanguages () {
+    if (_chatDoNotTranslateLanguages != null) return;
+    _chatDoNotTranslateLanguages = new HashMap<>();
+    String[] result = pmc.getStringArray(KEY_CHAT_DO_NOT_TRANSLATE_LIST);
+    if (result == null) return;
+    for (String lang: result) {
+      _chatDoNotTranslateLanguages.put(lang, true);
+    }
+  }
+
+  private void saveNotTranslatableLanguages () {
+    pmc.putStringArray(KEY_CHAT_DO_NOT_TRANSLATE_LIST, getAllNotTranslatableLanguages());
+  }
+
+  public String[] getAllNotTranslatableLanguages () {
+    StringList list = new StringList(_chatDoNotTranslateLanguages.size());
+    for (Map.Entry<String, Boolean> entry: _chatDoNotTranslateLanguages.entrySet()) {
+      list.append(entry.getKey());
+    }
+    return list.get();
+  }
+
+  public boolean isNotTranslatableLanguage (String lang) {
+    if (getChatDoNotTranslateMode() == DO_NOT_TRANSLATE_MODE_APP_LANG) {
+      return StringUtils.equalsOrBothEmpty(getLanguage().packInfo.pluralCode, lang);
+    } else {
+      return containsInNotTranslatableLanguageList(lang);
+    }
+  }
+
+  public boolean containsInNotTranslatableLanguageList (String lang) {
+    loadNotTranslatableLanguages();
+    return _chatDoNotTranslateLanguages.containsKey(lang);
+  }
+
+  public void setIsNotTranslatableLanguage (String lang, boolean isNotTranslatable) {
+    if (isNotTranslatable == containsInNotTranslatableLanguageList(lang)) return;
+    if (isNotTranslatable) {
+      _chatDoNotTranslateLanguages.put(lang, true);
+    } else {
+      _chatDoNotTranslateLanguages.remove(lang);
+    }
+    saveNotTranslatableLanguages();
+  }
+
+
+  public static final int DO_NOT_TRANSLATE_MODE_APP_LANG = 1;
+  public static final int DO_NOT_TRANSLATE_MODE_SELECTED = 2;
+  private Integer _chatDoNotTranslateMode;
+
+  public int getChatDoNotTranslateMode () {
+    if (_chatDoNotTranslateMode == null) {
+      _chatDoNotTranslateMode = pmc.getInt(KEY_CHAT_DO_NOT_TRANSLATE_MODE, DO_NOT_TRANSLATE_MODE_APP_LANG);
+    }
+    return _chatDoNotTranslateMode;
+  }
+
+  public void setChatDoNotTranslateMode (int mode) {
+    if (getChatDoNotTranslateMode() != mode) {
+      pmc.putInt(KEY_CHAT_DO_NOT_TRANSLATE_MODE, _chatDoNotTranslateMode = mode);
     }
   }
 

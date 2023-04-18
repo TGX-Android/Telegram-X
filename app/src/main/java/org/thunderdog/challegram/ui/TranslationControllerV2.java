@@ -3,6 +3,7 @@ package org.thunderdog.challegram.ui;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -33,6 +34,7 @@ import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.Menu;
 import org.thunderdog.challegram.navigation.MenuMoreWrap;
 import org.thunderdog.challegram.navigation.ToggleHeaderView2;
+import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -210,7 +212,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     layoutParams.bottomMargin = Screen.dp(48 - 6);
 
     text.replace(makeTextWrapper(originalText), false);
-    mTranslationsManager.requestTranslation(Lang.getDefaultLanguageToTranslate());
+    mTranslationsManager.requestTranslation(Lang.getDefaultLanguageToTranslateV2(messageOriginalLanguage));
     return wrapView;
   }
 
@@ -383,6 +385,15 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     return -1;
   }
 
+  protected void onCustomShowComplete () {
+    String current = mTranslationsManager.getCurrentTranslatedLanguage();
+    if (current == null || StringUtils.equalsOrBothEmpty(current, messageOriginalLanguage)) {
+      parent.tooltipManager().builder(headerCell).locate((targetView, outRect) -> {
+        outRect.set(0, Screen.dp(8), (int) headerCell.getTitleWidth(), targetView.getMeasuredHeight() - Screen.dp(8));
+      }).show(tdlib, Lang.getString(R.string.TapToSelectLanguage)).hideDelayed(3500, TimeUnit.MILLISECONDS);
+    }
+  }
+
   public HeaderView getHeaderView () {
     return headerView;
   }
@@ -462,6 +473,11 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     @Override
     protected HeaderView onCreateHeaderView () {
       return translationControllerFragment.getHeaderView();
+    }
+
+    @Override
+    protected void onCustomShowComplete () {
+      translationControllerFragment.onCustomShowComplete();
     }
 
     @Override
@@ -632,6 +648,21 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
       if (!(v instanceof LanguageView)) return;
       LanguageView languageView = (LanguageView) v;
       delegate.onSelect(languageView.langCode);
+
+      ArrayList<String> recentsLanguages = Settings.instance().getTranslateLanguageRecents();
+      int index = recentsLanguages.indexOf(languageView.langCode);
+      boolean needAddToRecent = index == -1 || index > 0;
+      if (needAddToRecent) {
+        if (index != -1) {
+          recentsLanguages.remove(index);
+        }
+        recentsLanguages.add(0, languageView.langCode);
+        while (recentsLanguages.size() > 4) {
+          recentsLanguages.remove(4);
+        }
+      }
+      Settings.instance().setTranslateLanguageRecents(recentsLanguages);
+
       hideWindow(true);
     }
   }
@@ -646,7 +677,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
 
     public LanguageAdapter (Context context, View.OnClickListener listener, String selected, String original) {
       this.recents = Settings.instance().getTranslateLanguageRecents();
-      this.languages = new ArrayList<>(Lang.supportedLanguagesForTranslate.length);
+      this.languages = new ArrayList<>(Lang.supportedLanguagesForTranslateFiltred.length);
       this.listener = listener;
       this.context = context;
 
@@ -658,7 +689,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
         addLanguage(lang);
       }
 
-      for (String lang: Lang.supportedLanguagesForTranslate) {
+      for (String lang: Lang.supportedLanguagesForTranslateFiltred) {
         if (StringUtils.equalsOrBothEmpty(lang, selected)) continue;
         if (StringUtils.equalsOrBothEmpty(lang, original)) continue;
         if (recents.contains(lang)) continue;

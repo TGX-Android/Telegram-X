@@ -51,6 +51,7 @@ import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
+import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.text.Text;
 
 import java.lang.annotation.Retention;
@@ -3766,6 +3767,45 @@ public class Lang {
     "sd", "si", "sk", "sl", "so", "es", "su", "sw", "sv", "tl", "tg", "ta", "tt", "te", "th",
     "tr", "tk", "uk", "ur", "ug", "uz", "vi", "cy", "xh", "yi", "ji", "yo", "zu"
   };
+
+  public static final String[] supportedLanguagesForTranslateFiltred;
+
+  static {
+    StringList list = new StringList(supportedLanguagesForTranslate.length);
+    for (String lang: Lang.supportedLanguagesForTranslate) {
+      if (Lang.getLanguageName(lang, null) != null) {
+        list.append(lang);
+      }
+    }
+    supportedLanguagesForTranslateFiltred = list.get();
+  }
+
+  public static @Nullable String getDefaultLanguageToTranslateV2 (@Nullable String sourceLanguage) {
+    ArrayList<String> recents = Settings.instance().getTranslateLanguageRecents();
+    for (String lang: recents) {
+      if (!StringUtils.equalsOrBothEmpty(lang, sourceLanguage)) {
+        return lang;
+      }
+    }
+    String appLanguage = Settings.instance().getLanguage().packInfo.pluralCode;
+    if (!StringUtils.equalsOrBothEmpty(appLanguage, sourceLanguage)) {
+      return appLanguage;
+    }
+
+    String systemLanguage = Locale.getDefault().getLanguage();
+    if (!StringUtils.equalsOrBothEmpty(systemLanguage, sourceLanguage)) {
+      return systemLanguage;
+    }
+
+    String[] notTranslatableLanguages = Settings.instance().getAllNotTranslatableLanguages();
+    for (String lang: notTranslatableLanguages) {
+      if (!StringUtils.equalsOrBothEmpty(lang, sourceLanguage)) {
+        return lang;
+      }
+    }
+
+    return null;
+  }
 
   public static String getDefaultLanguageToTranslate () {
     String userLanguageCode = Settings.instance().getLanguage().packInfo.pluralCode;

@@ -152,6 +152,7 @@
   <item type="id" name="controller_navigation" />
   <item type="id" name="controller_text" />
   <item type="id" name="controller_language" />
+  <item type="id" name="controller_translations" />
   <item type="id" name="controller_map" />
   <item type="id" name="controller_drawer" />
   <item type="id" name="controller_pollResults" />
@@ -289,10 +290,16 @@
   <item type="id" name="bucket" />
   <item type="id" name="btn_chatTranslate" />
   <item type="id" name="btn_chatTranslateOff" />
+
   <item type="id" name="btn_chatTranslateStyle" />
-  <item type="id" name="btn_chatTranslateStyle1" />
-  <item type="id" name="btn_chatTranslateStyle2" />
-  <item type="id" name="btn_chatTranslateStyle3" />
+  <item type="id" name="btn_chatTranslateStylePopup" />
+  <item type="id" name="btn_chatTranslateStyleInline" />
+  <item type="id" name="btn_chatTranslateStyleNone" />
+
+  <item type="id" name="btn_chatDoNotTranslate" />
+  <item type="id" name="btn_chatDoNotTranslateAppLang" />
+  <item type="id" name="btn_chatDoNotTranslateSelected" />
+
   <item type="id" name="btn_pinUnpinChat" />
   <item type="id" name="btn_unpinAll" />
   <item type="id" name="btn_reportLocation" />

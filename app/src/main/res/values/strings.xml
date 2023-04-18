@@ -4650,5 +4650,9 @@
   <string name="TranslateTryAgain">Try again later</string>
   <string name="TranslateWait">Please wait...</string>
   <string name="TranslateOriginal">Original message</string>
+  <string name="DoNotTranslate">Do not translate</string>
+  <string name="ApplicationLanguage">Application language</string>
+  <string name="SelectedLanguages">Selected languages</string>
+  <string name="TapToSelectLanguage">Tap to select language</string>
 
 </resources>

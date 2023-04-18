@@ -241,6 +241,12 @@ public class SettingsLanguageController extends RecyclerViewController<Void> imp
     });
   }
 
+  @Override
+  public void onPrepareToShow () {
+    super.onPrepareToShow();
+    adapter.updateAllValuedSettingsById(R.id.btn_chatTranslateStyle);
+  }
+
   private int headerItemsOffset = 0;
 
   private void processLanguagePackResult (TdApi.Object result) {
@@ -253,8 +259,8 @@ public class SettingsLanguageController extends RecyclerViewController<Void> imp
 
         items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_chatTranslateStyle, R.drawable.baseline_translate_24, R.string.Translation));
         items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-        items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.TranslateSettingsDesc));
-        headerItemsOffset = 3;
+        //items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.TranslateSettingsDesc));
+        headerItemsOffset = 2;
 
         boolean first = true;
         TdApi.LanguagePackInfo prevLanguageInfo = null;
@@ -753,7 +759,9 @@ public class SettingsLanguageController extends RecyclerViewController<Void> imp
   }
 
   private void showTranslateOptions () {
-    int chatTranslateMode = Settings.instance().getChatTranslateMode();
+    navigateTo(new SettingsLanguageTranslateController(context, tdlib));
+
+    /*int chatTranslateMode = Settings.instance().getChatTranslateMode();
     showSettings(new SettingsWrapBuilder(R.id.btn_chatTranslateStyle).setRawItems(new ListItem[]{
       new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_chatTranslateStyle1, 0, R.string.ChatTranslateStyle1, R.id.btn_chatTranslateStyle, chatTranslateMode == Settings.TRANSLATE_MODE_POPUP),
       new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_chatTranslateStyle2, 0, R.string.ChatTranslateStyle2, R.id.btn_chatTranslateStyle, chatTranslateMode == Settings.TRANSLATE_MODE_INLINE),
@@ -774,6 +782,6 @@ public class SettingsLanguageController extends RecyclerViewController<Void> imp
       }
       Settings.instance().setChatTranslateMode(chatTranslateMode1);
       adapter.updateValuedSettingById(R.id.btn_chatTranslateStyle);
-    }).setAllowResize(false));
+    }).setAllowResize(false));*/
   }
 }
