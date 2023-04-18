@@ -4654,5 +4654,6 @@
   <string name="ApplicationLanguage">Application language</string>
   <string name="SelectedLanguages">Selected languages</string>
   <string name="TapToSelectLanguage">Tap to select language</string>
+  <string name="PickLanguages">Pick languages</string>
 
 </resources>

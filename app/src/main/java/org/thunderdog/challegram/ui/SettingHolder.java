@@ -148,6 +148,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_VALUED_SETTING_COMPACT:
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_COLOR:
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO:
+      case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO_2:
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER:
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_CHECKBOX: {
         return Screen.dp(64f);
@@ -486,6 +487,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_VALUED_SETTING_COMPACT:
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_COLOR:
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO:
+      case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO_2:
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER:
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_CHECKBOX:
       case ListItem.TYPE_VALUED_SETTING_WITH_RADIO:
@@ -894,6 +896,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_VALUED_SETTING_COMPACT:
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_COLOR:
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO:
+      case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO_2:
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER:
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_CHECKBOX:
       case ListItem.TYPE_CHECKBOX_OPTION_DOUBLE_LINE: {
@@ -902,6 +905,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
           case ListItem.TYPE_VALUED_SETTING_COMPACT:
           case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_COLOR:
           case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO:
+          case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO_2:
           case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER:
           case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_CHECKBOX:
             settingView.setType(SettingView.TYPE_INFO_COMPACT);
@@ -930,13 +934,16 @@ public class SettingHolder extends RecyclerView.ViewHolder {
             }
             break;
           }
-          case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO: {
+          case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO:
+          case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO_2: {
             RadioView radioView = RadioView.simpleRadioView(context,  !Lang.rtl());
             settingView.addView(radioView);
             if (themeProvider != null) {
               themeProvider.addThemeInvalidateListener(radioView);
             }
-            settingView.forcePadding(Screen.dp(58f), 0);
+            if (viewType == ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO) {
+              settingView.forcePadding(Screen.dp(58f), 0);
+            }
             break;
           }
           case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_COLOR: {

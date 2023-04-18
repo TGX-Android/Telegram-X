@@ -55,6 +55,20 @@ public class SettingsLanguageTranslateController extends RecyclerViewController<
             view.setData(languageInfo.name);
             break;
           }
+          case R.id.btn_chatDoNotTranslateAppLang:
+          case R.id.btn_chatDoNotTranslateSelected: {
+            int chatDoNotTranslateMode = Settings.instance().getChatDoNotTranslateMode();
+
+            if (item.getId() == R.id.btn_chatDoNotTranslateAppLang) {
+              item.setSelected(chatDoNotTranslateMode == Settings.DO_NOT_TRANSLATE_MODE_APP_LANG);
+              view.setData(Lang.getLanguageName(Settings.instance().getLanguage().packInfo.pluralCode, ""));
+            } else {
+              item.setSelected(chatDoNotTranslateMode == Settings.DO_NOT_TRANSLATE_MODE_SELECTED);
+              view.setData(Lang.getString(R.string.PickLanguages));
+            }
+            view.findRadioView().setChecked(item.isSelected(), isUpdate);
+            break;
+          }
         }
       }
     };
@@ -86,9 +100,9 @@ public class SettingsLanguageTranslateController extends RecyclerViewController<
     int chatDoNotTranslateMode = Settings.instance().getChatDoNotTranslateMode();
     items.add(new ListItem(ListItem.TYPE_HEADER_PADDED, 0, 0, R.string.DoNotTranslate));
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-    items.add(new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_chatDoNotTranslateAppLang, 0, R.string.ApplicationLanguage, R.id.btn_chatDoNotTranslate, chatDoNotTranslateMode == Settings.DO_NOT_TRANSLATE_MODE_APP_LANG));
+    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO_2, R.id.btn_chatDoNotTranslateAppLang, 0, R.string.ApplicationLanguage, R.id.btn_chatDoNotTranslate, chatDoNotTranslateMode == Settings.DO_NOT_TRANSLATE_MODE_APP_LANG));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-    items.add(new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_chatDoNotTranslateSelected, 0, R.string.SelectedLanguages, R.id.btn_chatDoNotTranslate, chatDoNotTranslateMode == Settings.DO_NOT_TRANSLATE_MODE_SELECTED));
+    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO_2, R.id.btn_chatDoNotTranslateSelected, 0, R.string.SelectedLanguages, R.id.btn_chatDoNotTranslate, chatDoNotTranslateMode == Settings.DO_NOT_TRANSLATE_MODE_SELECTED));
   }
 
   private void addLanguagesItems (List<ListItem> items) {
@@ -135,23 +149,12 @@ public class SettingsLanguageTranslateController extends RecyclerViewController<
         }
         break;
       }
-      case R.id.btn_chatDoNotTranslateSelected:
-      case R.id.btn_chatDoNotTranslateAppLang: {  // popup
-        if (adapter.processToggle(v)) {
-          int value = adapter.getCheckIntResults().get(R.id.btn_chatDoNotTranslate);
-          int newMode;
-          switch (value) {
-            case R.id.btn_chatDoNotTranslateSelected:
-              newMode = Settings.DO_NOT_TRANSLATE_MODE_SELECTED;
-              break;
-            case R.id.btn_chatDoNotTranslateAppLang:
-              newMode = Settings.DO_NOT_TRANSLATE_MODE_APP_LANG;
-              break;
-            default:
-              return;
-          }
-          updateDoNotTranslationStyleMode(newMode);
-        }
+      case R.id.btn_chatDoNotTranslateSelected: {
+        updateDoNotTranslationStyleMode(Settings.DO_NOT_TRANSLATE_MODE_SELECTED);
+        break;
+      }
+      case R.id.btn_chatDoNotTranslateAppLang: {
+        updateDoNotTranslationStyleMode(Settings.DO_NOT_TRANSLATE_MODE_APP_LANG);
         break;
       }
       case R.id.language: {
@@ -193,13 +196,9 @@ public class SettingsLanguageTranslateController extends RecyclerViewController<
     int oldMode = Settings.instance().getChatDoNotTranslateMode();
     if (oldMode == mode) return;
 
-    if (mode == Settings.DO_NOT_TRANSLATE_MODE_APP_LANG) {
-      adapter.setIntResult(R.id.btn_chatDoNotTranslate, R.id.btn_chatDoNotTranslateAppLang);
-    } else if (mode == Settings.DO_NOT_TRANSLATE_MODE_SELECTED) {
-      adapter.setIntResult(R.id.btn_chatDoNotTranslate, R.id.btn_chatDoNotTranslateSelected);
-    }
-
     Settings.instance().setChatDoNotTranslateMode(mode);
+    adapter.updateAllValuedSettingsById(R.id.btn_chatDoNotTranslateAppLang);
+    adapter.updateAllValuedSettingsById(R.id.btn_chatDoNotTranslateSelected);
 
     if (mode == Settings.DO_NOT_TRANSLATE_MODE_APP_LANG) {
       adapter.removeRange(12, adapter.getItemCount() - 12);
