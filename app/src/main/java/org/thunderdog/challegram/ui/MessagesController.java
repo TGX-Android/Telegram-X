@@ -138,6 +138,7 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGAudio;
 import org.thunderdog.challegram.data.TGBotStart;
 import org.thunderdog.challegram.data.TGMessage;
+import org.thunderdog.challegram.data.TGMessageBotInfo;
 import org.thunderdog.challegram.data.TGMessageLocation;
 import org.thunderdog.challegram.data.TGMessageMedia;
 import org.thunderdog.challegram.data.TGMessageSticker;
@@ -11582,11 +11583,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
   TranslationControllerV2.Wrapper translationPopup;
 
   public void startTranslateMessages (TGMessage message) {
-    if (message.translationStyleMode() == Settings.TRANSLATE_MODE_INLINE) {
+    if (message.translationStyleMode() == Settings.TRANSLATE_MODE_INLINE && !(message instanceof TGMessageBotInfo)) {
       message.startTranslated();
     } else {
       translationPopup = new TranslationControllerV2.Wrapper(context, tdlib, this);
       translationPopup.setArguments(new TranslationControllerV2.Args(message));
+      translationPopup.setClickCallback(message.clickCallback());
+      translationPopup.setTextColorSet(message.getTextColorSet());
       translationPopup.show();
       translationPopup.setDismissListener(popup -> translationPopup = null);
     }

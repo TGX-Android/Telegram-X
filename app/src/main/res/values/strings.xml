@@ -4638,6 +4638,7 @@
   <string name="Translate">Translate</string>
   <string name="TranslateOff">Disable translation</string>
   <string name="Translation">Translation</string>
+  <string name="TranslationCopy">Copy translation</string>
   <string name="TranslatingTo">Translating to %1$s</string>
   <string name="TranslatedFrom">Translated from %1$s</string>
   <string name="TranslationFailed">Translation failed</string>
@@ -4655,5 +4656,8 @@
   <string name="SelectedLanguages">Selected languages</string>
   <string name="TapToSelectLanguage">Tap to select language</string>
   <string name="PickLanguages">Pick languages</string>
+
+  <string name="DoNotTranslateLanguages_one">%1$s language</string>
+  <string name="DoNotTranslateLanguages_other">%1$s languages</string>
 
 </resources>

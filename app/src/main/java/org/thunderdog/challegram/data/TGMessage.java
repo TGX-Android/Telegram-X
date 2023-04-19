@@ -153,7 +153,7 @@ import me.vkryl.td.ChatId;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
 
-public abstract class TGMessage implements InvalidateContentProvider, TdlibDelegate, FactorAnimator.Target, Comparable<TGMessage>, Counter.Callback {
+public abstract class TGMessage implements InvalidateContentProvider, TdlibDelegate, FactorAnimator.Target, Comparable<TGMessage>, Counter.Callback, TranslationsManager.Translatable {
   private static final int MAXIMUM_CHANNEL_MERGE_TIME_DIFF = 150;
   private static final int MAXIMUM_COMMON_MERGE_TIME_DIFF = 900;
 
@@ -288,6 +288,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   public static final int REACTIONS_DRAW_MODE_FLAT = 1;
   public static final int REACTIONS_DRAW_MODE_ONLY_ICON = 2;
 
+  private final TranslationsManager mTranslationsManager;
+
   protected TGMessage (MessagesManager manager, TdApi.Message msg) {
     if (!initialized) {
       synchronized (TGMessage.class) {
@@ -300,6 +302,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
     this.manager = manager;
     this.tdlib = manager.controller().tdlib();
+
+    this.mTranslationsManager = new TranslationsManager(tdlib, this, this::setTranslatedStatus, this::setTranslationResult, this::showTranslateErrorMessageBubbleMode);
 
     this.bubblePath = new Path();
     this.bubblePathRect = new RectF();
@@ -4157,7 +4161,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return new MessageId(msg.chatId, msg.id, getOtherMessageIds(msg.id));
   }
 
-  protected boolean isFakeMessage () {
+  public boolean isFakeMessage () {
     //noinspection WrongConstant
     if (msg.content.getConstructor() == TdApiExt.MessageChatEvent.CONSTRUCTOR) {
       return true;
@@ -7702,7 +7706,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public final void checkMessageFlags (Runnable r) {
     TdApi.Message msg = getMessage(getSmallestId());
-    if (msg == null) {
+    if (msg == null || isFakeMessage()) {
       r.run();
       return;
     }
@@ -8525,6 +8529,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return mTranslationsManager.getCurrentTranslatedLanguage();
   }
 
+  @Override
   public @Nullable String getOriginalMessageLanguage () {
     return textToTranslateOriginalLanguage;
   }
@@ -8537,17 +8542,18 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return !Td.isEmpty(textToTranslate) && !Settings.instance().isNotTranslatableLanguage(textToTranslateOriginalLanguage);
   }
 
+  @Override
   public @Nullable TdApi.FormattedText getTextToTranslate () {
     return textToTranslate;
   }
 
   public void checkTranslatableText (Runnable after) {
-    final TdApi.FormattedText textToTranslate = prepareTextToTranslate(getTextToTranslateImpl());
+    final TdApi.FormattedText textToTranslate = getTextToTranslateImpl();
     this.textToTranslate = textToTranslate;
-    textToTranslateOriginalLanguage = textToTranslate != null ? getCachedTextLanguage(textToTranslate.text): null;
+    textToTranslateOriginalLanguage = textToTranslate != null ? mTranslationsManager.getCachedTextLanguage(textToTranslate.text): null;
     if (textToTranslate != null && textToTranslateOriginalLanguage == null && translationStyleMode() != Settings.TRANSLATE_MODE_NONE) {
       LanguageDetector.detectLanguage(context(), textToTranslate.text, lang -> {
-        saveCachedTextLanguage(textToTranslate.text, textToTranslateOriginalLanguage = lang);
+        mTranslationsManager.saveCachedTextLanguage(textToTranslate.text, textToTranslateOriginalLanguage = lang);
         after.run();
       }, err -> {
         textToTranslateOriginalLanguage = null;
@@ -8558,28 +8564,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
   }
 
-  private TdApi.FormattedText prepareTextToTranslate (TdApi.FormattedText text) {
-    if (text == null || text.entities == null || text.entities.length == 0) {
-      return text;
-    }
-    try {
-      TdApi.TextEntity[] entities = new TdApi.TextEntity[text.entities.length];
-      for (int a = 0; a < entities.length; a++) {
-        TdApi.TextEntity entity = text.entities[a];
-        if (entity.type instanceof TdApi.TextEntityTypeUrl) {
-          String url = text.text.substring(entity.offset, entity.offset + entity.length);
-          TdApi.TextEntityTypeTextUrl newEntityTypeUrl = new TdApi.TextEntityTypeTextUrl(url);
-          entities[a] = new TdApi.TextEntity(entity.offset, entity.length, newEntityTypeUrl);
-        } else {
-          entities[a] = entity;
-        }
-      }
 
-      return new TdApi.FormattedText(text.text, entities);
-    } catch (Exception e) {
-      return text;
-    }
-  }
 
   protected @Nullable TdApi.FormattedText getTextToTranslateImpl () {
     return null; // override
@@ -8609,136 +8594,4 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   protected void setTranslationResult (@Nullable TdApi.FormattedText text) {};
-
-
-  // translatins cache
-
-  private final HashMap<String, TranslatedCachedValue> mTranslationsCache2 = new HashMap<>();
-
-  private @Nullable String getCachedTextLanguage (String text) {
-    TranslatedCachedValue cachedValue = mTranslationsCache2.get(text);
-    return (cachedValue != null ? cachedValue.originalLanguage: null);
-  }
-
-  private void saveCachedTextLanguage (String text, String language) {
-    if (!mTranslationsCache2.containsKey(text)) {
-      mTranslationsCache2.put(text, new TranslatedCachedValue(language));
-    }
-  }
-
-  public @Nullable TdApi.FormattedText getCachedTextTranslation (String text, String language) {
-    TranslatedCachedValue cachedValue = mTranslationsCache2.get(text);
-    return (cachedValue != null ? cachedValue.translationsCache.get(language): null);
-  }
-
-  public void saveCachedTextTranslation (String text, String language, TdApi.FormattedText translated) {
-    TranslatedCachedValue cachedValue = mTranslationsCache2.get(text);
-    if (cachedValue != null) {
-      cachedValue.translationsCache.put(language, translated);
-    }
-  }
-
-  private static class TranslatedCachedValue {
-    public final String originalLanguage;
-    public final HashMap<String, TdApi.FormattedText> translationsCache;
-
-    public TranslatedCachedValue (String originalLanguage) {
-      this.originalLanguage = originalLanguage;
-      this.translationsCache = new HashMap<>();
-    }
-  }
-
-
-
-  // translations manager
-
-  private final TranslationsManager mTranslationsManager = new TranslationsManager(this, this::setTranslatedStatus, this::setTranslationResult, this::showTranslateErrorMessageBubbleMode);
-
-  public static final class TranslationsManager {
-
-    private final TGMessage message;
-    private final OnChangeTranslatedStatus statusDelegate;
-    private final OnChangeTranslatedResult resultDelegate;
-    private final OnNewTranslatedError errorDelegate;
-    private String currentTranslatedLanguage;
-    private String lastTranslatedLanguage;
-
-    public interface OnNewTranslatedError {
-      void onError (String string);
-    }
-
-    public interface OnChangeTranslatedStatus {
-      void setTranslatedStatus (int status, boolean animated);
-    }
-
-    public interface OnChangeTranslatedResult {
-      void setTranslationResult (TdApi.FormattedText translationResult);
-    }
-
-    public TranslationsManager (TGMessage message, OnChangeTranslatedStatus statusDelegate, OnChangeTranslatedResult resultDelegate, OnNewTranslatedError errorDelegate) {
-      this.message = message;
-      this.statusDelegate = statusDelegate;
-      this.resultDelegate = resultDelegate;
-      this.errorDelegate = errorDelegate;
-    }
-
-    public void stopTranslation () {
-      requestTranslation(null);
-    }
-
-    public void requestTranslation (String language) {
-      currentTranslatedLanguage = language;
-      if (language == null || StringUtils.equalsOrBothEmpty(language, message.getOriginalMessageLanguage())) {
-        statusDelegate.setTranslatedStatus(TranslationCounterDrawable.TRANSLATE_STATUS_DEFAULT, true);
-        resultDelegate.setTranslationResult(null);
-        currentTranslatedLanguage = null;
-        return;
-      }
-
-      if (currentTranslatedLanguage != null) {
-        lastTranslatedLanguage = currentTranslatedLanguage;
-      }
-
-      TdApi.FormattedText textToTranslate = message.getTextToTranslate();
-      if (textToTranslate == null) return;
-
-      TdApi.FormattedText cachedText = message.getCachedTextTranslation(textToTranslate.text, language);
-      if (cachedText != null) {
-        statusDelegate.setTranslatedStatus(TranslationCounterDrawable.TRANSLATE_STATUS_SUCCESS, true);
-        resultDelegate.setTranslationResult(cachedText);
-        return;
-      }
-
-      statusDelegate.setTranslatedStatus(TranslationCounterDrawable.TRANSLATE_STATUS_LOADING, true);
-      message.tdlib().ui().post(() -> requestTranslationImpl(textToTranslate, language, object -> message.tdlib().ui().post(() -> {
-        if (object instanceof TdApi.FormattedText) {
-          TdApi.FormattedText text = (TdApi.FormattedText) object;
-          message.saveCachedTextTranslation(textToTranslate.text, language, text);
-          if (StringUtils.equalsOrBothEmpty(currentTranslatedLanguage, language)) {
-            statusDelegate.setTranslatedStatus(TranslationCounterDrawable.TRANSLATE_STATUS_SUCCESS, true);
-            resultDelegate.setTranslationResult(text);
-          }
-        } else {
-          if (StringUtils.equalsOrBothEmpty(currentTranslatedLanguage, language)) {
-            statusDelegate.setTranslatedStatus(TranslationCounterDrawable.TRANSLATE_STATUS_ERROR, true);
-            if (object instanceof TdApi.Error) {
-              errorDelegate.onError(TD.toErrorString(object));
-            }
-          }
-        }
-      })));
-    }
-
-    public String getCurrentTranslatedLanguage () {
-      return currentTranslatedLanguage;
-    }
-
-    public String getLastTranslatedLanguage () {
-      return lastTranslatedLanguage;
-    }
-
-    private void requestTranslationImpl (TdApi.FormattedText originalText, String toLanguage, Client.ResultHandler callback) {
-      message.tdlib().client().send(new TdApi.TranslateText(originalText, toLanguage), callback);
-    }
-  }
 }

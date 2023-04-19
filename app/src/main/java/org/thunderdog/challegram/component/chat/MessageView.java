@@ -485,7 +485,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   }
 
   private boolean onMessageClick (float x, float y) {
-    if (msg == null || msg instanceof TGMessageBotInfo) {
+    if (msg == null /*|| msg instanceof TGMessageBotInfo*/) {
       return false;
     }
     MessagesController m = msg.messagesController();
@@ -975,7 +975,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       }
     }
 
-    if (msg.canBeReported()) {
+    if (msg.canBeReported() && !msg.isFakeMessage()) {
       if (isMore) {
         ids.append(R.id.btn_messageReport);
         strings.append(R.string.MessageReport);

@@ -64,7 +64,21 @@ public class SettingsLanguageTranslateController extends RecyclerViewController<
               view.setData(Lang.getLanguageName(Settings.instance().getLanguage().packInfo.pluralCode, ""));
             } else {
               item.setSelected(chatDoNotTranslateMode == Settings.DO_NOT_TRANSLATE_MODE_SELECTED);
-              view.setData(Lang.getString(R.string.PickLanguages));
+              String[] languages = Settings.instance().getAllNotTranslatableLanguages();
+              if (languages == null || languages.length == 0) {
+                view.setData(Lang.getString(R.string.PickLanguages));
+              } else if (languages.length < 4) {
+                StringBuilder builder = new StringBuilder();
+                for (String lang: languages) {
+                  if (builder.length() > 0) {
+                    builder.append(", ");
+                  }
+                  builder.append(Lang.getLanguageName(lang, lang));
+                }
+                view.setData(builder);
+              } else {
+                view.setData(Lang.plural(R.string.DoNotTranslateLanguages, languages.length));
+              }
             }
             view.findRadioView().setChecked(item.isSelected(), isUpdate);
             break;
@@ -161,6 +175,7 @@ public class SettingsLanguageTranslateController extends RecyclerViewController<
         TdApi.LanguagePackInfo languageInfo = (TdApi.LanguagePackInfo) ((ListItem) v.getTag()).getData();
         Settings.instance().setIsNotTranslatableLanguage(languageInfo.id, !Settings.instance().containsInNotTranslatableLanguageList(languageInfo.id));
         adapter.updateValuedSettingByData(languageInfo);
+        adapter.updateAllValuedSettingsById(R.id.btn_chatDoNotTranslateSelected);
         break;
       }
     }

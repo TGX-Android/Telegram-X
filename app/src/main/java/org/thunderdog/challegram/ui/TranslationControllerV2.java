@@ -3,7 +3,6 @@ package org.thunderdog.challegram.ui;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.TypedValue;
@@ -15,6 +14,7 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -26,6 +26,7 @@ import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGSource;
+import org.thunderdog.challegram.data.TranslationsManager;
 import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
@@ -34,7 +35,6 @@ import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.Menu;
 import org.thunderdog.challegram.navigation.MenuMoreWrap;
 import org.thunderdog.challegram.navigation.ToggleHeaderView2;
-import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -44,10 +44,14 @@ import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.TranslationCounterDrawable;
 import org.thunderdog.challegram.util.text.Text;
+import org.thunderdog.challegram.util.text.TextColorSet;
+import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.util.text.TextWrapper;
 import org.thunderdog.challegram.v.CustomRecyclerView;
@@ -64,30 +68,35 @@ import me.vkryl.android.animator.ReplaceAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.collection.IntList;
 
 public class TranslationControllerV2 extends BottomSheetViewController.BottomSheetBaseRecyclerViewController<TranslationControllerV2.Args>
  implements BottomSheetViewController.BottomSheetBaseControllerPage, Menu {
+
+  public interface TextClickable {
+    TextColorSet getTextColorSet ();
+    Text.ClickCallback clickCallback ();
+  }
 
   private final TranslationCounterDrawable translationCounterDrawable;
   private final ReplaceAnimator<TextWrapper> text;
   private ComplexReceiver textMediaReceiver;
   private final Wrapper parent;
 
-  private TGMessage.TranslationsManager mTranslationsManager;
-  private TGMessage messageToTranslate;
+  private TranslationsManager mTranslationsManager;
+  private TranslationsManager.Translatable messageToTranslate;
   private TdApi.FormattedText originalText;
   private String messageOriginalLanguage;
 
   private FrameLayoutFix wrapView;
   private CustomRecyclerView recyclerView;
-  private LinearLayoutManager linearLayoutManager;
   private MessageTextView messageTextView;
   private ToggleHeaderView2 headerCell;
   private HeaderButton translationHeaderButton;
-  private View senderAvatarView;
-  private AvatarReceiver avatarReceiver;
-  private TextView senderTextView;
-  private TextView dateTextView;
+  private @Nullable View senderAvatarView;
+  private @Nullable AvatarReceiver avatarReceiver;
+  private @Nullable TextView senderTextView;
+  private @Nullable TextView dateTextView;
 
   private TranslationControllerV2 (Context context, Tdlib tdlib, Wrapper parent) {
     super(context, tdlib);
@@ -120,74 +129,79 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     wrapView.setBackgroundColor(0);
     wrapView.setBackground(null);
 
-    senderAvatarView = new View(context) {
-      @Override
-      protected void onAttachedToWindow () {
-        super.onAttachedToWindow();
-        avatarReceiver.attach();
+    TGMessage message = (messageToTranslate instanceof TGMessage) ? ((TGMessage) messageToTranslate) : null;
+    if (message != null) {
+      avatarReceiver = new AvatarReceiver(senderAvatarView);
+      senderAvatarView = new View(context) {
+        @Override
+        protected void onAttachedToWindow () {
+          super.onAttachedToWindow();
+          avatarReceiver.attach();
+        }
+
+        @Override
+        protected void onDetachedFromWindow () {
+          super.onDetachedFromWindow();
+          avatarReceiver.detach();
+        }
+
+        @Override
+        protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
+          super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+          avatarReceiver.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
+        }
+
+        @Override
+        protected void onDraw (Canvas canvas) {
+          super.onDraw(canvas);
+          if (avatarReceiver.needPlaceholder())
+            avatarReceiver.drawPlaceholder(canvas);
+          avatarReceiver.draw(canvas);
+        }
+      };
+      message.requestAvatar(avatarReceiver, true);
+      wrapView.addView(senderAvatarView, FrameLayoutFix.newParams(Screen.dp(20), Screen.dp(20), Gravity.LEFT | Gravity.BOTTOM, Screen.dp(18), 0, 0, Screen.dp(16)));
+
+      LinearLayout linearLayout = new LinearLayout(context);
+      linearLayout.setOrientation(LinearLayout.HORIZONTAL);
+
+      senderTextView = new TextView(context);
+      senderTextView.setTextColor(Theme.getColor(R.id.theme_color_textLight));
+      senderTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+      senderTextView.setTypeface(Fonts.getRobotoMedium());
+      senderTextView.setGravity(Gravity.CENTER_VERTICAL | Gravity.LEFT);
+      senderTextView.setMaxLines(1);
+      senderTextView.setEllipsize(TextUtils.TruncateAt.END);
+
+      TGSource forwardInfo = message.getForwardInfo();
+      int forwardTime = message.getForwardTimeStamp();
+
+      if (forwardInfo != null) {
+        senderTextView.setText(forwardInfo.getAuthorName());
+      } else {
+        senderTextView.setText(message.getSender().getName());
       }
+      linearLayout.addView(senderTextView, LayoutHelper.createLinear(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, 2, Gravity.LEFT | Gravity.CENTER_VERTICAL));
 
-      @Override
-      protected void onDetachedFromWindow () {
-        super.onDetachedFromWindow();
-        avatarReceiver.detach();
+      if (!message.isFakeMessage()) {
+        dateTextView = new TextView(context);
+        dateTextView.setTextColor(Theme.getColor(R.id.theme_color_textLight));
+        dateTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+        dateTextView.setGravity(Gravity.CENTER_VERTICAL | Gravity.RIGHT);
+        dateTextView.setText(Lang.dateYearShortTime(forwardTime > 0 ? forwardTime : message.getComparingDate(), TimeUnit.SECONDS));
+        dateTextView.setMaxLines(1);
+        linearLayout.addView(dateTextView, LayoutHelper.createLinear(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0, Gravity.RIGHT | Gravity.CENTER_VERTICAL, Screen.dp(12), 0, 0, 0));
       }
+      wrapView.addView(linearLayout, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(20), Gravity.BOTTOM, Screen.dp(44), 0, Screen.dp(18), Screen.dp(16)));
 
-      @Override
-      protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-        avatarReceiver.setBounds(0, 0, getMeasuredWidth(), getMeasuredHeight());
-      }
-
-      @Override
-      protected void onDraw (Canvas canvas) {
-        super.onDraw(canvas);
-        if (avatarReceiver.needPlaceholder())
-          avatarReceiver.drawPlaceholder(canvas);
-        avatarReceiver.draw(canvas);
-      }
-    };
-    avatarReceiver = new AvatarReceiver(senderAvatarView);
-    messageToTranslate.requestAvatar(avatarReceiver, true);
-    wrapView.addView(senderAvatarView, FrameLayoutFix.newParams(Screen.dp(20), Screen.dp(20), Gravity.LEFT | Gravity.BOTTOM, Screen.dp(18), 0, 0, Screen.dp(16)));
-
-    LinearLayout linearLayout = new LinearLayout(context);
-    linearLayout.setOrientation(LinearLayout.HORIZONTAL);
-
-    senderTextView = new TextView(context);
-    senderTextView.setTextColor(Theme.getColor(R.id.theme_color_textLight));
-    senderTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
-    senderTextView.setTypeface(Fonts.getRobotoMedium());
-    senderTextView.setGravity(Gravity.CENTER_VERTICAL | Gravity.LEFT);
-    senderTextView.setMaxLines(1);
-    senderTextView.setEllipsize(TextUtils.TruncateAt.END);
-
-    TGSource forwardInfo = messageToTranslate.getForwardInfo();
-    int forwardTime = messageToTranslate.getForwardTimeStamp();
-
-    if (forwardInfo != null) {
-      senderTextView.setText(forwardInfo.getAuthorName());
-    } else {
-      senderTextView.setText(messageToTranslate.getSender().getName());
     }
-
-    linearLayout.addView(senderTextView, LayoutHelper.createLinear(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, 2, Gravity.LEFT | Gravity.CENTER_VERTICAL));
-    dateTextView = new TextView(context);
-    dateTextView.setTextColor(Theme.getColor(R.id.theme_color_textLight));
-    dateTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
-    dateTextView.setGravity(Gravity.CENTER_VERTICAL | Gravity.RIGHT);
-    dateTextView.setText(Lang.dateYearShortTime(forwardTime > 0 ? forwardTime: messageToTranslate.getComparingDate(), TimeUnit.SECONDS));
-    dateTextView.setMaxLines(1);
-
-    linearLayout.addView(dateTextView, LayoutHelper.createLinear(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0, Gravity.RIGHT | Gravity.CENTER_VERTICAL, Screen.dp(12), 0, 0, 0));
-    wrapView.addView(linearLayout, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(20), Gravity.BOTTOM, Screen.dp(44), 0, Screen.dp(18), Screen.dp(16)));
 
     messageTextView = new MessageTextView(context);
     textMediaReceiver = new ComplexReceiver(messageTextView);
 
     recyclerView.setItemAnimator(null);
     recyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
-    recyclerView.setLayoutManager(linearLayoutManager = new LinearLayoutManager(context, RecyclerView.VERTICAL, false));
+    recyclerView.setLayoutManager(new LinearLayoutManager(context, RecyclerView.VERTICAL, false));
     recyclerView.setAdapter(new RecyclerView.Adapter<>() {
       @NonNull
       @Override
@@ -209,7 +223,9 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     });
 
     FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) recyclerView.getLayoutParams();
-    layoutParams.bottomMargin = Screen.dp(48 - 6);
+    if (message != null) {
+      layoutParams.bottomMargin = Screen.dp(48 - 6);
+    }
 
     text.replace(makeTextWrapper(originalText), false);
     mTranslationsManager.requestTranslation(Lang.getDefaultLanguageToTranslateV2(messageOriginalLanguage));
@@ -250,7 +266,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
   int currentHeight = -1;
   int prevHeight = -1;
 
-  private void updateTexts (ReplaceAnimator animator) {
+  private void updateTexts (ReplaceAnimator<?> animator) {
     messageTextView.invalidate();
     if (prevHeight <= 0) {
       return;
@@ -294,9 +310,9 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
   }
 
   private TextWrapper makeTextWrapper (TdApi.FormattedText formattedText) {
-    TextWrapper textWrapper = new TextWrapper(formattedText.text, TGMessage.getTextStyleProvider(), messageToTranslate.getTextColorSet())
+    TextWrapper textWrapper = new TextWrapper(formattedText.text, TGMessage.getTextStyleProvider(), parent.textColorSet)
       .setEntities(TextEntity.valueOf(tdlib, formattedText, null), (wrapper, text, specificMedia) -> messageTextView.invalidate())
-      .setClickCallback(messageToTranslate.clickCallback())
+      .setClickCallback(parent.clickCallback)
       .addTextFlags(Text.FLAG_BIG_EMOJI);
 
     if (currentTextWidth > 0) {
@@ -444,12 +460,36 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     messageToTranslate = args.message;
     originalText = args.message.getTextToTranslate();
     messageOriginalLanguage = args.message.getOriginalMessageLanguage();
-    mTranslationsManager = new TGMessage.TranslationsManager(messageToTranslate, this::setTranslatedStatus, this::setTranslationResult, this::onTranslationError);
+    mTranslationsManager = new TranslationsManager(tdlib, messageToTranslate, this::setTranslatedStatus, this::setTranslationResult, this::onTranslationError);
+    mTranslationsManager.saveCachedTextLanguage(originalText.text, messageOriginalLanguage);
+  }
+
+  public void showOptions () {
+    StringList strings = new StringList(1);
+    IntList icons = new IntList(1);
+    IntList ids = new IntList(1);
+    IntList colors = new IntList(1);
+
+    ids.append(R.id.btn_copyText);
+    strings.append(R.string.TranslationCopy);
+    icons.append(R.drawable.baseline_content_copy_24);
+    colors.append(OPTION_COLOR_NORMAL);
+
+    showOptions(null, ids.get(), strings.get(), colors.get(), icons.get(), (itemView, id) -> {
+      if (id == R.id.btn_copyText) {
+        TdApi.FormattedText text = mTranslationsManager.getCachedTextTranslation(originalText.text, mTranslationsManager.getCurrentTranslatedLanguage());
+        if (text != null) {
+          UI.copyText(text.text, R.string.CopiedText);
+        }
+      }
+
+      return true;
+    });
   }
 
   public static class Args {
-    private final TGMessage message;
-    public Args(TGMessage message) {
+    private final TranslationsManager.Translatable message;
+    public Args(TranslationsManager.Translatable message) {
       this.message = message;
     }
   }
@@ -462,6 +502,17 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
       super(context, tdlib);
       this.parent = parent;
       translationControllerFragment = new TranslationControllerV2(context, tdlib, this);
+    }
+
+    private TextColorSet textColorSet;
+    private Text.ClickCallback clickCallback;
+
+    public final void setTextColorSet (TextColorSet textColorSet) {
+      this.textColorSet = textColorSet;
+    }
+
+    public final void setClickCallback (Text.ClickCallback clickCallback) {
+      this.clickCallback = clickCallback;
     }
 
     @Override
@@ -604,7 +655,11 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
         }
       }
 
-      return false;
+      if (event.getAction() == MotionEvent.ACTION_UP) {
+        showOptions();
+      }
+
+      return true;
     }
   }
 

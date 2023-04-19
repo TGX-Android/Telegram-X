@@ -1032,6 +1032,7 @@ public class Settings {
   }
 
   public String[] getAllNotTranslatableLanguages () {
+    loadNotTranslatableLanguages();
     StringList list = new StringList(_chatDoNotTranslateLanguages.size());
     for (Map.Entry<String, Boolean> entry: _chatDoNotTranslateLanguages.entrySet()) {
       list.append(entry.getKey());
@@ -1049,6 +1050,7 @@ public class Settings {
 
   public boolean containsInNotTranslatableLanguageList (String lang) {
     loadNotTranslatableLanguages();
+    if (lang == null) return false;
     return _chatDoNotTranslateLanguages.containsKey(lang);
   }
 
