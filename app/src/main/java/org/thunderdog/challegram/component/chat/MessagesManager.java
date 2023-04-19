@@ -1489,11 +1489,17 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     if (view == null) {
       return;
     }
-
+    final int top = view.getTop();
     final int bottom = view.getBottom();
     if (bottom > recyclerHeight) {
-      final int index = adapter.indexOfMessageContainer(messageId);
-      scrollCompensation(view, heightDiff, index, recyclerHeight, bottom);
+      if (top > 0) {
+        scrollCompensation(view, heightDiff);
+      } else {
+        int topHidden = -top;
+        int bottomHidden = bottom - recyclerHeight;
+        float compensationScale = ((float) bottomHidden) / ((float)(topHidden + bottomHidden));
+        scrollCompensation(view, (int) (heightDiff * compensationScale));
+      }
       return;
     }
 
@@ -1503,20 +1509,16 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       if (unreadBadgeIndex != -1 && index != -1 && index <= unreadBadgeIndex) {
         View unreadBadgeView = manager.findViewByPosition(unreadBadgeIndex);
         if (unreadBadgeView != null && unreadBadgeView.getTop() <= controller.getTopOffset()) {
-          scrollCompensation(view, heightDiff, index, recyclerHeight, bottom);
+          scrollCompensation(view, heightDiff);
           return;
         }
       }
     }
   }
 
-  private void scrollCompensation (View view, int heightDiff, int index, int recyclerHeight, int bottom) {
-    OnGlobalLayoutListener listener = new OnGlobalLayoutListener(controller.getMessagesView(), view, heightDiff);
+  private void scrollCompensation (View view, int offset) {
+    OnGlobalLayoutListener listener = new OnGlobalLayoutListener(controller.getMessagesView(), view, offset);
     listener.add();
-
-    //tdlib.ui().post(() -> controller.getMessagesView().scrollBy(0, heightDiff));
-    // controller.getMessagesView().scrollBy(0, heightDiff);
-    // manager.scrollToPositionWithOffset(index, recyclerHeight - bottom + heightDiff);
   }
 
   public static class OnGlobalLayoutListener implements ViewTreeObserver.OnGlobalLayoutListener {
