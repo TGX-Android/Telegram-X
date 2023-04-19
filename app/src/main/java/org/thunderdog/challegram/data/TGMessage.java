@@ -1213,6 +1213,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       buildBubble(false);
       int oldHeight = height;
       height = computeHeight();
+      if (oldHeight != height) {
+        manager.onMessageHeightChanged(getChatId(), getId(), oldHeight, height);
+      }
       return oldHeight != height;
     } else {
       rebuildLayout();
