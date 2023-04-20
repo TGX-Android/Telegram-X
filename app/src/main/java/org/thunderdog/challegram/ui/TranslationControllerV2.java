@@ -470,13 +470,13 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     IntList ids = new IntList(1);
     IntList colors = new IntList(1);
 
-    ids.append(R.id.btn_copyText);
+    ids.append(R.id.btn_copyTranslation);
     strings.append(R.string.TranslationCopy);
     icons.append(R.drawable.baseline_content_copy_24);
     colors.append(OPTION_COLOR_NORMAL);
 
     showOptions(null, ids.get(), strings.get(), colors.get(), icons.get(), (itemView, id) -> {
-      if (id == R.id.btn_copyText) {
+      if (id == R.id.btn_copyTranslation) {
         TdApi.FormattedText text = mTranslationsManager.getCachedTextTranslation(originalText.text, mTranslationsManager.getCurrentTranslatedLanguage());
         if (text != null) {
           UI.copyText(text.text, R.string.CopiedText);

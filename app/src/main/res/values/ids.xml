@@ -730,6 +730,7 @@
   <item type="id" name="btn_inlineClose" />
   <item type="id" name="btn_inlineOpen" />
   <item type="id" name="btn_copyText" />
+  <item type="id" name="btn_copyTranslation" />
   <item type="id" name="btn_sourceCode" />
   <item type="id" name="btn_sourceCodeChanges" />
   <item type="id" name="btn_copyDebug" />

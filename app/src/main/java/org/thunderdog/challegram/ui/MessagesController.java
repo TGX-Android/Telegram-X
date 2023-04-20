@@ -5458,6 +5458,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           sendDice(itemView, ((TdApi.MessageDice) selectedMessage.getMessage().content).emoji, 0);
           return true;
         }
+        case R.id.btn_copyTranslation:
         case R.id.btn_messageCopy: {
           if (!selectedMessage.canBeSaved()) {
             context().tooltipManager().builder(itemView).show(tdlib, R.string.ChannelNoCopy).hideDelayed();
@@ -5471,7 +5472,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           if (message == null) {
             message = selectedMessage.getNewestMessage();
           }
-          TdApi.FormattedText text = Td.textOrCaption(message.content);
+          TdApi.FormattedText text = id == R.id.btn_copyTranslation ? selectedMessage.getTranslatedText(): Td.textOrCaption(message.content);
           if (text != null)
             UI.copyText(TD.toCopyText(text), R.string.CopiedText);
           return true;

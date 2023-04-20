@@ -8532,6 +8532,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return mTranslationsManager.getCurrentTranslatedLanguage();
   }
 
+  public @Nullable TdApi.FormattedText getTranslatedText () {
+    if (textToTranslate == null) return null;
+    return mTranslationsManager.getCachedTextTranslation(textToTranslate.text, getCurrentTranslatedLanguage());
+  }
+
   @Override
   public @Nullable String getOriginalMessageLanguage () {
     return textToTranslateOriginalLanguage;
