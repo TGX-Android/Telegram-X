@@ -2795,11 +2795,6 @@ set(WEBRTC_OPTIONS
 
 target_compile_definitions(webrtc PUBLIC ${WEBRTC_OPTIONS})
 
-#[[target_compile_options(webrtc INTERFACE
-  "$<$<COMPILE_LANGUAGE:C>:-std=c20>"
-  "$<$<COMPILE_LANGUAGE:CXX>:-std=c++20>"
-)]]
-
 target_compile_options(webrtc PRIVATE
   -Wno-shorten-64-to-32
   -Wno-macro-redefined

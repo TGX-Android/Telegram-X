@@ -20,6 +20,7 @@ set(CRYPTO_LIB_PATH "${SSL_DIR}/lib/libcrypto.a")
 
 set(LINK_TDLIB yes)
 set(USE_TDLIB_CRYPTO no)
+set(ENABLE_TG_CALLS yes)
 
 # Using webp only if building for 32-bit platform
 if (${ANDROID_ABI} STREQUAL "armeabi-v7a" OR ${ANDROID_ABI} STREQUAL "x86")
@@ -50,68 +51,92 @@ set(FFMPEG_LIBS
 set(VPX_DIR "${THIRDPARTY_DIR}/libvpx/build/${FFMPEG_ABI}")
 set(VPX_LIB_PATH "${VPX_DIR}/lib/libvpx.a")
 
-# == Setup ==
+# == Constants ==
+# $TGX_PUBLIC — optimize native bundle size / enable optimizations for end users
+# $TGX_BUILD_ID — unique app build id
+# $TGX_BUILD_ID_NATIVE — unique native bundle build id (changes less frequently)
+# $IS_ARM_FAMILY – armeabi-v7a or arm64-v8a
+
+if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+  set(TGX_PUBLIC no)
+else()
+  set(TGX_PUBLIC yes)
+endif()
+
+file(READ "${TGX_ROOT_DIR}/build-id.txt" TGX_BUILD_ID)
+file(READ "${TGX_ROOT_DIR}/build-id-native.txt" TGX_BUILD_ID_NATIVE)
+
+string(LENGTH "${TGX_BUILD_ID}" TGX_BUILD_ID_LENGTH)
+if(${TGX_BUILD_ID_LENGTH} EQUAL 0)
+  message(FATAL_ERROR "build-id.txt is empty or doesn't exist, check: ${TGX_ROOT_DIR}/build-id.txt")
+endif()
+
+string(LENGTH "${TGX_BUILD_ID_NATIVE}" TGX_BUILD_ID_NATIVE_LENGTH)
+if(${TGX_BUILD_ID_NATIVE_LENGTH} EQUAL 0)
+  message(FATAL_ERROR "build-id-native.txt is empty or doesn't exist, check: ${TGX_ROOT_DIR}/build-id-native.txt")
+endif()
 
 if (${ANDROID_ABI} STREQUAL "armeabi-v7a" OR ${ANDROID_ABI} STREQUAL "arm64-v8a")
+  set(IS_ARM_FAMILY yes)
+else()
+  set(IS_ARM_FAMILY no)
+endif()
+
+message(STATUS "Building native library... \
+        CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE} \
+        IS_ARM_FAMILY: ${IS_ARM_FAMILY} \
+        TGX_PUBLIC: ${TGX_PUBLIC} \
+        TGX_BUILD_ID: ${TGX_BUILD_ID} \
+        TGX_BUILD_ID_NATIVE: ${TGX_BUILD_ID_NATIVE}")
+
+# == CMake global settings ==
+
+set(CMAKE_SKIP_RPATH ON)
+set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
+
+if (${IS_ARM_FAMILY})
   enable_language(ASM)
 else()
   enable_language(ASM_NASM)
 endif()
 set(ORIGINAL_CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS}")
 
-set(ADD_COMMON_FLAGS
-  -w -Werror=return-type
-)
-
-if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+if ($TGX_PUBLIC)
   set(CMAKE_C_VISIBILITY_PRESET hidden)
   set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+else()
+  set(CMAKE_C_VISIBILITY_PRESET default)
+  set(CMAKE_CXX_VISIBILITY_PRESET default)
+endif()
 
-  list(APPEND ADD_COMMON_FLAGS
+set(ADD_COMMON_FLAG
+  -w -Werror=return-type
+  -ferror-limit=0
+)
+if ($TGX_PUBLIC)
+  list(APPEND ADD_COMMON_FLAG
     -O3
-    -fvisibility=hidden
-    -ffunction-sections -fdata-sections
     -finline-functions -ffast-math
     -fno-rtti
   )
 else()
-  list(APPEND ADD_COMMON_FLAGS
+  list(APPEND ADD_COMMON_FLAG
     -O2
     -fno-omit-frame-pointer
-    -g
   )
-  set(CMAKE_C_VISIBILITY_PRESET default)
-  set(CMAKE_CXX_VISIBILITY_PRESET default)
-endif()
-set(ADD_C_FLAGS ${ADD_COMMON_FLAGS}
-  -D_LARGEFILE_SOURCE=1
-)
-set(ADD_CXX_FLAGS ${ADD_COMMON_FLAGS} -std=c++17)
-
-foreach(lang C CXX)
-  Join(ADD_${lang}_FLAGS "${ADD_${lang}_FLAGS}" " ")
-  set(CMAKE_${lang}_FLAGS "${CMAKE_${lang}_FLAGS} ${ADD_${lang}_FLAGS}")
-endforeach()
-
-set(CMAKE_SKIP_RPATH ON)
-set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
-
-file(READ "${TGX_ROOT_DIR}/build-id.txt" TGX_BUILD_ID)
-string(LENGTH "${TGX_BUILD_ID}" TGX_BUILD_ID_LENGTH)
-
-if(${TGX_BUILD_ID_LENGTH} EQUAL 0)
-  message(FATAL_ERROR "Build-Id is empty or doesn't exist, check: ${TGX_ROOT_DIR}/build-id.txt")
 endif()
 
+Join(ADD_COMMON_FLAGS "${ADD_COMMON_FLAGS}" " ")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${COMMON_FLAGS} -D_LARGEFILE_SOURCE=1")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COMMON_FLAGS} -std=c++17")
 
 set(ADD_LINKER_FLAGS
   -Wl,--gc-sections,--icf=safe
-  -Wl,--build-id=none
+  -Wl,--build-id=sha1
 )
 set(EXCLUDE_LIBS
   libjni-utils.a
   libflac.a
-  libtgvoip.a
   libyuv.a
   "${VPX_LIB_PATH}"
   libopus.a
@@ -119,15 +144,22 @@ set(EXCLUDE_LIBS
   libopusfile.a
   librlottie.a
   liblz4.a
-  "${SSL_LIB_PATH}"
-  "${CRYPTO_LIB_PATH}"
-  libusrsctp.a
-  libsrtp.a
-  libopenh264.a
-  libabsl.a
-  libwebrtc.a
-  libtgcalls.a
 )
+if (${ENABLE_TG_CALLS})
+  list(APPEND EXCLUDE_LIBS
+    libtgvoip.a
+    "${SSL_LIB_PATH}"
+    "${CRYPTO_LIB_PATH}"
+    libusrsctp.a
+    libsrtp.a
+    libopenh264.a
+    libabsl.a
+    libjson11.a
+    librnnoise.a
+    libwebrtc.a
+    libtgcalls.a
+  )
+endif()
 if (${USE_WEBP})
   list(APPEND EXCLUDE_LIBS
     libwebpdecoder_static.a
@@ -163,15 +195,6 @@ if (${LINK_TDLIB})
   endif()
 endif()
 
-# crypto
-add_library(crypto STATIC IMPORTED)
-set_target_properties(crypto PROPERTIES IMPORTED_LOCATION "${CRYPTO_LIB_PATH}")
-
-# ssl
-add_library(ssl STATIC IMPORTED)
-set_target_properties(ssl PROPERTIES IMPORTED_LOCATION "${SSL_LIB_PATH}")
-target_include_directories(ssl INTERFACE "${SSL_DIR}/include")
-
 # flac
 include("${CMAKE_HOME_DIRECTORY}/BuildFlac.cmake")
 
@@ -182,33 +205,6 @@ add_subdirectory(
 
 # yuv
 include("${CMAKE_HOME_DIRECTORY}/BuildYuv.cmake")
-
-# usrsctp
-include("${CMAKE_HOME_DIRECTORY}/BuildUsrSCTP.cmake")
-
-# srtp
-include("${CMAKE_HOME_DIRECTORY}/BuildLibSRTP.cmake")
-
-# openh264
-include("${CMAKE_HOME_DIRECTORY}/BuildOpenH264.cmake")
-
-# absl
-include("${CMAKE_HOME_DIRECTORY}/BuildAbsl.cmake")
-
-# json11
-include("${CMAKE_HOME_DIRECTORY}/BuildJson11.cmake")
-
-# webrtc
-include("${CMAKE_HOME_DIRECTORY}/BuildWebRTC.cmake")
-
-# libtgvoip
-include("${CMAKE_HOME_DIRECTORY}/BuildTelegramVoIP.cmake")
-
-# tgcalls
-include("${CMAKE_HOME_DIRECTORY}/BuildTgCalls.cmake")
-
-# rnnoise
-include("${CMAKE_HOME_DIRECTORY}/BuildRNNoise.cmake")
 
 # vpx
 add_library(vpx STATIC IMPORTED)
@@ -229,6 +225,34 @@ include("${CMAKE_HOME_DIRECTORY}/BuildRlottie.cmake")
 
 # lz4
 include("${CMAKE_HOME_DIRECTORY}/BuildLz4.cmake")
+
+if (${ENABLE_TG_CALLS})
+  # crypto
+  add_library(crypto STATIC IMPORTED)
+  set_target_properties(crypto PROPERTIES IMPORTED_LOCATION "${CRYPTO_LIB_PATH}")
+  # ssl
+  add_library(ssl STATIC IMPORTED)
+  set_target_properties(ssl PROPERTIES IMPORTED_LOCATION "${SSL_LIB_PATH}")
+  target_include_directories(ssl INTERFACE "${SSL_DIR}/include")
+  # usrsctp
+  include("${CMAKE_HOME_DIRECTORY}/BuildUsrSCTP.cmake")
+  # srtp
+  include("${CMAKE_HOME_DIRECTORY}/BuildLibSRTP.cmake")
+  # openh264
+  include("${CMAKE_HOME_DIRECTORY}/BuildOpenH264.cmake")
+  # absl
+  include("${CMAKE_HOME_DIRECTORY}/BuildAbsl.cmake")
+  # json11
+  include("${CMAKE_HOME_DIRECTORY}/BuildJson11.cmake")
+  # rnnoise
+  include("${CMAKE_HOME_DIRECTORY}/BuildRNNoise.cmake")
+  # webrtc
+  include("${CMAKE_HOME_DIRECTORY}/BuildWebRTC.cmake")
+  # libtgvoip
+  include("${CMAKE_HOME_DIRECTORY}/BuildTelegramVoIP.cmake")
+  # tgcalls
+  include("${CMAKE_HOME_DIRECTORY}/BuildTgCalls.cmake")
+endif()
 
 # webp
 if (${USE_WEBP})
@@ -259,7 +283,6 @@ add_library(${NATIVE_LIB} SHARED
   utils.cpp
   image.c
   gif.cpp
-  tgvoip.cpp
   views.c
 
   "${THIRDPARTY_DIR}/exoplayer/opus_jni.cc"
@@ -270,6 +293,15 @@ add_library(${NATIVE_LIB} SHARED
 
   bridge.cpp
 )
+if (${ENABLE_TG_CALLS})
+  target_sources(${NATIVE_LIB} PRIVATE
+    tgvoip.cpp
+  )
+else()
+  target_compile_definitions(${NATIVE_LIB} PRIVATE
+    NO_TGCALLS
+  )
+endif()
 target_include_directories(${NATIVE_LIB} PRIVATE
   "${THIRDPARTY_DIR}/telegram_intro"
   "${THIRDPARTY_DIR}/exoplayer"
@@ -297,9 +329,12 @@ target_compile_definitions(${NATIVE_LIB} PUBLIC
   __STDC_CONSTANT_MACROS
 )
 target_compile_options(${NATIVE_LIB} PUBLIC
-  -Wall -Werror -fno-math-errno -fno-strict-aliasing -ffast-math -funroll-loops
-  -error-limit=0
+  -Wall -Werror -Wno-deprecated-declarations
+  -Wno-macro-redefined -Wno-unused-variable
+  -fno-math-errno -fno-strict-aliasing -funroll-loops
 )
+# TODO: remove -Wno-macro-redefined -Wno-unused-variable
+# only "${THIRDPARTY_DIR}/exoplayer/ffmpeg_jni.cc" needs them.
 
 # == Linking dependencies ==
 
@@ -313,7 +348,6 @@ endif()
 target_link_libraries(${NATIVE_LIB}
   jni-utils
   flac
-  tgvoip
   yuv
   vpx
   ogg
@@ -321,9 +355,14 @@ target_link_libraries(${NATIVE_LIB}
   opus
   rlottie
   lz4
-  tgcalls
-  -Wl,--whole-archive webrtc_android -Wl,--no-whole-archive
 )
+if (${ENABLE_TG_CALLS})
+  #tgvoip
+  target_link_libraries(${NATIVE_LIB}
+    tgcalls
+    -Wl,--whole-archive webrtc_android -Wl,--no-whole-archive
+  )
+endif()
 if (${USE_WEBP})
   target_link_libraries(${NATIVE_LIB} webpdecoder_static)
 else()

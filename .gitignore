@@ -9,6 +9,7 @@ build
 obj
 
 build-id.txt
+build-id-native.txt
 
 *.apk
 *.iml

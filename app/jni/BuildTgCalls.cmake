@@ -81,7 +81,12 @@ target_include_directories(tgcalls PUBLIC
 )
 
 target_compile_options(tgcalls PUBLIC
-  -Wall -finline-functions -ffast-math -fno-strict-aliasing -O3 -frtti -Wno-unknown-pragmas -funroll-loops -fexceptions -fno-math-errno
+  -Wall -Werror -Wno-deprecated-declarations
+  -fno-strict-aliasing
+  -frtti
+  -funroll-loops
+  -fexceptions
+  -fno-math-errno
 )
 
 target_link_libraries(tgcalls PRIVATE

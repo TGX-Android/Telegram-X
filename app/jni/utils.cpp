@@ -28,7 +28,6 @@ jclass jni_find_class (JNIEnv *env, const char *class_path, int need_cache) {
 
 void hexdump (void *data, int size) {
   unsigned char *buf = (unsigned char*) data;
-  char output_buf[256];
   int i, j;
   for (i = 0; i < size; i += 16) {
     printf("%06x: ", i);

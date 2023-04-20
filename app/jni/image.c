@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <setjmp.h>
 #include <android/bitmap.h>
+#include <string.h>
 #ifndef NO_WEBP
 #include <webp/decode.h>
 #endif
@@ -409,7 +410,7 @@ JNIEXPORT void Java_org_thunderdog_challegram_N_calcCDT(JNIEnv *env, jclass clas
         cdfsMax[i] = cdfs[i][PGPhotoEnhanceHistogramBins - 1];
     }
     
-    uint32_t resultSize = 4 * PGPhotoEnhanceHistogramBins * totalSegments;
+    // uint32_t resultSize = 4 * PGPhotoEnhanceHistogramBins * totalSegments;
     uint32_t resultBytesPerRow = 4 * PGPhotoEnhanceHistogramBins;
     
     unsigned char *result = (*env)->GetDirectBufferAddress(env, buffer);

@@ -31,5 +31,5 @@ target_compile_definitions(flac PRIVATE
   FLAC__HAS_OGG=0
 )
 target_compile_options(flac PRIVATE
-  -funroll-loops -finline-functions -fPIC
+  -funroll-loops -fPIC
 )

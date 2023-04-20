@@ -41,6 +41,7 @@ if (${ANDROID_ABI} STREQUAL "armeabi-v7a")
 endif()
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
   target_compile_options(webpdecoder_static PRIVATE
-    -frename-registers -s
+    -frename-registers
+    -s
   )
 endif()

@@ -514,6 +514,13 @@ JNI_OBJECT_FUNC(jlong, voip_TgCallsController, newInstance,
     endpoints.push_back(endpoint);
   }
 
+  // tgcalls options
+
+  tgcalls::NetworkType networkType = toNetworkType(env, options.getInt("networkType"));
+  bool audioOutputGainControlEnabled = options.getBoolean("audioGainControlEnabled") == JNI_TRUE;
+  int echoCancellationStrength = options.getInt("echoCancellationStrength");
+  bool muteMicrophone = options.getBoolean("isMicDisabled") == JNI_TRUE;
+
   // tgcalls::RtcServer
 
   std::vector<tgcalls::RtcServer> rtcServers;
@@ -568,12 +575,6 @@ JNI_OBJECT_FUNC(jlong, voip_TgCallsController, newInstance,
 
   tgcalls::Descriptor descriptor = {
     .version = version,
-    .endpoints = endpoints,
-    .rtcServers = rtcServers,
-    .encryptionKey = tgcalls::EncryptionKey(
-      std::move(encryptionKey),
-      isOutgoingCall
-    ),
     .config = tgcalls::Config {
       .initializationTimeout = connectTimeoutMs,
       .receiveTimeout = packetTimeoutMs,
@@ -581,20 +582,29 @@ JNI_OBJECT_FUNC(jlong, voip_TgCallsController, newInstance,
       .dataSaving = dataSaving,
 
       .enableP2P = allowP2p && udpP2p,
-      .enableAGC = useBuiltInAutomaticGainControl,
+      .allowTCP = forceTcp,
+      .enableStunMarking = enableStunMarking,
       .enableAEC = useBuiltInAcousticEchoCancellation,
       .enableNS = useBuiltInNoiseSuppressor,
-      .enableStunMarking = enableStunMarking,
+      .enableAGC = useBuiltInAutomaticGainControl,
 
-      .maxApiLayer = maxApiLayer,
+      .enableCallUpgrade = false,
       .enableVolumeControl = true,
 
+      .logPath = {logFilePath},
+      .statsLogPath = {statsLogFilePath},
+
+      .maxApiLayer = maxApiLayer,
       .enableHighBitrateVideo = false,
       .preferredVideoCodecs = {/*cricket::kVp9CodecName*/},
-
-      .logPath = {logFilePath},
-      .statsLogPath = {statsLogFilePath}
     },
+    .endpoints = endpoints,
+    .rtcServers = rtcServers,
+    .initialNetworkType = networkType,
+    .encryptionKey = tgcalls::EncryptionKey(
+      std::move(encryptionKey),
+      isOutgoingCall
+    ),
     .videoCapture = nullptr,
     .stateUpdated = [javaController](tgcalls::State state) {
       javaController->runSafely([javaController, state](JNIEnv *env) {
@@ -643,11 +653,6 @@ JNI_OBJECT_FUNC(jlong, voip_TgCallsController, newInstance,
   }
 
   readPersistentState(persistentStateFilePath.c_str(), descriptor.persistentState);
-
-  tgcalls::NetworkType networkType = toNetworkType(env, options.getInt("networkType"));
-  bool audioOutputGainControlEnabled = options.getBoolean("audioGainControlEnabled") == JNI_TRUE;
-  int echoCancellationStrength = options.getInt("echoCancellationStrength");
-  bool muteMicrophone = options.getBoolean("isMicDisabled") == JNI_TRUE;
 
   if (env->ExceptionCheck()) {
     return 0;

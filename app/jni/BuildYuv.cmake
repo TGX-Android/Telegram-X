@@ -67,8 +67,6 @@ target_include_directories(yuv PUBLIC
 
 target_compile_options(yuv PRIVATE
   -fexceptions
-  -finline-functions -ffast-math
-  -Os
   -fno-unwind-tables -fno-asynchronous-unwind-tables
   -Wnon-virtual-dtor -Woverloaded-virtual
   -Wno-unused-parameter

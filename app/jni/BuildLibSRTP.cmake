@@ -55,7 +55,7 @@ target_compile_definitions(srtp PRIVATE
   HAVE_NETINET_IN_H
   HAVE_SYS_TYPES_H
   HAVE_UNISTD_H
-  )
+)
 target_include_directories(srtp PRIVATE
   "${STUB_DIR}"
 )

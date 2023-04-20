@@ -25,7 +25,9 @@
 #endif
 
 int jni_init(JavaVM *vm, JNIEnv *env);
+#ifndef NO_TGCALLS
 int voipOnJNILoad(JavaVM *vm, JNIEnv *env);
+#endif
 
 jint JNI_OnLoad (JavaVM *vm, void *reserved) {
   JNIEnv *env = 0;
@@ -49,9 +51,11 @@ jint JNI_OnLoad (JavaVM *vm, void *reserved) {
       return -1;
   }*/
 
+#ifndef NO_TGCALLS
   if (voipOnJNILoad(vm, env) == -1) {
       return -1;
   }
+#endif
 
   return JNI_VERSION_1_6;
 }
