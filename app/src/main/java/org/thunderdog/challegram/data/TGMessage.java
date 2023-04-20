@@ -8587,6 +8587,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     } else {
       isTranslatedCounter.hide(animated);
     }
+    this.buildReactions(animated);
   }
 
   private void checkSelectLanguageWarning (boolean force) {
