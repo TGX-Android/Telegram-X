@@ -78,7 +78,7 @@ public final class TranslationsManager {
     statusDelegate.setTranslatedStatus(TranslationCounterDrawable.TRANSLATE_STATUS_LOADING, true);
     tdlib.ui().post(() -> requestTranslationImpl(textToTranslate, language, object -> tdlib.ui().post(() -> {
       if (object instanceof TdApi.FormattedText) {
-        TdApi.FormattedText text = (TdApi.FormattedText) object;
+        TdApi.FormattedText text = prepareTranslatedText((TdApi.FormattedText) object);
         saveCachedTextTranslation(textToTranslate.text, language, text);
         if (StringUtils.equalsOrBothEmpty(currentTranslatedLanguage, language)) {
           statusDelegate.setTranslatedStatus(TranslationCounterDrawable.TRANSLATE_STATUS_SUCCESS, true);
@@ -157,10 +157,40 @@ public final class TranslationsManager {
         TdApi.TextEntity entity = text.entities[a];
         if (entity.type instanceof TdApi.TextEntityTypeUrl) {
           String url = text.text.substring(entity.offset, entity.offset + entity.length);
-          TdApi.TextEntityTypeTextUrl newEntityTypeUrl = new TdApi.TextEntityTypeTextUrl(url);
+          TdApi.TextEntityType newEntityTypeUrl = new TdApi.TextEntityTypeTextUrl(url);
+          entities[a] = new TdApi.TextEntity(entity.offset, entity.length, newEntityTypeUrl);
+        } else if (entity.type instanceof TdApi.TextEntityTypeMention) {
+          String username = text.text.substring(entity.offset + 1, entity.offset + entity.length);
+          TdApi.TextEntityType newEntityTypeUrl = new TdApi.TextEntityTypeTextUrl("https://t.me/" + username);
+          entities[a] = new TdApi.TextEntity(entity.offset, entity.length, newEntityTypeUrl);
+        }  else if (entity.type instanceof TdApi.TextEntityTypeHashtag) {
+          TdApi.TextEntityType newEntityTypeUrl = new TdApi.TextEntityTypeCode();
           entities[a] = new TdApi.TextEntity(entity.offset, entity.length, newEntityTypeUrl);
         } else {
           entities[a] = entity;
+        }
+      }
+
+      return new TdApi.FormattedText(text.text, entities);
+    } catch (Exception e) {
+      return text;
+    }
+  }
+
+  public static TdApi.FormattedText prepareTranslatedText (TdApi.FormattedText text) {
+    if (text == null || text.entities == null || text.entities.length == 0) {
+      return text;
+    }
+    try {
+      TdApi.TextEntity[] entities = new TdApi.TextEntity[text.entities.length];
+      for (int a = 0; a < entities.length; a++) {
+        TdApi.TextEntity entity = entities[a] = text.entities[a];
+        if (entity.type instanceof TdApi.TextEntityTypeCode) {
+          String code = text.text.substring(entity.offset, entity.offset + entity.length);
+          if (code.startsWith("#")) {
+            TdApi.TextEntityType newEntityType = new TdApi.TextEntityTypeHashtag();
+            entities[a] = new TdApi.TextEntity(entity.offset, entity.length, newEntityType);
+          }
         }
       }
 
