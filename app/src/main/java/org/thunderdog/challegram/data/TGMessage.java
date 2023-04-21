@@ -8484,20 +8484,35 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (languageSelectorTooltip == null) return;
 
     float x = Math.max(languageSelectorTooltip.getContentRight() - Screen.dp(178 + 16), 0);
-    float y = useBubbles() ?
-      Math.max(languageSelectorTooltip.getContentBottom() - Screen.dp(280 + 16), HeaderView.getSize(true)):
-      Math.min(languageSelectorTooltip.getContentTop(), Screen.currentHeight() - Screen.dp(280 + 16));
+    float y;
+    float pivotY;
+    if (useBubbles()) {
+      y = languageSelectorTooltip.getContentBottom() - Screen.dp(280 + 16);
+      pivotY = Screen.dp(288);
+      if (y < HeaderView.getTopOffset()) {
+        pivotY = Screen.dp(288) - (HeaderView.getTopOffset() - y);
+        y = HeaderView.getTopOffset();
+      }
+    } else {
+      pivotY = Screen.dp(8);
+      y = languageSelectorTooltip.getContentTop();
+      if (y > Screen.currentHeight() - Screen.dp(280 + 16)) {
+        pivotY = Screen.dp(24) + y - (Screen.currentHeight() - Screen.dp(280 + 16));
+        y = Screen.currentHeight() - Screen.dp(280 + 16);
+      }
+    }
 
     TranslationControllerV2.LanguageSelectorPopup languagePopupLayout = new TranslationControllerV2.LanguageSelectorPopup(v.getContext(), this::onLanguageChanged, mTranslationsManager.getCurrentTranslatedLanguage(), getOriginalMessageLanguage());
-    languagePopupLayout.languageRecyclerWrap.setAnchorMode(MenuMoreWrap.ANCHOR_MODE_RIGHT);
+    // languagePopupLayout.languageRecyclerWrap.setAnchorMode(MenuMoreWrap.ANCHOR_MODE_RIGHT);
     languagePopupLayout.languageRecyclerWrap.setTranslationX(x);
     languagePopupLayout.languageRecyclerWrap.setTranslationY(y);
-    languagePopupLayout.languageRecyclerWrap.setShouldPivotBottom(useBubbles());
 
     FrameLayoutFix.LayoutParams params = (FrameLayoutFix.LayoutParams) languagePopupLayout.languageRecyclerWrap.getLayoutParams();
     params.gravity = Gravity.TOP | Gravity.LEFT;
 
     languagePopupLayout.show();
+    languagePopupLayout.languageRecyclerWrap.setPivotX(Screen.dp(178 + 8));
+    languagePopupLayout.languageRecyclerWrap.setPivotY(pivotY);
   }
 
   private void onLanguageChanged (String language) {

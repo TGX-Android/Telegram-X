@@ -248,11 +248,19 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
   }
 
   private void showTranslateOptions () {
-    int y = (int) MathUtils.clamp(headerView != null ? headerView.getTranslationY(): 0, 0, parent.getTargetHeight() - Screen.dp(280 + 16));
+    int y = (int) Math.max(headerView != null ? headerView.getTranslationY(): 0, 0);
+    int maxY = parent.getTargetHeight() - Screen.dp(280 + 16);
+    int pivotY = Screen.dp(8);
+    if (y > maxY) {
+      pivotY = Screen.dp(24) + y - maxY;
+      y = maxY;
+    }
+
 
     LanguageSelectorPopup languagePopupLayout = new LanguageSelectorPopup(context, mTranslationsManager::requestTranslation, mTranslationsManager.getCurrentTranslatedLanguage(), messageOriginalLanguage);
     languagePopupLayout.languageRecyclerWrap.setTranslationY(y);
     languagePopupLayout.show();
+    languagePopupLayout.languageRecyclerWrap.setPivotY(pivotY);
   }
 
   private void updateAnimations () {
