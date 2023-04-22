@@ -8562,7 +8562,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public boolean isTranslatable () {
-    return !Td.isEmpty(textToTranslate) && !Settings.instance().isNotTranslatableLanguage(textToTranslateOriginalLanguage);
+    return !Td.isEmpty(textToTranslate) && (flags & FLAG_UNSUPPORTED) == 0 && !Settings.instance().isNotTranslatableLanguage(textToTranslateOriginalLanguage);
   }
 
   @Override
