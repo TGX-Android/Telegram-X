@@ -876,5 +876,6 @@ public class TGMessageMedia extends TGMessage {
     checkCommonCaption(true);
     rebuildAndUpdateContent();
     invalidateTextMediaReceiver();
+    super.setTranslationResult(text);
   }
 }

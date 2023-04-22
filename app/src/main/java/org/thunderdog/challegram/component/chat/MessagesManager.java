@@ -1823,10 +1823,28 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
   }
 
+  public void updateMessageTranslation (long chatId, long messageId, TdApi.FormattedText translatedText) {
+    tdlib.ui().post(() -> {
+      if (loader.getChatId() == chatId) {
+        controller.onInlineTranslationChanged(chatId, messageId, translatedText);
+        ArrayList<TGMessage> items = adapter.getItems();
+        if (!adapter.isEmpty() && items != null) {
+          for (TGMessage item : items) {
+            TdApi.Message msg = item.getMessage();
+            if (msg.replyToMessageId == messageId) {
+              item.replaceReplyTranslation(messageId, translatedText);
+            }
+          }
+        }
+      }
+    });
+  }
+
   private void updateMessageEdited (long messageId, int editDate, @Nullable TdApi.ReplyMarkup replyMarkup) {
     int index = adapter.indexOfMessageContainer(messageId);
     if (index != -1) {
-      switch (adapter.getItem(index).setMessageEdited(messageId, editDate, replyMarkup)) {
+      TGMessage message = adapter.getItem(index);
+      switch (message.setMessageEdited(messageId, editDate, replyMarkup)) {
         case TGMessage.MESSAGE_INVALIDATED: {
           invalidateViewAt(index);
           break;
@@ -1836,6 +1854,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           break;
         }
       }
+      message.stopTranslated();
     }
     ThreadInfo messageThread = loader.getMessageThread();
     if (messageThread != null) {

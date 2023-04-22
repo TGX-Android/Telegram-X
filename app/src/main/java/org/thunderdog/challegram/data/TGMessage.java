@@ -3257,6 +3257,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
   }
 
+  public final void replaceReplyTranslation (long messageId, @Nullable TdApi.FormattedText translation) {
+    if (msg.replyToMessageId == messageId && replyData != null) {
+      replyData.replaceMessageTranslation(messageId, translation);
+    }
+  }
+
   public final void removeReply (long messageId) {
     if (msg.replyToMessageId == messageId && replyData != null) {
       replyData.deleteMessageContent(messageId);
@@ -8617,5 +8623,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
   }
 
-  protected void setTranslationResult (@Nullable TdApi.FormattedText text) {};
+  protected void setTranslationResult (@Nullable TdApi.FormattedText text) {
+    manager.updateMessageTranslation(getChatId(), getSmallestId(), text);
+  };
 }

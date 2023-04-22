@@ -1600,5 +1600,6 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     applyPoll(getPoll(), true);
     rebuildAndUpdateContent();
     invalidateTextMediaReceiver();
+    super.setTranslationResult(text);
   }
 }

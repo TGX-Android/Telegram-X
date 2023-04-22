@@ -7366,6 +7366,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
+  public void onInlineTranslationChanged (long chatId, long messageId, TdApi.FormattedText text) {
+
+  }
+
   public void onMessagesDeleted (long chatId, long[] messageIds) {
     if (editingMessage != null && editingMessage.chatId == chatId && ArrayUtils.indexOf(messageIds, editingMessage.id) != -1) {
       closeEdit();

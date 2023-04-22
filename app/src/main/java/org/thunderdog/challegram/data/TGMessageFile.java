@@ -760,5 +760,6 @@ public class TGMessageFile extends TGMessage {
     }
     rebuildAndUpdateContent();
     invalidateTextMediaReceiver();
+    super.setTranslationResult(text);
   }
 }
