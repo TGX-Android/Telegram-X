@@ -97,6 +97,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
   private @Nullable AvatarReceiver avatarReceiver;
   private @Nullable TextView senderTextView;
   private @Nullable TextView dateTextView;
+  private boolean isProtected;
 
   private TranslationControllerV2 (Context context, Tdlib tdlib, Wrapper parent) {
     super(context, tdlib);
@@ -131,6 +132,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
 
     TGMessage message = (messageToTranslate instanceof TGMessage) ? ((TGMessage) messageToTranslate) : null;
     if (message != null) {
+      isProtected = !message.canBeSaved();
       avatarReceiver = new AvatarReceiver(senderAvatarView);
       senderAvatarView = new View(context) {
         @Override
@@ -478,10 +480,14 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     IntList ids = new IntList(1);
     IntList colors = new IntList(1);
 
-    ids.append(R.id.btn_copyTranslation);
-    strings.append(R.string.TranslationCopy);
-    icons.append(R.drawable.baseline_content_copy_24);
-    colors.append(OPTION_COLOR_NORMAL);
+    if (!isProtected) {
+      ids.append(R.id.btn_copyTranslation);
+      strings.append(R.string.TranslationCopy);
+      icons.append(R.drawable.baseline_content_copy_24);
+      colors.append(OPTION_COLOR_NORMAL);
+    }
+
+    if (ids.isEmpty()) return;
 
     showOptions(null, ids.get(), strings.get(), colors.get(), icons.get(), (itemView, id) -> {
       if (id == R.id.btn_copyTranslation) {
