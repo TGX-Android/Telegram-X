@@ -8,21 +8,22 @@ import org.thunderdog.challegram.Log;
 
 public class LanguageDetector {
   public interface StringCallback {
-    void run(String str);
-  }
-  public interface ExceptionCallback {
-    void run(Exception e);
+    void run (String str);
   }
 
-  public static boolean hasSupport() {
+  public interface ExceptionCallback {
+    void run (Exception e);
+  }
+
+  public static boolean hasSupport () {
     return true;
   }
 
-  public static void detectLanguage(Context context, String text, StringCallback onSuccess, @Nullable ExceptionCallback onFail) {
+  public static void detectLanguage (Context context, String text, StringCallback onSuccess, @Nullable ExceptionCallback onFail) {
     detectLanguage(context, text, onSuccess, onFail, false);
   }
 
-  private static void detectLanguage(Context context, String text, StringCallback onSuccess, ExceptionCallback onFail, boolean initializeFirst) {
+  private static void detectLanguage (Context context, String text, StringCallback onSuccess, ExceptionCallback onFail, boolean initializeFirst) {
     try {
       if (initializeFirst) {
         com.google.mlkit.common.sdkinternal.MlKitContext.zza(context);
