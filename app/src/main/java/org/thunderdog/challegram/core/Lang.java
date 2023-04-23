@@ -3757,27 +3757,30 @@ public class Lang {
   }
 
 
-  public static final String[] supportedLanguagesForTranslate = new String[] {
-    "af", "sq", "am", "ar", "hy", "az", "eu", "be", "bn", "bs", "bg", "ca", "ceb", "zh-CN",
-    "zh", "zh-Hans", "zh-TW", "zh-Hant", "co", "hr", "cs", "da", "nl", "en", "eo", "et", "fi",
-    "fr", "fy", "gl", "ka", "de", "el", "gu", "ht", "ha", "haw", "he", "iw", "hi", "hmn", "hu",
-    "is", "ig", "id", "in", "ga", "it", "ja", "jv", "kn", "kk", "km", "rw", "ko", "ku", "ky",
-    "lo", "la", "lv", "lt", "lb", "mk", "mg", "ms", "ml", "mt", "mi", "mr", "mn", "my", "ne",
-    "no", "ny", "or", "ps", "fa", "pl", "pt", "pa", "ro", "ru", "sm", "gd", "sr", "st", "sn",
-    "sd", "si", "sk", "sl", "so", "es", "su", "sw", "sv", "tl", "tg", "ta", "tt", "te", "th",
-    "tr", "tk", "uk", "ur", "ug", "uz", "vi", "cy", "xh", "yi", "ji", "yo", "zu"
-  };
+  private static String[] supportedLanguagesForTranslateFiltred;
 
-  public static final String[] supportedLanguagesForTranslateFiltred;
+  public static String[] getSupportedLanguagesForTranslate () {
+    if (supportedLanguagesForTranslateFiltred == null) {
+      final String[] supportedLanguagesForTranslate = new String[] {
+        "af", "sq", "am", "ar", "hy", "az", "eu", "be", "bn", "bs", "bg", "ca", "ceb", "zh-CN",
+        "zh", "zh-Hans", "zh-TW", "zh-Hant", "co", "hr", "cs", "da", "nl", "en", "eo", "et", "fi",
+        "fr", "fy", "gl", "ka", "de", "el", "gu", "ht", "ha", "haw", "he", "iw", "hi", "hmn", "hu",
+        "is", "ig", "id", "in", "ga", "it", "ja", "jv", "kn", "kk", "km", "rw", "ko", "ku", "ky",
+        "lo", "la", "lv", "lt", "lb", "mk", "mg", "ms", "ml", "mt", "mi", "mr", "mn", "my", "ne",
+        "no", "ny", "or", "ps", "fa", "pl", "pt", "pa", "ro", "ru", "sm", "gd", "sr", "st", "sn",
+        "sd", "si", "sk", "sl", "so", "es", "su", "sw", "sv", "tl", "tg", "ta", "tt", "te", "th",
+        "tr", "tk", "uk", "ur", "ug", "uz", "vi", "cy", "xh", "yi", "ji", "yo", "zu"
+      };
 
-  static {
-    StringList list = new StringList(supportedLanguagesForTranslate.length);
-    for (String lang: Lang.supportedLanguagesForTranslate) {
-      if (Lang.getLanguageName(lang, null) != null) {
-        list.append(lang);
+      StringList list = new StringList(supportedLanguagesForTranslate.length);
+      for (String lang: supportedLanguagesForTranslate) {
+        if (Lang.getLanguageName(lang, null) != null) {
+          list.append(lang);
+        }
       }
+      supportedLanguagesForTranslateFiltred = list.get();
     }
-    supportedLanguagesForTranslateFiltred = list.get();
+    return supportedLanguagesForTranslateFiltred;
   }
 
   public static @Nullable String getDefaultLanguageToTranslateV2 (@Nullable String sourceLanguage) {
@@ -3805,17 +3808,6 @@ public class Lang {
     }
 
     return null;
-  }
-
-  public static String getDefaultLanguageToTranslate () {
-    String userLanguageCode = Settings.instance().getLanguage().packInfo.pluralCode;
-    for (String s : supportedLanguagesForTranslate) {
-      if (StringUtils.equalsTo(userLanguageCode, s)) {
-        return userLanguageCode;
-      }
-    }
-
-    return "en";
   }
 
   public static String getLanguageName (String code, String defaultName) {

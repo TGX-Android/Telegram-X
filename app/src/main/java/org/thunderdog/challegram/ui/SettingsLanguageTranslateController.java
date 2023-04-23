@@ -122,9 +122,9 @@ public class SettingsLanguageTranslateController extends RecyclerViewController<
   private void addLanguagesItems (List<ListItem> items) {
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-    for (int a = 0; a < Lang.supportedLanguagesForTranslateFiltred.length; a++) {
+    for (int a = 0; a < Lang.getSupportedLanguagesForTranslate().length; a++) {
       TdApi.LanguagePackInfo languageInfo = new TdApi.LanguagePackInfo();
-      languageInfo.id = Lang.supportedLanguagesForTranslateFiltred[a];
+      languageInfo.id = Lang.getSupportedLanguagesForTranslate()[a];
       Lang.fixLanguageCode(languageInfo.id, languageInfo);
       if (a != 0) items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_CHECKBOX, R.id.language, 0, languageInfo.nativeName, false).setData(languageInfo));

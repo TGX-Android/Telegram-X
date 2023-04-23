@@ -746,7 +746,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
 
     public LanguageAdapter (Context context, View.OnClickListener listener, String selected, String original) {
       this.recents = Settings.instance().getTranslateLanguageRecents();
-      this.languages = new ArrayList<>(Lang.supportedLanguagesForTranslateFiltred.length);
+      this.languages = new ArrayList<>(Lang.getSupportedLanguagesForTranslate().length);
       this.listener = listener;
       this.context = context;
 
@@ -758,7 +758,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
         addLanguage(lang);
       }
 
-      for (String lang: Lang.supportedLanguagesForTranslateFiltred) {
+      for (String lang: Lang.getSupportedLanguagesForTranslate()) {
         if (StringUtils.equalsOrBothEmpty(lang, selected)) continue;
         if (StringUtils.equalsOrBothEmpty(lang, original)) continue;
         if (recents.contains(lang)) continue;
