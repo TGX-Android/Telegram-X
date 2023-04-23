@@ -1122,7 +1122,7 @@ public class Settings {
   }
 
   public void clearTranslateLanguageRecents () {
-    pmc.edit().remove(KEY_CHAT_TRANSLATE_RECENTS).apply();
+    pmc.remove(KEY_CHAT_TRANSLATE_RECENTS);
   }
 
   public static final int CHAT_MODE_2LINE = 1;
