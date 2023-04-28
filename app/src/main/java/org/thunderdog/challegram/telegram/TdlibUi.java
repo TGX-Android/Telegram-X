@@ -3619,7 +3619,7 @@ public class TdlibUi extends Handler {
               });
               return;
             }
-            case TdApi.InternalLinkTypeFilterSettings.CONSTRUCTOR: {
+            case TdApi.InternalLinkTypeChatFolderSettings.CONSTRUCTOR: {
               // TODO show chat folders screen
               ok = false;
               break;
