@@ -7729,12 +7729,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     final String username = Td.primaryUsername(user);
 
-    if (switchInline.inCurrentChat && canWriteMessages() && hasWritePermission()) { // FIXME rightId.SEND_OTHER_MESSAGES
+    if (switchInline.targetChat.getConstructor() == TdApi.TargetChatCurrent.CONSTRUCTOR && canWriteMessages() && hasWritePermission()) { // FIXME rightId.SEND_OTHER_MESSAGES
       if (inputView != null) {
         inputView.setInput("@" + username + " " + switchInline.query, true, true);
       }
       return;
     }
+
+    // TODO support TargetChatInternalLink
 
     tdlib.ui().switchInline(this, username, switchInline.query, false);
   }
