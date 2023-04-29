@@ -106,14 +106,21 @@ public class MessageOptionsReactedController extends BottomSheetViewController.B
 
   private void processNewAddedReactions (TdApi.AddedReactions addedReactions) {
     final TdApi.AddedReaction[] reactions = addedReactions.reactions;
+    long senders;
 
     List<ListItem> items = adapter.getItems();
     for (TdApi.AddedReaction reaction : reactions) {
       if (!items.isEmpty()) {
         items.add(new ListItem(ListItem.TYPE_SEPARATOR));
       }
+      if (reaction.senderId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR) {
+        senders = ((TdApi.MessageSenderUser) reaction.senderId).userId;
+      } else {
+        senders = ((TdApi.MessageSenderChat) reaction.senderId).chatId;
+      }
+
       ListItem item = new ListItem(ListItem.TYPE_USER_SMALL, R.id.user)
-        .setLongId(((TdApi.MessageSenderUser) reaction.senderId).userId)
+        .setLongId(senders)
         .setIntValue(reaction.date)
         .setStringValue(TD.makeReactionKey(reaction.type));
       items.add(item);
