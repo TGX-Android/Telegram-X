@@ -54,7 +54,13 @@ public class MessageOptionsReactedController extends BottomSheetViewController.B
       @Override
       protected void setUser (ListItem item, int position, UserView userView, boolean isUpdate) {
         final TGReaction reactionObj = tdlib.getReaction(TD.toReactionType(item.getStringValue()));
-        TGUser user = new TGUser(tdlib, tdlib.chatUser(item.getLongId()));
+        TdApi.ChatType chatType = tdlib.chatType(item.getLongId());
+        TGUser user;
+        if (chatType.getConstructor() == TdApi.ChatTypePrivate.CONSTRUCTOR) {
+           user = new TGUser(tdlib, tdlib.chatUser(item.getLongId()));
+        } else {
+          user = new TGUser(tdlib, tdlib.chat(item.getLongId()));
+        }
         user.setActionDateStatus(item.getIntValue(), R.string.reacted);
         userView.setUser(user);
         if (item.getStringValue().length() > 0 && reactionObj != null && reactionType == null) {
