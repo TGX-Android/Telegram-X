@@ -3,7 +3,9 @@ package org.thunderdog.challegram.ui;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
+import android.text.TextPaint;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -53,6 +55,7 @@ import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextEntity;
+import org.thunderdog.challegram.util.text.TextStyleProvider;
 import org.thunderdog.challegram.util.text.TextWrapper;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.PopupLayout;
@@ -94,8 +97,9 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
   private ToggleHeaderView2 headerCell;
   private HeaderButton translationHeaderButton;
   private @Nullable View senderAvatarView;
+  private @Nullable LinearLayout linearLayout;
   private @Nullable AvatarReceiver avatarReceiver;
-  private @Nullable TextView senderTextView;
+  private @Nullable SenderTextView senderTextView;
   private @Nullable TextView dateTextView;
   private boolean isProtected;
 
@@ -164,16 +168,10 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
       message.requestAvatar(avatarReceiver, true);
       wrapView.addView(senderAvatarView, FrameLayoutFix.newParams(Screen.dp(20), Screen.dp(20), Gravity.LEFT | Gravity.BOTTOM, Screen.dp(18), 0, 0, Screen.dp(16)));
 
-      LinearLayout linearLayout = new LinearLayout(context);
+      linearLayout = new LinearLayout(context);
       linearLayout.setOrientation(LinearLayout.HORIZONTAL);
 
-      senderTextView = new TextView(context);
-      senderTextView.setTextColor(Theme.getColor(R.id.theme_color_textLight));
-      senderTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
-      senderTextView.setTypeface(Fonts.getRobotoMedium());
-      senderTextView.setGravity(Gravity.CENTER_VERTICAL | Gravity.LEFT);
-      senderTextView.setMaxLines(1);
-      senderTextView.setEllipsize(TextUtils.TruncateAt.END);
+      senderTextView = new SenderTextView(context);
 
       TGSource forwardInfo = message.getForwardInfo();
       int forwardTime = message.getForwardTimeStamp();
@@ -245,8 +243,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     float translation = Math.max(y3 - y2, 0);
 
     if (senderAvatarView != null) senderAvatarView.setTranslationY(translation);
-    if (senderTextView != null) senderTextView.setTranslationY(translation);
-    if (dateTextView != null) dateTextView.setTranslationY(translation);
+    if (linearLayout != null) linearLayout.setTranslationY(translation);
   }
 
   private void showTranslateOptions () {
@@ -881,6 +878,42 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
       if (drawable != null) {
         Drawables.draw(canvas, drawable, getMeasuredWidth() - Screen.dp(40), Screen.dp(13), Paints.getPorterDuffPaint(Theme.getColor(isSelected ? R.id.theme_color_iconActive: R.id.theme_color_icon)));
       }
+    }
+  }
+
+  private class SenderTextView extends View {
+    private String senderString;
+    private Text senderText;
+
+    public SenderTextView (Context context) {
+      super(context);
+    }
+
+    public void setText (String text) {
+      senderString = text;
+    }
+
+    @Override
+    protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
+      super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+      updateSenderText(getMeasuredWidth());
+    }
+
+    protected void updateSenderText (int maxWidth) {
+      TextPaint textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
+      textPaint.setTypeface(Fonts.getRobotoMedium());
+      TextStyleProvider textStyleProvider = new TextStyleProvider(textPaint);
+      textStyleProvider.setTextSize(12);
+      senderText = new Text.Builder(senderString, maxWidth, textStyleProvider, () -> Theme.getColor(R.id.theme_color_textLight))
+        .singleLine()
+        .clipTextArea()
+        .view(this)
+        .build();
+    }
+
+    @Override
+    protected void onDraw (Canvas canvas) {
+      senderText.draw(canvas, 0, (getMeasuredHeight() - Screen.dp(12)) / 2 - Screen.dp(1) );
     }
   }
 }
