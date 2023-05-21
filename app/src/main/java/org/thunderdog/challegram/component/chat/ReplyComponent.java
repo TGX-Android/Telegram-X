@@ -105,6 +105,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     }
     this.tdlib = message.tdlib();
     this.parent = message;
+    this.translatedText = message.getTranslatedText();
     /*TODO optimize displaying for channels, where you can reply to yourself only?
        if (channelTitle != null) {
       flags |= FLAG_CHANNEL;
@@ -556,7 +557,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
   private void setContent (final String title, final TD.ContentPreview content, boolean hasSpoiler, final Path contour, final ImageFile miniThumbnail, final ImageFile preview, final boolean previewCircle, final boolean forceRequest) {
     Background.instance().post(() -> {
       ReplyComponent.this.currentMessage = null;
-      ReplyComponent.this.content = content;
+      ReplyComponent.this.content = new TD.ContentPreview(translatedText, content);
       setTitleImpl(title);
       ReplyComponent.this.contour = contour;
       ReplyComponent.this.miniThumbnail = miniThumbnail;
@@ -577,6 +578,17 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
   public boolean replaceMessageContent (long messageId, TdApi.MessageContent content) {
     if (currentMessage != null && currentMessage.id == messageId) {
       currentMessage.content = content;
+      parseContent(currentMessage, true);
+      return true;
+    }
+    return false;
+  }
+
+  private TdApi.FormattedText translatedText;
+
+  public boolean replaceMessageTranslation (long messageId, TdApi.FormattedText translation) {
+    if (currentMessage != null && currentMessage.id == messageId) {
+      translatedText = translation;
       parseContent(currentMessage, true);
       return true;
     }
@@ -773,7 +785,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
       StringUtils.isEmpty(senderName) ? tdlib.senderName(sender, isMessageComponent()) :
       Lang.getString(isChannel() ? R.string.format_channelAndSignature : R.string.format_chatAndSignature, tdlib.senderName(sender, isMessageComponent()), senderName);
     if (Thread.currentThread() == Background.instance().thread() || forceLocal) {
-      this.content = contentPreview;
+      this.content = new TD.ContentPreview(translatedText, contentPreview);
       setTitleImpl(title);
       this.miniThumbnail = miniPreview;
       this.contour = contour;

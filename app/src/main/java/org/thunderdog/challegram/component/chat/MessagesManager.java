@@ -155,6 +155,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     };
 
     this.useReactionBubblesValue = checkReactionBubbles();
+    this.usedTranslateStyleMode = checkTranslateStyleMode();
   }
 
   public int getKnownTotalMessageCount () {
@@ -733,6 +734,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
     subscribeForUpdates();
     this.useReactionBubblesValue = checkReactionBubbles();
+    this.usedTranslateStyleMode = checkTranslateStyleMode();
     this.wasScrollByUser = false;
   }
 
@@ -954,7 +956,14 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     return useReactionBubblesValue;
   }
 
+  private int usedTranslateStyleMode;
+  private int checkTranslateStyleMode () {
+    return Settings.instance().getChatTranslateMode();
+  }
 
+  public int getUsedTranslateStyleMode () {
+    return usedTranslateStyleMode;
+  }
 
   @Nullable
   @Override
@@ -1480,11 +1489,17 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     if (view == null) {
       return;
     }
-
+    final int top = view.getTop();
     final int bottom = view.getBottom();
     if (bottom > recyclerHeight) {
-      final int index = adapter.indexOfMessageContainer(messageId);
-      scrollCompensation(view, heightDiff, index, recyclerHeight, bottom);
+      if (top > 0) {
+        scrollCompensation(view, heightDiff);
+      } else {
+        int topHidden = -top;
+        int bottomHidden = bottom - recyclerHeight;
+        float compensationScale = ((float) bottomHidden) / ((float)(topHidden + bottomHidden));
+        scrollCompensation(view, (int) (heightDiff * compensationScale));
+      }
       return;
     }
 
@@ -1494,28 +1509,24 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       if (unreadBadgeIndex != -1 && index != -1 && index <= unreadBadgeIndex) {
         View unreadBadgeView = manager.findViewByPosition(unreadBadgeIndex);
         if (unreadBadgeView != null && unreadBadgeView.getTop() <= controller.getTopOffset()) {
-          scrollCompensation(view, heightDiff, index, recyclerHeight, bottom);
+          scrollCompensation(view, heightDiff);
           return;
         }
       }
     }
   }
 
-  private void scrollCompensation (View view, int heightDiff, int index, int recyclerHeight, int bottom) {
-    OnGlobalLayoutListener listener = new OnGlobalLayoutListener(controller.getMessagesView(), view, heightDiff);
+  private void scrollCompensation (View view, int offset) {
+    OnGlobalLayoutListener listener = new OnGlobalLayoutListener(controller.getMessagesView(), view, offset);
     listener.add();
-
-    //tdlib.ui().post(() -> controller.getMessagesView().scrollBy(0, heightDiff));
-    // controller.getMessagesView().scrollBy(0, heightDiff);
-    // manager.scrollToPositionWithOffset(index, recyclerHeight - bottom + heightDiff);
   }
 
-  private static class OnGlobalLayoutListener implements ViewTreeObserver.OnGlobalLayoutListener {
-    private MessagesRecyclerView recyclerView;
-    private ViewTreeObserver observer;
+  public static class OnGlobalLayoutListener implements ViewTreeObserver.OnGlobalLayoutListener {
+    private final RecyclerView recyclerView;
+    private final ViewTreeObserver observer;
     private int offset;
 
-    OnGlobalLayoutListener (MessagesRecyclerView r, View v, int offset) {
+    public OnGlobalLayoutListener (RecyclerView r, View v, int offset) {
       this.recyclerView = r;
       this.observer = v.getViewTreeObserver();
       this.offset = offset;
@@ -1812,10 +1823,28 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
   }
 
+  public void updateMessageTranslation (long chatId, long messageId, TdApi.FormattedText translatedText) {
+    tdlib.ui().post(() -> {
+      if (loader.getChatId() == chatId) {
+        controller.onInlineTranslationChanged(chatId, messageId, translatedText);
+        ArrayList<TGMessage> items = adapter.getItems();
+        if (!adapter.isEmpty() && items != null) {
+          for (TGMessage item : items) {
+            TdApi.Message msg = item.getMessage();
+            if (msg.replyToMessageId == messageId) {
+              item.replaceReplyTranslation(messageId, translatedText);
+            }
+          }
+        }
+      }
+    });
+  }
+
   private void updateMessageEdited (long messageId, int editDate, @Nullable TdApi.ReplyMarkup replyMarkup) {
     int index = adapter.indexOfMessageContainer(messageId);
     if (index != -1) {
-      switch (adapter.getItem(index).setMessageEdited(messageId, editDate, replyMarkup)) {
+      TGMessage message = adapter.getItem(index);
+      switch (message.setMessageEdited(messageId, editDate, replyMarkup)) {
         case TGMessage.MESSAGE_INVALIDATED: {
           invalidateViewAt(index);
           break;
@@ -1825,6 +1854,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           break;
         }
       }
+      message.stopTranslated();
     }
     ThreadInfo messageThread = loader.getMessageThread();
     if (messageThread != null) {

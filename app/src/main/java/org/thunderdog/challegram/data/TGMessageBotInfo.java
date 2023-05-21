@@ -20,6 +20,8 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewParent;
 
+import androidx.annotation.Nullable;
+
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.MessageView;
@@ -38,6 +40,7 @@ import me.vkryl.td.ChatId;
 public class TGMessageBotInfo extends TGMessage {
   private TextWrapper titleWrapper;
   private TextWrapper textWrapper;
+  private TdApi.FormattedText description;
 
   private Drawable icon;
 
@@ -58,6 +61,7 @@ public class TGMessageBotInfo extends TGMessage {
       .setEntities(TextEntity.valueOf(tdlib, description, null), null)
       .setClickCallback(clickCallback());
     this.textWrapper.setViewProvider(currentViews);
+    this.description = description;
 
     icon = Drawables.get(context.controller().context().getResources(), R.drawable.baseline_help_24);
   }
@@ -93,7 +97,7 @@ public class TGMessageBotInfo extends TGMessage {
   }
 
   @Override
-  protected boolean isFakeMessage () {
+  public boolean isFakeMessage () {
     return true;
   }
 
@@ -203,5 +207,11 @@ public class TGMessageBotInfo extends TGMessage {
   public boolean performLongPress (View view, float x, float y) {
     boolean res = super.performLongPress(view, x, y);
     return textWrapper.performLongPress(view) || res;
+  }
+
+  @Nullable
+  @Override
+  public TdApi.FormattedText getTextToTranslateImpl () {
+    return description;
   }
 }

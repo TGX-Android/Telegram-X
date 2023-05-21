@@ -35,8 +35,10 @@ import androidx.core.view.ViewCompat;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
@@ -44,6 +46,7 @@ import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
@@ -252,6 +255,66 @@ public class TooltipOverlayView extends ViewGroup {
     }
   }
 
+  public static class TooltipLanguageSelectorView extends TooltipContentView {
+    private final View.OnClickListener listener;
+    private final Drawable arrow;
+    private final String originalLanguage;
+    private final String translatedLanguage;
+    private final int arrowX;
+    private final int width;
+
+    public TooltipLanguageSelectorView (TooltipOverlayView parentView, TGMessage message, View.OnClickListener listener) {
+      super(parentView);
+      this.listener = listener;
+      final String currentLang = message.getCurrentTranslatedLanguage();
+      originalLanguage = Lang.getLanguageName(message.getOriginalMessageLanguage(), Lang.getString(R.string.TranslateLangUnknown));
+      translatedLanguage = Lang.getLanguageName(message.getCurrentTranslatedLanguage(), currentLang != null ? currentLang: originalLanguage);
+      arrowX = (int) U.measureText(originalLanguage, Paints.getRegularTextPaint(14));
+      width = (int)(arrowX + U.measureText(translatedLanguage, Paints.getRegularTextPaint(14)) + Screen.dp(18));
+      arrow = Drawables.get(R.drawable.round_keyboard_arrow_right_16);
+    }
+
+    @Override
+    public boolean layout (TooltipInfo info, int parentWidth, int parentHeight, int maxWidth) {
+      return false;
+    }
+
+    @Override
+    public int getWidth () {
+      return width;
+    }
+
+    @Override
+    public int getHeight () {
+      return Screen.dp(16);
+    }
+
+    @Override
+    public boolean onTouchEvent (TooltipInfo info, View view, MotionEvent e) {
+      boolean isInside = info.isInside(e.getX(), e.getY());
+      if (!isInside) {
+        info.hide(true);
+        return true;
+      }
+      if (e.getAction() == MotionEvent.ACTION_UP) {
+        listener.onClick(view);
+      }
+      return true;
+    }
+
+    @Override
+    public void requestIcons (ComplexReceiver iconReceiver) {
+
+    }
+
+    @Override
+    public void draw (Canvas c, ColorProvider colorProvider, int left, int top, int right, int bottom, float alpha, ComplexReceiver iconReceiver) {
+      c.drawText(originalLanguage, left, top + Screen.dp(14), Paints.getRegularTextPaint(14, Theme.getColor(R.id.theme_color_tooltip_text)));
+      c.drawText(translatedLanguage, left + arrowX + Screen.dp(18), top + Screen.dp(14), Paints.getRegularTextPaint(14, Theme.getColor(R.id.theme_color_tooltip_textLink)));
+      Drawables.draw(c, arrow, left + arrowX + Screen.dp(1), top, Paints.getPorterDuffPaint(Theme.getColor(R.id.theme_color_tooltip_text)));
+    }
+  }
+
   public interface VisibilityListener {
     void onVisibilityChanged (TooltipInfo tooltipInfo, float visibilityFactor);
     void onVisibilityChangeFinished (TooltipInfo tooltipInfo, boolean isVisible);
@@ -431,6 +494,18 @@ public class TooltipOverlayView extends ViewGroup {
 
     public boolean isInside (float x, float y) {
       return x >= contentRect.left && x < contentRect.right && y >= contentRect.top && y < contentRect.bottom;
+    }
+
+    public float getContentRight () {
+      return contentRect.right;
+    }
+
+    public float getContentBottom () {
+      return contentRect.bottom;
+    }
+
+    public float getContentTop () {
+      return contentRect.top;
     }
 
     public void hideNow () {
@@ -1222,6 +1297,10 @@ public class TooltipOverlayView extends ViewGroup {
 
     public TooltipInfo show (TextWrapper textWrapper) {
       return show(new TooltipContentViewTextWrapper(parentView, textWrapper));
+    }
+
+    public TooltipInfo show (TGMessage message, View.OnClickListener listener) {
+      return show(new TooltipLanguageSelectorView(parentView, message, listener));
     }
 
     public TooltipInfo show (TooltipContentView view) {

@@ -51,6 +51,7 @@ import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
+import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.text.Text;
 
 import java.lang.annotation.Retention;
@@ -3753,5 +3754,72 @@ public class Lang {
     if (isDebug)
       return "[DEBUG] " + text;
     return text;
+  }
+
+
+  private static String[] supportedLanguagesForTranslateFiltred;
+
+  public static String[] getSupportedLanguagesForTranslate () {
+    if (supportedLanguagesForTranslateFiltred == null) {
+      final String[] supportedLanguagesForTranslate = new String[] {
+        "af", "sq", "am", "ar", "hy", "az", "eu", "be", "bn", "bs", "bg", "ca", "ceb", "zh-CN",
+        "zh", "zh-Hans", "zh-TW", "zh-Hant", "co", "hr", "cs", "da", "nl", "en", "eo", "et", "fi",
+        "fr", "fy", "gl", "ka", "de", "el", "gu", "ht", "ha", "haw", "he", "iw", "hi", "hmn", "hu",
+        "is", "ig", "id", "in", "ga", "it", "ja", "jv", "kn", "kk", "km", "rw", "ko", "ku", "ky",
+        "lo", "la", "lv", "lt", "lb", "mk", "mg", "ms", "ml", "mt", "mi", "mr", "mn", "my", "ne",
+        "no", "ny", "or", "ps", "fa", "pl", "pt", "pa", "ro", "ru", "sm", "gd", "sr", "st", "sn",
+        "sd", "si", "sk", "sl", "so", "es", "su", "sw", "sv", "tl", "tg", "ta", "tt", "te", "th",
+        "tr", "tk", "uk", "ur", "ug", "uz", "vi", "cy", "xh", "yi", "ji", "yo", "zu"
+      };
+
+      StringList list = new StringList(supportedLanguagesForTranslate.length);
+      for (String lang: supportedLanguagesForTranslate) {
+        if (Lang.getLanguageName(lang, null) != null) {
+          list.append(lang);
+        }
+      }
+      supportedLanguagesForTranslateFiltred = list.get();
+    }
+    return supportedLanguagesForTranslateFiltred;
+  }
+
+  public static @Nullable String getDefaultLanguageToTranslateV2 (@Nullable String sourceLanguage) {
+    ArrayList<String> recents = Settings.instance().getTranslateLanguageRecents();
+    for (String lang: recents) {
+      if (!StringUtils.equalsOrBothEmpty(lang, sourceLanguage)) {
+        return lang;
+      }
+    }
+    String appLanguage = Settings.instance().getLanguage().packInfo.pluralCode;
+    if (!StringUtils.equalsOrBothEmpty(appLanguage, sourceLanguage)) {
+      return appLanguage;
+    }
+
+    String systemLanguage = Locale.getDefault().getLanguage();
+    if (!StringUtils.equalsOrBothEmpty(systemLanguage, sourceLanguage)) {
+      return systemLanguage;
+    }
+
+    String[] notTranslatableLanguages = Settings.instance().getAllNotTranslatableLanguages();
+    for (String lang: notTranslatableLanguages) {
+      if (!StringUtils.equalsOrBothEmpty(lang, sourceLanguage)) {
+        return lang;
+      }
+    }
+
+    return null;
+  }
+
+  public static String getLanguageName (String code, String defaultName) {
+    if (code == null) {
+      return defaultName;
+    }
+
+    TdApi.LanguagePackInfo info = new TdApi.LanguagePackInfo();
+    if (fixLanguageCode(code, info)) {
+      return info.name;
+    }
+
+    return defaultName;
   }
 }

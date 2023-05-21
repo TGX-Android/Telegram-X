@@ -5906,6 +5906,10 @@ public class TD {
       this(copy.emoji, copy.placeholderText, copy.formattedText, copy.isTranslatable, copy.hideAuthor, emoji);
     }
 
+    public ContentPreview (@Nullable TdApi.FormattedText text, ContentPreview copy) {
+      this(copy.emoji, copy.placeholderText, text != null ? text: copy.formattedText, copy.isTranslatable, copy.hideAuthor, copy.parentEmoji);
+    }
+
     public ContentPreview (@Nullable Emoji emoji, int placeholderText, @Nullable TdApi.FormattedText formattedText, boolean isTranslatable, boolean hideAuthor, @Nullable Emoji parentEmoji) {
       this.emoji = emoji;
       this.placeholderText = placeholderText;

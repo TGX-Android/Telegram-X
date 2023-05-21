@@ -33,11 +33,14 @@ import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.component.user.RemoveHelper;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Keyboard;
+import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.MaterialEditTextGroup;
@@ -133,10 +136,26 @@ public class SettingsLanguageController extends RecyclerViewController<Void> imp
       @Override
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
         switch (item.getId()) {
+          case R.id.btn_chatTranslateStyle: {
+            int chatTranslateMode = Settings.instance().getChatTranslateMode();
+            switch (chatTranslateMode) {
+              case Settings.TRANSLATE_MODE_POPUP:
+                view.setData(Lang.getString(R.string.ChatTranslateStyle1));
+                break;
+              case Settings.TRANSLATE_MODE_INLINE:
+                view.setData(Lang.getString(R.string.ChatTranslateStyle2));
+                break;
+              case Settings.TRANSLATE_MODE_NONE:
+                view.setData(Lang.getString(R.string.ChatTranslateStyleDisabled));
+                break;
+            }
+            break;
+          }
           case R.id.language: {
             TdApi.LanguagePackInfo languageInfo = (TdApi.LanguagePackInfo) item.getData();
             view.setInProgress(applyingLanguageInfo == languageInfo, isUpdate);
             view.findRadioView().setChecked(languageInfo.id.equals(Lang.packId()), isUpdate);
+            view.forcePadding(Screen.dp(73), view.getForcedPaddingRight());
             if (Td.isBeta(languageInfo)) {
               view.setName(rawName(languageInfo.nativeName));
               String data = rawName(languageInfo.name);
@@ -222,11 +241,27 @@ public class SettingsLanguageController extends RecyclerViewController<Void> imp
     });
   }
 
+  @Override
+  public void onPrepareToShow () {
+    super.onPrepareToShow();
+    adapter.updateAllValuedSettingsById(R.id.btn_chatTranslateStyle);
+  }
+
+  private int headerItemsOffset = 0;
+
   private void processLanguagePackResult (TdApi.Object result) {
+    headerItemsOffset = 0;
+
     switch (result.getConstructor()) {
       case TdApi.LocalizationTargetInfo.CONSTRUCTOR: {
         TdApi.LocalizationTargetInfo languagePack = (TdApi.LocalizationTargetInfo) result;
         List<ListItem> items = new ArrayList<>(languagePack.languagePacks.length * 2);
+
+        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_chatTranslateStyle, R.drawable.baseline_translate_24, R.string.Translation));
+        items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+        //items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.TranslateSettingsDesc));
+        headerItemsOffset = 2;
+
         boolean first = true;
         TdApi.LanguagePackInfo prevLanguageInfo = null;
         for (TdApi.LanguagePackInfo languageInfo : languagePack.languagePacks) {
@@ -234,13 +269,12 @@ public class SettingsLanguageController extends RecyclerViewController<Void> imp
             first = true;
           }
           if (first) {
+            boolean isEmpty = items.size() <= 3;
             int sectionName = getSectionName(languageInfo);
-            if (sectionName != R.string.LanguageSectionOfficial || !items.isEmpty()) {
-              if (!items.isEmpty())
-                items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-              items.add(new ListItem(items.isEmpty() ? ListItem.TYPE_HEADER_PADDED : ListItem.TYPE_HEADER, 0, 0, sectionName));
-              items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-            }
+            if (!isEmpty)
+              items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+            items.add(new ListItem(ListItem.TYPE_HEADER_PADDED, 0, 0, sectionName));
+            items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
             first = false;
           } else {
             items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
@@ -299,7 +333,7 @@ public class SettingsLanguageController extends RecyclerViewController<Void> imp
                 } else if (next.getViewType() == ListItem.TYPE_SEPARATOR_FULL) {
                   adapter.removeRange(i, 2);
                 } else {
-                  adapter.removeRange(i - 2, 6);
+                  adapter.removeRange(i - 2, 4);
                 }
               }
             }
@@ -344,7 +378,7 @@ public class SettingsLanguageController extends RecyclerViewController<Void> imp
     } else if (Td.isBeta(info)) {
       return R.string.LanguageSectionRaw;
     } else {
-      return R.string.LanguageSectionOfficial;
+      return R.string.Language;
     }
   }
 
@@ -376,6 +410,10 @@ public class SettingsLanguageController extends RecyclerViewController<Void> imp
   @Override
   public void onClick (View v) {
     switch (v.getId()) {
+      case R.id.btn_chatTranslateStyle: {
+        showTranslateOptions();
+        break;
+      }
       case R.id.language: {
         TdApi.LanguagePackInfo languageInfo = (TdApi.LanguagePackInfo) ((ListItem) v.getTag()).getData();
         String code = Lang.packId();
@@ -400,17 +438,15 @@ public class SettingsLanguageController extends RecyclerViewController<Void> imp
     }
     ListItem item = newSettingItem(languageInfo);
     if (Td.isInstalled(firstInfo)) {
-      adapter.getItems().add(2, new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-      adapter.getItems().add(2, item);
-      adapter.notifyItemRangeInserted(2, 2);
+      adapter.getItems().add(2 + headerItemsOffset, new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+      adapter.getItems().add(2 + headerItemsOffset, item);
+      adapter.notifyItemRangeInserted(2 + headerItemsOffset, 2);
     } else {
-      adapter.getItems().add(0, new ListItem(ListItem.TYPE_SHADOW_TOP));
-      adapter.getItems().add(0, new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.LanguageSectionOfficial));
-      adapter.getItems().add(0, new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-      adapter.getItems().add(0, item);
-      adapter.getItems().add(0, new ListItem(ListItem.TYPE_SHADOW_TOP));
-      adapter.getItems().add(0, new ListItem(ListItem.TYPE_HEADER_PADDED, 0, 0, R.string.LanguageSectionInstalled));
-      adapter.notifyItemRangeInserted(0, 6);
+      adapter.getItems().add(headerItemsOffset, new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
+      adapter.getItems().add(headerItemsOffset, item);
+      adapter.getItems().add(headerItemsOffset, new ListItem(ListItem.TYPE_SHADOW_TOP));
+      adapter.getItems().add(headerItemsOffset, new ListItem(ListItem.TYPE_HEADER_PADDED, 0, 0, R.string.LanguageSectionInstalled));
+      adapter.notifyItemRangeInserted(headerItemsOffset, 4);
       ((LinearLayoutManager) getRecyclerView().getLayoutManager()).scrollToPositionWithOffset(0, 0);
     }
   }
@@ -722,5 +758,30 @@ public class SettingsLanguageController extends RecyclerViewController<Void> imp
     }
   }
 
+  private void showTranslateOptions () {
+    navigateTo(new SettingsLanguageTranslateController(context, tdlib));
 
+    /*int chatTranslateMode = Settings.instance().getChatTranslateMode();
+    showSettings(new SettingsWrapBuilder(R.id.btn_chatTranslateStyle).setRawItems(new ListItem[]{
+      new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_chatTranslateStyle1, 0, R.string.ChatTranslateStyle1, R.id.btn_chatTranslateStyle, chatTranslateMode == Settings.TRANSLATE_MODE_POPUP),
+      new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_chatTranslateStyle2, 0, R.string.ChatTranslateStyle2, R.id.btn_chatTranslateStyle, chatTranslateMode == Settings.TRANSLATE_MODE_INLINE),
+      new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_chatTranslateStyle3, 0, R.string.ChatTranslateStyle3, R.id.btn_chatTranslateStyle, chatTranslateMode == Settings.TRANSLATE_MODE_NONE),
+    }).setIntDelegate((id, result) -> {
+      int chatTranslateMode1 = Settings.instance().getChatTranslateMode();
+      int chatTranslateStyleResult = result.get(R.id.btn_chatTranslateStyle);
+      switch (chatTranslateStyleResult) {
+        case R.id.btn_chatTranslateStyle1:
+          chatTranslateMode1 = Settings.TRANSLATE_MODE_POPUP;
+          break;
+        case R.id.btn_chatTranslateStyle2:
+          chatTranslateMode1 = Settings.TRANSLATE_MODE_INLINE;
+          break;
+        case R.id.btn_chatTranslateStyle3:
+          chatTranslateMode1 = Settings.TRANSLATE_MODE_NONE;
+          break;
+      }
+      Settings.instance().setChatTranslateMode(chatTranslateMode1);
+      adapter.updateValuedSettingById(R.id.btn_chatTranslateStyle);
+    }).setAllowResize(false));*/
+  }
 }

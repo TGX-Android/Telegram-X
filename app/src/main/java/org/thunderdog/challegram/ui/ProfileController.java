@@ -66,6 +66,7 @@ import org.thunderdog.challegram.data.TGFoundChat;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.data.ThreadInfo;
+import org.thunderdog.challegram.data.TranslationsManager;
 import org.thunderdog.challegram.emoji.EmojiFilter;
 import org.thunderdog.challegram.filegen.SimpleGenerationInfo;
 import org.thunderdog.challegram.loader.AvatarReceiver;
@@ -108,6 +109,7 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.util.CharacterStyleFilter;
 import org.thunderdog.challegram.util.DoneListener;
+import org.thunderdog.challegram.util.LanguageDetector;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.SenderPickerDelegate;
 import org.thunderdog.challegram.util.StringList;
@@ -4598,6 +4600,8 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     );
   }
 
+  private @Nullable String descriptionLanguage;
+
   @Override
   public void onClick (View v) {
     switch (v.getId()) {
@@ -4702,34 +4706,15 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           editDescription();
           break;
         }
-
-        IntList ids = new IntList(2);
-        StringList strings = new StringList(2);
-        IntList icons = new IntList(2);
-
-        if (canEditDescription()) {
-          ids.append(R.id.btn_edit);
-          strings.append(R.string.edit);
-          icons.append(R.drawable.baseline_edit_24);
+        if (Settings.instance().getChatTranslateMode() != Settings.TRANSLATE_MODE_NONE) {
+          LanguageDetector.detectLanguage(context, aboutWrapper.getText(), (lang) -> {
+            showDescriptionOptions(true, descriptionLanguage = lang);
+          }, (err) -> {
+            showDescriptionOptions(true, descriptionLanguage = null);
+          });
+        } else {
+          showDescriptionOptions(false, descriptionLanguage = null);
         }
-
-        ids.append(R.id.btn_copyText);
-        strings.append(R.string.Copy);
-        icons.append(R.drawable.baseline_content_copy_24);
-
-        showOptions(null, ids.get(), strings.get(), null, icons.get(), (itemView, id) -> {
-          switch (id) {
-            case R.id.btn_copyText: {
-              copyDescription();
-              break;
-            }
-            case R.id.btn_edit: {
-              editDescription();
-              break;
-            }
-          }
-          return true;
-        });
         break;
       }
       case R.id.btn_notifications: {
@@ -4814,6 +4799,64 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         break;
       }
     }
+  }
+
+  private TranslationControllerV2.Wrapper translationPopup;
+
+  private void showDescriptionOptions (boolean showTranslate, String descriptionLang) {
+    IntList ids = new IntList(2);
+    StringList strings = new StringList(2);
+    IntList icons = new IntList(2);
+
+    if (canEditDescription()) {
+      ids.append(R.id.btn_edit);
+      strings.append(R.string.edit);
+      icons.append(R.drawable.baseline_edit_24);
+    }
+
+    ids.append(R.id.btn_copyText);
+    strings.append(R.string.Copy);
+    icons.append(R.drawable.baseline_content_copy_24);
+
+    if (showTranslate && !Settings.instance().isNotTranslatableLanguage(descriptionLang)) {
+      ids.append(R.id.btn_chatTranslate);
+      strings.append(Lang.getString(R.string.Translate));
+      icons.append(R.drawable.baseline_translate_24);
+    }
+
+    showOptions(null, ids.get(), strings.get(), null, icons.get(), (itemView, id) -> {
+      switch (id) {
+        case R.id.btn_copyText: {
+          copyDescription();
+          break;
+        }
+        case R.id.btn_edit: {
+          editDescription();
+          break;
+        }
+        case R.id.btn_chatTranslate: {
+          translationPopup = new TranslationControllerV2.Wrapper(context, tdlib, this);
+          translationPopup.setArguments(new TranslationControllerV2.Args(new TranslationsManager.Translatable() {
+            @Nullable
+            @Override
+            public String getOriginalMessageLanguage () {
+              return descriptionLanguage;
+            }
+
+            @Override
+            public TdApi.FormattedText getTextToTranslate () {
+              return currentAbout;
+            }
+          }));
+          // translationPopup.setClickCallback();
+          translationPopup.setTextColorSet(TextColorSets.Regular.NORMAL);
+          translationPopup.show();
+          translationPopup.setDismissListener(popup -> translationPopup = null);
+          break;
+        }
+      }
+      return true;
+    });
   }
 
   private TdApi.ChatInviteLink getInviteLink () {
@@ -4986,6 +5029,9 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   @Override
   public void onBlur () {
     super.onBlur();
+    if (translationPopup != null) {
+      translationPopup.hidePopupWindow(true);
+    }
     if (!isEditing()) {
       ((ComplexRecyclerView) baseRecyclerView).setFactorLocked(true);
     }

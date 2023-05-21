@@ -35,6 +35,9 @@
 # Keep sync services
 -keep class org.thunderdog.challegram.sync.**
 
+# https://developers.google.com/ml-kit/known-issues#android_issues
+-keep class com.google.mlkit.nl.languageid.internal.LanguageIdentificationJni { *; }
+
 # == THIRDPARTY ==
 
 # MP4Parser

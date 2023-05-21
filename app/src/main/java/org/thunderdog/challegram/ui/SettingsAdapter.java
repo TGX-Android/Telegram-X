@@ -1660,7 +1660,9 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       case ListItem.TYPE_VALUED_SETTING_COMPACT:
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_COLOR:
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO:
+      case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO_2:
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER:
+      case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_CHECKBOX:
       case ListItem.TYPE_INFO_MULTILINE:
       case ListItem.TYPE_INFO_SETTING: {
         SettingView settingView = (SettingView) holder.itemView;
@@ -1679,6 +1681,12 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
             Views.setGravity(view, Gravity.CENTER_VERTICAL | (Lang.rtl() ? Gravity.RIGHT : Gravity.LEFT));
             break;
           }
+          case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO_2: {
+            View view = ((ViewGroup) (holder.itemView)).getChildAt(0);
+            Views.setGravity(view, Gravity.CENTER_VERTICAL | (Lang.rtl() ? Gravity.LEFT : Gravity.RIGHT));
+            break;
+          }
+          case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_CHECKBOX:
           case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER: {
             ((SettingView) holder.itemView).checkRtl(true);
             break;
