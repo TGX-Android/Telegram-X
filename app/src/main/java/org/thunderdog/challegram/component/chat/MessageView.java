@@ -485,7 +485,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   }
 
   private boolean onMessageClick (float x, float y) {
-    if (msg == null || msg instanceof TGMessageBotInfo) {
+    if (msg == null /*|| msg instanceof TGMessageBotInfo*/) {
       return false;
     }
     MessagesController m = msg.messagesController();
@@ -548,7 +548,14 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     StringList strings = new StringList(6);
     Object tag = fillMessageOptions(m, msg, sender, ids, icons, strings, false);
     if (!ids.isEmpty()) {
-      m.showMessageOptions(msg, ids.get(), strings.get(), icons.get(), tag, sender, false);
+      msg.checkTranslatableText(() -> {
+        ids.clear();
+        icons.clear();
+        StringList strings2 = new StringList(6);
+        Object tag2 = fillMessageOptions(m, msg, sender, ids, icons, strings2, false);
+        m.showMessageOptions(msg, ids.get(), strings2.get(), icons.get(), tag2, sender, false);
+      });
+
       return true;
     }
     return false;
@@ -795,9 +802,25 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     }
 
     if (!isMore && msg.canBeSaved() && TD.canCopyText(newestMessage)) {
-      ids.append(R.id.btn_messageCopy);
-      strings.append(R.string.Copy);
+
+      if (msg.isTranslated()) {
+        ids.append(R.id.btn_copyTranslation);
+        strings.append(R.string.TranslationCopy);
+      } else {
+        ids.append(R.id.btn_messageCopy);
+        strings.append(R.string.Copy);
+      }
       icons.append(R.drawable.baseline_content_copy_24);
+    }
+
+    if (!isMore && msg.isTranslated()) {
+      ids.append(R.id.btn_chatTranslateOff);
+      strings.append(R.string.TranslateOff);
+      icons.append(R.drawable.baseline_translate_off_24);
+    } else if (!isMore && msg.isTranslatable() && msg.translationStyleMode() != Settings.TRANSLATE_MODE_NONE) {
+      ids.append(R.id.btn_chatTranslate);
+      strings.append(R.string.Translate);
+      icons.append(R.drawable.baseline_translate_24);
     }
 
     if (messageCount == 1) {
@@ -958,7 +981,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       }
     }
 
-    if (msg.canBeReported()) {
+    if (msg.canBeReported() && !msg.isFakeMessage()) {
       if (isMore) {
         ids.append(R.id.btn_messageReport);
         strings.append(R.string.MessageReport);

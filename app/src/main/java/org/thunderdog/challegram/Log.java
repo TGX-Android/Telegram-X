@@ -381,6 +381,7 @@ public class Log {
   public static final int TAG_PLAYER = 1 << 19;
   public static final int TAG_NDK = 1 << 20;
   public static final int TAG_ACCOUNTS = 1 << 21;
+  public static final int TAG_LANGUAGE = 1 << 22;
 
   public static final int TAG_TDLIB_FILES = 1 << 29;
   public static final int TAG_TDLIB_OPTIONS = 1 << 30;
@@ -407,7 +408,7 @@ public class Log {
     TAG_YOUTUBE,
     TAG_CAMERA,
     TAG_EMOJI,
-
+    TAG_LANGUAGE,
     TAG_TDLIB_FILES,
     TAG_TDLIB_OPTIONS
   };

@@ -115,8 +115,10 @@ public class ListItem {
   public static final int TYPE_DRAWER_ITEM_WITH_RADIO_SEPARATED = 88;
   public static final int TYPE_VALUED_SETTING_COMPACT = 89;
   public static final int TYPE_VALUED_SETTING_COMPACT_WITH_RADIO = 90;
+  public static final int TYPE_VALUED_SETTING_COMPACT_WITH_RADIO_2 = 390;
   public static final int TYPE_VALUED_SETTING_COMPACT_WITH_COLOR = 91;
   public static final int TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER = 92;
+  public static final int TYPE_VALUED_SETTING_COMPACT_WITH_CHECKBOX = 393;
   public static final int TYPE_DESCRIPTION_SMALL = 93;
   public static final int TYPE_COLOR_PICKER = 94;
   public static final int TYPE_EDITTEXT_REUSABLE = 95;

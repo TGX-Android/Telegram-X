@@ -73,6 +73,8 @@ import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
+import org.thunderdog.challegram.navigation.HeaderView;
+import org.thunderdog.challegram.navigation.MenuMoreWrap;
 import org.thunderdog.challegram.navigation.ReactionsOverlayView;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -95,8 +97,11 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.FeatureToggles;
 import org.thunderdog.challegram.ui.MessagesController;
+import org.thunderdog.challegram.ui.TranslationControllerV2;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.LanguageDetector;
 import org.thunderdog.challegram.util.ReactionsCounterDrawable;
+import org.thunderdog.challegram.util.TranslationCounterDrawable;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.Highlight;
 import org.thunderdog.challegram.util.text.Letters;
@@ -119,6 +124,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -131,6 +137,7 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.util.ClickHelper;
 import me.vkryl.android.util.InvalidateContentProvider;
 import me.vkryl.android.util.MultipleViewProvider;
+import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
@@ -146,7 +153,7 @@ import me.vkryl.td.ChatId;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
 
-public abstract class TGMessage implements InvalidateContentProvider, TdlibDelegate, FactorAnimator.Target, Comparable<TGMessage>, Counter.Callback {
+public abstract class TGMessage implements InvalidateContentProvider, TdlibDelegate, FactorAnimator.Target, Comparable<TGMessage>, Counter.Callback, TranslationsManager.Translatable {
   private static final int MAXIMUM_CHANNEL_MERGE_TIME_DIFF = 150;
   private static final int MAXIMUM_COMMON_MERGE_TIME_DIFF = 900;
 
@@ -220,6 +227,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private Counter isChannelHeaderCounter;
   private float isChannelHeaderCounterX, isChannelHeaderCounterY;
 
+  private boolean translatedCounterForceShow;
+  private final Counter isTranslatedCounter;
+  private final TranslationCounterDrawable isTranslatedCounterDrawable;
+  private float isTranslatedCounterX, isTranslatedCounterY;
+
   // forward values
 
   private String fTime;
@@ -276,6 +288,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   public static final int REACTIONS_DRAW_MODE_FLAT = 1;
   public static final int REACTIONS_DRAW_MODE_ONLY_ICON = 2;
 
+  private final TranslationsManager mTranslationsManager;
+
   protected TGMessage (MessagesManager manager, TdApi.Message msg) {
     if (!initialized) {
       synchronized (TGMessage.class) {
@@ -288,6 +302,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
     this.manager = manager;
     this.tdlib = manager.controller().tdlib();
+
+    this.mTranslationsManager = new TranslationsManager(tdlib, this, this::setTranslatedStatus, this::setTranslationResult, this::showTranslateErrorMessageBubbleMode);
 
     this.bubblePath = new Path();
     this.bubblePathRect = new RectF();
@@ -421,6 +437,19 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       .callback(this)
       .colorSet(() -> messageReactions.hasChosen() ? Theme.getColor(R.id.theme_color_badge) : Theme.getColor(R.id.theme_color_iconLight))
       .drawable(R.drawable.baseline_favorite_14, 14f, 0f, Gravity.CENTER_HORIZONTAL)
+      .build();
+
+    this.isTranslatedCounterDrawable = new TranslationCounterDrawable(Drawables.get(R.drawable.baseline_translate_14));
+    this.isTranslatedCounterDrawable.setColors(
+      msg.isOutgoing ? R.id.theme_color_bubbleOut_time: R.id.theme_color_bubbleIn_time,
+      msg.isOutgoing ? R.id.theme_color_bubbleOut_time: R.id.theme_color_bubbleIn_time,
+      msg.isOutgoing ? R.id.theme_color_bubbleOut_textLink: R.id.theme_color_bubbleIn_textLink
+    );
+    this.isTranslatedCounter = new Counter.Builder()
+      .noBackground()
+      .allBold(false)
+      .callback(this)
+      .drawable(isTranslatedCounterDrawable, 3f, Gravity.LEFT)
       .build();
 
     updateInteractionInfo(false);
@@ -573,6 +602,14 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       return null;
     }
     return Lang.getRelativeTimestampShort(msg.forwardInfo.date, TimeUnit.SECONDS);
+  }
+
+  public int getForwardTimeStamp () {
+    if (msg.forwardInfo == null) {
+      return -1;
+    }
+
+    return msg.forwardInfo.date;
   }
 
   // Other
@@ -1176,6 +1213,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       buildBubble(false);
       int oldHeight = height;
       height = computeHeight();
+      if (oldHeight != height) {
+        manager.onMessageHeightChanged(getChatId(), getId(), oldHeight, height);
+      }
       return oldHeight != height;
     } else {
       rebuildLayout();
@@ -1987,6 +2027,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         }
       }
 
+      if (translationStyleMode() == Settings.TRANSLATE_MODE_INLINE) {
+        isTranslatedCounter.draw(c, right, isTranslatedCounterY = top, Gravity.RIGHT, 1f);
+        isTranslatedCounterX = right - Screen.dp(10);
+        right -= isTranslatedCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN));
+      }
       if (reactionsDrawMode == REACTIONS_DRAW_MODE_FLAT) {
         reactionsCounter.draw(c, right, top, Gravity.RIGHT, 1f, view, getTimePartIconColorId());
         right -= reactionsCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN));
@@ -2612,6 +2657,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   private int getClickType (MessageView view, float x, float y) {
+    if (isTranslated()) {
+      if (MathUtils.distance(isTranslatedCounterX, isTranslatedCounterY, x, y) < Screen.dp(8)) {
+        return CLICK_TYPE_TRANSLATE_MESSAGE_ICON;
+      }
+    }
+
     if (needDrawChannelIconInHeader() && hAuthorNameT != null) {
       if (MathUtils.distance(isChannelHeaderCounterX, isChannelHeaderCounterY, x, y) < Screen.dp(8)) {
         return CLICK_TYPE_CHANNEL_MESSAGE_ICON;
@@ -2637,6 +2688,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     @Override
     public void onClickAt (View view, float x, float y) {
       switch (clickType) {
+        case CLICK_TYPE_TRANSLATE_MESSAGE_ICON: {
+          openLanguageSelectorInlineMode();
+          break;
+        }
         case CLICK_TYPE_CHANNEL_MESSAGE_ICON: {
           openMessageFromChannel();
           break;
@@ -2720,6 +2775,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private static final int CLICK_TYPE_REPLY = 1;
   private static final int CLICK_TYPE_AVATAR = 2;
   private static final int CLICK_TYPE_CHANNEL_MESSAGE_ICON = 3;
+  private static final int CLICK_TYPE_TRANSLATE_MESSAGE_ICON = 4;
 
   private int clickType = CLICK_TYPE_NONE;
 
@@ -3076,6 +3132,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (reactionsDrawMode == REACTIONS_DRAW_MODE_ONLY_ICON) {
       max -= shrinkedReactionsCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN));
     }
+    if (translationStyleMode() == Settings.TRANSLATE_MODE_INLINE) {
+      max -= isTranslatedCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN));
+    }
     int nameMaxWidth;
     if (isPsa) {
       nameMaxWidth = totalMaxWidth;
@@ -3195,6 +3254,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   public final void replaceReplyContent (long messageId, TdApi.MessageContent newContent) {
     if (msg.replyToMessageId == messageId && replyData != null) {
       replyData.replaceMessageContent(messageId, newContent);
+    }
+  }
+
+  public final void replaceReplyTranslation (long messageId, @Nullable TdApi.FormattedText translation) {
+    if (msg.replyToMessageId == messageId && replyData != null) {
+      replyData.replaceMessageTranslation(messageId, translation);
     }
   }
 
@@ -3608,6 +3673,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       startX += Icons.getEditedIconWidth() + Screen.dp(2f);
     }
 
+    if (translationStyleMode() == Settings.TRANSLATE_MODE_INLINE) {
+      isTranslatedCounter.draw(c, startX, isTranslatedCounterY = counterY, Gravity.LEFT, 1f);
+      isTranslatedCounterX = startX + Screen.dp(7);
+      startX += isTranslatedCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN));
+    }
+
     if (time != null) {
       c.drawText(time, startX, startY + Screen.dp(15.5f), Paints.colorPaint(mTimeBubble(), textColor));
       startX += pTimeWidth;
@@ -3656,6 +3727,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
     if (shouldShowEdited()) {
       width += Icons.getEditedIconWidth() + Screen.dp(2f);
+    }
+    if (translationStyleMode() == Settings.TRANSLATE_MODE_INLINE) {
+      width += isTranslatedCounter.getScaledOrTargetWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN), isTarget);
     }
     boolean isSending = isSending();
     if (getViewCountMode() == VIEW_COUNT_MAIN) {
@@ -3753,7 +3827,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public final void requestAvatar (AvatarReceiver receiver) {
-    if (hasAvatar) {
+    requestAvatar(receiver, false);
+  }
+
+  public final void requestAvatar (AvatarReceiver receiver, boolean force) {
+    if (hasAvatar || force) {
       final float avatarRadiusDp = useBubbles() ? BUBBLE_AVATAR_RADIUS : AVATAR_RADIUS;
       if (forceForwardedInfo()) {
         forwardInfo.requestAvatar(receiver);
@@ -4092,7 +4170,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return new MessageId(msg.chatId, msg.id, getOtherMessageIds(msg.id));
   }
 
-  protected boolean isFakeMessage () {
+  public boolean isFakeMessage () {
     //noinspection WrongConstant
     if (msg.content.getConstructor() == TdApiExt.MessageChatEvent.CONSTRUCTOR) {
       return true;
@@ -5970,13 +6048,20 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
             }
             break;
         }
-      } else if (counter == replyCounter || counter == shareCounter || counter == shrinkedReactionsCounter || counter == isPinned) {
+      } else if (counter == replyCounter || counter == shareCounter || counter == shrinkedReactionsCounter || counter == isPinned || counter == isTranslatedCounter) {
         if (useBubbles() || (flags & FLAG_HEADER_ENABLED) != 0) {
           layoutInfo();
         }
       } else if (counter == reactionsCounter) {
         layoutInfo();
       }
+    }
+    if (counter == isTranslatedCounter && isTranslatedCounter.getVisibility() == 1f) {
+      boolean force = !useBubbles() && Settings.instance().needTutorial(Settings.TUTORIAL_SELECT_LANGUAGE_INLINE_MODE);
+      if (force) {
+        Settings.instance().markTutorialAsShown(Settings.TUTORIAL_SELECT_LANGUAGE_INLINE_MODE);
+      }
+      checkSelectLanguageWarning(force);
     }
     if (UI.inUiThread()) { // FIXME remove this after reworking combineWith method
       invalidate();
@@ -6944,7 +7029,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return false;
   }
 
-  protected final Text.ClickCallback clickCallback () {
+  public final Text.ClickCallback clickCallback () {
     if (clickCallback != null)
       return clickCallback;
     return clickCallback = new Text.ClickCallback() {
@@ -7630,7 +7715,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public final void checkMessageFlags (Runnable r) {
     TdApi.Message msg = getMessage(getSmallestId());
-    if (msg == null) {
+    if (msg == null || isFakeMessage()) {
       r.run();
       return;
     }
@@ -8377,4 +8462,168 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private boolean needDrawChannelIconInHeader () {
     return sender.isChannel() && !messagesController().isChannel();
   }
+
+  private TooltipOverlayView.TooltipInfo languageSelectorTooltip;
+
+  private void openLanguageSelectorInlineMode () {
+    TooltipOverlayView.TooltipBuilder tooltipBuilder = context().tooltipManager().builder(findCurrentView()).locate((targetView, outRect) -> {
+      outRect.left = (int) (isTranslatedCounterX - Screen.dp(7));
+      outRect.top = (int) (isTranslatedCounterY - Screen.dp(7));
+      outRect.right = (int) (isTranslatedCounterX + Screen.dp(7));
+      outRect.bottom = (int) (isTranslatedCounterY + Screen.dp(7));
+    });
+
+    languageSelectorTooltip = tooltipBuilder.show(this, this::showLanguageSelectorInlineMode);//.hideDelayed(3500, TimeUnit.MILLISECONDS);
+  }
+
+  private void showTranslateErrorMessageBubbleMode (String message) {
+    TooltipOverlayView.TooltipBuilder tooltipBuilder = context().tooltipManager().builder(findCurrentView()).locate((targetView, outRect) -> {
+      outRect.left = (int) (isTranslatedCounterX - Screen.dp(7));
+      outRect.top = (int) (isTranslatedCounterY - Screen.dp(7));
+      outRect.right = (int) (isTranslatedCounterX + Screen.dp(7));
+      outRect.bottom = (int) (isTranslatedCounterY + Screen.dp(7));
+    });
+    languageSelectorTooltip = tooltipBuilder.show(tdlib, message).hideDelayed(3500, TimeUnit.MILLISECONDS);
+  }
+
+  private void showLanguageSelectorInlineMode (View v) {
+    if (languageSelectorTooltip == null) return;
+
+    float x = Math.max(languageSelectorTooltip.getContentRight() - Screen.dp(178 + 16), 0);
+    float y;
+    float pivotY;
+    if (useBubbles()) {
+      y = languageSelectorTooltip.getContentBottom() - Screen.dp(280 + 16);
+      pivotY = Screen.dp(288);
+      if (y < HeaderView.getTopOffset()) {
+        pivotY = Screen.dp(288) - (HeaderView.getTopOffset() - y);
+        y = HeaderView.getTopOffset();
+      }
+    } else {
+      pivotY = Screen.dp(8);
+      y = languageSelectorTooltip.getContentTop();
+      if (y > Screen.currentHeight() - Screen.dp(280 + 16)) {
+        pivotY = Screen.dp(24) + y - (Screen.currentHeight() - Screen.dp(280 + 16));
+        y = Screen.currentHeight() - Screen.dp(280 + 16);
+      }
+    }
+
+    TranslationControllerV2.LanguageSelectorPopup languagePopupLayout = new TranslationControllerV2.LanguageSelectorPopup(v.getContext(), this::onLanguageChanged, mTranslationsManager.getCurrentTranslatedLanguage(), getOriginalMessageLanguage());
+    // languagePopupLayout.languageRecyclerWrap.setAnchorMode(MenuMoreWrap.ANCHOR_MODE_RIGHT);
+    languagePopupLayout.languageRecyclerWrap.setTranslationX(x);
+    languagePopupLayout.languageRecyclerWrap.setTranslationY(y);
+
+    FrameLayoutFix.LayoutParams params = (FrameLayoutFix.LayoutParams) languagePopupLayout.languageRecyclerWrap.getLayoutParams();
+    params.gravity = Gravity.TOP | Gravity.LEFT;
+
+    languagePopupLayout.show();
+    languagePopupLayout.languageRecyclerWrap.setPivotX(Screen.dp(178 + 8));
+    languagePopupLayout.languageRecyclerWrap.setPivotY(pivotY);
+  }
+
+  private void onLanguageChanged (String language) {
+    if (languageSelectorTooltip != null) {
+      languageSelectorTooltip.hide(true);
+    }
+    mTranslationsManager.requestTranslation(language);
+  }
+
+  protected float getTranslationLoadingAlphaValue () {
+    return isTranslatedCounterDrawable.getLoadingTextAlpha();
+  }
+
+  public void startTranslated () {
+    translatedCounterForceShow = true;
+    mTranslationsManager.requestTranslation(Lang.getDefaultLanguageToTranslateV2(textToTranslateOriginalLanguage));
+  }
+
+  public void stopTranslated () {
+    translatedCounterForceShow = false;
+    mTranslationsManager.stopTranslation();
+  }
+
+  public int translationStyleMode () {
+    return manager().getUsedTranslateStyleMode();
+  }
+
+  private @Nullable TdApi.FormattedText textToTranslate;
+  private @Nullable String textToTranslateOriginalLanguage;
+
+  public @Nullable String getCurrentTranslatedLanguage () {
+    return mTranslationsManager.getCurrentTranslatedLanguage();
+  }
+
+  public @Nullable TdApi.FormattedText getTranslatedText () {
+    if (textToTranslate == null) return null;
+    return mTranslationsManager.getCachedTextTranslation(textToTranslate.text, getCurrentTranslatedLanguage());
+  }
+
+  @Override
+  public @Nullable String getOriginalMessageLanguage () {
+    return textToTranslateOriginalLanguage;
+  }
+
+  public boolean isTranslated () {
+    return mTranslationsManager.getCurrentTranslatedLanguage() != null || translatedCounterForceShow;
+  }
+
+  public boolean isTranslatable () {
+    return !Td.isEmpty(textToTranslate) && (flags & FLAG_UNSUPPORTED) == 0 && !Settings.instance().isNotTranslatableLanguage(textToTranslateOriginalLanguage);
+  }
+
+  @Override
+  public @Nullable TdApi.FormattedText getTextToTranslate () {
+    return textToTranslate;
+  }
+
+  public void checkTranslatableText (Runnable after) {
+    final TdApi.FormattedText textToTranslate = getTextToTranslateImpl();
+    this.textToTranslate = textToTranslate;
+    textToTranslateOriginalLanguage = textToTranslate != null ? mTranslationsManager.getCachedTextLanguage(textToTranslate.text): null;
+    if (textToTranslate != null && textToTranslateOriginalLanguage == null && translationStyleMode() != Settings.TRANSLATE_MODE_NONE) {
+      LanguageDetector.detectLanguage(context(), textToTranslate.text, lang -> {
+        mTranslationsManager.saveCachedTextLanguage(textToTranslate.text, textToTranslateOriginalLanguage = lang);
+        after.run();
+      }, err -> {
+        textToTranslateOriginalLanguage = null;
+        after.run();
+      });
+    } else {
+      after.run();
+    }
+  }
+
+
+
+  protected @Nullable TdApi.FormattedText getTextToTranslateImpl () {
+    return null; // override
+  }
+
+  private void setTranslatedStatus (int status, boolean animated) {
+    boolean show = status != TranslationCounterDrawable.TRANSLATE_STATUS_DEFAULT || translatedCounterForceShow;
+    isTranslatedCounterDrawable.setInvalidateCallback(show? this::invalidate: null);
+    isTranslatedCounterDrawable.setStatus(status, animated);
+    if (show) {
+      isTranslatedCounter.show(animated);
+    } else {
+      isTranslatedCounter.hide(animated);
+    }
+    this.buildReactions(animated);
+  }
+
+  private void checkSelectLanguageWarning (boolean force) {
+    String current = mTranslationsManager.getCurrentTranslatedLanguage();
+    if (current == null || StringUtils.equalsOrBothEmpty(current, getOriginalMessageLanguage()) || force) {
+      context().tooltipManager().builder(findCurrentView()).locate((targetView, outRect) -> {
+        outRect.left = (int) (isTranslatedCounterX - Screen.dp(7));
+        outRect.top = (int) (isTranslatedCounterY - Screen.dp(7));
+        outRect.right = (int) (isTranslatedCounterX + Screen.dp(7));
+        outRect.bottom = (int) (isTranslatedCounterY + Screen.dp(7));
+      }).show(tdlib, Lang.getString(R.string.TapToSelectLanguage)).hideDelayed(3500, TimeUnit.MILLISECONDS);;
+    }
+  }
+
+  protected void setTranslationResult (@Nullable TdApi.FormattedText text) {
+    manager.updateMessageTranslation(getChatId(), getSmallestId(), text);
+  };
 }

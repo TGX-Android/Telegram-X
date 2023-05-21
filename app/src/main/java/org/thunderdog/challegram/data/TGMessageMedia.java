@@ -277,13 +277,14 @@ public class TGMessageMedia extends TGMessage {
         this.wrapper.performDestroy();
       }
       if (!Td.isEmpty(caption)) {
-        this.wrapper = new TextWrapper(caption.text, getTextStyleProvider(), getTextColorSet())
-          .setEntities(TextEntity.valueOf(tdlib, caption, openParameters()), (wrapper, text, specificMedia) -> {
+        TdApi.FormattedText fText = translatedText != null ? translatedText: caption;
+        this.wrapper = new TextWrapper(fText.text, getTextStyleProvider(), getTextColorSet())
+          .setEntities(TextEntity.valueOf(tdlib, fText, openParameters()), (wrapper, text, specificMedia) -> {
             if (this.wrapper == wrapper) {
               invalidateTextMediaReceiver(text, specificMedia);
             }
           })
-          .setHighlightText(getHighlightedText(Highlight.Pool.KEY_MEDIA_CAPTION, caption.text))
+          .setHighlightText(getHighlightedText(Highlight.Pool.KEY_MEDIA_CAPTION, fText.text))
           .addTextFlags(Text.FLAG_BIG_EMOJI)
           .setClickCallback(clickCallback());
         this.wrapper.setViewProvider(currentViews);
@@ -592,7 +593,8 @@ public class TGMessageMedia extends TGMessage {
     }
 
     if (wrapper != null) {
-      wrapper.draw(c, getTextX(view, wrapper, false), getTextX(view, wrapper, true), Config.MOVE_BUBBLE_TIME_RTL_TO_LEFT ? 0 : getBubbleTimePartWidth(), startY + mosaicWrapper.getHeight() + Screen.dp(TEXT_MARGIN), null, 1f, view.getTextMediaReceiver());
+      float alpha = getTranslationLoadingAlphaValue();
+      wrapper.draw(c, getTextX(view, wrapper, false), getTextX(view, wrapper, true), Config.MOVE_BUBBLE_TIME_RTL_TO_LEFT ? 0 : getBubbleTimePartWidth(), startY + mosaicWrapper.getHeight() + Screen.dp(TEXT_MARGIN), null, alpha, view.getTextMediaReceiver());
     }
   }
 
@@ -858,5 +860,22 @@ public class TGMessageMedia extends TGMessage {
 
   public boolean isVideoFirstInMosaic (int mediaId) {
     return mosaicWrapper.isSingular() || (mosaicWrapper.getSingularItem() != null && mosaicWrapper.getSingularItem().isVideo() && mosaicWrapper.getSingularItem().getVideo().video.id == mediaId);
+  }
+
+  private TdApi.FormattedText translatedText;
+
+  @Nullable
+  @Override
+  public TdApi.FormattedText getTextToTranslateImpl () {
+    return caption;
+  }
+
+  @Override
+  protected void setTranslationResult (@Nullable TdApi.FormattedText text) {
+    translatedText = text;
+    checkCommonCaption(true);
+    rebuildAndUpdateContent();
+    invalidateTextMediaReceiver();
+    super.setTranslationResult(text);
   }
 }
