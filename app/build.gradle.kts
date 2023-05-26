@@ -37,6 +37,8 @@ val properties = extra["properties"] as Properties
 val projectName = extra["app_name"] as String
 
 android {
+  namespace = "org.thunderdog.challegram"
+
   defaultConfig {
     val versions = extra["versions"] as Properties
     val jniVersion = versions.getIntOrThrow("version.jni")
