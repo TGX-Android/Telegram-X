@@ -21,6 +21,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 
@@ -41,7 +42,7 @@ public class GearView extends FrameLayoutFix {
 
     imageView = new ImageView(context);
     imageView.setImageResource(R.drawable.baseline_settings_96);
-    imageView.setColorFilter(Theme.getColor(R.id.theme_color_iconActive));
+    imageView.setColorFilter(Theme.getColor(ColorId.iconActive));
     imageView.setScaleType(ImageView.ScaleType.CENTER);
     imageView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER));
     addView(gearBig = imageView);
@@ -49,7 +50,7 @@ public class GearView extends FrameLayoutFix {
     imageView = new ImageView(context);
     imageView.setImageResource(R.drawable.baseline_settings_56);
     imageView.setAlpha(.5f);
-    imageView.setColorFilter(Theme.getColor(R.id.theme_color_iconActive));
+    imageView.setColorFilter(Theme.getColor(ColorId.iconActive));
     imageView.setScaleType(ImageView.ScaleType.CENTER);
     imageView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER, 0, offset, offset, 0));
     imageView.setRotation(90f);
@@ -58,7 +59,7 @@ public class GearView extends FrameLayoutFix {
     imageView = new ImageView(context);
     imageView.setImageResource(R.drawable.baseline_settings_56);
     imageView.setAlpha(.5f);
-    imageView.setColorFilter(Theme.getColor(R.id.theme_color_iconActive));
+    imageView.setColorFilter(Theme.getColor(ColorId.iconActive));
     imageView.setScaleType(ImageView.ScaleType.CENTER);
     imageView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER, offset, 0,   0, offset));
     addView(gearSmallRight = imageView);

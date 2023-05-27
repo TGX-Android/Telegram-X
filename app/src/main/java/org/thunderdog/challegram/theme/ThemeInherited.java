@@ -32,7 +32,7 @@ public abstract class ThemeInherited implements ThemeDelegate {
 
   @Override
   public float getProperty (int propertyId) {
-    if (propertyId == ThemeProperty.PARENT_THEME)
+    if (propertyId == PropertyId.PARENT_THEME)
       return parentTheme.getId();
     return parentTheme.getProperty(propertyId);
   }

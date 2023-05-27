@@ -67,7 +67,7 @@ public class ThemeListenerEntry {
   public @interface EntryMode {}
 
   private final @EntryMode int mode;
-  private @ThemeColorId
+  private @ColorId
   int targetColor;
   private final WeakReference<Object> target;
 
@@ -84,7 +84,7 @@ public class ThemeListenerEntry {
     this.flags = BitwiseUtils.setFlag(flags, FLAG_SUBTITLE, isSubtitle);
   }
 
-  public ThemeListenerEntry (@EntryMode int mode, @ThemeColorId int targetColor, Object target) {
+  public ThemeListenerEntry (@EntryMode int mode, @ColorId int targetColor, Object target) {
     this.mode = mode;
     this.targetColor = targetColor;
     this.target = new WeakReference<>(target);
@@ -95,7 +95,7 @@ public class ThemeListenerEntry {
     return this;
   }
 
-  public void setTargetColorId (@ThemeColorId int colorId) {
+  public void setTargetColorId (@ColorId int colorId) {
     this.targetColor = colorId;
   }
 

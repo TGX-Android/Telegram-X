@@ -6,7 +6,7 @@ import android.view.View;
 
 import androidx.core.graphics.ColorUtils;
 
-import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 
@@ -40,7 +40,7 @@ public class LickView extends View {
       int bottom = getMeasuredHeight();
       int top = bottom - (int) ((float) bottom * factor);
       c.drawRect(0, top, getMeasuredWidth(), bottom, Paints.fillingPaint(
-        ColorUtils.compositeColors(Theme.getColor(R.id.theme_color_statusBar), headerBackground)
+        ColorUtils.compositeColors(Theme.getColor(ColorId.statusBar), headerBackground)
       ));
     }
   }

@@ -39,7 +39,7 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.ViewController;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.theme.ThemeManager;
 import org.thunderdog.challegram.tool.Screen;
@@ -51,12 +51,12 @@ import me.vkryl.android.ViewUtils;
 import me.vkryl.core.ColorUtils;
 
 public class ViewSupport {
-  public static void setThemedBackground (View view, @ThemeColorId int colorId) {
+  public static void setThemedBackground (View view, @ColorId int colorId) {
     setThemedBackground(view, colorId, null);
     // view.setBackgroundColor(0);
   }
 
-  public static FillingDrawable setThemedBackground (View view, @ThemeColorId int colorId, @Nullable ViewController<?> themeProvider) {
+  public static FillingDrawable setThemedBackground (View view, @ColorId int colorId, @Nullable ViewController<?> themeProvider) {
     FillingDrawable result = null;
     if (view != null) {
       Drawable existingBackground = view.getBackground();
@@ -110,8 +110,8 @@ public class ViewSupport {
           ThemeDelegate theme = ThemeManager.instance().currentTheme(false);
           final View header = mDatePicker.findViewById(viewId);
           if (header != null) {
-            final int bgColor = ColorUtils.compositeColor(theme.getColor(R.id.theme_color_headerBackground), theme.getColor(R.id.theme_color_headerPickerBackground));
-            final int textColor = ColorUtils.compositeColor(theme.getColor(R.id.theme_color_headerText), theme.getColor(R.id.theme_color_headerPickerText));
+            final int bgColor = ColorUtils.compositeColor(theme.getColor(ColorId.headerBackground), theme.getColor(ColorId.headerPickerBackground));
+            final int textColor = ColorUtils.compositeColor(theme.getColor(ColorId.headerText), theme.getColor(ColorId.headerPickerText));
             header.setBackgroundColor(bgColor);
             viewId = Resources.getSystem().getIdentifier("date_picker_header_year", "id", "android");
             if (viewId != 0) {

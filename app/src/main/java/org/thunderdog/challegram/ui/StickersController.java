@@ -385,44 +385,40 @@ public class StickersController extends RecyclerViewController<StickersControlle
 
   @Override
   public void onClick (View v) {
-    switch (v.getId()) {
-      case R.id.btn_stickerSetInfo: {
-        ListItem item = (ListItem) v.getTag();
-        TGStickerSetInfo info = findStickerSetById(item.getLongId());
-        if (info != null) {
-          if (mode == MODE_STICKERS_ARCHIVED && currentStates != null && currentStates.get(info.getId(), STATE_NONE) == STATE_DONE) {
-            return;
-          }
-          StickerSetWrap.showStickerSet(this, info.getInfo()).setIsOneShot();
+    final int viewId = v.getId();
+    if (viewId == R.id.btn_stickerSetInfo) {
+      ListItem item = (ListItem) v.getTag();
+      TGStickerSetInfo info = findStickerSetById(item.getLongId());
+      if (info != null) {
+        if (mode == MODE_STICKERS_ARCHIVED && currentStates != null && currentStates.get(info.getId(), STATE_NONE) == STATE_DONE) {
+          return;
         }
-        break;
+        StickerSetWrap.showStickerSet(this, info.getInfo()).setIsOneShot();
       }
-      case R.id.btn_double: {
-        ListItem item = (ListItem) ((ViewGroup) v.getParent()).getTag();
-        final TGStickerSetInfo info = findStickerSetById(item.getLongId());
-        if (info != null) {
-          int state = getState(info);
-          if (state == STATE_NONE) {
-            setState(info.getId(), STATE_IN_PROGRESS);
-            tdlib.client().send(new TdApi.ChangeStickerSet(info.getId(), true, false), object -> tdlib.ui().post(() -> {
-              if (!isDestroyed()) {
-                boolean isOk = object.getConstructor() == TdApi.Ok.CONSTRUCTOR;
-                if (isOk) {
-                  info.setIsInstalled();
-                }
-                setState(info.getId(), isOk ? STATE_DONE : STATE_NONE);
-                if (isOk) {
-                  if (mode == MODE_STICKERS_ARCHIVED) {
-                    UI.post(() -> removeArchivedStickerSet(info), 1500);
-                  } else if (currentStates != null) {
-                    currentStates.delete(info.getId());
-                  }
+    } else if (viewId == R.id.btn_double) {
+      ListItem item = (ListItem) ((ViewGroup) v.getParent()).getTag();
+      final TGStickerSetInfo info = findStickerSetById(item.getLongId());
+      if (info != null) {
+        int state = getState(info);
+        if (state == STATE_NONE) {
+          setState(info.getId(), STATE_IN_PROGRESS);
+          tdlib.client().send(new TdApi.ChangeStickerSet(info.getId(), true, false), object -> tdlib.ui().post(() -> {
+            if (!isDestroyed()) {
+              boolean isOk = object.getConstructor() == TdApi.Ok.CONSTRUCTOR;
+              if (isOk) {
+                info.setIsInstalled();
+              }
+              setState(info.getId(), isOk ? STATE_DONE : STATE_NONE);
+              if (isOk) {
+                if (mode == MODE_STICKERS_ARCHIVED) {
+                  UI.post(() -> removeArchivedStickerSet(info), 1500);
+                } else if (currentStates != null) {
+                  currentStates.delete(info.getId());
                 }
               }
-            }));
-          }
+            }
+          }));
         }
-        break;
       }
     }
   }

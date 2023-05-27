@@ -11,6 +11,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
@@ -52,13 +53,13 @@ public class SetSenderController extends BottomSheetViewController<SetSenderCont
 
   @Override
   protected void onAfterCreateView () {
-    setLickViewColor(Theme.getColor(R.id.theme_color_headerLightBackground));
+    setLickViewColor(Theme.getColor(ColorId.headerLightBackground));
   }
 
   @Override
   public void onThemeColorsChanged (boolean areTemp, ColorState state) {
     super.onThemeColorsChanged(areTemp, state);
-    setLickViewColor(Theme.getColor(R.id.theme_color_headerLightBackground));
+    setLickViewColor(Theme.getColor(ColorId.headerLightBackground));
   }
 
   private boolean showOverEverything = false;

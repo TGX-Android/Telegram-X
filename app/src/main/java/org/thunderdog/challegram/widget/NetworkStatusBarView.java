@@ -28,7 +28,6 @@ import androidx.annotation.StringRes;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.Log;
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.support.ViewSupport;
@@ -39,6 +38,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeListenerList;
 import org.thunderdog.challegram.tool.Screen;
@@ -85,7 +85,7 @@ public class NetworkStatusBarView extends FrameLayoutFix implements Destroyable,
     statusWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER_HORIZONTAL));
 
     addView(statusWrap);
-    ViewSupport.setThemedBackground(this, R.id.theme_color_statusBar);
+    ViewSupport.setThemedBackground(this, ColorId.statusBar);
 
 
     TdlibManager.instance().global().addAccountListener(this);

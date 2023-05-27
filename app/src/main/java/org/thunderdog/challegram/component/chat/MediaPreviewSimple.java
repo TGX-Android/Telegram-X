@@ -32,6 +32,7 @@ import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
@@ -320,7 +321,7 @@ public class MediaPreviewSimple extends MediaPreview {
     }
 
     if (drawColoredFileBackground) {
-      target.drawPlaceholderRounded(c, cornerRadius, Theme.getColor(R.id.theme_color_file));
+      target.drawPlaceholderRounded(c, cornerRadius, Theme.getColor(ColorId.file));
     }
 
     target.draw(c);
@@ -334,7 +335,7 @@ public class MediaPreviewSimple extends MediaPreview {
     }
 
     if (hasSpoiler) {
-      DrawAlgorithms.drawRoundRect(c, cornerRadius, target.getLeft(), target.getTop(), target.getRight(), target.getBottom(), Paints.fillingPaint(Theme.getColor(R.id.theme_color_spoilerMediaOverlay)));
+      DrawAlgorithms.drawRoundRect(c, cornerRadius, target.getLeft(), target.getTop(), target.getRight(), target.getBottom(), Paints.fillingPaint(Theme.getColor(ColorId.spoilerMediaOverlay)));
       DrawAlgorithms.drawParticles(c, cornerRadius, target.getLeft(), target.getTop(), target.getRight(), target.getBottom(), 1f);
     }
 

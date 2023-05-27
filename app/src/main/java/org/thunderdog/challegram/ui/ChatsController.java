@@ -86,6 +86,7 @@ import org.thunderdog.challegram.telegram.TdlibContactManager;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.telegram.TdlibThread;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -428,7 +429,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     }
     chatsView.setHasFixedSize(true);
     chatsView.addItemDecoration(new ChatPinSeparatorDecoration(this));
-    ViewSupport.setThemedBackground(chatsView, R.id.theme_color_filling, this);
+    ViewSupport.setThemedBackground(chatsView, ColorId.filling, this);
 
     touchHelper = new ItemTouchHelper(new ItemTouchHelper.Callback() {
       @Override
@@ -1001,53 +1002,42 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   @Override
   public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
-    switch (id) {
-      case R.id.menu_passcode: {
-        if (isBaseController()) {
-          header.addLockButton(menu);
-        }
-        header.addSearchButton(menu, this);
-        break;
+    if (id == R.id.menu_passcode) {
+      if (isBaseController()) {
+        header.addLockButton(menu);
       }
-      case R.id.menu_search: {
-        header.addSearchButton(menu, this);
-        break;
-      }
-      case R.id.menu_clear: {
-        header.addClearButton(menu, getSearchHeaderIconColorId(), getSearchBackButtonResource());
-        break;
-      }
-      case R.id.menu_chatBulkActions: {
-        // Pin / unpin
-        // Mute / unmute
-        // Delete
-        // More
+      header.addSearchButton(menu, this);
+    } else if (id == R.id.menu_search) {
+      header.addSearchButton(menu, this);
+    } else if (id == R.id.menu_clear) {
+      header.addClearButton(menu, getSearchHeaderIconColorId(), getSearchBackButtonResource());
+    } else if (id == R.id.menu_chatBulkActions) {// Pin / unpin
+      // Mute / unmute
+      // Delete
+      // More
 
-        int totalButtonsCount = 0;
-        boolean value;
-        int mode;
+      int totalButtonsCount = 0;
+      boolean value;
+      int mode;
 
-        int iconColorId = getSelectHeaderIconColorId();
+      int iconColorId = getSelectHeaderIconColorId();
 
-        mode = canPinUnpinSelectedChats();
-        header.addButton(menu, R.id.menu_btn_pinUnpin, mode == ACTION_MODE_ALL_ENABLED ? R.drawable.deproko_baseline_pin_undo_24 : R.drawable.deproko_baseline_pin_24, iconColorId, this, Screen.dp(52f))
-                .setVisibility((value = shouldShowPin(mode)) ? View.VISIBLE : View.GONE);
-        if (value) totalButtonsCount++;
+      mode = canPinUnpinSelectedChats();
+      header.addButton(menu, R.id.menu_btn_pinUnpin, mode == ACTION_MODE_ALL_ENABLED ? R.drawable.deproko_baseline_pin_undo_24 : R.drawable.deproko_baseline_pin_24, iconColorId, this, Screen.dp(52f))
+        .setVisibility((value = shouldShowPin(mode)) ? View.VISIBLE : View.GONE);
+      if (value) totalButtonsCount++;
 
-        mode = canMuteUnmuteSelectedChats();
-        header.addButton(menu, R.id.menu_btn_muteUnmute, mode == ACTION_MODE_ALL_ENABLED ? R.drawable.baseline_notifications_off_24 : R.drawable.baseline_notifications_24, iconColorId, this, Screen.dp(52f))
-                .setVisibility((value = mode != ACTION_MODE_NONE) ? View.VISIBLE : View.GONE);
-        if (value) totalButtonsCount++;
+      mode = canMuteUnmuteSelectedChats();
+      header.addButton(menu, R.id.menu_btn_muteUnmute, mode == ACTION_MODE_ALL_ENABLED ? R.drawable.baseline_notifications_off_24 : R.drawable.baseline_notifications_24, iconColorId, this, Screen.dp(52f))
+        .setVisibility((value = mode != ACTION_MODE_NONE) ? View.VISIBLE : View.GONE);
+      if (value) totalButtonsCount++;
 
-        mode = canDeleteSelectedChats();
-        header.addDeleteButton(menu, this, iconColorId)
-                .setVisibility((value = mode != ACTION_MODE_NONE && mode != ACTION_MODE_MIXED) ? View.VISIBLE : View.GONE);
-        if (value) totalButtonsCount++;
+      mode = canDeleteSelectedChats();
+      header.addDeleteButton(menu, this, iconColorId)
+        .setVisibility((value = mode != ACTION_MODE_NONE && mode != ACTION_MODE_MIXED) ? View.VISIBLE : View.GONE);
+      if (value) totalButtonsCount++;
 
-        header.addMoreButton(menu, this, getSelectHeaderIconColorId());
-
-        break;
-      }
+      header.addMoreButton(menu, this, getSelectHeaderIconColorId());
     }
   }
 
@@ -1118,312 +1108,295 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   @Override
   public void onMenuItemPressed (int id, View view) {
-    switch (id) {
-      case R.id.menu_btn_search: {
-        openSearchMode();
-        break;
+    if (id == R.id.menu_btn_search) {
+      openSearchMode();
+    } else if (id == R.id.menu_btn_clear) {
+      clearSearchInput();
+    } else if (id == R.id.menu_btn_more) {// Archive / unarchive
+      // Mark as Read / Unread
+      // Report
+      // Clear History
+      // Block user
+      // Clear from cache?
+
+      int size = 2;
+      IntList ids = new IntList(size);
+      StringList strings = new StringList(size);
+      IntList icons = new IntList(size);
+
+      int canArchive = 0, canUnarchive = 0;
+      int canMarkAsRead = 0, canMarkAsUnread = 0;
+      int canReportSpam = 0;
+      int canBlock = 0, canUnblock = 0;
+      int canClearHistory = 0;
+      for (int i = 0; i < selectedChats.size(); i++) {
+        TdApi.Chat chat = selectedChats.valueAt(i);
+        if (tdlib.canArchiveChat(chatList(), chat)) {
+          if (ChatPosition.isArchived(chat)) {
+            canUnarchive++;
+          } else {
+            canArchive++;
+          }
+        }
+        if (!tdlib.isSelfChat(chat.id) && tdlib.canClearHistory(chat)) {
+          canClearHistory++;
+        }
+        if (tdlib.canMarkAsRead(chat)) {
+          canMarkAsRead++;
+        } else {
+          canMarkAsUnread++;
+        }
+        if (tdlib.canReportChatSpam(chat))
+          canReportSpam++;
+        if (tdlib.chatBlocked(chat)) {
+          canUnblock++;
+        } else {
+          canBlock++;
+        }
       }
-      case R.id.menu_btn_clear: {
-        clearSearchInput();
-        break;
+
+      if (selectedChats.size() < tdlib.getCounter(chatList()).totalChatCount) {
+        ids.append(R.id.more_btn_selectAll);
+        strings.append(R.string.SelectMore);
+        icons.append(R.drawable.baseline_playlist_add_check_24);
       }
 
-      case R.id.menu_btn_more: {
-        // Archive / unarchive
-        // Mark as Read / Unread
-        // Report
-        // Clear History
-        // Block user
-        // Clear from cache?
+      if (canArchive + canUnarchive > 0) {
+        ids.append(R.id.more_btn_archiveUnarchive);
+        strings.append(canUnarchive > 0 ? R.string.Unarchive : R.string.Archive);
+        icons.append(canUnarchive > 0 ? R.drawable.baseline_unarchive_24 : R.drawable.baseline_archive_24);
+      }
 
-        int size = 2;
-        IntList ids = new IntList(size);
-        StringList strings = new StringList(size);
-        IntList icons = new IntList(size);
+      if (canMarkAsRead > 0) {
+        ids.append(R.id.more_btn_markAsRead);
+        strings.append(R.string.MarkAsRead);
+        icons.append(Config.ICON_MARK_AS_READ);
+      } else if (canMarkAsUnread > 0) {
+        ids.append(R.id.more_btn_markAsUnread);
+        strings.append(R.string.MarkAsUnread);
+        icons.append(Config.ICON_MARK_AS_UNREAD);
+      }
 
-        int canArchive = 0, canUnarchive = 0;
-        int canMarkAsRead = 0, canMarkAsUnread = 0;
-        int canReportSpam = 0;
-        int canBlock = 0, canUnblock = 0;
-        int canClearHistory = 0;
+      if (canReportSpam == selectedChats.size()) {
+        ids.append(R.id.more_btn_report);
+        strings.append(R.string.Report);
+        icons.append(R.drawable.baseline_report_24);
+      }
+
+      if (canUnblock > 0) {
+        ids.append(R.id.more_btn_unblock);
+        strings.append(R.string.Unblock);
+        icons.append(R.drawable.baseline_block_24);
+      } else if (canBlock == selectedChats.size()) {
+        ids.append(R.id.more_btn_block);
+        strings.append(R.string.BlockContact);
+        icons.append(R.drawable.baseline_block_24);
+      }
+
+      if (canClearHistory == selectedChats.size()) {
+        ids.append(R.id.more_btn_clearHistory);
+        strings.append(R.string.ClearHistory);
+        icons.append(R.drawable.baseline_delete_24);
+      }
+
+      ids.append(R.id.more_btn_clearCache);
+      strings.append(R.string.DeleteChatCache);
+      icons.append(R.drawable.templarian_baseline_broom_24);
+
+      getParentOrSelf().showMore(ids.get(), strings.get(), icons.get());
+    } else if (id == R.id.menu_btn_pinUnpin) {
+      int mode = canPinUnpinSelectedChats();
+      int cloudPinCount = 0, secretPinCount = 0;
+      long lastChatId = 0;
+      if (mode != ACTION_MODE_NONE) {
         for (int i = 0; i < selectedChats.size(); i++) {
-          TdApi.Chat chat = selectedChats.valueAt(i);
-          if (tdlib.canArchiveChat(chatList(), chat)) {
-            if (ChatPosition.isArchived(chat)) {
-              canUnarchive++;
-            } else {
-              canArchive++;
-            }
-          }
-          if (!tdlib.isSelfChat(chat.id) && tdlib.canClearHistory(chat)) {
-            canClearHistory++;
-          }
-          if (tdlib.canMarkAsRead(chat)) {
-            canMarkAsRead++;
-          } else {
-            canMarkAsUnread++;
-          }
-          if (tdlib.canReportChatSpam(chat))
-            canReportSpam++;
-          if (tdlib.chatBlocked(chat)) {
-            canUnblock++;
-          } else {
-            canBlock++;
-          }
+          if (mode == ACTION_MODE_MIXED && ChatPosition.isPinned(selectedChats.valueAt(i), chatList))
+            continue;
+          lastChatId = selectedChats.keyAt(i);
+          if (ChatId.isSecret(lastChatId))
+            secretPinCount++;
+          else
+            cloudPinCount++;
         }
-
-        if (selectedChats.size() < tdlib.getCounter(chatList()).totalChatCount) {
-          ids.append(R.id.more_btn_selectAll);
-          strings.append(R.string.SelectMore);
-          icons.append(R.drawable.baseline_playlist_add_check_24);
-        }
-
-        if (canArchive + canUnarchive > 0) {
-          ids.append(R.id.more_btn_archiveUnarchive);
-          strings.append(canUnarchive > 0 ? R.string.Unarchive : R.string.Archive);
-          icons.append(canUnarchive > 0 ? R.drawable.baseline_unarchive_24 : R.drawable.baseline_archive_24);
-        }
-
-        if (canMarkAsRead > 0) {
-          ids.append(R.id.more_btn_markAsRead);
-          strings.append(R.string.MarkAsRead);
-          icons.append(Config.ICON_MARK_AS_READ);
-        } else if (canMarkAsUnread > 0) {
-          ids.append(R.id.more_btn_markAsUnread);
-          strings.append(R.string.MarkAsUnread);
-          icons.append(Config.ICON_MARK_AS_UNREAD);
-        }
-
-        if (canReportSpam == selectedChats.size()) {
-          ids.append(R.id.more_btn_report);
-          strings.append(R.string.Report);
-          icons.append(R.drawable.baseline_report_24);
-        }
-
-        if (canUnblock > 0) {
-          ids.append(R.id.more_btn_unblock);
-          strings.append(R.string.Unblock);
-          icons.append(R.drawable.baseline_block_24);
-        } else if (canBlock == selectedChats.size()) {
-          ids.append(R.id.more_btn_block);
-          strings.append(R.string.BlockContact);
-          icons.append(R.drawable.baseline_block_24);
-        }
-
-        if (canClearHistory == selectedChats.size()) {
-          ids.append(R.id.more_btn_clearHistory);
-          strings.append(R.string.ClearHistory);
-          icons.append(R.drawable.baseline_delete_24);
-        }
-
-        ids.append(R.id.more_btn_clearCache);
-        strings.append(R.string.DeleteChatCache);
-        icons.append(R.drawable.templarian_baseline_broom_24);
-
-        getParentOrSelf().showMore(ids.get(), strings.get(), icons.get());
-        break;
       }
-
-      case R.id.menu_btn_pinUnpin: {
-        int mode = canPinUnpinSelectedChats();
-        int cloudPinCount = 0, secretPinCount = 0;
-        long lastChatId = 0;
-        if (mode != ACTION_MODE_NONE) {
-          for (int i = 0; i < selectedChats.size(); i++) {
-            if (mode == ACTION_MODE_MIXED && ChatPosition.isPinned(selectedChats.valueAt(i), chatList))
-              continue;
-            lastChatId = selectedChats.keyAt(i);
-            if (ChatId.isSecret(lastChatId))
-              secretPinCount++;
-            else
-              cloudPinCount++;
-          }
-        }
-        if ((cloudPinCount + secretPinCount) == 1 && tdlib.chatPinned(chatList, lastChatId)) {
-          tdlib.ui().processChatAction(this, chatList(), selectedChats.keyAt(0), null, new TdApi.MessageSourceChatList(), R.id.btn_pinUnpinChat,
+      if ((cloudPinCount + secretPinCount) == 1 && tdlib.chatPinned(chatList, lastChatId)) {
+        tdlib.ui().processChatAction(this, chatList(), selectedChats.keyAt(0), null, new TdApi.MessageSourceChatList(), R.id.btn_pinUnpinChat,
           this::onSelectionActionComplete);
+        return;
+      }
+      if (cloudPinCount > 0 || secretPinCount > 0) {
+        boolean isUnpin = mode == ACTION_MODE_ALL_ENABLED;
+        int maxPinnedCount = chatList().getConstructor() == TdApi.ChatListMain.CONSTRUCTOR ? tdlib.pinnedChatsMaxCount() : tdlib.pinnedArchivedChatsMaxCount();
+        int pinnedCloudCount = adapter.getPinnedChatCount(false), pinnedSecretCount = adapter.getPinnedChatCount(true);
+        if (!isUnpin && (pinnedCloudCount + cloudPinCount > maxPinnedCount || pinnedSecretCount + secretPinCount > maxPinnedCount)) {
+          CharSequence message = chatList().getConstructor() == TdApi.ChatListMain.CONSTRUCTOR ? Lang.pluralBold(R.string.PinTooMuchWarn, maxPinnedCount) : Lang.plural(R.string.ErrorPinnedChatsLimit, maxPinnedCount);
+          context.tooltipManager().builder(view).controller(getParentOrSelf()).icon(R.drawable.baseline_error_24).show(tdlib, message);
           return;
         }
-        if (cloudPinCount > 0 || secretPinCount > 0) {
-          boolean isUnpin = mode == ACTION_MODE_ALL_ENABLED;
-          int maxPinnedCount = chatList().getConstructor() == TdApi.ChatListMain.CONSTRUCTOR ? tdlib.pinnedChatsMaxCount() : tdlib.pinnedArchivedChatsMaxCount();
-          int pinnedCloudCount = adapter.getPinnedChatCount(false), pinnedSecretCount = adapter.getPinnedChatCount(true);
-          if (!isUnpin && (pinnedCloudCount + cloudPinCount > maxPinnedCount || pinnedSecretCount + secretPinCount > maxPinnedCount)) {
-            CharSequence message = chatList().getConstructor() == TdApi.ChatListMain.CONSTRUCTOR ? Lang.pluralBold(R.string.PinTooMuchWarn, maxPinnedCount) : Lang.plural(R.string.ErrorPinnedChatsLimit, maxPinnedCount);
-            context.tooltipManager().builder(view).controller(getParentOrSelf()).icon(R.drawable.baseline_error_24).show(tdlib, message);
-            return;
-          }
-          showOptions((secretPinCount + cloudPinCount) == 1 ? tdlib.chatTitle(lastChatId) : Lang.pluralBold(isUnpin ? R.string.UnpinXChats : R.string.PinXChats, secretPinCount + cloudPinCount), new int[] {
-            R.id.btn_pinUnpinChat,
-            R.id.btn_cancel
-          }, new String[] {
-            Lang.getString(isUnpin ? R.string.UnpinFromTop : R.string.PinToTop),
-            Lang.getString(R.string.Cancel)
-          }, null, new int[] {isUnpin ? R.drawable.deproko_baseline_pin_undo_24 : R.drawable.deproko_baseline_pin_24, R.drawable.baseline_cancel_24}, (v, optionId) -> {
-            if (optionId == R.id.btn_pinUnpinChat) {
-              if (isUnpin) {
-                int remainingCount = selectedChats.size();
-                for (int i = 0; i < selectedChats.size(); i++) {
-                  if (!ChatPosition.isPinned(selectedChats.valueAt(i), chatList)) {
-                    remainingCount--;
-                  }
+        showOptions((secretPinCount + cloudPinCount) == 1 ? tdlib.chatTitle(lastChatId) : Lang.pluralBold(isUnpin ? R.string.UnpinXChats : R.string.PinXChats, secretPinCount + cloudPinCount), new int[] {
+          R.id.btn_pinUnpinChat,
+          R.id.btn_cancel
+        }, new String[] {
+          Lang.getString(isUnpin ? R.string.UnpinFromTop : R.string.PinToTop),
+          Lang.getString(R.string.Cancel)
+        }, null, new int[] {isUnpin ? R.drawable.deproko_baseline_pin_undo_24 : R.drawable.deproko_baseline_pin_24, R.drawable.baseline_cancel_24}, (v, optionId) -> {
+          if (optionId == R.id.btn_pinUnpinChat) {
+            if (isUnpin) {
+              int remainingCount = selectedChats.size();
+              for (int i = 0; i < selectedChats.size(); i++) {
+                if (!ChatPosition.isPinned(selectedChats.valueAt(i), chatList)) {
+                  remainingCount--;
                 }
-                AtomicInteger remaining = new AtomicInteger(remainingCount);
-                Client.ResultHandler handler = object -> {
-                  switch (object.getConstructor()) {
-                    case TdApi.Ok.CONSTRUCTOR:
-                      if (remaining.decrementAndGet() == 0) {
-                        tdlib.ui().post(this::onSelectionActionComplete);
-                      }
-                      break;
-                    case TdApi.Error.CONSTRUCTOR:
-                      UI.showError(object);
-                      break;
-                  }
-                };
-                for (int i = 0; i < selectedChats.size(); i++) {
-                  long chatId = selectedChats.keyAt(i);
-                  if (ChatPosition.isPinned(selectedChats.valueAt(i), chatList)) {
-                    tdlib.client().send(new TdApi.ToggleChatIsPinned(chatList, chatId, false), handler);
-                  }
-                }
-              } else {
-                List<Long> pinnedChats = tdlib.getPinnedChats(chatList);
-                TdApi.Chat[] chats = ArrayUtils.asArray(selectedChats, new TdApi.Chat[selectedChats.size()]);
-                Td.sort(chats, chatList);
-                for (TdApi.Chat chat : chats) {
-                  if (!ChatPosition.isPinned(chat, chatList)) {
-                    pinnedChats.add(chat.id);
-                  }
-                }
-                performSelectAction(new TdApi.SetPinnedChats(chatList, ArrayUtils.asArray(pinnedChats)));
               }
+              AtomicInteger remaining = new AtomicInteger(remainingCount);
+              Client.ResultHandler handler = object -> {
+                switch (object.getConstructor()) {
+                  case TdApi.Ok.CONSTRUCTOR:
+                    if (remaining.decrementAndGet() == 0) {
+                      tdlib.ui().post(this::onSelectionActionComplete);
+                    }
+                    break;
+                  case TdApi.Error.CONSTRUCTOR:
+                    UI.showError(object);
+                    break;
+                }
+              };
+              for (int i = 0; i < selectedChats.size(); i++) {
+                long chatId = selectedChats.keyAt(i);
+                if (ChatPosition.isPinned(selectedChats.valueAt(i), chatList)) {
+                  tdlib.client().send(new TdApi.ToggleChatIsPinned(chatList, chatId, false), handler);
+                }
+              }
+            } else {
+              List<Long> pinnedChats = tdlib.getPinnedChats(chatList);
+              TdApi.Chat[] chats = ArrayUtils.asArray(selectedChats, new TdApi.Chat[selectedChats.size()]);
+              Td.sort(chats, chatList);
+              for (TdApi.Chat chat : chats) {
+                if (!ChatPosition.isPinned(chat, chatList)) {
+                  pinnedChats.add(chat.id);
+                }
+              }
+              performSelectAction(new TdApi.SetPinnedChats(chatList, ArrayUtils.asArray(pinnedChats)));
             }
-            return true;
-          });
-        }
-        break;
+          }
+          return true;
+        });
       }
-      case R.id.menu_btn_muteUnmute: {
-        /*if (getSelectedChatCount() == 1) {
+    } else if (id == R.id.menu_btn_muteUnmute) {/*if (getSelectedChatCount() == 1) {
           tdlib.ui().processChatAction(this, selectedChats.keyAt(0), R.id.btn_notifications, this::onSelectionActionComplete);
           return;
         }*/
 
-        int mode = canMuteUnmuteSelectedChats();
-        switch (mode) {
-          case ACTION_MODE_ALL_ENABLED: {
-            // Mute all
+      int mode = canMuteUnmuteSelectedChats();
+      switch (mode) {
+        case ACTION_MODE_ALL_ENABLED: {
+          // Mute all
 
-            int muteCount = 0;
-            boolean hasBlocked = false;
+          int muteCount = 0;
+          boolean hasBlocked = false;
 
-            SparseIntArray scopeCounters = new SparseIntArray(3);
-            for (int i = 0; i < selectedChats.size(); i++) {
-              TdApi.Chat chat = selectedChats.valueAt(i);
-              if (!tdlib.isSelfChat(chat.id)) {
-                muteCount++;
+          SparseIntArray scopeCounters = new SparseIntArray(3);
+          for (int i = 0; i < selectedChats.size(); i++) {
+            TdApi.Chat chat = selectedChats.valueAt(i);
+            if (!tdlib.isSelfChat(chat.id)) {
+              muteCount++;
 
-                TdApi.ScopeNotificationSettings scopeNotificationSettings = tdlib.scopeNotificationSettings(chat);
-                int count = scopeCounters.get(scopeNotificationSettings.getConstructor());
-                scopeCounters.put(scopeNotificationSettings.getConstructor(), count + 1);
-                if (!hasBlocked && tdlib.notifications().areNotificationsBlocked(chat.id, true))
-                  hasBlocked = true;
-              }
+              TdApi.ScopeNotificationSettings scopeNotificationSettings = tdlib.scopeNotificationSettings(chat);
+              int count = scopeCounters.get(scopeNotificationSettings.getConstructor());
+              scopeCounters.put(scopeNotificationSettings.getConstructor(), count + 1);
+              if (!hasBlocked && tdlib.notifications().areNotificationsBlocked(chat.id, true))
+                hasBlocked = true;
             }
-            TdApi.ScopeNotificationSettings defaultSettings = scopeCounters.size() == 3 ? tdlib.scopeNotificationSettings(Td.constructNotificationSettingsScope(scopeCounters.keyAt(0))) : null;
-
-            RunnableInt act = muteFor -> {
-              int mutedCount = 0;
-              for (int i = 0; i < selectedChats.size(); i++) {
-                TdApi.Chat chat = selectedChats.valueAt(i);
-                if (tdlib.isSelfChat(chat.id))
-                  continue;
-                if (muteFor == -1) {
-                  chat.notificationSettings.useDefaultMuteFor = true;
-                  tdlib.setChatNotificationSettings(chat.id, chat.notificationSettings);
-                } else {
-                  tdlib.setMuteFor(chat.id, muteFor);
-                }
-                mutedCount++;
-              }
-              UI.showToast(Lang.plural(R.string.MutedXChats, mutedCount), Toast.LENGTH_SHORT);
-              onSelectionActionComplete();
-            };
-
-            int size = 3;
-            IntList ids = new IntList(size);
-            IntList icons = new IntList(size);
-            IntList colors = hasBlocked ? new IntList(size) : null;
-            StringList strings = new StringList(size);
-            TdlibUi.fillMuteOptions(ids, icons, strings, colors, false, defaultSettings == null || !TD.isMutedForever(defaultSettings.muteFor), true, false, false, defaultSettings != null ? TdlibUi.getValueForSettings(defaultSettings.muteFor, true) : null, hasBlocked);
-            showOptions(Lang.pluralBold(R.string.MuteXChats, muteCount), ids.get(), strings.get(), colors != null ? colors.get() : null, icons.get(), (itemView, optionId) -> {
-              act.runWithInt(optionId == R.id.btn_menu_resetToDefault ? -1 : TdlibUi.getMuteDurationForId(optionId));
-              return true;
-            });
-            break;
           }
-          case ACTION_MODE_ALL_DISABLED:
-          case ACTION_MODE_MIXED: {
-            // Unmute all
+          TdApi.ScopeNotificationSettings defaultSettings = scopeCounters.size() == 3 ? tdlib.scopeNotificationSettings(Td.constructNotificationSettingsScope(scopeCounters.keyAt(0))) : null;
 
-            int overrideCount = 0;
-            int unmuteCount = 0;
-            int minScopeMute = 0;
-
+          RunnableInt act = muteFor -> {
+            int mutedCount = 0;
             for (int i = 0; i < selectedChats.size(); i++) {
               TdApi.Chat chat = selectedChats.valueAt(i);
               if (tdlib.isSelfChat(chat.id))
                 continue;
-              if (tdlib.chatMuteFor(chat) > 0) {
-                unmuteCount++;
+              if (muteFor == -1) {
+                chat.notificationSettings.useDefaultMuteFor = true;
+                tdlib.setChatNotificationSettings(chat.id, chat.notificationSettings);
+              } else {
+                tdlib.setMuteFor(chat.id, muteFor);
               }
-              int scopeMute = tdlib.scopeNotificationSettings(chat).muteFor;
-              if (scopeMute > 0) {
-                minScopeMute = overrideCount == 0 ? scopeMute : Math.min(scopeMute, minScopeMute);
-                overrideCount++;
-              }
+              mutedCount++;
             }
+            UI.showToast(Lang.plural(R.string.MutedXChats, mutedCount), Toast.LENGTH_SHORT);
+            onSelectionActionComplete();
+          };
 
-            Runnable act = () -> {
-              int unmutedCount = 0, overriddenCount = 0;
-              for (int i = 0; i < selectedChats.size(); i++) {
-                TdApi.Chat chat = selectedChats.valueAt(i);
-                if (tdlib.isSelfChat(chat.id))
-                  continue;
-                if (tdlib.chatMuteFor(chat) > 0)
-                  unmutedCount++;
-                if (tdlib.scopeNotificationSettings(chat).muteFor > 0)
-                  overriddenCount++;
-                tdlib.setMuteFor(chat.id, 0);
-              }
-              UI.showToast(Lang.plural(overriddenCount > 0 ? R.string.NotificationsOnXChats : R.string.UnmutedXChats, unmutedCount), Toast.LENGTH_SHORT);
-              onSelectionActionComplete();
-            };
-            if (overrideCount > 0) {
-              showOptions(Lang.getString(selectedChats.size() > overrideCount ? R.string.NotificationsEnableOverride3 : R.string.NotificationsEnableOverride2, Lang.lowercase(TdlibUi.getValueForSettings(minScopeMute))),
-                new int[]{R.id.btn_unmute, R.id.btn_cancel},
-                new String[]{Lang.plural(R.string.EnableNotifications2, unmuteCount), Lang.getString(R.string.Cancel)}, null,
-                new int[]{R.drawable.baseline_notifications_24, R.drawable.baseline_cancel_24},
-                (v, optionId) -> {
-                  if (optionId == R.id.btn_unmute) {
-                    act.run();
-                  }
-                  return true;
-                }
-              );
-            } else {
-              act.run();
+          int size = 3;
+          IntList ids = new IntList(size);
+          IntList icons = new IntList(size);
+          IntList colors = hasBlocked ? new IntList(size) : null;
+          StringList strings = new StringList(size);
+          TdlibUi.fillMuteOptions(ids, icons, strings, colors, false, defaultSettings == null || !TD.isMutedForever(defaultSettings.muteFor), true, false, false, defaultSettings != null ? TdlibUi.getValueForSettings(defaultSettings.muteFor, true) : null, hasBlocked);
+          showOptions(Lang.pluralBold(R.string.MuteXChats, muteCount), ids.get(), strings.get(), colors != null ? colors.get() : null, icons.get(), (itemView, optionId) -> {
+            act.runWithInt(optionId == R.id.btn_menu_resetToDefault ? -1 : TdlibUi.getMuteDurationForId(optionId));
+            return true;
+          });
+          break;
+        }
+        case ACTION_MODE_ALL_DISABLED:
+        case ACTION_MODE_MIXED: {
+          // Unmute all
+
+          int overrideCount = 0;
+          int unmuteCount = 0;
+          int minScopeMute = 0;
+
+          for (int i = 0; i < selectedChats.size(); i++) {
+            TdApi.Chat chat = selectedChats.valueAt(i);
+            if (tdlib.isSelfChat(chat.id))
+              continue;
+            if (tdlib.chatMuteFor(chat) > 0) {
+              unmuteCount++;
+            }
+            int scopeMute = tdlib.scopeNotificationSettings(chat).muteFor;
+            if (scopeMute > 0) {
+              minScopeMute = overrideCount == 0 ? scopeMute : Math.min(scopeMute, minScopeMute);
+              overrideCount++;
             }
           }
-          break;
+
+          Runnable act = () -> {
+            int unmutedCount = 0, overriddenCount = 0;
+            for (int i = 0; i < selectedChats.size(); i++) {
+              TdApi.Chat chat = selectedChats.valueAt(i);
+              if (tdlib.isSelfChat(chat.id))
+                continue;
+              if (tdlib.chatMuteFor(chat) > 0)
+                unmutedCount++;
+              if (tdlib.scopeNotificationSettings(chat).muteFor > 0)
+                overriddenCount++;
+              tdlib.setMuteFor(chat.id, 0);
+            }
+            UI.showToast(Lang.plural(overriddenCount > 0 ? R.string.NotificationsOnXChats : R.string.UnmutedXChats, unmutedCount), Toast.LENGTH_SHORT);
+            onSelectionActionComplete();
+          };
+          if (overrideCount > 0) {
+            showOptions(Lang.getString(selectedChats.size() > overrideCount ? R.string.NotificationsEnableOverride3 : R.string.NotificationsEnableOverride2, Lang.lowercase(TdlibUi.getValueForSettings(minScopeMute))),
+              new int[] {R.id.btn_unmute, R.id.btn_cancel},
+              new String[] {Lang.plural(R.string.EnableNotifications2, unmuteCount), Lang.getString(R.string.Cancel)}, null,
+              new int[] {R.drawable.baseline_notifications_24, R.drawable.baseline_cancel_24},
+              (v, optionId) -> {
+                if (optionId == R.id.btn_unmute) {
+                  act.run();
+                }
+                return true;
+              }
+            );
+          } else {
+            act.run();
+          }
         }
         break;
       }
-      case R.id.menu_btn_delete: {
-        bulkDeleteChat(false);
-        break;
-      }
+    } else if (id == R.id.menu_btn_delete) {
+      bulkDeleteChat(false);
     }
   }
 
@@ -1515,7 +1488,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
         .setRawItems(new ListItem[]{
           new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_clearChatHistory, 0, Lang.pluralBold(R.string.RevokeForX, revokeCount), R.id.btn_clearChatHistory, false)
         })
-        .setSaveColorId(R.id.theme_color_textNegative)
+        .setSaveColorId(ColorId.textNegative)
         .setSaveStr(clearHistory ? R.string.ClearHistoryBtn : R.string.Delete)
         .setIntDelegate((id, result) -> {
           boolean needRevoke = result.get(R.id.btn_clearChatHistory) == R.id.btn_clearChatHistory;
@@ -1538,211 +1511,175 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   @Override
   public void onMoreItemPressed (int id) {
-    switch (id) {
-      case R.id.more_btn_archiveUnarchive:
-      case R.id.more_btn_markAsRead:
-      case R.id.more_btn_markAsUnread:
-      case R.id.more_btn_report:
-      case R.id.more_btn_block:
-      case R.id.more_btn_unblock: {
-        final int completeStr, count;
-        int botCount = 0;
-        switch (id) {
-          case R.id.more_btn_archiveUnarchive:
-            completeStr = chatList().getConstructor() == TdApi.ChatListArchive.CONSTRUCTOR ? R.string.UnarchivedXChats : R.string.ArchivedXChats;
-            count = getSelectedChatCount();
-            break;
-          case R.id.more_btn_markAsRead:
-            completeStr = R.string.ReadAllChatsDone;
-            count = getSelectedChatCount();
-            break;
-          case R.id.more_btn_markAsUnread:
-            completeStr = R.string.MarkedXChats;
-            count = getSelectedChatCount();
-            break;
-          case R.id.more_btn_report:
-            completeStr = 0; // R.string.ReportedXChats;
-            count = getSelectedChatCount();
-            break;
-          case R.id.more_btn_block:
-          case R.id.more_btn_unblock:
-            Set<Long> userIds = new HashSet<>();
-            for (int i = 0; i < selectedChats.size(); i++) {
-              long userId = tdlib.chatUserId(selectedChats.valueAt(i));
-              userIds.add(userId);
-              if (tdlib.cache().userBot(userId)) {
-                botCount++;
-              }
-            }
-            count = userIds.size();
-            completeStr = count == botCount ? (id == R.id.more_btn_unblock ? R.string.UnblockedXBots : R.string.BlockedXBots) : id == R.id.more_btn_unblock ? R.string.UnblockedXUsers : R.string.BlockedXUsers;
-            break;
-          default:
-            return;
-        }
-        Runnable onDone = () -> {
-          if (completeStr != 0) {
-            UI.showToast(Lang.plural(completeStr, count), Toast.LENGTH_SHORT);
-          }
-          onSelectionActionComplete();
-        };
-        if (count == 1) {
-          int simpleActionId = 0;
-          switch (id) {
-            case R.id.more_btn_markAsUnread:
-              simpleActionId = R.id.btn_markChatAsUnread;
-              break;
-            case R.id.more_btn_markAsRead:
-              simpleActionId = R.id.btn_markChatAsRead;
-              break;
-            case R.id.more_btn_archiveUnarchive:
-              simpleActionId = R.id.btn_archiveUnarchiveChat;
-              break;
-            case R.id.more_btn_report:
-              TdlibUi.reportChat(getParentOrSelf(), selectedChats.keyAt(0), null, onDone, null);
-              return;
-          }
-          if (simpleActionId != 0) {
-            tdlib.ui().processChatAction(this, chatList(), selectedChats.keyAt(0), null, new TdApi.MessageSourceChatList(), simpleActionId, onDone);
-            return;
-          }
-        }
-        AtomicInteger remaining = new AtomicInteger(selectedChats.size());
-        Runnable after = () -> {
-          if (remaining.decrementAndGet() == 0) {
-            tdlib.ui().post(onDone);
-          }
-        };
-        switch (id) {
-          case R.id.more_btn_archiveUnarchive: {
-            boolean isUnarchvie = chatList().getConstructor() == TdApi.ChatListArchive.CONSTRUCTOR;
-            showOptions(
-              Lang.pluralBold(isUnarchvie ? R.string.UnarchiveXChats : R.string.ArchiveXChats, selectedChats.size()),
-              new int[] { R.id.btn_archiveUnarchiveChat, R.id.btn_cancel },
-              new String[] {Lang.getString(isUnarchvie ? R.string.Unarchive : R.string.Archive), Lang.getString(R.string.Cancel) }, null,
-              new int[] {isUnarchvie ? R.drawable.baseline_unarchive_24 : R.drawable.baseline_archive_24, R.drawable.baseline_cancel_24}, (v, optionId) -> {
-                if (optionId == R.id.btn_archiveUnarchiveChat) {
-                  TdApi.ChatList chatList = isUnarchvie ? new TdApi.ChatListMain() : new TdApi.ChatListArchive();
-                  for (int i = 0; i < selectedChats.size(); i++) {
-                    tdlib.client().send(new TdApi.AddChatToList(selectedChats.keyAt(i), chatList), result -> {
-                      switch (result.getConstructor()) {
-                        case TdApi.Ok.CONSTRUCTOR:
-                          after.run();
-                          break;
-                        case TdApi.Error.CONSTRUCTOR:
-                          UI.showError(result);
-                          break;
-                      }
-                    });
-                  }
-                }
-                return true;
-              }
-            );
-            break;
-          }
-          case R.id.more_btn_report: {
-            long[] chatIds = ArrayUtils.keys(selectedChats);
-            TdlibUi.reportChats(getParentOrSelf(), chatIds, onDone);
-            break;
-          }
-          case R.id.more_btn_block:
-          case R.id.more_btn_unblock: {
-            boolean isUnblock = id == R.id.more_btn_unblock;
-            if (isUnblock) {
-              for (int i = selectedChats.size() - 1; i >= 0; i--) {
-                long chatId = selectedChats.keyAt(i);
-                tdlib.blockSender(tdlib.sender(chatId), false, tdlib.okHandler());
-              }
-            } else {
-              showOptions(
-                Lang.pluralBold(botCount == count ? R.string.BlockXBots : R.string.BlockXUsers, count),
-                new int[]{R.id.btn_blockSender, R.id.btn_cancel},
-                new String[] {Lang.getString(R.string.BlockContact), Lang.getString(R.string.Cancel)},
-                new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL},
-                new int[]{R.drawable.baseline_block_24, R.drawable.baseline_cancel_24},
-                (v, optionId) -> {
-                  if (optionId == R.id.btn_unblockSender || optionId == R.id.btn_blockSender) {
-                    for (int i = selectedChats.size() - 1; i >= 0; i--) {
-                      long chatId = selectedChats.keyAt(i);
-                      tdlib.blockSender(tdlib.sender(chatId), optionId == R.id.btn_blockSender, tdlib.okHandler(after));
-                    }
-                  }
-                  return true;
-                }
-              );
-            }
-            break;
-          }
-          default: {
-            for (int i = 0; i < selectedChats.size(); i++) {
-              switch (id) {
-                case R.id.more_btn_markAsRead:
-                  tdlib.markChatAsRead(selectedChats.keyAt(i), new TdApi.MessageSourceChatList(), true, after);
-                  break;
-                case R.id.more_btn_markAsUnread:
-                  tdlib.markChatAsUnread(selectedChats.valueAt(i), after);
-                  break;
-              }
-            }
-            break;
-          }
-        }
-        break;
-      }
-      case R.id.more_btn_selectAll: {
-        int canMarkAsRead = 0;
+    if (id == R.id.more_btn_archiveUnarchive ||
+      id == R.id.more_btn_markAsRead ||
+      id == R.id.more_btn_markAsUnread ||
+      id == R.id.more_btn_report ||
+      id == R.id.more_btn_block ||
+      id == R.id.more_btn_unblock) {
+      final int completeStr, count;
+      int botCount = 0;
+      if (id == R.id.more_btn_archiveUnarchive) {
+        completeStr = chatList().getConstructor() == TdApi.ChatListArchive.CONSTRUCTOR ? R.string.UnarchivedXChats : R.string.ArchivedXChats;
+        count = getSelectedChatCount();
+      } else if (id == R.id.more_btn_markAsRead) {
+        completeStr = R.string.ReadAllChatsDone;
+        count = getSelectedChatCount();
+      } else if (id == R.id.more_btn_markAsUnread) {
+        completeStr = R.string.MarkedXChats;
+        count = getSelectedChatCount();
+      } else if (id == R.id.more_btn_report) {
+        completeStr = 0; // R.string.ReportedXChats;
+        count = getSelectedChatCount();
+      } else if (id == R.id.more_btn_block || id == R.id.more_btn_unblock) {
+        Set<Long> userIds = new HashSet<>();
         for (int i = 0; i < selectedChats.size(); i++) {
-          TdApi.Chat chat = selectedChats.valueAt(i);
-          if (tdlib.canMarkAsRead(chat)) {
-            canMarkAsRead++;
+          long userId = tdlib.chatUserId(selectedChats.valueAt(i));
+          userIds.add(userId);
+          if (tdlib.cache().userBot(userId)) {
+            botCount++;
           }
         }
-
-        IntList ids = new IntList(3);
-        StringList strings = new StringList(3);
-        IntList icons = new IntList(3);
-
-        ids.append(R.id.btn_selectAll);
-        strings.append(R.string.SelectAll);
-        icons.append(R.drawable.baseline_playlist_add_check_24);
-
-        if (canMarkAsRead == selectedChats.size() && canMarkAsRead < tdlib.getCounter(chatList()).chatCount) {
-          ids.append(R.id.btn_selectUnread);
-          strings.append(R.string.SelectUnread);
-          icons.append(Config.ICON_MARK_AS_UNREAD);
-        }
-
-        ids.append(R.id.btn_selectMuted);
-        strings.append(R.string.SelectMuted);
-        icons.append(R.drawable.baseline_notifications_off_24);
-
-        showOptions(Lang.getString(R.string.SelectMore), ids.get(), strings.get(), null, icons.get(), (v, optionId) -> {
-          switch (optionId) {
-            case R.id.btn_selectAll: {
-              selectChats(chat -> true, tdlib.getCounter(chatList()).totalChatCount);
-              break;
-            }
-            case R.id.btn_selectUnread: {
-              selectChats(chat -> chat.unreadCount > 0 || chat.isMarkedAsUnread, tdlib.getCounter(chatList()).chatCount);
-              break;
-            }
-            case R.id.btn_selectMuted: {
-              selectChats(tdlib::chatNeedsMuteIcon, tdlib.getCounter(chatList()).totalChatCount);
-              break;
-            }
-          }
-          return true;
-        });
-
-        // showOptions()
-        break;
+        count = userIds.size();
+        completeStr = count == botCount ? (id == R.id.more_btn_unblock ? R.string.UnblockedXBots : R.string.BlockedXBots) : id == R.id.more_btn_unblock ? R.string.UnblockedXUsers : R.string.BlockedXUsers;
+      } else {
+        return;
       }
-      case R.id.more_btn_clearCache: {
-        showOptions(Lang.pluralBold(R.string.ClearXChats, selectedChats.size()),
-          new int[] {R.id.btn_clearCache, R.id.btn_cancel},
-          new String[] {Lang.getString(R.string.DeleteChatCache), Lang.getString(R.string.Cancel)}, null,
-          new int[] {R.drawable.templarian_baseline_broom_24, R.drawable.baseline_cancel_24}, (v, optionId) -> {
+      Runnable onDone = () -> {
+        if (completeStr != 0) {
+          UI.showToast(Lang.plural(completeStr, count), Toast.LENGTH_SHORT);
+        }
+        onSelectionActionComplete();
+      };
+      if (count == 1) {
+        int simpleActionId = 0;
+        if (id == R.id.more_btn_markAsUnread) {
+          simpleActionId = R.id.btn_markChatAsUnread;
+        } else if (id == R.id.more_btn_markAsRead) {
+          simpleActionId = R.id.btn_markChatAsRead;
+        } else if (id == R.id.more_btn_archiveUnarchive) {
+          simpleActionId = R.id.btn_archiveUnarchiveChat;
+        } else if (id == R.id.more_btn_report) {
+          TdlibUi.reportChat(getParentOrSelf(), selectedChats.keyAt(0), null, onDone, null);
+          return;
+        }
+        if (simpleActionId != 0) {
+          tdlib.ui().processChatAction(this, chatList(), selectedChats.keyAt(0), null, new TdApi.MessageSourceChatList(), simpleActionId, onDone);
+          return;
+        }
+      }
+      AtomicInteger remaining = new AtomicInteger(selectedChats.size());
+      Runnable after = () -> {
+        if (remaining.decrementAndGet() == 0) {
+          tdlib.ui().post(onDone);
+        }
+      };
+      if (id == R.id.more_btn_archiveUnarchive) {
+        boolean isUnarchvie = chatList().getConstructor() == TdApi.ChatListArchive.CONSTRUCTOR;
+        showOptions(
+          Lang.pluralBold(isUnarchvie ? R.string.UnarchiveXChats : R.string.ArchiveXChats, selectedChats.size()),
+          new int[] {R.id.btn_archiveUnarchiveChat, R.id.btn_cancel},
+          new String[] {Lang.getString(isUnarchvie ? R.string.Unarchive : R.string.Archive), Lang.getString(R.string.Cancel)}, null,
+          new int[] {isUnarchvie ? R.drawable.baseline_unarchive_24 : R.drawable.baseline_archive_24, R.drawable.baseline_cancel_24}, (v, optionId) -> {
+            if (optionId == R.id.btn_archiveUnarchiveChat) {
+              TdApi.ChatList chatList = isUnarchvie ? new TdApi.ChatListMain() : new TdApi.ChatListArchive();
+              for (int i = 0; i < selectedChats.size(); i++) {
+                tdlib.client().send(new TdApi.AddChatToList(selectedChats.keyAt(i), chatList), result -> {
+                  switch (result.getConstructor()) {
+                    case TdApi.Ok.CONSTRUCTOR:
+                      after.run();
+                      break;
+                    case TdApi.Error.CONSTRUCTOR:
+                      UI.showError(result);
+                      break;
+                  }
+                });
+              }
+            }
+            return true;
+          }
+        );
+      } else if (id == R.id.more_btn_report) {
+        long[] chatIds = ArrayUtils.keys(selectedChats);
+        TdlibUi.reportChats(getParentOrSelf(), chatIds, onDone);
+      } else if (id == R.id.more_btn_block || id == R.id.more_btn_unblock) {
+        boolean isUnblock = id == R.id.more_btn_unblock;
+        if (isUnblock) {
+          for (int i = selectedChats.size() - 1; i >= 0; i--) {
+            long chatId = selectedChats.keyAt(i);
+            tdlib.blockSender(tdlib.sender(chatId), false, tdlib.okHandler());
+          }
+        } else {
+          showOptions(
+            Lang.pluralBold(botCount == count ? R.string.BlockXBots : R.string.BlockXUsers, count),
+            new int[] {R.id.btn_blockSender, R.id.btn_cancel},
+            new String[] {Lang.getString(R.string.BlockContact), Lang.getString(R.string.Cancel)},
+            new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL},
+            new int[] {R.drawable.baseline_block_24, R.drawable.baseline_cancel_24},
+            (v, optionId) -> {
+              if (optionId == R.id.btn_unblockSender || optionId == R.id.btn_blockSender) {
+                for (int i = selectedChats.size() - 1; i >= 0; i--) {
+                  long chatId = selectedChats.keyAt(i);
+                  tdlib.blockSender(tdlib.sender(chatId), optionId == R.id.btn_blockSender, tdlib.okHandler(after));
+                }
+              }
+              return true;
+            }
+          );
+        }
+      } else {
+        for (int i = 0; i < selectedChats.size(); i++) {
+          if (id == R.id.more_btn_markAsRead) {
+            tdlib.markChatAsRead(selectedChats.keyAt(i), new TdApi.MessageSourceChatList(), true, after);
+          } else if (id == R.id.more_btn_markAsUnread) {
+            tdlib.markChatAsUnread(selectedChats.valueAt(i), after);
+          }
+        }
+      }
+    } else if (id == R.id.more_btn_selectAll) {
+      int canMarkAsRead = 0;
+      for (int i = 0; i < selectedChats.size(); i++) {
+        TdApi.Chat chat = selectedChats.valueAt(i);
+        if (tdlib.canMarkAsRead(chat)) {
+          canMarkAsRead++;
+        }
+      }
+
+      IntList ids = new IntList(3);
+      StringList strings = new StringList(3);
+      IntList icons = new IntList(3);
+
+      ids.append(R.id.btn_selectAll);
+      strings.append(R.string.SelectAll);
+      icons.append(R.drawable.baseline_playlist_add_check_24);
+
+      if (canMarkAsRead == selectedChats.size() && canMarkAsRead < tdlib.getCounter(chatList()).chatCount) {
+        ids.append(R.id.btn_selectUnread);
+        strings.append(R.string.SelectUnread);
+        icons.append(Config.ICON_MARK_AS_UNREAD);
+      }
+
+      ids.append(R.id.btn_selectMuted);
+      strings.append(R.string.SelectMuted);
+      icons.append(R.drawable.baseline_notifications_off_24);
+
+      showOptions(Lang.getString(R.string.SelectMore), ids.get(), strings.get(), null, icons.get(), (v, optionId) -> {
+        if (optionId == R.id.btn_selectAll) {
+          selectChats(chat -> true, tdlib.getCounter(chatList()).totalChatCount);
+        } else if (optionId == R.id.btn_selectUnread) {
+          selectChats(chat -> chat.unreadCount > 0 || chat.isMarkedAsUnread, tdlib.getCounter(chatList()).chatCount);
+        } else if (optionId == R.id.btn_selectMuted) {
+          selectChats(tdlib::chatNeedsMuteIcon, tdlib.getCounter(chatList()).totalChatCount);
+        }
+        return true;
+      });
+
+      // showOptions()
+    } else if (id == R.id.more_btn_clearCache) {
+      showOptions(Lang.pluralBold(R.string.ClearXChats, selectedChats.size()),
+        new int[] {R.id.btn_clearCache, R.id.btn_cancel},
+        new String[] {Lang.getString(R.string.DeleteChatCache), Lang.getString(R.string.Cancel)}, null,
+        new int[] {R.drawable.templarian_baseline_broom_24, R.drawable.baseline_cancel_24}, (v, optionId) -> {
           if (optionId == R.id.btn_clearCache) {
             long[] chatIds = ArrayUtils.keys(selectedChats);
             UI.showToast(Lang.plural(R.string.ClearingXChats, chatIds.length), Toast.LENGTH_SHORT);
@@ -1766,12 +1703,8 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
           }
           return true;
         });
-        break;
-      }
-      case R.id.more_btn_clearHistory: {
-        bulkDeleteChat(true);
-        break;
-      }
+    } else if (id == R.id.more_btn_clearHistory) {
+      bulkDeleteChat(true);
     }
   }
 
@@ -1940,35 +1873,32 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   @Override
   protected int getSearchHeaderColorId () {
-    return R.id.theme_color_filling;
+    return ColorId.filling;
   }
 
   @Override
   protected int getSearchHeaderIconColorId () {
-    return R.id.theme_color_headerLightIcon;
+    return ColorId.headerLightIcon;
   }
 
   // click listeners
 
   @Override
   public void onClick (View v) {
-    switch (v.getId()) {
-      case R.id.chat: {
-        final TGChat chat = ((ChatView) v).getChat();
-        if (chat != null) {
-          if (isChatSelected(chat) || getSelectedChatCount() > 0) {
-            selectUnselectChat(chat, true);
-            return;
-          }
-          if (chat.isArchive()) {
-            ChatsController c = new ChatsController(context, tdlib);
-            c.setArguments(new Arguments(new TdApi.ChatListArchive()).setNeedMessagesSearch(true));
-            context.navigation().navigateTo(c);
-          } else {
-            onClick(chat.getChat());
-          }
+    if (v.getId() == R.id.chat) {
+      final TGChat chat = ((ChatView) v).getChat();
+      if (chat != null) {
+        if (isChatSelected(chat) || getSelectedChatCount() > 0) {
+          selectUnselectChat(chat, true);
+          return;
         }
-        break;
+        if (chat.isArchive()) {
+          ChatsController c = new ChatsController(context, tdlib);
+          c.setArguments(new Arguments(new TdApi.ChatListArchive()).setNeedMessagesSearch(true));
+          context.navigation().navigateTo(c);
+        } else {
+          onClick(chat.getChat());
+        }
       }
     }
   }
@@ -2041,7 +1971,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       }
 
       context.setTdlib(tdlib);
-      context.setHeaderAvatar(null, new AvatarPlaceholder.Metadata(R.id.theme_color_avatarArchive, R.drawable.baseline_archive_24));
+      context.setHeaderAvatar(null, new AvatarPlaceholder.Metadata(ColorId.avatarArchive, R.drawable.baseline_archive_24));
       context.setHeader(Lang.getString(R.string.ArchiveTitle), Lang.plural(R.string.xChats, tdlib.getTotalChatsCount(ChatPosition.CHAT_LIST_ARCHIVE)));
 
       context.setMaximizeListener((target1, animateToWhenReady, arg) -> {
@@ -2061,15 +1991,10 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
         @Override
         public void onAfterForceTouchAction (ForceTouchView.ForceTouchContext context, int actionId, Object arg) {
-          switch (actionId) {
-            case R.id.btn_markChatAsRead: {
-              tdlib.readAllChats(new TdApi.ChatListArchive(), readCount -> UI.showToast(Lang.plural(R.string.ReadAllChatsDone, readCount), Toast.LENGTH_SHORT));
-              break;
-            }
-            case R.id.btn_pinUnpinChat: {
-              tdlib.settings().toggleUserPreference(TdlibSettingsManager.PREFERENCE_HIDE_ARCHIVE);
-              break;
-            }
+          if (actionId == R.id.btn_markChatAsRead) {
+            tdlib.readAllChats(new TdApi.ChatListArchive(), readCount -> UI.showToast(Lang.plural(R.string.ReadAllChatsDone, readCount), Toast.LENGTH_SHORT));
+          } else if (actionId == R.id.btn_pinUnpinChat) {
+            tdlib.settings().toggleUserPreference(TdlibSettingsManager.PREFERENCE_HIDE_ARCHIVE);
           }
         }
       };
@@ -2090,20 +2015,17 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
 
   @Override
   public boolean onLongClick (View v) {
-    switch (v.getId()) {
-      case R.id.chat: {
-        TGChat chat = ((ChatView) v).getChat();
-        if (chat != null) {
-          if (chat.isArchive()) {
-            if (getSelectedChatCount() == 0) {
-              tdlib.ui().showArchiveOptions(this, tdlib.chatList(ChatPosition.CHAT_LIST_ARCHIVE));
-            }
-          } else {
-            tdlib.ui().showChatOptions(this, chatList(), chat.getChatId(), null, new TdApi.MessageSourceChatList(), canSelectChat(chat), isChatSelected(chat), () -> selectUnselectChat(chat, true));
+    if (v.getId() == R.id.chat) {
+      TGChat chat = ((ChatView) v).getChat();
+      if (chat != null) {
+        if (chat.isArchive()) {
+          if (getSelectedChatCount() == 0) {
+            tdlib.ui().showArchiveOptions(this, tdlib.chatList(ChatPosition.CHAT_LIST_ARCHIVE));
           }
-          return true;
+        } else {
+          tdlib.ui().showChatOptions(this, chatList(), chat.getChatId(), null, new TdApi.MessageSourceChatList(), canSelectChat(chat), isChatSelected(chat), () -> selectUnselectChat(chat, true));
         }
-        break;
+        return true;
       }
     }
     return false;
@@ -2299,22 +2221,18 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     }
 
     noChatsAdapter = new SettingsAdapter(this, v -> {
-      switch (v.getId()) {
-        case R.id.btn_invite: {
-          tdlib.contacts().startSyncIfNeeded(context(), true, () -> {
-            if (parentController != null) {
-              parentController.navigateTo(new PeopleController(context, tdlib).setNeedSearch().setNeedTutorial());
-            }
-          });
-          break;
-        }
-        case R.id.btn_archive: {
-          ChatsController c = new ChatsController(context, tdlib);
-          c.setArguments(new Arguments(ChatPosition.CHAT_LIST_ARCHIVE).setNeedMessagesSearch(true));
+      final int viewId = v.getId();
+      if (viewId == R.id.btn_invite) {
+        tdlib.contacts().startSyncIfNeeded(context(), true, () -> {
           if (parentController != null) {
-            parentController.navigateTo(c);
+            parentController.navigateTo(new PeopleController(context, tdlib).setNeedSearch().setNeedTutorial());
           }
-          break;
+        });
+      } else if (viewId == R.id.btn_archive) {
+        ChatsController c = new ChatsController(context, tdlib);
+        c.setArguments(new Arguments(ChatPosition.CHAT_LIST_ARCHIVE).setNeedMessagesSearch(true));
+        if (parentController != null) {
+          parentController.navigateTo(c);
         }
       }
     }, this);
@@ -2360,7 +2278,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
     // noChatsView.setItemAnimator(null);
     noChatsView.setAdapter(noChatsAdapter);
     noChatsView.setBackgroundColor(Theme.backgroundColor());
-    addThemeBackgroundColorListener(noChatsView, R.id.theme_color_background);
+    addThemeBackgroundColorListener(noChatsView, ColorId.background);
     noChatsView.setLayoutParams(new android.widget.FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     contentView.addView(noChatsView, contentView.indexOfChild(chatsView) + 1);
   }

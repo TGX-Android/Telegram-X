@@ -99,17 +99,13 @@ public class PeopleController extends RecyclerViewController<PeopleController.Ar
     adapter = new SettingsAdapter(this) {
       @Override
       protected void setUser (ListItem item, int position, UserView userView, boolean isUpdate) {
-        switch (item.getId()) {
-          case R.id.contact: {
-            TdlibContactManager.UnregisteredContact contact = (TdlibContactManager.UnregisteredContact) item.getData();
-            userView.setContact(contact);
-            break;
-          }
-          case R.id.user: {
-            TGUser user = (TGUser) item.getData();
-            userView.setUser(user);
-            break;
-          }
+        final int itemId = item.getId();
+        if (itemId == R.id.contact) {
+          TdlibContactManager.UnregisteredContact contact = (TdlibContactManager.UnregisteredContact) item.getData();
+          userView.setContact(contact);
+        } else if (itemId == R.id.user) {
+          TGUser user = (TGUser) item.getData();
+          userView.setUser(user);
         }
       }
 
@@ -154,32 +150,22 @@ public class PeopleController extends RecyclerViewController<PeopleController.Ar
 
   @Override
   public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
-    switch (id) {
-      case R.id.menu_people: {
-        header.addButton(menu, R.id.menu_btn_addContact, R.drawable.baseline_person_add_24, getHeaderIconColorId(), this, Screen.dp(49f));
-        header.addSearchButton(menu, this);
-        break;
-      }
-      default: {
-        super.fillMenuItems(id, header, menu);
-        break;
-      }
+    if (id == R.id.menu_people) {
+      header.addButton(menu, R.id.menu_btn_addContact, R.drawable.baseline_person_add_24, getHeaderIconColorId(), this, Screen.dp(49f));
+      header.addSearchButton(menu, this);
+    } else {
+      super.fillMenuItems(id, header, menu);
     }
   }
 
   @Override
   public void onMenuItemPressed (int id, View view) {
-    switch (id) {
-      case R.id.menu_btn_addContact: {
-        PhoneController c = new PhoneController(context, tdlib);
-        c.setMode(PhoneController.MODE_ADD_CONTACT);
-        navigateTo(c);
-        break;
-      }
-      default: {
-        super.onMenuItemPressed(id, view);
-        break;
-      }
+    if (id == R.id.menu_btn_addContact) {
+      PhoneController c = new PhoneController(context, tdlib);
+      c.setMode(PhoneController.MODE_ADD_CONTACT);
+      navigateTo(c);
+    } else {
+      super.onMenuItemPressed(id, view);
     }
   }
 
@@ -372,33 +358,27 @@ public class PeopleController extends RecyclerViewController<PeopleController.Ar
 
   @Override
   public void onClick (View v) {
-    switch (v.getId()) {
-      case R.id.user: {
-        TGUser user = (TGUser) ((ListItem) v.getTag()).getData();
-        tdlib.ui().openPrivateChat(this, user.getUserId(), null);
-        break;
+    final int viewId = v.getId();
+    if (viewId == R.id.user) {
+      TGUser user = (TGUser) ((ListItem) v.getTag()).getData();
+      tdlib.ui().openPrivateChat(this, user.getUserId(), null);
+    } else if (viewId == R.id.chat) {
+      TGFoundChat chat = (TGFoundChat) ((ListItem) v.getTag()).getData();
+      if (groupListener == null || !groupListener.onGroupSelected(this, chat)) {
+        tdlib.ui().openChat(this, chat.getChatId(), null);
       }
-      case R.id.chat: {
-        TGFoundChat chat = (TGFoundChat) ((ListItem) v.getTag()).getData();
-        if (groupListener == null || !groupListener.onGroupSelected(this, chat)) {
-          tdlib.ui().openChat(this, chat.getChatId(), null);
-        }
-        break;
-      }
-      case R.id.contact: {
-        final TdlibContactManager.UnregisteredContact contact = (TdlibContactManager.UnregisteredContact) ((ListItem) v.getTag()).getData();
-        if (contact.importerCount == 1000) {
-          Intents.sendSms(contact.contact.phoneNumber, Lang.getString(R.string.InviteTextCommonOverThousand, BuildConfig.DOWNLOAD_URL));
-        } else if (contact.importerCount > 1) {
-          Intents.sendSms(contact.contact.phoneNumber, Lang.plural(R.string.InviteTextCommonMany, contact.importerCount, BuildConfig.DOWNLOAD_URL));
-        } else {
-          tdlib.cache().getInviteText(result -> {
-            if (!isDestroyed()) {
-              Intents.sendSms(contact.contact.phoneNumber, result.text);
-            }
-          });
-        }
-        break;
+    } else if (viewId == R.id.contact) {
+      final TdlibContactManager.UnregisteredContact contact = (TdlibContactManager.UnregisteredContact) ((ListItem) v.getTag()).getData();
+      if (contact.importerCount == 1000) {
+        Intents.sendSms(contact.contact.phoneNumber, Lang.getString(R.string.InviteTextCommonOverThousand, BuildConfig.DOWNLOAD_URL));
+      } else if (contact.importerCount > 1) {
+        Intents.sendSms(contact.contact.phoneNumber, Lang.plural(R.string.InviteTextCommonMany, contact.importerCount, BuildConfig.DOWNLOAD_URL));
+      } else {
+        tdlib.cache().getInviteText(result -> {
+          if (!isDestroyed()) {
+            Intents.sendSms(contact.contact.phoneNumber, result.text);
+          }
+        });
       }
     }
   }

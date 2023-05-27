@@ -44,6 +44,7 @@ import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
@@ -85,7 +86,7 @@ public class CreateGroupController extends ViewController<Void> implements EditH
     FrameLayoutFix contentView;
 
     contentView = new FrameLayoutFix(context);
-    ViewSupport.setThemedBackground(contentView, R.id.theme_color_filling, this);
+    ViewSupport.setThemedBackground(contentView, ColorId.filling, this);
     contentView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
     FrameLayoutFix.LayoutParams params;
@@ -338,30 +339,25 @@ public class CreateGroupController extends ViewController<Void> implements EditH
 
   @Override
   public boolean onOptionItemPressed (View optionItemView, int id) {
-    switch (id) {
-      case R.id.btn_deleteMember: {
-        if (pickedUser != null) {
-          long userId = pickedUser.getUserId();
-          int index = indexOfUser(userId);
-          if (index != -1) {
-            tdlib.cache().unsubscribeFromUserUpdates(userId, this);
-            members.remove(index);
-            if (members.isEmpty()) {
-              adapter.notifyItemRangeRemoved(0, 3);
-              Keyboard.hide(headerCell.getInputView());
-              navigateBack();
-            } else {
-              adapter.notifyItemRemoved(index + 1);
-              adapter.notifyItemChanged(members.size() + 1);
-            }
+    if (id == R.id.btn_deleteMember) {
+      if (pickedUser != null) {
+        long userId = pickedUser.getUserId();
+        int index = indexOfUser(userId);
+        if (index != -1) {
+          tdlib.cache().unsubscribeFromUserUpdates(userId, this);
+          members.remove(index);
+          if (members.isEmpty()) {
+            adapter.notifyItemRangeRemoved(0, 3);
+            Keyboard.hide(headerCell.getInputView());
+            navigateBack();
+          } else {
+            adapter.notifyItemRemoved(index + 1);
+            adapter.notifyItemChanged(members.size() + 1);
           }
         }
-        break;
       }
-      default: {
-        tdlib.ui().handlePhotoOption(context, id, null, headerCell);
-        break;
-      }
+    } else {
+      tdlib.ui().handlePhotoOption(context, id, null, headerCell);
     }
     return true;
   }

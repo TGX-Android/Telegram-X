@@ -31,6 +31,7 @@ import androidx.annotation.StringRes;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
@@ -78,7 +79,7 @@ public class PrefixEditText extends EmojiEditText implements InputFilter, View.O
     this.prefix = prefix;
     Spannable spannable = new SpannableString(prefix);
     if (prefix.length() > 0) {
-      spannable.setSpan(new CustomTypefaceSpan(null, R.id.theme_color_textPlaceholder), 0, prefix.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+      spannable.setSpan(new CustomTypefaceSpan(null, ColorId.textPlaceholder), 0, prefix.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
     }
     minLength = spannable.length();
     forceText(spannable);

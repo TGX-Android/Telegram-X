@@ -50,6 +50,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
@@ -386,224 +387,169 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
 
       @Override
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
+        final int itemId = item.getId();
         if (isMainCrash) {
           int colorId;
-          switch (item.getId()) {
-            case R.id.btn_launchApp:
-              colorId = R.id.theme_color_iconActive;
-              break;
-            /*case R.id.btn_shareError:
+          if (itemId == R.id.btn_launchApp) {
+            colorId = ColorId.iconActive;
+              /*case R.id.btn_shareError:
             case R.id.btn_showError:*/
-            case R.id.btn_eraseDatabase:
-              colorId = R.id.theme_color_iconNegative;
-              break;
-            default:
-              colorId = 0;
-              break;
+          } else if (itemId == R.id.btn_eraseDatabase) {
+            colorId = ColorId.iconNegative;
+          } else {
+            colorId = 0;
           }
           view.setIconColorId(colorId);
         }
-        switch (item.getId()) {
-          case R.id.btn_log_verbosity: {
-            final boolean isCapturing = Log.isCapturing();
-            if (isUpdate) {
-              view.setEnabledAnimated(!isCapturing);
+        if (itemId == R.id.btn_log_verbosity) {
+          final boolean isCapturing = Log.isCapturing();
+          if (isUpdate) {
+            view.setEnabledAnimated(!isCapturing);
+          } else {
+            view.setEnabled(!isCapturing);
+          }
+          view.setData(getLogVerbosity(isCapturing ? Log.LEVEL_VERBOSE : Log.getLogLevel()));
+        } else if (itemId == R.id.btn_secret_replacePhoneNumber) {
+          view.getToggler().setRadioEnabled(Settings.instance().needHidePhoneNumber(), isUpdate);
+        } else if (itemId == R.id.btn_secret_disableQrProcess) {
+          view.getToggler().setRadioEnabled(Settings.instance().needDisableQrProcessing(), isUpdate);
+        } else if (itemId == R.id.btn_secret_forceQrZxing) {
+          view.getToggler().setRadioEnabled(Settings.instance().needForceZxingQrProcessing(), isUpdate);
+        } else if (itemId == R.id.btn_secret_debugQrRegions) {
+          view.getToggler().setRadioEnabled(Settings.instance().needShowQrRegions(), isUpdate);
+        } else if (itemId == R.id.btn_secret_disableNetwork) {
+          view.getToggler().setRadioEnabled(Settings.instance().forceDisableNetwork(), isUpdate);
+        } else if (itemId == R.id.btn_secret_forceTcpInCalls) {
+          view.getToggler().setRadioEnabled(Settings.instance().forceTcpInCalls(), isUpdate);
+        } else if (itemId == R.id.btn_secret_forceTdlibRestarts) {
+          view.getToggler().setRadioEnabled(Settings.instance().forceTdlibRestart(), isUpdate);
+        } else if (itemId == R.id.btn_switchRtl) {
+          view.getToggler().setRadioEnabled(Lang.rtl(), isUpdate);
+        } else if (itemId == R.id.btn_secret_pushToken) {
+          switch (tdlib.context().getTokenState()) {
+            case TdlibManager.TokenState.ERROR:
+              view.setData("Error: " + tdlib.context().getTokenError());
+              break;
+            case TdlibManager.TokenState.INITIALIZING:
+              view.setData("Initializing...");
+              break;
+            case TdlibManager.TokenState.OK:
+              view.setData("Firebase: " + tdlib.context().getToken());
+              break;
+            case TdlibManager.TokenState.NONE:
+            default:
+              view.setData("Unknown");
+              break;
+          }
+        } else if (itemId == R.id.btn_secret_pushConfig) {
+          FirebaseOptions options = FirebaseOptions.fromResource(UI.getAppContext());
+          view.setData(options != null ? options.toString() : "Unavailable");
+        } else if (itemId == R.id.btn_secret_appFingerprint) {
+          view.setData(U.getApkFingerprint("SHA1"));
+        } else if (itemId == R.id.btn_secret_pushStats) {
+          view.setData(Settings.instance().getPushMessageStats());
+        } else if (itemId == R.id.btn_secret_pushDate) {
+          long time = Settings.instance().getLastReceivedPushMessageReceivedTime();
+          if (time != 0) {
+            view.setData(Lang.getTimestamp(time, TimeUnit.MILLISECONDS));
+          } else {
+            view.setData("No data");
+          }
+        } else if (itemId == R.id.btn_secret_pushDuration) {
+          long durationMs = Settings.instance().getLastReceivedPushMessageReceivedTime() - Settings.instance().getLastReceivedPushMessageSentTime();
+          if (durationMs != 0) {
+            view.setData(Lang.getDuration((int) (durationMs / 1000)));
+          } else {
+            view.setData("No data");
+          }
+        } else if (itemId == R.id.btn_secret_pushTtl) {
+          int ttl = Settings.instance().getLastReceivedPushMessageTtl();
+          if (ttl != 0) {
+            view.setData(Integer.toString(ttl));
+          } else {
+            view.setData("No data");
+          }
+        } else if (itemId == R.id.btn_secret_dontReadMessages) {
+          view.getToggler().setRadioEnabled(Settings.instance().dontReadMessages(), isUpdate);
+        } else if (itemId == R.id.btn_log_files) {
+          final boolean isEnabled = !Log.isCapturing() && filesLoaded && !isDeleting && logFiles != null && !logFiles.isEmpty();
+          if (isUpdate) {
+            view.setEnabledAnimated(isEnabled);
+          } else {
+            view.setEnabled(isEnabled);
+          }
+          if (filesLoaded) {
+            if (logFiles == null || logFiles.isEmpty()) {
+              view.setData(Lang.plural(R.string.xFiles, 0));
             } else {
-              view.setEnabled(!isCapturing);
-            }
-            view.setData(getLogVerbosity(isCapturing ? Log.LEVEL_VERBOSE : Log.getLogLevel()));
-            break;
-          }
-          case R.id.btn_secret_replacePhoneNumber: {
-            view.getToggler().setRadioEnabled(Settings.instance().needHidePhoneNumber(), isUpdate);
-            break;
-          }
-          case R.id.btn_secret_disableQrProcess: {
-            view.getToggler().setRadioEnabled(Settings.instance().needDisableQrProcessing(), isUpdate);
-            break;
-          }
-          case R.id.btn_secret_forceQrZxing: {
-            view.getToggler().setRadioEnabled(Settings.instance().needForceZxingQrProcessing(), isUpdate);
-            break;
-          }
-          case R.id.btn_secret_debugQrRegions: {
-            view.getToggler().setRadioEnabled(Settings.instance().needShowQrRegions(), isUpdate);
-            break;
-          }
-          case R.id.btn_secret_disableNetwork: {
-            view.getToggler().setRadioEnabled(Settings.instance().forceDisableNetwork(), isUpdate);
-            break;
-          }
-          case R.id.btn_secret_forceTcpInCalls: {
-            view.getToggler().setRadioEnabled(Settings.instance().forceTcpInCalls(), isUpdate);
-            break;
-          }
-          case R.id.btn_secret_forceTdlibRestarts: {
-            view.getToggler().setRadioEnabled(Settings.instance().forceTdlibRestart(), isUpdate);
-            break;
-          }
-          case R.id.btn_switchRtl: {
-            view.getToggler().setRadioEnabled(Lang.rtl(), isUpdate);
-            break;
-          }
-          case R.id.btn_secret_pushToken: {
-            switch (tdlib.context().getTokenState()) {
-              case TdlibManager.TokenState.ERROR:
-                view.setData("Error: " + tdlib.context().getTokenError());
-                break;
-              case TdlibManager.TokenState.INITIALIZING:
-                view.setData("Initializing...");
-                break;
-              case TdlibManager.TokenState.OK:
-                view.setData("Firebase: " + tdlib.context().getToken());
-                break;
-              case TdlibManager.TokenState.NONE:
-              default:
-                view.setData("Unknown");
-                break;
-            }
-            break;
-          }
-          case R.id.btn_secret_pushConfig: {
-            FirebaseOptions options = FirebaseOptions.fromResource(UI.getAppContext());
-            view.setData(options != null ? options.toString() : "Unavailable");
-            break;
-          }
-          case R.id.btn_secret_appFingerprint: {
-            view.setData(U.getApkFingerprint("SHA1"));
-            break;
-          }
-          case R.id.btn_secret_pushStats: {
-            view.setData(Settings.instance().getPushMessageStats());
-            break;
-          }
-          case R.id.btn_secret_pushDate: {
-            long time = Settings.instance().getLastReceivedPushMessageReceivedTime();
-            if (time != 0) {
-              view.setData(Lang.getTimestamp(time, TimeUnit.MILLISECONDS));
-            } else {
-              view.setData("No data");
-            }
-            break;
-          }
-          case R.id.btn_secret_pushDuration: {
-            long durationMs = Settings.instance().getLastReceivedPushMessageReceivedTime() - Settings.instance().getLastReceivedPushMessageSentTime();
-            if (durationMs != 0) {
-              view.setData(Lang.getDuration((int) (durationMs / 1000)));
-            } else {
-              view.setData("No data");
-            }
-            break;
-          }
-          case R.id.btn_secret_pushTtl: {
-            int ttl = Settings.instance().getLastReceivedPushMessageTtl();
-            if (ttl != 0) {
-              view.setData(Integer.toString(ttl));
-            } else {
-              view.setData("No data");
-            }
-            break;
-          }
-          case R.id.btn_secret_dontReadMessages: {
-            view.getToggler().setRadioEnabled(Settings.instance().dontReadMessages(), isUpdate);
-            break;
-          }
-          case R.id.btn_log_files: {
-            final boolean isEnabled = !Log.isCapturing() && filesLoaded && !isDeleting && logFiles != null && !logFiles.isEmpty();
-            if (isUpdate) {
-              view.setEnabledAnimated(isEnabled);
-            } else {
-              view.setEnabled(isEnabled);
-            }
-            if (filesLoaded) {
-              if (logFiles == null || logFiles.isEmpty()) {
-                view.setData(Lang.plural(R.string.xFiles, 0));
-              } else {
-                StringBuilder b = new StringBuilder();
-                b.append(Strings.buildSize(logFiles.totalSize));
-                if (logFiles.logsCount > 0) {
-                  if (b.length() > 0) {
-                    b.append(", ");
-                  }
-                  b.append(logFiles.logsCount);
-                  b.append(" log");
-                  if (logFiles.logsCount != 1) {
-                    b.append('s');
-                  }
-                }
-                if (logFiles.crashesCount > 0) {
-                  if (b.length() > 0) {
-                    b.append(", ");
-                  }
-                  b.append(logFiles.crashesCount);
-                  b.append(" crash");
-                  if (logFiles.crashesCount != 1) {
-                    b.append("es");
-                  }
-                }
-                view.setData(b.toString());
-              }
-            } else {
-              view.setData(R.string.LoadingInformation);
-            }
-            break;
-          }
-          case R.id.btn_log_tags: {
-            final boolean isCapturing = Log.isCapturing();
-            if (isUpdate) {
-              view.setEnabledAnimated(!isCapturing);
-            } else {
-              view.setEnabled(!isCapturing);
-            }
-            StringBuilder b = new StringBuilder();
-            for (int tag : Log.TAGS) {
-              if (Log.isEnabled(tag)) {
+              StringBuilder b = new StringBuilder();
+              b.append(Strings.buildSize(logFiles.totalSize));
+              if (logFiles.logsCount > 0) {
                 if (b.length() > 0) {
                   b.append(", ");
                 }
-                b.append(Log.getLogTag(tag));
+                b.append(logFiles.logsCount);
+                b.append(" log");
+                if (logFiles.logsCount != 1) {
+                  b.append('s');
+                }
               }
+              if (logFiles.crashesCount > 0) {
+                if (b.length() > 0) {
+                  b.append(", ");
+                }
+                b.append(logFiles.crashesCount);
+                b.append(" crash");
+                if (logFiles.crashesCount != 1) {
+                  b.append("es");
+                }
+              }
+              view.setData(b.toString());
             }
-            if (b.length() == 0) {
-              b.append("None");
+          } else {
+            view.setData(R.string.LoadingInformation);
+          }
+        } else if (itemId == R.id.btn_log_tags) {
+          final boolean isCapturing = Log.isCapturing();
+          if (isUpdate) {
+            view.setEnabledAnimated(!isCapturing);
+          } else {
+            view.setEnabled(!isCapturing);
+          }
+          StringBuilder b = new StringBuilder();
+          for (int tag : Log.TAGS) {
+            if (Log.isEnabled(tag)) {
+              if (b.length() > 0) {
+                b.append(", ");
+              }
+              b.append(Log.getLogTag(tag));
             }
-            view.setData(b.toString());
-            break;
           }
-          case R.id.btn_log_android: {
-            view.getToggler().setRadioEnabled(Log.checkSetting(Log.SETTING_ANDROID_LOG), false);
-            break;
+          if (b.length() == 0) {
+            b.append("None");
           }
-
-          case R.id.btn_tdlib_verbosity: {
-            String module = (String) item.getData();
-            Settings.TdlibLogSettings settings = Settings.instance().getLogSettings();
-            int verbosity = settings.getVerbosity(module);
-            if (module != null && verbosity == settings.getDefaultVerbosity(module)) {
-              view.setData("Default");
-              view.getToggler().setRadioEnabled(verbosity <= settings.getVerbosity(null), isUpdate);
-            } else {
-              view.setData(getLogVerbosity(verbosity));
-              view.getToggler().setRadioEnabled(module != null ? verbosity <= settings.getVerbosity(null) : verbosity > 0, isUpdate);
-            }
-            break;
+          view.setData(b.toString());
+        } else if (itemId == R.id.btn_log_android) {
+          view.getToggler().setRadioEnabled(Log.checkSetting(Log.SETTING_ANDROID_LOG), false);
+        } else if (itemId == R.id.btn_tdlib_verbosity) {
+          String module = (String) item.getData();
+          Settings.TdlibLogSettings settings = Settings.instance().getLogSettings();
+          int verbosity = settings.getVerbosity(module);
+          if (module != null && verbosity == settings.getDefaultVerbosity(module)) {
+            view.setData("Default");
+            view.getToggler().setRadioEnabled(verbosity <= settings.getVerbosity(null), isUpdate);
+          } else {
+            view.setData(getLogVerbosity(verbosity));
+            view.getToggler().setRadioEnabled(module != null ? verbosity <= settings.getVerbosity(null) : verbosity > 0, isUpdate);
           }
-          case R.id.btn_tdlib_logSize: {
-            view.setData(Strings.buildSize(Settings.instance().getLogSettings().getLogMaxFileSize()));
-            break;
-          }
-          case R.id.btn_tdlib_viewLogs: {
-            view.setData(Strings.buildSize(logSize[0]));
-            break;
-          }
-          case R.id.btn_tdlib_viewLogsOld: {
-            view.setData(Strings.buildSize(logSize[1]));
-            break;
-          }
-          case R.id.btn_tdlib_androidLogs: {
-            view.getToggler().setRadioEnabled(Settings.instance().getLogSettings().needAndroidLog(), isUpdate);
-            break;
-          }
+        } else if (itemId == R.id.btn_tdlib_logSize) {
+          view.setData(Strings.buildSize(Settings.instance().getLogSettings().getLogMaxFileSize()));
+        } else if (itemId == R.id.btn_tdlib_viewLogs) {
+          view.setData(Strings.buildSize(logSize[0]));
+        } else if (itemId == R.id.btn_tdlib_viewLogsOld) {
+          view.setData(Strings.buildSize(logSize[1]));
+        } else if (itemId == R.id.btn_tdlib_androidLogs) {
+          view.getToggler().setRadioEnabled(Settings.instance().getLogSettings().needAndroidLog(), isUpdate);
         }
       }
     };
@@ -626,7 +572,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
 
       if (!items.isEmpty())
         items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_launchApp, R.drawable.baseline_warning_24, R.string.LaunchApp).setTextColorId(R.id.theme_color_textNeutral));
+      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_launchApp, R.drawable.baseline_warning_24, R.string.LaunchApp).setTextColorId(ColorId.textNeutral));
       if (!(BuildConfig.DEBUG || BuildConfig.EXPERIMENTAL)) {
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
         items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_update, R.drawable.baseline_system_update_24, R.string.LaunchAppCheckUpdate));
@@ -634,9 +580,9 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
       if (section != SECTION_TDLIB) {
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
         if (crash.getType() == Crash.Type.DISK_FULL) {
-          items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showError, R.drawable.baseline_info_24, R.string.LaunchAppViewError)/*.setTextColorId(R.id.theme_color_textNegative)*/);
+          items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_showError, R.drawable.baseline_info_24, R.string.LaunchAppViewError)/*.setTextColorId(ColorId.textNegative)*/);
         } else {
-          items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_shareError, R.drawable.baseline_share_24, R.string.LaunchAppShareError)/*.setTextColorId(R.id.theme_color_textNegative)*/);
+          items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_shareError, R.drawable.baseline_share_24, R.string.LaunchAppShareError)/*.setTextColorId(ColorId.textNegative)*/);
         }
       }
       switch (crash.getType()) {
@@ -644,7 +590,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
         case Crash.Type.TDLIB_DATABASE_BROKEN:
         case Crash.Type.TDLIB: {
           items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-          items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_eraseDatabase, R.drawable.baseline_delete_forever_24, R.string.LaunchAppEraseDatabase).setTextColorId(R.id.theme_color_textNegative));
+          items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_eraseDatabase, R.drawable.baseline_delete_forever_24, R.string.LaunchAppEraseDatabase).setTextColorId(ColorId.textNegative));
           break;
         }
       }
@@ -865,7 +811,7 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
 
         if (isMainCrash) {
           items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-          items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_shareError, R.drawable.baseline_share_24, R.string.LaunchAppShareError).setTextColorId(R.id.theme_color_textNegative));
+          items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_shareError, R.drawable.baseline_share_24, R.string.LaunchAppShareError).setTextColorId(ColorId.textNegative));
           items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
         }
 
@@ -1042,408 +988,298 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
   @Override
   public void onClick (View v) {
     final int viewId = v.getId();
-    switch (viewId) {
-      case R.id.btn_launchApp: {
-        ((MainActivity) context).proceedFromRecovery();
-        break;
-      }
-      case R.id.btn_update: {
-        Intents.openSelfGooglePlay();
-        break;
-      }
-      case R.id.btn_shareError: {
-        Intents.shareText(U.getUsefulMetadata(null) + "\n" + crash.message);
-        break;
-      }
-      case R.id.btn_eraseDatabase: {
-        if (isErasingData)
-          return;
-        if (crash.accountId != TdlibAccount.NO_ID) {
-          tdlib.context().tdlib(crash.accountId).ui().eraseLocalData(this, false, new TdlibUi.EraseCallback() {
-            @Override
-            public void onPrepareEraseData() {
+    if (viewId == R.id.btn_launchApp) {
+      ((MainActivity) context).proceedFromRecovery();
+    } else if (viewId == R.id.btn_update) {
+      Intents.openSelfGooglePlay();
+    } else if (viewId == R.id.btn_shareError) {
+      Intents.shareText(U.getUsefulMetadata(null) + "\n" + crash.message);
+    } else if (viewId == R.id.btn_eraseDatabase) {
+      if (isErasingData)
+        return;
+      if (crash.accountId != TdlibAccount.NO_ID) {
+        tdlib.context().tdlib(crash.accountId).ui().eraseLocalData(this, false, new TdlibUi.EraseCallback() {
+          @Override
+          public void onPrepareEraseData () {
+            isErasingData = true;
+          }
+
+          @Override
+          public void onEraseDataCompleted () {
+            isErasingData = false;
+            ((MainActivity) context).proceedFromRecovery();
+          }
+        });
+      } else {
+        ((MainActivity) context()).batchPerformFor(Lang.getMarkdownString(this, R.string.EraseDatabaseWarn), Lang.getString(R.string.EraseConfirm), accounts -> {
+          showWarning(Lang.getMarkdownString(this, R.string.EraseDatabaseWarn2), success -> {
+            if (success && !isDestroyed() && isFocused() && navigationController() != null) {
+              UI.showToast(R.string.EraseDatabaseProgress, Toast.LENGTH_SHORT);
+              navigationController().getStack().setIsLocked(true);
+
               isErasingData = true;
-            }
-
-            @Override
-            public void onEraseDataCompleted() {
-              isErasingData = false;
-              ((MainActivity) context).proceedFromRecovery();
-            }
-          });
-        } else {
-          ((MainActivity) context()).batchPerformFor(Lang.getMarkdownString(this, R.string.EraseDatabaseWarn), Lang.getString(R.string.EraseConfirm), accounts -> {
-            showWarning(Lang.getMarkdownString(this, R.string.EraseDatabaseWarn2), success -> {
-              if (success && !isDestroyed() && isFocused() && navigationController() != null) {
-                UI.showToast(R.string.EraseDatabaseProgress, Toast.LENGTH_SHORT);
-                navigationController().getStack().setIsLocked(true);
-
-                isErasingData = true;
-                AtomicBoolean error = new AtomicBoolean();
-                accounts.remove(accounts.size() - 1).tdlib().eraseTdlibDatabase(new RunnableBool() {
-                  @Override
-                  public void runWithBool (boolean arg) {
-                    if (!arg) {
-                      error.set(true);
-                    }
-                    if (!accounts.isEmpty()) {
-                      accounts.remove(accounts.size() - 1).tdlib().eraseTdlibDatabase(this);
-                      return;
-                    }
-                    isErasingData = false;
-                    if (!isDestroyed() && navigationController() != null) {
-                      navigationController().getStack().setIsLocked(false);
-                      if (!error.get()) {
-                        ((MainActivity) context).proceedFromRecovery();
-                        UI.showToast(R.string.EraseDatabaseDone, Toast.LENGTH_SHORT);
-                      } else {
-                        UI.showToast(R.string.EraseDatabaseError, Toast.LENGTH_SHORT);
-                      }
+              AtomicBoolean error = new AtomicBoolean();
+              accounts.remove(accounts.size() - 1).tdlib().eraseTdlibDatabase(new RunnableBool() {
+                @Override
+                public void runWithBool (boolean arg) {
+                  if (!arg) {
+                    error.set(true);
+                  }
+                  if (!accounts.isEmpty()) {
+                    accounts.remove(accounts.size() - 1).tdlib().eraseTdlibDatabase(this);
+                    return;
+                  }
+                  isErasingData = false;
+                  if (!isDestroyed() && navigationController() != null) {
+                    navigationController().getStack().setIsLocked(false);
+                    if (!error.get()) {
+                      ((MainActivity) context).proceedFromRecovery();
+                      UI.showToast(R.string.EraseDatabaseDone, Toast.LENGTH_SHORT);
+                    } else {
+                      UI.showToast(R.string.EraseDatabaseError, Toast.LENGTH_SHORT);
                     }
                   }
-                });
-              }
-            });
-          });
-        }
-        break;
-      }
-      case R.id.btn_showError: {
-        TextController c = new TextController(context, tdlib);
-        c.setArguments(TextController.Arguments.fromRawText(getCrashName(), crash.message, "text/plain"));
-        navigateTo(c);
-        break;
-      }
-      case R.id.btn_switchRtl: {
-        Settings.instance().setNeedRtl(Lang.packId(), adapter.toggleView(v));
-        break;
-      }
-      case R.id.btn_secret_pushToken: {
-        if (tdlib.context().getTokenState() == TdlibManager.TokenState.OK) {
-          UI.copyText("Firebase: " + tdlib.context().getToken(), R.string.CopiedText);
-        }
-        break;
-      }
-      case R.id.btn_secret_pushConfig: {
-        FirebaseOptions options = FirebaseOptions.fromResource(UI.getAppContext());
-        if (options != null) {
-          UI.copyText("Firebase config: " + options, R.string.CopiedText);
-        }
-        break;
-      }
-      case R.id.btn_secret_appFingerprint: {
-        UI.copyText(U.getApkFingerprint("SHA1"), R.string.CopiedText);
-        break;
-      }
-      case R.id.btn_secret_pushStats: {
-        UI.copyText(Settings.instance().getPushMessageStats(), R.string.CopiedText);
-        break;
-      }
-      case R.id.btn_debugSwitchRtl: {
-        context.addRemoveRtlSwitch();
-        break;
-      }
-      case R.id.btn_secret_replacePhoneNumber: {
-        Settings.instance().setHidePhoneNumber(adapter.toggleView(v));
-        break;
-      }
-      case R.id.btn_secret_disableQrProcess: {
-        Settings.instance().setDisableQrProcessing(adapter.toggleView(v));
-        break;
-      }
-      case R.id.btn_secret_forceQrZxing: {
-        Settings.instance().setForceZxingQrProcessing(adapter.toggleView(v));
-        break;
-      }
-      case R.id.btn_secret_debugQrRegions: {
-        Settings.instance().setShowQrRegions(adapter.toggleView(v));
-        break;
-      }
-      case R.id.btn_secret_qrTest: {
-        openInAppCamera(new ViewController.CameraOpenOptions().ignoreAnchor(true).noTrace(true).allowSystem(false).optionalMicrophone(true).qrModeDebug(true).mode(CameraController.MODE_QR).qrCodeListener((qrCode) -> UI.showToast(qrCode, Toast.LENGTH_LONG)));
-        break;
-      }
-      case R.id.btn_secret_disableNetwork: {
-        Settings.instance().setDisableNetwork(adapter.toggleView(v));
-        TdlibManager.instance().watchDog().letsHelpDoge();
-        break;
-      }
-      case R.id.btn_secret_forceTdlibRestarts: {
-        TdlibManager.instance().setForceTdlibRestarts(adapter.toggleView(v));
-        break;
-      }
-      case R.id.btn_secret_forceTcpInCalls: {
-        Settings.instance().setForceTcpInCalls(adapter.toggleView(v));
-        break;
-      }
-      case R.id.btn_test_database: {
-        runTest(TEST_DATABASE, true);
-        break;
-      }
-      case R.id.btn_test_recovery: {
-        Crash.Builder crash = (Crash.Builder) ((ListItem) v.getTag()).getData();
-        Settings.instance().storeTestCrash(crash);
-        System.exit(0);
-        break;
-      }
-      case R.id.btn_test_recovery_tdlib: {
-        String text = ((ListItem) v.getTag()).getStringValue();
-        if (StringUtils.isEmpty(text)) {
-          text = "[ 0][t 7][1663524892.910522937][StickersManager.cpp:327][#3][!Td]  Check `Unreacheable` failed";
-        }
-        Settings.instance().storeTestCrash(new Crash.Builder(tdlib.id(), text)
-          .flags(Crash.Flags.SOURCE_TDLIB)
-        );
-        ClientError clientLogicError = new Client.ClientLogicError(text, Client.getClientCount(), false)
-          .withoutPotentiallyPrivateData();
-        Log.i("Output client error", clientLogicError);
-        System.exit(0);
-        break;
-      }
-      case R.id.btn_test_crash1: {
-        Tracer.test1("[SUCCESS] INDIRECT " + MathUtils.random(0, 10000));
-        break;
-      }
-      case R.id.btn_test_crash2: {
-        Tracer.test2("[SUCCESS] DIRECT " + -MathUtils.random(0, 10000));
-        break;
-      }
-      case R.id.btn_test_crash3: {
-        Tracer.test3("[SUCCESS] INDIRECT NATIVE " + MathUtils.random(0, 10000));
-        break;
-      }
-      case R.id.btn_test_crash4: {
-        Tracer.test4("[SUCCESS] DIRECT NATIVE " + -MathUtils.random(0, 10000));
-        break;
-      }
-      case R.id.btn_test_crashDirectNative: {
-        Tracer.test5("[SUCCESS] DIRECT THROW " + -MathUtils.random(0, 10000));
-        break;
-      }
-      case R.id.btn_test_crashDirect: {
-        throw new RuntimeException("This is a default test");
-      }
-      case R.id.btn_secret_dropHidden: {
-        tdlib.notifications().onDropNotificationData(false);
-        break;
-      }
-      // case R.id.btn_ton:
-      case R.id.btn_tdlib: {
-        openTdlibLogs(testerLevel, crash);
-        break;
-      }
-      case R.id.btn_pushService: {
-        SettingsBugController c = new SettingsBugController(context, tdlib);
-        c.setArguments(new Args(SECTION_PUSH, crash).setTesterLevel(testerLevel));
-        navigateTo(c);
-        break;
-      }
-      case R.id.btn_appLogs: {
-        SettingsBugController c = new SettingsBugController(context, tdlib);
-        c.setArguments(new Args(SECTION_MAIN, crash).setTesterLevel(testerLevel));
-        navigateTo(c);
-        break;
-      }
-      case R.id.btn_testingUtils: {
-        RunnableBool callback = proceed -> {
-          if (proceed) {
-            SettingsBugController c = new SettingsBugController(context, tdlib);
-            c.setArguments(new Args(SECTION_UTILITIES, crash).setTesterLevel(testerLevel));
-            navigateTo(c);
-          }
-        };
-        if (crash != null) {
-          callback.runWithBool(true);
-        } else {
-          showWarning(Lang.getMarkdownString(this, R.string.TestModeWarn), callback);
-        }
-        break;
-      }
-      case R.id.btn_secret_resetTutorials: {
-        Settings.instance().resetTutorials();
-        UI.showToast("Hints reset completed", Toast.LENGTH_SHORT);
-        break;
-      }
-      case R.id.btn_log_verbosity: {
-        ListItem[] items = new ListItem[Log.LEVEL_VERBOSE + 1];
-        final int logLevel = Log.isCapturing() ? Log.LEVEL_VERBOSE : Log.getLogLevel();
-        for (int level = 0; level < items.length; level++) {
-          items[level] = new ListItem(ListItem.TYPE_RADIO_OPTION, level + 1, 0, getLogVerbosity(level), R.id.btn_log_verbosity, level == logLevel);
-        }
-        showSettings(R.id.btn_log_verbosity, items, this, false);
-        break;
-      }
-      case R.id.btn_log_files: {
-        SettingsLogFilesController c = new SettingsLogFilesController(context, tdlib);
-        c.setArguments(new SettingsLogFilesController.Arguments(logFiles));
-        navigateTo(c);
-        break;
-      }
-      case R.id.btn_log_android: {
-        Log.setSetting(Log.SETTING_ANDROID_LOG, ((SettingView) v).getToggler().toggle(true));
-        break;
-      }
-      case R.id.btn_log_tags: {
-        ListItem[] items = new ListItem[Log.TAGS.length];
-        for (int i = 0; i < items.length; i++) {
-          int tag = Log.TAGS[i];
-          items[i] = new ListItem(ListItem.TYPE_CHECKBOX_OPTION, tag, 0, "[" + Log.getLogTag(tag) + "]: " + Log.getLogTagDescription(tag), Log.isEnabled(tag));
-        }
-        showSettings(R.id.btn_log_tags, items, this, true);
-        break;
-      }
-      case R.id.btn_secret_dontReadMessages: {
-        int i = adapter.indexOfViewById(R.id.btn_secret_dontReadMessages);
-        if (i != -1) {
-          boolean newValue = !Settings.instance().dontReadMessages();
-          Settings.instance().setDontReadMessages(newValue);
-          if (newValue != Settings.instance().dontReadMessages()) {
-            UI.showToast("You can't enable that", Toast.LENGTH_SHORT);
-          } else {
-            adapter.updateValuedSettingById(R.id.btn_secret_dontReadMessages);
-          }
-        }
-        break;
-      }
-      case R.id.btn_secret_stressTest: {
-        openInputAlert("Stress test", "Restart count", R.string.Done, R.string.Cancel, "50", new InputAlertCallback() {
-          @Override
-          public boolean onAcceptInput (MaterialEditTextGroup inputView, String result) {
-            if (!StringUtils.isNumeric(result))
-              return false;
-            int count = StringUtils.parseInt(result);
-            if (count <= 0)
-              return false;
-            if (!isDestroyed()) {
-              if (navigationController != null)
-                navigationController.getStack().destroyAllExceptLast();
-              tdlib.stressTest(count);
-              return true;
-            }
-            return false;
-          }
-        }, true);
-        break;
-      }
-      case R.id.btn_secret_copyLanguageCodes: {
-        tdlib.client().send(new TdApi.GetLocalizationTargetInfo(false), result -> {
-          if (result instanceof TdApi.LocalizationTargetInfo) {
-            TdApi.LocalizationTargetInfo info = (TdApi.LocalizationTargetInfo) result;
-            StringBuilder codes = new StringBuilder();
-            for (TdApi.LanguagePackInfo languagePackInfo : info.languagePacks) {
-              if (!languagePackInfo.isBeta && languagePackInfo.isOfficial) {
-                if (codes.length() > 0)
-                  codes.append(", ");
-                codes.append("'");
-                codes.append(languagePackInfo.id);
-                codes.append("'");
-              }
-            }
-            UI.copyText(codes.toString(), R.string.CopiedText);
-          }
-        });
-        break;
-      }
-      case R.id.btn_secret_deleteContacts: {
-        tdlib.contacts().reset(true, () -> {
-          UI.showToast("Contacts reset done", Toast.LENGTH_SHORT);
-          tdlib.ui().post(() -> tdlib.contacts().startSyncIfNeeded(context(), false, null));
-        });
-        break;
-      }
-      case R.id.btn_secret_resetLocalNotificationSettings: {
-        tdlib.notifications().resetNotificationSettings(true);
-        break;
-      }
-      case R.id.btn_secret_databaseStats: {
-        String stats = Settings.instance().pmc().getProperty("leveldb.stats") + "\n\n" + "Memory usage: " + Settings.instance().pmc().getProperty("leveldb.approximate-memory-usage");
-        TextController c = new TextController(context, tdlib);
-        c.setArguments(TextController.Arguments.fromRawText("App Database Stats", stats, "text/plain"));
-        navigateTo(c);
-        break;
-      }
-      case R.id.btn_secret_tdlibDatabaseStats: {
-        UI.showToast("Calculating. Please wait...", Toast.LENGTH_SHORT);
-        tdlib.client().send(new TdApi.GetDatabaseStatistics(), result -> {
-          switch (result.getConstructor()) {
-            case TdApi.DatabaseStatistics.CONSTRUCTOR:
-              tdlib.ui().post(() -> {
-                if (!isDestroyed()) {
-                  TextController c = new TextController(context, tdlib);
-                  c.setArguments(TextController.Arguments.fromRawText("TDLib Database Stats", ((TdApi.DatabaseStatistics) result).statistics, "text/plain"));
-                  navigateTo(c);
                 }
               });
-              break;
-            case TdApi.Error.CONSTRUCTOR:
-              UI.showError(result);
-              break;
-          }
+            }
+          });
         });
-        break;
       }
-      case R.id.btn_secret_deleteProfilePhoto: {
-        TdApi.User user = tdlib.myUser();
-        if (user != null && user.profilePhoto != null) {
-          tdlib.client().send(new TdApi.DeleteFile(user.profilePhoto.small.id), tdlib.okHandler());
-          tdlib.client().send(new TdApi.DeleteFile(user.profilePhoto.big.id), tdlib.okHandler());
+    } else if (viewId == R.id.btn_showError) {
+      TextController c = new TextController(context, tdlib);
+      c.setArguments(TextController.Arguments.fromRawText(getCrashName(), crash.message, "text/plain"));
+      navigateTo(c);
+    } else if (viewId == R.id.btn_switchRtl) {
+      Settings.instance().setNeedRtl(Lang.packId(), adapter.toggleView(v));
+    } else if (viewId == R.id.btn_secret_pushToken) {
+      if (tdlib.context().getTokenState() == TdlibManager.TokenState.OK) {
+        UI.copyText("Firebase: " + tdlib.context().getToken(), R.string.CopiedText);
+      }
+    } else if (viewId == R.id.btn_secret_pushConfig) {
+      FirebaseOptions options = FirebaseOptions.fromResource(UI.getAppContext());
+      if (options != null) {
+        UI.copyText("Firebase config: " + options, R.string.CopiedText);
+      }
+    } else if (viewId == R.id.btn_secret_appFingerprint) {
+      UI.copyText(U.getApkFingerprint("SHA1"), R.string.CopiedText);
+    } else if (viewId == R.id.btn_secret_pushStats) {
+      UI.copyText(Settings.instance().getPushMessageStats(), R.string.CopiedText);
+    } else if (viewId == R.id.btn_debugSwitchRtl) {
+      context.addRemoveRtlSwitch();
+    } else if (viewId == R.id.btn_secret_replacePhoneNumber) {
+      Settings.instance().setHidePhoneNumber(adapter.toggleView(v));
+    } else if (viewId == R.id.btn_secret_disableQrProcess) {
+      Settings.instance().setDisableQrProcessing(adapter.toggleView(v));
+    } else if (viewId == R.id.btn_secret_forceQrZxing) {
+      Settings.instance().setForceZxingQrProcessing(adapter.toggleView(v));
+    } else if (viewId == R.id.btn_secret_debugQrRegions) {
+      Settings.instance().setShowQrRegions(adapter.toggleView(v));
+    } else if (viewId == R.id.btn_secret_qrTest) {
+      openInAppCamera(new CameraOpenOptions().ignoreAnchor(true).noTrace(true).allowSystem(false).optionalMicrophone(true).qrModeDebug(true).mode(CameraController.MODE_QR).qrCodeListener((qrCode) -> UI.showToast(qrCode, Toast.LENGTH_LONG)));
+    } else if (viewId == R.id.btn_secret_disableNetwork) {
+      Settings.instance().setDisableNetwork(adapter.toggleView(v));
+      TdlibManager.instance().watchDog().letsHelpDoge();
+    } else if (viewId == R.id.btn_secret_forceTdlibRestarts) {
+      TdlibManager.instance().setForceTdlibRestarts(adapter.toggleView(v));
+    } else if (viewId == R.id.btn_secret_forceTcpInCalls) {
+      Settings.instance().setForceTcpInCalls(adapter.toggleView(v));
+    } else if (viewId == R.id.btn_test_database) {
+      runTest(TEST_DATABASE, true);
+    } else if (viewId == R.id.btn_test_recovery) {
+      Crash.Builder crash = (Crash.Builder) ((ListItem) v.getTag()).getData();
+      Settings.instance().storeTestCrash(crash);
+      System.exit(0);
+    } else if (viewId == R.id.btn_test_recovery_tdlib) {
+      String text = ((ListItem) v.getTag()).getStringValue();
+      if (StringUtils.isEmpty(text)) {
+        text = "[ 0][t 7][1663524892.910522937][StickersManager.cpp:327][#3][!Td]  Check `Unreacheable` failed";
+      }
+      Settings.instance().storeTestCrash(new Crash.Builder(tdlib.id(), text)
+        .flags(Crash.Flags.SOURCE_TDLIB)
+      );
+      ClientError clientLogicError = new Client.ClientLogicError(text, Client.getClientCount(), false)
+        .withoutPotentiallyPrivateData();
+      Log.i("Output client error", clientLogicError);
+      System.exit(0);
+    } else if (viewId == R.id.btn_test_crash1) {
+      Tracer.test1("[SUCCESS] INDIRECT " + MathUtils.random(0, 10000));
+    } else if (viewId == R.id.btn_test_crash2) {
+      Tracer.test2("[SUCCESS] DIRECT " + -MathUtils.random(0, 10000));
+    } else if (viewId == R.id.btn_test_crash3) {
+      Tracer.test3("[SUCCESS] INDIRECT NATIVE " + MathUtils.random(0, 10000));
+    } else if (viewId == R.id.btn_test_crash4) {
+      Tracer.test4("[SUCCESS] DIRECT NATIVE " + -MathUtils.random(0, 10000));
+    } else if (viewId == R.id.btn_test_crashDirectNative) {
+      Tracer.test5("[SUCCESS] DIRECT THROW " + -MathUtils.random(0, 10000));
+    } else if (viewId == R.id.btn_test_crashDirect) {
+      throw new RuntimeException("This is a default test");
+    } else if (viewId == R.id.btn_secret_dropHidden) {
+      tdlib.notifications().onDropNotificationData(false);
+      // case R.id.btn_ton:
+    } else if (viewId == R.id.btn_tdlib) {
+      openTdlibLogs(testerLevel, crash);
+    } else if (viewId == R.id.btn_pushService) {
+      SettingsBugController c = new SettingsBugController(context, tdlib);
+      c.setArguments(new Args(SECTION_PUSH, crash).setTesterLevel(testerLevel));
+      navigateTo(c);
+    } else if (viewId == R.id.btn_appLogs) {
+      SettingsBugController c = new SettingsBugController(context, tdlib);
+      c.setArguments(new Args(SECTION_MAIN, crash).setTesterLevel(testerLevel));
+      navigateTo(c);
+    } else if (viewId == R.id.btn_testingUtils) {
+      RunnableBool callback = proceed -> {
+        if (proceed) {
+          SettingsBugController c = new SettingsBugController(context, tdlib);
+          c.setArguments(new Args(SECTION_UTILITIES, crash).setTesterLevel(testerLevel));
+          navigateTo(c);
         }
-        break;
+      };
+      if (crash != null) {
+        callback.runWithBool(true);
+      } else {
+        showWarning(Lang.getMarkdownString(this, R.string.TestModeWarn), callback);
       }
-      case R.id.btn_secret_dropSavedScrollPositions: {
-        Settings.instance().removeScrollPositions(tdlib.accountId(), null);
-        break;
+    } else if (viewId == R.id.btn_secret_resetTutorials) {
+      Settings.instance().resetTutorials();
+      UI.showToast("Hints reset completed", Toast.LENGTH_SHORT);
+    } else if (viewId == R.id.btn_log_verbosity) {
+      ListItem[] items = new ListItem[Log.LEVEL_VERBOSE + 1];
+      final int logLevel = Log.isCapturing() ? Log.LEVEL_VERBOSE : Log.getLogLevel();
+      for (int level = 0; level < items.length; level++) {
+        items[level] = new ListItem(ListItem.TYPE_RADIO_OPTION, level + 1, 0, getLogVerbosity(level), R.id.btn_log_verbosity, level == logLevel);
       }
-      case R.id.btn_secret_sendAllChangeLogs: {
-        tdlib.checkChangeLogs(false, true);
-        break;
+      showSettings(R.id.btn_log_verbosity, items, this, false);
+    } else if (viewId == R.id.btn_log_files) {
+      SettingsLogFilesController c = new SettingsLogFilesController(context, tdlib);
+      c.setArguments(new SettingsLogFilesController.Arguments(logFiles));
+      navigateTo(c);
+    } else if (viewId == R.id.btn_log_android) {
+      Log.setSetting(Log.SETTING_ANDROID_LOG, ((SettingView) v).getToggler().toggle(true));
+    } else if (viewId == R.id.btn_log_tags) {
+      ListItem[] items = new ListItem[Log.TAGS.length];
+      for (int i = 0; i < items.length; i++) {
+        int tag = Log.TAGS[i];
+        items[i] = new ListItem(ListItem.TYPE_CHECKBOX_OPTION, tag, 0, "[" + Log.getLogTag(tag) + "]: " + Log.getLogTagDescription(tag), Log.isEnabled(tag));
       }
-      case R.id.btn_secret_readAllChats: {
-        showConfirm(Lang.getString(R.string.ReadAllChatsInfo), null, () ->
-          tdlib.readAllChats(ChatPosition.CHAT_LIST_MAIN, readCount ->
-            tdlib.readAllChats(ChatPosition.CHAT_LIST_ARCHIVE, archiveReadCount ->
-              UI.showToast(Lang.plural(R.string.ReadAllChatsDone, readCount + archiveReadCount), Toast.LENGTH_SHORT)
-            )
-          )
-        );
-        break;
+      showSettings(R.id.btn_log_tags, items, this, true);
+    } else if (viewId == R.id.btn_secret_dontReadMessages) {
+      int i = adapter.indexOfViewById(R.id.btn_secret_dontReadMessages);
+      if (i != -1) {
+        boolean newValue = !Settings.instance().dontReadMessages();
+        Settings.instance().setDontReadMessages(newValue);
+        if (newValue != Settings.instance().dontReadMessages()) {
+          UI.showToast("You can't enable that", Toast.LENGTH_SHORT);
+        } else {
+          adapter.updateValuedSettingById(R.id.btn_secret_dontReadMessages);
+        }
       }
-      case R.id.btn_tdlib_verbosity: {
-        showTdlibVerbositySettings((String) ((ListItem) v.getTag()).getData());
-        break;
-      }
-      case R.id.btn_tdlib_resetLogSettings: {
-        Settings.instance().getLogSettings().reset();
-        adapter.updateAllValuedSettings();
-        UI.showToast("Done. Restart is required for some changes to apply.", Toast.LENGTH_SHORT);
-        break;
-      }
-      case R.id.btn_tdlib_logSize: {
-        openInputAlert("Maximum Log Size", "Amount of bytes", R.string.Done, R.string.Cancel, String.valueOf(Settings.instance().getLogSettings().getLogMaxFileSize()), (view, value) -> {
-          if (!StringUtils.isNumeric(value)) {
+    } else if (viewId == R.id.btn_secret_stressTest) {
+      openInputAlert("Stress test", "Restart count", R.string.Done, R.string.Cancel, "50", new InputAlertCallback() {
+        @Override
+        public boolean onAcceptInput (MaterialEditTextGroup inputView, String result) {
+          if (!StringUtils.isNumeric(result))
             return false;
+          int count = StringUtils.parseInt(result);
+          if (count <= 0)
+            return false;
+          if (!isDestroyed()) {
+            if (navigationController != null)
+              navigationController.getStack().destroyAllExceptLast();
+            tdlib.stressTest(count);
+            return true;
           }
-          long result = StringUtils.parseLong(value);
-          if (result < ByteUnit.KIB.toBytes(1))
-            return false;
-          Settings.instance().getLogSettings().setMaxFileSize(result);
-          adapter.updateValuedSettingById(R.id.btn_tdlib_logSize);
-          return true;
-        }, true);
-        break;
+          return false;
+        }
+      }, true);
+    } else if (viewId == R.id.btn_secret_copyLanguageCodes) {
+      tdlib.client().send(new TdApi.GetLocalizationTargetInfo(false), result -> {
+        if (result instanceof TdApi.LocalizationTargetInfo) {
+          TdApi.LocalizationTargetInfo info = (TdApi.LocalizationTargetInfo) result;
+          StringBuilder codes = new StringBuilder();
+          for (TdApi.LanguagePackInfo languagePackInfo : info.languagePacks) {
+            if (!languagePackInfo.isBeta && languagePackInfo.isOfficial) {
+              if (codes.length() > 0)
+                codes.append(", ");
+              codes.append("'");
+              codes.append(languagePackInfo.id);
+              codes.append("'");
+            }
+          }
+          UI.copyText(codes.toString(), R.string.CopiedText);
+        }
+      });
+    } else if (viewId == R.id.btn_secret_deleteContacts) {
+      tdlib.contacts().reset(true, () -> {
+        UI.showToast("Contacts reset done", Toast.LENGTH_SHORT);
+        tdlib.ui().post(() -> tdlib.contacts().startSyncIfNeeded(context(), false, null));
+      });
+    } else if (viewId == R.id.btn_secret_resetLocalNotificationSettings) {
+      tdlib.notifications().resetNotificationSettings(true);
+    } else if (viewId == R.id.btn_secret_databaseStats) {
+      String stats = Settings.instance().pmc().getProperty("leveldb.stats") + "\n\n" + "Memory usage: " + Settings.instance().pmc().getProperty("leveldb.approximate-memory-usage");
+      TextController c = new TextController(context, tdlib);
+      c.setArguments(TextController.Arguments.fromRawText("App Database Stats", stats, "text/plain"));
+      navigateTo(c);
+    } else if (viewId == R.id.btn_secret_tdlibDatabaseStats) {
+      UI.showToast("Calculating. Please wait...", Toast.LENGTH_SHORT);
+      tdlib.client().send(new TdApi.GetDatabaseStatistics(), result -> {
+        switch (result.getConstructor()) {
+          case TdApi.DatabaseStatistics.CONSTRUCTOR:
+            tdlib.ui().post(() -> {
+              if (!isDestroyed()) {
+                TextController c = new TextController(context, tdlib);
+                c.setArguments(TextController.Arguments.fromRawText("TDLib Database Stats", ((TdApi.DatabaseStatistics) result).statistics, "text/plain"));
+                navigateTo(c);
+              }
+            });
+            break;
+          case TdApi.Error.CONSTRUCTOR:
+            UI.showError(result);
+            break;
+        }
+      });
+    } else if (viewId == R.id.btn_secret_deleteProfilePhoto) {
+      TdApi.User user = tdlib.myUser();
+      if (user != null && user.profilePhoto != null) {
+        tdlib.client().send(new TdApi.DeleteFile(user.profilePhoto.small.id), tdlib.okHandler());
+        tdlib.client().send(new TdApi.DeleteFile(user.profilePhoto.big.id), tdlib.okHandler());
       }
-      case R.id.btn_tdlib_viewLogs: {
-        viewTdlibLog(v, false);
-        break;
-      }
-      case R.id.btn_tdlib_viewLogsOld: {
-        viewTdlibLog(v, true);
-        break;
-      }
-      case R.id.btn_tdlib_androidLogs: {
-        Settings.instance().getLogSettings().setNeedAndroidLog(adapter.toggleView(v));
-        break;
-      }
+    } else if (viewId == R.id.btn_secret_dropSavedScrollPositions) {
+      Settings.instance().removeScrollPositions(tdlib.accountId(), null);
+    } else if (viewId == R.id.btn_secret_sendAllChangeLogs) {
+      tdlib.checkChangeLogs(false, true);
+    } else if (viewId == R.id.btn_secret_readAllChats) {
+      showConfirm(Lang.getString(R.string.ReadAllChatsInfo), null, () ->
+        tdlib.readAllChats(ChatPosition.CHAT_LIST_MAIN, readCount ->
+          tdlib.readAllChats(ChatPosition.CHAT_LIST_ARCHIVE, archiveReadCount ->
+            UI.showToast(Lang.plural(R.string.ReadAllChatsDone, readCount + archiveReadCount), Toast.LENGTH_SHORT)
+          )
+        )
+      );
+    } else if (viewId == R.id.btn_tdlib_verbosity) {
+      showTdlibVerbositySettings((String) ((ListItem) v.getTag()).getData());
+    } else if (viewId == R.id.btn_tdlib_resetLogSettings) {
+      Settings.instance().getLogSettings().reset();
+      adapter.updateAllValuedSettings();
+      UI.showToast("Done. Restart is required for some changes to apply.", Toast.LENGTH_SHORT);
+    } else if (viewId == R.id.btn_tdlib_logSize) {
+      openInputAlert("Maximum Log Size", "Amount of bytes", R.string.Done, R.string.Cancel, String.valueOf(Settings.instance().getLogSettings().getLogMaxFileSize()), (view, value) -> {
+        if (!StringUtils.isNumeric(value)) {
+          return false;
+        }
+        long result = StringUtils.parseLong(value);
+        if (result < ByteUnit.KIB.toBytes(1))
+          return false;
+        Settings.instance().getLogSettings().setMaxFileSize(result);
+        adapter.updateValuedSettingById(R.id.btn_tdlib_logSize);
+        return true;
+      }, true);
+    } else if (viewId == R.id.btn_tdlib_viewLogs) {
+      viewTdlibLog(v, false);
+    } else if (viewId == R.id.btn_tdlib_viewLogsOld) {
+      viewTdlibLog(v, true);
+    } else if (viewId == R.id.btn_tdlib_androidLogs) {
+      Settings.instance().getLogSettings().setNeedAndroidLog(adapter.toggleView(v));
     }
   }
 
@@ -1553,30 +1389,21 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
     strings.append(R.string.Delete);
 
     showOptions(tdlibLogFile.getName() + " (" + Strings.buildSize(logSize[i]) + ")", ids.get(), strings.get(), colors.get(), icons.get(), (itemView, id) -> {
-      switch (id) {
-        case R.id.btn_tdlib_viewLogs: {
-          TextController textController = new TextController(context, tdlib);
-          textController.setArguments(TextController.Arguments.fromFile("TDLib Log", tdlibLogFile.getPath(), "text/plain"));
-          navigateTo(textController);
-          break;
+      if (id == R.id.btn_tdlib_viewLogs) {
+        TextController textController = new TextController(context, tdlib);
+        textController.setArguments(TextController.Arguments.fromFile("TDLib Log", tdlibLogFile.getPath(), "text/plain"));
+        navigateTo(textController);
+      } else if (id == R.id.btn_saveFile) {
+        TD.saveToDownloads(tdlibLogFile, "text/plain");
+      } else if (id == R.id.btn_tdlib_shareLogs) {
+        int verbosity = Settings.instance().getTdlibLogSettings().getVerbosity(null);
+        if (verbosity == 0) {
+          TdlibUi.sendTdlibLogs(SettingsBugController.this, old, tdlib == null || tdlib.context().inRecoveryMode());
+        } else {
+          context().tooltipManager().builder(view).show(this, tdlib, R.drawable.baseline_warning_24, Lang.getMarkdownString(this, R.string.DebugShareError));
         }
-        case R.id.btn_saveFile: {
-          TD.saveToDownloads(tdlibLogFile, "text/plain");
-          break;
-        }
-        case R.id.btn_tdlib_shareLogs: {
-          int verbosity = Settings.instance().getTdlibLogSettings().getVerbosity(null);
-          if (verbosity == 0) {
-            TdlibUi.sendTdlibLogs(SettingsBugController.this, old, tdlib == null || tdlib.context().inRecoveryMode());
-          } else {
-            context().tooltipManager().builder(view).show(this, tdlib, R.drawable.baseline_warning_24, Lang.getMarkdownString(this, R.string.DebugShareError));
-          }
-          break;
-        }
-        case R.id.btn_tdlib_clearLogs: {
-          TdlibUi.clearLogs(old, arg1 -> setLogSize(arg1, old));
-          break;
-        }
+      } else if (id == R.id.btn_tdlib_clearLogs) {
+        TdlibUi.clearLogs(old, arg1 -> setLogSize(arg1, old));
       }
       return true;
     });
@@ -1584,23 +1411,20 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
 
   @Override
   public boolean onLongClick (View v) {
-    switch (v.getId()) {
-      case R.id.btn_log_files: {
-        if (filesLoaded) {
-          if (logFiles == null || logFiles.isEmpty()) {
-            setLogFiles(Log.getLogFiles());
-          }
-          if (logFiles != null && !logFiles.isEmpty()) {
-            showOptions("Clear " + Strings.buildSize(logFiles.totalSize) + "?", new int[] {R.id.btn_deleteAll, R.id.btn_cancel}, new String[] {"Delete all logs", "Cancel"}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
-              if (id == R.id.btn_deleteAll) {
-                deleteAllFiles();
-              }
-              return true;
-            });
-            return true;
-          }
+    if (v.getId() == R.id.btn_log_files) {
+      if (filesLoaded) {
+        if (logFiles == null || logFiles.isEmpty()) {
+          setLogFiles(Log.getLogFiles());
         }
-        break;
+        if (logFiles != null && !logFiles.isEmpty()) {
+          showOptions("Clear " + Strings.buildSize(logFiles.totalSize) + "?", new int[] {R.id.btn_deleteAll, R.id.btn_cancel}, new String[] {"Delete all logs", "Cancel"}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+            if (id == R.id.btn_deleteAll) {
+              deleteAllFiles();
+            }
+            return true;
+          });
+          return true;
+        }
       }
     }
     return false;
@@ -1608,23 +1432,18 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
 
   @Override
   public void onApplySettings (@IdRes int id, SparseIntArray result) {
-    switch (id) {
-      case R.id.btn_log_verbosity: {
-        int level = result.get(R.id.btn_log_verbosity, Log.LEVEL_ERROR) - 1;
-        Log.setLogLevel(level);
-        adapter.updateValuedSettingById(R.id.btn_log_verbosity);
-        break;
+    if (id == R.id.btn_log_verbosity) {
+      int level = result.get(R.id.btn_log_verbosity, Log.LEVEL_ERROR) - 1;
+      Log.setLogLevel(level);
+      adapter.updateValuedSettingById(R.id.btn_log_verbosity);
+    } else if (id == R.id.btn_log_tags) {
+      long tags = 0;
+      final int count = result.size();
+      for (int i = 0; i < count; i++) {
+        tags |= result.keyAt(i);
       }
-      case R.id.btn_log_tags: {
-        long tags = 0;
-        final int count = result.size();
-        for (int i = 0; i < count; i++) {
-          tags |= result.keyAt(i);
-        }
-        Log.setEnabledTags(tags);
-        adapter.updateValuedSettingById(R.id.btn_log_tags);
-        break;
-      }
+      Log.setEnabledTags(tags);
+      adapter.updateValuedSettingById(R.id.btn_log_tags);
     }
   }
 }

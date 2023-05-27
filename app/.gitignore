@@ -11,7 +11,8 @@
 /src/main/java/org/thunderdog/challegram/theme/ThemeColors.kt
 /src/main/java/org/thunderdog/challegram/theme/ThemeProperties.kt
 /src/main/java/org/thunderdog/challegram/theme/ThemeId.java
-/src/main/java/org/thunderdog/challegram/theme/ThemeColorId.java
-/src/main/java/org/thunderdog/challegram/theme/ThemeColorIdTinted.java
-/src/main/java/org/thunderdog/challegram/theme/PorterDuffThemeColorId.java
+/src/main/java/org/thunderdog/challegram/theme/ColorId.java
+/src/main/java/org/thunderdog/challegram/theme/ColorIdTinted.java
+/src/main/java/org/thunderdog/challegram/theme/PropertyId.java
+/src/main/java/org/thunderdog/challegram/theme/PorterDuffColorId.java
 /src/main/java/org/thunderdog/challegram/tool/PorterDuffPaint.kt

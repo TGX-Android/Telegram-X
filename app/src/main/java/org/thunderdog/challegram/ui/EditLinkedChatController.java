@@ -56,10 +56,8 @@ public class EditLinkedChatController extends RecyclerViewController<EditLinkedC
 
   @Override
   public void onClick (View v) {
-    switch (v.getId()) {
-      case R.id.chat: {
-        break;
-      }
+    if (v.getId() == R.id.chat) {
+      // ...
     }
   }
 }

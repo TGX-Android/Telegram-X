@@ -29,7 +29,7 @@ import androidx.annotation.NonNull;
 
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
@@ -64,21 +64,21 @@ public class CounterHeaderView extends View {
     this.counters = new ArrayList<>();
   }
 
-  public void initDefault (@ThemeColorId int colorId) {
+  public void initDefault (@ColorId int colorId) {
     initDefault(19f, colorId);
   }
 
-  private @ThemeColorId int colorId;
+  private @ColorId int colorId;
   private float textSizeDp;
 
-  public void setTextColorId (@ThemeColorId int colorId) {
+  public void setTextColorId (@ColorId int colorId) {
     if (this.colorId != colorId) {
       this.colorId = colorId;
       invalidate();
     }
   }
 
-  public void initDefault (float textSizeDp, @ThemeColorId int colorId) {
+  public void initDefault (float textSizeDp, @ColorId int colorId) {
     init(textSizeDp, colorId, Screen.dp(20f), 0, Screen.dp(20f) + Screen.dp(15f));
   }
 
@@ -86,7 +86,7 @@ public class CounterHeaderView extends View {
     this.textTop = top;
   }
 
-  public void init (float textSizeDp, @ThemeColorId int colorId, int diff, int textLeft, int textTop) {
+  public void init (float textSizeDp, @ColorId int colorId, int diff, int textLeft, int textTop) {
     this.textSizeDp = textSizeDp;
     this.colorId = colorId;
     this.diff = diff;

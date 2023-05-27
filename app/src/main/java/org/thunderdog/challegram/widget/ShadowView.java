@@ -25,9 +25,9 @@ import android.view.ViewGroup;
 
 import androidx.annotation.ColorInt;
 
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -107,7 +107,7 @@ public class ShadowView extends View {
 
   public void setSimpleTopShadow (boolean withDefaultSize, ViewController<?> themeProvider) {
     setSimpleTopShadow(withDefaultSize);
-    ViewSupport.setThemedBackground(this, R.id.theme_color_background, themeProvider);
+    ViewSupport.setThemedBackground(this, ColorId.background, themeProvider);
   }
 
   private boolean isTopShadow;

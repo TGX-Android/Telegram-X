@@ -34,7 +34,7 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
@@ -120,9 +120,9 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
     }
   }
 
-  @ThemeColorId
+  @ColorId
   protected int getDrawerReplacementColorId () {
-    return R.id.theme_color_filling;
+    return ColorId.filling;
   }
 
   @Override
@@ -169,7 +169,7 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
             headerCell.getTopView().setTextPadding(Screen.dp(12f));
             TextView title = SimpleHeaderView.newTitle(context);
             title.setTextColor(Theme.headerTextColor());
-            addThemeTextColorListener(title, R.id.theme_color_headerText);
+            addThemeTextColorListener(title, ColorId.headerText);
             title.setId(R.id.text_title);
             Views.setMediumText(title, getName());
             ((ViewPagerHeaderViewCompact) headerCell).addView(title);

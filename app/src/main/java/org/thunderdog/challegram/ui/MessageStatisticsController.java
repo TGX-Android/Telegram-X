@@ -108,23 +108,21 @@ public class MessageStatisticsController extends RecyclerViewController<MessageS
 
       @Override
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
-        switch (item.getId()) {
-          case R.id.btn_statsViewCount:
-          case R.id.btn_statsPrivateShares:
-          case R.id.btn_statsPublishDate:
-          case R.id.btn_statsSignature:
-          case R.id.btn_statsPublicShares: {
-            view.setIgnoreEnabled(true);
-            view.setEnabled(false);
-            view.setTextColorId(0);
-            if (item.getData() instanceof String) {
-              view.setName(item.getData().toString());
-            } else {
-              view.setName(Strings.buildCounter((int) item.getData()));
-            }
-            view.setData(item.getString());
-            break;
+        final int itemId = item.getId();
+        if (itemId == R.id.btn_statsViewCount ||
+          itemId == R.id.btn_statsPrivateShares ||
+          itemId == R.id.btn_statsPublishDate ||
+          itemId == R.id.btn_statsSignature ||
+          itemId == R.id.btn_statsPublicShares) {
+          view.setIgnoreEnabled(true);
+          view.setEnabled(false);
+          view.setTextColorId(0);
+          if (item.getData() instanceof String) {
+            view.setName(item.getData().toString());
+          } else {
+            view.setName(Strings.buildCounter((int) item.getData()));
           }
+          view.setData(item.getString());
         }
       }
 

@@ -147,18 +147,15 @@ public class EditButton extends View implements FactorAnimator.Target {
     this.isActive = willBeActive;
     this.activeFactor = isActive ? 1f : 0f;
     if (icon != null) {
-      switch (iconRes) {
-        case R.drawable.baseline_volume_up_24: {
-          if (specialIcon != null && (specialIcon.getWidth() != icon.getMinimumWidth() || specialIcon.getHeight() != icon.getMinimumHeight())) {
-            specialIcon = null;
-          }
-          if (specialIcon == null || specialIcon.isRecycled()) {
-            specialIcon = Bitmap.createBitmap(icon.getMinimumWidth(), icon.getMinimumHeight(), Bitmap.Config.ARGB_8888);
-            specialIconCanvas = new Canvas(specialIcon);
-          }
-          drawSoundOn();
-          break;
+      if (iconRes == R.drawable.baseline_volume_up_24) {
+        if (specialIcon != null && (specialIcon.getWidth() != icon.getMinimumWidth() || specialIcon.getHeight() != icon.getMinimumHeight())) {
+          specialIcon = null;
         }
+        if (specialIcon == null || specialIcon.isRecycled()) {
+          specialIcon = Bitmap.createBitmap(icon.getMinimumWidth(), icon.getMinimumHeight(), Bitmap.Config.ARGB_8888);
+          specialIconCanvas = new Canvas(specialIcon);
+        }
+        drawSoundOn();
       }
     }
   }
@@ -211,11 +208,8 @@ public class EditButton extends View implements FactorAnimator.Target {
     if (this.activeFactor != factor) {
       this.activeFactor = factor;
 
-      switch (iconRes) {
-        case R.drawable.baseline_volume_up_24: {
-          drawSoundOn();
-          break;
-        }
+      if (iconRes == R.drawable.baseline_volume_up_24) {
+        drawSoundOn();
       }
 
       invalidate();

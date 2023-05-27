@@ -24,7 +24,7 @@ import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.ColorChangeAcceptorDelegate;
 import org.thunderdog.challegram.util.CustomStateListDrawable;
@@ -45,7 +45,7 @@ public class RippleSupport {
     }
   }
 
-  public static void setSimpleWhiteBackground (@NonNull View view, @ThemeColorId int backgroundColorId, @Nullable ViewController<?> themeProvider) {
+  public static void setSimpleWhiteBackground (@NonNull View view, @ColorId int backgroundColorId, @Nullable ViewController<?> themeProvider) {
     ViewUtils.setBackground(view, Theme.fillingSelector(backgroundColorId));
     if (themeProvider != null) {
       themeProvider.addThemeInvalidateListener(view);
@@ -73,11 +73,11 @@ public class RippleSupport {
     }
   }
 
-  public static void setCircleBackground (View view, float size, float padding, @ThemeColorId int colorId) {
+  public static void setCircleBackground (View view, float size, float padding, @ColorId int colorId) {
     setCircleBackground(view, size, padding, colorId, null);
   }
 
-  public static void changeViewColor (View view, @ThemeColorId int fromColorId, @ThemeColorId int toColorId, float factor) {
+  public static void changeViewColor (View view, @ColorId int fromColorId, @ColorId int toColorId, float factor) {
     if (view != null) {
       Drawable drawable = view.getBackground();
       boolean updated = false;
@@ -133,7 +133,7 @@ public class RippleSupport {
     return 0;
   }
 
-  public static void setCircleBackground (View view, float size, float padding, @ThemeColorId int colorId, @Nullable ViewController<?> themeProvider) {
+  public static void setCircleBackground (View view, float size, float padding, @ColorId int colorId, @Nullable ViewController<?> themeProvider) {
     ViewUtils.setBackground(view, Theme.circleSelector(size, colorId));
     if (SimpleShapeDrawable.USE_SOFTWARE_SHADOW) {
       view.setLayerType(View.LAYER_TYPE_SOFTWARE, Views.getLayerPaint());
@@ -144,11 +144,11 @@ public class RippleSupport {
     }
   }
 
-  public static void setRectBackground (View view, float size, float padding, @ThemeColorId int colorId) {
+  public static void setRectBackground (View view, float size, float padding, @ColorId int colorId) {
     setRectBackground(view, size, padding, colorId, null);
   }
 
-  public static void setRectBackground (View view, float size, float padding, @ThemeColorId int colorId, @Nullable ViewController<?> themeProvider) {
+  public static void setRectBackground (View view, float size, float padding, @ColorId int colorId, @Nullable ViewController<?> themeProvider) {
     ViewUtils.setBackground(view, Theme.rectSelector(size, padding, colorId));
     if (SimpleShapeDrawable.USE_SOFTWARE_SHADOW) {
       view.setLayerType(View.LAYER_TYPE_SOFTWARE, Views.getLayerPaint());

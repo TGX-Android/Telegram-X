@@ -39,6 +39,7 @@ import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
@@ -132,90 +133,71 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
     adapter = new SettingsAdapter(this) {
       @Override
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
-        switch (item.getId()) {
-          case R.id.btn_keepMedia: {
-            view.setData(keepMedia == 0 ? Lang.getString(R.string.KeepMediaForever) : Lang.getDuration((int) keepMedia, 0, 0, false));
-            break;
-          }
-          case R.id.btn_storagePath: {
-            TdApi.SetTdlibParameters parametersRequest = tdlib.clientParameters();
-            view.setData(parametersRequest != null ? parametersRequest.filesDirectory : "Unavailable");
-            view.setEnabled(parametersRequest != null && item.getBoolValue());
-            break;
-          }
-          case R.id.btn_localDatabase:
-            view.setEnabledAnimated(fastStats != null, isUpdate);
-            view.setData(fastStats != null ? Strings.buildSize(fastStats.getDatabaseSize(stats != null ? stats.getDatabaseAddSize() : 0)) : Lang.getString(R.string.Calculating));
-            break;
-          case R.id.btn_settings:
-            view.setEnabled(false);
-            view.setData(fastStats != null ? Lang.getString(R.string.format_approx, Strings.buildSize(fastStats.getSettingsSize())) : Lang.getString(R.string.Calculating));
-            break;
-          case R.id.btn_lottie:
-            view.setEnabledAnimated(fastStats != null, isUpdate);
-            view.setData(fastStats != null ? Strings.buildSize(fastStats.getLottieSize()) : Lang.getString(R.string.Calculating));
-            break;
-          case R.id.btn_languageSettings:
-            view.setEnabled(false);
-            view.setData(fastStats != null ? Strings.buildSize(fastStats.getLanguagePackDatabaseSize()) : Lang.getString(R.string.Calculating));
-            break;
-          case R.id.btn_junk:
-            view.setEnabledAnimated(fastStats != null, isUpdate);
-            view.setData(fastStats != null ? Strings.buildSize(fastStats.getJunkSize()) : Lang.getString(R.string.Calculating));
-            break;
-          case R.id.btn_paint:
-            view.setEnabledAnimated(fastStats != null, isUpdate);
-            view.setData(fastStats != null ? Strings.buildSize(fastStats.getPaintsSize()) : Lang.getString(R.string.Calculating));
-            break;
-          case R.id.btn_camera:
-            view.setEnabledAnimated(fastStats != null && fastStats.getPrivateCameraMediaSize() > 0, isUpdate);
-            view.setData(fastStats != null ? Strings.buildSize(fastStats.getPrivateCameraMediaSize()) : Lang.getString(R.string.Calculating));
-            break;
-          case R.id.btn_emoji:
-            view.setEnabledAnimated(fastStats != null && fastStats.getEmojiUnusedSize() > 0, isUpdate);
-            view.setData(fastStats != null ? Strings.buildSize(fastStats.getEmojiSize()) : Lang.getString(R.string.Calculating));
-            break;
-          case R.id.btn_logsSize:
-            view.setEnabledAnimated(fastStats != null, isUpdate);
-            view.setData(fastStats != null ? Strings.buildSize(fastStats.getLogsSize()) : Lang.getString(R.string.Calculating));
-            break;
-
-          case R.id.btn_otherChats:
-          case R.id.btn_otherFiles: {
-            if (stats != null) {
-              boolean isChat = item.getId() == R.id.btn_otherChats;
-              final TGStorageStats.Entry entry = isChat ? stats.getOtherChatsEntry() : stats.getOtherFilesEntry();
-              if (isUpdate) {
-                view.setEnabledAnimated(!entry.isEmpty() && !isCleaningUp);
-              } else {
-                view.setEnabled(!entry.isEmpty() && !isCleaningUp);
-              }
-              if (isCleaningUp && ((isChat && busyChatIds != null && busyChatIds.length == 1 && busyChatIds[0] == 0)) || (!isChat && busyEntry == stats.getOtherFilesEntry())) {
-                view.setData(R.string.CleaningUp);
-              } else {
-                view.setData(Strings.buildSize(entry.getSize()));
-              }
+        final int itemId = item.getId();
+        if (itemId == R.id.btn_keepMedia) {
+          view.setData(keepMedia == 0 ? Lang.getString(R.string.KeepMediaForever) : Lang.getDuration((int) keepMedia, 0, 0, false));
+        } else if (itemId == R.id.btn_storagePath) {
+          TdApi.SetTdlibParameters parametersRequest = tdlib.clientParameters();
+          view.setData(parametersRequest != null ? parametersRequest.filesDirectory : "Unavailable");
+          view.setEnabled(parametersRequest != null && item.getBoolValue());
+        } else if (itemId == R.id.btn_localDatabase) {
+          view.setEnabledAnimated(fastStats != null, isUpdate);
+          view.setData(fastStats != null ? Strings.buildSize(fastStats.getDatabaseSize(stats != null ? stats.getDatabaseAddSize() : 0)) : Lang.getString(R.string.Calculating));
+        } else if (itemId == R.id.btn_settings) {
+          view.setEnabled(false);
+          view.setData(fastStats != null ? Lang.getString(R.string.format_approx, Strings.buildSize(fastStats.getSettingsSize())) : Lang.getString(R.string.Calculating));
+        } else if (itemId == R.id.btn_lottie) {
+          view.setEnabledAnimated(fastStats != null, isUpdate);
+          view.setData(fastStats != null ? Strings.buildSize(fastStats.getLottieSize()) : Lang.getString(R.string.Calculating));
+        } else if (itemId == R.id.btn_languageSettings) {
+          view.setEnabled(false);
+          view.setData(fastStats != null ? Strings.buildSize(fastStats.getLanguagePackDatabaseSize()) : Lang.getString(R.string.Calculating));
+        } else if (itemId == R.id.btn_junk) {
+          view.setEnabledAnimated(fastStats != null, isUpdate);
+          view.setData(fastStats != null ? Strings.buildSize(fastStats.getJunkSize()) : Lang.getString(R.string.Calculating));
+        } else if (itemId == R.id.btn_paint) {
+          view.setEnabledAnimated(fastStats != null, isUpdate);
+          view.setData(fastStats != null ? Strings.buildSize(fastStats.getPaintsSize()) : Lang.getString(R.string.Calculating));
+        } else if (itemId == R.id.btn_camera) {
+          view.setEnabledAnimated(fastStats != null && fastStats.getPrivateCameraMediaSize() > 0, isUpdate);
+          view.setData(fastStats != null ? Strings.buildSize(fastStats.getPrivateCameraMediaSize()) : Lang.getString(R.string.Calculating));
+        } else if (itemId == R.id.btn_emoji) {
+          view.setEnabledAnimated(fastStats != null && fastStats.getEmojiUnusedSize() > 0, isUpdate);
+          view.setData(fastStats != null ? Strings.buildSize(fastStats.getEmojiSize()) : Lang.getString(R.string.Calculating));
+        } else if (itemId == R.id.btn_logsSize) {
+          view.setEnabledAnimated(fastStats != null, isUpdate);
+          view.setData(fastStats != null ? Strings.buildSize(fastStats.getLogsSize()) : Lang.getString(R.string.Calculating));
+        } else if (itemId == R.id.btn_otherChats || itemId == R.id.btn_otherFiles) {
+          if (stats != null) {
+            boolean isChat = item.getId() == R.id.btn_otherChats;
+            final TGStorageStats.Entry entry = isChat ? stats.getOtherChatsEntry() : stats.getOtherFilesEntry();
+            if (isUpdate) {
+              view.setEnabledAnimated(!entry.isEmpty() && !isCleaningUp);
             } else {
-              view.setData(R.string.Calculating);
+              view.setEnabled(!entry.isEmpty() && !isCleaningUp);
             }
-            break;
-          }
-          case R.id.btn_clearCache: {
-            if (stats != null) {
-              if (isUpdate) {
-                view.setEnabledAnimated(!stats.isFilesEmpty() && !isCleaningUp);
-              } else {
-                view.setEnabled(!stats.isFilesEmpty() && !isCleaningUp);
-              }
-              if (isCleaningUp) {
-                view.setData(R.string.CleaningUp);
-              } else {
-                view.setData(stats.getFilesSize());
-              }
+            if (isCleaningUp && ((isChat && busyChatIds != null && busyChatIds.length == 1 && busyChatIds[0] == 0)) || (!isChat && busyEntry == stats.getOtherFilesEntry())) {
+              view.setData(R.string.CleaningUp);
             } else {
-              view.setData(R.string.Calculating);
+              view.setData(Strings.buildSize(entry.getSize()));
             }
-            break;
+          } else {
+            view.setData(R.string.Calculating);
+          }
+        } else if (itemId == R.id.btn_clearCache) {
+          if (stats != null) {
+            if (isUpdate) {
+              view.setEnabledAnimated(!stats.isFilesEmpty() && !isCleaningUp);
+            } else {
+              view.setEnabled(!stats.isFilesEmpty() && !isCleaningUp);
+            }
+            if (isCleaningUp) {
+              view.setData(R.string.CleaningUp);
+            } else {
+              view.setData(stats.getFilesSize());
+            }
+          } else {
+            view.setData(R.string.Calculating);
           }
         }
       }
@@ -225,7 +207,7 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
         TGStorageStats.Entry entry = (TGStorageStats.Entry) item.getData();
         if (entry != null) {
           textView.setText(entry.getTitle(), isCleaningUp && ArrayUtils.contains(busyChatIds, item.getLongId()) ? Lang.getString(R.string.CleaningUp) : Strings.buildSize(entry.getSize()));
-          textView.setTitleColorId(entry.isSecret() ? R.id.theme_color_textSecure : entry.isSelfChat() ? R.id.theme_color_textNeutral : R.id.theme_color_text);
+          textView.setTitleColorId(entry.isSecret() ? ColorId.textSecure : entry.isSelfChat() ? ColorId.textNeutral : ColorId.text);
           textView.setChatAvatar(tdlib, entry.getId());
         }
       }
@@ -245,7 +227,7 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
 
     items.add(new ListItem(VIEW_TYPE, R.id.btn_keepMedia, 0, R.string.KeepMedia));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
-    items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Strings.replaceBoldTokens(Lang.getString(R.string.KeepMediaInfo), R.id.theme_color_background_textLight), false));
+    items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Strings.replaceBoldTokens(Lang.getString(R.string.KeepMediaInfo), ColorId.background_textLight), false));
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     items.add(new ListItem(VIEW_TYPE, R.id.btn_settings, 0, R.string.SettingsAndThemes));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
@@ -424,151 +406,118 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
 
   @Override
   public void onClick (View v) {
-    switch (v.getId()) {
-      case R.id.btn_localDatabase: {
-        openFeatureUnavailable(R.string.LocalDatabaseExcuse);
-        break;
-      }
-      case R.id.btn_showOtherChats: {
-        showAllChats();
-        break;
-      }
-      case R.id.btn_paint: {
-        if (fastStats != null) {
-          showOptions(Lang.getString(R.string.PaintsInfo), new int[] {R.id.btn_deleteFile, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearX, Strings.buildSize(fastStats.getPaintsSize())), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
-            if (id == R.id.btn_deleteFile) {
-              Background.instance().post(() -> {
-                FileUtils.delete(PaintState.getPaintsDir(), true);
-                reloadFastStats();
-              });
-            }
-            return true;
-          });
-        }
-        break;
-      }
-      case R.id.btn_junk: {
-        if (fastStats != null) {
-          showOptions(Lang.getString(R.string.JunkFilesInfo), new int[] {R.id.btn_deleteFile, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearX, Strings.buildSize(fastStats.getJunkSize())), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
-            if (id == R.id.btn_deleteFile) {
-              if (!fastStats.deleteJunk())
-                Log.w("Failed to delete some junk");
+    final int viewId = v.getId();
+    if (viewId == R.id.btn_localDatabase) {
+      openFeatureUnavailable(R.string.LocalDatabaseExcuse);
+    } else if (viewId == R.id.btn_showOtherChats) {
+      showAllChats();
+    } else if (viewId == R.id.btn_paint) {
+      if (fastStats != null) {
+        showOptions(Lang.getString(R.string.PaintsInfo), new int[] {R.id.btn_deleteFile, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearX, Strings.buildSize(fastStats.getPaintsSize())), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+          if (id == R.id.btn_deleteFile) {
+            Background.instance().post(() -> {
+              FileUtils.delete(PaintState.getPaintsDir(), true);
               reloadFastStats();
-            }
-            return true;
-          });
-        }
-        break;
-      }
-      case R.id.btn_camera: {
-        if (fastStats != null) {
-          showOptions(Lang.getString(R.string.InAppCameraCacheDeleteConfirm), new int[] {R.id.btn_deleteFile, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearX, Strings.buildSize(fastStats.getPrivateCameraMediaSize())), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
-            if (id == R.id.btn_deleteFile) {
-              if (!fastStats.deletePrivateCameraMedia())
-                Log.w("Failed to delete some emoji sets");
-              reloadFastStats();
-            }
-            return true;
-          });
-        }
-        break;
-      }
-      case R.id.btn_emoji: {
-        if (fastStats != null) {
-          showOptions(Lang.getString(R.string.EmojiSetsInfo), new int[] {R.id.btn_deleteFile, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearX, Strings.buildSize(fastStats.getEmojiUnusedSize())), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
-            if (id == R.id.btn_deleteFile) {
-              if (!fastStats.deleteEmoji())
-                Log.w("Failed to delete some emoji sets");
-              reloadFastStats();
-            }
-            return true;
-          });
-        }
-        break;
-      }
-      case R.id.btn_lottie: {
-        if (fastStats != null) {
-          showOptions(Lang.getString(R.string.AnimatedStickersInfo), new int[] {R.id.btn_deleteFile, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearX, Strings.buildSize(fastStats.getLottieSize())), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
-            if (id == R.id.btn_deleteFile) {
-              if (!fastStats.deleteLottieFiles())
-                Log.w("Failed to delete some emoji sets");
-              reloadFastStats();
-            }
-            return true;
-          });
-        }
-        break;
-      }
-      case R.id.btn_logsSize: {
-        if (fastStats == null)
-          return;
-        if (Settings.instance().hasLogsEnabled()) {
-          showSettings(new SettingsWrapBuilder(R.id.btn_logsSize).addHeaderItem(Lang.getString(R.string.AppLogsClear)).setSaveColorId(R.id.theme_color_textNegative).setSaveStr(Lang.getString(R.string.ClearX, Strings.buildSize(fastStats.getLogsSize()))).setRawItems(new ListItem[] {new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_tdlib_resetLogSettings, 0, R.string.AppLogsDisable, false)}).setIntDelegate((id, result) -> {
-            boolean reset = result.get(R.id.btn_tdlib_resetLogSettings) == R.id.btn_tdlib_resetLogSettings;
-            if (reset) {
-              Settings.instance().disableAllLogs();
-            }
-            Settings.instance().deleteAllLogs(true, this::reloadFastStats);
-          }));
-        } else {
-          showOptions(Lang.getString(R.string.AppLogsClear), new int[] {R.id.btn_deleteFile, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearX, Strings.buildSize(fastStats.getLogsSize())), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
-            if (id == R.id.btn_deleteFile) {
-              Settings.instance().deleteAllLogs(true, this::reloadFastStats);
-            }
-            return true;
-          });
-        }
-        break;
-      }
-      case R.id.btn_keepMedia: {
-        showOptions(new int[] {R.id.btn_keepMedia_3days, R.id.btn_keepMedia_1week, R.id.btn_keepMedia_1month, R.id.btn_keepMedia_forever}, new String[] {Lang.plural(R.string.xDays, 3), Lang.plural(R.string.xWeeks, 1), Lang.plural(R.string.xMonths, 1), Lang.getString(R.string.KeepMediaForever)}, (itemView, id) -> {
-          switch (id) {
-            case R.id.btn_keepMedia_3days: {
-              setKeepMedia(60 * 60 * 24 * 3, true);
-              break;
-            }
-            case R.id.btn_keepMedia_1week: {
-              setKeepMedia(60 * 60 * 24 * 7, true);
-              break;
-            }
-            case R.id.btn_keepMedia_1month: {
-              setKeepMedia(60 * 60 * 24 * 30, true);
-              break;
-            }
-            case R.id.btn_keepMedia_forever: {
-              setKeepMedia(0, true);
-              break;
-            }
+            });
           }
           return true;
         });
-        break;
       }
-      case R.id.btn_clearCache:
-      case R.id.btn_otherChats:
-      case R.id.btn_otherFiles: {
-        if (isBusyGlobally)
-          return;
-
-        if (stats != null && !isCleaningUp) {
-          final int id = v.getId();
-          TGStorageStats.Entry entry = id == R.id.btn_clearCache ? stats.getTotalFilesEntry() : id == R.id.btn_otherChats ? stats.getOtherChatsEntry() : stats.getOtherFilesEntry();
-          showClearSettings(R.id.btn_otherChats, entry);
-        }
-        break;
-      }
-      case R.id.chat: {
-        if (isBusyGlobally)
-          return;
-
-        ListItem item = (ListItem) v.getTag();
-        if (item != null && !isCleaningUp) {
-          TGStorageStats.Entry entry = (TGStorageStats.Entry) item.getData();
-          if (entry != null) {
-            showClearSettings(R.id.chat, entry);
+    } else if (viewId == R.id.btn_junk) {
+      if (fastStats != null) {
+        showOptions(Lang.getString(R.string.JunkFilesInfo), new int[] {R.id.btn_deleteFile, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearX, Strings.buildSize(fastStats.getJunkSize())), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+          if (id == R.id.btn_deleteFile) {
+            if (!fastStats.deleteJunk())
+              Log.w("Failed to delete some junk");
+            reloadFastStats();
           }
+          return true;
+        });
+      }
+    } else if (viewId == R.id.btn_camera) {
+      if (fastStats != null) {
+        showOptions(Lang.getString(R.string.InAppCameraCacheDeleteConfirm), new int[] {R.id.btn_deleteFile, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearX, Strings.buildSize(fastStats.getPrivateCameraMediaSize())), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+          if (id == R.id.btn_deleteFile) {
+            if (!fastStats.deletePrivateCameraMedia())
+              Log.w("Failed to delete some emoji sets");
+            reloadFastStats();
+          }
+          return true;
+        });
+      }
+    } else if (viewId == R.id.btn_emoji) {
+      if (fastStats != null) {
+        showOptions(Lang.getString(R.string.EmojiSetsInfo), new int[] {R.id.btn_deleteFile, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearX, Strings.buildSize(fastStats.getEmojiUnusedSize())), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+          if (id == R.id.btn_deleteFile) {
+            if (!fastStats.deleteEmoji())
+              Log.w("Failed to delete some emoji sets");
+            reloadFastStats();
+          }
+          return true;
+        });
+      }
+    } else if (viewId == R.id.btn_lottie) {
+      if (fastStats != null) {
+        showOptions(Lang.getString(R.string.AnimatedStickersInfo), new int[] {R.id.btn_deleteFile, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearX, Strings.buildSize(fastStats.getLottieSize())), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+          if (id == R.id.btn_deleteFile) {
+            if (!fastStats.deleteLottieFiles())
+              Log.w("Failed to delete some emoji sets");
+            reloadFastStats();
+          }
+          return true;
+        });
+      }
+    } else if (viewId == R.id.btn_logsSize) {
+      if (fastStats == null)
+        return;
+      if (Settings.instance().hasLogsEnabled()) {
+        showSettings(new SettingsWrapBuilder(R.id.btn_logsSize).addHeaderItem(Lang.getString(R.string.AppLogsClear)).setSaveColorId(ColorId.textNegative).setSaveStr(Lang.getString(R.string.ClearX, Strings.buildSize(fastStats.getLogsSize()))).setRawItems(new ListItem[] {new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_tdlib_resetLogSettings, 0, R.string.AppLogsDisable, false)}).setIntDelegate((id, result) -> {
+          boolean reset = result.get(R.id.btn_tdlib_resetLogSettings) == R.id.btn_tdlib_resetLogSettings;
+          if (reset) {
+            Settings.instance().disableAllLogs();
+          }
+          Settings.instance().deleteAllLogs(true, this::reloadFastStats);
+        }));
+      } else {
+        showOptions(Lang.getString(R.string.AppLogsClear), new int[] {R.id.btn_deleteFile, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearX, Strings.buildSize(fastStats.getLogsSize())), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+          if (id == R.id.btn_deleteFile) {
+            Settings.instance().deleteAllLogs(true, this::reloadFastStats);
+          }
+          return true;
+        });
+      }
+    } else if (viewId == R.id.btn_keepMedia) {
+      showOptions(new int[] {R.id.btn_keepMedia_3days, R.id.btn_keepMedia_1week, R.id.btn_keepMedia_1month, R.id.btn_keepMedia_forever}, new String[] {Lang.plural(R.string.xDays, 3), Lang.plural(R.string.xWeeks, 1), Lang.plural(R.string.xMonths, 1), Lang.getString(R.string.KeepMediaForever)}, (itemView, id) -> {
+        if (id == R.id.btn_keepMedia_3days) {
+          setKeepMedia(60 * 60 * 24 * 3, true);
+        } else if (id == R.id.btn_keepMedia_1week) {
+          setKeepMedia(60 * 60 * 24 * 7, true);
+        } else if (id == R.id.btn_keepMedia_1month) {
+          setKeepMedia(60 * 60 * 24 * 30, true);
+        } else if (id == R.id.btn_keepMedia_forever) {
+          setKeepMedia(0, true);
         }
-        break;
+        return true;
+      });
+    } else if (viewId == R.id.btn_clearCache || viewId == R.id.btn_otherChats || viewId == R.id.btn_otherFiles) {
+      if (isBusyGlobally)
+        return;
+
+      if (stats != null && !isCleaningUp) {
+        final int id = v.getId();
+        TGStorageStats.Entry entry = id == R.id.btn_clearCache ? stats.getTotalFilesEntry() : id == R.id.btn_otherChats ? stats.getOtherChatsEntry() : stats.getOtherFilesEntry();
+        showClearSettings(R.id.btn_otherChats, entry);
+      }
+    } else if (viewId == R.id.chat) {
+      if (isBusyGlobally)
+        return;
+
+      ListItem item = (ListItem) v.getTag();
+      if (item != null && !isCleaningUp) {
+        TGStorageStats.Entry entry = (TGStorageStats.Entry) item.getData();
+        if (entry != null) {
+          showClearSettings(R.id.chat, entry);
+        }
       }
     }
   }
@@ -701,7 +650,7 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
       String size = Strings.buildSize(measureTotal(settingsAdapter.getCheckIntResults(), entry), false);
       doneButton.setText(Lang.getString(R.string.ClearX, size).toUpperCase());
     }).setSaveStr(Lang.getString(R.string.ClearX, Strings.buildSize(selectedSize, false)))
-      .setSaveColorId(R.id.theme_color_textNegative).setAllowResize(count >= 5));
+      .setSaveColorId(ColorId.textNegative).setAllowResize(count >= 5));
   }
 
   private void optimizeStorage (SparseIntArray result, TGStorageStats.Entry entry) {
@@ -892,46 +841,32 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
   }
 
   private static int convertIdToKey (@IdRes int id) {
-    switch (id) {
-      case R.id.btn_gifs: {
-        return TGStorageStats.FILE_TYPE_ANIMATIONS;
-      }
-      case R.id.btn_files: {
-        return TGStorageStats.FILE_TYPE_DOCUMENTS;
-      }
-      case R.id.btn_music: {
-        return TGStorageStats.FILE_TYPE_MUSIC;
-      }
-      case R.id.btn_photos: {
-        return TGStorageStats.FILE_TYPE_PHOTOS;
-      }
-      case R.id.btn_video: {
-        return TGStorageStats.FILE_TYPE_VIDEOS;
-      }
-      case R.id.btn_profilePhotos: {
-        return TGStorageStats.FILE_TYPE_PROFILE_PHOTOS;
-      }
-      case R.id.btn_thumbnails: {
-        return TGStorageStats.FILE_TYPE_THUMBNAILS;
-      }
-      case R.id.btn_stickers: {
-        return TGStorageStats.FILE_TYPE_STICKERS;
-      }
-      case R.id.btn_voice: {
-        return TGStorageStats.FILE_TYPE_VOICE;
-      }
-      case R.id.btn_videoNote: {
-        return TGStorageStats.FILE_TYPE_VIDEO_MESSAGE;
-      }
-      case R.id.btn_secretFiles: {
-        return TGStorageStats.FILE_TYPE_SECRET;
-      }
-      case R.id.btn_other: {
-        return TGStorageStats.FILE_TYPE_OTHER;
-      }
-      case R.id.btn_wallpaper: {
-        return TGStorageStats.FILE_TYPE_WALLPAPER;
-      }
+    if (id == R.id.btn_gifs) {
+      return TGStorageStats.FILE_TYPE_ANIMATIONS;
+    } else if (id == R.id.btn_files) {
+      return TGStorageStats.FILE_TYPE_DOCUMENTS;
+    } else if (id == R.id.btn_music) {
+      return TGStorageStats.FILE_TYPE_MUSIC;
+    } else if (id == R.id.btn_photos) {
+      return TGStorageStats.FILE_TYPE_PHOTOS;
+    } else if (id == R.id.btn_video) {
+      return TGStorageStats.FILE_TYPE_VIDEOS;
+    } else if (id == R.id.btn_profilePhotos) {
+      return TGStorageStats.FILE_TYPE_PROFILE_PHOTOS;
+    } else if (id == R.id.btn_thumbnails) {
+      return TGStorageStats.FILE_TYPE_THUMBNAILS;
+    } else if (id == R.id.btn_stickers) {
+      return TGStorageStats.FILE_TYPE_STICKERS;
+    } else if (id == R.id.btn_voice) {
+      return TGStorageStats.FILE_TYPE_VOICE;
+    } else if (id == R.id.btn_videoNote) {
+      return TGStorageStats.FILE_TYPE_VIDEO_MESSAGE;
+    } else if (id == R.id.btn_secretFiles) {
+      return TGStorageStats.FILE_TYPE_SECRET;
+    } else if (id == R.id.btn_other) {
+      return TGStorageStats.FILE_TYPE_OTHER;
+    } else if (id == R.id.btn_wallpaper) {
+      return TGStorageStats.FILE_TYPE_WALLPAPER;
     }
     return -1;
   }
@@ -972,29 +907,26 @@ public class SettingsCacheController extends RecyclerViewController<SettingsData
 
   @Override
   public void onMoreItemPressed (int id) {
-    switch (id) {
-      case R.id.btn_resetLocalData: {
-        if (canEraseAllData()) {
-          tdlib.ui().eraseLocalData(this, true, new TdlibUi.EraseCallback() {
-            @Override
-            public void onPrepareEraseData() {
-              navigationController().getStack().destroyAllExceptLast();
-              setIsBusyGlobally(true);
-              setArguments(null);
-            }
+    if (id == R.id.btn_resetLocalData) {
+      if (canEraseAllData()) {
+        tdlib.ui().eraseLocalData(this, true, new TdlibUi.EraseCallback() {
+          @Override
+          public void onPrepareEraseData () {
+            navigationController().getStack().destroyAllExceptLast();
+            setIsBusyGlobally(true);
+            setArguments(null);
+          }
 
-            @Override
-            public void onEraseDataCompleted() {
-              MainController c = new MainController(context, tdlib);
-              onDataErased();
-              c.getValue();
-              navigationController().insertController(c, 0);
-            }
-          });
-        } else {
-          UI.showToast(R.string.EraseDatabaseWait, Toast.LENGTH_SHORT);
-        }
-        break;
+          @Override
+          public void onEraseDataCompleted () {
+            MainController c = new MainController(context, tdlib);
+            onDataErased();
+            c.getValue();
+            navigationController().insertController(c, 0);
+          }
+        });
+      } else {
+        UI.showToast(R.string.EraseDatabaseWait, Toast.LENGTH_SHORT);
       }
     }
   }

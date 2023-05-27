@@ -35,7 +35,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.receiver.RefreshRateLimiter;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
@@ -57,10 +57,10 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 
 public class CustomTextView extends View implements TGLegacyManager.EmojiLoadListener, RtlCheckListener, TextColorSetThemed, AttachDelegate, Destroyable, Text.TextMediaListener {
-  @ThemeColorId
-  private int colorId = R.id.theme_color_text,
-              clickableColorId = R.id.theme_color_textLink,
-              clickableHighlightColorId = R.id.theme_color_textLinkPressHighlight;
+  @ColorId
+  private int colorId = ColorId.text,
+              clickableColorId = ColorId.textLink,
+              clickableHighlightColorId = ColorId.textLinkPressHighlight;
   @Nullable
   private ThemeDelegate forcedTheme;
   private final Text.ClickCallback clickCallback = new Text.ClickCallback() {
@@ -188,14 +188,14 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
     textStyleProvider = provider;
   }
 
-  public void setTextColorId (@ThemeColorId int colorId) {
+  public void setTextColorId (@ColorId int colorId) {
     if (this.colorId != colorId) {
       this.colorId = colorId;
       invalidate();
     }
   }
 
-  public void setLinkColorId (@ThemeColorId int linkColorId, @ThemeColorId int linkColorHighlightId) {
+  public void setLinkColorId (@ColorId int linkColorId, @ColorId int linkColorHighlightId) {
     this.clickableColorId = linkColorId;
     this.clickableHighlightColorId = linkColorHighlightId;
   }

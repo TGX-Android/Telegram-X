@@ -37,7 +37,7 @@ import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.HapticMenuHelper;
@@ -91,12 +91,12 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
 
   @Override
   protected final int getHeaderTextColorId () {
-    return R.id.theme_color_text;
+    return ColorId.text;
   }
 
   @Override
   protected final int getHeaderColorId () {
-    return R.id.theme_color_filling;
+    return ColorId.filling;
   }
 
   @Override
@@ -106,7 +106,7 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
 
   @Override
   protected final int getHeaderIconColorId () {
-    return R.id.theme_color_headerLightIcon;
+    return ColorId.headerLightIcon;
   }
 
   @Override
@@ -302,8 +302,8 @@ public abstract class MediaBottomBaseController<T> extends ViewController<T> {
 
   }
 
-  protected @ThemeColorId int getRecyclerBackgroundColorId () {
-    return R.id.theme_color_filling;
+  protected @ColorId int getRecyclerBackgroundColorId () {
+    return ColorId.filling;
   }
 
   public void dispatchRecyclerTouchEvent (MotionEvent e) {

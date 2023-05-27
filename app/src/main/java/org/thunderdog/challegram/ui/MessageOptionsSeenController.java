@@ -15,6 +15,7 @@ import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.ListInfoView;
 import org.thunderdog.challegram.widget.PopupLayout;
@@ -57,7 +58,7 @@ public class MessageOptionsSeenController extends BottomSheetViewController.Bott
       }
     };
     recyclerView.setAdapter(adapter);
-    ViewSupport.setThemedBackground(recyclerView, R.id.theme_color_background);
+    ViewSupport.setThemedBackground(recyclerView, ColorId.background);
     addThemeInvalidateListener(recyclerView);
     tdlib.client().send(new TdApi.GetMessageViewers(message.getChatId(), message.getId()), (obj) -> {
       if (obj.getConstructor() != TdApi.MessageViewers.CONSTRUCTOR) return;

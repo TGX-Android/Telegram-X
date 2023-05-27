@@ -6,24 +6,14 @@ import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.Log;
 
+import me.vkryl.core.lambda.RunnableData;
+
 public class LanguageDetector {
-  public interface StringCallback {
-    void run (String str);
-  }
-
-  public interface ExceptionCallback {
-    void run (Exception e);
-  }
-
-  public static boolean hasSupport () {
-    return true;
-  }
-
-  public static void detectLanguage (Context context, String text, StringCallback onSuccess, @Nullable ExceptionCallback onFail) {
+  public static void detectLanguage (Context context, String text, RunnableData<String> onSuccess, @Nullable RunnableData<Throwable> onFail) {
     detectLanguage(context, text, onSuccess, onFail, false);
   }
 
-  private static void detectLanguage (Context context, String text, StringCallback onSuccess, ExceptionCallback onFail, boolean initializeFirst) {
+  private static void detectLanguage (Context context, String text, RunnableData<String> onSuccess, @Nullable RunnableData<Throwable> onFail, boolean initializeFirst) {
     try {
       if (initializeFirst) {
         com.google.mlkit.common.sdkinternal.MlKitContext.zza(context);
@@ -32,33 +22,23 @@ public class LanguageDetector {
         .identifyLanguage(text)
         .addOnSuccessListener(str -> {
           if (onSuccess != null) {
-            onSuccess.run(str);
+            onSuccess.runWithData(str);
           }
         })
         .addOnFailureListener(e -> {
           if (onFail != null) {
-            onFail.run(e);
+            onFail.runWithData(e);
           }
         });
-    } catch (IllegalStateException e) {
-      if (!initializeFirst) {
-        detectLanguage(context, text, onSuccess, onFail, true);
-      } else {
-        if (onFail != null) {
-          onFail.run(e);
-        }
-        Log.e(Log.TAG_LANGUAGE, "Error", e);
-      }
-    } catch (Exception e) {
-      if (onFail != null) {
-        onFail.run(e);
-      }
-      Log.e(Log.TAG_LANGUAGE, "Error", e);
     } catch (Throwable t) {
-      if (onFail != null) {
-        onFail.run(null);
+      if (t instanceof IllegalStateException && !initializeFirst) {
+        detectLanguage(context, text, onSuccess, onFail, true);
+        return;
       }
-      Log.e(Log.TAG_LANGUAGE, "Error", t);
+      Log.w("LanguageDetector failure", t);
+      if (onFail != null) {
+        onFail.runWithData(t);
+      }
     }
   }
 }

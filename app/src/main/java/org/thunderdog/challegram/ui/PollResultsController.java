@@ -34,7 +34,7 @@ import org.thunderdog.challegram.telegram.PollListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.telegram.UserListManager;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.v.CustomRecyclerView;
@@ -160,11 +160,8 @@ public class PollResultsController extends RecyclerViewController<PollResultsCon
 
   @Override
   public void onClick (View v) {
-    switch (v.getId()) {
-      case R.id.user: {
-        tdlib.ui().openPrivateProfile(this, ((VerticalChatView) v).getUserId(), new TdlibUi.UrlOpenParameters().tooltip(context().tooltipManager().builder(v)));
-        break;
-      }
+    if (v.getId() == R.id.user) {
+      tdlib.ui().openPrivateProfile(this, ((VerticalChatView) v).getUserId(), new TdlibUi.UrlOpenParameters().tooltip(context().tooltipManager().builder(v)));
     }
   }
 
@@ -223,21 +220,17 @@ public class PollResultsController extends RecyclerViewController<PollResultsCon
       protected void setText(ListItem item, CustomTextView view, boolean isUpdate) {
         super.setText(item, view, isUpdate);
 
-        switch (view.getId()) {
-          case R.id.text_title: {
-            view.setTextSize(17f);
-            view.setPadding(Screen.dp(16f), Screen.dp(13f), Screen.dp(16f), Screen.dp(13f));
-            view.setTextColorId(R.id.theme_color_text);
-            ViewSupport.setThemedBackground(view, R.id.theme_color_filling, PollResultsController.this);
-            break;
-          }
-          case R.id.text_subtitle: {
-            view.setTextSize(15f);
-            view.setPadding(Screen.dp(16f), Screen.dp(6f), Screen.dp(16f), Screen.dp(6f));
-            view.setTextColorId(R.id.theme_color_background_text);
-            ViewSupport.setThemedBackground(view, ThemeColorId.NONE, PollResultsController.this);
-            break;
-          }
+        final int viewId = view.getId();
+        if (viewId == R.id.text_title) {
+          view.setTextSize(17f);
+          view.setPadding(Screen.dp(16f), Screen.dp(13f), Screen.dp(16f), Screen.dp(13f));
+          view.setTextColorId(ColorId.text);
+          ViewSupport.setThemedBackground(view, ColorId.filling, PollResultsController.this);
+        } else if (viewId == R.id.text_subtitle) {
+          view.setTextSize(15f);
+          view.setPadding(Screen.dp(16f), Screen.dp(6f), Screen.dp(16f), Screen.dp(6f));
+          view.setTextColorId(ColorId.background_text);
+          ViewSupport.setThemedBackground(view, ColorId.NONE, PollResultsController.this);
         }
       }
 

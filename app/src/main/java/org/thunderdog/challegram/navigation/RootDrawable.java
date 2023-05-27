@@ -25,7 +25,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.BaseActivity;
-import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -100,10 +100,10 @@ public class RootDrawable extends Drawable {
 
     private int getColorId () {
       if (context.isPasscodeShowing()) {
-        return R.id.theme_color_headerBackground;
+        return ColorId.headerBackground;
       }
       final NavigationController navigation = context.navigation();
-      int colorId = R.id.theme_color_filling;
+      int colorId = ColorId.filling;
       final ViewController<?> popup = context.getCurrentlyOpenWindowedViewController();
       if (popup != null) {
         colorId = popup.getRootColorId();

@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Set;
 
 public class ColorState {
-  @ThemeColorId
+  @ColorId
   private final int colorId;
 
   private int savedColor;

@@ -39,6 +39,7 @@ import org.thunderdog.challegram.data.TGStickerSetInfo;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Screen;
@@ -215,21 +216,15 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
     Object tag = v.getTag();
     if (tag != null && tag instanceof TGStickerSetInfo) {
       TGStickerSetInfo stickerSet = (TGStickerSetInfo) tag;
-      switch (v.getId()) {
-        case R.id.btn_addStickerSet: {
-          ((NonMaterialButton) v).setInProgress(true, true);
-          installStickerSet(stickerSet);
-          break;
-        }
-        case R.id.btn_toggleCollapseRecentStickers: {
-          onToggleCollapseRecentStickers((TextView) v, stickerSet);
-          updateCollapseView((TextView) v, stickerSet);
-          break;
-        }
-        default: {
-          stickerSet.show(context);
-          break;
-        }
+      final int viewId = v.getId();
+      if (viewId == R.id.btn_addStickerSet) {
+        ((NonMaterialButton) v).setInProgress(true, true);
+        installStickerSet(stickerSet);
+      } else if (viewId == R.id.btn_toggleCollapseRecentStickers) {
+        onToggleCollapseRecentStickers((TextView) v, stickerSet);
+        updateCollapseView((TextView) v, stickerSet);
+      } else {
+        stickerSet.show(context);
       }
     }
   }
@@ -642,13 +637,13 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
           }
           params.topMargin = Screen.dp(3f);
           TextView newView = new NoScrollTextView(context);
-          ViewSupport.setThemedBackground(newView, R.id.theme_color_promo, themeProvider).setCornerRadius(3f);
+          ViewSupport.setThemedBackground(newView, ColorId.promo, themeProvider).setCornerRadius(3f);
           newView.setId(R.id.btn_new);
           newView.setSingleLine(true);
           newView.setPadding(Screen.dp(4f), Screen.dp(1f), Screen.dp(4f), 0);
-          newView.setTextColor(Theme.getColor(R.id.theme_color_promoContent));
+          newView.setTextColor(Theme.getColor(ColorId.promoContent));
           if (themeProvider != null) {
-            themeProvider.addThemeTextColorListener(newView, R.id.theme_color_promoContent);
+            themeProvider.addThemeTextColorListener(newView, ColorId.promoContent);
             themeProvider.addThemeInvalidateListener(newView);
           }
           newView.setTypeface(Fonts.getRobotoBold());

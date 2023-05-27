@@ -46,7 +46,7 @@ import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.mediaview.paint.PaintState;
 import org.thunderdog.challegram.telegram.TdlibStatusManager;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
@@ -125,7 +125,7 @@ public class DrawAlgorithms {
       Paints.fillingPaint(ColorUtils.alphaColor(alpha, 0x44000000))
     );
 
-    Drawables.drawCentered(c, drawable, centerX, centerY, PorterDuffPaint.get(R.id.theme_color_white, alpha));
+    Drawables.drawCentered(c, drawable, centerX, centerY, PorterDuffPaint.get(ColorId.white, alpha));
   }
   public static void drawReceiver (Canvas c, Receiver preview, Receiver receiver, boolean clearPreview, boolean needPlaceholder, int left, int top, int right, int bottom) {
     drawReceiver(c, preview, receiver, clearPreview, needPlaceholder, left, top, right, bottom, 1f, 1f);
@@ -287,7 +287,7 @@ public class DrawAlgorithms {
   }
 
   public static void drawOnline (Canvas c, Receiver receiver, float onlineFactor) {
-    drawOnline(c, receiver, onlineFactor, Theme.fillingColor(), Theme.getColor(R.id.theme_color_online));
+    drawOnline(c, receiver, onlineFactor, Theme.fillingColor(), Theme.getColor(ColorId.online));
   }
 
   public static void drawOnline (Canvas c, Receiver receiver, float onlineFactor, int contentCutOutColor, int onlineColor) {
@@ -319,7 +319,7 @@ public class DrawAlgorithms {
       float x = cx + (float) ((double) (radius) * Math.sin(radians));
       float y = cy + (float) ((double) (radius) * Math.cos(radians));
       c.drawCircle(x, y, outerRadius * onlineFactor, Paints.fillingPaint(Theme.fillingColor()));
-      c.drawCircle(x, y, innerRadius * onlineFactor, Paints.fillingPaint(Theme.getColor(R.id.theme_color_online)));
+      c.drawCircle(x, y, innerRadius * onlineFactor, Paints.fillingPaint(Theme.getColor(ColorId.online)));
     }
   }
 
@@ -985,7 +985,7 @@ public class DrawAlgorithms {
     return 0;
   }
 
-  public static int drawStatus (Canvas c, TdlibStatusManager.ChatState state, float cx, float cy, int color, DrawableProvider provider, @ThemeColorId int knownThemeId) {
+  public static int drawStatus (Canvas c, TdlibStatusManager.ChatState state, float cx, float cy, int color, DrawableProvider provider, @ColorId int knownThemeId) {
     TdApi.ChatAction action = state.action();
     if (action == null) {
       return 0;
@@ -1178,11 +1178,11 @@ public class DrawAlgorithms {
         if (drawable != null) {
           Paint paint;
           switch (knownThemeId) {
-            case R.id.theme_color_textLight:
+            case ColorId.textLight:
               paint = Paints.getDecentPorterDuffPaint();
               break;
-            case R.id.theme_color_chatListAction:
-            case R.id.theme_color_headerText:
+            case ColorId.chatListAction:
+            case ColorId.headerText:
             default:
               paint = Paints.getPorterDuffPaint(color);
               break;

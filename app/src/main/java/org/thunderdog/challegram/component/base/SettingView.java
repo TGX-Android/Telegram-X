@@ -46,7 +46,7 @@ import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -116,9 +116,9 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
   private int displayItemNameWidth;
   private int displayItemDataWidth;
 
-  private @ThemeColorId
-  int textColorId = R.id.theme_color_text;
-  private @ThemeColorId
+  private @ColorId
+  int textColorId = ColorId.text;
+  private @ColorId
   int dataColorId;
 
   private final Tdlib tdlib;
@@ -235,9 +235,9 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     return complexReceiver;
   }
 
-  public void setTextColorId (@ThemeColorId int textColorId) {
-    if (textColorId == ThemeColorId.NONE)
-      textColorId = R.id.theme_color_text;
+  public void setTextColorId (@ColorId int textColorId) {
+    if (textColorId == ColorId.NONE)
+      textColorId = ColorId.text;
     if (this.textColorId != textColorId) {
       this.textColorId = textColorId;
       invalidate();
@@ -403,9 +403,9 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     }
   }
 
-  private int colorDataId = ThemeColorId.NONE;
+  private int colorDataId = ColorId.NONE;
 
-  public void setColorDataId (@ThemeColorId int color) {
+  public void setColorDataId (@ColorId int color) {
     if (this.colorDataId != color) {
       this.colorDataId = color;
       invalidate();
@@ -750,7 +750,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
 
   @Override
   public long backgroundId (boolean isPressed) {
-    return isPressed ? R.id.theme_color_textLinkPressHighlight : 0;
+    return isPressed ? ColorId.textLinkPressHighlight : 0;
   }
 
   @Override
@@ -766,7 +766,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
   private final TextColorSet subtitleColorSet = new TextColorSetOverride(this) {
     @Override
     public int defaultTextColor () {
-      int subtitleColor = Theme.getColor(dataColorId != 0 ? dataColorId : R.id.theme_color_textLight);
+      int subtitleColor = Theme.getColor(dataColorId != 0 ? dataColorId : ColorId.textLight);
       if ((flags & FLAG_DATA_SUBTITLE) != 0) {
         subtitleColor = ColorUtils.alphaColor(Theme.getSubtitleAlpha(), subtitleColor);
       }
@@ -807,7 +807,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
 
     if (type == TYPE_INFO || type == TYPE_INFO_COMPACT || (type == TYPE_INFO_MULTILINE && text == null)) {
       if (displayItemName != null) {
-        int subtitleColor = Theme.getColor(dataColorId != 0 ? dataColorId : R.id.theme_color_textLight);
+        int subtitleColor = Theme.getColor(dataColorId != 0 ? dataColorId : ColorId.textLight);
         if ((flags & FLAG_DATA_SUBTITLE) != 0) {
           subtitleColor = ColorUtils.alphaColor(Theme.getSubtitleAlpha(), subtitleColor);
         }
@@ -818,7 +818,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
       }
     } else if (type == TYPE_INFO_MULTILINE) {
       if (displayItemName != null) {
-        int subtitleColor = Theme.getColor(dataColorId != 0 ? dataColorId : R.id.theme_color_textLight);
+        int subtitleColor = Theme.getColor(dataColorId != 0 ? dataColorId : ColorId.textLight);
         if ((flags & FLAG_DATA_SUBTITLE) != 0) {
           subtitleColor = ColorUtils.alphaColor(Theme.getSubtitleAlpha(), subtitleColor);
         }

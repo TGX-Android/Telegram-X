@@ -35,6 +35,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.TdlibManager;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
@@ -68,7 +69,7 @@ public class WebViewPreviewLayout extends PreviewLayout {
     TdlibManager.instance().player().setPauseReason(TGPlayerController.PAUSE_REASON_OPEN_WEB_VIDEO, true);
 
     preview = new WebView(getContext());
-    ViewSupport.setThemedBackground(preview, R.id.theme_color_placeholder);
+    ViewSupport.setThemedBackground(preview, ColorId.placeholder);
     preview.getSettings().setDomStorageEnabled(true);
     preview.getSettings().setJavaScriptEnabled(true);
     preview.getSettings().setAllowContentAccess(true);

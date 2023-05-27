@@ -28,7 +28,7 @@ import androidx.annotation.StringRes;
 
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -121,7 +121,7 @@ public class DoubleHeaderView extends FrameLayoutFix implements RtlCheckListener
     }
   }
 
-  public void setThemedTextColor (@ThemeColorId int titleColorId, @ThemeColorId int subtitleColorId, @Nullable ViewController<?> themeProvider) {
+  public void setThemedTextColor (@ColorId int titleColorId, @ColorId int subtitleColorId, @Nullable ViewController<?> themeProvider) {
     titleView.setTextColor(Theme.getColor(titleColorId));
     subtitleView.setTextColor(Theme.getColor(subtitleColorId));
     customColors = true;

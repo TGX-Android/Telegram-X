@@ -49,6 +49,7 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.receiver.LiveLocationReceiver;
 import org.thunderdog.challegram.receiver.TGShareBroadcastReceiver;
 import org.thunderdog.challegram.telegram.TdlibNotificationChannelGroup;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.util.Permissions;
 
@@ -714,8 +715,8 @@ public class Intents {
         share.setAction(Intent.ACTION_SEND);
 
         CustomTabsIntent.Builder builder = new CustomTabsIntent.Builder();
-        builder.setToolbarColor(Theme.getColor(R.id.theme_color_headerBackground));
-        builder.setSecondaryToolbarColor(Theme.getColor(R.id.theme_color_headerText));
+        builder.setToolbarColor(Theme.getColor(ColorId.headerBackground));
+        builder.setSecondaryToolbarColor(Theme.getColor(ColorId.headerText));
         builder.setShowTitle(true);
         builder.setActionButton(Drawables.getBitmap(R.drawable.baseline_share_24), Lang.getString(R.string.Share), PendingIntent.getBroadcast(UI.getContext(), 0, share, Intents.mutabilityFlags(true)), true);
         CustomTabsIntent intent = builder.build();

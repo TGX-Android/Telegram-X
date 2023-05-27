@@ -30,6 +30,7 @@ import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.v.CustomRecyclerView;
@@ -70,13 +71,13 @@ public class SettingsWebsitesController extends RecyclerViewController<SettingsP
 
     if (websites.isEmpty()) {
       adapter.setItems(new ListItem[] {
-        new ListItem(ListItem.TYPE_WEBSITES_EMPTY, R.id.btn_loggedWebsites, 0, Strings.replaceBoldTokens(Lang.getString(R.string.NoActiveLogins), R.id.theme_color_background_textLight), false),
+        new ListItem(ListItem.TYPE_WEBSITES_EMPTY, R.id.btn_loggedWebsites, 0, Strings.replaceBoldTokens(Lang.getString(R.string.NoActiveLogins), ColorId.background_textLight), false),
       }, false);
       return;
     }
 
     ArrayList<ListItem> items = new ArrayList<>(6 + websites.size() * 2);
-    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_terminateAllSessions, 0, R.string.TerminateAllWebSessions).setTextColorId(R.id.theme_color_textNegative));
+    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_terminateAllSessions, 0, R.string.TerminateAllWebSessions).setTextColorId(ColorId.textNegative));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.ClearOtherWebSessionsHelp));
 
@@ -106,14 +107,11 @@ public class SettingsWebsitesController extends RecyclerViewController<SettingsP
     this.adapter = new SettingsAdapter(this) {
       @Override
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
-        switch (item.getId()) {
-          case R.id.btn_terminateAllSessions: {
-            if (isUpdate) {
-              view.setEnabledAnimated(!disconnectingAllWebsites);
-            } else {
-              view.setEnabled(!disconnectingAllWebsites);
-            }
-            break;
+        if (item.getId() == R.id.btn_terminateAllSessions) {
+          if (isUpdate) {
+            view.setEnabledAnimated(!disconnectingAllWebsites);
+          } else {
+            view.setEnabled(!disconnectingAllWebsites);
           }
         }
       }
@@ -248,7 +246,7 @@ public class SettingsWebsitesController extends RecyclerViewController<SettingsP
           terminateSession(website, banUser1, false);
         })
         .setSaveStr(R.string.DisconnectWebsite)
-        .setSaveColorId(R.id.theme_color_textNegative)
+        .setSaveColorId(ColorId.textNegative)
       );
       return;
     }
@@ -288,32 +286,25 @@ public class SettingsWebsitesController extends RecyclerViewController<SettingsP
 
   @Override
   public void onClick (View v) {
-    switch (v.getId()) {
-      case R.id.btn_terminateAllSessions: {
-        showOptions(Lang.getString(R.string.DisconnectAllWebsitesHint), new int[] {R.id.btn_terminateAllSessions, R.id.btn_cancel}, new String[]{Lang.getString(R.string.TerminateAllWebSessions), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
-          if (id == R.id.btn_terminateAllSessions) {
-            disconnectAllWebsites();
-          }
-          return true;
-        });
-        break;
-      }
-      case R.id.btn_session: {
-        ListItem item = (ListItem) v.getTag();
-        final TdApi.ConnectedWebsite website = (TdApi.ConnectedWebsite) item.getData();
-        showOptions(website.domainName, new int[] {R.id.btn_terminateSession, R.id.btn_openChat}, new String[] {Lang.getString(R.string.DisconnectWebsiteAction), Lang.getString(R.string.OpenChat)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_chat_bubble_24}, (itemView, id) -> {
-          switch (id) {
-            case R.id.btn_openChat:
-              tdlib.ui().openPrivateChat(this, website.botUserId, new TdlibUi.ChatOpenParameters().keepStack());
-              break;
-            case R.id.btn_terminateSession:
-              terminateSession(website, false, true);
-              break;
-          }
-          return true;
-        });
-        break;
-      }
+    final int viewId = v.getId();
+    if (viewId == R.id.btn_terminateAllSessions) {
+      showOptions(Lang.getString(R.string.DisconnectAllWebsitesHint), new int[] {R.id.btn_terminateAllSessions, R.id.btn_cancel}, new String[] {Lang.getString(R.string.TerminateAllWebSessions), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+        if (id == R.id.btn_terminateAllSessions) {
+          disconnectAllWebsites();
+        }
+        return true;
+      });
+    } else if (viewId == R.id.btn_session) {
+      ListItem item = (ListItem) v.getTag();
+      final TdApi.ConnectedWebsite website = (TdApi.ConnectedWebsite) item.getData();
+      showOptions(website.domainName, new int[] {R.id.btn_terminateSession, R.id.btn_openChat}, new String[] {Lang.getString(R.string.DisconnectWebsiteAction), Lang.getString(R.string.OpenChat)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_chat_bubble_24}, (itemView, id) -> {
+        if (id == R.id.btn_openChat) {
+          tdlib.ui().openPrivateChat(this, website.botUserId, new TdlibUi.ChatOpenParameters().keepStack());
+        } else if (id == R.id.btn_terminateSession) {
+          terminateSession(website, false, true);
+        }
+        return true;
+      });
     }
   }
 

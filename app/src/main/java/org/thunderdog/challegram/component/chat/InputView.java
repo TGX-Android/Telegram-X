@@ -220,55 +220,38 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
           try {
             for (int i = 0; i < menu.size(); i++) {
               MenuItem item = menu.getItem(i);
-              int overrideResId;
-              TdApi.TextEntityType type;
-              switch (item.getItemId()) {
-                case R.id.btn_plain: {
-                  overrideResId = R.string.TextFormatClear;
-                  type = null;
-                  break;
+              final int overrideResId;
+              final TdApi.TextEntityType type;
+              final int itemId = item.getItemId();
+              if (itemId == R.id.btn_plain) {
+                overrideResId = R.string.TextFormatClear;
+                type = null;
+              } else if (itemId == R.id.btn_bold) {
+                overrideResId = R.string.TextFormatBold;
+                type = new TdApi.TextEntityTypeBold();
+              } else if (itemId == R.id.btn_italic) {
+                overrideResId = R.string.TextFormatItalic;
+                type = new TdApi.TextEntityTypeItalic();
+              } else if (itemId == R.id.btn_spoiler) {
+                overrideResId = R.string.TextFormatSpoiler;
+                type = new TdApi.TextEntityTypeSpoiler();
+              } else if (itemId == R.id.btn_underline) {
+                overrideResId = R.string.TextFormatUnderline;
+                type = new TdApi.TextEntityTypeUnderline();
+              } else if (itemId == R.id.btn_strikethrough) {
+                overrideResId = R.string.TextFormatStrikethrough;
+                type = new TdApi.TextEntityTypeStrikethrough();
+              } else if (itemId == R.id.btn_monospace) {
+                overrideResId = R.string.TextFormatMonospace;
+                type = new TdApi.TextEntityTypeCode();
+              } else if (itemId == R.id.btn_link) {
+                overrideResId = R.string.TextFormatLink;
+                type = null;
+              } else {
+                if (BuildConfig.DEBUG) {
+                  Log.i("Menu item: %s %s", UI.getAppContext().getResources().getResourceName(item.getItemId()), item.getTitle());
                 }
-                case R.id.btn_bold: {
-                  overrideResId = R.string.TextFormatBold;
-                  type = new TdApi.TextEntityTypeBold();
-                  break;
-                }
-                case R.id.btn_italic: {
-                  overrideResId = R.string.TextFormatItalic;
-                  type = new TdApi.TextEntityTypeItalic();
-                  break;
-                }
-                case R.id.btn_spoiler: {
-                  overrideResId = R.string.TextFormatSpoiler;
-                  type = new TdApi.TextEntityTypeSpoiler();
-                  break;
-                }
-                case R.id.btn_underline: {
-                  overrideResId = R.string.TextFormatUnderline;
-                  type = new TdApi.TextEntityTypeUnderline();
-                  break;
-                }
-                case R.id.btn_strikethrough: {
-                  overrideResId = R.string.TextFormatStrikethrough;
-                  type = new TdApi.TextEntityTypeStrikethrough();
-                  break;
-                }
-                case R.id.btn_monospace: {
-                  overrideResId = R.string.TextFormatMonospace;
-                  type = new TdApi.TextEntityTypeCode();
-                  break;
-                }
-                case R.id.btn_link: {
-                  overrideResId = R.string.TextFormatLink;
-                  type = null;
-                  break;
-                }
-                default: {
-                  if (BuildConfig.DEBUG) {
-                    Log.i("Menu item: %s %s",  UI.getAppContext().getResources().getResourceName(item.getItemId()), item.getTitle());
-                  }
-                  continue;
-                }
+                continue;
               }
               item.setTitle(type != null ? Lang.wrap(Lang.getString(overrideResId), Lang.entityCreator(type)) : Lang.getString(overrideResId));
             }
@@ -343,44 +326,34 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     mediaHolder.performDestroy();
   }
 
-  public boolean setSpan (int id) {
+  public boolean setSpan (@IdRes int id) {
     TextSelection selection = getTextSelection();
     if (selection == null || selection.isEmpty()) {
       return false;
     }
     TdApi.TextEntityType type;
-    switch (id) {
-      case R.id.btn_plain: {
-        clearSpans(selection.start, selection.end);
-        return true;
-      }
-      case R.id.btn_bold:
-        type = new TdApi.TextEntityTypeBold();
-        break;
-      case R.id.btn_italic:
-        type = new TdApi.TextEntityTypeItalic();
-        break;
-      case R.id.btn_spoiler:
-        type = new TdApi.TextEntityTypeSpoiler();
-        break;
-      case R.id.btn_strikethrough:
-        type = new TdApi.TextEntityTypeStrikethrough();
-        break;
-      case R.id.btn_underline:
-        type = new TdApi.TextEntityTypeUnderline();
-        break;
-      case R.id.btn_monospace:
-        type = new TdApi.TextEntityTypeCode();
-        break;
-      case R.id.btn_link: {
-        URLSpan[] existingSpans = getText().getSpans(selection.start, selection.end, URLSpan.class);
-        URLSpan existingSpan = existingSpans != null && existingSpans.length > 0 ? existingSpans[0] : null;
-        createTextUrl(existingSpan, selection.start, selection.end);
-        return true;
-      }
-      default: {
-        return false;
-      }
+    if (id == R.id.btn_plain) {
+      clearSpans(selection.start, selection.end);
+      return true;
+    } else if (id == R.id.btn_bold) {
+      type = new TdApi.TextEntityTypeBold();
+    } else if (id == R.id.btn_italic) {
+      type = new TdApi.TextEntityTypeItalic();
+    } else if (id == R.id.btn_spoiler) {
+      type = new TdApi.TextEntityTypeSpoiler();
+    } else if (id == R.id.btn_strikethrough) {
+      type = new TdApi.TextEntityTypeStrikethrough();
+    } else if (id == R.id.btn_underline) {
+      type = new TdApi.TextEntityTypeUnderline();
+    } else if (id == R.id.btn_monospace) {
+      type = new TdApi.TextEntityTypeCode();
+    } else if (id == R.id.btn_link) {
+      URLSpan[] existingSpans = getText().getSpans(selection.start, selection.end, URLSpan.class);
+      URLSpan existingSpan = existingSpans != null && existingSpans.length > 0 ? existingSpans[0] : null;
+      createTextUrl(existingSpan, selection.start, selection.end);
+      return true;
+    } else {
+      return false;
     }
     setSpan(selection.start, selection.end, type);
     return true;

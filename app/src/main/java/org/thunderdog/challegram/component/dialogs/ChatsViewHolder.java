@@ -24,11 +24,11 @@ import android.widget.TextView;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGChat;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Screen;
@@ -95,7 +95,7 @@ public class ChatsViewHolder extends RecyclerView.ViewHolder {
         textView.setGravity(Gravity.CENTER);
         textView.setTextColor(Theme.textDecentColor());
         if (themeProvider != null) {
-          themeProvider.addThemeTextColorListener(textView, R.id.theme_color_textLight);
+          themeProvider.addThemeTextColorListener(textView, ColorId.textLight);
         }
         textView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         return new ChatsViewHolder(textView);

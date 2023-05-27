@@ -39,7 +39,7 @@ import org.thunderdog.challegram.navigation.TelegramViewController;
 import org.thunderdog.challegram.navigation.ViewPagerController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.v.CustomRecyclerView;
@@ -62,9 +62,9 @@ public abstract class RecyclerViewController<T> extends TelegramViewController<T
 
   private CustomRecyclerView recyclerView;
 
-  protected @ThemeColorId
+  protected @ColorId
   int getRecyclerBackground () {
-    return R.id.theme_color_background;
+    return ColorId.background;
   }
 
   private boolean disableSettling;
@@ -269,41 +269,25 @@ public abstract class RecyclerViewController<T> extends TelegramViewController<T
 
   @Override
   public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
-    switch (id) {
-      case R.id.menu_search: {
-        header.addSearchButton(menu, this);
-        break;
-      }
-      case R.id.menu_help: {
-        header.addButton(menu, R.id.menu_btn_help, R.drawable.baseline_help_outline_24, getHeaderIconColorId(), this, Screen.dp(49f));
-        break;
-      }
-      case R.id.menu_clear: {
-        header.addClearButton(menu, this);
-        break;
-      }
-      case R.id.menu_more: {
-        header.addMoreButton(menu, this);
-        break;
-      }
+    if (id == R.id.menu_search) {
+      header.addSearchButton(menu, this);
+    } else if (id == R.id.menu_help) {
+      header.addButton(menu, R.id.menu_btn_help, R.drawable.baseline_help_outline_24, getHeaderIconColorId(), this, Screen.dp(49f));
+    } else if (id == R.id.menu_clear) {
+      header.addClearButton(menu, this);
+    } else if (id == R.id.menu_more) {
+      header.addMoreButton(menu, this);
     }
   }
 
   @Override
   public void onMenuItemPressed (int id, View view) {
-    switch (id) {
-      case R.id.menu_btn_search: {
-        openSearchMode();
-        break;
-      }
-      case R.id.menu_btn_clear: {
-        clearSearchInput();
-        break;
-      }
-      case R.id.menu_btn_more: {
-        openMoreMenu();
-        break;
-      }
+    if (id == R.id.menu_btn_search) {
+      openSearchMode();
+    } else if (id == R.id.menu_btn_clear) {
+      clearSearchInput();
+    } else if (id == R.id.menu_btn_more) {
+      openMoreMenu();
     }
   }
 

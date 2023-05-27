@@ -1041,17 +1041,17 @@ public class TGBackground {
     switch (legacyWallpaperId) {
       case ID_SOLID_BLUE: // solid blue
       case ID_CATS_BLUE: // cats
-        return Theme.getColorFast(R.id.theme_color_wp_cats);
+        return Theme.getColorFast(ColorId.wp_cats);
       case ID_BLUE_CIRCLES:
-        return Theme.getColorFast(R.id.theme_color_wp_circlesBlue);
+        return Theme.getColorFast(ColorId.wp_circlesBlue);
       case ID_CATS_PINK: // pink cats
-        return Theme.getColorFast(R.id.theme_color_wp_catsPink);
+        return Theme.getColorFast(ColorId.wp_catsPink);
       case ID_CATS_GREEN: // green cats
-        return Theme.getColorFast(R.id.theme_color_wp_catsGreen);
+        return Theme.getColorFast(ColorId.wp_catsGreen);
       case ID_CATS_ORANGE: // orange cats
-        return Theme.getColorFast(R.id.theme_color_wp_catsOrange);
+        return Theme.getColorFast(ColorId.wp_catsOrange);
       case ID_CATS_BEIGE: // beige cats
-        return Theme.getColorFast(R.id.theme_color_wp_catsBeige);
+        return Theme.getColorFast(ColorId.wp_catsBeige);
     }
     int legacyColor = getLegacyWallpaperColor(legacyWallpaperId);
     if ((legacyColor & 0xffffff) != 0)

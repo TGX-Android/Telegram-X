@@ -44,7 +44,7 @@ import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibSender;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -74,7 +74,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
 
   private TdApi.MessageSender sender;
   private String senderName;
-  private @ThemeColorId int nameColorId;
+  private @ColorId int nameColorId;
 
   private int maxWidth;
   private int flags;
@@ -414,7 +414,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
       }
       if (hasSpoiler) {
         float radius = Theme.getBubbleMergeRadius();
-        DrawAlgorithms.drawRoundRect(c, radius, receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom(), Paints.fillingPaint(Theme.getColor(R.id.theme_color_spoilerMediaOverlay)));
+        DrawAlgorithms.drawRoundRect(c, radius, receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom(), Paints.fillingPaint(Theme.getColor(ColorId.spoilerMediaOverlay)));
         DrawAlgorithms.drawParticles(c, radius, receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom(), 1f);
       }
       ViewSupport.restoreClipPath(c, restoreToCount);
@@ -436,7 +436,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
       } else {
         rectF.set(startX, startY, startX + lineWidth, startY + mHeight);
       }
-      c.drawRoundRect(rectF, lineWidth / 2f, lineWidth / 2f, Paints.fillingPaint(isWhite ? parent.getBubbleMediaReplyTextColor() : isOutBubble ? Theme.getColor(R.id.theme_color_bubbleOut_chatVerticalLine) : nameColorId != 0 ? Theme.getColor(nameColorId) : Theme.getColor(R.id.theme_color_messageVerticalLine)));
+      c.drawRoundRect(rectF, lineWidth / 2f, lineWidth / 2f, Paints.fillingPaint(isWhite ? parent.getBubbleMediaReplyTextColor() : isOutBubble ? Theme.getColor(ColorId.bubbleOut_chatVerticalLine) : nameColorId != 0 ? Theme.getColor(nameColorId) : Theme.getColor(ColorId.messageVerticalLine)));
 
       return;
     }
@@ -452,7 +452,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     }
 
     Paints.getRectF().set(startX, startY, startX + lineWidth, startY + height);
-    c.drawRoundRect(Paints.getRectF(), lineWidth / 2f, lineWidth / 2f, Paints.fillingPaint(Theme.getColor(R.id.theme_color_messageVerticalLine)));
+    c.drawRoundRect(Paints.getRectF(), lineWidth / 2f, lineWidth / 2f, Paints.fillingPaint(Theme.getColor(ColorId.messageVerticalLine)));
   }
 
   // Data workers
@@ -610,7 +610,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     if ((flags & FLAG_USE_COLORIZE) != 0 && !tdlib.isSelfSender(msg)) {
       nameColorId = TD.getNameColorId(new TdlibSender(tdlib, msg.chatId, msg.senderId).getAvatarColorId());
     } else {
-      nameColorId = ThemeColorId.NONE;
+      nameColorId = ColorId.NONE;
     }
     boolean isPrivate = msg.selfDestructTime != 0;
     Path contour = null;

@@ -15,6 +15,7 @@ package me.vkryl.task
 import com.beust.klaxon.Klaxon
 import org.gradle.api.tasks.TaskAction
 import java.io.File
+import java.util.*
 import kotlin.contracts.ExperimentalContracts
 import kotlin.streams.asSequence
 
@@ -28,7 +29,7 @@ open class CheckEmojiKeyboardTask : BaseTask() {
   }
 
   private fun hex(text: String): String {
-    return text.chars().asSequence().joinToString("") { "\\u" + it.toString(16).toUpperCase() }
+    return text.chars().asSequence().joinToString("") { "\\u" + it.toString(16).uppercase(Locale.US) }
   }
 
   private fun javaWrap(text: String): String {

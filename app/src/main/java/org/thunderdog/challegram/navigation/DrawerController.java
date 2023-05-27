@@ -56,6 +56,7 @@ import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibOptionListener;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.theme.ThemeManager;
@@ -292,26 +293,20 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
       @Override
       protected void setDrawerItem (ListItem item, DrawerItemView view, TimerView timerView, boolean isUpdate) {
         isUpdate = isUpdate && factor > 0f;
-        switch (item.getId()) {
-          case R.id.account: {
-            TdlibAccount account = (TdlibAccount) item.getData();
-            TdlibBadgeCounter badge = account.getUnreadBadge();
-            view.setChecked(account.id == account.context().preferredAccountId(), isUpdate);
-            view.setUnreadCount(badge.getCount(), badge.isMuted(), isUpdate);
-            view.setAvatar(account);
-            view.setText(Lang.getDebugString(account.getName(), account.isDebug()));
-            view.setCustomControllerProvider(DrawerController.this);
-            view.setPreviewActionListProvider(DrawerController.this);
-            break;
-          }
-          case R.id.btn_settings: {
-            view.setError(settingsErrorIcon != 0, settingsErrorIcon != Tdlib.CHAT_FAILED ? settingsErrorIcon : 0, isUpdate);
-            break;
-          }
-          default: {
-            view.setError(false, 0, isUpdate);
-            break;
-          }
+        final int itemId = item.getId();
+        if (itemId == R.id.account) {
+          TdlibAccount account = (TdlibAccount) item.getData();
+          TdlibBadgeCounter badge = account.getUnreadBadge();
+          view.setChecked(account.id == account.context().preferredAccountId(), isUpdate);
+          view.setUnreadCount(badge.getCount(), badge.isMuted(), isUpdate);
+          view.setAvatar(account);
+          view.setText(Lang.getDebugString(account.getName(), account.isDebug()));
+          view.setCustomControllerProvider(DrawerController.this);
+          view.setPreviewActionListProvider(DrawerController.this);
+        } else if (itemId == R.id.btn_settings) {
+          view.setError(settingsErrorIcon != 0, settingsErrorIcon != Tdlib.CHAT_FAILED ? settingsErrorIcon : 0, isUpdate);
+        } else {
+          view.setError(false, 0, isUpdate);
         }
       }
     };
@@ -332,7 +327,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
     });
     recyclerView.setItemAnimator(null);
     recyclerView.setOverScrollMode(View.OVER_SCROLL_IF_CONTENT_SCROLLS);
-    ViewSupport.setThemedBackground(recyclerView, R.id.theme_color_filling, this);
+    ViewSupport.setThemedBackground(recyclerView, ColorId.filling, this);
     addThemeFillingColorListener(recyclerView);
     recyclerView.setLayoutManager(new LinearLayoutManager(context, RecyclerView.VERTICAL, false));
     recyclerView.setAdapter(adapter);
@@ -614,12 +609,9 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
 
       @Override
       public void onAfterForceTouchAction (ForceTouchView.ForceTouchContext context, int actionId, Object arg) {
-        switch (actionId) {
-          case R.id.btn_removeAccount: {
-            TdlibAccount tdlibAccount = (TdlibAccount) arg;
-            TdlibUi.removeAccount(DrawerController.this, tdlibAccount);
-            break;
-          }
+        if (actionId == R.id.btn_removeAccount) {
+          TdlibAccount tdlibAccount = (TdlibAccount) arg;
+          TdlibUi.removeAccount(DrawerController.this, tdlibAccount);
         }
       }
     };
@@ -791,19 +783,17 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
     if (item == null) {
       return false;
     }
-    if (item.getId() != R.id.account) {
-      switch (item.getId()) {
-        case R.id.btn_addAccount: {
-          if (Config.ALLOW_DEBUG_DC) {
-            context.currentTdlib().ui().addAccount(context, true, true);
-          } else {
-            context.currentTdlib().getTesterLevel(level -> {
-              if (level >= Tdlib.TESTER_LEVEL_ADMIN) {
-                context.currentTdlib().ui().addAccount(context, true, true);
-              }
-            });
-          }
-          break;
+    final int itemId = item.getId();
+    if (itemId != R.id.account) {
+      if (itemId == R.id.btn_addAccount) {
+        if (Config.ALLOW_DEBUG_DC) {
+          context.currentTdlib().ui().addAccount(context, true, true);
+        } else {
+          context.currentTdlib().getTesterLevel(level -> {
+            if (level >= Tdlib.TESTER_LEVEL_ADMIN) {
+              context.currentTdlib().ui().addAccount(context, true, true);
+            }
+          });
         }
       }
       return false;
@@ -818,92 +808,62 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
 
   @Override
   public void onClick (View v) {
-    switch (v.getId()) {
-      case R.id.btn_tdlib_clearLogs: {
-        TdlibUi.clearLogs(true, size -> TdlibUi.clearLogs(false, size2 -> UI.showToast("Logs Cleared", Toast.LENGTH_SHORT)));
-        break;
-      }
-      case R.id.btn_tdlib_shareLogs: {
-        TdlibUi.sendTdlibLogs(context.navigation().getCurrentStackItem(), false, false);
-        break;
-      }
-      case R.id.btn_wallet: {
-        /*context.currentTdlib().withTon(ton -> {
+    int viewId = v.getId();
+    if (viewId == R.id.btn_tdlib_clearLogs) {
+      TdlibUi.clearLogs(true, size -> TdlibUi.clearLogs(false, size2 -> UI.showToast("Logs Cleared", Toast.LENGTH_SHORT)));
+    } else if (viewId == R.id.btn_tdlib_shareLogs) {
+      TdlibUi.sendTdlibLogs(context.navigation().getCurrentStackItem(), false, false);
+    } else if (viewId == R.id.btn_wallet) {/*context.currentTdlib().withTon(ton -> {
           // ton.send(new TonApi.WalletInit(new TonApi.InputKey(, )));
         });*/
-        break;
+    } else if (viewId == R.id.account) {
+      TdlibAccount account = (TdlibAccount) ((ListItem) v.getTag()).getData();
+      long now = SystemClock.uptimeMillis();
+      if (account.context().preferredAccountId() != account.id && (lastPreferTime == 0 || now - lastPreferTime >= 720)) {
+        lastPreferTime = now;
+        needAnimationDelay = true;
+        account.context().changePreferredAccountId(account.id, TdlibManager.SWITCH_REASON_USER_CLICK);
       }
-      case R.id.account: {
-        TdlibAccount account = (TdlibAccount) ((ListItem) v.getTag()).getData();
-        long now = SystemClock.uptimeMillis();
-        if (account.context().preferredAccountId() != account.id && (lastPreferTime == 0 || now - lastPreferTime >= 720)) {
-          lastPreferTime = now;
-          needAnimationDelay = true;
-          account.context().changePreferredAccountId(account.id, TdlibManager.SWITCH_REASON_USER_CLICK);
-        }
-        break;
+    } else if (viewId == R.id.btn_contacts) {
+      openContacts();
+      // openEmptyChat();
+    } else if (viewId == R.id.btn_reportBug) {
+      if (Test.NEED_CLICK) {
+        Test.onClick(context);
       }
-      case R.id.btn_contacts: {
-        openContacts();
-        // openEmptyChat();
-        break;
-      }
-      case R.id.btn_reportBug: {
-        if (Test.NEED_CLICK) {
-          Test.onClick(context);
-        }
-        break;
-      }
-      case R.id.btn_savedMessages: {
-        openSavedMessages();
-        break;
-      }
-      case R.id.btn_addAccount: {
-        context.currentTdlib().ui().addAccount(context, true, false);
-        break;
-      }
+    } else if (viewId == R.id.btn_savedMessages) {
+      openSavedMessages();
+    } else if (viewId == R.id.btn_addAccount) {
+      context.currentTdlib().ui().addAccount(context, true, false);
       /*case R.id.btn_logout: {
         logoutOnClose = true;
         close(0f);
         break;
       }*/
-      case R.id.btn_settings: {
-        openSettings();
-        break;
+    } else if (viewId == R.id.btn_settings) {
+      openSettings();
+    } else if (viewId == R.id.btn_proxy) {
+      if (v instanceof TogglerView) {
+        boolean value = Settings.instance().toggleProxySetting(Settings.PROXY_FLAG_ENABLED);
+        setProxyEnabled(value);
+      } else {
+        context.currentTdlib().ui().openProxySettings(context.navigation().getCurrentStackItem(), false);
       }
-      case R.id.btn_proxy: {
-        if (v instanceof TogglerView) {
-          boolean value = Settings.instance().toggleProxySetting(Settings.PROXY_FLAG_ENABLED);
-          setProxyEnabled(value);
-        } else {
-          context.currentTdlib().ui().openProxySettings(context.navigation().getCurrentStackItem(), false);
+    } else if (viewId == R.id.btn_help) {
+      cancelSupportOpen();
+      supportOpen = context.currentTdlib().ui().openSupport(context.navigation().getCurrentStackItem());
+    } else if (viewId == R.id.btn_invite) {
+      context.currentTdlib().cache().getInviteText(text -> {
+        if (isVisible() && !isDestroyed()) {
+          shareText(text.text);
         }
-        break;
-      }
-      case R.id.btn_help: {
-        cancelSupportOpen();
-        supportOpen = context.currentTdlib().ui().openSupport(context.navigation().getCurrentStackItem());
-        break;
-      }
-      case R.id.btn_invite: {
-        context.currentTdlib().cache().getInviteText(text -> {
-          if (isVisible() && !isDestroyed()) {
-            shareText(text.text);
-          }
-        });
-        break;
-      }
-      case R.id.btn_night: {
-        ThemeManager.instance().toggleNightMode();
-        break;
-      }
-      case R.id.btn_bubble: {
-        context().currentTdlib().settings().toggleChatStyle();
-        break;
-      }
-      case R.id.btn_featureToggles:
-        UI.navigateTo(new FeatureToggles.Controller(context, context.currentTdlib()));
-        break;
+      });
+    } else if (viewId == R.id.btn_night) {
+      ThemeManager.instance().toggleNightMode();
+    } else if (viewId == R.id.btn_bubble) {
+      context().currentTdlib().settings().toggleChatStyle();
+    } else if (viewId == R.id.btn_featureToggles) {
+      UI.navigateTo(new FeatureToggles.Controller(context, context.currentTdlib()));
     }
   }
 

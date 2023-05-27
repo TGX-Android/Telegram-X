@@ -14,6 +14,7 @@ import androidx.annotation.Nullable;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
@@ -96,7 +97,7 @@ public class MessageSenderButton extends FrameLayout implements ReplaceAnimator.
     float alpha = Math.min((1f - sendFactor), quickSelected.getFloatValue());
     float r = (int) (Screen.dp(33) * alpha);
 
-    c.drawCircle(cx, cy, r, Paints.fillingPaint(ColorUtils.alphaColor(0.05f * alpha, Theme.getColor(R.id.theme_color_text))));
+    c.drawCircle(cx, cy, r, Paints.fillingPaint(ColorUtils.alphaColor(0.05f * alpha, Theme.getColor(ColorId.text))));
     super.onDraw(c);
   }
 
@@ -347,7 +348,7 @@ public class MessageSenderButton extends FrameLayout implements ReplaceAnimator.
         if (sendModeFactor != 0 && mode == MODE_ANONYMOUS_BUTTON) {
           c.drawCircle(cx, cy, r, Paints.fillingPaint(ColorUtils.alphaColor(sendModeFactor, Theme.iconLightColor())));
           Drawable drawable = Drawables.get(getResources(), R.drawable.infanf_baseline_incognito_20);
-          Drawables.draw(c, drawable, cx - r2, cy - r2, Paints.getPorterDuffPaint(ColorUtils.alphaColor(sendModeFactor, Theme.getColor(R.id.theme_color_badgeMutedText))));
+          Drawables.draw(c, drawable, cx - r2, cy - r2, Paints.getPorterDuffPaint(ColorUtils.alphaColor(sendModeFactor, Theme.getColor(ColorId.badgeMutedText))));
         }
       }
       super.onDraw(c);

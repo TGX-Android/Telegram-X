@@ -54,6 +54,7 @@ import org.thunderdog.challegram.navigation.Menu;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.RightId;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
@@ -92,11 +93,8 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
 
   @Override
   public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
-    switch (id) {
-      case R.id.menu_more: {
-        header.addMoreButton(menu, this);
-        break;
-      }
+    if (id == R.id.menu_more) {
+      header.addMoreButton(menu, this);
     }
   }
 
@@ -236,14 +234,14 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
         final boolean isRemovable = Environment.isExternalStorageRemovable();
         StatFs fs = new StatFs(environmentPath);
         String text = Lang.getString(R.string.FreeXofY, Strings.buildSize(U.getFreeMemorySize(fs)), Strings.buildSize(U.getTotalMemorySize(fs)));
-        InlineResultCommon internalStorage = new InlineResultCommon(context, tdlib, KEY_FOLDER + environmentPath, R.id.theme_color_fileAttach, isRemovable ? R.drawable.baseline_sd_storage_24 : R.drawable.baseline_storage_24, Lang.getString(isRemovable ? R.string.SdCard : R.string.InternalStorage), text);
+        InlineResultCommon internalStorage = new InlineResultCommon(context, tdlib, KEY_FOLDER + environmentPath, ColorId.fileAttach, isRemovable ? R.drawable.baseline_sd_storage_24 : R.drawable.baseline_storage_24, Lang.getString(isRemovable ? R.string.SdCard : R.string.InternalStorage), text);
         items.add(createItem(internalStorage, R.id.btn_internalStorage));
       }
 
       final ArrayList<String> externalStorageFiles = U.getExternalStorageDirectories(baseExternalDir != null ? baseExternalDir.getPath() : null, false);
       if (externalStorageFiles != null) {
         for (String dir : externalStorageFiles) {
-          InlineResultCommon internalStorage = new InlineResultCommon(context, tdlib, KEY_FOLDER + dir, R.id.theme_color_fileAttach, R.drawable.baseline_storage_24, Lang.getString(R.string.Storage), dir);
+          InlineResultCommon internalStorage = new InlineResultCommon(context, tdlib, KEY_FOLDER + dir, ColorId.fileAttach, R.drawable.baseline_storage_24, Lang.getString(R.string.Storage), dir);
           items.add(createItem(internalStorage, R.id.btn_internalStorage));
         }
       }
@@ -300,7 +298,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
           text = Lang.plural(R.string.xFolders, foldersCount);
         else
           text = Lang.plural(R.string.xFiles, filesCount);
-        InlineResultCommon rootDirectory = new InlineResultCommon(context, tdlib, KEY_FOLDER + rootDir.getPath(), R.id.theme_color_fileAttach, R.drawable.baseline_folder_24, Lang.getString(R.string.RootDirectory), text);
+        InlineResultCommon rootDirectory = new InlineResultCommon(context, tdlib, KEY_FOLDER + rootDir.getPath(), ColorId.fileAttach, R.drawable.baseline_folder_24, Lang.getString(R.string.RootDirectory), text);
         items.add(createItem(rootDirectory, R.id.btn_folder));
         hasRoot = true;
       }
@@ -959,7 +957,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
 
   public static InlineResultCommon createItem (BaseActivity context, Tdlib tdlib, File file, @Nullable Object tag, String title, long lastModifiedTime, String subtitle, boolean isFolder) {
     if (file.isDirectory()) {
-      return new InlineResultCommon(context, tdlib, KEY_FOLDER + file.getPath(), R.id.theme_color_fileAttach, R.drawable.baseline_folder_24, file.getName(), Lang.getString(R.string.Folder));
+      return new InlineResultCommon(context, tdlib, KEY_FOLDER + file.getPath(), ColorId.fileAttach, R.drawable.baseline_folder_24, file.getName(), Lang.getString(R.string.Folder));
     } else {
       if (subtitle == null) {
         subtitle = Lang.getFileTimestamp(lastModifiedTime, TimeUnit.MILLISECONDS, file.length());
@@ -973,7 +971,7 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
   }
 
   public static InlineResultCommon createItem (BaseActivity context, Tdlib tdlib, String path, int iconRes, String title, String subtitle) {
-    return new InlineResultCommon(context, tdlib, path, R.id.theme_color_fileAttach, iconRes, title, subtitle);
+    return new InlineResultCommon(context, tdlib, path, ColorId.fileAttach, iconRes, title, subtitle);
   }
 
   public static ListItem createItem (InlineResult<?> result, int id) {
@@ -1023,88 +1021,81 @@ public class MediaBottomFilesController extends MediaBottomBaseController<Void> 
     ListItem item = (ListItem) tag;
     if (item.getViewType() == ListItem.TYPE_CUSTOM_INLINE) {
       InlineResultCommon result = (InlineResultCommon) item.getData();
-      switch (item.getId()) {
-        case R.id.btn_file:
-        case R.id.btn_music: {
-          if (inFileSelectMode) {
-            selectItem(item, result);
-          } else {
-            switch (result.getType()) {
-              case InlineResult.TYPE_AUDIO: {
-                mediaLayout.sendMusic(v, (MusicEntry) result.getTag());
-                break;
-              }
-              case InlineResult.TYPE_DOCUMENT: {
-                mediaLayout.sendFile(v, result.getId());
-                break;
-              }
+      final int itemId = item.getId();
+      if (itemId == R.id.btn_file || itemId == R.id.btn_music) {
+        if (inFileSelectMode) {
+          selectItem(item, result);
+        } else {
+          switch (result.getType()) {
+            case InlineResult.TYPE_AUDIO: {
+              mediaLayout.sendMusic(v, (MusicEntry) result.getTag());
+              break;
+            }
+            case InlineResult.TYPE_DOCUMENT: {
+              mediaLayout.sendFile(v, result.getId());
+              break;
             }
           }
-          break;
         }
-        case R.id.btn_bucket: {
-          navigateInside(v, KEY_BUCKET, result);
-          break;
-        }
-        default: {
-          String path = result.getId();
-          boolean isMusic = KEY_MUSIC.equals(path);
-          if (mediaLayout.getTarget() != null) {
-            boolean res = mediaLayout.getTarget().showRestriction(v, isMusic ? RightId.SEND_AUDIO : RightId.SEND_DOCS);
-            if (res) {
-              return;
-            }
+      } else if (itemId == R.id.btn_bucket) {
+        navigateInside(v, KEY_BUCKET, result);
+      } else {
+        String path = result.getId();
+        boolean isMusic = KEY_MUSIC.equals(path);
+        if (mediaLayout.getTarget() != null) {
+          boolean res = mediaLayout.getTarget().showRestriction(v, isMusic ? RightId.SEND_AUDIO : RightId.SEND_DOCS);
+          if (res) {
+            return;
           }
-          boolean isDownloads = KEY_DOWNLOADS.equals(path);
-          if (v.getId() == R.id.btn_internalStorage || isDownloads) {
-            if (!context.permissions().canManageStorage()) {
+        }
+        boolean isDownloads = KEY_DOWNLOADS.equals(path);
+        if (v.getId() == R.id.btn_internalStorage || isDownloads) {
+          if (!context.permissions().canManageStorage()) {
+            showSystemPicker(isDownloads);
+            return;
+          }
+          if (context.permissions().requestReadExternalStorage(Permissions.ReadType.ALL, grantType -> {
+            if (grantType != Permissions.GrantResult.ALL || !context.permissions().canManageStorage()) {
               showSystemPicker(isDownloads);
-              return;
+            } else {
+              navigateTo(v, result);
             }
-            if (context.permissions().requestReadExternalStorage(Permissions.ReadType.ALL, grantType -> {
-              if (grantType != Permissions.GrantResult.ALL || !context.permissions().canManageStorage()) {
-                showSystemPicker(isDownloads);
-              } else {
-                navigateTo(v, result);
-              }
-            })) {
-              return;
-            }
+          })) {
+            return;
           }
-
-          if (path != null) {
-            switch (path) {
-              case KEY_GALLERY: {
-                if (context.permissions().requestReadExternalStorage(Permissions.ReadType.IMAGES_AND_VIDEOS, grantType -> {
-                  if (grantType == Permissions.GrantResult.ALL) {
-                    navigateTo(v, result);
-                  } else {
-                    // TODO 1-tap access to privacy settings?
-                    context.tooltipManager().builder(v).icon(R.drawable.baseline_warning_24).show(tdlib, R.string.MissingGalleryPermission).hideDelayed();
-                  }
-                })) {
-                  return;
-                }
-                break;
-              }
-              case KEY_MUSIC: {
-                if (context.permissions().requestReadExternalStorage(Permissions.ReadType.AUDIO, grantType -> {
-                  if (grantType == Permissions.GrantResult.ALL) {
-                    navigateTo(v, result);
-                  } else {
-                    // TODO 1-tap access to privacy settings?
-                    context.tooltipManager().builder(v).icon(R.drawable.baseline_warning_24).show(tdlib, R.string.MissingAudioPermission).hideDelayed();
-                  }
-                })) {
-                  return;
-                }
-                break;
-              }
-            }
-          }
-          navigateTo(v, result);
-          break;
         }
+
+        if (path != null) {
+          switch (path) {
+            case KEY_GALLERY: {
+              if (context.permissions().requestReadExternalStorage(Permissions.ReadType.IMAGES_AND_VIDEOS, grantType -> {
+                if (grantType == Permissions.GrantResult.ALL) {
+                  navigateTo(v, result);
+                } else {
+                  // TODO 1-tap access to privacy settings?
+                  context.tooltipManager().builder(v).icon(R.drawable.baseline_warning_24).show(tdlib, R.string.MissingGalleryPermission).hideDelayed();
+                }
+              })) {
+                return;
+              }
+              break;
+            }
+            case KEY_MUSIC: {
+              if (context.permissions().requestReadExternalStorage(Permissions.ReadType.AUDIO, grantType -> {
+                if (grantType == Permissions.GrantResult.ALL) {
+                  navigateTo(v, result);
+                } else {
+                  // TODO 1-tap access to privacy settings?
+                  context.tooltipManager().builder(v).icon(R.drawable.baseline_warning_24).show(tdlib, R.string.MissingAudioPermission).hideDelayed();
+                }
+              })) {
+                return;
+              }
+              break;
+            }
+          }
+        }
+        navigateTo(v, result);
       }
     }
   }

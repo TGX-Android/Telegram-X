@@ -39,6 +39,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibManager;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Screen;
@@ -101,7 +102,7 @@ public class PasscodeSetupController extends ViewController<PasscodeSetupControl
     textView.setTypeface(Fonts.getRobotoRegular());
     textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
     textView.setTextColor(Theme.textDecent2Color());
-    context.addThemeTextColorListener(textView, R.id.theme_color_background_textLight);
+    context.addThemeTextColorListener(textView, ColorId.background_textLight);
     return textView;
   }
 
@@ -324,7 +325,7 @@ public class PasscodeSetupController extends ViewController<PasscodeSetupControl
     contentView.addView(settingsList);
 
     FrameLayoutFix wrapper = new FrameLayoutFix(context);
-    ViewSupport.setThemedBackground(wrapper, R.id.theme_color_background, this);
+    ViewSupport.setThemedBackground(wrapper, ColorId.background, this);
     contentView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     wrapper.addView(contentView);
 
@@ -453,25 +454,18 @@ public class PasscodeSetupController extends ViewController<PasscodeSetupControl
 
     context.showOptions(info, ids.get(), strings.get(), null, icons.get(), (itemView, id) -> {
       int mode;
-      switch (id) {
-        case R.id.btn_passcodeType_pin:
-          mode = Passcode.MODE_PINCODE;
-          break;
-        case R.id.btn_passcodeType_password:
-          mode = Passcode.MODE_PASSWORD;
-          break;
-        case R.id.btn_passcodeType_pattern:
-          mode = Passcode.MODE_PATTERN;
-          break;
-        case R.id.btn_passcodeType_gesture:
-          mode = Passcode.MODE_GESTURE;
-          break;
-        case R.id.btn_passcodeType_fingerprint:
-          mode = Passcode.MODE_FINGERPRINT;
-          break;
-        default:
-          mode = 0;
-          break;
+      if (id == R.id.btn_passcodeType_pin) {
+        mode = Passcode.MODE_PINCODE;
+      } else if (id == R.id.btn_passcodeType_password) {
+        mode = Passcode.MODE_PASSWORD;
+      } else if (id == R.id.btn_passcodeType_pattern) {
+        mode = Passcode.MODE_PATTERN;
+      } else if (id == R.id.btn_passcodeType_gesture) {
+        mode = Passcode.MODE_GESTURE;
+      } else if (id == R.id.btn_passcodeType_fingerprint) {
+        mode = Passcode.MODE_FINGERPRINT;
+      } else {
+        mode = 0;
       }
       if (mode == 0) {
         return true;
@@ -487,64 +481,49 @@ public class PasscodeSetupController extends ViewController<PasscodeSetupControl
 
   @Override
   public void onClick (View v) {
-    switch (v.getId()) {
-      case R.id.btn_passcode: {
-        boolean enabled = !isPasscodeEnabled();
+    final int viewId = v.getId();
+    if (viewId == R.id.btn_passcode) {
+      boolean enabled = !isPasscodeEnabled();
 
-        if (enabled) {
-          showPasscodeOptions();
-        } else {
-          disablePasscode();
-          updateEnabledStatus(true);
+      if (enabled) {
+        showPasscodeOptions();
+      } else {
+        disablePasscode();
+        updateEnabledStatus(true);
+      }
+    } else if (viewId == R.id.btn_passcode_change) {
+      if (isPasscodeEnabled()) {
+        showPasscodeOptions();
+      }
+    } else if (viewId == R.id.btn_fingerprint) {
+      if (fingerprintView.getToggler().isEnabled()) {
+        fingerprintView.toggleRadio();
+        disableUnlockByFingerprint();
+      } else if (!FingerprintPassword.isAvailable() || !FingerprintPassword.hasFingerprints()) {
+        UI.showToast(R.string.fingerprint_hint3, Toast.LENGTH_SHORT);
+      } else {
+        PasscodeController c = new PasscodeController(context, tdlib);
+        if (specificChat != null) {
+          c.setArguments(new PasscodeController.Args(specificChat, chatPasscode, null));
         }
-
-        break;
+        c.setPasscodeMode(PasscodeController.MODE_SETUP);
+        c.setInFingerprintSetup();
+        navigateTo(c);
       }
-      case R.id.btn_passcode_change: {
-        if (isPasscodeEnabled()) {
-          showPasscodeOptions();
-        }
-        break;
+    } else if (viewId == R.id.btn_pattern) {
+      setPasscodeVisible(!visibilityView.toggleRadio());
+    } else if (viewId == R.id.btn_notificationContent) {
+      if (notificationsView != null) {
+        Passcode.instance().setDisplayNotifications(notificationsView.toggleRadio());
+        TdlibManager.instance().onUpdateAllNotifications();
       }
-      case R.id.btn_fingerprint: {
-        if (fingerprintView.getToggler().isEnabled()) {
-          fingerprintView.toggleRadio();
-          disableUnlockByFingerprint();
-        } else if (!FingerprintPassword.isAvailable() || !FingerprintPassword.hasFingerprints()) {
-          UI.showToast(R.string.fingerprint_hint3, Toast.LENGTH_SHORT);
-        } else {
-          PasscodeController c = new PasscodeController(context, tdlib);
-          if (specificChat != null) {
-            c.setArguments(new PasscodeController.Args(specificChat, chatPasscode, null));
-          }
-          c.setPasscodeMode(PasscodeController.MODE_SETUP);
-          c.setInFingerprintSetup();
-          navigateTo(c);
-        }
-        break;
+    } else if (viewId == R.id.btn_screenCapture) {
+      if (screenshotView != null) {
+        Passcode.instance().setAllowScreenshots(screenshotView.toggleRadio());
+        UI.checkDisallowScreenshots();
       }
-      case R.id.btn_pattern: {
-        setPasscodeVisible(!visibilityView.toggleRadio());
-        break;
-      }
-      case R.id.btn_notificationContent: {
-        if (notificationsView != null) {
-          Passcode.instance().setDisplayNotifications(notificationsView.toggleRadio());
-          TdlibManager.instance().onUpdateAllNotifications();
-        }
-        break;
-      }
-      case R.id.btn_screenCapture: {
-        if (screenshotView != null) {
-          Passcode.instance().setAllowScreenshots(screenshotView.toggleRadio());
-          UI.checkDisallowScreenshots();
-        }
-        break;
-      }
-      case R.id.btn_passcode_auto: {
-        showAutoLockOptions();
-        break;
-      }
+    } else if (viewId == R.id.btn_passcode_auto) {
+      showAutoLockOptions();
     }
   }
 

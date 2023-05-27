@@ -21,5 +21,5 @@ public interface ThemeChangeListener {
   void onThemeColorsChanged (boolean areTemp, @Nullable ColorState state);
   default void onThemeChanged (ThemeDelegate fromTheme, ThemeDelegate toTheme) { }
   default void onThemeAutoNightModeChanged (int autoNightMode) { }
-  default void onThemePropertyChanged (int themeId, @ThemeProperty int propertyId, float value, boolean isDefault) { }
+  default void onThemePropertyChanged (int themeId, @PropertyId int propertyId, float value, boolean isDefault) { }
 }

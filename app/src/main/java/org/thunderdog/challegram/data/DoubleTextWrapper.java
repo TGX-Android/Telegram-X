@@ -19,7 +19,6 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
-import android.view.Gravity;
 import android.view.View;
 
 import androidx.annotation.Nullable;
@@ -33,6 +32,7 @@ import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibContext;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
@@ -46,7 +46,6 @@ import org.thunderdog.challegram.util.text.TextColorSets;
 
 import me.vkryl.android.animator.BounceAnimator;
 import me.vkryl.android.util.MultipleViewProvider;
-import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
@@ -462,7 +461,7 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
       double radians = Math.toRadians(45f);
       float x = receiver.centerX() + (float) ((double) (receiver.getWidth() / 2) * Math.sin(radians));
       float y = receiver.centerY() + (float) ((double) (receiver.getHeight() / 2) * Math.cos(radians));
-      Drawable incognitoIcon = view.getSparseDrawable(R.drawable.baseline_incognito_circle_18, R.id.theme_color_iconLight);
+      Drawable incognitoIcon = view.getSparseDrawable(R.drawable.baseline_incognito_circle_18, ColorId.iconLight);
       c.drawCircle(x, y, incognitoIcon.getMinimumWidth() / 2f * anonymousFactor, Paints.fillingPaint(Theme.fillingColor()));
       if (anonymousFactor != 1f) {
         c.save();
@@ -492,16 +491,16 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
       c.restore();
     }
     if (drawAnonymousIcon) {
-      Drawable incognitoIcon = view.getSparseDrawable(R.drawable.dot_baseline_acc_anon_24, R.id.theme_color_icon);
+      Drawable incognitoIcon = view.getSparseDrawable(R.drawable.dot_baseline_acc_anon_24, ColorId.icon);
       float x = currentWidth - Screen.dp(28);
       float y = receiver.centerY();
-      Drawables.draw(c, incognitoIcon, x - incognitoIcon.getMinimumWidth() / 2f, y - incognitoIcon.getMinimumHeight() / 2f, PorterDuffPaint.get(R.id.theme_color_icon));
+      Drawables.draw(c, incognitoIcon, x - incognitoIcon.getMinimumWidth() / 2f, y - incognitoIcon.getMinimumHeight() / 2f, PorterDuffPaint.get(ColorId.icon));
     }
     if (isPremiumLocked) {
-      Drawable incognitoIcon = view.getSparseDrawable(R.drawable.baseline_lock_16, R.id.theme_color_text);
+      Drawable incognitoIcon = view.getSparseDrawable(R.drawable.baseline_lock_16, ColorId.text);
       float x = currentWidth - Screen.dp(18 + 16);
       float y = receiver.centerY();
-      Drawables.draw(c, incognitoIcon, x, y - incognitoIcon.getMinimumHeight() / 2f, Paints.getPorterDuffPaint(Theme.getColor(R.id.theme_color_text)));
+      Drawables.draw(c, incognitoIcon, x, y - incognitoIcon.getMinimumHeight() / 2f, Paints.getPorterDuffPaint(Theme.getColor(ColorId.text)));
     }
     if (trimmedTitle != null) {
       trimmedTitle.draw(c, left, Screen.dp(13f));
@@ -519,7 +518,7 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
       int cmLeft = left + trimmedTitle.getWidth() + Screen.dp(6f);
       RectF rct = Paints.getRectF();
       rct.set(cmLeft, Screen.dp(13f), cmLeft + chatMark.getWidth() + Screen.dp(8f), Screen.dp(13f) + trimmedTitle.getLineHeight(false));
-      c.drawRoundRect(rct, Screen.dp(2f), Screen.dp(2f), Paints.getProgressPaint(Theme.getColor(R.id.theme_color_textNegative), Screen.dp(1.5f)));
+      c.drawRoundRect(rct, Screen.dp(2f), Screen.dp(2f), Paints.getProgressPaint(Theme.getColor(ColorId.textNegative), Screen.dp(1.5f)));
       cmLeft += Screen.dp(4f);
       chatMark.draw(c, cmLeft, cmLeft + chatMark.getWidth(), 0, Screen.dp(13f) + ((trimmedTitle.getLineHeight(false) - chatMark.getLineHeight(false)) / 2));
     }

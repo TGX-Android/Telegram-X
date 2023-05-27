@@ -41,6 +41,7 @@ import org.thunderdog.challegram.telegram.MessageListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.telegram.TdlibManager;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
@@ -565,13 +566,10 @@ public class LiveLocationHelper implements LiveLocationManager.Listener, FactorA
     }
 
     c.showOptions(info, ids.get(), strings.get(), new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, icons.get(), (itemView, id) -> {
-      switch (id) {
-        case R.id.btn_stopAllLiveLocations: {
-          tdlib.cache().stopLiveLocations(chatId);
-          if (after != null) {
-            after.run();
-          }
-          break;
+      if (id == R.id.btn_stopAllLiveLocations) {
+        tdlib.cache().stopLiveLocations(chatId);
+        if (after != null) {
+          after.run();
         }
       }
       return true;
@@ -613,7 +611,7 @@ public class LiveLocationHelper implements LiveLocationManager.Listener, FactorA
     final SettingsWrap[] wrap = new SettingsWrap[1];
 
     b.setSaveStr(R.string.StopAllLocationSharings);
-    b.setSaveColorId(R.id.theme_color_textNegative);
+    b.setSaveColorId(ColorId.textNegative);
     b.addHeaderItem(Lang.plural(R.string.SharingLiveLocationToChats, locationMessages.size()));
     ListItem[] items = new ListItem[locationMessages.size() + 2];
     items[0] = items[items.length - 1] = new ListItem(ListItem.TYPE_PADDING).setHeight(Screen.dp(12f)).setBoolValue(true);
@@ -692,16 +690,13 @@ public class LiveLocationHelper implements LiveLocationManager.Listener, FactorA
 
   @Override
   public void onAfterForceTouchAction (ForceTouchView.ForceTouchContext context, int actionId, Object arg) {
-    switch (actionId) {
-      case R.id.btn_messageLiveStop: {
-        stopLiveLocations(((MessagesController) arg).getChatId(), () -> {
-          if (lastPopup != null) {
-            lastPopup.window.hideWindow(true);
-            lastPopup = null;
-          }
-        });
-        break;
-      }
+    if (actionId == R.id.btn_messageLiveStop) {
+      stopLiveLocations(((MessagesController) arg).getChatId(), () -> {
+        if (lastPopup != null) {
+          lastPopup.window.hideWindow(true);
+          lastPopup = null;
+        }
+      });
     }
   }
 

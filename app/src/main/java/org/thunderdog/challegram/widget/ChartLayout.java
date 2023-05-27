@@ -24,7 +24,6 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.td.libcore.telegram.TdApi;
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.charts.BarChartView;
 import org.thunderdog.challegram.charts.BaseChartView;
 import org.thunderdog.challegram.charts.Chart;
@@ -41,6 +40,7 @@ import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
 
 import me.vkryl.android.AnimatorUtils;
@@ -198,7 +198,7 @@ public class ChartLayout extends FrameLayout implements FactorAnimator.Target, A
     this.tdlib = tdlib;
     this.delegate = delegate;
     this.chartType = type;
-    ViewSupport.setThemedBackground(this, R.id.theme_color_filling, themeProvider);
+    ViewSupport.setThemedBackground(this, ColorId.filling, themeProvider);
 
     tdlib.client().send(new TdApi.GetAnimatedEmoji(TD.EMOJI_ABACUS.textRepresentation), result -> {
       if (result.getConstructor() == TdApi.AnimatedEmoji.CONSTRUCTOR) {

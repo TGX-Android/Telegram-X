@@ -32,6 +32,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.theme.ThemeId;
@@ -97,7 +98,7 @@ public class InfiniteRecyclerView<T> extends RecyclerView implements View.OnClic
   public void addThemeListeners (@Nullable ViewController<?> themeProvider) {
     this.themeProvider = themeProvider;
     if (forcedTheme == null && themeProvider != null) {
-      themeProvider.addThemePaintColorListener(textPaint, R.id.theme_color_text);
+      themeProvider.addThemePaintColorListener(textPaint, ColorId.text);
     }
   }
 
@@ -107,7 +108,7 @@ public class InfiniteRecyclerView<T> extends RecyclerView implements View.OnClic
 
   public void setForcedTheme (ThemeDelegate forcedTheme) {
     this.forcedTheme = forcedTheme;
-    this.textPaint.setColor(forcedTheme != null ? forcedTheme.getColor(R.id.theme_color_text) : Theme.textAccentColor());
+    this.textPaint.setColor(forcedTheme != null ? forcedTheme.getColor(ColorId.text) : Theme.textAccentColor());
   }
 
   private boolean trimItems = true;
@@ -237,8 +238,8 @@ public class InfiniteRecyclerView<T> extends RecyclerView implements View.OnClic
       int cy = getMeasuredHeight() / 2;
       int h2 = getItemHeight() / 2;
 
-      c.drawLine(0, cy - h2, getMeasuredWidth(), cy - h2, Paints.strokeSeparatorPaint(forcedTheme != null ? forcedTheme.getColor(R.id.theme_color_separator) : Theme.separatorColor()));
-      c.drawLine(0, cy + h2, getMeasuredWidth(), cy + h2, Paints.strokeSeparatorPaint(forcedTheme != null ? forcedTheme.getColor(R.id.theme_color_separator) : Theme.separatorColor()));
+      c.drawLine(0, cy - h2, getMeasuredWidth(), cy - h2, Paints.strokeSeparatorPaint(forcedTheme != null ? forcedTheme.getColor(ColorId.separator) : Theme.separatorColor()));
+      c.drawLine(0, cy + h2, getMeasuredWidth(), cy + h2, Paints.strokeSeparatorPaint(forcedTheme != null ? forcedTheme.getColor(ColorId.separator) : Theme.separatorColor()));
     }
   }
 

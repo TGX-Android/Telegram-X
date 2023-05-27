@@ -34,6 +34,7 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.ListManager;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
@@ -194,8 +195,8 @@ public class PinnedMessagesBar extends ViewGroup implements Destroyable, Message
     Views.setClickable(collapseButton);
     addView(collapseButton);
 
-    ViewSupport.setThemedBackground(this, R.id.theme_color_filling, null);
-    ViewSupport.setThemedBackground(recyclerView, R.id.theme_color_filling, null);
+    ViewSupport.setThemedBackground(this, ColorId.filling, null);
+    ViewSupport.setThemedBackground(recyclerView, ColorId.filling, null);
     setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
     setWillNotDraw(false);

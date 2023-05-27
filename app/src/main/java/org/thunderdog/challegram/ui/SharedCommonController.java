@@ -297,24 +297,17 @@ public class SharedCommonController extends SharedBaseController<InlineResult<?>
     final InlineResult<?> c = (InlineResult<?>) item.getData();
 
     alternateParent.showOptions(null, new int[]{R.id.btn_showInChat, R.id.btn_share, R.id.btn_delete}, new String[]{Lang.getString(R.string.ShowInChat), Lang.getString(R.string.Share), Lang.getString(R.string.Delete)}, new int[]{OPTION_COLOR_NORMAL, OPTION_COLOR_NORMAL, OPTION_COLOR_RED}, new int[] {R.drawable.baseline_visibility_24, R.drawable.baseline_forward_24, R.drawable.baseline_delete_24}, (itemView, id) -> {
-      switch (id) {
-        case R.id.btn_showInChat: {
-          alternateParent.closeSearchModeByBackPress(false);
-          tdlib.ui().openMessage(SharedCommonController.this, c.getMessage(), new TdlibUi.UrlOpenParameters().tooltip(context().tooltipManager().builder(v)));
-          break;
-        }
-        case R.id.btn_share: {
-          ShareController share = new ShareController(context, tdlib);
-          share.setArguments(new ShareController.Args(c.getMessage()).setAllowCopyLink(true));
-          share.show();
-          break;
-        }
-        case R.id.btn_delete: {
-          tdlib.ui().showDeleteOptions(alternateParent, new TdApi.Message[] {c.getMessage()}, () -> {
-            // setInMediaSelectMode(false);
-          });
-          break;
-        }
+      if (id == R.id.btn_showInChat) {
+        alternateParent.closeSearchModeByBackPress(false);
+        tdlib.ui().openMessage(SharedCommonController.this, c.getMessage(), new TdlibUi.UrlOpenParameters().tooltip(context().tooltipManager().builder(v)));
+      } else if (id == R.id.btn_share) {
+        ShareController share = new ShareController(context, tdlib);
+        share.setArguments(new ShareController.Args(c.getMessage()).setAllowCopyLink(true));
+        share.show();
+      } else if (id == R.id.btn_delete) {
+        tdlib.ui().showDeleteOptions(alternateParent, new TdApi.Message[] {c.getMessage()}, () -> {
+          // setInMediaSelectMode(false);
+        });
       }
       return true;
     });

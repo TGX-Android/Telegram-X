@@ -36,6 +36,7 @@ import org.thunderdog.challegram.navigation.Menu;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibContext;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
@@ -112,7 +113,7 @@ public class EditProxyController extends EditBaseController<EditProxyController.
 
   @Override
   protected int getRecyclerBackgroundColorId () {
-    return R.id.theme_color_background;
+    return ColorId.background;
   }
 
   @Override
@@ -120,37 +121,26 @@ public class EditProxyController extends EditBaseController<EditProxyController.
     adapter = new SettingsAdapter(this) {
       @Override
       protected void modifyEditText (ListItem item, ViewGroup parent, MaterialEditTextGroup editText) {
-        switch (item.getId()) {
-          case R.id.edit_proxy_server: {
-            editText.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
-            editText.getEditText().setIsPassword(false);
-            break;
-          }
-          case R.id.edit_proxy_port: {
-            editText.getEditText().setInputType(InputType.TYPE_CLASS_NUMBER);
-            editText.getEditText().setIsPassword(false);
-            break;
-          }
-          case R.id.edit_proxy_username: {
-            editText.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
-            editText.getEditText().setIsPassword(false);
-            break;
-          }
-          case R.id.edit_proxy_password: {
-            editText.getEditText().setInputType(InputType.TYPE_TEXT_VARIATION_PASSWORD);
-            editText.getEditText().setIsPassword(true);
-            break;
-          }
+        final int itemId = item.getId();
+        if (itemId == R.id.edit_proxy_server) {
+          editText.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
+          editText.getEditText().setIsPassword(false);
+        } else if (itemId == R.id.edit_proxy_port) {
+          editText.getEditText().setInputType(InputType.TYPE_CLASS_NUMBER);
+          editText.getEditText().setIsPassword(false);
+        } else if (itemId == R.id.edit_proxy_username) {
+          editText.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS);
+          editText.getEditText().setIsPassword(false);
+        } else if (itemId == R.id.edit_proxy_password) {
+          editText.getEditText().setInputType(InputType.TYPE_TEXT_VARIATION_PASSWORD);
+          editText.getEditText().setIsPassword(true);
         }
       }
 
       @Override
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
-        switch (item.getId()) {
-          case R.id.edit_proxy_tcpOnly: {
-            view.getToggler().setRadioEnabled(tcpOnly.getBoolValue(), isUpdate);
-            break;
-          }
+        if (item.getId() == R.id.edit_proxy_tcpOnly) {
+          view.getToggler().setRadioEnabled(tcpOnly.getBoolValue(), isUpdate);
         }
       }
     };
@@ -227,15 +217,12 @@ public class EditProxyController extends EditBaseController<EditProxyController.
       public void getItemOffsets (Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
         ListItem item = (ListItem) view.getTag();
         int itemId = item != null ? item.getId() : 0;
-        switch (itemId) {
-          case R.id.edit_proxy_port:
-          case R.id.edit_proxy_password:
-          case R.id.edit_proxy_secret:
-            outRect.bottom = Screen.dp(12f);
-            break;
-          default:
-            outRect.bottom = 0;
-            break;
+        if (itemId == R.id.edit_proxy_port ||
+          itemId == R.id.edit_proxy_password ||
+          itemId == R.id.edit_proxy_secret) {
+          outRect.bottom = Screen.dp(12f);
+        } else {
+          outRect.bottom = 0;
         }
       }
     });
@@ -249,26 +236,20 @@ public class EditProxyController extends EditBaseController<EditProxyController.
   @Override
   public void onClick (View view) {
     ListItem item = (ListItem) view.getTag();
-    switch (item.getId()) {
-      case R.id.edit_proxy_tcpOnly: {
-        item.setBoolValue(adapter.toggleView(view));
-        checkDoneVisibility(0);
-        break;
-      }
+    if (item.getId() == R.id.edit_proxy_tcpOnly) {
+      item.setBoolValue(adapter.toggleView(view));
+      checkDoneVisibility(0);
     }
   }
 
   @Override
   public void onTextChanged (int id, ListItem item, MaterialEditTextGroup v, String text) {
-    switch (id) {
-      case R.id.edit_proxy_server:
-      case R.id.edit_proxy_port:
-      case R.id.edit_proxy_username:
-      case R.id.edit_proxy_password:
-      case R.id.edit_proxy_secret: {
-        checkDoneVisibility(id);
-        break;
-      }
+    if (id == R.id.edit_proxy_server ||
+      id == R.id.edit_proxy_port ||
+      id == R.id.edit_proxy_username ||
+      id == R.id.edit_proxy_password ||
+      id == R.id.edit_proxy_secret) {
+      checkDoneVisibility(id);
     }
   }
 
@@ -288,34 +269,26 @@ public class EditProxyController extends EditBaseController<EditProxyController.
 
   @Override
   public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
-    switch (id) {
-      case R.id.menu_proxy: {
-        if (tdlib.myUserId() != 0) {
-          header.addForwardButton(menu, this, getHeaderIconColorId());
-        }
-        header.addDeleteButton(menu, this, getHeaderIconColorId());
-        break;
+    if (id == R.id.menu_proxy) {
+      if (tdlib.myUserId() != 0) {
+        header.addForwardButton(menu, this, getHeaderIconColorId());
       }
+      header.addDeleteButton(menu, this, getHeaderIconColorId());
     }
   }
 
   @Override
   public void onMenuItemPressed (int id, View view) {
-    switch (id) {
-      case R.id.menu_btn_forward: {
-        Keyboard.hide(getLockFocusView());
-        tdlib.getProxyLink(getArgumentsStrict().existingProxy, url -> {
-          if (!StringUtils.isEmpty(url)) {
-            tdlib.ui().shareProxyUrl(new TdlibContext(context, context.currentTdlib()), url);
-          }
-        });
-        break;
-      }
-      case R.id.menu_btn_delete: {
-        if (Settings.instance().removeProxy(getArgumentsStrict().existingProxy.id)) {
-          onSaveCompleted();
+    if (id == R.id.menu_btn_forward) {
+      Keyboard.hide(getLockFocusView());
+      tdlib.getProxyLink(getArgumentsStrict().existingProxy, url -> {
+        if (!StringUtils.isEmpty(url)) {
+          tdlib.ui().shareProxyUrl(new TdlibContext(context, context.currentTdlib()), url);
         }
-        break;
+      });
+    } else if (id == R.id.menu_btn_delete) {
+      if (Settings.instance().removeProxy(getArgumentsStrict().existingProxy.id)) {
+        onSaveCompleted();
       }
     }
   }

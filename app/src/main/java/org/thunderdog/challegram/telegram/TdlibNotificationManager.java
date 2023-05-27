@@ -50,6 +50,7 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.helper.Recorder;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.sync.SyncAdapter;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.MainController;
 import org.thunderdog.challegram.ui.MessagesController;
@@ -237,15 +238,15 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   public static final int LED_COLOR_DEFAULT = LED_COLORS[1]; // Blue
   public static final int LED_COLOR_UNSET = 0;
   public static final int[] LED_COLORS_IDS = {
-    R.id.theme_color_ledWhite,
-    R.id.theme_color_ledBlue,
-    R.id.theme_color_ledRed,
-    R.id.theme_color_ledOrange,
-    R.id.theme_color_ledYellow,
-    R.id.theme_color_ledGreen,
-    R.id.theme_color_ledCyan,
-    R.id.theme_color_ledPurple,
-    R.id.theme_color_ledPink
+    ColorId.ledWhite,
+    ColorId.ledBlue,
+    ColorId.ledRed,
+    ColorId.ledOrange,
+    ColorId.ledYellow,
+    ColorId.ledGreen,
+    ColorId.ledCyan,
+    ColorId.ledPurple,
+    ColorId.ledPink
   };
 
   public static final int[] LED_COLORS_STRINGS = {

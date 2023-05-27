@@ -37,6 +37,7 @@ import org.thunderdog.challegram.emoji.EmojiFilter;
 import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.NavigationStack;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
@@ -115,66 +116,54 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
     adapter = new SettingsAdapter(this) {
       @Override
       protected void modifyEditText (ListItem item, ViewGroup parent, MaterialEditTextGroup editText) {
-        switch (item.getId()) {
-          case R.id.text_subtitle: {
-            editText.addLengthCounter(false);
-            editText.setEmptyHint(R.string.QuizExplanationEmpty);
-            editText.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
-            Views.setSingleLine(editText.getEditText(), false);
-            editText.setMaxLength(TdConstants.MAX_QUIZ_EXPLANATION_LENGTH);
-            editText.setAlwaysActive(true);
-            editText.getEditText().setLineDisabled(true);
-            break;
-          }
-          case R.id.title: {
-            editText.setEmptyHint(R.string.PollQuestionEmpty);
-            editText.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
-            Views.setSingleLine(editText.getEditText(), false);
-            editText.setMaxLength(TdConstants.MAX_POLL_QUESTION_LENGTH);
-            editText.setAlwaysActive(true);
-            editText.getEditText().setLineDisabled(true);
-            break;
-          }
-          case R.id.optionAdd: {
-            editText.setRadioVisible(isQuiz, false);
-            editText.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
-            Views.setSingleLine(editText.getEditText(), false);
-            editText.getEditText().setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI | EditorInfo.IME_ACTION_NEXT);
-            editText.setNeedNextButton(v -> true);
-            break;
-          }
-          case R.id.option: {
-            editText.setRadioVisible(isQuiz, false);
-            editText.setRadioActive(item == correctOptionItem, false);
-            editText.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
-            Views.setSingleLine(editText.getEditText(), false);
-            editText.setAlwaysActive(true);
-            editText.getEditText().setLineDisabled(true);
-            editText.getEditText().setBackspaceListener((v, text, selectionStart, selectionEnd) -> {
-              if (options.size() > 1 && (text.length() == 0 || text.toString().trim().isEmpty())) {
-                removeOption((ListItem) ((ViewGroup) v.getParent().getParent()).getTag());
-                return true;
+        final int itemId = item.getId();
+        if (itemId == R.id.text_subtitle) {
+          editText.addLengthCounter(false);
+          editText.setEmptyHint(R.string.QuizExplanationEmpty);
+          editText.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+          Views.setSingleLine(editText.getEditText(), false);
+          editText.setMaxLength(TdConstants.MAX_QUIZ_EXPLANATION_LENGTH);
+          editText.setAlwaysActive(true);
+          editText.getEditText().setLineDisabled(true);
+        } else if (itemId == R.id.title) {
+          editText.setEmptyHint(R.string.PollQuestionEmpty);
+          editText.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+          Views.setSingleLine(editText.getEditText(), false);
+          editText.setMaxLength(TdConstants.MAX_POLL_QUESTION_LENGTH);
+          editText.setAlwaysActive(true);
+          editText.getEditText().setLineDisabled(true);
+        } else if (itemId == R.id.optionAdd) {
+          editText.setRadioVisible(isQuiz, false);
+          editText.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+          Views.setSingleLine(editText.getEditText(), false);
+          editText.getEditText().setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI | EditorInfo.IME_ACTION_NEXT);
+          editText.setNeedNextButton(v -> true);
+        } else if (itemId == R.id.option) {
+          editText.setRadioVisible(isQuiz, false);
+          editText.setRadioActive(item == correctOptionItem, false);
+          editText.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+          Views.setSingleLine(editText.getEditText(), false);
+          editText.setAlwaysActive(true);
+          editText.getEditText().setLineDisabled(true);
+          editText.getEditText().setBackspaceListener((v, text, selectionStart, selectionEnd) -> {
+            if (options.size() > 1 && (text.length() == 0 || text.toString().trim().isEmpty())) {
+              removeOption((ListItem) ((ViewGroup) v.getParent().getParent()).getTag());
+              return true;
+            }
+            return false;
+          });
+          editText.setNeedNextButton((v) -> {
+            ListItem listItem = (ListItem) ((ViewGroup) v.getParent()).getTag();
+            if (listItem != null && listItem.getId() == R.id.option) {
+              int i = adapter.indexOfView(listItem);
+              if (i != -1 && i + 2 < adapter.getItems().size()) {
+                int id = adapter.getItems().get(i + 2).getId();
+                return id == R.id.option || id == R.id.optionAdd;
               }
-              return false;
-            });
-            editText.setNeedNextButton((v) -> {
-              ListItem listItem = (ListItem) ((ViewGroup) v.getParent()).getTag();
-              if (listItem != null && listItem.getId() == R.id.option) {
-                int i = adapter.indexOfView(listItem);
-                if (i != -1 && i + 2 < adapter.getItems().size()) {
-                  int id = adapter.getItems().get(i + 2).getId();
-                  switch (id) {
-                    case R.id.option:
-                    case R.id.optionAdd:
-                      return true;
-                  }
-                }
-              }
-              return false;
-            });
-            editText.getEditText().setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI | EditorInfo.IME_ACTION_NEXT);
-            break;
-          }
+            }
+            return false;
+          });
+          editText.getEditText().setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI | EditorInfo.IME_ACTION_NEXT);
         }
       }
 
@@ -195,21 +184,15 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
 
       @Override
       protected void setValuedSetting(ListItem item, SettingView view, boolean isUpdate) {
-        switch (item.getId()) {
-          case R.id.btn_pollSetting_anonymous: {
-            view.getToggler().setRadioEnabled(isAnonymousVoting, isUpdate);
-            break;
-          }
-          case R.id.btn_pollSetting_multi: {
-            view.getToggler().setRadioEnabled(isMultiChoiceVote, isUpdate);
-            view.setEnabledAnimated(!isQuiz, isUpdate);
-            break;
-          }
-          case R.id.btn_pollSetting_quiz: {
-            view.getToggler().setRadioEnabled(isQuiz, isUpdate);
-            view.setEnabledAnimated(canChangePollType(), isUpdate);
-            break;
-          }
+        int itemId = item.getId();
+        if (itemId == R.id.btn_pollSetting_anonymous) {
+          view.getToggler().setRadioEnabled(isAnonymousVoting, isUpdate);
+        } else if (itemId == R.id.btn_pollSetting_multi) {
+          view.getToggler().setRadioEnabled(isMultiChoiceVote, isUpdate);
+          view.setEnabledAnimated(!isQuiz, isUpdate);
+        } else if (itemId == R.id.btn_pollSetting_quiz) {
+          view.getToggler().setRadioEnabled(isQuiz, isUpdate);
+          view.setEnabledAnimated(canChangePollType(), isUpdate);
         }
       }
     };
@@ -355,115 +338,104 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
 
   @Override
   public void onClick (View v) {
-    switch (v.getId()) {
-      case R.id.optionAdd: {
-        addOption();
-        break;
-      }
-      case R.id.btn_pollSetting_anonymous: {
-        isAnonymousVoting = adapter.toggleView(v);
-        break;
-      }
-      case R.id.btn_pollSetting_multi: {
-        isMultiChoiceVote = adapter.toggleView(v);
-        break;
-      }
-      case R.id.btn_pollSetting_quiz: {
-        if (canChangePollType()) {
-          isQuiz = adapter.toggleView(v);
+    int viewId = v.getId();
+    if (viewId == R.id.optionAdd) {
+      addOption();
+    } else if (viewId == R.id.btn_pollSetting_anonymous) {
+      isAnonymousVoting = adapter.toggleView(v);
+    } else if (viewId == R.id.btn_pollSetting_multi) {
+      isMultiChoiceVote = adapter.toggleView(v);
+    } else if (viewId == R.id.btn_pollSetting_quiz) {
+      if (canChangePollType()) {
+        isQuiz = adapter.toggleView(v);
 
-          int explanationIndex = adapter.indexOfViewById(R.id.text_subtitle);
-          if (isQuiz) {
-            // Show hint
+        int explanationIndex = adapter.indexOfViewById(R.id.text_subtitle);
+        if (isQuiz) {
+          // Show hint
 
-            int i = ((LinearLayoutManager) getRecyclerView().getLayoutManager()).findFirstVisibleItemPosition();
-            if (i != RecyclerView.NO_POSITION) {
-              i = adapter.indexOfViewById(R.id.option, i);
-              i = i != -1 ? options.indexOf(adapter.getItem(i)) : -1;
+          int i = ((LinearLayoutManager) getRecyclerView().getLayoutManager()).findFirstVisibleItemPosition();
+          if (i != RecyclerView.NO_POSITION) {
+            i = adapter.indexOfViewById(R.id.option, i);
+            i = i != -1 ? options.indexOf(adapter.getItem(i)) : -1;
+            if (i != -1) {
+              int firstVisibleOptionId = i;
+              while (i < options.size() && StringUtils.isEmpty(StringUtils.trim(options.get(i).getStringValue()))) {
+                i++;
+              }
+              if (i != options.size()) {
+                firstVisibleOptionId = i;
+              }
+              i = adapter.indexOfView(options.get(firstVisibleOptionId));
               if (i != -1) {
-                int firstVisibleOptionId = i;
-                while (i < options.size() && StringUtils.isEmpty(StringUtils.trim(options.get(i).getStringValue()))) {
-                  i++;
-                }
-                if (i != options.size()) {
-                  firstVisibleOptionId = i;
-                }
-                i = adapter.indexOfView(options.get(firstVisibleOptionId));
-                if (i != -1) {
-                  View view = getRecyclerView().getLayoutManager().findViewByPosition(i);
-                  if (view instanceof ViewGroup && view.getTag() == options.get(firstVisibleOptionId)) {
-                    MaterialEditTextGroup editTextGroup = ((MaterialEditTextGroup) ((ViewGroup) view).getChildAt(0));
-                    editTextGroup.showRadioHint(this, tdlib, R.string.QuizOptionHint);
-                  }
+                View view = getRecyclerView().getLayoutManager().findViewByPosition(i);
+                if (view instanceof ViewGroup && view.getTag() == options.get(firstVisibleOptionId)) {
+                  MaterialEditTextGroup editTextGroup = ((MaterialEditTextGroup) ((ViewGroup) view).getChildAt(0));
+                  editTextGroup.showRadioHint(this, tdlib, R.string.QuizOptionHint);
                 }
               }
             }
-
-            // Add explanation item
-            if (explanationIndex == -1) {
-              if (explanationItem == null)
-                explanationItem = newExplanationItem();
-              int index = adapter.getItems().size();
-              adapter.addItems(index - 1,
-                new ListItem(ListItem.TYPE_SHADOW_TOP),
-                explanationItem,
-                new ListItem(ListItem.TYPE_SHADOW_BOTTOM),
-                new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.QuizExplanationInfo)
-              );
-              decoration.addRange(index, index + 1);
-              getRecyclerView().invalidateItemDecorations();
-              // adapter.notifyItemChanged(index - 2);
-            }
-          } else {
-            // Remove explanation item
-            if (explanationIndex != -1) {
-              decoration.removeLastRange();
-              adapter.removeRange(explanationIndex - 1, 4);
-              getRecyclerView().invalidateItemDecorations();
-              // adapter.notifyItemChanged(explanationIndex - 2);
-            }
           }
 
-          int titleIndex = adapter.indexOfViewById(R.id.text_title);
-          if (titleIndex != -1 && adapter.getItems().get(titleIndex).setStringIfChanged(isQuiz ? R.string.QuizOptions : R.string.PollOptions)) {
-            adapter.notifyItemChanged(titleIndex);
+          // Add explanation item
+          if (explanationIndex == -1) {
+            if (explanationItem == null)
+              explanationItem = newExplanationItem();
+            int index = adapter.getItems().size();
+            adapter.addItems(index - 1,
+              new ListItem(ListItem.TYPE_SHADOW_TOP),
+              explanationItem,
+              new ListItem(ListItem.TYPE_SHADOW_BOTTOM),
+              new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.QuizExplanationInfo)
+            );
+            decoration.addRange(index, index + 1);
+            getRecyclerView().invalidateItemDecorations();
+            // adapter.notifyItemChanged(index - 2);
           }
-
-          if (isQuiz) {
-            isMultiChoiceVote = false;
-          }
-          adapter.updateValuedSettingById(R.id.btn_pollSetting_multi);
-
-          if (headerView != null)
-            headerView.updateTextTitle(getId(), getName());
-
-          checkSend();
-
-          int position = 0;
-          for (ListItem item : adapter.getItems()) {
-            switch (item.getId()) {
-              case R.id.option:
-              case R.id.optionAdd: {
-                View view = getRecyclerView().getLayoutManager().findViewByPosition(position);
-                if (view != null && view.getTag() == item) {
-                  ((MaterialEditTextGroup) ((ViewGroup) view).getChildAt(0)).setRadioVisible(isQuiz, true);
-                } else {
-                  adapter.notifyItemChanged(position);
-                }
-                break;
-              }
-            }
-            position++;
+        } else {
+          // Remove explanation item
+          if (explanationIndex != -1) {
+            decoration.removeLastRange();
+            adapter.removeRange(explanationIndex - 1, 4);
+            getRecyclerView().invalidateItemDecorations();
+            // adapter.notifyItemChanged(explanationIndex - 2);
           }
         }
-        break;
+
+        int titleIndex = adapter.indexOfViewById(R.id.text_title);
+        if (titleIndex != -1 && adapter.getItems().get(titleIndex).setStringIfChanged(isQuiz ? R.string.QuizOptions : R.string.PollOptions)) {
+          adapter.notifyItemChanged(titleIndex);
+        }
+
+        if (isQuiz) {
+          isMultiChoiceVote = false;
+        }
+        adapter.updateValuedSettingById(R.id.btn_pollSetting_multi);
+
+        if (headerView != null)
+          headerView.updateTextTitle(getId(), getName());
+
+        checkSend();
+
+        int position = 0;
+        for (ListItem item : adapter.getItems()) {
+          int itemId = item.getId();
+          if (itemId == R.id.option || itemId == R.id.optionAdd) {
+            View view = getRecyclerView().getLayoutManager().findViewByPosition(position);
+            if (view != null && view.getTag() == item) {
+              ((MaterialEditTextGroup) ((ViewGroup) view).getChildAt(0)).setRadioVisible(isQuiz, true);
+            } else {
+              adapter.notifyItemChanged(position);
+            }
+          }
+          position++;
+        }
       }
     }
   }
 
   @Override
   public int getRootColorId () {
-    return R.id.theme_color_background;
+    return ColorId.background;
   }
 
   private boolean isAdding;

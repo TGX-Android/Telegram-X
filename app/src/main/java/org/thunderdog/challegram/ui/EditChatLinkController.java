@@ -25,6 +25,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.OptionDelegate;
@@ -214,25 +215,19 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
         @Override
         public boolean onOptionItemPressed (View optionItemView, int id) {
           long millis;
-          switch (id) {
-            case R.id.btn_sendScheduledCustom: {
-              showDateTimePicker(Lang.getString(R.string.InviteLinkExpireTitle), R.string.InviteLinkExpireToday, R.string.InviteLinkExpireTomorrow, R.string.InviteLinkExpireFuture, (currentMillis) -> act.runWithLong(currentMillis - tdlib.currentTimeMillis()), null);
-              return true;
-            }
-            case R.id.btn_expireIn12h:
-              millis = TimeUnit.HOURS.toMillis(12);
-              break;
-            case R.id.btn_expireIn2d:
-              millis = TimeUnit.DAYS.toMillis(2);
-              break;
-            case R.id.btn_expireIn1w:
-              millis = TimeUnit.DAYS.toMillis(7);
-              break;
-            case R.id.btn_expireIn2w:
-              millis = TimeUnit.DAYS.toMillis(14);
-              break;
-            default:
-              return false;
+          if (id == R.id.btn_sendScheduledCustom) {
+            showDateTimePicker(Lang.getString(R.string.InviteLinkExpireTitle), R.string.InviteLinkExpireToday, R.string.InviteLinkExpireTomorrow, R.string.InviteLinkExpireFuture, (currentMillis) -> act.runWithLong(currentMillis - tdlib.currentTimeMillis()), null);
+            return true;
+          } else if (id == R.id.btn_expireIn12h) {
+            millis = TimeUnit.HOURS.toMillis(12);
+          } else if (id == R.id.btn_expireIn2d) {
+            millis = TimeUnit.DAYS.toMillis(2);
+          } else if (id == R.id.btn_expireIn1w) {
+            millis = TimeUnit.DAYS.toMillis(7);
+          } else if (id == R.id.btn_expireIn2w) {
+            millis = TimeUnit.DAYS.toMillis(14);
+          } else {
+            return false;
           }
           act.runWithLong(millis);
           return true;
@@ -431,6 +426,6 @@ public class EditChatLinkController extends EditBaseController<EditChatLinkContr
 
   @Override
   protected int getRecyclerBackgroundColorId () {
-    return R.id.theme_color_background;
+    return ColorId.background;
   }
 }

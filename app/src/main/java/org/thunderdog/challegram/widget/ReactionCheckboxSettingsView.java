@@ -12,7 +12,6 @@
  */
 package org.thunderdog.challegram.widget;
 
-import android.animation.ValueAnimator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Rect;
@@ -26,7 +25,6 @@ import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.charts.LayoutHelper;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
@@ -34,11 +32,10 @@ import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeInvalidateListener;
-import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
-import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.util.text.Counter;
 
@@ -126,8 +123,8 @@ public class ReactionCheckboxSettingsView extends LinearLayout implements ThemeI
   }
 
   public void recolor () {
-    captionTextView.setTextColor(Theme.getColor(R.id.theme_color_text));
-    captionTextView.setHighlightColor(Theme.getColor(R.id.theme_color_text));
+    captionTextView.setTextColor(Theme.getColor(ColorId.text));
+    captionTextView.setHighlightColor(Theme.getColor(ColorId.text));
   }
 
   public void attach () {

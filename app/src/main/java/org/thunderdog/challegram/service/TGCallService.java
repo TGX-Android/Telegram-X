@@ -67,6 +67,7 @@ import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibNotificationChannelGroup;
 import org.thunderdog.challegram.telegram.TdlibNotificationManager;
 import org.thunderdog.challegram.telegram.TdlibNotificationUtils;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.UI;
@@ -314,6 +315,7 @@ public class TGCallService extends Service implements
       am.registerMediaButtonEventReceiver(new ComponentName(this, VoIPMediaButtonReceiver.class));
 
       if (btAdapter != null && btAdapter.isEnabled()) {
+        //noinspection MissingPermission
         int headsetState = btAdapter.getProfileConnectionState(BluetoothProfile.HEADSET);
         updateBluetoothHeadsetState(headsetState == BluetoothProfile.STATE_CONNECTED);
         if (headsetState == BluetoothProfile.STATE_CONNECTED) {
@@ -828,7 +830,7 @@ public class TGCallService extends Service implements
       CharSequence endTitle = Lang.getString(R.string.DeclineCall);
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
         endTitle = new SpannableString(endTitle);
-        ((SpannableString) endTitle).setSpan(new ForegroundColorSpan(Theme.getColor(R.id.theme_color_circleButtonNegative)), 0, endTitle.length(), 0);
+        ((SpannableString) endTitle).setSpan(new ForegroundColorSpan(Theme.getColor(ColorId.circleButtonNegative)), 0, endTitle.length(), 0);
       }
       builder.addAction(R.drawable.round_call_end_24_white, endTitle, PendingIntent.getBroadcast(this, 0, endIntent, PendingIntent.FLAG_ONE_SHOT | Intents.mutabilityFlags(false)));
       Intent answerIntent = new Intent();
@@ -837,7 +839,7 @@ public class TGCallService extends Service implements
       CharSequence answerTitle = Lang.getString(R.string.AnswerCall);
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
         answerTitle = new SpannableString(answerTitle);
-        ((SpannableString) answerTitle).setSpan(new ForegroundColorSpan(Theme.getColor(R.id.theme_color_circleButtonPositive)), 0, answerTitle.length(), 0);
+        ((SpannableString) answerTitle).setSpan(new ForegroundColorSpan(Theme.getColor(ColorId.circleButtonPositive)), 0, answerTitle.length(), 0);
       }
       builder.addAction(R.drawable.round_call_24_white, answerTitle, PendingIntent.getBroadcast(this, 0, answerIntent, PendingIntent.FLAG_ONE_SHOT | Intents.mutabilityFlags(false)));
       builder.setPriority(Notification.PRIORITY_MAX);
@@ -961,19 +963,12 @@ public class TGCallService extends Service implements
       setIsRinging(false);
     }
     if (callSound != 0) {
-      switch (callSound) {
-        case R.raw.voip_end:
-        case R.raw.voip_fail:
-          soundPoolMap.playUnique(callSound, 1, 1, 0, 0, 1);
-          break;
-        case R.raw.voip_busy:
-          soundPoolMap.playUnique(callSound, 1, 1, 0, 2, 1);
-          break;
-        case R.raw.voip_connecting:
-        case R.raw.voip_ringback:
-        default:
-          soundPoolMap.playUnique(callSound, 1, 1, 0, call.state.getConstructor() == TdApi.CallStateExchangingKeys.CONSTRUCTOR ? 0 : -1, 1);
-          break;
+      if (callSound == R.raw.voip_end || callSound == R.raw.voip_fail) {
+        soundPoolMap.playUnique(callSound, 1, 1, 0, 0, 1);
+      } else if (callSound == R.raw.voip_busy) {
+        soundPoolMap.playUnique(callSound, 1, 1, 0, 2, 1);
+      } else {
+        soundPoolMap.playUnique(callSound, 1, 1, 0, call.state.getConstructor() == TdApi.CallStateExchangingKeys.CONSTRUCTOR ? 0 : -1, 1);
       }
     } else {
       soundPoolMap.stopLastSound();

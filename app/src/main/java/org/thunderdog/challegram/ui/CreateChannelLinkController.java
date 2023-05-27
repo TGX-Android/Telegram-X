@@ -45,6 +45,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Keyboard;
@@ -119,7 +120,7 @@ public class CreateChannelLinkController extends ViewController<CreateChannelLin
     iconView.setScaleType(ImageView.ScaleType.CENTER);
     iconView.setImageResource(R.drawable.baseline_link_24);
     iconView.setColorFilter(Theme.iconColor());
-    addThemeFilterListener(iconView, R.id.theme_color_icon);
+    addThemeFilterListener(iconView, ColorId.icon);
     iconView.setLayoutParams(new LinearLayout.LayoutParams(Screen.dp(24f), Screen.dp(46f)));
 
     LinearLayout.LayoutParams params;
@@ -181,7 +182,7 @@ public class CreateChannelLinkController extends ViewController<CreateChannelLin
       }
     };
     scrollView.setHeaderView(headerView);
-    ViewSupport.setThemedBackground(scrollView, R.id.theme_color_filling, this);
+    ViewSupport.setThemedBackground(scrollView, ColorId.filling, this);
     scrollView.addView(contentView);
     scrollView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     return scrollView;
@@ -210,25 +211,21 @@ public class CreateChannelLinkController extends ViewController<CreateChannelLin
 
   @Override
   public void onClick (View v) {
-    switch (v.getId()) {
-      case R.id.btn_publicChannel: {
-        if (privateRadio.isChecked()) {
-          privateRadio.toggleChecked();
-          publicRadio.toggleChecked();
-          updateLink();
-          hintView.setText(Lang.getString(R.string.ChannelUsernameHelp));
-        }
-        break;
+    final int viewId = v.getId();
+    if (viewId == R.id.btn_publicChannel) {
+      if (privateRadio.isChecked()) {
+        privateRadio.toggleChecked();
+        publicRadio.toggleChecked();
+        updateLink();
+        hintView.setText(Lang.getString(R.string.ChannelUsernameHelp));
       }
-      case R.id.btn_privateChannel: {
-        if (publicRadio.isChecked()) {
-          username = linkView.getSuffix();
-          publicRadio.toggleChecked();
-          privateRadio.toggleChecked();
-          updateLink();
-          hintView.setText(Lang.getString(R.string.ChannelPrivateLinkHelp));
-        }
-        break;
+    } else if (viewId == R.id.btn_privateChannel) {
+      if (publicRadio.isChecked()) {
+        username = linkView.getSuffix();
+        publicRadio.toggleChecked();
+        privateRadio.toggleChecked();
+        updateLink();
+        hintView.setText(Lang.getString(R.string.ChannelPrivateLinkHelp));
       }
     }
   }

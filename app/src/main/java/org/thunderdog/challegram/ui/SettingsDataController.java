@@ -38,6 +38,7 @@ import org.thunderdog.challegram.telegram.GlobalConnectionListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibFilesManager;
 import org.thunderdog.challegram.telegram.TdlibManager;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.v.CustomRecyclerView;
@@ -142,112 +143,77 @@ public class SettingsDataController extends RecyclerViewController<SettingsDataC
     this.adapter = new SettingsAdapter(this) {
       @Override
       public void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
-        switch (item.getId()) {
-          case R.id.btn_dataSaver: {
-            final boolean isEnabled = !tdlib.files().isDataSaverEventuallyEnabled();
-            if (isUpdate) {
-              view.setEnabledAnimated(isEnabled);
-            } else {
-              view.setEnabled(isEnabled);
-            }
-            view.getToggler().setRadioEnabled(tdlib.files().isDataSaverActive(), isUpdate);
-            break;
+        final int itemId = item.getId();
+        if (itemId == R.id.btn_dataSaver) {
+          final boolean isEnabled = !tdlib.files().isDataSaverEventuallyEnabled();
+          if (isUpdate) {
+            view.setEnabledAnimated(isEnabled);
+          } else {
+            view.setEnabled(isEnabled);
           }
-          case R.id.btn_dataSaverForce: {
-            final boolean overMobile = tdlib.files().isDataSaverEnabledOverMobile();
-            final boolean overRoaming = tdlib.files().isDataSaverEnabledOverRoaming();
-            final int resource = overMobile && overRoaming ? R.string.WhenUsingMobileDataOrRoaming : overMobile ? R.string.WhenUsingMobileData : overRoaming ? R.string.WhenUsingRoaming : R.string.Never;
-            view.setData(resource);
+          view.getToggler().setRadioEnabled(tdlib.files().isDataSaverActive(), isUpdate);
+        } else if (itemId == R.id.btn_dataSaverForce) {
+          final boolean overMobile = tdlib.files().isDataSaverEnabledOverMobile();
+          final boolean overRoaming = tdlib.files().isDataSaverEnabledOverRoaming();
+          final int resource = overMobile && overRoaming ? R.string.WhenUsingMobileDataOrRoaming : overMobile ? R.string.WhenUsingMobileData : overRoaming ? R.string.WhenUsingRoaming : R.string.Never;
+          view.setData(resource);
 
-            final boolean isEnabled = tdlib.files().isDataSaverEventuallyEnabled() || !tdlib.files().isDataSaverAlwaysEnabled();
-            if (isUpdate) {
-              view.setEnabledAnimated(isEnabled);
-            } else {
-              view.setEnabled(isEnabled);
-            }
-
-            break;
+          final boolean isEnabled = tdlib.files().isDataSaverEventuallyEnabled() || !tdlib.files().isDataSaverAlwaysEnabled();
+          if (isUpdate) {
+            view.setEnabledAnimated(isEnabled);
+          } else {
+            view.setEnabled(isEnabled);
           }
-
-          case R.id.btn_proxy: {
-            int proxyId = Settings.instance().getEffectiveProxyId();
-            if (proxyId != Settings.PROXY_ID_NONE) {
-              view.setData(Settings.instance().getProxyName(proxyId));
-            } else {
-              view.setData(Settings.instance().getAvailableProxyCount() == 0 ? R.string.ProxySetup : R.string.ProxyDisabled);
-            }
-            break;
+        } else if (itemId == R.id.btn_proxy) {
+          int proxyId = Settings.instance().getEffectiveProxyId();
+          if (proxyId != Settings.PROXY_ID_NONE) {
+            view.setData(Settings.instance().getProxyName(proxyId));
+          } else {
+            view.setData(Settings.instance().getAvailableProxyCount() == 0 ? R.string.ProxySetup : R.string.ProxyDisabled);
           }
-
-          case R.id.btn_inPrivateChats: {
-            view.setData(tdlib.files().getDownloadInPrivateChatsList());
-            break;
-          }
-          case R.id.btn_inGroupChats: {
-            view.setData(tdlib.files().getDownloadInGroupChatsList());
-            break;
-          }
-          case R.id.btn_inChannelChats: {
-            view.setData(tdlib.files().getDownloadInChannelChatsList());
-            break;
-          }
-          case R.id.btn_mediaWiFiLimits: {
-            view.setData(tdlib.files().getDownloadLimitOverWiFiString());
-            break;
-          }
-          case R.id.btn_mediaMobileLimits: {
-            view.setData(tdlib.files().getDownloadLimitOverMobileString());
-            break;
-          }
-          case R.id.btn_mediaRoamingLimits: {
-            view.setData(tdlib.files().getDownloadLimitOverRoamingString());
-            break;
-          }
+        } else if (itemId == R.id.btn_inPrivateChats) {
+          view.setData(tdlib.files().getDownloadInPrivateChatsList());
+        } else if (itemId == R.id.btn_inGroupChats) {
+          view.setData(tdlib.files().getDownloadInGroupChatsList());
+        } else if (itemId == R.id.btn_inChannelChats) {
+          view.setData(tdlib.files().getDownloadInChannelChatsList());
+        } else if (itemId == R.id.btn_mediaWiFiLimits) {
+          view.setData(tdlib.files().getDownloadLimitOverWiFiString());
+        } else if (itemId == R.id.btn_mediaMobileLimits) {
+          view.setData(tdlib.files().getDownloadLimitOverMobileString());
+        } else if (itemId == R.id.btn_mediaRoamingLimits) {
+          view.setData(tdlib.files().getDownloadLimitOverRoamingString());
           // Voice
-          case R.id.btn_lessDataForCalls: {
-            switch (tdlib.files().getVoipDataSavingOption()) {
-              case VoIPController.DATA_SAVING_ALWAYS:
-                view.setData(R.string.UseLessDataAlways);
-                break;
-              case VoIPController.DATA_SAVING_MOBILE:
-                view.setData(R.string.OnMobileNetwork);
-                break;
-              case VoIPController.DATA_SAVING_ROAMING:
-                view.setData(R.string.OnRoaming);
-                break;
-              case VoIPController.DATA_SAVING_NEVER:
-              default:
-                view.setData(R.string.Never);
-                break;
-            }
-            break;
+        } else if (itemId == R.id.btn_lessDataForCalls) {
+          switch (tdlib.files().getVoipDataSavingOption()) {
+            case VoIPController.DATA_SAVING_ALWAYS:
+              view.setData(R.string.UseLessDataAlways);
+              break;
+            case VoIPController.DATA_SAVING_MOBILE:
+              view.setData(R.string.OnMobileNetwork);
+              break;
+            case VoIPController.DATA_SAVING_ROAMING:
+              view.setData(R.string.OnRoaming);
+              break;
+            case VoIPController.DATA_SAVING_NEVER:
+            default:
+              view.setData(R.string.Never);
+              break;
           }
           // Storage usage
-          case R.id.btn_storageUsage: {
-            view.setData(storageStats != null ? storageStats.isEmpty() ? Lang.getString(R.string.StorageUsageHint) : storageStats.getTotalSizeEntry() : Lang.getString(R.string.Calculating));
-            break;
-          }
+        } else if (itemId == R.id.btn_storageUsage) {
+          view.setData(storageStats != null ? storageStats.isEmpty() ? Lang.getString(R.string.StorageUsageHint) : storageStats.getTotalSizeEntry() : Lang.getString(R.string.Calculating));
           // Data usage
-          case R.id.btn_dataUsageTotal: {
-            view.setData(networkStats != null ? networkStats.getTotalEntry() : Lang.getString(R.string.Calculating));
-            break;
-          }
-          case R.id.btn_dataUsageMobile: {
-            view.setData(networkStats != null ? networkStats.getMobileEntry() : Lang.getString(R.string.Calculating));
-            break;
-          }
-          case R.id.btn_dataUsageRoaming: {
-            view.setData(networkStats != null ? networkStats.getRoamingEntry() : Lang.getString(R.string.Calculating));
-            break;
-          }
-          case R.id.btn_dataUsageWiFi: {
-            view.setData(networkStats != null ? networkStats.getWiFiEntry() : Lang.getString(R.string.Calculating));
-            break;
-          }
-          case R.id.btn_resetNetworkStats: {
-            view.setData(networkStats != null ? networkStats.getDateEntry() : Lang.getString(R.string.LoadingInformation));
-            break;
-          }
+        } else if (itemId == R.id.btn_dataUsageTotal) {
+          view.setData(networkStats != null ? networkStats.getTotalEntry() : Lang.getString(R.string.Calculating));
+        } else if (itemId == R.id.btn_dataUsageMobile) {
+          view.setData(networkStats != null ? networkStats.getMobileEntry() : Lang.getString(R.string.Calculating));
+        } else if (itemId == R.id.btn_dataUsageRoaming) {
+          view.setData(networkStats != null ? networkStats.getRoamingEntry() : Lang.getString(R.string.Calculating));
+        } else if (itemId == R.id.btn_dataUsageWiFi) {
+          view.setData(networkStats != null ? networkStats.getWiFiEntry() : Lang.getString(R.string.Calculating));
+        } else if (itemId == R.id.btn_resetNetworkStats) {
+          view.setData(networkStats != null ? networkStats.getDateEntry() : Lang.getString(R.string.LoadingInformation));
         }
       }
     };
@@ -271,7 +237,7 @@ public class SettingsDataController extends RecyclerViewController<SettingsDataC
         new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_dataUsageRoaming, R.drawable.baseline_public_24, R.string.RoamingUsage),
         new ListItem(ListItem.TYPE_SHADOW_BOTTOM),
         new ListItem(ListItem.TYPE_SHADOW_TOP),
-        new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_resetNetworkStats, 0, R.string.ResetStatistics).setTextColorId(R.id.theme_color_textNegative),
+        new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_resetNetworkStats, 0, R.string.ResetStatistics).setTextColorId(ColorId.textNegative),
         new ListItem(ListItem.TYPE_SHADOW_BOTTOM)
       };
     } else {
@@ -485,180 +451,142 @@ public class SettingsDataController extends RecyclerViewController<SettingsDataC
     final int id = v.getId();
     final boolean toggleResult = adapter.toggleView(v);
 
-    switch (id) {
-      case R.id.btn_resetNetworkStats: {
-        showOptions(Lang.getString(R.string.ResetStatsHint), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.Reset), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, optionId) -> {
-          if (optionId == R.id.btn_delete) {
-            tdlib.client().send(new TdApi.ResetNetworkStatistics(), object -> {
-              switch (object.getConstructor()) {
-                case TdApi.Ok.CONSTRUCTOR: {
-                  tdlib.client().send(new TdApi.GetNetworkStatistics(), SettingsDataController.this);
-                  break;
-                }
-                case TdApi.Error.CONSTRUCTOR: {
-                  UI.showError(object);
-                  break;
-                }
+    if (id == R.id.btn_resetNetworkStats) {
+      showOptions(Lang.getString(R.string.ResetStatsHint), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.Reset), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, optionId) -> {
+        if (optionId == R.id.btn_delete) {
+          tdlib.client().send(new TdApi.ResetNetworkStatistics(), object -> {
+            switch (object.getConstructor()) {
+              case TdApi.Ok.CONSTRUCTOR: {
+                tdlib.client().send(new TdApi.GetNetworkStatistics(), SettingsDataController.this);
+                break;
               }
-            });
-          }
-          return true;
-        });
-        break;
-      }
-
-      case R.id.btn_storageUsage: {
-        SettingsCacheController cacheController = new SettingsCacheController(context, tdlib);
-        cacheController.setArguments(this);
-        navigateTo(cacheController);
-        break;
-      }
-
-      case R.id.btn_dataUsageTotal: {
-        if (networkStats == null) {
-          return;
-        }
-        SettingsDataController c = new SettingsDataController(context, tdlib);
-        c.setArguments(new Args(MODE_STATISTICS).setData(networkStats));
-        navigateTo(c);
-        break;
-      }
-
-      case R.id.btn_dataUsageMobile:
-      case R.id.btn_dataUsageWiFi:
-      case R.id.btn_dataUsageRoaming: {
-        if (networkStats == null) {
-          return;
-        }
-
-        int type;
-        switch (id) {
-          case R.id.btn_dataUsageMobile: {
-            type = TGNetworkStats.TYPE_MOBILE;
-            break;
-          }
-          case R.id.btn_dataUsageRoaming: {
-            type = TGNetworkStats.TYPE_ROAMING;
-            break;
-          }
-          case R.id.btn_dataUsageWiFi: {
-            type = TGNetworkStats.TYPE_WIFI;
-            break;
-          }
-          default: {
-            return;
-          }
-        }
-
-        SettingsNetworkStatsController c = new SettingsNetworkStatsController(context, tdlib);
-        c.setArguments(new SettingsNetworkStatsController.Args(type, networkStats));
-        navigateTo(c);
-
-        break;
-      }
-
-      case R.id.btn_lessDataForCalls: {
-        showSettings(new SettingsWrapBuilder(id).addHeaderItem(new ListItem(ListItem.TYPE_INFO, 0, 0, R.string.UseLessDataForCallsDesc)).setRawItems(new ListItem[] {
-          new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_disabled, 0, R.string.Never, id, tdlib.files().getVoipDataSavingOption() == VoIPController.DATA_SAVING_NEVER),
-          new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_roaming, 0, R.string.OnRoaming, id, tdlib.files().getVoipDataSavingOption() == VoIPController.DATA_SAVING_ROAMING),
-          new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_mobile, 0, R.string.OnMobileNetwork, id, tdlib.files().getVoipDataSavingOption() == VoIPController.DATA_SAVING_MOBILE),
-          new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_always, 0, R.string.UseLessDataAlways, id, tdlib.files().getVoipDataSavingOption() == VoIPController.DATA_SAVING_ALWAYS)
-        }).setIntDelegate(this));
-        break;
-      }
-
-      case R.id.btn_proxy: {
-        tdlib.ui().openProxySettings(this, true);
-        break;
-      }
-
-      case R.id.btn_dataSaver: {
-        if (tdlib.files().setDataSaverEnabled(toggleResult)) {
-          adapter.updateValuedSettingById(R.id.btn_dataSaverForce);
-        }
-        break;
-      }
-      case R.id.btn_dataSaverForce: {
-        showSettings(id, new ListItem[] {
-          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_forceMobile, 0, R.string.WhenUsingMobileData, tdlib.files().isDataSaverEnabledOverMobile()),
-          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_forceRoaming, 0, R.string.WhenUsingRoaming, tdlib.files().isDataSaverEnabledOverRoaming())
-        }, this);
-        break;
-      }
-
-      case R.id.btn_inPrivateChats:
-      case R.id.btn_inGroupChats:
-      case R.id.btn_inChannelChats:
-      case R.id.btn_mediaMobileLimits:
-      case R.id.btn_mediaWiFiLimits:
-      case R.id.btn_mediaRoamingLimits: {
-        int flags;
-        int sizeOption = 0;
-        int size = 0;
-        switch (id) {
-          case R.id.btn_inPrivateChats: flags = tdlib.files().getDownloadInPrivateChats(); break;
-          case R.id.btn_inGroupChats: flags = tdlib.files().getDownloadInGroupChats(); break;
-          case R.id.btn_inChannelChats: flags = tdlib.files().getDownloadInChannelChats(); break;
-          case R.id.btn_mediaMobileLimits: flags = tdlib.files().getExcludeOverMobile(); size = tdlib.files().getDownloadLimitOverMobile(); sizeOption = R.id.btn_size; break;
-          case R.id.btn_mediaWiFiLimits: flags = tdlib.files().getExcludeOverWiFi(); size = tdlib.files().getDownloadLimitOverWifi(); sizeOption = R.id.btn_size; break;
-          case R.id.btn_mediaRoamingLimits: flags = tdlib.files().getExcludeOverRoaming(); size = tdlib.files().getDownloadLimitOverRoaming(); sizeOption = R.id.btn_size; break;
-          default: throw new RuntimeException();
-        }
-
-        int currentValue = 0;
-        String[] sizeOptions;
-        if (sizeOption != 0) {
-          sizeOptions = new String[TdlibFilesManager.DOWNLOAD_LIMIT_OPTIONS.length];
-          for (int i = 0; i < sizeOptions.length; i++) {
-            sizeOptions[i] = tdlib.files().getDownloadLimitString(TdlibFilesManager.DOWNLOAD_LIMIT_OPTIONS[i]);
-            if (TdlibFilesManager.DOWNLOAD_LIMIT_OPTIONS[i] == size) {
-              currentValue = i;
+              case TdApi.Error.CONSTRUCTOR: {
+                UI.showError(object);
+                break;
+              }
             }
-          }
-        } else {
-          sizeOptions = null;
+          });
         }
-
-        showSettings(new SettingsWrapBuilder(id).setRawItems(new ListItem[]{
-          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_photos, 0, sizeOption != 0 ? R.string.NoPhotos : R.string.Photos, (flags & TdlibFilesManager.DOWNLOAD_FLAG_PHOTO) != 0),
-          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_voice, 0, sizeOption != 0 ? R.string.NoVoiceMessages : R.string.VoiceMessages, (flags & TdlibFilesManager.DOWNLOAD_FLAG_VOICE) != 0),
-          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_videoNote, 0, sizeOption != 0 ? R.string.NoVideoMessages : R.string.VideoMessages, (flags & TdlibFilesManager.DOWNLOAD_FLAG_VIDEO_NOTE) != 0),
-          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_video, 0, sizeOption != 0 ? R.string.NoVideos : R.string.Videos, (flags & TdlibFilesManager.DOWNLOAD_FLAG_VIDEO) != 0),
-          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_file, 0, sizeOption != 0 ? R.string.NoFiles : R.string.Files, (flags & TdlibFilesManager.DOWNLOAD_FLAG_FILE) != 0),
-          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_music, 0,sizeOption != 0 ? R.string.NoMusic : R.string.Music, (flags & TdlibFilesManager.DOWNLOAD_FLAG_MUSIC) != 0),
-          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_gif, 0, sizeOption != 0 ? R.string.NoGIFs : R.string.GIFs, (flags & TdlibFilesManager.DOWNLOAD_FLAG_GIF) != 0),
-        }).setIntDelegate(this).setSizeOptionId(sizeOption).setSizeValue(currentValue).setSizeValues(sizeOptions).setAllowResize(false));
-
-        break;
+        return true;
+      });
+    } else if (id == R.id.btn_storageUsage) {
+      SettingsCacheController cacheController = new SettingsCacheController(context, tdlib);
+      cacheController.setArguments(this);
+      navigateTo(cacheController);
+    } else if (id == R.id.btn_dataUsageTotal) {
+      if (networkStats == null) {
+        return;
+      }
+      SettingsDataController c = new SettingsDataController(context, tdlib);
+      c.setArguments(new Args(MODE_STATISTICS).setData(networkStats));
+      navigateTo(c);
+    } else if (id == R.id.btn_dataUsageMobile || id == R.id.btn_dataUsageWiFi || id == R.id.btn_dataUsageRoaming) {
+      if (networkStats == null) {
+        return;
       }
 
-      case R.id.btn_cacheSettings: {
-        navigateTo(new SettingsCacheController(context, tdlib));
-        break;
+      int type;
+      if (id == R.id.btn_dataUsageMobile) {
+        type = TGNetworkStats.TYPE_MOBILE;
+      } else if (id == R.id.btn_dataUsageRoaming) {
+        type = TGNetworkStats.TYPE_ROAMING;
+      } else if (id == R.id.btn_dataUsageWiFi) {
+        type = TGNetworkStats.TYPE_WIFI;
+      } else {
+        return;
       }
 
-      case R.id.btn_showAdvanced: {
-        final int index = adapter.indexOfViewById(R.id.btn_showAdvanced);
+      SettingsNetworkStatsController c = new SettingsNetworkStatsController(context, tdlib);
+      c.setArguments(new SettingsNetworkStatsController.Args(type, networkStats));
+      navigateTo(c);
+    } else if (id == R.id.btn_lessDataForCalls) {
+      showSettings(new SettingsWrapBuilder(id).addHeaderItem(new ListItem(ListItem.TYPE_INFO, 0, 0, R.string.UseLessDataForCallsDesc)).setRawItems(new ListItem[] {
+        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_disabled, 0, R.string.Never, id, tdlib.files().getVoipDataSavingOption() == VoIPController.DATA_SAVING_NEVER),
+        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_roaming, 0, R.string.OnRoaming, id, tdlib.files().getVoipDataSavingOption() == VoIPController.DATA_SAVING_ROAMING),
+        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_mobile, 0, R.string.OnMobileNetwork, id, tdlib.files().getVoipDataSavingOption() == VoIPController.DATA_SAVING_MOBILE),
+        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_always, 0, R.string.UseLessDataAlways, id, tdlib.files().getVoipDataSavingOption() == VoIPController.DATA_SAVING_ALWAYS)
+      }).setIntDelegate(this));
+    } else if (id == R.id.btn_proxy) {
+      tdlib.ui().openProxySettings(this, true);
+    } else if (id == R.id.btn_dataSaver) {
+      if (tdlib.files().setDataSaverEnabled(toggleResult)) {
+        adapter.updateValuedSettingById(R.id.btn_dataSaverForce);
+      }
+    } else if (id == R.id.btn_dataSaverForce) {
+      showSettings(id, new ListItem[] {
+        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_forceMobile, 0, R.string.WhenUsingMobileData, tdlib.files().isDataSaverEnabledOverMobile()),
+        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_forceRoaming, 0, R.string.WhenUsingRoaming, tdlib.files().isDataSaverEnabledOverRoaming())
+      }, this);
+    } else if (id == R.id.btn_inPrivateChats || id == R.id.btn_inGroupChats || id == R.id.btn_inChannelChats || id == R.id.btn_mediaMobileLimits || id == R.id.btn_mediaWiFiLimits || id == R.id.btn_mediaRoamingLimits) {
+      int flags;
+      int sizeOption = 0;
+      int size = 0;
+      if (id == R.id.btn_inPrivateChats) {
+        flags = tdlib.files().getDownloadInPrivateChats();
+      } else if (id == R.id.btn_inGroupChats) {
+        flags = tdlib.files().getDownloadInGroupChats();
+      } else if (id == R.id.btn_inChannelChats) {
+        flags = tdlib.files().getDownloadInChannelChats();
+      } else if (id == R.id.btn_mediaMobileLimits) {
+        flags = tdlib.files().getExcludeOverMobile();
+        size = tdlib.files().getDownloadLimitOverMobile();
+        sizeOption = R.id.btn_size;
+      } else if (id == R.id.btn_mediaWiFiLimits) {
+        flags = tdlib.files().getExcludeOverWiFi();
+        size = tdlib.files().getDownloadLimitOverWifi();
+        sizeOption = R.id.btn_size;
+      } else if (id == R.id.btn_mediaRoamingLimits) {
+        flags = tdlib.files().getExcludeOverRoaming();
+        size = tdlib.files().getDownloadLimitOverRoaming();
+        sizeOption = R.id.btn_size;
+      } else {
+        throw new RuntimeException();
+      }
 
-        if (index != -1) {
-          List<ListItem> items = adapter.getItems();
-
-          items.remove(index);
-          items.remove(index);
-
-          ListItem[] advancedItems = newAdvancedItems();
-
-          ArrayUtils.ensureCapacity(items, items.size() + advancedItems.length);
-          int i = index;
-          for (ListItem item : advancedItems) {
-            items.add(i++, item);
+      int currentValue = 0;
+      String[] sizeOptions;
+      if (sizeOption != 0) {
+        sizeOptions = new String[TdlibFilesManager.DOWNLOAD_LIMIT_OPTIONS.length];
+        for (int i = 0; i < sizeOptions.length; i++) {
+          sizeOptions[i] = tdlib.files().getDownloadLimitString(TdlibFilesManager.DOWNLOAD_LIMIT_OPTIONS[i]);
+          if (TdlibFilesManager.DOWNLOAD_LIMIT_OPTIONS[i] == size) {
+            currentValue = i;
           }
+        }
+      } else {
+        sizeOptions = null;
+      }
 
-          adapter.notifyItemRangeRemoved(index, 2);
-          adapter.notifyItemRangeInserted(index, advancedItems.length);
+      showSettings(new SettingsWrapBuilder(id).setRawItems(new ListItem[] {
+        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_photos, 0, sizeOption != 0 ? R.string.NoPhotos : R.string.Photos, (flags & TdlibFilesManager.DOWNLOAD_FLAG_PHOTO) != 0),
+        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_voice, 0, sizeOption != 0 ? R.string.NoVoiceMessages : R.string.VoiceMessages, (flags & TdlibFilesManager.DOWNLOAD_FLAG_VOICE) != 0),
+        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_videoNote, 0, sizeOption != 0 ? R.string.NoVideoMessages : R.string.VideoMessages, (flags & TdlibFilesManager.DOWNLOAD_FLAG_VIDEO_NOTE) != 0),
+        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_video, 0, sizeOption != 0 ? R.string.NoVideos : R.string.Videos, (flags & TdlibFilesManager.DOWNLOAD_FLAG_VIDEO) != 0),
+        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_file, 0, sizeOption != 0 ? R.string.NoFiles : R.string.Files, (flags & TdlibFilesManager.DOWNLOAD_FLAG_FILE) != 0),
+        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_music, 0, sizeOption != 0 ? R.string.NoMusic : R.string.Music, (flags & TdlibFilesManager.DOWNLOAD_FLAG_MUSIC) != 0),
+        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_gif, 0, sizeOption != 0 ? R.string.NoGIFs : R.string.GIFs, (flags & TdlibFilesManager.DOWNLOAD_FLAG_GIF) != 0),
+      }).setIntDelegate(this).setSizeOptionId(sizeOption).setSizeValue(currentValue).setSizeValues(sizeOptions).setAllowResize(false));
+    } else if (id == R.id.btn_cacheSettings) {
+      navigateTo(new SettingsCacheController(context, tdlib));
+    } else if (id == R.id.btn_showAdvanced) {
+      final int index = adapter.indexOfViewById(R.id.btn_showAdvanced);
+
+      if (index != -1) {
+        List<ListItem> items = adapter.getItems();
+
+        items.remove(index);
+        items.remove(index);
+
+        ListItem[] advancedItems = newAdvancedItems();
+
+        ArrayUtils.ensureCapacity(items, items.size() + advancedItems.length);
+        int i = index;
+        for (ListItem item : advancedItems) {
+          items.add(i++, item);
         }
 
-        break;
+        adapter.notifyItemRangeRemoved(index, 2);
+        adapter.notifyItemRangeInserted(index, advancedItems.length);
       }
     }
   }
@@ -677,70 +605,68 @@ public class SettingsDataController extends RecyclerViewController<SettingsDataC
 
   @Override
   public void onApplySettings (@IdRes int id, SparseIntArray result) {
-    switch (id) {
-      case R.id.btn_dataSaverForce: {
-        final boolean forceMobile = result.get(R.id.btn_forceMobile) != 0;
-        final boolean forceRoaming = result.get(R.id.btn_forceRoaming) != 0;
+    if (id == R.id.btn_dataSaverForce) {
+      final boolean forceMobile = result.get(R.id.btn_forceMobile) != 0;
+      final boolean forceRoaming = result.get(R.id.btn_forceRoaming) != 0;
 
-        if (tdlib.files().setDataSaverForcedOptions(forceMobile, forceRoaming)) {
-          adapter.updateValuedSettingById(R.id.btn_dataSaver);
-          adapter.updateValuedSettingById(id);
-        }
-        break;
+      if (tdlib.files().setDataSaverForcedOptions(forceMobile, forceRoaming)) {
+        adapter.updateValuedSettingById(R.id.btn_dataSaver);
+        adapter.updateValuedSettingById(id);
       }
-      case R.id.btn_lessDataForCalls: {
-        final int res = result.get(R.id.btn_lessDataForCalls);
-        final int option =
-          res == R.id.btn_always ? VoIPController.DATA_SAVING_ALWAYS :
+    } else if (id == R.id.btn_lessDataForCalls) {
+      final int res = result.get(R.id.btn_lessDataForCalls);
+      final int option =
+        res == R.id.btn_always ? VoIPController.DATA_SAVING_ALWAYS :
           res == R.id.btn_mobile ? VoIPController.DATA_SAVING_MOBILE :
-          res == R.id.btn_roaming ? VoIPController.DATA_SAVING_ROAMING :
-            VoIPController.DATA_SAVING_NEVER;
+            res == R.id.btn_roaming ? VoIPController.DATA_SAVING_ROAMING :
+              VoIPController.DATA_SAVING_NEVER;
 
-        if (tdlib.files().setVoipDataSavingOption(option)) {
-          adapter.updateValuedSettingById(R.id.btn_lessDataForCalls);
-        }
-
-        break;
+      if (tdlib.files().setVoipDataSavingOption(option)) {
+        adapter.updateValuedSettingById(R.id.btn_lessDataForCalls);
       }
-      case R.id.btn_inPrivateChats:
-      case R.id.btn_inGroupChats:
-      case R.id.btn_inChannelChats:
-      case R.id.btn_mediaMobileLimits:
-      case R.id.btn_mediaWiFiLimits:
-      case R.id.btn_mediaRoamingLimits: {
-        int size = 0;
-        int flags = 0;
-        final int itemCount = result.size();
-        for (int i = 0; i < itemCount; i++) {
-          int key = result.keyAt(i);
-          int value = result.valueAt(i);
-          switch (key) {
-            case R.id.btn_size: size = TdlibFilesManager.DOWNLOAD_LIMIT_OPTIONS[value]; break;
-            case R.id.btn_photos: flags |= TdlibFilesManager.DOWNLOAD_FLAG_PHOTO; break;
-            case R.id.btn_voice: flags |= TdlibFilesManager.DOWNLOAD_FLAG_VOICE; break;
-            case R.id.btn_videoNote: flags |= TdlibFilesManager.DOWNLOAD_FLAG_VIDEO_NOTE; break;
-            case R.id.btn_video: flags |= TdlibFilesManager.DOWNLOAD_FLAG_VIDEO; break;
-            case R.id.btn_file: flags |= TdlibFilesManager.DOWNLOAD_FLAG_FILE; break;
-            case R.id.btn_music: flags |= TdlibFilesManager.DOWNLOAD_FLAG_MUSIC; break;
-            case R.id.btn_gif: flags |= TdlibFilesManager.DOWNLOAD_FLAG_GIF; break;
-          }
+    } else if (id == R.id.btn_inPrivateChats || id == R.id.btn_inGroupChats || id == R.id.btn_inChannelChats || id == R.id.btn_mediaMobileLimits || id == R.id.btn_mediaWiFiLimits || id == R.id.btn_mediaRoamingLimits) {
+      int size = 0;
+      int flags = 0;
+      final int itemCount = result.size();
+      for (int i = 0; i < itemCount; i++) {
+        int key = result.keyAt(i);
+        int value = result.valueAt(i);
+        if (key == R.id.btn_size) {
+          size = TdlibFilesManager.DOWNLOAD_LIMIT_OPTIONS[value];
+        } else if (key == R.id.btn_photos) {
+          flags |= TdlibFilesManager.DOWNLOAD_FLAG_PHOTO;
+        } else if (key == R.id.btn_voice) {
+          flags |= TdlibFilesManager.DOWNLOAD_FLAG_VOICE;
+        } else if (key == R.id.btn_videoNote) {
+          flags |= TdlibFilesManager.DOWNLOAD_FLAG_VIDEO_NOTE;
+        } else if (key == R.id.btn_video) {
+          flags |= TdlibFilesManager.DOWNLOAD_FLAG_VIDEO;
+        } else if (key == R.id.btn_file) {
+          flags |= TdlibFilesManager.DOWNLOAD_FLAG_FILE;
+        } else if (key == R.id.btn_music) {
+          flags |= TdlibFilesManager.DOWNLOAD_FLAG_MUSIC;
+        } else if (key == R.id.btn_gif) {
+          flags |= TdlibFilesManager.DOWNLOAD_FLAG_GIF;
         }
+      }
 
-        boolean changed = false;
-        switch (id) {
-          case R.id.btn_inPrivateChats: changed = tdlib.files().setDownloadInPrivateChats(flags); break;
-          case R.id.btn_inGroupChats: changed = tdlib.files().setDownloadInGroupChats(flags); break;
-          case R.id.btn_inChannelChats: changed = tdlib.files().setDownloadInChannelChats(flags); break;
-          case R.id.btn_mediaMobileLimits: changed = tdlib.files().setLimitsOverMobile(flags, size);break;
-          case R.id.btn_mediaWiFiLimits: changed = tdlib.files().setLimitsOverWiFi(flags, size); break;
-          case R.id.btn_mediaRoamingLimits: changed = tdlib.files().setLimitsOverRoaming(flags, size); break;
-        }
+      boolean changed = false;
+      if (id == R.id.btn_inPrivateChats) {
+        changed = tdlib.files().setDownloadInPrivateChats(flags);
+      } else if (id == R.id.btn_inGroupChats) {
+        changed = tdlib.files().setDownloadInGroupChats(flags);
+      } else if (id == R.id.btn_inChannelChats) {
+        changed = tdlib.files().setDownloadInChannelChats(flags);
+      } else if (id == R.id.btn_mediaMobileLimits) {
+        changed = tdlib.files().setLimitsOverMobile(flags, size);
+      } else if (id == R.id.btn_mediaWiFiLimits) {
+        changed = tdlib.files().setLimitsOverWiFi(flags, size);
+      } else if (id == R.id.btn_mediaRoamingLimits) {
+        changed = tdlib.files().setLimitsOverRoaming(flags, size);
+      }
 
-        if (changed) {
-          adapter.updateValuedSettingById(id);
-        }
-
-        break;
+      if (changed) {
+        adapter.updateValuedSettingById(id);
       }
     }
   }

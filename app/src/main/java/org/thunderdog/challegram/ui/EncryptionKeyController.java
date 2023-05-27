@@ -34,6 +34,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Screen;
@@ -80,7 +81,7 @@ public class EncryptionKeyController extends ViewController<EncryptionKeyControl
   protected View onCreateView (Context context) {
     final RelativeLayout contentView = new RelativeLayout(context);
     contentView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-    ViewSupport.setThemedBackground(contentView, R.id.theme_color_background, this);
+    ViewSupport.setThemedBackground(contentView, ColorId.background, this);
 
     final FrameLayoutFix keyView = new FrameLayoutFix(context) {
       @Override
@@ -95,7 +96,7 @@ public class EncryptionKeyController extends ViewController<EncryptionKeyControl
     keyView.setId(R.id.btn_encryptionKey);
     int padding = Screen.dp(12f);
     keyView.setPadding(padding, padding, padding, padding);
-    ViewSupport.setThemedBackground(keyView, R.id.theme_color_filling, this);
+    ViewSupport.setThemedBackground(keyView, ColorId.filling, this);
 
     RelativeLayout.LayoutParams params;
 
@@ -187,8 +188,8 @@ public class EncryptionKeyController extends ViewController<EncryptionKeyControl
       if (b.length() > 0)
         b.insert(0, "\n");
       b.insert(0, hash);
-      CustomTypefaceSpan span = new CustomTypefaceSpan(Fonts.getRobotoMono(), R.id.theme_color_background_textLight);
-      addThemeTextColorListener(span, R.id.theme_color_background_textLight);
+      CustomTypefaceSpan span = new CustomTypefaceSpan(Fonts.getRobotoMono(), ColorId.background_textLight);
+      addThemeTextColorListener(span, ColorId.background_textLight);
       b.setSpan(span, 0, hash.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
     }
 

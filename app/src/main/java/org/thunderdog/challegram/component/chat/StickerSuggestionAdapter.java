@@ -31,6 +31,7 @@ import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 
@@ -231,7 +232,7 @@ public class StickerSuggestionAdapter extends RecyclerView.Adapter<StickerSugges
           FrameLayoutFix contentView = new FrameLayoutFix(context);
           contentView.setLayoutParams(new RecyclerView.LayoutParams(Screen.dp(34f), ViewGroup.LayoutParams.MATCH_PARENT));
 
-          Drawable drawable = Theme.filteredDrawable(R.drawable.stickers_back_left, R.id.theme_color_overlayFilling, themeProvider);
+          Drawable drawable = Theme.filteredDrawable(R.drawable.stickers_back_left, ColorId.overlayFilling, themeProvider);
 
           View view = new View(context);
           ViewUtils.setBackground(view, drawable);
@@ -247,7 +248,7 @@ public class StickerSuggestionAdapter extends RecyclerView.Adapter<StickerSugges
           FrameLayoutFix contentView = new FrameLayoutFix(context);
           contentView.setLayoutParams(new RecyclerView.LayoutParams(Screen.dp(34f), ViewGroup.LayoutParams.MATCH_PARENT));
 
-          Drawable drawable = Theme.filteredDrawable(R.drawable.stickers_back_right, R.id.theme_color_overlayFilling, themeProvider);
+          Drawable drawable = Theme.filteredDrawable(R.drawable.stickers_back_right, ColorId.overlayFilling, themeProvider);
 
           View view = new View(context);
           ViewUtils.setBackground(view, drawable);
@@ -264,7 +265,7 @@ public class StickerSuggestionAdapter extends RecyclerView.Adapter<StickerSugges
           stickerView.init(tdlib);
           stickerView.setStickerMovementCallback(callback);
 
-          Drawable drawable = Theme.filteredDrawable(R.drawable.stickers_back_center, R.id.theme_color_overlayFilling, themeProvider);
+          Drawable drawable = Theme.filteredDrawable(R.drawable.stickers_back_center, ColorId.overlayFilling, themeProvider);
 
           ViewUtils.setBackground(stickerView, drawable);
           if (themeProvider != null) {

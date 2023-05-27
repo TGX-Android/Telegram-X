@@ -20,7 +20,7 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Strings;
 
 import java.util.ArrayList;
@@ -94,13 +94,13 @@ public class CallItem {
     return isOutgoing ? R.drawable.baseline_call_made_18 : isMissed(call) ? R.drawable.baseline_call_missed_18 : R.drawable.baseline_call_received_18;
   }
 
-  public @ThemeColorId
+  public @ColorId
   int getSubtitleIconColorId () {
     return getSubtitleIconColorId((TdApi.MessageCall) lastMessage().content);
   }
 
-  public static @ThemeColorId int getSubtitleIconColorId (TdApi.MessageCall call) {
-    return isMissedOrCancelled(call) ? R.id.theme_color_iconNegative : R.id.theme_color_iconPositive;
+  public static @ColorId int getSubtitleIconColorId (TdApi.MessageCall call) {
+    return isMissedOrCancelled(call) ? ColorId.iconNegative : ColorId.iconPositive;
   }
 
   public int getDate () {

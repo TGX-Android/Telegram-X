@@ -19,6 +19,7 @@ import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.Menu;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Keyboard;
@@ -263,15 +264,10 @@ public class SetSenderControllerPage extends BottomSheetViewController.BottomShe
 
   @Override
   public void onMenuItemPressed (int id, View view) {
-    switch (id) {
-      case R.id.menu_btn_search: {
-        openSearchMode();
-        break;
-      }
-      case R.id.menu_btn_clear: {
-        clearSearchInput();
-        break;
-      }
+    if (id == R.id.menu_btn_search) {
+      openSearchMode();
+    } else if (id == R.id.menu_btn_clear) {
+      clearSearchInput();
     }
   }
 
@@ -379,17 +375,17 @@ public class SetSenderControllerPage extends BottomSheetViewController.BottomShe
 
   @Override
   protected int getHeaderTextColorId () {
-    return R.id.theme_color_text;
+    return ColorId.text;
   }
 
   @Override
   protected int getHeaderColorId () {
-    return R.id.theme_color_filling;
+    return ColorId.filling;
   }
 
   @Override
   protected int getHeaderIconColorId () {
-    return R.id.theme_color_icon;
+    return ColorId.icon;
   }
 
   @Override

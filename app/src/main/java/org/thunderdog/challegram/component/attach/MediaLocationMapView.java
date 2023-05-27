@@ -52,6 +52,7 @@ import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeId;
 import org.thunderdog.challegram.tool.Intents;
@@ -143,7 +144,7 @@ public class MediaLocationMapView extends FrameLayoutFix implements OnMapReadyCa
     pinXView = new ImageView(getContext());
     pinXView.setScaleType(ImageView.ScaleType.CENTER);
     pinXView.setImageResource(R.drawable.baseline_close_18);
-    pinXView.setColorFilter(Theme.getColor(R.id.theme_color_icon, ThemeId.BLUE));
+    pinXView.setColorFilter(Theme.getColor(ColorId.icon, ThemeId.BLUE));
     pinXView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER));
     addView(pinXView);
 
@@ -171,7 +172,7 @@ public class MediaLocationMapView extends FrameLayoutFix implements OnMapReadyCa
       }
     };
     themeProvider.addThemeInvalidateListener(myLocationButton);
-    myLocationButton.init(R.drawable.baseline_gps_fixed_24, 40f, 4f, R.id.theme_color_circleButtonOverlay, R.id.theme_color_circleButtonOverlayIcon);
+    myLocationButton.init(R.drawable.baseline_gps_fixed_24, 40f, 4f, ColorId.circleButtonOverlay, ColorId.circleButtonOverlayIcon);
     myLocationButton.setId(R.id.btn_gps);
     myLocationButton.setAlpha(0f);
     myLocationButton.setOnClickListener(this);
@@ -196,7 +197,7 @@ public class MediaLocationMapView extends FrameLayoutFix implements OnMapReadyCa
     // Global
 
     setBackgroundColor(Theme.placeholderColor());
-    themeProvider.addThemeBackgroundColorListener(this, R.id.theme_color_placeholder);
+    themeProvider.addThemeBackgroundColorListener(this, ColorId.placeholder);
     setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, mapHeight, Gravity.TOP));
 
     // Google Maps initialization

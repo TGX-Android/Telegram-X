@@ -32,6 +32,7 @@ import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -264,7 +265,7 @@ public abstract class PageBlock {
     return 0;
   }
   public int getBackgroundColorId () {
-    return R.id.theme_color_filling;
+    return ColorId.filling;
   }
 
   protected int getTotalContentPadding () {
@@ -273,7 +274,7 @@ public abstract class PageBlock {
 
   public final <T extends View & DrawableProvider> void draw (T view, Canvas c, Receiver preview, Receiver receiver, @Nullable ComplexReceiver iconReceiver) {
     if (isPost) {
-      final int lineColor = Theme.getColor(R.id.theme_color_iv_blockQuoteLine);
+      final int lineColor = Theme.getColor(ColorId.iv_blockQuoteLine);
       RectF rectF = Paints.getRectF();
       int lineWidth = Screen.dp(3f);
       int linePadding = Screen.dp(8f) / 2;
@@ -381,11 +382,11 @@ public abstract class PageBlock {
       if (this.isClosed != isClosed) {
         this.isClosed = isClosed;
         if (needOffset && isClosed && !((lastBlock != null && lastBlock.block != null) && (lastBlock.block.getConstructor() == TdApi.PageBlockDetails.CONSTRUCTOR || lastBlock.block.getConstructor() == TdApi.PageBlockChatLink.CONSTRUCTOR))) {
-          processImpl(new PageBlockSimple(context, ListItem.TYPE_EMPTY_OFFSET_NO_HEAD, R.id.theme_color_filling), out);
+          processImpl(new PageBlockSimple(context, ListItem.TYPE_EMPTY_OFFSET_NO_HEAD, ColorId.filling), out);
         }
         processImpl(new PageBlockSimple(context, isClosed ? ListItem.TYPE_SHADOW_BOTTOM : ListItem.TYPE_SHADOW_TOP, 0), out);
         if (needOffset && !isClosed) {
-          processImpl(new PageBlockSimple(context, ListItem.TYPE_EMPTY_OFFSET_NO_HEAD, R.id.theme_color_filling), out);
+          processImpl(new PageBlockSimple(context, ListItem.TYPE_EMPTY_OFFSET_NO_HEAD, ColorId.filling), out);
         }
       }
     }
@@ -396,7 +397,7 @@ public abstract class PageBlock {
         setClosed(!isPost && openedList == null && detailsBlock == null && (pageBlock.getConstructor() == TdApi.PageBlockFooter.CONSTRUCTOR), block.context, out, pageBlock.getConstructor() != TdApi.PageBlockChatLink.CONSTRUCTOR);
       }
       if (lastBlock != null && (lastBlock != detailsBlock && ((lastBlock.block != null && lastBlock.block.getConstructor() == TdApi.PageBlockDetails.CONSTRUCTOR) || (lastBlock.details != null && lastBlock.details != detailsBlock)))) {
-        processImpl(new PageBlockSimple(block.context, ListItem.TYPE_EMPTY_OFFSET_NO_HEAD, R.id.theme_color_filling), out);
+        processImpl(new PageBlockSimple(block.context, ListItem.TYPE_EMPTY_OFFSET_NO_HEAD, ColorId.filling), out);
       }
       processImpl(block, out);
     }
@@ -445,13 +446,13 @@ public abstract class PageBlock {
     boolean needPadding = (detailsBlock != null && pageBlocks.length > 0);
     ArrayList<PageBlock> out = new ArrayList<>(pageBlocks.length);
     if (needPadding) {
-      context.process(new PageBlockSimple(parent, ListItem.TYPE_EMPTY_OFFSET_NO_HEAD, R.id.theme_color_filling), out);
+      context.process(new PageBlockSimple(parent, ListItem.TYPE_EMPTY_OFFSET_NO_HEAD, ColorId.filling), out);
     }
     for (TdApi.PageBlock rawPageBlock : pageBlocks) {
       parse(parent, out, context, rawPageBlock, urlOpenParameters);
     }
     if (needPadding) {
-      context.process(new PageBlockSimple(parent, ListItem.TYPE_EMPTY_OFFSET_NO_HEAD, R.id.theme_color_filling), out);
+      context.process(new PageBlockSimple(parent, ListItem.TYPE_EMPTY_OFFSET_NO_HEAD, ColorId.filling), out);
     }
     if (detailsBlock == null) {
       context.setClosed(true, parent, out, true);
@@ -675,7 +676,7 @@ public abstract class PageBlock {
         int index = 0;
         for (TdApi.PageBlockRelatedArticle related : relatedRaw.articles) {
           if (index > 0) {
-            context.process(new PageBlockSimple(parent, ListItem.TYPE_SEPARATOR_FULL, R.id.theme_color_filling), out);
+            context.process(new PageBlockSimple(parent, ListItem.TYPE_SEPARATOR_FULL, ColorId.filling), out);
           }
           context.process(new PageBlockRelatedArticle(parent, relatedRaw, related, openParameters), out);
           index++;

@@ -52,6 +52,7 @@ import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.EmojiMediaType;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeId;
 import org.thunderdog.challegram.tool.Drawables;
@@ -170,33 +171,26 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
   private void removeStickerSet (final TGStickerSetInfo info) {
     if (themeProvider != null) {
       themeProvider.showOptions(null, new int[] {R.id.btn_copyLink, R.id.btn_archive, R.id.more_btn_delete}, new String[] {Lang.getString(R.string.CopyLink), Lang.getString(R.string.ArchivePack), Lang.getString(R.string.DeletePack)}, new int[] {ViewController.OPTION_COLOR_NORMAL, ViewController.OPTION_COLOR_NORMAL, ViewController.OPTION_COLOR_RED}, new int[] {R.drawable.baseline_link_24, R.drawable.baseline_archive_24, R.drawable.baseline_delete_24}, (itemView, id) -> {
-        switch (id) {
-          case R.id.more_btn_delete: {
-            if (themeProvider != null) {
-              themeProvider.showOptions(Lang.getStringBold(R.string.RemoveStickerSet, info.getTitle()), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.RemoveStickerSetAction), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
-                if (resultId == R.id.btn_delete) {
-                  parentController.tdlib().client().send(new TdApi.ChangeStickerSet(info.getId(), false, false), parentController.tdlib().okHandler());
-                }
-                return true;
-              });
-            }
-            break;
+        if (id == R.id.more_btn_delete) {
+          if (themeProvider != null) {
+            themeProvider.showOptions(Lang.getStringBold(R.string.RemoveStickerSet, info.getTitle()), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.RemoveStickerSetAction), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
+              if (resultId == R.id.btn_delete) {
+                parentController.tdlib().client().send(new TdApi.ChangeStickerSet(info.getId(), false, false), parentController.tdlib().okHandler());
+              }
+              return true;
+            });
           }
-          case R.id.btn_archive: {
-            if (themeProvider != null) {
-              themeProvider.showOptions(Lang.getStringBold(R.string.ArchiveStickerSet, info.getTitle()), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] { Lang.getString(R.string.ArchiveStickerSetAction), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_archive_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
-                if (resultId == R.id.btn_delete) {
-                  parentController.tdlib().client().send(new TdApi.ChangeStickerSet(info.getId(), false, true), parentController.tdlib().okHandler());
-                }
-                return true;
-              });
-            }
-            break;
+        } else if (id == R.id.btn_archive) {
+          if (themeProvider != null) {
+            themeProvider.showOptions(Lang.getStringBold(R.string.ArchiveStickerSet, info.getTitle()), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ArchiveStickerSetAction), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_archive_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
+              if (resultId == R.id.btn_delete) {
+                parentController.tdlib().client().send(new TdApi.ChangeStickerSet(info.getId(), false, true), parentController.tdlib().okHandler());
+              }
+              return true;
+            });
           }
-          case R.id.btn_copyLink: {
-            UI.copyText(TD.getStickerPackLink(info.getName()), R.string.CopiedLink);
-            break;
-          }
+        } else if (id == R.id.btn_copyLink) {
+          UI.copyText(TD.getStickerPackLink(info.getName()), R.string.CopiedLink);
         }
         return true;
       });
@@ -453,12 +447,12 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
 
     public void draw (Canvas c, int cx, int cy) {
       if (selectionFactor == 0f || activeDisabled) {
-        Drawables.draw(c, icon, cx - icon.getMinimumWidth() / 2, cy - icon.getMinimumHeight() / 2, parent.useDarkMode ? Paints.getPorterDuffPaint(Theme.getColor(R.id.theme_color_icon, ThemeId.NIGHT_BLACK)) : Paints.getIconGrayPorterDuffPaint());
+        Drawables.draw(c, icon, cx - icon.getMinimumWidth() / 2, cy - icon.getMinimumHeight() / 2, parent.useDarkMode ? Paints.getPorterDuffPaint(Theme.getColor(ColorId.icon, ThemeId.NIGHT_BLACK)) : Paints.getIconGrayPorterDuffPaint());
       } else if (selectionFactor == 1f) {
         final Drawable icon = this.activeIcon != null ? activeIcon : this.icon;
-        Drawables.draw(c, icon, cx - icon.getMinimumWidth() / 2, cy - icon.getMinimumHeight() / 2, parent.useDarkMode ? Paints.getPorterDuffPaint(Theme.getColor(R.id.theme_color_iconActive, ThemeId.NIGHT_BLACK)) : Paints.getActiveKeyboardPaint());
+        Drawables.draw(c, icon, cx - icon.getMinimumWidth() / 2, cy - icon.getMinimumHeight() / 2, parent.useDarkMode ? Paints.getPorterDuffPaint(Theme.getColor(ColorId.iconActive, ThemeId.NIGHT_BLACK)) : Paints.getActiveKeyboardPaint());
       } else {
-        final Paint grayPaint = parent.useDarkMode ? Paints.getPorterDuffPaint(Theme.getColor(R.id.theme_color_icon, ThemeId.NIGHT_BLACK)) : Paints.getIconGrayPorterDuffPaint();
+        final Paint grayPaint = parent.useDarkMode ? Paints.getPorterDuffPaint(Theme.getColor(ColorId.icon, ThemeId.NIGHT_BLACK)) : Paints.getIconGrayPorterDuffPaint();
         final int grayAlpha = grayPaint.getAlpha();
 
         if (makeFirstTransparent) {
@@ -1076,9 +1070,9 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
       }
     };
     if (useDarkMode) {
-      headerView.setBackgroundColor(Theme.getColor(R.id.theme_color_filling, ThemeId.NIGHT_BLACK));
+      headerView.setBackgroundColor(Theme.getColor(ColorId.filling, ThemeId.NIGHT_BLACK));
     } else {
-      ViewSupport.setThemedBackground(headerView, R.id.theme_color_filling, themeProvider);
+      ViewSupport.setThemedBackground(headerView, ColorId.filling, themeProvider);
     }
     headerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, headerSize));
 
@@ -1161,10 +1155,10 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     }
     circleButton.setId(R.id.btn_circle);
     if (position == 0) {
-      circleButton.init(R.drawable.baseline_backspace_24, -Screen.dp(BACKSPACE_OFFSET), 46f, 4f, R.id.theme_color_circleButtonOverlay, R.id.theme_color_circleButtonOverlayIcon);
+      circleButton.init(R.drawable.baseline_backspace_24, -Screen.dp(BACKSPACE_OFFSET), 46f, 4f, ColorId.circleButtonOverlay, ColorId.circleButtonOverlayIcon);
       setCircleVisible(hasLeftButton(), false, 0, 0);
     } else {
-      circleButton.init(R.drawable.baseline_search_24, 46f, 4f, R.id.theme_color_circleButtonOverlay, R.id.theme_color_circleButtonOverlayIcon);
+      circleButton.init(R.drawable.baseline_search_24, 46f, 4f, ColorId.circleButtonOverlay, ColorId.circleButtonOverlayIcon);
       setCircleVisible(hasRightButton(), false, 0, 0);
     }
     circleButton.setOnClickListener(this);
@@ -1177,9 +1171,9 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     addView(circleButton);
 
     if (useDarkMode) {
-      setBackgroundColor(Theme.getColor(R.id.theme_color_chatKeyboard, ThemeId.NIGHT_BLACK));
+      setBackgroundColor(Theme.getColor(ColorId.chatKeyboard, ThemeId.NIGHT_BLACK));
     } else {
-      ViewSupport.setThemedBackground(this, R.id.theme_color_chatKeyboard, themeProvider);
+      ViewSupport.setThemedBackground(this, ColorId.chatKeyboard, themeProvider);
     }
     // NewEmoji.instance().loadAllEmoji();
 
@@ -1332,14 +1326,12 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
 
   @Override
   public boolean onLongClick (View v) {
-    switch (v.getId()) {
-      case R.id.btn_section: {
-        EmojiSection section = ((EmojiSectionView) v).getSection();
-        if (emojiSections.get(0) == section && Emoji.instance().canClearRecents()) {
-          clearRecentEmoji();
-          return true;
-        }
-        break;
+    int viewId = v.getId();
+    if (viewId == R.id.btn_section) {
+      EmojiSection section = ((EmojiSectionView) v).getSection();
+      if (emojiSections.get(0) == section && Emoji.instance().canClearRecents()) {
+        clearRecentEmoji();
+        return true;
       }
     }
     return false;
@@ -1351,88 +1343,80 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
       return;
     }
 
-    switch (v.getId()) {
-      case R.id.btn_stickerSet: {
-        TGStickerSetInfo info = ((StickerSectionView) v).getStickerSet();
+    final int viewId = v.getId();
+    if (viewId == R.id.btn_stickerSet) {
+      TGStickerSetInfo info = ((StickerSectionView) v).getStickerSet();
 
-        if (info != null) {
-          scrollToStickerSet(info);
-        }
-
-        break;
+      if (info != null) {
+        scrollToStickerSet(info);
       }
-      case R.id.btn_circle: {
-        switch (pager.getCurrentItem()) {
+    } else if (viewId == R.id.btn_circle) {
+      switch (pager.getCurrentItem()) {
+        case 0: {
+          if (listener != null) {
+            listener.onDeleteEmoji();
+          }
+          break;
+        }
+        case 1: {
+          if (listener != null) {
+            listener.onSearchRequested(this, false);
+          }
+          break;
+        }
+      }
+    } else if (viewId == R.id.btn_section) {
+      EmojiSection section = ((EmojiSectionView) v).getSection();
+
+      int prevSection = getCurrentEmojiSection();
+      int newSection = -1;
+
+      if (section.index >= 0) {
+        if (allowMedia && section.index == emojiSections.size() - 1) {
+          pager.setCurrentItem(1, true);
+          newSection = getCurrentMediaEmojiSection();
+        } else {
+          scrollToEmojiSection(section.index);
+          newSection = EmojiMediaType.EMOJI;
+        }
+      } else {
+        int index = -(section.index) - 1;
+
+        switch (index) {
           case 0: {
-            if (listener != null) {
-              listener.onDeleteEmoji();
-            }
+            pager.setCurrentItem(0, true);
+            newSection = EmojiMediaType.EMOJI;
             break;
           }
           case 1: {
-            if (listener != null) {
-              listener.onSearchRequested(this, false);
+            ViewController<?> c = adapter.getCachedItem(1);
+            if (c != null) {
+              boolean shownGifs = ((EmojiMediaListController) c).showGIFs();
+              if (!shownGifs && listener != null) {
+                listener.onSearchRequested(this, false);
+              }
+            }
+            break;
+          }
+          case 2: {
+            ViewController<?> c = adapter.getCachedItem(1);
+            if (c != null) {
+              ((EmojiMediaListController) c).showHot();
+            }
+            break;
+          }
+          case 3: {
+            ViewController<?> c = adapter.getCachedItem(1);
+            if (c != null) {
+              ((EmojiMediaListController) c).showSystemStickers();
             }
             break;
           }
         }
-        break;
       }
-      case R.id.btn_section: {
-        EmojiSection section = ((EmojiSectionView) v).getSection();
 
-        int prevSection = getCurrentEmojiSection();
-        int newSection = -1;
-
-        if (section.index >= 0) {
-          if (allowMedia && section.index == emojiSections.size() - 1) {
-            pager.setCurrentItem(1, true);
-            newSection = getCurrentMediaEmojiSection();
-          } else {
-            scrollToEmojiSection(section.index);
-            newSection = EmojiMediaType.EMOJI;
-          }
-        } else {
-          int index = -(section.index) - 1;
-
-          switch (index) {
-            case 0: {
-              pager.setCurrentItem(0, true);
-              newSection = EmojiMediaType.EMOJI;
-              break;
-            }
-            case 1: {
-              ViewController<?> c = adapter.getCachedItem(1);
-              if (c != null) {
-                boolean shownGifs = ((EmojiMediaListController) c).showGIFs();
-                if (!shownGifs && listener != null) {
-                  listener.onSearchRequested(this, false);
-                }
-              }
-              break;
-            }
-            case 2: {
-              ViewController<?> c = adapter.getCachedItem(1);
-              if (c != null) {
-                ((EmojiMediaListController) c).showHot();
-              }
-              break;
-            }
-            case 3: {
-              ViewController<?> c = adapter.getCachedItem(1);
-              if (c != null) {
-                ((EmojiMediaListController) c).showSystemStickers();
-              }
-              break;
-            }
-          }
-        }
-
-        if (listener != null && newSection != -1) {
-          listener.onSectionSwitched(this, newSection, prevSection);
-        }
-
-        break;
+      if (listener != null && newSection != -1) {
+        listener.onSectionSwitched(this, newSection, prevSection);
       }
     }
   }
@@ -1634,15 +1618,11 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     public void updateCachedItemsSpanCounts () {
       for (int i = 0; i < cachedItems.size(); i++) {
         ViewController<?> c = cachedItems.valueAt(i);
-        switch (c.getId()) {
-          case R.id.controller_emoji: {
-            ((EmojiListController) c).checkSpanCount();
-            break;
-          }
-          case R.id.controller_emojiMedia: {
-            ((EmojiMediaListController) c).checkSpanCount();
-            break;
-          }
+        final int controllerId = c.getId();
+        if (controllerId == R.id.controller_emoji) {
+          ((EmojiListController) c).checkSpanCount();
+        } else if (controllerId == R.id.controller_emojiMedia) {
+          ((EmojiMediaListController) c).checkSpanCount();
         }
       }
       parent.resetScrollState();
