@@ -73,7 +73,7 @@ After submitting a pull request and its initial review, special build including 
 
 ## Reproducing public builds
 
-In order to verify that there is no additional source code injected inside official APKs, you must use **Ubuntu 21.04** and comply with the following requirements:
+In order to verify that there is no additional source code injected inside official APKs, you must use **Ubuntu 21.04** for builds published before [26th May 2023](https://github.com/TGX-Android/Telegram-X/commit/e9a054a0f469a98a13f7e0d751539687fef8759b) or **Ubuntu 22.04.2 LTS** for any newer releases, and comply with the following requirements:
 
 1. Create user called `vk` with the home directory located at `/home/vk`
 2. Clone `tgx` repository to `/home/vk/tgx`
