@@ -29,6 +29,7 @@ import org.thunderdog.challegram.component.attach.MeasuredAdapterDelegate;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
@@ -238,7 +239,7 @@ public class SimpleUsersAdapter extends RecyclerView.Adapter<SimpleUsersAdapter.
           if (onClickListener != null || onLongClickListener != null) {
             userView.setOnClickListener(onClickListener);
             userView.setOnLongClickListener(onLongClickListener);
-            ViewUtils.setBackground(userView, Theme.fillingSelector(R.id.theme_color_chatBackground));
+            ViewUtils.setBackground(userView, Theme.fillingSelector(ColorId.chatBackground));
             Views.setClickable(userView);
           }
 

@@ -44,6 +44,7 @@ import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.DrawableProvider;
@@ -122,7 +123,7 @@ public class PageBlockWrapView extends FrameLayoutFix implements ViewPager.OnPag
           return super.onTouchEvent(event);
         }
       };
-      ViewSupport.setThemedBackground(webView, R.id.theme_color_placeholder);
+      ViewSupport.setThemedBackground(webView, ColorId.placeholder);
       webView.getSettings().setJavaScriptEnabled(true);
       webView.getSettings().setAllowContentAccess(true);
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
@@ -477,7 +478,7 @@ public class PageBlockWrapView extends FrameLayoutFix implements ViewPager.OnPag
       SimpleMediaWrapperView wrapperView;
       if (recycledPool.isEmpty()) {
         wrapperView = new SimpleMediaWrapperView(context);
-        wrapperView.setBackgroundColorId(R.id.theme_color_placeholder);
+        wrapperView.setBackgroundColorId(ColorId.placeholder);
         wrapperView.setFitsBounds();
         wrapperView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
       } else {

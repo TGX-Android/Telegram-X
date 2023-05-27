@@ -65,7 +65,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
@@ -1245,7 +1245,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
   // Drawing
 
   public static class BackgroundDecoration extends RecyclerView.ItemDecoration {
-    private @ThemeColorId int colorId;
+    private @ColorId int colorId;
 
     public BackgroundDecoration (int colorId) {
       this.colorId = colorId;
@@ -1356,7 +1356,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       case ListItem.TYPE_SHADOW_BOTTOM:
       case ListItem.TYPE_SHADOW_TOP: {
         setShadowVisibility(item, (ShadowView) holder.itemView);
-        int colorId = item.getTextColorId(ThemeColorId.NONE);
+        int colorId = item.getTextColorId(ColorId.NONE);
         if (colorId != 0) {
           holder.itemView.setBackgroundColor(Theme.getColor(colorId));
         }
@@ -1575,7 +1575,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
         ((SettingView) holder.itemView).setIcon(item.getIconResource());
         ((SettingView) holder.itemView).setName(item.getString());
         ((SettingView) holder.itemView).setIgnoreEnabled(false);
-        ((SettingView) holder.itemView).setTextColorId(item.getTextColorId(R.id.theme_color_text));
+        ((SettingView) holder.itemView).setTextColorId(item.getTextColorId(ColorId.text));
         holder.itemView.setEnabled(true);
         setValuedSetting(item, (SettingView) holder.itemView, false);
         switch (viewType) {
@@ -1624,7 +1624,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       }
       case ListItem.TYPE_EMPTY: {
         ((TextView) holder.itemView).setText(item.getString());
-        ((TextView) holder.itemView).setTextColor(Theme.getColor(item.getTextColorId(R.id.theme_color_background_textLight)));
+        ((TextView) holder.itemView).setTextColor(Theme.getColor(item.getTextColorId(ColorId.background_textLight)));
         break;
       }
       case ListItem.TYPE_2FA_EMAIL: {
@@ -1668,7 +1668,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
         SettingView settingView = (SettingView) holder.itemView;
         settingView.setIcon(item.getIconResource());
         settingView.setName(item.getString());
-        settingView.setTextColorId(item.getTextColorId(ThemeColorId.NONE));
+        settingView.setTextColorId(item.getTextColorId(ColorId.NONE));
         holder.itemView.setEnabled(true);
         switch (viewType) {
           case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_COLOR: {
@@ -1728,7 +1728,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       case ListItem.TYPE_HEADER_PADDED: {
         TextView textView = (TextView) holder.itemView;
         setHeaderText(item, textView, false);
-        textView.setTextColor(Theme.getColor(item.getTextColorId(R.id.theme_color_background_textLight)));
+        textView.setTextColor(Theme.getColor(item.getTextColorId(ColorId.background_textLight)));
         textView.setGravity(Lang.gravity(Gravity.CENTER_VERTICAL));
         break;
       }
@@ -1736,7 +1736,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
         TextView textView = ((TextView) ((FrameLayoutFix) holder.itemView).getChildAt(0));
         textView.setGravity(Lang.gravity(Gravity.CENTER_VERTICAL));
         setHeaderText(item, textView, false);
-        textView.setTextColor(Theme.getColor(item.getTextColorId(R.id.theme_color_background_textLight)));
+        textView.setTextColor(Theme.getColor(item.getTextColorId(ColorId.background_textLight)));
         ImageView imageView = (ImageView) ((FrameLayoutFix) holder.itemView).getChildAt(1);
         imageView.setId(item.getId());
         imageView.setImageResource(item.getIconResource());
@@ -1755,7 +1755,7 @@ public class SettingsAdapter extends RecyclerView.Adapter<SettingHolder> impleme
       case ListItem.TYPE_DESCRIPTION_SMALL:
       case ListItem.TYPE_DESCRIPTION_CENTERED: {
         TextView textView = (TextView) holder.itemView;
-        textView.setTextColor(Theme.getColor(item.getTextColorId(viewType == ListItem.TYPE_DESCRIPTION_CENTERED ? R.id.theme_color_textLight : R.id.theme_color_background_textLight)));
+        textView.setTextColor(Theme.getColor(item.getTextColorId(viewType == ListItem.TYPE_DESCRIPTION_CENTERED ? ColorId.textLight : ColorId.background_textLight)));
         int padding = Screen.dp(16f) + item.getTextPaddingLeft();
         textView.setText(item.getString());
         if (holder.itemView.getPaddingLeft() != padding) {

@@ -27,6 +27,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ChatStyleChangeListener;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.TGBackground;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeManager;
@@ -108,13 +109,13 @@ public class WallpaperParametersView extends View implements ClickHelper.Delegat
     buttonRect.bottom = checkboxY + checkboxSize;
     buttonRect.left = checkboxX - checkboxSize;
     buttonRect.right = centerX + textWidth + (int) (checkboxSize / 1.5) - offset;
-    c.drawRoundRect(buttonRect, Screen.dp(16f), Screen.dp(16f), Paints.fillingPaint(Theme.getColor(R.id.theme_color_previewBackground)));
+    c.drawRoundRect(buttonRect, Screen.dp(16f), Screen.dp(16f), Paints.fillingPaint(Theme.getColor(ColorId.previewBackground)));
 
     c.drawText(text, centerX - offset, centerY + Screen.sp(4f), textPaint);
 
     c.save();
     c.scale(checkboxScale, checkboxScale, checkboxX, centerY);
-    c.drawCircle(checkboxX, checkboxY, checkboxSize / 2, Paints.getProgressPaint(Theme.getColor(R.id.theme_color_text), Screen.dp(2f)));
+    c.drawCircle(checkboxX, checkboxY, checkboxSize / 2, Paints.getProgressPaint(Theme.getColor(ColorId.text), Screen.dp(2f)));
     SimplestCheckBox.draw(c, checkboxX, checkboxY, selectAnimator.getFloatValue(), null);
     c.restore();
   }

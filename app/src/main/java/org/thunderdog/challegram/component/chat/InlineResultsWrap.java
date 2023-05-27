@@ -53,6 +53,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeId;
 import org.thunderdog.challegram.theme.ThemeListenerList;
@@ -201,7 +202,7 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
       public void draw (Canvas c) {
         int top = detectRecyclerTopEdge();
         int width = getMeasuredWidth();
-        c.drawRect(0, top, width, getMeasuredHeight(), Paints.fillingPaint(adapter.useDarkMode() ? Theme.getColor(R.id.theme_color_filling, ThemeId.NIGHT_BLACK) : Theme.fillingColor()));
+        c.drawRect(0, top, width, getMeasuredHeight(), Paints.fillingPaint(adapter.useDarkMode() ? Theme.getColor(ColorId.filling, ThemeId.NIGHT_BLACK) : Theme.fillingColor()));
 
         super.draw(c);
       }
@@ -889,46 +890,42 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
 
   @Override
   public void onClick (View v) {
-    switch (v.getId()) {
-      case R.id.btn_switchPmButton: {
-        switchPm((InlineResultButton) v.getTag());
-        break;
-      }
-      case R.id.result: {
-        Object tag = v.getTag();
-        if (tag != null && tag instanceof InlineResult) {
-          InlineResult<?> result = (InlineResult<?>) tag;
-          PickListener listener = findListener();
-          if (listener == null) {
-            return;
+    int viewId = v.getId();
+    if (viewId == R.id.btn_switchPmButton) {
+      switchPm((InlineResultButton) v.getTag());
+    } else if (viewId == R.id.result) {
+      Object tag = v.getTag();
+      if (tag != null && tag instanceof InlineResult) {
+        InlineResult<?> result = (InlineResult<?>) tag;
+        PickListener listener = findListener();
+        if (listener == null) {
+          return;
+        }
+        switch (result.getType()) {
+          case InlineResult.TYPE_HASHTAG: {
+            InlineResultHashtag hashtag = (InlineResultHashtag) result;
+            listener.onHashtagPick(hashtag);
+            break;
           }
-          switch (result.getType()) {
-            case InlineResult.TYPE_HASHTAG: {
-              InlineResultHashtag hashtag = (InlineResultHashtag) result;
-              listener.onHashtagPick(hashtag);
-              break;
-            }
-            case InlineResult.TYPE_EMOJI_SUGGESTION: {
-              InlineResultEmojiSuggestion suggestion = (InlineResultEmojiSuggestion) result;
-              listener.onEmojiSuggestionPick(suggestion);
-              break;
-            }
-            case InlineResult.TYPE_MENTION: {
-              InlineResultMention mention = (InlineResultMention) result;
-              listener.onMentionPick(mention, mention.isUsernameless() ? mention.getMention(true) : null);
-              break;
-            }
-            case InlineResult.TYPE_COMMAND: {
-              listener.onCommandPick((InlineResultCommand) result, false);
-              break;
-            }
-            default: {
-              listener.onInlineQueryResultPick(result);
-              break;
-            }
+          case InlineResult.TYPE_EMOJI_SUGGESTION: {
+            InlineResultEmojiSuggestion suggestion = (InlineResultEmojiSuggestion) result;
+            listener.onEmojiSuggestionPick(suggestion);
+            break;
+          }
+          case InlineResult.TYPE_MENTION: {
+            InlineResultMention mention = (InlineResultMention) result;
+            listener.onMentionPick(mention, mention.isUsernameless() ? mention.getMention(true) : null);
+            break;
+          }
+          case InlineResult.TYPE_COMMAND: {
+            listener.onCommandPick((InlineResultCommand) result, false);
+            break;
+          }
+          default: {
+            listener.onInlineQueryResultPick(result);
+            break;
           }
         }
-        break;
       }
     }
   }

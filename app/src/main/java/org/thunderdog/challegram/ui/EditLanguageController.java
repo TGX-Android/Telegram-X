@@ -43,7 +43,7 @@ import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Screen;
@@ -176,14 +176,14 @@ public class EditLanguageController extends EditBaseController<EditLanguageContr
       for (String string : args) {
         TextView textView = new NoScrollTextView(context);
         textView.setTypeface(Fonts.getRobotoMedium());
-        textView.setTextColor(Theme.getColor(R.id.theme_color_background_textLight));
+        textView.setTextColor(Theme.getColor(ColorId.background_textLight));
         textView.setText(string);
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16f);
         textView.setPadding(Screen.dp(12f), Screen.dp(30f), Screen.dp(12f), Screen.dp(30f));
         textView.setOnClickListener(onClickListener);
         RippleSupport.setTransparentSelector(textView);
         Views.setClickable(textView);
-        addThemeTextColorListener(textView, R.id.theme_color_background_textLight);
+        addThemeTextColorListener(textView, ColorId.background_textLight);
         hotKeysLayout.addView(textView);
       }
     }
@@ -251,7 +251,7 @@ public class EditLanguageController extends EditBaseController<EditLanguageContr
         String num = String.valueOf(number);
         int startIndex = b.length();
         b.append(num);
-        b.setSpan(new CustomTypefaceSpan(Fonts.getRobotoMedium(), R.id.theme_color_background_textLight), startIndex, startIndex + num.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        b.setSpan(new CustomTypefaceSpan(Fonts.getRobotoMedium(), ColorId.background_textLight), startIndex, startIndex + num.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
       }
       return b;
     }
@@ -267,7 +267,7 @@ public class EditLanguageController extends EditBaseController<EditLanguageContr
       String content = textView.getText().toString();
       boolean isEnabled = currentInput != null && !currentInput.contains(content);
       removeThemeListenerByTarget(textView);
-      @ThemeColorId int colorId = isEnabled ? R.id.theme_color_textLink : R.id.theme_color_background_textLight;
+      @ColorId int colorId = isEnabled ? ColorId.textLink : ColorId.background_textLight;
       addThemeTextColorListener(textView, colorId);
       textView.setTextColor(Theme.getColor(colorId));
     }
@@ -468,18 +468,14 @@ public class EditLanguageController extends EditBaseController<EditLanguageContr
 
   private void exit (boolean forceBack) {
     showOptions(Lang.getStringBold(R.string.LocalizationEditConfirmPrompt, getArgumentsStrict().string.getKey()), new int[] {R.id.btn_save, R.id.btn_discard, R.id.btn_cancel}, new String[] {Lang.getString(R.string.LocalizationEditConfirmSave), Lang.getString(R.string.LocalizationEditConfirmDiscard), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_BLUE, OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_check_24, R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
-      switch (id) {
-        case R.id.btn_save:
-        case R.id.btn_discard: {
-          if (id == R.id.btn_save) {
-            if (!saveString()) {
-              return true;
-            }
+      if (id == R.id.btn_save || id == R.id.btn_discard) {
+        if (id == R.id.btn_save) {
+          if (!saveString()) {
+            return true;
           }
-          if (forceBack || !navigateToPreviousString())
-            navigateBack();
-          break;
         }
+        if (forceBack || !navigateToPreviousString())
+          navigateBack();
       }
       return true;
     });
@@ -515,48 +511,40 @@ public class EditLanguageController extends EditBaseController<EditLanguageContr
 
   @Override
   public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
-    switch (id) {
-      case R.id.menu_editLangPackString: {
-        header.addButton(menu, R.id.menu_btn_view, getHeaderIconColorId(), this, R.drawable.baseline_open_in_browser_24, Screen.dp(49f), R.drawable.bg_btn_header);
-        header.addMoreButton(menu, this, getHeaderIconColorId());
-        break;
-      }
+    if (id == R.id.menu_editLangPackString) {
+      header.addButton(menu, R.id.menu_btn_view, getHeaderIconColorId(), this, R.drawable.baseline_open_in_browser_24, Screen.dp(49f), R.drawable.bg_btn_header);
+      header.addMoreButton(menu, this, getHeaderIconColorId());
     }
   }
 
   @Override
   public void onMenuItemPressed (int id, View view) {
-    switch (id) {
-      case R.id.menu_btn_view: {
-        String url = TD.getLanguageKeyLink(getArgumentsStrict().string.getKey());
-        if (!Intents.openInAppBrowser(context, Uri.parse(url), true)) {
-          tdlib.ui().openUrl(this, url, new TdlibUi.UrlOpenParameters().disableInstantView());
-        }
-        break;
+    if (id == R.id.menu_btn_view) {
+      String url = TD.getLanguageKeyLink(getArgumentsStrict().string.getKey());
+      if (!Intents.openInAppBrowser(context, Uri.parse(url), true)) {
+        tdlib.ui().openUrl(this, url, new TdlibUi.UrlOpenParameters().disableInstantView());
       }
-      case R.id.menu_btn_more: {
-        IntList ids = new IntList(3);
-        StringList strings = new StringList(3);
+    } else if (id == R.id.menu_btn_more) {
+      IntList ids = new IntList(3);
+      StringList strings = new StringList(3);
 
-        ids.append(R.id.btn_copyLink);
-        strings.append(R.string.CopyLink);
+      ids.append(R.id.btn_copyLink);
+      strings.append(R.string.CopyLink);
 
-        if (getArgumentsStrict().string.string.value.getConstructor() == TdApi.LanguagePackStringValueOrdinary.CONSTRUCTOR) {
-          ids.append(R.id.btn_copyText);
-          strings.append(R.string.LocalizationCopy);
-          if (focusedEditText != null && StringUtils.isEmpty(value.value)) {
-            ids.append(R.id.btn_pasteText);
-            strings.append(R.string.LocalizationPaste);
-          }
+      if (getArgumentsStrict().string.string.value.getConstructor() == TdApi.LanguagePackStringValueOrdinary.CONSTRUCTOR) {
+        ids.append(R.id.btn_copyText);
+        strings.append(R.string.LocalizationCopy);
+        if (focusedEditText != null && StringUtils.isEmpty(value.value)) {
+          ids.append(R.id.btn_pasteText);
+          strings.append(R.string.LocalizationPaste);
         }
-        if (!swipeNavigationEnabled()) {
-          ids.append(R.id.btn_close);
-          strings.append(R.string.LocalizationExit);
-        }
-
-        showMore(ids.get(), strings.get(), 0);
-        break;
       }
+      if (!swipeNavigationEnabled()) {
+        ids.append(R.id.btn_close);
+        strings.append(R.string.LocalizationExit);
+      }
+
+      showMore(ids.get(), strings.get(), 0);
     }
   }
 
@@ -570,32 +558,23 @@ public class EditLanguageController extends EditBaseController<EditLanguageContr
 
   @Override
   public void onMoreItemPressed (int id) {
-    switch (id) {
-      case R.id.btn_copyLink: {
-        UI.copyText(TD.getLanguageKeyLink(getArgumentsStrict().string.getKey()), R.string.CopiedLink);
-        break;
-      }
-      case R.id.btn_copyText: {
-        UI.copyText(getBuiltinValueOrdinary(), R.string.CopiedText);
-        break;
-      }
-      case R.id.btn_pasteText: {
-        if (focusedEditText != null) {
-          String text = getBuiltinValueOrdinary();
-          if (!StringUtils.isEmpty(text)) {
-            TextSelection selection = focusedEditText.getEditText().getTextSelection();
-            if (selection != null) {
-              focusedEditText.getEditText().getText().replace(selection.start, selection.end, text);
-              madeChanges = true;
-            }
+    if (id == R.id.btn_copyLink) {
+      UI.copyText(TD.getLanguageKeyLink(getArgumentsStrict().string.getKey()), R.string.CopiedLink);
+    } else if (id == R.id.btn_copyText) {
+      UI.copyText(getBuiltinValueOrdinary(), R.string.CopiedText);
+    } else if (id == R.id.btn_pasteText) {
+      if (focusedEditText != null) {
+        String text = getBuiltinValueOrdinary();
+        if (!StringUtils.isEmpty(text)) {
+          TextSelection selection = focusedEditText.getEditText().getTextSelection();
+          if (selection != null) {
+            focusedEditText.getEditText().getText().replace(selection.start, selection.end, text);
+            madeChanges = true;
           }
         }
-        break;
       }
-      case R.id.btn_close: {
-        exit(true);
-        break;
-      }
+    } else if (id == R.id.btn_close) {
+      exit(true);
     }
   }
 
@@ -603,39 +582,30 @@ public class EditLanguageController extends EditBaseController<EditLanguageContr
 
   @Override
   public void onTextChanged (int id, ListItem item, MaterialEditTextGroup v, String text) {
-    switch (id) {
-      case R.id.string:
-      case R.id.pluralZero:
-      case R.id.pluralOne:
-      case R.id.pluralTwo:
-      case R.id.pluralFew:
-      case R.id.pluralMany:
-      case R.id.pluralOther:
-        madeChanges = true;
-        break;
+    if (
+      id == R.id.string ||
+      id == R.id.pluralZero ||
+      id == R.id.pluralOne ||
+      id == R.id.pluralTwo ||
+      id == R.id.pluralFew ||
+      id == R.id.pluralMany ||
+      id == R.id.pluralOther) {
+      madeChanges = true;
     }
-    switch (id) {
-      case R.id.string:
-        value.value = text;
-        break;
-      case R.id.pluralZero:
-        pluralizedValue.zeroValue = text;
-        break;
-      case R.id.pluralOne:
-        pluralizedValue.oneValue = text;
-        break;
-      case R.id.pluralTwo:
-        pluralizedValue.twoValue = text;
-        break;
-      case R.id.pluralFew:
-        pluralizedValue.fewValue = text;
-        break;
-      case R.id.pluralMany:
-        pluralizedValue.manyValue = text;
-        break;
-      case R.id.pluralOther:
-        pluralizedValue.otherValue = text;
-        break;
+    if (id == R.id.string) {
+      value.value = text;
+    } else if (id == R.id.pluralZero) {
+      pluralizedValue.zeroValue = text;
+    } else if (id == R.id.pluralOne) {
+      pluralizedValue.oneValue = text;
+    } else if (id == R.id.pluralTwo) {
+      pluralizedValue.twoValue = text;
+    } else if (id == R.id.pluralFew) {
+      pluralizedValue.fewValue = text;
+    } else if (id == R.id.pluralMany) {
+      pluralizedValue.manyValue = text;
+    } else if (id == R.id.pluralOther) {
+      pluralizedValue.otherValue = text;
     }
     v.setInErrorState(false);
     checkHotKeys();

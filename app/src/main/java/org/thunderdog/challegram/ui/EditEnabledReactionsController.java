@@ -36,6 +36,7 @@ import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.navigation.ReactionsOverlayView;
 import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
@@ -198,7 +199,7 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
         super.onBindViewHolder(holder, position);
         if (holder.getItemViewType() == ListItem.TYPE_HEADER_WITH_ACTION) {
           ImageView imageView = (ImageView) ((FrameLayoutFix) holder.itemView).getChildAt(1);
-          imageView.setColorFilter(Theme.getColor(R.id.theme_color_text));
+          imageView.setColorFilter(Theme.getColor(ColorId.text));
           holder.itemView.setOnClickListener((v) -> {
             imageView.performClick();
           });
@@ -217,7 +218,7 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
 
     GridSpacingItemDecoration decoration = new GridSpacingItemDecoration(4, Screen.dp(3f), true, true, true);
     decoration.setNeedDraw(true, ListItem.TYPE_REACTION_CHECKBOX);
-    decoration.setDrawColorId(R.id.theme_color_filling);
+    decoration.setDrawColorId(ColorId.filling);
     decoration.setSpanSizeLookup(manager.getSpanSizeLookup());
     recyclerView.addItemDecoration(decoration);
     recyclerView.setItemAnimator(null);
@@ -486,7 +487,7 @@ public class EditEnabledReactionsController extends EditBaseController<EditEnabl
 
   @Override
   protected int getRecyclerBackgroundColorId () {
-    return R.id.theme_color_background;
+    return ColorId.background;
   }
 
   @Override

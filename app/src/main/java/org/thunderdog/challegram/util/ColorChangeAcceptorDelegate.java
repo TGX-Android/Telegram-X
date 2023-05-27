@@ -16,9 +16,9 @@ package org.thunderdog.challegram.util;
 
 import androidx.annotation.ColorInt;
 
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 
 public interface ColorChangeAcceptorDelegate {
-  void applyColor (@ThemeColorId int fromColorId, @ThemeColorId int toColorId, float factor);
+  void applyColor (@ColorId int fromColorId, @ColorId int toColorId, float factor);
   @ColorInt int getDrawColor ();
 }

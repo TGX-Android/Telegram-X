@@ -53,24 +53,24 @@ public final class ThemeCustom implements ThemeDelegate {
     return parentTheme;
   }
 
-  @ThemeColorId
+  @ColorId
   private int lastChangedColorId;
 
-  public void setColor (@ThemeColorId int colorId, @Nullable Integer color) {
+  public void setColor (@ColorId int colorId, @Nullable Integer color) {
     this.lastChangedColorId = colorId;
     colors.set(colorId, color);
   }
 
-  public boolean hasRecentlyChanged (@ThemeColorId int colorId) {
+  public boolean hasRecentlyChanged (@ColorId int colorId) {
     return lastChangedColorId == colorId;
   }
 
-  public boolean hasColor (@ThemeColorId int colorId, boolean onlyModified) {
+  public boolean hasColor (@ColorId int colorId, boolean onlyModified) {
     Integer color = colors.get(colorId);
     return color != null && (!onlyModified || parentTheme == null || color != parentTheme.getColor(colorId));
   }
 
-  public boolean hasProperty (@ThemeProperty int propertyId, boolean onlyModified) {
+  public boolean hasProperty (@PropertyId int propertyId, boolean onlyModified) {
     Float property = properties.get(propertyId);
     return property != null && (!onlyModified || parentTheme == null || property != parentTheme.getProperty(propertyId));
   }
@@ -81,8 +81,8 @@ public final class ThemeCustom implements ThemeDelegate {
       throw new IllegalArgumentException("Invalid themeId: " + id);
   }
 
-  public void setProperty (@ThemeProperty int propertyId, @Nullable Float value) {
-    if (propertyId == ThemeProperty.PARENT_THEME) {
+  public void setProperty (@PropertyId int propertyId, @Nullable Float value) {
+    if (propertyId == PropertyId.PARENT_THEME) {
       setParentThemeImpl(value != null ? value.intValue() : ThemeId.NONE);
     }
     properties.set(propertyId, value);
@@ -117,7 +117,7 @@ public final class ThemeCustom implements ThemeDelegate {
   public String getDefaultWallpaper () {
     if (wallpaper != null)
       return wallpaper;
-    Float property = properties.get(ThemeProperty.WALLPAPER_ID);
+    Float property = properties.get(PropertyId.WALLPAPER_ID);
     if (property != null) {
       String wallpaper = TGBackground.getBackgroundForLegacyWallpaperId(property.intValue());
       if (wallpaper != null)

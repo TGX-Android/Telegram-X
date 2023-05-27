@@ -16,7 +16,7 @@ import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.theme.ThemeManager;
 
@@ -32,29 +32,29 @@ public interface TextColorSetThemed extends TextColorSet {
     return forcedTheme != null ? forcedTheme : ThemeManager.instance().currentTheme();
   }
 
-  @ThemeColorId
+  @ColorId
   int defaultTextColorId ();
-  @ThemeColorId
+  @ColorId
   default int iconColorId () {
     return defaultTextColorId();
   }
-  @ThemeColorId
+  @ColorId
   default int clickableTextColorId (boolean isPressed) {
     return defaultTextColorId();
   }
-  @ThemeColorId
+  @ColorId
   default int pressedBackgroundColorId () {
     return 0;
   }
-  @ThemeColorId
+  @ColorId
   default int staticBackgroundColorId () {
     return 0;
   }
-  @ThemeColorId
+  @ColorId
   default int backgroundColorId (boolean isPressed) {
     return isPressed ? pressedBackgroundColorId() : staticBackgroundColorId();
   }
-  @ThemeColorId
+  @ColorId
   default int outlineColorId (boolean isPressed) {
     return 0;
   }

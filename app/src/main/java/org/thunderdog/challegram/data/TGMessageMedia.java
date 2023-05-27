@@ -36,6 +36,7 @@ import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
@@ -165,7 +166,7 @@ public class TGMessageMedia extends TGMessage {
   public MediaViewThumbLocation getMediaThumbLocation (long messageId, View view, int viewTop, int viewBottom, int top) {
     MediaViewThumbLocation location = mosaicWrapper.getMediaThumbLocation(messageId, view, viewTop, viewBottom, top);
     if (location != null) {
-      location.setColorId(useBubbles() && isOutgoingBubble() ? R.id.theme_color_bubbleOut_background : R.id.theme_color_filling);
+      location.setColorId(useBubbles() && isOutgoingBubble() ? ColorId.bubbleOut_background : ColorId.filling);
     }
     return location;
   }

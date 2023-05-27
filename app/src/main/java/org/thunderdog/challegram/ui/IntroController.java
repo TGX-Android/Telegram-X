@@ -64,6 +64,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibOptionListener;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeListenerEntry;
@@ -236,54 +237,48 @@ public class IntroController extends ViewController<Void> implements GLSurfaceVi
 
     CharSequence info = Strings.buildMarkdown(new TdlibContext(context, getTdlib()), Lang.getString(languagePackInfo, R.string.LoginErrorLongConnecting), null);
     PopupLayout popupLayout = showOptions(info, ids.get(), strings.get(), null, icons.get(), (itemView, id) -> {
-      switch (id) {
-        case R.id.btn_done: {
-          break;
+      if (id == R.id.btn_done) {
+        // nothing to do?
+      } else if (id == R.id.btn_help) {
+        TdApi.NetworkType networkType = getTdlib().networkType();
+        String networkTypeStr;
+        if (networkType != null) {
+          switch (networkType.getConstructor()) {
+            case TdApi.NetworkTypeMobile.CONSTRUCTOR:
+              networkTypeStr = "Mobile";
+              break;
+            case TdApi.NetworkTypeMobileRoaming.CONSTRUCTOR:
+              networkTypeStr = "Roaming";
+              break;
+            case TdApi.NetworkTypeOther.CONSTRUCTOR:
+              networkTypeStr = "Other";
+              break;
+            case TdApi.NetworkTypeWiFi.CONSTRUCTOR:
+              networkTypeStr = "Wifi";
+              break;
+            case TdApi.NetworkTypeNone.CONSTRUCTOR:
+            default:
+              networkTypeStr = "None";
+              break;
+          }
+        } else {
+          networkTypeStr = "Unknown";
         }
-        case R.id.btn_help: {
-          TdApi.NetworkType networkType = getTdlib().networkType();
-          String networkTypeStr;
-          if (networkType != null) {
-            switch (networkType.getConstructor()) {
-              case TdApi.NetworkTypeMobile.CONSTRUCTOR:
-                networkTypeStr = "Mobile";
-                break;
-              case TdApi.NetworkTypeMobileRoaming.CONSTRUCTOR:
-                networkTypeStr = "Roaming";
-                break;
-              case TdApi.NetworkTypeOther.CONSTRUCTOR:
-                networkTypeStr = "Other";
-                break;
-              case TdApi.NetworkTypeWiFi.CONSTRUCTOR:
-                networkTypeStr = "Wifi";
-                break;
-              case TdApi.NetworkTypeNone.CONSTRUCTOR:
-              default:
-                networkTypeStr = "None";
-                break;
-            }
-          } else {
-            networkTypeStr = "Unknown";
-          }
-          if (getTdlib().isConnected()) {
-            networkTypeStr = networkTypeStr + ", " + Lang.getString(languagePackInfo, R.string.Connected);
-          }
-          String text = Lang.getString(languagePackInfo,
-            R.string.email_LoginTooLong_text,
+        if (getTdlib().isConnected()) {
+          networkTypeStr = networkTypeStr + ", " + Lang.getString(languagePackInfo, R.string.Connected);
+        }
+        String text = Lang.getString(languagePackInfo,
+          R.string.email_LoginTooLong_text,
 
-            BuildConfig.VERSION_NAME,
-            languagePackInfo.id,
-            Lang.getDuration((int) (getTdlib().timeSinceFirstConnectionAttemptMs() / 1000l)) + " (" + networkTypeStr + ")",
-            TdlibManager.getSystemLanguageCode(),
-            TdlibManager.getSystemVersion()
-          );
-          Intents.sendEmail(Lang.getStringSecure(R.string.email_SmsHelp), Lang.getString(languagePackInfo, R.string.email_LoginTooLong_subject), text, Lang.getString(languagePackInfo, R.string.HelpEmailError));
-          break;
-        }
-        case R.id.btn_proxy: {
-          getTdlib().ui().openProxySettings(new TdlibContext(context, getTdlib()), true);
-          break;
-        }
+          BuildConfig.VERSION_NAME,
+          languagePackInfo.id,
+          Lang.getDuration((int) (getTdlib().timeSinceFirstConnectionAttemptMs() / 1000l)) + " (" + networkTypeStr + ")",
+          TdlibManager.getSystemLanguageCode(),
+          TdlibManager.getSystemVersion()
+        );
+        Intents.sendEmail(Lang.getStringSecure(R.string.email_SmsHelp), Lang.getString(languagePackInfo, R.string.email_LoginTooLong_subject), text, Lang.getString(languagePackInfo, R.string.HelpEmailError));
+      } else if (id == R.id.btn_proxy) {
+        getTdlib().ui().openProxySettings(new TdlibContext(context, getTdlib()), true);
       }
       return true;
     });
@@ -327,14 +322,11 @@ public class IntroController extends ViewController<Void> implements GLSurfaceVi
     strings.append(Lang.getString(languagePackInfo, R.string.Settings));
     icons.append(R.drawable.baseline_settings_24);
     PopupLayout popupLayout = showOptions(msg, ids.get(), strings.get(), null, icons.get(), (itemView, id) -> {
-      switch (id) {
-        case R.id.btn_settings: {
-          if (U.isAirplaneModeOn()) {
-            Intents.openAirplaneSettings();
-          } else {
-            Intents.openWirelessSettings();
-          }
-          break;
+      if (id == R.id.btn_settings) {
+        if (U.isAirplaneModeOn()) {
+          Intents.openAirplaneSettings();
+        } else {
+          Intents.openWirelessSettings();
         }
       }
       return true;
@@ -854,7 +846,7 @@ public class IntroController extends ViewController<Void> implements GLSurfaceVi
     initLanguages();
 
     FrameLayoutFix contentView = new FrameLayoutFix(context);
-    ViewSupport.setThemedBackground(contentView, R.id.theme_color_filling, this);
+    ViewSupport.setThemedBackground(contentView, ColorId.filling, this);
     contentView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
     // UI.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN);
@@ -1015,8 +1007,8 @@ public class IntroController extends ViewController<Void> implements GLSurfaceVi
     button.setOnClickListener(this);
     button.setOnLongClickListener(this);
     button.setLayoutParams(params);
-    button.setTextColor(Theme.getColor(R.id.theme_color_textNeutral));
-    addThemeTextColorListener(button, R.id.theme_color_textNeutral);
+    button.setTextColor(Theme.getColor(ColorId.textNeutral));
+    addThemeTextColorListener(button, ColorId.textNeutral);
     RippleSupport.setSimpleWhiteBackground(button);
     textWrap.addView(button);
 
@@ -1042,9 +1034,9 @@ public class IntroController extends ViewController<Void> implements GLSurfaceVi
     continueButton.setLayoutParams(params);
     continueButton.setOnClickListener(this);
     continueButton.setPadding(Screen.dp(16f), 0, Screen.dp(16f), Screen.dp(1f));
-    continueButton.setTextColor(Theme.getColor(R.id.theme_color_textNeutral));
+    continueButton.setTextColor(Theme.getColor(ColorId.textNeutral));
     continueButton.setTranslationY(Screen.dp(48f) + Screen.dp(16f));
-    addThemeTextColorListener(continueButton, R.id.theme_color_textNeutral);
+    addThemeTextColorListener(continueButton, ColorId.textNeutral);
     textWrap.addView(continueButton);
 
     continueAnimator = new BoolAnimator(0, new FactorAnimator.Target() {
@@ -1085,13 +1077,11 @@ public class IntroController extends ViewController<Void> implements GLSurfaceVi
 
   @Override
   public void onClick (View v) {
-    switch (v.getId()) {
-      case R.id.btn_done:
-        requestLogin(false);
-        break;
-      case R.id.btn_cancel:
-        requestLogin(true);
-        break;
+    final int viewId = v.getId();
+    if (viewId == R.id.btn_done) {
+      requestLogin(false);
+    } else if (viewId == R.id.btn_cancel) {
+      requestLogin(true);
     }
   }
 
@@ -1159,27 +1149,18 @@ public class IntroController extends ViewController<Void> implements GLSurfaceVi
     }
 
     showOptions(null, ids.get(), strings.get(), null, icons.get(), (itemView, id) -> {
-      switch (id) {
-        case R.id.btn_tdlib_debugDatacenter: {
-          if (Config.ALLOW_DEBUG_DC) {
-            proceedInDebugMode(!getTdlib().account().isDebug());
-          }
-          break;
+      if (id == R.id.btn_tdlib_debugDatacenter) {
+        if (Config.ALLOW_DEBUG_DC) {
+          proceedInDebugMode(!getTdlib().account().isDebug());
         }
-        case R.id.btn_log_files: {
-          navigateTo(new SettingsBugController(context, getTdlib()));
-          break;
-        }
-        case R.id.btn_proxy: {
-          getTdlib().ui().openProxySettings(new TdlibContext(context, getTdlib()), true);
-          break;
-        }
-        case R.id.btn_test: {
-          if (!UI.inTestMode()) {
-            UI.TEST_MODE = UI.TEST_MODE_USER;
-            proceedInDebugMode(true);
-          }
-          break;
+      } else if (id == R.id.btn_log_files) {
+        navigateTo(new SettingsBugController(context, getTdlib()));
+      } else if (id == R.id.btn_proxy) {
+        getTdlib().ui().openProxySettings(new TdlibContext(context, getTdlib()), true);
+      } else if (id == R.id.btn_test) {
+        if (!UI.inTestMode()) {
+          UI.TEST_MODE = UI.TEST_MODE_USER;
+          proceedInDebugMode(true);
         }
       }
       return true;
@@ -1329,22 +1310,18 @@ public class IntroController extends ViewController<Void> implements GLSurfaceVi
   }
 
   private static boolean belongsToIntro (@StringRes int res) {
-    switch (res) {
-      case R.string.Page1Title:
-      case R.string.Page1Message:
-      case R.string.Page2Title:
-      case R.string.Page2Message:
-      case R.string.Page3Title:
-      case R.string.Page3Message:
-      case R.string.Page4Title:
-      case R.string.Page4Message:
-      case R.string.Page5Title:
-      case R.string.Page5Message:
-      case R.string.Page6Title:
-      case R.string.Page6Message:
-        return true;
-    }
-    return false;
+    return res == R.string.Page1Title ||
+      res == R.string.Page1Message ||
+      res == R.string.Page2Title ||
+      res == R.string.Page2Message ||
+      res == R.string.Page3Title ||
+      res == R.string.Page3Message ||
+      res == R.string.Page4Title ||
+      res == R.string.Page4Message ||
+      res == R.string.Page5Title ||
+      res == R.string.Page5Message ||
+      res == R.string.Page6Title ||
+      res == R.string.Page6Message;
   }
 
   private static int getTitleString (int position, boolean isDesc) {
@@ -1366,7 +1343,7 @@ public class IntroController extends ViewController<Void> implements GLSurfaceVi
       return descs[pos];
     } else {
       String text = getString(getTitleString(pos, true));
-      return (descs[pos] = Strings.replaceBoldTokens(text, R.id.theme_color_text));
+      return (descs[pos] = Strings.replaceBoldTokens(text, ColorId.text));
     }
   }
 
@@ -1452,8 +1429,8 @@ public class IntroController extends ViewController<Void> implements GLSurfaceVi
     }
 
     public void initWithController (IntroController c) {
-      c.getThemeListeners().addThemeListener(titlePaint, R.id.theme_color_text, ThemeListenerEntry.MODE_PAINT_COLOR);
-      c.getThemeListeners().addThemeListener(textPaint, R.id.theme_color_text, ThemeListenerEntry.MODE_PAINT_COLOR);
+      c.getThemeListeners().addThemeListener(titlePaint, ColorId.text, ThemeListenerEntry.MODE_PAINT_COLOR);
+      c.getThemeListeners().addThemeListener(textPaint, ColorId.text, ThemeListenerEntry.MODE_PAINT_COLOR);
     }
 
     public void setUseCenter (boolean useCenter) {

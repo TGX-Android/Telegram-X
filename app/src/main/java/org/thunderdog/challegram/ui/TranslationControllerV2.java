@@ -40,6 +40,7 @@ import org.thunderdog.challegram.navigation.ToggleHeaderView2;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
@@ -53,7 +54,6 @@ import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.TranslationCounterDrawable;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
-import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.util.text.TextStyleProvider;
 import org.thunderdog.challegram.util.text.TextWrapper;
@@ -69,7 +69,6 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.ListAnimator;
 import me.vkryl.android.animator.ReplaceAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
-import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 
@@ -109,7 +108,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
 
     text = new ReplaceAnimator<>(this::updateTexts, AnimatorUtils.DECELERATE_INTERPOLATOR, 300L);
     translationCounterDrawable = new TranslationCounterDrawable(Drawables.get(R.drawable.baseline_translate_24));
-    translationCounterDrawable.setColors(R.id.theme_color_icon, R.id.theme_color_background ,R.id.theme_color_iconActive);
+    translationCounterDrawable.setColors(ColorId.icon, ColorId.background ,ColorId.iconActive);
     translationCounterDrawable.setInvalidateCallback(this::updateAnimations);
   }
 
@@ -185,7 +184,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
 
       if (!message.isFakeMessage()) {
         dateTextView = new TextView(context);
-        dateTextView.setTextColor(Theme.getColor(R.id.theme_color_textLight));
+        dateTextView.setTextColor(Theme.getColor(ColorId.textLight));
         dateTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
         dateTextView.setGravity(Gravity.CENTER_VERTICAL | Gravity.RIGHT);
         dateTextView.setText(Lang.dateYearShortTime(forwardTime > 0 ? forwardTime : message.getComparingDate(), TimeUnit.SECONDS));
@@ -438,17 +437,17 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
 
   @Override
   protected int getHeaderTextColorId () {
-    return R.id.theme_color_text;
+    return ColorId.text;
   }
 
   @Override
   protected int getHeaderColorId () {
-    return R.id.theme_color_filling;
+    return ColorId.filling;
   }
 
   @Override
   protected int getHeaderIconColorId () {
-    return R.id.theme_color_icon;
+    return ColorId.icon;
   }
 
   @Override
@@ -550,13 +549,13 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
 
     @Override
     protected void onAfterCreateView () {
-      setLickViewColor(Theme.getColor(R.id.theme_color_headerLightBackground));
+      setLickViewColor(Theme.getColor(ColorId.headerLightBackground));
     }
 
     @Override
     public void onThemeColorsChanged (boolean areTemp, ColorState state) {
       super.onThemeColorsChanged(areTemp, state);
-      setLickViewColor(Theme.getColor(R.id.theme_color_headerLightBackground));
+      setLickViewColor(Theme.getColor(ColorId.headerLightBackground));
     }
 
     @Override
@@ -615,7 +614,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
 
     @Override
     protected int getBackgroundColorId () {
-      return R.id.theme_color_filling;
+      return ColorId.filling;
     }
   }
 
@@ -840,7 +839,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
       super(context);
 
       titleView = new TextView(context);
-      titleView.setTextColor(Theme.getColor(R.id.theme_color_text));
+      titleView.setTextColor(Theme.getColor(ColorId.text));
       titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
       titleView.setEllipsize(TextUtils.TruncateAt.END);
       titleView.setMaxLines(1);
@@ -848,7 +847,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
 
       subtitleView = new TextView(context);
       subtitleView.setText(Lang.getString(R.string.ChatTranslateOriginal));
-      subtitleView.setTextColor(Theme.getColor(R.id.theme_color_textLight));
+      subtitleView.setTextColor(Theme.getColor(ColorId.textLight));
       subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
       subtitleView.setEllipsize(TextUtils.TruncateAt.END);
       subtitleView.setMaxLines(1);
@@ -876,7 +875,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     protected void dispatchDraw (Canvas canvas) {
       super.dispatchDraw(canvas);
       if (drawable != null) {
-        Drawables.draw(canvas, drawable, getMeasuredWidth() - Screen.dp(40), Screen.dp(13), Paints.getPorterDuffPaint(Theme.getColor(isSelected ? R.id.theme_color_iconActive: R.id.theme_color_icon)));
+        Drawables.draw(canvas, drawable, getMeasuredWidth() - Screen.dp(40), Screen.dp(13), Paints.getPorterDuffPaint(Theme.getColor(isSelected ? ColorId.iconActive: ColorId.icon)));
       }
     }
   }
@@ -904,7 +903,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
       textPaint.setTypeface(Fonts.getRobotoMedium());
       TextStyleProvider textStyleProvider = new TextStyleProvider(textPaint);
       textStyleProvider.setTextSize(12);
-      senderText = new Text.Builder(senderString, maxWidth, textStyleProvider, () -> Theme.getColor(R.id.theme_color_textLight))
+      senderText = new Text.Builder(senderString, maxWidth, textStyleProvider, () -> Theme.getColor(ColorId.textLight))
         .singleLine()
         .clipTextArea()
         .view(this)

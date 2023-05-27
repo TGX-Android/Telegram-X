@@ -351,15 +351,11 @@ public class CameraController extends ViewController<Void> implements CameraDele
 
   @Override
   public void onClick (View v) {
-    switch (v.getId()) {
-      case R.id.btn_camera_switch: {
-        switchCamera();
-        break;
-      }
-      case R.id.btn_camera_flash: {
-        manager.switchFlashMode();
-        break;
-      }
+    final int viewId = v.getId();
+    if (viewId == R.id.btn_camera_switch) {
+      switchCamera();
+    } else if (viewId == R.id.btn_camera_flash) {
+      manager.switchFlashMode();
     }
   }
 

@@ -41,7 +41,7 @@ import org.thunderdog.challegram.loader.ImageCache;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReader;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Intents;
@@ -99,7 +99,7 @@ public class TdlibNotificationUtils {
         Bitmap createdBitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
         Canvas c = new Canvas(createdBitmap);
 
-        final int color = Theme.getColor(R.id.theme_color_avatarSavedMessages, tdlib.settings().globalTheme());
+        final int color = Theme.getColor(ColorId.avatarSavedMessages, tdlib.settings().globalTheme());
 
         bitmapPaint.setColor(color);
         if (Device.ROUND_NOTIFICAITON_IMAGE) {
@@ -115,7 +115,7 @@ public class TdlibNotificationUtils {
           c.save();
           c.scale(scale, scale, size / 2, size / 2);
         }
-        Drawables.draw(c, d, size / 2 - d.getMinimumWidth() / 2, size / 2 - d.getMinimumHeight() / 2, PorterDuffPaint.get(R.id.theme_color_avatar_content));
+        Drawables.draw(c, d, size / 2 - d.getMinimumWidth() / 2, size / 2 - d.getMinimumHeight() / 2, PorterDuffPaint.get(ColorId.avatar_content));
         if (scale != 1f) {
           c.restore();
         }
@@ -130,7 +130,7 @@ public class TdlibNotificationUtils {
     return bitmap;
   }
 
-  public static Bitmap buildLargeIcon (Tdlib tdlib, TdApi.File rawFile, @ThemeColorId int colorId, Letters letters, boolean allowSyncDownload, boolean allowDownload) {
+  public static Bitmap buildLargeIcon (Tdlib tdlib, TdApi.File rawFile, @ColorId int colorId, Letters letters, boolean allowSyncDownload, boolean allowDownload) {
     Bitmap avatarBitmap = null;
     if (rawFile != null) {
       tdlib.files().syncFile(rawFile, null, 500);

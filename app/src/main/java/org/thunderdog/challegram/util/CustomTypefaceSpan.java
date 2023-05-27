@@ -25,7 +25,7 @@ import androidx.annotation.Nullable;
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.component.chat.WallpaperView;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.theme.ThemeId;
 import org.thunderdog.challegram.theme.ThemeSet;
@@ -43,17 +43,17 @@ public class CustomTypefaceSpan extends MetricAffectingSpan {
   private static final int FLAG_NEED_REVEAL_ON_TAP = 1 << 5;
 
   private @Nullable Typeface typeface;
-  private @ThemeColorId int colorId;
+  private @ColorId int colorId;
   @Nullable
   private ThemeDelegate forcedTheme;
   private TdApi.TextEntityType type;
   private int flags;
   private float textSizeDp;
 
-  private @ThemeColorId int transparentColorId;
+  private @ColorId int transparentColorId;
   private WallpaperView boundTransparencyView;
 
-  private @ThemeColorId int backgroundColorId;
+  private @ColorId int backgroundColorId;
 
   private Object tag;
 
@@ -79,11 +79,11 @@ public class CustomTypefaceSpan extends MetricAffectingSpan {
     this.tag = copy.tag;
   }
 
-  public CustomTypefaceSpan setBackgroundColorId (@ThemeColorId int colorId) {
+  public CustomTypefaceSpan setBackgroundColorId (@ColorId int colorId) {
     return setBackgroundColorId(colorId, false);
   }
 
-  public CustomTypefaceSpan setBackgroundColorId (@ThemeColorId int colorId, boolean noTransparency) {
+  public CustomTypefaceSpan setBackgroundColorId (@ColorId int colorId, boolean noTransparency) {
     this.backgroundColorId = colorId;
     this.flags = BitwiseUtils.setFlag(flags, FLAG_NO_BACKGROUND_TRANSPARENCY, noTransparency);
     return this;
@@ -153,7 +153,7 @@ public class CustomTypefaceSpan extends MetricAffectingSpan {
     return this;
   }
 
-  public CustomTypefaceSpan setTransparencyColorId (@ThemeColorId int transparentColorId, WallpaperView wallpaperView) {
+  public CustomTypefaceSpan setTransparencyColorId (@ColorId int transparentColorId, WallpaperView wallpaperView) {
     this.transparentColorId = transparentColorId;
     this.boundTransparencyView = wallpaperView;
     return this;

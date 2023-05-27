@@ -26,7 +26,7 @@ import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.theme.ThemedColorAnimator;
 import org.thunderdog.challegram.tool.Paints;
@@ -143,20 +143,20 @@ public class BackHeaderButton extends HeaderButton implements View.OnClickListen
     }
   }
 
-  private final ThemedColorAnimator menuHintBadgeColor = new ThemedColorAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l, R.id.theme_color_headerBadgeFailed);
+  private final ThemedColorAnimator menuHintBadgeColor = new ThemedColorAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l, ColorId.headerBadgeFailed);
   private final BounceAnimator menuHintBadgeVisible = new BounceAnimator(new SingleViewProvider(this));
 
   public void hideMenuBadge (boolean animated) {
-    setMenuBadge(ThemeColorId.NONE, null, animated);
+    setMenuBadge(ColorId.NONE, null, animated);
   }
 
-  public void setMenuBadge (@ThemeColorId int colorId, boolean animated) {
+  public void setMenuBadge (@ColorId int colorId, boolean animated) {
     setMenuBadge(colorId, null, animated);
   }
 
-  public void setMenuBadge (@ThemeColorId int colorId, @Nullable ThemeDelegate forcedTheme, boolean animated) {
+  public void setMenuBadge (@ColorId int colorId, @Nullable ThemeDelegate forcedTheme, boolean animated) {
     animated = animated && (factor >= 0f && factor < 1f);
-    boolean needShow = colorId != ThemeColorId.NONE;
+    boolean needShow = colorId != ColorId.NONE;
     if (needShow) {
       menuHintBadgeColor.setValue(colorId, forcedTheme, animated && menuHintBadgeVisible.getFloatValue() > 0f);
     }

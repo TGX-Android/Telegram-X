@@ -19,6 +19,7 @@ import android.view.Gravity;
 import android.view.ViewGroup;
 
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.unsorted.Size;
 
 import me.vkryl.android.widget.FrameLayoutFix;
@@ -35,8 +36,8 @@ public class ViewPagerHeaderView extends SimpleHeaderView implements StretchyHea
 
     topView = new ViewPagerTopView(context);
     topView.setLayoutParams(params);
-    topView.setSelectionColorId(R.id.theme_color_headerTabActive);
-    topView.setTextFromToColorId(R.id.theme_color_headerTabInactiveText, R.id.theme_color_headerTabActiveText);
+    topView.setSelectionColorId(ColorId.headerTabActive);
+    topView.setTextFromToColorId(ColorId.headerTabInactiveText, ColorId.headerTabActiveText);
     addView(topView);
   }
 

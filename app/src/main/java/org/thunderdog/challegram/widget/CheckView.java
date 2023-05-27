@@ -26,7 +26,7 @@ import android.os.Build;
 import android.view.MotionEvent;
 import android.view.View;
 
-import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -365,15 +365,15 @@ public class CheckView extends View {
             if (mode == MODE_LOCATION) {
               cx = padding + locationRadius;
               cy = padding + locationRadius;
-              checkCanvas.drawCircle(cx, cy, locationRadius, Paints.fillingPaint(Theme.getColor(R.id.theme_color_fileAttach))); // theme_color_checkFilling
-              // checkColor = Theme.getColor(R.id.theme_color_checkCheck);
+              checkCanvas.drawCircle(cx, cy, locationRadius, Paints.fillingPaint(Theme.getColor(ColorId.fileAttach))); // theme_color_checkFilling
+              // checkColor = Theme.getColor(ColorId.checkCheck);
             } else {
               cx = padding + galleryTotalRadius;
               cy = padding + galleryTotalRadius;
 
               checkCanvas.drawCircle(cx, cy, galleryTotalRadius, Paints.fillingPaint(0xffffffff));
-              checkCanvas.drawCircle(cx, cy, galleryInnerRadius, Paints.fillingPaint(Theme.getColor(R.id.theme_color_checkActive)));
-              checkColor = Theme.getColor(R.id.theme_color_checkContent);
+              checkCanvas.drawCircle(cx, cy, galleryInnerRadius, Paints.fillingPaint(Theme.getColor(ColorId.checkActive)));
+              checkColor = Theme.getColor(ColorId.checkContent);
             }
 
             final float fx;

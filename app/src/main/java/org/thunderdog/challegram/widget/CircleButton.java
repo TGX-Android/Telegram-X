@@ -26,7 +26,7 @@ import androidx.annotation.DrawableRes;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
@@ -90,11 +90,11 @@ public class CircleButton extends View implements FactorAnimator.Target {
     return !(e.getAction() == MotionEvent.ACTION_DOWN && (getAlpha() == 0f || !isEnabled() || (getParent() != null && ((View) getParent()).getAlpha() == 0f))) && super.onTouchEvent(e);
   }
 
-  public final void init (@DrawableRes int icon, float size, float padding, @ThemeColorId int backgroundColorId, @ThemeColorId int iconColorId) {
+  public final void init (@DrawableRes int icon, float size, float padding, @ColorId int backgroundColorId, @ColorId int iconColorId) {
     init(icon, 0, size, padding, backgroundColorId, iconColorId);
   }
 
-  public void init (@DrawableRes int icon, int offsetLeft, float size, float padding, @ThemeColorId int backgroundColorId, @ThemeColorId int iconColorId) {
+  public void init (@DrawableRes int icon, int offsetLeft, float size, float padding, @ColorId int backgroundColorId, @ColorId int iconColorId) {
     this.icon = Drawables.get(icon);
     this.offsetLeft = offsetLeft;
     this.backgroundColorId = backgroundColorId;
@@ -103,7 +103,7 @@ public class CircleButton extends View implements FactorAnimator.Target {
     RippleSupport.setCircleBackground(this, size, padding, backgroundColorId);
   }
 
-  public void setCrossColorId (@ThemeColorId int backgroundColorId, @ThemeColorId int iconColorId) {
+  public void setCrossColorId (@ColorId int backgroundColorId, @ColorId int iconColorId) {
     this.crossBackgroundColorId = backgroundColorId;
     this.crossIconColorId = iconColorId;
   }
@@ -346,7 +346,7 @@ public class CircleButton extends View implements FactorAnimator.Target {
     }
   }
 
-  public void setFromToColor (@ThemeColorId int fromColorId, @ThemeColorId int toColorId, float factor) {
+  public void setFromToColor (@ColorId int fromColorId, @ColorId int toColorId, float factor) {
     RippleSupport.changeViewColor(this, fromColorId, toColorId, factor);
   }
 

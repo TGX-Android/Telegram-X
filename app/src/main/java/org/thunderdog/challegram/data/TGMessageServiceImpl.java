@@ -41,6 +41,7 @@ import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.telegram.TdlibSender;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -354,7 +355,7 @@ abstract class TGMessageServiceImpl extends TGMessage {
     location.setRoundings(avatarRadius);
 
     location.set(avatarLeft, top + avatarTop, avatarLeft + avatarRadius * 2, top + avatarTop + avatarRadius * 2);
-    location.setColorId(manager().useBubbles() ? R.id.theme_color_placeholder : R.id.theme_color_chatBackground);
+    location.setColorId(manager().useBubbles() ? ColorId.placeholder : ColorId.chatBackground);
     return location;
   }
 
@@ -423,7 +424,7 @@ abstract class TGMessageServiceImpl extends TGMessage {
       });
       int nameColorId = needColoredNames() ?
         sender.getNameColorId() :
-        R.id.theme_color_messageAuthor;
+        ColorId.messageAuthor;
       if (useBubbles()) {
         custom.setCustomColorSet(new TextColorSetOverride(defaultTextColorSet()) {
           @Override

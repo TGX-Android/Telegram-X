@@ -74,6 +74,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Screen;
@@ -212,14 +213,14 @@ public class TD {
   }
 
   private static final int[] color_ids =  {
-    R.id.theme_color_avatarRed      /* red 0 */,
-    R.id.theme_color_avatarOrange   /* orange 1 */,
-    R.id.theme_color_avatarYellow   /* yellow 2 */,
-    R.id.theme_color_avatarGreen    /* green 3 */,
-    R.id.theme_color_avatarCyan     /* cyan 4 */,
-    R.id.theme_color_avatarBlue     /* blue 5 */,
-    R.id.theme_color_avatarViolet   /* violet 6 */,
-    R.id.theme_color_avatarPink     /* pink 7 */
+    ColorId.avatarRed      /* red 0 */,
+    ColorId.avatarOrange   /* orange 1 */,
+    ColorId.avatarYellow   /* yellow 2 */,
+    ColorId.avatarGreen    /* green 3 */,
+    ColorId.avatarCyan     /* cyan 4 */,
+    ColorId.avatarBlue     /* blue 5 */,
+    ColorId.avatarViolet   /* violet 6 */,
+    ColorId.avatarPink     /* pink 7 */
   };
 
   public static boolean isSameSource (TdApi.Message a, TdApi.Message b, boolean splitAuthors) {
@@ -280,7 +281,7 @@ public class TD {
         case TdApi.TextEntityTypeHashtag.CONSTRUCTOR:
         case TdApi.TextEntityTypeCashtag.CONSTRUCTOR: {
           String hashtag = Td.substring(text, entity);
-          span = new CustomTypefaceSpan(defaultTypeface, R.id.theme_color_textLink)
+          span = new CustomTypefaceSpan(defaultTypeface, ColorId.textLink)
             .setOnClickListener((view, span1, clickedText) -> {
               if (onClickListener == null || !onClickListener.onClick(view, span1, clickedText)) {
                 if (context != null) {
@@ -295,7 +296,7 @@ public class TD {
         }
         case TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR: {
           String emailAddress = Td.substring(text, entity);
-          span = new CustomTypefaceSpan(defaultTypeface, R.id.theme_color_textLink)
+          span = new CustomTypefaceSpan(defaultTypeface, ColorId.textLink)
             .setOnClickListener((view, span1, clickedText) -> {
               if (onClickListener == null || !onClickListener.onClick(view, span1, clickedText)) {
                 Intents.sendEmail(emailAddress);
@@ -306,7 +307,7 @@ public class TD {
         }
         case TdApi.TextEntityTypeMention.CONSTRUCTOR: {
           String username = Td.substring(text, entity);
-          span = new CustomTypefaceSpan(defaultTypeface, R.id.theme_color_textLink)
+          span = new CustomTypefaceSpan(defaultTypeface, ColorId.textLink)
             .setOnClickListener((view, span1, clickedText) -> {
               if (onClickListener == null || !onClickListener.onClick(view, span1, clickedText)) {
                 if (context != null)
@@ -318,7 +319,7 @@ public class TD {
         }
         case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR: {
           String cardNumber = Td.substring(text, entity);
-          span = new CustomTypefaceSpan(defaultTypeface, R.id.theme_color_textLink)
+          span = new CustomTypefaceSpan(defaultTypeface, ColorId.textLink)
             .setOnClickListener((view, span1, clickedText) -> {
               if (onClickListener == null || !onClickListener.onClick(view, span1, clickedText)) {
                 if (context != null)
@@ -330,7 +331,7 @@ public class TD {
         }
         case TdApi.TextEntityTypePhoneNumber.CONSTRUCTOR: {
           String phoneNumber = Td.substring(text, entity);
-          span = new CustomTypefaceSpan(defaultTypeface, R.id.theme_color_textLink)
+          span = new CustomTypefaceSpan(defaultTypeface, ColorId.textLink)
             .setOnClickListener((view, span1, clickedText) -> {
               if (onClickListener == null || !onClickListener.onClick(view, span1, clickedText)) {
                 Intents.openNumber(phoneNumber);
@@ -341,7 +342,7 @@ public class TD {
         }
         case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
           String url = Td.substring(text, entity);
-          span = new CustomTypefaceSpan(defaultTypeface, R.id.theme_color_textLink)
+          span = new CustomTypefaceSpan(defaultTypeface, ColorId.textLink)
             .setOnClickListener((view, span1, clickedText) -> {
               if (onClickListener == null || !onClickListener.onClick(view, span1, clickedText)) {
                 if (context != null)
@@ -352,7 +353,7 @@ public class TD {
           break;
         case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
           String textUrl = ((TdApi.TextEntityTypeTextUrl) entity.type).url;
-          span = new CustomTypefaceSpan(defaultTypeface, R.id.theme_color_textLink)
+          span = new CustomTypefaceSpan(defaultTypeface, ColorId.textLink)
             .setOnClickListener((view, span1, clickedText) -> {
               if (onClickListener == null || !onClickListener.onClick(view, span1, clickedText)) {
                 if (context != null)
@@ -657,11 +658,11 @@ public class TD {
 
   public static int getColorIdForString (String string) {
     switch (Math.abs(string.hashCode()) % 3) {
-      case 0: return R.id.theme_color_fileYellow;
-      case 1: return R.id.theme_color_fileRed;
-      case 2: return R.id.theme_color_fileGreen;
+      case 0: return ColorId.fileYellow;
+      case 1: return ColorId.fileRed;
+      case 2: return ColorId.fileGreen;
     }
-    return R.id.theme_color_file;
+    return ColorId.file;
   }
 
   public static int getColorIdForName (String name) {
@@ -679,7 +680,7 @@ public class TD {
 
     // Android APKs
     if ("application/vnd.android.package-archive".equals(mime) || "apk".equals(ext)) {
-      return R.id.theme_color_fileGreen;
+      return ColorId.fileGreen;
     }
 
     if (
@@ -687,16 +688,16 @@ public class TD {
       "zip".equals(ext) || "application/zip".equals(mime) ||
       "rar".equals(ext) || "application/x-rar-compressed".equals(mime)
       ) {
-      return R.id.theme_color_fileYellow;
+      return ColorId.fileYellow;
     }
 
     if (
       "pdf".equals(ext) || "application/pdf".equals(mime)
       ) {
-      return R.id.theme_color_fileRed;
+      return ColorId.fileRed;
     }
 
-    return isOutBubble ? R.id.theme_color_bubbleOut_file : R.id.theme_color_file;
+    return isOutBubble ? ColorId.bubbleOut_file : ColorId.file;
   }
 
   public static String getPhoneNumber (String in) {
@@ -1406,28 +1407,28 @@ public class TD {
 
   public static int getNameColorId (int avatarColorId) {
     switch (avatarColorId) {
-      case R.id.theme_color_avatarRed:
-        return R.id.theme_color_nameRed;
-      case R.id.theme_color_avatarOrange:
-        return R.id.theme_color_nameOrange;
-      case R.id.theme_color_avatarYellow:
-        return R.id.theme_color_nameYellow;
-      case R.id.theme_color_avatarGreen:
-        return R.id.theme_color_nameGreen;
-      case R.id.theme_color_avatarCyan:
-        return R.id.theme_color_nameCyan;
-      case R.id.theme_color_avatarBlue:
-        return R.id.theme_color_nameBlue;
-      case R.id.theme_color_avatarViolet:
-        return R.id.theme_color_nameViolet;
-      case R.id.theme_color_avatarPink:
-        return R.id.theme_color_namePink;
-      case R.id.theme_color_avatarSavedMessages:
-        return R.id.theme_color_messageAuthor;
-      case R.id.theme_color_avatarInactive:
-        return R.id.theme_color_nameInactive;
+      case ColorId.avatarRed:
+        return ColorId.nameRed;
+      case ColorId.avatarOrange:
+        return ColorId.nameOrange;
+      case ColorId.avatarYellow:
+        return ColorId.nameYellow;
+      case ColorId.avatarGreen:
+        return ColorId.nameGreen;
+      case ColorId.avatarCyan:
+        return ColorId.nameCyan;
+      case ColorId.avatarBlue:
+        return ColorId.nameBlue;
+      case ColorId.avatarViolet:
+        return ColorId.nameViolet;
+      case ColorId.avatarPink:
+        return ColorId.namePink;
+      case ColorId.avatarSavedMessages:
+        return ColorId.messageAuthor;
+      case ColorId.avatarInactive:
+        return ColorId.nameInactive;
     }
-    return R.id.theme_color_messageAuthor;
+    return ColorId.messageAuthor;
   }
 
   public static boolean isMultiChat (TdApi.Chat chat) {
@@ -1447,11 +1448,11 @@ public class TD {
   }
 
   public static int getAuthorColorId (int selfUserId, int id) {
-    return selfUserId != 0 && selfUserId == id ? R.id.theme_color_chatAuthor : id == -1 ? R.id.theme_color_chatAuthorDead : color_ids[getColorIndex(selfUserId, id)];
+    return selfUserId != 0 && selfUserId == id ? ColorId.chatAuthor : id == -1 ? ColorId.chatAuthorDead : color_ids[getColorIndex(selfUserId, id)];
   }*/
 
   public static int getAvatarColorId (long id, long selfUserId) {
-    return id == -1 ? R.id.theme_color_avatarInactive : color_ids[getColorIndex(selfUserId, id)];
+    return id == -1 ? ColorId.avatarInactive : color_ids[getColorIndex(selfUserId, id)];
   }
 
   public static boolean hasEncryptionKey (TdApi.SecretChat secretChat) {
@@ -5439,7 +5440,7 @@ public class TD {
     switch (type.getConstructor()) {
       case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
       case TdApi.TextEntityTypeMentionName.CONSTRUCTOR:
-        span = new CustomTypefaceSpan(defaultTypeface, R.id.theme_color_textLink);
+        span = new CustomTypefaceSpan(defaultTypeface, ColorId.textLink);
         break;
       case TdApi.TextEntityTypeBold.CONSTRUCTOR:
         if (needFakeBold)
@@ -5541,7 +5542,7 @@ public class TD {
       case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
         return new BackgroundColorSpan(SPOILER_BACKGROUND_COLOR);
       case TdApi.TextEntityTypeMentionName.CONSTRUCTOR:
-        return allowInternal ? new CustomTypefaceSpan(null, R.id.theme_color_textLink).setEntityType(type) : null;
+        return allowInternal ? new CustomTypefaceSpan(null, ColorId.textLink).setEntityType(type) : null;
       case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
         return new CustomEmojiId(((TdApi.TextEntityTypeCustomEmoji) type).customEmojiId);
       // auto-detected entities

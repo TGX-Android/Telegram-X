@@ -610,49 +610,40 @@ public class TextEntityMessage extends TextEntity {
     final int[] shareState = {0};
 
     context.showOptions(copyText, ids.get(), strings.get(), null, icons.get(), (itemView, id) -> {
-      switch (id) {
-        case R.id.btn_copyLink: {
-          UI.copyText(copyLink != null ? copyLink : copyText, R.string.CopiedLink);
-          break;
-        }
-        case R.id.btn_copyText: {
-          int message;
-          switch (clickableEntity.type.getConstructor()) {
-            case TdApi.TextEntityTypeMention.CONSTRUCTOR: {
-              message = R.string.CopiedUsername;
-              break;
-            }
-            case TdApi.TextEntityTypeHashtag.CONSTRUCTOR:
-              message = R.string.CopiedHashtag;
-              break;
-            case TdApi.TextEntityTypeCashtag.CONSTRUCTOR:
-              message = R.string.CopiedCashtag;
-              break;
-            case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
-            case TdApi.TextEntityTypeCode.CONSTRUCTOR:
-            case TdApi.TextEntityTypePre.CONSTRUCTOR: {
-              message = R.string.CopiedText;
-              break;
-            }
-            default: {
-              message = R.string.CopiedLink;
-              break;
-            }
+      if (id == R.id.btn_copyLink) {
+        UI.copyText(copyLink != null ? copyLink : copyText, R.string.CopiedLink);
+      } else if (id == R.id.btn_copyText) {
+        int message;
+        switch (clickableEntity.type.getConstructor()) {
+          case TdApi.TextEntityTypeMention.CONSTRUCTOR: {
+            message = R.string.CopiedUsername;
+            break;
           }
-          UI.copyText(copyText, message);
-          break;
-        }
-        case R.id.btn_shareLink: {
-          if (shareState[0] == 0) {
-            shareState[0] = 1;
-            TD.shareLink(new TdlibContext(context.context(), tdlib), copyText);
+          case TdApi.TextEntityTypeHashtag.CONSTRUCTOR:
+            message = R.string.CopiedHashtag;
+            break;
+          case TdApi.TextEntityTypeCashtag.CONSTRUCTOR:
+            message = R.string.CopiedCashtag;
+            break;
+          case TdApi.TextEntityTypePreCode.CONSTRUCTOR:
+          case TdApi.TextEntityTypeCode.CONSTRUCTOR:
+          case TdApi.TextEntityTypePre.CONSTRUCTOR: {
+            message = R.string.CopiedText;
+            break;
           }
-          break;
+          default: {
+            message = R.string.CopiedLink;
+            break;
+          }
         }
-        case R.id.btn_openLink: {
-          performClick(itemView, text, part, clickCallback);
-          break;
+        UI.copyText(copyText, message);
+      } else if (id == R.id.btn_shareLink) {
+        if (shareState[0] == 0) {
+          shareState[0] = 1;
+          TD.shareLink(new TdlibContext(context.context(), tdlib), copyText);
         }
+      } else if (id == R.id.btn_openLink) {
+        performClick(itemView, text, part, clickCallback);
       }
       return true;
     }, clickCallback != null ? clickCallback.getForcedTheme(view, text) : null);

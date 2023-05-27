@@ -32,6 +32,7 @@ import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.SettingHolder;
@@ -102,9 +103,9 @@ public class MessageSeenController extends MediaBottomBaseController<Void> imple
       @Override
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
         if (item.getId() == R.id.btn_openLink) {
-          view.setIconColorId(R.id.theme_color_textNeutral);
+          view.setIconColorId(ColorId.textNeutral);
         } else {
-          view.setIconColorId(R.id.theme_color_icon);
+          view.setIconColorId(ColorId.icon);
         }
       }
 
@@ -121,7 +122,7 @@ public class MessageSeenController extends MediaBottomBaseController<Void> imple
       }
     };
 
-    ViewSupport.setThemedBackground(recyclerView, R.id.theme_color_background);
+    ViewSupport.setThemedBackground(recyclerView, ColorId.background);
 
     ArrayList<ListItem> items = new ArrayList<>();
 

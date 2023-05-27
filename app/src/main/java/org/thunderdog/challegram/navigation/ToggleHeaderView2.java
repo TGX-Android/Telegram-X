@@ -9,6 +9,7 @@ import android.view.View;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
@@ -54,7 +55,7 @@ public class ToggleHeaderView2 extends View {
       entry.item.measure(avail, Paints.getMediumTextPaint(18f, Theme.headerTextColor(), false));
     }
     for (ListAnimator.Entry<TrimmedText> entry: subtitleR) {
-      entry.item.measure(avail, Paints.getRegularTextPaint(14f, Theme.getColor(R.id.theme_color_textLight)));
+      entry.item.measure(avail, Paints.getRegularTextPaint(14f, Theme.getColor(ColorId.textLight)));
     }
   }
 
@@ -79,16 +80,16 @@ public class ToggleHeaderView2 extends View {
       final int offset2 = (int) ((!entry.isAffectingList() ?
         ((entry.getVisibility() - 1f) * Screen.dp(18)):
         ((1f - entry.getVisibility()) * Screen.dp(18))));
-      entry.item.draw(c, getPaddingLeft(), textTop + offset2, entry.getVisibility(), Paints.getMediumTextPaint(18f, Theme.getColor(R.id.theme_color_text), false));
+      entry.item.draw(c, getPaddingLeft(), textTop + offset2, entry.getVisibility(), Paints.getMediumTextPaint(18f, Theme.getColor(ColorId.text), false));
     }
     for (ListAnimator.Entry<TrimmedText> entry: subtitleR) {
       final int offset2 = (int) ((!entry.isAffectingList() ?
         ((entry.getVisibility() - 1f) * Screen.dp(14)):
         ((1f - entry.getVisibility()) * Screen.dp(14))));
-      entry.item.draw(c, getPaddingLeft(), textTop + Screen.dp(19) + offset2, entry.getVisibility(), Paints.getRegularTextPaint(14f, Theme.getColor(R.id.theme_color_textLight)));
+      entry.item.draw(c, getPaddingLeft(), textTop + Screen.dp(19) + offset2, entry.getVisibility(), Paints.getRegularTextPaint(14f, Theme.getColor(ColorId.textLight)));
     }
 
-    Drawables.draw(c, arrowDrawable, getTitleWidth() + Screen.dp(2), triangleTop, Paints.getPorterDuffPaint(Theme.getColor(R.id.theme_color_icon)));
+    Drawables.draw(c, arrowDrawable, getTitleWidth() + Screen.dp(2), triangleTop, Paints.getPorterDuffPaint(Theme.getColor(ColorId.icon)));
   }
 
 

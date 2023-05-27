@@ -32,7 +32,8 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibChatList;
 import org.thunderdog.challegram.telegram.TdlibCounter;
 import org.thunderdog.challegram.telegram.TdlibStatusManager;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.tool.Icons;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -106,8 +107,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
 
   private TD.ContentPreview currentPreview;
   private IntList textIconIds;
-  private @ThemeColorId
-  int textIconColorId;
+  private @PorterDuffColorId int textIconColorId;
 
   private int textLeft;
   private int timeLeft;
@@ -166,7 +166,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
       .callback(this)
       .noBackground()
       .allBold(false)
-      .textColor(R.id.theme_color_ticksRead)
+      .textColor(ColorId.ticksRead)
       .drawable(R.drawable.baseline_visibility_14, 14f, 3f, Gravity.RIGHT)
       .build();
     setCounter(false);
@@ -685,7 +685,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
 
   private void setAvatar () {
     if (isArchive()) {
-      avatarPlaceholder = new AvatarPlaceholder.Metadata(R.id.theme_color_avatarArchive, R.drawable.baseline_archive_24);
+      avatarPlaceholder = new AvatarPlaceholder.Metadata(ColorId.avatarArchive, R.drawable.baseline_archive_24);
     } else {
       avatarPlaceholder = null;
     }
@@ -1088,7 +1088,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     return textIconIds;
   }
 
-  public @ThemeColorId int getTextIconColorId () {
+  public @PorterDuffColorId int getTextIconColorId () {
     return textIconColorId;
   }
 
@@ -1306,7 +1306,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     if (preview.emoji != null) {
       addIcon(preview.emoji.iconRepresentation);
     }
-    this.textIconColorId = R.id.theme_color_chatListIcon;
+    this.textIconColorId = ColorId.chatListIcon;
 
     if ((isGroup() || isSupergroup()) && !preview.hideAuthor) {
       flags |= FLAG_HAS_PREFIX;

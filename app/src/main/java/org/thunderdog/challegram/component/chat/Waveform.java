@@ -19,8 +19,8 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
 
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
@@ -167,7 +167,7 @@ public class Waveform {
     int[] adjustedSamples = new int[numSamples];
     scale(data, adjustedSamples);
     if (mode == MODE_BITMAP) {
-      paint.setColor(Theme.getColor(isOutBubble ? R.id.theme_color_bubbleOut_waveformInactive : R.id.theme_color_waveformInactive));
+      paint.setColor(Theme.getColor(isOutBubble ? ColorId.bubbleOut_waveformInactive : ColorId.waveformInactive));
     }
     int cx = 0;
     int centerY = (int) ((float) currentHeight * .5f);
@@ -215,7 +215,7 @@ public class Waveform {
         if (chunks == null || bitmap == null || bitmap.isRecycled()) {
           break;
         }
-        int color = Theme.getColor(isOutBubble ? R.id.theme_color_bubbleOut_waveformInactive : R.id.theme_color_waveformInactive);
+        int color = Theme.getColor(isOutBubble ? ColorId.bubbleOut_waveformInactive : ColorId.waveformInactive);
         if (paint.getColor() != color) {
           paint.setColorFilter(Paints.createColorFilter(color));
           paint.setColor(color);
@@ -226,14 +226,14 @@ public class Waveform {
           break;
         }
         if (progress == 1f) {
-          int colorId = isOutBubble ? R.id.theme_color_bubbleOut_waveformActive : R.id.theme_color_waveformActive;
+          int colorId = isOutBubble ? ColorId.bubbleOut_waveformActive : ColorId.waveformActive;
           c.drawBitmap(bitmap, startX, topY, PorterDuffPaint.get(colorId));
           break;
         }
         float endX = progress * (float) currentWidth;
         c.save();
         c.clipRect(startX, topY, startX + endX, topY + bitmap.getHeight());
-        int colorId = isOutBubble ? R.id.theme_color_bubbleOut_waveformActive : R.id.theme_color_waveformActive;
+        int colorId = isOutBubble ? ColorId.bubbleOut_waveformActive : ColorId.waveformActive;
         c.drawBitmap(bitmap, startX, topY, PorterDuffPaint.get(colorId));
         c.restore();
         c.save();
@@ -248,7 +248,7 @@ public class Waveform {
         }
         int cx = startX;
         if (progress == 0f || progress == 1f) {
-          paint.setColor(Theme.getColor(progress == 0f ? (isOutBubble ? R.id.theme_color_bubbleOut_waveformInactive : R.id.theme_color_waveformInactive) : (isOutBubble ? R.id.theme_color_bubbleOut_waveformActive : R.id.theme_color_waveformActive)));
+          paint.setColor(Theme.getColor(progress == 0f ? (isOutBubble ? ColorId.bubbleOut_waveformInactive : ColorId.waveformInactive) : (isOutBubble ? ColorId.bubbleOut_waveformActive : ColorId.waveformActive)));
           for (Chunk chunk : chunks) {
             chunk.draw(c, cx, centerY, expandFactor, paint);
             cx += width + spacing;
@@ -261,7 +261,7 @@ public class Waveform {
         float endX = startX + progress * (float) currentWidth;
         c.save();
         c.clipRect(startX, topY, endX, bottomY);
-        paint.setColor(Theme.getColor(isOutBubble ? R.id.theme_color_bubbleOut_waveformActive : R.id.theme_color_waveformActive));
+        paint.setColor(Theme.getColor(isOutBubble ? ColorId.bubbleOut_waveformActive : ColorId.waveformActive));
         int i = 0;
         for (Chunk chunk : chunks) {
           chunk.draw(c, cx, centerY, expandFactor, paint);
@@ -275,7 +275,7 @@ public class Waveform {
         c.restore();
         c.save();
         c.clipRect(endX - 1, topY, startX + currentWidth, bottomY);
-        paint.setColor(Theme.getColor(isOutBubble ? R.id.theme_color_bubbleOut_waveformInactive : R.id.theme_color_waveformInactive));
+        paint.setColor(Theme.getColor(isOutBubble ? ColorId.bubbleOut_waveformInactive : ColorId.waveformInactive));
         for (; i < chunks.length; i++) {
           Chunk chunk = chunks[i];
           chunk.draw(c, cx, centerY, expandFactor, paint);

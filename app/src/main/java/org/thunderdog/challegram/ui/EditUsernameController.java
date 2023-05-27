@@ -33,6 +33,7 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGFoundChat;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Strings;
@@ -89,7 +90,7 @@ public class EditUsernameController extends EditBaseController<EditUsernameContr
 
   @Override
   protected int getRecyclerBackgroundColorId () {
-    return chatId != 0 ? R.id.theme_color_background : super.getRecyclerBackgroundColorId();
+    return chatId != 0 ? ColorId.background : super.getRecyclerBackgroundColorId();
   }
 
   @Override
@@ -102,7 +103,7 @@ public class EditUsernameController extends EditBaseController<EditUsernameContr
     }
     sourceUsername = currentUsername = usernames != null ? usernames.editableUsername : "";
 
-    checkingItem = new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, chatId != 0 ? R.string.LinkChecking : R.string.UsernameChecking).setTextColorId(R.id.theme_color_textLight);
+    checkingItem = new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, chatId != 0 ? R.string.LinkChecking : R.string.UsernameChecking).setTextColorId(ColorId.textLight);
     checkedItem = new ListItem(ListItem.TYPE_DESCRIPTION, R.id.state, 0, 0);
 
     adapter = new SettingsAdapter(this) {
@@ -121,7 +122,7 @@ public class EditUsernameController extends EditBaseController<EditUsernameContr
         new TD.UsernameFilter()
       }).setOnEditorActionListener(new SimpleEditorActionListener(EditorInfo.IME_ACTION_DONE, this)));
     items.add((description = new ListItem(ListItem.TYPE_DESCRIPTION, R.id.description, 0, genDescription(), false)
-      .setTextColorId(R.id.theme_color_textLight)));
+      .setTextColorId(ColorId.textLight)));
 
     if (chatId != 0) {
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM, R.id.shadowBottom));
@@ -152,7 +153,7 @@ public class EditUsernameController extends EditBaseController<EditUsernameContr
     }
 
     if (sourceUsername.equals(username) && !username.isEmpty()) {
-      checkedItem.setTextColorId(R.id.theme_color_textSecure);
+      checkedItem.setTextColorId(ColorId.textSecure);
       checkedItem.setString(getResultString(ResultType.AVAILABLE));
       adapter.updateEditTextById(R.id.input, true, false);
       setState(STATE_CHECKED);
@@ -180,60 +181,53 @@ public class EditUsernameController extends EditBaseController<EditUsernameContr
 
   @Override
   public void onClick (View v) {
-    switch (v.getId()) {
-      case R.id.chat: {
-        ListItem item = (ListItem) v.getTag();
-        if (item == null) {
-          return;
-        }
-        TGFoundChat chat = (TGFoundChat) item.getData();
-        if (chat == null) {
-          return;
-        }
-        String publicLink = tdlib.tMeHost() + tdlib.chatUsername(chat.getChatId());
-        showOptions(publicLink, new int[] {R.id.btn_delete, R.id.btn_openChat}, new String[] {Lang.getString(R.string.ChatLinkRemove), Lang.getString(R.string.ChatLinkView)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_visibility_24}, (itemView, id) -> {
-          switch (id) {
-            case R.id.btn_openChat: {
-              tdlib.ui().openChat(this, chat.getChatId(), new TdlibUi.ChatOpenParameters().keepStack());
-              break;
-            }
-            case R.id.btn_delete: {
-              showOptions(Lang.getStringBold(R.string.ChatLinkRemoveAlert, tdlib.chatTitle(chat.getChatId()), publicLink), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ChatLinkRemove), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int [] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (resultItemView, confirmId) -> {
-                if (confirmId == R.id.btn_delete && !isInProgress()) {
-                  setInProgress(true);
-                  tdlib.client().send(new TdApi.SetSupergroupUsername(ChatId.toSupergroupId(chat.getChatId()), null), result -> {
-                    switch (result.getConstructor()) {
-                      case TdApi.Ok.CONSTRUCTOR: {
-                        tdlib.ui().post(() -> {
-                          if (!isDestroyed()) {
-                            setInProgress(false);
-                            doUsernameCheck(currentUsername);
-                            Keyboard.show(getLockFocusView());
-                          }
-                        });
-                        break;
-                      }
-                      case TdApi.Error.CONSTRUCTOR: {
-                        UI.showError(result);
-                        tdlib.ui().post(() -> {
-                          if (!isDestroyed()) {
-                            setInProgress(false);
-                          }
-                        });
-                        break;
-                      }
-                    }
-                  });
-                }
-                return true;
-              });
-              break;
-            }
-          }
-          return true;
-        });
-        break;
+    final int viewId = v.getId();
+    if (viewId == R.id.chat) {
+      ListItem item = (ListItem) v.getTag();
+      if (item == null) {
+        return;
       }
+      TGFoundChat chat = (TGFoundChat) item.getData();
+      if (chat == null) {
+        return;
+      }
+      String publicLink = tdlib.tMeHost() + tdlib.chatUsername(chat.getChatId());
+      showOptions(publicLink, new int[] {R.id.btn_delete, R.id.btn_openChat}, new String[] {Lang.getString(R.string.ChatLinkRemove), Lang.getString(R.string.ChatLinkView)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_visibility_24}, (itemView, id) -> {
+        if (id == R.id.btn_openChat) {
+          tdlib.ui().openChat(this, chat.getChatId(), new TdlibUi.ChatOpenParameters().keepStack());
+        } else if (id == R.id.btn_delete) {
+          showOptions(Lang.getStringBold(R.string.ChatLinkRemoveAlert, tdlib.chatTitle(chat.getChatId()), publicLink), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ChatLinkRemove), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (resultItemView, confirmId) -> {
+            if (confirmId == R.id.btn_delete && !isInProgress()) {
+              setInProgress(true);
+              tdlib.client().send(new TdApi.SetSupergroupUsername(ChatId.toSupergroupId(chat.getChatId()), null), result -> {
+                switch (result.getConstructor()) {
+                  case TdApi.Ok.CONSTRUCTOR: {
+                    tdlib.ui().post(() -> {
+                      if (!isDestroyed()) {
+                        setInProgress(false);
+                        doUsernameCheck(currentUsername);
+                        Keyboard.show(getLockFocusView());
+                      }
+                    });
+                    break;
+                  }
+                  case TdApi.Error.CONSTRUCTOR: {
+                    UI.showError(result);
+                    tdlib.ui().post(() -> {
+                      if (!isDestroyed()) {
+                        setInProgress(false);
+                      }
+                    });
+                    break;
+                  }
+                }
+              });
+            }
+            return true;
+          });
+        }
+        return true;
+      });
     }
   }
 
@@ -282,7 +276,7 @@ public class EditUsernameController extends EditBaseController<EditUsernameContr
         }
 
         checkedItem.setString(result);
-        checkedItem.setTextColorId(isAvailable ? R.id.theme_color_textSecure : R.id.theme_color_textNegative);
+        checkedItem.setTextColorId(isAvailable ? ColorId.textSecure : ColorId.textNegative);
         setState(STATE_CHECKED);
         adapter.updateEditTextById(R.id.input, isAvailable, !isAvailable);
 
@@ -423,7 +417,7 @@ public class EditUsernameController extends EditBaseController<EditUsernameContr
 
   private void showError (String error) {
     checkedItem.setString(error);
-    checkedItem.setTextColorId(R.id.theme_color_textNegative);
+    checkedItem.setTextColorId(ColorId.textNegative);
     adapter.updateEditTextById(R.id.input, false, true);
     setState(STATE_CHECKED);
   }
@@ -455,7 +449,7 @@ public class EditUsernameController extends EditBaseController<EditUsernameContr
 
   private CharSequence genDescription () {
     if (helpSequence == null) {
-      helpSequence = Strings.replaceBoldTokens(Lang.getString(chatId != 0 ? (tdlib.isChannel(chatId) ? R.string.LinkChannelHelp : R.string.LinkGroupHelp) : R.string.UsernameHelp), R.id.theme_color_textLight);
+      helpSequence = Strings.replaceBoldTokens(Lang.getString(chatId != 0 ? (tdlib.isChannel(chatId) ? R.string.LinkChannelHelp : R.string.LinkGroupHelp) : R.string.UsernameHelp), ColorId.textLight);
     }
     if (currentUsername.length() >= MIN_USERNAME_LENGTH && currentUsername.length() <= 32 && chatId == 0) {
       SpannableStringBuilder b = new SpannableStringBuilder(helpSequence);
@@ -464,7 +458,7 @@ public class EditUsernameController extends EditBaseController<EditUsernameContr
       b.append(" ");
       String tMeUrl = tdlib.tMeUrl(currentUsername);
       b.append(tMeUrl);
-      b.setSpan(new CustomTypefaceSpan(Fonts.getRobotoRegular(), R.id.theme_color_textLink), b.length() - tMeUrl.length(), b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+      b.setSpan(new CustomTypefaceSpan(Fonts.getRobotoRegular(), ColorId.textLink), b.length() - tMeUrl.length(), b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
       return b;
     }
     return helpSequence;
@@ -483,7 +477,7 @@ public class EditUsernameController extends EditBaseController<EditUsernameContr
     switch (resultType) {
       case ResultType.AVAILABLE: {
         SpannableStringBuilder b = new SpannableStringBuilder(Lang.getString(sourceUsername.equals(currentUsername) ? (chatId != 0 ? R.string.LinkCurrent : R.string.UsernameCurrent) : R.string.UsernameAvailable, currentUsername));
-        b.setSpan(new CustomTypefaceSpan(Fonts.getRobotoMedium(), R.id.theme_color_textSecure), 0, currentUsername.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        b.setSpan(new CustomTypefaceSpan(Fonts.getRobotoMedium(), ColorId.textSecure), 0, currentUsername.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         return b;
       }
       case ResultType.OCCUPIED: {

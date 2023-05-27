@@ -54,8 +54,8 @@ import org.thunderdog.challegram.loader.Watcher;
 import org.thunderdog.challegram.loader.WatcherReference;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
@@ -165,7 +165,7 @@ public class MapGoogleController extends MapController<MapView, MapGoogleControl
       c.drawRoundRect(rect, Screen.dp(26), Screen.dp(26), roundPaint);
     }
 
-    private void drawAvatar (final MarkerData data, Canvas c, @ThemeColorId int avatarColorId, Letters letters, TdApi.File avatar) {
+    private void drawAvatar (final MarkerData data, Canvas c, @ColorId int avatarColorId, Letters letters, TdApi.File avatar) {
       int cx = Screen.dp(62) / 2;
       int cy = Screen.dp(62f) / 2;
       int radius = Screen.dp(26f);
@@ -194,7 +194,7 @@ public class MapGoogleController extends MapController<MapView, MapGoogleControl
       data.requestFile(imageFile);
     }
 
-    private @Nullable Bitmap newBitmap (MarkerData data, @ThemeColorId int avatarColorId, Letters letters, TdApi.File avatar) {
+    private @Nullable Bitmap newBitmap (MarkerData data, @ColorId int avatarColorId, Letters letters, TdApi.File avatar) {
       Bitmap result = null;
       boolean success = false;
       try {

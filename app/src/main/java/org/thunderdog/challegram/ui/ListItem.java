@@ -23,7 +23,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.util.DrawModifier;
 
 import me.vkryl.core.ArrayUtils;
@@ -183,7 +183,7 @@ public class ListItem {
 
   private int firstVisiblePosition = -1, offsetInPixels;
 
-  private @ThemeColorId int radioColorId;
+  private @ColorId int radioColorId;
 
   private int height;
 
@@ -241,7 +241,7 @@ public class ListItem {
 
   private InputFilter[] inputFilter;
 
-  public int getTextColorId (@ThemeColorId int defColorId) {
+  public int getTextColorId (@ColorId int defColorId) {
     return textColorId != 0 ? textColorId : defColorId;
   }
 
@@ -249,7 +249,7 @@ public class ListItem {
     return TGTheme.getColor(getTextColorId(defColorId));
   }*/
 
-  public ListItem setTextColorId (@ThemeColorId int colorId) {
+  public ListItem setTextColorId (@ColorId int colorId) {
     this.textColorId = colorId;
     return this;
   }
@@ -276,12 +276,12 @@ public class ListItem {
     return longValue;
   }
 
-  public ListItem setRadioColorId (@ThemeColorId int colorId) {
+  public ListItem setRadioColorId (@ColorId int colorId) {
     this.radioColorId = colorId;
     return this;
   }
 
-  @ThemeColorId
+  @ColorId
   public int getRadioColorId () {
     return radioColorId;
   }

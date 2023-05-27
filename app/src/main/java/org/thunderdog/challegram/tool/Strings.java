@@ -37,7 +37,7 @@ import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ThemeId;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
@@ -532,7 +532,7 @@ public class Strings {
         if (b == null) {
           b = Spannable.Factory.getInstance().newSpannable(text);
         }
-        b.setSpan(new CustomTypefaceSpan(null, R.id.theme_color_textSearchQueryHighlight).setForceThemeId(forceThemeId), startIndex, startIndex + foundToken.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        b.setSpan(new CustomTypefaceSpan(null, ColorId.textSearchQueryHighlight).setForceThemeId(forceThemeId), startIndex, startIndex + foundToken.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
       }
       int i = Text.indexOfSplitter(text, startIndex, special);
       startIndex = i != -1 ? i + 1 : end;
@@ -686,7 +686,7 @@ public class Strings {
     return replaceBoldTokens(input, 0);
   }
 
-  public static CharSequence replaceBoldTokens (final String input, @ThemeColorId int colorId) {
+  public static CharSequence replaceBoldTokens (final String input, @ColorId int colorId) {
     String token = "**";
     int tokenLen = token.length();
 
@@ -989,7 +989,7 @@ public class Strings {
     return Lang.getString(stringRes, (allowFloat ? Lang.formatNumber(value) : Strings.buildCounter((long) value)));
   }
 
-  public static CharSequence setSpanColorId (CharSequence str, @ThemeColorId int colorId) {
+  public static CharSequence setSpanColorId (CharSequence str, @ColorId int colorId) {
     if (str instanceof Spannable) {
       CustomTypefaceSpan[] spans = ((Spannable) str).getSpans(0, str.length(), CustomTypefaceSpan.class);
       if (spans != null && spans.length > 0) {

@@ -22,18 +22,18 @@ import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 
 public class LineDrawModifier implements DrawModifier {
-  @ThemeColorId
+  @ColorId
   private final int colorId;
 
   private ThemeDelegate forcedTheme;
 
-  public LineDrawModifier (@ThemeColorId int colorId, @Nullable ThemeDelegate forcedTheme) {
+  public LineDrawModifier (@ColorId int colorId, @Nullable ThemeDelegate forcedTheme) {
     this.colorId = colorId;
     this.forcedTheme = forcedTheme;
   }

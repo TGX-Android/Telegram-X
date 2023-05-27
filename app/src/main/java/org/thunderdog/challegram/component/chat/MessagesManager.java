@@ -52,9 +52,9 @@ import org.thunderdog.challegram.telegram.MessageThreadListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
+import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PropertyId;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
-import org.thunderdog.challegram.theme.ThemeProperty;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
@@ -3368,7 +3368,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
   // Colors
 
-  public final int getOverlayColor (@ThemeColorId int plainModeColorId, @ThemeColorId int bubbleColorId, @ThemeColorId int bubbleNoWallpaperColorId, @ThemeProperty int overridePropertyId) {
+  public final int getOverlayColor (@ColorId int plainModeColorId, @ColorId int bubbleColorId, @ColorId int bubbleNoWallpaperColorId, @PropertyId int overridePropertyId) {
     if (!useBubbles())
       return Theme.getColor(plainModeColorId);
     float transparency = controller().wallpaper().getBackgroundTransparency();
@@ -3385,7 +3385,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
   }
 
-  public final int getColor (@ThemeColorId int plainModeColorId, @ThemeColorId int bubbleColorId, @ThemeColorId int bubbleNoWallpaperColorId, @ThemeProperty int overridePropertyId) {
+  public final int getColor (@ColorId int plainModeColorId, @ColorId int bubbleColorId, @ColorId int bubbleNoWallpaperColorId, @PropertyId int overridePropertyId) {
     if (!useBubbles())
       return Theme.getColor(plainModeColorId);
     float transparency = controller().wallpaper().getBackgroundTransparency();

@@ -61,6 +61,7 @@ import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibFilesManager;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
@@ -988,7 +989,7 @@ public class MediaWrapper implements FileProgressComponent.SimpleListener, FileP
         BitwiseUtils.hasFlag(roundings, ROUND_BOTTOM_RIGHT) ? radius : 0,
         BitwiseUtils.hasFlag(roundings, ROUND_BOTTOM_LEFT) ? radius : 0,
         cellLeft, cellTop, cellRight, cellBottom,
-        Paints.fillingPaint(ColorUtils.alphaColor(spoilerFactor, Theme.getColor(R.id.theme_color_spoilerMediaOverlay)))
+        Paints.fillingPaint(ColorUtils.alphaColor(spoilerFactor, Theme.getColor(ColorId.spoilerMediaOverlay)))
       );
       DrawAlgorithms.drawParticles(c,
         BitwiseUtils.hasFlag(roundings, ROUND_TOP_LEFT) ? radius : 0,

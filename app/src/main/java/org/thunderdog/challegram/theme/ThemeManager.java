@@ -57,7 +57,7 @@ public class ThemeManager implements FactorAnimator.Target, GlobalAccountListene
 
   // When adding a new built-in theme, check that the id available in:
   // ThemeId.java
-  // ThemeColorId.java
+  // ColorId.java
 
   public static boolean isCustomTheme (@ThemeId int themeId) {
     return resolveCustomThemeId(themeId) != ThemeId.NONE;
@@ -191,7 +191,7 @@ public class ThemeManager implements FactorAnimator.Target, GlobalAccountListene
     }
   }
 
-  public static void addThemeListener (Paint paint, @ThemeColorId int colorIdRes) {
+  public static void addThemeListener (Paint paint, @ColorId int colorIdRes) {
     // TODO get rid of this
     instance().globalThemeListenerEntries.add(new ThemeListenerEntry(ThemeListenerEntry.MODE_PAINT_COLOR, colorIdRes, paint));
   }
@@ -292,7 +292,7 @@ public class ThemeManager implements FactorAnimator.Target, GlobalAccountListene
     return currentTheme(true).getId() == ThemeId.TEMPORARY;
   }
 
-  public boolean hasColorChanged (@ThemeColorId int colorId) {
+  public boolean hasColorChanged (@ColorId int colorId) {
     ThemeDelegate currentTheme = currentThemeImpl(false);
     int themeId = currentTheme.getId();
     if (themeId == ThemeId.TEMPORARY) {
@@ -532,84 +532,84 @@ public class ThemeManager implements FactorAnimator.Target, GlobalAccountListene
     return ThemeId.CUSTOM - customThemeId;
   }
 
-  public static float normalizeProperty (@ThemeProperty int propertyId, float value) {
+  public static float normalizeProperty (@PropertyId int propertyId, float value) {
     switch (propertyId) {
-      case ThemeProperty.PARENT_THEME:
+      case PropertyId.PARENT_THEME:
         return ThemeManager.restoreThemeId((int) value, false);
 
-      case ThemeProperty.BUBBLE_CORNER_MERGED:
-      case ThemeProperty.BUBBLE_CORNER:
-      case ThemeProperty.BUBBLE_DATE_CORNER:
-      case ThemeProperty.DATE_CORNER:
+      case PropertyId.BUBBLE_CORNER_MERGED:
+      case PropertyId.BUBBLE_CORNER:
+      case PropertyId.BUBBLE_DATE_CORNER:
+      case PropertyId.DATE_CORNER:
         return Math.max(0, value); // Math.min(18, value)
-      case ThemeProperty.BUBBLE_CORNER_LEGACY:
+      case PropertyId.BUBBLE_CORNER_LEGACY:
         return Math.max(0, Math.min(6, value));
-      case ThemeProperty.BUBBLE_OUTER_MARGIN:
+      case PropertyId.BUBBLE_OUTER_MARGIN:
         return 8f; // FIXME return Math.max(0, Math.min(12, value));
 
-      case ThemeProperty.SHADOW_DEPTH:
-      case ThemeProperty.SUBTITLE_ALPHA:
-      case ThemeProperty.AVATAR_RADIUS:
-      case ThemeProperty.AVATAR_RADIUS_FORUM:
+      case PropertyId.SHADOW_DEPTH:
+      case PropertyId.SUBTITLE_ALPHA:
+      case PropertyId.AVATAR_RADIUS:
+      case PropertyId.AVATAR_RADIUS_FORUM:
         return MathUtils.clamp(value);
 
-      case ThemeProperty.AVATAR_RADIUS_CHAT_LIST:
-      case ThemeProperty.AVATAR_RADIUS_CHAT_LIST_FORUM:
+      case PropertyId.AVATAR_RADIUS_CHAT_LIST:
+      case PropertyId.AVATAR_RADIUS_CHAT_LIST_FORUM:
         return value == -1.0f ? value : MathUtils.clamp(value);
 
-      case ThemeProperty.BUBBLE_OUTLINE_SIZE:
-      case ThemeProperty.IMAGE_CORNER:
+      case PropertyId.BUBBLE_OUTLINE_SIZE:
+      case PropertyId.IMAGE_CORNER:
         return Math.max(0, value);
 
-      case ThemeProperty.WALLPAPER_USAGE_ID:
+      case PropertyId.WALLPAPER_USAGE_ID:
         return Math.max(0, Math.min(2, (int) value));
-      case ThemeProperty.WALLPAPER_ID:
+      case PropertyId.WALLPAPER_ID:
         return (int) value;
 
-      case ThemeProperty.DARK:
-      case ThemeProperty.REPLACE_SHADOWS_WITH_SEPARATORS:
-      case ThemeProperty.BUBBLE_OUTLINE:
-      case ThemeProperty.BUBBLE_UNREAD_SHADOW:
-      case ThemeProperty.LIGHT_STATUS_BAR:
-      case ThemeProperty.WALLPAPER_OVERRIDE_BUTTON:
-      case ThemeProperty.WALLPAPER_OVERRIDE_DATE:
-      case ThemeProperty.WALLPAPER_OVERRIDE_MEDIA_REPLY:
-      case ThemeProperty.WALLPAPER_OVERRIDE_OVERLAY:
-      case ThemeProperty.WALLPAPER_OVERRIDE_TIME:
-      case ThemeProperty.WALLPAPER_OVERRIDE_UNREAD:
+      case PropertyId.DARK:
+      case PropertyId.REPLACE_SHADOWS_WITH_SEPARATORS:
+      case PropertyId.BUBBLE_OUTLINE:
+      case PropertyId.BUBBLE_UNREAD_SHADOW:
+      case PropertyId.LIGHT_STATUS_BAR:
+      case PropertyId.WALLPAPER_OVERRIDE_BUTTON:
+      case PropertyId.WALLPAPER_OVERRIDE_DATE:
+      case PropertyId.WALLPAPER_OVERRIDE_MEDIA_REPLY:
+      case PropertyId.WALLPAPER_OVERRIDE_OVERLAY:
+      case PropertyId.WALLPAPER_OVERRIDE_TIME:
+      case PropertyId.WALLPAPER_OVERRIDE_UNREAD:
         return Math.max(0, Math.min(1, (int) value));
     }
     throw Theme.newError(propertyId, "propertyId");
   }
 
-  public static boolean isBoolProperty (@ThemeProperty int propertyId) {
+  public static boolean isBoolProperty (@PropertyId int propertyId) {
     switch (propertyId) { // Bool properties can have only 0..1 values
-      case ThemeProperty.DARK:
-      case ThemeProperty.REPLACE_SHADOWS_WITH_SEPARATORS:
-      case ThemeProperty.BUBBLE_OUTLINE:
-      case ThemeProperty.BUBBLE_UNREAD_SHADOW:
-      case ThemeProperty.LIGHT_STATUS_BAR:
-      case ThemeProperty.WALLPAPER_OVERRIDE_BUTTON:
-      case ThemeProperty.WALLPAPER_OVERRIDE_DATE:
-      case ThemeProperty.WALLPAPER_OVERRIDE_MEDIA_REPLY:
-      case ThemeProperty.WALLPAPER_OVERRIDE_OVERLAY:
-      case ThemeProperty.WALLPAPER_OVERRIDE_TIME:
-      case ThemeProperty.WALLPAPER_OVERRIDE_UNREAD:
+      case PropertyId.DARK:
+      case PropertyId.REPLACE_SHADOWS_WITH_SEPARATORS:
+      case PropertyId.BUBBLE_OUTLINE:
+      case PropertyId.BUBBLE_UNREAD_SHADOW:
+      case PropertyId.LIGHT_STATUS_BAR:
+      case PropertyId.WALLPAPER_OVERRIDE_BUTTON:
+      case PropertyId.WALLPAPER_OVERRIDE_DATE:
+      case PropertyId.WALLPAPER_OVERRIDE_MEDIA_REPLY:
+      case PropertyId.WALLPAPER_OVERRIDE_OVERLAY:
+      case PropertyId.WALLPAPER_OVERRIDE_TIME:
+      case PropertyId.WALLPAPER_OVERRIDE_UNREAD:
         return true;
     }
     return false;
   }
 
-  public static boolean isStaticProperty (@ThemeProperty int propertyId) { // Static properties are not animated
+  public static boolean isStaticProperty (@PropertyId int propertyId) { // Static properties are not animated
     switch (propertyId) {
-      case ThemeProperty.WALLPAPER_ID:
-      case ThemeProperty.WALLPAPER_USAGE_ID:
+      case PropertyId.WALLPAPER_ID:
+      case PropertyId.WALLPAPER_USAGE_ID:
         return true;
     }
     return false;
   }
 
-  public static boolean isValidProperty (@ThemeProperty int propertyId, float value) {
+  public static boolean isValidProperty (@PropertyId int propertyId, float value) {
     return normalizeProperty(propertyId, value) == value;
   }
 
@@ -665,7 +665,7 @@ public class ThemeManager implements FactorAnimator.Target, GlobalAccountListene
       notifyThemeColorsChanged(isTemporaryChange, colorState);
   }
 
-  public void notifyPropertyChanged (@ThemeId int themeId, @ThemeProperty int propertyId, float value, float defaultValue) {
+  public void notifyPropertyChanged (@ThemeId int themeId, @PropertyId int propertyId, float value, float defaultValue) {
     if (currentThemeId() == themeId) {
       // ((ThemeCustom) currentTheme).setProperty(propertyId, value != defaultValue ? value : null);
       for (ThemeChangeListener listener : themeChangeListeners) {

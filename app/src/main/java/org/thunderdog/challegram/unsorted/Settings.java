@@ -60,9 +60,10 @@ import org.thunderdog.challegram.telegram.TdlibNotificationUtils;
 import org.thunderdog.challegram.telegram.TdlibProvider;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.PropertyId;
 import org.thunderdog.challegram.theme.TGBackground;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ThemeColors;
 import org.thunderdog.challegram.theme.ThemeCustom;
 import org.thunderdog.challegram.theme.ThemeDelegate;
@@ -70,7 +71,6 @@ import org.thunderdog.challegram.theme.ThemeId;
 import org.thunderdog.challegram.theme.ThemeInfo;
 import org.thunderdog.challegram.theme.ThemeManager;
 import org.thunderdog.challegram.theme.ThemeProperties;
-import org.thunderdog.challegram.theme.ThemeProperty;
 import org.thunderdog.challegram.theme.ThemeSet;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
@@ -1563,13 +1563,13 @@ public class Settings {
           if (customThemeId >= 0) {
             int activeColor;
             try {
-              activeColor = pmc.tryGetInt(themeColorKey(customThemeId, R.id.theme_color_headerText));
+              activeColor = pmc.tryGetInt(themeColorKey(customThemeId, ColorId.headerText));
             } catch (Throwable ignored) {
               continue;
             }
-            String activeKey = themeColorKey(customThemeId, R.id.theme_color_headerTabActive);
-            String activeTextKey = themeColorKey(customThemeId, R.id.theme_color_headerTabActiveText);
-            String inactiveTextKey = themeColorKey(customThemeId, R.id.theme_color_headerTabInactiveText);
+            String activeKey = themeColorKey(customThemeId, ColorId.headerTabActive);
+            String activeTextKey = themeColorKey(customThemeId, ColorId.headerTabActiveText);
+            String inactiveTextKey = themeColorKey(customThemeId, ColorId.headerTabInactiveText);
             int barColor = ColorUtils.alphaColor(.9f, activeColor);
             int inactiveColor = ColorUtils.alphaColor(.8f, activeColor);
             if (!pmc.contains(activeKey)) {
@@ -4699,7 +4699,7 @@ public class Settings {
         default:
           throw new UnsupportedOperationException(proxy.type.toString());
       }
-      return Lang.getString(stringRes, (target, argStart, argEnd, argIndex, needFakeBold) -> new CustomTypefaceSpan(null, R.id.theme_color_textLight), name);
+      return Lang.getString(stringRes, (target, argStart, argEnd, argIndex, needFakeBold) -> new CustomTypefaceSpan(null, ColorId.textLight), name);
     }
 
     @Override
@@ -5222,7 +5222,7 @@ public class Settings {
   private static final String KEY_THEME_FLAGS = "theme_flags";
   private static final String KEY_THEME_HISTORY = "theme_history";
 
-  private static String themePropertyKey (int customThemeId, @ThemeProperty int propertyId) {
+  private static String themePropertyKey (int customThemeId, @PropertyId int propertyId) {
     return themePropertyKey(customThemeId, Theme.getPropertyName(propertyId));
   }
 
@@ -5230,7 +5230,7 @@ public class Settings {
     return KEY_THEME_FULL + customThemeId + "_p_" + colorName;
   }
 
-  private static String themeColorKey (int customThemeId, @ThemeColorId int colorId) {
+  private static String themeColorKey (int customThemeId, @ColorId int colorId) {
     return themeColorKey(customThemeId, Theme.getColorName(colorId));
   }
 
@@ -5238,7 +5238,7 @@ public class Settings {
     return KEY_THEME_FULL + customThemeId + "_c_" + colorName;
   }
 
-  private static String themeColorHistoryKey (int customThemeId, @ThemeColorId int colorId) {
+  private static String themeColorHistoryKey (int customThemeId, @ColorId int colorId) {
     return KEY_THEME_HISTORY + customThemeId + "_" + Theme.getColorName(colorId);
   }
 
@@ -5328,7 +5328,7 @@ public class Settings {
       }
       for (TdlibUi.ImportedTheme.Value value : theme.propertiesList) {
         putFloat(themePropertyKey(newThemeId, value.name), value.floatValue);
-        if (value.id == ThemeProperty.PARENT_THEME)
+        if (value.id == PropertyId.PARENT_THEME)
           hasParentTheme = true;
       }
       if (!StringUtils.isEmpty(theme.author)) {
@@ -5343,7 +5343,7 @@ public class Settings {
       }
     }
     if (!hasParentTheme) {
-      putFloat(themePropertyKey(newThemeId, ThemeProperty.PARENT_THEME), parentThemeId);
+      putFloat(themePropertyKey(newThemeId, PropertyId.PARENT_THEME), parentThemeId);
     }
     pmc.apply();
     return newThemeId;
@@ -5386,7 +5386,7 @@ public class Settings {
     pmc.apply();
   }
 
-  public float getThemeProperty (int customThemeId, @ThemeProperty int propertyId, float defValue) {
+  public float getThemeProperty (int customThemeId, @PropertyId int propertyId, float defValue) {
     return pmc.getFloat(themePropertyKey(customThemeId, propertyId), defValue);
   }
 
@@ -5398,7 +5398,7 @@ public class Settings {
     }
     int themeId = ThemeManager.serializeCustomThemeId(customThemeId);
     if (theme == null || theme.getId() != themeId) {
-      int parentThemeId = (int) getThemeProperty(customThemeId, ThemeProperty.PARENT_THEME, ThemeId.BLUE);
+      int parentThemeId = (int) getThemeProperty(customThemeId, PropertyId.PARENT_THEME, ThemeId.BLUE);
       theme = new ThemeInfo(themeId, entry.asString(), getCustomThemeWallpaper(customThemeId), parentThemeId, getCustomThemeFlags(customThemeId));
     }
     return theme;
@@ -5447,7 +5447,7 @@ public class Settings {
       case 'p': {
         float value = entry.asFloat();
         theme.addProperty(name, value);
-        if (theme.parentThemeId == ThemeId.NONE && ThemeProperties.getName(ThemeProperty.PARENT_THEME).equals(name)) {
+        if (theme.parentThemeId == ThemeId.NONE && ThemeProperties.getName(PropertyId.PARENT_THEME).equals(name)) {
           theme.parentThemeId = (int) value;
         }
         if (properties != null)
@@ -5461,7 +5461,7 @@ public class Settings {
   }
 
   public boolean hasCustomTheme (int customThemeId) {
-    return customThemeId > 0 && pmc.contains(themePropertyKey(customThemeId, ThemeProperty.PARENT_THEME));
+    return customThemeId > 0 && pmc.contains(themePropertyKey(customThemeId, PropertyId.PARENT_THEME));
   }
 
   public static class ThemeExportInfo {
@@ -5547,7 +5547,7 @@ public class Settings {
     } else {
       theme = new ThemeExportInfo(Lang.getString(ThemeManager.getBuiltinThemeName(themeId)), null);
       ThemeDelegate currentTheme = ThemeSet.getBuiltinTheme(themeId);
-      theme.parentThemeId = (int) currentTheme.getProperty(ThemeProperty.PARENT_THEME);
+      theme.parentThemeId = (int) currentTheme.getProperty(PropertyId.PARENT_THEME);
       if (theme.parentThemeId != ThemeId.NONE) {
         ThemeDelegate parentTheme = ThemeSet.getBuiltinTheme(theme.parentThemeId);
         for (Map.Entry<String, Integer> entry : colors.entrySet()) {
@@ -5559,7 +5559,7 @@ public class Settings {
 
         for (Map.Entry<String, Integer> entry : properties.entrySet()) {
           int propertyId = entry.getValue();
-          if (entry.getValue() == ThemeProperty.WALLPAPER_ID && currentTheme.getProperty(propertyId) == TGBackground.getDefaultWallpaperId(themeId))
+          if (entry.getValue() == PropertyId.WALLPAPER_ID && currentTheme.getProperty(propertyId) == TGBackground.getDefaultWallpaperId(themeId))
             continue;
           if (parentTheme.getProperty(propertyId) != currentTheme.getProperty(propertyId)) {
             theme.addProperty(entry.getKey(), currentTheme.getProperty(propertyId));
@@ -5574,7 +5574,7 @@ public class Settings {
       }
       for (Map.Entry<String, Integer> entry : properties.entrySet()) {
         float value = Theme.getProperty(entry.getValue(), parentThemeId);
-        if (!ThemeManager.isCustomTheme(themeId) && entry.getValue() == ThemeProperty.WALLPAPER_ID && value == TGBackground.getDefaultWallpaperId(themeId)) {
+        if (!ThemeManager.isCustomTheme(themeId) && entry.getValue() == PropertyId.WALLPAPER_ID && value == TGBackground.getDefaultWallpaperId(themeId)) {
           continue;
         }
         theme.addProperty(entry.getKey(), value);
@@ -5599,35 +5599,35 @@ public class Settings {
     return themes;
   }
 
-  public void setCustomThemeColor (int customThemeId, @ThemeColorId int colorId, @Nullable Integer newColor) {
+  public void setCustomThemeColor (int customThemeId, @ColorId int colorId, @Nullable Integer newColor) {
     if (newColor == null)
       pmc.remove(themeColorKey(customThemeId, colorId));
     else
       pmc.putInt(themeColorKey(customThemeId, colorId), newColor);
   }
 
-  public void setCustomThemeProperty (int customThemeId, @ThemeProperty int propertyId, @Nullable Float newValue) {
+  public void setCustomThemeProperty (int customThemeId, @PropertyId int propertyId, @Nullable Float newValue) {
     if (newValue == null)
       pmc.remove(themePropertyKey(customThemeId, propertyId));
     else
       pmc.putFloat(themePropertyKey(customThemeId, propertyId), newValue);
   }
 
-  public int getCustomThemeColor (int customThemeId, @ThemeColorId int colorId) {
+  public int getCustomThemeColor (int customThemeId, @ColorId int colorId) {
     try {
       return pmc.tryGetInt(themeColorKey(customThemeId, colorId));
     } catch (FileNotFoundException e) {
-      return ThemeSet.getColor((int) getCustomThemeProperty(customThemeId, ThemeProperty.PARENT_THEME), colorId);
+      return ThemeSet.getColor((int) getCustomThemeProperty(customThemeId, PropertyId.PARENT_THEME), colorId);
     }
   }
 
-  public float getCustomThemeProperty (int customThemeId, @ThemeProperty int propertyId) {
+  public float getCustomThemeProperty (int customThemeId, @PropertyId int propertyId) {
     try {
       return pmc.tryGetFloat(themePropertyKey(customThemeId, propertyId));
     } catch (FileNotFoundException e) {
-      if (propertyId == ThemeProperty.PARENT_THEME)
+      if (propertyId == PropertyId.PARENT_THEME)
         return ThemeId.BLUE;
-      return ThemeSet.getProperty((int) getCustomThemeProperty(customThemeId, ThemeProperty.PARENT_THEME), propertyId);
+      return ThemeSet.getProperty((int) getCustomThemeProperty(customThemeId, PropertyId.PARENT_THEME), propertyId);
     }
   }
 

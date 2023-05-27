@@ -26,9 +26,9 @@ import android.view.ViewGroup;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
@@ -407,9 +407,9 @@ public class SectionedRecyclerView extends RecyclerView implements Runnable {
 
     // Scrollbar drawing
     if (scrollbarEnabled && scrollbarSpace > 0) {
-      int inactiveColor = Theme.getColor(R.id.theme_color_sectionedScrollBar);
-      int activeColor = ColorUtils.compositeColor(Theme.headerColor(), Theme.getColor(R.id.theme_color_sectionedScrollBarActive));
-      int activeTextColor = ColorUtils.compositeColor(Theme.headerTextColor(), Theme.getColor(R.id.theme_color_sectionedScrollBarActiveContent));
+      int inactiveColor = Theme.getColor(ColorId.sectionedScrollBar);
+      int activeColor = ColorUtils.compositeColor(Theme.headerColor(), Theme.getColor(ColorId.sectionedScrollBarActive));
+      int activeTextColor = ColorUtils.compositeColor(Theme.headerTextColor(), Theme.getColor(ColorId.sectionedScrollBarActiveContent));
 
       c.drawRoundRect(scrollbarRect, scrollbarRadius, scrollbarRadius, Paints.fillingPaint(ColorUtils.fromToArgb(inactiveColor, activeColor, bubbleFactor)));
 

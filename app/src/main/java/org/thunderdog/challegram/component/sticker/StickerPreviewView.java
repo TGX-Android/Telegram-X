@@ -48,6 +48,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeChangeListener;
@@ -102,7 +103,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
     this.stickerView = new StickerView(context);
     this.stickerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     addView(stickerView);
-    ViewSupport.setThemedBackground(this, R.id.theme_color_previewBackground);
+    ViewSupport.setThemedBackground(this, ColorId.previewBackground);
     themeListenerList.addThemeInvalidateListener(this);
     setAlpha(0f);
     stickerView.setLayerType(LAYER_TYPE_HARDWARE, Views.getLayerPaint());
@@ -446,43 +447,33 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
     params.topMargin = getStickerCenterY() + stickerHeight / 2 + Screen.dp(32f);
     menu.setLayoutParams(params);
     View.OnClickListener onClickListener = v -> {
-      switch (v.getId()) {
-        case R.id.btn_favorite: {
-          final int stickerId = sticker.getId();
-          if (tdlib.isStickerFavorite(stickerId)) {
-            tdlib.client().send(new TdApi.RemoveFavoriteSticker(new TdApi.InputFileId(stickerId)), tdlib.okHandler());
-          } else {
-            tdlib.client().send(new TdApi.AddFavoriteSticker(new TdApi.InputFileId(stickerId)), tdlib.okHandler());
-          }
-          closePreviewIfNeeded();
-          break;
+      final int viewId = v.getId();
+      if (viewId == R.id.btn_favorite) {
+        final int stickerId = sticker.getId();
+        if (tdlib.isStickerFavorite(stickerId)) {
+          tdlib.client().send(new TdApi.RemoveFavoriteSticker(new TdApi.InputFileId(stickerId)), tdlib.okHandler());
+        } else {
+          tdlib.client().send(new TdApi.AddFavoriteSticker(new TdApi.InputFileId(stickerId)), tdlib.okHandler());
         }
-        case R.id.btn_send: {
-          if (controllerView != null && controllerView.onSendSticker(v, sticker, Td.newSendOptions())) {
+        closePreviewIfNeeded();
+      } else if (viewId == R.id.btn_send) {
+        if (controllerView != null && controllerView.onSendSticker(v, sticker, Td.newSendOptions())) {
+          closePreviewIfNeeded();
+        }
+      } else if (viewId == R.id.btn_view) {
+        if (controllerView != null) {
+          ViewController<?> context = findRoot();
+          if (context != null) {
+            tdlib.ui().showStickerSet(context, sticker.getStickerSetId(), null);
             closePreviewIfNeeded();
           }
-          break;
         }
-        case R.id.btn_view: {
-          if (controllerView != null) {
-            ViewController<?> context = findRoot();
-            if (context != null) {
-              tdlib.ui().showStickerSet(context, sticker.getStickerSetId(), null);
-              closePreviewIfNeeded();
-            }
-          }
-          break;
-        }
-        case R.id.btn_removeRecent: {
-          final int stickerId = sticker.getId();
-          tdlib.client().send(new TdApi.RemoveRecentSticker(false, new TdApi.InputFileId(stickerId)), tdlib.okHandler());
-          closePreviewIfNeeded();
-          break;
-        }
-        default: {
-          closePreviewIfNeeded();
-          break;
-        }
+      } else if (viewId == R.id.btn_removeRecent) {
+        final int stickerId = sticker.getId();
+        tdlib.client().send(new TdApi.RemoveRecentSticker(false, new TdApi.InputFileId(stickerId)), tdlib.okHandler());
+        closePreviewIfNeeded();
+      } else {
+        closePreviewIfNeeded();
       }
     };
     themeListenerList.addThemeInvalidateListener(menu);
@@ -494,8 +485,8 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
     imageView.setScaleType(ImageView.ScaleType.CENTER);
     imageView.setOnClickListener(onClickListener);
     imageView.setImageResource(isFavorite ? R.drawable.baseline_star_24 : R.drawable.baseline_star_border_24);
-    imageView.setColorFilter(Theme.getColor(R.id.theme_color_textNeutral));
-    themeListenerList.addThemeFilterListener(imageView, R.id.theme_color_textNeutral);
+    imageView.setColorFilter(Theme.getColor(ColorId.textNeutral));
+    themeListenerList.addThemeFilterListener(imageView, ColorId.textNeutral);
     imageView.setLayoutParams(new ViewGroup.LayoutParams(Screen.dp(48f), ViewGroup.LayoutParams.MATCH_PARENT));
     imageView.setPadding(Lang.rtl() ? 0 : Screen.dp(8f), 0, Lang.rtl() ? Screen.dp(8f) : 0, 0);
     RippleSupport.setTransparentBlackSelector(imageView);
@@ -511,8 +502,8 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
     sendView.setId(R.id.btn_send);
     sendView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
     sendView.setTypeface(Fonts.getRobotoMedium());
-    sendView.setTextColor(Theme.getColor(R.id.theme_color_textNeutral));
-    themeListenerList.addThemeColorListener(sendView, R.id.theme_color_textNeutral);
+    sendView.setTextColor(Theme.getColor(ColorId.textNeutral));
+    themeListenerList.addThemeColorListener(sendView, ColorId.textNeutral);
     Views.setMediumText(sendView, Lang.getString(R.string.SendSticker).toUpperCase());
     sendView.setOnClickListener(onClickListener);
     RippleSupport.setTransparentBlackSelector(sendView);
@@ -541,9 +532,9 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
       viewView.setId(R.id.btn_view);
       viewView.setTypeface(Fonts.getRobotoMedium());
       viewView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
-      viewView.setTextColor(Theme.getColor(R.id.theme_color_textNeutral));
+      viewView.setTextColor(Theme.getColor(ColorId.textNeutral));
       Views.setMediumText(viewView, Lang.getString(R.string.ViewPackPreview).toUpperCase());
-      themeListenerList.addThemeColorListener(viewView, R.id.theme_color_textNeutral);
+      themeListenerList.addThemeColorListener(viewView, ColorId.textNeutral);
       viewView.setOnClickListener(onClickListener);
       RippleSupport.setTransparentBlackSelector(viewView);
       viewView.setPadding(Screen.dp(Lang.rtl() ? 16f : 12f), 0, Screen.dp(Lang.rtl() ? 12f : 16f), 0);
@@ -561,8 +552,8 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
       removeRecentView.setScaleType(ImageView.ScaleType.CENTER);
       removeRecentView.setOnClickListener(onClickListener);
       removeRecentView.setImageResource(R.drawable.baseline_auto_delete_24);
-      removeRecentView.setColorFilter(Theme.getColor(R.id.theme_color_textNegative));
-      themeListenerList.addThemeFilterListener(removeRecentView, R.id.theme_color_textNegative);
+      removeRecentView.setColorFilter(Theme.getColor(ColorId.textNegative));
+      themeListenerList.addThemeFilterListener(removeRecentView, ColorId.textNegative);
       removeRecentView.setLayoutParams(new ViewGroup.LayoutParams(Screen.dp(48f), ViewGroup.LayoutParams.MATCH_PARENT));
       removeRecentView.setPadding(Lang.rtl() ? Screen.dp(8f) : 0, 0, Lang.rtl() ? 0 : Screen.dp(8f), 0);
       RippleSupport.setTransparentBlackSelector(removeRecentView);

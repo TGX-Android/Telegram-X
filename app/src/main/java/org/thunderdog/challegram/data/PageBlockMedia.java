@@ -480,27 +480,20 @@ public class PageBlockMedia extends PageBlock implements MediaWrapper.OnClickLis
     }
     if (!StringUtils.isEmpty(url)) {
       context.showOptions(Lang.getString(R.string.OpenThisLink, url), new int[] {R.id.btn_openLink, R.id.btn_copyLink, R.id.btn_open}, new String[] {Lang.getString(R.string.Open), Lang.getString(R.string.CopyLink), Lang.getString(R.string.ViewPhoto)}, null, new int[] {R.drawable.baseline_open_in_browser_24, R.drawable.baseline_content_copy_24, R.drawable.baseline_visibility_24}, (optionItemView, id) -> {
-        switch (id) {
-          case R.id.btn_openLink: {
-            TdlibUi.UrlOpenParameters openParameters = new TdlibUi.UrlOpenParameters(this.urlOpenParameters);
-            if (openParameters.tooltip == null) {
-              openParameters.tooltip = UI.getContext(view.getContext()).tooltipManager().builder(view, currentViews).locate((targetView, outRect) -> outRect.set(wrapper.getCellLeft(), wrapper.getCellTop(), wrapper.getCellRight(), wrapper.getCellBottom()));
-            }
-            if (context instanceof InstantViewController) {
-              ((InstantViewController) context).onUrlClick(view, url, false, openParameters);
-            } else {
-              context.tdlib().ui().openUrl(context, url, openParameters);
-            }
-            break;
+        if (id == R.id.btn_openLink) {
+          TdlibUi.UrlOpenParameters openParameters = new TdlibUi.UrlOpenParameters(this.urlOpenParameters);
+          if (openParameters.tooltip == null) {
+            openParameters.tooltip = UI.getContext(view.getContext()).tooltipManager().builder(view, currentViews).locate((targetView, outRect) -> outRect.set(wrapper.getCellLeft(), wrapper.getCellTop(), wrapper.getCellRight(), wrapper.getCellBottom()));
           }
-          case R.id.btn_copyLink: {
-            UI.copyText(url, R.string.CopiedLink);
-            break;
+          if (context instanceof InstantViewController) {
+            ((InstantViewController) context).onUrlClick(view, url, false, openParameters);
+          } else {
+            context.tdlib().ui().openUrl(context, url, openParameters);
           }
-          case R.id.btn_open: {
-            openMedia(clickWrapper);
-            break;
-          }
+        } else if (id == R.id.btn_copyLink) {
+          UI.copyText(url, R.string.CopiedLink);
+        } else if (id == R.id.btn_open) {
+          openMedia(clickWrapper);
         }
         return true;
       });

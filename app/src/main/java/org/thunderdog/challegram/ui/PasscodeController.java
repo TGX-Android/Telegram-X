@@ -57,6 +57,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Keyboard;
@@ -178,12 +179,12 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
 
   @Override
   protected int getHeaderIconColorId () {
-    return R.id.theme_color_passcodeIcon;
+    return ColorId.passcodeIcon;
   }
 
   @Override
   protected int getHeaderColorId () {
-    return R.id.theme_color_passcode;
+    return ColorId.passcode;
   }
 
   @Override
@@ -194,7 +195,7 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
         return (ev.getAction() == MotionEvent.ACTION_DOWN && !inSetupMode() && Settings.instance().isPasscodeBlocked(mode, makeBruteForceSuffix())) || super.onInterceptTouchEvent(ev);
       }
     };
-    ViewSupport.setThemedBackground(contentView, R.id.theme_color_passcode, this);
+    ViewSupport.setThemedBackground(contentView, ColorId.passcode, this);
     contentView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
     getCustomHeaderCell();
@@ -211,8 +212,8 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
       setMode(getPasscodeMode());
       if (mode != Passcode.MODE_FINGERPRINT && needUnlockByFingerprint()) {
         swirlView = new SwirlView(context);
-        swirlView.setColorFilter(ColorUtils.alphaColor(Theme.getSubtitleAlpha(), Theme.getColor(R.id.theme_color_passcodeIcon)));
-        addThemeFilterListener(swirlView, R.id.theme_color_passcodeIcon).setIsSubtitle(true);
+        swirlView.setColorFilter(ColorUtils.alphaColor(Theme.getSubtitleAlpha(), Theme.getColor(ColorId.passcodeIcon)));
+        addThemeFilterListener(swirlView, ColorId.passcodeIcon).setIsSubtitle(true);
         swirlView.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(36f), Screen.dp(36f), Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 0, 0, Screen.dp(18f)));
         setNeedFinger(true);
         contentView.addView(swirlView);
@@ -309,10 +310,10 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
       passwordView.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
       passwordView.setTransformationMethod(isPasscodeVisible() ? PasswordTransformationMethod.getInstance() : InvisibleTransformationMethod.instance());
       passwordView.setGravity(Gravity.CENTER);
-      passwordView.setTextColor(Theme.getColor(R.id.theme_color_passcodeText));
+      passwordView.setTextColor(Theme.getColor(ColorId.passcodeText));
       passwordView.setOnEditorActionListener(this);
       passwordView.setImeOptions(EditorInfo.IME_ACTION_DONE);
-      addThemeTextColorListener(passwordView, R.id.theme_color_passcodeText);
+      addThemeTextColorListener(passwordView, ColorId.passcodeText);
       // Views.setCursorColor(passwordView, 0xffadcae0, R.drawable.cursor_blue);
 
       ViewUtils.setBackground(passwordView, null);
@@ -427,8 +428,8 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
       gestureView = new GestureOverlayView(context());
       gestureView.setGestureStrokeWidth(Screen.dp(3f));
       gestureView.setOrientation(GestureOverlayView.ORIENTATION_VERTICAL);
-      gestureView.setGestureColor(Theme.getColor(R.id.theme_color_passcodeIcon));
-      gestureView.setUncertainGestureColor(Theme.getColor(R.id.theme_color_passcodeIcon));
+      gestureView.setGestureColor(Theme.getColor(ColorId.passcodeIcon));
+      gestureView.setUncertainGestureColor(Theme.getColor(ColorId.passcodeIcon));
       gestureView.setGestureVisible(isPasscodeVisible());
       gestureView.setFadeEnabled(true);
       gestureView.addOnGesturePerformedListener(this);
@@ -504,8 +505,8 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
   private void showFingerprintIcon () {
     if (fingerprintView == null) {
       fingerprintView = new SwirlView(context);
-      fingerprintView.setColorFilter(ColorUtils.alphaColor(Theme.getSubtitleAlpha(), Theme.getColor(R.id.theme_color_passcodeIcon)));
-      addThemeFilterListener(fingerprintView, R.id.theme_color_passcodeIcon).setIsSubtitle(true);
+      fingerprintView.setColorFilter(ColorUtils.alphaColor(Theme.getSubtitleAlpha(), Theme.getColor(ColorId.passcodeIcon)));
+      addThemeFilterListener(fingerprintView, ColorId.passcodeIcon).setIsSubtitle(true);
 
       int orientation = UI.getOrientation();
 
@@ -875,7 +876,7 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
 
   @Override
   public int getRootColorId () {
-    return R.id.theme_color_passcode;
+    return ColorId.passcode;
   }
 
   @Override
@@ -984,7 +985,7 @@ public class PasscodeController extends ViewController<PasscodeController.Args> 
 
   @Override
   protected int getHeaderTextColorId () {
-    return R.id.theme_color_passcodeText;
+    return ColorId.passcodeText;
   }
 
   @Override

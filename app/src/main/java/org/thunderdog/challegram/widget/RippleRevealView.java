@@ -20,13 +20,13 @@ import android.view.View;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Paints;
 
 import me.vkryl.core.ColorUtils;
 
 public class RippleRevealView extends View {
-  private @ThemeColorId int colorId = R.id.theme_color_filling;
+  private @ColorId int colorId = ColorId.filling;
   private float revealFactor;
 
   public RippleRevealView (Context context) {

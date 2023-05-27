@@ -39,6 +39,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeId;
 import org.thunderdog.challegram.tool.EmojiData;
@@ -207,13 +208,11 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
     if (StringUtils.isEmpty(rawEmoji)) {
       return;
     }
-    switch (v.getId()) {
-      case R.id.emoji:
-        Emoji.instance().saveRecentEmoji(rawEmoji);
-        break;
-      case R.id.emoji_recent:
-        // Nothing to do?
-        break;
+    final int viewId = v.getId();
+    if (viewId == R.id.emoji) {
+      Emoji.instance().saveRecentEmoji(rawEmoji);
+    } else if (viewId == R.id.emoji_recent) {
+      // Nothing to do?
     }
     if (getArguments() != null) {
       getArguments().onEnterEmoji(emoji);
@@ -607,7 +606,7 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
           TextView textView = new NoScrollTextView(context);
           textView.setTypeface(Fonts.getRobotoMedium());
           if (this.parent.useDarkMode) {
-            textView.setTextColor(Theme.getColor(R.id.theme_color_textLight, ThemeId.NIGHT_BLACK));
+            textView.setTextColor(Theme.getColor(ColorId.textLight, ThemeId.NIGHT_BLACK));
           } else {
             textView.setTextColor(Theme.textDecentColor());
             this.parent.addThemeTextDecentColorListener(textView);

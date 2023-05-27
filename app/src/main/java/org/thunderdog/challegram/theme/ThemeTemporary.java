@@ -74,7 +74,7 @@ final class ThemeTemporary implements ThemeDelegate {
   }
 
   @Override
-  public float getProperty (@ThemeProperty int propertyId) {
+  public float getProperty (@PropertyId int propertyId) {
     if (factor == 1f || ThemeManager.isStaticProperty(propertyId))
       return toTheme.getProperty(propertyId);
     else if (factor == 0f)

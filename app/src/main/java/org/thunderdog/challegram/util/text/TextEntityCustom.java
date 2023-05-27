@@ -402,22 +402,15 @@ public class TextEntityCustom extends TextEntity {
     final int[] shareState = {0};
 
     context.showOptions(copyText, ids.get(), strings.get(), null, icons.get(), (itemView, id) -> {
-      switch (id) {
-        case R.id.btn_copyLink: {
-          UI.copyText(copyText, R.string.CopiedLink);
-          break;
+      if (id == R.id.btn_copyLink) {
+        UI.copyText(copyText, R.string.CopiedLink);
+      } else if (id == R.id.btn_shareLink) {
+        if (shareState[0] == 0) {
+          shareState[0] = 1;
+          TD.shareLink(new TdlibContext(context.context(), tdlib), copyText);
         }
-        case R.id.btn_shareLink: {
-          if (shareState[0] == 0) {
-            shareState[0] = 1;
-            TD.shareLink(new TdlibContext(context.context(), tdlib), copyText);
-          }
-          break;
-        }
-        case R.id.btn_openLink: {
-          performClick(view, text, part, clickCallback);
-          break;
-        }
+      } else if (id == R.id.btn_openLink) {
+        performClick(view, text, part, clickCallback);
       }
       return true;
     }, clickCallback != null ? clickCallback.getForcedTheme(view, text) : null);

@@ -24,9 +24,9 @@ import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.theme.PorterDuffThemeColorId;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -74,9 +74,9 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
     private float drawableWidthDp, drawableMarginDp;
     private int drawableGravity = Gravity.NO_GRAVITY;
 
-    private int textColorId = R.id.theme_color_badgeText;
-    private int mutedTextColorId = R.id.theme_color_badgeMutedText;
-    private int failedTextColorId = R.id.theme_color_badgeFailedText;
+    private int textColorId = ColorId.badgeText;
+    private int mutedTextColorId = ColorId.badgeMutedText;
+    private int failedTextColorId = ColorId.badgeFailedText;
     private int outlineColorId;
     private boolean visibleIfZero;
 
@@ -121,12 +121,12 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
       return this;
     }
 
-    public Builder textColor (@ThemeColorId int textColorId) {
+    public Builder textColor (@ColorId int textColorId) {
       this.textColorId = textColorId;
       return this;
     }
 
-    public Builder textColor (@ThemeColorId int textColorId, @ThemeColorId int mutedTextColorId, @ThemeColorId int failedTextColorId) {
+    public Builder textColor (@ColorId int textColorId, @ColorId int mutedTextColorId, @ColorId int failedTextColorId) {
       this.textColorId = textColorId;
       this.mutedTextColorId = mutedTextColorId;
       this.failedTextColorId = failedTextColorId;
@@ -138,7 +138,7 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
       return this;
     }
 
-    public Builder outlineColor (@ThemeColorId int colorId) {
+    public Builder outlineColor (@ColorId int colorId) {
       this.outlineColorId = colorId;
       return this;
     }
@@ -178,13 +178,13 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
   private final int drawableGravity;
   private boolean visibleIfZero;
 
-  @ThemeColorId
+  @ColorId
   private final int textColorId, mutedTextColorId, failedTextColorId, outlineColorId;
   
   private final TextColorSet colorSet;
 
   private Counter (float textSize, Callback callback, int flags,
-                   @ThemeColorId int textColorId, @ThemeColorId int mutedTextColorId, @ThemeColorId int failedTextColorId, @ThemeColorId int outlineColorId,
+                   @ColorId int textColorId, @ColorId int mutedTextColorId, @ColorId int failedTextColorId, @ColorId int outlineColorId,
                    @DrawableRes int drawableRes, float drawableWidthDp, float drawableMarginDp, int drawableGravity,
                    @Nullable TextColorSet colorSet, Drawable counterDrawable, boolean visibleIfZero) {
     this.textSize = textSize;
@@ -291,7 +291,7 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
     return 0;
   }
 
-  private Drawable getDrawable (DrawableProvider drawableProvider, @PorterDuffThemeColorId int drawableColorId) {
+  private Drawable getDrawable (DrawableProvider drawableProvider, @PorterDuffColorId int drawableColorId) {
     if (drawableRes != 0) {
       return drawableProvider.getSparseDrawable(drawableRes, drawableColorId);
     }
@@ -336,11 +336,11 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
     draw(c, cx, cy, gravity, alpha, null, 0);
   }
 
-  public void draw (Canvas c, float cx, float cy, int gravity, float alpha, DrawableProvider drawableProvider, @PorterDuffThemeColorId int drawableColorId) {
+  public void draw (Canvas c, float cx, float cy, int gravity, float alpha, DrawableProvider drawableProvider, @PorterDuffColorId int drawableColorId) {
     draw(c, cx, cy, gravity, alpha, alpha, drawableProvider, drawableColorId);
   }
 
-  public void draw (Canvas c, float cx, float cy, int gravity, float alpha, float drawableAlpha, DrawableProvider drawableProvider, @PorterDuffThemeColorId int drawableColorId) {
+  public void draw (Canvas c, float cx, float cy, int gravity, float alpha, float drawableAlpha, DrawableProvider drawableProvider, @PorterDuffColorId int drawableColorId) {
     if (alpha * getVisibility() > 0f) {
       Drawable drawable = getDrawable(drawableProvider, drawableColorId);
       DrawAlgorithms.drawCounter(c, cx, cy, gravity, counter, textSize, BitwiseUtils.hasFlag(flags, FLAG_NEED_BACKGROUND),this, drawable, drawableGravity, drawableColorId, Screen.dp(drawableMarginDp), alpha * getVisibility(), drawableAlpha * getVisibility(), isVisible.getFloatValue());
@@ -371,7 +371,7 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
 
   @Override
   public int backgroundColor (boolean isPressed) {
-    return colorSet != null ? colorSet.backgroundColor(isPressed) : getColor(getMuteFactor(), R.id.theme_color_badge, R.id.theme_color_badgeMuted, R.id.theme_color_badgeFailed);
+    return colorSet != null ? colorSet.backgroundColor(isPressed) : getColor(getMuteFactor(), ColorId.badge, ColorId.badgeMuted, ColorId.badgeFailed);
   }
 
   @Override

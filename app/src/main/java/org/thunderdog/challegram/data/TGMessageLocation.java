@@ -42,6 +42,7 @@ import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.LiveLocationManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Icons;
@@ -746,7 +747,7 @@ public class TGMessageLocation extends TGMessage implements LiveLocationManager.
       float step = .35f;
       float alpha = .45f * (pulseFactor < step ? 1f : 1f - (pulseFactor - step) / (1f - step));
       float radius = (float) maxPulseRadius * pulseFactor;
-      int color = ColorUtils.alphaColor(alpha, Theme.getColor(R.id.theme_color_file));
+      int color = ColorUtils.alphaColor(alpha, Theme.getColor(ColorId.file));
       c.drawCircle(mapCenterX, mapCenterY + Screen.dp(1f), radius, Paints.fillingPaint(color));
     }
 
@@ -767,7 +768,7 @@ public class TGMessageLocation extends TGMessage implements LiveLocationManager.
       }
     } else {
       iconSize = Screen.dp(16f);
-      c.drawCircle(mapCenterX, pinCenterY, pinRadius, Paints.fillingPaint(Theme.getColor(R.id.theme_color_file)));
+      c.drawCircle(mapCenterX, pinCenterY, pinRadius, Paints.fillingPaint(Theme.getColor(ColorId.file)));
 
       if (iconReceiver.needPlaceholder()) {
         float iconAlpha = 1f - ((ImageReceiver) iconReceiver).getDisplayAlpha();
@@ -819,7 +820,7 @@ public class TGMessageLocation extends TGMessage implements LiveLocationManager.
       }/* else if (NEED_VENUE_CIRCLE && venue != null) {
         int circleRadius = Screen.dp(20f);
         int centerY = venueContentY + paddingTop + circleRadius;
-        c.drawCircle(venueContentX + circleRadius, centerY, circleRadius, Paints.fillingPaint(Theme.getColor(R.id.theme_color_circleButtonRegular)));
+        c.drawCircle(venueContentX + circleRadius, centerY, circleRadius, Paints.fillingPaint(Theme.getColor(ColorId.circleButtonRegular)));
         final Bitmap icon = Icons.getLocationIcon();
         c.drawBitmap(icon, venueContentX + circleRadius - icon.getWidth() / 2, centerY - icon.getHeight() / 2, Paints.getBitmapPaint());
         textX += circleRadius * 2 + Screen.dp(11f);
@@ -937,20 +938,16 @@ public class TGMessageLocation extends TGMessage implements LiveLocationManager.
                 double latitude = point.latitude;
                 double longitude = point.longitude;
                 controller().showOptions(latitudeStr(latitude) + " " + longitudeStr(longitude), new int[] {R.id.btn_open, R.id.btn_copyText, R.id.btn_openIn}, new String[] {Lang.getString(R.string.OpenMap), Lang.getString(R.string.CopyCoordinates), Lang.getString(R.string.OpenInExternalApp)}, null, new int[] {R.drawable.baseline_map_24, R.drawable.baseline_content_copy_24, R.drawable.baseline_open_in_browser_24}, (itemView, id) -> {
-                  switch (id) {
-                    case R.id.btn_copyText:
-                      UI.copyText(String.format(Locale.US, "%f,%f", latitude, longitude), R.string.CopiedCoordinates);
-                      break;
-                    case R.id.btn_open:
-                      if (tdlib.ui().openMap(TGMessageLocation.this, args)) {
-                        readContent();
-                      }
-                      break;
-                    case R.id.btn_openIn:
-                      if (Intents.openMap(latitude, longitude, args.title, args.address)) {
-                        readContent();
-                      }
-                      break;
+                  if (id == R.id.btn_copyText) {
+                    UI.copyText(String.format(Locale.US, "%f,%f", latitude, longitude), R.string.CopiedCoordinates);
+                  } else if (id == R.id.btn_open) {
+                    if (tdlib.ui().openMap(TGMessageLocation.this, args)) {
+                      readContent();
+                    }
+                  } else if (id == R.id.btn_openIn) {
+                    if (Intents.openMap(latitude, longitude, args.title, args.address)) {
+                      readContent();
+                    }
                   }
                   return true;
                 });

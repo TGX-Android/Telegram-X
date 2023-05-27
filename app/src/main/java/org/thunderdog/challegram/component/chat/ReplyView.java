@@ -33,6 +33,7 @@ import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
@@ -130,7 +131,7 @@ public class ReplyView extends FrameLayoutFix implements View.OnClickListener, D
     closeView = new ImageView(getContext());
     closeView.setImageResource(R.drawable.baseline_close_24);
     closeView.setColorFilter(Theme.iconColor());
-    themeProvider.addThemeFilterListener(closeView, R.id.theme_color_icon);
+    themeProvider.addThemeFilterListener(closeView, ColorId.icon);
     closeView.setScaleType(ImageView.ScaleType.CENTER);
     closeView.setLayoutParams(params);
     closeView.setOnClickListener(this);

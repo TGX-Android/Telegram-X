@@ -19,7 +19,7 @@ import android.view.ViewGroup;
 
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
 
 import me.vkryl.android.widget.FrameLayoutFix;
@@ -52,7 +52,7 @@ public class SliderFilterWrapView extends FrameLayoutFix implements SliderView.L
     setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(42f)));
   }
 
-  public void setData (String name, int value, float floatValue, int anchorMode, @ThemeColorId int colorId, boolean isEnabled) {
+  public void setData (String name, int value, float floatValue, int anchorMode, @ColorId int colorId, boolean isEnabled) {
     nameView.setName(name);
     nameView.setValue(value == 0 ? "0" : value > 0 ? "+" + value : String.valueOf(value));
     sliderView.setColorId(colorId, false);
@@ -65,7 +65,7 @@ public class SliderFilterWrapView extends FrameLayoutFix implements SliderView.L
     sliderView.setSlideEnabled(isEnabled, true);
   }
 
-  public void setColorId (@ThemeColorId int colorId) {
+  public void setColorId (@ColorId int colorId) {
     sliderView.setColorId(colorId, true);
   }
 

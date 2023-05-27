@@ -29,6 +29,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.TdlibManager;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -48,15 +49,15 @@ public class CameraButton extends View implements FactorAnimator.Target, Runnabl
   public CameraButton (Context context) {
     super(context);
     Views.setClickable(this);
-    RippleSupport.setCircleBackground(this, 56f, 4f, R.id.theme_color_white, null);
+    RippleSupport.setCircleBackground(this, 56f, 4f, ColorId.white, null);
     setLayerType(LAYER_TYPE_HARDWARE, null);
 
     int padding = Screen.dp(4f);
     setLayoutParams(FrameLayoutFix.newParams(Screen.dp(56f) + padding * 2, Screen.dp(56f) + padding * 2));
     setPadding(padding, padding, padding, padding);
 
-    // cameraIcon = new EraseDrawable(R.drawable.baseline_camera_alt_24, R.id.theme_color_white);
-    // stopIcon = new EraseDrawable(R.drawable.baseline_stop_24, R.id.theme_color_white);
+    // cameraIcon = new EraseDrawable(R.drawable.baseline_camera_alt_24, ColorId.white);
+    // stopIcon = new EraseDrawable(R.drawable.baseline_stop_24, ColorId.white);
     cameraIcon = Drawables.toBitmap(Drawables.get(R.drawable.baseline_camera_alt_24));
     closeIcon = Drawables.toBitmap(Drawables.get(R.drawable.baseline_close_24));
     stopIcon = Drawables.toBitmap(Drawables.get(R.drawable.baseline_stop_24));

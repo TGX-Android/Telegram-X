@@ -43,6 +43,7 @@ import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.Menu;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Intents;
@@ -90,33 +91,23 @@ public class MediaBottomLocationController extends MediaBottomBaseController<Voi
 
   @Override
   public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
-    switch (id) {
-      case R.id.menu_search: {
-        header.addSearchButton(menu, this);
-        break;
-      }
-      case R.id.menu_clear: {
-        header.addClearButton(menu, this);
-        break;
-      }
+    if (id == R.id.menu_search) {
+      header.addSearchButton(menu, this);
+    } else if (id == R.id.menu_clear) {
+      header.addClearButton(menu, this);
     }
   }
 
   @Override
   public void onMenuItemPressed (int id, View view) {
-    switch (id) {
-      case R.id.menu_btn_search: {
-        if (firstLoaded && currentLocation != null) {
-          mediaLayout.getHeaderView().openSearchMode();
-          headerView = mediaLayout.getHeaderView();
-          hideMap();
-        }
-        break;
+    if (id == R.id.menu_btn_search) {
+      if (firstLoaded && currentLocation != null) {
+        mediaLayout.getHeaderView().openSearchMode();
+        headerView = mediaLayout.getHeaderView();
+        hideMap();
       }
-      case R.id.menu_btn_clear: {
-        clearSearchInput();
-        break;
-      }
+    } else if (id == R.id.menu_btn_clear) {
+      clearSearchInput();
     }
   }
 
@@ -184,23 +175,19 @@ public class MediaBottomLocationController extends MediaBottomBaseController<Voi
     settingsAdapter = new SettingsAdapter(this) {
       @Override
       protected void setPlace (ListItem item, int position, MediaLocationPlaceView view, boolean isUpdate) {
-        switch (item.getId()) {
-          case R.id.btn_shareLiveLocation: {
-            view.setDefaultLiveLocation(true);
-            view.setInProgress(sendingLiveLocation, isUpdate);
-            view.setEnabled(!sendingLiveLocation);
-            break;
-          }
-          case R.id.place: {
-            view.setInProgress(false, false);
-            MediaLocationData place = (MediaLocationData) item.getData();
-            boolean isChecked = selectedPlace != null && selectedPlace.equals(place);
-            if (isUpdate) {
-              view.setChecked(isChecked, true);
-            } else {
-              view.setLocation(place, isChecked);
-            }
-            break;
+        final int itemId = item.getId();
+        if (itemId == R.id.btn_shareLiveLocation) {
+          view.setDefaultLiveLocation(true);
+          view.setInProgress(sendingLiveLocation, isUpdate);
+          view.setEnabled(!sendingLiveLocation);
+        } else if (itemId == R.id.place) {
+          view.setInProgress(false, false);
+          MediaLocationData place = (MediaLocationData) item.getData();
+          boolean isChecked = selectedPlace != null && selectedPlace.equals(place);
+          if (isUpdate) {
+            view.setChecked(isChecked, true);
+          } else {
+            view.setLocation(place, isChecked);
           }
         }
       }
@@ -210,7 +197,7 @@ public class MediaBottomLocationController extends MediaBottomBaseController<Voi
     if (!mediaLayout.inSpecificMode() && !ChatId.isSecret(mediaLayout.getTargetChatId()) && !mediaLayout.areScheduledOnly()) {
       items.add(liveItem = new ListItem(ListItem.TYPE_ATTACH_LOCATION, R.id.btn_shareLiveLocation));
     }
-    items.add(new ListItem(ListItem.TYPE_HEADER, R.id.btn_places, 0, R.string.PullToSeePlaces).setTextColorId(R.id.theme_color_textLight));
+    items.add(new ListItem(ListItem.TYPE_HEADER, R.id.btn_places, 0, R.string.PullToSeePlaces).setTextColorId(ColorId.textLight));
     settingsAdapter.setItems(items, false);
 
     // adapter = new MediaLocationAdapter(context, manager, totalHeaderSize, this, this);
@@ -280,7 +267,7 @@ public class MediaBottomLocationController extends MediaBottomBaseController<Voi
     dataView = new NoScrollTextView(context);
     dataView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13f);
     dataView.setTextColor(Theme.textDecentColor());
-    addThemeTextDecentColorListener(R.id.theme_color_textLight);
+    addThemeTextDecentColorListener(ColorId.textLight);
     dataView.setTypeface(Fonts.getRobotoRegular());
     dataView.setEllipsize(TextUtils.TruncateAt.END);
     dataView.setSingleLine(true);
@@ -345,71 +332,65 @@ public class MediaBottomLocationController extends MediaBottomBaseController<Voi
 
   @Override
   public void onClick (View v) {
-    switch (v.getId()) {
-      case R.id.place: {
-        ListItem item = (ListItem) v.getTag();
-        MediaLocationData data = (MediaLocationData) item.getData();
-        selectPlace(data, true);
-        break;
-      }
-      case R.id.btn_send: {
-        if (selectedPlace != null) {
-          mediaLayout.sendVenue(selectedPlace);
-        } else {
-          Location location = mapView.getCurrentLocation();
-          if (location != null) {
-            mediaLayout.sendLocation(location.getLatitude(), location.getLongitude(), location.getAccuracy(), U.getHeading(location), 0);
-          }
+    final int viewId = v.getId();
+    if (viewId == R.id.place) {
+      ListItem item = (ListItem) v.getTag();
+      MediaLocationData data = (MediaLocationData) item.getData();
+      selectPlace(data, true);
+    } else if (viewId == R.id.btn_send) {
+      if (selectedPlace != null) {
+        mediaLayout.sendVenue(selectedPlace);
+      } else {
+        Location location = mapView.getCurrentLocation();
+        if (location != null) {
+          mediaLayout.sendLocation(location.getLatitude(), location.getLongitude(), location.getAccuracy(), U.getHeading(location), 0);
         }
-        break;
       }
-      case R.id.btn_shareLiveLocation: {
-        if (!sendingLiveLocation) {
-          /*if (lastKnownLocation != null && U.timeSinceGenerationMs(lastKnownLocation) <= 150000l *//*2.5 minutes*//*) {
+    } else if (viewId == R.id.btn_shareLiveLocation) {
+      if (!sendingLiveLocation) {
+        /*if (lastKnownLocation != null && U.timeSinceGenerationMs(lastKnownLocation) <= 150000l *//*2.5 minutes*//*) {
             openLiveLocationAlert();
             return;
           }*/
-          sendingLiveLocation = true;
+        sendingLiveLocation = true;
+        settingsAdapter.updateValuedSettingById(R.id.btn_shareLiveLocation);
+        LocationHelper.requestLocation(context, 15000l, true, true, (errorCode, location) -> {
+          if (isDestroyed()) {
+            return;
+          }
+          sendingLiveLocation = false;
           settingsAdapter.updateValuedSettingById(R.id.btn_shareLiveLocation);
-          LocationHelper.requestLocation(context, 15000l, true, true, (errorCode, location) -> {
-            if (isDestroyed()) {
-              return;
+          switch (errorCode) {
+            case LocationHelper.ERROR_CODE_PERMISSION: {
+              Intents.openPermissionSettings();
+              break;
             }
-            sendingLiveLocation = false;
-            settingsAdapter.updateValuedSettingById(R.id.btn_shareLiveLocation);
-            switch (errorCode) {
-              case LocationHelper.ERROR_CODE_PERMISSION: {
-                Intents.openPermissionSettings();
-                break;
+            case LocationHelper.ERROR_CODE_RESOLUTION: {
+              ViewController<?> c = context.navigation().getCurrentStackItem();
+              if (c != null) {
+                c.openMissingLocationPermissionAlert(true);
               }
-              case LocationHelper.ERROR_CODE_RESOLUTION: {
-                ViewController<?> c = context.navigation().getCurrentStackItem();
-                if (c != null) {
-                  c.openMissingLocationPermissionAlert(true);
-                }
-                break;
-              }
-              case LocationHelper.ERROR_CODE_NONE: {
-                if (location != null) {
-                  if (lastKnownLocation == null) {
-                    lastKnownLocation = U.newFakeLocation();
-                  }
-                  lastKnownLocation.set(location);
-                }
-                openLiveLocationAlert();
-                break;
-              }
-              case LocationHelper.ERROR_CODE_PERMISSION_CANCEL: {
-                break;
-              }
-              default: {
-                UI.showToast(R.string.DetectLocationError, Toast.LENGTH_SHORT);
-                break;
-              }
+              break;
             }
-          });
-        }
-        break;
+            case LocationHelper.ERROR_CODE_NONE: {
+              if (location != null) {
+                if (lastKnownLocation == null) {
+                  lastKnownLocation = U.newFakeLocation();
+                }
+                lastKnownLocation.set(location);
+              }
+              openLiveLocationAlert();
+              break;
+            }
+            case LocationHelper.ERROR_CODE_PERMISSION_CANCEL: {
+              break;
+            }
+            default: {
+              UI.showToast(R.string.DetectLocationError, Toast.LENGTH_SHORT);
+              break;
+            }
+          }
+        });
       }
     }
   }

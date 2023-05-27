@@ -42,7 +42,7 @@ import org.thunderdog.challegram.navigation.RtlCheckListener;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -256,7 +256,7 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
     subtitleView.setText(subtitle);
   }
 
-  public void setTitleColorId (@ThemeColorId int colorId) {
+  public void setTitleColorId (@ColorId int colorId) {
     titleView.setTextColor(Theme.getColor(colorId));
   }
 

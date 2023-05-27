@@ -1428,37 +1428,33 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
               outRect.set(0, startY, getContentWidth(), getContentHeight());
             }, R.string.ErrorScheduled);
           } else {
-            switch (button.singleton().item.id) {
-              case R.id.btn_vote: {
-                IntList selectedOptions = new IntList(this.options.length);
-                IntList currentOptions = new IntList(selectedOptions.size());
-                int optionId = 0;
-                for (OptionEntry entry : options) {
-                  if (entry.isSelected()) {
-                    selectedOptions.append(optionId);
-                  }
-                  if (getPoll().options[optionId].isBeingChosen) {
-                    currentOptions.append(optionId);
-                  }
-                  optionId++;
+            final int itemId = button.singleton().item.id;
+            if (itemId == R.id.btn_vote) {
+              IntList selectedOptions = new IntList(this.options.length);
+              IntList currentOptions = new IntList(selectedOptions.size());
+              int optionId = 0;
+              for (OptionEntry entry : options) {
+                if (entry.isSelected()) {
+                  selectedOptions.append(optionId);
                 }
-                int[] selectedOptionIds = selectedOptions.get();
-                int[] currentOptionIds = currentOptions.get();
-                if (isAnonymous() || messagesController().callNonAnonymousProtection(msg.id + R.id.btn_vote, this, makeVoteButtonLocationProvider())) {
-                  if (Arrays.equals(selectedOptionIds, currentOptionIds)) {
-                    tdlib.client().send(new TdApi.SetPollAnswer(msg.chatId, msg.id, null), tdlib.okHandler());
-                  } else {
-                    tdlib.client().send(new TdApi.SetPollAnswer(msg.chatId, msg.id, selectedOptionIds), tdlib.okHandler());
-                  }
+                if (getPoll().options[optionId].isBeingChosen) {
+                  currentOptions.append(optionId);
                 }
-                break;
+                optionId++;
               }
-              case R.id.btn_viewResults: {
-                PollResultsController c = new PollResultsController(context(), tdlib());
-                c.setArguments(new PollResultsController.Args(getPoll(), msg.chatId, msg.id));
-                navigateTo(c);
-                break;
+              int[] selectedOptionIds = selectedOptions.get();
+              int[] currentOptionIds = currentOptions.get();
+              if (isAnonymous() || messagesController().callNonAnonymousProtection(msg.id + R.id.btn_vote, this, makeVoteButtonLocationProvider())) {
+                if (Arrays.equals(selectedOptionIds, currentOptionIds)) {
+                  tdlib.client().send(new TdApi.SetPollAnswer(msg.chatId, msg.id, null), tdlib.okHandler());
+                } else {
+                  tdlib.client().send(new TdApi.SetPollAnswer(msg.chatId, msg.id, selectedOptionIds), tdlib.okHandler());
+                }
               }
+            } else if (itemId == R.id.btn_viewResults) {
+              PollResultsController c = new PollResultsController(context(), tdlib());
+              c.setArguments(new PollResultsController.Args(getPoll(), msg.chatId, msg.id));
+              navigateTo(c);
             }
           }
         }

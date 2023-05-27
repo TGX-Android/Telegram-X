@@ -21,6 +21,7 @@ import android.text.method.PasswordTransformationMethod;
 import android.view.KeyEvent;
 
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
@@ -178,11 +179,11 @@ public class MaterialEditText extends EmojiEditText implements FactorAnimator.Ta
       RectF rectF = Paints.getRectF();
       rectF.set(scrollLeft, height - scaledSize, width + scrollLeft, height);
 
-      int color = forceColorId != 0 ? Theme.getColor(forceColorId) : ColorUtils.fromToArgb(Theme.getColor(R.id.theme_color_inputInactive), Theme.getColor(R.id.theme_color_inputActive), factor);
+      int color = forceColorId != 0 ? Theme.getColor(forceColorId) : ColorUtils.fromToArgb(Theme.getColor(ColorId.inputInactive), Theme.getColor(ColorId.inputActive), factor);
       if (goodFactor != 0f)
-        color = ColorUtils.fromToArgb(color, Theme.getColor(R.id.theme_color_inputPositive), goodFactor);
+        color = ColorUtils.fromToArgb(color, Theme.getColor(ColorId.inputPositive), goodFactor);
       if (errorFactor != 0f)
-        color = ColorUtils.fromToArgb(color, Theme.getColor(R.id.theme_color_inputNegative), errorFactor);
+        color = ColorUtils.fromToArgb(color, Theme.getColor(ColorId.inputNegative), errorFactor);
       c.drawRoundRect(rectF, scaledSize / 2, scaledSize / 2, Paints.fillingPaint(color));
     }
 

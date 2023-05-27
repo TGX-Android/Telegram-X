@@ -19,6 +19,7 @@ import android.view.Gravity;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
 
 import me.vkryl.android.AnimatorUtils;
@@ -36,7 +37,7 @@ public class DoneButton extends CircleButton {
   public DoneButton (Context context) {
     super(context);
 
-    init(R.drawable.baseline_check_24, 56f, 4f, R.id.theme_color_circleButtonRegular, R.id.theme_color_circleButtonRegularIcon);
+    init(R.drawable.baseline_check_24, 56f, 4f, ColorId.circleButtonRegular, ColorId.circleButtonRegularIcon);
 
     int padding = Screen.dp(4f);
     FrameLayoutFix.LayoutParams params;

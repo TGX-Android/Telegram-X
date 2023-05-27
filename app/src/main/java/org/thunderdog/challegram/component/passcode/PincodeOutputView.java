@@ -21,7 +21,7 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.view.View;
 
-import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -301,7 +301,7 @@ public class PincodeOutputView {
     public void draw (Canvas c, float x, float y) {
       // TODO: 09/08/15 Display digit
       int radius = Screen.dp(4.5f);
-      Paint circlePaint = Paints.fillingPaint(Theme.getColor(R.id.theme_color_passcodeIcon));
+      Paint circlePaint = Paints.fillingPaint(Theme.getColor(ColorId.passcodeIcon));
       if (isAnimating) {
         c.drawCircle(x, y, radius * radiusFactor, circlePaint);
       } else {

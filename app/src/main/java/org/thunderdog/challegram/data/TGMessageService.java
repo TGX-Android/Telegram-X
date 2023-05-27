@@ -25,6 +25,7 @@ import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.TdlibSender;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.ui.MapController;
@@ -1746,7 +1747,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
         public int clickableTextColor (boolean isPressed) {
           return ColorUtils.fromToArgb(
             getBubbleDateTextColor(),
-            Theme.getColor(R.id.theme_color_messageAuthor),
+            Theme.getColor(ColorId.messageAuthor),
             messagesController().wallpaper().getBackgroundTransparency()
           );
         }
@@ -1763,7 +1764,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
         public int backgroundColorId (boolean isPressed) {
           float transparency = messagesController().wallpaper().getBackgroundTransparency();
           return isPressed && transparency == 1f ?
-            R.id.theme_color_messageAuthor :
+            ColorId.messageAuthor :
             0;
         }
 
@@ -1785,12 +1786,12 @@ public final class TGMessageService extends TGMessageServiceImpl {
 
         @Override
         public int clickableTextColor (boolean isPressed) {
-          return Theme.getColor(R.id.theme_color_messageAuthor);
+          return Theme.getColor(ColorId.messageAuthor);
         }
 
         @Override
         public int backgroundColorId (boolean isPressed) {
-          return isPressed ? R.id.theme_color_messageAuthor : 0;
+          return isPressed ? ColorId.messageAuthor : 0;
         }
 
         @Override
@@ -1803,7 +1804,7 @@ public final class TGMessageService extends TGMessageServiceImpl {
 
         @Override
         public int iconColor () {
-          return Theme.getColor(R.id.theme_color_icon);
+          return Theme.getColor(ColorId.icon);
         }
       };
     }

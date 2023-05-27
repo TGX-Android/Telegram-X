@@ -17,6 +17,7 @@ import org.thunderdog.challegram.charts.Chart;
 import org.thunderdog.challegram.charts.LayoutHelper;
 import org.thunderdog.challegram.charts.MiniChart;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeInvalidateListener;
 import org.thunderdog.challegram.tool.Fonts;
@@ -72,7 +73,7 @@ public class ChartHeaderView extends FrameLayout implements Chart.DateListener, 
     back.setCompoundDrawablesWithIntrinsicBounds(zoomIcon, null, null, null);
     back.setCompoundDrawablePadding(Screen.dp(4));
     back.setPadding(Screen.dp(8), Screen.dp(4), Screen.dp(8), Screen.dp(4));
-    back.setBackground(Theme.getRoundRectSelectorDrawable(Theme.getColor(R.id.theme_color_textNegative))); // key_featuredStickers_removeButtonText
+    back.setBackground(Theme.getRoundRectSelectorDrawable(Theme.getColor(ColorId.textNegative))); // key_featuredStickers_removeButtonText
 
     datesTmp.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
       datesTmp.setPivotX(datesTmp.getMeasuredWidth() * 0.7f);
@@ -86,8 +87,8 @@ public class ChartHeaderView extends FrameLayout implements Chart.DateListener, 
     title.setTextColor(Theme.textAccent2Color()); // key_dialogTextBlack
     dates.setTextColor(Theme.textAccent2Color()); // key_dialogTextBlack
     datesTmp.setTextColor(Theme.textAccent2Color()); // key_dialogTextBlack
-    back.setTextColor(Theme.getColor(R.id.theme_color_textNeutral)); // key_statisticChartBackZoomColor
-    zoomIcon.setColorFilter(Theme.getColor(R.id.theme_color_textNeutral), PorterDuff.Mode.SRC_IN); // key_statisticChartBackZoomColor
+    back.setTextColor(Theme.getColor(ColorId.textNeutral)); // key_statisticChartBackZoomColor
+    zoomIcon.setColorFilter(Theme.getColor(ColorId.textNeutral), PorterDuff.Mode.SRC_IN); // key_statisticChartBackZoomColor
   }
 
   public void setDates (long start, long end) {

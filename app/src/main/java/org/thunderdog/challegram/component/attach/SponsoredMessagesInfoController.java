@@ -25,6 +25,7 @@ import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.SettingsAdapter;
@@ -45,20 +46,20 @@ public class SponsoredMessagesInfoController extends MediaBottomBaseController<V
       @Override
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
         if (item.getId() == R.id.btn_openLink) {
-          view.setIconColorId(R.id.theme_color_textNeutral);
+          view.setIconColorId(ColorId.textNeutral);
         } else {
-          view.setIconColorId(R.id.theme_color_icon);
+          view.setIconColorId(ColorId.icon);
         }
       }
     });
 
-    ViewSupport.setThemedBackground(recyclerView, R.id.theme_color_background);
+    ViewSupport.setThemedBackground(recyclerView, ColorId.background);
 
     adapter.setItems(new ListItem[] {
       new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL),
       new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.SponsoredInfoText),
       new ListItem(ListItem.TYPE_SHADOW_TOP),
-      new ListItem(ListItem.TYPE_SETTING, R.id.btn_openLink, R.drawable.baseline_language_24, Lang.getString(R.string.url_promote), false).setTextColorId(R.id.theme_color_textNeutral),
+      new ListItem(ListItem.TYPE_SETTING, R.id.btn_openLink, R.drawable.baseline_language_24, Lang.getString(R.string.url_promote), false).setTextColorId(ColorId.textNeutral),
       new ListItem(ListItem.TYPE_SHADOW_BOTTOM),
       new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.SponsoredInfoText2),
     }, false);
@@ -74,16 +75,16 @@ public class SponsoredMessagesInfoController extends MediaBottomBaseController<V
       @Override
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
         if (item.getId() == R.id.btn_close) {
-          view.setIconColorId(R.id.theme_color_textNeutral);
+          view.setIconColorId(ColorId.textNeutral);
         } else {
-          view.setIconColorId(R.id.theme_color_icon);
+          view.setIconColorId(ColorId.icon);
         }
       }
     };
     rv.setAdapter(sa);
     sa.setItems(new ListItem[] {
       new ListItem(ListItem.TYPE_SHADOW_TOP),
-      new ListItem(ListItem.TYPE_SETTING, R.id.btn_close, R.drawable.baseline_check_circle_24, R.string.Continue).setTextColorId(R.id.theme_color_textNeutral),
+      new ListItem(ListItem.TYPE_SETTING, R.id.btn_close, R.drawable.baseline_check_circle_24, R.string.Continue).setTextColorId(ColorId.textNeutral),
       new ListItem(ListItem.TYPE_SETTING, R.id.btn_openLink, R.drawable.baseline_help_24, R.string.SponsoredInfoAction),
     }, false);
     return rv;

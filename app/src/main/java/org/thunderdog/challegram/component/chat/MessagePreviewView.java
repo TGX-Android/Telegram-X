@@ -21,7 +21,6 @@ import android.view.ViewGroup;
 import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ComplexReceiver;
@@ -32,6 +31,7 @@ import org.thunderdog.challegram.telegram.MessageListener;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
@@ -354,7 +354,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
       newText = null;
       receiver = null;
     }
-    this.contentText.replace(newText != null || iconRes != 0 ? new TextEntry(newText, getSparseDrawable(iconRes, R.id.theme_color_icon), receiver) : null, animated);
+    this.contentText.replace(newText != null || iconRes != 0 ? new TextEntry(newText, getSparseDrawable(iconRes, ColorId.icon), receiver) : null, animated);
   }
 
   @Override
@@ -379,7 +379,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
     }
     for (ListAnimator.Entry<TextEntry> entry : contentText) {
       if (entry.item.drawable != null) {
-        Drawables.draw(c, entry.item.drawable, textX, contextTextY + (entry.item.content != null ? entry.item.content.getLineHeight(false) : Screen.dp(TEXT_SIZE)) / 2f - entry.item.drawable.getMinimumHeight() / 2f, PorterDuffPaint.get(R.id.theme_color_icon, entry.getVisibility()));
+        Drawables.draw(c, entry.item.drawable, textX, contextTextY + (entry.item.content != null ? entry.item.content.getLineHeight(false) : Screen.dp(TEXT_SIZE)) / 2f - entry.item.drawable.getMinimumHeight() / 2f, PorterDuffPaint.get(ColorId.icon, entry.getVisibility()));
       }
       if (entry.item.content != null) {
         entry.item.content.draw(c, textX, contextTextY, null, entry.getVisibility(), entry.item.receiver);

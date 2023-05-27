@@ -31,6 +31,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
@@ -305,8 +306,8 @@ public class MediaGalleryImageView extends BaseView implements Destroyable, Fact
 
     receiver.draw(c);
     if (showFavorite) {
-      Drawable drawable = getSparseDrawable(R.drawable.baseline_favorite_12, R.id.theme_color_white);
-      Drawables.draw(c, drawable, receiver.getLeft() + Screen.dp(6f), receiver.getBottom() - drawable.getMinimumHeight() - Screen.dp(6f), PorterDuffPaint.get(R.id.theme_color_white, .95f));
+      Drawable drawable = getSparseDrawable(R.drawable.baseline_favorite_12, ColorId.white);
+      Drawables.draw(c, drawable, receiver.getLeft() + Screen.dp(6f), receiver.getBottom() - drawable.getMinimumHeight() - Screen.dp(6f), PorterDuffPaint.get(ColorId.white, .95f));
     }
     if (duration != null && !duration.isEmpty()) {
       int textLeft = receiver.getLeft() + Screen.dp(7f);

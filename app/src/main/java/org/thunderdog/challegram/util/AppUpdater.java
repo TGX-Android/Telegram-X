@@ -354,13 +354,10 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
           }
           b.cancelItem();
           c.showOptions(b.build(), (optionItemView, id) -> {
-            switch (id) {
-              case R.id.btn_update:
-                downloadUpdate();
-                break;
-              case R.id.btn_sourceCode:
-                UI.openUrl(changesUrl);
-                break;
+            if (id == R.id.btn_update) {
+              downloadUpdate();
+            } else if (id == R.id.btn_sourceCode) {
+              UI.openUrl(changesUrl);
             }
             return true;
           });

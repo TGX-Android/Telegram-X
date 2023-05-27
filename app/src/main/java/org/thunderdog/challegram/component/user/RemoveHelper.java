@@ -23,8 +23,8 @@ import androidx.annotation.DrawableRes;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
@@ -142,7 +142,7 @@ public class RemoveHelper implements FactorAnimator.Target {
     if (alpha < 1f) {
       bitmapPaint.setAlpha((int) (255f * alpha));
     }
-    int color = ColorUtils.alphaColor(alpha, Theme.getColor(R.id.theme_color_fillingNegative));
+    int color = ColorUtils.alphaColor(alpha, Theme.getColor(ColorId.fillingNegative));
     int iconX = Lang.rtl() ? Screen.dp(18f) : right - Screen.dp(18f) - icon.getMinimumWidth();
     int iconY = height / 2 - icon.getMinimumHeight() / 2;
 

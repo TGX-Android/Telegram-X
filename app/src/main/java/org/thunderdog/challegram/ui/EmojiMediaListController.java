@@ -380,15 +380,12 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
     ViewController<?> c = context().navigation().getCurrentStackItem();
     if (c != null) {
       c.showOptions(Lang.getString(R.string.RemoveGifConfirm), new int[]{R.id.btn_deleteGif, R.id.btn_cancel}, new String[]{Lang.getString(R.string.Delete), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
-        switch (id) {
-          case R.id.btn_deleteGif: {
-            gifsAdapter.removeSavedGif(animation.animation.id);
-            if (gifsAdapter.getItemCount() == 0) {
-              showStickers();
-            }
-            tdlib.client().send(new TdApi.RemoveSavedAnimation(new TdApi.InputFileId(animation.animation.id)), tdlib.okHandler());
-            break;
+        if (id == R.id.btn_deleteGif) {
+          gifsAdapter.removeSavedGif(animation.animation.id);
+          if (gifsAdapter.getItemCount() == 0) {
+            showStickers();
           }
+          tdlib.client().send(new TdApi.RemoveSavedAnimation(new TdApi.InputFileId(animation.animation.id)), tdlib.okHandler());
         }
         return true;
       });
@@ -489,15 +486,10 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
 
   @Override
   public void onAfterForceTouchAction (ForceTouchView.ForceTouchContext context, int actionId, Object arg) {
-    switch (actionId) {
-      case R.id.btn_deleteGif: {
-        removeGif((TdApi.Animation) arg);
-        break;
-      }
-      case R.id.btn_send: {
-        sendGif(context.getSourceView(), (TdApi.Animation) arg);
-        break;
-      }
+    if (actionId == R.id.btn_deleteGif) {
+      removeGif((TdApi.Animation) arg);
+    } else if (actionId == R.id.btn_send) {
+      sendGif(context.getSourceView(), (TdApi.Animation) arg);
     }
   }
 

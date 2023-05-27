@@ -48,7 +48,7 @@ import org.thunderdog.challegram.telegram.NotificationSettingsListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Icons;
 import org.thunderdog.challegram.tool.Paints;
@@ -103,7 +103,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
 
   private int subtitleIcon;
   private Drawable subtitleIconDrawable;
-  private @ThemeColorId
+  private @ColorId
   int subtitleIconColorId;
 
   public BetterChatView (Context context, Tdlib tdlib) {
@@ -187,13 +187,13 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
     counter.setCount(unreadCount, muted, animated);
   }
 
-  public void setSubtitleIcon (int icon, @ThemeColorId int color) {
+  public void setSubtitleIcon (int icon, @ColorId int color) {
     if (this.subtitleIcon != icon || this.subtitleIconColorId != color) {
       this.subtitleIconColorId = color;
       if (this.subtitleIcon != icon) {
         boolean prevHadIcon = subtitleIcon != 0;
         this.subtitleIcon = icon;
-        this.subtitleIconDrawable = getSparseDrawable(icon, ThemeColorId.NONE);
+        this.subtitleIconDrawable = getSparseDrawable(icon, ColorId.NONE);
         boolean nowHasIcon = icon != 0;
         if (prevHadIcon != nowHasIcon) {
           setTrimmedSubtitle();
@@ -367,7 +367,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
       if (isSecret) {
         Drawables.drawRtl(c, Icons.getSecureDrawable(), titleLeft - Screen.dp(6f), Screen.dp(12f), Paints.getGreenPorterDuffPaint(), width, rtl);
         titleLeft += Screen.dp(15f);
-        paint.setColor(Theme.getColor(R.id.theme_color_textSecure));
+        paint.setColor(Theme.getColor(ColorId.textSecure));
       }
       int titleTop = Screen.dp(12f) + Screen.dp(1f);
       displayTitle.draw(c, titleLeft, titleTop);

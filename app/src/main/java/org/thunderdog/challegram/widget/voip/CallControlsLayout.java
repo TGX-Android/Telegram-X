@@ -28,6 +28,7 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.preview.FlingDetector;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.CallController;
@@ -110,7 +111,7 @@ public class CallControlsLayout extends FrameLayoutFix implements View.OnClickLi
 
     acceptButton = new CircleButton(context);
     acceptButton.setId(R.id.btn_acceptOrHangCall);
-    acceptButton.init(R.drawable.baseline_phone_36, CALL_BUTTON_SIZE, CALL_BUTTON_PADDING, R.id.theme_color_circleButtonPositive, R.id.theme_color_circleButtonPositiveIcon);
+    acceptButton.init(R.drawable.baseline_phone_36, CALL_BUTTON_SIZE, CALL_BUTTON_PADDING, ColorId.circleButtonPositive, ColorId.circleButtonPositiveIcon);
     acceptButton.setLayoutParams(params);
     acceptButton.setOnClickListener(this);
     addView(acceptButton);
@@ -121,7 +122,7 @@ public class CallControlsLayout extends FrameLayoutFix implements View.OnClickLi
 
     closeButton = new CircleButton(context);
     closeButton.setId(R.id.btn_closeCall);
-    closeButton.init(R.drawable.baseline_close_36, CALL_BUTTON_SIZE, CALL_BUTTON_PADDING, R.id.theme_color_circleButtonOverlay, R.id.theme_color_circleButtonOverlayIcon);
+    closeButton.init(R.drawable.baseline_close_36, CALL_BUTTON_SIZE, CALL_BUTTON_PADDING, ColorId.circleButtonOverlay, ColorId.circleButtonOverlayIcon);
     closeButton.setLayoutParams(params);
     closeButton.setIsHidden(true, false);
     closeButton.setOnClickListener(this);
@@ -133,7 +134,7 @@ public class CallControlsLayout extends FrameLayoutFix implements View.OnClickLi
 
     declineButton = new CircleButton(context);
     declineButton.setId(R.id.btn_declineCall);
-    declineButton.init(R.drawable.baseline_phone_36, CALL_BUTTON_SIZE, CALL_BUTTON_PADDING, R.id.theme_color_circleButtonNegative, R.id.theme_color_circleButtonNegativeIcon);
+    declineButton.init(R.drawable.baseline_phone_36, CALL_BUTTON_SIZE, CALL_BUTTON_PADDING, ColorId.circleButtonNegative, ColorId.circleButtonNegativeIcon);
     declineButton.setIconRotation(135f, false);
     declineButton.setLayoutParams(params);
     declineButton.setOnClickListener(this);
@@ -258,34 +259,28 @@ public class CallControlsLayout extends FrameLayoutFix implements View.OnClickLi
     if (callback == null || call == null) {
       return;
     }
-    switch (v.getId()) {
-      case R.id.btn_acceptOrHangCall: {
-        switch (call.state.getConstructor()) {
-          case TdApi.CallStateDiscarded.CONSTRUCTOR:
-          case TdApi.CallStateError.CONSTRUCTOR:
-            callback.onCallRestart(call);
-            break;
-          case TdApi.CallStatePending.CONSTRUCTOR:
-            if (call.isOutgoing) {
-              callback.onCallDecline(call, false);
-            } else {
-              callback.onCallAccept(call);
-            }
-            break;
-          default:
-            callback.onCallDecline(call, true);
-            break;
-        }
-        break;
+    final int viewId = v.getId();
+    if (viewId == R.id.btn_acceptOrHangCall) {
+      switch (call.state.getConstructor()) {
+        case TdApi.CallStateDiscarded.CONSTRUCTOR:
+        case TdApi.CallStateError.CONSTRUCTOR:
+          callback.onCallRestart(call);
+          break;
+        case TdApi.CallStatePending.CONSTRUCTOR:
+          if (call.isOutgoing) {
+            callback.onCallDecline(call, false);
+          } else {
+            callback.onCallAccept(call);
+          }
+          break;
+        default:
+          callback.onCallDecline(call, true);
+          break;
       }
-      case R.id.btn_declineCall: {
-        callback.onCallDecline(call, false);
-        break;
-      }
-      case R.id.btn_closeCall: {
-        callback.onCallClose(call);
-        break;
-      }
+    } else if (viewId == R.id.btn_declineCall) {
+      callback.onCallDecline(call, false);
+    } else if (viewId == R.id.btn_closeCall) {
+      callback.onCallClose(call);
     }
   }
 
@@ -439,7 +434,7 @@ public class CallControlsLayout extends FrameLayoutFix implements View.OnClickLi
   private void updateAcceptTransform () {
     float factor = transforms[SLIDE_MODE_ACCEPT - 1] * (1f - closeFactor);
     acceptButton.setIconRotation(135f * factor, false);
-    acceptButton.setFromToColor(R.id.theme_color_circleButtonPositive, R.id.theme_color_circleButtonNegative, factor);
+    acceptButton.setFromToColor(ColorId.circleButtonPositive, ColorId.circleButtonNegative, factor);
   }
 
   private void setTransformFactor (float factor, int who) {

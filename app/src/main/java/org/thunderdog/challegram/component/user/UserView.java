@@ -36,6 +36,7 @@ import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibContactManager;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeManager;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
@@ -257,7 +258,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
 
   private void updateLetters () {
     if (unregisteredContact != null) {
-      avatarPlaceholder = new AvatarPlaceholder.Metadata(R.id.theme_color_avatarInactive, unregisteredContact.letters.text);
+      avatarPlaceholder = new AvatarPlaceholder.Metadata(ColorId.avatarInactive, unregisteredContact.letters.text);
     } else {
       avatarPlaceholder = null;
     }
@@ -295,7 +296,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
       trimmedName.draw(c, offsetLeft + textLeftMargin, (int) ((height - Screen.dp(DEFAULT_HEIGHT)) / 2f + Screen.dp(17f)));
     }
     if (trimmedStatus != null) {
-      statusPaint.setColor(Theme.getColor(user != null && user.isOnline() ? R.id.theme_color_textNeutral : R.id.theme_color_textLight));
+      statusPaint.setColor(Theme.getColor(user != null && user.isOnline() ? ColorId.textNeutral : ColorId.textLight));
       c.drawText(trimmedStatus, rtl ? viewWidth - offsetLeft - textLeftMargin - trimmedStatusWidth : offsetLeft + textLeftMargin,
         statusTop + (height - Screen.dp(DEFAULT_HEIGHT)) / 2f, statusPaint);
     }
@@ -312,7 +313,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
       int x = getMeasuredWidth() - Screen.dp(21f);
       int width = Screen.dp(14f);
       int height = Screen.dp(2f);
-      Paint paint = Paints.fillingPaint(Theme.getColor(R.id.theme_color_iconActive));
+      Paint paint = Paints.fillingPaint(Theme.getColor(ColorId.iconActive));
 
       if (rtl) {
         int x1, x2;
@@ -448,7 +449,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
     statusPaint.setTypeface(Fonts.getRobotoRegular());
     statusPaint.setTextSize(Screen.dp(14f));
     statusPaint.setColor(Theme.textDecentColor());
-    ThemeManager.addThemeListener(statusPaint, R.id.theme_color_textLight);
+    ThemeManager.addThemeListener(statusPaint, ColorId.textLight);
   }
 
   public static TextPaint getStatusPaint () {

@@ -46,6 +46,7 @@ import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.tool.Drawables;
@@ -120,27 +121,27 @@ public class TooltipOverlayView extends ViewGroup {
       return colorTheme().getColor(tooltipColorId());
     }
     default int tooltipColorId () {
-      return R.id.theme_color_tooltip;
+      return ColorId.tooltip;
     }
     default int tooltipOutlineColor () {
       return colorTheme().getColor(tooltipOutlineColorId());
     }
     default int tooltipOutlineColorId () {
-      return R.id.theme_color_tooltip_outline;
+      return ColorId.tooltip_outline;
     }
     @Override
     default int defaultTextColorId () {
-      return R.id.theme_color_tooltip_text;
+      return ColorId.tooltip_text;
     }
 
     @Override
     default int clickableTextColorId (boolean isPressed) {
-      return R.id.theme_color_tooltip_textLink;
+      return ColorId.tooltip_textLink;
     }
 
     @Override
     default int pressedBackgroundColorId () {
-      return R.id.theme_color_tooltip_textLinkPressHighlight;
+      return ColorId.tooltip_textLinkPressHighlight;
     }
   }
 
@@ -309,9 +310,9 @@ public class TooltipOverlayView extends ViewGroup {
 
     @Override
     public void draw (Canvas c, ColorProvider colorProvider, int left, int top, int right, int bottom, float alpha, ComplexReceiver iconReceiver) {
-      c.drawText(originalLanguage, left, top + Screen.dp(14), Paints.getRegularTextPaint(14, Theme.getColor(R.id.theme_color_tooltip_text)));
-      c.drawText(translatedLanguage, left + arrowX + Screen.dp(18), top + Screen.dp(14), Paints.getRegularTextPaint(14, Theme.getColor(R.id.theme_color_tooltip_textLink)));
-      Drawables.draw(c, arrow, left + arrowX + Screen.dp(1), top, Paints.getPorterDuffPaint(Theme.getColor(R.id.theme_color_tooltip_text)));
+      c.drawText(originalLanguage, left, top + Screen.dp(14), Paints.getRegularTextPaint(14, Theme.getColor(ColorId.tooltip_text)));
+      c.drawText(translatedLanguage, left + arrowX + Screen.dp(18), top + Screen.dp(14), Paints.getRegularTextPaint(14, Theme.getColor(ColorId.tooltip_textLink)));
+      Drawables.draw(c, arrow, left + arrowX + Screen.dp(1), top, Paints.getPorterDuffPaint(Theme.getColor(ColorId.tooltip_text)));
     }
   }
 
@@ -1046,27 +1047,27 @@ public class TooltipOverlayView extends ViewGroup {
 
       @Override
       public int tooltipColorId () {
-        return R.id.theme_color_filling;
+        return ColorId.filling;
       }
 
       @Override
       public int tooltipOutlineColorId () {
-        return R.id.theme_color_separator;
+        return ColorId.separator;
       }
 
       @Override
       public int defaultTextColorId () {
-        return R.id.theme_color_text;
+        return ColorId.text;
       }
 
       @Override
       public int clickableTextColorId (boolean isPressed) {
-        return R.id.theme_color_textLink;
+        return ColorId.textLink;
       }
 
       @Override
       public int pressedBackgroundColorId () {
-        return R.id.theme_color_textLinkPressHighlight;
+        return ColorId.textLinkPressHighlight;
       }
     };
   }

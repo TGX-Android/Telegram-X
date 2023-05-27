@@ -22,7 +22,7 @@ import org.thunderdog.challegram.data.MediaWrapper;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Paints;
 
 import me.vkryl.android.util.SingleViewProvider;
@@ -48,10 +48,10 @@ public class SimpleMediaWrapperView extends SparseDrawableView {
     };
   }
 
-  private @ThemeColorId
+  private @ColorId
   int backgroundColorId;
 
-  public void setBackgroundColorId (@ThemeColorId int backgroundColorId) {
+  public void setBackgroundColorId (@ColorId int backgroundColorId) {
     this.backgroundColorId = backgroundColorId;
   }
 

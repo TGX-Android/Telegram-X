@@ -27,7 +27,7 @@ import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
@@ -44,7 +44,7 @@ public class TGMessageContact extends TGMessage implements TdlibCache.UserDataCh
   private TdApi.User user;
 
   private ImageFile avatar;
-  private @ThemeColorId
+  private @ColorId
   int avatarColorId;
   private Letters letters;
 

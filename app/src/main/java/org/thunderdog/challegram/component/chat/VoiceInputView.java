@@ -38,6 +38,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.TGLegacyAudioManager;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Screen;
@@ -111,9 +112,9 @@ public class VoiceInputView extends FrameLayoutFix implements View.OnClickListen
   }
 
   public void addThemeListeners (ViewController<?> c) {
-    c.addThemeFilterListener(iconView, R.id.theme_color_icon);
+    c.addThemeFilterListener(iconView, ColorId.icon);
     c.addThemeInvalidateListener(this);
-    ViewSupport.setThemedBackground(this, R.id.theme_color_filling);
+    ViewSupport.setThemedBackground(this, ColorId.filling);
   }
 
   private int calculateWaveformWidth () {
@@ -134,12 +135,9 @@ public class VoiceInputView extends FrameLayoutFix implements View.OnClickListen
 
   @Override
   public void onClick (View v) {
-    switch (v.getId()) {
-      case R.id.btn_discard_record: {
-        if (callback != null) {
-          callback.onDiscardVoiceRecord();
-        }
-        break;
+    if (v.getId() == R.id.btn_discard_record) {
+      if (callback != null) {
+        callback.onDiscardVoiceRecord();
       }
     }
   }

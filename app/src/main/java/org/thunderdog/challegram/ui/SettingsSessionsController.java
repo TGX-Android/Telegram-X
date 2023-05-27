@@ -33,7 +33,7 @@ import org.thunderdog.challegram.component.user.RemoveHelper;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.SessionListener;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
@@ -84,7 +84,7 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
     ArrayList<ListItem> items = new ArrayList<>();
 
     if (tdlib.allowQrLoginCamera()) {
-      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_qrLogin, R.drawable.xt3000_baseline_qrcode_scan_24, R.string.ScanQR).setTextColorId(R.id.theme_color_textNeutral));
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_qrLogin, R.drawable.xt3000_baseline_qrcode_scan_24, R.string.ScanQR).setTextColorId(ColorId.textNeutral));
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     }
 
@@ -100,7 +100,7 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
       items.add(new ListItem(ListItem.TYPE_SESSIONS_EMPTY));
     } else {
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_terminateAllSessions, R.drawable.baseline_cancel_24, R.string.TerminateAllSessions).setTextColorId(R.id.theme_color_textNegative));
+      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_terminateAllSessions, R.drawable.baseline_cancel_24, R.string.TerminateAllSessions).setTextColorId(ColorId.textNegative));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
       boolean first = true;
@@ -255,76 +255,66 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
         if (item.getViewType() == ListItem.TYPE_VALUED_SETTING_COMPACT) {
           view.forcePadding(Screen.dp(63f), 0);
         }
-        int iconColorId = item.getTextColorId(ThemeColorId.NONE);
-        if (iconColorId == R.id.theme_color_textNegative) {
-          iconColorId = R.id.theme_color_iconNegative;
+        int iconColorId = item.getTextColorId(ColorId.NONE);
+        if (iconColorId == ColorId.textNegative) {
+          iconColorId = ColorId.iconNegative;
         }
         view.setIconColorId(iconColorId);
-        switch (item.getId()) {
-          case R.id.btn_terminateAllSessions: {
-            view.setData(R.string.ClearOtherSessionsHelp);
-            break;
-          }
-          case R.id.btn_qrLogin: {
-            view.setData(Lang.getStringSecure(R.string.ScanQRLogInInfo));
-            break;
-          }
-          case R.id.btn_sessionTtl: {
-            view.setData(Lang.getDuration((int) TimeUnit.DAYS.toSeconds(inactiveSessionTtlDays)));
-            break;
-          }
+        final int itemId = item.getId();
+        if (itemId == R.id.btn_terminateAllSessions) {
+          view.setData(R.string.ClearOtherSessionsHelp);
+        } else if (itemId == R.id.btn_qrLogin) {
+          view.setData(Lang.getStringSecure(R.string.ScanQRLogInInfo));
+        } else if (itemId == R.id.btn_sessionTtl) {
+          view.setData(Lang.getDuration((int) TimeUnit.DAYS.toSeconds(inactiveSessionTtlDays)));
         }
       }
 
       @Override
       protected void setSession (ListItem item, int position, RelativeLayout parent, boolean isUpdate, TextView timeView, TextView titleView, TextView subtextView, TextView locationView, ProgressComponentView progressView, AvatarView avatarView, ImageView iconView, TextView secretStateView, TextView callsStateView) {
-        switch (item.getId()) {
-          case R.id.btn_currentSession: {
-            parent.setTag(sessions.currentSession);
-            timeView.setText("");
-            titleView.setText(getTitle(sessions.currentSession));
-            subtextView.setText(getAppName(sessions.currentSession));
-            if (!StringUtils.isEmpty(sessions.currentSession.ip) || !StringUtils.isEmpty(sessions.currentSession.country)) {
-              locationView.setText(Strings.concatIpLocation(sessions.currentSession.ip, sessions.currentSession.country));
-            } else {
-              locationView.setText(Lang.getString(R.string.SessionUnknown));
-            }
-            progressView.forceFactor(0f);
-            iconView.setImageResource(R.drawable.baseline_device_android_x_24);
-            secretStateView.setVisibility(sessions.currentSession.canAcceptSecretChats ? View.VISIBLE : View.GONE);
-            callsStateView.setVisibility(sessions.currentSession.canAcceptCalls ? View.VISIBLE : View.GONE);
-            callsStateView.setPadding(sessions.currentSession.canAcceptSecretChats ? 0 : Screen.dp(48f), 0, 0, 0);
-            break;
+        final int itemId = item.getId();
+        if (itemId == R.id.btn_currentSession) {
+          parent.setTag(sessions.currentSession);
+          timeView.setText("");
+          titleView.setText(getTitle(sessions.currentSession));
+          subtextView.setText(getAppName(sessions.currentSession));
+          if (!StringUtils.isEmpty(sessions.currentSession.ip) || !StringUtils.isEmpty(sessions.currentSession.country)) {
+            locationView.setText(Strings.concatIpLocation(sessions.currentSession.ip, sessions.currentSession.country));
+          } else {
+            locationView.setText(Lang.getString(R.string.SessionUnknown));
           }
-          case R.id.btn_session: {
-            TdApi.Session session = (TdApi.Session) item.getData();
-            parent.setTag(session);
-            String date = Lang.timeOrDateShort(session.lastActiveDate, TimeUnit.SECONDS);
-            if (!DateUtils.isToday(session.lastActiveDate, TimeUnit.SECONDS)) {
-              date += " " + Lang.time(session.lastActiveDate, TimeUnit.SECONDS);
-            }
-            timeView.setText(date);
-            titleView.setText(getTitle(session));
-            subtextView.setText(getAppName(session));
-            if (!StringUtils.isEmpty(session.ip) || !StringUtils.isEmpty(session.country)) {
-              locationView.setText(Strings.concatIpLocation(session.ip, session.country));
-            } else {
-              locationView.setText(Lang.getString(R.string.SessionUnknown));
-            }
+          progressView.forceFactor(0f);
+          iconView.setImageResource(R.drawable.baseline_device_android_x_24);
+          secretStateView.setVisibility(sessions.currentSession.canAcceptSecretChats ? View.VISIBLE : View.GONE);
+          callsStateView.setVisibility(sessions.currentSession.canAcceptCalls ? View.VISIBLE : View.GONE);
+          callsStateView.setPadding(sessions.currentSession.canAcceptSecretChats ? 0 : Screen.dp(48f), 0, 0, 0);
+        } else if (itemId == R.id.btn_session) {
+          TdApi.Session session = (TdApi.Session) item.getData();
+          parent.setTag(session);
+          String date = Lang.timeOrDateShort(session.lastActiveDate, TimeUnit.SECONDS);
+          if (!DateUtils.isToday(session.lastActiveDate, TimeUnit.SECONDS)) {
+            date += " " + Lang.time(session.lastActiveDate, TimeUnit.SECONDS);
+          }
+          timeView.setText(date);
+          titleView.setText(getTitle(session));
+          subtextView.setText(getAppName(session));
+          if (!StringUtils.isEmpty(session.ip) || !StringUtils.isEmpty(session.country)) {
+            locationView.setText(Strings.concatIpLocation(session.ip, session.country));
+          } else {
+            locationView.setText(Lang.getString(R.string.SessionUnknown));
+          }
 
-            final boolean inProgress = terminatingSessions != null && terminatingSessions.get(session.id) != null;
-            parent.setEnabled(!inProgress);
-            if (isUpdate) {
-              progressView.animateFactor(inProgress ? 1f : 0f);
-            } else {
-              progressView.forceFactor(inProgress ? 1f : 0f);
-            }
-            iconView.setImageResource(SessionIconKt.asIcon(session));
-            secretStateView.setVisibility((session.canAcceptSecretChats && !session.isPasswordPending) ? View.VISIBLE : View.GONE);
-            callsStateView.setVisibility((session.canAcceptCalls && !session.isPasswordPending) ? View.VISIBLE : View.GONE);
-            callsStateView.setPadding(session.canAcceptSecretChats ? 0 : Screen.dp(48f), 0, 0, 0);
-            break;
+          final boolean inProgress = terminatingSessions != null && terminatingSessions.get(session.id) != null;
+          parent.setEnabled(!inProgress);
+          if (isUpdate) {
+            progressView.animateFactor(inProgress ? 1f : 0f);
+          } else {
+            progressView.forceFactor(inProgress ? 1f : 0f);
           }
+          iconView.setImageResource(SessionIconKt.asIcon(session));
+          secretStateView.setVisibility((session.canAcceptSecretChats && !session.isPasswordPending) ? View.VISIBLE : View.GONE);
+          callsStateView.setVisibility((session.canAcceptCalls && !session.isPasswordPending) ? View.VISIBLE : View.GONE);
+          callsStateView.setPadding(session.canAcceptSecretChats ? 0 : Screen.dp(48f), 0, 0, 0);
         }
       }
     };
@@ -546,15 +536,10 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
 
   private void killSession (final TdApi.Session session, boolean alert) {
     showOptions(Strings.concat("\n\n", Lang.boldify(Lang.getString(session.isPasswordPending ? R.string.TerminateIncompleteSessionQuestion : R.string.TerminateSessionQuestion)), getSubtext(session, true)), new int[]{R.id.btn_terminateSession, R.id.btn_cancel, R.id.btn_copyText}, new String[]{Lang.getString(session.isPasswordPending ? R.string.TerminateIncompleteSession : R.string.TerminateSession), Lang.getString(R.string.Cancel), Lang.getString(R.string.Copy)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24, R.drawable.baseline_content_copy_24}, (itemView, id) -> {
-      switch (id) {
-        case R.id.btn_terminateSession: {
-          terminateSession(session);
-          break;
-        }
-        case R.id.btn_copyText: {
-          UI.copyText(getSubtext(session, true), R.string.CopiedText);
-          break;
-        }
+      if (id == R.id.btn_terminateSession) {
+        terminateSession(session);
+      } else if (id == R.id.btn_copyText) {
+        UI.copyText(getSubtext(session, true), R.string.CopiedText);
       }
       return true;
     });
@@ -577,96 +562,83 @@ public class SettingsSessionsController extends RecyclerViewController<Void> imp
 
   @Override
   public void onClick (View v) {
-    switch (v.getId()) {
-      case R.id.btn_terminateAllSessions: {
-        showOptions(Lang.getString(R.string.AreYouSureSessions), new int[]{R.id.btn_terminateAllSessions, R.id.btn_cancel}, new String[]{Lang.getString(R.string.TerminateAllSessions), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
-          if (id == R.id.btn_terminateAllSessions) {
-            terminateOtherSessions();
-          }
-          return true;
-        });
-        break;
-      }
-      case R.id.btn_qrLogin: {
-        openInAppCamera(new CameraOpenOptions().anchor(v).noTrace(true).allowSystem(false).optionalMicrophone(true).mode(CameraController.MODE_QR).qrCodeListener(this));
-        break;
-      }
-      case R.id.btn_sessionTtl: {
-        IntList ids = new IntList(4);
-        StringList strings = new StringList(4);
-
-        RunnableInt act = (days) -> {
-          if (days == 0) return;
-          tdlib.setInactiveSessionTtl(days, err -> {});
-        };
-
-        ids.append(R.id.btn_terminateIn1w);
-        strings.append(Lang.plural(R.string.SessionTerminatesInWeeks, 1));
-
-        ids.append(R.id.btn_terminateIn1m);
-        strings.append(Lang.plural(R.string.SessionTerminatesInMonths, 1));
-
-        ids.append(R.id.btn_terminateIn3m);
-        strings.append(Lang.plural(R.string.SessionTerminatesInMonths, 3));
-
-        ids.append(R.id.btn_terminateIn6m);
-        strings.append(Lang.plural(R.string.SessionTerminatesInMonths, 6));
-
-        ids.append(R.id.btn_terminateInCustom);
-        strings.append(Lang.getString(R.string.SessionTerminatesCustom));
-
-        showOptions(null, ids.get(), strings.get(), null, null, (optionItemView, id) -> {
-          int days = 0;
-          
-          switch (id) {
-            case R.id.btn_terminateIn1w:
-              days = 7;
-              break;
-            case R.id.btn_terminateIn1m:
-              days = 31;
-              break;
-            case R.id.btn_terminateIn3m:
-              days = 31 * 3;
-              break;
-            case R.id.btn_terminateIn6m:
-              days = 31 * 6;
-              break;
-            case R.id.btn_terminateInCustom:
-              openInputAlert(Lang.getString(R.string.SessionTerminatesCustomAlertTitle), Lang.getString(R.string.SessionTerminatesCustomAlertHint), R.string.Done, R.string.Cancel, String.valueOf(inactiveSessionTtlDays), (inputView, result) -> {
-                int data = StringUtils.parseInt(result, -1);
-                if (data < 1 || data > 366)
-                  return false;
-
-                act.runWithInt(data);
-                return true;
-              }, true).getEditText().setInputType(InputType.TYPE_CLASS_NUMBER);
-              return true;
-          }
-
-          act.runWithInt(days);
-          return true;
-        });
-        break;
-      }
-      case R.id.btn_currentSession:
-      case R.id.btn_session: {
-        Object tag = v.getTag();
-        if (tag instanceof TdApi.Session) {
-          TdApi.Session session = (TdApi.Session) tag;
-          EditSessionController esc = new EditSessionController(context, tdlib);
-          esc.setArguments(new EditSessionController.Args(session, sessions.inactiveSessionTtlDays, () -> terminateSession(session), (newSession) -> {
-            if (newSession.isCurrent) {
-              sessions.currentSession.canAcceptSecretChats = newSession.canAcceptSecretChats;
-              sessions.currentSession.canAcceptCalls = newSession.canAcceptCalls;
-              adapter.updateValuedSettingById(R.id.btn_currentSession);
-            } else {
-              sessions.allSessions[indexOfSession(newSession.id)] = newSession;
-              updateSessionById(newSession.id);
-            }
-          }));
-          context.navigation().navigateTo(esc);
+    final int viewId = v.getId();
+    if (viewId == R.id.btn_terminateAllSessions) {
+      showOptions(Lang.getString(R.string.AreYouSureSessions), new int[] {R.id.btn_terminateAllSessions, R.id.btn_cancel}, new String[] {Lang.getString(R.string.TerminateAllSessions), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+        if (id == R.id.btn_terminateAllSessions) {
+          terminateOtherSessions();
         }
-        break;
+        return true;
+      });
+    } else if (viewId == R.id.btn_qrLogin) {
+      openInAppCamera(new CameraOpenOptions().anchor(v).noTrace(true).allowSystem(false).optionalMicrophone(true).mode(CameraController.MODE_QR).qrCodeListener(this));
+    } else if (viewId == R.id.btn_sessionTtl) {
+      IntList ids = new IntList(4);
+      StringList strings = new StringList(4);
+
+      RunnableInt act = (days) -> {
+        if (days == 0) return;
+        tdlib.setInactiveSessionTtl(days, err -> {
+        });
+      };
+
+      ids.append(R.id.btn_terminateIn1w);
+      strings.append(Lang.plural(R.string.SessionTerminatesInWeeks, 1));
+
+      ids.append(R.id.btn_terminateIn1m);
+      strings.append(Lang.plural(R.string.SessionTerminatesInMonths, 1));
+
+      ids.append(R.id.btn_terminateIn3m);
+      strings.append(Lang.plural(R.string.SessionTerminatesInMonths, 3));
+
+      ids.append(R.id.btn_terminateIn6m);
+      strings.append(Lang.plural(R.string.SessionTerminatesInMonths, 6));
+
+      ids.append(R.id.btn_terminateInCustom);
+      strings.append(Lang.getString(R.string.SessionTerminatesCustom));
+
+      showOptions(null, ids.get(), strings.get(), null, null, (optionItemView, id) -> {
+        int days = 0;
+
+        if (id == R.id.btn_terminateIn1w) {
+          days = 7;
+        } else if (id == R.id.btn_terminateIn1m) {
+          days = 31;
+        } else if (id == R.id.btn_terminateIn3m) {
+          days = 31 * 3;
+        } else if (id == R.id.btn_terminateIn6m) {
+          days = 31 * 6;
+        } else if (id == R.id.btn_terminateInCustom) {
+          openInputAlert(Lang.getString(R.string.SessionTerminatesCustomAlertTitle), Lang.getString(R.string.SessionTerminatesCustomAlertHint), R.string.Done, R.string.Cancel, String.valueOf(inactiveSessionTtlDays), (inputView, result) -> {
+            int data = StringUtils.parseInt(result, -1);
+            if (data < 1 || data > 366)
+              return false;
+
+            act.runWithInt(data);
+            return true;
+          }, true).getEditText().setInputType(InputType.TYPE_CLASS_NUMBER);
+          return true;
+        }
+
+        act.runWithInt(days);
+        return true;
+      });
+    } else if (viewId == R.id.btn_currentSession || viewId == R.id.btn_session) {
+      Object tag = v.getTag();
+      if (tag instanceof TdApi.Session) {
+        TdApi.Session session = (TdApi.Session) tag;
+        EditSessionController esc = new EditSessionController(context, tdlib);
+        esc.setArguments(new EditSessionController.Args(session, sessions.inactiveSessionTtlDays, () -> terminateSession(session), (newSession) -> {
+          if (newSession.isCurrent) {
+            sessions.currentSession.canAcceptSecretChats = newSession.canAcceptSecretChats;
+            sessions.currentSession.canAcceptCalls = newSession.canAcceptCalls;
+            adapter.updateValuedSettingById(R.id.btn_currentSession);
+          } else {
+            sessions.allSessions[indexOfSession(newSession.id)] = newSession;
+            updateSessionById(newSession.id);
+          }
+        }));
+        context.navigation().navigateTo(esc);
       }
     }
   }

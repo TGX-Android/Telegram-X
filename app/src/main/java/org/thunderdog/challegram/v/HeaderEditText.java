@@ -33,6 +33,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.RtlCheckListener;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Views;
@@ -96,12 +97,12 @@ public class HeaderEditText extends EmojiEditText implements ActionMode.Callback
 
   public static HeaderEditText create (@NonNull ViewGroup parent, boolean light, @Nullable ViewController<?> themeProvider) {
     HeaderEditText editText = (HeaderEditText) Views.inflate(parent.getContext(), light ? R.layout.input_header_light : R.layout.input_header, parent);
-    editText.setTextColor(Theme.getColor(R.id.theme_color_headerText));
-    editText.setHintTextColor(ColorUtils.alphaColor(Theme.HEADER_TEXT_DECENT_ALPHA, Theme.getColor(R.id.theme_color_headerText)));
+    editText.setTextColor(Theme.getColor(ColorId.headerText));
+    editText.setHintTextColor(ColorUtils.alphaColor(Theme.HEADER_TEXT_DECENT_ALPHA, Theme.getColor(ColorId.headerText)));
     editText.checkRtl();
     if (themeProvider != null) {
-      themeProvider.addThemeTextColorListener(editText, R.id.theme_color_headerText);
-      themeProvider.addThemeHintTextColorListener(editText, R.id.theme_color_headerText).setAlpha(Theme.HEADER_TEXT_DECENT_ALPHA);
+      themeProvider.addThemeTextColorListener(editText, ColorId.headerText);
+      themeProvider.addThemeHintTextColorListener(editText, ColorId.headerText).setAlpha(Theme.HEADER_TEXT_DECENT_ALPHA);
     }
     return editText;
   }

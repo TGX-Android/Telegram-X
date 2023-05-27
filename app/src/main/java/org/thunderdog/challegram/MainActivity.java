@@ -54,6 +54,7 @@ import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Screen;
@@ -189,7 +190,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
             return getAlpha() == 1f;
           }
         };
-        ViewSupport.setThemedBackground(blankView, R.id.theme_color_filling);
+        ViewSupport.setThemedBackground(blankView, ColorId.filling);
         blankView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
       }
       if (blankView.getParent() == null) {
@@ -245,12 +246,12 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
     @Tdlib.ResolvableProblem int problemType = tdlib.findResolvableProblem();
     BackHeaderButton backButton = navigation.getHeaderView().getBackButton();
     if (problemType != Tdlib.ResolvableProblem.NONE) {
-      backButton.setMenuBadge(R.id.theme_color_headerBadgeFailed, animated);
+      backButton.setMenuBadge(ColorId.headerBadgeFailed, animated);
     } else {
       TdlibBadgeCounter counter = TdlibManager.instance().getTotalUnreadBadgeCounter(tdlib.accountId());
       if (counter.getCount() > 0) {
         backButton.setMenuBadge(
-          counter.isMuted() ? R.id.theme_color_headerBadgeMuted : R.id.theme_color_headerBadge,
+          counter.isMuted() ? ColorId.headerBadgeMuted : ColorId.headerBadge,
           animated
         );
       } else {
@@ -439,7 +440,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
       ll.setOrientation(LinearLayout.VERTICAL);
       ll.setGravity(Gravity.CENTER);
       ll.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-      ViewSupport.setThemedBackground(ll, R.id.theme_color_filling);
+      ViewSupport.setThemedBackground(ll, ColorId.filling);
 
       GearView gearView = new GearView(this);
       ll.addView(gearView);
@@ -1197,68 +1198,49 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
   }
 
   private static boolean canSaveController (int id, ViewController<?> c) {
-    switch (id) {
-      case R.id.controller_settings:
-      case R.id.controller_wallpaper:
-      case R.id.controller_fontSize:
-      case R.id.controller_storageSettings:
-        return true;
-    }
-    return false;
+    return
+      id == R.id.controller_settings ||
+      id == R.id.controller_wallpaper ||
+      id == R.id.controller_fontSize ||
+      id == R.id.controller_storageSettings;
   }
 
   private static ViewController<?> restoreController (BaseActivity context, Tdlib tdlib, int id, Bundle in, String keyPrefix) {
     ViewController<?> restore;
-    switch (id) {
-      case R.id.controller_settings:
-        return new SettingsController(context, tdlib);
-      case R.id.controller_storageSettings:
-        return new SettingsCacheController(context, tdlib);
-      case R.id.controller_wallpaper:
-      case R.id.controller_fontSize: {
-        MessagesController m = new MessagesController(context, tdlib);
-        m.setArguments(new MessagesController.Arguments(id == R.id.controller_fontSize ? MessagesController.PREVIEW_MODE_FONT_SIZE : MessagesController.PREVIEW_MODE_WALLPAPER, null, null));
-        return m;
-      }
-      case R.id.controller_passcode:
-        restore = new PasscodeController(context, tdlib);
-        break;
-      case R.id.controller_messages:
-        restore = new MessagesController(context, tdlib);
-        break;
-      case R.id.controller_profile:
-        restore = new ProfileController(context, tdlib);
-        break;
-      case R.id.controller_themeSettings:
-        restore = new SettingsThemeController(context, tdlib);
-        break;
-      case R.id.controller_newChannel:
-        restore = new CreateChannelController(context, tdlib);
-        break;
-      case R.id.controller_newGroup:
-        restore = new CreateGroupController(context, tdlib);
-        break;
-      case R.id.controller_notificationSettings:
-        restore = new SettingsNotificationController(context, tdlib);
-        break;
-      case R.id.controller_privacySettings:
-        restore = new SettingsPrivacyController(context, tdlib);
-        break;
-      case R.id.controller_chatSettings:
-        restore = new SettingsDataController(context, tdlib);
-        break;
-      case R.id.controller_privacyKey:
-        restore = new SettingsPrivacyKeyController(context, tdlib);
-        break;
-      case R.id.controller_privacyException:
-        restore = new PrivacyExceptionController(context, tdlib);
-        break;
-      case R.id.controller_networkStats:
-        restore = new SettingsNetworkStatsController(context, tdlib);
-        break;
-      default: {
-        return null;
-      }
+    if (id == R.id.controller_settings) {
+      return new SettingsController(context, tdlib);
+    } else if (id == R.id.controller_storageSettings) {
+      return new SettingsCacheController(context, tdlib);
+    } else if (id == R.id.controller_wallpaper || id == R.id.controller_fontSize) {
+      MessagesController m = new MessagesController(context, tdlib);
+      m.setArguments(new MessagesController.Arguments(id == R.id.controller_fontSize ? MessagesController.PREVIEW_MODE_FONT_SIZE : MessagesController.PREVIEW_MODE_WALLPAPER, null, null));
+      return m;
+    } else if (id == R.id.controller_passcode) {
+      restore = new PasscodeController(context, tdlib);
+    } else if (id == R.id.controller_messages) {
+      restore = new MessagesController(context, tdlib);
+    } else if (id == R.id.controller_profile) {
+      restore = new ProfileController(context, tdlib);
+    } else if (id == R.id.controller_themeSettings) {
+      restore = new SettingsThemeController(context, tdlib);
+    } else if (id == R.id.controller_newChannel) {
+      restore = new CreateChannelController(context, tdlib);
+    } else if (id == R.id.controller_newGroup) {
+      restore = new CreateGroupController(context, tdlib);
+    } else if (id == R.id.controller_notificationSettings) {
+      restore = new SettingsNotificationController(context, tdlib);
+    } else if (id == R.id.controller_privacySettings) {
+      restore = new SettingsPrivacyController(context, tdlib);
+    } else if (id == R.id.controller_chatSettings) {
+      restore = new SettingsDataController(context, tdlib);
+    } else if (id == R.id.controller_privacyKey) {
+      restore = new SettingsPrivacyKeyController(context, tdlib);
+    } else if (id == R.id.controller_privacyException) {
+      restore = new PrivacyExceptionController(context, tdlib);
+    } else if (id == R.id.controller_networkStats) {
+      restore = new SettingsNetworkStatsController(context, tdlib);
+    } else {
+      return null;
     }
     if (restore.restoreInstanceState(in, keyPrefix)) {
       if (!(restore instanceof PasscodeController) && restore.getChatId() != 0 && tdlib.hasPasscode(restore.getChatId())) {
@@ -1451,7 +1433,7 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
   public void onResume () {
     super.onResume();
     Log.i("MainActivity.onResume");
-    // Log.e("%s", Strings.getHexColor(U.compositeColor(Theme.headerColor(), Theme.getColor(R.id.theme_color_statusBar)), false));
+    // Log.e("%s", Strings.getHexColor(U.compositeColor(Theme.headerColor(), Theme.getColor(ColorId.statusBar)), false));
     tdlib.contacts().makeSilentPermissionCheck(this);
     tdlib.context().global().notifyResolvableProblemAvailabilityMightHaveChanged();
     UI.startNotificationService();

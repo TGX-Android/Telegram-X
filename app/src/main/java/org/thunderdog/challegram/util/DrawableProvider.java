@@ -20,17 +20,17 @@ import android.graphics.drawable.Drawable;
 import androidx.annotation.DrawableRes;
 import androidx.collection.SparseArrayCompat;
 
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Drawables;
 
 public interface DrawableProvider {
   SparseArrayCompat<Drawable> getSparseDrawableHolder ();
   Resources getSparseDrawableResources ();
 
-  default Drawable getSparseDrawable (@DrawableRes int res, @ThemeColorId int knownThemeColorId) {
+  default Drawable getSparseDrawable (@DrawableRes int res, @ColorId int knownColorId) {
     if (res == 0)
       return null;
-    /*Drawable drawable = knownThemeColorId != 0 ? Icons.getSparseDrawable(res, knownThemeColorId) : null;
+    /*Drawable drawable = knownColorId != 0 ? Icons.getSparseDrawable(res, knownColorId) : null;
     if (drawable != null)
       return drawable;*/
     SparseArrayCompat<Drawable> array = getSparseDrawableHolder();

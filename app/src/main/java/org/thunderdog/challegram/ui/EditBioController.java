@@ -29,6 +29,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.emoji.EmojiFilter;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.CharacterStyleFilter;
@@ -120,7 +121,7 @@ public class EditBioController extends EditBaseController<EditBioController.Argu
       items = new ListItem[] {
         item,
         (new ListItem(ListItem.TYPE_DESCRIPTION, R.id.description, 0, R.string.BioDescription)
-        .setTextColorId(R.id.theme_color_textLight))
+        .setTextColorId(ColorId.textLight))
       };
     }
     adapter.setTextChangeListener(this);

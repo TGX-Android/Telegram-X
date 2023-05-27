@@ -8,6 +8,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
@@ -37,9 +38,9 @@ public class TranslationCounterDrawable extends Drawable implements FactorAnimat
   private final int width, height;
   private Runnable invalidateCallback;
 
-  private int defaultColorId = R.id.theme_color_icon;
-  private int backgroundColorId = R.id.theme_color_bubbleIn_time;
-  private int loadingColorId = R.id.theme_color_bubbleIn_textLink;
+  private int defaultColorId = ColorId.icon;
+  private int backgroundColorId = ColorId.bubbleIn_time;
+  private int loadingColorId = ColorId.bubbleIn_textLink;
 
   public TranslationCounterDrawable (Drawable drawable) {
     this.drawable = drawable;
@@ -89,9 +90,9 @@ public class TranslationCounterDrawable extends Drawable implements FactorAnimat
     final float loadedProgress = 1f - isLoading.getFloatValue();
     final float errorProgress = isError.getFloatValue();
     final float successProgress = isSuccess.getFloatValue();
-    final int iconColor2 = ColorUtils.fromToArgb(Theme.getColor(defaultColorId), Theme.getColor(R.id.theme_color_iconActive), successProgress);
+    final int iconColor2 = ColorUtils.fromToArgb(Theme.getColor(defaultColorId), Theme.getColor(ColorId.iconActive), successProgress);
     final int iconColor1 = ColorUtils.fromToArgb(Theme.getColor(loadingColorId), iconColor2, loadedProgress);
-    final int iconColor = ColorUtils.fromToArgb(iconColor1, Theme.getColor(R.id.theme_color_iconNegative), errorProgress);
+    final int iconColor = ColorUtils.fromToArgb(iconColor1, Theme.getColor(ColorId.iconNegative), errorProgress);
 
     if (loadedProgress == 1f) {
       Drawables.draw(canvas, drawable, 0, 0, Paints.getPorterDuffPaint(iconColor));

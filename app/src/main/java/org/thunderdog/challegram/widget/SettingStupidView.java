@@ -29,7 +29,7 @@ import org.thunderdog.challegram.navigation.RtlCheckListener;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
@@ -38,8 +38,8 @@ public class SettingStupidView extends RelativeLayout implements RtlCheckListene
   private final TextView titleView;
   private final TextView subtitleView;
 
-  private @ThemeColorId int titleColorId;
-  private @ThemeColorId int subtitleColorId;
+  private @ColorId int titleColorId;
+  private @ColorId int subtitleColorId;
 
   public SettingStupidView (Context context) {
     super(context);
@@ -56,7 +56,7 @@ public class SettingStupidView extends RelativeLayout implements RtlCheckListene
 
     titleView = new NoScrollTextView(context);
     titleView.setId(R.id.text_stupid);
-    titleView.setTextColor(Theme.getColor(titleColorId = R.id.theme_color_text));
+    titleView.setTextColor(Theme.getColor(titleColorId = ColorId.text));
     titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16f);
     titleView.setTypeface(Fonts.getRobotoRegular());
     titleView.setLayoutParams(params);
@@ -68,7 +68,7 @@ public class SettingStupidView extends RelativeLayout implements RtlCheckListene
     params.topMargin = Screen.dp(2f);
 
     subtitleView = new NoScrollTextView(context);
-    subtitleView.setTextColor(Theme.getColor(subtitleColorId = R.id.theme_color_textLight));
+    subtitleView.setTextColor(Theme.getColor(subtitleColorId = ColorId.textLight));
     subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13f);
     subtitleView.setTypeface(Fonts.getRobotoRegular());
     subtitleView.setLayoutParams(params);
@@ -103,7 +103,7 @@ public class SettingStupidView extends RelativeLayout implements RtlCheckListene
   }
 
   public void setIsRed () {
-    titleView.setTextColor(Theme.getColor(titleColorId = R.id.theme_color_textNegative));
+    titleView.setTextColor(Theme.getColor(titleColorId = ColorId.textNegative));
   }
 
   public void addThemeListeners (@Nullable ViewController<?> themeProvider) {

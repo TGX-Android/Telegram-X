@@ -3,7 +3,6 @@ package org.thunderdog.challegram.ui;
 import android.animation.Animator;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Rect;
 import android.view.MotionEvent;
 import android.view.View;
@@ -16,7 +15,6 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
@@ -24,6 +22,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.navigation.ViewPagerController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Paints;
@@ -105,7 +104,7 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
     FrameLayout.LayoutParams fp = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(6f));
     fp.topMargin = getHeaderHeight();
     fixView = new View(context);
-    ViewSupport.setThemedBackground(fixView, R.id.theme_color_background, this);
+    ViewSupport.setThemedBackground(fixView, ColorId.background, this);
     fixView.setLayoutParams(fp);
 
     wrapView = new FrameLayoutFix(context) {
@@ -190,7 +189,7 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
 
 
   protected int getBackgroundColorId () {
-    return R.id.theme_color_background;
+    return ColorId.background;
   }
 
   private boolean ignoreAnyPagerScrollEventsBecauseOfMovements;

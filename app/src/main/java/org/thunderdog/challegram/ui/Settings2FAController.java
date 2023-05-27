@@ -32,6 +32,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
@@ -154,96 +155,75 @@ public class Settings2FAController extends RecyclerViewController<Settings2FACon
 
   @Override
   public void onTextChanged (int id, ListItem item, MaterialEditTextGroup v, String text) {
-    switch (id) {
-      case R.id.login_code: {
-        if (state.recoveryEmailAddressCodeInfo != null && Strings.getNumberLength(text) >= TD.getCodeLength(state.recoveryEmailAddressCodeInfo)) {
-          submitEmailRecoveryCode(v);
-        } else {
-          v.setInErrorState(false);
-        }
-        break;
+    if (id == R.id.login_code) {
+      if (state.recoveryEmailAddressCodeInfo != null && Strings.getNumberLength(text) >= TD.getCodeLength(state.recoveryEmailAddressCodeInfo)) {
+        submitEmailRecoveryCode(v);
+      } else {
+        v.setInErrorState(false);
       }
     }
   }
 
   @Override
   public void onClick (View v) {
-    switch (v.getId()) {
-      case R.id.btn_setPassword: {
-        PasswordController c = new PasswordController(context, tdlib);
-        c.setArguments(new PasswordController.Args(PasswordController.MODE_NEW, state));
-        navigateTo(c);
-        break;
-      }
-      case R.id.btn_changePassword: {
-        PasswordController c = new PasswordController(context, tdlib);
-        c.setArguments(new PasswordController.Args(PasswordController.MODE_EDIT, state).setEmail(currentRecoveryEmailAddress).setOldPassword(currentAcceptedPassword));
-        navigateTo(c);
-        break;
-      }
-
-      case R.id.btn_setRecoveryEmail: {
-        PasswordController c = new PasswordController(context, tdlib);
-        c.setArguments(new PasswordController.Args(PasswordController.MODE_EMAIL_CHANGE, state).setEmail(currentRecoveryEmailAddress).setOldPassword(currentAcceptedPassword));
-        navigateTo(c);
-        break;
-      }
-      case R.id.btn_abortRecoveryEmail: {
-        showWarning(Lang.getString(R.string.AbortRecoveryEmailConfirm), success -> {
-          if (success) {
-            tdlib.client().send(new TdApi.SetRecoveryEmailAddress(currentAcceptedPassword, currentRecoveryEmailAddress), object -> tdlib.ui().post(() -> {
-              if (object instanceof TdApi.PasswordState) {
-                updatePasswordState((TdApi.PasswordState) object, currentAcceptedPassword);
-              }
-            }));
-          }
-        });
-        break;
-      }
-      case R.id.btn_abort2FA: {
-        hideSoftwareKeyboard();
-        showOptions(Lang.getString(R.string.AbortPasswordConfirm), new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {Lang.getString(R.string.AbortPassword), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
-          switch (id) {
-            case R.id.btn_done: {
-              hideSoftwareKeyboard();
-              abort2FA();
-              break;
+    final int viewId = v.getId();
+    if (viewId == R.id.btn_setPassword) {
+      PasswordController c = new PasswordController(context, tdlib);
+      c.setArguments(new PasswordController.Args(PasswordController.MODE_NEW, state));
+      navigateTo(c);
+    } else if (viewId == R.id.btn_changePassword) {
+      PasswordController c = new PasswordController(context, tdlib);
+      c.setArguments(new PasswordController.Args(PasswordController.MODE_EDIT, state).setEmail(currentRecoveryEmailAddress).setOldPassword(currentAcceptedPassword));
+      navigateTo(c);
+    } else if (viewId == R.id.btn_setRecoveryEmail) {
+      PasswordController c = new PasswordController(context, tdlib);
+      c.setArguments(new PasswordController.Args(PasswordController.MODE_EMAIL_CHANGE, state).setEmail(currentRecoveryEmailAddress).setOldPassword(currentAcceptedPassword));
+      navigateTo(c);
+    } else if (viewId == R.id.btn_abortRecoveryEmail) {
+      showWarning(Lang.getString(R.string.AbortRecoveryEmailConfirm), success -> {
+        if (success) {
+          tdlib.client().send(new TdApi.SetRecoveryEmailAddress(currentAcceptedPassword, currentRecoveryEmailAddress), object -> tdlib.ui().post(() -> {
+            if (object instanceof TdApi.PasswordState) {
+              updatePasswordState((TdApi.PasswordState) object, currentAcceptedPassword);
             }
+          }));
+        }
+      });
+    } else if (viewId == R.id.btn_abort2FA) {
+      hideSoftwareKeyboard();
+      showOptions(Lang.getString(R.string.AbortPasswordConfirm), new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {Lang.getString(R.string.AbortPassword), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+        if (id == R.id.btn_done) {
+          hideSoftwareKeyboard();
+          abort2FA();
+        }
+        return true;
+      });
+    } else if (viewId == R.id.btn_resendRecoveryEmail) {
+      tdlib.client().send(new TdApi.ResendRecoveryEmailAddressCode(), result -> {
+        switch (result.getConstructor()) {
+          case TdApi.PasswordState.CONSTRUCTOR: {
+            tdlib.ui().post(() -> {
+              if (!isDestroyed())
+                UI.showToast(R.string.RecoveryCodeResent, Toast.LENGTH_SHORT);
+            });
+            break;
           }
-          return true;
-        });
-        break;
-      }
-      case R.id.btn_resendRecoveryEmail: {
-        tdlib.client().send(new TdApi.ResendRecoveryEmailAddressCode(), result -> {
-          switch (result.getConstructor()) {
-            case TdApi.PasswordState.CONSTRUCTOR: {
-              tdlib.ui().post(() -> {
-                if (!isDestroyed())
-                  UI.showToast(R.string.RecoveryCodeResent, Toast.LENGTH_SHORT);
-              });
-              break;
-            }
-            case TdApi.Error.CONSTRUCTOR:
-              UI.showError(result);
-              break;
-          }
-        });
-        break;
-      }
-      case R.id.btn_disablePassword: {
-        showOptions(Strings.buildMarkdown(this, Lang.getString(state.hasPassportData ? R.string.TurnPasswordOffQuestion2 : R.string.TurnPasswordOffQuestion), null), new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {Lang.getString(R.string.DisablePassword), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
-          if (id == R.id.btn_done) {
-            state.hasRecoveryEmailAddress = false;
-            state.recoveryEmailAddressCodeInfo = null;
-            setHasPassword(false);
-            buildCells();
-            tdlib.client().send(new TdApi.SetPassword(currentAcceptedPassword, null, null, true, null), Settings2FAController.this);
-          }
-          return true;
-        });
-        break;
-      }
+          case TdApi.Error.CONSTRUCTOR:
+            UI.showError(result);
+            break;
+        }
+      });
+    } else if (viewId == R.id.btn_disablePassword) {
+      showOptions(Strings.buildMarkdown(this, Lang.getString(state.hasPassportData ? R.string.TurnPasswordOffQuestion2 : R.string.TurnPasswordOffQuestion), null), new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {Lang.getString(R.string.DisablePassword), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_remove_circle_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+        if (id == R.id.btn_done) {
+          state.hasRecoveryEmailAddress = false;
+          state.recoveryEmailAddressCodeInfo = null;
+          setHasPassword(false);
+          buildCells();
+          tdlib.client().send(new TdApi.SetPassword(currentAcceptedPassword, null, null, true, null), Settings2FAController.this);
+        }
+        return true;
+      });
     }
   }
 
@@ -321,7 +301,7 @@ public class Settings2FAController extends RecyclerViewController<Settings2FACon
       int i = str.indexOf(pattern);
       if (i != -1) {
         SpannableStringBuilder recoverySequence = new SpannableStringBuilder(str);
-        recoverySequence.setSpan(new CustomTypefaceSpan(Fonts.getRobotoMedium(), R.id.theme_color_background_textLight), i, i + pattern.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        recoverySequence.setSpan(new CustomTypefaceSpan(Fonts.getRobotoMedium(), ColorId.background_textLight), i, i + pattern.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         return recoverySequence;
       }
     }
@@ -366,7 +346,7 @@ public class Settings2FAController extends RecyclerViewController<Settings2FACon
           new ListItem(ListItem.TYPE_SHADOW_TOP),
           new ListItem(ListItem.TYPE_SETTING, R.id.btn_resendRecoveryEmail, 0, R.string.ResendRecoveryEmailCode),
           new ListItem(ListItem.TYPE_SEPARATOR_FULL),
-          new ListItem(ListItem.TYPE_SETTING, R.id.btn_abort2FA, 0, R.string.AbortPassword).setTextColorId(R.id.theme_color_textNegative),
+          new ListItem(ListItem.TYPE_SETTING, R.id.btn_abort2FA, 0, R.string.AbortPassword).setTextColorId(ColorId.textNegative),
           new ListItem(ListItem.TYPE_SHADOW_BOTTOM),
         }, false);
         this.adapter.setLockFocusOn(this, true);
@@ -399,7 +379,7 @@ public class Settings2FAController extends RecyclerViewController<Settings2FACon
         items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
         items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_resendRecoveryEmail, 0, R.string.ResendRecoveryEmailCode));
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-        items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_abortRecoveryEmail, 0, state.hasRecoveryEmailAddress ? R.string.AbortRecoveryEmailChange : R.string.AbortRecoveryEmail).setTextColorId(R.id.theme_color_textNegative));
+        items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_abortRecoveryEmail, 0, state.hasRecoveryEmailAddress ? R.string.AbortRecoveryEmailChange : R.string.AbortRecoveryEmail).setTextColorId(ColorId.textNegative));
         items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
         this.adapter.setLockFocusOn(this, false);
       }

@@ -24,7 +24,7 @@ import android.view.View;
 import androidx.annotation.DrawableRes;
 
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -45,7 +45,7 @@ public class HeaderButton extends View {
   private Drawable drawable;
   private @DrawableRes int drawableRes;
 
-  protected @ThemeColorId int themeColorId, toThemeColorId;
+  protected @ColorId int themeColorId, toThemeColorId;
   protected float colorFactor = -1f;
 
   private OnTouchDownListener touchDownListener;
@@ -59,7 +59,7 @@ public class HeaderButton extends View {
     this.touchDownListener = listener;
   }
 
-  public HeaderButton setThemeColorId (@ThemeColorId int colorId) {
+  public HeaderButton setThemeColorId (@ColorId int colorId) {
     this.themeColorId = colorId;
     this.colorFactor = -1f;
     invalidate();
@@ -74,7 +74,7 @@ public class HeaderButton extends View {
     return this;
   }
 
-  public HeaderButton setThemeColorId (@ThemeColorId int fromColorId, @ThemeColorId int toColorId, float factor) {
+  public HeaderButton setThemeColorId (@ColorId int fromColorId, @ColorId int toColorId, float factor) {
     this.themeColorId = fromColorId;
     this.toThemeColorId = toColorId;
     this.colorFactor = factor;

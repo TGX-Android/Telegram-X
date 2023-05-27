@@ -24,10 +24,10 @@ import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 import android.view.View;
 
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeManager;
 import org.thunderdog.challegram.tool.Drawables;
@@ -52,7 +52,7 @@ public class SendButton extends View implements FactorAnimator.Target, TooltipOv
       strokePaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
       strokePaint.setStyle(Paint.Style.STROKE);
       strokePaint.setColor(Theme.iconColor());
-      ThemeManager.addThemeListener(strokePaint, R.id.theme_color_icon);
+      ThemeManager.addThemeListener(strokePaint, ColorId.icon);
       strokePaint.setStrokeWidth(Screen.dp(2f));
     }
   }

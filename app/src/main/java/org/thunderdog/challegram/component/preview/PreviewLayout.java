@@ -65,17 +65,13 @@ public abstract class PreviewLayout extends FrameLayoutFix implements View.OnCli
 
   @Override
   public void onClick (View v) {
-    switch (v.getId()) {
-      case R.id.btn_openLink: {
-        popupLayout.hideWindow(true);
-        UI.openUrl(nativeEmbed.viewUrl);
-        break;
-      }
-      case R.id.btn_share: {
-        popupLayout.hideWindow(true);
-        TD.shareLink(parent, nativeEmbed.viewUrl);
-        break;
-      }
+    final int viewId = v.getId();
+    if (viewId == R.id.btn_openLink) {
+      popupLayout.hideWindow(true);
+      UI.openUrl(nativeEmbed.viewUrl);
+    } else if (viewId == R.id.btn_share) {
+      popupLayout.hideWindow(true);
+      TD.shareLink(parent, nativeEmbed.viewUrl);
     }
   }
 
@@ -182,13 +178,10 @@ public abstract class PreviewLayout extends FrameLayoutFix implements View.OnCli
           R.drawable.baseline_open_in_browser_24,
           R.drawable.baseline_cancel_24
         }, (optionItemView, id) -> {
-          switch (id) {
-            case R.id.btn_openLink:
-              show(parent, service, false);
-              break;
-            case R.id.btn_useInAppBrowser:
-              UI.openUrl(service.viewUrl);
-              break;
+          if (id == R.id.btn_openLink) {
+            show(parent, service, false);
+          } else if (id == R.id.btn_useInAppBrowser) {
+            UI.openUrl(service.viewUrl);
           }
 
           return true;

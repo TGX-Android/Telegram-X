@@ -21,7 +21,7 @@ import android.graphics.RectF;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
 
@@ -98,8 +98,8 @@ public class MediaViewThumbLocation {
     return bottom - clipBottom;
   }
 
-  private @ThemeColorId
-  int colorId = R.id.theme_color_filling;
+  private @ColorId
+  int colorId = ColorId.filling;
 
   public void setColorId (int colorId) {
     this.colorId = colorId;

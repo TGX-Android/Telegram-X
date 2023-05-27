@@ -46,6 +46,7 @@ import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibNotificationGroup;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
@@ -1427,7 +1428,7 @@ public class Lang {
       while (matcher.find()) {
         int start = matcher.start();
         int end = matcher.end();
-        out.setSpan(new CustomTypefaceSpan(Fonts.getRobotoMedium(), R.id.theme_color_textNeutral).setEntityType(new TdApi.TextEntityTypeBold()).setFakeBold(Text.needFakeBold(str, start, end)), startIndex + start, startIndex + end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        out.setSpan(new CustomTypefaceSpan(Fonts.getRobotoMedium(), ColorId.textNeutral).setEntityType(new TdApi.TextEntityTypeBold()).setFakeBold(Text.needFakeBold(str, start, end)), startIndex + start, startIndex + end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
       }
       if (num >= 0) {
         int index = StringUtils.indexOf(out, "%1$s", startIndex);
@@ -1453,7 +1454,7 @@ public class Lang {
         while (endIndex - spaceEndCount - 1 > startIndex && Strings.isWhitespace(out.charAt(endIndex - spaceEndCount - 1))) {
           spaceEndCount++;
         }
-        int color = 0xaaff0000; // U.alphaColor(.5f, Theme.getColor(R.id.theme_color_textNegativeAction));
+        int color = 0xaaff0000; // U.alphaColor(.5f, Theme.getColor(ColorId.textNegativeAction));
         if (spaceStartCount > 0) {
           out.setSpan(new BackgroundColorSpan(color), startIndex, startIndex + spaceStartCount, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         }

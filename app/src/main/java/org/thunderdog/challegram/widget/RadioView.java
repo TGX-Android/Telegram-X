@@ -20,8 +20,8 @@ import android.graphics.Paint;
 import android.view.Gravity;
 import android.view.View;
 
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -111,7 +111,7 @@ public class RadioView extends View implements FactorAnimator.Target {
     final float radius = Screen.dp(9f);
     final float innerRadius = Screen.dp(5f);
 
-    final int color = Theme.getColor(colorId != 0 ? colorId : R.id.theme_color_controlInactive);
+    final int color = Theme.getColor(colorId != 0 ? colorId : ColorId.controlInactive);
     final int radioFillingColor = ColorUtils.fromToArgb(color, colorId != 0 && useColor ? color : Theme.radioFillingColor(), activeAnimator.getFloatValue());
 
     final float selectFactor = checkAnimator.getFloatValue();

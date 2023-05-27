@@ -21,6 +21,7 @@ import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 
@@ -44,7 +45,7 @@ public class SettingsPhoneController extends RecyclerViewController<Void> implem
   protected void onCreateView (Context context, CustomRecyclerView recyclerView) {
     SettingsAdapter adapter = new SettingsAdapter(this);
     adapter.setItems(new ListItem[] {
-      new ListItem(ListItem.TYPE_ICONIZED_EMPTY, R.id.changePhoneText, R.drawable.baseline_sim_card_96, Strings.replaceBoldTokens(Lang.getString(R.string.PhoneNumberHelp), R.id.theme_color_background_textLight), false),
+      new ListItem(ListItem.TYPE_ICONIZED_EMPTY, R.id.changePhoneText, R.drawable.baseline_sim_card_96, Strings.replaceBoldTokens(Lang.getString(R.string.PhoneNumberHelp), ColorId.background_textLight), false),
       new ListItem(ListItem.TYPE_SHADOW_TOP),
       new ListItem(ListItem.TYPE_BUTTON, R.id.btn_changePhoneNumber, 0, R.string.PhoneNumberChange),
       new ListItem(ListItem.TYPE_SHADOW_BOTTOM)

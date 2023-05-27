@@ -36,6 +36,7 @@ import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.filegen.VideoData;
 import org.thunderdog.challegram.loader.ImageReader;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
@@ -592,9 +593,9 @@ public class VideoTimelineView extends View implements Destroyable, FactorAnimat
   private TooltipOverlayView.TooltipInfo startTooltip, endTooltip;
   private long startTooltipTime = -1, endTooltipTime = -1;
 
-  private int sliderActiveColorId = R.id.theme_color_sliderActive;
-  private int iconColorId = R.id.theme_color_filling;
-  private int overlayColorId = R.id.theme_color_previewBackground;
+  private int sliderActiveColorId = ColorId.sliderActive;
+  private int iconColorId = ColorId.filling;
+  private int overlayColorId = ColorId.previewBackground;
 
   public void setColors (int sliderActiveColorId, int iconColorId, int overlayColorId) {
     if (this.sliderActiveColorId != sliderActiveColorId || this.iconColorId != iconColorId || this.overlayColorId != overlayColorId) {

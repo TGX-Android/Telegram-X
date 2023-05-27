@@ -32,6 +32,7 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.navigation.DoubleHeaderView;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Screen;
@@ -234,41 +235,30 @@ public class LanguageController extends RecyclerViewController<LanguageControlle
 
   @Override
   public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
-    switch (id) {
-      case R.id.menu_clear: {
-        header.addClearButton(menu, getSearchHeaderIconColorId(), getBackButtonResource());
-        break;
-      }
-      case R.id.menu_editLangPack: {
-        header.addButton(menu, R.id.menu_btn_toggle, R.drawable.baseline_check_box_outline_blank_24, R.id.theme_color_headerIcon, this, Screen.dp(49f));
-        header.addSearchButton(menu, this);
-        break;
-      }
-      default: {
-        super.fillMenuItems(id, header, menu);
-        break;
-      }
+    if (id == R.id.menu_clear) {
+      header.addClearButton(menu, getSearchHeaderIconColorId(), getBackButtonResource());
+    } else if (id == R.id.menu_editLangPack) {
+      header.addButton(menu, R.id.menu_btn_toggle, R.drawable.baseline_check_box_outline_blank_24, ColorId.headerIcon, this, Screen.dp(49f));
+      header.addSearchButton(menu, this);
+    } else {
+      super.fillMenuItems(id, header, menu);
     }
   }
 
   @Override
   public void onMenuItemPressed (int id, View view) {
-    switch (id) {
-      case R.id.menu_btn_toggle:
-        if (langPack == null)
-          return;
-        onlyUntranslated = !onlyUntranslated;
-        updateSubtitle();
-        getRecyclerView().stopScroll();
-        updateButton();
-        if (langPack != null) {
-          buildCells(langPack.strings, onlyUntranslated);
-        }
-        break;
-      default: {
-        super.onMenuItemPressed(id, view);
-        break;
+    if (id == R.id.menu_btn_toggle) {
+      if (langPack == null)
+        return;
+      onlyUntranslated = !onlyUntranslated;
+      updateSubtitle();
+      getRecyclerView().stopScroll();
+      updateButton();
+      if (langPack != null) {
+        buildCells(langPack.strings, onlyUntranslated);
       }
+    } else {
+      super.onMenuItemPressed(id, view);
     }
   }
 
@@ -289,15 +279,12 @@ public class LanguageController extends RecyclerViewController<LanguageControlle
     adapter = new SettingsAdapter(this) {
       @Override
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
-        switch (item.getId()) {
-          case R.id.btn_string: {
-            Lang.PackString string = (Lang.PackString) item.getData();
-            SpannableStringBuilder b = new SpannableStringBuilder();
-            langPack.makeString(string, b, false);
-            view.setTextColorId(string.translated ? R.id.theme_color_text : R.id.theme_color_textNegative);
-            view.setData(b);
-            break;
-          }
+        if (item.getId() == R.id.btn_string) {
+          Lang.PackString string = (Lang.PackString) item.getData();
+          SpannableStringBuilder b = new SpannableStringBuilder();
+          langPack.makeString(string, b, false);
+          view.setTextColorId(string.translated ? ColorId.text : ColorId.textNegative);
+          view.setData(b);
         }
       }
       @Override
@@ -393,83 +380,72 @@ public class LanguageController extends RecyclerViewController<LanguageControlle
 
   @Override
   public void onClick (View v) {
-    switch (v.getId()) {
-      case R.id.btn_string: {
-        Lang.PackString string = (Lang.PackString) ((ListItem) v.getTag()).getData();
+    final int viewId = v.getId();
+    if (viewId == R.id.btn_string) {
+      Lang.PackString string = (Lang.PackString) ((ListItem) v.getTag()).getData();
 
-        if (getArgumentsStrict().languageInfo.id.startsWith("X")) {
-          preventLeavingSearchMode();
-          EditLanguageController c = new EditLanguageController(context, tdlib);
-          c.setArguments(new EditLanguageController.Args(this, langPack, string));
-          navigateTo(c);
-          return;
-        }
+      if (getArgumentsStrict().languageInfo.id.startsWith("X")) {
+        preventLeavingSearchMode();
+        EditLanguageController c = new EditLanguageController(context, tdlib);
+        c.setArguments(new EditLanguageController.Args(this, langPack, string));
+        navigateTo(c);
+        return;
+      }
 
-        IntList ids = new IntList(3);
-        IntList icons = new IntList(3);
-        StringList strings = new StringList(3);
+      IntList ids = new IntList(3);
+      IntList icons = new IntList(3);
+      StringList strings = new StringList(3);
 
-        ids.append(R.id.btn_string);
-        strings.append(R.string.ToolsOpenOnPlatform);
-        icons.append(R.drawable.baseline_open_in_browser_24);
+      ids.append(R.id.btn_string);
+      strings.append(R.string.ToolsOpenOnPlatform);
+      icons.append(R.drawable.baseline_open_in_browser_24);
 
-        ids.append(R.id.btn_copyLink);
-        strings.append(R.string.CopyLink);
-        icons.append(R.drawable.baseline_link_24);
+      ids.append(R.id.btn_copyLink);
+      strings.append(R.string.CopyLink);
+      icons.append(R.drawable.baseline_link_24);
 
-        if (string.string.value instanceof TdApi.LanguagePackStringValueOrdinary) {
-          ids.append(R.id.btn_copyText);
-          strings.append(R.string.ToolsCopyString);
-          icons.append(R.drawable.baseline_content_copy_24);
-        }
+      if (string.string.value instanceof TdApi.LanguagePackStringValueOrdinary) {
+        ids.append(R.id.btn_copyText);
+        strings.append(R.string.ToolsCopyString);
+        icons.append(R.drawable.baseline_content_copy_24);
+      }
 
-        ids.append(R.id.btn_open);
-        strings.append(R.string.ToolsShowToast);
-        icons.append(R.drawable.baseline_visibility_24);
+      ids.append(R.id.btn_open);
+      strings.append(R.string.ToolsShowToast);
+      icons.append(R.drawable.baseline_visibility_24);
 
-        String key = string.string.key;
-        SpannableStringBuilder b = new SpannableStringBuilder(key);
+      String key = string.string.key;
+      SpannableStringBuilder b = new SpannableStringBuilder(key);
 
-        b.setSpan(new CustomTypefaceSpan(Fonts.getRobotoItalic(), R.id.theme_color_textNeutral).setEntityType(new TdApi.TextEntityTypeItalic()), 0, key.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        showOptions(Spannable.Factory.getInstance().newSpannable(b), ids.get(), strings.get(), null, icons.get(), (itemView, id) -> {
-          switch (id) {
-            case R.id.btn_string: {
-              Intents.openLink(TD.getLanguageKeyLink(string.string.key));
+      b.setSpan(new CustomTypefaceSpan(Fonts.getRobotoItalic(), ColorId.textNeutral).setEntityType(new TdApi.TextEntityTypeItalic()), 0, key.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+      showOptions(Spannable.Factory.getInstance().newSpannable(b), ids.get(), strings.get(), null, icons.get(), (itemView, id) -> {
+        if (id == R.id.btn_string) {
+          Intents.openLink(TD.getLanguageKeyLink(string.string.key));
+        } else if (id == R.id.btn_copyLink) {
+          UI.copyText(TD.getLanguageKeyLink(string.string.key), R.string.CopiedLink);
+        } else if (id == R.id.btn_copyText) {
+          UI.copyText(((TdApi.LanguagePackStringValueOrdinary) string.string.value).value, R.string.CopiedText);
+        } else if (id == R.id.btn_open) {
+          switch (string.string.value.getConstructor()) {
+            case TdApi.LanguagePackStringValueOrdinary.CONSTRUCTOR:
+              UI.showToast(((TdApi.LanguagePackStringValueOrdinary) string.string.value).value, Toast.LENGTH_LONG);
               break;
-            }
-            case R.id.btn_copyLink: {
-              UI.copyText(TD.getLanguageKeyLink(string.string.key), R.string.CopiedLink);
-              break;
-            }
-            case R.id.btn_copyText: {
-              UI.copyText(((TdApi.LanguagePackStringValueOrdinary) string.string.value).value, R.string.CopiedText);
-              break;
-            }
-            case R.id.btn_open: {
-              switch (string.string.value.getConstructor()) {
-                case TdApi.LanguagePackStringValueOrdinary.CONSTRUCTOR:
-                  UI.showToast(((TdApi.LanguagePackStringValueOrdinary) string.string.value).value, Toast.LENGTH_LONG);
-                  break;
-                case TdApi.LanguagePackStringValuePluralized.CONSTRUCTOR: {
-                  int resId = Lang.getStringResourceIdentifier(string.string.key);
-                  Lang.PluralizationRules rules = string.translated ? langPack.rules : langPack.untranslatedRules;
-                  for (Lang.PluralizationForm form : rules.forms) {
-                    if (form.numbers != null && form.numbers.length > 0) {
-                      UI.showToast(Lang.plural(resId, form.numbers[0]), Toast.LENGTH_SHORT);
-                    }
-                  }
-                  break;
+            case TdApi.LanguagePackStringValuePluralized.CONSTRUCTOR: {
+              int resId = Lang.getStringResourceIdentifier(string.string.key);
+              Lang.PluralizationRules rules = string.translated ? langPack.rules : langPack.untranslatedRules;
+              for (Lang.PluralizationForm form : rules.forms) {
+                if (form.numbers != null && form.numbers.length > 0) {
+                  UI.showToast(Lang.plural(resId, form.numbers[0]), Toast.LENGTH_SHORT);
                 }
-                case TdApi.LanguagePackStringValueDeleted.CONSTRUCTOR:
-                  break;
               }
               break;
             }
+            case TdApi.LanguagePackStringValueDeleted.CONSTRUCTOR:
+              break;
           }
-          return true;
-        });
-        break;
-      }
+        }
+        return true;
+      });
     }
   }
 

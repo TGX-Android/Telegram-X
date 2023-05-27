@@ -34,6 +34,7 @@ import androidx.annotation.Nullable;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
@@ -80,8 +81,8 @@ public class TogglerView extends View implements FactorAnimator.Target, TooltipO
           final int fromBackgroundColor;
           final int toBackgroundColor;
           if (useNegativeState) {
-            fromBackgroundColor = Theme.getColor(R.id.theme_color_togglerNegativeBackground);
-            toBackgroundColor = Theme.getColor(R.id.theme_color_togglerPositiveBackground);
+            fromBackgroundColor = Theme.getColor(ColorId.togglerNegativeBackground);
+            toBackgroundColor = Theme.getColor(ColorId.togglerPositiveBackground);
           } else {
             fromBackgroundColor = Theme.togglerInactiveFillingColor();
             toBackgroundColor = Theme.togglerActiveFillingColor();
@@ -293,11 +294,11 @@ public class TogglerView extends View implements FactorAnimator.Target, TooltipO
     final int toBackgroundColor, toColor;
     int checkColor;
     if (useNegativeState) {
-      fromBackgroundColor = Theme.getColor(R.id.theme_color_togglerNegativeBackground); // ThemeRed.getColor(R.id.theme_color_togglerFillingActive);
-      fromColor = Theme.getColor(R.id.theme_color_togglerNegative); // ThemeRed.getColor(R.id.theme_color_togglerActive);
-      toBackgroundColor = Theme.getColor(R.id.theme_color_togglerPositiveBackground); // ThemeBase.getColor(R.id.theme_color_togglerFillingActive);
-      toColor = Theme.getColor(R.id.theme_color_togglerPositive); // ThemeBase.getColor(R.id.theme_color_togglerActive);
-      checkColor = ColorUtils.fromToArgb(Theme.getColor(R.id.theme_color_togglerNegativeContent), Theme.getColor(R.id.theme_color_togglerPositiveContent), factor);
+      fromBackgroundColor = Theme.getColor(ColorId.togglerNegativeBackground); // ThemeRed.getColor(ColorId.togglerFillingActive);
+      fromColor = Theme.getColor(ColorId.togglerNegative); // ThemeRed.getColor(ColorId.togglerActive);
+      toBackgroundColor = Theme.getColor(ColorId.togglerPositiveBackground); // ThemeBase.getColor(ColorId.togglerFillingActive);
+      toColor = Theme.getColor(ColorId.togglerPositive); // ThemeBase.getColor(ColorId.togglerActive);
+      checkColor = ColorUtils.fromToArgb(Theme.getColor(ColorId.togglerNegativeContent), Theme.getColor(ColorId.togglerPositiveContent), factor);
     } else {
       fromBackgroundColor = Theme.togglerInactiveFillingColor();
       fromColor = Theme.togglerInactiveColor();

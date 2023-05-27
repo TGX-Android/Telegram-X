@@ -67,7 +67,7 @@ public class RecordBackgroundView extends View {
   @Override
   protected void onDraw (Canvas c) {
     /*if (factor > 0f) {
-      int color = Utils.alphaColor(factor, Theme.getColor(R.id.theme_color_overlay));
+      int color = Utils.alphaColor(factor, Theme.getColor(ColorId.overlay));
       int halfColor = Utils.alphaColor(.5f, color);
       c.drawColor(halfColor);
       if (factor == 1f) {

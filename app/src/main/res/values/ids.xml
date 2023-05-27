@@ -377,6 +377,7 @@
   <item type="id" name="btn_toggleSignatures" />
   <item type="id" name="btn_toggleJoinByRequest" />
   <item type="id" name="btn_toggleProtection" />
+  <item type="id" name="btn_togglePermission" />
   <item type="id" name="btn_allMembers" />
   <item type="id" name="btn_onlyAdmins" />
   <item type="id" name="btn_hidden" />
@@ -1147,6 +1148,7 @@
   <item type="id" name="btn_savedMessages" />
   <item type="id" name="btn_contacts" />
   <item type="id" name="btn_invite" />
+  <item type="id" name="btn_inviteBack" />
   <item type="id" name="btn_help" />
 
   <item type="id" name="btn_neverAllow" />
@@ -1212,7 +1214,7 @@
 
   <item type="id" name="btn_applyWallpaper" />
 
-  <item type="id" name="right_readMessages" />
+  <!--<item type="id" name="right_readMessages" />
   <item type="id" name="right_sendMessages" />
   <item type="id" name="right_sendAudio" />
   <item type="id" name="right_sendDocument" />
@@ -1232,7 +1234,7 @@
   <item type="id" name="right_pinMessages" />
   <item type="id" name="right_manageVideoChats" />
   <item type="id" name="right_remainAnonymous" />
-  <item type="id" name="right_addNewAdmins" />
+  <item type="id" name="right_addNewAdmins" />-->
 
   <item type="id" name="btn_camera_switch" />
   <item type="id" name="btn_camera_flash" />
