@@ -25,9 +25,6 @@ import org.thunderdog.challegram.widget.ListInfoView;
 import org.thunderdog.challegram.widget.PopupLayout;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-
-import me.vkryl.core.StringUtils;
 
 public class MessageOptionsReactedController extends BottomSheetViewController.BottomSheetBaseRecyclerViewController<Void> implements View.OnClickListener {
   private SettingsAdapter adapter;
@@ -58,7 +55,7 @@ public class MessageOptionsReactedController extends BottomSheetViewController.B
         TdApi.MessageSender senderId = (TdApi.MessageSender) item.getData();       
         TGUser user;
         if (senderId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR) {
-          user = new TGUser(tdlib, tdlib.cache().user(((TdApi.MessageSenderUser) senderId).userId));
+          user = new TGUser(tdlib, tdlib.cache().userStrict(((TdApi.MessageSenderUser) senderId).userId));
         } else {
           user = new TGUser(tdlib, tdlib.chatStrict(((TdApi.MessageSenderChat) senderId).chatId));
         }

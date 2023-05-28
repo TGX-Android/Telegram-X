@@ -34,8 +34,8 @@ import org.thunderdog.challegram.util.text.Text;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
-import me.vkryl.core.StringUtils;
 import me.vkryl.core.BitwiseUtils;
+import me.vkryl.core.StringUtils;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
@@ -244,9 +244,7 @@ public class TGUser implements UserProvider {
     this.chatId = chatId;
     avatarPlaceholderMetadata = tdlib.chatPlaceholderMetadata(chatId, chat, false);
     imageFile = tdlib.chatAvatar(chatId);
-    this.nameText = tdlib.chatTitle(chat);
-    this.nameFake = Text.needFakeBold(nameText);
-    this.nameWidth = U.measureText(nameText, Paints.getTitleBigPaint());
+    updateName();
     updateStatus();
   }
 
@@ -280,7 +278,14 @@ public class TGUser implements UserProvider {
 
   public boolean updateName () {
     if ((flags & FLAG_CHAT_TITLE_AS_USER_NAME) != 0) return false;
-    String nameText = (flags & FLAG_LOCAL) != 0 ? TD.getUserName(firstName, lastName) : TD.getUserName(userId, user);
+    String nameText;
+    if (BitwiseUtils.hasFlag(flags, FLAG_LOCAL)) {
+      nameText = TD.getUserName(firstName, lastName);
+    } else if (user != null || userId != 0) {
+      nameText = TD.getUserName(userId, user);
+    } else {
+      nameText = tdlib.chatTitle(chatId);
+    }
     if (!StringUtils.equalsOrBothEmpty(this.nameText, nameText)) {
       this.nameText = nameText;
       this.nameFake = Text.needFakeBold(nameText);
