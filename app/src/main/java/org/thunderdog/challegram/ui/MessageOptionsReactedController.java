@@ -55,7 +55,13 @@ public class MessageOptionsReactedController extends BottomSheetViewController.B
       @Override
       protected void setUser (ListItem item, int position, UserView userView, boolean isUpdate) {
         final TGReaction reactionObj = tdlib.getReaction(TD.toReactionType(item.getStringValue()));
-        TGUser user = new TGUser(tdlib, tdlib.chatUser(item.getLongId()));
+        TdApi.MessageSender senderId = (TdApi.MessageSender) item.getData();       
+        TGUser user;
+        if (senderId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR) {
+          user = new TGUser(tdlib, tdlib.cache().user(((TdApi.MessageSenderUser) senderId).userId));
+        } else {
+          user = new TGUser(tdlib, tdlib.chatStrict(((TdApi.MessageSenderChat) senderId).chatId));
+        }
         user.setActionDateStatus(item.getIntValue(), R.string.reacted);
         userView.setUser(user);
         if (item.getStringValue().length() > 0 && reactionObj != null && reactionType == null) {
@@ -107,14 +113,14 @@ public class MessageOptionsReactedController extends BottomSheetViewController.B
 
   private void processNewAddedReactions (TdApi.AddedReactions addedReactions) {
     final TdApi.AddedReaction[] reactions = addedReactions.reactions;
-
     List<ListItem> items = adapter.getItems();
     for (TdApi.AddedReaction reaction : reactions) {
       if (!items.isEmpty()) {
         items.add(new ListItem(ListItem.TYPE_SEPARATOR));
       }
+
       ListItem item = new ListItem(ListItem.TYPE_USER_SMALL, R.id.user)
-        .setLongId(((TdApi.MessageSenderUser) reaction.senderId).userId)
+        .setData(reaction.senderId)
         .setIntValue(reaction.date)
         .setStringValue(TD.makeReactionKey(reaction.type));
       items.add(item);
