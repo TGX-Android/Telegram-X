@@ -14,6 +14,8 @@
  */
 package org.thunderdog.challegram.emoji;
 
+import androidx.annotation.Keep;
+
 import me.vkryl.core.util.Blob;
 import me.vkryl.core.util.BlobEntry;
 
@@ -21,7 +23,11 @@ public class RecentInfo implements BlobEntry {
   public int useCount;
   public int lastUseTime;
 
-  public RecentInfo () { }
+  @Keep
+  @SuppressWarnings("unused")
+  public RecentInfo () {
+    // Used by Settings.getBinaryMap
+  }
 
   public RecentInfo (int useCount, int lastUseTime) {
     this.useCount = useCount;
