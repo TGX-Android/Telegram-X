@@ -283,6 +283,7 @@
   <item type="id" name="result" />
   <item type="id" name="search_chat" />
   <item type="id" name="user" />
+  <item type="id" name="sender" />
   <item type="id" name="account" />
   <item type="id" name="btn_wallet" />
   <item type="id" name="contact" />

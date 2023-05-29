@@ -116,7 +116,7 @@ public class MessageOptionsReactedController extends BottomSheetViewController.B
         items.add(new ListItem(ListItem.TYPE_SEPARATOR));
       }
 
-      ListItem item = new ListItem(ListItem.TYPE_USER_SMALL, R.id.user)
+      ListItem item = new ListItem(ListItem.TYPE_USER_SMALL, R.id.sender)
         .setData(reaction.senderId)
         .setIntValue(reaction.date)
         .setStringValue(TD.makeReactionKey(reaction.type));
@@ -133,9 +133,11 @@ public class MessageOptionsReactedController extends BottomSheetViewController.B
 
   @Override
   public void onClick (View v) {
-    if (v.getId() == R.id.user) {
+    if (v.getId() == R.id.sender) {
       popupLayout.hideWindow(true);
-      tdlib.ui().openPrivateProfile(this, ((ListItem) v.getTag()).getLongId(), new TdlibUi.UrlOpenParameters().tooltip(context().tooltipManager().builder(v)));
+      ListItem item = (ListItem) v.getTag();
+      TdApi.MessageSender senderId = (TdApi.MessageSender) item.getData();
+      tdlib.ui().openSenderProfile(this, senderId, new TdlibUi.UrlOpenParameters().tooltip(context().tooltipManager().builder(v)));
     }
   }
 
