@@ -432,7 +432,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
   }
 
   public void setEmojiStatus (TdApi.User user) {
-    emojiStatusHelper.updateEmoji(tdlib, user, TextColorSets.Regular.NORMAL, R.drawable.baseline_premium_star_16, 18);
+    emojiStatusHelper.updateEmoji(tdlib, user, getTitleColorSet(), R.drawable.baseline_premium_star_16, 18);
     emojiStatusHelper.invalidateEmojiStatusReceiver(trimmedTitleExpanded, null);
     buildLayout();
     invalidate();

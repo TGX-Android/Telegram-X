@@ -526,7 +526,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
       lastChat.updateChat();
     }
     setTitle(lastChat.getTitle(), lastChat.getTitleHighlight());
-    setEmojiStatus(tdlib.chatUser(lastChat.getChat()));
+    setEmojiStatus(lastChat.getChat() != null ? tdlib.chatUser(lastChat.getChat()): null);
     updateSubtitle();
     lastChat.requestAvatar(avatarReceiver, AvatarReceiver.Options.SHOW_ONLINE);
     setTime(null);

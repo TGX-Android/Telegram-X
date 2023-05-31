@@ -520,12 +520,12 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
             final long emojiId = sticker.getCustomEmojiId();
             if (id == R.id.btn_setEmojiStatusTimedCustom) {
               int titleRes, todayRes, tomorrowRes, futureRes;
-              titleRes = R.string.SendSchedule;
-              todayRes = R.string.SendTodayAt;
-              tomorrowRes = R.string.SendTomorrowAt;
-              futureRes = R.string.SendDateAt;
+              titleRes = R.string.SetEmojiAsStatus;
+              todayRes = R.string.SetTodayAt;
+              tomorrowRes = R.string.SetTomorrowAt;
+              futureRes = R.string.SetDateAt;
 
-              context.showDateTimePicker(Lang.getString(titleRes), todayRes, tomorrowRes, futureRes, millis -> {
+              context.showDateTimePicker(tdlib, Lang.getString(titleRes), todayRes, tomorrowRes, futureRes, millis -> {
                 int duration = (int) ((millis - System.currentTimeMillis()) / 1000L);
                 controllerView.onSetEmojiStatus(v, sticker, emojiId, duration);
                 tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(emojiId), duration), tdlib.okHandler());

@@ -4662,7 +4662,7 @@
 
   <string name="SelectEmojiStatus">Select Emoji Status</string>
   <string name="FilterByEmoji">Filter by Emoji</string>
-  <string name="SetEmojiAsStatus">Set as atatus</string>
+  <string name="SetEmojiAsStatus">Set as status</string>
   <string name="SetEmojiAsStatusTimed">Set timed</string>
   <string name="SetEmojiAsStatusTimed1Hour">For 1 hour</string>
   <string name="SetEmojiAsStatusTimed2Hours">For 2 hours</string>

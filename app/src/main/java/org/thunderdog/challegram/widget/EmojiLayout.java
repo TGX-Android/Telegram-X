@@ -946,6 +946,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
 
     @Override
     public boolean onLongClick (View v) {
+      if (parent != null && parent.animatedEmojiOnly) return false;
       if (v instanceof StickerSectionView) {
         StickerSectionView sectionView = (StickerSectionView) v;
         TGStickerSetInfo info = sectionView.getStickerSet();
