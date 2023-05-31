@@ -14,7 +14,7 @@
  */
 package org.thunderdog.challegram.telegram;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 
 public interface GlobalAccountListener {
   default void onAccountProfileChanged (TdlibAccount account, TdApi.User profile, boolean isCurrent, boolean isLoaded) { }

@@ -14,7 +14,7 @@
  */
 package org.thunderdog.challegram.telegram;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 
 public interface StickersListener {
   default void onInstalledStickerSetsUpdated (long[] stickerSetIds, TdApi.StickerType stickerType) { }

@@ -54,8 +54,8 @@ if [ ! "$IGNORE_SDK" ]; then
     fi
   fi
 
-  NDK_VERSION=$("$(dirname "$0")"/read-property.sh version.properties version.ndk)
-  CMAKE_VERSION=$("$(dirname "$0")"/read-property.sh version.properties version.cmake)
+  NDK_VERSION=$(scripts/./read-property.sh version.properties version.ndk)
+  CMAKE_VERSION=$(scripts/./read-property.sh version.properties version.cmake)
   if [[ ! "$NDK_VERSION" =~ ^[_0-9\.]+$ ]]; then
     echo "${STYLE_ERROR}Invalid NDK version: $NDK_VERSION!${STYLE_END}"
     exit 1

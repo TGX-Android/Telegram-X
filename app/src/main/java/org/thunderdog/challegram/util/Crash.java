@@ -20,8 +20,8 @@ import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringDef;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
@@ -40,6 +40,7 @@ import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.leveldb.LevelDB;
 import me.vkryl.td.JSON;
+import me.vkryl.td.Td;
 
 public class Crash {
   @Retention(RetentionPolicy.SOURCE)
@@ -176,12 +177,12 @@ public class Crash {
 
   public @Type int getType () {
     if (BitwiseUtils.hasFlag(flags, Flags.SOURCE_TDLIB)) {
-      if (Client.isDiskFullError(message)) {
+      if (Td.isDiskFullError(message)) {
         return Type.DISK_FULL;
-      } else if (Client.isDatabaseBrokenError(message)) {
+      } else if (Td.isDatabaseBrokenError(message)) {
         return Type.TDLIB_DATABASE_BROKEN;
       }
-      if (Client.isExternalError(message)) {
+      if (Td.isExternalError(message)) {
         return Type.TDLIB_EXTERNAL_ERROR;
       } else {
         return Type.TDLIB;

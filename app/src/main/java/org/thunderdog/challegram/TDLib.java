@@ -14,8 +14,8 @@ package org.thunderdog.challegram;
 
 import androidx.annotation.Nullable;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.unsorted.Settings;
 

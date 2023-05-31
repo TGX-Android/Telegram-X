@@ -16,10 +16,9 @@ package org.thunderdog.challegram.data;
 
 import android.view.View;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.loader.AvatarReceiver;
-import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.util.text.Text;

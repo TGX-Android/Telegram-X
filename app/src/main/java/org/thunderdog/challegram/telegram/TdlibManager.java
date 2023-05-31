@@ -29,8 +29,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 import org.drinkmore.Tracer;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
@@ -316,16 +316,11 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   private @Nullable String tdlibCommitHash, tdlibVersion;
 
   private TdlibManager (int firstInstanceId, boolean forceService) {
-    Client.setFatalErrorHandler((client, errorMessage, isLayerError) -> {
-      final int accountId = findAccountIdByClient(client);
+    Client.setLogMessageHandler(0, (verbosityLevel, errorMessage) -> {
       Crash.Builder b = new Crash.Builder()
-        .accountId(accountId)
         .message(StringUtils.isEmpty(errorMessage) ? "empty" : errorMessage)
         .flags(Crash.Flags.SOURCE_TDLIB | Crash.Flags.SAVE_APPLICATION_LOG_EVENT);
       Settings.instance().storeCrash(b);
-      if (isLayerError) {
-        Tracer.onTdlibLostPromiseError(errorMessage);
-      }
     });
 
     this.languageDatabasePath = getLanguageDatabasePath();

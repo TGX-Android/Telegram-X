@@ -195,7 +195,7 @@ open class GenerateResourcesAndThemesTask : BaseTask() {
           if (arg != "%") {
             error("Invalid string argument in \"$name\" ($arg):\n$value")
           } else {
-            project.logger.lifecycle("\"$name\" contains '%' without argument")
+            logger.lifecycle("\"$name\" contains '%' without argument")
           }
         }
       }

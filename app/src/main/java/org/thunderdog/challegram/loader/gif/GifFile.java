@@ -19,7 +19,7 @@ import android.os.SystemClock;
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.telegram.Tdlib;

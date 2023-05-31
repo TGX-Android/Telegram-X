@@ -37,7 +37,7 @@ import androidx.annotation.RawRes;
 import androidx.core.app.NotificationManagerCompat;
 import androidx.core.content.ContextCompat;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.FileProvider;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
@@ -65,9 +65,9 @@ import java.lang.annotation.Target;
 import java.util.Arrays;
 import java.util.List;
 
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.FileUtils;
 import me.vkryl.core.StringUtils;
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.leveldb.LevelDB;
 import me.vkryl.td.ChatId;
 

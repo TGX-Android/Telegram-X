@@ -127,15 +127,27 @@ set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${ADD_LINKER_FLAGS}"
 
 # tdjni
 
+add_library(crypto SHARED IMPORTED)
+set_target_properties(crypto PROPERTIES IMPORTED_LOCATION
+  ${TDLIB_DIR}/openssl/${ANDROID_ABI}/lib/libcrypto.so
+)
+add_library(ssl SHARED IMPORTED)
+set_target_properties(ssl PROPERTIES IMPORTED_LOCATION
+  ${TDLIB_DIR}/openssl/${ANDROID_ABI}/lib/libssl.so
+)
+if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.11.0")
+  target_include_directories(crypto INTERFACE
+    ${TDLIB_DIR}/openssl/${ANDROID_ABI}/include
+  )
+  target_include_directories(ssl INTERFACE
+    ${TDLIB_DIR}/openssl/${ANDROID_ABI}/include
+  )
+endif()
+
 add_library(tdjni SHARED IMPORTED)
 set_target_properties(tdjni PROPERTIES IMPORTED_LOCATION
   ${TDLIB_DIR}/src/main/libs/${ANDROID_ABI}/libtdjni.so
 )
-if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.11.0")
-  target_include_directories(tdjni INTERFACE
-    ${TDLIB_DIR}/include
-  )
-endif()
 
 # flac
 
@@ -914,6 +926,8 @@ target_compile_options(${NATIVE_LIB} PUBLIC
 # == Linking dependencies ==
 
 target_link_libraries(${NATIVE_LIB}
+  crypto
+  ssl
   tdjni
   jni-utils
   flac

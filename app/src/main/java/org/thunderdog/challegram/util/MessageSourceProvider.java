@@ -14,7 +14,7 @@
  */
 package org.thunderdog.challegram.util;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 
 public interface MessageSourceProvider {
   int getSourceDate ();

@@ -20,7 +20,7 @@ import android.view.ViewParent;
 
 import androidx.annotation.Nullable;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.navigation.MenuMoreWrap;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
@@ -35,7 +35,6 @@ import java.util.List;
 
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.core.lambda.RunnableBool;
 
 public class HapticMenuHelper implements View.OnTouchListener, View.OnLongClickListener {
   public interface Provider {

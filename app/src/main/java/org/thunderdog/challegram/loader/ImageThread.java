@@ -17,7 +17,7 @@ package org.thunderdog.challegram.loader;
 import android.graphics.Bitmap;
 import android.os.Message;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.core.BaseThread;
 
 public class ImageThread extends BaseThread {

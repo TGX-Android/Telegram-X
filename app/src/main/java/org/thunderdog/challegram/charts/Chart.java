@@ -4,7 +4,7 @@ import androidx.annotation.IdRes;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.json.JSONException;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.charts.data.ChartData;
@@ -14,9 +14,9 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.ListItem;
 
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.reference.ReferenceList;
-import me.vkryl.core.BitwiseUtils;
 
 public class Chart implements BaseChartView.DateChangeListener {
   public interface Listener {

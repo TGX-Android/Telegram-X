@@ -1,6 +1,6 @@
 package org.thunderdog.challegram.charts.data;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.json.JSONException;
 import org.json.JSONObject;
 

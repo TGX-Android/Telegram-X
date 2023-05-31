@@ -16,7 +16,7 @@ package org.thunderdog.challegram.telegram;
 
 import androidx.collection.LongSparseArray;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 
 import me.vkryl.core.collection.LongSparseIntArray;
 
