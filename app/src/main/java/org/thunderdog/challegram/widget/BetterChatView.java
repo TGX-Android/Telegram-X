@@ -147,6 +147,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
 
     setTime(Lang.time(item.getDate(), TimeUnit.SECONDS));
     setTitle(TD.getUserName(userId, user), null);
+    setEmojiStatus(user);
     setSubtitleIcon(item.getSubtitleIcon(), item.getSubtitleIconColorId());
     setSubtitle(item.getSubtitle());
     avatarReceiver.requestUser(tdlib, userId, AvatarReceiver.Options.SHOW_ONLINE);
