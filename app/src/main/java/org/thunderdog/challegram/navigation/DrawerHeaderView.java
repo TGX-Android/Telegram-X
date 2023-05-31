@@ -24,6 +24,7 @@ import android.view.MotionEvent;
 import android.view.View;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.FillingDrawable;
@@ -40,14 +41,20 @@ import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibBadgeCounter;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
+import org.thunderdog.challegram.ui.EmojiStatusSelectorEmojiPage;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.EmojiStatusHelper;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
+import org.thunderdog.challegram.util.text.TextColorSetOverride;
+import org.thunderdog.challegram.util.text.TextColorSets;
+import org.thunderdog.challegram.util.text.TextPart;
 import org.thunderdog.challegram.widget.ExpanderView;
 
 import me.vkryl.android.AnimatorUtils;
@@ -63,6 +70,7 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
   private static final int DRAWER_ALPHA = 90;
 
   // private final TextPaint namePaint, phonePaint;
+  private final EmojiStatusHelper emojiStatusHelper;
 
   private DoubleImageReceiver receiver;
   private DoubleImageReceiver receiver2;
@@ -72,6 +80,7 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
   private final Drawable gradient;
   private final ExpanderView expanderView;
   private final ClickHelper clickHelper;
+  private TdlibAccount currentAccount;
 
   public DrawerHeaderView (Context context, DrawerController parent) {
     super(context);
@@ -93,6 +102,9 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
     this.receiver.setRadius(0);
     this.receiver2.setRadius(0);
 
+    emojiStatusHelper = new EmojiStatusHelper(parent.tdlib, this);
+    emojiStatusHelper.setClickListener(this::onEmojiStatusClick);
+
     TdlibAccount account = TdlibManager.instance().currentAccount();
     TdlibManager.instance().global().addAccountListener(this);
     TdlibManager.instance().global().addCountersListener(this);
@@ -107,6 +119,36 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
         return ColorUtils.compositeColor(super.getFillingColor(), Theme.getColor(ColorId.drawer));
       }
     });
+  }
+
+  public boolean onEmojiStatusClick (View v, Text text, TextPart part, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+    int[] pos = new int[2];
+    getLocationOnScreen(pos);
+    EmojiStatusSelectorEmojiPage.Wrapper c = new EmojiStatusSelectorEmojiPage.Wrapper(parent.context, currentAccount.tdlib(), parent, new EmojiStatusSelectorEmojiPage.AnimationsEmojiStatusSetDelegate() {
+      @Override
+      public void onAnimationStart () {
+        emojiStatusHelper.setIgnoreDraw(true);
+        invalidate();
+      }
+
+      @Override
+      public void onAnimationEnd () {
+        emojiStatusHelper.setIgnoreDraw(false);
+        invalidate();
+      }
+
+      @Override
+      public int getDestX () {
+        return pos[0] + emojiStatusHelper.getLastDrawX() + Screen.dp(12);
+      }
+
+      @Override
+      public int getDestY () {
+        return pos[1] + emojiStatusHelper.getLastDrawY() + Screen.dp(12);
+      }
+    });
+    c.show();
+    return false;
   }
 
   @Override
@@ -140,7 +182,7 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
 
   @Override
   public boolean onTouchEvent (MotionEvent event) {
-    return clickHelper.onTouchEvent(this, event);
+    return emojiStatusHelper.onTouchEvent(this, event) || clickHelper.onTouchEvent(this, event);
   }
 
   // Other
@@ -150,6 +192,7 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
     TdlibManager.instance().global().removeAccountListener(this);
     TdlibManager.instance().global().removeCountersListener(this);
     TGLegacyManager.instance().removeEmojiListener(this);
+    emojiStatusHelper.destroy();
   }
 
   @Override
@@ -261,7 +304,10 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
     private Text trimmedName, trimmedPhone;
 
     public void trim (int width) {
-      int availWidth = width - contentLeft() * 2;
+      int availWidth = width - contentLeft() * 3 - Screen.dp(24);
+      if (account.getUser() != null && account.getUser().isPremium) {
+        availWidth -= Screen.dp(48);
+      }
       if (availWidth <= 0) {
         return;
       }
@@ -386,6 +432,14 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
     DisplayInfo info = new DisplayInfo(this, account);
     info.trim(getMeasuredWidth());
 
+    currentAccount = account;
+    emojiStatusHelper.updateEmoji(account.tdlib(), account.getUser(), new TextColorSetOverride(TextColorSets.Regular.NORMAL) {
+      @Override
+      public int emojiStatusColor () {
+        return Theme.getColor(ColorId.headerButtonIcon);
+      }
+    }, R.drawable.baseline_premium_star_24, EmojiStatusHelper.emojiSizeToTextSize(24));
+
     if (this.animator != null) {
       this.animator.cancel();
       applyFuture();
@@ -417,12 +471,14 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
   protected void onAttachedToWindow () {
     super.onAttachedToWindow();
     receiver.attach();
+    emojiStatusHelper.attach();
   }
 
   @Override
   protected void onDetachedFromWindow () {
     super.onDetachedFromWindow();
     receiver.detach();
+    emojiStatusHelper.detach();
   }
 
   @Override
@@ -493,5 +549,6 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
     }
 
     expanderView.draw(c, rtl ? Screen.dp(54f) / 2 : viewWidth - Screen.dp(54f) / 2, viewHeight - Screen.dp(54f) / 2, getTextColor(avatarFactor));
+    emojiStatusHelper.draw(c, rtl ? Screen.dp(16 + 24 * 2) : viewWidth - Screen.dp(88), viewHeight - Screen.dp(18 + 24));
   }
 }

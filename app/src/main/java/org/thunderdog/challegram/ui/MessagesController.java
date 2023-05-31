@@ -9909,7 +9909,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   @Override
-  public void onUserUpdated (TdApi.User user) { }
+  public void onUserUpdated (TdApi.User user) {
+    if (chat != null && user != null && headerCell != null && TD.getUserId(chat) == user.id) {
+      runOnUiThreadOptional(() -> {
+        headerCell.setEmojiStatus(user);
+      });
+    }
+  }
 
   @Override
   public void onUserFullUpdated (final long userId, final TdApi.UserFullInfo userFull) {

@@ -98,6 +98,7 @@ import org.thunderdog.challegram.ui.FeatureToggles;
 import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.ui.TranslationControllerV2;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.EmojiStatusHelper;
 import org.thunderdog.challegram.util.LanguageDetector;
 import org.thunderdog.challegram.util.ReactionsCounterDrawable;
 import org.thunderdog.challegram.util.TranslationCounterDrawable;
@@ -216,6 +217,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private @Nullable Text hAuthorNameT, hPsaTextT, hAuthorChatMark;
   private @Nullable Text hAdminNameT;
   private @Nullable Letters uBadge;
+  private EmojiStatusHelper.EmojiStatusDrawable hAuthorEmojiStatus;
 
   // counters
 
@@ -790,7 +792,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   private int getAuthorWidth () {
-    return hAuthorNameT != null ? hAuthorNameT.getWidth() + (hAuthorChatMark != null ? hAuthorChatMark.getWidth() + Screen.dp(16f) : 0) : needName(true) ? -Screen.dp(3f) : 0;
+    return hAuthorNameT != null ?
+      hAuthorNameT.getWidth() + (hAuthorEmojiStatus != null ? hAuthorEmojiStatus.getWidth(Screen.dp(3)): 0) + (hAuthorChatMark != null ? hAuthorChatMark.getWidth() + Screen.dp(16f) : 0) :
+      needName(true) ? -Screen.dp(3f) : 0;
   }
 
   private int computeBubbleWidth () {
@@ -1941,6 +1945,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
             newTop += getPsaTitleHeight();
           }
           hAuthorNameT.draw(c, left, left + hAuthorNameT.getWidth(), 0, newTop);
+          if (hAuthorEmojiStatus != null) {
+            hAuthorEmojiStatus.draw(c, left + hAuthorNameT.getWidth() + Screen.dp(3), newTop, 1f, view.getEmojiStatusReceiver());
+          }
           if (sender.hasChatMark() && hAuthorChatMark != null) {
             int cmLeft = left + hAuthorNameT.getWidth() + Screen.dp(6f);
             RectF rct = Paints.getRectF();
@@ -2606,6 +2613,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     performWithViews(view -> requestTextMedia(view.getTextMediaReceiver()));
   }
 
+  public final void invalidateEmojiStatusReceiver () {
+    performWithViews(view -> requestAuthorTextMedia(view.getEmojiStatusReceiver()));
+  }
+
   public final void invalidateAvatarsReceiver () {
     performWithViews(view -> requestCommentsResources(view.getAvatarsReceiver(), true));
   }
@@ -3019,10 +3030,22 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         public int backgroundColorId (boolean isPressed) {
           return isPressed ? nameColorId : 0;
         }
+
+        @Override
+        public int emojiStatusColor () {
+          return Theme.getColor(nameColorId);
+        }
       };
     } else {
       colorTheme = getChatAuthorColorSet();
     }
+
+    if (!tdlib.isSelfChat(chat)) {
+      hAuthorEmojiStatus = EmojiStatusHelper.makeDrawable(tdlib, tdlib.cache().user(sender.getUserId()), colorTheme, (text1, specificMedia) -> invalidateEmojiStatusReceiver());
+      hAuthorEmojiStatus.invalidateTextMedia();
+      maxWidth -= hAuthorEmojiStatus.getWidth(Screen.dp(3));
+    }
+
     return new Text.Builder(tdlib, text, openParameters(), maxWidth, getNameStyleProvider(), colorTheme, null)
       .singleLine()
       .clipTextArea()
@@ -3859,6 +3882,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public final void requestAllTextMedia (MessageView view) {
     requestTextMedia(view.getTextMediaReceiver());
+    requestAuthorTextMedia(view.getEmojiStatusReceiver());
 
     if (footerText != null) {
       footerText.requestMedia(view.getFooterTextMediaReceiver(true));
@@ -3867,6 +3891,14 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       if (receiver != null) {
         receiver.clear();
       }
+    }
+  }
+
+  public final void requestAuthorTextMedia (ComplexReceiver textMediaReceiver) {
+    if (hAuthorEmojiStatus != null) {
+      hAuthorEmojiStatus.requestMedia(textMediaReceiver);
+    } else {
+      textMediaReceiver.clear();
     }
   }
 
@@ -8351,7 +8383,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
   }
 
-  private static class QuickReactionAnimatedPositionProvider implements ReactionsOverlayView.AnimatedPositionProvider {
+  public static class QuickReactionAnimatedPositionProvider implements ReactionsOverlayView.AnimatedPositionProvider {
     private final int jumpHeight;
 
     public QuickReactionAnimatedPositionProvider () {

@@ -37,6 +37,8 @@ public class TGStickerObj {
   private GifFile previewAnimation, fullAnimation, premiumFullAnimation;
   private String foundByEmoji;
   private TdApi.ReactionType reactionType;
+  private boolean needRepainting;
+  private boolean isDefaultPremiumStar;
 
   private int flags;
   private float displayScale = 1f;
@@ -57,6 +59,13 @@ public class TGStickerObj {
       preview.setNeedCancellation(true);
     }
   }
+
+  public static TGStickerObj makeDefaultPremiumStar (Tdlib tdlib) {
+    TGStickerObj o = new TGStickerObj(tdlib, null, null, new TdApi.StickerTypeCustomEmoji());
+    o.isDefaultPremiumStar = true;
+    return o;
+  }
+
 
   public TGStickerObj setDisplayScale (float scale) {
     this.displayScale = scale;
@@ -104,6 +113,7 @@ public class TGStickerObj {
     if (this.sticker == null || sticker == null || this.tdlib != tdlib || !Td.equalsTo(this.sticker, sticker)) {
       this.tdlib = tdlib;
       this.sticker = sticker;
+      this.needRepainting = TD.needRepainting(sticker);
       this.fullImage = null;
       this.previewAnimation = null;
       this.fullAnimation = null;
@@ -230,6 +240,18 @@ public class TGStickerObj {
     return premiumFullAnimation;
   }
 
+  public boolean isNeedRepainting () {
+    return needRepainting || isDefaultPremiumStar();
+  }
+
+  public boolean isDefaultPremiumStar () {
+    return isDefaultPremiumStar;
+  }
+
+  public long getCustomEmojiId () {
+    return TD.getStickerCustomEmojiId(sticker);
+  }
+
   public void setIsRecent () {
     flags |= FLAG_RECENT;
   }
@@ -255,7 +277,7 @@ public class TGStickerObj {
   }
 
   public boolean isMasks () {
-    return stickerType.getConstructor() == TdApi.StickerTypeMask.CONSTRUCTOR;
+    return !isDefaultPremiumStar && stickerType.getConstructor() == TdApi.StickerTypeMask.CONSTRUCTOR;
   }
 
   public int getId () {
@@ -263,17 +285,17 @@ public class TGStickerObj {
   }
 
   public int getWidth () {
-    return sticker != null ? sticker.width : 0;
+    return isDefaultPremiumStar ? 512: sticker != null ? sticker.width : 0;
   }
 
   public int getHeight () {
-    return sticker != null ? sticker.height : 0;
+    return isDefaultPremiumStar ? 512: sticker != null ? sticker.height : 0;
   }
 
   // If sticker set is not loaded yet
 
   public boolean isEmpty () {
-    return sticker == null;
+    return sticker == null && !isDefaultPremiumStar;
   }
 
   private long stickerSetId;

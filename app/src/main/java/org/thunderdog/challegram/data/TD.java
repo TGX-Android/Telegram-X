@@ -1315,6 +1315,16 @@ public class TD {
     }
   }
 
+  public static boolean needRepainting (TdApi.Sticker sticker) {
+    return (sticker != null && sticker.fullType instanceof TdApi.StickerFullTypeCustomEmoji
+      && ((TdApi.StickerFullTypeCustomEmoji) sticker.fullType).needsRepainting);
+  }
+
+  public static long getStickerCustomEmojiId (TdApi.Sticker sticker) {
+    return (sticker != null && sticker.fullType instanceof TdApi.StickerFullTypeCustomEmoji) ?
+      ((TdApi.StickerFullTypeCustomEmoji) sticker.fullType).customEmojiId: 0;
+  }
+
   public static class Size {
     public final int width, height;
 

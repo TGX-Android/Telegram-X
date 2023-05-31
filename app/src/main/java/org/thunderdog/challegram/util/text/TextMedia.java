@@ -205,6 +205,10 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
     return 1f;
   }
 
+  public boolean needsRepainting () {
+    return isCustomEmoji() && customEmoji != null && TD.needRepainting(customEmoji.value);
+  }
+
   public boolean isCustomEmoji () {
     return customEmojiId != 0;
   }
@@ -255,6 +259,12 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
       }
       return;
     }
+
+    final boolean needRepainting = needsRepainting();
+    if (needRepainting) {
+      c.saveLayerAlpha(left - width / 4f, top - height / 4f, right + width / 4f, bottom + height / 4f, 255, Canvas.ALL_SAVE_FLAG);
+    }
+
     //noinspection ConstantConditions
     float scale = customEmoji != null && !customEmoji.isNotFound() ? getScale(customEmoji.value, (right - left)) : 1f;
     boolean needScaleUp = scale != 1f;
@@ -302,6 +312,10 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
     }
     if (needScaleUp) {
       Views.restore(c, restoreToCount);
+    }
+    if (needRepainting) {
+      c.drawRect(left - width / 4f, top - height / 4f, right + width / 4f, bottom + height / 4f, Paints.getSrcInPaint(source.getEmojiStatusColor()));
+      c.restore();
     }
   }
 }

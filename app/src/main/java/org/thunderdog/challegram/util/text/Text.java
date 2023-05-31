@@ -2915,6 +2915,15 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     return isClickable ? theme.clickableTextColor(isPressed) : theme.defaultTextColor();
   }
 
+  public int getEmojiSize () {
+    return emojiSize;
+  }
+
+  public int getEmojiStatusColor () {
+    TextColorSet theme = pickTheme(null, null);
+    return theme.emojiStatusColor();
+  }
+
   @ColorInt
   public int getTextColor () {
     return getTextColor(null, null, BitwiseUtils.hasFlag(textFlags, FLAG_ALL_CLICKABLE), false);

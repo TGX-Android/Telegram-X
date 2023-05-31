@@ -100,6 +100,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   private final AvatarReceiver avatarReceiver;
   private final GifReceiver gifReceiver;
   private final ComplexReceiver avatarsReceiver;
+  private final ComplexReceiver emojiStatusReceiver;
   private final ComplexReceiver reactionsComplexReceiver, textMediaReceiver, replyTextMediaReceiver;
   private final DoubleImageReceiver replyReceiver;
   private final RefreshRateLimiter refreshRateLimiter;
@@ -120,6 +121,8 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     reactionsComplexReceiver = new ComplexReceiver()
       .setUpdateListener(new RefreshRateLimiter(this, 60.0f)); // Limit by 60fps
     textMediaReceiver = new ComplexReceiver()
+      .setUpdateListener(refreshRateLimiter);
+    emojiStatusReceiver = new ComplexReceiver()
       .setUpdateListener(refreshRateLimiter);
     replyTextMediaReceiver = new ComplexReceiver()
       .setUpdateListener(refreshRateLimiter);
@@ -157,6 +160,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     gifReceiver.destroy();
     reactionsComplexReceiver.performDestroy();
     textMediaReceiver.performDestroy();
+    emojiStatusReceiver.performDestroy();
     if (contentReceiver != null) {
       contentReceiver.destroy();
     }
@@ -202,6 +206,10 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
   public void invalidateTextMediaReceiver (@NonNull TGMessage msg, Text text, @Nullable TextMedia textMedia) {
     invalidateTextMediaReceiver(msg, text, textMedia, textMediaReceiver);
+  }
+
+  public void invalidateEmojiStatusReceiver (@NonNull TGMessage msg, Text text, @Nullable TextMedia textMedia) {
+    invalidateTextMediaReceiver(msg, text, textMedia, emojiStatusReceiver);
   }
 
   public void invalidateReplyTextMediaReceiver (@NonNull TGMessage msg, @NonNull Text text, @Nullable TextMedia textMedia) {
@@ -316,12 +324,17 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     return textMediaReceiver;
   }
 
+  public ComplexReceiver getEmojiStatusReceiver () {
+    return emojiStatusReceiver;
+  }
+
   public void invalidateContentReceiver (long chatId, long messageId, int arg) {
     if (msg != null && chatId == msg.getChatId()) {
       if ((flags & FLAG_USE_COMPLEX_RECEIVER) != 0) {
         if (msg.isDescendantOrSelf(messageId)) {
           msg.requestMediaContent(complexReceiver, true, arg);
           msg.requestTextMedia(textMediaReceiver);
+          msg.requestAuthorTextMedia(emojiStatusReceiver);
         }
       } else if (messageId == msg.getId()) {
         if (gifReceiver != null && msg.needGifReceiver()) {
@@ -336,6 +349,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
           }
         }
         msg.requestTextMedia(textMediaReceiver);
+        msg.requestAuthorTextMedia(emojiStatusReceiver);
         if ((flags & FLAG_DISABLE_MEASURE) != 0 && getParent() instanceof MessageViewGroup) {
           ((MessageViewGroup) getParent()).invalidateContent(msg);
         }
@@ -442,6 +456,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       gifReceiver.attach();
       reactionsComplexReceiver.attach();
       textMediaReceiver.attach();
+      emojiStatusReceiver.attach();
       replyReceiver.attach();
       replyTextMediaReceiver.attach();
       if ((flags & FLAG_USE_COMMON_RECEIVER) != 0) {
@@ -462,6 +477,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       gifReceiver.detach();
       reactionsComplexReceiver.detach();
       textMediaReceiver.detach();
+      emojiStatusReceiver.detach();
       replyReceiver.detach();
       replyTextMediaReceiver.detach();
       if ((flags & FLAG_USE_COMMON_RECEIVER) != 0) {

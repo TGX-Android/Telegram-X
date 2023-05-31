@@ -4660,4 +4660,17 @@
   <string name="DoNotTranslateLanguages_one">%1$s language</string>
   <string name="DoNotTranslateLanguages_other">%1$s languages</string>
 
+  <string name="SelectEmojiStatus">Select Emoji Status</string>
+  <string name="FilterByEmoji">Filter by Emoji</string>
+  <string name="SetEmojiAsStatus">Set as atatus</string>
+  <string name="SetEmojiAsStatusTimed">Set timed</string>
+  <string name="SetEmojiAsStatusTimed1Hour">For 1 hour</string>
+  <string name="SetEmojiAsStatusTimed2Hours">For 2 hours</string>
+  <string name="SetEmojiAsStatusTimed8Hours">For 8 hours</string>
+  <string name="SetEmojiAsStatusTimedCustom">Set custom timer...</string>
+
+  <string name="SetTodayAt">Set until today at %1$s</string>
+  <string name="SetTomorrowAt">Set until tomorrow at %1$s</string>
+  <string name="SetDateAt">Set until %1$s at %2$s</string>
+
 </resources>
