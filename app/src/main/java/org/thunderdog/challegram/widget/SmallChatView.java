@@ -121,8 +121,12 @@ public class SmallChatView extends BaseView implements AttachDelegate, TooltipOv
       chat.getViewProvider().attachToView(this);
     }
 
+    invalidateEmojiStatusReceiver(null, null);
     requestFile();
     invalidate();
+    if (chat != null) {
+      chat.onAttachToView();
+    }
   }
 
   private void requestFile () {
@@ -199,6 +203,8 @@ public class SmallChatView extends BaseView implements AttachDelegate, TooltipOv
 
   @Override
   public void invalidateEmojiStatusReceiver (Text text, @Nullable TextMedia specificMedia) {
-    chat.requestEmojiStatusReceiver(emojiStatusHelper.emojiStatusReceiver);
+    if (emojiStatusHelper != null && chat != null) {
+      chat.requestEmojiStatusReceiver(emojiStatusHelper.emojiStatusReceiver);
+    }
   }
 }

@@ -327,6 +327,7 @@
   <item type="id" name="btn_setEmojiStatusTimed1Hour" />
   <item type="id" name="btn_setEmojiStatusTimed2Hours" />
   <item type="id" name="btn_setEmojiStatusTimed8Hours" />
+  <item type="id" name="btn_setEmojiStatusTimed2Days" />
   <item type="id" name="btn_setEmojiStatusTimedCustom" />
   <item type="id" name="btn_places" />
   <item type="id" name="btn_shareLiveLocation" />

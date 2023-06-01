@@ -40,6 +40,10 @@ public class EmojiStatusHelper implements Destroyable {
     this.clickListenerToSet = clickListenerToSet;
   }
 
+  public void invalidateEmojiStatusReceiver (@Nullable TextMedia specificMedia) {
+    invalidateEmojiStatusReceiver(emojiStatusDrawable != null ? emojiStatusDrawable.emojiStatus: null, specificMedia);
+  }
+
   public void invalidateEmojiStatusReceiver (Text text, @Nullable TextMedia specificMedia) {
     if (text != null) {
       text.requestMedia(emojiStatusReceiver, 0, 1);
@@ -127,6 +131,12 @@ public class EmojiStatusHelper implements Destroyable {
     this.ignoreDraw = ignoreDraw;
     if (emojiStatusDrawable != null) {
       emojiStatusDrawable.ignoreDraw = ignoreDraw;
+    }
+  }
+
+  public void onAppear () {
+    if (emojiStatusDrawable != null) {
+      emojiStatusDrawable.onAppear();
     }
   }
 
@@ -264,6 +274,15 @@ public class EmojiStatusHelper implements Destroyable {
         c.restore();
       }
     }
+
+    public void onAppear () {
+      if (emojiStatus != null) {
+        TextMedia part = emojiStatus.getTextMediaFromLastPart();
+        if (part != null) {
+          part.rebuild();
+        }
+      }
+    }
   }
 
 
@@ -272,10 +291,17 @@ public class EmojiStatusHelper implements Destroyable {
     TdApi.FormattedText text = makeEmojiText(user);
     if (text == null) return null;
 
-    return new Text.Builder(tdlib, text, null, Screen.dp(1000), Paints.robotoStyleProvider(textSize), textColorSet, textMediaListener)
+    Text result = new Text.Builder(tdlib, text, null, Screen.dp(1000), Paints.robotoStyleProvider(textSize), textColorSet, textMediaListener)
       .singleLine()
       .onClick(clickListener)
       .build();
+
+    TextMedia part = result.getTextMediaFromLastPart();
+    if (part != null) {
+      part.setIsEmojiStatus();
+    }
+
+    return result;
   }
 
   private static @Nullable TdApi.FormattedText makeEmojiText (@Nullable TdApi.User user) {

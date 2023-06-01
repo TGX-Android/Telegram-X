@@ -127,6 +127,15 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
     return "emoji_" + customEmojiId + "_" + size;
   }
 
+  private boolean isEmojiStatus;
+
+  public void setIsEmojiStatus () {
+    isEmojiStatus = true;
+    if (gifFile != null) {
+      gifFile.setRepeatCount(2);
+    }
+  }
+
   private void buildCustomEmoji (@NonNull TdlibEmojiManager.Entry customEmoji) {
     TdApi.Sticker sticker = customEmoji.value;
     if (sticker == null)
@@ -148,6 +157,9 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
         this.gifFile.setScaleType(GifFile.FIT_CENTER);
         this.gifFile.setOptimizationMode(GifFile.OptimizationMode.EMOJI);
         this.gifFile.setRequestedSize(Math.max(width, height));
+        if (isEmojiStatus) {
+          this.gifFile.setRepeatCount(2);
+        }
         break;
       }
       case TdApi.StickerFormatWebp.CONSTRUCTOR: {
@@ -157,6 +169,17 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
         break;
       }
     }
+  }
+
+  public void rebuild () {
+    if (customEmoji != null && !customEmoji.isNotFound()) {
+      buildCustomEmoji(customEmoji);
+    }
+    tdlib.ui().post(() -> {
+      if (!isDestroyed) {
+        source.notifyMediaChanged(this);
+      }
+    });
   }
 
   @TdlibThread

@@ -479,6 +479,12 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
     }
   }
 
+  public void onAttachToView () {
+    if (emojiStatusDrawable != null) {
+      emojiStatusDrawable.onAppear();
+    }
+  }
+
   public <T extends View & DrawableProvider> void draw (T view, Receiver receiver, Canvas c, ComplexReceiver emojiStatusReceiver) {
     int left = Screen.dp(72f);
     boolean rtl = Lang.rtl();

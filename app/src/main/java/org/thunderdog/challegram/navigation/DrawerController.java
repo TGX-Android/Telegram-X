@@ -1002,6 +1002,9 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
   }
 
   private void showView () {
+    if (headerView != null) {
+      headerView.onAppear();
+    }
     if (navigationController != null) {
       navigationController.preventLayout();
     }

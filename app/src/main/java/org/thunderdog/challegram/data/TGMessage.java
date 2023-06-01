@@ -2432,6 +2432,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public final void onAttachedToView (@Nullable MessageView view) {
+    if (hAuthorEmojiStatus != null) {
+      hAuthorEmojiStatus.onAppear();
+    }
+
     setViewAttached(view != null || hasAttachedToAnything());
     if (currentViews.attachToView(view) && view != null) {
       onMessageAttachedToView(view, true);

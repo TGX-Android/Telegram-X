@@ -387,6 +387,9 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
       } else {
         setCustomControllerProvider(null);
       }
+      if (chat != null) {
+        chat.onAttachToView();
+      }
     }
     requestContent();
   }

@@ -462,6 +462,10 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
     }
   }
 
+  public void onAppear () {
+    emojiStatusHelper.onAppear();
+  }
+
   @Override
   protected void onAttachedToWindow () {
     super.onAttachedToWindow();

@@ -500,18 +500,22 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
             R.id.btn_setEmojiStatusTimed1Hour,
             R.id.btn_setEmojiStatusTimed2Hours,
             R.id.btn_setEmojiStatusTimed8Hours,
+            R.id.btn_setEmojiStatusTimed2Days,
             R.id.btn_setEmojiStatusTimedCustom,
           }, new String[] {
             Lang.getString(R.string.SetEmojiAsStatusTimed1Hour),
             Lang.getString(R.string.SetEmojiAsStatusTimed2Hours),
             Lang.getString(R.string.SetEmojiAsStatusTimed8Hours),
+            Lang.getString(R.string.SetEmojiAsStatusTimed2Days),
             Lang.getString(R.string.SetEmojiAsStatusTimedCustom)
           }, new int[] {
             ViewController.OPTION_COLOR_NORMAL,
             ViewController.OPTION_COLOR_NORMAL,
             ViewController.OPTION_COLOR_NORMAL,
             ViewController.OPTION_COLOR_NORMAL,
+            ViewController.OPTION_COLOR_NORMAL,
           }, new int[] {
+            R.drawable.baseline_access_time_24,
             R.drawable.baseline_access_time_24,
             R.drawable.baseline_access_time_24,
             R.drawable.baseline_access_time_24,
@@ -541,8 +545,8 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
               duration = 2 * 60 * 60;
             } else if (id == R.id.btn_setEmojiStatusTimed8Hours) {
               duration = 8 * 60 * 60;
-            } else if (id == R.id.btn_setEmojiStatusTimedCustom) {
-              duration = -1;
+            } else if (id == R.id.btn_setEmojiStatusTimed2Days) {
+              duration = 2 * 24 * 60 * 60;
             } else {
               duration = 0;
             }

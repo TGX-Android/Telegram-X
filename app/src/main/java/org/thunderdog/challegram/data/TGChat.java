@@ -222,6 +222,12 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     }
   }
 
+  public void onAttachToView () {
+    if (emojiStatusDrawable != null) {
+      emojiStatusDrawable.onAppear();
+    }
+  }
+
   @Override
   public void onCounterAppearanceChanged (Counter counter, boolean sizeChanged) {
     if (sizeChanged) {

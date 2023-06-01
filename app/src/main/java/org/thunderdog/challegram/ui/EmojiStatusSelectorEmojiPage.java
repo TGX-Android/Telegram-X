@@ -6,6 +6,7 @@ import android.graphics.Canvas;
 import android.graphics.Path;
 import android.graphics.Point;
 import android.graphics.Rect;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
@@ -86,6 +87,12 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
       @Override
       protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(Screen.dp(56), MeasureSpec.EXACTLY));
+      }
+
+      @Override
+      public boolean onTouchEvent (MotionEvent e) {
+        super.onTouchEvent(e);
+        return true;
       }
     };
     headerView.initWithSingleController(this, false);

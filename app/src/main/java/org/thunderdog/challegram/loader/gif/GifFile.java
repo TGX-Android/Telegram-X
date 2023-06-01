@@ -236,7 +236,23 @@ public class GifFile {
     loopListeners.add(callback);
   }
 
+
+  private int repeatsCounter = -1;
+
+  public void setRepeatCount (int count) {
+    setPlayOnce(true);
+    setLooped(false);
+    repeatsCounter = count;
+  }
+
   public void onLoop () {
+    if (repeatsCounter >= 0) {
+      repeatsCounter -= 1;
+      if (repeatsCounter > 0) {
+        setLooped(false);
+      }
+    }
+
     if (loopListeners != null) {
       tdlib.ui().post(() -> {
         if (loopListeners != null) {

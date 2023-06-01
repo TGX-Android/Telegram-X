@@ -4667,6 +4667,7 @@
   <string name="SetEmojiAsStatusTimed1Hour">For 1 hour</string>
   <string name="SetEmojiAsStatusTimed2Hours">For 2 hours</string>
   <string name="SetEmojiAsStatusTimed8Hours">For 8 hours</string>
+  <string name="SetEmojiAsStatusTimed2Days">For 2 days</string>
   <string name="SetEmojiAsStatusTimedCustom">Set custom timer...</string>
 
   <string name="SetTodayAt">Set until today at %1$s</string>
