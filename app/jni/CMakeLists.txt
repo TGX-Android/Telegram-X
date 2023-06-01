@@ -91,7 +91,7 @@ endforeach()
 
 set(ADD_LINKER_FLAGS
   -Wl,--gc-sections,--icf=safe
-  -Wl,--build-id=none
+  -Wl,--build-id=sha1
 )
 set(EXCLUDE_LIBS
   libjni-utils.a
