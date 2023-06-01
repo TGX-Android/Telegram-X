@@ -8692,6 +8692,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             switch (item.getViewType()) {
               case ListItem.TYPE_CHECKBOX_OPTION:
               case ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR:
+                view.setEmojiStatus(tdlib.cache().user(item.getLongValue()));
                 ((CheckBoxView) view.getChildAt(0)).setChecked(item.isSelected(), isUpdate);
                 break;
             }

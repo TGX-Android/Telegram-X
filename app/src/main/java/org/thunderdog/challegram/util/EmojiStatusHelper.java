@@ -25,13 +25,13 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.lambda.Destroyable;
 
 public class EmojiStatusHelper implements Destroyable {
-  private final Tdlib tdlib;
+  private final @Nullable Tdlib tdlib;
   public final ComplexReceiver emojiStatusReceiver;
 
   private @Nullable EmojiStatusDrawable emojiStatusDrawable;
   private @Nullable Text.ClickListener clickListenerToSet;
 
-  public EmojiStatusHelper (Tdlib tdlib, View v) {
+  public EmojiStatusHelper (@Nullable Tdlib tdlib, View v) {
     this.tdlib = tdlib;
     emojiStatusReceiver = new ComplexReceiver(v, Config.MAX_ANIMATED_EMOJI_REFRESH_RATE);
   }
@@ -99,6 +99,10 @@ public class EmojiStatusHelper implements Destroyable {
 
   public int getWidth () {
     return emojiStatusDrawable != null ? emojiStatusDrawable.getWidth(): 0;
+  }
+
+  public int getWidth (int offset) {
+    return emojiStatusDrawable != null ? emojiStatusDrawable.getWidth(offset): 0;
   }
 
   public void draw (Canvas c, int startX, int startY) {

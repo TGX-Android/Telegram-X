@@ -411,7 +411,9 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
 
   @Override
   public boolean onStickerClick (StickerSmallView view, View clickView, TGStickerObj sticker, boolean isMenuClick, TdApi.MessageSendOptions sendOptions) {
-    if (getArguments() != null) {
+    if (context.isKeyboardVisible()) {
+      context.hideSoftwareKeyboard();
+    } else if (getArguments() != null) {
       return getArguments().setEmojiStatus(clickView, sticker, 0);
     }
     return false;
@@ -891,9 +893,9 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
         LongList longList = new LongList(200);
         getCustomEmojiStatusList(new TdApi.GetThemedEmojiStatuses(), longList, () ->
           getCustomEmojiStatusList(new TdApi.GetRecentEmojiStatuses(), longList, () ->
-              //getCustomEmojiStatusList(new TdApi.GetDefaultEmojiStatuses(), longList, () ->
+            getCustomEmojiStatusList(new TdApi.GetDefaultEmojiStatuses(), longList, () ->
               tdlib.client().send(new TdApi.GetCustomEmojiStickers(longList.get()), serviceStickersHandler(null))
-            //)
+            )
           )
         );
       } else {
