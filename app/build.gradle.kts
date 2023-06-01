@@ -144,10 +144,14 @@ android {
 
   // Packaging
 
-  packagingOptions {
+  packaging {
     Config.SUPPORTED_ABI.forEach { abi ->
-      jniLibs.pickFirsts.add("lib/$abi/libc++_shared.so")
-      jniLibs.pickFirsts.add("tdlib/src/main/libs/$abi/libtdjni.so")
+      jniLibs.pickFirsts.let { set ->
+        set.add("lib/$abi/libc++_shared.so")
+        set.add("tdlib/openssl/$abi/lib/libcrypto.so")
+        set.add("tdlib/openssl/$abi/lib/libssl.so")
+        set.add("tdlib/src/main/libs/$abi/libtdjni.so")
+      }
     }
   }
 }

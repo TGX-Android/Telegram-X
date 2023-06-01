@@ -10,31 +10,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-import com.android.build.api.dsl.BaseFlavor
+import com.android.build.api.dsl.ApplicationBaseFlavor
 import com.android.build.api.dsl.VariantDimension
-import com.android.build.gradle.api.BaseVariant
+import com.android.build.gradle.api.ApplicationVariant
 import java.io.File
 import java.util.*
 
-fun BaseFlavor.buildConfigInt (name: String, value: Int) =
+fun ApplicationBaseFlavor.buildConfigInt (name: String, value: Int) =
   this.buildConfigField("int", name, value.toString())
-fun BaseFlavor.buildConfigLong (name: String, value: Long) =
+fun ApplicationBaseFlavor.buildConfigLong (name: String, value: Long) =
   this.buildConfigField("long", name, value.toString())
-fun BaseFlavor.buildConfigBool (name: String, value: Boolean) =
+fun ApplicationBaseFlavor.buildConfigBool (name: String, value: Boolean) =
   this.buildConfigField("boolean", name, value.toString())
-fun BaseFlavor.buildConfigString (name: String, value: String?) =
+fun ApplicationBaseFlavor.buildConfigString (name: String, value: String?) =
   this.buildConfigField("String", name, if (value != null) {
     "\"$value\""
   } else {
     "null"
   })
-fun BaseVariant.buildConfigInt (name: String, value: Int) =
+fun ApplicationVariant.buildConfigInt (name: String, value: Int) =
   this.buildConfigField("int", name, value.toString())
-fun BaseVariant.buildConfigLong (name: String, value: Long) =
+fun ApplicationVariant.buildConfigLong (name: String, value: Long) =
   this.buildConfigField("long", name, value.toString())
-fun BaseVariant.buildConfigBool (name: String, value: Boolean) =
+fun ApplicationVariant.buildConfigBool (name: String, value: Boolean) =
   this.buildConfigField("boolean", name, value.toString())
-fun BaseVariant.buildConfigString (name: String, value: String?) =
+fun ApplicationVariant.buildConfigString (name: String, value: String?) =
   this.buildConfigField("String", name, if (value != null) {
     "\"$value\""
   } else {
