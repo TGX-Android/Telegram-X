@@ -1238,6 +1238,7 @@ public class ForceTouchView extends FrameLayoutFix implements
     headerView.setShowVerify(user.isVerified);
     headerView.setShowScam(user.isScam);
     headerView.setShowFake(user.isFake);
+    headerView.setEmojiStatus(user);
     headerView.setText(TD.getUserName(user), tdlib.status().getPrivateChatSubtitle(user.id, user, false));
     setChatAvatar();
   }
@@ -1258,6 +1259,7 @@ public class ForceTouchView extends FrameLayoutFix implements
     headerView.setShowScam(tdlib.chatScam(chat));
     headerView.setShowFake(tdlib.chatFake(chat));
     headerView.setShowMute(tdlib.chatNeedsMuteIcon(chat));
+    headerView.setEmojiStatus(tdlib.chatUser(chat));
     if (messageThread != null) {
       headerView.setText(messageThread.chatHeaderTitle(), messageThread.chatHeaderSubtitle());
     } else {
