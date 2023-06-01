@@ -22,6 +22,7 @@ import com.android.build.gradle.AppExtension
 import com.android.build.gradle.BaseExtension
 import com.android.build.gradle.LibraryExtension
 import com.android.build.gradle.ProguardFiles
+import com.android.build.gradle.internal.dsl.BaseAppModuleExtension
 import getLongOrThrow
 import getOrThrow
 import loadProperties
@@ -291,10 +292,11 @@ open class ModulePlugin : Plugin<Project> {
               }
             }
 
-            buildTypes {
-              lintOptions {
-                disable("MissingTranslation")
-                isCheckDependencies = true
+            if (this is BaseAppModuleExtension) {
+              // FIXME[gradle]: lint is still not available through AppExtension
+              lint {
+                disable += "MissingTranslation"
+                checkDependencies = true
               }
             }
 

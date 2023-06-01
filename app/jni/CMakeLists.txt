@@ -536,7 +536,7 @@ target_compile_definitions(tgvoip PRIVATE
   TGVOIP_NO_GROUP_CALLS
   TGVOIP_PACKAGE_PATH="org/thunderdog/challegram/voip"
   TGVOIP_PEER_TAG_VARIABLE_NAME="peerTag"
-  TGVOIP_ENDPOINT_CLASS="org/drinkless/td/libcore/telegram/TdApi$CallServer"
+  TGVOIP_ENDPOINT_CLASS="org/drinkless/tdlib/TdApi$CallServer"
 
   USE_KISS_FFT
   WEBRTC_APM_DEBUG_DUMP=0
