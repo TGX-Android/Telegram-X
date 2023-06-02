@@ -79,7 +79,8 @@ public class TGStickerSetInfo {
   public TGStickerSetInfo (Tdlib tdlib, @NonNull TdApi.StickerSetInfo info) {
     this.tdlib = tdlib;
     this.info = info;
-    if (info.thumbnail != null) {
+    boolean iDontKnowHowFixThat = StringUtils.equalsOrBothEmpty(info.title, "Status Pack");
+    if (info.thumbnail != null && !iDontKnowHowFixThat) {
       this.previewOutline = info.thumbnailOutline;
       this.previewWidth = info.thumbnail.width;
       this.previewHeight = info.thumbnail.height;
@@ -115,7 +116,7 @@ public class TGStickerSetInfo {
       this.previewOutline = info.covers[0].outline;
       this.previewWidth = info.covers[0].width;
       this.previewHeight = info.covers[0].height;
-      if (Td.isAnimated(info.covers[0].format)) {
+      if (Td.isAnimated(info.covers[0].format) && !iDontKnowHowFixThat) {
         this.previewImage = null;
         this.previewAnimation = new GifFile(tdlib, info.covers[0].sticker, info.covers[0].format);
         this.previewAnimation.setOptimizationMode(GifFile.OptimizationMode.STICKER_PREVIEW);
