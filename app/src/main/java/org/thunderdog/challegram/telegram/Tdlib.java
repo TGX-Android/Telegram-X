@@ -2103,8 +2103,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
+  private void updateTdlibThread () {
+    tdlibThread = Thread.currentThread();
+  }
+
   public boolean inTdlibThread () {
-    return Thread.currentThread() == Client.getResponseReceiverThread();
+    if (tdlibThread != null) {
+      // FIXME[tdlib]: it is safe as long as there's just one thread for all apps
+      return Thread.currentThread() == tdlibThread;
+    } else {
+      // FIXME[tdlib]: more reliable way
+      final String tdlibThreadName = "TDLib thread";
+      return tdlibThreadName.equals(Thread.currentThread().getName());
+    }
   }
 
   public TdApi.Object clientExecute (TdApi.Function<?> function, long timeoutMs) {
@@ -5507,8 +5518,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
+  private Thread tdlibThread;
+
   private void updateParameters (Client client) {
-    Client.ResultHandler okHandler = okHandler();
+    Client.ResultHandler okHandler = object -> {
+      updateTdlibThread();
+      switch (object.getConstructor()) {
+        case TdApi.Ok.CONSTRUCTOR:
+          break;
+        case TdApi.Error.CONSTRUCTOR:
+          UI.showError(object);
+          break;
+      }
+    };
     final boolean isService = isServiceInstance();
     client.send(new TdApi.SetOption("use_quick_ack", new TdApi.OptionValueBoolean(true)), okHandler);
     client.send(new TdApi.SetOption("use_pfs", new TdApi.OptionValueBoolean(true)), okHandler);

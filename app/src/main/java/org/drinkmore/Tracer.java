@@ -35,7 +35,7 @@ import java.util.Locale;
 @SuppressWarnings("unused")
 public class Tracer {
   static String format (String message) {
-    return String.format(Locale.US, "Client fatal error (%d): %s", Client.getClientCount(), message);
+    return String.format(Locale.US, "Client fatal error: %s", message);
   }
 
   private static void throwError (Throwable throwable) {
