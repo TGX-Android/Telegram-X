@@ -349,6 +349,17 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
     return -1;
   }
 
+  private boolean isContainStickerSet (TdApi.StickerSetInfo stickerSet) {
+    if (stickerSets != null) {
+      for (TGStickerSetInfo oldStickerSet : stickerSets) {
+        if (stickerSet.id == oldStickerSet.getId()) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   private int indexOfSticker (TGStickerObj sticker) {
     if (stickerSets != null) {
       for (TGStickerSetInfo stickerSet : stickerSets) {
@@ -817,25 +828,25 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
           TdApi.StickerSetInfo[] rawStickerSets = ((TdApi.StickerSets) object).sets;
 
           final TdApi.Sticker[] recentStickers = pendingRecentStickers;
+          final TdApi.Sticker[] trendingStickers = pendingTrendingStickers;
           final ArrayList<TGStickerSetInfo> stickerSets = new ArrayList<>(rawStickerSets.length);
           final ArrayList<MediaStickersAdapter.StickerItem> items = new ArrayList<>();
           pendingRecentStickers = null;
+          pendingTrendingStickers = null;
 
           if (rawStickerSets.length == 0 && recentStickers.length == 0) {
-            items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_NO_STICKERSETS));
+            items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_NO_EMOJISETS));
           } else {
             items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_KEYBOARD_TOP));
             int startIndex = 1;
 
             final int totalRecentCount = recentStickers.length;
+            final int totalTrendingCount = trendingStickers.length;
             if (totalRecentCount > 0) {
               TGStickerSetInfo info = new TGStickerSetInfo(tdlib, recentStickers, false, totalRecentCount);
               info.setStartIndex(startIndex);
               stickerSets.add(info);
               items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_EMPTY, info));
-              if (needAddDefaultPremiumStar) {
-                items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_EMOJI_STATUS_DEFAULT, info));
-              }
               int remainingCount = totalRecentCount;
               for (TdApi.Sticker recentSticker : recentStickers) {
                 TGStickerObj sticker = new TGStickerObj(tdlib, recentSticker, null, recentSticker.fullType);
@@ -845,7 +856,28 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
                   break;
                 }
               }
-              startIndex += totalRecentCount + (needAddDefaultPremiumStar ? 2: 1);
+              startIndex += totalRecentCount + 1;
+            }
+
+            if (totalTrendingCount > 0) {
+              TGStickerSetInfo info = new TGStickerSetInfo(tdlib, trendingStickers, false, totalTrendingCount);
+              info.setStartIndex(startIndex);
+              info.setIsDefaultEmoji();
+              stickerSets.add(info);
+              items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_HEADER, info));
+              if (needAddDefaultPremiumStar) {
+                items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_EMOJI_STATUS_DEFAULT, info));
+              }
+              int remainingCount = totalTrendingCount;
+              for (TdApi.Sticker trendingSticker : trendingStickers) {
+                TGStickerObj sticker = new TGStickerObj(tdlib, trendingSticker, null, trendingSticker.fullType);
+                sticker.setIsRecent();
+                items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, sticker));
+                if (--remainingCount == 0) {
+                  break;
+                }
+              }
+              startIndex += totalTrendingCount + (needAddDefaultPremiumStar ? 2: 1);
             }
 
             for (TdApi.StickerSetInfo rawInfo : rawStickerSets) {
@@ -868,9 +900,11 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
 
           runOnUiThreadOptional(() -> {
             if (getArguments() != null) {
-              getArguments().setStickerSets(stickerSets, false, recentStickers.length > 0);
+              getArguments().setStickerSets(stickerSets, false, recentStickers.length > 0, trendingStickers.length > 0);
             }
             setStickers(stickerSets, items);
+            stickersLoaded = true;
+            loadNextTrending();
           });
 
           break;
@@ -883,20 +917,24 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
     };
   }
 
+  /* Loading functions */
+
   private boolean loadingStickers;
+  private boolean stickersLoaded;
 
   private void loadStickers () {
     if (!loadingStickers) {
       loadingStickers = true;
+      stickersLoaded = false;
 
       if (StringUtils.isEmpty(currentTextSearchRequest) && StringUtils.isEmpty(currentEmojiSearchRequest)) {
-        LongList longList = new LongList(200);
-        getCustomEmojiStatusList(new TdApi.GetThemedEmojiStatuses(), longList, () ->
-          getCustomEmojiStatusList(new TdApi.GetRecentEmojiStatuses(), longList, () ->
-            getCustomEmojiStatusList(new TdApi.GetDefaultEmojiStatuses(), longList, () ->
-              tdlib.client().send(new TdApi.GetCustomEmojiStickers(longList.get()), serviceStickersHandler(null))
-            )
-          )
+        LongList recentEmojiList = new LongList(200);
+        LongList trendingEmojiList = new LongList(200);
+        getCustomEmojiStatusList(new TdApi.GetThemedEmojiStatuses(), trendingEmojiList, () ->
+          getCustomEmojiStatusList(new TdApi.GetRecentEmojiStatuses(), recentEmojiList, () ->
+            getCustomEmojiStatusList(new TdApi.GetDefaultEmojiStatuses(), trendingEmojiList, () ->
+              getCustomEmojiStickers(trendingEmojiList.get(), trendingStickersHandler(() ->
+                getCustomEmojiStickers(recentEmojiList.get(), serviceStickersHandler(null))))))
         );
       } else {
         if (StringUtils.isEmpty(currentEmojiSearchRequest)) {
@@ -952,6 +990,25 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
     });
   }
 
+  private void getCustomEmojiStickers (long[] emojiIds, Client.ResultHandler resultHandler) {
+    tdlib.client().send(new TdApi.GetCustomEmojiStickers(emojiIds), resultHandler);
+  }
+
+  private Client.ResultHandler trendingStickersHandler (Runnable after) {
+    return object -> {
+      switch (object.getConstructor()) {
+        case TdApi.Stickers.CONSTRUCTOR: {
+          pendingTrendingStickers = ((TdApi.Stickers) object).stickers;
+          after.run();
+          break;
+        }
+        case TdApi.Error.CONSTRUCTOR: {
+          UI.showError(object);
+          break;
+        }
+      }
+    };
+  }
 
   private Client.ResultHandler serviceStickersHandler (final String setsQuery) {
     return object -> {
@@ -1078,7 +1135,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
               }
               stickerSets.remove(i);
               if (stickerSets.isEmpty()) {
-                stickersAdapter.setItem(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_NO_STICKERSETS));
+                stickersAdapter.setItem(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_NO_EMOJISETS));
               } else {
                 // Shifting next sticker sets bounds
                 int startIndex;
@@ -1165,6 +1222,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
   }
 
   private TdApi.Sticker[] pendingRecentStickers;
+  private TdApi.Sticker[] pendingTrendingStickers;
 
   @Override
   public void onSavedAnimationsUpdated (int[] animationIds) {
@@ -1194,11 +1252,78 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
     setStickers(new ArrayList<>(), new ArrayList<>());
     stickersAdapter.setItem(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_PROGRESS));
     if (getArguments() != null) {
-      getArguments().setStickerSets(stickerSets, false, false);
+      getArguments().setStickerSets(stickerSets, false, false, false);
     }
     currentTextSearchRequest = query;
     currentEmojiSearchRequest = emojiQuery;
     pendingRecentStickers = new TdApi.Sticker[0];
+    pendingTrendingStickers = new TdApi.Sticker[0];
     reloadStickers();
   }
+
+
+  /* Trending Sets */
+
+  private final ArrayList<TGStickerSetInfo> trendingSets = new ArrayList<>();
+  private boolean trendingLoading;
+  private boolean canLoadMoreTrending = true;
+  private int trendingOffset = 0;
+  private int trendingSkip = 0;
+  private @Nullable TGStickerSetInfo lastTrendingStickerSet;
+
+  private void loadNextTrending () {
+    if (!trendingLoading && stickersLoaded) {
+      trendingLoading = true;
+      tdlib.client().send(new TdApi.GetTrendingStickerSets(new TdApi.StickerTypeCustomEmoji(), trendingOffset, 25), object -> {
+        final ArrayList<TGStickerSetInfo> parsedStickerSets = new ArrayList<>();
+        final ArrayList<MediaStickersAdapter.StickerItem> items = new ArrayList<>();
+        final int offset = trendingOffset;
+
+        if (object.getConstructor() == TdApi.TrendingStickerSets.CONSTRUCTOR) {
+          TdApi.TrendingStickerSets trendingStickerSets = (TdApi.TrendingStickerSets) object;
+          trendingOffset += trendingStickerSets.sets.length;
+
+          ArrayList<TdApi.StickerSetInfo> filtered = new ArrayList<>();
+          for (TdApi.StickerSetInfo set: trendingStickerSets.sets) {
+            if (!isContainStickerSet(set)) {
+              filtered.add(set);
+            } else {
+              trendingSkip += 1;
+            }
+          }
+
+          EmojiMediaListController.parseTrending(tdlib, parsedStickerSets, items,  stickersAdapter.getItemCount(), filtered.toArray(new TdApi.StickerSetInfo[0]), this, null, false, true);
+        }
+
+        runOnUiThreadOptional(() -> {
+          addTrendingStickers(parsedStickerSets, items, offset);
+        });
+      });
+    }
+  }
+
+  private void addTrendingStickers (ArrayList<TGStickerSetInfo> trendingSets, ArrayList<MediaStickersAdapter.StickerItem> items, int offset) {
+    if (offset != 0 && (!trendingLoading /*|| (offset != this.trendingSets.size() + trendingSkip)*/))
+      return;
+
+    if (trendingSets != null) {
+      if (offset == 0) {
+        this.lastTrendingStickerSet = null;
+        this.trendingSets.clear();
+      }
+      this.trendingSets.addAll(trendingSets);
+      for (TGStickerSetInfo info: trendingSets) {
+        getArguments().addStickerSection(stickerSets.size(), info);
+        stickerSets.add(info);
+      }
+    }
+    this.canLoadMoreTrending = trendingSets != null && !trendingSets.isEmpty();
+
+    stickersAdapter.addItems(items);
+
+    this.trendingLoading = false;
+
+    loadNextTrending();
+  }
+
 }

@@ -542,7 +542,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
     this.trendingLoading = false;
   }
 
-  public static int parseTrending (Tdlib tdlib, ArrayList<TGStickerSetInfo> parsedStickerSets, ArrayList<MediaStickersAdapter.StickerItem> items, int offset, TdApi.StickerSetInfo[] stickerSets, TGStickerObj.DataProvider dataProvider, @Nullable TGStickerSetInfo.ViewCallback viewCallback, boolean needSeparators) {
+  public static int parseTrending (Tdlib tdlib, ArrayList<TGStickerSetInfo> parsedStickerSets, ArrayList<MediaStickersAdapter.StickerItem> items, int offset, TdApi.StickerSetInfo[] stickerSets, TGStickerObj.DataProvider dataProvider, @Nullable TGStickerSetInfo.ViewCallback viewCallback, boolean needSeparators, boolean isEmojiStatuses) {
     int unreadItemCount = 0;
     parsedStickerSets.ensureCapacity(stickerSets.length);
     items.ensureCapacity(items.size() + stickerSets.length * 2 + 1);
@@ -554,7 +554,11 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
       }
       TGStickerSetInfo stickerSet = new TGStickerSetInfo(tdlib, stickerSetInfo);
       stickerSet.setViewCallback(viewCallback);
-      stickerSet.setIsTrending();
+      if (isEmojiStatuses) {
+        stickerSet.setIsTrendingEmoji();
+      } else {
+        stickerSet.setIsTrending();
+      }
       if (needSeparators) {
         if (first) {
           first = false;
@@ -565,8 +569,12 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
       }
       parsedStickerSets.add(stickerSet);
       stickerSet.setStartIndex(startIndex);
-      items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_HEADER_TRENDING, stickerSet));
-      int itemCount = 5;
+      if (isEmojiStatuses) {
+        items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_HEADER, stickerSet));
+      } else {
+        items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_HEADER_TRENDING, stickerSet));
+      }
+      int itemCount = isEmojiStatuses ? stickerSetInfo.size :5;
       for (int i = 0; i < itemCount; i++) {
         TGStickerObj stickerObj = new TGStickerObj(tdlib, i < stickerSetInfo.covers.length ? stickerSetInfo.covers[i] : null, null, stickerSetInfo.stickerType);
         stickerObj.setStickerSetId(stickerSetInfo.id, null);
@@ -591,7 +599,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
           TdApi.TrendingStickerSets trendingStickerSets = (TdApi.TrendingStickerSets) object;
           if (offset == 0)
             items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_KEYBOARD_TOP));
-          unreadItemCount = parseTrending(tdlib, parsedStickerSets, items,  cellCount, trendingStickerSets.sets, EmojiMediaListController.this, EmojiMediaListController.this, false);
+          unreadItemCount = parseTrending(tdlib, parsedStickerSets, items,  cellCount, trendingStickerSets.sets, EmojiMediaListController.this, EmojiMediaListController.this, false, false);
         } else {
           if (offset == 0)
             items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_COME_AGAIN_LATER));
@@ -1685,7 +1693,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
       final ArrayList<MediaStickersAdapter.StickerItem> stickerItems = new ArrayList<>(sets.sets.length * 2 + 1);
       final ArrayList<TGStickerSetInfo> stickerSetInfos = new ArrayList<>(sets.sets.length);
       stickerItems.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_KEYBOARD_TOP));
-      final int unreadItemCount = parseTrending(tdlib, stickerSetInfos, stickerItems, 0, sets.sets, this, this, false);
+      final int unreadItemCount = parseTrending(tdlib, stickerSetInfos, stickerItems, 0, sets.sets, this, this, false, false);
       addTrendingStickers(stickerSetInfos, stickerItems, unreadItemCount > 0, 0);
     }
   }

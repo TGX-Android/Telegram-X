@@ -22,6 +22,7 @@ import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -73,6 +74,7 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
+import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 
 public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPreDrawListener, ViewPager.OnPageChangeListener, FactorAnimator.Target, View.OnClickListener, View.OnLongClickListener, Lang.Listener {
@@ -743,6 +745,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
       }
       // this.favoriteSection = new EmojiSection(parent, -4, R.drawable.baseline_star_border_24, R.drawable.baseline_star_24).setMakeFirstTransparent();
       this.recentSection = new EmojiSection(parent, -4, R.drawable.baseline_access_time_24, R.drawable.baseline_watch_later_24).setMakeFirstTransparent();
+      this.trendingSection = new EmojiSection(parent, -5, R.drawable.outline_whatshot_24, R.drawable.baseline_whatshot_24).setMakeFirstTransparent();
 
       this.selectedObject = selectedIsGifs ? headerItems.get(1) : recentSection;
       if (selectedIsGifs) {
@@ -775,8 +778,14 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
         if (hasRecents) {
           i++;
         }
+        if (hasTrending) {
+          i++;
+        }
       } else {
         if (showingRecentSection) {
+          i++;
+        }
+        if (showingTrendingSection) {
           i++;
         }
       }
@@ -794,6 +803,30 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
           notifyItemInserted(headerItems.size() - 1);
         } else {
           int i = headerItems.indexOf(recentSection);
+          if (i != -1) {
+            headerItems.remove(i);
+            notifyItemRemoved(i);
+          }
+        }
+      } else if (selectedObject != null) {
+        int i = indexOfObject(selectedObject);
+        if (i != -1) {
+          notifyItemRangeChanged(i, 2);
+        }
+      }
+    }
+
+    private boolean showingTrendingSection;
+
+    private void checkTrending () {
+      boolean showTrending = hasTrending;
+      if (this.showingTrendingSection != showTrending) {
+        this.showingTrendingSection = showTrending;
+        if (showTrending) {
+          headerItems.add(trendingSection);
+          notifyItemInserted(headerItems.size() - 1);
+        } else {
+          int i = headerItems.indexOf(trendingSection);
           if (i != -1) {
             headerItems.remove(i);
             notifyItemRemoved(i);
@@ -834,6 +867,15 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
       if (this.hasNewHots != hasHots) {
         this.hasNewHots = hasHots;
         // TODO
+      }
+    }
+
+    private boolean hasTrending;
+
+    public void setHasTrending (boolean hasTrending) {
+      if (this.hasTrending != hasTrending) {
+        this.hasTrending = hasTrending;
+        checkTrending();
       }
     }
 
@@ -892,6 +934,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
 
     private final ArrayList<TGStickerSetInfo> stickerSets;
     private final EmojiSection recentSection; // favoriteSection
+    private final EmojiSection trendingSection; // favoriteSection
 
     public void removeStickerSet (int index) {
       if (index >= 0 && index < stickerSets.size()) {
@@ -1303,8 +1346,13 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
   }
 
   public void setStickerSets (ArrayList<TGStickerSetInfo> stickers, boolean showFavorite, boolean showRecents) {
+    setStickerSets(stickers, showFavorite, showRecents, false);
+  }
+
+  public void setStickerSets (ArrayList<TGStickerSetInfo> stickers, boolean showFavorite, boolean showRecents, boolean showTrending) {
     mediaAdapter.setHasFavorite(showFavorite);
     mediaAdapter.setHasRecents(showRecents);
+    mediaAdapter.setHasTrending(showTrending);
     mediaAdapter.setStickerSets(stickers);
   }
 

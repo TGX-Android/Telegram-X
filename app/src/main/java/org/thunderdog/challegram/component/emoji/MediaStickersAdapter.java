@@ -562,6 +562,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
     public static final int TYPE_HEADER_TRENDING = 8;
     public static final int TYPE_SEPARATOR = 10;
     public static final int TYPE_EMOJI_STATUS_DEFAULT = 11;
+    public static final int TYPE_NO_EMOJISETS = 12;
 
     public StickerHolder (View itemView) {
       super(itemView);
@@ -739,6 +740,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
           return new StickerHolder(separatorView);
         }
         case TYPE_COME_AGAIN_LATER:
+        case TYPE_NO_EMOJISETS:
         case TYPE_NO_STICKERSETS: {
           TextView textView = new NoScrollTextView(context);
           textView.setTypeface(Fonts.getRobotoRegular());
@@ -749,7 +751,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
           }
           textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
           textView.setSingleLine(true);
-          textView.setText(Lang.getString(viewType == TYPE_COME_AGAIN_LATER ? R.string.ComeAgainLater : R.string.NoStickerSets));
+          textView.setText(Lang.getString(viewType == TYPE_NO_EMOJISETS ? R.string.NoEmojiSetsFound: viewType == TYPE_COME_AGAIN_LATER ? R.string.ComeAgainLater : R.string.NoStickerSets));
           textView.setGravity(Gravity.CENTER);
           textView.setEllipsize(TextUtils.TruncateAt.END);
           //noinspection ResourceType

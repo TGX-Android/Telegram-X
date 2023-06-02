@@ -1005,6 +1005,7 @@
   <string name="Default">Default</string>
   <string name="OnlyIfSilent">Only on silent</string>
   <string name="NoStickerSets">No sticker sets installed</string>
+  <string name="NoEmojiSetsFound">No emoji status found</string>
   <string name="NoMasks">No masks installed</string>
   <string name="ArchivedStickersInfo">You can have up to %1$s sticker sets installed. Unused stickers are archived when you install new sets.</string>
   <string name="MasksHint">In future versions, you will be able to add masks to photos and videos you send.</string>
@@ -2086,6 +2087,7 @@
   <string name="UntilX">Until %1$s</string>
   <string name="NetworkUsage">Network Usage</string>
   <string name="RecentStickers">Recently Used</string>
+  <string name="TrendingStatuses">Trending statuses</string>
   <string name="AddToFavorites">Add to Favorites</string>
   <string name="RemoveFromFavorites">Remove from Favorites</string>
   <string name="HoldToAudio">Hold to record audio. Tap to switch to video.</string>
