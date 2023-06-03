@@ -325,6 +325,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
   public void onEnterEmoji (String emoji) {
     closeEmojiSelectMode();
     setSearchInput(emojiSearchRequest = emoji);
+    getSearchHeaderView(headerView).setEnabled(false);
   }
 
   private boolean inEmojiSelectMode;
@@ -348,6 +349,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
   protected void onEnterSearchMode () {
     super.onEnterSearchMode();
     searchModeVisibility.setValue(true, true);
+    getSearchHeaderView(headerView).setEnabled(true);
     scheduleScrollOffsetDisable();
   }
 
@@ -356,7 +358,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
     super.onAfterLeaveSearchMode();
     if (!inEmojiSelectMode) {
       emojiCustomListController.search(currentSearchInput = null, emojiSearchRequest = null);
-      setScrollOffsetDisabled(false);
+      UI.post(() -> setScrollOffsetDisabled(false), 250);
       searchModeVisibility.setValue(false, true);
     }
   }
@@ -380,7 +382,11 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
   public void scheduleScrollOffsetDisable () {
     isScrollOffsetDisableScheduled = true;
     final int top = parent.getTopEdge();
-    runOnUiThread(() -> smoothScrollBy(top), 50);
+    if (top > 0) {
+      runOnUiThread(() -> smoothScrollBy(top), 50);
+    } else {
+      setScrollOffsetDisabled(true);
+    }
   }
 
   public boolean isScrollOffsetDisableScheduled () {

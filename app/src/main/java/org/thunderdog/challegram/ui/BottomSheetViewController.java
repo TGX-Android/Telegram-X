@@ -4,6 +4,7 @@ import android.animation.Animator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Rect;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -514,6 +515,15 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
         final int itemsHeight = isUnknown ? view.getMeasuredHeight() : page.getItemsHeight(parent);
         final int parentHeight = parent.getMeasuredHeight();
         bottom = parentHeight - itemsHeight;
+      }
+
+      if (position == 0 || position == itemCount - 1 || isUnknown) {
+        Log.i("OFFSETS_DEBUG", ""
+          + page.needTopDecorationOffsets(parent) + " "
+          + (page.needTopDecorationOffsets(parent) ? Math.max(top, 0) : 0) + " "
+          + page.needBottomDecorationOffsets(parent) + " "
+          + (page.needBottomDecorationOffsets(parent) ? Math.max(0, bottom) : 0)
+        );
       }
 
       outRect.set(

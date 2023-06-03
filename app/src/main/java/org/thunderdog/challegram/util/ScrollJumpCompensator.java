@@ -1,5 +1,6 @@
 package org.thunderdog.challegram.util;
 
+import android.util.Log;
 import android.view.View;
 import android.view.ViewTreeObserver;
 
@@ -24,6 +25,7 @@ public class ScrollJumpCompensator implements ViewTreeObserver.OnGlobalLayoutLis
   public void onGlobalLayout () {
     if (offset != 0) {
       recyclerView.scrollBy(0, offset);
+      Log.i("OFFSETS_DEBUG", "SCROLL " + offset);
       offset = 0;
     }
 
