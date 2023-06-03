@@ -41,7 +41,6 @@ import com.google.android.gms.location.LocationSettingsResponse;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
 import com.google.android.gms.tasks.Task;
 
-import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
@@ -55,7 +54,6 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.ActivityPermissionResult;
 
 import me.vkryl.core.lambda.CancellableRunnable;
-import me.vkryl.core.lambda.RunnableData;
 
 public class LocationHelper implements ActivityResultHandler {
   // static API

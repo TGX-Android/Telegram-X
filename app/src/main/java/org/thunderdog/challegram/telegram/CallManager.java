@@ -27,7 +27,7 @@ import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
@@ -42,7 +42,6 @@ import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.CallController;
 import org.thunderdog.challegram.unsorted.Settings;
-import org.thunderdog.challegram.util.ActivityPermissionResult;
 import org.thunderdog.challegram.voip.VoIPController;
 import org.thunderdog.challegram.voip.VoIPServerConfig;
 import org.thunderdog.challegram.voip.gui.CallSettings;

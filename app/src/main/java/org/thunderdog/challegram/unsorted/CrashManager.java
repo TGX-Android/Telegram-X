@@ -21,12 +21,10 @@ import android.os.Process;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.drinkless.td.libcore.telegram.ClientError;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.tool.UI;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -35,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import me.vkryl.core.StringUtils;
+import me.vkryl.td.Td;
 
 public class CrashManager {
   private static CrashManager instance;
@@ -142,19 +141,12 @@ public class CrashManager {
     isCrashing.set(false);
     if (defaultHandler != null) {
       Thread.setDefaultUncaughtExceptionHandler(defaultHandler);
-      defaultHandler.uncaughtException(thread, normalizeError(ex));
+      defaultHandler.uncaughtException(thread, Td.normalizeError(ex));
       Thread.setDefaultUncaughtExceptionHandler(crashHandler);
     } else {
       Process.killProcess(Process.myPid());
       System.exit(10);
     }
-  }
-
-  private static Throwable normalizeError (Throwable t) {
-    if (t instanceof ClientError) {
-      return ((ClientError) t).withoutPotentiallyPrivateData();
-    }
-    return t;
   }
 
   public void crash (@Nullable String description, @NonNull Throwable ex) {

@@ -16,7 +16,7 @@ package org.thunderdog.challegram.telegram;
 
 import androidx.annotation.Nullable;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 
 public interface MessageListener {
   default void onNewMessage (TdApi.Message message) { }

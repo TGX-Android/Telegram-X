@@ -14,7 +14,7 @@ package org.thunderdog.challegram.telegram;
 
 import androidx.annotation.IntDef;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

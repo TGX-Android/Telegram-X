@@ -12,7 +12,7 @@
  */
 package org.thunderdog.challegram.telegram;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 
 public interface PrivacySettingsListener {
   void onPrivacySettingRulesChanged (TdApi.UserPrivacySetting setting, TdApi.UserPrivacySettingRules rules);

@@ -21,8 +21,7 @@ import android.view.View;
 import androidx.annotation.Nullable;
 import androidx.palette.graphics.Palette;
 
-import org.drinkless.td.libcore.telegram.TdApi;
-import org.thunderdog.challegram.R;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.telegram.Tdlib;

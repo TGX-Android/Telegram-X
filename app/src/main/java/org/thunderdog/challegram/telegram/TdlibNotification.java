@@ -28,7 +28,7 @@ import androidx.annotation.Nullable;
 import androidx.collection.LongSparseArray;
 import androidx.collection.SparseArrayCompat;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.TDLib;
 import org.thunderdog.challegram.config.Config;

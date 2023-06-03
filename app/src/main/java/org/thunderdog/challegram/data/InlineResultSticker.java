@@ -16,12 +16,10 @@ package org.thunderdog.challegram.data;
 
 import androidx.annotation.NonNull;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.telegram.Tdlib;
-
-import me.vkryl.td.Td;
 
 public class InlineResultSticker extends InlineResult<TdApi.InlineQueryResultSticker> {
   private final TGStickerObj sticker;

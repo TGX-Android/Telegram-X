@@ -14,8 +14,8 @@
  */
 package org.thunderdog.challegram.loader;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.telegram.TdlibProvider;
 

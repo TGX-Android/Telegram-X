@@ -31,7 +31,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.collection.SparseArrayCompat;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.helper.LiveLocationHelper;
@@ -85,8 +85,8 @@ import org.thunderdog.challegram.ui.SettingsNotificationController;
 import org.thunderdog.challegram.ui.SettingsPrivacyController;
 import org.thunderdog.challegram.ui.SettingsPrivacyKeyController;
 import org.thunderdog.challegram.ui.SettingsThemeController;
-import org.thunderdog.challegram.util.Crash;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.Crash;
 import org.thunderdog.challegram.widget.GearView;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 

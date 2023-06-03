@@ -20,8 +20,8 @@ import android.os.SystemClock;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 import org.drinkmore.Tracer;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
@@ -40,8 +40,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import me.vkryl.core.StringUtils;
 import me.vkryl.core.BitwiseUtils;
+import me.vkryl.core.StringUtils;
 import me.vkryl.leveldb.LevelDB;
 import me.vkryl.td.Td;
 

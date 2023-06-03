@@ -18,8 +18,8 @@ import androidx.annotation.IntDef;
 import androidx.annotation.Keep;
 import androidx.annotation.Nullable;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.data.TD;
@@ -35,7 +35,7 @@ import java.util.Locale;
 @SuppressWarnings("unused")
 public class Tracer {
   static String format (String message) {
-    return String.format(Locale.US, "Client fatal error (%d): %s", Client.getClientCount(), message);
+    return String.format(Locale.US, "Client fatal error: %s", message);
   }
 
   private static void throwError (Throwable throwable) {

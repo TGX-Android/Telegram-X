@@ -18,7 +18,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.core.BaseThread;
 
 public class GifBridgeThread extends BaseThread {

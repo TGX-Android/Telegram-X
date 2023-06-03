@@ -3,7 +3,7 @@ package org.thunderdog.challegram.charts;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 
 public class MiniChart {
   public final @StringRes int titleRes;

@@ -20,7 +20,7 @@ import android.graphics.Rect;
 import android.view.View;
 import android.view.ViewGroup;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.DoubleTextWrapper;
 import org.thunderdog.challegram.loader.AvatarReceiver;

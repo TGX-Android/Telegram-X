@@ -33,8 +33,8 @@ import androidx.collection.LongSparseArray;
 import androidx.collection.SparseArrayCompat;
 import androidx.core.os.CancellationSignal;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 import org.drinkmore.Tracer;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
@@ -55,8 +55,8 @@ import org.thunderdog.challegram.loader.ImageLoader;
 import org.thunderdog.challegram.loader.gif.GifBridge;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.sync.SyncHelper;
-import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Passcode;
@@ -258,7 +258,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     public ClientHolder (Tdlib tdlib) {
       Log.i(Log.TAG_ACCOUNTS, "Creating client #%d", runningClients.incrementAndGet());
       this.tdlib = tdlib;
-      this.client = Client.create(this, this, this, tdlib.isDebugInstance());
+      this.client = Client.create(this, this, this);
       tdlib.updateParameters(client);
       if (Config.NEED_ONLINE) {
         if (tdlib.isOnline) {
@@ -387,7 +387,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     public void close () {
       Log.i(Log.TAG_ACCOUNTS, "Calling client.close(), accountId:%d", tdlib.accountId);
       long ms = SystemClock.uptimeMillis();
-      client.close();
+      // Nothing to do anymore?
+      // client.close();
       Log.i(Log.TAG_ACCOUNTS, "client.close() done in %dms, accountId:%d, accountsNum:%d", SystemClock.uptimeMillis() - ms, tdlib.accountId, runningClients.decrementAndGet());
     }
 
@@ -1637,11 +1638,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public void wakeUp () {
     synchronized (clientLock) {
-      if (client == null || !instancePaused || Thread.currentThread() != client.client.getThread()) {
+      if (client == null || !instancePaused || !inTdlibThread()) {
         clientHolderUnsafe();
         return;
       }
     }
+    //FIXME?
     new Thread(this::clientHolder).start();
   }
 
@@ -1745,7 +1747,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
     if (!instancePaused)
       return client;
-    if (Thread.currentThread() == client.client.getThread())
+    if (inTdlibThread())
       throw new IllegalStateException();
     return null;
   }
@@ -2101,8 +2103,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
+  private void updateTdlibThread () {
+    tdlibThread = Thread.currentThread();
+  }
+
   public boolean inTdlibThread () {
-    return Thread.currentThread() == client().getThread();
+    if (tdlibThread != null) {
+      // FIXME[tdlib]: it is safe as long as there's just one thread for all apps
+      return Thread.currentThread() == tdlibThread;
+    } else {
+      // FIXME[tdlib]: more reliable way
+      final String tdlibThreadName = "TDLib thread";
+      return tdlibThreadName.equals(Thread.currentThread().getName());
+    }
   }
 
   public TdApi.Object clientExecute (TdApi.Function<?> function, long timeoutMs) {
@@ -5505,8 +5518,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
+  private Thread tdlibThread;
+
   private void updateParameters (Client client) {
-    Client.ResultHandler okHandler = okHandler();
+    Client.ResultHandler okHandler = object -> {
+      updateTdlibThread();
+      switch (object.getConstructor()) {
+        case TdApi.Ok.CONSTRUCTOR:
+          break;
+        case TdApi.Error.CONSTRUCTOR:
+          UI.showError(object);
+          break;
+      }
+    };
     final boolean isService = isServiceInstance();
     client.send(new TdApi.SetOption("use_quick_ack", new TdApi.OptionValueBoolean(true)), okHandler);
     client.send(new TdApi.SetOption("use_pfs", new TdApi.OptionValueBoolean(true)), okHandler);

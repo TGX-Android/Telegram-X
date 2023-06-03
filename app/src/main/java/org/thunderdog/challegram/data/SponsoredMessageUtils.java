@@ -12,13 +12,11 @@
  */
 package org.thunderdog.challegram.data;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.Tdlib;
-
-import me.vkryl.core.MathUtils;
 
 public class SponsoredMessageUtils {
   public static final String TELEGRAM_AD_TYPE = "telegram_adx";

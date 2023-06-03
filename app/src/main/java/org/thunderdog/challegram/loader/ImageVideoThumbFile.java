@@ -14,7 +14,7 @@
  */
 package org.thunderdog.challegram.loader;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.telegram.Tdlib;
 
 public class ImageVideoThumbFile extends ImageFile {
