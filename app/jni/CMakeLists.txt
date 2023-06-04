@@ -216,7 +216,7 @@ add_library(tgvoip STATIC
   ${TGVOIP_DIR}/os/posix/NetworkSocketPosix.cpp
   ${TGVOIP_DIR}/PacketReassembler.cpp
   ${TGVOIP_DIR}/MessageThread.cpp
-  ${TGVOIP_DIR}/json11.cpp
+  ${TGVOIP_DIR}/json/json11.cpp
   ${TGVOIP_DIR}/audio/AudioIO.cpp
   ${TGVOIP_DIR}/video/VideoRenderer.cpp
   ${TGVOIP_DIR}/video/VideoSource.cpp
@@ -537,6 +537,7 @@ target_compile_definitions(tgvoip PRIVATE
   TGVOIP_PACKAGE_PATH="org/thunderdog/challegram/voip"
   TGVOIP_PEER_TAG_VARIABLE_NAME="peerTag"
   TGVOIP_ENDPOINT_CLASS="org/drinkless/tdlib/TdApi$CallServer"
+  TGVOIP_ENDPOINT_TYPE_CLASS="org/drinkless/tdlib/TdApi$CallServerType"
 
   USE_KISS_FFT
   WEBRTC_APM_DEBUG_DUMP=0
@@ -549,6 +550,7 @@ target_compile_definitions(tgvoip PRIVATE
 target_include_directories(tgvoip PRIVATE
   ${OPUS_DIR}/include
   ${TGVOIP_DIR}/webrtc_dsp
+  ${TGVOIP_DIR}/json
   .
 )
 target_compile_options(tgvoip PRIVATE
