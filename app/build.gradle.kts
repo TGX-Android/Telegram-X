@@ -164,7 +164,7 @@ gradle.projectsEvaluated {
     "updateExceptions"
   )
   Abi.VARIANTS.forEach { (_, variant) ->
-    tasks.getByName("pre${variant.flavor[0].toUpperCase() + variant.flavor.substring(1)}ReleaseBuild").let { task ->
+    tasks.getByName("pre${variant.flavor[0].uppercaseChar() + variant.flavor.substring(1)}ReleaseBuild").let { task ->
       task.dependsOn("updateLanguages")
       if (!isExperimentalBuild) {
         task.dependsOn("validateApiTokens")

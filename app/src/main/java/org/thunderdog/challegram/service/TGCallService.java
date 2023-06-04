@@ -73,6 +73,7 @@ import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.SoundPoolMap;
+import org.thunderdog.challegram.voip.NetworkStats;
 import org.thunderdog.challegram.voip.VoIPController;
 import org.thunderdog.challegram.voip.gui.CallSettings;
 import org.thunderdog.challegram.voip.gui.VoIPFeedbackActivity;
@@ -1111,7 +1112,7 @@ public class TGCallService extends Service implements
     }
   }
 
-  private VoIPController.Stats stats = new VoIPController.Stats(), prevStats = new VoIPController.Stats();
+  private NetworkStats stats = new NetworkStats(), prevStats = new NetworkStats();
   private long prevDuration;
 
   private void updateStats () {
@@ -1128,7 +1129,7 @@ public class TGCallService extends Service implements
     long mobileReceivedDiff = stats.bytesRecvdMobile - prevStats.bytesRecvdMobile;
     double durationDiff = (double) Math.max(0, newDuration - prevDuration) / 1000d;
 
-    VoIPController.Stats tmp = stats;
+    NetworkStats tmp = stats;
     stats = prevStats;
     prevStats = tmp;
     prevDuration = newDuration;

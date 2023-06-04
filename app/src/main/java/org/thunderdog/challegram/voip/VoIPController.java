@@ -236,7 +236,7 @@ public class VoIPController{
     return nativeGetLastError(nativeInst);
   }
 
-  public void getStats(Stats stats){
+  public void getStats(NetworkStats stats){
     ensureNativeInstance();
     if(stats==null)
       throw new NullPointerException("You're not supposed to pass null here");
@@ -330,7 +330,7 @@ public class VoIPController{
   private native void nativeSetNetworkType(long inst, int type);
   private native void nativeSetMicMute(long inst, boolean mute);
   private native void nativeDebugCtl(long inst, int request, int param);
-  private native void nativeGetStats(long inst, Stats stats);
+  private native void nativeGetStats(long inst, NetworkStats stats);
   private native void nativeSetConfig(long inst, double recvTimeout, double initTimeout, int dataSavingOption, boolean enableAEC, boolean enableNS, boolean enableAGC, String logFilePath, String statsDumpPath, boolean logPacketStats);
   private native void nativeSetEncryptionKey(long inst, byte[] key, boolean isOutgoing);
   private native void nativeSetProxy(long inst, String address, int port, String username, String password);
@@ -354,22 +354,5 @@ public class VoIPController{
     void onGroupCallKeyReceived(byte[] key);
     void onGroupCallKeySent();
     void onCallUpgradeRequestReceived();
-  }
-
-  public static class Stats{
-    public long bytesSentWifi;
-    public long bytesRecvdWifi;
-    public long bytesSentMobile;
-    public long bytesRecvdMobile;
-
-    @Override
-    public String toString(){
-      return "Stats{"+
-        "bytesRecvdMobile="+bytesRecvdMobile+
-        ", bytesSentWifi="+bytesSentWifi+
-        ", bytesRecvdWifi="+bytesRecvdWifi+
-        ", bytesSentMobile="+bytesSentMobile+
-        '}';
-    }
   }
 }
