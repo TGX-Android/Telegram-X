@@ -17,7 +17,7 @@ package org.thunderdog.challegram.data;
 import android.graphics.Canvas;
 import android.text.TextUtils;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.inline.CustomResultView;

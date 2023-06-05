@@ -16,7 +16,7 @@ package org.thunderdog.challegram.telegram;
 
 import androidx.annotation.Nullable;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 
 public interface ChatListener extends ForumTopicInfoListener {
   default void onChatTopMessageChanged (long chatId, @Nullable TdApi.Message topMessage) { }

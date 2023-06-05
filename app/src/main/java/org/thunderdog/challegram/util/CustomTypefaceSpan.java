@@ -22,17 +22,17 @@ import android.view.View;
 
 import androidx.annotation.Nullable;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.component.chat.WallpaperView;
-import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.theme.ThemeId;
 import org.thunderdog.challegram.theme.ThemeSet;
 import org.thunderdog.challegram.tool.Screen;
 
-import me.vkryl.core.ColorUtils;
 import me.vkryl.core.BitwiseUtils;
+import me.vkryl.core.ColorUtils;
 
 public class CustomTypefaceSpan extends MetricAffectingSpan {
   private static final int FLAG_FAKE_BOLD = 1;

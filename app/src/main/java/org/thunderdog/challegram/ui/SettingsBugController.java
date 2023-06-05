@@ -26,9 +26,7 @@ import androidx.annotation.Nullable;
 
 import com.google.firebase.FirebaseOptions;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.ClientError;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.drinkmore.Tracer;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
@@ -1097,9 +1095,6 @@ public class SettingsBugController extends RecyclerViewController<SettingsBugCon
       Settings.instance().storeTestCrash(new Crash.Builder(tdlib.id(), text)
         .flags(Crash.Flags.SOURCE_TDLIB)
       );
-      ClientError clientLogicError = new Client.ClientLogicError(text, Client.getClientCount(), false)
-        .withoutPotentiallyPrivateData();
-      Log.i("Output client error", clientLogicError);
       System.exit(0);
     } else if (viewId == R.id.btn_test_crash1) {
       Tracer.test1("[SUCCESS] INDIRECT " + MathUtils.random(0, 10000));

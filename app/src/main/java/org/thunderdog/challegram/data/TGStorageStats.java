@@ -19,7 +19,7 @@ import android.util.SparseIntArray;
 import androidx.annotation.NonNull;
 import androidx.collection.LongSparseArray;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.telegram.Tdlib;

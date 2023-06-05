@@ -9,7 +9,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.Px;
 import androidx.core.util.ObjectsCompat;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ComplexReceiver;

@@ -14,7 +14,7 @@
  */
 package org.thunderdog.challegram.component.attach;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.telegram.TdlibProvider;
 

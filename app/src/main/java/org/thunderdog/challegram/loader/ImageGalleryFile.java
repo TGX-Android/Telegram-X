@@ -14,7 +14,7 @@
  */
 package org.thunderdog.challegram.loader;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.filegen.PhotoGenerationInfo;
@@ -26,8 +26,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import me.vkryl.core.MathUtils;
 import me.vkryl.core.BitwiseUtils;
+import me.vkryl.core.MathUtils;
 import me.vkryl.td.Td;
 
 public class ImageGalleryFile extends ImageFile implements Comparable<ImageGalleryFile> {

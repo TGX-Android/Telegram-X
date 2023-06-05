@@ -21,7 +21,7 @@ import androidx.annotation.Keep;
 import androidx.annotation.UiThread;
 import androidx.collection.ArraySet;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.telegram.Tdlib;

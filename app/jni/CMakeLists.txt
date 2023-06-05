@@ -91,7 +91,7 @@ endforeach()
 
 set(ADD_LINKER_FLAGS
   -Wl,--gc-sections,--icf=safe
-  -Wl,--build-id=none
+  -Wl,--build-id=sha1
 )
 set(EXCLUDE_LIBS
   libjni-utils.a
@@ -127,15 +127,27 @@ set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${ADD_LINKER_FLAGS}"
 
 # tdjni
 
+add_library(crypto SHARED IMPORTED)
+set_target_properties(crypto PROPERTIES IMPORTED_LOCATION
+  ${TDLIB_DIR}/openssl/${ANDROID_ABI}/lib/libcrypto.so
+)
+add_library(ssl SHARED IMPORTED)
+set_target_properties(ssl PROPERTIES IMPORTED_LOCATION
+  ${TDLIB_DIR}/openssl/${ANDROID_ABI}/lib/libssl.so
+)
+if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.11.0")
+  target_include_directories(crypto INTERFACE
+    ${TDLIB_DIR}/openssl/${ANDROID_ABI}/include
+  )
+  target_include_directories(ssl INTERFACE
+    ${TDLIB_DIR}/openssl/${ANDROID_ABI}/include
+  )
+endif()
+
 add_library(tdjni SHARED IMPORTED)
 set_target_properties(tdjni PROPERTIES IMPORTED_LOCATION
   ${TDLIB_DIR}/src/main/libs/${ANDROID_ABI}/libtdjni.so
 )
-if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.11.0")
-  target_include_directories(tdjni INTERFACE
-    ${TDLIB_DIR}/include
-  )
-endif()
 
 # flac
 
@@ -204,7 +216,7 @@ add_library(tgvoip STATIC
   ${TGVOIP_DIR}/os/posix/NetworkSocketPosix.cpp
   ${TGVOIP_DIR}/PacketReassembler.cpp
   ${TGVOIP_DIR}/MessageThread.cpp
-  ${TGVOIP_DIR}/json11.cpp
+  ${TGVOIP_DIR}/json/json11.cpp
   ${TGVOIP_DIR}/audio/AudioIO.cpp
   ${TGVOIP_DIR}/video/VideoRenderer.cpp
   ${TGVOIP_DIR}/video/VideoSource.cpp
@@ -524,7 +536,8 @@ target_compile_definitions(tgvoip PRIVATE
   TGVOIP_NO_GROUP_CALLS
   TGVOIP_PACKAGE_PATH="org/thunderdog/challegram/voip"
   TGVOIP_PEER_TAG_VARIABLE_NAME="peerTag"
-  TGVOIP_ENDPOINT_CLASS="org/drinkless/td/libcore/telegram/TdApi$CallServer"
+  TGVOIP_ENDPOINT_CLASS="org/drinkless/tdlib/TdApi$CallServer"
+  TGVOIP_ENDPOINT_TYPE_CLASS="org/drinkless/tdlib/TdApi$CallServerType"
 
   USE_KISS_FFT
   WEBRTC_APM_DEBUG_DUMP=0
@@ -537,6 +550,7 @@ target_compile_definitions(tgvoip PRIVATE
 target_include_directories(tgvoip PRIVATE
   ${OPUS_DIR}/include
   ${TGVOIP_DIR}/webrtc_dsp
+  ${TGVOIP_DIR}/json
   .
 )
 target_compile_options(tgvoip PRIVATE
@@ -914,6 +928,8 @@ target_compile_options(${NATIVE_LIB} PUBLIC
 # == Linking dependencies ==
 
 target_link_libraries(${NATIVE_LIB}
+  crypto
+  ssl
   tdjni
   jni-utils
   flac

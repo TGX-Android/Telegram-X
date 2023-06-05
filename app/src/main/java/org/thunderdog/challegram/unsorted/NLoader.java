@@ -73,6 +73,8 @@ public class NLoader implements ReLinker.Logger {
         if (Config.SO_SHARED) {
           libraries.add("c++_shared");
         }
+        libraries.add("crypto");
+        libraries.add("ssl");
         libraries.add("tdjni");
         libraries.add("leveldbjni");
         libraries.add("challegram.23");

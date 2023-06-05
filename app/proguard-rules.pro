@@ -26,6 +26,10 @@
 -keep class org.thunderdog.challegram.N { *; }
 -keep class org.thunderdog.challegram.N$* { *; }
 -keepclassmembers class org.thunderdog.challegram.N { *; }
+# Keep TdApi.java
+-keep class org.drinkless.tdlib.TdApi { *; }
+-keep class org.drinkless.tdlib.TdApi$* { *; }
+-keepclassmembers class org.drinkless.tdlib.TdApi { *; }
 # Keep log
 -keep class org.thunderdog.challegram.Log
 -keepclassmembers class org.thunderdog.challegram.Log { *; }

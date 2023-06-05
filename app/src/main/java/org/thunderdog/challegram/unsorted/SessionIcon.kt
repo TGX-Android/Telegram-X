@@ -13,7 +13,7 @@
 package org.thunderdog.challegram.unsorted
 
 import androidx.annotation.DrawableRes
-import org.drinkless.td.libcore.telegram.TdApi.*
+import org.drinkless.tdlib.TdApi.*
 import org.thunderdog.challegram.R
 
 @DrawableRes

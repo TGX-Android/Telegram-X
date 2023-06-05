@@ -40,7 +40,7 @@ import androidx.collection.LongSparseArray;
 
 import com.google.android.gms.maps.MapsInitializer;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
