@@ -27,9 +27,6 @@ patch-opus-impl.sh
 # Patch ExoPlayer sources
 patch-exoplayer-impl.sh
 
-# Build OpenSSL
-build-openssl-impl.sh
-
 # Build and configure libvpx
 build-vpx-impl.sh
 
