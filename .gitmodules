@@ -1,6 +1,6 @@
 [submodule "webp"]
 	path = app/jni/third_party/webp
-	url = https://github.com/webmproject/libwebp.git
+	url = https://github.com/webmproject/libwebp
 	shallow = true
 [submodule "libyuv"]
 	path = app/jni/third_party/libyuv
@@ -8,8 +8,9 @@
 	shallow = true
 [submodule "libtgvoip"]
 	path = app/jni/third_party/libtgvoip
-	url = https://github.com/TGX-Android/libtgvoip.git
+	url = https://github.com/TGX-Android/libtgvoip
 	shallow = true
+	branch = tgx
 [submodule "ffmpeg"]
 	path = app/jni/third_party/ffmpeg
 	url = https://github.com/FFmpeg/FFmpeg
@@ -20,60 +21,64 @@
 	shallow = true
 [submodule "ExoPlayer"]
 	path = thirdparty/ExoPlayer
-	url = https://github.com/google/ExoPlayer.git
+	url = https://github.com/google/ExoPlayer
 	shallow = true
+	branch = release-v2
 [submodule "flac"]
 	path = app/jni/third_party/flac
-	url = https://github.com/xiph/flac.git
+	url = https://github.com/xiph/flac
 	shallow = true
 [submodule "opus"]
 	path = app/jni/third_party/opus
-	url = https://github.com/xiph/opus.git
+	url = https://github.com/xiph/opus
 	shallow = true
 [submodule "opusfile"]
 	path = app/jni/third_party/opusfile
-	url = https://github.com/xiph/opusfile.git
+	url = https://github.com/xiph/opusfile
 	shallow = true
 [submodule "ogg"]
 	path = app/jni/third_party/ogg
-	url = https://github.com/xiph/ogg.git
+	url = https://github.com/xiph/ogg
 	shallow = true
 [submodule "libvpx"]
 	path = app/jni/third_party/libvpx
-	url = https://github.com/webmproject/libvpx.git
+	url = https://github.com/webmproject/libvpx
 	shallow = true
 [submodule "tdlib"]
 	path = tdlib
 	url = https://github.com/TGX-Android/tdlib
 	shallow = true
+	branch = main
 [submodule "jni-utils"]
 	path = app/jni/third_party/jni-utils
 	url = https://github.com/TGX-Android/jni-utils
 	shallow = true
+	branch = main
 [submodule "vkryl/leveldb"]
 	path = vkryl/leveldb
 	url = https://github.com/TGX-Android/leveldb
 	shallow = true
+	branch = main
 [submodule "vkryl/core"]
 	path = vkryl/core
-	url = https://github.com/TGX-Android/X-Core.git
+	url = https://github.com/TGX-Android/X-Core
 	shallow = true
+	branch = main
 [submodule "rlottie"]
 	path = app/jni/third_party/rlottie
 	url = https://github.com/TGX-Android/rlottie
 	shallow = true
+	branch = main
 [submodule "vkryl/td"]
 	path = vkryl/td
-	url = https://github.com/TGX-Android/tdlib-utils.git
+	url = https://github.com/TGX-Android/tdlib-utils
 	shallow = true
+	branch = main
 [submodule "vkryl/android"]
 	path = vkryl/android
-	url = https://github.com/TGX-Android/X-Android.git
+	url = https://github.com/TGX-Android/X-Android
 	shallow = true
-[submodule "boringssl"]
-	path = app/jni/third_party/boringssl
-	url = https://github.com/google/boringssl
-	shallow = true
+	branch = main
 [submodule "usrsctp"]
 	path = app/jni/third_party/usrsctp
 	url = https://github.com/sctplab/usrsctp
@@ -94,32 +99,33 @@
 	path = app/jni/third_party/webrtc
 	url = https://github.com/TGX-Android/webrtc
 	shallow = true
+	branch = main
 [submodule "webrtc_rnnoise"]
 	path = app/jni/third_party/webrtc_deps/third_party/rnnoise
 	url = https://github.com/TGX-Android/rnnoise
 	shallow = true
+	branch = main
 [submodule "pffft"]
 	path = app/jni/third_party/pffft
 	url = https://github.com/TGX-Android/pffft
 	shallow = true
+	branch = main
 [submodule "tgcalls"]
 	path = app/jni/third_party/tgcalls
 	url = https://github.com/TGX-Android/tgcalls
 	shallow = true
+	branch = main
 [submodule "libevent"]
 	path = app/jni/third_party/libevent
 	url = https://github.com/TGX-Android/libevent
 	shallow = true
+	branch = main
 [submodule "crc32c"]
 	path = app/jni/third_party/crc32c
 	url = https://github.com/google/crc32c
-	shallow = true
-[submodule "openssl"]
-	path = app/jni/third_party/openssl
-	url = https://github.com/openssl/openssl
 	shallow = true
 [submodule "rnnoise"]
 	path = app/jni/third_party/rnnoise
 	url = https://github.com/xiph/rnnoise
 	shallow = true
-
+	branch = main

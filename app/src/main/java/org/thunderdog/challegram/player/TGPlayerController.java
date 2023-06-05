@@ -23,8 +23,8 @@ import androidx.annotation.Nullable;
 
 import com.google.android.exoplayer2.PlaybackParameters;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.InlineResult;
@@ -41,10 +41,10 @@ import java.util.Iterator;
 import java.util.List;
 
 import me.vkryl.core.ArrayUtils;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.core.reference.ReferenceMap;
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
 
@@ -1886,7 +1886,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
     }
 
     /**
-     * Search query to be passed in {@link org.drinkless.td.libcore.telegram.TdApi.SearchChatMessages} query
+     * Search query to be passed in {@link org.drinkless.tdlib.TdApi.SearchChatMessages} query
      * */
     public PlayList setSearchQuery (String query) {
       this.searchQuery = query;
@@ -1894,7 +1894,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
     }
 
     /**
-     * Message thread identifier to be passed in {@link org.drinkless.td.libcore.telegram.TdApi.SearchChatMessages} query
+     * Message thread identifier to be passed in {@link org.drinkless.tdlib.telegram.TdApi.SearchChatMessages} query
      */
     public PlayList setMessageThreadId (long messageThreadId) {
       this.messageThreadId = messageThreadId;

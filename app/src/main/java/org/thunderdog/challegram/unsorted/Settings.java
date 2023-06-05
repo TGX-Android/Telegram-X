@@ -33,8 +33,8 @@ import androidx.annotation.UiThread;
 
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategy;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 import org.drinkmore.Tracer;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
@@ -60,9 +60,10 @@ import org.thunderdog.challegram.telegram.TdlibNotificationUtils;
 import org.thunderdog.challegram.telegram.TdlibProvider;
 import org.thunderdog.challegram.telegram.TdlibSettingsManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PropertyId;
 import org.thunderdog.challegram.theme.TGBackground;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.theme.ThemeColors;
 import org.thunderdog.challegram.theme.ThemeCustom;
 import org.thunderdog.challegram.theme.ThemeDelegate;
@@ -70,7 +71,6 @@ import org.thunderdog.challegram.theme.ThemeId;
 import org.thunderdog.challegram.theme.ThemeInfo;
 import org.thunderdog.challegram.theme.ThemeManager;
 import org.thunderdog.challegram.theme.ThemeProperties;
-import org.thunderdog.challegram.theme.ThemeProperty;
 import org.thunderdog.challegram.theme.ThemeSet;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
@@ -80,6 +80,7 @@ import org.thunderdog.challegram.util.Crash;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
 import org.thunderdog.challegram.util.DeviceStorageError;
 import org.thunderdog.challegram.util.DeviceTokenType;
+import org.thunderdog.challegram.util.StringList;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -121,7 +122,7 @@ import me.vkryl.td.Td;
 
 /**
  * All app-related settings.
- *
+ * <p>
  * SharedPreferences is no longer used at all for the following reasons:
  * 1. Application launch speed;
  * 2. Storage usage;
@@ -172,7 +173,8 @@ public class Settings {
   private static final int VERSION_39 = 39; // drop all previously stored crashes
   private static final int VERSION_40 = 40; // drop legacy crash management ids
   private static final int VERSION_41 = 41; // clear all application log files
-  private static final int VERSION = VERSION_41;
+  private static final int VERSION_42 = 42; // drop __
+  private static final int VERSION = VERSION_42;
 
   private static final AtomicBoolean hasInstance = new AtomicBoolean(false);
   private static volatile Settings instance;
@@ -218,6 +220,10 @@ public class Settings {
   private static final String KEY_TUTORIAL_PSA = "settings_tutorial_psa";
   private static final String KEY_CHAT_FONT_SIZE = "settings_font_size";
   private static final String KEY_CHAT_LIST_MODE = "settings_chat_list_mode";
+  private static final String KEY_CHAT_TRANSLATE_MODE = "settings_chat_translate_mode";
+  private static final String KEY_CHAT_DO_NOT_TRANSLATE_MODE = "settings_chat_do_not_translate_mode";
+  private static final String KEY_CHAT_DO_NOT_TRANSLATE_LIST = "settings_chat_do_not_translate_list";
+  private static final String KEY_CHAT_TRANSLATE_RECENTS = "language_recents";
   private static final String KEY_INSTANT_VIEW = "settings_iv_mode";
   private static final String KEY_RESTRICT_CONTENT = "settings_restrict_content";
   private static final String KEY_CAMERA_ASPECT_RATIO = "settings_camera_ratio";
@@ -243,6 +249,7 @@ public class Settings {
   public static final String KEY_ACCOUNT_INFO_SUFFIX_PHOTO = "photo"; // path, if loaded
   public static final String KEY_ACCOUNT_INFO_SUFFIX_PHOTO_FULL = "photo_full"; // path, if loaded
   public static final String KEY_ACCOUNT_INFO_SUFFIX_COUNTER = "counter_"; // counter
+
   public static String accountInfoPrefix (int accountId) {
     return KEY_ACCOUNT_INFO + accountId + "_";
   }
@@ -456,6 +463,7 @@ public class Settings {
   public static final long TUTORIAL_PROXY_SPONSOR = 1 << 16;
   public static final long TUTORIAL_BRUSH_COLOR_TONE = 1 << 17;
   public static final long TUTORIAL_QR_SCAN = 1 << 18;
+  public static final long TUTORIAL_SELECT_LANGUAGE_INLINE_MODE = 1 << 19;
 
   @Nullable
   private Long _tutorialFlags;
@@ -618,7 +626,7 @@ public class Settings {
             if (value != null)
               value[0] = verbosity;
             else
-              _modules.put(module, value = new int[]{verbosity, defaultVerbosityLevel});
+              _modules.put(module, value = new int[] {verbosity, defaultVerbosityLevel});
             if (value[0] == value[1])
               remove(verbosityKey + "_" + module);
             else
@@ -841,51 +849,67 @@ public class Settings {
   public LevelDB edit () {
     return pmc.edit();
   }
+
   public void remove (String key) {
     pmc.remove(key);
   }
+
   public void putLong (String key, long value) {
     pmc.putLong(key, value);
   }
+
   public long getLong (String key, long defValue) {
     return pmc.getLong(key, defValue);
   }
+
   public long[] getLongArray (String key) {
     return pmc.getLongArray(key);
   }
+
   public void putLongArray (String key, long[] value) {
     pmc.putLongArray(key, value);
   }
+
   public void putInt (String key, int value) {
     pmc.putInt(key, value);
   }
+
   public int getInt (String key, int defValue) {
     return pmc.getInt(key, defValue);
   }
+
   public void putFloat (String key, float value) {
     pmc.putFloat(key, value).apply();
   }
+
   public void putBoolean (String key, boolean value) {
     pmc.putBoolean(key, value);
   }
+
   public boolean getBoolean (String key, boolean defValue) {
     return pmc.getBoolean(key, defValue);
   }
+
   public void putVoid (String key) {
     pmc.putVoid(key);
   }
+
   public boolean containsKey (String key) {
     return pmc.contains(key);
   }
+
   public void putString (String key, @NonNull String value) {
     pmc.putString(key, value);
   }
+
   public String getString (String key, String defValue) {
     return pmc.getString(key, defValue);
   }
+
   public void removeByPrefix (String prefix, @Nullable SharedPreferences.Editor editor) {
     pmc.removeByPrefix(prefix); // editor
   }
+
   public void removeByAnyPrefix (String[] prefixes, @Nullable SharedPreferences.Editor editor) {
     pmc.removeByAnyPrefix(prefixes); // , editor
   }
@@ -1007,6 +1031,116 @@ public class Settings {
         break;
       }
     }
+  }
+
+  public HashMap<String, Boolean> _chatDoNotTranslateLanguages;
+
+  private void loadNotTranslatableLanguages () {
+    if (_chatDoNotTranslateLanguages != null) return;
+    _chatDoNotTranslateLanguages = new HashMap<>();
+    String[] result = pmc.getStringArray(KEY_CHAT_DO_NOT_TRANSLATE_LIST);
+    if (result == null) return;
+    for (String lang : result) {
+      _chatDoNotTranslateLanguages.put(lang, true);
+    }
+  }
+
+  private void saveNotTranslatableLanguages () {
+    pmc.putStringArray(KEY_CHAT_DO_NOT_TRANSLATE_LIST, getAllNotTranslatableLanguages());
+  }
+
+  public String[] getAllNotTranslatableLanguages () {
+    loadNotTranslatableLanguages();
+    StringList list = new StringList(_chatDoNotTranslateLanguages.size());
+    for (Map.Entry<String, Boolean> entry : _chatDoNotTranslateLanguages.entrySet()) {
+      list.append(entry.getKey());
+    }
+    return list.get();
+  }
+
+  public boolean isNotTranslatableLanguage (String lang) {
+    if (getChatDoNotTranslateMode() == DO_NOT_TRANSLATE_MODE_APP_LANG) {
+      return StringUtils.equalsOrBothEmpty(getLanguage().packInfo.pluralCode, lang);
+    } else {
+      return containsInNotTranslatableLanguageList(lang);
+    }
+  }
+
+  public boolean containsInNotTranslatableLanguageList (String lang) {
+    loadNotTranslatableLanguages();
+    if (lang == null) return false;
+    return _chatDoNotTranslateLanguages.containsKey(lang);
+  }
+
+  public void setIsNotTranslatableLanguage (String lang, boolean isNotTranslatable) {
+    if (isNotTranslatable == containsInNotTranslatableLanguageList(lang)) return;
+    if (isNotTranslatable) {
+      _chatDoNotTranslateLanguages.put(lang, true);
+    } else {
+      _chatDoNotTranslateLanguages.remove(lang);
+    }
+    saveNotTranslatableLanguages();
+  }
+
+
+  public static final int DO_NOT_TRANSLATE_MODE_APP_LANG = 1;
+  public static final int DO_NOT_TRANSLATE_MODE_SELECTED = 2;
+  private Integer _chatDoNotTranslateMode;
+
+  public int getChatDoNotTranslateMode () {
+    if (_chatDoNotTranslateMode == null) {
+      _chatDoNotTranslateMode = pmc.getInt(KEY_CHAT_DO_NOT_TRANSLATE_MODE, DO_NOT_TRANSLATE_MODE_APP_LANG);
+    }
+    return _chatDoNotTranslateMode;
+  }
+
+  public void setChatDoNotTranslateMode (int mode) {
+    if (getChatDoNotTranslateMode() != mode) {
+      pmc.putInt(KEY_CHAT_DO_NOT_TRANSLATE_MODE, _chatDoNotTranslateMode = mode);
+    }
+  }
+
+  public static final int TRANSLATE_MODE_NONE = 1;
+  public static final int TRANSLATE_MODE_POPUP = 2;
+  public static final int TRANSLATE_MODE_INLINE = 3;
+  private Integer _chatTranslateMode;
+
+  public int getChatTranslateMode () {
+    if (_chatTranslateMode == null) {
+      _chatTranslateMode = pmc.getInt(KEY_CHAT_TRANSLATE_MODE, TRANSLATE_MODE_POPUP);
+    }
+    return _chatTranslateMode;
+  }
+
+  public void setChatTranslateMode (int mode) {
+    if (getChatTranslateMode() != mode) {
+      pmc.putInt(KEY_CHAT_TRANSLATE_MODE, _chatTranslateMode = mode);
+    }
+  }
+
+  public void setTranslateLanguageRecents (String[] recents) {
+    pmc.putStringArray(KEY_CHAT_TRANSLATE_RECENTS, recents);
+  }
+
+  public void setTranslateLanguageRecents (List<String> recents) {
+    String[] out = new String[recents.size()];
+    int i = 0;
+    for (String recent : recents) {
+      out[i++] = recent;
+    }
+    setTranslateLanguageRecents(out);
+  }
+
+  public ArrayList<String> getTranslateLanguageRecents () {
+    String[] result = pmc.getStringArray(KEY_CHAT_TRANSLATE_RECENTS);
+    if (result != null) {
+      return new ArrayList<>(Arrays.asList(result));
+    }
+    return new ArrayList<>();
+  }
+
+  public void clearTranslateLanguageRecents () {
+    pmc.remove(KEY_CHAT_TRANSLATE_RECENTS);
   }
 
   public static final int CHAT_MODE_2LINE = 1;
@@ -1430,14 +1564,16 @@ public class Settings {
           if (type == MAP_PROVIDER_GOOGLE) {
             editor.remove(KEY_MAP_PROVIDER_TYPE_CLOUD);
           }
-        } catch (FileNotFoundException ignored) { }
+        } catch (FileNotFoundException ignored) {
+        }
         // Removing secret chat map provider setting, if it's equal to Google
         try {
           int type = pmc.tryGetInt(KEY_MAP_PROVIDER_TYPE);
           if (type == MAP_PROVIDER_GOOGLE) {
             editor.remove(KEY_MAP_PROVIDER_TYPE);
           }
-        } catch (FileNotFoundException ignored) { }
+        } catch (FileNotFoundException ignored) {
+        }
         break;
       }
       case VERSION_17: {
@@ -1447,13 +1583,13 @@ public class Settings {
           if (customThemeId >= 0) {
             int activeColor;
             try {
-              activeColor = pmc.tryGetInt(themeColorKey(customThemeId, R.id.theme_color_headerText));
+              activeColor = pmc.tryGetInt(themeColorKey(customThemeId, ColorId.headerText));
             } catch (Throwable ignored) {
               continue;
             }
-            String activeKey = themeColorKey(customThemeId, R.id.theme_color_headerTabActive);
-            String activeTextKey = themeColorKey(customThemeId, R.id.theme_color_headerTabActiveText);
-            String inactiveTextKey = themeColorKey(customThemeId, R.id.theme_color_headerTabInactiveText);
+            String activeKey = themeColorKey(customThemeId, ColorId.headerTabActive);
+            String activeTextKey = themeColorKey(customThemeId, ColorId.headerTabActiveText);
+            String inactiveTextKey = themeColorKey(customThemeId, ColorId.headerTabInactiveText);
             int barColor = ColorUtils.alphaColor(.9f, activeColor);
             int inactiveColor = ColorUtils.alphaColor(.8f, activeColor);
             if (!pmc.contains(activeKey)) {
@@ -1523,7 +1659,8 @@ public class Settings {
           if (newBadgeMode != 0)
             editor.putInt(KEY_BADGE_FLAGS, newBadgeMode);
           editor.remove(KEY_BADGE_MODE);
-        } catch (Throwable ignored) { }
+        } catch (Throwable ignored) {
+        }
         changeDefaultOtherFlag(pmc, editor, FLAG_OTHER_SPLIT_CHAT_NOTIFICATIONS, true);
         break;
       }
@@ -1533,13 +1670,15 @@ public class Settings {
           if (file.exists() && !file.delete()) {
             // nothing?
           }
-        } catch (Throwable ignored) { }
+        } catch (Throwable ignored) {
+        }
         try {
           File file = new File(TdlibManager.getLegacyLogFilePath(true));
           if (file.exists() && !file.delete()) {
             // nothing?
           }
-        } catch (Throwable ignored) { }
+        } catch (Throwable ignored) {
+        }
         break;
       }
       case VERSION_21: {
@@ -1667,7 +1806,8 @@ public class Settings {
             setNewSetting(SETTING_FLAG_EDIT_MARKDOWN, true);
           }
           editor.remove(KEY_MARKDOWN_MODE);
-        } catch (FileNotFoundException ignored) { }
+        } catch (FileNotFoundException ignored) {
+        }
         break;
       }
       case VERSION_30: {
@@ -1855,6 +1995,13 @@ public class Settings {
         deleteAllLogs(false, null);
         break;
       }
+      case VERSION_42: {
+        int accountNum = TdlibManager.readAccountNum();
+        for (int accountId = 0; accountId < accountNum; accountId++) {
+          editor.remove(TdlibSettingsManager.key(TdlibSettingsManager.__DEVICE_TDLIB_VERSION_KEY, accountId));
+        }
+        break;
+      }
     }
   }
 
@@ -1865,7 +2012,8 @@ public class Settings {
       if (settings != newSettings) {
         editor.putInt(KEY_OTHER, newSettings);
       }
-    } catch (FileNotFoundException ignored) { }
+    } catch (FileNotFoundException ignored) {
+    }
   }
 
   private boolean needProxyLegacyMigrateCheck;
@@ -2089,7 +2237,7 @@ public class Settings {
 
           default:
             if (key.startsWith(KEY_SCROLL_CHAT_PREFIX) ||
-                key.startsWith(TdlibNotificationManager._NOTIFICATIONS_STACK_KEY)) {
+              key.startsWith(TdlibNotificationManager._NOTIFICATIONS_STACK_KEY)) {
               continue;
             }
             break;
@@ -2523,7 +2671,8 @@ public class Settings {
 
   public interface VideoModePreferenceListener {
     void onPreferVideoModeChanged (boolean preferVideoMode);
-    default void onRecordAudioVideoError (boolean preferVideoMode) { }
+
+    default void onRecordAudioVideoError (boolean preferVideoMode) {}
   }
 
   private final List<Reference<VideoModePreferenceListener>> videoPreferenceChangeListeners = new ArrayList<>();
@@ -2738,7 +2887,7 @@ public class Settings {
       if (o == null || getClass() != o.getClass()) return false;
       VideoSize videoSize = (VideoSize) o;
       return majorSize == videoSize.majorSize &&
-             minorSize == videoSize.minorSize;
+        minorSize == videoSize.minorSize;
     }
 
     public boolean isDefault () {
@@ -2781,8 +2930,8 @@ public class Settings {
     public boolean isDefault () {
       return
         size.isDefault() &&
-        fps == DEFAULT_FRAME_RATE &&
-        bitrate == DefaultVideoStrategy.BITRATE_UNKNOWN;
+          fps == DEFAULT_FRAME_RATE &&
+          bitrate == DefaultVideoStrategy.BITRATE_UNKNOWN;
     }
 
     @Override
@@ -2791,8 +2940,8 @@ public class Settings {
       if (o == null || getClass() != o.getClass()) return false;
       VideoLimit that = (VideoLimit) o;
       return fps == that.fps &&
-             bitrate == that.bitrate &&
-             size.equals(that.size);
+        bitrate == that.bitrate &&
+        size.equals(that.size);
     }
 
     @Override
@@ -2857,8 +3006,8 @@ public class Settings {
       int dataSize =
         /*bitrate != DefaultVideoStrategy.BITRATE_UNKNOWN ? 4 :*/ // never saving the bitrate as it is calculated automatically
         fps != DEFAULT_FRAME_RATE ? 3 :
-        size.majorSize != size.minorSize ? 2 :
-        size.majorSize != 0 ? 1 : 0;
+          size.majorSize != size.minorSize ? 2 :
+            size.majorSize != 0 ? 1 : 0;
       if (dataSize == 0)
         return null;
       int[] result = new int[dataSize];
@@ -3235,12 +3384,15 @@ public class Settings {
   public int getEmojiPosition () {
     return getInt(KEY_EMOJI_POSITION, 0);
   }
+
   public int getEmojiMediaSection () {
     return getInt(KEY_EMOJI_MEDIA_SECTION, EmojiMediaType.STICKER);
   }
+
   public void setEmojiPosition (int position) {
     putInt(KEY_EMOJI_POSITION, position);
   }
+
   public void setEmojiMediaSection (int section) {
     putInt(KEY_EMOJI_MEDIA_SECTION, section);
   }
@@ -3345,7 +3497,7 @@ public class Settings {
     public double longitude;
     public float zoomOrAccuracy;
 
-    public LastLocation () { }
+    public LastLocation () {}
 
     public LastLocation (double latitude, double longitude, float zoomOrAccuracy) {
       this.latitude = latitude;
@@ -3985,7 +4137,7 @@ public class Settings {
 
   /**
    * @return Identifier of proxy to be applied to TDLib client instances.
-   *         Returns {@link #PROXY_ID_NONE} in case {@link #PROXY_FLAG_ENABLED} is not set.
+   * Returns {@link #PROXY_ID_NONE} in case {@link #PROXY_FLAG_ENABLED} is not set.
    */
   public int getEffectiveProxyId () {
     if (BitwiseUtils.hasFlag(getProxySettings(), PROXY_FLAG_ENABLED)) {
@@ -4007,7 +4159,7 @@ public class Settings {
 
   /**
    * @return Identifier of proxy to be applied to TDLib client instances.
-   *         Returns proxy identifier even when {@link #PROXY_FLAG_ENABLED} is not set.
+   * Returns proxy identifier even when {@link #PROXY_FLAG_ENABLED} is not set.
    */
   public int getAvailableProxyId () {
     return pmc.getInt(KEY_PROXY_CURRENT, PROXY_ID_NONE);
@@ -4079,7 +4231,8 @@ public class Settings {
       return enabled;
     }
     if (setting == PROXY_FLAG_ENABLED) {
-      int proxyId; Proxy proxy;
+      int proxyId;
+      Proxy proxy;
       if (enabled) {
         proxyId = getAvailableProxyId();
         if (proxyId <= PROXY_ID_NONE) {
@@ -4351,10 +4504,10 @@ public class Settings {
   /**
    * Adds proxy configuration or returns identifier of existing one.
    *
-   * @param proxy Proxy server
+   * @param proxy            Proxy server
    * @param proxyDescription Nullable alias for the proxy.
-   * @param setAsCurrent If set to false, proxy will be saved for later use.
-   * @param existingProxyId Existing proxy identifier to be modified or {@link #PROXY_ID_NONE}
+   * @param setAsCurrent     If set to false, proxy will be saved for later use.
+   * @param existingProxyId  Existing proxy identifier to be modified or {@link #PROXY_ID_NONE}
    * @return proxy identifier
    */
   public int addOrUpdateProxy (@NonNull TdApi.InternalLinkTypeProxy proxy, @Nullable String proxyDescription, boolean setAsCurrent, int existingProxyId) {
@@ -4475,11 +4628,11 @@ public class Settings {
   /**
    * Trace proxy connection time.
    * Call this method periodically when TDLib connection is established
-   *
+   * <p>
    * See {@link #PROXY_UPDATE_PERIOD_SECONDS}
    *
    * @param proxyId Proxy identifier. {@link #PROXY_ID_NONE} means connection without proxy.
-   * @param time Last successful connection time. Seconds
+   * @param time    Last successful connection time. Seconds
    */
   @Deprecated
   public void traceProxyConnected (int proxyId, int accountId, int time) {
@@ -4509,7 +4662,8 @@ public class Settings {
       TYPE_MTPROTO,
       TYPE_HTTP
     })
-    public @interface Type {}
+    public @interface Type {
+    }
 
     private static final int TYPE_SOCKS5 = 1;
     private static final int TYPE_MTPROTO = 2;
@@ -4544,6 +4698,7 @@ public class Settings {
     public boolean hasPong () {
       return pingMs >= 0;
     }
+
     public static boolean canUseForCalls (@Nullable TdApi.ProxyType type) {
       if (type != null) {
         switch (type.getConstructor()) {
@@ -4583,7 +4738,7 @@ public class Settings {
         default:
           throw new UnsupportedOperationException(proxy.type.toString());
       }
-      return Lang.getString(stringRes, (target, argStart, argEnd, argIndex, needFakeBold) -> new CustomTypefaceSpan(null, R.id.theme_color_textLight), name);
+      return Lang.getString(stringRes, (target, argStart, argEnd, argIndex, needFakeBold) -> new CustomTypefaceSpan(null, ColorId.textLight), name);
     }
 
     @Override
@@ -4635,6 +4790,7 @@ public class Settings {
 
   /**
    * Sets order of proxy list
+   *
    * @param proxyIds Array of proxy identifiers
    */
   public void setProxyOrder (@Nullable int[] proxyIds) {
@@ -4647,7 +4803,7 @@ public class Settings {
 
   /**
    * Get list of all available proxies in the descending order (last added first).
-   *
+   * <p>
    * This operation may take time, if there are too many proxies,
    * maybe it's good idea to invoke this method on background thread.
    *
@@ -4716,7 +4872,8 @@ public class Settings {
                 break;
               }
             }
-          } catch (IllegalArgumentException ignored) { }
+          } catch (IllegalArgumentException ignored) {
+          }
         }
       }
     }
@@ -4726,7 +4883,9 @@ public class Settings {
 
   public interface ProxyChangeListener {
     void onProxyConfigurationChanged (int proxyId, @Nullable TdApi.InternalLinkTypeProxy proxy, @Nullable String description, boolean isCurrent, boolean isNewAdd);
+
     void onProxyAvailabilityChanged (boolean isAvailable);
+
     void onProxyAdded (Proxy proxy, boolean isCurrent);
   }
 
@@ -4742,8 +4901,9 @@ public class Settings {
 
   /**
    * Notifies that all TDLib instances must change proxy configuration.
-   * @param id Proxy identifier
-   * @param proxy Proxy details
+   *
+   * @param id        Proxy identifier
+   * @param proxy     Proxy details
    * @param isCurrent True when this proxy is applied to TDLib instances
    * @param isNewAdd
    */
@@ -4779,7 +4939,8 @@ public class Settings {
 
   @Retention(RetentionPolicy.SOURCE)
   @IntDef({EARPIECE_MODE_NEVER, EARPIECE_MODE_PROXIMITY, EARPIECE_MODE_ALWAYS})
-  public @interface EarpieceMode {}
+  public @interface EarpieceMode {
+  }
 
   public static final int EARPIECE_MODE_NEVER = 0;
   public static final int EARPIECE_MODE_PROXIMITY = 1;
@@ -4949,7 +5110,7 @@ public class Settings {
     int num = 0;
     String errorHash = error != null ? Passcode.getPasscodeHash(error) : null;
     for (LevelDB.Entry entry : pmc.find(key)) {
-      if (errorHash != null && StringUtils.equalsOrBothEmpty(errorHash, entry.asString())){
+      if (errorHash != null && StringUtils.equalsOrBothEmpty(errorHash, entry.asString())) {
         entry.release();
         return;
       }
@@ -5106,7 +5267,7 @@ public class Settings {
   private static final String KEY_THEME_FLAGS = "theme_flags";
   private static final String KEY_THEME_HISTORY = "theme_history";
 
-  private static String themePropertyKey (int customThemeId, @ThemeProperty int propertyId) {
+  private static String themePropertyKey (int customThemeId, @PropertyId int propertyId) {
     return themePropertyKey(customThemeId, Theme.getPropertyName(propertyId));
   }
 
@@ -5114,7 +5275,7 @@ public class Settings {
     return KEY_THEME_FULL + customThemeId + "_p_" + colorName;
   }
 
-  private static String themeColorKey (int customThemeId, @ThemeColorId int colorId) {
+  private static String themeColorKey (int customThemeId, @ColorId int colorId) {
     return themeColorKey(customThemeId, Theme.getColorName(colorId));
   }
 
@@ -5122,7 +5283,7 @@ public class Settings {
     return KEY_THEME_FULL + customThemeId + "_c_" + colorName;
   }
 
-  private static String themeColorHistoryKey (int customThemeId, @ThemeColorId int colorId) {
+  private static String themeColorHistoryKey (int customThemeId, @ColorId int colorId) {
     return KEY_THEME_HISTORY + customThemeId + "_" + Theme.getColorName(colorId);
   }
 
@@ -5212,7 +5373,7 @@ public class Settings {
       }
       for (TdlibUi.ImportedTheme.Value value : theme.propertiesList) {
         putFloat(themePropertyKey(newThemeId, value.name), value.floatValue);
-        if (value.id == ThemeProperty.PARENT_THEME)
+        if (value.id == PropertyId.PARENT_THEME)
           hasParentTheme = true;
       }
       if (!StringUtils.isEmpty(theme.author)) {
@@ -5227,7 +5388,7 @@ public class Settings {
       }
     }
     if (!hasParentTheme) {
-      putFloat(themePropertyKey(newThemeId, ThemeProperty.PARENT_THEME), parentThemeId);
+      putFloat(themePropertyKey(newThemeId, PropertyId.PARENT_THEME), parentThemeId);
     }
     pmc.apply();
     return newThemeId;
@@ -5270,7 +5431,7 @@ public class Settings {
     pmc.apply();
   }
 
-  public float getThemeProperty (int customThemeId, @ThemeProperty int propertyId, float defValue) {
+  public float getThemeProperty (int customThemeId, @PropertyId int propertyId, float defValue) {
     return pmc.getFloat(themePropertyKey(customThemeId, propertyId), defValue);
   }
 
@@ -5282,7 +5443,7 @@ public class Settings {
     }
     int themeId = ThemeManager.serializeCustomThemeId(customThemeId);
     if (theme == null || theme.getId() != themeId) {
-      int parentThemeId = (int) getThemeProperty(customThemeId, ThemeProperty.PARENT_THEME, ThemeId.BLUE);
+      int parentThemeId = (int) getThemeProperty(customThemeId, PropertyId.PARENT_THEME, ThemeId.BLUE);
       theme = new ThemeInfo(themeId, entry.asString(), getCustomThemeWallpaper(customThemeId), parentThemeId, getCustomThemeFlags(customThemeId));
     }
     return theme;
@@ -5331,7 +5492,7 @@ public class Settings {
       case 'p': {
         float value = entry.asFloat();
         theme.addProperty(name, value);
-        if (theme.parentThemeId == ThemeId.NONE && ThemeProperties.getName(ThemeProperty.PARENT_THEME).equals(name)) {
+        if (theme.parentThemeId == ThemeId.NONE && ThemeProperties.getName(PropertyId.PARENT_THEME).equals(name)) {
           theme.parentThemeId = (int) value;
         }
         if (properties != null)
@@ -5345,7 +5506,7 @@ public class Settings {
   }
 
   public boolean hasCustomTheme (int customThemeId) {
-    return customThemeId > 0 && pmc.contains(themePropertyKey(customThemeId, ThemeProperty.PARENT_THEME));
+    return customThemeId > 0 && pmc.contains(themePropertyKey(customThemeId, PropertyId.PARENT_THEME));
   }
 
   public static class ThemeExportInfo {
@@ -5431,7 +5592,7 @@ public class Settings {
     } else {
       theme = new ThemeExportInfo(Lang.getString(ThemeManager.getBuiltinThemeName(themeId)), null);
       ThemeDelegate currentTheme = ThemeSet.getBuiltinTheme(themeId);
-      theme.parentThemeId = (int) currentTheme.getProperty(ThemeProperty.PARENT_THEME);
+      theme.parentThemeId = (int) currentTheme.getProperty(PropertyId.PARENT_THEME);
       if (theme.parentThemeId != ThemeId.NONE) {
         ThemeDelegate parentTheme = ThemeSet.getBuiltinTheme(theme.parentThemeId);
         for (Map.Entry<String, Integer> entry : colors.entrySet()) {
@@ -5443,7 +5604,7 @@ public class Settings {
 
         for (Map.Entry<String, Integer> entry : properties.entrySet()) {
           int propertyId = entry.getValue();
-          if (entry.getValue() == ThemeProperty.WALLPAPER_ID && currentTheme.getProperty(propertyId) == TGBackground.getDefaultWallpaperId(themeId))
+          if (entry.getValue() == PropertyId.WALLPAPER_ID && currentTheme.getProperty(propertyId) == TGBackground.getDefaultWallpaperId(themeId))
             continue;
           if (parentTheme.getProperty(propertyId) != currentTheme.getProperty(propertyId)) {
             theme.addProperty(entry.getKey(), currentTheme.getProperty(propertyId));
@@ -5458,7 +5619,7 @@ public class Settings {
       }
       for (Map.Entry<String, Integer> entry : properties.entrySet()) {
         float value = Theme.getProperty(entry.getValue(), parentThemeId);
-        if (!ThemeManager.isCustomTheme(themeId) && entry.getValue() == ThemeProperty.WALLPAPER_ID && value == TGBackground.getDefaultWallpaperId(themeId)) {
+        if (!ThemeManager.isCustomTheme(themeId) && entry.getValue() == PropertyId.WALLPAPER_ID && value == TGBackground.getDefaultWallpaperId(themeId)) {
           continue;
         }
         theme.addProperty(entry.getKey(), value);
@@ -5483,35 +5644,35 @@ public class Settings {
     return themes;
   }
 
-  public void setCustomThemeColor (int customThemeId, @ThemeColorId int colorId, @Nullable Integer newColor) {
+  public void setCustomThemeColor (int customThemeId, @ColorId int colorId, @Nullable Integer newColor) {
     if (newColor == null)
       pmc.remove(themeColorKey(customThemeId, colorId));
     else
       pmc.putInt(themeColorKey(customThemeId, colorId), newColor);
   }
 
-  public void setCustomThemeProperty (int customThemeId, @ThemeProperty int propertyId, @Nullable Float newValue) {
+  public void setCustomThemeProperty (int customThemeId, @PropertyId int propertyId, @Nullable Float newValue) {
     if (newValue == null)
       pmc.remove(themePropertyKey(customThemeId, propertyId));
     else
       pmc.putFloat(themePropertyKey(customThemeId, propertyId), newValue);
   }
 
-  public int getCustomThemeColor (int customThemeId, @ThemeColorId int colorId) {
+  public int getCustomThemeColor (int customThemeId, @ColorId int colorId) {
     try {
       return pmc.tryGetInt(themeColorKey(customThemeId, colorId));
     } catch (FileNotFoundException e) {
-      return ThemeSet.getColor((int) getCustomThemeProperty(customThemeId, ThemeProperty.PARENT_THEME), colorId);
+      return ThemeSet.getColor((int) getCustomThemeProperty(customThemeId, PropertyId.PARENT_THEME), colorId);
     }
   }
 
-  public float getCustomThemeProperty (int customThemeId, @ThemeProperty int propertyId) {
+  public float getCustomThemeProperty (int customThemeId, @PropertyId int propertyId) {
     try {
       return pmc.tryGetFloat(themePropertyKey(customThemeId, propertyId));
     } catch (FileNotFoundException e) {
-      if (propertyId == ThemeProperty.PARENT_THEME)
+      if (propertyId == PropertyId.PARENT_THEME)
         return ThemeId.BLUE;
-      return ThemeSet.getProperty((int) getCustomThemeProperty(customThemeId, ThemeProperty.PARENT_THEME), propertyId);
+      return ThemeSet.getProperty((int) getCustomThemeProperty(customThemeId, PropertyId.PARENT_THEME), propertyId);
     }
   }
 
@@ -5573,7 +5734,7 @@ public class Settings {
 
   public static final int THEME_FLAG_INSTALLED = 1;
   public static final int THEME_FLAG_COPY = 1 << 1;
-  
+
   public int getCustomThemeFlags (int customThemeId) {
     return pmc.getByte(KEY_THEME_FLAGS + customThemeId, (byte) 0);
   }
@@ -5582,7 +5743,7 @@ public class Settings {
     int flags = getCustomThemeFlags(customThemeId);
     return (flags & THEME_FLAG_INSTALLED) == 0 || (flags & THEME_FLAG_COPY) != 0;
   }
-  
+
   public String getThemeAuthor (int customThemeId) {
     return pmc.getString(KEY_THEME_AUTHOR + customThemeId, null);
   }
@@ -6009,8 +6170,8 @@ public class Settings {
     if (StringUtils.isEmpty(crashDeviceId)) {
       crashDeviceId = U.sha256(
         U.getUsefulMetadata(null) + "\n" +
-        StringUtils.random("abcdefABCDEF0123456789", 16) + "\n" +
-        (long) ((double) Long.MAX_VALUE * Math.random())
+          StringUtils.random("abcdefABCDEF0123456789", 16) + "\n" +
+          (long) ((double) Long.MAX_VALUE * Math.random())
       );
       pmc.putString(KEY_CRASH_DEVICE_ID, crashDeviceId);
     }
@@ -6089,10 +6250,12 @@ public class Settings {
     public final TdApi.File getFile () {
       return file;
     }
+
     @Nullable
     public final ImageFile getPreviewFile () {
       return previewFile;
     }
+
     public final String getDisplayName () {
       return displayName;
     }
@@ -6133,11 +6296,13 @@ public class Settings {
     }
 
     public abstract void install (@NonNull RunnableBool callback);
+
     public abstract boolean isBuiltIn ();
 
     public static final int STATE_NOT_INSTALLED = 0;
     public static final int STATE_INSTALLED = 1;
     public static final int STATE_UPDATE_NEEDED = 2;
+
     public abstract int getInstallState (boolean fast);
 
     public final boolean isInstalled () {
@@ -6437,8 +6602,8 @@ public class Settings {
   public String getPushMessageStats () {
     return
       "total: " + getReceivedPushMessageCountTotal() + " " +
-      "by_token: " + getReceivedPushMessageCountByToken() + " " +
-      "by_app_version: " + getReceivedPushMessageCountByAppVersion() + " ";
+        "by_token: " + getReceivedPushMessageCountByToken() + " " +
+        "by_app_version: " + getReceivedPushMessageCountByAppVersion() + " ";
   }
 
   public long getReceivedPushMessageCountTotal () {

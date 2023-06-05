@@ -27,8 +27,8 @@ import androidx.annotation.Px;
 import androidx.annotation.UiThread;
 import androidx.collection.SparseArrayCompat;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
@@ -38,6 +38,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageFile;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.DrawableProvider;
@@ -956,7 +957,7 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   }
 
   public AvatarPlaceholder.Metadata selfPlaceholderMetadata () {
-    return new AvatarPlaceholder.Metadata(R.id.theme_color_avatarSavedMessages, (String) null, R.drawable.baseline_bookmark_24, 0);
+    return new AvatarPlaceholder.Metadata(ColorId.avatarSavedMessages, (String) null, R.drawable.baseline_bookmark_24, 0);
   }
 
   public AvatarPlaceholder.Metadata userPlaceholderMetadata (@Nullable TdApi.User user, boolean allowSavedMessages) {
@@ -968,12 +969,12 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
     int desiredDrawableRes = 0;
     int extraDrawableRes = 0;
     if (allowSavedMessages && tdlib.isSelfUserId(user.id)) {
-      avatarColorId = R.id.theme_color_avatarSavedMessages;
+      avatarColorId = ColorId.avatarSavedMessages;
       desiredDrawableRes = R.drawable.baseline_bookmark_24;
     } else {
       if (tdlib.isRepliesChat(ChatId.fromUserId(user.id))) {
         desiredDrawableRes = R.drawable.baseline_reply_24;
-        avatarColorId = R.id.theme_color_avatarReplies;
+        avatarColorId = ColorId.avatarReplies;
       } else {
         avatarLetters = userLetters(user);
         avatarColorId = userAvatarColorId(user);

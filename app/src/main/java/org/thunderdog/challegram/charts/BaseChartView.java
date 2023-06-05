@@ -25,7 +25,6 @@ import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator;
 
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.charts.data.ChartData;
 import org.thunderdog.challegram.charts.view_data.ChartBottomSignatureData;
@@ -33,6 +32,7 @@ import org.thunderdog.challegram.charts.view_data.ChartHorizontalLinesData;
 import org.thunderdog.challegram.charts.view_data.LegendSignatureView;
 import org.thunderdog.challegram.charts.view_data.LineViewData;
 import org.thunderdog.challegram.charts.view_data.TransitionParams;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeInvalidateListener;
 import org.thunderdog.challegram.tool.Screen;
@@ -289,10 +289,10 @@ public abstract class BaseChartView<T extends ChartData, L extends LineViewData>
         bottomSignaturePaint.setColor(Theme.textDecentColor()); // Theme.key_statisticChartSignature
         linePaint.setColor(Theme.separatorColor()); // Theme.key_statisticChartHintLine
         selectedLinePaint.setColor(Theme.separatorColor()); // TODO key_statisticChartActiveLine
-        pickerSelectorPaint.setColor(Theme.getColor(R.id.theme_color_fillingPositive)); // TODO key_statisticChartActivePickerChart
-        unactiveBottomChartPaint.setColor(me.vkryl.core.ColorUtils.alphaColor(.5f, ColorUtils.blendARGB(Theme.getColor(R.id.theme_color_fillingPositive), Theme.fillingColor(), .6f))); // TODO key_statisticChartInactivePickerChart
+        pickerSelectorPaint.setColor(Theme.getColor(ColorId.fillingPositive)); // TODO key_statisticChartActivePickerChart
+        unactiveBottomChartPaint.setColor(me.vkryl.core.ColorUtils.alphaColor(.5f, ColorUtils.blendARGB(Theme.getColor(ColorId.fillingPositive), Theme.fillingColor(), .6f))); // TODO key_statisticChartInactivePickerChart
         selectionBackgroundPaint.setColor(Theme.fillingColor()); // Theme.key_windowBackgroundWhite
-        ripplePaint.setColor(me.vkryl.core.ColorUtils.alphaColor(.2f, Theme.getColor(R.id.theme_color_fillingPositive))); // Theme.key_statisticChartRipple
+        ripplePaint.setColor(me.vkryl.core.ColorUtils.alphaColor(.2f, Theme.getColor(ColorId.fillingPositive))); // Theme.key_statisticChartRipple
         legendSignatureView.recolor();
 
         hintLinePaintAlpha = linePaint.getAlpha();

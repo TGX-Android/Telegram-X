@@ -28,6 +28,7 @@ import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
@@ -282,7 +283,7 @@ public class MediaSmallView extends SparseDrawableView implements Destroyable, F
     }
 
     if (item.hasSpoiler()) {
-      DrawAlgorithms.drawRoundRect(c, 0, preview.getLeft(), preview.getTop(), preview.getRight(), preview.getBottom(), Paints.fillingPaint(Theme.getColor(R.id.theme_color_spoilerMediaOverlay)));
+      DrawAlgorithms.drawRoundRect(c, 0, preview.getLeft(), preview.getTop(), preview.getRight(), preview.getBottom(), Paints.fillingPaint(Theme.getColor(ColorId.spoilerMediaOverlay)));
       DrawAlgorithms.drawParticles(c, 0, preview.getLeft(), preview.getTop(), preview.getRight(), preview.getBottom(), 1f);
     }
 

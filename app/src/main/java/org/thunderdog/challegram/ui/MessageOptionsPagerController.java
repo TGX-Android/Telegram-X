@@ -24,8 +24,8 @@ import android.view.View;
 import androidx.collection.SparseArrayCompat;
 import androidx.core.graphics.ColorUtils;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
@@ -37,6 +37,7 @@ import org.thunderdog.challegram.navigation.ViewPagerHeaderViewReactionsCompact;
 import org.thunderdog.challegram.navigation.ViewPagerTopView;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
@@ -166,7 +167,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     headerView.initWithSingleController(this, false);
     headerView.getFilling().setShadowAlpha(0f);
     headerView.getBackButton().setIsReverse(true);
-    ViewSupport.setThemedBackground(headerView, R.id.theme_color_background, this);
+    ViewSupport.setThemedBackground(headerView, ColorId.background, this);
 
     return headerView;
   };
@@ -177,7 +178,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
       @Override
       public void onThemeInvalidate (boolean isTempUpdate) {
         setHeaderBackgroundFactor(headerBackgroundFactor);
-        getBackButton().setColor(Theme.getColor(R.id.theme_color_headerLightIcon));
+        getBackButton().setColor(Theme.getColor(ColorId.headerLightIcon));
         super.onThemeInvalidate(isTempUpdate);
       }
     };
@@ -194,10 +195,10 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     headerCell.getTopView().setTextPadding(Screen.dp(0));
     headerCell.getTopView().setItems(Arrays.asList(counters));
     headerCell.getTopView().setOnItemClickListener(this);
-    headerCell.getTopView().setSelectionColorId(R.id.theme_color_text);
+    headerCell.getTopView().setSelectionColorId(ColorId.text);
     addThemeInvalidateListener(headerCell.getTopView());
 
-    headerCell.getBackButton().setColor(Theme.getColor(R.id.theme_color_headerLightIcon));
+    headerCell.getBackButton().setColor(Theme.getColor(ColorId.headerLightIcon));
     headerCell.getBackButton().setOnClickListener((v) -> {
       if (needShowOptions) {
         headerCell.getTopView().getOnItemClickListener().onPagerItemClick(0);
@@ -253,8 +254,8 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
   @Override
   protected void setHeaderBackgroundFactor (float headerBackgroundFactor) {
     final int headerBackground = ColorUtils.blendARGB(
-      Theme.getColor(R.id.theme_color_background),
-      Theme.getColor(R.id.theme_color_headerLightBackground),
+      Theme.getColor(ColorId.background),
+      Theme.getColor(ColorId.headerLightBackground),
       headerBackgroundFactor
     );
     setLickViewColor(headerBackground);
@@ -462,7 +463,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
 
   @Override
   public int defaultTextColor () {
-    return Theme.getColor(R.id.theme_color_text);
+    return Theme.getColor(ColorId.text);
   }
 
   // Reactions selector delegate

@@ -40,6 +40,7 @@ import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.theme.ThemeListenerList;
@@ -104,14 +105,14 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     setMinimumWidth(Screen.dp(196f));
     Drawable drawable;
     if (forcedTheme != null) {
-      drawable = ViewSupport.getDrawableFilter(getContext(), R.drawable.bg_popup_fixed, new PorterDuffColorFilter(forcedTheme.getColor(R.id.theme_color_overlayFilling), PorterDuff.Mode.MULTIPLY));
+      drawable = ViewSupport.getDrawableFilter(getContext(), R.drawable.bg_popup_fixed, new PorterDuffColorFilter(forcedTheme.getColor(ColorId.overlayFilling), PorterDuff.Mode.MULTIPLY));
     } else {
       drawable = ViewSupport.getDrawableFilter(getContext(), R.drawable.bg_popup_fixed, new PorterDuffColorFilter(Theme.headerFloatBackgroundColor(), PorterDuff.Mode.MULTIPLY));
     }
     ViewUtils.setBackground(this, drawable);
 
     if (themeProvider != null && forcedTheme == null) {
-      themeProvider.addThemeSpecialFilterListener(drawable, R.id.theme_color_overlayFilling);
+      themeProvider.addThemeSpecialFilterListener(drawable, ColorId.overlayFilling);
       themeProvider.addThemeInvalidateListener(this);
     }
 
@@ -159,9 +160,9 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     menuItem.setGravity(Gravity.CENTER_VERTICAL | Lang.gravity());
     menuItem.setVisibility(View.VISIBLE);
     if (drawable != null) {
-      drawable.setColorFilter(Paints.getColorFilter(Theme.getColor(R.id.theme_color_icon)));
+      drawable.setColorFilter(Paints.getColorFilter(Theme.getColor(ColorId.icon)));
       if (themeProvider != null) {
-        themeProvider.addThemeFilterListener(drawable, R.id.theme_color_icon);
+        themeProvider.addThemeFilterListener(drawable, ColorId.icon);
       }
       if (Drawables.needMirror(icon)) {
         // TODO
@@ -207,20 +208,20 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
           if (icon != null) {
             float x = getMeasuredWidth() - Screen.dp(17 + 16);
             float y = (getMeasuredHeight() - icon.getMinimumHeight()) / 2f;
-            Drawables.draw(canvas, icon, x, y, Paints.getPorterDuffPaint(Theme.getColor(R.id.theme_color_text)));
+            Drawables.draw(canvas, icon, x, y, Paints.getPorterDuffPaint(Theme.getColor(ColorId.text)));
           }
         }
 
         if (menuItem.isCheckbox) {
           int fillingColor, checkColor, outlineColor;
           if (forcedTheme != null) {
-            fillingColor = forcedTheme.getColor(R.id.theme_color_checkActive);
-            checkColor = forcedTheme.getColor(R.id.theme_color_checkContent);
-            outlineColor = forcedTheme.getColor(R.id.theme_color_icon);
+            fillingColor = forcedTheme.getColor(ColorId.checkActive);
+            checkColor = forcedTheme.getColor(ColorId.checkContent);
+            outlineColor = forcedTheme.getColor(ColorId.icon);
           } else {
             fillingColor = Theme.checkFillingColor();
             checkColor = Theme.checkCheckColor();
-            outlineColor = Theme.getColor(R.id.theme_color_icon);
+            outlineColor = Theme.getColor(ColorId.icon);
           }
 
           // TODO move into SimplestCheckbox
@@ -251,7 +252,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
           if (menuItem.iconResId == 0) {
             finalIcon.draw(canvas);
           } else {
-            Drawables.draw(canvas, finalIcon, 0, 0, PorterDuffPaint.get(R.id.theme_color_icon));
+            Drawables.draw(canvas, finalIcon, 0, 0, PorterDuffPaint.get(ColorId.icon));
           }
           canvas.restore();
         }
@@ -306,9 +307,9 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
       subtitleTextItem.setMaxWidth(maxWidth);
 
       if (forcedTheme != null) {
-        subtitleTextItem.setTextColor(forcedTheme.getColor(R.id.theme_color_textLight));
+        subtitleTextItem.setTextColor(forcedTheme.getColor(ColorId.textLight));
       } else {
-        subtitleTextItem.setTextColor(Theme.getColor(R.id.theme_color_textLight));
+        subtitleTextItem.setTextColor(Theme.getColor(ColorId.textLight));
         if (themeListeners != null) {
           themeListeners.addThemeTextDecentColorListener(subtitleTextItem);
         }
@@ -318,7 +319,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     }
 
     if (forcedTheme != null) {
-      titleTextItem.setTextColor(forcedTheme.getColor(R.id.theme_color_text));
+      titleTextItem.setTextColor(forcedTheme.getColor(ColorId.text));
     } else {
       titleTextItem.setTextColor(Theme.textAccentColor());
       if (themeListeners != null) {
@@ -349,7 +350,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     menuItem.setTypeface(Fonts.getRobotoRegular());
     menuItem.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16f);
     if (forcedTheme != null) {
-      menuItem.setTextColor(forcedTheme.getColor(R.id.theme_color_text));
+      menuItem.setTextColor(forcedTheme.getColor(ColorId.text));
     } else {
       menuItem.setTextColor(Theme.textAccentColor());
       if (themeListeners != null) {
@@ -367,11 +368,11 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     icon = iconRes != 0 ? Drawables.get(getResources(), iconRes) : icon;
     if (icon != null) {
       if (forcedTheme != null) {
-        icon.setColorFilter(Paints.getColorFilter(forcedTheme.getColor(R.id.theme_color_icon)));
+        icon.setColorFilter(Paints.getColorFilter(forcedTheme.getColor(ColorId.icon)));
       } else {
-        icon.setColorFilter(Paints.getColorFilter(Theme.getColor(R.id.theme_color_icon)));
+        icon.setColorFilter(Paints.getColorFilter(Theme.getColor(ColorId.icon)));
         if (themeListeners != null) {
-          themeListeners.addThemeFilterListener(icon, R.id.theme_color_icon);
+          themeListeners.addThemeFilterListener(icon, ColorId.icon);
         }
       }
       if (Drawables.needMirror(iconRes)) {
@@ -525,7 +526,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
       for (int i = 0; i < childCount; i++) {
         final float alpha = MathUtils.clamp(1f - Math.abs(factorAnimator.getFactor() - i));
         if (alpha > 0f) {
-          canvas.drawRect(Screen.dp(PADDING), Screen.dp(PADDING + ITEM_HEIGHT * i), getMeasuredWidth() - Screen.dp(PADDING), Screen.dp(PADDING + ITEM_HEIGHT * (i + 1)), Paints.fillingPaint(ColorUtils.alphaColor(alpha * 0.05f, Theme.getColor(R.id.theme_color_text))));
+          canvas.drawRect(Screen.dp(PADDING), Screen.dp(PADDING + ITEM_HEIGHT * i), getMeasuredWidth() - Screen.dp(PADDING), Screen.dp(PADDING + ITEM_HEIGHT * (i + 1)), Paints.fillingPaint(ColorUtils.alphaColor(alpha * 0.05f, Theme.getColor(ColorId.text))));
         }
       }
     }

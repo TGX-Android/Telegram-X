@@ -22,13 +22,13 @@ import android.graphics.RectF;
 import android.text.TextUtils;
 import android.view.View;
 
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -237,7 +237,7 @@ public class BubbleView {
     boolean deleting = (deleteFactor != 0f && (flags & FLAG_DELETING) != 0);
 
     // view.paint.setColor(deleting ? changer.getColor(deleteFactor) : TGTheme.headerPlaceholderColor());
-    view.paint.setColor(ColorUtils.alphaColor(scale, ColorUtils.fromToArgb(ColorUtils.compositeColor(Theme.headerColor(), Theme.headerPlaceholderColor()), Theme.getColor(R.id.theme_color_headerRemoveBackground), deleting ? deleteFactor : 0f)));
+    view.paint.setColor(ColorUtils.alphaColor(scale, ColorUtils.fromToArgb(ColorUtils.compositeColor(Theme.headerColor(), Theme.headerPlaceholderColor()), Theme.getColor(ColorId.headerRemoveBackground), deleting ? deleteFactor : 0f)));
     // view.paint.setAlpha(alpha);
 
     RectF rectF = Paints.getRectF();
@@ -255,10 +255,10 @@ public class BubbleView {
     if (receiver != null) {
       layoutReceiver();
       if (receiver.needPlaceholder()) {
-        view.paint.setColor(ColorUtils.alphaColor(scale, ColorUtils.fromToArgb(ColorUtils.compositeColor(Theme.headerColor(), Theme.headerPlaceholderColor()), Theme.getColor(R.id.theme_color_headerRemoveBackgroundHighlight), deleting ? deleteFactor : 0f)));
+        view.paint.setColor(ColorUtils.alphaColor(scale, ColorUtils.fromToArgb(ColorUtils.compositeColor(Theme.headerColor(), Theme.headerPlaceholderColor()), Theme.getColor(ColorId.headerRemoveBackgroundHighlight), deleting ? deleteFactor : 0f)));
         c.drawCircle(receiver.centerX(), receiver.centerY(), avatarRadius, view.paint);
       } else if (deleting) {
-        view.paint.setColor(ColorUtils.alphaColor(scale, Theme.getColor(R.id.theme_color_headerRemoveBackgroundHighlight)));
+        view.paint.setColor(ColorUtils.alphaColor(scale, Theme.getColor(ColorId.headerRemoveBackgroundHighlight)));
         c.drawCircle(receiver.centerX(), receiver.centerY(), avatarRadius, view.paint);
       }
       receiver.setPaintAlpha(deleting ? scale * (1f - deleteFactor) : scale);
@@ -276,7 +276,7 @@ public class BubbleView {
         c.save();
         c.rotate(45f * (Lang.rtl() ? 1f : -1f) * deleteFactor,  circleX, cy + avatarRadius);
 
-        view.paint.setColor(ColorUtils.alphaColor(scale, Theme.getColor(R.id.theme_color_headerRemoveBackgroundHighlight)));
+        view.paint.setColor(ColorUtils.alphaColor(scale, Theme.getColor(ColorId.headerRemoveBackgroundHighlight)));
         c.drawCircle(circleX, cy + avatarRadius, avatarRadius, view.paint);
       }
       avatarPlaceholder.draw(c, circleX, cy + avatarRadius, scale * (1f - deleteFactor));

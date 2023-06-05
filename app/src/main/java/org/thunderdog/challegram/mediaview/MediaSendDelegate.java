@@ -14,7 +14,7 @@ package org.thunderdog.challegram.mediaview;
 
 import android.view.View;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.loader.ImageFile;
 
 import java.util.ArrayList;

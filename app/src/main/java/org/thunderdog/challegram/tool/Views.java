@@ -53,7 +53,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewTranslator;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.util.TextSelection;
 import org.thunderdog.challegram.util.WebViewHolder;
 import org.thunderdog.challegram.util.text.Text;
@@ -139,7 +139,7 @@ public class Views {
     }
   }
 
-  public static ImageView newImageButton (Context context, @DrawableRes int icon, @ThemeColorId int colorId, @Nullable ViewController<?> themeProvider) {
+  public static ImageView newImageButton (Context context, @DrawableRes int icon, @ColorId int colorId, @Nullable ViewController<?> themeProvider) {
     ImageView imageView = new ImageView(context);
     imageView.setScaleType(ImageView.ScaleType.CENTER);
     imageView.setImageResource(icon);

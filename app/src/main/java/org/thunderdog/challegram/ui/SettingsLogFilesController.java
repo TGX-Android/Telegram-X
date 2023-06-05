@@ -63,12 +63,9 @@ public class SettingsLogFilesController extends RecyclerViewController<SettingsL
     adapter = new SettingsAdapter(this) {
       @Override
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
-        switch (item.getId()) {
-          case R.id.btn_file: {
-            File file = (File) item.getData();
-            view.setData(Lang.getFileTimestamp(file.lastModified(), TimeUnit.MILLISECONDS, file.length()));
-            break;
-          }
+        if (item.getId() == R.id.btn_file) {
+          File file = (File) item.getData();
+          view.setData(Lang.getFileTimestamp(file.lastModified(), TimeUnit.MILLISECONDS, file.length()));
         }
       }
     };
@@ -125,40 +122,31 @@ public class SettingsLogFilesController extends RecyclerViewController<SettingsL
 
   @Override
   public void onClick (View v) {
-    switch (v.getId()) {
-      case R.id.btn_file: {
-        final ListItem item = (ListItem) v.getTag();
-        final File file = (File) item.getData();
-        showOptions(file.getName() + " (" + Strings.buildSize(file.length()) + ")", new int[]{R.id.btn_open, R.id.btn_share, R.id.btn_delete}, new String[]{"View", "Share", "Delete"}, new int[]{OPTION_COLOR_NORMAL, OPTION_COLOR_NORMAL, OPTION_COLOR_RED}, new int[]{R.drawable.baseline_visibility_24, R.drawable.baseline_forward_24, R.drawable.baseline_delete_24}, (itemView, id) -> {
-          switch (id) {
-            case R.id.btn_open: {
-              TextController c = new TextController(context, tdlib);
-              c.setArguments(TextController.Arguments.fromFile(file.getName(), file.getPath(), "text/plain"));
-              navigateTo(c);
-              break;
-            }
-            case R.id.btn_share: {
-              ShareController c = new ShareController(context, tdlib);
-              c.setArguments(new ShareController.Args(file, "text/plain"));
-              c.show();
-              break;
-            }
-            case R.id.btn_delete: {
-              final long size = file.length();
-              final boolean isCrash = file.getName().startsWith(Log.CRASH_PREFIX);
-              if (Log.deleteFile(file)) {
-                UI.showToast("OK. Freed " + Strings.buildSize(size), Toast.LENGTH_SHORT);
-                removeFile(file, size, isCrash);
-              } else {
-                UI.showToast("Failed", Toast.LENGTH_SHORT);
-              }
-              break;
-            }
+    final int viewId = v.getId();
+    if (viewId == R.id.btn_file) {
+      final ListItem item = (ListItem) v.getTag();
+      final File file = (File) item.getData();
+      showOptions(file.getName() + " (" + Strings.buildSize(file.length()) + ")", new int[] {R.id.btn_open, R.id.btn_share, R.id.btn_delete}, new String[] {"View", "Share", "Delete"}, new int[] {OPTION_COLOR_NORMAL, OPTION_COLOR_NORMAL, OPTION_COLOR_RED}, new int[] {R.drawable.baseline_visibility_24, R.drawable.baseline_forward_24, R.drawable.baseline_delete_24}, (itemView, id) -> {
+        if (id == R.id.btn_open) {
+          TextController c = new TextController(context, tdlib);
+          c.setArguments(TextController.Arguments.fromFile(file.getName(), file.getPath(), "text/plain"));
+          navigateTo(c);
+        } else if (id == R.id.btn_share) {
+          ShareController c = new ShareController(context, tdlib);
+          c.setArguments(new ShareController.Args(file, "text/plain"));
+          c.show();
+        } else if (id == R.id.btn_delete) {
+          final long size = file.length();
+          final boolean isCrash = file.getName().startsWith(Log.CRASH_PREFIX);
+          if (Log.deleteFile(file)) {
+            UI.showToast("OK. Freed " + Strings.buildSize(size), Toast.LENGTH_SHORT);
+            removeFile(file, size, isCrash);
+          } else {
+            UI.showToast("Failed", Toast.LENGTH_SHORT);
           }
-          return true;
-        });
-        break;
-      }
+        }
+        return true;
+      });
     }
   }
 

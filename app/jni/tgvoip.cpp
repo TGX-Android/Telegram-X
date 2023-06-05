@@ -270,7 +270,7 @@ jint toJavaVideoState (JNIEnv *env, tgcalls::VideoState state) {
 }
 
 jint findTdApiConstructor (JNIEnv *env, const std::string& name) {
-  jclass clazz = env->FindClass(("org/drinkless/td/libcore/telegram/TdApi$" + name).c_str());
+  jclass clazz = env->FindClass((TDLIB_TDAPI_CLASS_PATH "$" + name).c_str());
   jfieldID constructor = env->GetStaticFieldID(clazz, "CONSTRUCTOR", "I");
   return (int32_t) env->GetStaticIntField(clazz, constructor);
 }
@@ -428,8 +428,8 @@ JNI_OBJECT_FUNC(jlong, voip_TgCallsController, newInstance,
   jni::Object configuration (env, jConfiguration, tgcalls::javaCallConfiguration);
   jni::Object options (env, jOptions, tgcalls::javaCallOptions);
 
-  jni::Object callStateReady = configuration.getObject("state", "Lorg/drinkless/td/libcore/telegram/TdApi$CallStateReady;");
-  jni::Object callProtocol = callStateReady.getObject("protocol", "Lorg/drinkless/td/libcore/telegram/TdApi$CallProtocol;");
+  jni::Object callStateReady = configuration.getObject("state", "L" TDLIB_TDAPI_CLASS_PATH "$CallStateReady;");
+  jni::Object callProtocol = callStateReady.getObject("protocol", "L" TDLIB_TDAPI_CLASS_PATH "$CallProtocol;");
 
   // tgcalls::Config
   auto connectTimeoutMs = (double) configuration.getLong("connectTimeoutMs");
@@ -470,12 +470,12 @@ JNI_OBJECT_FUNC(jlong, voip_TgCallsController, newInstance,
   jint typeTelegramReflector = findTdApiConstructor(env, "CallServerTypeTelegramReflector");
   jint typeWebrtc = findTdApiConstructor(env, "CallServerTypeWebrtc");
 
-  jobjectArray jServers = callStateReady.getObjectArray("servers", "[Lorg/drinkless/td/libcore/telegram/TdApi$CallServer;");
+  jobjectArray jServers = callStateReady.getObjectArray("servers", "[L" TDLIB_TDAPI_CLASS_PATH "$CallServer;");
   jsize jServersCount = env->GetArrayLength(jServers);
   for (jsize i = 0; i < jServersCount; i++) {
     jobject jServer = env->GetObjectArrayElement(jServers, i);
-    jni::Object server (env, jServer, "Lorg/drinkless/td/libcore/telegram/TdApi$CallServer;");
-    jni::Object serverType = server.getObject("type", "Lorg/drinkless/td/libcore/telegram/TdApi$CallServerType;");
+    jni::Object server (env, jServer, "L" TDLIB_TDAPI_CLASS_PATH "$CallServer;");
+    jni::Object serverType = server.getObject("type", "L" TDLIB_TDAPI_CLASS_PATH "$CallServerType;");
     jint serverTypeConstructor = findTdApiConstructor(env, serverType.getThis());
 
     auto id = (int64_t) server.getLong("id");
@@ -531,8 +531,8 @@ JNI_OBJECT_FUNC(jlong, voip_TgCallsController, newInstance,
 
   for (jsize i = 0; i < jServersCount; i++) {
     jobject jServer = env->GetObjectArrayElement(jServers, i);
-    jni::Object server (env, jServer, "Lorg/drinkless/td/libcore/telegram/TdApi$CallServer;");
-    jni::Object serverType = server.getObject("type", "Lorg/drinkless/td/libcore/telegram/TdApi$CallServerType;");
+    jni::Object server (env, jServer, "L" TDLIB_TDAPI_CLASS_PATH "$CallServer;");
+    jni::Object serverType = server.getObject("type", "L" TDLIB_TDAPI_CLASS_PATH "$CallServerType;");
     jint serverTypeConstructor = findTdApiConstructor(env, serverType.getThis());
 
     auto id = (int64_t) server.getLong("id");

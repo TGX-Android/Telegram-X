@@ -22,8 +22,8 @@ import androidx.annotation.Nullable;
 import me.vkryl.android.animator.ColorAnimator;
 
 public class ThemedColorAnimator extends ColorAnimator {
-  private static FutureColor futureForColorId (@ThemeColorId int colorId, @Nullable ThemeDelegate forcedTheme) {
-    if (colorId == ThemeColorId.NONE)
+  private static FutureColor futureForColorId (@ColorId int colorId, @Nullable ThemeDelegate forcedTheme) {
+    if (colorId == ColorId.NONE)
       throw new IllegalArgumentException();
     if (forcedTheme != null) {
       return () ->
@@ -34,28 +34,28 @@ public class ThemedColorAnimator extends ColorAnimator {
     }
   }
 
-  public ThemedColorAnimator (View target, Interpolator interpolator, long duration, @ThemeColorId int startColorId) {
+  public ThemedColorAnimator (View target, Interpolator interpolator, long duration, @ColorId int startColorId) {
     this((animator, newValue) -> target.invalidate(), interpolator, duration, startColorId, null);
   }
 
-  public ThemedColorAnimator (Target<FutureColor> target, Interpolator interpolator, long duration, @ThemeColorId int startColorId) {
+  public ThemedColorAnimator (Target<FutureColor> target, Interpolator interpolator, long duration, @ColorId int startColorId) {
     this(target, interpolator, duration, startColorId, null);
   }
 
-  private @ThemeColorId int currentColorId;
+  private @ColorId int currentColorId;
   private @Nullable ThemeDelegate forcedTheme;
 
-  public ThemedColorAnimator (Target<FutureColor> target, Interpolator interpolator, long duration, @ThemeColorId int startColorId, @Nullable ThemeDelegate forcedTheme) {
+  public ThemedColorAnimator (Target<FutureColor> target, Interpolator interpolator, long duration, @ColorId int startColorId, @Nullable ThemeDelegate forcedTheme) {
     super(target, interpolator, duration, futureForColorId(startColorId, forcedTheme));
     this.currentColorId = startColorId;
     this.forcedTheme = forcedTheme;
   }
 
-  public final void setValue (@ThemeColorId int colorId, boolean animated) {
+  public final void setValue (@ColorId int colorId, boolean animated) {
     setValue(colorId, null, animated);
   }
 
-  public final void setValue (@ThemeColorId int colorId, @Nullable ThemeDelegate forcedTheme, boolean animated) {
+  public final void setValue (@ColorId int colorId, @Nullable ThemeDelegate forcedTheme, boolean animated) {
     if (this.currentColorId != colorId || this.forcedTheme != forcedTheme) {
       this.currentColorId = colorId;
       this.forcedTheme = forcedTheme;
@@ -65,7 +65,7 @@ public class ThemedColorAnimator extends ColorAnimator {
     }
   }
 
-  @ThemeColorId
+  @ColorId
   public int getColorIdValue () {
     return currentColorId;
   }

@@ -15,7 +15,6 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
@@ -23,6 +22,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.navigation.ViewPagerController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Paints;
@@ -79,7 +79,7 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
       @Override
       protected void onDraw (Canvas canvas) {
         if (headerView != null) {
-          canvas.drawRect(0, headerView.getTranslationY(), getMeasuredWidth(), getMeasuredHeight(), Paints.fillingPaint(Theme.backgroundColor()));
+          canvas.drawRect(0, headerView.getTranslationY(), getMeasuredWidth(), getMeasuredHeight(), Paints.fillingPaint(Theme.getColor(getBackgroundColorId())));
         }
         super.onDraw(canvas);
       }
@@ -104,7 +104,7 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
     FrameLayout.LayoutParams fp = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(6f));
     fp.topMargin = getHeaderHeight();
     fixView = new View(context);
-    ViewSupport.setThemedBackground(fixView, R.id.theme_color_background, this);
+    ViewSupport.setThemedBackground(fixView, ColorId.background, this);
     fixView.setLayoutParams(fp);
 
     wrapView = new FrameLayoutFix(context) {
@@ -188,6 +188,9 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
   }
 
 
+  protected int getBackgroundColorId () {
+    return ColorId.background;
+  }
 
   private boolean ignoreAnyPagerScrollEventsBecauseOfMovements;
 
@@ -367,6 +370,7 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
         super.onCustomShowComplete();
         isFirstCreation = false;
         if (!isDestroyed()) {
+          BottomSheetViewController.this.onCustomShowComplete();
           ViewController<?> c = getCurrentPagerItem();
           if (c instanceof BottomSheetViewController.BottomSheetBaseControllerPage) {
             RecyclerView r = ((BottomSheetBaseControllerPage) c).getRecyclerView();
@@ -384,6 +388,10 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
     context().addFullScreenView(this, false);
   }
 
+  protected void onCustomShowComplete () {
+
+  }
+
   protected void setupPopupLayout (PopupLayout popupLayout) {
     popupLayout.setBoundController(this);
     popupLayout.setPopupHeightProvider(this);
@@ -398,8 +406,12 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
     }
   }
 
-  protected void hidePopupWindow (boolean animated) {
+  public void hidePopupWindow (boolean animated) {
     popupLayout.hideWindow(animated);
+  }
+
+  public void setDismissListener (PopupLayout.DismissListener l) {
+    popupLayout.setDismissListener(l);
   }
 
   protected PopupLayout getPopupLayout () {
@@ -517,13 +529,19 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
       this.controller = controller;
     }
 
+    private boolean ignoreScrollChangeState;
+
     @Override
     public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {
       super.onScrollStateChanged(recyclerView, newState);
       if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+        if (ignoreScrollChangeState) {
+          ignoreScrollChangeState = false;
+          return;
+        }
+
         ViewController<?> c = controller.findCurrentCachedController();
         boolean canHideByScroll = controller.canHideByScroll();
-        int targetHeight = controller.getTargetHeight();
         int contentOffset = controller.getContentOffset();
         int topEdge = controller.getTopEdge();
 
@@ -535,6 +553,7 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
             } else if (canHideByScroll && (topEdge > contentOffset)) {
               if (controller.getContentVisibleHeight() > controller.getHideByScrollBorder()) {
                 ci.getRecyclerView().smoothScrollBy(0, topEdge - contentOffset);
+                ignoreScrollChangeState = true;
               } else {
                 controller.hidePopupWindow(true);
               }
@@ -547,10 +566,19 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
     @Override
     public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
       ViewController<?> c = controller.findCurrentCachedController();
+      boolean canHideByScroll = controller.canHideByScroll() && recyclerView.getScrollState() == RecyclerView.SCROLL_STATE_SETTLING;
+      int contentOffset = controller.getContentOffset();
+      int topEdge = controller.getTopEdge();
+
       if (c instanceof BottomSheetViewController.BottomSheetBaseControllerPage) {
         BottomSheetBaseControllerPage ci = (BottomSheetBaseControllerPage) c;
         if (ci.getRecyclerView() == recyclerView && (!controller.getIgnoreAnyPagerScrollEventsBecauseOfMovements())) {
           controller.checkHeaderPosition(recyclerView);
+          if (canHideByScroll && (topEdge > contentOffset)) {
+            if (!(controller.getContentVisibleHeight() > controller.getHideByScrollBorder())) {
+              controller.hidePopupWindow(true);
+            }
+          }
         }
       }
     }

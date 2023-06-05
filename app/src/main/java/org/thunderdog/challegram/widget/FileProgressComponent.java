@@ -32,7 +32,7 @@ import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
@@ -50,8 +50,8 @@ import org.thunderdog.challegram.telegram.MediaDownloadType;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibFilesManager;
 import org.thunderdog.challegram.telegram.TdlibManager;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
@@ -321,7 +321,7 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
 
   private boolean backgroundColorIsId;
 
-  public void setBackgroundColorId (@ThemeColorId int colorId) {
+  public void setBackgroundColorId (@ColorId int colorId) {
     this.backgroundColorIsId = true;
     this.backgroundColor = colorId;
   }
@@ -1254,8 +1254,8 @@ public class FileProgressComponent implements TdlibFilesManager.FileListener, Fa
       cloudColor = Theme.getColor(backgroundColor);
     } else {
       float colorFactor = playPauseFactor;
-      int activeColor = colorFactor != 0f ? Theme.getColor(R.id.theme_color_file) : 0;
-      int inactiveColor = colorFactor != 1f ? (backgroundColorProvider != null ? backgroundColorProvider.getDecentIconColor() : Theme.getColor(R.id.theme_color_iconLight)) : 0;
+      int activeColor = colorFactor != 0f ? Theme.getColor(ColorId.file) : 0;
+      int inactiveColor = colorFactor != 1f ? (backgroundColorProvider != null ? backgroundColorProvider.getDecentIconColor() : Theme.getColor(ColorId.iconLight)) : 0;
       cloudColor = ColorUtils.fromToArgb(inactiveColor, activeColor, colorFactor);
     }
     int fillingColor;

@@ -20,7 +20,7 @@ import android.widget.FrameLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.MediaBottomBaseController;
 import org.thunderdog.challegram.component.attach.MediaLayout;
@@ -33,6 +33,7 @@ import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.ui.SettingsAdapter;
@@ -89,9 +90,9 @@ public class JoinDialogController extends MediaBottomBaseController<Void> implem
       @Override
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
         if (item.getId() == R.id.btn_join) {
-          view.setIconColorId(R.id.theme_color_textNeutral);
+          view.setIconColorId(ColorId.textNeutral);
         } else {
-          view.setIconColorId(R.id.theme_color_icon);
+          view.setIconColorId(ColorId.icon);
         }
       }
 
@@ -118,7 +119,7 @@ public class JoinDialogController extends MediaBottomBaseController<Void> implem
       }
     };
 
-    ViewSupport.setThemedBackground(recyclerView, R.id.theme_color_filling);
+    ViewSupport.setThemedBackground(recyclerView, ColorId.filling);
 
     boolean isChannel = TD.isChannel(inviteLinkInfo.type);
 
@@ -147,7 +148,7 @@ public class JoinDialogController extends MediaBottomBaseController<Void> implem
       items.add(new ListItem(ListItem.TYPE_INFO, R.id.message, 0, Lang.getString(isChannel ? R.string.RequestToJoinChannelInfo : R.string.RequestToJoinGroupInfo), false));
     }
 
-    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_join, R.drawable.baseline_person_add_24, inviteLinkInfo.createsJoinRequest ? Lang.getString(isChannel ? R.string.RequestJoinChannelBtn : R.string.RequestJoinGroupBtn) : Lang.getString(isChannel ? R.string.JoinChannel : R.string.JoinChat), false).setTextColorId(R.id.theme_color_textNeutral));
+    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_join, R.drawable.baseline_person_add_24, inviteLinkInfo.createsJoinRequest ? Lang.getString(isChannel ? R.string.RequestJoinChannelBtn : R.string.RequestJoinGroupBtn) : Lang.getString(isChannel ? R.string.JoinChannel : R.string.JoinChat), false).setTextColorId(ColorId.textNeutral));
     items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_cancel, R.drawable.baseline_cancel_24, R.string.Cancel));
 
     FrameLayoutFix.LayoutParams params;

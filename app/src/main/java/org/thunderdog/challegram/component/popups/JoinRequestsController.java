@@ -18,7 +18,7 @@ import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.MediaBottomBaseController;
 import org.thunderdog.challegram.component.attach.MediaLayout;
@@ -27,6 +27,7 @@ import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.Menu;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Strings;
 
 import me.vkryl.android.widget.FrameLayoutFix;
@@ -55,7 +56,7 @@ public class JoinRequestsController extends MediaBottomBaseController<Void> impl
     buildContentView(false);
 
     this.component.onCreateView(context, recyclerView);
-    ViewSupport.setThemedBackground(recyclerView, R.id.theme_color_background);
+    ViewSupport.setThemedBackground(recyclerView, ColorId.background);
 
     initMetrics();
     this.allowExpand = getInitialContentHeight() == super.getInitialContentHeight();
@@ -146,30 +147,20 @@ public class JoinRequestsController extends MediaBottomBaseController<Void> impl
 
   @Override
   public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
-    switch (id) {
-      case R.id.menu_search: {
-        header.addSearchButton(menu, this);
-        break;
-      }
-      case R.id.menu_clear: {
-        header.addClearButton(menu, this);
-        break;
-      }
+    if (id == R.id.menu_search) {
+      header.addSearchButton(menu, this);
+    } else if (id == R.id.menu_clear) {
+      header.addClearButton(menu, this);
     }
   }
 
   @Override
   public void onMenuItemPressed (int id, View view) {
-    switch (id) {
-      case R.id.menu_btn_search: {
-        mediaLayout.getHeaderView().openSearchMode();
-        headerView = mediaLayout.getHeaderView();
-        break;
-      }
-      case R.id.menu_btn_clear: {
-        clearSearchInput();
-        break;
-      }
+    if (id == R.id.menu_btn_search) {
+      mediaLayout.getHeaderView().openSearchMode();
+      headerView = mediaLayout.getHeaderView();
+    } else if (id == R.id.menu_btn_clear) {
+      clearSearchInput();
     }
   }
 

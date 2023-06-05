@@ -44,7 +44,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.Px;
 import androidx.annotation.UiThread;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.config.Device;
@@ -64,6 +64,7 @@ import org.thunderdog.challegram.telegram.MessageThreadListener;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeChangeListener;
@@ -278,7 +279,7 @@ public class ForceTouchView extends FrameLayoutFix implements
     if (context.backgroundColor != 0) {
       backgroundView.setBackgroundColor(context.backgroundColor);
     } else {
-      ViewSupport.setThemedBackground(backgroundView, R.id.theme_color_previewBackground);
+      ViewSupport.setThemedBackground(backgroundView, ColorId.previewBackground);
       themeListenerList.addThemeInvalidateListener(backgroundView);
     }
 
@@ -371,7 +372,7 @@ public class ForceTouchView extends FrameLayoutFix implements
           return PixelFormat.UNKNOWN;
         }
       });
-      themeListenerList.addThemeDoubleTextColorListener(targetHeaderView, R.id.theme_color_text, R.id.theme_color_textLight);
+      themeListenerList.addThemeDoubleTextColorListener(targetHeaderView, ColorId.text, ColorId.textLight);
 
       params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, Screen.dp(7f));
       params.addRule(RelativeLayout.ALIGN_LEFT, R.id.forceTouch_content);
@@ -500,7 +501,7 @@ public class ForceTouchView extends FrameLayoutFix implements
         PopupContext popupContext = new PopupContext(popupWrapView, view, actionItem.title);
         view.setTag(popupContexts[i] = popupContext);
         view.setScaleType(ImageView.ScaleType.CENTER);
-        themeListenerList.addThemeFilterListener(view, R.id.theme_color_icon);
+        themeListenerList.addThemeFilterListener(view, ColorId.icon);
         if (actionItem.iconRes != 0) {
           view.setImageResource(actionItem.iconRes);
           view.setColorFilter(Theme.iconColor());

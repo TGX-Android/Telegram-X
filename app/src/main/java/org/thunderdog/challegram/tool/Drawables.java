@@ -55,16 +55,13 @@ public class Drawables {
   public static boolean needMirror (@DrawableRes int resId) {
     if (!Lang.rtl())
       return false;
-    switch (resId) {
-      case R.drawable.baseline_forward_24:
-      case R.drawable.baseline_content_copy_24:
-      case R.drawable.baseline_reply_24:
-      case R.drawable.baseline_share_24:
-      case R.drawable.baseline_arrow_forward_24:
-      case R.drawable.deproko_baseline_send_24:
-        return true;
-    }
-    return false;
+    return
+      resId == R.drawable.baseline_forward_24 ||
+      resId == R.drawable.baseline_content_copy_24 ||
+      resId == R.drawable.baseline_reply_24 ||
+      resId == R.drawable.baseline_share_24 ||
+      resId == R.drawable.baseline_arrow_forward_24 ||
+      resId == R.drawable.deproko_baseline_send_24;
   }
 
   public static Drawable getColorSelector (Drawable defaultDrawable, Drawable pressedDrawable) {
@@ -222,38 +219,28 @@ public class Drawables {
   // Custom drawable utilities
 
   public static String getAuthorForResource (@DrawableRes int resId) {
-    switch (resId) {
-
-
-      case R.drawable.templarian_baseline_broom_24:
-      case R.drawable.templarian_baseline_calculator_18:
-      case R.drawable.templarian_baseline_foursquare_24:
-      case R.drawable.templarian_baseline_gamepad_variant_16:
-        return "templarian";
-
-      case R.drawable.mrgrigri_baseline_textbox_password_24:
-        return "mrgrigri";
-
-      case R.drawable.itsspelledhaley_baseline_lock_pattern_24:
-        return "japanyoshilol";
-
-      case R.drawable.ivanliana_baseline_video_collections_16:
-      case R.drawable.ivanliana_baseline_audio_collections_16:
-      case R.drawable.ivanliana_baseline_file_collections_16:
-        return "ivanliana";
-
-      case R.drawable.vkryl_baseline_lock_pin_24:
-        return "vkryl";
-
-      case R.drawable.logo_dailymotion:
-        return "dailymotion";
-
-      case R.drawable.logo_vimeo:
-        return "Vimeo";
-
-      case R.drawable.logo_youtube:
-      case R.drawable.logo_youtube_tube:
-        return "YouTube";
+    // TODO(?): rework based on Lang.getResourceEntryName(resId)
+    if (resId == R.drawable.templarian_baseline_broom_24 ||
+      resId == R.drawable.templarian_baseline_calculator_18 ||
+      resId == R.drawable.templarian_baseline_foursquare_24 ||
+      resId == R.drawable.templarian_baseline_gamepad_variant_16) {
+      return "templarian";
+    } else if (resId == R.drawable.mrgrigri_baseline_textbox_password_24) {
+      return "mrgrigri";
+    } else if (resId == R.drawable.itsspelledhaley_baseline_lock_pattern_24) {
+      return "japanyoshilol";
+    } else if (resId == R.drawable.ivanliana_baseline_video_collections_16 ||
+      resId == R.drawable.ivanliana_baseline_audio_collections_16 ||
+      resId == R.drawable.ivanliana_baseline_file_collections_16) {
+      return "ivanliana";
+    } else if (resId == R.drawable.vkryl_baseline_lock_pin_24) {
+      return "vkryl";
+    } else if (resId == R.drawable.logo_dailymotion) {
+      return "dailymotion";
+    } else if (resId == R.drawable.logo_vimeo) {
+      return "Vimeo";
+    } else if (resId == R.drawable.logo_youtube || resId == R.drawable.logo_youtube_tube) {
+      return "YouTube";
     }
     return null;
   }

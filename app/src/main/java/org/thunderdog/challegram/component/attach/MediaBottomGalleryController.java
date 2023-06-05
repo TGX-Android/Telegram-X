@@ -36,7 +36,7 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.CircleCounterBadgeView;
@@ -57,6 +57,7 @@ import org.thunderdog.challegram.navigation.Menu;
 import org.thunderdog.challegram.navigation.MenuMoreWrap;
 import org.thunderdog.challegram.navigation.ToggleHeaderView;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
@@ -98,46 +99,34 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
 
   @Override
   public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
-    switch (id) {
-      case R.id.menu_more: {
-        header.addSearchButton(menu, this);
-        header.addMoreButton(menu, this);
-        break;
-      }
-      case R.id.menu_clear: {
-        header.addClearButton(menu, this);
-        break;
-      }
+    if (id == R.id.menu_more) {
+      header.addSearchButton(menu, this);
+      header.addMoreButton(menu, this);
+    } else if (id == R.id.menu_clear) {
+      header.addClearButton(menu, this);
     }
   }
 
   @Override
   protected int getRecyclerBackgroundColorId () {
-    return R.id.theme_color_chatBackground;
+    return ColorId.chatBackground;
   }
 
   @Override
   public void onMenuItemPressed (int id, View view) {
-    switch (id) {
-      case R.id.menu_btn_clear: {
-        clearSearchInput();
-        break;
-      }
-      case R.id.menu_btn_search: {
-        if (true) {
-          mediaLayout.chooseInlineBot(tdlib.getPhotoSearchBotUsername());
-        } else {
-          if (galleryShown || !hasGalleryAccess) {
-            mediaLayout.getHeaderView().openSearchMode();
-            headerView = mediaLayout.getHeaderView();
-          }
+    if (id == R.id.menu_btn_clear) {
+      clearSearchInput();
+    } else if (id == R.id.menu_btn_search) {
+      if (true) {
+        mediaLayout.chooseInlineBot(tdlib.getPhotoSearchBotUsername());
+      } else {
+        if (galleryShown || !hasGalleryAccess) {
+          mediaLayout.getHeaderView().openSearchMode();
+          headerView = mediaLayout.getHeaderView();
         }
-        break;
       }
-      case R.id.menu_btn_more: {
-        mediaLayout.openGallery(false);
-        break;
-      }
+    } else if (id == R.id.menu_btn_more) {
+      mediaLayout.openGallery(false);
     }
   }
 
@@ -238,7 +227,7 @@ public class MediaBottomGalleryController extends MediaBottomBaseController<Medi
 
     if (mediaLayout.needCameraButton()) {
       cameraBadgeView = new CircleCounterBadgeView(this, R.id.btn_camera, this::onCameraButtonClick, null);
-      cameraBadgeView.init(R.drawable.deproko_baseline_camera_26, 48f, 4f, R.id.theme_color_circleButtonChat, R.id.theme_color_circleButtonChatIcon);
+      cameraBadgeView.init(R.drawable.deproko_baseline_camera_26, 48f, 4f, ColorId.circleButtonChat, ColorId.circleButtonChatIcon);
       cameraBadgeView.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(CircleCounterBadgeView.BUTTON_WRAPPER_WIDTH), Screen.dp(74f), Gravity.BOTTOM | Gravity.RIGHT, 0, 0, Screen.dp(12), Screen.dp(12 + 60)));
       contentView.addView(cameraBadgeView);
     }

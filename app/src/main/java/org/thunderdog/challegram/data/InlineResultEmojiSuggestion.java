@@ -23,12 +23,12 @@ import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.N;
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.inline.CustomResultView;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeId;
 import org.thunderdog.challegram.tool.Paints;
@@ -95,7 +95,7 @@ public class InlineResultEmojiSuggestion extends InlineResult<N.Suggestion> {
       startX += Screen.dp(24f);
     }
     if (trimmedText != null) {
-      final int color = forceDarkMode ? Theme.getColor(R.id.theme_color_text, ThemeId.NIGHT_BLACK) : Theme.textAccentColor();
+      final int color = forceDarkMode ? Theme.getColor(ColorId.text, ThemeId.NIGHT_BLACK) : Theme.textAccentColor();
       if (textLayout != null) {
         c.save();
         c.translate(startX, startY - Screen.dp(13f));

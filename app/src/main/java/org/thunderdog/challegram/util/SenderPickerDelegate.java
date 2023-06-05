@@ -16,7 +16,7 @@ package org.thunderdog.challegram.util;
 
 import android.view.View;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.ui.ContactsController;
 
 public interface SenderPickerDelegate {

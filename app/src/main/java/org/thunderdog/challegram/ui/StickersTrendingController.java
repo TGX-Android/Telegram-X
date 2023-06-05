@@ -25,8 +25,8 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.emoji.MediaStickersAdapter;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
@@ -36,6 +36,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.StickersListener;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 
@@ -75,7 +76,7 @@ public class StickersTrendingController extends ViewController<Void> implements 
     recyclerView.setItemAnimator(null);
     recyclerView.setLayoutManager(manager);
     recyclerView.setAdapter(adapter);
-    ViewSupport.setThemedBackground(recyclerView, R.id.theme_color_filling, this);
+    ViewSupport.setThemedBackground(recyclerView, ColorId.filling, this);
     recyclerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     adapter.setManager(recyclerView.getLayoutManager());
     adapter.setItem(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_PROGRESS));

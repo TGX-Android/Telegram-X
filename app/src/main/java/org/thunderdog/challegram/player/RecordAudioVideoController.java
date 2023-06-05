@@ -29,7 +29,7 @@ import android.widget.Toast;
 import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
@@ -44,6 +44,7 @@ import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibFilesManager;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeChangeListener;
@@ -155,11 +156,11 @@ public class RecordAudioVideoController implements
 
     this.inputOverlayView.setBackgroundColor(Theme.fillingColor());
     this.slideHintView.setTextColor(Theme.textDecentColor());
-    this.cancelView.setTextColor(Theme.getColor(R.id.theme_color_textNeutral));
+    this.cancelView.setTextColor(Theme.getColor(ColorId.textNeutral));
     this.videoPlaceholderView.setBackgroundColor(Theme.fillingColor());
     this.deleteButton.setColorFilter(Theme.iconColor());
     this.sendButton.setColorFilter(Theme.chatSendButtonColor());
-    this.videoBackgroundView.setBackgroundColor(Theme.getColor(R.id.theme_color_previewBackground));
+    this.videoBackgroundView.setBackgroundColor(Theme.getColor(ColorId.previewBackground));
 
     this.cornerView.invalidate();
     this.switchCameraButton.invalidate();
@@ -345,7 +346,7 @@ public class RecordAudioVideoController implements
       this.switchCameraButton.setIsSmall();
       this.switchCameraButtonWrap = new FrameLayoutFix(context);
       Views.setClickable(switchCameraButtonWrap);
-      RippleSupport.setCircleBackground(switchCameraButtonWrap, 33f, 3f, R.id.theme_color_filling);
+      RippleSupport.setCircleBackground(switchCameraButtonWrap, 33f, 3f, ColorId.filling);
       this.switchCameraButtonWrap.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(33f) + Screen.dp(3f) * 2, Screen.dp(33f) + Screen.dp(3f) * 2));
       this.switchCameraButtonWrap.setOnClickListener(v -> {
         if (ownedCamera != null) {

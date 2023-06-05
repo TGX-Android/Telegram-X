@@ -38,7 +38,7 @@ import org.thunderdog.challegram.navigation.ViewPagerController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ThemeInfo;
 import org.thunderdog.challegram.theme.ThemeManager;
 import org.thunderdog.challegram.tool.Screen;
@@ -85,15 +85,13 @@ public class ThemeController extends ViewPagerController<ThemeController.Args> i
 
   @Override
   public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
-    switch (id) {
-      case R.id.menu_theme:
-        header.addSearchButton(menu, this);
-        header.addMoreButton(menu, this);
-        break;
+    if (id == R.id.menu_theme) {
+      header.addSearchButton(menu, this);
+      header.addMoreButton(menu, this);
     }
   }
 
-  public void highlightColor (@ThemeColorId int colorId) {
+  public void highlightColor (@ColorId int colorId) {
     SparseArrayCompat<ViewController<?>> controllers = getAllCachedControllers();
     if (controllers == null)
       return;
@@ -176,48 +174,43 @@ public class ThemeController extends ViewPagerController<ThemeController.Args> i
 
   @Override
   public void onMenuItemPressed (int id, View view) {
-    switch (id) {
-      case R.id.menu_btn_search: {
-        Args args = getArgumentsStrict();
-        ThemeListController c = new ThemeListController(context, tdlib);
-        c.setArguments(new ThemeListController.Args(args.theme, 0).setLookupParent(this));
-        navigateTo(c);
-        break;
+    if (id == R.id.menu_btn_search) {
+      Args args = getArgumentsStrict();
+      ThemeListController c = new ThemeListController(context, tdlib);
+      c.setArguments(new ThemeListController.Args(args.theme, 0).setLookupParent(this));
+      navigateTo(c);
+    } else if (id == R.id.menu_btn_more) {
+      int size = openOverlayOnClose ? 4 : 7;
+
+      IntList ids = new IntList(size);
+      StringList strings = new StringList(size);
+
+      if (!openOverlayOnClose) {
+        ids.append(R.id.btn_edit);
+        strings.append(R.string.ThemeEditName);
+
+        ids.append(R.id.btn_wallpaper);
+        strings.append(R.string.Wallpaper);
       }
-      case R.id.menu_btn_more: {
-        int size = openOverlayOnClose ? 4 : 7;
 
-        IntList ids = new IntList(size);
-        StringList strings = new StringList(size);
+      ids.append(R.id.btn_showAdvanced);
+      strings.append(R.string.ThemeAdvanced);
 
-        if (!openOverlayOnClose) {
-          ids.append(R.id.btn_edit);
-          strings.append(R.string.ThemeEditName);
+      ids.append(R.id.btn_color);
+      strings.append(R.string.ThemeColorFormat);
 
-          ids.append(R.id.btn_wallpaper);
-          strings.append(R.string.Wallpaper);
-        }
+      ids.append(R.id.btn_share);
+      strings.append(Settings.instance().canEditAuthor(ThemeManager.resolveCustomThemeId(getArgumentsStrict().theme.getId())) ? R.string.ThemeExport : R.string.Share);
 
-        ids.append(R.id.btn_showAdvanced);
-        strings.append(R.string.ThemeAdvanced);
-
-        ids.append(R.id.btn_color);
-        strings.append(R.string.ThemeColorFormat);
-
-        ids.append(R.id.btn_share);
-        strings.append(Settings.instance().canEditAuthor(ThemeManager.resolveCustomThemeId(getArgumentsStrict().theme.getId())) ? R.string.ThemeExport : R.string.Share);
-
-        if (!openOverlayOnClose) {
-          ids.append(R.id.btn_delete);
-          strings.append(R.string.ThemeRemove);
-        }
-
-        ids.append(R.id.btn_close);
-        strings.append(openOverlayOnClose ? R.string.ThemeClose : R.string.ThemeMinimize);
-
-        showMore(ids.get(), strings.get(), 0);
-        break;
+      if (!openOverlayOnClose) {
+        ids.append(R.id.btn_delete);
+        strings.append(R.string.ThemeRemove);
       }
+
+      ids.append(R.id.btn_close);
+      strings.append(openOverlayOnClose ? R.string.ThemeClose : R.string.ThemeMinimize);
+
+      showMore(ids.get(), strings.get(), 0);
     }
   }
 
@@ -249,7 +242,7 @@ public class ThemeController extends ViewPagerController<ThemeController.Args> i
     }
   }
 
-  public void closeOtherEditors (ThemeListController callee, @ThemeColorId int colorId) {
+  public void closeOtherEditors (ThemeListController callee, @ColorId int colorId) {
     SparseArrayCompat<ViewController<?>> controllers = getAllCachedControllers();
     if (controllers != null) {
       for (int i = 0; i < controllers.size(); i++) {
@@ -263,126 +256,106 @@ public class ThemeController extends ViewPagerController<ThemeController.Args> i
 
   @Override
   public void onMoreItemPressed (int id) {
-    switch (id) {
-      case R.id.btn_edit: {
-        openInputAlert(Lang.getString(R.string.ThemeEditName), Lang.getString(R.string.ThemeName), R.string.Save, R.string.Cancel, getArgumentsStrict().theme.getName(), (v, value) -> {
-          value = value.trim();
-          if (value.isEmpty())
-            return false;
-          String currentName = getArgumentsStrict().theme.getName();
-          if (currentName.equals(value))
-            return true;
-          Args args = getArgumentsStrict();
-          args.theme.setName(value);
-          changeName(value);
-          Settings.instance().setCustomThemeName(ThemeManager.resolveCustomThemeId(args.theme.getId()), value);
-          if (args.parent != null && !args.parent.isDestroyed()) {
-            args.parent.updateTheme(args.theme);
-          }
+    if (id == R.id.btn_edit) {
+      openInputAlert(Lang.getString(R.string.ThemeEditName), Lang.getString(R.string.ThemeName), R.string.Save, R.string.Cancel, getArgumentsStrict().theme.getName(), (v, value) -> {
+        value = value.trim();
+        if (value.isEmpty())
+          return false;
+        String currentName = getArgumentsStrict().theme.getName();
+        if (currentName.equals(value))
           return true;
-        }, true);
-        break;
-      }
-      case R.id.btn_wallpaper: {
-        openInputAlert(Lang.getString(R.string.ThemeEditWallpaper), Lang.getString(R.string.ThemeWallpaper), R.string.Save, R.string.Cancel, getArgumentsStrict().theme.getWallpaperLink(tdlib), (v, value) -> {
-          value = tdlib.getWallpaperData(value.trim());
-          String currentWallpaper = getArgumentsStrict().theme.getWallpaper();
-          if (StringUtils.equalsOrBothEmpty(currentWallpaper, value))
-            return true;
-          Args args = getArgumentsStrict();
-          args.theme.setWallpaper(value);
-          Settings.instance().setCustomThemeWallpaper(ThemeManager.resolveCustomThemeId(args.theme.getId()), value);
-          if (args.parent != null && !args.parent.isDestroyed()) {
-            args.parent.updateTheme(args.theme);
-          }
-          tdlib.wallpaper().notifyDefaultWallpaperChanged(args.theme.getId());
+        Args args = getArgumentsStrict();
+        args.theme.setName(value);
+        changeName(value);
+        Settings.instance().setCustomThemeName(ThemeManager.resolveCustomThemeId(args.theme.getId()), value);
+        if (args.parent != null && !args.parent.isDestroyed()) {
+          args.parent.updateTheme(args.theme);
+        }
+        return true;
+      }, true);
+    } else if (id == R.id.btn_wallpaper) {
+      openInputAlert(Lang.getString(R.string.ThemeEditWallpaper), Lang.getString(R.string.ThemeWallpaper), R.string.Save, R.string.Cancel, getArgumentsStrict().theme.getWallpaperLink(tdlib), (v, value) -> {
+        value = tdlib.getWallpaperData(value.trim());
+        String currentWallpaper = getArgumentsStrict().theme.getWallpaper();
+        if (StringUtils.equalsOrBothEmpty(currentWallpaper, value))
           return true;
-        }, true);
-        break;
-      }
-      case R.id.btn_showAdvanced: {
-        ThemeListController c = new ThemeListController(context, tdlib);
-        c.setArguments(new ThemeListController.Args(getArgumentsStrict().theme, R.id.theme_category_settings));
-        navigateTo(c);
-        break;
-      }
-      case R.id.btn_close: {
-        openOverlayOnClose = !openOverlayOnClose;
-        getArgumentsStrict().parent = null;
-        navigateBack();
-        break;
-      }
-      case R.id.btn_color: {
-        showOptions(new int[] {R.id.btn_colorFormatHex, R.id.btn_colorFormatRgb, R.id.btn_colorFormatHsl}, new String[] {Lang.getString(R.string.ColorTypeHex), Lang.getString(R.string.ColorTypeRGBA), Lang.getString(R.string.ColorTypeHSLA)}, (itemView, optionId) -> {
-          int value;
-          switch (optionId) {
-            case R.id.btn_colorFormatHex:
-              value = Settings.COLOR_FORMAT_HEX;
-              break;
-            case R.id.btn_colorFormatRgb:
-              value = Settings.COLOR_FORMAT_RGB;
-              break;
-            case R.id.btn_colorFormatHsl:
-              value = Settings.COLOR_FORMAT_HSL;
-              break;
-            default:
-              return false;
-          }
-          if (Settings.instance().setColorFormat(value)) {
-            SparseArrayCompat<ViewController<?>> array = getAllCachedControllers();
-            if (array != null && array.size() > 0) {
-              for (int i = 0; i < array.size(); i++) {
-                ViewController<?> c = array.valueAt(i);
-                if (c instanceof RecyclerViewController) {
-                  ((RecyclerViewController<?>) c).getRecyclerView().getAdapter().notifyDataSetChanged();
-                }
+        Args args = getArgumentsStrict();
+        args.theme.setWallpaper(value);
+        Settings.instance().setCustomThemeWallpaper(ThemeManager.resolveCustomThemeId(args.theme.getId()), value);
+        if (args.parent != null && !args.parent.isDestroyed()) {
+          args.parent.updateTheme(args.theme);
+        }
+        tdlib.wallpaper().notifyDefaultWallpaperChanged(args.theme.getId());
+        return true;
+      }, true);
+    } else if (id == R.id.btn_showAdvanced) {
+      ThemeListController c = new ThemeListController(context, tdlib);
+      c.setArguments(new ThemeListController.Args(getArgumentsStrict().theme, R.id.theme_category_settings));
+      navigateTo(c);
+    } else if (id == R.id.btn_close) {
+      openOverlayOnClose = !openOverlayOnClose;
+      getArgumentsStrict().parent = null;
+      navigateBack();
+    } else if (id == R.id.btn_color) {
+      showOptions(new int[] {R.id.btn_colorFormatHex, R.id.btn_colorFormatRgb, R.id.btn_colorFormatHsl}, new String[] {Lang.getString(R.string.ColorTypeHex), Lang.getString(R.string.ColorTypeRGBA), Lang.getString(R.string.ColorTypeHSLA)}, (itemView, optionId) -> {
+        int value;
+        if (optionId == R.id.btn_colorFormatHex) {
+          value = Settings.COLOR_FORMAT_HEX;
+        } else if (optionId == R.id.btn_colorFormatRgb) {
+          value = Settings.COLOR_FORMAT_RGB;
+        } else if (optionId == R.id.btn_colorFormatHsl) {
+          value = Settings.COLOR_FORMAT_HSL;
+        } else {
+          return false;
+        }
+        if (Settings.instance().setColorFormat(value)) {
+          SparseArrayCompat<ViewController<?>> array = getAllCachedControllers();
+          if (array != null && array.size() > 0) {
+            for (int i = 0; i < array.size(); i++) {
+              ViewController<?> c = array.valueAt(i);
+              if (c instanceof RecyclerViewController) {
+                ((RecyclerViewController<?>) c).getRecyclerView().getAdapter().notifyDataSetChanged();
               }
             }
           }
-          return true;
-        });
-        break;
-      }
-      case R.id.btn_share: {
-        ThemeInfo theme = getArgumentsStrict().theme;
-        tdlib.ui().exportTheme(this, theme, !theme.hasParent(), false);
-        break;
-      }
-      case R.id.btn_delete: {
-        tdlib.ui().showDeleteThemeConfirm(this, getArgumentsStrict().theme, () -> {
-          navigateBack();
-          if (getArgumentsStrict().parent != null && !getArgumentsStrict().parent.isDestroyed()) {
-            getArgumentsStrict().parent.deleteTheme(getArgumentsStrict().theme, false);
-          }
-        });
-        break;
-      }
+        }
+        return true;
+      });
+    } else if (id == R.id.btn_share) {
+      ThemeInfo theme = getArgumentsStrict().theme;
+      tdlib.ui().exportTheme(this, theme, !theme.hasParent(), false);
+    } else if (id == R.id.btn_delete) {
+      tdlib.ui().showDeleteThemeConfirm(this, getArgumentsStrict().theme, () -> {
+        navigateBack();
+        if (getArgumentsStrict().parent != null && !getArgumentsStrict().parent.isDestroyed()) {
+          getArgumentsStrict().parent.deleteTheme(getArgumentsStrict().theme, false);
+        }
+      });
     }
   }
 
   @StringRes
   private static int getSectionName (@IdRes int sectionId) {
-    switch (sectionId) {
-      case R.id.theme_category_main:
-        return R.string.ThemeCategoryAccent;
-      case R.id.theme_category_content:
-        return R.string.ThemeCategoryContent;
-      case R.id.theme_category_navigation:
-        return R.string.ThemeCategoryNavigation;
-      case R.id.theme_category_controls:
-        return R.string.ThemeCategoryControls;
-      case R.id.theme_category_chat:
-        return R.string.ThemeCategoryChats;
-      case R.id.theme_category_bubbles:
-        return R.string.ThemeCategoryBubbles;
-      case R.id.theme_category_colors:
-        return R.string.ThemeCategoryColors;
-      case R.id.theme_category_iv:
-        return R.string.ThemeCategoryIV;
-      case R.id.theme_category_other:
-        return R.string.ThemeCategoryOther;
-      case R.id.theme_category_internal:
-        return R.string.ThemeCategoryInternal;
+    if (sectionId == R.id.theme_category_main) {
+      return R.string.ThemeCategoryAccent;
+    } else if (sectionId == R.id.theme_category_content) {
+      return R.string.ThemeCategoryContent;
+    } else if (sectionId == R.id.theme_category_navigation) {
+      return R.string.ThemeCategoryNavigation;
+    } else if (sectionId == R.id.theme_category_controls) {
+      return R.string.ThemeCategoryControls;
+    } else if (sectionId == R.id.theme_category_chat) {
+      return R.string.ThemeCategoryChats;
+    } else if (sectionId == R.id.theme_category_bubbles) {
+      return R.string.ThemeCategoryBubbles;
+    } else if (sectionId == R.id.theme_category_colors) {
+      return R.string.ThemeCategoryColors;
+    } else if (sectionId == R.id.theme_category_iv) {
+      return R.string.ThemeCategoryIV;
+    } else if (sectionId == R.id.theme_category_other) {
+      return R.string.ThemeCategoryOther;
+    } else if (sectionId == R.id.theme_category_internal) {
+      return R.string.ThemeCategoryInternal;
     }
     throw Theme.newError(sectionId, "sectionId");
   }
@@ -423,7 +396,7 @@ public class ThemeController extends ViewPagerController<ThemeController.Args> i
     CircleButton btn = new CircleButton(context);
     int size = Screen.dp(52f) + Screen.dp(12f * 2f);
     btn.setLayoutParams(FrameLayoutFix.newParams(size, size, Settings.instance().getMinimizedThemeLocation()));
-    btn.init(R.drawable.baseline_palette_24, 52f, 12f, R.id.theme_color_circleButtonTheme, R.id.theme_color_circleButtonThemeIcon);
+    btn.init(R.drawable.baseline_palette_24, 52f, 12f, ColorId.circleButtonTheme, ColorId.circleButtonThemeIcon);
     btn.setOnClickListener(v -> {
       context().closeThumbnail(ThemeController.this);
       context().navigation().navigateTo(ThemeController.this);
@@ -471,7 +444,7 @@ public class ThemeController extends ViewPagerController<ThemeController.Args> i
 
   @Override
   protected int getDrawerReplacementColorId () {
-    return R.id.theme_color_background;
+    return ColorId.background;
   }
 
   @Override

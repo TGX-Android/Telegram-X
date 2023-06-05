@@ -39,7 +39,7 @@ import androidx.core.content.pm.ShortcutManagerCompat;
 import androidx.core.graphics.drawable.IconCompat;
 import androidx.core.os.CancellationSignal;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
@@ -56,7 +56,7 @@ import org.thunderdog.challegram.receiver.TGMessageReceiver;
 import org.thunderdog.challegram.receiver.TGRemoveAllReceiver;
 import org.thunderdog.challegram.receiver.TGRemoveReceiver;
 import org.thunderdog.challegram.receiver.TGWearReplyReceiver;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Strings;
@@ -848,7 +848,7 @@ public class TdlibNotificationStyle implements TdlibNotificationStyleDelegate, F
     return buildPerson(context, notification.isSelfChat(), TD.isMultiChat(chat), tdlib.isChannelChat(chat), Long.toString(chat.id), tdlib.isBotChat(chat) || tdlib.isChannelChat(chat), chat.title, tdlib.chatLetters(chat), tdlib.chatAvatarColorId(chat), chat.photo != null ? chat.photo.small : null, isScheduled, isSilent, allowDownload);
   }
 
-  public static Person buildPerson (TdlibNotificationManager context, boolean isSelfChat, boolean isGroupChat, boolean isChannel, String id, boolean isBot, String name, Letters letters, @ThemeColorId int colorId, TdApi.File photo, boolean isScheduled, boolean isSilent, boolean allowDownload) {
+  public static Person buildPerson (TdlibNotificationManager context, boolean isSelfChat, boolean isGroupChat, boolean isChannel, String id, boolean isBot, String name, Letters letters, @ColorId int colorId, TdApi.File photo, boolean isScheduled, boolean isSilent, boolean allowDownload) {
     Person.Builder b = new Person.Builder();
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
       b.setKey(id);

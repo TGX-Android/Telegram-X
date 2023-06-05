@@ -18,17 +18,9 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 
 import androidx.annotation.Keep;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
-import org.drinkless.td.libcore.telegram.TdApi;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.unsorted.NLoader;
-import org.thunderdog.challegram.voip.CallConfiguration;
-import org.thunderdog.challegram.voip.CallOptions;
-import org.thunderdog.challegram.voip.Socks5Proxy;
-import org.thunderdog.challegram.voip.annotation.CallNetworkType;
-import org.webrtc.VideoSink;
 
 import java.nio.ByteBuffer;
 

@@ -36,7 +36,7 @@ public class ThemeInfo {
   public ThemeInfo (int id) {
     this.id = id;
     if (!ThemeManager.isCustomTheme(id)) {
-      this.parentThemeId = (int) ThemeSet.getProperty(id, ThemeProperty.PARENT_THEME);
+      this.parentThemeId = (int) ThemeSet.getProperty(id, PropertyId.PARENT_THEME);
     }
   }
 

@@ -48,8 +48,8 @@ import androidx.annotation.StringRes;
 import androidx.annotation.UiThread;
 import androidx.collection.LongSparseArray;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 import org.drinkmore.Tracer;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.BuildConfig;
@@ -73,6 +73,7 @@ import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
+import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.ReactionsOverlayView;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -80,10 +81,10 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.telegram.TdlibSender;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PropertyId;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.theme.ThemeManager;
-import org.thunderdog.challegram.theme.ThemeProperty;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
@@ -95,8 +96,11 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.FeatureToggles;
 import org.thunderdog.challegram.ui.MessagesController;
+import org.thunderdog.challegram.ui.TranslationControllerV2;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.LanguageDetector;
 import org.thunderdog.challegram.util.ReactionsCounterDrawable;
+import org.thunderdog.challegram.util.TranslationCounterDrawable;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.Highlight;
 import org.thunderdog.challegram.util.text.Letters;
@@ -131,6 +135,7 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.util.ClickHelper;
 import me.vkryl.android.util.InvalidateContentProvider;
 import me.vkryl.android.util.MultipleViewProvider;
+import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
@@ -146,7 +151,7 @@ import me.vkryl.td.ChatId;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
 
-public abstract class TGMessage implements InvalidateContentProvider, TdlibDelegate, FactorAnimator.Target, Comparable<TGMessage>, Counter.Callback {
+public abstract class TGMessage implements InvalidateContentProvider, TdlibDelegate, FactorAnimator.Target, Comparable<TGMessage>, Counter.Callback, TranslationsManager.Translatable {
   private static final int MAXIMUM_CHANNEL_MERGE_TIME_DIFF = 150;
   private static final int MAXIMUM_COMMON_MERGE_TIME_DIFF = 900;
 
@@ -216,9 +221,14 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   private final Counter viewCounter, replyCounter, shareCounter, isPinned;
   private Counter shrinkedReactionsCounter, reactionsCounter;
-  private ReactionsCounterDrawable reactionsCounterDrawable;
-  private Counter isChannelHeaderCounter;
+  private final ReactionsCounterDrawable reactionsCounterDrawable;
+  private final Counter isChannelHeaderCounter;
   private float isChannelHeaderCounterX, isChannelHeaderCounterY;
+
+  private boolean translatedCounterForceShow;
+  private final Counter isTranslatedCounter;
+  private final TranslationCounterDrawable isTranslatedCounterDrawable;
+  private float isTranslatedCounterX, isTranslatedCounterY;
 
   // forward values
 
@@ -235,7 +245,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private float lastMergeRadius, lastDefaultRadius;
   private int pContentX, pContentY, pContentMaxWidth;
   private int timeAddedHeight;
-  private FactorAnimator timeExpandValue = new FactorAnimator(0, new FactorAnimator.Target() {
+  private final FactorAnimator timeExpandValue = new FactorAnimator(0, new FactorAnimator.Target() {
     @Override
     public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
       if (BitwiseUtils.hasFlag(flags, FLAG_LAYOUT_BUILT)) {
@@ -276,6 +286,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   public static final int REACTIONS_DRAW_MODE_FLAT = 1;
   public static final int REACTIONS_DRAW_MODE_ONLY_ICON = 2;
 
+  private final TranslationsManager mTranslationsManager;
+
   protected TGMessage (MessagesManager manager, TdApi.Message msg) {
     if (!initialized) {
       synchronized (TGMessage.class) {
@@ -288,6 +300,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
     this.manager = manager;
     this.tdlib = manager.controller().tdlib();
+
+    this.mTranslationsManager = new TranslationsManager(tdlib, this, this::setTranslatedStatus, this::setTranslationResult, this::showTranslateErrorMessageBubbleMode);
 
     this.bubblePath = new Path();
     this.bubblePathRect = new RectF();
@@ -413,14 +427,27 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       .allBold(false)
       .callback(this)
       .textSize(useBubbles() ? 11f : 12f)
-      .colorSet(() -> messageReactions.hasChosen() ? Theme.getColor(R.id.theme_color_badge) : this.getTimePartTextColor())
+      .colorSet(() -> messageReactions.hasChosen() ? Theme.getColor(ColorId.badge) : this.getTimePartTextColor())
       .build();
     this.shrinkedReactionsCounter = new Counter.Builder()
       .noBackground()
       .allBold(false)
       .callback(this)
-      .colorSet(() -> messageReactions.hasChosen() ? Theme.getColor(R.id.theme_color_badge) : Theme.getColor(R.id.theme_color_iconLight))
+      .colorSet(() -> messageReactions.hasChosen() ? Theme.getColor(ColorId.badge) : Theme.getColor(ColorId.iconLight))
       .drawable(R.drawable.baseline_favorite_14, 14f, 0f, Gravity.CENTER_HORIZONTAL)
+      .build();
+
+    this.isTranslatedCounterDrawable = new TranslationCounterDrawable(Drawables.get(R.drawable.baseline_translate_14));
+    this.isTranslatedCounterDrawable.setColors(
+      msg.isOutgoing ? ColorId.bubbleOut_time: ColorId.bubbleIn_time,
+      msg.isOutgoing ? ColorId.bubbleOut_time: ColorId.bubbleIn_time,
+      msg.isOutgoing ? ColorId.bubbleOut_textLink: ColorId.bubbleIn_textLink
+    );
+    this.isTranslatedCounter = new Counter.Builder()
+      .noBackground()
+      .allBold(false)
+      .callback(this)
+      .drawable(isTranslatedCounterDrawable, 3f, Gravity.LEFT)
       .build();
 
     updateInteractionInfo(false);
@@ -573,6 +600,14 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       return null;
     }
     return Lang.getRelativeTimestampShort(msg.forwardInfo.date, TimeUnit.SECONDS);
+  }
+
+  public int getForwardTimeStamp () {
+    if (msg.forwardInfo == null) {
+      return -1;
+    }
+
+    return msg.forwardInfo.date;
   }
 
   // Other
@@ -1117,9 +1152,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public final @ColorInt int getContentReplaceColor () {
     if (useBubbles()) {
-      return Theme.getColor(isOutgoingBubble() ? R.id.theme_color_bubbleOut_background : R.id.theme_color_bubbleIn_background);
+      return Theme.getColor(isOutgoingBubble() ? ColorId.bubbleOut_background : ColorId.bubbleIn_background);
     } else {
-      int color = Theme.getColor(R.id.theme_color_chatBackground);
+      int color = Theme.getColor(ColorId.chatBackground);
       if (selectionFactor > 0f) {
         return ColorUtils.compositeColor(color, ColorUtils.alphaColor(selectionFactor, Theme.chatSelectionColor()));
       } else {
@@ -1176,6 +1211,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       buildBubble(false);
       int oldHeight = height;
       height = computeHeight();
+      if (oldHeight != height) {
+        manager.onMessageHeightChanged(getChatId(), getId(), oldHeight, height);
+      }
       return oldHeight != height;
     } else {
       rebuildLayout();
@@ -1648,55 +1686,55 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public final int getBubbleDateBackgroundColor () {
-    return manager.getOverlayColor(0, R.id.theme_color_bubble_date, R.id.theme_color_bubble_date_noWallpaper, ThemeProperty.WALLPAPER_OVERRIDE_DATE);
+    return manager.getOverlayColor(ColorId.NONE, ColorId.bubble_date, ColorId.bubble_date_noWallpaper, PropertyId.WALLPAPER_OVERRIDE_DATE);
   }
 
   public final int getBubbleDateTextColor () {
-    return manager.getColor(0, R.id.theme_color_bubble_dateText, R.id.theme_color_bubble_dateText_noWallpaper, ThemeProperty.WALLPAPER_OVERRIDE_DATE);
+    return manager.getColor(ColorId.NONE, ColorId.bubble_dateText, ColorId.bubble_dateText_noWallpaper, PropertyId.WALLPAPER_OVERRIDE_DATE);
   }
 
   protected final int getUnreadSeparatorBackgroundColor () {
-    return manager.getOverlayColor(R.id.theme_color_unread, R.id.theme_color_bubble_unread, R.id.theme_color_bubble_unread_noWallpaper, ThemeProperty.WALLPAPER_OVERRIDE_UNREAD);
+    return manager.getOverlayColor(ColorId.unread, ColorId.bubble_unread, ColorId.bubble_unread_noWallpaper, PropertyId.WALLPAPER_OVERRIDE_UNREAD);
   }
 
   protected final int getUnreadSeparatorContentColor () {
-    return manager.getColor(R.id.theme_color_unreadText, R.id.theme_color_bubble_unreadText, R.id.theme_color_bubble_unreadText_noWallpaper, ThemeProperty.WALLPAPER_OVERRIDE_UNREAD);
+    return manager.getColor(ColorId.unreadText, ColorId.bubble_unreadText, ColorId.bubble_unreadText_noWallpaper, PropertyId.WALLPAPER_OVERRIDE_UNREAD);
   }
 
   public final int getBubbleMediaReplyBackgroundColor () {
-    return manager.getOverlayColor(0, R.id.theme_color_bubble_mediaReply, R.id.theme_color_bubble_mediaReply_noWallpaper, ThemeProperty.WALLPAPER_OVERRIDE_MEDIA_REPLY);
+    return manager.getOverlayColor(ColorId.NONE, ColorId.bubble_mediaReply, ColorId.bubble_mediaReply_noWallpaper, PropertyId.WALLPAPER_OVERRIDE_MEDIA_REPLY);
   }
 
   public final int getBubbleMediaReplyTextColor () {
-    return manager.getColor(0, R.id.theme_color_bubble_mediaReplyText, R.id.theme_color_bubble_mediaReplyText_noWallpaper, ThemeProperty.WALLPAPER_OVERRIDE_MEDIA_REPLY);
+    return manager.getColor(ColorId.NONE, ColorId.bubble_mediaReplyText, ColorId.bubble_mediaReplyText_noWallpaper, PropertyId.WALLPAPER_OVERRIDE_MEDIA_REPLY);
   }
 
   protected final int getBubbleTimeColor () {
-    return manager.getOverlayColor(0, R.id.theme_color_bubble_mediaTime, R.id.theme_color_bubble_mediaTime_noWallpaper, ThemeProperty.WALLPAPER_OVERRIDE_TIME);
+    return manager.getOverlayColor(ColorId.NONE, ColorId.bubble_mediaTime, ColorId.bubble_mediaTime_noWallpaper, PropertyId.WALLPAPER_OVERRIDE_TIME);
   }
 
   protected final int getBubbleTimeTextColor () {
-    return manager.getColor(0, R.id.theme_color_bubble_mediaTimeText, R.id.theme_color_bubble_mediaTimeText_noWallpaper, ThemeProperty.WALLPAPER_OVERRIDE_TIME);
+    return manager.getColor(ColorId.NONE, ColorId.bubble_mediaTimeText, ColorId.bubble_mediaTimeText_noWallpaper, PropertyId.WALLPAPER_OVERRIDE_TIME);
   }
 
   public final int getBubbleButtonBackgroundColor () {
-    return manager.getOverlayColor(0, R.id.theme_color_bubble_button, R.id.theme_color_bubble_button_noWallpaper, ThemeProperty.WALLPAPER_OVERRIDE_BUTTON);
+    return manager.getOverlayColor(ColorId.NONE, ColorId.bubble_button, ColorId.bubble_button_noWallpaper, PropertyId.WALLPAPER_OVERRIDE_BUTTON);
   }
 
   public final int getBubbleButtonRippleColor () {
-    return manager.getOverlayColor(0, R.id.theme_color_bubble_buttonRipple, R.id.theme_color_bubble_buttonRipple_noWallpaper, ThemeProperty.WALLPAPER_OVERRIDE_BUTTON);
+    return manager.getOverlayColor(ColorId.NONE, ColorId.bubble_buttonRipple, ColorId.bubble_buttonRipple_noWallpaper, PropertyId.WALLPAPER_OVERRIDE_BUTTON);
   }
 
   public final int getBubbleButtonTextColor () {
-    return manager.getColor(0, R.id.theme_color_bubble_buttonText, R.id.theme_color_bubble_buttonText_noWallpaper, ThemeProperty.WALLPAPER_OVERRIDE_BUTTON);
+    return manager.getColor(ColorId.NONE, ColorId.bubble_buttonText, ColorId.bubble_buttonText_noWallpaper, PropertyId.WALLPAPER_OVERRIDE_BUTTON);
   }
 
   public static int getBubbleTransparentColor (MessagesManager manager) {
-    return manager.getOverlayColor(0, R.id.theme_color_bubble_overlay, R.id.theme_color_bubble_overlay_noWallpaper, ThemeProperty.WALLPAPER_OVERRIDE_OVERLAY);
+    return manager.getOverlayColor(ColorId.NONE, ColorId.bubble_overlay, ColorId.bubble_overlay_noWallpaper, PropertyId.WALLPAPER_OVERRIDE_OVERLAY);
   }
 
   public static int getBubbleTransparentTextColor (MessagesManager manager) {
-    return manager.getColor(0, R.id.theme_color_bubble_overlayText, R.id.theme_color_bubble_overlayText_noWallpaper, ThemeProperty.WALLPAPER_OVERRIDE_OVERLAY);
+    return manager.getColor(ColorId.NONE, ColorId.bubble_overlayText, ColorId.bubble_overlayText_noWallpaper, PropertyId.WALLPAPER_OVERRIDE_OVERLAY);
   }
 
   public boolean drawDate (Canvas c, int centerX, int startY, float detachFactor, float alpha) {
@@ -1725,7 +1763,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         int padding = Screen.dp(10f);
         rectF.set(centerX - pDateWidth / 2 - padding, startY + Screen.dp(8f), centerX + pDateWidth / 2 + padding, startY + Screen.dp(8f) + Screen.dp(26f));
         int radius = Screen.dp(Theme.getDateRadius());
-        c.drawRoundRect(rectF, radius, radius, Paints.fillingPaint(ColorUtils.alphaColor(alpha * detachFactor, Theme.getColor(R.id.theme_color_chatBackground))));
+        c.drawRoundRect(rectF, radius, radius, Paints.fillingPaint(ColorUtils.alphaColor(alpha * detachFactor, Theme.getColor(ColorId.chatBackground))));
         c.drawRoundRect(rectF, radius, radius, Paints.getProgressPaint(ColorUtils.alphaColor(alpha * detachFactor, Theme.separatorColor()), Math.max(1, Screen.dp(.5f))));
       }
       textX = centerX - pDateWidth / 2;
@@ -1817,7 +1855,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     boolean hasBubble = useBubbles && useBubble();
     float lineFactor = 0f;
     if (hasBubble) {
-      final int bubbleColor = Theme.getColor(isOutgoingBubble() && !useCircleBubble() ? R.id.theme_color_bubbleOut_background : R.id.theme_color_bubbleIn_background);
+      final int bubbleColor = Theme.getColor(isOutgoingBubble() && !useCircleBubble() ? ColorId.bubbleOut_background : ColorId.bubbleIn_background);
       lineFactor = Theme.getBubbleOutlineFactor();
       /*if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP && lineFactor < 1f) {
         c.save();
@@ -1884,7 +1922,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         float cx = avatarReceiver.centerX();
         float cy = avatarReceiver.centerY();
         if (useFullWidth()) {
-          c.drawCircle(cx, cy, xAvatarRadius + Screen.dp(2.5f), Paints.fillingPaint(Theme.getColor(R.id.theme_color_chatBackground)));
+          c.drawCircle(cx, cy, xAvatarRadius + Screen.dp(2.5f), Paints.fillingPaint(Theme.getColor(ColorId.chatBackground)));
         }
         if (avatarReceiver.needPlaceholder())
           avatarReceiver.drawPlaceholder(c);
@@ -1907,7 +1945,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
             int cmLeft = left + hAuthorNameT.getWidth() + Screen.dp(6f);
             RectF rct = Paints.getRectF();
             rct.set(cmLeft, newTop, cmLeft + hAuthorChatMark.getWidth() + Screen.dp(8f), newTop + hAuthorNameT.getLineHeight(false));
-            c.drawRoundRect(rct, Screen.dp(2f), Screen.dp(2f), Paints.getProgressPaint(Theme.getColor(R.id.theme_color_textNegative), Screen.dp(1.5f)));
+            c.drawRoundRect(rct, Screen.dp(2f), Screen.dp(2f), Paints.getProgressPaint(Theme.getColor(ColorId.textNegative), Screen.dp(1.5f)));
             cmLeft += Screen.dp(4f);
             hAuthorChatMark.draw(c, cmLeft, cmLeft + hAuthorChatMark.getWidth(), 0, newTop + ((hAuthorNameT.getLineHeight(false) - hAuthorChatMark.getLineHeight(false)) / 2));
           }
@@ -1919,7 +1957,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           hAdminNameT.draw(c, right, top - Screen.dp(12f));
         }
         if (useBubbles && needDrawChannelIconInHeader() && hAuthorNameT != null) {
-          isChannelHeaderCounter.draw(c, isChannelHeaderCounterX = (right - Screen.dp(6)), isChannelHeaderCounterY = (top - Screen.dp(5)), Gravity.RIGHT | Gravity.BOTTOM, 1f, view, isOutgoing() ? R.id.theme_color_bubbleOut_time: R.id.theme_color_bubbleIn_time);
+          isChannelHeaderCounter.draw(c, isChannelHeaderCounterX = (right - Screen.dp(6)), isChannelHeaderCounterY = (top - Screen.dp(5)), Gravity.RIGHT | Gravity.BOTTOM, 1f, view, isOutgoing() ? ColorId.bubbleOut_time: ColorId.bubbleIn_time);
         }
       }
     }
@@ -1939,19 +1977,19 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       int viewsX = pTicksLeft - Icons.getSingleTickWidth() + ((flags & FLAG_HEADER_ENABLED) != 0 ? 0 : Screen.dp(1f)) - Screen.dp(Icons.TICKS_SHIFT_X);
 
       if (needDrawChannelIconInHeader() && hAuthorNameT != null) {
-        isChannelHeaderCounter.draw(c, isChannelHeaderCounterX = ((isSending() ? clockX: viewsX) + Screen.dp(7)), isChannelHeaderCounterY = (pTicksTop + Screen.dp(5)), Gravity.LEFT, 1f, view, R.id.theme_color_iconLight);
+        isChannelHeaderCounter.draw(c, isChannelHeaderCounterX = ((isSending() ? clockX: viewsX) + Screen.dp(7)), isChannelHeaderCounterY = (pTicksTop + Screen.dp(5)), Gravity.LEFT, 1f, view, ColorId.iconLight);
         clockX -= isChannelHeaderCounter.getScaledWidth(Screen.dp(1));
         viewsX -= isChannelHeaderCounter.getScaledWidth(Screen.dp(1));
       }
 
       // Clock, tick and views
       if (isSending()) {
-        Drawables.draw(c, Icons.getClockIcon(R.id.theme_color_iconLight), clockX, pClockTop - Screen.dp(Icons.CLOCK_SHIFT_Y), Paints.getIconLightPorterDuffPaint());
+        Drawables.draw(c, Icons.getClockIcon(ColorId.iconLight), clockX, pClockTop - Screen.dp(Icons.CLOCK_SHIFT_Y), Paints.getIconLightPorterDuffPaint());
       } else if (isFailed()) {
         // TODO failure icon
       } else if (shouldShowTicks() && getViewCountMode() != VIEW_COUNT_MAIN) {
         boolean unread = isUnread() && !noUnread();
-        Drawables.draw(c, unread ? Icons.getSingleTick(R.id.theme_color_ticks) : Icons.getDoubleTick(R.id.theme_color_ticksRead), viewsX, pTicksTop - Screen.dp(Icons.TICKS_SHIFT_Y), unread ? Paints.getTicksPaint() : Paints.getTicksReadPaint());
+        Drawables.draw(c, unread ? Icons.getSingleTick(ColorId.ticks) : Icons.getDoubleTick(ColorId.ticksRead), viewsX, pTicksTop - Screen.dp(Icons.TICKS_SHIFT_Y), unread ? Paints.getTicksPaint() : Paints.getTicksReadPaint());
       }
 
       int right = pTicksLeft - (shouldShowTicks() ? Icons.getSingleTickWidth() + Screen.dp(2.5f) : 0); //needMetadata ? pTimeLeft - Screen.dp(4f) : pTicksLeft;
@@ -1964,9 +2002,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         // right -= Icons.getEditedIconWidth();
         right -= Icons.getEditedIconWidth();
         if (isBeingEdited()) {
-          Drawables.draw(c, Icons.getClockIcon(R.id.theme_color_iconLight), pTicksLeft - (shouldShowTicks() ? Icons.getSingleTickWidth() + Screen.dp(2.5f) : 0) - Icons.getEditedIconWidth() - Screen.dp(6f), pTicksTop - Screen.dp(5f), Paints.getIconLightPorterDuffPaint());
+          Drawables.draw(c, Icons.getClockIcon(ColorId.iconLight), pTicksLeft - (shouldShowTicks() ? Icons.getSingleTickWidth() + Screen.dp(2.5f) : 0) - Icons.getEditedIconWidth() - Screen.dp(6f), pTicksTop - Screen.dp(5f), Paints.getIconLightPorterDuffPaint());
         } else {
-          Drawables.draw(c, view.getSparseDrawable(R.drawable.baseline_edit_12, 0), right, pTicksTop, Paints.getIconLightPorterDuffPaint());
+          Drawables.draw(c, view.getSparseDrawable(R.drawable.baseline_edit_12, ColorId.NONE), right, pTicksTop, Paints.getIconLightPorterDuffPaint());
         }
         right -= Screen.dp(COUNTER_ADD_MARGIN);
       }
@@ -1987,6 +2025,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         }
       }
 
+      if (translationStyleMode() == Settings.TRANSLATE_MODE_INLINE) {
+        isTranslatedCounter.draw(c, right, isTranslatedCounterY = top, Gravity.RIGHT, 1f);
+        isTranslatedCounterX = right - Screen.dp(10);
+        right -= isTranslatedCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN));
+      }
       if (reactionsDrawMode == REACTIONS_DRAW_MODE_FLAT) {
         reactionsCounter.draw(c, right, top, Gravity.RIGHT, 1f, view, getTimePartIconColorId());
         right -= reactionsCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN));
@@ -1995,7 +2038,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         right -= Screen.dp(5) * reactionsCounter.getVisibility();
       }
       if (reactionsDrawMode == REACTIONS_DRAW_MODE_ONLY_ICON) {
-        shrinkedReactionsCounter.draw(c, right, top, Gravity.RIGHT, 1f, view, 0);
+        shrinkedReactionsCounter.draw(c, right, top, Gravity.RIGHT, 1f, view, ColorId.NONE);
         setLastDrawReactionsPosition(right, top);
         right -= shrinkedReactionsCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN)) + Screen.dp(COUNTER_ADD_MARGIN);
       }
@@ -2015,7 +2058,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
         // float darkFactor = Theme.getDarkFactor();
         float transparency = manager.controller().wallpaper().getBackgroundTransparency();
-        c.drawCircle(centerX, centerY, Screen.dp(9f) + (int) (Screen.dp(1f) * (1f - transparency)), Paints.strokeBigPaint(ColorUtils.alphaColor(selectableFactor, ColorUtils.fromToArgb(Theme.getColor(R.id.theme_color_bubble_messageCheckOutline), Theme.getColor(R.id.theme_color_bubble_messageCheckOutlineNoWallpaper), transparency))));
+        c.drawCircle(centerX, centerY, Screen.dp(9f) + (int) (Screen.dp(1f) * (1f - transparency)), Paints.strokeBigPaint(ColorUtils.alphaColor(selectableFactor, ColorUtils.fromToArgb(Theme.getColor(ColorId.bubble_messageCheckOutline), Theme.getColor(ColorId.bubble_messageCheckOutlineNoWallpaper), transparency))));
         SimplestCheckBox.draw(c, centerX, centerY, selectionFactor, null);
       }
     } else if (selectionFactor > 0f) {
@@ -2036,7 +2079,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
       if ((flags & FLAG_HEADER_ENABLED) != 0) {
         if (useFullWidth()) {
-          final int color = Theme.getColor(R.id.theme_color_chatBackground);
+          final int color = Theme.getColor(ColorId.chatBackground);
           c.drawArc(rectF, 135f, 170f * selectionFactor, false, Paints.getOuterCheckPaint(color));
           c.drawArc(rectF, 305f, 195f * selectionFactor, false, Paints.getOuterCheckPaint(color));
         } else {
@@ -2612,6 +2655,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   private int getClickType (MessageView view, float x, float y) {
+    if (isTranslated()) {
+      if (MathUtils.distance(isTranslatedCounterX, isTranslatedCounterY, x, y) < Screen.dp(8)) {
+        return CLICK_TYPE_TRANSLATE_MESSAGE_ICON;
+      }
+    }
+
     if (needDrawChannelIconInHeader() && hAuthorNameT != null) {
       if (MathUtils.distance(isChannelHeaderCounterX, isChannelHeaderCounterY, x, y) < Screen.dp(8)) {
         return CLICK_TYPE_CHANNEL_MESSAGE_ICON;
@@ -2637,6 +2686,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     @Override
     public void onClickAt (View view, float x, float y) {
       switch (clickType) {
+        case CLICK_TYPE_TRANSLATE_MESSAGE_ICON: {
+          openLanguageSelectorInlineMode();
+          break;
+        }
         case CLICK_TYPE_CHANNEL_MESSAGE_ICON: {
           openMessageFromChannel();
           break;
@@ -2720,6 +2773,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private static final int CLICK_TYPE_REPLY = 1;
   private static final int CLICK_TYPE_AVATAR = 2;
   private static final int CLICK_TYPE_CHANNEL_MESSAGE_ICON = 3;
+  private static final int CLICK_TYPE_TRANSLATE_MESSAGE_ICON = 4;
 
   private int clickType = CLICK_TYPE_NONE;
 
@@ -3076,6 +3130,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (reactionsDrawMode == REACTIONS_DRAW_MODE_ONLY_ICON) {
       max -= shrinkedReactionsCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN));
     }
+    if (translationStyleMode() == Settings.TRANSLATE_MODE_INLINE) {
+      max -= isTranslatedCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN));
+    }
     int nameMaxWidth;
     if (isPsa) {
       nameMaxWidth = totalMaxWidth;
@@ -3195,6 +3252,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   public final void replaceReplyContent (long messageId, TdApi.MessageContent newContent) {
     if (msg.replyToMessageId == messageId && replyData != null) {
       replyData.replaceMessageContent(messageId, newContent);
+    }
+  }
+
+  public final void replaceReplyTranslation (long messageId, @Nullable TdApi.FormattedText translation) {
+    if (msg.replyToMessageId == messageId && replyData != null) {
+      replyData.replaceMessageTranslation(messageId, translation);
     }
   }
 
@@ -3489,7 +3552,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     } else if (isTransparent) {
       return getBubbleTimeTextColor();
     } else {
-      return Theme.getColor(R.id.theme_color_bubble_mediaOverlayText);
+      return Theme.getColor(ColorId.bubble_mediaOverlayText);
     }
   }
 
@@ -3504,9 +3567,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (!isWhite) { // Inside bubble
       return getDecentIconColorId();
     } else if (isTransparent) { // Partially on the content
-      return R.id.theme_color_bubble_mediaTime;
+      return ColorId.bubble_mediaTime;
     } else {
-      return R.id.theme_color_bubble_mediaOverlayText;
+      return ColorId.bubble_mediaOverlayText;
     }
   }
 
@@ -3530,13 +3593,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       ticksReadPaint = Paints.getBubbleTicksReadPaint();
     } else if (isTransparent) { // Partially on the content
       textColor = getBubbleTimeTextColor();
-      iconColorId = R.id.theme_color_bubble_mediaTimeText;
+      iconColorId = ColorId.bubble_mediaTimeText;
       backgroundColor = getBubbleTimeColor();
       iconPaint = ticksPaint = ticksReadPaint = Paints.getBubbleTimePaint(textColor);
     } else { // Media
-      iconColorId = R.id.theme_color_bubble_mediaOverlayText;
-      textColor = Theme.getColor(R.id.theme_color_bubble_mediaOverlayText);
-      backgroundColor = Theme.getColor(R.id.theme_color_bubble_mediaOverlay);
+      iconColorId = ColorId.bubble_mediaOverlayText;
+      textColor = Theme.getColor(ColorId.bubble_mediaOverlayText);
+      backgroundColor = Theme.getColor(ColorId.bubble_mediaOverlay);
       iconPaint = ticksPaint = ticksReadPaint = Paints.getBubbleOverlayTimePaint(textColor);
     }
 
@@ -3603,9 +3666,15 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       if (isBeingEdited()) {
         Drawables.draw(c, Icons.getClockIcon(iconColorId), startX - Screen.dp(6f), startY + Screen.dp(4.5f) - Screen.dp(5f), iconPaint);
       } else {
-        Drawables.draw(c, view.getSparseDrawable(R.drawable.baseline_edit_12, 0), startX, startY + Screen.dp(4.5f), iconPaint);
+        Drawables.draw(c, view.getSparseDrawable(R.drawable.baseline_edit_12, ColorId.NONE), startX, startY + Screen.dp(4.5f), iconPaint);
       }
       startX += Icons.getEditedIconWidth() + Screen.dp(2f);
+    }
+
+    if (translationStyleMode() == Settings.TRANSLATE_MODE_INLINE) {
+      isTranslatedCounter.draw(c, startX, isTranslatedCounterY = counterY, Gravity.LEFT, 1f);
+      isTranslatedCounterX = startX + Screen.dp(7);
+      startX += isTranslatedCounter.getScaledWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN));
     }
 
     if (time != null) {
@@ -3656,6 +3725,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
     if (shouldShowEdited()) {
       width += Icons.getEditedIconWidth() + Screen.dp(2f);
+    }
+    if (translationStyleMode() == Settings.TRANSLATE_MODE_INLINE) {
+      width += isTranslatedCounter.getScaledOrTargetWidth(Screen.dp(COUNTER_ICON_MARGIN + COUNTER_ADD_MARGIN), isTarget);
     }
     boolean isSending = isSending();
     if (getViewCountMode() == VIEW_COUNT_MAIN) {
@@ -3753,7 +3825,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public final void requestAvatar (AvatarReceiver receiver) {
-    if (hasAvatar) {
+    requestAvatar(receiver, false);
+  }
+
+  public final void requestAvatar (AvatarReceiver receiver, boolean force) {
+    if (hasAvatar || force) {
       final float avatarRadiusDp = useBubbles() ? BUBBLE_AVATAR_RADIUS : AVATAR_RADIUS;
       if (forceForwardedInfo()) {
         forwardInfo.requestAvatar(receiver);
@@ -4092,7 +4168,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return new MessageId(msg.chatId, msg.id, getOtherMessageIds(msg.id));
   }
 
-  protected boolean isFakeMessage () {
+  public boolean isFakeMessage () {
     //noinspection WrongConstant
     if (msg.content.getConstructor() == TdApiExt.MessageChatEvent.CONSTRUCTOR) {
       return true;
@@ -5647,14 +5723,14 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   public int getSelectionColor (float factor) {
     final boolean useBubbles = useBubbles();
     if (useBubbles) {
-      return ColorUtils.alphaColor(factor, ColorUtils.fromToArgb(Theme.getColor(R.id.theme_color_bubble_messageSelection), Theme.getColor(R.id.theme_color_bubble_messageSelectionNoWallpaper), manager.controller().wallpaper().getBackgroundTransparency()));
+      return ColorUtils.alphaColor(factor, ColorUtils.fromToArgb(Theme.getColor(ColorId.bubble_messageSelection), Theme.getColor(ColorId.bubble_messageSelectionNoWallpaper), manager.controller().wallpaper().getBackgroundTransparency()));
     } else {
-      // manager.controller().wallpaper().getOverlayColor(R.id.theme_color_chatTransparentColor)
+      // manager.controller().wallpaper().getOverlayColor(ColorId.chatTransparentColor)
       final int color = Theme.chatSelectionColor();
-      return ColorUtils.alphaColor(factor, ColorUtils.compositeColor(Theme.getColor(R.id.theme_color_chatBackground), color));
+      return ColorUtils.alphaColor(factor, ColorUtils.compositeColor(Theme.getColor(ColorId.chatBackground), color));
     }
-    /*final int color = useBubbles ? Theme.getColor(R.id.theme_color_messageBubbleSelection) : Theme.chatSelectionColor();
-    return U.alphaColor(factor, useBubbles ? color : U.compositeColor(Theme.getColor(R.id.theme_color_chatPlainBackground), color));*/
+    /*final int color = useBubbles ? Theme.getColor(ColorId.messageBubbleSelection) : Theme.chatSelectionColor();
+    return U.alphaColor(factor, useBubbles ? color : U.compositeColor(Theme.getColor(ColorId.chatPlainBackground), color));*/
   }
 
   private int findBottomEdge () {
@@ -5970,13 +6046,20 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
             }
             break;
         }
-      } else if (counter == replyCounter || counter == shareCounter || counter == shrinkedReactionsCounter || counter == isPinned) {
+      } else if (counter == replyCounter || counter == shareCounter || counter == shrinkedReactionsCounter || counter == isPinned || counter == isTranslatedCounter) {
         if (useBubbles() || (flags & FLAG_HEADER_ENABLED) != 0) {
           layoutInfo();
         }
       } else if (counter == reactionsCounter) {
         layoutInfo();
       }
+    }
+    if (counter == isTranslatedCounter && isTranslatedCounter.getVisibility() == 1f) {
+      boolean force = !useBubbles() && Settings.instance().needTutorial(Settings.TUTORIAL_SELECT_LANGUAGE_INLINE_MODE);
+      if (force) {
+        Settings.instance().markTutorialAsShown(Settings.TUTORIAL_SELECT_LANGUAGE_INLINE_MODE);
+      }
+      checkSelectLanguageWarning(force);
     }
     if (UI.inUiThread()) { // FIXME remove this after reworking combineWith method
       invalidate();
@@ -6492,7 +6575,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private void drawTranslateRect (Canvas c, float x, float y, int width, int height, float positionFactor, int quickColor, Drawable icon, String text, int textWidth, int textY) {
     final Paint iconPaint = Paints.getInlineBubbleIconPaint(
       ColorUtils.alphaColor((float) mQuickText.getAlpha() / 255f,
-      Theme.getColor(R.id.theme_color_messageSwipeContent)));
+      Theme.getColor(ColorId.messageSwipeContent)));
 
     final int iconWidth = icon != null ? icon.getMinimumWidth() : 0;
     final int iconHeight = icon != null ? icon.getMinimumHeight() : 0;
@@ -6732,38 +6815,38 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public final @ColorInt int getContentBackgroundColor () {
     if (useBubbles()) {
-      return Theme.getColor(isOutgoingBubble() ? R.id.theme_color_bubbleOut_background : R.id.theme_color_bubbleIn_background);
+      return Theme.getColor(isOutgoingBubble() ? ColorId.bubbleOut_background : ColorId.bubbleIn_background);
     } else {
-      return ColorUtils.compositeColor(Theme.getColor(R.id.theme_color_chatBackground), getSelectionColor(selectionFactor));
+      return ColorUtils.compositeColor(Theme.getColor(ColorId.chatBackground), getSelectionColor(selectionFactor));
     }
   }
 
-  public final @ThemeColorId int getDecentColorId (@ThemeColorId int defaultColorId) {
-    return useBubbles() ? (isOutgoingBubble() ? R.id.theme_color_bubbleOut_time : R.id.theme_color_bubbleIn_time) : defaultColorId;
+  public final @ColorId int getDecentColorId (@ColorId int defaultColorId) {
+    return useBubbles() ? (isOutgoingBubble() ? ColorId.bubbleOut_time : ColorId.bubbleIn_time) : defaultColorId;
   }
 
-  public final @ThemeColorId int getProgressColorId () {
-    return useBubbles() ? (isOutgoingBubble() ? R.id.theme_color_bubbleOut_progress : R.id.theme_color_bubbleIn_progress) : R.id.theme_color_progress;
+  public final @ColorId int getProgressColorId () {
+    return useBubbles() ? (isOutgoingBubble() ? ColorId.bubbleOut_progress : ColorId.bubbleIn_progress) : ColorId.progress;
   }
 
   public final int getProgressColor () {
     return Theme.getColor(getProgressColorId());
   }
 
-  public final @ThemeColorId int getDecentColorId () {
-    return getDecentColorId(R.id.theme_color_textLight);
+  public final @ColorId int getDecentColorId () {
+    return getDecentColorId(ColorId.textLight);
   }
 
-  public final @ThemeColorId int getSeparatorColorId () {
-    return useBubbles() ? (isOutgoingBubble() ? R.id.theme_color_bubbleOut_separator : R.id.theme_color_bubbleIn_separator) : R.id.theme_color_separator;
+  public final @ColorId int getSeparatorColorId () {
+    return useBubbles() ? (isOutgoingBubble() ? ColorId.bubbleOut_separator : ColorId.bubbleIn_separator) : ColorId.separator;
   }
 
-  public final @ThemeColorId int getPressColorId () {
-    return useBubbles() ? (isOutgoingBubble() ? R.id.theme_color_bubbleOut_pressed : R.id.theme_color_bubbleIn_pressed) : R.id.theme_color_messageSelection;
+  public final @ColorId int getPressColorId () {
+    return useBubbles() ? (isOutgoingBubble() ? ColorId.bubbleOut_pressed : ColorId.bubbleIn_pressed) : ColorId.messageSelection;
   }
 
-  public final @ThemeColorId int getDecentIconColorId () {
-    return getDecentColorId(R.id.theme_color_iconLight);
+  public final @ColorId int getDecentIconColorId () {
+    return getDecentColorId(ColorId.iconLight);
   }
 
   public final @ColorInt int getDecentColor () {
@@ -6783,19 +6866,19 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public final int getTextColor () {
-    return Theme.getColor(useBubbles() ? (isOutgoingBubble() ? R.id.theme_color_bubbleOut_text : R.id.theme_color_bubbleIn_text) : R.id.theme_color_text);
+    return Theme.getColor(useBubbles() ? (isOutgoingBubble() ? ColorId.bubbleOut_text : ColorId.bubbleIn_text) : ColorId.text);
   }
 
   public final int getOutlineColor () {
-    return Theme.getColor(useBubbles() ? (isOutgoingBubble() ? R.id.theme_color_bubbleOut_outline : R.id.theme_color_bubbleIn_outline) : R.id.theme_color_separator);
+    return Theme.getColor(useBubbles() ? (isOutgoingBubble() ? ColorId.bubbleOut_outline : ColorId.bubbleIn_outline) : ColorId.separator);
   }
 
   public final int getTextLinkColor () {
-    return Theme.getColor(useBubbles() ? (isOutgoingBubble() ? R.id.theme_color_bubbleOut_textLink : R.id.theme_color_bubbleIn_textLink) : R.id.theme_color_textLink);
+    return Theme.getColor(useBubbles() ? (isOutgoingBubble() ? ColorId.bubbleOut_textLink : ColorId.bubbleIn_textLink) : ColorId.textLink);
   }
 
   public final int getTextLinkHighlightColor () {
-    return Theme.getColor(useBubbles() ? (isOutgoingBubble() ? R.id.theme_color_bubbleOut_textLinkPressHighlight : R.id.theme_color_bubbleIn_textLinkPressHighlight) : R.id.theme_color_textLinkPressHighlight);
+    return Theme.getColor(useBubbles() ? (isOutgoingBubble() ? ColorId.bubbleOut_textLinkPressHighlight : ColorId.bubbleIn_textLinkPressHighlight) : ColorId.textLinkPressHighlight);
   }
 
   protected final int getTextTopOffset () {
@@ -6803,35 +6886,35 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   protected final int getVerticalLineColor () {
-    return Theme.getColor(isOutgoingBubble() ? R.id.theme_color_bubbleOut_chatVerticalLine : R.id.theme_color_messageVerticalLine);
+    return Theme.getColor(isOutgoingBubble() ? ColorId.bubbleOut_chatVerticalLine : ColorId.messageVerticalLine);
   }
 
   protected final int getVerticalLineContentColor () {
-    return Theme.getColor(isOutgoingBubble() ? R.id.theme_color_bubbleOut_chatNeutralFillingContent : R.id.theme_color_messageNeutralFillingContent);
+    return Theme.getColor(isOutgoingBubble() ? ColorId.bubbleOut_chatNeutralFillingContent : ColorId.messageNeutralFillingContent);
   }
 
   protected final int getCorrectLineColor (boolean isPersonal) {
     return Theme.getColor(
             isPersonal ?
-            isOutgoingBubble() ? R.id.theme_color_bubbleOut_chatCorrectChosenFilling : R.id.theme_color_messageCorrectChosenFilling :
-            isOutgoingBubble() ? R.id.theme_color_bubbleOut_chatCorrectFilling : R.id.theme_color_messageCorrectFilling
+            isOutgoingBubble() ? ColorId.bubbleOut_chatCorrectChosenFilling : ColorId.messageCorrectChosenFilling :
+            isOutgoingBubble() ? ColorId.bubbleOut_chatCorrectFilling : ColorId.messageCorrectFilling
     );
   }
 
   protected final int getCorrectLineContentColor (boolean isPersonal) {
     return Theme.getColor(
             isPersonal ?
-            isOutgoingBubble() ? R.id.theme_color_bubbleOut_chatCorrectChosenFillingContent : R.id.theme_color_messageCorrectChosenFillingContent :
-            isOutgoingBubble() ? R.id.theme_color_bubbleOut_chatCorrectFillingContent : R.id.theme_color_messageCorrectFillingContent
+            isOutgoingBubble() ? ColorId.bubbleOut_chatCorrectChosenFillingContent : ColorId.messageCorrectChosenFillingContent :
+            isOutgoingBubble() ? ColorId.bubbleOut_chatCorrectFillingContent : ColorId.messageCorrectFillingContent
     );
   }
 
   protected final int getNegativeLineColor () {
-    return Theme.getColor(isOutgoingBubble() ? R.id.theme_color_bubbleOut_chatNegativeFilling : R.id.theme_color_messageNegativeLine);
+    return Theme.getColor(isOutgoingBubble() ? ColorId.bubbleOut_chatNegativeFilling : ColorId.messageNegativeLine);
   }
 
   protected final int getNegativeLineContentColor () {
-    return Theme.getColor(isOutgoingBubble() ? R.id.theme_color_bubbleOut_chatNegativeFillingContent : R.id.theme_color_messageNegativeLineContent);
+    return Theme.getColor(isOutgoingBubble() ? ColorId.bubbleOut_chatNegativeFillingContent : ColorId.messageNegativeLineContent);
   }
 
   protected final int getChatAuthorColor () {
@@ -6839,11 +6922,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   protected final int getChatAuthorColorId () {
-    return isOutgoingBubble() ? R.id.theme_color_bubbleOut_messageAuthor : R.id.theme_color_messageAuthor;
+    return isOutgoingBubble() ? ColorId.bubbleOut_messageAuthor : ColorId.messageAuthor;
   }
 
   protected final int getChatAuthorPsaColor () {
-    return Theme.getColor(isOutgoingBubble() ? R.id.theme_color_bubbleOut_messageAuthorPsa : R.id.theme_color_messageAuthorPsa);
+    return Theme.getColor(isOutgoingBubble() ? ColorId.bubbleOut_messageAuthorPsa : ColorId.messageAuthorPsa);
   }
 
   private void drawFooter (MessageView view, Canvas c) {
@@ -6863,7 +6946,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     // int textY = contentY; // + Screen.dp(14f); //  + getFooterFontSizeOffset() / 2;
     TextStyleProvider provider = getSmallerTextStyleProvider();
     TextPaint paint = provider.getBoldPaint();
-    paint.setColor(Theme.getColor(R.id.theme_color_textNeutral));
+    paint.setColor(Theme.getColor(ColorId.textNeutral));
     c.drawText(trimmedFooterTitle != null ? trimmedFooterTitle : footerTitle, contentX, contentY + Screen.dp(15f), paint);
 
     footerText.draw(c, contentX, contentY + Screen.dp(22f), null, 1f, view.getFooterTextMediaReceiver(true));
@@ -6944,7 +7027,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return false;
   }
 
-  protected final Text.ClickCallback clickCallback () {
+  public final Text.ClickCallback clickCallback () {
     if (clickCallback != null)
       return clickCallback;
     return clickCallback = new Text.ClickCallback() {
@@ -7026,7 +7109,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   protected static TextPaint mTime (boolean willDraw) {
     TextPaint paint = Paints.getRegularTextPaint(12f);
     if (willDraw)
-      paint.setColor(Theme.getColor(R.id.theme_color_textLight));;
+      paint.setColor(Theme.getColor(ColorId.textLight));;
     return paint;
   }
 
@@ -7034,7 +7117,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (mQuickText == null) {
       mQuickText = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG | Paint.FILTER_BITMAP_FLAG);
       mQuickText.setColor(Theme.chatQuickActionTextColor());
-      ThemeManager.addThemeListener(mQuickText, R.id.theme_color_messageSwipeContent);
+      ThemeManager.addThemeListener(mQuickText, ColorId.messageSwipeContent);
       mQuickText.setTypeface(Fonts.getRobotoRegular());
       mQuickText.setTextSize(Screen.dp(16f));
     }
@@ -7247,12 +7330,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   private static boolean isStaticText (int res) {
-    switch (res) {
-      case R.string.SwipeShare:
-      case R.string.SwipeReply:
-        return true;
-    }
-    return false;
+    return res == R.string.SwipeShare || res == R.string.SwipeReply;
   }
 
   public static void processLanguageEvent (@Lang.EventType int eventType, int arg1) {
@@ -7630,7 +7708,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public final void checkMessageFlags (Runnable r) {
     TdApi.Message msg = getMessage(getSmallestId());
-    if (msg == null) {
+    if (msg == null || isFakeMessage()) {
       r.run();
       return;
     }
@@ -7903,7 +7981,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       .noBackground()
       .allBold(false)
       .callback(this)
-      .colorSet(() -> messageReactions.hasChosen() ? Theme.getColor(R.id.theme_color_badge) : Theme.getColor(R.id.theme_color_iconLight))
+      .colorSet(() -> messageReactions.hasChosen() ? Theme.getColor(ColorId.badge) : Theme.getColor(ColorId.iconLight))
       .drawable(R.drawable.baseline_favorite_14, 14f, 0f, Gravity.CENTER_HORIZONTAL)
       .build();
 
@@ -7923,7 +8001,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       .allBold(false)
       .callback(this)
       .textSize(useBubbles() ? 11f : 12f)
-      .colorSet(() -> messageReactions.hasChosen() ? Theme.getColor(R.id.theme_color_badge) : this.getTimePartTextColor())
+      .colorSet(() -> messageReactions.hasChosen() ? Theme.getColor(ColorId.badge) : this.getTimePartTextColor())
       .build();
 
     int count = messageReactions.getTotalCount();
@@ -8377,4 +8455,168 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private boolean needDrawChannelIconInHeader () {
     return sender.isChannel() && !messagesController().isChannel();
   }
+
+  private TooltipOverlayView.TooltipInfo languageSelectorTooltip;
+
+  private void openLanguageSelectorInlineMode () {
+    TooltipOverlayView.TooltipBuilder tooltipBuilder = context().tooltipManager().builder(findCurrentView()).locate((targetView, outRect) -> {
+      outRect.left = (int) (isTranslatedCounterX - Screen.dp(7));
+      outRect.top = (int) (isTranslatedCounterY - Screen.dp(7));
+      outRect.right = (int) (isTranslatedCounterX + Screen.dp(7));
+      outRect.bottom = (int) (isTranslatedCounterY + Screen.dp(7));
+    });
+
+    languageSelectorTooltip = tooltipBuilder.show(this, this::showLanguageSelectorInlineMode);//.hideDelayed(3500, TimeUnit.MILLISECONDS);
+  }
+
+  private void showTranslateErrorMessageBubbleMode (String message) {
+    TooltipOverlayView.TooltipBuilder tooltipBuilder = context().tooltipManager().builder(findCurrentView()).locate((targetView, outRect) -> {
+      outRect.left = (int) (isTranslatedCounterX - Screen.dp(7));
+      outRect.top = (int) (isTranslatedCounterY - Screen.dp(7));
+      outRect.right = (int) (isTranslatedCounterX + Screen.dp(7));
+      outRect.bottom = (int) (isTranslatedCounterY + Screen.dp(7));
+    });
+    languageSelectorTooltip = tooltipBuilder.show(tdlib, message).hideDelayed(3500, TimeUnit.MILLISECONDS);
+  }
+
+  private void showLanguageSelectorInlineMode (View v) {
+    if (languageSelectorTooltip == null) return;
+
+    float x = Math.max(languageSelectorTooltip.getContentRight() - Screen.dp(178 + 16), 0);
+    float y;
+    float pivotY;
+    if (useBubbles()) {
+      y = languageSelectorTooltip.getContentBottom() - Screen.dp(280 + 16);
+      pivotY = Screen.dp(288);
+      if (y < HeaderView.getTopOffset()) {
+        pivotY = Screen.dp(288) - (HeaderView.getTopOffset() - y);
+        y = HeaderView.getTopOffset();
+      }
+    } else {
+      pivotY = Screen.dp(8);
+      y = languageSelectorTooltip.getContentTop();
+      if (y > Screen.currentHeight() - Screen.dp(280 + 16)) {
+        pivotY = Screen.dp(24) + y - (Screen.currentHeight() - Screen.dp(280 + 16));
+        y = Screen.currentHeight() - Screen.dp(280 + 16);
+      }
+    }
+
+    TranslationControllerV2.LanguageSelectorPopup languagePopupLayout = new TranslationControllerV2.LanguageSelectorPopup(v.getContext(), this::onLanguageChanged, mTranslationsManager.getCurrentTranslatedLanguage(), getOriginalMessageLanguage());
+    // languagePopupLayout.languageRecyclerWrap.setAnchorMode(MenuMoreWrap.ANCHOR_MODE_RIGHT);
+    languagePopupLayout.languageRecyclerWrap.setTranslationX(x);
+    languagePopupLayout.languageRecyclerWrap.setTranslationY(y);
+
+    FrameLayoutFix.LayoutParams params = (FrameLayoutFix.LayoutParams) languagePopupLayout.languageRecyclerWrap.getLayoutParams();
+    params.gravity = Gravity.TOP | Gravity.LEFT;
+
+    languagePopupLayout.show();
+    languagePopupLayout.languageRecyclerWrap.setPivotX(Screen.dp(178 + 8));
+    languagePopupLayout.languageRecyclerWrap.setPivotY(pivotY);
+  }
+
+  private void onLanguageChanged (String language) {
+    if (languageSelectorTooltip != null) {
+      languageSelectorTooltip.hide(true);
+    }
+    mTranslationsManager.requestTranslation(language);
+  }
+
+  protected float getTranslationLoadingAlphaValue () {
+    return isTranslatedCounterDrawable.getLoadingTextAlpha();
+  }
+
+  public void startTranslated () {
+    translatedCounterForceShow = true;
+    mTranslationsManager.requestTranslation(Lang.getDefaultLanguageToTranslateV2(textToTranslateOriginalLanguage));
+  }
+
+  public void stopTranslated () {
+    translatedCounterForceShow = false;
+    mTranslationsManager.stopTranslation();
+  }
+
+  public int translationStyleMode () {
+    return manager().getUsedTranslateStyleMode();
+  }
+
+  private @Nullable TdApi.FormattedText textToTranslate;
+  private @Nullable String textToTranslateOriginalLanguage;
+
+  public @Nullable String getCurrentTranslatedLanguage () {
+    return mTranslationsManager.getCurrentTranslatedLanguage();
+  }
+
+  public @Nullable TdApi.FormattedText getTranslatedText () {
+    if (textToTranslate == null) return null;
+    return mTranslationsManager.getCachedTextTranslation(textToTranslate.text, getCurrentTranslatedLanguage());
+  }
+
+  @Override
+  public @Nullable String getOriginalMessageLanguage () {
+    return textToTranslateOriginalLanguage;
+  }
+
+  public boolean isTranslated () {
+    return mTranslationsManager.getCurrentTranslatedLanguage() != null || translatedCounterForceShow;
+  }
+
+  public boolean isTranslatable () {
+    return !Td.isEmpty(textToTranslate) && (flags & FLAG_UNSUPPORTED) == 0 && !Settings.instance().isNotTranslatableLanguage(textToTranslateOriginalLanguage);
+  }
+
+  @Override
+  public @Nullable TdApi.FormattedText getTextToTranslate () {
+    return textToTranslate;
+  }
+
+  public void checkTranslatableText (Runnable after) {
+    final TdApi.FormattedText textToTranslate = getTextToTranslateImpl();
+    this.textToTranslate = textToTranslate;
+    textToTranslateOriginalLanguage = textToTranslate != null ? mTranslationsManager.getCachedTextLanguage(textToTranslate.text): null;
+    if (textToTranslate != null && textToTranslateOriginalLanguage == null && translationStyleMode() != Settings.TRANSLATE_MODE_NONE) {
+      LanguageDetector.detectLanguage(context(), textToTranslate.text, lang -> {
+        mTranslationsManager.saveCachedTextLanguage(textToTranslate.text, textToTranslateOriginalLanguage = lang);
+        after.run();
+      }, err -> {
+        textToTranslateOriginalLanguage = null;
+        after.run();
+      });
+    } else {
+      after.run();
+    }
+  }
+
+
+
+  protected @Nullable TdApi.FormattedText getTextToTranslateImpl () {
+    return null; // override
+  }
+
+  private void setTranslatedStatus (int status, boolean animated) {
+    boolean show = status != TranslationCounterDrawable.TRANSLATE_STATUS_DEFAULT || translatedCounterForceShow;
+    isTranslatedCounterDrawable.setInvalidateCallback(show? this::invalidate: null);
+    isTranslatedCounterDrawable.setStatus(status, animated);
+    if (show) {
+      isTranslatedCounter.show(animated);
+    } else {
+      isTranslatedCounter.hide(animated);
+    }
+    this.buildReactions(animated);
+  }
+
+  private void checkSelectLanguageWarning (boolean force) {
+    String current = mTranslationsManager.getCurrentTranslatedLanguage();
+    if (current == null || StringUtils.equalsOrBothEmpty(current, getOriginalMessageLanguage()) || force) {
+      context().tooltipManager().builder(findCurrentView()).locate((targetView, outRect) -> {
+        outRect.left = (int) (isTranslatedCounterX - Screen.dp(7));
+        outRect.top = (int) (isTranslatedCounterY - Screen.dp(7));
+        outRect.right = (int) (isTranslatedCounterX + Screen.dp(7));
+        outRect.bottom = (int) (isTranslatedCounterY + Screen.dp(7));
+      }).show(tdlib, Lang.getString(R.string.TapToSelectLanguage)).hideDelayed(3500, TimeUnit.MILLISECONDS);;
+    }
+  }
+
+  protected void setTranslationResult (@Nullable TdApi.FormattedText text) {
+    manager.updateMessageTranslation(getChatId(), getSmallestId(), text);
+  };
 }

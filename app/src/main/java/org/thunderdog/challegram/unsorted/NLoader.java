@@ -30,14 +30,12 @@ import com.google.android.exoplayer2.ext.vp9.VpxLibrary;
 
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.N;
-import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.voip.VoIPController;
 import org.webrtc.SoftwareVideoEncoderFactory;
 import org.webrtc.VideoCodecInfo;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 
 import me.vkryl.leveldb.LevelDB;
@@ -59,31 +57,22 @@ public class NLoader implements ReLinker.Logger {
     return instance;
   }
 
-  public static boolean ensureLibraryLoaded () {
-    return loaded || loadLibrary();
+  private static void loadLibraryImpl (ReLinkerInstance reLinker, String library, @Nullable String version) {
+    long ms = SystemClock.uptimeMillis();
+    reLinker.loadLibrary(UI.getAppContext(), library, version);
+    android.util.Log.v("tgx", "Loaded " + library + " in " + (SystemClock.uptimeMillis() - ms) + "ms");
   }
 
   public static synchronized boolean loadLibrary () {
     if (!loaded) {
       try {
-        long ms;
         ReLinkerInstance reLinker = ReLinker.recursively().log(NLoader.instance());
-        int libCount = 2;
-        if (Config.SO_SHARED) {
-          libCount++;
-        }
-        List<String> libraries = new ArrayList<>(libCount);
-        if (Config.SO_SHARED) {
-          libraries.add("c++_shared");
-        }
-        libraries.add("tdjni");
-        libraries.add("leveldbjni");
-        libraries.add("challegram.23");
-        for (String library : libraries) {
-          ms = SystemClock.uptimeMillis();
-          reLinker.loadLibrary(UI.getAppContext(), library, "1." + BuildConfig.SO_VERSION);
-          android.util.Log.v("tgx", "Loaded " + library + " in " + (SystemClock.uptimeMillis() - ms) + "ms");
-        }
+        loadLibraryImpl(reLinker, "c++_shared", BuildConfig.NDK_VERSION);
+        loadLibraryImpl(reLinker, "crypto", BuildConfig.OPENSSL_VERSION);
+        loadLibraryImpl(reLinker, "ssl", BuildConfig.OPENSSL_VERSION);
+        loadLibraryImpl(reLinker, "tdjni", BuildConfig.TDLIB_VERSION);
+        loadLibraryImpl(reLinker, "leveldbjni", BuildConfig.LEVELDB_VERSION);
+        loadLibraryImpl(reLinker, "tgxjni", BuildConfig.JNI_VERSION);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
           OpusLibrary.setLibraries(C.CRYPTO_TYPE_UNSUPPORTED);
           VpxLibrary.setLibraries(C.CRYPTO_TYPE_UNSUPPORTED);

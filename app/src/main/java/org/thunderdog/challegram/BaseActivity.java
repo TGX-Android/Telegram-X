@@ -63,7 +63,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.collection.SparseArrayCompat;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.drinkmore.Tracer;
 import org.thunderdog.challegram.component.attach.MediaLayout;
 import org.thunderdog.challegram.component.base.ProgressWrap;
@@ -99,14 +99,14 @@ import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibManager;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ColorState;
+import org.thunderdog.challegram.theme.PropertyId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeChangeListener;
-import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.theme.ThemeListenerList;
 import org.thunderdog.challegram.theme.ThemeManager;
-import org.thunderdog.challegram.theme.ThemeProperty;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Invalidator;
 import org.thunderdog.challegram.tool.Keyboard;
@@ -561,7 +561,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     return modifyAlert(dialog, theme);
   }
 
-  private static boolean patchAlertButton (View v, ThemeDelegate theme, @ThemeColorId int colorId) {
+  private static boolean patchAlertButton (View v, ThemeDelegate theme, @ColorId int colorId) {
     if (v == null)
       return false;
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -584,7 +584,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     if (theme == null)
       theme = ThemeManager.instance().currentTheme(false);
 
-    int textColor = theme.getColor(R.id.theme_color_text);
+    int textColor = theme.getColor(ColorId.text);
 
     view = dialog.findViewById(android.R.id.title);
     Views.makeFakeBold(view);
@@ -600,16 +600,16 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     if (view instanceof TextView)
       ((TextView) view).setTextColor(textColor);
 
-    if (!patchAlertButton(dialog.getButton(DialogInterface.BUTTON_POSITIVE), theme, R.id.theme_color_textNeutral))
-      patchAlertButton(dialog.findViewById(android.R.id.button1), theme, R.id.theme_color_textNeutral);
-    if (!patchAlertButton(dialog.getButton(DialogInterface.BUTTON_NEUTRAL), theme, R.id.theme_color_textNeutral))
-      patchAlertButton(dialog.findViewById(android.R.id.button2), theme, R.id.theme_color_textNeutral);
-    if (!patchAlertButton(dialog.getButton(DialogInterface.BUTTON_NEGATIVE), theme, R.id.theme_color_textNeutral))
-      patchAlertButton(dialog.findViewById(android.R.id.button3), theme, R.id.theme_color_textNeutral);
+    if (!patchAlertButton(dialog.getButton(DialogInterface.BUTTON_POSITIVE), theme, ColorId.textNeutral))
+      patchAlertButton(dialog.findViewById(android.R.id.button1), theme, ColorId.textNeutral);
+    if (!patchAlertButton(dialog.getButton(DialogInterface.BUTTON_NEUTRAL), theme, ColorId.textNeutral))
+      patchAlertButton(dialog.findViewById(android.R.id.button2), theme, ColorId.textNeutral);
+    if (!patchAlertButton(dialog.getButton(DialogInterface.BUTTON_NEGATIVE), theme, ColorId.textNeutral))
+      patchAlertButton(dialog.findViewById(android.R.id.button3), theme, ColorId.textNeutral);
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       Drawable drawable = dialog.getWindow().getDecorView().getBackground();
       if (drawable != null) {
-        drawable.setColorFilter(new PorterDuffColorFilter(theme.getColor(R.id.theme_color_overlayFilling), PorterDuff.Mode.SRC_IN));
+        drawable.setColorFilter(new PorterDuffColorFilter(theme.getColor(ColorId.overlayFilling), PorterDuff.Mode.SRC_IN));
       }
     }
     return dialog;
@@ -3078,7 +3078,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       }
       float passcodeFactor = isPasscodeShowing ? 1f : dismissingPasscodeController != null ? dismissingPasscodeController.getValue().getAlpha() : 0f;
       if (passcodeFactor != 0f) {
-        color = ColorUtils.fromToArgb(color, Theme.getColor(R.id.theme_color_passcode), passcodeFactor);
+        color = ColorUtils.fromToArgb(color, Theme.getColor(ColorId.passcode), passcodeFactor);
         isLight = isLight && passcodeFactor < .5f;
       }
       getWindow().setNavigationBarColor(color);
@@ -3268,10 +3268,10 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   @Override
-  public void onThemePropertyChanged (int themeId, int propertyId, float value, boolean isDefault) {
+  public void onThemePropertyChanged (int themeId, @PropertyId int propertyId, float value, boolean isDefault) {
     switch (propertyId) {
-      case ThemeProperty.DARK:
-      case ThemeProperty.LIGHT_STATUS_BAR:
+      case PropertyId.DARK:
+      case PropertyId.LIGHT_STATUS_BAR:
         updateWindowDecorSystemUiVisibility();
         break;
     }

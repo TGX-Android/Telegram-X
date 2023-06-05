@@ -24,8 +24,8 @@ import androidx.annotation.IdRes;
 import androidx.annotation.Nullable;
 import androidx.collection.SparseArrayCompat;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
@@ -42,6 +42,7 @@ import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.telegram.TdlibContactManager;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Passcode;
 import org.thunderdog.challegram.unsorted.Settings;
@@ -87,53 +88,38 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
     adapter = new SettingsAdapter(this) {
       @Override
       public void setValuedSetting (ListItem item, SettingView v, boolean isUpdate) {
-        switch (item.getId()) {
-          case R.id.btn_syncContacts:
-            v.getToggler().setRadioEnabled(tdlib.contacts().isSyncEnabled(), isUpdate);
-            break;
-          case R.id.btn_mapProvider:
-            v.setData(getMapProviderName(false));
-            break;
-          case R.id.btn_mapProviderCloud:
-            v.setData(getMapProviderName(true));
-            break;
-          case R.id.btn_suggestContacts:
-            v.getToggler().setRadioEnabled(!tdlib.areTopChatsDisabled(), isUpdate);
-            break;
-          case R.id.btn_incognitoMode:
-            v.getToggler().setRadioEnabled(Settings.instance().needsIncognitoMode(), isUpdate);
-            break;
-          case R.id.btn_blockedSenders:
-            v.setData(getBlockedSendersCount());
-            break;
-          case R.id.btn_privacyRule:
-            v.setData(buildPrivacy(((TdApi.UserPrivacySetting) item.getData()).getConstructor()));
-            break;
-          case R.id.btn_sessions:
-            v.setData(getAuthorizationsCount());
-            break;
-          case R.id.btn_passcode:
-            v.setData(Passcode.instance().getModeName());
-            break;
-          case R.id.btn_accountTTL:
-            v.setData(getAccountTTLIn());
-            break;
-          case R.id.btn_hideSecretChats:
-            v.getToggler().setRadioEnabled(Settings.instance().needHideSecretChats(), isUpdate);
-            break;
-          case R.id.btn_2fa: {
-            if (isUpdate) {
-              v.setEnabledAnimated(passwordState != null);
-            } else {
-              v.setEnabled(passwordState != null);
-            }
-            v.setData(getPasswordState());
-            break;
+        final int itemId = item.getId();
+        if (itemId == R.id.btn_syncContacts) {
+          v.getToggler().setRadioEnabled(tdlib.contacts().isSyncEnabled(), isUpdate);
+        } else if (itemId == R.id.btn_mapProvider) {
+          v.setData(getMapProviderName(false));
+        } else if (itemId == R.id.btn_mapProviderCloud) {
+          v.setData(getMapProviderName(true));
+        } else if (itemId == R.id.btn_suggestContacts) {
+          v.getToggler().setRadioEnabled(!tdlib.areTopChatsDisabled(), isUpdate);
+        } else if (itemId == R.id.btn_incognitoMode) {
+          v.getToggler().setRadioEnabled(Settings.instance().needsIncognitoMode(), isUpdate);
+        } else if (itemId == R.id.btn_blockedSenders) {
+          v.setData(getBlockedSendersCount());
+        } else if (itemId == R.id.btn_privacyRule) {
+          v.setData(buildPrivacy(((TdApi.UserPrivacySetting) item.getData()).getConstructor()));
+        } else if (itemId == R.id.btn_sessions) {
+          v.setData(getAuthorizationsCount());
+        } else if (itemId == R.id.btn_passcode) {
+          v.setData(Passcode.instance().getModeName());
+        } else if (itemId == R.id.btn_accountTTL) {
+          v.setData(getAccountTTLIn());
+        } else if (itemId == R.id.btn_hideSecretChats) {
+          v.getToggler().setRadioEnabled(Settings.instance().needHideSecretChats(), isUpdate);
+        } else if (itemId == R.id.btn_2fa) {
+          if (isUpdate) {
+            v.setEnabledAnimated(passwordState != null);
+          } else {
+            v.setEnabled(passwordState != null);
           }
-          case R.id.btn_secretLinkPreviews: {
-            v.getToggler().setRadioEnabled(Settings.instance().needSecretLinkPreviews(), isUpdate);
-            break;
-          }
+          v.setData(getPasswordState());
+        } else if (itemId == R.id.btn_secretLinkPreviews) {
+          v.getToggler().setRadioEnabled(Settings.instance().needSecretLinkPreviews(), isUpdate);
         }
       }
     };
@@ -334,218 +320,174 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
   @Override
   public void onClick (View v) {
     final int id = v.getId();
-    switch (id) {
-      case R.id.btn_syncContacts: {
-        if (tdlib.contacts().isSyncEnabled()) {
-          tdlib.contacts().disableSync();
+    if (id == R.id.btn_syncContacts) {
+      if (tdlib.contacts().isSyncEnabled()) {
+        tdlib.contacts().disableSync();
+      } else {
+        tdlib.contacts().enableSync(context);
+      }
+    } else if (id == R.id.btn_mapProvider || id == R.id.btn_mapProviderCloud) {
+      tdlib.ui().showMapProviderSettings(this, id == R.id.btn_mapProviderCloud ? TdlibUi.MAP_PROVIDER_MODE_CLOUD : TdlibUi.MAP_PROVIDER_MODE_SECRET, () -> {
+        if (!isDestroyed()) {
+          adapter.updateValuedSettingById(id);
+        }
+      });
+    } else if (id == R.id.btn_secretLinkPreviews) {
+      Settings.instance().setUseSecretLinkPreviews(adapter.toggleView(v));
+    } else if (id == R.id.btn_incognitoMode) {
+      Settings.instance().setIncognitoMode(adapter.toggleView(v) ? Settings.INCOGNITO_CHAT_SECRET : 0);
+    } else if (id == R.id.btn_hideSecretChats) {
+      boolean hide = adapter.toggleView(v);
+      boolean updated = Settings.instance().setNeedHideSecretChats(hide);
+      if (secretInfo != null) {
+        secretInfo.setString(hide ? R.string.HideSecretOn : R.string.HideSecretOff);
+        adapter.updateValuedSetting(secretInfo);
+      }
+      if (updated) {
+        TdlibManager.instance().onUpdateSecretChatNotifications();
+      }
+    } else if (id == R.id.btn_clearPaymentAndShipping) {
+      showSettings(new SettingsWrapBuilder(R.id.btn_clearPaymentAndShipping).setSaveStr(R.string.Clear).setRawItems(new ListItem[] {
+        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_clearShipping, 0, R.string.PrivacyClearShipping, R.id.btn_clearShipping, true),
+        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_clearPayment, 0, R.string.PrivacyClearPayment, R.id.btn_clearPayment, true)
+      }).setSaveColorId(ColorId.textNegative).addHeaderItem(Lang.getString(R.string.PrivacyPaymentsClearAlert)).setIntDelegate((settingsId, result) -> {
+        boolean clearShipping = result.get(R.id.btn_clearShipping) == R.id.btn_clearShipping;
+        boolean clearPayment = result.get(R.id.btn_clearPayment) == R.id.btn_clearPayment;
+        if (!clearPayment || !clearShipping) {
+          if (clearShipping)
+            tdlib.client().send(new TdApi.DeleteSavedOrderInfo(), tdlib.doneHandler());
+          if (clearPayment)
+            tdlib.client().send(new TdApi.DeleteSavedCredentials(), tdlib.doneHandler());
         } else {
-          tdlib.contacts().enableSync(context);
+          int[] numResults = new int[1];
+          Client.ResultHandler handler = object -> {
+            switch (object.getConstructor()) {
+              case TdApi.Ok.CONSTRUCTOR: {
+                if (++numResults[0] == 2) {
+                  UI.showToast(R.string.Done, Toast.LENGTH_SHORT);
+                }
+                break;
+              }
+              case TdApi.Error.CONSTRUCTOR:
+                UI.showError(object);
+                break;
+            }
+          };
+          tdlib.client().send(new TdApi.DeleteSavedOrderInfo(), handler);
+          tdlib.client().send(new TdApi.DeleteSavedCredentials(), handler);
         }
-        break;
-      }
-      case R.id.btn_mapProvider:
-      case R.id.btn_mapProviderCloud: {
-        tdlib.ui().showMapProviderSettings(this, id == R.id.btn_mapProviderCloud ? TdlibUi.MAP_PROVIDER_MODE_CLOUD : TdlibUi.MAP_PROVIDER_MODE_SECRET, () -> {
-          if (!isDestroyed()) {
-            adapter.updateValuedSettingById(id);
-          }
-        });
-        break;
-      }
-      case R.id.btn_secretLinkPreviews: {
-        Settings.instance().setUseSecretLinkPreviews(adapter.toggleView(v));
-        break;
-      }
-      case R.id.btn_incognitoMode: {
-        Settings.instance().setIncognitoMode(adapter.toggleView(v) ? Settings.INCOGNITO_CHAT_SECRET : 0);
-        break;
-      }
-      case R.id.btn_hideSecretChats: {
-        boolean hide = adapter.toggleView(v);
-        boolean updated = Settings.instance().setNeedHideSecretChats(hide);
-        if (secretInfo != null) {
-          secretInfo.setString(hide ? R.string.HideSecretOn : R.string.HideSecretOff);
-          adapter.updateValuedSetting(secretInfo);
-        }
-        if (updated) {
-          TdlibManager.instance().onUpdateSecretChatNotifications();
-        }
-        break;
-      }
-      case R.id.btn_clearPaymentAndShipping: {
-        showSettings(new SettingsWrapBuilder(R.id.btn_clearPaymentAndShipping).setSaveStr(R.string.Clear).setRawItems(new ListItem[] {
-          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_clearShipping, 0, R.string.PrivacyClearShipping, R.id.btn_clearShipping, true),
-          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_clearPayment, 0, R.string.PrivacyClearPayment, R.id.btn_clearPayment, true)
-        }).setSaveColorId(R.id.theme_color_textNegative).addHeaderItem(Lang.getString(R.string.PrivacyPaymentsClearAlert)).setIntDelegate((settingsId, result) -> {
+      }).setOnActionButtonClick((wrap, view, isCancel) -> {
+        if (!isCancel) {
+          SparseIntArray result = wrap.adapter.getCheckIntResults();
           boolean clearShipping = result.get(R.id.btn_clearShipping) == R.id.btn_clearShipping;
           boolean clearPayment = result.get(R.id.btn_clearPayment) == R.id.btn_clearPayment;
-          if (!clearPayment || !clearShipping) {
-            if (clearShipping)
-              tdlib.client().send(new TdApi.DeleteSavedOrderInfo(), tdlib.doneHandler());
-            if (clearPayment)
-              tdlib.client().send(new TdApi.DeleteSavedCredentials(), tdlib.doneHandler());
-          } else {
-            int[] numResults = new int[1];
-            Client.ResultHandler handler = object -> {
-              switch (object.getConstructor()) {
-                case TdApi.Ok.CONSTRUCTOR: {
-                  if (++numResults[0] == 2) {
-                    UI.showToast(R.string.Done, Toast.LENGTH_SHORT);
-                  }
-                  break;
-                }
-                case TdApi.Error.CONSTRUCTOR:
-                  UI.showError(object);
-                  break;
-                }
-            };
-            tdlib.client().send(new TdApi.DeleteSavedOrderInfo(), handler);
-            tdlib.client().send(new TdApi.DeleteSavedCredentials(), handler);
-          }
-        }).setOnActionButtonClick((wrap, view, isCancel) -> {
-          if (!isCancel) {
-            SparseIntArray result = wrap.adapter.getCheckIntResults();
-            boolean clearShipping = result.get(R.id.btn_clearShipping) == R.id.btn_clearShipping;
-            boolean clearPayment = result.get(R.id.btn_clearPayment) == R.id.btn_clearPayment;
-            return !clearPayment && !clearShipping;
-          }
-          return false;
-        }));
-        break;
-      }
-      case R.id.btn_suggestContacts: {
-        boolean value = ((SettingView) v).getToggler().isEnabled();
-        if (value) {
-          showOptions(Lang.getString(R.string.SuggestContactsAlert), new int[]{R.id.btn_suggestContacts, R.id.btn_cancel}, new String[]{Lang.getString(R.string.SuggestContactsDone), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, resultId) -> {
-            if (resultId == R.id.btn_suggestContacts) {
-              tdlib.setDisableTopChats(true);
-              adapter.updateValuedSettingById(R.id.btn_suggestContacts);
-            }
-            return true;
-          });
-        } else {
-          tdlib.setDisableTopChats(!((SettingView) v).getToggler().toggle(true));
+          return !clearPayment && !clearShipping;
         }
-        break;
-      }
-      case R.id.btn_resetContacts: {
-        showOptions(Lang.getString(R.string.SyncContactsDeleteInfo), new int[] {R.id.btn_resetContacts, R.id.btn_cancel}, new String[] {Lang.getString(R.string.SyncContactsDeleteButton), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, resultId) -> {
-          if (resultId == R.id.btn_resetContacts) {
-            tdlib.contacts().deleteContacts();
+        return false;
+      }));
+    } else if (id == R.id.btn_suggestContacts) {
+      boolean value = ((SettingView) v).getToggler().isEnabled();
+      if (value) {
+        showOptions(Lang.getString(R.string.SuggestContactsAlert), new int[] {R.id.btn_suggestContacts, R.id.btn_cancel}, new String[] {Lang.getString(R.string.SuggestContactsDone), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, resultId) -> {
+          if (resultId == R.id.btn_suggestContacts) {
+            tdlib.setDisableTopChats(true);
+            adapter.updateValuedSettingById(R.id.btn_suggestContacts);
           }
           return true;
         });
-        break;
+      } else {
+        tdlib.setDisableTopChats(!((SettingView) v).getToggler().toggle(true));
       }
-      case R.id.btn_blockedSenders: {
-        SettingsBlockedController c = new SettingsBlockedController(context, tdlib);
-        c.setArguments(this);
-        navigateTo(c);
-        break;
-      }
-      case R.id.btn_privacyRule: {
-        TdApi.UserPrivacySetting setting = (TdApi.UserPrivacySetting) ((ListItem) v.getTag()).getData();
-        if (Td.requiresPremiumSubscription(setting) && tdlib.ui().showPremiumAlert(this, v, TdlibUi.PremiumFeature.RESTRICT_VOICE_AND_VIDEO_MESSAGES)) {
-          return;
+    } else if (id == R.id.btn_resetContacts) {
+      showOptions(Lang.getString(R.string.SyncContactsDeleteInfo), new int[] {R.id.btn_resetContacts, R.id.btn_cancel}, new String[] {Lang.getString(R.string.SyncContactsDeleteButton), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, resultId) -> {
+        if (resultId == R.id.btn_resetContacts) {
+          tdlib.contacts().deleteContacts();
         }
-        SettingsPrivacyKeyController c = new SettingsPrivacyKeyController(context, tdlib);
-        c.setArguments(setting);
-        navigateTo(c);
-        break;
+        return true;
+      });
+    } else if (id == R.id.btn_blockedSenders) {
+      SettingsBlockedController c = new SettingsBlockedController(context, tdlib);
+      c.setArguments(this);
+      navigateTo(c);
+    } else if (id == R.id.btn_privacyRule) {
+      TdApi.UserPrivacySetting setting = (TdApi.UserPrivacySetting) ((ListItem) v.getTag()).getData();
+      if (Td.requiresPremiumSubscription(setting) && tdlib.ui().showPremiumAlert(this, v, TdlibUi.PremiumFeature.RESTRICT_VOICE_AND_VIDEO_MESSAGES)) {
+        return;
       }
-      case R.id.btn_sessions: {
-        lastClickedButton = id;
-        SettingsSessionsController sessions = new SettingsSessionsController(context, tdlib);
-        SettingsWebsitesController websites = new SettingsWebsitesController(context, tdlib);
-        websites.setArguments(this);
+      SettingsPrivacyKeyController c = new SettingsPrivacyKeyController(context, tdlib);
+      c.setArguments(setting);
+      navigateTo(c);
+    } else if (id == R.id.btn_sessions) {
+      lastClickedButton = id;
+      SettingsSessionsController sessions = new SettingsSessionsController(context, tdlib);
+      SettingsWebsitesController websites = new SettingsWebsitesController(context, tdlib);
+      websites.setArguments(this);
 
-        SimpleViewPagerController c = new SimpleViewPagerController(context, tdlib, new ViewController[] {sessions, websites}, new String[] {Lang.getString(R.string.Devices).toUpperCase(), Lang.getString(R.string.Websites).toUpperCase()}, false);
-        navigateTo(c);
-        break;
+      SimpleViewPagerController c = new SimpleViewPagerController(context, tdlib, new ViewController[] {sessions, websites}, new String[] {Lang.getString(R.string.Devices).toUpperCase(), Lang.getString(R.string.Websites).toUpperCase()}, false);
+      navigateTo(c);
+    } else if (id == R.id.btn_passcode) {
+      lastClickedButton = id;
+      if (Passcode.instance().isEnabled()) {
+        PasscodeController passcode = new PasscodeController(context, tdlib);
+        passcode.setPasscodeMode(PasscodeController.MODE_UNLOCK_SETUP);
+        navigateTo(passcode);
+      } else {
+        navigateTo(new PasscodeSetupController(context, tdlib));
       }
-      case R.id.btn_passcode: {
-        lastClickedButton = id;
-        if (Passcode.instance().isEnabled()) {
-          PasscodeController passcode = new PasscodeController(context, tdlib);
-          passcode.setPasscodeMode(PasscodeController.MODE_UNLOCK_SETUP);
-          navigateTo(passcode);
+    } else if (id == R.id.btn_2fa) {
+      if (passwordState != null) {
+        if (!passwordState.hasPassword) {
+          Settings2FAController controller = new Settings2FAController(context, tdlib);
+          controller.setArguments(new Settings2FAController.Args(this, null, null));
+          navigateTo(controller);
         } else {
-          navigateTo(new PasscodeSetupController(context, tdlib));
+          PasswordController controller = new PasswordController(context, tdlib);
+          controller.setArguments(new PasswordController.Args(PasswordController.MODE_UNLOCK_EDIT, passwordState));
+          navigateTo(controller);
         }
-        break;
       }
-      case R.id.btn_2fa: {
-        if (passwordState != null) {
-          if (!passwordState.hasPassword) {
-            Settings2FAController controller = new Settings2FAController(context, tdlib);
-            controller.setArguments(new Settings2FAController.Args(this, null, null));
-            navigateTo(controller);
-          } else {
-            PasswordController controller = new PasswordController(context, tdlib);
-            controller.setArguments(new PasswordController.Args(PasswordController.MODE_UNLOCK_EDIT, passwordState));
-            navigateTo(controller);
-          }
+    } else if (id == R.id.btn_accountTTL) {
+      int days = accountTtl != null ? accountTtl.days : 0;
+      int months = days / 30;
+      int years = months / 12;
+      showSettings(id, new ListItem[] {
+        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_1month, 0, Lang.pluralBold(R.string.xMonths, 1), R.id.btn_accountTTL, months == 1),
+        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_3months, 0, Lang.pluralBold(R.string.xMonths, 3), R.id.btn_accountTTL, months == 3),
+        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_6month, 0, Lang.pluralBold(R.string.xMonths, 6), R.id.btn_accountTTL, months == 6),
+        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_1year, 0, Lang.pluralBold(R.string.xYears, 1), R.id.btn_accountTTL, years == 1)
+      }, this);
+    } else if (id == R.id.btn_clearAllDrafts) {
+      showOptions(Lang.getString(R.string.AreYouSureClearDrafts), new int[] {R.id.btn_clearAllDrafts, R.id.btn_cancel}, new String[] {Lang.getString(R.string.PrivacyDeleteCloudDrafts), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, actionId) -> {
+        if (actionId == R.id.btn_clearAllDrafts) {
+          tdlib.client().send(new TdApi.ClearAllDraftMessages(true), tdlib.doneHandler());
         }
-        break;
-      }
-      case R.id.btn_accountTTL: {
-        int days = accountTtl != null ? accountTtl.days : 0;
-        int months = days / 30;
-        int years = months / 12;
-        showSettings(id, new ListItem[] {
-          new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_1month, 0, Lang.pluralBold(R.string.xMonths, 1), R.id.btn_accountTTL, months == 1),
-          new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_3months, 0, Lang.pluralBold(R.string.xMonths, 3), R.id.btn_accountTTL, months == 3),
-          new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_6month, 0, Lang.pluralBold(R.string.xMonths, 6), R.id.btn_accountTTL, months == 6),
-          new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_1year, 0, Lang.pluralBold(R.string.xYears, 1), R.id.btn_accountTTL, years == 1)
-        }, this);
-        break;
-      }
-      case R.id.btn_clearAllDrafts: {
-        showOptions(Lang.getString(R.string.AreYouSureClearDrafts), new int[] {R.id.btn_clearAllDrafts, R.id.btn_cancel}, new String[] {Lang.getString(R.string.PrivacyDeleteCloudDrafts), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_forever_24, R.drawable.baseline_cancel_24}, (itemView, actionId) -> {
-          if (actionId == R.id.btn_clearAllDrafts) {
-            tdlib.client().send(new TdApi.ClearAllDraftMessages(true), tdlib.doneHandler());
-          }
-          return true;
-        });
-        break;
-      }
+        return true;
+      });
     }
   }
 
   @Override
   public void onApplySettings (@IdRes int id, SparseIntArray result) {
-    switch (id) {
-      case R.id.btn_accountTTL: {
-        if (result.size() == 1) {
-          int resultDaysTTL;
-          switch (result.valueAt(0)) {
-            case R.id.btn_1month: {
-              resultDaysTTL = 31;
-              break;
-            }
-            case R.id.btn_3months: {
-              resultDaysTTL = 91;
-              break;
-            }
-            case R.id.btn_6month: {
-              resultDaysTTL = 181;
-              break;
-            }
-            case R.id.btn_1year: {
-              resultDaysTTL = 366;
-              break;
-            }
-            default: {
-              resultDaysTTL = 0;
-            }
-          }
-          if (resultDaysTTL >= 30 && (accountTtl == null || accountTtl.days != resultDaysTTL)) {
-            accountTtl = new TdApi.AccountTtl(resultDaysTTL);
-            tdlib.client().send(new TdApi.SetAccountTtl(accountTtl), tdlib.okHandler());
-            adapter.updateValuedSettingById(R.id.btn_accountTTL);
-          }
+    if (id == R.id.btn_accountTTL) {
+      if (result.size() == 1) {
+        int resultDaysTTL;
+        int resultId = result.valueAt(0);
+        if (resultId == R.id.btn_1month) {
+          resultDaysTTL = 31;
+        } else if (resultId == R.id.btn_3months) {
+          resultDaysTTL = 91;
+        } else if (resultId == R.id.btn_6month) {
+          resultDaysTTL = 181;
+        } else if (resultId == R.id.btn_1year) {
+          resultDaysTTL = 366;
+        } else {
+          resultDaysTTL = 0;
         }
-        break;
+        if (resultDaysTTL >= 30 && (accountTtl == null || accountTtl.days != resultDaysTTL)) {
+          accountTtl = new TdApi.AccountTtl(resultDaysTTL);
+          tdlib.client().send(new TdApi.SetAccountTtl(accountTtl), tdlib.okHandler());
+          adapter.updateValuedSettingById(R.id.btn_accountTTL);
+        }
       }
     }
   }

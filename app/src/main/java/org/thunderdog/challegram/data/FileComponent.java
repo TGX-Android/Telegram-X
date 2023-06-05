@@ -25,7 +25,7 @@ import androidx.annotation.ColorInt;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
@@ -45,6 +45,7 @@ import org.thunderdog.challegram.telegram.TGLegacyAudioManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibFilesManager;
 import org.thunderdog.challegram.telegram.TdlibManager;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
@@ -213,7 +214,7 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
     if (hasPreview) {
       progress.setBackgroundColor(Config.COVER_OVERLAY);
     } else {
-      progress.setBackgroundColorId(context.isOutgoingBubble() ? R.id.theme_color_bubbleOut_file : R.id.theme_color_file);
+      progress.setBackgroundColorId(context.isOutgoingBubble() ? ColorId.bubbleOut_file : ColorId.file);
     }
     this.progress.setPlayPauseFile(playPauseFile != null ? playPauseFile : TD.newFakeMessage(audio), playListBuilder);
     if (viewProvider != null) {
@@ -242,7 +243,7 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
     this.progress = new FileProgressComponent(context.context(), context.tdlib(), TdlibFilesManager.DOWNLOAD_FLAG_VOICE, false,message != null ? message.chatId : context.getChatId(), message != null ? message.id : context.getId());
     this.progress.setBackgroundColorProvider(context);
     this.progress.setSimpleListener(this);
-    this.progress.setBackgroundColorId(context.isOutgoingBubble() ? R.id.theme_color_bubbleOut_file : R.id.theme_color_file);
+    this.progress.setBackgroundColorId(context.isOutgoingBubble() ? ColorId.bubbleOut_file : ColorId.file);
     this.progress.setPlayPauseFile(playPauseFile != null ? playPauseFile : TD.newFakeMessage(voice), playListBuilder, this);
     if (this.viewProvider != null) {
       this.progress.setViewProvider(viewProvider);
@@ -742,7 +743,7 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
         float y = cy + (float) ((double) fileRadius * Math.cos(radians));
 
         // c.drawCircle(x, y, outerRadius * unreadFactor, Paints.fillingPaint(context.getContentReplaceColor()));
-        c.drawCircle(x, y, innerRadius * unreadFactor, Paints.fillingPaint(ColorUtils.alphaColor(unreadFactor, Theme.getColor(align ? R.id.theme_color_bubbleOut_waveformActive : R.id.theme_color_waveformActive))));
+        c.drawCircle(x, y, innerRadius * unreadFactor, Paints.fillingPaint(ColorUtils.alphaColor(unreadFactor, Theme.getColor(align ? ColorId.bubbleOut_waveformActive : ColorId.waveformActive))));
       }
       if (trimmedSubtitle != null) {
         int textX = startX + previewSize + getPreviewOffset() + waveform.getWidth() + Screen.dp(12f);
@@ -780,13 +781,10 @@ public class FileComponent extends BaseComponent implements FileProgressComponen
     if (doc != null) {
       this.context.tdlib().ui().readCustomLanguage(this.context.controller(), doc, langPack ->
         this.context.controller().showOptions(Lang.getString(R.string.LanguageWarning), new int[] {R.id.btn_messageApplyLocalization, R.id.btn_open}, new String[] {Lang.getString(R.string.LanguageInstall), Lang.getString(R.string.Open)}, null, new int[] {R.drawable.baseline_language_24, R.drawable.baseline_open_in_browser_24}, (itemView, id) -> {
-          switch (id) {
-            case R.id.btn_messageApplyLocalization:
-              this.context.tdlib().ui().showLanguageInstallPrompt(this.context.controller(), langPack, this.context.getMessage());
-              break;
-            case R.id.btn_open:
-              open();
-              break;
+          if (id == R.id.btn_messageApplyLocalization) {
+            this.context.tdlib().ui().showLanguageInstallPrompt(this.context.controller(), langPack, this.context.getMessage());
+          } else if (id == R.id.btn_open) {
+            open();
           }
           this.context.readContent();
           return true;

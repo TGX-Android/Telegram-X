@@ -22,8 +22,8 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.user.SimpleUsersAdapter;
 import org.thunderdog.challegram.core.Background;
@@ -66,32 +66,22 @@ public class MediaBottomContactsController extends MediaBottomBaseController<Voi
 
   @Override
   public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
-    switch (id) {
-      case R.id.menu_search: {
-        header.addSearchButton(menu, this);
-        break;
-      }
-      case R.id.menu_clear: {
-        header.addClearButton(menu, this);
-        break;
-      }
+    if (id == R.id.menu_search) {
+      header.addSearchButton(menu, this);
+    } else if (id == R.id.menu_clear) {
+      header.addClearButton(menu, this);
     }
   }
 
   @Override
   public void onMenuItemPressed (int id, View view) {
-    switch (id) {
-      case R.id.menu_btn_search: {
-        if (users != null && !users.isEmpty()) {
-          mediaLayout.getHeaderView().openSearchMode();
-          headerView = mediaLayout.getHeaderView();
-        }
-        break;
+    if (id == R.id.menu_btn_search) {
+      if (users != null && !users.isEmpty()) {
+        mediaLayout.getHeaderView().openSearchMode();
+        headerView = mediaLayout.getHeaderView();
       }
-      case R.id.menu_btn_clear: {
-        clearSearchInput();
-        break;
-      }
+    } else if (id == R.id.menu_btn_clear) {
+      clearSearchInput();
     }
   }
 

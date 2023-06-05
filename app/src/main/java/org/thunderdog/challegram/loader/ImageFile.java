@@ -19,7 +19,7 @@ import android.os.Build;
 import androidx.annotation.NonNull;
 import androidx.palette.graphics.Palette;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.mediaview.crop.CropState;
 import org.thunderdog.challegram.mediaview.data.FiltersState;
@@ -32,9 +32,9 @@ import java.lang.ref.Reference;
 import java.util.ArrayList;
 import java.util.List;
 
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.core.reference.ReferenceUtils;
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.Td;
 
 public class ImageFile {

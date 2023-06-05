@@ -25,9 +25,9 @@ import android.widget.ScrollView;
 
 import androidx.annotation.Nullable;
 
-import org.drinkless.td.libcore.telegram.TdApi;
-import org.thunderdog.challegram.R;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Screen;
@@ -137,7 +137,7 @@ public class CommandKeyboardLayout extends ViewGroup implements ViewTreeObserver
   private TextView genButton () {
     TextView text = new EmojiTextView(getContext());
     text.setScrollDisabled(true);
-    ViewUtils.setBackground(text, Theme.rectSelector(4f, 0f, R.id.theme_color_chatKeyboardButton));
+    ViewUtils.setBackground(text, Theme.rectSelector(4f, 0f, ColorId.chatKeyboardButton));
     if (themeProvider != null) {
       themeProvider.addThemeInvalidateListener(text);
     }

@@ -14,8 +14,8 @@
  */
 package org.thunderdog.challegram.util;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 
 public abstract class CancellableResultHandler implements Client.ResultHandler {
   private volatile boolean isCancelled;

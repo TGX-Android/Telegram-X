@@ -21,6 +21,7 @@ import org.thunderdog.challegram.charts.CombinedDrawable;
 import org.thunderdog.challegram.charts.LayoutHelper;
 import org.thunderdog.challegram.charts.RadialProgressView;
 import org.thunderdog.challegram.charts.data.ChartData;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Screen;
@@ -106,7 +107,7 @@ public class LegendSignatureView extends FrameLayout {
         progressView.setProgressColor(Theme.iconColor()); // key_statisticChartChevronColor
 
         shadowDrawable = getContext().getResources().getDrawable(R.drawable.stats_tooltip).mutate();
-        backgroundDrawable = Theme.createSimpleSelectorRoundRectDrawable(Screen.dp(4), Theme.getColor(R.id.theme_color_filling /*key_dialogBackground*/), Theme.getColor(R.id.theme_color_fillingPressed /*key_listSelector*/), 0xff000000);
+        backgroundDrawable = Theme.createSimpleSelectorRoundRectDrawable(Screen.dp(4), Theme.getColor(ColorId.filling /*key_dialogBackground*/), Theme.getColor(ColorId.fillingPressed /*key_listSelector*/), 0xff000000);
         CombinedDrawable drawable = new CombinedDrawable(shadowDrawable, backgroundDrawable, Screen.dp(3), Screen.dp(3));
         drawable.setFullsize(true);
         setBackground(drawable);

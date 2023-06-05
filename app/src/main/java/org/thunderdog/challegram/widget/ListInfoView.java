@@ -28,6 +28,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Screen;
@@ -68,7 +69,7 @@ public class ListInfoView extends FrameLayoutFix {
 
   public void addThemeListeners (@Nullable ViewController<?> themeProvider) {
     if (themeProvider != null) {
-      themeProvider.addThemeTextColorListener(textView, R.id.theme_color_background_textLight);
+      themeProvider.addThemeTextColorListener(textView, ColorId.background_textLight);
     }
   }
 

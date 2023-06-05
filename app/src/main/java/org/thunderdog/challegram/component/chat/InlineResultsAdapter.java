@@ -38,6 +38,7 @@ import org.thunderdog.challegram.data.InlineResultPhoto;
 import org.thunderdog.challegram.data.InlineResultSticker;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeId;
 import org.thunderdog.challegram.theme.ThemeListenerList;
@@ -305,9 +306,9 @@ public class InlineResultsAdapter extends RecyclerView.Adapter<InlineResultsAdap
           textView.setPadding(Screen.dp(16f), 0, Screen.dp(16f), Screen.dp(1f));
           textView.setTypeface(Fonts.getRobotoMedium());
           textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
-          textView.setTextColor(useDarkMode ? Theme.getColor(R.id.theme_color_textNeutral, ThemeId.NIGHT_BLACK) : Theme.getColor(R.id.theme_color_textNeutral));
+          textView.setTextColor(useDarkMode ? Theme.getColor(ColorId.textNeutral, ThemeId.NIGHT_BLACK) : Theme.getColor(ColorId.textNeutral));
           if (themeList != null && !useDarkMode) {
-            themeList.addThemeColorListener(textView, R.id.theme_color_textNeutral);
+            themeList.addThemeColorListener(textView, ColorId.textNeutral);
             themeList.addThemeInvalidateListener(textView);
           }
           Views.setClickable(textView);

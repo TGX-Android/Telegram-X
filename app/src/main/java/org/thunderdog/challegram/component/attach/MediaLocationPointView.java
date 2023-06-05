@@ -22,6 +22,7 @@ import android.os.SystemClock;
 import android.view.View;
 
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
@@ -95,7 +96,7 @@ public class MediaLocationPointView extends View implements FactorAnimator.Targe
     float placeFactor = isPlace.getFloatValue();
     float activeFactor = Math.max(gpsFactor, customFactor);
 
-    int color = Theme.getColor(R.id.theme_color_file);
+    int color = Theme.getColor(ColorId.file);
 
     c.drawCircle(cx, cy, Screen.dp(20f), Paints.fillingPaint(color));
     progressComponent.draw(c);

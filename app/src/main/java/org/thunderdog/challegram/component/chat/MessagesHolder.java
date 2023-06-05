@@ -37,6 +37,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Fonts;
@@ -259,7 +260,7 @@ public class MessagesHolder extends RecyclerView.ViewHolder {
         } else {
           imageView.setColorFilter(Theme.textSecureColor());
           if (themeProvider != null) {
-            themeProvider.addThemeFilterListener(imageView, R.id.theme_color_textSecure);
+            themeProvider.addThemeFilterListener(imageView, ColorId.textSecure);
           }
         }
         imageView.setLayoutParams(params);
@@ -277,7 +278,7 @@ public class MessagesHolder extends RecyclerView.ViewHolder {
         } else {
           headerView.setTextColor(Theme.textSecureColor());
           if (themeProvider != null) {
-            themeProvider.addThemeTextColorListener(headerView, R.id.theme_color_textSecure);
+            themeProvider.addThemeTextColorListener(headerView, ColorId.textSecure);
           }
         }
         headerView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);

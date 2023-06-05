@@ -33,8 +33,8 @@ import androidx.collection.LongSparseArray;
 import androidx.collection.SparseArrayCompat;
 import androidx.core.os.CancellationSignal;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 import org.drinkmore.Tracer;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
@@ -55,8 +55,8 @@ import org.thunderdog.challegram.loader.ImageLoader;
 import org.thunderdog.challegram.loader.gif.GifBridge;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.sync.SyncHelper;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Passcode;
@@ -259,7 +259,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     public ClientHolder (Tdlib tdlib) {
       Log.i(Log.TAG_ACCOUNTS, "Creating client #%d", runningClients.incrementAndGet());
       this.tdlib = tdlib;
-      this.client = Client.create(this, this, this, tdlib.isDebugInstance());
+      this.client = Client.create(this, this, this);
       tdlib.updateParameters(client);
       if (Config.NEED_ONLINE) {
         if (tdlib.isOnline) {
@@ -388,7 +388,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     public void close () {
       Log.i(Log.TAG_ACCOUNTS, "Calling client.close(), accountId:%d", tdlib.accountId);
       long ms = SystemClock.uptimeMillis();
-      client.close();
+      // Nothing to do anymore?
+      // client.close();
       Log.i(Log.TAG_ACCOUNTS, "client.close() done in %dms, accountId:%d, accountsNum:%d", SystemClock.uptimeMillis() - ms, tdlib.accountId, runningClients.decrementAndGet());
     }
 
@@ -1638,11 +1639,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public void wakeUp () {
     synchronized (clientLock) {
-      if (client == null || !instancePaused || Thread.currentThread() != client.client.getThread()) {
+      if (client == null || !instancePaused || !inTdlibThread()) {
         clientHolderUnsafe();
         return;
       }
     }
+    //FIXME?
     new Thread(this::clientHolder).start();
   }
 
@@ -1746,7 +1748,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
     if (!instancePaused)
       return client;
-    if (Thread.currentThread() == client.client.getThread())
+    if (inTdlibThread())
       throw new IllegalStateException();
     return null;
   }
@@ -2102,8 +2104,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
+  private void updateTdlibThread () {
+    tdlibThread = Thread.currentThread();
+  }
+
   public boolean inTdlibThread () {
-    return Thread.currentThread() == client().getThread();
+    if (tdlibThread != null) {
+      // FIXME[tdlib]: it is safe as long as there's just one thread for all apps
+      return Thread.currentThread() == tdlibThread;
+    } else {
+      // FIXME[tdlib]: more reliable way
+      final String tdlibThreadName = "TDLib thread";
+      return tdlibThreadName.equals(Thread.currentThread().getName());
+    }
   }
 
   public TdApi.Object clientExecute (TdApi.Function<?> function, long timeoutMs) {
@@ -2859,7 +2872,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         case TdApi.ChatTypePrivate.CONSTRUCTOR: {
           long userId = chatUserId(chat);
           if (isSelfUserId(userId)) {
-            return R.id.theme_color_avatarSavedMessages;
+            return ColorId.avatarSavedMessages;
           }
           return cache().userAvatarColorId(userId);
         }
@@ -3222,10 +3235,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
-  public TdApi.ChatFilterInfo chatFilterInfo (int chatFilterId) {
+  public TdApi.ChatFolderInfo chatFilterInfo (int chatFilterId) {
     synchronized (dataLock) {
-      if (chatFilters != null) {
-        for (TdApi.ChatFilterInfo filter : chatFilters) {
+      if (chatFolders != null) {
+        for (TdApi.ChatFolderInfo filter : chatFolders) {
           if (filter.id == chatFilterId)
             return filter;
         }
@@ -3242,7 +3255,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         case TdApi.ChatListMain.CONSTRUCTOR:
         case TdApi.ChatListArchive.CONSTRUCTOR:
           break;
-        case TdApi.ChatListFilter.CONSTRUCTOR:
+        case TdApi.ChatListFolder.CONSTRUCTOR:
           return false;
       }
     }
@@ -3254,7 +3267,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
             return !isSelfChat(chat.id) && !isServiceNotificationsChat(chat.id);
           case TdApi.ChatListArchive.CONSTRUCTOR:
             return true; // Already archived
-          case TdApi.ChatListFilter.CONSTRUCTOR:
+          case TdApi.ChatListFolder.CONSTRUCTOR:
             break;
         }
       }
@@ -4254,18 +4267,18 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   // Notificaitons
 
   public int accountColor (long chatId) {
-    return getColor(ChatId.isSecret(chatId) ? R.id.theme_color_notificationSecure : R.id.theme_color_notification);
+    return getColor(ChatId.isSecret(chatId) ? ColorId.notificationSecure : ColorId.notification);
   }
 
   public int accountColor () {
-    return getColor(R.id.theme_color_notification);
+    return getColor(ColorId.notification);
   }
 
   public int accountPlayerColor () {
-    return getColor(R.id.theme_color_notificationPlayer);
+    return getColor(ColorId.notificationPlayer);
   }
 
-  public int getColor (@ThemeColorId int colorId) {
+  public int getColor (@ColorId int colorId) {
     int colorTheme = settings().globalTheme();
     return Theme.getColor(colorId, colorTheme);
   }
@@ -5506,8 +5519,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
+  private Thread tdlibThread;
+
   private void updateParameters (Client client) {
-    Client.ResultHandler okHandler = okHandler();
+    Client.ResultHandler okHandler = object -> {
+      updateTdlibThread();
+      switch (object.getConstructor()) {
+        case TdApi.Ok.CONSTRUCTOR:
+          break;
+        case TdApi.Error.CONSTRUCTOR:
+          UI.showError(object);
+          break;
+      }
+    };
     final boolean isService = isServiceInstance();
     client.send(new TdApi.SetOption("use_quick_ack", new TdApi.OptionValueBoolean(true)), okHandler);
     client.send(new TdApi.SetOption("use_pfs", new TdApi.OptionValueBoolean(true)), okHandler);
@@ -7522,12 +7546,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     listeners.updateChatAvailableReactions(update);
   }
 
-  private TdApi.ChatFilterInfo[] chatFilters;
+  private TdApi.ChatFolderInfo[] chatFolders;
 
   @TdlibThread
-  private void updateChatFilters (TdApi.UpdateChatFilters update) {
+  private void updateChatFilters (TdApi.UpdateChatFolders update) {
     synchronized (dataLock) {
-      this.chatFilters = update.chatFilters;
+      this.chatFolders = update.chatFolders;
     }
     listeners.updateChatFilters(update);
   }
@@ -7923,6 +7947,13 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     listeners.updatePrivacySettingRules(update.setting, update.rules);
   }
 
+  // Updates: ADD MEMBERS PRIVACY
+
+  @TdlibThread
+  private void updateAddChatMembersPrivacyForbidden (TdApi.UpdateAddChatMembersPrivacyForbidden update) {
+    // TODO show alert
+  }
+
   // Updates: CHAT ACTION
 
   @TdlibThread
@@ -8255,6 +8286,20 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         chatThemes.put(theme.name, theme);
       }
     }
+  }
+
+  @TdlibThread
+  private void updateChatBackground (TdApi.UpdateChatBackground update) {
+    final TdApi.Chat chat;
+    synchronized (dataLock) {
+      chat = chats.get(update.chatId);
+      if (TdlibUtils.assertChat(update.chatId, chat, update)) {
+        return;
+      }
+      chat.background = update.background;
+    }
+
+    listeners.updateChatBackground(update);
   }
 
   @AnyThread
@@ -8897,8 +8942,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         updateChatMessageAutoDeleteTime((TdApi.UpdateChatMessageAutoDeleteTime) update);
         break;
       }
-      case TdApi.UpdateChatFilters.CONSTRUCTOR: {
-        updateChatFilters((TdApi.UpdateChatFilters) update);
+      case TdApi.UpdateChatFolders.CONSTRUCTOR: {
+        updateChatFilters((TdApi.UpdateChatFolders) update);
         break;
       }
       case TdApi.UpdateChatPosition.CONSTRUCTOR: {
@@ -9027,6 +9072,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
       case TdApi.UpdateUserPrivacySettingRules.CONSTRUCTOR: {
         updatePrivacySettingRules((TdApi.UpdateUserPrivacySettingRules) update);
+        break;
+      }
+      case TdApi.UpdateAddChatMembersPrivacyForbidden.CONSTRUCTOR: {
+        updateAddChatMembersPrivacyForbidden((TdApi.UpdateAddChatMembersPrivacyForbidden) update);
         break;
       }
 
@@ -9179,6 +9228,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
       case TdApi.UpdateChatThemes.CONSTRUCTOR: {
         updateChatThemes((TdApi.UpdateChatThemes) update);
+        break;
+      }
+      case TdApi.UpdateChatBackground.CONSTRUCTOR: {
+        updateChatBackground((TdApi.UpdateChatBackground) update);
         break;
       }
 

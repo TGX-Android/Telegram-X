@@ -28,6 +28,7 @@ import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 
@@ -54,8 +55,8 @@ public class BubbleLayout extends AnimatedLinearLayout implements FactorAnimator
     this.themeProvider = themeProvider;
     this.top = top;
 
-    this.backgroundDrawable = Theme.filteredDrawable(R.drawable.stickers_back_all, R.id.theme_color_overlayFilling, themeProvider);
-    this.cornerDrawable = Theme.filteredDrawable(R.drawable.stickers_back_arrow, R.id.theme_color_overlayFilling, themeProvider);
+    this.backgroundDrawable = Theme.filteredDrawable(R.drawable.stickers_back_all, ColorId.overlayFilling, themeProvider);
+    this.cornerDrawable = Theme.filteredDrawable(R.drawable.stickers_back_arrow, ColorId.overlayFilling, themeProvider);
 
     if (themeProvider != null) {
       themeProvider.addThemeInvalidateListener(this);

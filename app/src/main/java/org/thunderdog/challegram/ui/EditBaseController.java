@@ -34,7 +34,7 @@ import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
@@ -63,8 +63,8 @@ public abstract class EditBaseController<T> extends ViewController<T> implements
   private DoneButton doneButton;
   protected RecyclerView.ItemAnimator itemAnimator;
 
-  protected @ThemeColorId int getRecyclerBackgroundColorId () {
-    return R.id.theme_color_filling;
+  protected @ColorId int getRecyclerBackgroundColorId () {
+    return ColorId.filling;
   }
 
   protected final DoneButton getDoneButton () {

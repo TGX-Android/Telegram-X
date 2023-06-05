@@ -16,7 +16,7 @@ package org.thunderdog.challegram.telegram;
 
 import androidx.annotation.Nullable;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 
 public interface ChatListener extends ForumTopicInfoListener {
   default void onChatTopMessageChanged (long chatId, @Nullable TdApi.Message topMessage) { }
@@ -24,6 +24,8 @@ public interface ChatListener extends ForumTopicInfoListener {
   default void onChatPermissionsChanged (long chatId, TdApi.ChatPermissions permissions) { }
   default void onChatTitleChanged (long chatId, String title) { }
   default void onChatThemeChanged (long chatId, String themeName) { }
+
+  default void onChatBackgroundChanged (long chatId, @Nullable TdApi.ChatBackground background) { }
   default void onChatActionBarChanged (long chatId, TdApi.ChatActionBar actionBar) { }
   default void onChatPhotoChanged (long chatId, @Nullable TdApi.ChatPhotoInfo photo) { }
   default void onChatReadInbox (long chatId, long lastReadInboxMessageId, int unreadCount, boolean availabilityChanged) { }

@@ -20,7 +20,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.util.ColorChangeAcceptorDelegate;
 
 import me.vkryl.core.ColorUtils;
@@ -28,10 +28,10 @@ import me.vkryl.core.ColorUtils;
 public abstract class SimpleShapeDrawable extends Drawable implements ColorChangeAcceptorDelegate {
   public static final boolean USE_SOFTWARE_SHADOW = Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP;
 
-  private @ThemeColorId
+  private @ColorId
   int colorId;
   private float changeFactor;
-  private @ThemeColorId
+  private @ColorId
   int toColorId;
 
   protected final float size;
@@ -44,7 +44,7 @@ public abstract class SimpleShapeDrawable extends Drawable implements ColorChang
   }
 
   @Override
-  public void applyColor (@ThemeColorId int fromColorId, @ThemeColorId int toColorId, float factor) {
+  public void applyColor (@ColorId int fromColorId, @ColorId int toColorId, float factor) {
     if (colorId != fromColorId || changeFactor != factor || (this.toColorId != toColorId && factor > 0f)) {
       this.colorId = fromColorId;
       this.changeFactor = factor;

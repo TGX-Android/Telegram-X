@@ -31,7 +31,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.luckycatlabs.sunrisesunset.SunriseSunsetCalculator;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
@@ -63,8 +63,8 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.AppUpdater;
 import org.thunderdog.challegram.util.DrawableModifier;
 import org.thunderdog.challegram.util.EmojiModifier;
-import org.thunderdog.challegram.util.ReactionModifier;
 import org.thunderdog.challegram.util.Permissions;
+import org.thunderdog.challegram.util.ReactionModifier;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.RadioView;
@@ -154,374 +154,290 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       @Override
       protected void setValuedSetting (ListItem item, SettingView v, boolean isUpdate) {
         v.setDrawModifier(item.getDrawModifier());
-        switch (item.getId()) {
-          case R.id.btn_theme: {
-            v.setName(item.getString()); // FIXME in {@link SettingsAdapter#updateValuedItemByPosition}?
-            RadioView view = v.findRadioView();
-            if (view != null)
-              view.setChecked(item.isSelected(), isUpdate);
-            break;
+        final int itemId = item.getId();
+        if (itemId == R.id.btn_theme) {
+          v.setName(item.getString()); // FIXME in {@link SettingsAdapter#updateValuedItemByPosition}?
+          RadioView view = v.findRadioView();
+          if (view != null)
+            view.setChecked(item.isSelected(), isUpdate);
+        } else if (itemId == R.id.btn_emoji) {
+          Settings.EmojiPack emojiPack = Settings.instance().getEmojiPack();
+          if (emojiPack.identifier.equals(BuildConfig.EMOJI_BUILTIN_ID)) {
+            v.setData(R.string.EmojiBuiltIn);
+          } else {
+            v.setData(emojiPack.displayName);
           }
-          case R.id.btn_emoji: {
-            Settings.EmojiPack emojiPack = Settings.instance().getEmojiPack();
-            if (emojiPack.identifier.equals(BuildConfig.EMOJI_BUILTIN_ID)) {
-              v.setData(R.string.EmojiBuiltIn);
-            } else {
-              v.setData(emojiPack.displayName);
+        } else if (itemId == R.id.btn_quick_reaction) {
+          final String[] reactions = Settings.instance().getQuickReactions(tdlib);
+          tdlib.ensureReactionsAvailable(reactions, reactionsUpdated -> {
+            if (reactionsUpdated) {
+              runOnUiThreadOptional(() -> {
+                updateQuickReaction();
+              });
             }
-            break;
-          }
-          case R.id.btn_quick_reaction: {
-            final String[] reactions = Settings.instance().getQuickReactions(tdlib);
-            tdlib.ensureReactionsAvailable(reactions, reactionsUpdated -> {
-              if (reactionsUpdated) {
-                runOnUiThreadOptional(() -> {
-                  updateQuickReaction();
-                });
-              }
-            });
-            StringBuilder stringBuilder = new StringBuilder();
-            if (reactions.length > 0) {
-              final List<TGReaction> tgReactions = new ArrayList<>(reactions.length);
-              for (String reactionKey : reactions) {
-                TdApi.ReactionType reactionType = TD.toReactionType(reactionKey);
-                final TGReaction tgReaction = tdlib.getReaction(reactionType, false);
-                if (tgReaction != null) {
-                  tgReactions.add(tgReaction);
-                  if (stringBuilder.length() > 0) {
-                    stringBuilder.append(Lang.getConcatSeparator());
-                  }
-                  stringBuilder.append(tgReaction.getTitle());
+          });
+          StringBuilder stringBuilder = new StringBuilder();
+          if (reactions.length > 0) {
+            final List<TGReaction> tgReactions = new ArrayList<>(reactions.length);
+            for (String reactionKey : reactions) {
+              TdApi.ReactionType reactionType = TD.toReactionType(reactionKey);
+              final TGReaction tgReaction = tdlib.getReaction(reactionType, false);
+              if (tgReaction != null) {
+                tgReactions.add(tgReaction);
+                if (stringBuilder.length() > 0) {
+                  stringBuilder.append(Lang.getConcatSeparator());
                 }
-              }
-              v.setDrawModifier(new ReactionModifier(v.getComplexReceiver(), tgReactions.toArray(new TGReaction[0])));
-              v.setData(stringBuilder.toString());
-            } else {
-              v.setDrawModifier(null);
-              v.setData(R.string.QuickReactionDisabled);
-            }
-            break;
-          }
-          case R.id.btn_icon: {
-            v.setData(R.string.IconsBuiltIn);
-            break;
-          }
-          case R.id.btn_reduceMotion: {
-            v.getToggler().setRadioEnabled(Settings.instance().needReduceMotion(), isUpdate);
-            break;
-          }
-          case R.id.btn_autoplayGIFs: {
-            v.getToggler().setRadioEnabled(Settings.instance().needAutoplayGIFs(), isUpdate);
-            break;
-          }
-          case R.id.btn_saveToGallery: {
-            v.getToggler().setRadioEnabled(Settings.instance().needSaveEditedMediaToGallery(), isUpdate);
-            break;
-          }
-          case R.id.btn_mosaic: {
-            v.getToggler().setRadioEnabled(Settings.instance().rememberAlbumSetting(), isUpdate);
-            break;
-          }
-          case R.id.btn_cameraSetting: {
-            v.getToggler().setRadioEnabled(Settings.instance().getNewSetting(item.getLongId()) != item.getBoolValue(), isUpdate);
-            break;
-          }
-          case R.id.btn_cameraRatio: {
-            int ratioMode = Settings.instance().getCameraAspectRatioMode();
-            switch (ratioMode) {
-              case Settings.CAMERA_RATIO_1_1:
-                v.setData("1:1");
-                break;
-              case Settings.CAMERA_RATIO_4_3:
-                v.setData("4:3");
-                break;
-              case Settings.CAMERA_RATIO_FULL_SCREEN:
-                v.setData(R.string.CameraRatioFull);
-                break;
-              case Settings.CAMERA_RATIO_16_9:
-              default:
-                v.setData("16:9");
-                break;
-            }
-            break;
-          }
-          case R.id.btn_cameraVolume: {
-            switch (Settings.instance().getCameraVolumeControl()) {
-              case Settings.CAMERA_VOLUME_CONTROL_SHOOT:
-                v.setData(R.string.CameraVolumeShoot);
-                break;
-              case Settings.CAMERA_VOLUME_CONTROL_ZOOM:
-                v.setData(R.string.CameraVolumeZoom);
-                break;
-              case Settings.CAMERA_VOLUME_CONTROL_NONE:
-                v.setData(R.string.CameraVolumeNone);
-                break;
-            }
-            break;
-          }
-          case R.id.btn_cameraType: {
-            if (Config.CAMERA_X_AVAILABLE) {
-              int type = Settings.instance().getCameraType();
-              switch (type) {
-                case Settings.CAMERA_TYPE_LEGACY:
-                  v.setData(R.string.CameraTypeLegacy);
-                  break;
-                case Settings.CAMERA_TYPE_SYSTEM:
-                  v.setData(R.string.CameraTypeSystem);
-                  break;
-                case Settings.CAMERA_TYPE_X:
-                  v.setData(R.string.CameraTypeXBeta);
-                  break;
-              }
-            } else {
-              v.getToggler().setRadioEnabled(Settings.instance().getCameraType() == Settings.CAMERA_TYPE_SYSTEM, isUpdate);
-            }
-            break;
-          }
-          case R.id.btn_systemFonts: {
-            v.getToggler().setRadioEnabled(Settings.instance().useSystemFonts(), isUpdate);
-            break;
-          }
-          case R.id.btn_secret_batmanTransitions: {
-            v.getToggler().setRadioEnabled(Settings.instance().getNewSetting(Settings.SETTING_FLAG_BATMAN_POLL_TRANSITIONS), isUpdate);
-            break;
-          }
-          case R.id.btn_chatListStyle: {
-            switch (Settings.instance().getChatListMode()) {
-              case Settings.CHAT_MODE_3LINE_BIG:
-                v.setData(R.string.ChatListStyle3);
-                break;
-              case Settings.CHAT_MODE_3LINE:
-                v.setData(R.string.ChatListStyle2);
-                break;
-              case Settings.CHAT_MODE_2LINE:
-              default:
-                v.setData(R.string.ChatListStyle1);
-                break;
-            }
-            break;
-          }
-          case R.id.btn_stickerSuggestions: {
-            switch (Settings.instance().getStickerMode()) {
-              case Settings.STICKER_MODE_ALL:
-                v.setData(R.string.SuggestStickersAll);
-                break;
-              case Settings.STICKER_MODE_ONLY_INSTALLED:
-                v.setData(R.string.SuggestStickersInstalled);
-                break;
-              case Settings.STICKER_MODE_NONE:
-                v.setData(R.string.SuggestStickersNone);
-                break;
-            }
-            break;
-          }
-          case R.id.btn_autoNightModeScheduled_location: {
-            if (isUpdate) {
-              v.setEnabledAnimated(locationHelper == null);
-            } else {
-              v.setEnabled(locationHelper == null);
-            }
-            v.setName(locationHelper == null ? R.string.AutoNightModeScheduledByLocation : R.string.AutoNightModeScheduledByLocationProgress);
-            v.invalidate();
-            break;
-          }
-          case R.id.btn_earpieceMode:
-          case R.id.btn_earpieceModeVideo: {
-            switch (Settings.instance().getEarpieceMode(item.getId() == R.id.btn_earpieceModeVideo)) {
-              case Settings.EARPIECE_MODE_ALWAYS:
-                v.setData(R.string.EarpieceModeAlways);
-                break;
-              case Settings.EARPIECE_MODE_PROXIMITY:
-                v.setData(R.string.EarpieceModeProximity);
-                break;
-              case Settings.EARPIECE_MODE_NEVER:
-                v.setData(R.string.EarpieceModeNever);
-                break;
-            }
-            break;
-          }
-          case R.id.btn_separateMedia:
-            v.getToggler().setRadioEnabled(Settings.instance().needSeparateMediaTab(), isUpdate);
-            break;
-          case R.id.btn_restrictSensitiveContent:
-            v.getToggler().setRadioEnabled(tdlib.ignoreSensitiveContentRestrictions(), isUpdate);
-            break;
-          case R.id.btn_ignoreContentRestrictions:
-            v.getToggler().setRadioEnabled(!Settings.instance().needRestrictContent(), isUpdate);
-            break;
-          case R.id.btn_useBigEmoji:
-            v.getToggler().setRadioEnabled(Settings.instance().useBigEmoji(), isUpdate);
-            break;
-          case R.id.btn_markdown: {
-            v.getToggler().setRadioEnabled(Settings.instance().getNewSetting(Settings.SETTING_FLAG_EDIT_MARKDOWN), isUpdate);
-            break;
-          }
-          case R.id.btn_forceExoPlayerExtensions: {
-            v.getToggler().setRadioEnabled(Settings.instance().getNewSetting(Settings.SETTING_FLAG_FORCE_EXO_PLAYER_EXTENSIONS), isUpdate);
-            break;
-          }
-          case R.id.btn_audioCompression: {
-            v.getToggler().setRadioEnabled(!Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_AUDIO_COMPRESSION), isUpdate);
-            break;
-          }
-          case R.id.btn_sizeUnit: {
-            v.setData(Settings.instance().getNewSetting(Settings.SETTING_FLAG_USE_METRIC_FILE_SIZE_UNITS) ? R.string.SizeUnitMetric : R.string.SizeUnitBinary);
-            break;
-          }
-          case R.id.btn_instantViewMode: {
-            switch (Settings.instance().getInstantViewMode()) {
-              case Settings.INSTANT_VIEW_MODE_ALL:
-                v.setData(R.string.AutoInstantViewAll);
-                break;
-              case Settings.INSTANT_VIEW_MODE_INTERNAL:
-                v.setData(R.string.AutoInstantViewTelegram);
-                break;
-              case Settings.INSTANT_VIEW_MODE_NONE:
-                v.setData(R.string.AutoInstantViewNone);
-                break;
-            }
-            break;
-          }
-          case R.id.btn_hqRounds: {
-            v.getToggler().setRadioEnabled(Settings.instance().needHqRoundVideos(), isUpdate);
-            break;
-          }
-          case R.id.btn_rearRounds: {
-            v.getToggler().setRadioEnabled(Settings.instance().startRoundWithRear(), isUpdate);
-            break;
-          }
-          case R.id.btn_autoNightModeScheduled_timeOff:
-          case R.id.btn_autoNightModeScheduled_timeOn: {
-            int time = v.getId() == R.id.btn_autoNightModeScheduled_timeOn ? Settings.instance().getNightModeScheduleOn() : Settings.instance().getNightModeScheduleOff();
-            v.setData(U.timeToString(time));
-            break;
-          }
-          case R.id.btn_big_reactions: {
-            StringBuilder b = new StringBuilder();
-            if (Settings.instance().getBigReactionsInChats()) {
-              b.append(Lang.getString(R.string.BigReactionsChats));
-            }
-            if (Settings.instance().getBigReactionsInChannels()) {
-              if (b.length() > 0) {
-                b.append(Lang.getConcatSeparator());
-              }
-              b.append(Lang.getString(R.string.BigReactionsChannels));
-            }
-            if (b.length() == 0) {
-              b.append(Lang.getString(R.string.BigReactionsNone));
-            }
-            v.setData(b.toString());
-            break;
-          }
-          case R.id.btn_chatSwipes: {
-            StringBuilder b = new StringBuilder();
-            if (Settings.instance().needChatQuickShare()) {
-              b.append(Lang.getString(R.string.QuickActionSettingShare));
-            }
-            if (Settings.instance().needChatQuickReply()) {
-              if (b.length() > 0) {
-                b.append(Lang.getConcatSeparator());
-              }
-              b.append(Lang.getString(R.string.QuickActionSettingReply));
-            }
-            if (b.length() == 0) {
-              b.append(Lang.getString(R.string.QuickActionSettingNone));
-            }
-            v.setData(b.toString());
-            break;
-          }
-          case R.id.btn_systemEmoji: {
-            v.getToggler().setRadioEnabled(Settings.instance().useSystemEmoji(), isUpdate);
-            break;
-          }
-          case R.id.btn_customVibrations: {
-            v.getToggler().setRadioEnabled(Settings.instance().useCustomVibrations(), isUpdate);
-            break;
-          }
-          case R.id.btn_confirmCalls: {
-            v.getToggler().setRadioEnabled(Settings.instance().needOutboundCallsPrompt(), isUpdate);
-            break;
-          }
-          case R.id.btn_hideChatKeyboard: {
-            v.getToggler().setRadioEnabled(Settings.instance().needHideChatKeyboardOnScroll(), isUpdate);
-            break;
-          }
-          case R.id.btn_useInAppBrowser: {
-            v.getToggler().setRadioEnabled(Settings.instance().useInAppBrowser(), isUpdate);
-            break;
-          }
-          case R.id.btn_switchRtl: {
-            v.getToggler().setRadioEnabled(Lang.rtl(), isUpdate);
-            break;
-          }
-          case R.id.btn_useHoldToPreview: {
-            v.getToggler().setRadioEnabled(Settings.instance().needPreviewChatOnHold(), isUpdate);
-            break;
-          }
-          case R.id.btn_sendByEnter: {
-            v.getToggler().setRadioEnabled(Settings.instance().needSendByEnter(), isUpdate);
-            break;
-          }
-          case R.id.btn_toggleNewSetting: {
-            boolean value = Settings.instance().getNewSetting(item.getLongId());
-            if (item.getBoolValue())
-              value = !value;
-            v.getToggler().setRadioEnabled(value, isUpdate);
-            break;
-          }
-          case R.id.btn_updateAutomatically: {
-            int mode = Settings.instance().getAutoUpdateMode();
-            v.getToggler().setRadioEnabled(mode != Settings.AUTO_UPDATE_MODE_NEVER, isUpdate);
-            switch (mode) {
-              case Settings.AUTO_UPDATE_MODE_NEVER:
-                v.setData(R.string.AutoUpdateNever);
-                break;
-              case Settings.AUTO_UPDATE_MODE_ALWAYS:
-                v.setData(R.string.AutoUpdateAlways);
-                break;
-              case Settings.AUTO_UPDATE_MODE_WIFI_ONLY:
-                v.setData(R.string.AutoUpdateWiFi);
-                break;
-              case Settings.AUTO_UPDATE_MODE_PROMPT:
-                v.setData(R.string.AutoUpdatePrompt);
-                break;
-            }
-            break;
-          }
-          case R.id.btn_checkUpdates: {
-            switch (context().appUpdater().state()) {
-              case AppUpdater.State.NONE: {
-                v.setEnabledAnimated(true, isUpdate);
-                v.setName(R.string.CheckForUpdates);
-                break;
-              }
-              case AppUpdater.State.CHECKING: {
-                v.setEnabledAnimated(false, isUpdate);
-                v.setName(R.string.CheckingForUpdates);
-                break;
-              }
-              case AppUpdater.State.AVAILABLE: {
-                v.setEnabledAnimated(true, isUpdate);
-                long bytesToDownload = context().appUpdater().totalBytesToDownload() - context().appUpdater().bytesDownloaded();
-                if (bytesToDownload > 0) {
-                  v.setName(Lang.getStringBold(R.string.DownloadUpdateSize, Strings.buildSize(bytesToDownload)));
-                } else {
-                  v.setName(R.string.DownloadUpdate);
-                }
-                break;
-              }
-              case AppUpdater.State.DOWNLOADING: {
-                v.setEnabledAnimated(false, isUpdate);
-                v.setName(Lang.getDownloadProgress(context().appUpdater().bytesDownloaded(), context().appUpdater().totalBytesToDownload(), true));
-                break;
-              }
-              case AppUpdater.State.READY_TO_INSTALL: {
-                v.setEnabledAnimated(true, isUpdate);
-                v.setName(R.string.InstallUpdate);
-                break;
+                stringBuilder.append(tgReaction.getTitle());
               }
             }
-            break;
+            v.setDrawModifier(new ReactionModifier(v.getComplexReceiver(), tgReactions.toArray(new TGReaction[0])));
+            v.setData(stringBuilder.toString());
+          } else {
+            v.setDrawModifier(null);
+            v.setData(R.string.QuickReactionDisabled);
+          }
+        } else if (itemId == R.id.btn_icon) {
+          v.setData(R.string.IconsBuiltIn);
+        } else if (itemId == R.id.btn_reduceMotion) {
+          v.getToggler().setRadioEnabled(Settings.instance().needReduceMotion(), isUpdate);
+        } else if (itemId == R.id.btn_autoplayGIFs) {
+          v.getToggler().setRadioEnabled(Settings.instance().needAutoplayGIFs(), isUpdate);
+        } else if (itemId == R.id.btn_saveToGallery) {
+          v.getToggler().setRadioEnabled(Settings.instance().needSaveEditedMediaToGallery(), isUpdate);
+        } else if (itemId == R.id.btn_mosaic) {
+          v.getToggler().setRadioEnabled(Settings.instance().rememberAlbumSetting(), isUpdate);
+        } else if (itemId == R.id.btn_cameraSetting) {
+          v.getToggler().setRadioEnabled(Settings.instance().getNewSetting(item.getLongId()) != item.getBoolValue(), isUpdate);
+        } else if (itemId == R.id.btn_cameraRatio) {
+          int ratioMode = Settings.instance().getCameraAspectRatioMode();
+          switch (ratioMode) {
+            case Settings.CAMERA_RATIO_1_1:
+              v.setData("1:1");
+              break;
+            case Settings.CAMERA_RATIO_4_3:
+              v.setData("4:3");
+              break;
+            case Settings.CAMERA_RATIO_FULL_SCREEN:
+              v.setData(R.string.CameraRatioFull);
+              break;
+            case Settings.CAMERA_RATIO_16_9:
+            default:
+              v.setData("16:9");
+              break;
+          }
+        } else if (itemId == R.id.btn_cameraVolume) {
+          switch (Settings.instance().getCameraVolumeControl()) {
+            case Settings.CAMERA_VOLUME_CONTROL_SHOOT:
+              v.setData(R.string.CameraVolumeShoot);
+              break;
+            case Settings.CAMERA_VOLUME_CONTROL_ZOOM:
+              v.setData(R.string.CameraVolumeZoom);
+              break;
+            case Settings.CAMERA_VOLUME_CONTROL_NONE:
+              v.setData(R.string.CameraVolumeNone);
+              break;
+          }
+        } else if (itemId == R.id.btn_cameraType) {
+          if (Config.CAMERA_X_AVAILABLE) {
+            int type = Settings.instance().getCameraType();
+            switch (type) {
+              case Settings.CAMERA_TYPE_LEGACY:
+                v.setData(R.string.CameraTypeLegacy);
+                break;
+              case Settings.CAMERA_TYPE_SYSTEM:
+                v.setData(R.string.CameraTypeSystem);
+                break;
+              case Settings.CAMERA_TYPE_X:
+                v.setData(R.string.CameraTypeXBeta);
+                break;
+            }
+          } else {
+            v.getToggler().setRadioEnabled(Settings.instance().getCameraType() == Settings.CAMERA_TYPE_SYSTEM, isUpdate);
+          }
+        } else if (itemId == R.id.btn_systemFonts) {
+          v.getToggler().setRadioEnabled(Settings.instance().useSystemFonts(), isUpdate);
+        } else if (itemId == R.id.btn_secret_batmanTransitions) {
+          v.getToggler().setRadioEnabled(Settings.instance().getNewSetting(Settings.SETTING_FLAG_BATMAN_POLL_TRANSITIONS), isUpdate);
+        } else if (itemId == R.id.btn_chatListStyle) {
+          switch (Settings.instance().getChatListMode()) {
+            case Settings.CHAT_MODE_3LINE_BIG:
+              v.setData(R.string.ChatListStyle3);
+              break;
+            case Settings.CHAT_MODE_3LINE:
+              v.setData(R.string.ChatListStyle2);
+              break;
+            case Settings.CHAT_MODE_2LINE:
+            default:
+              v.setData(R.string.ChatListStyle1);
+              break;
+          }
+        } else if (itemId == R.id.btn_stickerSuggestions) {
+          switch (Settings.instance().getStickerMode()) {
+            case Settings.STICKER_MODE_ALL:
+              v.setData(R.string.SuggestStickersAll);
+              break;
+            case Settings.STICKER_MODE_ONLY_INSTALLED:
+              v.setData(R.string.SuggestStickersInstalled);
+              break;
+            case Settings.STICKER_MODE_NONE:
+              v.setData(R.string.SuggestStickersNone);
+              break;
+          }
+        } else if (itemId == R.id.btn_autoNightModeScheduled_location) {
+          if (isUpdate) {
+            v.setEnabledAnimated(locationHelper == null);
+          } else {
+            v.setEnabled(locationHelper == null);
+          }
+          v.setName(locationHelper == null ? R.string.AutoNightModeScheduledByLocation : R.string.AutoNightModeScheduledByLocationProgress);
+          v.invalidate();
+        } else if (itemId == R.id.btn_earpieceMode || itemId == R.id.btn_earpieceModeVideo) {
+          switch (Settings.instance().getEarpieceMode(item.getId() == R.id.btn_earpieceModeVideo)) {
+            case Settings.EARPIECE_MODE_ALWAYS:
+              v.setData(R.string.EarpieceModeAlways);
+              break;
+            case Settings.EARPIECE_MODE_PROXIMITY:
+              v.setData(R.string.EarpieceModeProximity);
+              break;
+            case Settings.EARPIECE_MODE_NEVER:
+              v.setData(R.string.EarpieceModeNever);
+              break;
+          }
+        } else if (itemId == R.id.btn_separateMedia) {
+          v.getToggler().setRadioEnabled(Settings.instance().needSeparateMediaTab(), isUpdate);
+        } else if (itemId == R.id.btn_restrictSensitiveContent) {
+          v.getToggler().setRadioEnabled(tdlib.ignoreSensitiveContentRestrictions(), isUpdate);
+        } else if (itemId == R.id.btn_ignoreContentRestrictions) {
+          v.getToggler().setRadioEnabled(!Settings.instance().needRestrictContent(), isUpdate);
+        } else if (itemId == R.id.btn_useBigEmoji) {
+          v.getToggler().setRadioEnabled(Settings.instance().useBigEmoji(), isUpdate);
+        } else if (itemId == R.id.btn_markdown) {
+          v.getToggler().setRadioEnabled(Settings.instance().getNewSetting(Settings.SETTING_FLAG_EDIT_MARKDOWN), isUpdate);
+        } else if (itemId == R.id.btn_forceExoPlayerExtensions) {
+          v.getToggler().setRadioEnabled(Settings.instance().getNewSetting(Settings.SETTING_FLAG_FORCE_EXO_PLAYER_EXTENSIONS), isUpdate);
+        } else if (itemId == R.id.btn_audioCompression) {
+          v.getToggler().setRadioEnabled(!Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_AUDIO_COMPRESSION), isUpdate);
+        } else if (itemId == R.id.btn_sizeUnit) {
+          v.setData(Settings.instance().getNewSetting(Settings.SETTING_FLAG_USE_METRIC_FILE_SIZE_UNITS) ? R.string.SizeUnitMetric : R.string.SizeUnitBinary);
+        } else if (itemId == R.id.btn_instantViewMode) {
+          switch (Settings.instance().getInstantViewMode()) {
+            case Settings.INSTANT_VIEW_MODE_ALL:
+              v.setData(R.string.AutoInstantViewAll);
+              break;
+            case Settings.INSTANT_VIEW_MODE_INTERNAL:
+              v.setData(R.string.AutoInstantViewTelegram);
+              break;
+            case Settings.INSTANT_VIEW_MODE_NONE:
+              v.setData(R.string.AutoInstantViewNone);
+              break;
+          }
+        } else if (itemId == R.id.btn_hqRounds) {
+          v.getToggler().setRadioEnabled(Settings.instance().needHqRoundVideos(), isUpdate);
+        } else if (itemId == R.id.btn_rearRounds) {
+          v.getToggler().setRadioEnabled(Settings.instance().startRoundWithRear(), isUpdate);
+        } else if (itemId == R.id.btn_autoNightModeScheduled_timeOff || itemId == R.id.btn_autoNightModeScheduled_timeOn) {
+          int time = v.getId() == R.id.btn_autoNightModeScheduled_timeOn ? Settings.instance().getNightModeScheduleOn() : Settings.instance().getNightModeScheduleOff();
+          v.setData(U.timeToString(time));
+        } else if (itemId == R.id.btn_big_reactions) {
+          StringBuilder b = new StringBuilder();
+          if (Settings.instance().getBigReactionsInChats()) {
+            b.append(Lang.getString(R.string.BigReactionsChats));
+          }
+          if (Settings.instance().getBigReactionsInChannels()) {
+            if (b.length() > 0) {
+              b.append(Lang.getConcatSeparator());
+            }
+            b.append(Lang.getString(R.string.BigReactionsChannels));
+          }
+          if (b.length() == 0) {
+            b.append(Lang.getString(R.string.BigReactionsNone));
+          }
+          v.setData(b.toString());
+        } else if (itemId == R.id.btn_chatSwipes) {
+          StringBuilder b = new StringBuilder();
+          if (Settings.instance().needChatQuickShare()) {
+            b.append(Lang.getString(R.string.QuickActionSettingShare));
+          }
+          if (Settings.instance().needChatQuickReply()) {
+            if (b.length() > 0) {
+              b.append(Lang.getConcatSeparator());
+            }
+            b.append(Lang.getString(R.string.QuickActionSettingReply));
+          }
+          if (b.length() == 0) {
+            b.append(Lang.getString(R.string.QuickActionSettingNone));
+          }
+          v.setData(b.toString());
+        } else if (itemId == R.id.btn_systemEmoji) {
+          v.getToggler().setRadioEnabled(Settings.instance().useSystemEmoji(), isUpdate);
+        } else if (itemId == R.id.btn_customVibrations) {
+          v.getToggler().setRadioEnabled(Settings.instance().useCustomVibrations(), isUpdate);
+        } else if (itemId == R.id.btn_confirmCalls) {
+          v.getToggler().setRadioEnabled(Settings.instance().needOutboundCallsPrompt(), isUpdate);
+        } else if (itemId == R.id.btn_hideChatKeyboard) {
+          v.getToggler().setRadioEnabled(Settings.instance().needHideChatKeyboardOnScroll(), isUpdate);
+        } else if (itemId == R.id.btn_useInAppBrowser) {
+          v.getToggler().setRadioEnabled(Settings.instance().useInAppBrowser(), isUpdate);
+        } else if (itemId == R.id.btn_switchRtl) {
+          v.getToggler().setRadioEnabled(Lang.rtl(), isUpdate);
+        } else if (itemId == R.id.btn_useHoldToPreview) {
+          v.getToggler().setRadioEnabled(Settings.instance().needPreviewChatOnHold(), isUpdate);
+        } else if (itemId == R.id.btn_sendByEnter) {
+          v.getToggler().setRadioEnabled(Settings.instance().needSendByEnter(), isUpdate);
+        } else if (itemId == R.id.btn_toggleNewSetting) {
+          boolean value = Settings.instance().getNewSetting(item.getLongId());
+          if (item.getBoolValue())
+            value = !value;
+          v.getToggler().setRadioEnabled(value, isUpdate);
+        } else if (itemId == R.id.btn_updateAutomatically) {
+          int mode = Settings.instance().getAutoUpdateMode();
+          v.getToggler().setRadioEnabled(mode != Settings.AUTO_UPDATE_MODE_NEVER, isUpdate);
+          switch (mode) {
+            case Settings.AUTO_UPDATE_MODE_NEVER:
+              v.setData(R.string.AutoUpdateNever);
+              break;
+            case Settings.AUTO_UPDATE_MODE_ALWAYS:
+              v.setData(R.string.AutoUpdateAlways);
+              break;
+            case Settings.AUTO_UPDATE_MODE_WIFI_ONLY:
+              v.setData(R.string.AutoUpdateWiFi);
+              break;
+            case Settings.AUTO_UPDATE_MODE_PROMPT:
+              v.setData(R.string.AutoUpdatePrompt);
+              break;
+          }
+        } else if (itemId == R.id.btn_checkUpdates) {
+          switch (context().appUpdater().state()) {
+            case AppUpdater.State.NONE: {
+              v.setEnabledAnimated(true, isUpdate);
+              v.setName(R.string.CheckForUpdates);
+              break;
+            }
+            case AppUpdater.State.CHECKING: {
+              v.setEnabledAnimated(false, isUpdate);
+              v.setName(R.string.CheckingForUpdates);
+              break;
+            }
+            case AppUpdater.State.AVAILABLE: {
+              v.setEnabledAnimated(true, isUpdate);
+              long bytesToDownload = context().appUpdater().totalBytesToDownload() - context().appUpdater().bytesDownloaded();
+              if (bytesToDownload > 0) {
+                v.setName(Lang.getStringBold(R.string.DownloadUpdateSize, Strings.buildSize(bytesToDownload)));
+              } else {
+                v.setName(R.string.DownloadUpdate);
+              }
+              break;
+            }
+            case AppUpdater.State.DOWNLOADING: {
+              v.setEnabledAnimated(false, isUpdate);
+              v.setName(Lang.getDownloadProgress(context().appUpdater().bytesDownloaded(), context().appUpdater().totalBytesToDownload(), true));
+              break;
+            }
+            case AppUpdater.State.READY_TO_INSTALL: {
+              v.setEnabledAnimated(true, isUpdate);
+              v.setName(R.string.InstallUpdate);
+              break;
+            }
           }
         }
       }
@@ -1155,497 +1071,370 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
 
   @Override
   public void onClick (View v) {
-    switch (v.getId()) {
-      case R.id.btn_reduceMotion: {
-        Settings.instance().toggleReduceMotion();
-        adapter.updateValuedSettingById(R.id.btn_reduceMotion);
-        break;
-      }
-      case R.id.btn_quick_reaction: {
-        EditEnabledReactionsController c = new EditEnabledReactionsController(context, tdlib);
-        c.setArguments(new EditEnabledReactionsController.Args(null, EditEnabledReactionsController.TYPE_QUICK_REACTION));
-        navigateTo(c);
-        break;
-      }
-      case R.id.btn_emoji: {
-        SettingsCloudEmojiController c = new SettingsCloudEmojiController(context, tdlib);
-        c.setArguments(new SettingsCloudController.Args<>(this));
-        navigateTo(c);
-        break;
-      }
-      case R.id.btn_icon: {
-        SettingsCloudIconController c = new SettingsCloudIconController(context, tdlib);
-        c.setArguments(new SettingsCloudController.Args<>(this));
-        navigateTo(c);
-        break;
-      }
-      case R.id.btn_earpieceMode: {
-        showEarpieceOptions(false);
-        break;
-      }
-      case R.id.btn_earpieceModeVideo: {
-        showEarpieceOptions(true);
-        break;
-      }
-      case R.id.btn_autoplayGIFs: {
-        Settings.instance().setAutoplayGIFs(adapter.toggleView(v));
-        break;
-      }
-      case R.id.btn_cameraSetting: {
-        ListItem item = ((ListItem) v.getTag());
-        Settings.instance().setNewSetting(item.getLongId(), item.getBoolValue() != adapter.toggleView(v));
-        break;
-      }
-      case R.id.btn_cameraRatio: {
-        showOptions(Lang.boldify(Lang.getString(R.string.CameraRatio)), new int[] {
-          R.id.btn_cameraRatio_16_9,
-          R.id.btn_cameraRatio_4_3,
-          // R.id.btn_cameraRatio_1_1,
-          R.id.btn_cameraRatio_fullScreen
-        }, new String[] {
-          "16:9",
-          "4:3",
-          // "1:1",
-          Lang.getString(R.string.CameraRatioFull)
-        }, null, new int[] {
-          R.drawable.baseline_crop_16_9_24,
-          R.drawable.baseline_crop_3_2_24,
-          // R.drawable.baseline_crop_square_24,
-          R.drawable.baseline_crop_free_24
-        }, (optionView, optionId) -> {
-          int cameraRatio;
-          switch (optionId) {
-            case R.id.btn_cameraRatio_1_1:
-              cameraRatio = Settings.CAMERA_RATIO_1_1;
-              break;
-            case R.id.btn_cameraRatio_4_3:
-              cameraRatio = Settings.CAMERA_RATIO_4_3;
-              break;
-            case R.id.btn_cameraRatio_fullScreen:
-              cameraRatio = Settings.CAMERA_RATIO_FULL_SCREEN;
-              break;
-            case R.id.btn_cameraRatio_16_9:
-            default:
-              cameraRatio = Settings.CAMERA_RATIO_16_9;
-              break;
+    final int viewId = v.getId();
+    if (viewId == R.id.btn_reduceMotion) {
+      Settings.instance().toggleReduceMotion();
+      adapter.updateValuedSettingById(R.id.btn_reduceMotion);
+    } else if (viewId == R.id.btn_quick_reaction) {
+      EditEnabledReactionsController c = new EditEnabledReactionsController(context, tdlib);
+      c.setArguments(new EditEnabledReactionsController.Args(null, EditEnabledReactionsController.TYPE_QUICK_REACTION));
+      navigateTo(c);
+    } else if (viewId == R.id.btn_emoji) {
+      SettingsCloudEmojiController c = new SettingsCloudEmojiController(context, tdlib);
+      c.setArguments(new SettingsCloudController.Args<>(this));
+      navigateTo(c);
+    } else if (viewId == R.id.btn_icon) {
+      SettingsCloudIconController c = new SettingsCloudIconController(context, tdlib);
+      c.setArguments(new SettingsCloudController.Args<>(this));
+      navigateTo(c);
+    } else if (viewId == R.id.btn_earpieceMode) {
+      showEarpieceOptions(false);
+    } else if (viewId == R.id.btn_earpieceModeVideo) {
+      showEarpieceOptions(true);
+    } else if (viewId == R.id.btn_autoplayGIFs) {
+      Settings.instance().setAutoplayGIFs(adapter.toggleView(v));
+    } else if (viewId == R.id.btn_cameraSetting) {
+      ListItem item = ((ListItem) v.getTag());
+      Settings.instance().setNewSetting(item.getLongId(), item.getBoolValue() != adapter.toggleView(v));
+    } else if (viewId == R.id.btn_cameraRatio) {
+      showOptions(Lang.boldify(Lang.getString(R.string.CameraRatio)), new int[] {
+        R.id.btn_cameraRatio_16_9,
+        R.id.btn_cameraRatio_4_3,
+        // R.id.btn_cameraRatio_1_1,
+        R.id.btn_cameraRatio_fullScreen
+      }, new String[] {
+        "16:9",
+        "4:3",
+        // "1:1",
+        Lang.getString(R.string.CameraRatioFull)
+      }, null, new int[] {
+        R.drawable.baseline_crop_16_9_24,
+        R.drawable.baseline_crop_3_2_24,
+        // R.drawable.baseline_crop_square_24,
+        R.drawable.baseline_crop_free_24
+      }, (optionView, optionId) -> {
+        int cameraRatio;
+        if (optionId == R.id.btn_cameraRatio_1_1) {
+          cameraRatio = Settings.CAMERA_RATIO_1_1;
+        } else if (optionId == R.id.btn_cameraRatio_4_3) {
+          cameraRatio = Settings.CAMERA_RATIO_4_3;
+        } else if (optionId == R.id.btn_cameraRatio_fullScreen) {
+          cameraRatio = Settings.CAMERA_RATIO_FULL_SCREEN;
+        } else {
+          cameraRatio = Settings.CAMERA_RATIO_16_9;
+        }
+        Settings.instance().setCameraAspectRatioMode(cameraRatio);
+        adapter.updateValuedSettingById(R.id.btn_cameraRatio);
+        return true;
+      });
+    } else if (viewId == R.id.btn_cameraVolume) {
+      showOptions(Lang.boldify(Lang.getString(R.string.CameraVolume)), new int[] {
+        R.id.btn_cameraVolumeShoot,
+        R.id.btn_cameraVolumeZoom,
+        R.id.btn_cameraVolumeNone
+      }, new String[] {
+        Lang.getString(R.string.CameraVolumeShoot),
+        Lang.getString(R.string.CameraVolumeZoom),
+        Lang.getString(R.string.CameraVolumeNone),
+      }, null, new int[] {
+        R.drawable.baseline_camera_enhance_24,
+        R.drawable.baseline_zoom_in_24,
+        R.drawable.baseline_volume_up_24
+      }, (optionView, optionId) -> {
+        int cameraControlType;
+        if (optionId == R.id.btn_cameraVolumeShoot) {
+          cameraControlType = Settings.CAMERA_VOLUME_CONTROL_SHOOT;
+        } else if (optionId == R.id.btn_cameraVolumeZoom) {
+          cameraControlType = Settings.CAMERA_VOLUME_CONTROL_ZOOM;
+        } else {
+          cameraControlType = Settings.CAMERA_VOLUME_CONTROL_NONE;
+        }
+        Settings.instance().setCameraVolumeControl(cameraControlType);
+        adapter.updateValuedSettingById(R.id.btn_cameraVolume);
+        return true;
+      });
+    } else if (viewId == R.id.btn_cameraType) {
+      if (Config.CAMERA_X_AVAILABLE) {
+        int type = Settings.instance().getCameraType();
+        showSettings(R.id.btn_cameraType, new ListItem[] {
+          new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_cameraTypeX, 0, R.string.CameraTypeXBeta, R.id.btn_cameraType, type == Settings.CAMERA_TYPE_X),
+          new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_cameraTypeLegacy, 0, R.string.CameraTypeLegacy, R.id.btn_cameraType, type == Settings.CAMERA_TYPE_LEGACY),
+          new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_cameraTypeSystem, 0, R.string.CameraTypeSystem, R.id.btn_cameraType, type == Settings.CAMERA_TYPE_SYSTEM),
+        }, (id, result) -> {
+          int cameraType = result.get(R.id.btn_cameraType);
+          if (cameraType == R.id.btn_cameraTypeX) {
+            cameraType = Settings.CAMERA_TYPE_X;
+          } else if (cameraType == R.id.btn_cameraTypeLegacy) {
+            cameraType = Settings.CAMERA_TYPE_LEGACY;
+          } else if (cameraType == R.id.btn_cameraTypeSystem) {
+            cameraType = Settings.CAMERA_TYPE_SYSTEM;
+          } else {
+            cameraType = Settings.CAMERA_TYPE_DEFAULT;
           }
-          Settings.instance().setCameraAspectRatioMode(cameraRatio);
-          adapter.updateValuedSettingById(R.id.btn_cameraRatio);
-          return true;
-        });
-        break;
-      }
-      case R.id.btn_cameraVolume: {
-        showOptions(Lang.boldify(Lang.getString(R.string.CameraVolume)), new int[] {
-          R.id.btn_cameraVolumeShoot,
-          R.id.btn_cameraVolumeZoom,
-          R.id.btn_cameraVolumeNone
-        }, new String[] {
-          Lang.getString(R.string.CameraVolumeShoot),
-          Lang.getString(R.string.CameraVolumeZoom),
-          Lang.getString(R.string.CameraVolumeNone),
-        }, null, new int[] {
-          R.drawable.baseline_camera_enhance_24,
-          R.drawable.baseline_zoom_in_24,
-          R.drawable.baseline_volume_up_24
-        }, (optionView, optionId) -> {
-          int cameraControlType;
-          switch (optionId) {
-            case R.id.btn_cameraVolumeShoot:
-              cameraControlType = Settings.CAMERA_VOLUME_CONTROL_SHOOT;
-              break;
-            case R.id.btn_cameraVolumeZoom:
-              cameraControlType = Settings.CAMERA_VOLUME_CONTROL_ZOOM;
-              break;
-            case R.id.btn_cameraVolumeNone:
-            default:
-              cameraControlType = Settings.CAMERA_VOLUME_CONTROL_NONE;
-              break;
+          int prevCameraType = Settings.instance().getCameraType();
+          Settings.instance().setCameraType(cameraType);
+          if (cameraType != Settings.CAMERA_TYPE_SYSTEM) {
+            context.checkCameraApi();
           }
-          Settings.instance().setCameraVolumeControl(cameraControlType);
-          adapter.updateValuedSettingById(R.id.btn_cameraVolume);
-          return true;
-        });
-        break;
-      }
-      case R.id.btn_cameraType: {
-        if (Config.CAMERA_X_AVAILABLE) {
-          int type = Settings.instance().getCameraType();
-          showSettings(R.id.btn_cameraType, new ListItem[] {
-            new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_cameraTypeX, 0, R.string.CameraTypeXBeta, R.id.btn_cameraType, type == Settings.CAMERA_TYPE_X),
-            new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_cameraTypeLegacy, 0, R.string.CameraTypeLegacy, R.id.btn_cameraType, type == Settings.CAMERA_TYPE_LEGACY),
-            new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_cameraTypeSystem, 0, R.string.CameraTypeSystem, R.id.btn_cameraType, type == Settings.CAMERA_TYPE_SYSTEM),
-          }, (id, result) -> {
-            int cameraType = result.get(R.id.btn_cameraType);
-            switch (cameraType) {
-              case R.id.btn_cameraTypeX:
-                cameraType = Settings.CAMERA_TYPE_X;
-                break;
-              case R.id.btn_cameraTypeLegacy:
-                cameraType = Settings.CAMERA_TYPE_LEGACY;
-                break;
-              case R.id.btn_cameraTypeSystem:
-                cameraType = Settings.CAMERA_TYPE_SYSTEM;
-                break;
-              default:
-                cameraType = Settings.CAMERA_TYPE_DEFAULT;
-                break;
-            }
-            int prevCameraType = Settings.instance().getCameraType();
-            Settings.instance().setCameraType(cameraType);
-            if (cameraType != Settings.CAMERA_TYPE_SYSTEM) {
-              context.checkCameraApi();
-            }
-            if (prevCameraType != cameraType && (prevCameraType == Settings.CAMERA_TYPE_SYSTEM || cameraType == Settings.CAMERA_TYPE_SYSTEM)) {
-              int index = adapter.indexOfViewById(R.id.btn_cameraType);
-              if (index != -1) {
-                index += 2; // + separator + keep discarded media
-                if (prevCameraType == Settings.CAMERA_TYPE_SYSTEM) {
-                  List<ListItem> items = getCameraSettings();
-                  adapter.getItems().addAll(index + 1, items);
-                  adapter.notifyItemRangeInserted(index + 1, items.size());
-                  adapter.addItem(index + 1 + items.size() + 1, newCameraFlipInfoItem());
-                } else {
-                  adapter.removeRange(index + 1, CAMERA_SETTING_ITEM_COUNT);
-                  adapter.removeItem(index + 2);
-                }
+          if (prevCameraType != cameraType && (prevCameraType == Settings.CAMERA_TYPE_SYSTEM || cameraType == Settings.CAMERA_TYPE_SYSTEM)) {
+            int index = adapter.indexOfViewById(R.id.btn_cameraType);
+            if (index != -1) {
+              index += 2; // + separator + keep discarded media
+              if (prevCameraType == Settings.CAMERA_TYPE_SYSTEM) {
+                List<ListItem> items = getCameraSettings();
+                adapter.getItems().addAll(index + 1, items);
+                adapter.notifyItemRangeInserted(index + 1, items.size());
+                adapter.addItem(index + 1 + items.size() + 1, newCameraFlipInfoItem());
+              } else {
+                adapter.removeRange(index + 1, CAMERA_SETTING_ITEM_COUNT);
+                adapter.removeItem(index + 2);
               }
             }
-            adapter.updateValuedSettingById(R.id.btn_cameraType);
-          });
-        } else {
-          Settings.instance().setCameraType(adapter.toggleView(v) ? Settings.CAMERA_TYPE_SYSTEM : Settings.CAMERA_TYPE_LEGACY);
-        }
-        break;
+          }
+          adapter.updateValuedSettingById(R.id.btn_cameraType);
+        });
+      } else {
+        Settings.instance().setCameraType(adapter.toggleView(v) ? Settings.CAMERA_TYPE_SYSTEM : Settings.CAMERA_TYPE_LEGACY);
       }
-      case R.id.btn_systemFonts: {
-        Boolean value = Fonts.areUsingSystemFonts();
-        if (value != null && value != Settings.instance().useSystemFonts()) {
-          Settings.instance().setUseSystemFonts(value);
-          adapter.updateValuedSettingById(R.id.btn_systemFonts);
-          break;
-        }
+    } else if (viewId == R.id.btn_systemFonts) {
+      Boolean value = Fonts.areUsingSystemFonts();
+      if (value != null && value != Settings.instance().useSystemFonts()) {
+        Settings.instance().setUseSystemFonts(value);
+        adapter.updateValuedSettingById(R.id.btn_systemFonts);
+        return;
+      }
 
-        if (Settings.instance().useSystemFonts()) {
-          showWarning(Lang.getString(R.string.RestartEffect), success -> {
-            Settings.instance().setUseSystemFonts(false);
+      if (Settings.instance().useSystemFonts()) {
+        showWarning(Lang.getString(R.string.RestartEffect), success -> {
+          Settings.instance().setUseSystemFonts(false);
+          adapter.updateValuedSettingById(R.id.btn_systemFonts);
+        });
+      } else {
+        showWarning(TextUtils.concat(Lang.getMarkdownString(this, R.string.UseSystemFontsHint), "\n\n", Lang.getString(R.string.RestartEffect)), success -> {
+          if (success) {
+            Settings.instance().setUseSystemFonts(true);
             adapter.updateValuedSettingById(R.id.btn_systemFonts);
-          });
-        } else {
-          showWarning(TextUtils.concat(Lang.getMarkdownString(this, R.string.UseSystemFontsHint), "\n\n", Lang.getString(R.string.RestartEffect)), success -> {
-            if (success) {
-              Settings.instance().setUseSystemFonts(true);
-              adapter.updateValuedSettingById(R.id.btn_systemFonts);
-            }
-          });
-        }
-        break;
+          }
+        });
       }
-      case R.id.btn_hqRounds: {
-        Settings.instance().setNeedHqRoundVideos(adapter.toggleView(v));
-        break;
-      }
-      case R.id.btn_rearRounds: {
-        Settings.instance().setStartRoundWithRear(adapter.toggleView(v));
-        break;
-      }
-      case R.id.btn_autoNightModeScheduled_location: {
-        if (locationHelper == null) {
-          locationHelper = LocationHelper.requestLocation(context, 10000, true, true, (errorCode, location) -> {
-            if (locationHelper == null) {
-              return;
-            }
-            locationHelper = null;
-            adapter.updateValuedSettingById(R.id.btn_autoNightModeScheduled_location);
-            if (Settings.instance().getNightMode() != Settings.NIGHT_MODE_SCHEDULED) {
-              return;
-            }
-            if (errorCode != LocationHelper.ERROR_CODE_NONE) {
-              UI.showToast(R.string.DetectLocationError, Toast.LENGTH_SHORT);
-            } else {
-              Calendar sunrise = SunriseSunsetCalculator.getSunrise(location.getLatitude(), location.getLongitude(), TimeZone.getDefault(), DateUtils.getNowCalendar(), 0);
-              Calendar sunset = SunriseSunsetCalculator.getSunset(location.getLatitude(), location.getLongitude(), TimeZone.getDefault(), DateUtils.getNowCalendar(), 0);
+    } else if (viewId == R.id.btn_hqRounds) {
+      Settings.instance().setNeedHqRoundVideos(adapter.toggleView(v));
+    } else if (viewId == R.id.btn_rearRounds) {
+      Settings.instance().setStartRoundWithRear(adapter.toggleView(v));
+    } else if (viewId == R.id.btn_autoNightModeScheduled_location) {
+      if (locationHelper == null) {
+        locationHelper = LocationHelper.requestLocation(context, 10000, true, true, (errorCode, location) -> {
+          if (locationHelper == null) {
+            return;
+          }
+          locationHelper = null;
+          adapter.updateValuedSettingById(R.id.btn_autoNightModeScheduled_location);
+          if (Settings.instance().getNightMode() != Settings.NIGHT_MODE_SCHEDULED) {
+            return;
+          }
+          if (errorCode != LocationHelper.ERROR_CODE_NONE) {
+            UI.showToast(R.string.DetectLocationError, Toast.LENGTH_SHORT);
+          } else {
+            Calendar sunrise = SunriseSunsetCalculator.getSunrise(location.getLatitude(), location.getLongitude(), TimeZone.getDefault(), DateUtils.getNowCalendar(), 0);
+            Calendar sunset = SunriseSunsetCalculator.getSunset(location.getLatitude(), location.getLongitude(), TimeZone.getDefault(), DateUtils.getNowCalendar(), 0);
               /*if (result == null || result[0] == -1 || result[1] == -1) {
                 UI.showToast(R.string.AutoNightModeScheduledByLocationError, Toast.LENGTH_SHORT);
                 return;
               }*/
-              int startHour = sunset.get(Calendar.HOUR_OF_DAY);
-              int startMinute = sunset.get(Calendar.MINUTE);
+            int startHour = sunset.get(Calendar.HOUR_OF_DAY);
+            int startMinute = sunset.get(Calendar.MINUTE);
 
-              int endHour = sunrise.get(Calendar.HOUR_OF_DAY);
-              int endMinute = sunrise.get(Calendar.MINUTE);
+            int endHour = sunrise.get(Calendar.HOUR_OF_DAY);
+            int endMinute = sunrise.get(Calendar.MINUTE);
 
-              UI.showToast(R.string.Done, Toast.LENGTH_SHORT);
+            UI.showToast(R.string.Done, Toast.LENGTH_SHORT);
 
-              if (Settings.instance().setNightModeSchedule(BitwiseUtils.mergeLong(BitwiseUtils.mergeTimeToInt(startHour, startMinute, 0), BitwiseUtils.mergeTimeToInt(endHour, endMinute, 0)))) {
-                adapter.updateValuedSettingById(R.id.btn_autoNightModeScheduled_timeOff);
-                adapter.updateValuedSettingById(R.id.btn_autoNightModeScheduled_timeOn);
-              }
+            if (Settings.instance().setNightModeSchedule(BitwiseUtils.mergeLong(BitwiseUtils.mergeTimeToInt(startHour, startMinute, 0), BitwiseUtils.mergeTimeToInt(endHour, endMinute, 0)))) {
+              adapter.updateValuedSettingById(R.id.btn_autoNightModeScheduled_timeOff);
+              adapter.updateValuedSettingById(R.id.btn_autoNightModeScheduled_timeOn);
             }
-          });
-          adapter.updateValuedSettingById(R.id.btn_autoNightModeScheduled_location);
-        }
-        break;
-      }
-      case R.id.btn_autoNightModeNone:
-      case R.id.btn_autoNightModeAuto:
-      case R.id.btn_autoNightModeScheduled:
-      case R.id.btn_autoNightModeSystem: {
-        if (adapter.processToggle(v)) {
-          int value = adapter.getCheckIntResults().get(R.id.btn_autoNightMode);
-          int newMode;
-          switch (value) {
-            case R.id.btn_autoNightModeNone:
-              newMode = Settings.NIGHT_MODE_NONE;
-              break;
-            case R.id.btn_autoNightModeAuto:
-              newMode = Settings.NIGHT_MODE_AUTO;
-              break;
-            case R.id.btn_autoNightModeScheduled:
-              newMode = Settings.NIGHT_MODE_SCHEDULED;
-              break;
-            case R.id.btn_autoNightModeSystem:
-              newMode = Settings.NIGHT_MODE_SYSTEM;
-              break;
-            default:
-              return;
           }
-          setCurrentNightMode(newMode, true);
-          Settings.instance().setAutoNightMode(newMode);
-        }
-        break;
-      }
-      case R.id.btn_autoNightModeScheduled_timeOn:
-      case R.id.btn_autoNightModeScheduled_timeOff: {
-        final int id = v.getId();
-        final boolean isOn = id == R.id.btn_autoNightModeScheduled_timeOn;
-        final int time = isOn ? Settings.instance().getNightModeScheduleOn() : Settings.instance().getNightModeScheduleOff();
-
-        TimePickerDialog timePickerDialog = new TimePickerDialog(context(), Theme.dialogTheme(), (view, hourOfDay, minute) -> {
-          final int newTime = BitwiseUtils.mergeTimeToInt(hourOfDay, minute, 0);
-          if (time != newTime) {
-            Settings.instance().setNightModeSchedule(newTime, isOn);
-            adapter.updateValuedSettingById(id);
-          }
-        }, BitwiseUtils.splitIntToHour(time), BitwiseUtils.splitIntToMinute(time), !UI.needAmPm());
-        ViewSupport.showTimePicker(timePickerDialog);
-
-        break;
-      }
-      case R.id.btn_markdown: {
-        Settings.instance().setNewSetting(Settings.SETTING_FLAG_EDIT_MARKDOWN, adapter.toggleView(v));
-        break;
-      }
-      case R.id.btn_forceExoPlayerExtensions: {
-        Settings.instance().setNewSetting(Settings.SETTING_FLAG_FORCE_EXO_PLAYER_EXTENSIONS, adapter.toggleView(v));
-        break;
-      }
-      case R.id.btn_audioCompression: {
-        Settings.instance().setNewSetting(Settings.SETTING_FLAG_NO_AUDIO_COMPRESSION, !adapter.toggleView(v));
-        break;
-      }
-      case R.id.btn_sizeUnit: {
-        boolean isMetric = Settings.instance().getNewSetting(Settings.SETTING_FLAG_USE_METRIC_FILE_SIZE_UNITS);
-        showSettings(new SettingsWrapBuilder(R.id.btn_sizeUnit).setRawItems(new ListItem[]{
-          new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_sizeUnitMetric, 0, R.string.SizeUnitMetric, R.id.btn_sizeUnit, isMetric),
-          new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_sizeUnitBinary, 0, R.string.SizeUnitBinary, R.id.btn_sizeUnit, !isMetric),
-        }).setIntDelegate((id, result) -> {
-          boolean nowMetric = result.get(R.id.btn_sizeUnit) == R.id.btn_sizeUnitMetric;
-          Settings.instance().setNewSetting(Settings.SETTING_FLAG_USE_METRIC_FILE_SIZE_UNITS, nowMetric);
-          adapter.updateValuedSettingById(R.id.btn_sizeUnit);
-        }).setAllowResize(false)); //.setHeaderItem(new SettingItem(SettingItem.TYPE_INFO, 0, 0, UI.getString(R.string.MarkdownHint), false))
-        break;
-      }
-      case R.id.btn_separateMedia: {
-        Settings.instance().setNeedSeparateMediaTab(adapter.toggleView(v));
-        break;
-      }
-      case R.id.btn_restrictSensitiveContent: {
-        tdlib.setIgnoreSensitiveContentRestrictions(adapter.toggleView(v));
-        break;
-      }
-      case R.id.btn_ignoreContentRestrictions: {
-        Settings.instance().setRestrictContent(!adapter.toggleView(v));
-        break;
-      }
-      case R.id.btn_useBigEmoji: {
-        Settings.instance().setUseBigEmoji(adapter.toggleView(v));
-        break;
-      }
-      case R.id.btn_secret_batmanTransitions: {
-        Settings.instance().setNewSetting(Settings.SETTING_FLAG_BATMAN_POLL_TRANSITIONS, adapter.toggleView(v));
-        break;
-      }
-      case R.id.btn_stickerSuggestions: {
-        showStickerOptions();
-        break;
-      }
-      case R.id.btn_chatListStyle: {
-        showChatListOptions();
-        break;
-      }
-      case R.id.btn_instantViewMode: {
-        showInstantViewOptions();
-        break;
-      }
-      case R.id.btn_chatSwipes: {
-        showSettings(R.id.btn_chatSwipes, new ListItem[]{
-          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_messageShare, 0, R.string.Share, R.id.btn_messageShare, Settings.instance().needChatQuickShare()),
-          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_messageReply, 0, R.string.Reply, R.id.btn_messageReply, Settings.instance().needChatQuickReply())
-        }, (id, result) -> {
-          Settings.instance().setDisableChatQuickActions(result.get(R.id.btn_messageShare) != R.id.btn_messageShare, result.get(R.id.btn_messageReply) != R.id.btn_messageReply);
-          adapter.updateValuedSettingById(R.id.btn_chatSwipes);
         });
-        break;
+        adapter.updateValuedSettingById(R.id.btn_autoNightModeScheduled_location);
       }
-      case R.id.btn_big_reactions: {
-        showSettings(R.id.btn_big_reactions, new ListItem[]{
-          new ListItem(ListItem.TYPE_INFO, 0, 0, R.string.BigReactionsInfo),
-          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_bigReactionsChats, 0, R.string.BigReactionsChats, R.id.btn_bigReactionsChats, Settings.instance().getBigReactionsInChats()),
-          new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_bigReactionsChannels, 0, R.string.BigReactionsChannels, R.id.btn_bigReactionsChannels, Settings.instance().getBigReactionsInChannels())
-        }, (id, result) -> {
-          Settings.instance().setBigReactionsInChannels(result.get(R.id.btn_bigReactionsChannels) == R.id.btn_bigReactionsChannels);
-          Settings.instance().setBigReactionsInChats(result.get(R.id.btn_bigReactionsChats) == R.id.btn_bigReactionsChats);
-          adapter.updateValuedSettingById(R.id.btn_big_reactions);
-        });
-        break;
-      }
-      case R.id.btn_systemEmoji: {
-        Settings.instance().setUseSystemEmoji(adapter.toggleView(v));
-        break;
-      }
-      case R.id.btn_customVibrations: {
-        Settings.instance().setUseCustomVibrations(adapter.toggleView(v));
-        break;
-      }
-      case R.id.btn_confirmCalls: {
-        Settings.instance().setNeedOutboundCallsPrompt(adapter.toggleView(v));
-        break;
-      }
-      case R.id.btn_useInAppBrowser: {
-        Settings.instance().setUseInAppBrowser(adapter.toggleView(v));
-        break;
-      }
-      case R.id.btn_switchRtl: {
-        Settings.instance().setNeedRtl(Lang.packId(), adapter.toggleView(v));
-        break;
-      }
-      case R.id.btn_useHoldToPreview: {
-        Settings.instance().setNeedPreviewChatsOnHold(adapter.toggleView(v));
-        break;
-      }
-      case R.id.btn_hideChatKeyboard: {
-        Settings.instance().setNeedHideChatKeyboardOnScroll(adapter.toggleView(v));
-        break;
-      }
-      case R.id.btn_sendByEnter: {
-        Settings.instance().setNeedSendByEnter(adapter.toggleView(v));
-        break;
-      }
-      case R.id.btn_toggleNewSetting: {
-        ListItem item = (ListItem) v.getTag();
-        boolean value = adapter.toggleView(v);
-        if (item.getBoolValue())
-          value = !value;
-        Settings.instance().setNewSetting(item.getLongId(), value);
-        if (value && item.getLongId() == Settings.SETTING_FLAG_DOWNLOAD_BETAS) {
-          context().appUpdater().checkForUpdates();
-        }
-        break;
-      }
-      case R.id.btn_subscribeToBeta: {
-        tdlib.ui().subscribeToBeta(this);
-        break;
-      }
-      case R.id.btn_checkUpdates: {
-        switch (context().appUpdater().state()) {
-          case AppUpdater.State.NONE: {
-            context().appUpdater().checkForUpdates();
-            break;
-          }
-          case AppUpdater.State.CHECKING:
-          case AppUpdater.State.DOWNLOADING: {
-            // Do nothing.
-            break;
-          }
-          case AppUpdater.State.AVAILABLE: {
-            context().appUpdater().downloadUpdate();
-            break;
-          }
-          case AppUpdater.State.READY_TO_INSTALL: {
-            context().appUpdater().installUpdate();
-            break;
-          }
-        }
-        break;
-      }
-      case R.id.btn_updateAutomatically: {
-        showUpdateOptions();
-        break;
-      }
-      case R.id.btn_saveToGallery: {
-        Settings.instance().setSaveEditedMediaToGallery(adapter.toggleView(v));
-        break;
-      }
-      case R.id.btn_mosaic: {
-        Settings.instance().setRememberAlbumSetting(adapter.toggleView(v));
-        break;
-      }
-      case R.id.btn_chatFontSize: {
-        MessagesController controller = new MessagesController(context, tdlib);
-        controller.setArguments(new MessagesController.Arguments(MessagesController.PREVIEW_MODE_FONT_SIZE, null, null));
-        navigateTo(controller);
-        break;
-      }
-      case R.id.btn_chatBackground: {
-        if (!context().permissions().requestReadExternalStorage(Permissions.ReadType.IMAGES, grantType ->
-          openWallpaperSetup()
-        )) {
-          openWallpaperSetup();
-        }
-        break;
-      }
-      case R.id.btn_previewChat: {
-        MessagesController controller = new MessagesController(context, tdlib);
-        controller.setArguments(new MessagesController.Arguments(MessagesController.PREVIEW_MODE_NONE, null, null));
-        navigateTo(controller);
-        break;
-      }
-      case R.id.btn_theme: {
-        ListItem item = (ListItem) v.getTag();
-        int themeId = item.getIntValue();
-        if (ThemeManager.instance().isCurrentTheme(themeId)) {
-          ThemeInfo theme = (ThemeInfo) item.getData();
-          if (!theme.isInstalled() && theme.isCustom())
-            editTheme(theme, false);
-          else if (theme.isCustom())
-            showThemeOptions(item);
+    } else if (viewId == R.id.btn_autoNightModeNone || viewId == R.id.btn_autoNightModeAuto || viewId == R.id.btn_autoNightModeScheduled || viewId == R.id.btn_autoNightModeSystem) {
+      if (adapter.processToggle(v)) {
+        int value = adapter.getCheckIntResults().get(R.id.btn_autoNightMode);
+        int newMode;
+        if (value == R.id.btn_autoNightModeNone) {
+          newMode = Settings.NIGHT_MODE_NONE;
+        } else if (value == R.id.btn_autoNightModeAuto) {
+          newMode = Settings.NIGHT_MODE_AUTO;
+        } else if (value == R.id.btn_autoNightModeScheduled) {
+          newMode = Settings.NIGHT_MODE_SCHEDULED;
+        } else if (value == R.id.btn_autoNightModeSystem) {
+          newMode = Settings.NIGHT_MODE_SYSTEM;
         } else {
-          ThemeManager.instance().changeGlobalTheme(tdlib, getTheme(item), false, null);
+          return;
         }
-        break;
+        setCurrentNightMode(newMode, true);
+        Settings.instance().setAutoNightMode(newMode);
       }
-      case R.id.btn_themeCreate: {
-        createNewTheme(currentTheme);
-        break;
+    } else if (viewId == R.id.btn_autoNightModeScheduled_timeOn || viewId == R.id.btn_autoNightModeScheduled_timeOff) {
+      final int id = v.getId();
+      final boolean isOn = id == R.id.btn_autoNightModeScheduled_timeOn;
+      final int time = isOn ? Settings.instance().getNightModeScheduleOn() : Settings.instance().getNightModeScheduleOff();
+
+      TimePickerDialog timePickerDialog = new TimePickerDialog(context(), Theme.dialogTheme(), (view, hourOfDay, minute) -> {
+        final int newTime = BitwiseUtils.mergeTimeToInt(hourOfDay, minute, 0);
+        if (time != newTime) {
+          Settings.instance().setNightModeSchedule(newTime, isOn);
+          adapter.updateValuedSettingById(id);
+        }
+      }, BitwiseUtils.splitIntToHour(time), BitwiseUtils.splitIntToMinute(time), !UI.needAmPm());
+      ViewSupport.showTimePicker(timePickerDialog);
+    } else if (viewId == R.id.btn_markdown) {
+      Settings.instance().setNewSetting(Settings.SETTING_FLAG_EDIT_MARKDOWN, adapter.toggleView(v));
+    } else if (viewId == R.id.btn_forceExoPlayerExtensions) {
+      Settings.instance().setNewSetting(Settings.SETTING_FLAG_FORCE_EXO_PLAYER_EXTENSIONS, adapter.toggleView(v));
+    } else if (viewId == R.id.btn_audioCompression) {
+      Settings.instance().setNewSetting(Settings.SETTING_FLAG_NO_AUDIO_COMPRESSION, !adapter.toggleView(v));
+    } else if (viewId == R.id.btn_sizeUnit) {
+      boolean isMetric = Settings.instance().getNewSetting(Settings.SETTING_FLAG_USE_METRIC_FILE_SIZE_UNITS);
+      showSettings(new SettingsWrapBuilder(R.id.btn_sizeUnit).setRawItems(new ListItem[] {
+        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_sizeUnitMetric, 0, R.string.SizeUnitMetric, R.id.btn_sizeUnit, isMetric),
+        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_sizeUnitBinary, 0, R.string.SizeUnitBinary, R.id.btn_sizeUnit, !isMetric),
+      }).setIntDelegate((id, result) -> {
+        boolean nowMetric = result.get(R.id.btn_sizeUnit) == R.id.btn_sizeUnitMetric;
+        Settings.instance().setNewSetting(Settings.SETTING_FLAG_USE_METRIC_FILE_SIZE_UNITS, nowMetric);
+        adapter.updateValuedSettingById(R.id.btn_sizeUnit);
+      }).setAllowResize(false)); //.setHeaderItem(new SettingItem(SettingItem.TYPE_INFO, 0, 0, UI.getString(R.string.MarkdownHint), false))
+    } else if (viewId == R.id.btn_separateMedia) {
+      Settings.instance().setNeedSeparateMediaTab(adapter.toggleView(v));
+    } else if (viewId == R.id.btn_restrictSensitiveContent) {
+      tdlib.setIgnoreSensitiveContentRestrictions(adapter.toggleView(v));
+    } else if (viewId == R.id.btn_ignoreContentRestrictions) {
+      Settings.instance().setRestrictContent(!adapter.toggleView(v));
+    } else if (viewId == R.id.btn_useBigEmoji) {
+      Settings.instance().setUseBigEmoji(adapter.toggleView(v));
+    } else if (viewId == R.id.btn_secret_batmanTransitions) {
+      Settings.instance().setNewSetting(Settings.SETTING_FLAG_BATMAN_POLL_TRANSITIONS, adapter.toggleView(v));
+    } else if (viewId == R.id.btn_stickerSuggestions) {
+      showStickerOptions();
+    } else if (viewId == R.id.btn_chatListStyle) {
+      showChatListOptions();
+    } else if (viewId == R.id.btn_instantViewMode) {
+      showInstantViewOptions();
+    } else if (viewId == R.id.btn_chatSwipes) {
+      showSettings(R.id.btn_chatSwipes, new ListItem[] {
+        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_messageShare, 0, R.string.Share, R.id.btn_messageShare, Settings.instance().needChatQuickShare()),
+        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_messageReply, 0, R.string.Reply, R.id.btn_messageReply, Settings.instance().needChatQuickReply())
+      }, (id, result) -> {
+        Settings.instance().setDisableChatQuickActions(result.get(R.id.btn_messageShare) != R.id.btn_messageShare, result.get(R.id.btn_messageReply) != R.id.btn_messageReply);
+        adapter.updateValuedSettingById(R.id.btn_chatSwipes);
+      });
+    } else if (viewId == R.id.btn_big_reactions) {
+      showSettings(R.id.btn_big_reactions, new ListItem[] {
+        new ListItem(ListItem.TYPE_INFO, 0, 0, R.string.BigReactionsInfo),
+        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_bigReactionsChats, 0, R.string.BigReactionsChats, R.id.btn_bigReactionsChats, Settings.instance().getBigReactionsInChats()),
+        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_bigReactionsChannels, 0, R.string.BigReactionsChannels, R.id.btn_bigReactionsChannels, Settings.instance().getBigReactionsInChannels())
+      }, (id, result) -> {
+        Settings.instance().setBigReactionsInChannels(result.get(R.id.btn_bigReactionsChannels) == R.id.btn_bigReactionsChannels);
+        Settings.instance().setBigReactionsInChats(result.get(R.id.btn_bigReactionsChats) == R.id.btn_bigReactionsChats);
+        adapter.updateValuedSettingById(R.id.btn_big_reactions);
+      });
+    } else if (viewId == R.id.btn_systemEmoji) {
+      Settings.instance().setUseSystemEmoji(adapter.toggleView(v));
+    } else if (viewId == R.id.btn_customVibrations) {
+      Settings.instance().setUseCustomVibrations(adapter.toggleView(v));
+    } else if (viewId == R.id.btn_confirmCalls) {
+      Settings.instance().setNeedOutboundCallsPrompt(adapter.toggleView(v));
+    } else if (viewId == R.id.btn_useInAppBrowser) {
+      Settings.instance().setUseInAppBrowser(adapter.toggleView(v));
+    } else if (viewId == R.id.btn_switchRtl) {
+      Settings.instance().setNeedRtl(Lang.packId(), adapter.toggleView(v));
+    } else if (viewId == R.id.btn_useHoldToPreview) {
+      Settings.instance().setNeedPreviewChatsOnHold(adapter.toggleView(v));
+    } else if (viewId == R.id.btn_hideChatKeyboard) {
+      Settings.instance().setNeedHideChatKeyboardOnScroll(adapter.toggleView(v));
+    } else if (viewId == R.id.btn_sendByEnter) {
+      Settings.instance().setNeedSendByEnter(adapter.toggleView(v));
+    } else if (viewId == R.id.btn_toggleNewSetting) {
+      ListItem item = (ListItem) v.getTag();
+      boolean value = adapter.toggleView(v);
+      if (item.getBoolValue())
+        value = !value;
+      Settings.instance().setNewSetting(item.getLongId(), value);
+      if (value && item.getLongId() == Settings.SETTING_FLAG_DOWNLOAD_BETAS) {
+        context().appUpdater().checkForUpdates();
       }
-      default: {
-        ListItem item = (ListItem) v.getTag();
-        switch (item.getCheckId()) {
-          case R.id.btn_forcePlainChannels:
-            if (adapter.processToggle(v)) {
-              SparseIntArray array = adapter.getCheckIntResults();
-              boolean value = array.get(R.id.btn_forcePlainChannels) != R.id.btn_forcePlainChannels;
-              tdlib.settings().setForcePlainModeInChannels(value);
-            }
-            break;
-          case R.id.theme_chat: {
-            if (adapter.processToggle(v)) {
-              SparseIntArray array = adapter.getCheckIntResults();
-              int result = array.get(R.id.theme_chat);
-              int chatStyle = result == R.id.theme_chat_classic ? ThemeManager.CHAT_STYLE_BUBBLES : ThemeManager.CHAT_STYLE_MODERN;
-              tdlib.settings().setChatStyle(chatStyle);
-            }
+    } else if (viewId == R.id.btn_subscribeToBeta) {
+      tdlib.ui().subscribeToBeta(this);
+    } else if (viewId == R.id.btn_checkUpdates) {
+      switch (context().appUpdater().state()) {
+        case AppUpdater.State.NONE: {
+          context().appUpdater().checkForUpdates();
+          break;
+        }
+        case AppUpdater.State.CHECKING:
+        case AppUpdater.State.DOWNLOADING: {
+          // Do nothing.
+          break;
+        }
+        case AppUpdater.State.AVAILABLE: {
+          context().appUpdater().downloadUpdate();
+          break;
+        }
+        case AppUpdater.State.READY_TO_INSTALL: {
+          context().appUpdater().installUpdate();
+          break;
+        }
+      }
+    } else if (viewId == R.id.btn_updateAutomatically) {
+      showUpdateOptions();
+    } else if (viewId == R.id.btn_saveToGallery) {
+      Settings.instance().setSaveEditedMediaToGallery(adapter.toggleView(v));
+    } else if (viewId == R.id.btn_mosaic) {
+      Settings.instance().setRememberAlbumSetting(adapter.toggleView(v));
+    } else if (viewId == R.id.btn_chatFontSize) {
+      MessagesController controller = new MessagesController(context, tdlib);
+      controller.setArguments(new MessagesController.Arguments(MessagesController.PREVIEW_MODE_FONT_SIZE, null, null));
+      navigateTo(controller);
+    } else if (viewId == R.id.btn_chatBackground) {
+      if (!context().permissions().requestReadExternalStorage(Permissions.ReadType.IMAGES, grantType ->
+        openWallpaperSetup()
+      )) {
+        openWallpaperSetup();
+      }
+    } else if (viewId == R.id.btn_previewChat) {
+      MessagesController controller = new MessagesController(context, tdlib);
+      controller.setArguments(new MessagesController.Arguments(MessagesController.PREVIEW_MODE_NONE, null, null));
+      navigateTo(controller);
+    } else if (viewId == R.id.btn_theme) {
+      ListItem item = (ListItem) v.getTag();
+      int themeId = item.getIntValue();
+      if (ThemeManager.instance().isCurrentTheme(themeId)) {
+        ThemeInfo theme = (ThemeInfo) item.getData();
+        if (!theme.isInstalled() && theme.isCustom())
+          editTheme(theme, false);
+        else if (theme.isCustom())
+          showThemeOptions(item);
+      } else {
+        ThemeManager.instance().changeGlobalTheme(tdlib, getTheme(item), false, null);
+      }
+    } else if (viewId == R.id.btn_themeCreate) {
+      createNewTheme(currentTheme);
+    } else {
+      ListItem item = (ListItem) v.getTag();
+      final int checkId = item.getCheckId();
+      if (checkId == R.id.btn_forcePlainChannels) {
+        if (adapter.processToggle(v)) {
+          SparseIntArray array = adapter.getCheckIntResults();
+          boolean value = array.get(R.id.btn_forcePlainChannels) != R.id.btn_forcePlainChannels;
+          tdlib.settings().setForcePlainModeInChannels(value);
+        }
+      } else if (checkId == R.id.theme_chat) {
+        if (adapter.processToggle(v)) {
+          SparseIntArray array = adapter.getCheckIntResults();
+          int result = array.get(R.id.theme_chat);
+          int chatStyle = result == R.id.theme_chat_classic ? ThemeManager.CHAT_STYLE_BUBBLES : ThemeManager.CHAT_STYLE_MODERN;
+          tdlib.settings().setChatStyle(chatStyle);
+        }
             /*if (!adapter.processToggle(v)) {
               break;
             }
@@ -1663,10 +1452,6 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
                 break;
               }
             }*/
-            break;
-          }
-        }
-        break;
       }
     }
   }
@@ -1710,29 +1495,24 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_updateAutomaticallyWiFi, 0, R.string.AutoUpdateWiFi, R.id.btn_updateAutomatically, autoUpdateMode == Settings.AUTO_UPDATE_MODE_WIFI_ONLY),
       new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_updateAutomaticallyNever, 0, R.string.AutoUpdateNever, R.id.btn_updateAutomatically, autoUpdateMode == Settings.AUTO_UPDATE_MODE_NEVER),
     }).setAllowResize(false).setIntDelegate((id, result) -> {
-      int autoUpdateMode1 = Settings.instance().getAutoUpdateMode();
-      int autoUpdateResult = result.get(R.id.btn_updateAutomatically);
-      boolean shouldChangeUi = (autoUpdateMode1 == Settings.AUTO_UPDATE_MODE_NEVER && autoUpdateResult != R.id.btn_updateAutomaticallyNever) || (autoUpdateMode1 != Settings.AUTO_UPDATE_MODE_NEVER && autoUpdateResult == R.id.btn_updateAutomaticallyNever);
-      switch (autoUpdateResult) {
-        case R.id.btn_updateAutomaticallyAlways:
-          autoUpdateMode1 = Settings.AUTO_UPDATE_MODE_ALWAYS;
-          break;
-        case R.id.btn_updateAutomaticallyWiFi:
-          autoUpdateMode1 = Settings.AUTO_UPDATE_MODE_WIFI_ONLY;
-          break;
-        case R.id.btn_updateAutomaticallyPrompt:
-          autoUpdateMode1 = Settings.AUTO_UPDATE_MODE_PROMPT;
-          break;
-        case R.id.btn_updateAutomaticallyNever:
-          autoUpdateMode1 = Settings.AUTO_UPDATE_MODE_NEVER;
-          break;
+      int newAutoUpdateMode = Settings.instance().getAutoUpdateMode();
+      int autoUpdateResultId = result.get(R.id.btn_updateAutomatically);
+      boolean shouldChangeUi = (newAutoUpdateMode == Settings.AUTO_UPDATE_MODE_NEVER && autoUpdateResultId != R.id.btn_updateAutomaticallyNever) || (newAutoUpdateMode != Settings.AUTO_UPDATE_MODE_NEVER && autoUpdateResultId == R.id.btn_updateAutomaticallyNever);
+      if (autoUpdateResultId == R.id.btn_updateAutomaticallyAlways) {
+        newAutoUpdateMode = Settings.AUTO_UPDATE_MODE_ALWAYS;
+      } else if (autoUpdateResultId == R.id.btn_updateAutomaticallyWiFi) {
+        newAutoUpdateMode = Settings.AUTO_UPDATE_MODE_WIFI_ONLY;
+      } else if (autoUpdateResultId == R.id.btn_updateAutomaticallyPrompt) {
+        newAutoUpdateMode = Settings.AUTO_UPDATE_MODE_PROMPT;
+      } else if (autoUpdateResultId == R.id.btn_updateAutomaticallyNever) {
+        newAutoUpdateMode = Settings.AUTO_UPDATE_MODE_NEVER;
       }
-      Settings.instance().setAutoUpdateMode(autoUpdateMode1);
+      Settings.instance().setAutoUpdateMode(newAutoUpdateMode);
       adapter.updateValuedSettingById(R.id.btn_updateAutomatically);
 
       int index = adapter.indexOfViewById(R.id.btn_updateAutomatically);
       if (shouldChangeUi && index != -1) {
-        if (autoUpdateMode1 == Settings.AUTO_UPDATE_MODE_NEVER) {
+        if (newAutoUpdateMode == Settings.AUTO_UPDATE_MODE_NEVER) {
           adapter.removeRange(index + 1, 4);
         } else {
           adapter.addItems(index + 1, newAutoUpdateConfigurationItems().toArray(new ListItem[0]));
@@ -1809,26 +1589,17 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
     }
 
     showOptions(info, ids.get(), strings.get(), colors.get(), icons.get(), (itemView, id) -> {
-      switch (id) {
-        case R.id.btn_edit: {
-          editTheme((ThemeInfo) item.getData(), false);
-          break;
-        }
-        case R.id.btn_share: {
-          ThemeInfo theme = (ThemeInfo) item.getData();
-          tdlib.ui().exportTheme(this, theme, !theme.hasParent(), false);
-          break;
-        }
-        case R.id.btn_delete: {
-          ThemeInfo theme = (ThemeInfo) item.getData();
-          tdlib.ui().showDeleteThemeConfirm(this, theme, () -> deleteTheme(theme, true));
-          break;
-        }
-        case R.id.btn_new: {
-          ThemeInfo theme = (ThemeInfo) item.getData();
-          createNewTheme(theme);
-          break;
-        }
+      if (id == R.id.btn_edit) {
+        editTheme((ThemeInfo) item.getData(), false);
+      } else if (id == R.id.btn_share) {
+        ThemeInfo theme = (ThemeInfo) item.getData();
+        tdlib.ui().exportTheme(this, theme, !theme.hasParent(), false);
+      } else if (id == R.id.btn_delete) {
+        ThemeInfo theme = (ThemeInfo) item.getData();
+        tdlib.ui().showDeleteThemeConfirm(this, theme, () -> deleteTheme(theme, true));
+      } else if (id == R.id.btn_new) {
+        ThemeInfo theme = (ThemeInfo) item.getData();
+        createNewTheme(theme);
       }
       return true;
     });
@@ -1861,12 +1632,10 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
 
   @Override
   public boolean onLongClick (View v) {
-    switch (v.getId()) {
-      case R.id.btn_theme: {
-        ListItem item = (ListItem) v.getTag();
-        showThemeOptions(item);
-        return true;
-      }
+    if (v.getId() == R.id.btn_theme) {
+      ListItem item = (ListItem) v.getTag();
+      showThemeOptions(item);
+      return true;
     }
     return false;
   }
@@ -2060,20 +1829,16 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_chatListStyle2, 0, R.string.ChatListStyle2, R.id.btn_chatListStyle, chatListStyle == Settings.CHAT_MODE_3LINE),
       new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_chatListStyle3, 0, R.string.ChatListStyle3, R.id.btn_chatListStyle, chatListStyle == Settings.CHAT_MODE_3LINE_BIG),
     }).setIntDelegate((id, result) -> {
-      int chatListStyle1 = Settings.instance().getChatListMode();
-      int chatListStyleResult = result.get(R.id.btn_chatListStyle);
-      switch (chatListStyleResult) {
-        case R.id.btn_chatListStyle1:
-          chatListStyle1 = Settings.CHAT_MODE_2LINE;
-          break;
-        case R.id.btn_chatListStyle2:
-          chatListStyle1 = Settings.CHAT_MODE_3LINE;
-          break;
-        case R.id.btn_chatListStyle3:
-          chatListStyle1 = Settings.CHAT_MODE_3LINE_BIG;
-          break;
+      int newChatListStyle = Settings.instance().getChatListMode();
+      int chatListStyleResultId = result.get(R.id.btn_chatListStyle);
+      if (chatListStyleResultId == R.id.btn_chatListStyle1) {
+        newChatListStyle = Settings.CHAT_MODE_2LINE;
+      } else if (chatListStyleResultId == R.id.btn_chatListStyle2) {
+        newChatListStyle = Settings.CHAT_MODE_3LINE;
+      } else if (chatListStyleResultId == R.id.btn_chatListStyle3) {
+        newChatListStyle = Settings.CHAT_MODE_3LINE_BIG;
       }
-      Settings.instance().setChatListMode(chatListStyle1);
+      Settings.instance().setChatListMode(newChatListStyle);
       adapter.updateValuedSettingById(R.id.btn_chatListStyle);
     }).setAllowResize(false)); //.setHeaderItem(new SettingItem(SettingItem.TYPE_INFO, 0, 0, UI.getString(R.string.MarkdownHint), false))
   }
@@ -2085,20 +1850,16 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_stickerSuggestionsInstalled, 0, R.string.SuggestStickersInstalled, R.id.btn_stickerSuggestions, stickerOption == Settings.STICKER_MODE_ONLY_INSTALLED),
       new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_stickerSuggestionsNone, 0, R.string.SuggestStickersNone, R.id.btn_stickerSuggestions, stickerOption == Settings.STICKER_MODE_NONE),
     }).setIntDelegate((id, result) -> {
-      int stickerOption1 = Settings.instance().getStickerMode();
-      int stickerResult = result.get(R.id.btn_stickerSuggestions);
-      switch (stickerResult) {
-        case R.id.btn_stickerSuggestionsAll:
-          stickerOption1 = Settings.STICKER_MODE_ALL;
-          break;
-        case R.id.btn_stickerSuggestionsInstalled:
-          stickerOption1 = Settings.STICKER_MODE_ONLY_INSTALLED;
-          break;
-        case R.id.btn_stickerSuggestionsNone:
-          stickerOption1 = Settings.STICKER_MODE_NONE;
-          break;
+      int newStickerMode = Settings.instance().getStickerMode();
+      int stickerResultId = result.get(R.id.btn_stickerSuggestions);
+      if (stickerResultId == R.id.btn_stickerSuggestionsAll) {
+        newStickerMode = Settings.STICKER_MODE_ALL;
+      } else if (stickerResultId == R.id.btn_stickerSuggestionsInstalled) {
+        newStickerMode = Settings.STICKER_MODE_ONLY_INSTALLED;
+      } else if (stickerResultId == R.id.btn_stickerSuggestionsNone) {
+        newStickerMode = Settings.STICKER_MODE_NONE;
       }
-      Settings.instance().setStickerMode(stickerOption1);
+      Settings.instance().setStickerMode(newStickerMode);
       adapter.updateValuedSettingById(R.id.btn_stickerSuggestions);
     }).setAllowResize(false)); //.setHeaderItem(new SettingItem(SettingItem.TYPE_INFO, 0, 0, UI.getString(R.string.MarkdownHint), false))
   }
@@ -2113,16 +1874,13 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
     };
     showSettings(new SettingsWrapBuilder(settingId).setRawItems(items).setAllowResize(false).setIntDelegate((id, result) -> {
       int newMode = earpieceMode;
-      switch (result.get(settingId)) {
-        case R.id.btn_earpieceMode_never:
-          newMode = Settings.EARPIECE_MODE_NEVER;
-          break;
-        case R.id.btn_earpieceMode_proximity:
-          newMode = Settings.EARPIECE_MODE_PROXIMITY;
-          break;
-        case R.id.btn_earpieceMode_always:
-          newMode = Settings.EARPIECE_MODE_ALWAYS;
-          break;
+      final int resultId = result.get(settingId);
+      if (resultId == R.id.btn_earpieceMode_never) {
+        newMode = Settings.EARPIECE_MODE_NEVER;
+      } else if (resultId == R.id.btn_earpieceMode_proximity) {
+        newMode = Settings.EARPIECE_MODE_PROXIMITY;
+      } else if (resultId == R.id.btn_earpieceMode_always) {
+        newMode = Settings.EARPIECE_MODE_ALWAYS;
       }
       Settings.instance().setEarpieceMode(isVideo, newMode);
       adapter.updateValuedSettingById(settingId);
@@ -2136,20 +1894,16 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_instantViewModeTelegram, 0, R.string.AutoInstantViewTelegram, R.id.btn_instantViewMode, instantViewOption == Settings.INSTANT_VIEW_MODE_INTERNAL),
       new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_instantViewModeNone, 0, R.string.AutoInstantViewNone, R.id.btn_instantViewMode, instantViewOption == Settings.INSTANT_VIEW_MODE_NONE),
     }).setAllowResize(false).addHeaderItem(Lang.getString(R.string.AutoInstantViewDesc)).setIntDelegate((id, result) -> {
-      int instantViewOption1 = Settings.instance().getInstantViewMode();
+      int newInstantViewMode = Settings.instance().getInstantViewMode();
       int instantViewResult = result.get(R.id.btn_instantViewMode);
-      switch (instantViewResult) {
-        case R.id.btn_instantViewModeNone:
-          instantViewOption1 = Settings.INSTANT_VIEW_MODE_NONE;
-          break;
-        case R.id.btn_instantViewModeTelegram:
-          instantViewOption1 = Settings.INSTANT_VIEW_MODE_INTERNAL;
-          break;
-        case R.id.btn_instantViewModeAll:
-          instantViewOption1 = Settings.INSTANT_VIEW_MODE_ALL;
-          break;
+      if (instantViewResult == R.id.btn_instantViewModeNone) {
+        newInstantViewMode = Settings.INSTANT_VIEW_MODE_NONE;
+      } else if (instantViewResult == R.id.btn_instantViewModeTelegram) {
+        newInstantViewMode = Settings.INSTANT_VIEW_MODE_INTERNAL;
+      } else if (instantViewResult == R.id.btn_instantViewModeAll) {
+        newInstantViewMode = Settings.INSTANT_VIEW_MODE_ALL;
       }
-      Settings.instance().setInstantViewMode(instantViewOption1);
+      Settings.instance().setInstantViewMode(newInstantViewMode);
       adapter.updateValuedSettingById(R.id.btn_instantViewMode);
     }));
   }
@@ -2200,7 +1954,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       .setRawItems(new SettingItem[]{
         new SettingItem(SettingItem.TYPE_SLIDER, R.id.btn_lux, 0, R.string.MaxLux, true).setSliderInfo(maxLuxValues, maxLuxIndex),
         new SettingItem(SettingItem.TYPE_SLIDER, R.id.btn_luxMultiply, 0, R.string.Multiply, true).setSliderInfo(luxMultiplyValues, luxMultiplyIndex)
-      }).setCancelStr(R.string.Reset).setCancelColorId(R.id.theme_color_textNegativeAction).setSaveStr(R.string.Done).setDismissListener(new PopupLayout.PopupDismissListener() {
+      }).setCancelStr(R.string.Reset).setCancelColorId(ColorId.textNegativeAction).setSaveStr(R.string.Done).setDismissListener(new PopupLayout.PopupDismissListener() {
         @Override
         public void onPopupDismiss (PopupLayout popup) {
           UI.getContext(getContext()).removeLuxListener(SettingsThemeController.this);
@@ -2263,27 +2017,18 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
 
   @Override
   public void onApplySettings (@IdRes int id, SparseIntArray result) {
-    switch (id) {
-      case R.id.theme_chat: {
-        final int chatStyleId = result.get(R.id.theme_chat, R.id.theme_chat_modern);
-        final int chatStyle;
-        switch (chatStyleId) {
-          case R.id.theme_chat_modern: {
-            chatStyle = ThemeManager.CHAT_STYLE_MODERN;
-            break;
-          }
-          case R.id.theme_chat_classic: {
-            chatStyle = ThemeManager.CHAT_STYLE_BUBBLES;
-            break;
-          }
-          default: {
-            return;
-          }
-        }
-        tdlib.settings().setChatStyle(chatStyle);
-        adapter.updateValuedSettingById(R.id.theme_chat);
-        break;
+    if (id == R.id.theme_chat) {
+      final int chatStyleId = result.get(R.id.theme_chat, R.id.theme_chat_modern);
+      final int newChatStyle;
+      if (chatStyleId == R.id.theme_chat_modern) {
+        newChatStyle = ThemeManager.CHAT_STYLE_MODERN;
+      } else if (chatStyleId == R.id.theme_chat_classic) {
+        newChatStyle = ThemeManager.CHAT_STYLE_BUBBLES;
+      } else {
+        return;
       }
+      tdlib.settings().setChatStyle(newChatStyle);
+      adapter.updateValuedSettingById(R.id.theme_chat);
     }
   }
 }

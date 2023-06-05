@@ -18,13 +18,14 @@ import android.view.View;
 
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.navigation.DoubleHeaderView;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.SessionIconKt;
@@ -85,44 +86,34 @@ public class EditSessionController extends EditBaseController<EditSessionControl
 
   @Override
   public void onClick (View v) {
-    switch (v.getId()) {
-      case R.id.btn_sessionPlatform:
-      case R.id.btn_sessionCountry:
-      case R.id.btn_sessionIp:
-      case R.id.btn_sessionFirstLogin:
-      case R.id.btn_sessionLastLogin:
-        UI.copyText((CharSequence) v.getTag(), R.string.CopiedText);
-        break;
-      case R.id.btn_sessionDevice:
-        UI.copyText(session.deviceModel, R.string.CopiedText);
-        break;
-      case R.id.btn_sessionApp:
-        UI.copyText(session.applicationName + " " + session.applicationVersion, R.string.CopiedText);
-        break;
-      case R.id.btn_sessionAcceptSecretChats:
-        this.allowSecretChats = adapter.toggleView(v);
-        adapter.updateValuedSettingById(R.id.btn_sessionAcceptSecretChats);
-        checkDoneButton();
-        break;
-      case R.id.btn_sessionAcceptCalls:
-        this.allowCalls = adapter.toggleView(v);
-        adapter.updateValuedSettingById(R.id.btn_sessionAcceptCalls);
-        checkDoneButton();
-        break;
-      case R.id.btn_sessionLogout:
-        if (session.isCurrent) {
-          navigateTo(new SettingsLogOutController(context, tdlib));
-        } else {
-          showOptions(null, new int[]{R.id.btn_terminateSession, R.id.btn_cancel}, new String[]{Lang.getString(session.isPasswordPending ? R.string.TerminateIncompleteSession : R.string.TerminateSession), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_dangerous_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
-            if (id == R.id.btn_terminateSession) {
-              navigateBack();
-              getArgumentsStrict().sessionTerminationListener.run();
-            }
+    final int viewId = v.getId();
+    if (viewId == R.id.btn_sessionPlatform || viewId == R.id.btn_sessionCountry || viewId == R.id.btn_sessionIp || viewId == R.id.btn_sessionFirstLogin || viewId == R.id.btn_sessionLastLogin) {
+      UI.copyText((CharSequence) v.getTag(), R.string.CopiedText);
+    } else if (viewId == R.id.btn_sessionDevice) {
+      UI.copyText(session.deviceModel, R.string.CopiedText);
+    } else if (viewId == R.id.btn_sessionApp) {
+      UI.copyText(session.applicationName + " " + session.applicationVersion, R.string.CopiedText);
+    } else if (viewId == R.id.btn_sessionAcceptSecretChats) {
+      this.allowSecretChats = adapter.toggleView(v);
+      adapter.updateValuedSettingById(R.id.btn_sessionAcceptSecretChats);
+      checkDoneButton();
+    } else if (viewId == R.id.btn_sessionAcceptCalls) {
+      this.allowCalls = adapter.toggleView(v);
+      adapter.updateValuedSettingById(R.id.btn_sessionAcceptCalls);
+      checkDoneButton();
+    } else if (viewId == R.id.btn_sessionLogout) {
+      if (session.isCurrent) {
+        navigateTo(new SettingsLogOutController(context, tdlib));
+      } else {
+        showOptions(null, new int[] {R.id.btn_terminateSession, R.id.btn_cancel}, new String[] {Lang.getString(session.isPasswordPending ? R.string.TerminateIncompleteSession : R.string.TerminateSession), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_dangerous_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+          if (id == R.id.btn_terminateSession) {
+            navigateBack();
+            getArgumentsStrict().sessionTerminationListener.run();
+          }
 
-            return true;
-          });
-          break;
-        }
+          return true;
+        });
+      }
     }
   }
 
@@ -180,48 +171,38 @@ public class EditSessionController extends EditBaseController<EditSessionControl
       @Override
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
         if (item.getId() == R.id.btn_sessionLogout) {
-          view.setIconColorId(R.id.theme_color_textNegative);
+          view.setIconColorId(ColorId.textNegative);
         } else {
-          view.setIconColorId(R.id.theme_color_icon);
+          view.setIconColorId(ColorId.icon);
         }
 
-        switch (item.getId()) {
-          case R.id.btn_sessionDevice:
-            view.setText(new TextWrapper(session.deviceModel, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL));
-            break;
-          case R.id.btn_sessionApp:
-            view.setText(new TextWrapper(session.applicationName + " " + session.applicationVersion, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL));
-            break;
-          case R.id.btn_sessionPlatform:
-            view.setData(R.string.SessionSystem);
-            break;
-          case R.id.btn_sessionCountry:
-            view.setData(R.string.SessionLocation);
-            break;
-          case R.id.btn_sessionIp:
-            view.setData(R.string.SessionIP);
-            break;
-          case R.id.btn_sessionFirstLogin:
-            view.setData(session.isPasswordPending ? R.string.SessionAttempt : R.string.SessionFirstLogin);
-            break;
-          case R.id.btn_sessionLastLogin:
-            view.setData(R.string.SessionLastLogin);
-            break;
-          case R.id.btn_sessionLogout:
-            view.setData((session.isCurrent || session.isPasswordPending) ? null : Lang.getReverseRelativeDateBold(
-              session.lastActiveDate + TimeUnit.DAYS.toSeconds(getArgumentsStrict().inactiveSessionTtlDays), TimeUnit.SECONDS,
-              tdlib.currentTimeMillis(), TimeUnit.MILLISECONDS,
-              true, 0, R.string.session_TerminatesIn, false
-            ));
-            break;
-          case R.id.btn_sessionAcceptSecretChats:
-            view.getToggler().setRadioEnabled(allowSecretChats, isUpdate);
-            view.setData(allowSecretChats ? R.string.SessionAccept : R.string.SessionReject);
-            break;
-          case R.id.btn_sessionAcceptCalls:
-            view.getToggler().setRadioEnabled(allowCalls, isUpdate);
-            view.setData(allowCalls ? R.string.SessionAccept : R.string.SessionReject);
-            break;
+        final int itemId = item.getId();
+        if (itemId == R.id.btn_sessionDevice) {
+          view.setText(new TextWrapper(session.deviceModel, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL));
+        } else if (itemId == R.id.btn_sessionApp) {
+          view.setText(new TextWrapper(session.applicationName + " " + session.applicationVersion, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL));
+        } else if (itemId == R.id.btn_sessionPlatform) {
+          view.setData(R.string.SessionSystem);
+        } else if (itemId == R.id.btn_sessionCountry) {
+          view.setData(R.string.SessionLocation);
+        } else if (itemId == R.id.btn_sessionIp) {
+          view.setData(R.string.SessionIP);
+        } else if (itemId == R.id.btn_sessionFirstLogin) {
+          view.setData(session.isPasswordPending ? R.string.SessionAttempt : R.string.SessionFirstLogin);
+        } else if (itemId == R.id.btn_sessionLastLogin) {
+          view.setData(R.string.SessionLastLogin);
+        } else if (itemId == R.id.btn_sessionLogout) {
+          view.setData((session.isCurrent || session.isPasswordPending) ? null : Lang.getReverseRelativeDateBold(
+            session.lastActiveDate + TimeUnit.DAYS.toSeconds(getArgumentsStrict().inactiveSessionTtlDays), TimeUnit.SECONDS,
+            tdlib.currentTimeMillis(), TimeUnit.MILLISECONDS,
+            true, 0, R.string.session_TerminatesIn, false
+          ));
+        } else if (itemId == R.id.btn_sessionAcceptSecretChats) {
+          view.getToggler().setRadioEnabled(allowSecretChats, isUpdate);
+          view.setData(allowSecretChats ? R.string.SessionAccept : R.string.SessionReject);
+        } else if (itemId == R.id.btn_sessionAcceptCalls) {
+          view.getToggler().setRadioEnabled(allowCalls, isUpdate);
+          view.setData(allowCalls ? R.string.SessionAccept : R.string.SessionReject);
         }
 
         view.setTag(item.getString());
@@ -259,7 +240,7 @@ public class EditSessionController extends EditBaseController<EditSessionControl
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-    items.add(new ListItem((session.isPasswordPending || session.isCurrent) ? ListItem.TYPE_SETTING : ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_sessionLogout, R.drawable.baseline_dangerous_24, session.isCurrent ? R.string.LogOut : (session.isPasswordPending ? R.string.TerminateIncompleteSession : R.string.TerminateSession)).setTextColorId(R.id.theme_color_textNegative));
+    items.add(new ListItem((session.isPasswordPending || session.isCurrent) ? ListItem.TYPE_SETTING : ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_sessionLogout, R.drawable.baseline_dangerous_24, session.isCurrent ? R.string.LogOut : (session.isPasswordPending ? R.string.TerminateIncompleteSession : R.string.TerminateSession)).setTextColorId(ColorId.textNegative));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     adapter.setItems(items, false);
@@ -284,7 +265,7 @@ public class EditSessionController extends EditBaseController<EditSessionControl
 
   @Override
   protected int getRecyclerBackgroundColorId () {
-    return R.id.theme_color_background;
+    return ColorId.background;
   }
 
   @Override

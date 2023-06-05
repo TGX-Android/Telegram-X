@@ -20,7 +20,7 @@ import androidx.annotation.Nullable;
 import com.google.android.exoplayer2.PlaybackException;
 import com.google.android.exoplayer2.Player;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.telegram.Tdlib;

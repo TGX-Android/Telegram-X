@@ -26,6 +26,7 @@ import androidx.annotation.Nullable;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
@@ -56,7 +57,7 @@ public class SnackBar extends RelativeLayout {
     rp.topMargin = rp.bottomMargin = Screen.dp(2f);
 
     textView = new TextView(context);
-    textView.setTextColor(Theme.getColor(R.id.theme_color_snackbarUpdateText));
+    textView.setTextColor(Theme.getColor(ColorId.snackbarUpdateText));
     textView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
     textView.setPadding(Screen.dp(12f), Screen.dp(12f), 0, Screen.dp(12f));
     textView.setLayoutParams(rp);
@@ -67,13 +68,13 @@ public class SnackBar extends RelativeLayout {
     rp.addRule(RelativeLayout.ALIGN_PARENT_RIGHT);
     actionView = new TextView(context);
     actionView.setPadding(Screen.dp(12f), Screen.dp(12f), Screen.dp(12f), Screen.dp(12f));
-    actionView.setTextColor(Theme.getColor(R.id.theme_color_snackbarUpdateAction));
+    actionView.setTextColor(Theme.getColor(ColorId.snackbarUpdateAction));
     actionView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
     actionView.setLayoutParams(rp);
     Views.setClickable(actionView);
     addView(actionView);
 
-    ViewSupport.setThemedBackground(this, R.id.theme_color_snackbarUpdate);
+    ViewSupport.setThemedBackground(this, ColorId.snackbarUpdate);
 
     isShowing = new BoolAnimator(0, new FactorAnimator.Target() {
       @Override
@@ -129,8 +130,8 @@ public class SnackBar extends RelativeLayout {
 
   public SnackBar addThemeListeners (@Nullable ViewController<?> themeProvider) {
     if (themeProvider != null) {
-      themeProvider.addThemeTextColorListener(actionView, R.id.theme_color_snackbarUpdateAction);
-      themeProvider.addThemeTextColorListener(textView, R.id.theme_color_snackbarUpdateText);
+      themeProvider.addThemeTextColorListener(actionView, ColorId.snackbarUpdateAction);
+      themeProvider.addThemeTextColorListener(textView, ColorId.snackbarUpdateText);
       themeProvider.addThemeInvalidateListener(this);
     }
     return this;

@@ -25,7 +25,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Paints;
 
 import me.vkryl.core.ColorUtils;
@@ -59,7 +59,7 @@ public class GridSpacingItemDecoration extends RecyclerView.ItemDecoration {
     this.viewType = viewType;
   }
 
-  public void setDrawColorId (@ThemeColorId int colorId) {
+  public void setDrawColorId (@ColorId int colorId) {
     this.colorId = colorId;
   }
 

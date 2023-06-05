@@ -19,8 +19,8 @@ import android.view.View;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
@@ -136,16 +136,12 @@ public class JoinRequestsComponent implements TGLegacyManager.EmojiLoadListener,
     }
 
     controller.showOptions(msg, new int[]{R.id.btn_approveChatRequest, R.id.btn_declineChatRequest, R.id.btn_openChat}, new String[]{Lang.getString(isChannel ? R.string.InviteLinkActionAcceptChannel : R.string.InviteLinkActionAccept), Lang.getString(R.string.InviteLinkActionDeclineAction), Lang.getString(R.string.InviteLinkActionWrite)}, new int[] { ViewController.OPTION_COLOR_BLUE, ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL }, new int[]{R.drawable.baseline_person_add_24, R.drawable.baseline_delete_24, R.drawable.baseline_person_24}, (itemView2, id2) -> {
-      switch (id2) {
-        case R.id.btn_approveChatRequest:
-          acceptRequest(user);
-          break;
-        case R.id.btn_openChat:
-          openProfile(user);
-          break;
-        case R.id.btn_declineChatRequest:
-          declineRequest(user);
-          break;
+      if (id2 == R.id.btn_approveChatRequest) {
+        acceptRequest(user);
+      } else if (id2 == R.id.btn_openChat) {
+        openProfile(user);
+      } else if (id2 == R.id.btn_declineChatRequest) {
+        declineRequest(user);
       }
 
       return true;

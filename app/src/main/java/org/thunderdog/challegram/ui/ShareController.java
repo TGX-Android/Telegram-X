@@ -49,7 +49,7 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
@@ -79,6 +79,7 @@ import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibChatList;
 import org.thunderdog.challegram.telegram.TdlibChatListSlice;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
@@ -313,17 +314,17 @@ public class ShareController extends TelegramViewController<ShareController.Args
 
   @Override
   protected int getHeaderTextColorId () {
-    return R.id.theme_color_text;
+    return ColorId.text;
   }
 
   @Override
   protected int getHeaderColorId () {
-    return R.id.theme_color_filling;
+    return ColorId.filling;
   }
 
   @Override
   protected int getHeaderIconColorId () {
-    return R.id.theme_color_icon;
+    return ColorId.icon;
   }
 
   @Override
@@ -358,25 +359,20 @@ public class ShareController extends TelegramViewController<ShareController.Args
 
   @Override
   public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
-    switch (id) {
-      case R.id.menu_search: {
-        if (canCopyLink()) {
-          header.addButton(menu, R.id.menu_btn_copy, getHeaderIconColorId(), this, R.drawable.baseline_link_24, Screen.dp(49f), R.drawable.bg_btn_header);
-        }
-        int exportState = getExportContentState();
-        if (exportState != EXPORT_NONE) {
-          header.addButton(menu, R.id.menu_btn_forward, getHeaderIconColorId(), this, R.drawable.baseline_share_24, Screen.dp(49f), R.drawable.bg_btn_header);
-        }
-        header.addSearchButton(menu, this, getHeaderIconColorId()).setTouchDownListener((v, e) -> {
-          resetTopEnsuredState();
-          hideSoftwareKeyboard();
-        });
-        break;
+    if (id == R.id.menu_search) {
+      if (canCopyLink()) {
+        header.addButton(menu, R.id.menu_btn_copy, getHeaderIconColorId(), this, R.drawable.baseline_link_24, Screen.dp(49f), R.drawable.bg_btn_header);
       }
-      case R.id.menu_clear: {
-        header.addClearButton(menu, this);
-        break;
+      int exportState = getExportContentState();
+      if (exportState != EXPORT_NONE) {
+        header.addButton(menu, R.id.menu_btn_forward, getHeaderIconColorId(), this, R.drawable.baseline_share_24, Screen.dp(49f), R.drawable.bg_btn_header);
       }
+      header.addSearchButton(menu, this, getHeaderIconColorId()).setTouchDownListener((v, e) -> {
+        resetTopEnsuredState();
+        hideSoftwareKeyboard();
+      });
+    } else if (id == R.id.menu_clear) {
+      header.addClearButton(menu, this);
     }
   }
 
@@ -395,29 +391,18 @@ public class ShareController extends TelegramViewController<ShareController.Args
 
   @Override
   public void onMenuItemPressed (int id, View view) {
-    switch (id) {
-      case R.id.menu_btn_search: {
-        if (displayingChats != null) {
-          openSearchMode();
-        }
-        break;
+    if (id == R.id.menu_btn_search) {
+      if (displayingChats != null) {
+        openSearchMode();
       }
-      case R.id.menu_btn_copy: {
-        copyLink();
-        break;
-      }
-      case R.id.menu_btn_forward: {
-        exportContent();
-        break;
-      }
-      case R.id.btn_menu_customize: {
-        showShareSettings();
-        break;
-      }
-      case R.id.menu_btn_clear: {
-        clearSearchInput();
-        break;
-      }
+    } else if (id == R.id.menu_btn_copy) {
+      copyLink();
+    } else if (id == R.id.menu_btn_forward) {
+      exportContent();
+    } else if (id == R.id.btn_menu_customize) {
+      showShareSettings();
+    } else if (id == R.id.menu_btn_clear) {
+      clearSearchInput();
     }
   }
 
@@ -927,7 +912,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
   @Override
   public boolean accept (TdApi.Chat chat) {
     if (tdlib.chatAvailable(chat)) {
-      Tdlib.RestrictionStatus restrictionStatus = tdlib.getRestrictionStatus(chat, R.id.right_sendMessages);
+      Tdlib.RestrictionStatus restrictionStatus = tdlib.getRestrictionStatus(chat, RightId.SEND_BASIC_MESSAGES);
       return restrictionStatus == null || !restrictionStatus.isGlobal();
     }
     return false;
@@ -974,7 +959,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     headerCell = new DoubleHeaderView(context);
     headerCell.setTitle(R.string.SendTo);
     headerCell.initWithMargin(Screen.dp(56f) * getMenuItemCount(), false);
-    headerCell.setThemedTextColor(R.id.theme_color_text, R.id.theme_color_textLight, this);
+    headerCell.setThemedTextColor(ColorId.text, ColorId.textLight, this);
     updateHeader();
 
     contentView = new RelativeLayout(context);
@@ -1065,7 +1050,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     };
     decoration = new GridSpacingItemDecoration(calculateSpanCount(), Screen.dp(HORIZONTAL_PADDING_SIZE), true, false, false);
     /*decoration.setNeedDraw(true, SettingItem.TYPE_CHAT_VERTICAL_FULLWIDTH);
-    decoration.setDrawColorId(R.id.theme_color_filling);*/
+    decoration.setDrawColorId(ColorId.filling);*/
     decoration.setSpanSizeLookup(lookup);
     recyclerView.addItemDecoration(decoration);
     recyclerView.addItemDecoration(new RecyclerView.ItemDecoration() {
@@ -1168,22 +1153,17 @@ public class ShareController extends TelegramViewController<ShareController.Args
         return false;
       TdApi.MessageSendOptions defaultSendOptions = getArgumentsStrict().defaultSendOptions;
       boolean needHideKeyboard = parentView.getId() == R.id.btn_done;
-      switch (view.getId()) {
-        case R.id.btn_settings:
-          showShareSettings();
-          break;
-        case R.id.btn_sendScheduled:
-          tdlib.ui().showScheduleOptions(this, selectedChats.size() == 1 ? selectedChats.valueAt(0).getChatId() : 0, false, (sendOptions, disableMarkdown) -> performSend(needHideKeyboard, sendOptions, false), defaultSendOptions, null);
-          break;
-        case R.id.btn_sendOnceOnline:
-          performSend(needHideKeyboard, Td.newSendOptions(defaultSendOptions, new TdApi.MessageSchedulingStateSendWhenOnline()), false);
-          break;
-        case R.id.btn_sendNoSound:
-          performSend(needHideKeyboard, Td.newSendOptions(defaultSendOptions, true), false);
-          break;
-        case R.id.btn_sendAndOpen:
-          performSend(needHideKeyboard, Td.newSendOptions(defaultSendOptions), true);
-          break;
+      final int viewId = view.getId();
+      if (viewId == R.id.btn_settings) {
+        showShareSettings();
+      } else if (viewId == R.id.btn_sendScheduled) {
+        tdlib.ui().showScheduleOptions(this, selectedChats.size() == 1 ? selectedChats.valueAt(0).getChatId() : 0, false, (sendOptions, disableMarkdown) -> performSend(needHideKeyboard, sendOptions, false), defaultSendOptions, null);
+      } else if (viewId == R.id.btn_sendOnceOnline) {
+        performSend(needHideKeyboard, Td.newSendOptions(defaultSendOptions, new TdApi.MessageSchedulingStateSendWhenOnline()), false);
+      } else if (viewId == R.id.btn_sendNoSound) {
+        performSend(needHideKeyboard, Td.newSendOptions(defaultSendOptions, true), false);
+      } else if (viewId == R.id.btn_sendAndOpen) {
+        performSend(needHideKeyboard, Td.newSendOptions(defaultSendOptions), true);
       }
       return true;
     }, getThemeListeners(), null).attachToView(sendButton.getChildAt(0));
@@ -1268,10 +1248,10 @@ public class ShareController extends TelegramViewController<ShareController.Args
     inputView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18f);
     inputView.setPadding(Screen.dp(60f), Screen.dp(12f), Screen.dp(55f), Screen.dp(12f));
     inputView.setHintTextColor(Theme.textPlaceholderColor());
-    addThemeHintTextColorListener(inputView, R.id.theme_color_textPlaceholder);
-    ViewSupport.setThemedBackground(inputView, R.id.theme_color_filling, this);
+    addThemeHintTextColorListener(inputView, ColorId.textPlaceholder);
+    ViewSupport.setThemedBackground(inputView, ColorId.filling, this);
     inputView.setHighlightColor(Theme.fillingTextSelectionColor());
-    addThemeHighlightColorListener(inputView, R.id.theme_color_textSelectionHighlight);
+    addThemeHighlightColorListener(inputView, ColorId.textSelectionHighlight);
     inputView.setMinimumHeight(Screen.dp(48f));
     inputView.setHint(Lang.getString(R.string.AddComment));
     inputView.setImeOptions(EditorInfo.IME_FLAG_NO_EXTRACT_UI);
@@ -1302,7 +1282,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     okButton.setScaleType(ImageView.ScaleType.CENTER);
     okButton.setImageResource(R.drawable.deproko_baseline_send_24);
     okButton.setColorFilter(Theme.chatSendButtonColor());
-    addThemeFilterListener(okButton, R.id.theme_color_chatSendButton);
+    addThemeFilterListener(okButton, ColorId.chatSendButton);
     okButton.setVisibility(View.INVISIBLE);
     okButton.setOnClickListener(this);
     okButton.setLayoutParams(params);
@@ -1319,7 +1299,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     emojiButton.setOnClickListener(this);
     emojiButton.setImageResource(R.drawable.deproko_baseline_insert_emoticon_26);
     emojiButton.setColorFilter(Theme.iconColor());
-    addThemeFilterListener(emojiButton, R.id.theme_color_icon);
+    addThemeFilterListener(emojiButton, ColorId.icon);
     emojiButton.setLayoutParams(params);
     contentView.addView(emojiButton);
 
@@ -1332,7 +1312,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
     params.addRule(RelativeLayout.ABOVE, R.id.share_bottom);
     bottomShadow = SeparatorView.simpleSeparator(context, params, false);
-    bottomShadow.setColorId(R.id.theme_color_shareSeparator);
+    bottomShadow.setColorId(ColorId.shareSeparator);
     bottomShadow.setAlignBottom();
     if (canShareLink) {
       bottomShadow.setTranslationY(Screen.dp(48f));
@@ -1364,7 +1344,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     FrameLayout.LayoutParams fp = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(6f));
     fp.topMargin = HeaderView.getSize(false) - Screen.dp(3f);
     fixView = new View(context);
-    ViewSupport.setThemedBackground(fixView, R.id.theme_color_filling, this);
+    ViewSupport.setThemedBackground(fixView, ColorId.filling, this);
     fixView.setLayoutParams(fp);
 
     wrapView = new FrameLayoutFix(context);
@@ -1879,63 +1859,49 @@ public class ShareController extends TelegramViewController<ShareController.Args
 
   @Override
   public void onClick (View v) {
-    switch (v.getId()) {
-      case R.id.btn_send:{
-        if (selectedChats.size() == 0) {
-          if (canShareLink) {
-            shareLink();
-            // copyLink();
-          }
-        } else {
-          performSend(false, Td.newSendOptions(), false);
+    final int viewId = v.getId();
+    if (viewId == R.id.btn_send) {
+      if (selectedChats.size() == 0) {
+        if (canShareLink) {
+          shareLink();
+          // copyLink();
         }
-        break;
+      } else {
+        performSend(false, Td.newSendOptions(), false);
       }
-      case R.id.btn_done: {
-        if (selectedChats.size() == 0) {
-          hideSoftwareKeyboard();
-        } else {
-          performSend(true, Td.newSendOptions(), false);
-        }
-        break;
+    } else if (viewId == R.id.btn_done) {
+      if (selectedChats.size() == 0) {
+        hideSoftwareKeyboard();
+      } else {
+        performSend(true, Td.newSendOptions(), false);
       }
-      case R.id.share_comment_stub: {
-        if (OPEN_KEYBOARD_WITH_AUTOSCROLL) {
-          final int top = getTopEdge();
-          openKeyboardUponFinishingAutoScroll = true;
-          smoothScrollBy(top);
-        }
-        break;
+    } else if (viewId == R.id.share_comment_stub) {
+      if (OPEN_KEYBOARD_WITH_AUTOSCROLL) {
+        final int top = getTopEdge();
+        openKeyboardUponFinishingAutoScroll = true;
+        smoothScrollBy(top);
       }
-      case R.id.btn_emoji: {
-        processEmojiClick();
-        break;
-      }
-      default: {
-        ListItem item = (ListItem) v.getTag();
-        TGFoundChat chat = (TGFoundChat) item.getData();
-        switch (item.getId()) {
-          case R.id.chat: {
-            if (autoScrollFinished) {
-              if (!processSingleTap(chat)) {
-                toggleChecked(v, chat, isChecked ->
-                  ((VerticalChatView) v).setIsChecked(isChecked, true)
-                );
-              }
-            }
-            break;
-          }
-          case R.id.search_chat: {
-            if (!processSingleTap(chat)) {
-              toggleChecked(v, chat, isChecked ->
-                ((VerticalChatView) v).setIsChecked(isChecked, true)
-              );
-              closeSearchMode(null);
-            }
-            break;
+    } else if (viewId == R.id.btn_emoji) {
+      processEmojiClick();
+    } else {
+      ListItem item = (ListItem) v.getTag();
+      TGFoundChat chat = (TGFoundChat) item.getData();
+      final int itemId = item.getId();
+      if (itemId == R.id.chat) {
+        if (autoScrollFinished) {
+          if (!processSingleTap(chat)) {
+            toggleChecked(v, chat, isChecked ->
+              ((VerticalChatView) v).setIsChecked(isChecked, true)
+            );
           }
         }
-        break;
+      } else if (itemId == R.id.search_chat) {
+        if (!processSingleTap(chat)) {
+          toggleChecked(v, chat, isChecked ->
+            ((VerticalChatView) v).setIsChecked(isChecked, true)
+          );
+          closeSearchMode(null);
+        }
       }
     }
   }
@@ -2381,13 +2347,13 @@ public class ShareController extends TelegramViewController<ShareController.Args
     private void doDraw (Canvas c) {
       final int width = getMeasuredWidth();
       final int height = getMeasuredHeight();
-      final int color = factor == 0f ? Theme.fillingColor() : factor == 1f ? Theme.getColor(R.id.theme_color_fillingPositive) : ColorUtils.fromToArgb(Theme.fillingColor(), Theme.getColor(R.id.theme_color_fillingPositive), factor);
+      final int color = factor == 0f ? Theme.fillingColor() : factor == 1f ? Theme.getColor(ColorId.fillingPositive) : ColorUtils.fromToArgb(Theme.fillingColor(), Theme.getColor(ColorId.fillingPositive), factor);
       c.drawColor(color);
       if (factor != 0f && factor != 1f) {
         float radius = (float) Math.sqrt(width * width + height * height) * .5f;
-        c.drawCircle(width / 2, height / 2, radius * factor, Paints.fillingPaint(ColorUtils.alphaColor(factor, Theme.getColor(R.id.theme_color_fillingPositive))));
+        c.drawCircle(width / 2, height / 2, radius * factor, Paints.fillingPaint(ColorUtils.alphaColor(factor, Theme.getColor(ColorId.fillingPositive))));
       }
-      final int textColor = factor == 0f ? Theme.getColor(R.id.theme_color_textNeutral) : factor == 1f ? Theme.getColor(R.id.theme_color_fillingPositiveContent) : ColorUtils.fromToArgb(Theme.getColor(R.id.theme_color_textNeutral), Theme.getColor(R.id.theme_color_fillingPositiveContent), factor);
+      final int textColor = factor == 0f ? Theme.getColor(ColorId.textNeutral) : factor == 1f ? Theme.getColor(ColorId.fillingPositiveContent) : ColorUtils.fromToArgb(Theme.getColor(ColorId.textNeutral), Theme.getColor(ColorId.fillingPositiveContent), factor);
       if (factor <= .5f) {
         TextPaint paint = Paints.getTitleBigPaint(copyTextFake);
         final int sourceTextColor = paint.getColor();
@@ -2727,7 +2693,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
         emojiButton.setImageResource(R.drawable.baseline_keyboard_24);
         emojiLayout.hideKeyboard(inputView);
       } else {
-        emojiButton.setImageResource(MessagesController.BOT_CLOSE_RES);
+        emojiButton.setImageResource(R.drawable.baseline_direction_arrow_down_24);
       }
 
       checkKeyboardVisible();

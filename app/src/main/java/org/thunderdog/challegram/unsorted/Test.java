@@ -17,7 +17,7 @@ package org.thunderdog.challegram.unsorted;
 import android.os.SystemClock;
 import android.view.View;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;

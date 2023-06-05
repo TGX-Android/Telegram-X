@@ -18,7 +18,7 @@ import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.data.TD;
 
 import java.util.ArrayList;
@@ -1158,7 +1158,7 @@ public class TdlibListeners {
 
   // updateChatFilters
 
-  void updateChatFilters (TdApi.UpdateChatFilters update) {
+  void updateChatFilters (TdApi.UpdateChatFolders update) {
     // TODO?
   }
 
@@ -1340,6 +1340,21 @@ public class TdlibListeners {
   void updateChatIsMarkedAsUnread (TdApi.UpdateChatIsMarkedAsUnread update) {
     updateChatIsMarkedAsUnread(update.chatId, update.isMarkedAsUnread, chatListeners.iterator());
     updateChatIsMarkedAsUnread(update.chatId, update.isMarkedAsUnread, specificChatListeners.iterator(update.chatId));
+  }
+
+  // updateChatBackground
+
+  private static void updateChatBackground (long chatId, @Nullable TdApi.ChatBackground background, @Nullable Iterator<ChatListener> list) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onChatBackgroundChanged(chatId, background);
+      }
+    }
+  }
+
+  void updateChatBackground (TdApi.UpdateChatBackground update) {
+    updateChatBackground(update.chatId, update.background, chatListeners.iterator());
+    updateChatBackground(update.chatId, update.background, specificChatListeners.iterator(update.chatId));
   }
 
   // updateChatIsTranslatable

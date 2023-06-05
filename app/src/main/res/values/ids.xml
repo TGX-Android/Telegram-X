@@ -114,6 +114,7 @@
   <item type="id" name="edit_proxy_password" />
   <item type="id" name="edit_proxy_secret" />
 
+  <item type="id" name="controller_msgTranslate" />
   <item type="id" name="controller_simplePager" />
   <item type="id" name="controller_logOut" />
   <item type="id" name="controller_editLanguage" />
@@ -151,6 +152,7 @@
   <item type="id" name="controller_navigation" />
   <item type="id" name="controller_text" />
   <item type="id" name="controller_language" />
+  <item type="id" name="controller_translations" />
   <item type="id" name="controller_map" />
   <item type="id" name="controller_drawer" />
   <item type="id" name="controller_pollResults" />
@@ -281,11 +283,24 @@
   <item type="id" name="result" />
   <item type="id" name="search_chat" />
   <item type="id" name="user" />
+  <item type="id" name="sender" />
   <item type="id" name="account" />
   <item type="id" name="btn_wallet" />
   <item type="id" name="contact" />
   <item type="id" name="call" />
   <item type="id" name="bucket" />
+  <item type="id" name="btn_chatTranslate" />
+  <item type="id" name="btn_chatTranslateOff" />
+
+  <item type="id" name="btn_chatTranslateStyle" />
+  <item type="id" name="btn_chatTranslateStylePopup" />
+  <item type="id" name="btn_chatTranslateStyleInline" />
+  <item type="id" name="btn_chatTranslateStyleNone" />
+
+  <item type="id" name="btn_chatDoNotTranslate" />
+  <item type="id" name="btn_chatDoNotTranslateAppLang" />
+  <item type="id" name="btn_chatDoNotTranslateSelected" />
+
   <item type="id" name="btn_pinUnpinChat" />
   <item type="id" name="btn_unpinAll" />
   <item type="id" name="btn_reportLocation" />
@@ -363,6 +378,7 @@
   <item type="id" name="btn_toggleSignatures" />
   <item type="id" name="btn_toggleJoinByRequest" />
   <item type="id" name="btn_toggleProtection" />
+  <item type="id" name="btn_togglePermission" />
   <item type="id" name="btn_allMembers" />
   <item type="id" name="btn_onlyAdmins" />
   <item type="id" name="btn_hidden" />
@@ -716,6 +732,7 @@
   <item type="id" name="btn_inlineClose" />
   <item type="id" name="btn_inlineOpen" />
   <item type="id" name="btn_copyText" />
+  <item type="id" name="btn_copyTranslation" />
   <item type="id" name="btn_sourceCode" />
   <item type="id" name="btn_sourceCodeChanges" />
   <item type="id" name="btn_copyDebug" />
@@ -1134,6 +1151,7 @@
   <item type="id" name="btn_savedMessages" />
   <item type="id" name="btn_contacts" />
   <item type="id" name="btn_invite" />
+  <item type="id" name="btn_inviteBack" />
   <item type="id" name="btn_help" />
 
   <item type="id" name="btn_neverAllow" />
@@ -1199,7 +1217,7 @@
 
   <item type="id" name="btn_applyWallpaper" />
 
-  <item type="id" name="right_readMessages" />
+  <!--<item type="id" name="right_readMessages" />
   <item type="id" name="right_sendMessages" />
   <item type="id" name="right_sendAudio" />
   <item type="id" name="right_sendDocument" />
@@ -1219,7 +1237,7 @@
   <item type="id" name="right_pinMessages" />
   <item type="id" name="right_manageVideoChats" />
   <item type="id" name="right_remainAnonymous" />
-  <item type="id" name="right_addNewAdmins" />
+  <item type="id" name="right_addNewAdmins" />-->
 
   <item type="id" name="btn_camera_switch" />
   <item type="id" name="btn_camera_flash" />

@@ -20,7 +20,7 @@ import android.view.View;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.DoubleTextWrapper;
@@ -398,56 +398,46 @@ public class SharedMembersController extends SharedBaseController<DoubleTextWrap
         result = Lang.boldify(name);
       }
       showOptions(result, ids.get(), strings.get(), colors.get(), icons.get(), (itemView, id) -> {
-        switch (id) {
-          case R.id.btn_messageViewList:
-            TdApi.Chat chat = tdlib.chat(chatId);
-            MessagesController c = new MessagesController(context, tdlib);
-            c.setArguments(new MessagesController.Arguments(null, chat, content.getSenderId()));
-            if (parent != null) {
-              parent.navigateTo(c);
-            } else {
-              getParentOrSelf().navigateTo(c);
-            }
-            break;
-          case R.id.btn_makePrivate:
-          case R.id.btn_makePublic: {
-            Runnable act = () -> {
-              TdApi.ChatMemberStatus newStatus = Td.copyOf(content.getMember().status);
-
-              switch (newStatus.getConstructor()) {
-                case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
-                  ((TdApi.ChatMemberStatusCreator) newStatus).isAnonymous = id == R.id.btn_makePrivate;
-                  break;
-                case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
-                  ((TdApi.ChatMemberStatusAdministrator) newStatus).rights.isAnonymous = id == R.id.btn_makePrivate;
-                  break;
-                default:
-                  return;
-              }
-
-              tdlib.setChatMemberStatus(chatId, content.getSenderId(), newStatus, content.getMember().status, null);
-            };
-
-            if (ChatId.isBasicGroup(chatId)) {
-              showConfirm(Lang.getMarkdownString(this, R.string.UpgradeChatPrompt), Lang.getString(R.string.Proceed), act);
-            } else {
-              act.run();
-            }
-
-            break;
+        if (id == R.id.btn_messageViewList) {
+          TdApi.Chat chat = tdlib.chat(chatId);
+          MessagesController c = new MessagesController(context, tdlib);
+          c.setArguments(new MessagesController.Arguments(null, chat, content.getSenderId()));
+          if (parent != null) {
+            parent.navigateTo(c);
+          } else {
+            getParentOrSelf().navigateTo(c);
           }
-          case R.id.btn_editRights:
-            editMember(content, false);
-            break;
-          case R.id.btn_restrictMember:
-            editMember(content, true);
-            break;
-          case R.id.btn_blockSender:
-            tdlib.ui().kickMember(getParentOrSelf(), chatId, content.getSenderId(), content.getMember().status);
-            break;
-          case R.id.btn_unblockSender:
-            tdlib.ui().unblockMember(getParentOrSelf(), chatId, content.getSenderId(), content.getMember().status);
-            break;
+        } else if (id == R.id.btn_makePrivate || id == R.id.btn_makePublic) {
+          Runnable act = () -> {
+            TdApi.ChatMemberStatus newStatus = Td.copyOf(content.getMember().status);
+
+            switch (newStatus.getConstructor()) {
+              case TdApi.ChatMemberStatusCreator.CONSTRUCTOR:
+                ((TdApi.ChatMemberStatusCreator) newStatus).isAnonymous = id == R.id.btn_makePrivate;
+                break;
+              case TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR:
+                ((TdApi.ChatMemberStatusAdministrator) newStatus).rights.isAnonymous = id == R.id.btn_makePrivate;
+                break;
+              default:
+                return;
+            }
+
+            tdlib.setChatMemberStatus(chatId, content.getSenderId(), newStatus, content.getMember().status, null);
+          };
+
+          if (ChatId.isBasicGroup(chatId)) {
+            showConfirm(Lang.getMarkdownString(this, R.string.UpgradeChatPrompt), Lang.getString(R.string.Proceed), act);
+          } else {
+            act.run();
+          }
+        } else if (id == R.id.btn_editRights) {
+          editMember(content, false);
+        } else if (id == R.id.btn_restrictMember) {
+          editMember(content, true);
+        } else if (id == R.id.btn_blockSender) {
+          tdlib.ui().kickMember(getParentOrSelf(), chatId, content.getSenderId(), content.getMember().status);
+        } else if (id == R.id.btn_unblockSender) {
+          tdlib.ui().unblockMember(getParentOrSelf(), chatId, content.getSenderId(), content.getMember().status);
         }
         return true;
       });

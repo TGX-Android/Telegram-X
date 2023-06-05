@@ -24,8 +24,8 @@ import android.view.View;
 
 import androidx.annotation.Nullable;
 
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -181,7 +181,7 @@ public class RecordButton extends View implements FactorAnimator.Target, ClickHe
 
   @Override
   public void onDraw (Canvas c) {
-    int color = Theme.getColor(R.id.theme_color_circleButtonRegular);
+    int color = Theme.getColor(ColorId.circleButtonRegular);
     c.drawCircle(center, center, (radius + radiusAdd * volume) * expand, Paints.fillingPaint(ColorUtils.alphaColor(.3f, color)));
     c.drawCircle(center, center, radius * expand, Paints.fillingPaint(color));
   }

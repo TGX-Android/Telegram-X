@@ -173,7 +173,7 @@ fun String.stripUnderscoresWithCamelCase (): String {
     when {
       c == '_' -> nextUpperCase = true
       nextUpperCase -> {
-        upperCase.append(c.toUpperCase())
+        upperCase.append(c.uppercaseChar())
         nextUpperCase = false
       }
       else -> upperCase.append(c)
@@ -190,16 +190,16 @@ fun String.normalizeArgbHex(): String {
     3 -> {
       val b = StringBuilder(8).append("ff")
       for (c in hex) {
-        val l = c.toLowerCase()
+        val l = c.lowercaseChar()
         b.append(l).append(l)
       }
       return b.toString()
     }
     4 -> {
-      val r = hex[0].toLowerCase()
-      val g = hex[1].toLowerCase()
-      val b = hex[2].toLowerCase()
-      val a = hex[3].toLowerCase()
+      val r = hex[0].lowercaseChar()
+      val g = hex[1].lowercaseChar()
+      val b = hex[2].lowercaseChar()
+      val a = hex[3].lowercaseChar()
       return StringBuilder(8)
         .append(a).append(a)
         .append(r).append(r)
@@ -207,10 +207,10 @@ fun String.normalizeArgbHex(): String {
         .append(b).append(b).toString()
     }
     6 -> {
-      return "ff${hex.toLowerCase(Locale.US)}"
+      return "ff${hex.lowercase(Locale.US)}"
     }
     8 -> {
-      return hex.substring(6, 8).toLowerCase(Locale.US) + hex.substring(0, 6).toLowerCase(Locale.US)
+      return hex.substring(6, 8).lowercase(Locale.US) + hex.substring(0, 6).lowercase(Locale.US)
     }
     else -> error("Invalid color: $this")
   }

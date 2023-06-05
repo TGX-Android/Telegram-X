@@ -25,7 +25,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.mediaview.data.FiltersState;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 
 import java.util.ArrayList;
 
@@ -68,9 +68,9 @@ public class MediaFiltersAdapter extends RecyclerView.Adapter<MediaFiltersAdapte
     this.state = state;
 
     int highlightsColorId = state.getValue(FiltersState.KEY_HIGHLIGHTS_COLOR_ID);
-    highlightsColorIdItem.setFillingColorId(highlightsColorId == 0 ? R.id.theme_color_white : highlightsColorId);
+    highlightsColorIdItem.setFillingColorId(highlightsColorId == 0 ? ColorId.white : highlightsColorId);
     int shadowsColorId = state.getValue(FiltersState.KEY_SHADOWS_COLOR_ID);
-    shadowsColorIdItem.setFillingColorId(shadowsColorId == 0 ? R.id.theme_color_white : shadowsColorId);
+    shadowsColorIdItem.setFillingColorId(shadowsColorId == 0 ? ColorId.white : shadowsColorId);
 
 
     U.notifyItemsReplaced(this, oldItemCount);
@@ -146,13 +146,13 @@ public class MediaFiltersAdapter extends RecyclerView.Adapter<MediaFiltersAdapte
   }
 
   @Override
-  public void onColorChanged (ColorPickerWrap wrap, @ThemeColorId int newColorId) {
+  public void onColorChanged (ColorPickerWrap wrap, @ColorId int newColorId) {
     Item item = (Item) wrap.getTag();
     int i = indexOfItemByKey(item.getKey());
     if (i != -1) {
       View view = manager.findViewByPosition(i + 1);
       if (view != null) {
-        ((SliderFilterWrapView) view).setColorId(newColorId == 0 ? R.id.theme_color_white : newColorId);
+        ((SliderFilterWrapView) view).setColorId(newColorId == 0 ? ColorId.white : newColorId);
       } else {
         notifyItemChanged(i + 1);
       }
@@ -248,13 +248,13 @@ public class MediaFiltersAdapter extends RecyclerView.Adapter<MediaFiltersAdapte
     private int key;
     private @StringRes int stringRes;
 
-    private @ThemeColorId int fillingColorId;
+    private @ColorId int fillingColorId;
 
     public Item (int type, int key, int stringRes) {
       this.type = type;
       this.key = key;
       this.stringRes = stringRes;
-      this.fillingColorId = R.id.theme_color_white;
+      this.fillingColorId = ColorId.white;
     }
 
     public boolean setFillingColorId (int colorId) {
@@ -265,7 +265,7 @@ public class MediaFiltersAdapter extends RecyclerView.Adapter<MediaFiltersAdapte
       return false;
     }
 
-    public @ThemeColorId int getFillingColorId () {
+    public @ColorId int getFillingColorId () {
       return fillingColorId;
     }
 

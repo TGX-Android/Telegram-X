@@ -32,7 +32,7 @@ import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -86,7 +86,7 @@ public class JoinedUsersView extends View implements Destroyable, FactorAnimator
       setUserIdsImpl(userIds, count, false);
     }
 
-    this.inviteText = Strings.replaceBoldTokens(Lang.getString(R.string.NoChatsText), ThemeColorId.NONE);
+    this.inviteText = Strings.replaceBoldTokens(Lang.getString(R.string.NoChatsText), ColorId.NONE);
 
     tdlib.contacts().addAvatarExpector(this);
   }
@@ -438,7 +438,7 @@ public class JoinedUsersView extends View implements Destroyable, FactorAnimator
         c.scale(scale, scale, cx, centerY);
       }
       if (i == 4 && moreCounter != null) {
-        c.drawCircle(cx, centerY, avatarRadius, Paints.fillingPaint(ColorUtils.alphaColor(factor, Theme.getColor(R.id.theme_color_avatarSavedMessages))));
+        c.drawCircle(cx, centerY, avatarRadius, Paints.fillingPaint(ColorUtils.alphaColor(factor, Theme.getColor(ColorId.avatarSavedMessages))));
         Paint paint = Paints.whiteMediumPaint(COUNTER_MEDIUM_DP, false, false);
         paint.setAlpha((int) (255f * factor));
         int padding = Screen.dp(3f);

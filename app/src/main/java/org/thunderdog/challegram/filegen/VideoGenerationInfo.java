@@ -20,7 +20,7 @@ import androidx.annotation.Nullable;
 
 import com.otaliastudios.transcoder.strategy.DefaultVideoStrategy;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;

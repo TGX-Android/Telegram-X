@@ -16,7 +16,7 @@ package org.thunderdog.challegram.voip;
 
 import androidx.annotation.Keep;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 
 @Keep
 public class Socks5Proxy {

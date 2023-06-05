@@ -20,7 +20,7 @@ import android.graphics.Paint;
 import android.view.View;
 
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
@@ -30,7 +30,7 @@ import me.vkryl.android.animator.FactorAnimator;
 
 public class CheckCircle extends View implements FactorAnimator.Target {
   private static Paint strokePaint;
-  private @ThemeColorId int colorId;
+  private @ColorId int colorId;
 
   public CheckCircle (Context context) {
     super(context);

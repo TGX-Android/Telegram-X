@@ -21,8 +21,8 @@ import android.widget.TextView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
@@ -38,6 +38,7 @@ import org.thunderdog.challegram.telegram.DayChangeListener;
 import org.thunderdog.challegram.telegram.MessageListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibOptionListener;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.StringList;
@@ -104,26 +105,24 @@ public class CallListController extends RecyclerViewController<Void> implements
 
       @Override
       protected void setRecyclerViewData (ListItem item, RecyclerView recyclerView, boolean isInitialization) {
-        switch (item.getId()) {
-          case R.id.search_top: {
-            if (recyclerView.getAdapter() != topChatsAdapter) {
-              recyclerView.setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 180l));
-              recyclerView.setAdapter(topChatsAdapter);
-              if (recyclerView.getItemDecorationCount() == 0) {
-                recyclerView.addItemDecoration(new CenterDecoration() {
-                  @Override
-                  public int getItemCount () {
-                    return topChats != null ? topChats.size() : 0;
-                  }
-                });
-                ((CustomRecyclerView) recyclerView).setMeasureListener((v, oldWidth, oldHeight, newWidth, newHeight) -> {
-                  if (oldWidth != newWidth && oldWidth != 0) {
-                    v.invalidateItemDecorations();
-                  }
-                });
-              }
+        final int itemId = item.getId();
+        if (itemId == R.id.search_top) {
+          if (recyclerView.getAdapter() != topChatsAdapter) {
+            recyclerView.setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 180l));
+            recyclerView.setAdapter(topChatsAdapter);
+            if (recyclerView.getItemDecorationCount() == 0) {
+              recyclerView.addItemDecoration(new CenterDecoration() {
+                @Override
+                public int getItemCount () {
+                  return topChats != null ? topChats.size() : 0;
+                }
+              });
+              ((CustomRecyclerView) recyclerView).setMeasureListener((v, oldWidth, oldHeight, newWidth, newHeight) -> {
+                if (oldWidth != newWidth && oldWidth != 0) {
+                  v.invalidateItemDecorations();
+                }
+              });
             }
-            break;
           }
         }
       }
@@ -180,13 +179,11 @@ public class CallListController extends RecyclerViewController<Void> implements
     if (topChats != null && topChatsAdapter == null) {
       topChatsAdapter = new SettingsAdapter(this, v -> {
         ListItem item = (ListItem) v.getTag();
-        switch (item.getId()) {
-          case R.id.search_chat_top: {
-            final TGFoundChat chat = (TGFoundChat) item.getData();
-            if (chat.getId() != 0) {
-              tdlib.context().calls().makeCall(CallListController.this, chat.getUserId(), null);
-            }
-            break;
+        final int itemId = item.getId();
+        if (itemId == R.id.search_chat_top) {
+          final TGFoundChat chat = (TGFoundChat) item.getData();
+          if (chat.getId() != 0) {
+            tdlib.context().calls().makeCall(CallListController.this, chat.getUserId(), null);
           }
         }
       }, this) {
@@ -198,12 +195,11 @@ public class CallListController extends RecyclerViewController<Void> implements
       };
       topChatsAdapter.setOnLongClickListener(v -> {
         final ListItem item = (ListItem) v.getTag();
-        switch (item.getId()) {
-          case R.id.search_chat_top: {
-            final TGFoundChat chat = (TGFoundChat) item.getData();
-            removeTopChat(chat);
-            return true;
-          }
+        final int itemId = item.getId();
+        if (itemId == R.id.search_chat_top) {
+          final TGFoundChat chat = (TGFoundChat) item.getData();
+          removeTopChat(chat);
+          return true;
         }
         return false;
       });
@@ -573,15 +569,10 @@ public class CallListController extends RecyclerViewController<Void> implements
       final long[] messageIdsToDelete = call.getMessageIds();
       if (messageIdsToDelete != null) {
         showOptions(null, new int[]{R.id.btn_deleteAll, R.id.btn_openChat, R.id.btn_cancel}, new String[]{Lang.getString(R.string.DeleteEntry), Lang.getString(R.string.OpenChat), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL, ViewController.OPTION_COLOR_NORMAL}, new int[]{R.drawable.baseline_delete_sweep_24, R.drawable.baseline_chat_bubble_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
-          switch (id) {
-            case R.id.btn_deleteAll: {
-              tdlib.deleteMessages(chatId, messageIdsToDelete, false);
-              break;
-            }
-            case R.id.btn_openChat: {
-              tdlib.ui().openChat(CallListController.this, chatId, null);
-              break;
-            }
+          if (id == R.id.btn_deleteAll) {
+            tdlib.deleteMessages(chatId, messageIdsToDelete, false);
+          } else if (id == R.id.btn_openChat) {
+            tdlib.ui().openChat(CallListController.this, chatId, null);
           }
           return true;
         });
@@ -602,23 +593,19 @@ public class CallListController extends RecyclerViewController<Void> implements
     final long chatId;
     final CallItem call;
     final TGFoundChat chat;
-    switch (item.getId()) {
-      case R.id.search_chat_top: {
-        chat = (TGFoundChat) item.getData();
-        chatId = chat.getId();
-        userId = chat.getUserId();
-        call = null;
-        break;
-      }
-      case R.id.call: {
-        call = (CallItem) item.getData();
-        chat = null;
-        userId = call.getUserId();
-        chatId = call.getChatId();
-        break;
-      }
-      default:
-        return null;
+    final int itemId = item.getId();
+    if (itemId == R.id.search_chat_top) {
+      chat = (TGFoundChat) item.getData();
+      chatId = chat.getId();
+      userId = chat.getUserId();
+      call = null;
+    } else if (itemId == R.id.call) {
+      call = (CallItem) item.getData();
+      chat = null;
+      userId = call.getUserId();
+      chatId = call.getChatId();
+    } else {
+      return null;
     }
 
     if (tdlib.cache().userGeneral(userId)) {
@@ -634,38 +621,33 @@ public class CallListController extends RecyclerViewController<Void> implements
     return new ForceTouchView.ActionListener() {
       @Override
       public void onForceTouchAction (ForceTouchView.ForceTouchContext context, int actionId, Object arg) {
-        switch (actionId) {
-          case R.id.btn_phone_call: {
-            tdlib.context().calls().makeCallDelayed(CallListController.this, userId, null, true);
-            break;
-          }
-          case R.id.btn_delete: {
-            if (call != null) {
-              String firstName = tdlib.senderName(new TdApi.MessageSenderUser(call.getUserId()), true);
-              CharSequence text = Lang.getStringBold(R.string.QDeleteCallFromRecent);
-              if (call.canBeDeletedForAllUsers()) {
-                showSettings(
-                  new SettingsWrapBuilder(R.id.btn_delete).setHeaderItem(new ListItem(ListItem.TYPE_INFO, R.id.text_title, 0, text, false)).setRawItems(
-                    new ListItem[]{
-                      new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_deleteAll, 0, Lang.getStringBold(R.string.DeleteForUser, firstName), false)
-                    }).setIntDelegate((id, result) -> {
-                    if (id == R.id.btn_delete) {
-                      tdlib.deleteMessages(chatId, call.getMessageIds(), result.get(R.id.btn_deleteAll) != 0);
-                    }
-                  }).setSaveStr(R.string.Delete).setSaveColorId(R.id.theme_color_textNegative)
-                );
-              } else {
-                showOptions(null, new int[]{R.id.btn_delete, R.id.btn_cancel}, new String[]{Lang.getString(R.string.DeleteEntry), Lang.getString(R.string.Cancel)}, new int[]{OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_sweep_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+        if (actionId == R.id.btn_phone_call) {
+          tdlib.context().calls().makeCallDelayed(CallListController.this, userId, null, true);
+        } else if (actionId == R.id.btn_delete) {
+          if (call != null) {
+            String firstName = tdlib.senderName(new TdApi.MessageSenderUser(call.getUserId()), true);
+            CharSequence text = Lang.getStringBold(R.string.QDeleteCallFromRecent);
+            if (call.canBeDeletedForAllUsers()) {
+              showSettings(
+                new SettingsWrapBuilder(R.id.btn_delete).setHeaderItem(new ListItem(ListItem.TYPE_INFO, R.id.text_title, 0, text, false)).setRawItems(
+                  new ListItem[] {
+                    new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_deleteAll, 0, Lang.getStringBold(R.string.DeleteForUser, firstName), false)
+                  }).setIntDelegate((id, result) -> {
                   if (id == R.id.btn_delete) {
-                    tdlib.deleteMessages(chatId, call.getMessageIds(), false);
+                    tdlib.deleteMessages(chatId, call.getMessageIds(), result.get(R.id.btn_deleteAll) != 0);
                   }
-                  return true;
-                });
-              }
-            } else if (chat != null) {
-              removeTopChat(chat);
+                }).setSaveStr(R.string.Delete).setSaveColorId(ColorId.textNegative)
+              );
+            } else {
+              showOptions(null, new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.DeleteEntry), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_sweep_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+                if (id == R.id.btn_delete) {
+                  tdlib.deleteMessages(chatId, call.getMessageIds(), false);
+                }
+                return true;
+              });
             }
-            break;
+          } else if (chat != null) {
+            removeTopChat(chat);
           }
         }
       }

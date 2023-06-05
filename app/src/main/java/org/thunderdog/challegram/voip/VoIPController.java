@@ -1,13 +1,12 @@
 package org.thunderdog.challegram.voip;
 
 import android.media.audiofx.AcousticEchoCanceler;
-import android.media.audiofx.AutomaticGainControl;
 import android.media.audiofx.NoiseSuppressor;
 
 import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.voip.annotation.CallNetworkType;
 
 import java.util.ArrayList;

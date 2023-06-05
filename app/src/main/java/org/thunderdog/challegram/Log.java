@@ -25,7 +25,7 @@ import androidx.annotation.Nullable;
 
 import com.otaliastudios.transcoder.internal.utils.Logger;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.BaseThread;
 import org.thunderdog.challegram.telegram.TdlibManager;
@@ -407,7 +407,6 @@ public class Log {
     TAG_YOUTUBE,
     TAG_CAMERA,
     TAG_EMOJI,
-
     TAG_TDLIB_FILES,
     TAG_TDLIB_OPTIONS
   };

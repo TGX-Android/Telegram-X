@@ -2,9 +2,6 @@ package org.thunderdog.challegram.util;
 
 import androidx.annotation.IntDef;
 
-import org.drinkless.td.libcore.telegram.TdApi;
-import org.thunderdog.challegram.unsorted.Settings;
-
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 

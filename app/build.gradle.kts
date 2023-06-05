@@ -37,14 +37,19 @@ val properties = extra["properties"] as Properties
 val projectName = extra["app_name"] as String
 
 android {
+  namespace = "org.thunderdog.challegram"
+
   defaultConfig {
     val versions = extra["versions"] as Properties
-    val jniVersion = versions.getIntOrThrow("version.jni")
-    val tdlibVersion = versions.getIntOrThrow("version.tdlib")
-    val leveldbVersion = versions.getIntOrThrow("version.leveldb")
 
-    buildConfigInt("SO_VERSION", (jniVersion + tdlibVersion + leveldbVersion))
-    buildConfigInt("TDLIB_VERSION", tdlibVersion)
+    val ndkVersion = versions.getProperty("version.ndk")
+    val jniVersion = versions.getProperty("version.jni")
+    val leveldbVersion = versions.getProperty("version.leveldb")
+
+    buildConfigString("NDK_VERSION", ndkVersion)
+    buildConfigString("JNI_VERSION", jniVersion)
+    buildConfigString("LEVELDB_VERSION", leveldbVersion)
+
     buildConfigString("TDLIB_REMOTE_URL", "https://github.com/tdlib/td")
 
     buildConfigField("boolean", "EXPERIMENTAL", isExperimentalBuild.toString())
@@ -149,10 +154,14 @@ android {
 
   // Packaging
 
-  packagingOptions {
+  packaging {
     Config.SUPPORTED_ABI.forEach { abi ->
-      jniLibs.pickFirsts.add("lib/$abi/libc++_shared.so")
-      jniLibs.pickFirsts.add("tdlib/src/main/libs/$abi/libtdjni.so")
+      jniLibs.pickFirsts.let { set ->
+        set.add("lib/$abi/libc++_shared.so")
+        set.add("tdlib/openssl/$abi/lib/libcrypto.so")
+        set.add("tdlib/openssl/$abi/lib/libssl.so")
+        set.add("tdlib/src/main/libs/$abi/libtdjni.so")
+      }
     }
   }
 }
@@ -165,7 +174,7 @@ gradle.projectsEvaluated {
     "updateExceptions"
   )
   Abi.VARIANTS.forEach { (_, variant) ->
-    tasks.getByName("pre${variant.flavor[0].toUpperCase() + variant.flavor.substring(1)}ReleaseBuild").let { task ->
+    tasks.getByName("pre${variant.flavor[0].uppercaseChar() + variant.flavor.substring(1)}ReleaseBuild").let { task ->
       task.dependsOn("updateLanguages")
       if (!isExperimentalBuild) {
         task.dependsOn("validateApiTokens")
@@ -182,7 +191,7 @@ dependencies {
   implementation(project(":vkryl:android"))
   implementation(project(":vkryl:td"))
   // AndroidX: https://developer.android.com/jetpack/androidx/releases/
-  implementation("androidx.activity:activity:1.7.0")
+  implementation("androidx.activity:activity:1.7.2")
   implementation("androidx.palette:palette:1.0.0")
   implementation("androidx.recyclerview:recyclerview:1.3.0")
   implementation("androidx.viewpager:viewpager:1.0.0")
@@ -193,9 +202,9 @@ dependencies {
   implementation("androidx.interpolator:interpolator:1.0.0")
   implementation("androidx.gridlayout:gridlayout:1.0.0")
   // CameraX: https://developer.android.com/jetpack/androidx/releases/camera
-  implementation("androidx.camera:camera-camera2:1.2.2")
-  implementation("androidx.camera:camera-lifecycle:1.2.2")
-  implementation("androidx.camera:camera-view:1.2.2")
+  implementation("androidx.camera:camera-camera2:1.2.3")
+  implementation("androidx.camera:camera-lifecycle:1.2.3")
+  implementation("androidx.camera:camera-view:1.2.3")
   // Google Play Services: https://developers.google.com/android/guides/releases
   implementation("com.google.android.gms:play-services-base:17.6.0")
   implementation("com.google.android.gms:play-services-basement:17.6.0")
@@ -210,9 +219,11 @@ dependencies {
   }
   implementation("com.google.firebase:firebase-appcheck-safetynet:16.1.2")
   // Play In-App Updates: https://developer.android.com/reference/com/google/android/play/core/release-notes-in_app_updates
-  implementation("com.google.android.play:app-update:2.0.1")
+  implementation("com.google.android.play:app-update:2.1.0")
   // ExoPlayer: https://github.com/google/ExoPlayer/blob/release-v2/RELEASENOTES.md
-  implementation("com.google.android.exoplayer:exoplayer-core:2.18.5")
+  implementation("com.google.android.exoplayer:exoplayer-core:2.18.7")
+  // 17.x version requires minSdk 19 or higher
+  implementation("com.google.mlkit:language-id:16.1.1")
   // The Checker Framework: https://checkerframework.org/CHANGELOG.md
   compileOnly("org.checkerframework:checker-qual:3.32.0")
   // OkHttp: https://github.com/square/okhttp/blob/master/CHANGELOG.md

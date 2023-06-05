@@ -18,7 +18,7 @@ import android.util.SparseIntArray;
 
 import androidx.annotation.NonNull;
 
-import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.theme.ColorId;
 
 public class FiltersState {
   public static final int BLUR_TYPE_NONE = 0;
@@ -52,24 +52,24 @@ public class FiltersState {
 
   public static final int[] SHADOWS_TINT_COLOR_IDS = {
     0,
-    R.id.theme_color_photoShadowTint1,
-    R.id.theme_color_photoShadowTint2,
-    R.id.theme_color_photoShadowTint3,
-    R.id.theme_color_photoShadowTint4,
-    R.id.theme_color_photoShadowTint5,
-    R.id.theme_color_photoShadowTint6,
-    R.id.theme_color_photoShadowTint7
+    ColorId.photoShadowTint1,
+    ColorId.photoShadowTint2,
+    ColorId.photoShadowTint3,
+    ColorId.photoShadowTint4,
+    ColorId.photoShadowTint5,
+    ColorId.photoShadowTint6,
+    ColorId.photoShadowTint7
   };
 
   public static final int[] HIGHLIGHTS_TINT_COLOR_IDS = {
     0,
-    R.id.theme_color_photoHighlightTint1,
-    R.id.theme_color_photoHighlightTint2,
-    R.id.theme_color_photoHighlightTint3,
-    R.id.theme_color_photoHighlightTint4,
-    R.id.theme_color_photoHighlightTint5,
-    R.id.theme_color_photoHighlightTint6,
-    R.id.theme_color_photoHighlightTint7,
+    ColorId.photoHighlightTint1,
+    ColorId.photoHighlightTint2,
+    ColorId.photoHighlightTint3,
+    ColorId.photoHighlightTint4,
+    ColorId.photoHighlightTint5,
+    ColorId.photoHighlightTint6,
+    ColorId.photoHighlightTint7,
   };
 
   // Implementation

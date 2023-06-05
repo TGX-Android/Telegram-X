@@ -65,7 +65,7 @@ import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
@@ -148,7 +148,9 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_VALUED_SETTING_COMPACT:
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_COLOR:
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO:
-      case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER: {
+      case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO_2:
+      case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER:
+      case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_CHECKBOX: {
         return Screen.dp(64f);
       }
       case ListItem.TYPE_SHADOW_TOP: { // 2 OK
@@ -485,7 +487,9 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_VALUED_SETTING_COMPACT:
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_COLOR:
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO:
+      case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO_2:
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER:
+      case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_CHECKBOX:
       case ListItem.TYPE_VALUED_SETTING_WITH_RADIO:
       case ListItem.TYPE_INFO_MULTILINE:
       case ListItem.TYPE_INFO_SETTING:
@@ -555,22 +559,22 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         View view = new View(context);
         switch (viewType) {
           case ListItem.TYPE_EMPTY_OFFSET_SMALL: {
-            ViewSupport.setThemedBackground(view, R.id.theme_color_background, themeProvider);
+            ViewSupport.setThemedBackground(view, ColorId.background, themeProvider);
             view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(4f)));
             break;
           }
           case ListItem.TYPE_DRAWER_OFFSET: {
-            ViewSupport.setThemedBackground(view, R.id.theme_color_filling, themeProvider);
+            ViewSupport.setThemedBackground(view, ColorId.filling, themeProvider);
             view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Size.getHeaderDrawerSize()));
             break;
           }
           case ListItem.TYPE_EMPTY_OFFSET_NO_HEAD: {
-            ViewSupport.setThemedBackground(view, R.id.theme_color_filling, themeProvider);
+            ViewSupport.setThemedBackground(view, ColorId.filling, themeProvider);
             view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(12f)));
             break;
           }
           case ListItem.TYPE_EMPTY_OFFSET: {
-            ViewSupport.setThemedBackground(view, R.id.theme_color_filling, themeProvider);
+            ViewSupport.setThemedBackground(view, ColorId.filling, themeProvider);
             view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(12f) + Size.getMaximumHeaderSizeDifference()));
             break;
           }
@@ -628,7 +632,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         }
 
         wrapView.setRealTimeChangeListener(adapter.getSliderChangeListener());
-        ViewSupport.setThemedBackground(wrapView, R.id.theme_color_filling, themeProvider);
+        ViewSupport.setThemedBackground(wrapView, ColorId.filling, themeProvider);
         wrapView.addThemeListeners(themeProvider);
         wrapView.setCallback(adapter);
         return new SettingHolder(wrapView);
@@ -750,7 +754,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
                 timerView.setLayoutParams(params);
                 wrap.addView(timerView);
                 if (themeProvider != null) {
-                  themeProvider.addThemeTextColorListener(timerView, R.id.theme_color_progress);
+                  themeProvider.addThemeTextColorListener(timerView, ColorId.progress);
                 }
                 break;
               }
@@ -843,7 +847,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         textView.setGravity(Gravity.CENTER);
         textView.setTextColor(Theme.textDecent2Color());
         if (themeProvider != null) {
-          themeProvider.addThemeTextColorListener(textView, R.id.theme_color_background_textLight);
+          themeProvider.addThemeTextColorListener(textView, ColorId.background_textLight);
         }
         textView.setOnClickListener(onClickListener);
         textView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -892,14 +896,18 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_VALUED_SETTING_COMPACT:
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_COLOR:
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO:
+      case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO_2:
       case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER:
+      case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_CHECKBOX:
       case ListItem.TYPE_CHECKBOX_OPTION_DOUBLE_LINE: {
         SettingView settingView = new SettingView(context, tdlib);
         switch (viewType) {
           case ListItem.TYPE_VALUED_SETTING_COMPACT:
           case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_COLOR:
           case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO:
+          case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO_2:
           case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER:
+          case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_CHECKBOX:
             settingView.setType(SettingView.TYPE_INFO_COMPACT);
             break;
           default:
@@ -926,13 +934,16 @@ public class SettingHolder extends RecyclerView.ViewHolder {
             }
             break;
           }
-          case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO: {
+          case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO:
+          case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO_2: {
             RadioView radioView = RadioView.simpleRadioView(context,  !Lang.rtl());
             settingView.addView(radioView);
             if (themeProvider != null) {
               themeProvider.addThemeInvalidateListener(radioView);
             }
-            settingView.forcePadding(Screen.dp(58f), 0);
+            if (viewType == ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO) {
+              settingView.forcePadding(Screen.dp(58f), 0);
+            }
             break;
           }
           case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_COLOR: {
@@ -948,6 +959,14 @@ public class SettingHolder extends RecyclerView.ViewHolder {
           }
           case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER: {
             settingView.addToggler();
+            break;
+          }
+          case ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_CHECKBOX: {
+            CheckBoxView checkBox = CheckBoxView.simpleCheckBox(context, Lang.rtl());
+            settingView.addView(checkBox);
+            if (themeProvider != null) {
+              themeProvider.addThemeInvalidateListener(checkBox);
+            }
             break;
           }
         }
@@ -973,7 +992,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
           case ListItem.TYPE_EDITTEXT_WITH_PHOTO_SMALLER: {
             frameLayout = new ScoutFrameLayout(context);
             frameLayout.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, measureHeightForType(viewType)));
-            ViewSupport.setThemedBackground(frameLayout, R.id.theme_color_filling, themeProvider);
+            ViewSupport.setThemedBackground(frameLayout, ColorId.filling, themeProvider);
             break;
           }
           default: {
@@ -1005,7 +1024,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
             }
             frameLayout.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, height));
             if (viewType == ListItem.TYPE_EDITTEXT_CHANNEL_DESCRIPTION) {
-              ViewSupport.setThemedBackground(frameLayout, R.id.theme_color_filling, themeProvider);
+              ViewSupport.setThemedBackground(frameLayout, ColorId.filling, themeProvider);
             }
             break;
           }
@@ -1138,8 +1157,8 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_INFO: {
         CustomTextView textView = new CustomTextView(context, tdlib);
         textView.setPadding(Screen.dp(16f), Screen.dp(12f), Screen.dp(16f), Screen.dp(12f));
-        textView.setTextColorId(R.id.theme_color_textLight);
-        ViewSupport.setThemedBackground(textView, R.id.theme_color_filling, themeProvider);
+        textView.setTextColorId(ColorId.textLight);
+        ViewSupport.setThemedBackground(textView, ColorId.filling, themeProvider);
         textView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         return new SettingHolder(textView);
       }
@@ -1213,7 +1232,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
             }
           }
         });
-        ViewSupport.setThemedBackground(recyclerView, R.id.theme_color_filling, themeProvider);
+        ViewSupport.setThemedBackground(recyclerView, ColorId.filling, themeProvider);
         recyclerView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? View.OVER_SCROLL_IF_CONTENT_SCROLLS : View.OVER_SCROLL_NEVER);
         recyclerView.setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 180l));
         recyclerView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false));
@@ -1258,7 +1277,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         textView.setEllipsize(TextUtils.TruncateAt.END);
         textView.setTextColor(Theme.textAccent2Color());
         if (themeProvider != null) {
-          themeProvider.addThemeTextColorListener(textView, R.id.theme_color_background_text);
+          themeProvider.addThemeTextColorListener(textView, ColorId.background_text);
         }
         textView.setTypeface(Fonts.getRobotoMedium());
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
@@ -1275,9 +1294,9 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         ImageView imageView = new ImageView(context);
         imageView.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(52f), ViewGroup.LayoutParams.MATCH_PARENT, isRtl ? Gravity.LEFT : Gravity.RIGHT));
         imageView.setScaleType(ImageView.ScaleType.CENTER);
-        imageView.setColorFilter(Theme.getColor(R.id.theme_color_background_textLight));
+        imageView.setColorFilter(Theme.getColor(ColorId.background_textLight));
         if (themeProvider != null) {
-          themeProvider.addThemeFilterListener(imageView, R.id.theme_color_background_textLight);
+          themeProvider.addThemeFilterListener(imageView, ColorId.background_textLight);
         }
         imageView.setOnClickListener(onClickListener);
         wrapView.addView(imageView);
@@ -1289,7 +1308,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       case ListItem.TYPE_DESCRIPTION:
       case ListItem.TYPE_DESCRIPTION_CENTERED:
       case ListItem.TYPE_DESCRIPTION_SMALL: {
-        return new SettingHolder(createDescription(context, viewType, R.id.theme_color_background_textLight, onClickListener, themeProvider));
+        return new SettingHolder(createDescription(context, viewType, ColorId.background_textLight, onClickListener, themeProvider));
       }
       case ListItem.TYPE_BUILD_NO: {
         TextView textView = new NoScrollTextView(context);
@@ -1298,7 +1317,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         textView.setTypeface(Fonts.getRobotoRegular());
         textView.setTextColor(Theme.textDecent2Color());
         if (themeProvider != null) {
-          themeProvider.addThemeTextColorListener(textView, R.id.theme_color_background_textLight);
+          themeProvider.addThemeTextColorListener(textView, ColorId.background_textLight);
         }
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
         textView.setOnClickListener(onClickListener);
@@ -1449,15 +1468,15 @@ public class SettingHolder extends RecyclerView.ViewHolder {
           ImageView iconView = new ImageView(context);
           iconView.setId(R.id.session_icon);
           iconView.setLayoutParams(params);
-          iconView.setColorFilter(Theme.getColor(R.id.theme_color_icon));
+          iconView.setColorFilter(Theme.getColor(ColorId.icon));
           iconView.setScaleType(ImageView.ScaleType.CENTER);
           layout.addView(iconView);
 
           // State Icons
           Drawable callIcon = Drawables.get(context.getResources(), R.drawable.baseline_call_16);
-          callIcon.setColorFilter(Paints.getColorFilter(Theme.getColor(R.id.theme_color_textNeutral)));
+          callIcon.setColorFilter(Paints.getColorFilter(Theme.getColor(ColorId.textNeutral)));
           Drawable secretIcon = Drawables.get(context.getResources(), R.drawable.baseline_lock_16);
-          secretIcon.setColorFilter(Paints.getColorFilter(Theme.getColor(R.id.theme_color_textSecure)));
+          secretIcon.setColorFilter(Paints.getColorFilter(Theme.getColor(ColorId.textSecure)));
 
           params = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
           params.addRule(RelativeLayout.BELOW, R.id.session_location);
@@ -1471,7 +1490,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
           secretState.setCompoundDrawablesWithIntrinsicBounds(secretIcon, null, null, null);
           secretState.setCompoundDrawablePadding(Screen.dp(8));
           secretState.setText(R.string.SessionSecretChats);
-          secretState.setTextColor(Theme.getColor(R.id.theme_color_textSecure));
+          secretState.setTextColor(Theme.getColor(ColorId.textSecure));
           secretState.setAllCaps(true);
           secretState.setGravity(Gravity.CENTER_VERTICAL);
           secretState.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12f);
@@ -1488,17 +1507,17 @@ public class SettingHolder extends RecyclerView.ViewHolder {
           callsState.setCompoundDrawablesWithIntrinsicBounds(callIcon, null, null, null);
           callsState.setCompoundDrawablePadding(Screen.dp(8));
           callsState.setText("Calls");
-          callsState.setTextColor(Theme.getColor(R.id.theme_color_textNeutral));
+          callsState.setTextColor(Theme.getColor(ColorId.textNeutral));
           callsState.setAllCaps(true);
           callsState.setGravity(Gravity.CENTER_VERTICAL);
           callsState.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12f);
           layout.addView(callsState);
 
           if (themeProvider != null) {
-            themeProvider.addThemeFilterListener(callIcon, R.id.theme_color_textNeutral);
-            themeProvider.addThemeFilterListener(secretIcon, R.id.theme_color_textSecure);
-            themeProvider.addThemeTextColorListener(callsState, R.id.theme_color_textNeutral);
-            themeProvider.addThemeTextColorListener(secretState, R.id.theme_color_textSecure);
+            themeProvider.addThemeFilterListener(callIcon, ColorId.textNeutral);
+            themeProvider.addThemeFilterListener(secretIcon, ColorId.textSecure);
+            themeProvider.addThemeTextColorListener(callsState, ColorId.textNeutral);
+            themeProvider.addThemeTextColorListener(secretState, ColorId.textSecure);
           }
         }
 
@@ -1552,7 +1571,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         imageView.setImageResource(R.drawable.baseline_devices_other_96);
         imageView.setColorFilter(Theme.backgroundIconColor());
         if (themeProvider != null) {
-          themeProvider.addThemeFilterListener(imageView, R.id.theme_color_background_icon);
+          themeProvider.addThemeFilterListener(imageView, ColorId.background_icon);
         }
         imageView.setPadding(0, Screen.dp(12f), 0, Screen.dp(16f));
         imageView.setLayoutParams(params);
@@ -1570,7 +1589,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
         titleView.setTextColor(Theme.textDecent2Color());
         if (themeProvider != null) {
-          themeProvider.addThemeTextColorListener(titleView, R.id.theme_color_background_textLight);
+          themeProvider.addThemeTextColorListener(titleView, ColorId.background_textLight);
         }
         titleView.setEllipsize(TextUtils.TruncateAt.END);
         titleView.setLayoutParams(params);
@@ -1587,7 +1606,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         descView.setLineSpacing(Screen.dp(2f), 1);
         descView.setTextColor(Theme.textDecent2Color());
         if (themeProvider != null) {
-          themeProvider.addThemeTextColorListener(descView, R.id.theme_color_background_textLight);
+          themeProvider.addThemeTextColorListener(descView, ColorId.background_textLight);
         }
         descView.setTypeface(Fonts.getRobotoRegular());
         descView.setGravity(Gravity.CENTER_HORIZONTAL);
@@ -1640,7 +1659,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
             imageView.setScaleType(ImageView.ScaleType.CENTER);
             imageView.setColorFilter(Theme.backgroundIconColor());
             if (themeProvider != null) {
-              themeProvider.addThemeFilterListener(imageView, R.id.theme_color_background_icon);
+              themeProvider.addThemeFilterListener(imageView, ColorId.background_icon);
             }
             imageView.setLayoutParams(params);
             contentView.addView(imageView);
@@ -1654,7 +1673,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
           textView.setTypeface(Fonts.getRobotoRegular());
           textView.setTextColor(Theme.textDecent2Color());
           if (themeProvider != null) {
-            themeProvider.addThemeTextColorListener(textView, R.id.theme_color_background_textLight);
+            themeProvider.addThemeTextColorListener(textView, ColorId.background_textLight);
           }
           textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
           textView.setPadding(Screen.dp(22f), Screen.dp(12f), Screen.dp(22f), Screen.dp(24f));
@@ -1676,19 +1695,13 @@ public class SettingHolder extends RecyclerView.ViewHolder {
             int totalHeight = parent != null ? ((RecyclerView) parent).getMeasuredHeight() : 0;
             int availHeight = totalHeight - paddingBottom;
             int headerHeight;
-            switch (getId()) {
-              case R.id.changePhoneText: {
-                headerHeight = Screen.dp(310f);
-                break;
-              }
-              case R.id.inviteFriendsText: {
-                headerHeight = Screen.dp(120f);
-                break;
-              }
-              default: {
-                headerHeight = Screen.dp(240f);
-                break;
-              }
+            int myViewId = getId();
+            if (myViewId == R.id.changePhoneText) {
+              headerHeight = Screen.dp(310f);
+            } else if (myViewId == R.id.inviteFriendsText) {
+              headerHeight = Screen.dp(120f);
+            } else {
+              headerHeight = Screen.dp(240f);
             }
 
             if (availHeight <= headerHeight) {
@@ -1712,10 +1725,10 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         textView.setTypeface(Fonts.getRobotoMedium());
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16f);
         textView.setGravity(Gravity.CENTER);
-        textView.setTextColor(Theme.getColor(R.id.theme_color_textNeutral));
+        textView.setTextColor(Theme.getColor(ColorId.textNeutral));
         textView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         if (themeProvider != null) {
-          themeProvider.addThemeTextColorListener(textView, R.id.theme_color_textNeutral);
+          themeProvider.addThemeTextColorListener(textView, ColorId.textNeutral);
         }
 
         FrameLayoutFix frameLayout = new FrameLayoutFix(context);
@@ -1792,7 +1805,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         imageView.setImageResource(R.drawable.baseline_mail_96);
         imageView.setColorFilter(Theme.backgroundIconColor());
         if (themeProvider != null) {
-          themeProvider.addThemeFilterListener(imageView, R.id.theme_color_background_icon);
+          themeProvider.addThemeFilterListener(imageView, ColorId.background_icon);
         }
         imageView.setPadding(0, 0, 0, Screen.dp(36f));
         imageView.setLayoutParams(params);
@@ -1806,7 +1819,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         textView.setText(Lang.getString(R.string.CheckYourVerificationEmail));
         textView.setTextColor(Theme.textDecent2Color());
         if (themeProvider != null) {
-          themeProvider.addThemeTextColorListener(textView, R.id.theme_color_background_textLight);
+          themeProvider.addThemeTextColorListener(textView, ColorId.background_textLight);
         }
         textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
         textView.setPadding(0, 0, 0, 0);
@@ -1823,7 +1836,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         emailView.setId(R.id.text_email_email);
         emailView.setTextColor(Theme.textDecent2Color());
         if (themeProvider != null) {
-          themeProvider.addThemeTextColorListener(emailView, R.id.theme_color_background_textLight);
+          themeProvider.addThemeTextColorListener(emailView, ColorId.background_textLight);
         }
         emailView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
         emailView.setTypeface(Fonts.getRobotoRegular());
@@ -1841,9 +1854,9 @@ public class SettingHolder extends RecyclerView.ViewHolder {
 
         abortView.setText(Lang.getString(R.string.AbortPassword));
         abortView.setPadding(0, 0, 0, Screen.dp(42f));
-        abortView.setTextColor(Theme.getColor(R.id.theme_color_textNeutral));
+        abortView.setTextColor(Theme.getColor(ColorId.textNeutral));
         if (themeProvider != null) {
-          themeProvider.addThemeTextColorListener(abortView, R.id.theme_color_textNeutral);
+          themeProvider.addThemeTextColorListener(abortView, ColorId.textNeutral);
         }
         abortView.setTypeface(Fonts.getRobotoRegular());
         abortView.setGravity(Gravity.CENTER_HORIZONTAL);
@@ -2013,7 +2026,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         CustomRecyclerView recyclerView = new CustomRecyclerView(context);
         recyclerView.setBackgroundColor(Theme.fillingColor());
         if (themeProvider != null) {
-          themeProvider.addThemeBackgroundColorListener(recyclerView, R.id.theme_color_filling);
+          themeProvider.addThemeBackgroundColorListener(recyclerView, ColorId.filling);
         }
         recyclerView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, Lang.rtl()));
         recyclerView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(95f)));
@@ -2058,7 +2071,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       }
       case ListItem.TYPE_LIVE_LOCATION_PROMO: {
         LiveLocationView v = new LiveLocationView(context);
-        ViewSupport.setThemedBackground(v, R.id.theme_color_file, themeProvider);
+        ViewSupport.setThemedBackground(v, ColorId.file, themeProvider);
         return new SettingHolder(v);
       }
       case ListItem.TYPE_COLOR_PICKER: {
@@ -2075,7 +2088,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         contentView.setFocusable(true);
         contentView.setFocusableInTouchMode(true);
         contentView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, viewHeight));
-        // ViewSupport.setThemedBackground(contentView, R.id.theme_color_filling, themeProvider);
+        // ViewSupport.setThemedBackground(contentView, ColorId.filling, themeProvider);
         ColorToneView pickerView = new ColorToneView(context);
         pickerView.setListener(adapter);
         pickerView.setPadding(Screen.dp(12f), 0, Screen.dp(12f), 0);
@@ -2184,56 +2197,44 @@ public class SettingHolder extends RecyclerView.ViewHolder {
             editText.getEditText().getLayoutParams().height = Screen.dp(40f);
             editText.setId(id);
             int imeOptions = EditorInfo.IME_FLAG_NO_EXTRACT_UI;
-            switch (id) {
-              case R.id.color_default: {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                  editText.getEditText().setShowSoftInputOnFocus(false);
+            if (id == R.id.color_default) {
+              if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                editText.getEditText().setShowSoftInputOnFocus(false);
+              }
+              editText.setTextColorId(ColorId.textPlaceholder);
+            } else if (id == R.id.color_hex) {
+              editText.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+              editText.getEditText().setFilters(new InputFilter[] {
+                new InputFilter.AllCaps(),
+                new InputFilter.LengthFilter(8),
+                new AcceptFilter() {
+                  @Override
+                  protected boolean accept (char c) {
+                    return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+                  }
                 }
-                editText.setTextColorId(R.id.theme_color_textPlaceholder);
-                break;
-              }
-              case R.id.color_hex: {
-                editText.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
-                editText.getEditText().setFilters(new InputFilter[]{
-                  new InputFilter.AllCaps(),
-                  new InputFilter.LengthFilter(8),
-                  new AcceptFilter() {
-                    @Override
-                    protected boolean accept (char c) {
-                      return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
-                    }
+              });
+            } else if (id == R.id.color_hue || id == R.id.color_lightness || id == R.id.color_saturation || id == R.id.color_alphaPercentage) {
+              editText.getEditText().setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+              editText.getEditText().setFilters(new InputFilter[] {
+                new AcceptFilter() {
+                  @Override
+                  protected boolean accept (char c) {
+                    return (c >= '0' && c <= '9') || c == '.';
                   }
-                });
-                break;
-              }
-              case R.id.color_hue:
-              case R.id.color_lightness:
-              case R.id.color_saturation:
-              case R.id.color_alphaPercentage: {
-                editText.getEditText().setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
-                editText.getEditText().setFilters(new InputFilter[]{
-                  new AcceptFilter() {
-                    @Override
-                    protected boolean accept (char c) {
-                      return (c >= '0' && c <= '9') || c == '.';
-                    }
+                }
+              });
+            } else {
+              editText.getEditText().setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+              editText.getEditText().setFilters(new InputFilter[] {
+                new AcceptFilter() {
+                  @Override
+                  protected boolean accept (char c) {
+                    return (c >= '0' && c <= '9');
                   }
-                });
-                break;
-              }
-              default: {
-                editText.getEditText().setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
-                editText.getEditText().setFilters(new InputFilter[]{
-                  new AcceptFilter() {
-                    @Override
-                    protected boolean accept (char c) {
-                      return (c >= '0' && c <= '9');
-                    }
-                  },
-                  new InputFilter.LengthFilter(3)
-                });
-                break;
-              }
+                },
+                new InputFilter.LengthFilter(3)
+              });
             }
             if (inputIndex == ids.length - 1 || id == R.id.color_hex || id == R.id.color_default) {
               imeOptions |= EditorInfo.IME_ACTION_DONE;
@@ -2302,7 +2303,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
           for (int id : ids) {
             NonMaterialButton btn = new NonMaterialButton(context);
             if (first) {
-              btn.setBackgroundColorId(R.id.theme_color_filling);
+              btn.setBackgroundColorId(ColorId.filling);
             }
             btn.setPressureListener(adapter);
             btn.setId(id);
@@ -2315,30 +2316,22 @@ public class SettingHolder extends RecyclerView.ViewHolder {
             } else {
               lParams.rightMargin = Screen.dp(6f);
             }
-            switch (id) {
-              case R.id.btn_colorUndo:
-                btn.setIcon(R.drawable.baseline_undo_18);
-                btn.setPadding(Screen.dp(6f), 0, Screen.dp(6f), 0);
-                break;
-              case R.id.btn_colorRedo:
-                btn.setIcon(R.drawable.baseline_redo_18);
-                btn.setPadding(Screen.dp(6f), 0, Screen.dp(6f), 0);
-                break;
-              case R.id.btn_colorClear:
-                btn.setIcon(R.drawable.baseline_delete_18);
-                break;
-              case R.id.btn_colorSave:
-                btn.setIcon(R.drawable.baseline_playlist_add_18);
-                break;
-              case R.id.btn_colorCalculate:
-                btn.setIcon(R.drawable.baseline_opacity_18);
-                break;
-              case R.id.btn_colorCopy:
-                btn.setIcon(R.drawable.baseline_content_copy_18);
-                break;
-              case R.id.btn_colorPaste:
-                btn.setIcon(R.drawable.baseline_content_paste_18);
-                break;
+            if (id == R.id.btn_colorUndo) {
+              btn.setIcon(R.drawable.baseline_undo_18);
+              btn.setPadding(Screen.dp(6f), 0, Screen.dp(6f), 0);
+            } else if (id == R.id.btn_colorRedo) {
+              btn.setIcon(R.drawable.baseline_redo_18);
+              btn.setPadding(Screen.dp(6f), 0, Screen.dp(6f), 0);
+            } else if (id == R.id.btn_colorClear) {
+              btn.setIcon(R.drawable.baseline_delete_18);
+            } else if (id == R.id.btn_colorSave) {
+              btn.setIcon(R.drawable.baseline_playlist_add_18);
+            } else if (id == R.id.btn_colorCalculate) {
+              btn.setIcon(R.drawable.baseline_opacity_18);
+            } else if (id == R.id.btn_colorCopy) {
+              btn.setIcon(R.drawable.baseline_content_copy_18);
+            } else if (id == R.id.btn_colorPaste) {
+              btn.setIcon(R.drawable.baseline_content_paste_18);
             }
 
             btn.setLayoutParams(lParams);
@@ -2356,7 +2349,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
         ChartHeaderView headerView = new ChartHeaderView(context);
         headerView.setPadding(0, Screen.dp(8f), 0, Screen.dp(4f));
         headerView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        //ViewSupport.setThemedBackground(headerView, R.id.theme_color_filling, themeProvider);
+        //ViewSupport.setThemedBackground(headerView, ColorId.filling, themeProvider);
         if (themeProvider != null) {
           themeProvider.addThemeInvalidateListener(headerView);
         }
@@ -2394,7 +2387,7 @@ public class SettingHolder extends RecyclerView.ViewHolder {
 
   public static final boolean COLOR_PICKER_PALETTE_BOTTOM = true;
 
-  public static TextView createDescription (Context context, int viewType, @ThemeColorId int textColorId, View.OnClickListener onClickListener, @Nullable ViewController<?> themeProvider) {
+  public static TextView createDescription (Context context, int viewType, @ColorId int textColorId, View.OnClickListener onClickListener, @Nullable ViewController<?> themeProvider) {
     TextView textView = new NoScrollTextView(context);
     if (viewType == ListItem.TYPE_DESCRIPTION_CENTERED) {
       textView.setGravity(Gravity.CENTER);
@@ -2407,9 +2400,9 @@ public class SettingHolder extends RecyclerView.ViewHolder {
       textView.setTextColor(Theme.textDecentColor());
       textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12f);
       textView.setPadding(Screen.dp(16f), 0, Screen.dp(16f), Screen.dp(12f));
-      ViewUtils.setBackground(textView, new FillingDrawable(R.id.theme_color_filling));
+      ViewUtils.setBackground(textView, new FillingDrawable(ColorId.filling));
       if (themeProvider != null) {
-        themeProvider.addThemeTextColorListener(textView, R.id.theme_color_textLight);
+        themeProvider.addThemeTextColorListener(textView, ColorId.textLight);
         themeProvider.addThemeInvalidateListener(textView);
       }
     } else {
@@ -2423,8 +2416,8 @@ public class SettingHolder extends RecyclerView.ViewHolder {
     textView.setLinkTextColor(Theme.textLinkColor());
     textView.setHighlightColor(Theme.textLinkHighlightColor());
     if (themeProvider != null) {
-      themeProvider.addThemeLinkTextColorListener(textView, R.id.theme_color_textLink);
-      themeProvider.addThemeHighlightColorListener(textView, R.id.theme_color_textLinkPressHighlight);
+      themeProvider.addThemeLinkTextColorListener(textView, ColorId.textLink);
+      themeProvider.addThemeHighlightColorListener(textView, ColorId.textLinkPressHighlight);
     }
     textView.setOnClickListener(onClickListener);
     textView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));

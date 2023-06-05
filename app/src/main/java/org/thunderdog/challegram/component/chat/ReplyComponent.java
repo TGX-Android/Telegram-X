@@ -25,8 +25,8 @@ import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
@@ -43,8 +43,8 @@ import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibSender;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -74,7 +74,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
 
   private TdApi.MessageSender sender;
   private String senderName;
-  private @ThemeColorId int nameColorId;
+  private @ColorId int nameColorId;
 
   private int maxWidth;
   private int flags;
@@ -105,6 +105,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     }
     this.tdlib = message.tdlib();
     this.parent = message;
+    this.translatedText = message.getTranslatedText();
     /*TODO optimize displaying for channels, where you can reply to yourself only?
        if (channelTitle != null) {
       flags |= FLAG_CHANNEL;
@@ -413,7 +414,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
       }
       if (hasSpoiler) {
         float radius = Theme.getBubbleMergeRadius();
-        DrawAlgorithms.drawRoundRect(c, radius, receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom(), Paints.fillingPaint(Theme.getColor(R.id.theme_color_spoilerMediaOverlay)));
+        DrawAlgorithms.drawRoundRect(c, radius, receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom(), Paints.fillingPaint(Theme.getColor(ColorId.spoilerMediaOverlay)));
         DrawAlgorithms.drawParticles(c, radius, receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom(), 1f);
       }
       ViewSupport.restoreClipPath(c, restoreToCount);
@@ -435,7 +436,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
       } else {
         rectF.set(startX, startY, startX + lineWidth, startY + mHeight);
       }
-      c.drawRoundRect(rectF, lineWidth / 2f, lineWidth / 2f, Paints.fillingPaint(isWhite ? parent.getBubbleMediaReplyTextColor() : isOutBubble ? Theme.getColor(R.id.theme_color_bubbleOut_chatVerticalLine) : nameColorId != 0 ? Theme.getColor(nameColorId) : Theme.getColor(R.id.theme_color_messageVerticalLine)));
+      c.drawRoundRect(rectF, lineWidth / 2f, lineWidth / 2f, Paints.fillingPaint(isWhite ? parent.getBubbleMediaReplyTextColor() : isOutBubble ? Theme.getColor(ColorId.bubbleOut_chatVerticalLine) : nameColorId != 0 ? Theme.getColor(nameColorId) : Theme.getColor(ColorId.messageVerticalLine)));
 
       return;
     }
@@ -451,7 +452,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     }
 
     Paints.getRectF().set(startX, startY, startX + lineWidth, startY + height);
-    c.drawRoundRect(Paints.getRectF(), lineWidth / 2f, lineWidth / 2f, Paints.fillingPaint(Theme.getColor(R.id.theme_color_messageVerticalLine)));
+    c.drawRoundRect(Paints.getRectF(), lineWidth / 2f, lineWidth / 2f, Paints.fillingPaint(Theme.getColor(ColorId.messageVerticalLine)));
   }
 
   // Data workers
@@ -556,7 +557,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
   private void setContent (final String title, final TD.ContentPreview content, boolean hasSpoiler, final Path contour, final ImageFile miniThumbnail, final ImageFile preview, final boolean previewCircle, final boolean forceRequest) {
     Background.instance().post(() -> {
       ReplyComponent.this.currentMessage = null;
-      ReplyComponent.this.content = content;
+      ReplyComponent.this.content = new TD.ContentPreview(translatedText, content);
       setTitleImpl(title);
       ReplyComponent.this.contour = contour;
       ReplyComponent.this.miniThumbnail = miniThumbnail;
@@ -583,6 +584,17 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     return false;
   }
 
+  private TdApi.FormattedText translatedText;
+
+  public boolean replaceMessageTranslation (long messageId, TdApi.FormattedText translation) {
+    if (currentMessage != null && currentMessage.id == messageId) {
+      translatedText = translation;
+      parseContent(currentMessage, true);
+      return true;
+    }
+    return false;
+  }
+
   public boolean deleteMessageContent (long messageId) {
     if (currentMessage != null && currentMessage.id == messageId) {
       setContent(Lang.getString(R.string.Error), new TD.ContentPreview(null, R.string.DeletedMessage), false, null, null, null, false, true);
@@ -598,7 +610,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     if ((flags & FLAG_USE_COLORIZE) != 0 && !tdlib.isSelfSender(msg)) {
       nameColorId = TD.getNameColorId(new TdlibSender(tdlib, msg.chatId, msg.senderId).getAvatarColorId());
     } else {
-      nameColorId = ThemeColorId.NONE;
+      nameColorId = ColorId.NONE;
     }
     boolean isPrivate = msg.selfDestructTime != 0;
     Path contour = null;
@@ -773,7 +785,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
       StringUtils.isEmpty(senderName) ? tdlib.senderName(sender, isMessageComponent()) :
       Lang.getString(isChannel() ? R.string.format_channelAndSignature : R.string.format_chatAndSignature, tdlib.senderName(sender, isMessageComponent()), senderName);
     if (Thread.currentThread() == Background.instance().thread() || forceLocal) {
-      this.content = contentPreview;
+      this.content = new TD.ContentPreview(translatedText, contentPreview);
       setTitleImpl(title);
       this.miniThumbnail = miniPreview;
       this.contour = contour;

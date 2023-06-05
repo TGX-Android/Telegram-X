@@ -35,7 +35,7 @@ import com.otaliastudios.transcoder.strategy.PassThroughTrackStrategy;
 import com.otaliastudios.transcoder.strategy.RemoveTrackStrategy;
 import com.otaliastudios.transcoder.strategy.TrackStrategy;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;

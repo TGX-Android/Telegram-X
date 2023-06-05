@@ -14,12 +14,6 @@ set(TGX_ROOT_DIR "${CMAKE_HOME_DIRECTORY}/../..")
 set(TDLIB_DIR "${TGX_ROOT_DIR}/tdlib")
 set(UTILS_DIR "${THIRDPARTY_DIR}/jni-utils")
 
-set(SSL_DIR "${THIRDPARTY_DIR}/openssl/android_static/${ANDROID_ABI}")
-set(SSL_LIB_PATH "${SSL_DIR}/lib/libssl.a")
-set(CRYPTO_LIB_PATH "${SSL_DIR}/lib/libcrypto.a")
-
-set(LINK_TDLIB yes)
-set(USE_TDLIB_CRYPTO no)
 set(ENABLE_TG_CALLS yes)
 
 # Using webp only if building for 32-bit platform
@@ -148,8 +142,6 @@ set(EXCLUDE_LIBS
 if (${ENABLE_TG_CALLS})
   list(APPEND EXCLUDE_LIBS
     libtgvoip.a
-    "${SSL_LIB_PATH}"
-    "${CRYPTO_LIB_PATH}"
     libusrsctp.a
     libsrtp.a
     libopenh264.a
@@ -181,19 +173,28 @@ set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${ADD_LINKER_FLAGS}"
 # == Libraries ==
 
 # tdjni
-if (${LINK_TDLIB})
-  add_library(tdjni SHARED IMPORTED)
-  set_target_properties(tdjni PROPERTIES IMPORTED_LOCATION
-    "${TDLIB_DIR}/src/main/libs/${ANDROID_ABI}/libtdjni.so"
+
+add_library(crypto SHARED IMPORTED)
+set_target_properties(crypto PROPERTIES IMPORTED_LOCATION
+  ${TDLIB_DIR}/openssl/${ANDROID_ABI}/lib/libcrypto.so
+)
+add_library(ssl SHARED IMPORTED)
+set_target_properties(ssl PROPERTIES IMPORTED_LOCATION
+  ${TDLIB_DIR}/openssl/${ANDROID_ABI}/lib/libssl.so
+)
+if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.11.0")
+  target_include_directories(crypto INTERFACE
+    ${TDLIB_DIR}/openssl/${ANDROID_ABI}/include
   )
-  if (${USE_TDLIB_CRYPTO})
-    if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.11.0")
-      target_include_directories(tdjni INTERFACE
-        "${TDLIB_DIR}/include"
-      )
-    endif()
-  endif()
+  target_include_directories(ssl INTERFACE
+    ${TDLIB_DIR}/openssl/${ANDROID_ABI}/include
+  )
 endif()
+
+add_library(tdjni SHARED IMPORTED)
+set_target_properties(tdjni PROPERTIES IMPORTED_LOCATION
+  ${TDLIB_DIR}/src/main/libs/${ANDROID_ABI}/libtdjni.so
+)
 
 # flac
 include("${CMAKE_HOME_DIRECTORY}/BuildFlac.cmake")
@@ -227,13 +228,6 @@ include("${CMAKE_HOME_DIRECTORY}/BuildRlottie.cmake")
 include("${CMAKE_HOME_DIRECTORY}/BuildLz4.cmake")
 
 if (${ENABLE_TG_CALLS})
-  # crypto
-  add_library(crypto STATIC IMPORTED)
-  set_target_properties(crypto PROPERTIES IMPORTED_LOCATION "${CRYPTO_LIB_PATH}")
-  # ssl
-  add_library(ssl STATIC IMPORTED)
-  set_target_properties(ssl PROPERTIES IMPORTED_LOCATION "${SSL_LIB_PATH}")
-  target_include_directories(ssl INTERFACE "${SSL_DIR}/include")
   # usrsctp
   include("${CMAKE_HOME_DIRECTORY}/BuildUsrSCTP.cmake")
   # srtp
@@ -268,7 +262,7 @@ endforeach()
 
 # == Target ==
 
-set(NATIVE_LIB "challegram.23")
+set(NATIVE_LIB "tgxjni")
 add_library(${NATIVE_LIB} SHARED
   log.cpp
 
@@ -309,13 +303,6 @@ target_include_directories(${NATIVE_LIB} PRIVATE
   "${THIRDPARTY_DIR}"
   .
 )
-if (${LINK_TDLIB} AND ${USE_TDLIB_CRYPTO})
-  if(${CMAKE_VERSION} VERSION_LESS "3.11.0")
-    target_include_directories(${NATIVE_LIB} PRIVATE
-      "${TDLIB_DIR}/include"
-    )
-  endif()
-endif()
 
 target_compile_definitions(${NATIVE_LIB} PUBLIC
   SOCKLEN_T=socklen_t
@@ -327,6 +314,8 @@ target_compile_definitions(${NATIVE_LIB} PUBLIC
   ANDROID_TILE_BASED_DECODE
   ANDROID_ARMV6_IDCT
   __STDC_CONSTANT_MACROS
+
+  TDLIB_TDAPI_CLASS_PATH="org/drinkless/tdlib/TdApi"
 )
 target_compile_options(${NATIVE_LIB} PUBLIC
   -Wall -Werror -Wno-deprecated-declarations
@@ -338,14 +327,10 @@ target_compile_options(${NATIVE_LIB} PUBLIC
 
 # == Linking dependencies ==
 
-if(${LINK_TDLIB})
-  target_link_libraries(${NATIVE_LIB} tdjni)
-  if (${USE_TDLIB_CRYPTO})
-    target_compile_definitions(${NATIVE_LIB} PRIVATE HAVE_TDLIB_CRYPTO)
-  endif()
-endif()
-
 target_link_libraries(${NATIVE_LIB}
+  crypto
+  ssl
+  tdjni
   jni-utils
   flac
   yuv
@@ -357,7 +342,7 @@ target_link_libraries(${NATIVE_LIB}
   lz4
 )
 if (${ENABLE_TG_CALLS})
-  #tgvoip
+  # tgcalls
   target_link_libraries(${NATIVE_LIB}
     tgcalls
     -Wl,--whole-archive webrtc_android -Wl,--no-whole-archive

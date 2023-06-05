@@ -22,6 +22,7 @@ import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.DoubleHeaderView;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.unsorted.Passcode;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 
@@ -69,7 +70,7 @@ public class SettingsLogOutController extends RecyclerViewController<Void> imple
     adapter = new SettingsAdapter(this) {
       @Override
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
-        view.setIconColorId(item.getId() == R.id.btn_logout ? R.id.theme_color_iconNegative : 0);
+        view.setIconColorId(item.getId() == R.id.btn_logout ? ColorId.iconNegative : 0);
       }
     };
 
@@ -102,7 +103,7 @@ public class SettingsLogOutController extends RecyclerViewController<Void> imple
     items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.SignOutAltHelpHint));
 
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_logout, R.drawable.baseline_delete_forever_24, R.string.LogOut).setTextColorId(R.id.theme_color_textNegative));
+    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_logout, R.drawable.baseline_delete_forever_24, R.string.LogOut).setTextColorId(ColorId.textNegative));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.SignOutAltHint2));
 
@@ -113,33 +114,21 @@ public class SettingsLogOutController extends RecyclerViewController<Void> imple
 
   @Override
   public void onClick (View v) {
-    switch (v.getId()) {
-      case R.id.btn_addAccount: {
-        tdlib.ui().addAccount(context, true, false);
-        break;
+    final int viewId = v.getId();
+    if (viewId == R.id.btn_addAccount) {
+      tdlib.ui().addAccount(context, true, false);
+    } else if (viewId == R.id.btn_passcode) {
+      if (!Passcode.instance().isEnabled()) {
+        navigateTo(new PasscodeSetupController(context, tdlib));
       }
-      case R.id.btn_passcode: {
-        if (!Passcode.instance().isEnabled()) {
-          navigateTo(new PasscodeSetupController(context, tdlib));
-        }
-        break;
-      }
-      case R.id.btn_storageUsage: {
-        navigateTo(new SettingsCacheController(context, tdlib));
-        break;
-      }
-      case R.id.btn_changePhoneNumber: {
-        navigateTo(new SettingsPhoneController(context, tdlib));
-        break;
-      }
-      case R.id.btn_help: {
-        tdlib.ui().openSupport(this);
-        break;
-      }
-      case R.id.btn_logout: {
-        tdlib.ui().logOut(this, false);
-        break;
-      }
+    } else if (viewId == R.id.btn_storageUsage) {
+      navigateTo(new SettingsCacheController(context, tdlib));
+    } else if (viewId == R.id.btn_changePhoneNumber) {
+      navigateTo(new SettingsPhoneController(context, tdlib));
+    } else if (viewId == R.id.btn_help) {
+      tdlib.ui().openSupport(this);
+    } else if (viewId == R.id.btn_logout) {
+      tdlib.ui().logOut(this, false);
     }
   }
 }

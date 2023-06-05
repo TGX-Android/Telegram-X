@@ -25,7 +25,7 @@ import android.widget.LinearLayout;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.HeaderButton;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Screen;
 
@@ -58,7 +58,7 @@ public class ClearButton extends HeaderButton {
 
   private int colorId;
 
-  public void setColorId (@ThemeColorId int color) {
+  public void setColorId (@ColorId int color) {
     this.colorId = color;
   }
 

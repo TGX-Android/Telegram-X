@@ -28,7 +28,7 @@ import androidx.annotation.Nullable;
 import androidx.collection.LongSparseArray;
 import androidx.collection.SparseArrayCompat;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.TDLib;
 import org.thunderdog.challegram.config.Config;
@@ -36,6 +36,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReader;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 
@@ -400,7 +401,7 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
             if (b == null) {
               b = new SpannableStringBuilder(text);
             }
-            ForegroundColorSpan colorSpan = new ForegroundColorSpan(tdlib.getColor(R.id.theme_color_notificationLink));
+            ForegroundColorSpan colorSpan = new ForegroundColorSpan(tdlib.getColor(ColorId.notificationLink));
             b.setSpan(colorSpan, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
           }
         }
