@@ -22,6 +22,8 @@ import android.view.ViewGroup;
 
 import androidx.annotation.Nullable;
 
+import org.thunderdog.challegram.component.emoji.AnimatedEmojiDrawable;
+import org.thunderdog.challegram.component.emoji.AnimatedEmojiEffect;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.loader.ImageFile;
@@ -128,6 +130,8 @@ public class ReactionsOverlayView extends ViewGroup {
     private float displayScale;
     private Runnable removeRunnable;
     private boolean useDefaultSprayAnimation;
+    @Nullable
+    private AnimatedEmojiEffect animatedEmojiEffect;
 
     // animation
     private static final int POSITION_ANIMATOR = 0;
@@ -177,6 +181,15 @@ public class ReactionsOverlayView extends ViewGroup {
       return this;
     }
 
+    public ReactionInfo setEmojiStatusEffect (TGStickerObj sticker) {
+      if (sticker != null) {
+        AnimatedEmojiDrawable d = new AnimatedEmojiDrawable(parentView);
+        d.setSticker(sticker, true);
+        this.animatedEmojiEffect = AnimatedEmojiEffect.createFrom(d, false);
+      }
+      return this;
+    }
+
     public ReactionInfo setAnimatedPosition (Rect startPosition, Rect finishPosition, AnimatedPositionProvider animatedPositionProvider, long duration) {
       this.animatedPositionProvider = animatedPositionProvider;
       this.startPosition = startPosition;
@@ -217,6 +230,9 @@ public class ReactionsOverlayView extends ViewGroup {
       position = rect;
       gifReceiver.setBounds(rect.left, rect.top, rect.right, rect.bottom);
       imageReceiver.setBounds(rect.left, rect.top, rect.right, rect.bottom);
+      if (animatedEmojiEffect != null) {
+        animatedEmojiEffect.setBounds(rect.left, rect.top, rect.right, rect.bottom);
+      }
       return this;
     }
 
@@ -266,6 +282,10 @@ public class ReactionsOverlayView extends ViewGroup {
       }
       gifReceiver.draw(canvas);
       //canvas.drawRect(position, Paints.strokeBigPaint(Color.RED));
+      if (animatedEmojiEffect != null) {
+        canvas.translate(imageReceiver.getLeft(), imageReceiver.getTop());
+        animatedEmojiEffect.draw(canvas);
+      }
       Views.restore(canvas, saveCount);
     }
 
@@ -275,6 +295,9 @@ public class ReactionsOverlayView extends ViewGroup {
       if (positionAnimator != null) {
         positionAnimator.animateTo(1f);
       }
+      if (animatedEmojiEffect != null) {
+        animatedEmojiEffect.setView(parentView);
+      }
     }
 
     public void detach () {
@@ -282,6 +305,9 @@ public class ReactionsOverlayView extends ViewGroup {
       gifReceiver.detach();
       if (positionAnimator != null) {
         positionAnimator.cancel();
+      }
+      if (animatedEmojiEffect != null) {
+        animatedEmojiEffect.removeView();
       }
     }
 
@@ -322,6 +348,9 @@ public class ReactionsOverlayView extends ViewGroup {
     public void performDestroy () {
       imageReceiver.destroy();
       gifReceiver.destroy();
+      if (animatedEmojiEffect != null) {
+
+      }
     }
   }
 

@@ -22,6 +22,8 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.dialogs.SearchManager;
+import org.thunderdog.challegram.component.emoji.AnimatedEmojiDrawable;
+import org.thunderdog.challegram.component.emoji.AnimatedEmojiEffect;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.core.Lang;
@@ -175,6 +177,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
         )
     );
     scheduleClickAnimation(sticker.getCustomEmojiId());
+    scheduledClickEffectSticker = sticker;
 
     return true;
   }
@@ -185,6 +188,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
     context().reactionsOverlayManager().addOverlay(
       new ReactionsOverlayView.ReactionInfo(context().reactionsOverlayManager())
         .setSticker(scheduledClickSticker, true)
+        .setEmojiStatusEffect(scheduledClickEffectSticker)
         .setUseDefaultSprayAnimation(true)
         .setPosition(new Point(destX, destY), Screen.dp(90))
     );
@@ -192,6 +196,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
 
   private long scheduledClickAnimation;
   private TGStickerObj scheduledClickSticker;
+  private TGStickerObj scheduledClickEffectSticker;
 
   private void scheduleClickAnimation (final long emojiId) {
     scheduledClickAnimation = emojiId;

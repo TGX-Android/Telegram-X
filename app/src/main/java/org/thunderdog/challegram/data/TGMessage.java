@@ -8295,6 +8295,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         new ReactionsOverlayView.ReactionInfo(context().reactionsOverlayManager())
           .setSticker(overlaySticker, true)
           .setUseDefaultSprayAnimation(tgReaction.isCustom())
+          .setEmojiStatusEffect(tgReaction.isCustom() ? tgReaction.newCenterAnimationSicker(): null)
           .setPosition(new Point(bubbleX, bubbleY), Screen.dp(90))
           .setAnimatedPositionOffsetProvider(new QuickReactionAnimatedPositionOffsetProvider())
       );

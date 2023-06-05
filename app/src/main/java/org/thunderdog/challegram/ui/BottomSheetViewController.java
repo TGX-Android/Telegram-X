@@ -517,15 +517,6 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
         bottom = parentHeight - itemsHeight;
       }
 
-      if (position == 0 || position == itemCount - 1 || isUnknown) {
-        Log.i("OFFSETS_DEBUG", ""
-          + page.needTopDecorationOffsets(parent) + " "
-          + (page.needTopDecorationOffsets(parent) ? Math.max(top, 0) : 0) + " "
-          + page.needBottomDecorationOffsets(parent) + " "
-          + (page.needBottomDecorationOffsets(parent) ? Math.max(0, bottom) : 0)
-        );
-      }
-
       outRect.set(
         0, page.needTopDecorationOffsets(parent) ? Math.max(top, 0): 0,
         0, page.needBottomDecorationOffsets(parent) ? Math.max(0, bottom) : 0);
