@@ -869,7 +869,7 @@ endforeach()
 
 # == Target ==
 
-set(NATIVE_LIB "challegram.23")
+set(NATIVE_LIB "tgxjni")
 add_library(${NATIVE_LIB} SHARED
   log.cpp
 

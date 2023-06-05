@@ -60,8 +60,6 @@ public class Config {
 
   public static final boolean TEST_NOTIFICATION_PROBLEM_RESOLUTION = false; // BuildConfig.DEBUG;
 
-  public static final boolean SO_SHARED = true;
-
   public static final boolean NEED_TDLIB_CLEANUP = false;
 
   public static final boolean FAKE_BACKGROUND_CONNECTION_STATE = true;

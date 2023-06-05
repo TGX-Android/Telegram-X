@@ -41,12 +41,15 @@ android {
 
   defaultConfig {
     val versions = extra["versions"] as Properties
-    val jniVersion = versions.getIntOrThrow("version.jni")
-    val tdlibVersion = versions.getIntOrThrow("version.tdlib")
-    val leveldbVersion = versions.getIntOrThrow("version.leveldb")
 
-    buildConfigInt("SO_VERSION", (jniVersion + tdlibVersion + leveldbVersion))
-    buildConfigInt("TDLIB_VERSION", tdlibVersion)
+    val ndkVersion = versions.getProperty("version.ndk")
+    val jniVersion = versions.getProperty("version.jni")
+    val leveldbVersion = versions.getProperty("version.leveldb")
+
+    buildConfigString("NDK_VERSION", ndkVersion)
+    buildConfigString("JNI_VERSION", jniVersion)
+    buildConfigString("LEVELDB_VERSION", leveldbVersion)
+
     buildConfigString("TDLIB_REMOTE_URL", "https://github.com/tdlib/td")
 
     buildConfigField("boolean", "EXPERIMENTAL", isExperimentalBuild.toString())

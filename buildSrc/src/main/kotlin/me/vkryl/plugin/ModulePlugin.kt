@@ -171,6 +171,56 @@ open class ModulePlugin : Plugin<Project> {
               """.trimIndent())
             }
 
+            var openSslVersion: String = ""
+            val openSslVersionFile = File(project.rootDir.absoluteFile, "tdlib/source/openssl/include/openssl/opensslv.h")
+            openSslVersionFile.bufferedReader().use { reader ->
+              val regex = Regex("^#\\s*define OPENSSL_VERSION_NUMBER\\s*((?:0x)[0-9a-fAF]+)L?\$")
+              while (true) {
+                val line = reader.readLine() ?: break
+                val result = regex.find(line)
+                if (result != null) {
+                  val rawVersion = result.groupValues[1]
+                  val version = if (rawVersion.startsWith("0x")) {
+                    rawVersion.substring(2).toLong(16)
+                  } else {
+                    rawVersion.toLong()
+                  }
+                  // MNNFFPPS: major minor fix patch status
+                  val major = ((version shr 28) and 0xf).toInt()
+                  val minor = ((version shr 20) and 0xff).toInt()
+                  val fix = ((version shr 12) and 0xff).toInt()
+                  val patch = ((version shr 4) and 0xff).toInt()
+                  val status = (version and 0xf).toInt()
+                  if (status != 0xf) {
+                    error("Using non-stable OpenSSL version: $rawVersion (status = ${status.toString(16)})")
+                  }
+                  openSslVersion = "${major}.${minor}.${fix}${('a'.code - 1 + patch).toChar()}"
+                  break
+                }
+              }
+            }
+            if (openSslVersion.isEmpty()) {
+              error("OpenSSL not found!")
+            }
+
+            var tdlibVersion = ""
+            val tdlibCommit = File(project.rootDir.absoluteFile, "tdlib/version.txt").bufferedReader().readLine().take(7)
+            val tdlibVerisonFile = File(project.rootDir.absoluteFile, "tdlib/source/td/CMakeLists.txt")
+            tdlibVerisonFile.bufferedReader().use { reader ->
+              val regex = Regex("^project\\(TDLib VERSION (\\d+\\.\\d+\\.\\d+) LANGUAGES CXX C\\)$")
+              while (true) {
+                val line = reader.readLine() ?: break
+                val result = regex.find(line)
+                if (result != null) {
+                  tdlibVersion = "${result.groupValues[1]}-${tdlibCommit}"
+                  break
+                }
+              }
+            }
+            if (tdlibVersion.isEmpty()) {
+              error("TDLib not found!")
+            }
+
             var git: List<String>
             val process = if (System.getProperty("os.name").startsWith("Windows")) {
               ProcessBuilder("cmd", "/C", "${project.rootDir.absolutePath}\\scripts\\windows\\git-info.cmd").start()
@@ -224,6 +274,9 @@ open class ModulePlugin : Plugin<Project> {
               buildConfigString("SAFETYNET_API_KEY", safetyNetToken)
 
               buildConfigString("DOWNLOAD_URL", appDownloadUrl)
+
+              buildConfigString("OPENSSL_VERSION", openSslVersion)
+              buildConfigString("TDLIB_VERSION", tdlibVersion)
 
               buildConfigString("REMOTE_URL", remoteUrl)
               buildConfigString("COMMIT_URL", commitUrl)
