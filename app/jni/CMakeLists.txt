@@ -47,27 +47,12 @@ set(VPX_LIB_PATH "${VPX_DIR}/lib/libvpx.a")
 
 # == Constants ==
 # $TGX_PUBLIC — optimize native bundle size / enable optimizations for end users
-# $TGX_BUILD_ID — unique app build id
-# $TGX_BUILD_ID_NATIVE — unique native bundle build id (changes less frequently)
 # $IS_ARM_FAMILY – armeabi-v7a or arm64-v8a
 
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
   set(TGX_PUBLIC no)
 else()
   set(TGX_PUBLIC yes)
-endif()
-
-file(READ "${TGX_ROOT_DIR}/build-id.txt" TGX_BUILD_ID)
-file(READ "${TGX_ROOT_DIR}/build-id-native.txt" TGX_BUILD_ID_NATIVE)
-
-string(LENGTH "${TGX_BUILD_ID}" TGX_BUILD_ID_LENGTH)
-if(${TGX_BUILD_ID_LENGTH} EQUAL 0)
-  message(FATAL_ERROR "build-id.txt is empty or doesn't exist, check: ${TGX_ROOT_DIR}/build-id.txt")
-endif()
-
-string(LENGTH "${TGX_BUILD_ID_NATIVE}" TGX_BUILD_ID_NATIVE_LENGTH)
-if(${TGX_BUILD_ID_NATIVE_LENGTH} EQUAL 0)
-  message(FATAL_ERROR "build-id-native.txt is empty or doesn't exist, check: ${TGX_ROOT_DIR}/build-id-native.txt")
 endif()
 
 if (${ANDROID_ABI} STREQUAL "armeabi-v7a" OR ${ANDROID_ABI} STREQUAL "arm64-v8a")
@@ -79,9 +64,7 @@ endif()
 message(STATUS "Building native library... \
         CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE} \
         IS_ARM_FAMILY: ${IS_ARM_FAMILY} \
-        TGX_PUBLIC: ${TGX_PUBLIC} \
-        TGX_BUILD_ID: ${TGX_BUILD_ID} \
-        TGX_BUILD_ID_NATIVE: ${TGX_BUILD_ID_NATIVE}")
+        TGX_PUBLIC: ${TGX_PUBLIC}")
 
 # == CMake global settings ==
 
