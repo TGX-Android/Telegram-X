@@ -268,29 +268,6 @@ open class ModulePlugin : Plugin<Project> {
               PullRequest(it.toLong(), properties)
             }.sortedBy { it.id }
 
-            /*val nativeBuildIdContents = (
-              versions.getIntOrThrow("version.jni") +
-              versions.getIntOrThrow("version.tdlib") +
-              versions.getIntOrThrow("version.leveldb")
-            ).toString()
-            val nativeBuildId = sha256Of(
-              nativeBuildIdContents
-            )
-            writeToFile("build-id-native.txt") {
-              it.append(nativeBuildId)
-            }
-            val buildIdContents = commitHashLong + "+" + nativeBuildIdContents + (if (pullRequests.isEmpty()) {
-              ""
-            } else {
-              "+" + pullRequests.joinToString(",") { it.commitShort }
-            })
-            val buildId = sha256Of(
-              buildIdContents
-            )
-            writeToFile("build-id.txt") {
-              it.append(buildId)
-            }*/
-
             namespace = "org.thunderdog.challegram"
 
             defaultConfig {
