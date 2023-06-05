@@ -10,6 +10,7 @@
 	path = app/jni/thirdparty/libtgvoip
 	url = https://github.com/TGX-Android/libtgvoip.git
 	shallow = true
+	branch = tgx
 [submodule "app/jni/thirdparty/ffmpeg"]
 	path = app/jni/thirdparty/ffmpeg
 	url = https://github.com/FFmpeg/FFmpeg
@@ -46,25 +47,34 @@
 	path = tdlib
 	url = https://github.com/TGX-Android/tdlib
 	shallow = true
+	branch = main
 [submodule "app/jni/thirdparty/jni-utils"]
 	path = app/jni/thirdparty/jni-utils
 	url = https://github.com/TGX-Android/jni-utils
 	shallow = true
+	branch = main
 [submodule "vkryl/leveldb"]
 	path = vkryl/leveldb
 	url = https://github.com/TGX-Android/leveldb
 	shallow = true
+	branch = main
 [submodule "vkryl/core"]
 	path = vkryl/core
 	url = https://github.com/TGX-Android/X-Core.git
   shallow = true
+  branch = main
 [submodule "app/jni/thirdparty/rlottie"]
 	path = app/jni/thirdparty/rlottie
 	url = https://github.com/TGX-Android/rlottie
 	shallow = true
+	branch = main
 [submodule "vkryl/td"]
 	path = vkryl/td
 	url = https://github.com/TGX-Android/tdlib-utils.git
+	shallow = true
+	branch = main
 [submodule "vkryl/android"]
 	path = vkryl/android
 	url = https://github.com/TGX-Android/X-Android.git
+	shallow = true
+	branch = main
