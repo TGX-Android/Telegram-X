@@ -107,9 +107,9 @@ Join(ADD_COMMON_FLAGS "${ADD_COMMON_FLAGS}" " ")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${COMMON_FLAGS} -D_LARGEFILE_SOURCE=1")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COMMON_FLAGS} -std=c++17")
 
-set(ADD_LINKER_FLAGS
-  -Wl,--gc-sections,--icf=safe
-  -Wl,--build-id=sha1
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} \
+  -Wl,--gc-sections,--icf=safe \
+  -Wl,--build-id=sha1"
 )
 set(EXCLUDE_LIBS
   libjni-utils.a
@@ -122,19 +122,19 @@ set(EXCLUDE_LIBS
   librlottie.a
   liblz4.a
 )
-if (${ENABLE_TG_CALLS})
-  list(APPEND EXCLUDE_LIBS
-    libtgvoip.a
-    libusrsctp.a
-    libsrtp.a
-    libopenh264.a
-    libabsl.a
-    libjson11.a
-    librnnoise.a
-    libwebrtc.a
-    libtgcalls.a
-  )
-endif()
+#if (${ENABLE_TG_CALLS})
+#  list(APPEND EXCLUDE_LIBS
+#    libtgvoip.a
+#    libusrsctp.a
+#    libsrtp.a
+#    libopenh264.a
+#    libabsl.a
+#    libjson11.a
+#    librnnoise.a
+#    libwebrtc.a
+#    libtgcalls.a
+#  )
+#endif()
 if (${USE_WEBP})
   list(APPEND EXCLUDE_LIBS
     libwebpdecoder_static.a
@@ -149,7 +149,6 @@ Join(EXCLUDE_LIBS "${EXCLUDE_LIBS}" ",")
 list(APPEND ADD_LINKER_FLAGS
   -Wl,--exclude-libs,${EXCLUDE_LIBS}
 )
-
 Join(ADD_LINKER_FLAGS "${ADD_LINKER_FLAGS}" " ")
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${ADD_LINKER_FLAGS}")
 
@@ -270,15 +269,15 @@ add_library(${NATIVE_LIB} SHARED
 
   bridge.cpp
 )
-if (${ENABLE_TG_CALLS})
-  target_sources(${NATIVE_LIB} PRIVATE
-    tgvoip.cpp
-  )
-else()
-  target_compile_definitions(${NATIVE_LIB} PRIVATE
-    NO_TGCALLS
-  )
-endif()
+#if (${ENABLE_TG_CALLS})
+#  target_sources(${NATIVE_LIB} PRIVATE
+#    tgvoip.cpp
+#  )
+#else()
+#  target_compile_definitions(${NATIVE_LIB} PRIVATE
+#    NO_TGCALLS
+#  )
+#endif()
 target_include_directories(${NATIVE_LIB} PRIVATE
   "${THIRDPARTY_DIR}/telegram_intro"
   "${THIRDPARTY_DIR}/exoplayer"
@@ -324,13 +323,13 @@ target_link_libraries(${NATIVE_LIB}
   rlottie
   lz4
 )
-if (${ENABLE_TG_CALLS})
-  # tgcalls
-  target_link_libraries(${NATIVE_LIB}
-    tgcalls
-    -Wl,--whole-archive webrtc_android -Wl,--no-whole-archive
-  )
-endif()
+#if (${ENABLE_TG_CALLS})
+#  # tgcalls
+#  target_link_libraries(${NATIVE_LIB}
+#    tgcalls
+#    -Wl,--whole-archive webrtc_android -Wl,--no-whole-archive
+#  )
+#endif()
 if (${USE_WEBP})
   target_link_libraries(${NATIVE_LIB} webpdecoder_static)
 else()

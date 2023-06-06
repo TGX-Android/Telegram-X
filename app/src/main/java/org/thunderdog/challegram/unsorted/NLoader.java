@@ -72,6 +72,7 @@ public class NLoader implements ReLinker.Logger {
         loadLibraryImpl(reLinker, "ssl", BuildConfig.OPENSSL_VERSION);
         loadLibraryImpl(reLinker, "tdjni", BuildConfig.TDLIB_VERSION);
         loadLibraryImpl(reLinker, "leveldbjni", BuildConfig.LEVELDB_VERSION);
+        loadLibraryImpl(reLinker, "tgcallsjni", "1.0.0" /*FIXME*/);
         loadLibraryImpl(reLinker, "tgxjni", BuildConfig.JNI_VERSION);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
           OpusLibrary.setLibraries(C.CRYPTO_TYPE_UNSUPPORTED);

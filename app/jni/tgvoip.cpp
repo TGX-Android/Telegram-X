@@ -16,8 +16,8 @@
 #include <jni_utils.h>
 #include "bridge.h"
 
-#include <libtgvoip/VoIPController.h>
-#include <libtgvoip/client/android/tg_voip_jni.h>
+#include <VoIPController.h>
+#include <client/android/tg_voip_jni.h>
 
 #ifndef DISABLE_TGCALLS
 #include <modules/utility/include/jvm_android.h>
@@ -26,7 +26,7 @@
 #include <rtc_base/ssl_adapter.h>
 #include <webrtc/media/base/media_constants.h>
 
-#include <libtgvoip/os/android/JNIUtilities.h>
+#include <os/android/JNIUtilities.h>
 
 #include <tgcalls/legacy/InstanceImplLegacy.h>
 #include <tgcalls/InstanceImpl.h>
@@ -847,5 +847,18 @@ int voipOnJNILoad(JavaVM *vm, JNIEnv *env) {
 #endif
   tgvoipRegisterNatives(env);
   return 0;
+}
+
+jint JNI_OnLoad (JavaVM *vm, void *reserved) {
+  JNIEnv *env = 0;
+  srand(time(NULL));
+
+  if (vm->GetEnv((void **) &env, JNI_VERSION_1_6) != JNI_OK) {
+    return -1;
+  }
+
+  voipOnJNILoad(vm, env);
+
+  return JNI_VERSION_1_6;
 }
 }
