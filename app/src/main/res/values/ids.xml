@@ -1269,4 +1269,11 @@
   <item type="id" name="btn_themeExportSetAuthor" />
 
   <item type="id" name="btn_featureToggles" />
+
+  <!-- RESOLUTION ID SECTION -->
+
+  <item type="id" name="btn_resolutionLow" />
+  <item type="id" name="btn_resolutionMedium" />
+  <item type="id" name="btn_resolutionHigh" />
+  <item type="id" name="btn_resolutionOption" />
 </resources>

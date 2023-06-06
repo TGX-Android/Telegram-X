@@ -4660,4 +4660,11 @@
   <string name="DoNotTranslateLanguages_one">%1$s language</string>
   <string name="DoNotTranslateLanguages_other">%1$s languages</string>
 
+  <!-- RESOLUTION STRING SECTION -->
+
+  <string name="ResolutionOption">Photo Resolution Selector</string>
+  <string name="ResolutionDesc">Resolution Selector (Experimental): Possible instability or app crashes.</string>
+  <string name="ResolutionLow">Low (800px)</string>
+  <string name="ResolutionMedium">Medium (1280px)</string>
+  <string name="ResolutionHigh">High (2560px)</string>
 </resources>
