@@ -275,6 +275,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     public @Nullable Drawable activeIcon;
 
     private boolean activeDisabled;
+    private boolean isTrending;
 
     private @Nullable View view;
     private EmojiLayout parent;
@@ -287,6 +288,14 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
       this.activeIconRes = activeIconRes;
       this.activeIcon = Drawables.get(parent.getResources(), activeIconRes);
       changeIcon(iconRes);
+    }
+
+    public void setIsTrending () {
+      this.isTrending = true;
+    }
+
+    public boolean isTrending () {
+      return isTrending;
     }
 
     public EmojiSection setActiveDisabled () {
@@ -746,6 +755,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
       // this.favoriteSection = new EmojiSection(parent, -4, R.drawable.baseline_star_border_24, R.drawable.baseline_star_24).setMakeFirstTransparent();
       this.recentSection = new EmojiSection(parent, -4, R.drawable.baseline_access_time_24, R.drawable.baseline_watch_later_24).setMakeFirstTransparent();
       this.trendingSection = new EmojiSection(parent, -5, R.drawable.outline_whatshot_24, R.drawable.baseline_whatshot_24).setMakeFirstTransparent();
+      this.trendingSection.setIsTrending();
 
       this.selectedObject = selectedIsGifs ? headerItems.get(1) : recentSection;
       if (selectedIsGifs) {
@@ -1466,7 +1476,11 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
       if (animatedEmojiOnly) {
         ViewController<?> c = adapter.getCachedItem(0);
         if (c != null) {
-          ((EmojiStatusListController) c).scrollToSystemStickers(true);
+          if (section.isTrending) {
+            ((EmojiStatusListController) c).scrollToTrendingStickers(true);
+          } else {
+            ((EmojiStatusListController) c).scrollToSystemStickers(true);
+          }
         }
       } else if (section.index >= 0) {
         if (allowMedia && section.index == emojiSections.size() - 1) {

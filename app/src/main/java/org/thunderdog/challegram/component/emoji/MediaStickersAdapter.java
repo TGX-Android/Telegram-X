@@ -106,7 +106,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
 
     for (int i = 0; i < sectionIndex + 1 && position > 0 && i < sections.size(); i++) {
       TGStickerSetInfo stickerSet = sections.get(i);
-      if (!stickerSet.isSystem()) {
+      if (!stickerSet.isSystem() || stickerSet.isDefaultEmoji()) {
         scrollY += Screen.dp(stickerSet.isTrending() ? 52f : 32f);
         position--;
       } else if (stickerSet.isFavorite()) {
@@ -119,7 +119,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
         }
       }
       if (position > 0) {
-        int itemCount = Math.min(stickerSet.isTrending() ? 5 : stickerSet.getSize(), position);
+        int itemCount = Math.min(stickerSet.isDefaultEmoji() ? stickerSet.getSize() + 1: stickerSet.isTrending() ? 5 : stickerSet.getSize(), position);
         int rowCount = (int) Math.ceil((double) itemCount / (double) spanCount);
         scrollY += rowCount * rowSize;
         position -= itemCount;

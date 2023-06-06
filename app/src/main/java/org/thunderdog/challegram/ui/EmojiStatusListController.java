@@ -482,6 +482,22 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
     return -1;
   }
 
+  private int findTrendingStickerSet () {
+    if (stickerSets != null && !stickerSets.isEmpty()) {
+      int i = 0;
+      for (TGStickerSetInfo set : stickerSets) {
+        if (set.isDefaultEmoji()) {
+          return i;
+        }
+        i++;
+        if (i > MAX_HEADER_COUNT) {
+          break;
+        }
+      }
+    }
+    return -1;
+  }
+
   private int findFavoriteStickerSet () {
     if (stickerSets != null && !stickerSets.isEmpty()) {
       int i = 0;
@@ -1034,6 +1050,12 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
     int i = findFavoriteStickerSet();
     if (i == -1)
       i = findRecentStickerSet();
+    if (i != -1)
+      scrollToStickerSet(i == 0 ? 0 : stickerSets.get(i).getStartIndex(), animated);
+  }
+
+  public void scrollToTrendingStickers (boolean animated) {
+    int i = findTrendingStickerSet();
     if (i != -1)
       scrollToStickerSet(i == 0 ? 0 : stickerSets.get(i).getStartIndex(), animated);
   }
