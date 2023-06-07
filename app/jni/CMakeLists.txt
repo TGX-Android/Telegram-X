@@ -70,31 +70,6 @@ else()
 endif()
 set(ORIGINAL_CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS}")
 
-set(ADD_COMMON_FLAG
-  -w -Werror=return-type
-  -ferror-limit=0
-)
-if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
-  list(APPEND ADD_COMMON_FLAG
-    -O2
-    -fno-omit-frame-pointer
-  )
-else()
-  list(APPEND ADD_COMMON_FLAG
-    -O3
-    -finline-functions -ffast-math
-    -fno-rtti
-  )
-endif()
-
-Join(ADD_COMMON_FLAGS "${ADD_COMMON_FLAGS}" " ")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${ADD_COMMON_FLAGS} -D_LARGEFILE_SOURCE=1")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${ADD_COMMON_FLAGS} -std=c++17")
-
-set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} \
-  -Wl,--gc-sections,--icf=safe \
-  -Wl,--build-id=sha1"
-)
 set(EXCLUDE_LIBS
   libjni-utils.a
   libflac.a
