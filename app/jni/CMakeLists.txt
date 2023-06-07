@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.10.2 FATAL_ERROR)
+project(tgx VERSION 1.0.0 LANGUAGES C CXX)
 
 # == Include ==
 
@@ -81,19 +82,6 @@ set(EXCLUDE_LIBS
   librlottie.a
   liblz4.a
 )
-#if (${ENABLE_TG_CALLS})
-#  list(APPEND EXCLUDE_LIBS
-#    libtgvoip.a
-#    libusrsctp.a
-#    libsrtp.a
-#    libopenh264.a
-#    libabsl.a
-#    libjson11.a
-#    librnnoise.a
-#    libwebrtc.a
-#    libtgcalls.a
-#  )
-#endif()
 if (${USE_WEBP})
   list(APPEND EXCLUDE_LIBS
     libwebpdecoder_static.a
@@ -228,15 +216,6 @@ add_library(${NATIVE_LIB} SHARED
 
   bridge.cpp
 )
-#if (${ENABLE_TG_CALLS})
-#  target_sources(${NATIVE_LIB} PRIVATE
-#    tgvoip.cpp
-#  )
-#else()
-#  target_compile_definitions(${NATIVE_LIB} PRIVATE
-#    NO_TGCALLS
-#  )
-#endif()
 target_include_directories(${NATIVE_LIB} PRIVATE
   "${THIRDPARTY_DIR}/telegram_intro"
   "${THIRDPARTY_DIR}/exoplayer"
@@ -262,6 +241,8 @@ target_compile_options(${NATIVE_LIB} PUBLIC
   -Wall -Werror -Wno-deprecated-declarations
   -Wno-macro-redefined -Wno-unused-variable
   -fno-math-errno -fno-strict-aliasing -funroll-loops
+  -ffast-math
+  -fno-rtti
 )
 # TODO: remove -Wno-macro-redefined -Wno-unused-variable
 # only "${THIRDPARTY_DIR}/exoplayer/ffmpeg_jni.cc" needs them.
@@ -282,13 +263,6 @@ target_link_libraries(${NATIVE_LIB}
   rlottie
   lz4
 )
-#if (${ENABLE_TG_CALLS})
-#  # tgcalls
-#  target_link_libraries(${NATIVE_LIB}
-#    tgcalls
-#    -Wl,--whole-archive webrtc_android -Wl,--no-whole-archive
-#  )
-#endif()
 if (${USE_WEBP})
   target_link_libraries(${NATIVE_LIB} webpdecoder_static)
 else()

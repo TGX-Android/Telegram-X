@@ -36,6 +36,7 @@ open class CMakePlugin : Plugin<Project> {
                   "-w",
                   "-Werror=return-type",
                   "-ferror-limit=0",
+                  "-fno-exceptions",
 
                   "-O2",
                   "-fno-omit-frame-pointer"
@@ -47,7 +48,6 @@ open class CMakePlugin : Plugin<Project> {
                   "-DCMAKE_SKIP_RPATH=ON",
                   "-DCMAKE_C_VISIBILITY_PRESET=hidden",
                   "-DCMAKE_CXX_VISIBILITY_PRESET=hidden",
-                  "-DCMAKE_BUILD_PARALLEL_LEVEL=${Runtime.getRuntime().availableProcessors()}",
                   "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,--gc-sections,--icf=safe -Wl,--build-id=sha1",
                   "-DCMAKE_C_FLAGS=-D_LARGEFILE_SOURCE=1 ${flags.joinToString(" ")}",
                   "-DCMAKE_CXX_FLAGS=-std=c++17 ${flags.joinToString(" ")}"
@@ -63,11 +63,10 @@ open class CMakePlugin : Plugin<Project> {
                   "-w",
                   "-Werror=return-type",
                   "-ferror-limit=0",
+                  "-fno-exceptions",
 
                   "-O3",
-                  "-finline-functions",
-                  "-ffast-math",
-                  "-fno-rtti"
+                  "-finline-functions"
                 )
 
                 arguments(
@@ -77,7 +76,6 @@ open class CMakePlugin : Plugin<Project> {
                   "-DCMAKE_SKIP_RPATH=ON",
                   "-DCMAKE_C_VISIBILITY_PRESET=hidden",
                   "-DCMAKE_CXX_VISIBILITY_PRESET=hidden",
-                  "-DCMAKE_BUILD_PARALLEL_LEVEL=${Runtime.getRuntime().availableProcessors()}",
                   "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,--gc-sections,--icf=safe -Wl,--build-id=sha1",
                   "-DCMAKE_C_FLAGS=-D_LARGEFILE_SOURCE=1 ${flags.joinToString(" ")}",
                   "-DCMAKE_CXX_FLAGS=-std=c++17 ${flags.joinToString(" ")}"
