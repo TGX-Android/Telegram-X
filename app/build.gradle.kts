@@ -131,9 +131,9 @@ android {
     val outputFileNamePrefix = properties.getProperty("app.file", projectName.replace(" ", "-").replace("#", ""))
     val fileName = "${outputFileNamePrefix}-${versionNameOverride.replace("-universal(?=-|\$)", "")}"
 
-    variant.buildConfigInt("ORIGINAL_VERSION_CODE", versionCode)
-    variant.buildConfigString("ORIGINAL_VERSION_NAME", "${variant.versionName}.${defaultConfig.versionCode}")
-    variant.buildConfigInt("ABI", abi)
+    variant.buildConfigField("int", "ORIGINAL_VERSION_CODE", versionCode.toString())
+    variant.buildConfigField("int", "ABI", abi.toString())
+    variant.buildConfigField("String", "ORIGINAL_VERSION_NAME", "\"${variant.versionName}.${defaultConfig.versionCode}\"")
 
     variant.outputs.map { it as ApkVariantOutputImpl }.forEach { output ->
       output.versionCodeOverride = versionCodeOverride

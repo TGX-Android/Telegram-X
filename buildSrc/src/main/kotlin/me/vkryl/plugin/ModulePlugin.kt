@@ -22,13 +22,10 @@ import com.android.build.gradle.AppExtension
 import com.android.build.gradle.BaseExtension
 import com.android.build.gradle.LibraryExtension
 import com.android.build.gradle.ProguardFiles
-import com.android.build.gradle.internal.cxx.hashing.sha256Of
 import com.android.build.gradle.internal.dsl.BaseAppModuleExtension
-import getIntOrThrow
 import getLongOrThrow
 import getOrThrow
 import loadProperties
-import me.vkryl.task.writeToFile
 import monthYears
 import org.gradle.api.Plugin
 import org.gradle.api.Project
