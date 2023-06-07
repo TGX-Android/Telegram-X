@@ -46,14 +46,7 @@ set(VPX_DIR "${THIRDPARTY_DIR}/libvpx/build/${FFMPEG_ABI}")
 set(VPX_LIB_PATH "${VPX_DIR}/lib/libvpx.a")
 
 # == Constants ==
-# $TGX_PUBLIC — optimize native bundle size / enable optimizations for end users
 # $IS_ARM_FAMILY – armeabi-v7a or arm64-v8a
-
-if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-  set(TGX_PUBLIC no)
-else()
-  set(TGX_PUBLIC yes)
-endif()
 
 if (${ANDROID_ABI} STREQUAL "armeabi-v7a" OR ${ANDROID_ABI} STREQUAL "arm64-v8a")
   set(IS_ARM_FAMILY yes)
@@ -63,8 +56,7 @@ endif()
 
 message(STATUS "Building native library... \
         CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE} \
-        IS_ARM_FAMILY: ${IS_ARM_FAMILY} \
-        TGX_PUBLIC: ${TGX_PUBLIC}")
+        IS_ARM_FAMILY: ${IS_ARM_FAMILY}")
 
 # == CMake global settings ==
 
@@ -78,28 +70,20 @@ else()
 endif()
 set(ORIGINAL_CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS}")
 
-if ($TGX_PUBLIC)
-  set(CMAKE_C_VISIBILITY_PRESET hidden)
-  set(CMAKE_CXX_VISIBILITY_PRESET hidden)
-else()
-  set(CMAKE_C_VISIBILITY_PRESET default)
-  set(CMAKE_CXX_VISIBILITY_PRESET default)
-endif()
-
 set(ADD_COMMON_FLAG
   -w -Werror=return-type
   -ferror-limit=0
 )
-if ($TGX_PUBLIC)
+if (${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+  list(APPEND ADD_COMMON_FLAG
+    -O2
+    -fno-omit-frame-pointer
+  )
+else()
   list(APPEND ADD_COMMON_FLAG
     -O3
     -finline-functions -ffast-math
     -fno-rtti
-  )
-else()
-  list(APPEND ADD_COMMON_FLAG
-    -O2
-    -fno-omit-frame-pointer
   )
 endif()
 
