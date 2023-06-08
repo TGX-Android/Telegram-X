@@ -30,6 +30,12 @@
 -keep class org.drinkless.tdlib.TdApi { *; }
 -keep class org.drinkless.tdlib.TdApi$* { *; }
 -keepclassmembers class org.drinkless.tdlib.TdApi { *; }
+# Keep
+-keepclassmembers class org.drinkless.tdlib.Client$LogMessageHandler {
+    *;
+}
+-keep,allowoptimization interface org.drinkless.tdlib.Client$LogMessageHandler
+
 # Keep log
 -keep class org.thunderdog.challegram.Log
 -keepclassmembers class org.thunderdog.challegram.Log { *; }
