@@ -2,6 +2,7 @@
 	path = app/jni/third_party/webp
 	url = https://github.com/webmproject/libwebp
 	shallow = true
+	branch = 1.2.2
 [submodule "libyuv"]
 	path = app/jni/third_party/libyuv
 	url = https://chromium.googlesource.com/libyuv/libyuv
@@ -15,6 +16,7 @@
 	path = app/jni/third_party/ffmpeg
 	url = https://github.com/FFmpeg/FFmpeg
 	shallow = true
+	branch = release/4.4
 [submodule "lz4"]
 	path = app/jni/third_party/lz4
 	url = https://github.com/lz4/lz4
@@ -124,6 +126,7 @@
 	path = app/jni/third_party/crc32c
 	url = https://github.com/google/crc32c
 	shallow = true
+	branch = main
 [submodule "rnnoise"]
 	path = app/jni/third_party/rnnoise
 	url = https://github.com/xiph/rnnoise
