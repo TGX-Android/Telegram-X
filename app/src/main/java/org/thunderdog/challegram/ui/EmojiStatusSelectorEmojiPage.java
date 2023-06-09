@@ -102,14 +102,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
     headerView.getBackButton().setIsReverse(true);
     parent.addThemeInvalidateListener(headerView);
 
-    emojiCustomListLayout = new EmojiLayout(context()) {
-      @Override
-      protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
-        int height = MeasureSpec.getSize(heightMeasureSpec);
-        setForceHeight(height * 5 / 10);
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-      }
-    };
+    emojiCustomListLayout = new EmojiLayout(context());
     emojiCustomListLayout.initWithEmojiStatus(this, this, this);
 
     emojiCustomListController = new EmojiStatusListController(context, tdlib) {
@@ -137,6 +130,12 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
           int bottom = getKeyboardState() ? Keyboard.getSize(Keyboard.getSize()): 0;
           outRect.set(0, 0, 0, bottom);
         }
+      }
+    });
+    customRecyclerView.addOnLayoutChangeListener((view, i, i1, i2, i3, i4, i5, i6, i7) -> {
+      if (emojiCustomListLayout.checkWidth(customRecyclerView.getMeasuredWidth())) {
+        emojiCustomListLayout.invalidateStickerSets();
+        customRecyclerView.getAdapter().notifyDataSetChanged();
       }
     });
 

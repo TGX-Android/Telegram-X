@@ -1366,6 +1366,10 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     mediaAdapter.setStickerSets(stickers);
   }
 
+  public void invalidateStickerSets () {
+    mediaAdapter.notifyDataSetChanged();
+  }
+
   private void scrollToStickerSet (@NonNull TGStickerSetInfo stickerSet) {
     if (animatedEmojiOnly) {
       ViewController<?> c = adapter.getCachedItem(0);
@@ -1933,12 +1937,17 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
   @Override
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
     super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(forceHeight > 0 ? forceHeight: Keyboard.getSize(), MeasureSpec.EXACTLY));
-    int width = getMeasuredWidth();
+    checkWidth(getMeasuredWidth());
+  }
+
+  public boolean checkWidth (int width) {
     if (width != 0 && lastMeasuredWidth != width) {
       lastMeasuredWidth = width;
       updatePositions();
       adapter.updateCachedItemsSpanCounts();
+      return true;
     }
+    return false;
   }
 
   public void setForceHeight (int forceHeight) {
