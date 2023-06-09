@@ -916,7 +916,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
 
           runOnUiThreadOptional(() -> {
             if (getArguments() != null) {
-              getArguments().setStickerSets(stickerSets, false, recentStickers.length > 0, trendingStickers.length > 0);
+              getArguments().setStickerSets(stickerSets, false, recentStickers.length > 0, trendingStickers.length > 0, !needAddDefaultPremiumStar);
             }
             setStickers(stickerSets, items);
             stickersLoaded = true;
@@ -1274,7 +1274,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
     setStickers(new ArrayList<>(), new ArrayList<>());
     stickersAdapter.setItem(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_PROGRESS));
     if (getArguments() != null) {
-      getArguments().setStickerSets(stickerSets, false, false, false);
+      getArguments().setStickerSets(stickerSets, false, false, false, !StringUtils.isEmpty(query) || !StringUtils.isEmpty(emojiQuery));
     }
     currentTextSearchRequest = query;
     currentEmojiSearchRequest = emojiQuery;

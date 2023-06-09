@@ -280,7 +280,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     private @Nullable View view;
     private EmojiLayout parent;
 
-    private final int activeIconRes;
+    private int activeIconRes;
 
     public EmojiSection (EmojiLayout parent, int sectionIndex, @DrawableRes int iconRes, @DrawableRes int activeIconRes) {
       this.parent = parent;
@@ -303,7 +303,17 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
       return this;
     }
 
-    private void changeIcon (final int iconRes) {
+    public void changeIcon (final int iconRes, final int activeIconRes) {
+      changeIcon(iconRes);
+      if (this.activeIconRes != activeIconRes) {
+        this.activeIcon = Drawables.get(parent.getResources(), this.activeIconRes = activeIconRes);
+        if (view != null) {
+          view.invalidate();
+        }
+      }
+    }
+
+    public void changeIcon (final int iconRes) {
       if (this.iconRes != iconRes) {
         this.icon = Drawables.get(parent.getResources(), this.iconRes = iconRes);
         if (view != null) {
@@ -777,6 +787,12 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
         this.hasRecents = hasRecents;
         checkRecent();
       }
+    }
+
+    public void setShowRecentsAsFound (boolean showRecentAsFound) {
+      recentSection.changeIcon(
+        showRecentAsFound ? R.drawable.baseline_emoticon_outline_24: R.drawable.baseline_access_time_24,
+        showRecentAsFound ? 0: R.drawable.baseline_watch_later_24);
     }
 
     public int getAddItemCount (boolean allowHidden) {
@@ -1356,12 +1372,13 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
   }
 
   public void setStickerSets (ArrayList<TGStickerSetInfo> stickers, boolean showFavorite, boolean showRecents) {
-    setStickerSets(stickers, showFavorite, showRecents, false);
+    setStickerSets(stickers, showFavorite, showRecents, false, false);
   }
 
-  public void setStickerSets (ArrayList<TGStickerSetInfo> stickers, boolean showFavorite, boolean showRecents, boolean showTrending) {
+  public void setStickerSets (ArrayList<TGStickerSetInfo> stickers, boolean showFavorite, boolean showRecents, boolean showTrending, boolean isFound) {
     mediaAdapter.setHasFavorite(showFavorite);
     mediaAdapter.setHasRecents(showRecents);
+    mediaAdapter.setShowRecentsAsFound(isFound);
     mediaAdapter.setHasTrending(showTrending);
     mediaAdapter.setStickerSets(stickers);
   }
