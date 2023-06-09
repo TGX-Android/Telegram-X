@@ -68,11 +68,11 @@ public class NLoader implements ReLinker.Logger {
       try {
         ReLinkerInstance reLinker = ReLinker.recursively().log(NLoader.instance());
         loadLibraryImpl(reLinker, "c++_shared", BuildConfig.NDK_VERSION);
-        loadLibraryImpl(reLinker, "crypto", BuildConfig.OPENSSL_VERSION);
-        loadLibraryImpl(reLinker, "ssl", BuildConfig.OPENSSL_VERSION);
+        loadLibraryImpl(reLinker, "cryptox", BuildConfig.OPENSSL_VERSION);
+        loadLibraryImpl(reLinker, "sslx", BuildConfig.OPENSSL_VERSION);
         loadLibraryImpl(reLinker, "tdjni", BuildConfig.TDLIB_VERSION);
         loadLibraryImpl(reLinker, "leveldbjni", BuildConfig.LEVELDB_VERSION);
-        loadLibraryImpl(reLinker, "tgcallsjni", "1.0.0" /*FIXME*/);
+        loadLibraryImpl(reLinker, "tgcallsjni", BuildConfig.JNI_VERSION /*TODO: separate variable?*/);
         loadLibraryImpl(reLinker, "tgxjni", BuildConfig.JNI_VERSION);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
           OpusLibrary.setLibraries(C.CRYPTO_TYPE_UNSUPPORTED);

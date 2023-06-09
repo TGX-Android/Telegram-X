@@ -172,6 +172,7 @@ open class ModulePlugin : Plugin<Project> {
             }
 
             var openSslVersion: String = ""
+            var openSslVersionFull: String = ""
             val openSslVersionFile = File(project.rootDir.absoluteFile, "tdlib/source/openssl/include/openssl/opensslv.h")
             openSslVersionFile.bufferedReader().use { reader ->
               val regex = Regex("^#\\s*define OPENSSL_VERSION_NUMBER\\s*((?:0x)[0-9a-fAF]+)L?\$")
@@ -194,7 +195,8 @@ open class ModulePlugin : Plugin<Project> {
                   if (status != 0xf) {
                     error("Using non-stable OpenSSL version: $rawVersion (status = ${status.toString(16)})")
                   }
-                  openSslVersion = "${major}.${minor}.${fix}${('a'.code - 1 + patch).toChar()}"
+                  openSslVersion = "${major}.${minor}"
+                  openSslVersionFull = "${major}.${minor}.${fix}${('a'.code - 1 + patch).toChar()}"
                   break
                 }
               }
@@ -278,6 +280,7 @@ open class ModulePlugin : Plugin<Project> {
               buildConfigString("DOWNLOAD_URL", appDownloadUrl)
 
               buildConfigString("OPENSSL_VERSION", openSslVersion)
+              buildConfigString("OPENSSL_VERSION_FULL", openSslVersionFull)
               buildConfigString("TDLIB_VERSION", tdlibVersion)
 
               buildConfigString("REMOTE_URL", remoteUrl)
