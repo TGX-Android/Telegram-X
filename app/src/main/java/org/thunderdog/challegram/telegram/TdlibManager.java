@@ -317,10 +317,12 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
 
   private TdlibManager (int firstInstanceId, boolean forceService) {
     Client.setLogMessageHandler(0, (verbosityLevel, errorMessage) -> {
-      Crash.Builder b = new Crash.Builder()
-        .message(StringUtils.isEmpty(errorMessage) ? "empty" : errorMessage)
-        .flags(Crash.Flags.SOURCE_TDLIB | Crash.Flags.SAVE_APPLICATION_LOG_EVENT);
-      Settings.instance().storeCrash(b);
+      if (verbosityLevel == 0) {
+        Crash.Builder b = new Crash.Builder()
+          .message(StringUtils.isEmpty(errorMessage) ? "empty" : errorMessage)
+          .flags(Crash.Flags.SOURCE_TDLIB | Crash.Flags.SAVE_APPLICATION_LOG_EVENT);
+        Settings.instance().storeCrash(b);
+      }
     });
 
     this.languageDatabasePath = getLanguageDatabasePath();

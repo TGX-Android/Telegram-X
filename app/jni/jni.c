@@ -25,7 +25,6 @@
 #endif
 
 int jni_init(JavaVM *vm, JNIEnv *env);
-int voipOnJNILoad(JavaVM *vm, JNIEnv *env);
 
 jint JNI_OnLoad (JavaVM *vm, void *reserved) {
   JNIEnv *env = 0;
@@ -48,10 +47,6 @@ jint JNI_OnLoad (JavaVM *vm, void *reserved) {
   /*if (gifvideoOnJNILoad(vm, env) == -1) {
       return -1;
   }*/
-
-  if (voipOnJNILoad(vm, env) == -1) {
-      return -1;
-  }
 
   return JNI_VERSION_1_6;
 }

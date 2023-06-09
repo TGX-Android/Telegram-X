@@ -2,6 +2,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <jni.h>
+#include <string.h>
 
 static int is_initialized = 0;
 static float _coefficientsX[TIMING_NUM][4], _coefficientsY[TIMING_NUM][4];
@@ -700,7 +701,7 @@ void draw_shape_colored(const Shape* shape, mat4x4 view_projection_matrix, vec4 
     }
 }
 
-void draw_shape(const Shape* shape, mat4x4 view_projection_matrix) {
+void draw_shape(/*const*/ Shape* shape, mat4x4 view_projection_matrix) {
   draw_shape_colored(shape, view_projection_matrix, shape->color);
 }
 

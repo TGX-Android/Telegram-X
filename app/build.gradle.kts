@@ -41,12 +41,15 @@ android {
 
   defaultConfig {
     val versions = extra["versions"] as Properties
-    val jniVersion = versions.getIntOrThrow("version.jni")
-    val tdlibVersion = versions.getIntOrThrow("version.tdlib")
-    val leveldbVersion = versions.getIntOrThrow("version.leveldb")
 
-    buildConfigInt("SO_VERSION", (jniVersion + tdlibVersion + leveldbVersion))
-    buildConfigInt("TDLIB_VERSION", tdlibVersion)
+    val ndkVersion = versions.getProperty("version.ndk")
+    val jniVersion = versions.getProperty("version.jni")
+    val leveldbVersion = versions.getProperty("version.leveldb")
+
+    buildConfigString("NDK_VERSION", ndkVersion)
+    buildConfigString("JNI_VERSION", jniVersion)
+    buildConfigString("LEVELDB_VERSION", leveldbVersion)
+
     buildConfigString("TDLIB_REMOTE_URL", "https://github.com/tdlib/td")
 
     buildConfigField("boolean", "EXPERIMENTAL", isExperimentalBuild.toString())
@@ -71,6 +74,13 @@ android {
 
   sourceSets.getByName("main") {
     java.srcDirs("./src/google/java") // TODO: Huawei & FOSS editions
+    java.srcDirs(
+      "./jni/third_party/webrtc/rtc_base/java/src",
+      "./jni/third_party/webrtc/modules/audio_device/android/java/src",
+      "./jni/third_party/webrtc/sdk/android/api",
+      "./jni/third_party/webrtc/sdk/android/src/java",
+      "../thirdparty/WebRTC/src/java"
+    )
     Config.EXOPLAYER_EXTENSIONS.forEach { module ->
       java.srcDirs("../thirdparty/ExoPlayer/extensions/${module}/src/main/java")
     }
@@ -121,9 +131,9 @@ android {
     val outputFileNamePrefix = properties.getProperty("app.file", projectName.replace(" ", "-").replace("#", ""))
     val fileName = "${outputFileNamePrefix}-${versionNameOverride.replace("-universal(?=-|\$)", "")}"
 
-    variant.buildConfigInt("ORIGINAL_VERSION_CODE", versionCode)
-    variant.buildConfigString("ORIGINAL_VERSION_NAME", "${variant.versionName}.${defaultConfig.versionCode}")
-    variant.buildConfigInt("ABI", abi)
+    variant.buildConfigField("int", "ORIGINAL_VERSION_CODE", versionCode.toString())
+    variant.buildConfigField("int", "ABI", abi.toString())
+    variant.buildConfigField("String", "ORIGINAL_VERSION_NAME", "\"${variant.versionName}.${defaultConfig.versionCode}\"")
 
     variant.outputs.map { it as ApkVariantOutputImpl }.forEach { output ->
       output.versionCodeOverride = versionCodeOverride
@@ -148,8 +158,8 @@ android {
     Config.SUPPORTED_ABI.forEach { abi ->
       jniLibs.pickFirsts.let { set ->
         set.add("lib/$abi/libc++_shared.so")
-        set.add("tdlib/openssl/$abi/lib/libcrypto.so")
-        set.add("tdlib/openssl/$abi/lib/libssl.so")
+        set.add("tdlib/openssl/$abi/lib/libcryptox.so")
+        set.add("tdlib/openssl/$abi/lib/libsslx.so")
         set.add("tdlib/src/main/libs/$abi/libtdjni.so")
       }
     }

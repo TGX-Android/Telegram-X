@@ -11,7 +11,6 @@ import java.nio.ByteBuffer;
  */
 
 @SuppressWarnings("unused")
-@Deprecated
 public class AudioTrackJNI{
 	private AudioTrack audioTrack;
 	private byte[] buffer=new byte[960*2];

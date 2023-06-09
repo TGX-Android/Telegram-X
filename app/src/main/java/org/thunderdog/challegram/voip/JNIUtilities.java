@@ -27,7 +27,6 @@ import java.util.Enumeration;
  */
 
 @SuppressWarnings("unused")
-@Deprecated
 public class JNIUtilities{
 	@TargetApi(23)
 	public static String getCurrentNetworkInterfaceName(){

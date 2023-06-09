@@ -60,8 +60,6 @@ public class Config {
 
   public static final boolean TEST_NOTIFICATION_PROBLEM_RESOLUTION = false; // BuildConfig.DEBUG;
 
-  public static final boolean SO_SHARED = true;
-
   public static final boolean NEED_TDLIB_CLEANUP = false;
 
   public static final boolean FAKE_BACKGROUND_CONNECTION_STATE = true;
@@ -296,4 +294,7 @@ public class Config {
   public static final boolean USE_HARDWARE_PHOTO_VIEWER_CONFIG = false;
 
   public static final boolean REQUIRE_FIREBASE_SERVICES_FOR_SAFETYNET = false;
+
+  public static final int VOIP_CONNECTION_MIN_LAYER = 65;
+  public static final boolean FORCE_DIRECT_TGVOIP = false;
 }

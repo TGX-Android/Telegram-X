@@ -30,6 +30,12 @@
 -keep class org.drinkless.tdlib.TdApi { *; }
 -keep class org.drinkless.tdlib.TdApi$* { *; }
 -keepclassmembers class org.drinkless.tdlib.TdApi { *; }
+# Keep
+-keepclassmembers class org.drinkless.tdlib.Client$LogMessageHandler {
+    *;
+}
+-keep,allowoptimization interface org.drinkless.tdlib.Client$LogMessageHandler
+
 # Keep log
 -keep class org.thunderdog.challegram.Log
 -keepclassmembers class org.thunderdog.challegram.Log { *; }
@@ -65,6 +71,25 @@
 -dontwarn org.conscrypt.ConscryptHostnameVerifier
 -dontwarn org.conscrypt.Conscrypt$Version
 -dontwarn org.conscrypt.Conscrypt
+
+# WebRTC
+
+# Keep items annotated with @CalledByNative
+-keep @org.webrtc.CalledByNative public class *
+-keepclassmembers class * {
+    @org.webrtc.CalledByNative *;
+}
+
+# Keep items annotated with @CalledByNativeUnchecked
+-keep @org.webrtc.CalledByNativeUnchecked public class *
+-keepclassmembers class * {
+    @org.webrtc.CalledByNativeUnchecked *;
+}
+
+-keep class org.webrtc.** { *; }
+-keepclassmembers class org.webrtc.** { *; }
+
+# Other
 
 -dontwarn org.bouncycastle.jsse.BCSSLParameters
 -dontwarn org.bouncycastle.jsse.BCSSLSocket

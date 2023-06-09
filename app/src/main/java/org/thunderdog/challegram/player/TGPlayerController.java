@@ -1886,7 +1886,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
     }
 
     /**
-     * Search query to be passed in {@link org.drinkless.td.libcore.telegram.TdApi.SearchChatMessages} query
+     * Search query to be passed in {@link org.drinkless.tdlib.TdApi.SearchChatMessages} query
      * */
     public PlayList setSearchQuery (String query) {
       this.searchQuery = query;
@@ -1894,7 +1894,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
     }
 
     /**
-     * Message thread identifier to be passed in {@link org.drinkless.td.libcore.telegram.TdApi.SearchChatMessages} query
+     * Message thread identifier to be passed in {@link org.drinkless.tdlib.telegram.TdApi.SearchChatMessages} query
      */
     public PlayList setMessageThreadId (long messageThreadId) {
       this.messageThreadId = messageThreadId;

@@ -8,7 +8,6 @@ import org.thunderdog.challegram.Log;
  * Created by grishka on 01.03.17.
  */
 
-@Deprecated
 public class VoIPServerConfig{
 
 	private static JSONObject config;

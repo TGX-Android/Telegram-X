@@ -9,14 +9,14 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * File created on 31/03/2023
  */
 package org.thunderdog.challegram.telegram;
 
 import org.drinkless.tdlib.TdApi;
 
-public interface CallsListener {
-  void onCallUpdated (TdApi.Call call);
-  void onNewCallSignallingDataArrived (int callId, byte[] data);
-  void onGroupCallUpdated (TdApi.GroupCall groupCall);
-  void onGroupCallParticipantUpdated (int groupCallId, TdApi.GroupCallParticipant groupCallParticipant);
+public interface GroupCallListener {
+  default void onGroupCallUpdated (TdApi.GroupCall groupCall) { }
+  default void onGroupCallParticipantUpdated (int groupCallId, TdApi.GroupCallParticipant groupCallParticipant) { }
 }
