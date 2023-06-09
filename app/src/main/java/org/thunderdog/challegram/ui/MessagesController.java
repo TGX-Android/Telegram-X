@@ -8381,7 +8381,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return sendContent(view, RightId.SEND_OTHER_MESSAGES, R.string.ChatDisabledStickers, R.string.ChatRestrictedStickers, R.string.ChatRestrictedStickersUntil, allowReply, initialSendOptions, () -> new TdApi.InputMessageSticker(new TdApi.InputFileId(sticker.sticker.id), null, 0, 0, emoji));
   }
 
-  private void sendSticker (String path, boolean allowReply, TdApi.MessageSendOptions initialSendOptions) {
+  private void sendWebp (String path, boolean allowReply, TdApi.MessageSendOptions initialSendOptions) {
     sendContent(null, RightId.SEND_OTHER_MESSAGES, R.string.ChatDisabledStickers, R.string.ChatRestrictedStickers, R.string.ChatRestrictedStickersUntil, allowReply, initialSendOptions, () -> new TdApi.InputMessageSticker(TD.createInputFile(path), null, 0, 0, null));
   }
 
@@ -9260,8 +9260,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
           return;
         }
 
-        if (imagePath != null && imagePath.endsWith(".webp") && tdlib.getRestrictionStatus(chat, RightId.SEND_OTHER_MESSAGES) == null) {
-          sendSticker(imagePath, true, Td.newSendOptions());
+        if (imagePath != null && imagePath.endsWith(".webp")) {
+          sendWebp(imagePath, true, Td.newSendOptions());
         } else if (requestCode == Intents.ACTIVITY_RESULT_GALLERY_FILE) {
           sendFiles(mediaButton, Collections.singletonList(imagePath), false, true, Td.newSendOptions());
         } else {
