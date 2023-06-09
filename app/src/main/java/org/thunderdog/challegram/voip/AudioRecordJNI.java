@@ -14,7 +14,6 @@ import java.nio.ByteBuffer;
 import java.util.regex.Pattern;
 
 @SuppressWarnings("unused")
-@Deprecated
 public class AudioRecordJNI {
 
 	private AudioRecord audioRecord;

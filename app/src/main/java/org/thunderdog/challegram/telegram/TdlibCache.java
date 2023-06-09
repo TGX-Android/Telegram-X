@@ -43,7 +43,7 @@ import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.text.Letters;
-import org.thunderdog.challegram.voip.VoIPController;
+import org.thunderdog.challegram.voip.annotation.CallState;
 import org.thunderdog.challegram.voip.gui.CallSettings;
 
 import java.util.ArrayList;
@@ -660,8 +660,8 @@ public class TdlibCache implements LiveLocationManager.OutputDelegate, CleanupSt
   // Calls
 
   @UiThread
-  void onCallStateChanged (final int callId, final int newState) {
-    if (newState == VoIPController.STATE_ESTABLISHED) {
+  void onCallStateChanged (final int callId, final @CallState int newState) {
+    if (newState == CallState.ESTABLISHED) {
       notifyCallListeners(callsGlobalListeners.iterator(), callId, newState, false);
       notifyCallListeners(callListeners.iterator(callId), callId, newState, false);
     }

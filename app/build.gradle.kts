@@ -74,6 +74,13 @@ android {
 
   sourceSets.getByName("main") {
     java.srcDirs("./src/google/java") // TODO: Huawei & FOSS editions
+    java.srcDirs(
+      "./jni/third_party/webrtc/rtc_base/java/src",
+      "./jni/third_party/webrtc/modules/audio_device/android/java/src",
+      "./jni/third_party/webrtc/sdk/android/api",
+      "./jni/third_party/webrtc/sdk/android/src/java",
+      "../thirdparty/WebRTC/src/java"
+    )
     Config.EXOPLAYER_EXTENSIONS.forEach { module ->
       java.srcDirs("../thirdparty/ExoPlayer/extensions/${module}/src/main/java")
     }
@@ -124,9 +131,9 @@ android {
     val outputFileNamePrefix = properties.getProperty("app.file", projectName.replace(" ", "-").replace("#", ""))
     val fileName = "${outputFileNamePrefix}-${versionNameOverride.replace("-universal(?=-|\$)", "")}"
 
-    variant.buildConfigInt("ORIGINAL_VERSION_CODE", versionCode)
-    variant.buildConfigString("ORIGINAL_VERSION_NAME", "${variant.versionName}.${defaultConfig.versionCode}")
-    variant.buildConfigInt("ABI", abi)
+    variant.buildConfigField("int", "ORIGINAL_VERSION_CODE", versionCode.toString())
+    variant.buildConfigField("int", "ABI", abi.toString())
+    variant.buildConfigField("String", "ORIGINAL_VERSION_NAME", "\"${variant.versionName}.${defaultConfig.versionCode}\"")
 
     variant.outputs.map { it as ApkVariantOutputImpl }.forEach { output ->
       output.versionCodeOverride = versionCodeOverride

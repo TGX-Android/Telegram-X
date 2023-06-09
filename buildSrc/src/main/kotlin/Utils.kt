@@ -12,7 +12,6 @@
  */
 import com.android.build.api.dsl.ApplicationBaseFlavor
 import com.android.build.api.dsl.VariantDimension
-import com.android.build.gradle.api.ApplicationVariant
 import java.io.File
 import java.util.*
 
@@ -23,18 +22,6 @@ fun ApplicationBaseFlavor.buildConfigLong (name: String, value: Long) =
 fun ApplicationBaseFlavor.buildConfigBool (name: String, value: Boolean) =
   this.buildConfigField("boolean", name, value.toString())
 fun ApplicationBaseFlavor.buildConfigString (name: String, value: String?) =
-  this.buildConfigField("String", name, if (value != null) {
-    "\"$value\""
-  } else {
-    "null"
-  })
-fun ApplicationVariant.buildConfigInt (name: String, value: Int) =
-  this.buildConfigField("int", name, value.toString())
-fun ApplicationVariant.buildConfigLong (name: String, value: Long) =
-  this.buildConfigField("long", name, value.toString())
-fun ApplicationVariant.buildConfigBool (name: String, value: Boolean) =
-  this.buildConfigField("boolean", name, value.toString())
-fun ApplicationVariant.buildConfigString (name: String, value: String?) =
   this.buildConfigField("String", name, if (value != null) {
     "\"$value\""
   } else {

@@ -94,7 +94,7 @@ export STYLE_INFO
 
 export SED
 
-THIRDPARTY_LIBRARIES=$(pwd)/app/jni/thirdparty
+THIRDPARTY_LIBRARIES="$(pwd)/app/jni/third_party"
 export THIRDPARTY_LIBRARIES
 
 PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$(pwd)/scripts:$(pwd)/scripts/private:$PATH"

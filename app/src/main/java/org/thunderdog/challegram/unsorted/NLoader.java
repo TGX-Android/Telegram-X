@@ -29,8 +29,11 @@ import com.google.android.exoplayer2.ext.opus.OpusLibrary;
 import com.google.android.exoplayer2.ext.vp9.VpxLibrary;
 
 import org.thunderdog.challegram.BuildConfig;
+import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.voip.VoIPController;
+import org.webrtc.SoftwareVideoEncoderFactory;
+import org.webrtc.VideoCodecInfo;
 
 import java.util.ArrayList;
 import java.util.Locale;
@@ -69,6 +72,7 @@ public class NLoader implements ReLinker.Logger {
         loadLibraryImpl(reLinker, "ssl", BuildConfig.OPENSSL_VERSION);
         loadLibraryImpl(reLinker, "tdjni", BuildConfig.TDLIB_VERSION);
         loadLibraryImpl(reLinker, "leveldbjni", BuildConfig.LEVELDB_VERSION);
+        loadLibraryImpl(reLinker, "tgcallsjni", "1.0.0" /*FIXME*/);
         loadLibraryImpl(reLinker, "tgxjni", BuildConfig.JNI_VERSION);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
           OpusLibrary.setLibraries(C.CRYPTO_TYPE_UNSUPPORTED);
@@ -77,13 +81,15 @@ public class NLoader implements ReLinker.Logger {
           FfmpegLibrary.setLibraries();
           if (BuildConfig.DEBUG) {
             android.util.Log.v("tgx", String.format(Locale.US,
-              "leveldb %s, libopus %s, libvpx %s, ffmpeg %s, tgvoip %s",
+              "leveldb %s, libopus %s, libvpx %s, ffmpeg %s, tgvoip %s, tgcalls %s",
               LevelDB.getVersion(),
               OpusLibrary.getVersion(),
               VpxLibrary.getVersion(),
               FfmpegLibrary.getVersion(),
-              VoIPController.getVersion()
+              VoIPController.getVersion(),
+              TextUtils.join("+", N.getTgCallsVersions())
             ));
+            VideoCodecInfo[] softwareVideoCodecs = new SoftwareVideoEncoderFactory().getSupportedCodecs();
           }
         }
       } catch (Throwable t) {

@@ -18,13 +18,23 @@
 
 #define JNI_FUNC(RETURN_TYPE, NAME, ...)                              \
   extern "C" {                                                        \
-  JNIEXPORT RETURN_TYPE                                               \
-      Java_org_thunderdog_challegram_N_##NAME( \
+  JNIEXPORT RETURN_TYPE JNICALL                                       \
+      Java_org_thunderdog_challegram_N_##NAME(                        \
           JNIEnv *env, jclass clazz, ##__VA_ARGS__);                  \
   }                                                                   \
-  JNIEXPORT RETURN_TYPE                                               \
-      Java_org_thunderdog_challegram_N_##NAME( \
+  JNIEXPORT RETURN_TYPE JNICALL                                       \
+      Java_org_thunderdog_challegram_N_##NAME(                        \
           JNIEnv *env, jclass clazz, ##__VA_ARGS__)
+
+#define JNI_OBJECT_FUNC(RETURN_TYPE, CLASS_NAME, NAME, ...)           \
+  extern "C" {                                                        \
+  JNIEXPORT RETURN_TYPE JNICALL                                       \
+      Java_org_thunderdog_challegram_##CLASS_NAME##_##NAME(           \
+          JNIEnv *env, jobject thiz, ##__VA_ARGS__);                  \
+  }                                                                   \
+  JNIEXPORT RETURN_TYPE JNICALL                                       \
+      Java_org_thunderdog_challegram_##CLASS_NAME##_##NAME(           \
+          JNIEnv *env, jobject thiz, ##__VA_ARGS__)
 
 void onFatalError (JNIEnv *env, const std::string &message, int cause);
 

@@ -905,6 +905,8 @@
   <item type="id" name="btn_secret_tdlibDatabaseStats" />
   <item type="id" name="btn_secret_databaseStats" />
   <item type="id" name="btn_secret_stressTest" />
+  <item type="id" name="btn_secret_tgcalls" />
+  <item type="id" name="btn_secret_tgcallsOptions" />
   <item type="id" name="btn_secret_sendAllChangeLogs" />
   <item type="id" name="btn_secret_copyLanguageCodes" />
   <item type="id" name="btn_resetLocalData" />

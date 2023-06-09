@@ -42,7 +42,7 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.v.CustomRecyclerView;
-import org.thunderdog.challegram.voip.VoIPController;
+import org.thunderdog.challegram.voip.annotation.DataSavingOption;
 
 import java.util.List;
 
@@ -186,16 +186,16 @@ public class SettingsDataController extends RecyclerViewController<SettingsDataC
           // Voice
         } else if (itemId == R.id.btn_lessDataForCalls) {
           switch (tdlib.files().getVoipDataSavingOption()) {
-            case VoIPController.DATA_SAVING_ALWAYS:
+            case DataSavingOption.ALWAYS:
               view.setData(R.string.UseLessDataAlways);
               break;
-            case VoIPController.DATA_SAVING_MOBILE:
+            case DataSavingOption.MOBILE:
               view.setData(R.string.OnMobileNetwork);
               break;
-            case VoIPController.DATA_SAVING_ROAMING:
+            case DataSavingOption.ROAMING:
               view.setData(R.string.OnRoaming);
               break;
-            case VoIPController.DATA_SAVING_NEVER:
+            case DataSavingOption.NEVER:
             default:
               view.setData(R.string.Never);
               break;
@@ -501,10 +501,10 @@ public class SettingsDataController extends RecyclerViewController<SettingsDataC
       navigateTo(c);
     } else if (id == R.id.btn_lessDataForCalls) {
       showSettings(new SettingsWrapBuilder(id).addHeaderItem(new ListItem(ListItem.TYPE_INFO, 0, 0, R.string.UseLessDataForCallsDesc)).setRawItems(new ListItem[] {
-        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_disabled, 0, R.string.Never, id, tdlib.files().getVoipDataSavingOption() == VoIPController.DATA_SAVING_NEVER),
-        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_roaming, 0, R.string.OnRoaming, id, tdlib.files().getVoipDataSavingOption() == VoIPController.DATA_SAVING_ROAMING),
-        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_mobile, 0, R.string.OnMobileNetwork, id, tdlib.files().getVoipDataSavingOption() == VoIPController.DATA_SAVING_MOBILE),
-        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_always, 0, R.string.UseLessDataAlways, id, tdlib.files().getVoipDataSavingOption() == VoIPController.DATA_SAVING_ALWAYS)
+        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_disabled, 0, R.string.Never, id, tdlib.files().getVoipDataSavingOption() == DataSavingOption.NEVER),
+        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_roaming, 0, R.string.OnRoaming, id, tdlib.files().getVoipDataSavingOption() == DataSavingOption.ROAMING),
+        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_mobile, 0, R.string.OnMobileNetwork, id, tdlib.files().getVoipDataSavingOption() == DataSavingOption.MOBILE),
+        new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_always, 0, R.string.UseLessDataAlways, id, tdlib.files().getVoipDataSavingOption() == DataSavingOption.ALWAYS)
       }).setIntDelegate(this));
     } else if (id == R.id.btn_proxy) {
       tdlib.ui().openProxySettings(this, true);
@@ -615,11 +615,11 @@ public class SettingsDataController extends RecyclerViewController<SettingsDataC
       }
     } else if (id == R.id.btn_lessDataForCalls) {
       final int res = result.get(R.id.btn_lessDataForCalls);
-      final int option =
-        res == R.id.btn_always ? VoIPController.DATA_SAVING_ALWAYS :
-          res == R.id.btn_mobile ? VoIPController.DATA_SAVING_MOBILE :
-            res == R.id.btn_roaming ? VoIPController.DATA_SAVING_ROAMING :
-              VoIPController.DATA_SAVING_NEVER;
+      final @DataSavingOption int option =
+        res == R.id.btn_always ? DataSavingOption.ALWAYS :
+        res == R.id.btn_mobile ? DataSavingOption.MOBILE :
+        res == R.id.btn_roaming ? DataSavingOption.ROAMING :
+        DataSavingOption.NEVER;
 
       if (tdlib.files().setVoipDataSavingOption(option)) {
         adapter.updateValuedSettingById(R.id.btn_lessDataForCalls);
