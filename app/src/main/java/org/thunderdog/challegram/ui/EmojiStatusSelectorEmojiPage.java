@@ -100,6 +100,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
     headerView.initWithSingleController(this, false);
     headerView.setBackgroundHeight(Screen.dp(56));
     headerView.getBackButton().setIsReverse(true);
+    parent.addThemeInvalidateListener(headerView);
 
     emojiCustomListLayout = new EmojiLayout(context()) {
       @Override
@@ -507,6 +508,18 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
     return ColorId.icon;
   }
 
+  @Override
+  public boolean needsTempUpdates () {
+    return true;
+  }
+
+  @Override
+  public void onThemeColorsChanged (boolean areTemp, ColorState state) {
+    super.onThemeColorsChanged(areTemp, state);
+    if (headerView != null) {
+      headerView.resetColors(this, null);
+    }
+  }
 
 
   /* Views */
@@ -751,6 +764,11 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
         }
       });
       super.setDefaultListenersAndDecorators(controller);
+    }
+
+    @Override
+    public boolean needsTempUpdates () {
+      return true;
     }
   }
 
