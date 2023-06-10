@@ -22,7 +22,6 @@ import android.graphics.Path;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
-import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -74,7 +73,6 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
-import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 
 public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPreDrawListener, ViewPager.OnPageChangeListener, FactorAnimator.Target, View.OnClickListener, View.OnLongClickListener, Lang.Listener {
@@ -146,9 +144,20 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
 
   private void clearRecentStickers () {
     if (themeProvider != null && mediaAdapter.hasRecents) {
-      themeProvider.showOptions(null, new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {Lang.getString(R.string.ClearRecentStickers), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_auto_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
+      themeProvider.showOptions(null, new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {
+        Lang.getString(animatedEmojiOnly ? R.string.ClearRecentEmojiStatuses: R.string.ClearRecentStickers),
+        Lang.getString(R.string.Cancel)
+      }, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_auto_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
         if (id == R.id.btn_done) {
           setShowRecents(false);
+          if (animatedEmojiOnly) {
+            ViewController<?> c = adapter.getCachedItem(0);
+            if (c != null) {
+              ((EmojiStatusListController) c).removeRecentStickers();
+            }
+            parentController.tdlib().client().send(new TdApi.ClearRecentEmojiStatuses(), parentController.tdlib().okHandler());
+            return true;
+          }
           ViewController<?> c = adapter.getCachedItem(1);
           if (c != null) {
             ((EmojiMediaListController) c).removeRecentStickers();
@@ -173,6 +182,46 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
         return true;
       });
     }
+  }
+
+  private void openEmojiSetOptions (final TGStickerSetInfo info) {
+    if (themeProvider == null) return;
+
+    boolean isTrending = info.isTrendingEmoji();
+    themeProvider.showOptions(null, new int[] {
+      R.id.btn_copyLink,
+      isTrending ? R.id.btn_addStickerSet: R.id.more_btn_delete
+    }, new String[] {
+      Lang.getString(R.string.CopyLink),
+      Lang.getString(isTrending ? R.string.AddPack: R.string.DeletePack)
+    }, new int[] {
+      ViewController.OPTION_COLOR_NORMAL,
+      isTrending ? ViewController.OPTION_COLOR_NORMAL: ViewController.OPTION_COLOR_RED
+    }, new int[] {
+      R.drawable.baseline_link_24,
+      isTrending ? R.drawable.deproko_baseline_insert_sticker_24: R.drawable.baseline_delete_24
+    }, (itemView, id) -> {
+      if (id == R.id.more_btn_delete) {
+        if (themeProvider != null) {
+          themeProvider.showOptions(Lang.getStringBold(R.string.RemoveEmojiSet, info.getTitle()), new int[] {R.id.btn_delete, R.id.btn_cancel}, new String[] {Lang.getString(R.string.RemoveStickerSetAction), Lang.getString(R.string.Cancel)}, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (resultItemView, resultId) -> {
+            if (resultId == R.id.btn_delete) {
+              ViewController<?> c = adapter.getCachedItem(0);
+              if (c != null) {
+                ((EmojiStatusListController) c).removeStickerSet(info);
+              }
+              parentController.tdlib().client().send(new TdApi.ChangeStickerSet(info.getId(), false, false), parentController.tdlib().okHandler());
+            }
+            return true;
+          });
+        }
+      } else if (id == R.id.btn_addStickerSet) {
+        info.unsetIsTrendingEmoji();
+        parentController.tdlib().client().send(new TdApi.ChangeStickerSet(info.getId(), true, false), parentController.tdlib().okHandler());
+      } else if (id == R.id.btn_copyLink) {
+        UI.copyText(TD.getEmojiPackLink(info.getName()), R.string.CopiedLink);
+      }
+      return true;
+    });
   }
 
   private void removeStickerSet (final TGStickerSetInfo info) {
@@ -1015,12 +1064,16 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
 
     @Override
     public boolean onLongClick (View v) {
-      if (parent != null && parent.animatedEmojiOnly) return false;
+      // if (parent != null && parent.animatedEmojiOnly) return false;
       if (v instanceof StickerSectionView) {
         StickerSectionView sectionView = (StickerSectionView) v;
         TGStickerSetInfo info = sectionView.getStickerSet();
         if (parent != null) {
-          parent.removeStickerSet(info);
+          if (parent.animatedEmojiOnly) {
+            parent.openEmojiSetOptions(info);
+          } else {
+            parent.removeStickerSet(info);
+          }
           return true;
         }
         return false;

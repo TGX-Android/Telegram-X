@@ -754,7 +754,14 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
     resetScrollCache();
   }
 
-  private int removeStickerSet (TGStickerSetInfo stickerSet) {
+  public void removeRecentStickers () {
+    TGStickerSetInfo stickerSet = stickerSets.get(0);
+    if (stickerSet != null && stickerSet.isRecent()) {
+      removeStickerSet(stickerSet);
+    }
+  }
+
+  public int removeStickerSet (TGStickerSetInfo stickerSet) {
     int i = stickerSets.indexOf(stickerSet);
     if (i != -1) {
       beforeStickerChanges();

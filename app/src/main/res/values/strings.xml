@@ -1373,13 +1373,16 @@
   <string name="CustomNotifications">Custom notifications</string>
   <string name="Send">Send</string>
   <string name="ClearRecentStickers">Clear Recent Stickers</string>
+  <string name="ClearRecentEmojiStatuses">Clear Recent Emoji Statuses</string>
   <string name="CropSquare">Square</string>
   <string name="Wallpaper">Wallpaper</string>
   <string name="ChatPreview">Chat preview</string>
   <string name="AndroidVersionWarning">Sorry, this feature is available yet only on Android %1$s (%2$s) or higher</string>
   <string name="RemoveStickerSet">Remove sticker set %1$s?</string>
+  <string name="RemoveEmojiSet">Remove emoji set %1$s?</string>
   <string name="RemoveStickerSetAction">Remove</string>
   <string name="DeletePack">Delete pack</string>
+  <string name="AddPack">Add pack</string>
   <string name="DeleteArchivedPack">Delete from archive</string>
   <string name="Folders">Folders</string>
   <string name="StartEncryptedChat">Start secret chat</string>

@@ -3545,6 +3545,10 @@ public class TD {
     return "https://" + getTelegramMeHost() + "/addstickers/" + name;
   }
 
+  public static String getEmojiPackLink (String name) {
+    return "https://" + getTelegramMeHost() + "/addemoji/" + name;
+  }
+
   public static String getLink (TdApi.User user) {
     return "https://" + getTelegramMeHost() + "/" + Td.primaryUsername(user);
   }

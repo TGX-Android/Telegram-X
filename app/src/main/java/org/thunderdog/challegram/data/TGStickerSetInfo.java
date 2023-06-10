@@ -32,6 +32,7 @@ import org.thunderdog.challegram.widget.EmojiLayout;
 
 import java.util.ArrayList;
 
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.td.Td;
 
@@ -217,6 +218,10 @@ public class TGStickerSetInfo {
 
   public void setIsTrendingEmoji () {
     flags |= FLAG_TRENDING_EMOJI;
+  }
+
+  public void unsetIsTrendingEmoji () {
+    flags = BitwiseUtils.setFlag(flags, FLAG_TRENDING_EMOJI, false);
   }
 
   public boolean isTrendingEmoji () {
