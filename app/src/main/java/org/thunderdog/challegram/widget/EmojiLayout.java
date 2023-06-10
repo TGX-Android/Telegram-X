@@ -1261,14 +1261,8 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
       mediaSectionsView.setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 180));
       mediaSectionsView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? OVER_SCROLL_IF_CONTENT_SCROLLS :OVER_SCROLL_NEVER);
       mediaSectionsView.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, Lang.rtl()));
-      mediaSectionsView.addItemDecoration(new RecyclerView.ItemDecoration() {
-        @Override
-        public void getItemOffsets (Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
-          int position = parent.getChildAdapterPosition(view);
-          outRect.left = position == 0 ? getHorizontalPadding() : 0;
-          outRect.right = position == mediaAdapter.getItemCount() - 1 ? getHorizontalPadding() : 0;
-        }
-      });
+      mediaSectionsView.setPadding(getHorizontalPadding(), 0, getHorizontalPadding(), 0);
+      mediaSectionsView.setClipToPadding(false);
       mediaSectionsView.setAdapter(mediaAdapter = new MediaAdapter(getContext(), this, this, animatedEmojiOnly ? 8: emojiSections.size(), Settings.instance().getEmojiMediaSection() == EmojiMediaType.GIF, themeProvider, animatedEmojiOnly));
       mediaSectionsView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, headerSize));
 
