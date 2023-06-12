@@ -144,7 +144,16 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
     emojiCustomListLayout.removeView(emojiCustomListLayout.getHeaderView());
     parent.foregroundView.addView(emojiCustomListLayout.getHeaderView());
 
-    foregroundEmojiLayout = new ForegroundSearchByEmojiView(context, this);
+    foregroundEmojiLayout = new ForegroundSearchByEmojiView(context, this) {
+      @Override
+      public boolean onTouchEvent (MotionEvent event) {
+        if (emojiSelectorVisibility.getFloatValue() < 1f) return false;
+        return super.onTouchEvent(event);
+      }
+    };
+    foregroundEmojiLayout.setOnClickListener(v -> {
+      closeEmojiSelectMode();
+    });
     parent.foregroundView.addView(foregroundEmojiLayout);
   }
 

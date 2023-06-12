@@ -72,6 +72,7 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.MessageId;
+import me.vkryl.td.Td;
 
 public class BetterChatView extends BaseView implements Destroyable, RemoveHelper.RemoveDelegate, ChatListener, TdlibCache.UserDataChangeListener, TdlibCache.SupergroupDataChangeListener, TdlibCache.BasicGroupDataChangeListener, NotificationSettingsListener, TdlibCache.UserStatusChangeListener, DrawableProvider, TooltipOverlayView.LocationProvider {
   private static final int FLAG_FAKE_TITLE = 1;
@@ -698,6 +699,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
       setSubtitle(foundMessage.getText(), foundMessage.getHighlight());
       setUnreadCount(0, counter.isMuted(), false);
       TdApi.MessageSender sender = chat.getSenderId();
+      setEmojiStatus(tdlib.chatUser(Td.getSenderId(sender)));
       avatarReceiver.requestMessageSender(tdlib, sender, AvatarReceiver.Options.NONE);
       invalidate();
     }

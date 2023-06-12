@@ -930,13 +930,13 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
         }
 
         c.restore();
-        int statusDrawLeft = (int) (baseTextLeft + (trimmedTitle.getWidth() + Screen.dp(6)) * textScaleFactor);
+        int statusDrawLeft = (int) (baseTextLeft + (trimmedTitle.getWidth() + Screen.dp(6)) * textScaleFactor) + (showLock ? Screen.dp(16f) : 0);
         int statusDrawTop = (int) baseTitleTop;
         if (trimmedTitleExpanded != null && avatarExpandFactor > 0f) {
           if (avatarExpandFactor < 1f) {
             emojiStatusHelper.draw(c, statusDrawLeft, statusDrawTop, 1f - avatarExpandFactor, textScaleFactor);
           }
-          int statusDrawLeft2 = (int) (baseTextLeft + (trimmedTitleExpanded.getLastLineWidth() + Screen.dp(6)) * textScaleFactor);
+          int statusDrawLeft2 = (int) (baseTextLeft + (trimmedTitleExpanded.getLastLineWidth() + Screen.dp(6)) * textScaleFactor) + (showLock ? Screen.dp(16f) : 0);
           int statusDrawTop2 = (int) (baseTitleTop + (trimmedTitleExpanded.getNextLineHeight() - trimmedTitleExpanded.getLineHeight(trimmedTitleExpanded.getLineCount() - 1)) * textScaleFactor);
           emojiStatusHelper.draw(c, statusDrawLeft2, statusDrawTop2, avatarExpandFactor, textScaleFactor);
         } else {

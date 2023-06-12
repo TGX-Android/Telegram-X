@@ -1050,7 +1050,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
   }
 
   public int getEmojiStatusLeft () {
-    return emojiStatusLeft;
+    return emojiStatusLeft + (isSecretChat() ? Screen.dp(12): 0);
   }
 
   public int getChecksRight () {
