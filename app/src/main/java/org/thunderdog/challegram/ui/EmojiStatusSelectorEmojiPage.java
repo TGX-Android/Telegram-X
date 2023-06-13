@@ -314,6 +314,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
   public boolean onKeyboardStateChanged (boolean visible) {
     boolean result = super.onKeyboardStateChanged(visible);
     customRecyclerView.invalidateItemDecorations();
+    emojiCustomListController.onKeyboardStateChanged(visible);
     return result;
   }
 
@@ -380,6 +381,14 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
   @Override
   protected void onSearchInputChanged (String input) {
     super.onSearchInputChanged(currentSearchInput = input);
+    if (StringUtils.isEmpty(input)) {
+      searchModeVisibility.setValue(true, true);
+      getSearchHeaderView(headerView).setEnabled(true);
+      Keyboard.show(getSearchHeaderView(headerView));
+      if (!StringUtils.isEmpty(emojiSearchRequest)) {
+        emojiSearchRequest = null;
+      }
+    }
     searchFieldIsNotEmpty.setValue(!StringUtils.isEmpty(input), true);
     emojiCustomListController.search(currentSearchInput, emojiSearchRequest);
   }
@@ -528,6 +537,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
       headerView.resetColors(this, null);
     }
   }
+
 
 
   /* Views */

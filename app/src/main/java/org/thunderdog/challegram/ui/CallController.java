@@ -23,6 +23,7 @@ import android.graphics.drawable.Drawable;
 import android.os.SystemClock;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.TextPaint;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -41,6 +42,7 @@ import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.emoji.Emoji;
@@ -58,6 +60,9 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.CustomTypefaceSpan;
+import org.thunderdog.challegram.util.EmojiStatusHelper;
+import org.thunderdog.challegram.util.text.TextColorSetOverride;
+import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.voip.gui.CallSettings;
 import org.thunderdog.challegram.widget.AvatarView;
 import org.thunderdog.challegram.widget.EmojiTextView;
@@ -206,6 +211,9 @@ public class CallController extends ViewController<CallController.Arguments> imp
 
   private AvatarView avatarView;
   private TextView nameView, stateView;
+  private EmojiStatusHelper emojiStatusHelper;
+  private float nameTextWidth;
+  private TextPaint nameTextPaint;
   private LinearLayout brandWrap;
   private TextView debugView;
   private CallStrengthView strengthView;
@@ -371,16 +379,37 @@ public class CallController extends ViewController<CallController.Arguments> imp
     params.topMargin = Screen.dp(76f);
     params.leftMargin = params.rightMargin = Screen.dp(18f);
 
-    nameView = new EmojiTextView(context);
+    nameView = new EmojiTextView(context) {
+      @Override
+      protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        nameTextWidth = U.measureText(TD.getUserName(user), nameTextPaint);
+        if (nameTextWidth > getMeasuredWidth() - getPaddingRight()) {
+          nameTextWidth = U.measureText(TextUtils.ellipsize(TD.getUserName(user), nameTextPaint, getMeasuredWidth() - getPaddingRight(), TextUtils.TruncateAt.END), nameTextPaint);
+        }
+      }
+
+      @Override
+      protected void onDraw (Canvas canvas) {
+        super.onDraw(canvas);
+        emojiStatusHelper.draw(canvas, (int) Math.min(getMeasuredWidth() - emojiStatusHelper.getWidth(0), nameTextWidth + Screen.dp(7)), Screen.dp(9));
+      }
+    };
     nameView.setScrollDisabled(true);
     nameView.setSingleLine(true);
     nameView.setTextColor(0xffffffff);
     nameView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 40);
     nameView.setTypeface(Typeface.create("sans-serif-light", Typeface.NORMAL));
+    nameView.setBackgroundColor(0x4000FF00);
     Views.setSimpleShadow(nameView);
     nameView.setEllipsize(TextUtils.TruncateAt.END);
     nameView.setLayoutParams(params);
     contentView.addView(nameView);
+
+    nameTextPaint = new TextPaint();
+    nameTextPaint.setTextSize(Screen.dp(40));
+    nameTextPaint.setTypeface(Typeface.create("sans-serif-light", Typeface.NORMAL));
+    emojiStatusHelper = new EmojiStatusHelper(tdlib, nameView);
 
     params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
     params.topMargin = Screen.dp(136f);
@@ -605,8 +634,18 @@ public class CallController extends ViewController<CallController.Arguments> imp
 
 
   private void setTexts () {
-    if (nameView != null)
+    if (emojiStatusHelper != null) {
+      this.emojiStatusHelper.updateEmoji(tdlib, user, new TextColorSetOverride(TextColorSets.Regular.NORMAL) {
+        @Override
+        public int emojiStatusColor () {
+          return 0xffffffff;
+        }
+      }, R.drawable.baseline_premium_star_28, 28);
+    }
+    if (nameView != null) {
       this.nameView.setText(TD.getUserName(user));
+      this.nameView.setPadding(0, 0, user != null && user.isPremium ? emojiStatusHelper.getWidth(Screen.dp(7)): 0, 0);
+    }
     if (emojiViewHint != null)
       this.emojiViewHint.setText(Lang.getString(R.string.CallEmojiHint, TD.getUserSingleName(call.userId, user)));
   }

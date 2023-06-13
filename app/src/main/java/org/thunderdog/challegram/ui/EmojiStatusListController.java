@@ -420,14 +420,28 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
     return -1;
   }
 
+  private boolean lockClickListenersByKeyboard;
+  private final Runnable unlockClickListenersByKeyboardRunnable = () -> lockClickListenersByKeyboard = false;
+
   @Override
   public boolean onStickerClick (StickerSmallView view, View clickView, TGStickerObj sticker, boolean isMenuClick, TdApi.MessageSendOptions sendOptions) {
-    if (context.isKeyboardVisible()) {
+    if (lockClickListenersByKeyboard || context.isKeyboardVisible()) {
       context.hideSoftwareKeyboard();
     } else if (getArguments() != null) {
       return getArguments().setEmojiStatus(clickView, sticker, 0);
     }
     return false;
+  }
+
+  @Override
+  public boolean onKeyboardStateChanged (boolean visible) {
+    if (visible) {
+      UI.cancel(unlockClickListenersByKeyboardRunnable);
+      lockClickListenersByKeyboard = true;
+    } else {
+      UI.post(unlockClickListenersByKeyboardRunnable, 100);
+    }
+    return super.onKeyboardStateChanged(visible);
   }
 
   @Override
