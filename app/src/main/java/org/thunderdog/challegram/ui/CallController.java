@@ -400,7 +400,6 @@ public class CallController extends ViewController<CallController.Arguments> imp
     nameView.setTextColor(0xffffffff);
     nameView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 40);
     nameView.setTypeface(Typeface.create("sans-serif-light", Typeface.NORMAL));
-    nameView.setBackgroundColor(0x4000FF00);
     Views.setSimpleShadow(nameView);
     nameView.setEllipsize(TextUtils.TruncateAt.END);
     nameView.setLayoutParams(params);
