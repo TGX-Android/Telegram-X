@@ -120,6 +120,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
     emojiCustomListController.setArguments(emojiCustomListLayout);
     emojiCustomListController.initWithFakeViews(customRecyclerView = recyclerView);
     emojiCustomListController.getValue();
+    emojiCustomListController.setOnStickersLoadListener(parent::launchOpenAnimation);
 
     customRecyclerView.addItemDecoration(new RecyclerView.ItemDecoration() {
       @Override
@@ -155,6 +156,8 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
       closeEmojiSelectMode();
     });
     parent.foregroundView.addView(foregroundEmojiLayout);
+
+    UI.post(parent::launchOpenAnimation, 150);
   }
 
   private int destX, destY;
@@ -697,7 +700,6 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
     protected void onCreateView (Context context, FrameLayoutFix contentView, ViewPager pager) {
       pager.setOffscreenPageLimit(1);
       contentView.addView(foregroundView, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-      tdlib.ui().post(this::launchOpenAnimation);
     }
 
     @Override

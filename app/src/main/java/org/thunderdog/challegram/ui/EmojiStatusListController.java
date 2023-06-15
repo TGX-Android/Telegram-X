@@ -942,6 +942,10 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
             setStickers(stickerSets, items);
             stickersLoaded = true;
             loadNextTrending();
+            if (onStickersLoadListener != null) {
+              onStickersLoadListener.run();
+              onStickersLoadListener = null;
+            }
           });
 
           break;
@@ -958,6 +962,11 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
 
   private boolean loadingStickers;
   private boolean stickersLoaded;
+  private Runnable onStickersLoadListener;
+
+  public void setOnStickersLoadListener (Runnable onStickersLoadListener) {
+    this.onStickersLoadListener = onStickersLoadListener;
+  }
 
   private void loadStickers () {
     if (!loadingStickers) {
