@@ -296,7 +296,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
             mediaSectionsView.scrollBy(desiredScrollX - scrollX, 0);
           }
         } else if (section + OFFSET > last) {
-          int desiredScrollX = Math.max(0, (section - emojiSections.size()) * itemWidth + itemWidth * OFFSET + itemWidth / 2);
+          int desiredScrollX = Math.max(0, (section - emojiSections.size()) * itemWidth + itemWidth * OFFSET + (animatedEmojiOnly ? -itemWidth: itemWidth / 2));
           if (animated && headerHideFactor != 1f) {
             mediaSectionsView.smoothScrollBy(desiredScrollX - scrollX, 0);
           } else {
