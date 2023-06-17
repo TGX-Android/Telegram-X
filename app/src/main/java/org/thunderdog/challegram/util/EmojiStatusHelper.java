@@ -27,12 +27,14 @@ import me.vkryl.core.lambda.Destroyable;
 public class EmojiStatusHelper implements Destroyable {
   private final @Nullable Tdlib tdlib;
   public final ComplexReceiver emojiStatusReceiver;
+  private final View parentView;
 
   private @Nullable EmojiStatusDrawable emojiStatusDrawable;
   private @Nullable Text.ClickListener clickListenerToSet;
 
   public EmojiStatusHelper (@Nullable Tdlib tdlib, View v) {
     this.tdlib = tdlib;
+    this.parentView = v;
     emojiStatusReceiver = new ComplexReceiver(v, Config.MAX_ANIMATED_EMOJI_REFRESH_RATE);
   }
 
@@ -47,6 +49,9 @@ public class EmojiStatusHelper implements Destroyable {
   public void invalidateEmojiStatusReceiver (Text text, @Nullable TextMedia specificMedia) {
     if (text != null) {
       text.requestMedia(emojiStatusReceiver, 0, 1);
+    }
+    if (parentView != null) {
+      parentView.invalidate();
     }
   }
 
