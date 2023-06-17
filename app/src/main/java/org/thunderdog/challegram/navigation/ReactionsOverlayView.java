@@ -17,11 +17,13 @@ import android.graphics.Canvas;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
 import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.Nullable;
 
+import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.emoji.AnimatedEmojiDrawable;
 import org.thunderdog.challegram.component.emoji.AnimatedEmojiEffect;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
@@ -30,6 +32,9 @@ import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
+import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Views;
 
@@ -37,6 +42,7 @@ import java.util.ArrayList;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
+import me.vkryl.core.ColorUtils;
 import me.vkryl.core.lambda.Destroyable;
 
 public class ReactionsOverlayView extends ViewGroup {
@@ -127,11 +133,16 @@ public class ReactionsOverlayView extends ViewGroup {
     private final ImageReceiver imageReceiver;
     private final GifReceiver gifReceiver;
     private GifFile animation;
+    private @Nullable Drawable drawable;
     private float displayScale;
     private Runnable removeRunnable;
     private boolean useDefaultSprayAnimation;
     @Nullable
     private AnimatedEmojiEffect animatedEmojiEffect;
+
+    private int repaintingColorStart;
+    private int repaintingColorEnd;
+    private boolean needsRepainting;
 
     // animation
     private static final int POSITION_ANIMATOR = 0;
@@ -158,6 +169,7 @@ public class ReactionsOverlayView extends ViewGroup {
       this.parentView = parentView;
       imageReceiver = new ImageReceiver(parentView, 0);
       gifReceiver = new GifReceiver(parentView);
+      repaintingColorStart = repaintingColorEnd = Theme.getColor(ColorId.iconActive);
     }
 
     public ReactionInfo setUseDefaultSprayAnimation (boolean useDefaultSprayAnimation) {
@@ -166,9 +178,17 @@ public class ReactionsOverlayView extends ViewGroup {
     }
 
     public ReactionInfo setSticker (TGStickerObj sticker, boolean isPlayOnce) {
+      if (sticker.isDefaultPremiumStar()) {
+        displayScale = sticker.getDisplayScale();
+        needsRepainting = true;
+        drawable = Drawables.get(R.drawable.baseline_premium_star_28).mutate();
+        parentView.invalidate();
+        return this;
+      }
       ImageFile imageFile = sticker.getImage();
       animation = sticker.getPreviewAnimation();
       displayScale = sticker.getDisplayScale();
+      needsRepainting |= sticker.isNeedRepainting();
       if (animation != null) {
         if (isPlayOnce) {
           animation.setPlayOnce(true);
@@ -186,6 +206,7 @@ public class ReactionsOverlayView extends ViewGroup {
         AnimatedEmojiDrawable d = new AnimatedEmojiDrawable(parentView);
         d.setSticker(sticker, true);
         this.animatedEmojiEffect = AnimatedEmojiEffect.createFrom(d, false);
+        this.needsRepainting |= sticker.isNeedRepainting();
       }
       return this;
     }
@@ -197,6 +218,12 @@ public class ReactionsOverlayView extends ViewGroup {
       this.duration = duration;
       this.positionAnimator = new FactorAnimator(POSITION_ANIMATOR, this, AnimatorUtils.DECELERATE_INTERPOLATOR, duration, 0f);
       return setPosition(new Rect(startPosition));
+    }
+
+    public ReactionInfo setRepaintingColors (int colorStart, int colorEnd) {
+      repaintingColorStart = colorStart;
+      repaintingColorEnd = colorEnd;
+      return this;
     }
 
     public ReactionInfo setAnimatedPosition (Point startPosition, Point finishPosition, int size, AnimatedPositionProvider animatedPositionProvider, long duration) {
@@ -230,6 +257,9 @@ public class ReactionsOverlayView extends ViewGroup {
       position = rect;
       gifReceiver.setBounds(rect.left, rect.top, rect.right, rect.bottom);
       imageReceiver.setBounds(rect.left, rect.top, rect.right, rect.bottom);
+      if (drawable != null) {
+        drawable.setBounds(rect.left, rect.top, rect.right, rect.bottom);
+      }
       if (animatedEmojiEffect != null) {
         animatedEmojiEffect.setBounds(rect.left, rect.top, rect.right, rect.bottom);
       }
@@ -277,15 +307,42 @@ public class ReactionsOverlayView extends ViewGroup {
       if (Config.DEBUG_REACTIONS_ANIMATIONS) {
         canvas.drawRect(gifReceiver.getLeft(), gifReceiver.getTop(), gifReceiver.getRight(), gifReceiver.getBottom(), Paints.fillingPaint(0xaaff0000));
       }
+
+      if (needsRepainting) {
+        canvas.saveLayerAlpha(
+          gifReceiver.getLeft() - gifReceiver.getWidth() / 4f,
+          gifReceiver.getTop() - gifReceiver.getHeight() / 4f,
+          gifReceiver.getRight() + gifReceiver.getWidth() / 4f,
+          gifReceiver.getBottom() + gifReceiver.getHeight() / 4f,
+          255, Canvas.ALL_SAVE_FLAG);
+      }
+
       if (gifReceiver.needPlaceholder() || Config.DEBUG_REACTIONS_ANIMATIONS) {
         imageReceiver.draw(canvas);
       }
       gifReceiver.draw(canvas);
       //canvas.drawRect(position, Paints.strokeBigPaint(Color.RED));
+      if (drawable != null) {
+        drawable.setColorFilter(Paints.getPorterDuffPaint(0xFFFFFFFF).getColorFilter());
+        drawable.draw(canvas);
+      }
       if (animatedEmojiEffect != null) {
+        canvas.save();
         canvas.translate(imageReceiver.getLeft(), imageReceiver.getTop());
         animatedEmojiEffect.draw(canvas);
+        canvas.restore();
       }
+
+      if (needsRepainting) {
+        canvas.drawRect(
+          gifReceiver.getLeft() - gifReceiver.getWidth() / 4f,
+          gifReceiver.getTop() - gifReceiver.getHeight() / 4f,
+          gifReceiver.getRight() + gifReceiver.getWidth() / 4f,
+          gifReceiver.getBottom() + gifReceiver.getHeight() / 4f,
+          Paints.getSrcInPaint(ColorUtils.fromToArgb(repaintingColorStart, repaintingColorEnd, positionAnimator != null ? positionAnimator.getFactor(): 1f)));
+        canvas.restore();
+      }
+
       Views.restore(canvas, saveCount);
     }
 

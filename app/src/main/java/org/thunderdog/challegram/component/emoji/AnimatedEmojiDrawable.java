@@ -10,12 +10,14 @@ import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
+import org.thunderdog.challegram.tool.Drawables;
 
 import me.vkryl.core.lambda.Destroyable;
 
@@ -23,6 +25,7 @@ public class AnimatedEmojiDrawable extends Drawable implements Destroyable {
 
   private final ImageReceiver imageReceiver;
   private final GifReceiver gifReceiver;
+  private Drawable drawable;
 
   public AnimatedEmojiDrawable (View parentView) {
     imageReceiver = new ImageReceiver(parentView, 0);
@@ -30,9 +33,12 @@ public class AnimatedEmojiDrawable extends Drawable implements Destroyable {
   }
 
   public void setSticker (TGStickerObj sticker, boolean isPlayOnce) {
+    if (sticker.isDefaultPremiumStar()) {
+      drawable = Drawables.get(R.drawable.baseline_premium_star_28).mutate();
+      return;
+    }
     ImageFile imageFile = sticker.getImage();
     GifFile animation = sticker.getPreviewAnimation();
-    float displayScale = sticker.getDisplayScale();
     if (animation != null) {
       if (isPlayOnce) {
         animation.setPlayOnce(true);
@@ -55,6 +61,10 @@ public class AnimatedEmojiDrawable extends Drawable implements Destroyable {
 
   @Override
   public void draw (@NonNull Canvas canvas) {
+    if (drawable != null) {
+      drawable.draw(canvas);
+      return;
+    }
     if (gifReceiver.needPlaceholder() || Config.DEBUG_REACTIONS_ANIMATIONS) {
       imageReceiver.draw(canvas);
     }
@@ -65,6 +75,9 @@ public class AnimatedEmojiDrawable extends Drawable implements Destroyable {
   public void setBounds (@NonNull Rect bounds) {
     gifReceiver.setBounds(bounds.left, bounds.top, bounds.right, bounds.bottom);
     imageReceiver.setBounds(bounds.left, bounds.top, bounds.right, bounds.bottom);
+    if (drawable != null) {
+      drawable.setBounds(bounds.left, bounds.top, bounds.right, bounds.bottom);
+    }
     super.setBounds(bounds);
   }
 
@@ -72,6 +85,9 @@ public class AnimatedEmojiDrawable extends Drawable implements Destroyable {
   public void setBounds (int left, int top, int right, int bottom) {
     gifReceiver.setBounds(left, top, right, bottom);
     imageReceiver.setBounds(left, top, right, bottom);
+    if (drawable != null) {
+      drawable.setBounds(left, top, right, bottom);
+    }
     super.setBounds(left, top, right, bottom);
   }
 
@@ -79,6 +95,9 @@ public class AnimatedEmojiDrawable extends Drawable implements Destroyable {
   public void setAlpha (int i) {
     gifReceiver.setAlpha(i / 255f);
     imageReceiver.setAlpha(i / 255f);
+    if (drawable != null) {
+      drawable.setAlpha(i);
+    }
   }
 
   @Override
