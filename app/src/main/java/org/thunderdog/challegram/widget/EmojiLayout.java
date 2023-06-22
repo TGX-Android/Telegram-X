@@ -1263,7 +1263,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
       mediaSectionsView.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, Lang.rtl()));
       mediaSectionsView.setPadding(getHorizontalPadding(), 0, getHorizontalPadding(), 0);
       mediaSectionsView.setClipToPadding(false);
-      mediaSectionsView.setAdapter(mediaAdapter = new MediaAdapter(getContext(), this, this, animatedEmojiOnly ? 8: emojiSections.size(), Settings.instance().getEmojiMediaSection() == EmojiMediaType.GIF, themeProvider, animatedEmojiOnly));
+      mediaSectionsView.setAdapter(mediaAdapter = new MediaAdapter(getContext(), this, this, animatedEmojiOnly ? 8: emojiSections.size(), !animatedEmojiOnly && Settings.instance().getEmojiMediaSection() == EmojiMediaType.GIF, themeProvider, animatedEmojiOnly));
       mediaSectionsView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, headerSize));
 
       headerView.addView(mediaSectionsView);
