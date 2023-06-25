@@ -3034,15 +3034,17 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         public int backgroundColorId (boolean isPressed) {
           return isPressed ? nameColorId : 0;
         }
-
-        @Override
-        public int emojiStatusColor () {
-          return Theme.getColor(nameColorId);
-        }
       };
     } else {
       colorTheme = getChatAuthorColorSet();
     }
+
+    colorTheme = new TextColorSetOverride(colorTheme) {
+      @Override
+      public int emojiStatusColor () {
+        return clickableTextColor(false);
+      }
+    };
 
     if (!tdlib.isSelfChat(chat) && !hasBot) {
       hAuthorEmojiStatus = EmojiStatusHelper.makeDrawable(tdlib, tdlib.cache().user(sender.getUserId()), colorTheme, (text1, specificMedia) -> invalidateEmojiStatusReceiver());
