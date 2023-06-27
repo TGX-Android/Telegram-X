@@ -6072,7 +6072,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   @Override
   public void onCounterAppearanceChanged (Counter counter, boolean sizeChanged) {
-    if (sizeChanged && BitwiseUtils.hasFlag(flags, FLAG_LAYOUT_BUILT)) {
+    if ((sizeChanged || (counter == reactionsCounter && !useBubbles())) && BitwiseUtils.hasFlag(flags, FLAG_LAYOUT_BUILT)) {
       if (counter == viewCounter) {
         switch (getViewCountMode()) {
           case VIEW_COUNT_FORWARD:
