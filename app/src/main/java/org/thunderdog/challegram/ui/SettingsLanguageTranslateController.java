@@ -77,6 +77,8 @@ public class SettingsLanguageTranslateController extends RecyclerViewController<
             }
           }
           view.findRadioView().setChecked(item.isSelected(), isUpdate);
+        } else if (itemId == R.id.btn_quickTranslate) {
+          view.getToggler().setRadioEnabled(Settings.instance().needUseQuickTranslation(), isUpdate);
         }
       }
     };
@@ -106,6 +108,9 @@ public class SettingsLanguageTranslateController extends RecyclerViewController<
 
   private void addDoNotTranslateItems (List<ListItem> items) {
     int chatDoNotTranslateMode = Settings.instance().getChatDoNotTranslateMode();
+    items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
+    items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_quickTranslate, 0, R.string.QuickTranslate));
+    items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     items.add(new ListItem(ListItem.TYPE_HEADER_PADDED, 0, 0, R.string.DoNotTranslate));
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO_2, R.id.btn_chatDoNotTranslateAppLang, 0, R.string.ApplicationLanguage, R.id.btn_chatDoNotTranslate, chatDoNotTranslateMode == Settings.DO_NOT_TRANSLATE_MODE_APP_LANG));
@@ -157,6 +162,8 @@ public class SettingsLanguageTranslateController extends RecyclerViewController<
       Settings.instance().setIsNotTranslatableLanguage(languageInfo.id, !Settings.instance().containsInNotTranslatableLanguageList(languageInfo.id));
       adapter.updateValuedSettingByData(languageInfo);
       adapter.updateAllValuedSettingsById(R.id.btn_chatDoNotTranslateSelected);
+    } else if (viewId == R.id.btn_quickTranslate) {
+      Settings.instance().setUseQuickTranslation(adapter.toggleView(v));
     }
   }
 
@@ -195,11 +202,11 @@ public class SettingsLanguageTranslateController extends RecyclerViewController<
     adapter.updateAllValuedSettingsById(R.id.btn_chatDoNotTranslateSelected);
 
     if (mode == Settings.DO_NOT_TRANSLATE_MODE_APP_LANG) {
-      adapter.removeRange(12, adapter.getItemCount() - 12);
+      adapter.removeRange(15, adapter.getItemCount() - 15);
     } else {
       List<ListItem> items = adapter.getItems();
       addLanguagesItems(items);
-      adapter.notifyItemRangeInserted(12, items.size() - 12);
+      adapter.notifyItemRangeInserted(15, items.size() - 15);
     }
   }
 

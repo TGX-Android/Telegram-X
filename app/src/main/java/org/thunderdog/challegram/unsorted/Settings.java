@@ -356,6 +356,7 @@ public class Settings {
   private static final int FLAG_OTHER_NO_CHAT_QUICK_REPLY = 1 << 11;
   private static final int FLAG_OTHER_SEND_BY_ENTER = 1 << 12;
   private static final int FLAG_OTHER_HIDE_CHAT_KEYBOARD = 1 << 13;
+  private static final int FLAG_OTHER_USE_QUICK_TRANSLATION = 1 << 14;
   private static final int FLAG_OTHER_DISABLE_PREVIEW_CHATS_ON_HOLD = 1 << 15;
   private static final int FLAG_OTHER_NEED_GROUP_MEDIA = 1 << 16;
   private static final int FLAG_OTHER_DISABLE_INAPP_BROWSER = 1 << 17;
@@ -2482,6 +2483,14 @@ public class Settings {
 
   public void setAutoplayGIFs (boolean autoplayGIFs) {
     setSetting(FLAG_OTHER_AUTOPLAY_GIFS, autoplayGIFs);
+  }
+
+  public void setUseQuickTranslation (boolean useQuickTranslation) {
+    setSetting(FLAG_OTHER_USE_QUICK_TRANSLATION, useQuickTranslation);
+  }
+
+  public boolean needUseQuickTranslation () {
+    return checkSetting(FLAG_OTHER_USE_QUICK_TRANSLATION);
   }
 
   public boolean forceArabicNumbers () {

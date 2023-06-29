@@ -1388,10 +1388,12 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       return false;
     }
     if (touchX > MessagesController.getSlideBackBound()) {
-      msg.checkAvailableReactions(() -> {
+      msg.checkTranslatableText(() -> {
+        msg.checkAvailableReactions(() -> {
           if ((msg.getRightQuickReactions().size() > 0 && diffX < 0) || (msg.getLeftQuickReactions().size() > 0 && diffX > 0)) {
             m.startSwipe(findTargetView());
           }
+        });
       });
       return true;
     }
