@@ -195,8 +195,8 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
     this.receiver.requestChat(tdlib, chatId, AvatarReceiver.Options.NONE);
   }
 
-  public void setEmojiStatus (Tdlib tdlib, TdApi.User user) {
-    emojiStatusHelper.updateEmoji(tdlib, user, new TextColorSetOverride(TextColorSets.Regular.NORMAL) {
+  public void setEmojiStatus (TdlibAccount account) {
+    emojiStatusHelper.updateEmojiWithoutTdlib(account.getUser(), account.getEmojiStatusSticker(), new TextColorSetOverride(TextColorSets.Regular.NORMAL) {
       @Override
       public int emojiStatusColor () {
         return Theme.getColor(ColorId.iconActive);

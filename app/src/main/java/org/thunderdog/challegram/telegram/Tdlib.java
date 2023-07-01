@@ -9265,6 +9265,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   private TdApi.ProfilePhoto myProfilePhoto;
+  private Long myEmojiStatusId;
+  private TdApi.File myEmojiStatusFile;
 
   private Client.ResultHandler profilePhotoHandler (boolean isBig) {
     return result -> {
@@ -9289,9 +9291,66 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     };
   }
 
+  private RunnableData<TdlibEmojiManager.Entry> emojiStatusHandler () {
+    return result -> {
+      if (result.value != null) {
+        TdApi.File downloadedFile = result.value.sticker;
+        long emojiStatusId = TD.getStickerCustomEmojiId(result.value);
+        if (myEmojiStatusId != null && myEmojiStatusId == emojiStatusId) {
+          myEmojiStatusFile = downloadedFile;
+          if (TD.isFileLoaded(downloadedFile)) {
+            emojiStatusFileHandler(result.value).onResult(downloadedFile);
+          } else if (!TD.isFileLoading(downloadedFile)) {
+            client().send(new TdApi.DownloadFile(downloadedFile.id, TdlibFilesManager.CLOUD_PRIORITY, 0, 0, true), emojiStatusFileHandler(result.value));
+          }
+        }
+      } else {
+        Log.e("Failed to load emoji status, accountId:%d", accountId);
+      }
+    };
+  }
+
+  private Client.ResultHandler emojiStatusFileHandler (TdApi.Sticker sticker) {
+    return result -> {
+      switch (result.getConstructor()) {
+        case TdApi.File.CONSTRUCTOR: {
+          TdApi.File downloadedFile = (TdApi.File) result;
+          if (TD.isFileLoaded(downloadedFile)) {
+            TdApi.File currentFile = myEmojiStatusFile;
+            if (currentFile != null && currentFile.id == downloadedFile.id) {
+              Td.copyTo(downloadedFile, currentFile);
+              account().storeUserEmojiStatusSticker(sticker);
+            }
+          }
+          break;
+        }
+        case TdApi.Error.CONSTRUCTOR: {
+          Log.e("Failed to load emoji status, accountId:%d", accountId);
+          break;
+        }
+      }
+    };
+  }
+
+  @TdlibThread
+  void downloadMyUserEmojiStatus (@Nullable TdApi.User user) {
+    Long newEmojiStatusId = user != null && user.isPremium ? (user.emojiStatus != null ? user.emojiStatus.customEmojiId: 0) : null;
+
+    if (newEmojiStatusId == null && myEmojiStatusId == null)
+      return;
+    if (newEmojiStatusId != null && myEmojiStatusId != null && (newEmojiStatusId.longValue() == myEmojiStatusId.longValue()))
+      return;
+    myEmojiStatusId = newEmojiStatusId;
+    if (newEmojiStatusId != null && newEmojiStatusId != 0) {
+      emoji().findOrRequest(newEmojiStatusId, emojiStatusHandler());
+    }
+  }
+
   @TdlibThread
   void downloadMyUser (@Nullable TdApi.User user) {
     account().storeUserInformation(user);
+
+    downloadMyUserEmojiStatus(user);
 
     TdApi.ProfilePhoto newProfilePhoto = user != null ? user.profilePhoto : null;
     if (newProfilePhoto == null && myProfilePhoto == null)

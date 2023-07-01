@@ -26,7 +26,12 @@ import androidx.annotation.Nullable;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ComplexReceiver;
+import org.thunderdog.challegram.loader.ImageFile;
+import org.thunderdog.challegram.loader.ImageReceiver;
+import org.thunderdog.challegram.loader.gif.GifFile;
+import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
@@ -37,6 +42,7 @@ import org.thunderdog.challegram.util.text.TextMedia;
 
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.lambda.Destroyable;
+import me.vkryl.td.Td;
 
 public class EmojiStatusHelper implements Destroyable {
   private final @Nullable Tdlib tdlib;
@@ -67,6 +73,15 @@ public class EmojiStatusHelper implements Destroyable {
     if (parentView != null) {
       parentView.invalidate();
     }
+  }
+
+  public void updateEmojiWithoutTdlib (@Nullable TdApi.User user, @Nullable TdApi.Sticker sticker, TextColorSet textColorSet) {
+    updateEmojiWithoutTdlib(user, sticker, textColorSet, R.drawable.baseline_premium_star_16, 15);
+  }
+  public void updateEmojiWithoutTdlib (@Nullable TdApi.User user, @Nullable TdApi.Sticker sticker, TextColorSet textColorSet, int defaultStarIconId, int textSize) {
+    emojiStatusDrawable = new EmojiStatusDrawable(parentView, user, sticker, clickListenerToSet, textColorSet, defaultStarIconId, textSize);
+    emojiStatusDrawable.ignoreDraw = ignoreDraw;
+    invalidateEmojiStatusReceiver(null, null);
   }
 
   public void updateEmoji (@Nullable TdApi.User user, TextColorSet textColorSet) {
@@ -148,6 +163,10 @@ public class EmojiStatusHelper implements Destroyable {
     return emojiSize - 3;
   }
 
+  public static int textSizeToEmojiSize (int textSize) {
+    return textSize + 3;
+  }
+
   private boolean ignoreDraw;
 
   public void setIgnoreDraw (boolean ignoreDraw) {
@@ -163,13 +182,8 @@ public class EmojiStatusHelper implements Destroyable {
     }
   }
 
-
   public static EmojiStatusDrawable makeDrawable (Tdlib tdlib, @Nullable TdApi.User user, TextColorSet textColorSet, Text.TextMediaListener textMediaListener) {
     return new EmojiStatusDrawable(tdlib, user, null, textColorSet, textMediaListener, R.drawable.baseline_premium_star_16, 15);
-  }
-
-  public static @NonNull EmojiStatusDrawable makeDrawable (Tdlib tdlib, @Nullable TdApi.User user, @Nullable Text.ClickListener clickListener, TextColorSet textColorSet, Text.TextMediaListener textMediaListener, int defaultStarIconId, int textSize) {
-    return new EmojiStatusDrawable(tdlib, user, clickListener, textColorSet, textMediaListener, defaultStarIconId, textSize);
   }
 
   public static class EmojiStatusDrawable {
@@ -180,6 +194,8 @@ public class EmojiStatusHelper implements Destroyable {
     private final boolean needDrawEmojiStatus;
     private final Text.TextMediaListener textMediaListener;
     private final int textSize;
+    private final @Nullable ImageReceiver imageReceiver;
+    private final @Nullable GifReceiver gifReceiver;
     private int lastDrawX, lastDrawY;
     private float lastDrawScale = 1f;
     private boolean ignoreDraw;
@@ -192,6 +208,31 @@ public class EmojiStatusHelper implements Destroyable {
       this.textMediaListener = textMediaListener;
       this.clickListener = clickListener;
       this.starDrawable = emojiStatus == null && needDrawEmojiStatus ? Drawables.get(defaultStarIconId): null;
+      this.imageReceiver = null;
+      this.gifReceiver = null;
+    }
+
+    private EmojiStatusDrawable (View v, @Nullable TdApi.User user, @Nullable TdApi.Sticker sticker, @Nullable Text.ClickListener clickListener, @Nullable TextColorSet textColorSet, int defaultStarIconId, int textSize) {
+      this.emojiStatus = null;
+      this.needDrawEmojiStatus = user != null && user.isPremium;
+      this.textSize = textSize;
+      this.textColorSet = textColorSet;
+      this.textMediaListener = null;
+      this.clickListener = clickListener;
+      this.starDrawable = user != null && user.emojiStatus == null && needDrawEmojiStatus ? Drawables.get(defaultStarIconId): null;
+
+      if (sticker != null && TD.isFileLoaded(sticker.sticker)) {
+        this.imageReceiver = new ImageReceiver(v, 0);
+        this.gifReceiver = new GifReceiver(v);
+        if (Td.isAnimated(sticker.format)) {
+          gifReceiver.requestFile(new GifFile(null, sticker));
+        } else {
+          imageReceiver.requestFile(new ImageFile(null, sticker.sticker));
+        }
+      } else {
+        this.imageReceiver = null;
+        this.gifReceiver = null;
+      }
     }
 
     public void setIgnoreDraw (boolean ignoreDraw) {
@@ -205,7 +246,9 @@ public class EmojiStatusHelper implements Destroyable {
     }
 
     public int getWidth () {
-      if (emojiStatus != null) {
+      if (imageReceiver != null) {
+        return Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize));
+      } else if (emojiStatus != null) {
         return emojiStatus.getWidth();
       } else if (needDrawEmojiStatus) {
         return Screen.dp(18);
@@ -214,7 +257,9 @@ public class EmojiStatusHelper implements Destroyable {
     }
 
     public int getWidth (int offset) {
-      if (emojiStatus != null) {
+      if (imageReceiver != null) {
+        return Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)) + offset;
+      } else if (emojiStatus != null) {
         return emojiStatus.getWidth() + offset;
       } else if (needDrawEmojiStatus) {
         return Screen.dp(18) + offset;
@@ -234,14 +279,20 @@ public class EmojiStatusHelper implements Destroyable {
       if (emojiStatus != null) {
         return emojiStatus.onTouchEvent(v, e);
       }
-      if (clickListener == null || starDrawable == null) return false;
+
+      int width = starDrawable != null ? starDrawable.getMinimumWidth():
+        imageReceiver != null ? imageReceiver.getWidth(): 0;
+      int height = starDrawable != null ? starDrawable.getMinimumHeight():
+        imageReceiver != null ? imageReceiver.getHeight(): 0;
+
+      if (clickListener == null || width == 0 || height == 0) return false;
 
       int touchX = (int) e.getX();
       int touchY = (int) e.getY();
 
       boolean isInside = (lastDrawX <= touchX) && (lastDrawY <= touchY) &&
-        (touchX <= lastDrawX + starDrawable.getMinimumWidth()) &&
-        (touchY <= lastDrawY + starDrawable.getMinimumHeight());
+        (touchX <= lastDrawX + width) &&
+        (touchY <= lastDrawY + height);
 
       switch (e.getAction()) {
         case MotionEvent.ACTION_DOWN: {
@@ -287,7 +338,15 @@ public class EmojiStatusHelper implements Destroyable {
       lastDrawX = startX;
       lastDrawY = startY;
       lastDrawScale = scale;
-      if (emojiStatus != null) {
+      if (imageReceiver != null && gifReceiver != null) {
+        imageReceiver.setBounds(startX, startY, startX + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)), startY + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)));
+        gifReceiver.setBounds(startX, startY, startX + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)), startY + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)));
+        if (!gifReceiver.isEmpty()) {
+          gifReceiver.draw(c);
+        } else if (!imageReceiver.isEmpty()) {
+          imageReceiver.draw(c);
+        }
+      } else if (emojiStatus != null) {
         emojiStatus.draw(c, startX, startY, null, alpha, emojiStatusReceiver);
       } else if (starDrawable != null && textColorSet != null) {
         Paint p = Paints.getPorterDuffPaint(ColorUtils.alphaColor(alpha, textColorSet.emojiStatusColor()));

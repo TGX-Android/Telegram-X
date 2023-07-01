@@ -31,6 +31,9 @@ import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageFileLocal;
+import org.thunderdog.challegram.loader.ImageReceiver;
+import org.thunderdog.challegram.loader.gif.GifFile;
+import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.unsorted.Settings;
 
@@ -46,6 +49,8 @@ import me.vkryl.leveldb.LevelDB;
 import me.vkryl.td.Td;
 
 public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
+  private static int CURRENT_ID = ImageFile.EMOJI_START_ID;
+
   public static final int NO_ID = -1;
   public static final int ID_MAX = 0xffff;
 
@@ -477,6 +482,7 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
     private TdApi.Usernames usernames;
     private String phoneNumber;
     private String profilePhotoSmallPath, profilePhotoBigPath;
+    private TdApi.Sticker emojiStatusSticker;
 
     DisplayInformation (String prefix) {
       this.prefix = prefix;
@@ -494,6 +500,11 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
         this.profilePhotoBigPath = TD.isFileLoaded(user.profilePhoto.big) ? user.profilePhoto.big.local.path : isUpdate ? getUserProfilePhotoPath(accountId, true) : null;
       } else {
         this.profilePhotoSmallPath = this.profilePhotoBigPath = null;
+      }
+      if (user.isPremium && user.emojiStatus != null) {
+        this.emojiStatusSticker = isUpdate ? getEmojiStatusSticker(accountId): null;
+      } else {
+        this.emojiStatusSticker = null;
       }
       saveAll();
     }
@@ -537,6 +548,61 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
         Settings.instance().remove(key);
       } else {
         Settings.instance().putString(key, path);
+      }
+    }
+
+    public @Nullable TdApi.Sticker getEmojiStatusSticker () {
+      return emojiStatusSticker;
+    }
+
+    static @Nullable TdApi.Sticker getEmojiStatusSticker (int accountId) {
+      String prefix = Settings.accountInfoPrefix(accountId);
+
+      String emojiStatusStickerPath = Settings.instance().getString(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_FILE, null);
+      if (StringUtils.isEmpty(emojiStatusStickerPath)) return null;
+
+      int emojiStatusStickerType = Settings.instance().getInt(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_TYPE, 0);
+      long emojiStatusStickerId = Settings.instance().getLong(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_ID, 0);
+      boolean emojiStatusStickerRepainting = Settings.instance().getBoolean(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_REPAINTING, false);
+      int emojiStatusStickerWidth = Settings.instance().getInt(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_WIDTH, 0);
+      int emojiStatusStickerHeight = Settings.instance().getInt(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_HEIGHT, 0);
+
+      TdApi.File file = TD.newFile(CURRENT_ID--, Integer.toString(CURRENT_ID), emojiStatusStickerPath, 1);
+      TdApi.StickerFormat format = fromStickerFormatInt(emojiStatusStickerType);
+      if (format != null) {
+        return new TdApi.Sticker(0, 0,
+          emojiStatusStickerWidth, emojiStatusStickerHeight, null, format,
+          new TdApi.StickerFullTypeCustomEmoji(emojiStatusStickerId, emojiStatusStickerRepainting),
+          new TdApi.ClosedVectorPath[0], null, file
+        );
+      }
+      return null;
+    }
+
+    void setEmojiStatusSticker (@Nullable TdApi.Sticker sticker) {
+      emojiStatusSticker = sticker;
+      setEmojiStatusSticker(prefix, sticker);
+    }
+
+    static void setEmojiStatusSticker (int accountId, @Nullable TdApi.Sticker sticker) {
+      setEmojiStatusSticker(Settings.accountInfoPrefix(accountId), sticker);
+    }
+
+    static void setEmojiStatusSticker (String prefix, @Nullable TdApi.Sticker sticker) {
+      if (sticker != null && TD.isFileLoaded(sticker.sticker)) {
+        Settings.instance().putString(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_FILE, sticker.sticker.local.path);
+        Settings.instance().putInt(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_TYPE, sticker.format.getConstructor());
+        Settings.instance().putLong(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_ID, TD.getStickerCustomEmojiId(sticker));
+        Settings.instance().putBoolean(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_REPAINTING, TD.needRepainting(sticker));
+        Settings.instance().putInt(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_WIDTH, sticker.width);
+        Settings.instance().putInt(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_HEIGHT, sticker.height);
+      } else {
+        Settings.instance().remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_FILE);
+        Settings.instance().remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_TYPE);
+        Settings.instance().remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_ID);
+        Settings.instance().remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_REPAINTING);
+        Settings.instance().remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_WIDTH);
+        Settings.instance().remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_HEIGHT);
       }
     }
 
@@ -595,11 +661,31 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
       } else {
         editor.remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_PHOTO_FULL);
       }
+      if (emojiStatusSticker != null && TD.isFileLoaded(emojiStatusSticker.sticker)) {
+        editor.putString(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_FILE, emojiStatusSticker.sticker.local.path);
+        editor.putInt(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_TYPE, emojiStatusSticker.format.getConstructor());
+        editor.putLong(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_ID, TD.getStickerCustomEmojiId(emojiStatusSticker));
+        editor.putBoolean(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_REPAINTING, TD.needRepainting(emojiStatusSticker));
+        editor.putInt(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_WIDTH, emojiStatusSticker.width);
+        editor.putInt(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_HEIGHT, emojiStatusSticker.height);
+      } else {
+        editor.remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_FILE);
+        editor.remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_TYPE);
+        editor.remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_ID);
+        editor.remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_REPAINTING);
+        editor.remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_WIDTH);
+        editor.remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_HEIGHT);
+      }
       editor.apply();
     }
 
     static DisplayInformation fullRestore (String prefix, long expectedUserId) {
       DisplayInformation info = null;
+      String emojiStatusStickerPath = null;
+      boolean emojiStatusStickerRepainting = false;
+      int emojiStatusStickerType = 0, emojiStatusStickerWidth = 0, emojiStatusStickerHeight = 0;
+      long emojiStatusStickerId = 0;
+
       for (LevelDB.Entry entry : Settings.instance().pmc().find(prefix)) {
         /*if (entry.key().length() == prefix.length()) {
           long userId = entry.asLong();
@@ -630,17 +716,48 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
           case Settings.KEY_ACCOUNT_INFO_SUFFIX_PHOTO_FULL:
             info.profilePhotoBigPath = entry.asString();
             break;
+          case Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_FILE:
+            emojiStatusStickerPath = entry.asString();
+            break;
+          case Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_TYPE:
+            emojiStatusStickerType = entry.asInt();
+            break;
+          case Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_ID:
+            emojiStatusStickerId = entry.asLong();
+            break;
+          case Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_REPAINTING:
+            emojiStatusStickerRepainting = entry.asBoolean();
+            break;
+          case Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_WIDTH:
+            emojiStatusStickerWidth = entry.asInt();
+            break;
+          case Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_HEIGHT:
+            emojiStatusStickerHeight = entry.asInt();
+            break;
+        }
+      }
+      if (info != null && !StringUtils.isEmpty(emojiStatusStickerPath)) {
+        TdApi.File file = TD.newFile(CURRENT_ID--, Integer.toString(CURRENT_ID), emojiStatusStickerPath, 1);
+        TdApi.StickerFormat format = fromStickerFormatInt(emojiStatusStickerType);
+        if (format != null) {
+          info.emojiStatusSticker = new TdApi.Sticker(0, 0,
+            emojiStatusStickerWidth, emojiStatusStickerHeight, null, format,
+            new TdApi.StickerFullTypeCustomEmoji(emojiStatusStickerId, emojiStatusStickerRepainting),
+            new TdApi.ClosedVectorPath[0], null, file
+          );
         }
       }
       return info != null && info.userId == expectedUserId ? info : null;
     }
   }
 
-  private ImageFile avatarSmallFile, avatarBigFile;
+  private ImageFile avatarSmallFile, avatarBigFile, emojiStatusImageFile;
+  private GifFile emojiStatusGifFile;
   private DisplayInformation displayInformation;
 
   void storeUserInformation (@Nullable TdApi.User user) {
-    avatarSmallFile = avatarBigFile = null;
+    avatarSmallFile = avatarBigFile = emojiStatusImageFile = null;
+    emojiStatusGifFile = null;
     if (user != null && user.id == knownUserId) {
       String prefix = Settings.accountInfoPrefix(id);
       boolean isUpdate = Settings.instance().getLong(prefix, 0) == user.id;
@@ -648,6 +765,31 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
     } else {
       deleteDisplayInformation();
       counters.clear();
+    }
+  }
+
+  void storeUserEmojiStatusSticker (@Nullable TdApi.Sticker sticker) {
+    if (displayInformation != null) {
+      displayInformation.setEmojiStatusSticker(sticker);
+    } else {
+      DisplayInformation.setEmojiStatusSticker(id, sticker);
+    }
+  }
+
+  public @Nullable TdApi.Sticker getEmojiStatusSticker () {
+    DisplayInformation info = getDisplayInformation();
+    return info != null ? info.getEmojiStatusSticker(): null;
+  }
+  
+  static @Nullable TdApi.StickerFormat fromStickerFormatInt (int constructor) {
+    if (constructor == TdApi.StickerFormatTgs.CONSTRUCTOR) {
+      return new TdApi.StickerFormatTgs();
+    } else if (constructor == TdApi.StickerFormatWebm.CONSTRUCTOR) {
+      return new TdApi.StickerFormatWebm();
+    } else if (constructor == TdApi.StickerFormatWebp.CONSTRUCTOR) {
+      return new TdApi.StickerFormatWebp();
+    } else {
+      return null;
     }
   }
 

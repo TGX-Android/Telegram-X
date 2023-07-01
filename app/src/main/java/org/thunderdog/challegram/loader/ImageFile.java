@@ -42,6 +42,7 @@ public class ImageFile {
   public static final int GALLERY_START_ID = -2000000;
   public static final int LOCAL_START_ID = -3000000;
   public static final int MP3_START_ID = -4000000;
+  public static final int EMOJI_START_ID = -5000000;
 
   public static final int FIT_CENTER = 1;
   public static final int CENTER_CROP = 2;

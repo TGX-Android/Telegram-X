@@ -433,7 +433,7 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
     info.trim(getMeasuredWidth());
 
     currentAccount = account;
-    emojiStatusHelper.updateEmoji(account.tdlib(), account.getUser(), info, R.drawable.baseline_premium_star_24, EmojiStatusHelper.emojiSizeToTextSize(24));
+    emojiStatusHelper.updateEmojiWithoutTdlib(account.getUser(), account.getEmojiStatusSticker(), info, R.drawable.baseline_premium_star_24, EmojiStatusHelper.emojiSizeToTextSize(24));
 
     if (this.animator != null) {
       this.animator.cancel();
