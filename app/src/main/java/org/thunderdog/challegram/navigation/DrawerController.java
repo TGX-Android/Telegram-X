@@ -300,7 +300,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
           view.setChecked(account.id == account.context().preferredAccountId(), isUpdate);
           view.setUnreadCount(badge.getCount(), badge.isMuted(), isUpdate);
           view.setAvatar(account);
-          view.setEmojiStatus(account);
+          view.setEmojiStatus(lastTdlib, account.getUser());
           view.setText(Lang.getDebugString(account.getName(), account.isDebug()));
           view.setCustomControllerProvider(DrawerController.this);
           view.setPreviewActionListProvider(DrawerController.this);

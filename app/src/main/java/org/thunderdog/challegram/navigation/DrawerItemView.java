@@ -24,6 +24,7 @@ import android.view.ViewGroup;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.Nullable;
 
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.loader.AvatarReceiver;
@@ -194,8 +195,8 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
     this.receiver.requestChat(tdlib, chatId, AvatarReceiver.Options.NONE);
   }
 
-  public void setEmojiStatus (TdlibAccount account) {
-    emojiStatusHelper.updateEmoji(account.tdlib(), account.getUser(), new TextColorSetOverride(TextColorSets.Regular.NORMAL) {
+  public void setEmojiStatus (Tdlib tdlib, TdApi.User user) {
+    emojiStatusHelper.updateEmoji(tdlib, user, new TextColorSetOverride(TextColorSets.Regular.NORMAL) {
       @Override
       public int emojiStatusColor () {
         return Theme.getColor(ColorId.iconActive);
