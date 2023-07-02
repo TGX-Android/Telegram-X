@@ -37,11 +37,11 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.td.Td;
 
 public class TGStickerSetInfo {
-  private static final int FLAG_RECENT = 0x01;
-  private static final int FLAG_TRENDING = 0x04;
-  private static final int FLAG_FAVORITE = 0x08;
-  private static final int FLAG_TRENDING_EMOJI = 0x10;
-  private static final int FLAG_DEFAULT_EMOJI = 0x20;
+  private static final int FLAG_RECENT = 1;
+  private static final int FLAG_TRENDING = 1 << 2;
+  private static final int FLAG_FAVORITE = 1 << 3;
+  private static final int FLAG_TRENDING_EMOJI = 1 << 4;
+  private static final int FLAG_DEFAULT_EMOJI = 1 << 5;
 
   private final Tdlib tdlib;
   private final @Nullable TdApi.StickerSetInfo info;
