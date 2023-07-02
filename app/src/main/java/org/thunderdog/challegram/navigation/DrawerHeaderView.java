@@ -128,6 +128,7 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
       @Override
       public void onAnimationStart () {
         emojiStatusHelper.setIgnoreDraw(true);
+        // emojiStatusHelper.clear();
         invalidate();
       }
 
@@ -214,6 +215,13 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
 
   @Override
   public void onAccountProfilePhotoChanged (TdlibAccount account, boolean big, boolean isCurrent) {
+    if (displayInfo != null && displayInfo.compareTo(account, false)) {
+      setUser(account);
+    }
+  }
+
+  @Override
+  public void onAccountProfileEmojiStatusChanged (TdlibAccount account, boolean isCurrent) {
     if (displayInfo != null && displayInfo.compareTo(account, false)) {
       setUser(account);
     }

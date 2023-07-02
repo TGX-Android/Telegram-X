@@ -124,10 +124,10 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
       public void onSetEmojiStatusFromPreview (StickerSmallView view, View clickView, TGStickerObj sticker, long emojiId, int duration) {
         context.replaceReactionPreviewCords(parent.animationDelegate.getDestX(), parent.animationDelegate.getDestY());
         parent.hidePopupWindow(true);
-        parent.animationDelegate.onAnimationStart();
         scheduleClickAnimation(sticker.getCustomEmojiId());
         destX = parent.animationDelegate.getDestX();
         destY = parent.animationDelegate.getDestY();
+        parent.animationDelegate.onAnimationStart();
         UI.post(EmojiStatusSelectorEmojiPage.this::onSetStatusAnimationFinish, 180L);
       }
     };
@@ -188,7 +188,6 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
     int startX = positionCords[0] + view.getMeasuredWidth() / 2;
     int startY = positionCords[1] + view.getMeasuredHeight() / 2;
 
-    parent.animationDelegate.onAnimationStart();
     context().reactionsOverlayManager().addOverlay(
       new ReactionsOverlayView.ReactionInfo(context().reactionsOverlayManager())
         .setSticker(sticker, false)
@@ -205,6 +204,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
     );
     scheduleClickAnimation(sticker.getCustomEmojiId());
     scheduledClickEffectSticker = sticker;
+    parent.animationDelegate.onAnimationStart();
 
     return true;
   }

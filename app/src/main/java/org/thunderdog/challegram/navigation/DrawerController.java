@@ -715,6 +715,15 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
   }
 
   @Override
+  public void onAccountProfileEmojiStatusChanged (TdlibAccount account, boolean isCurrent) {
+    if (showingAccounts) {
+      int i = adapter.indexOfViewByData(account);
+      if (i != -1)
+        adapter.updateValuedSettingByPosition(i);
+    }
+  }
+
+  @Override
   public void onActiveAccountRemoved (TdlibAccount account, int position) {
     if (showingAccounts) {
       adapter.removeItem(1 + position);

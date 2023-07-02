@@ -169,6 +169,10 @@ public class EmojiStatusHelper implements Destroyable {
 
   private boolean ignoreDraw;
 
+  public void clear () {
+    emojiStatusDrawable = null;
+  }
+
   public void setIgnoreDraw (boolean ignoreDraw) {
     this.ignoreDraw = ignoreDraw;
     if (emojiStatusDrawable != null) {
@@ -241,7 +245,9 @@ public class EmojiStatusHelper implements Destroyable {
           imageFile.setScaleType(GifFile.FIT_CENTER);
           imageReceiver.requestFile(imageFile);
         }
-        preview.requestFile(TD.toImageFile(null, sticker.thumbnail));
+        if (sticker.thumbnail != null && TD.isFileLoaded(sticker.thumbnail.file)) {
+          preview.requestFile(TD.toImageFile(null, sticker.thumbnail));
+        }
       } else {
         this.preview = null;
         this.imageReceiver = null;

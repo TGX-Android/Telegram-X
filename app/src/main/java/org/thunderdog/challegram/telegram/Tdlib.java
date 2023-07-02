@@ -9300,8 +9300,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           myEmojiStatusFile = downloadedFile;
           if (TD.isFileLoaded(downloadedFile)) {
             emojiStatusFileHandler(result.value).onResult(downloadedFile);
-          } else if (!TD.isFileLoading(downloadedFile)) {
-            client().send(new TdApi.DownloadFile(downloadedFile.id, TdlibFilesManager.CLOUD_PRIORITY, 0, 0, true), emojiStatusFileHandler(result.value));
+          } else {
+            client().send(new TdApi.DownloadFile(downloadedFile.id, TdlibFilesManager.CLOUD_PRIORITY + 1, 0, 0, true), emojiStatusFileHandler(result.value));
           }
         }
       } else {
@@ -9320,6 +9320,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
             if (currentFile != null && currentFile.id == downloadedFile.id) {
               Td.copyTo(downloadedFile, currentFile);
               account().storeUserEmojiStatusSticker(sticker);
+              context.onUpdateEmojiStatus(accountId);
             }
           }
           break;
