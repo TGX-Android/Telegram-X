@@ -722,7 +722,7 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
         }
       }
       if (info != null && !StringUtils.isEmpty(emojiStatusStickerPath)) {
-        TdApi.File file = TD.newFile(CURRENT_ID--, Integer.toString(CURRENT_ID), emojiStatusStickerPath, 1);
+        TdApi.File file = ImageFileLocal.newFakeLocalFile(emojiStatusStickerPath);
         TdApi.StickerFormat format = fromStickerFormatInt(emojiStatusStickerType);
         if (format != null) {
           info.emojiStatusSticker = new TdApi.Sticker(0, 0,
