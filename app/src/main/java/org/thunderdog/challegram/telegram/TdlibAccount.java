@@ -590,7 +590,7 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
     static void setEmojiStatusSticker (String prefix, @Nullable TdApi.Sticker sticker) {
       if (sticker != null && TD.isFileLoaded(sticker.sticker)) {
         Settings.instance().putString(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_FILE, sticker.sticker.local.path);
-        Settings.instance().putInt(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_TYPE, sticker.format.getConstructor());
+        Settings.instance().putInt(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_TYPE, toStickerFormatInt(sticker.format));
         Settings.instance().putBoolean(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_REPAINTING, TD.needRepainting(sticker));
         Settings.instance().putLong(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_SIZE, BitwiseUtils.mergeLong(sticker.width, sticker.height));
       } else {
@@ -658,7 +658,7 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
       }
       if (emojiStatusSticker != null && TD.isFileLoaded(emojiStatusSticker.sticker)) {
         editor.putString(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_FILE, emojiStatusSticker.sticker.local.path);
-        editor.putInt(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_TYPE, emojiStatusSticker.format.getConstructor());
+        editor.putInt(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_TYPE, toStickerFormatInt(emojiStatusSticker.format));
         editor.putBoolean(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_REPAINTING, TD.needRepainting(emojiStatusSticker));
         editor.putLong(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_SIZE, BitwiseUtils.mergeLong(emojiStatusSticker.width, emojiStatusSticker.height));
       } else {
@@ -767,12 +767,28 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
     return info != null ? info.getEmojiStatusSticker(): null;
   }
 
-  static @Nullable TdApi.StickerFormat fromStickerFormatInt (int constructor) {
+  private static final int TYPE_TGS = 1;
+  private static final int TYPE_WEBM = 2;
+  private static final int TYPE_WEBP = 3;
+
+  static int toStickerFormatInt (TdApi.StickerFormat format) {
+    final int constructor = format.getConstructor();
     if (constructor == TdApi.StickerFormatTgs.CONSTRUCTOR) {
-      return new TdApi.StickerFormatTgs();
+      return TYPE_TGS;
     } else if (constructor == TdApi.StickerFormatWebm.CONSTRUCTOR) {
-      return new TdApi.StickerFormatWebm();
+      return TYPE_WEBM;
     } else if (constructor == TdApi.StickerFormatWebp.CONSTRUCTOR) {
+      return TYPE_WEBP;
+    }
+    return -1;
+  }
+
+  static @Nullable TdApi.StickerFormat fromStickerFormatInt (int type) {
+    if (type == TYPE_TGS) {
+      return new TdApi.StickerFormatTgs();
+    } else if (type == TYPE_WEBM) {
+      return new TdApi.StickerFormatWebm();
+    } else if (type == TYPE_WEBP) {
       return new TdApi.StickerFormatWebp();
     } else {
       return null;
