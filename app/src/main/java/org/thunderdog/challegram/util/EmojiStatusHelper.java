@@ -194,8 +194,10 @@ public class EmojiStatusHelper implements Destroyable {
     private final boolean needDrawEmojiStatus;
     private final Text.TextMediaListener textMediaListener;
     private final int textSize;
+    private final @Nullable ImageReceiver preview;
     private final @Nullable ImageReceiver imageReceiver;
     private final @Nullable GifReceiver gifReceiver;
+    private final boolean needRepainting;
     private int lastDrawX, lastDrawY;
     private float lastDrawScale = 1f;
     private boolean ignoreDraw;
@@ -208,8 +210,10 @@ public class EmojiStatusHelper implements Destroyable {
       this.textMediaListener = textMediaListener;
       this.clickListener = clickListener;
       this.starDrawable = emojiStatus == null && needDrawEmojiStatus ? Drawables.get(defaultStarIconId): null;
+      this.preview = null;
       this.imageReceiver = null;
       this.gifReceiver = null;
+      this.needRepainting = false;
     }
 
     private EmojiStatusDrawable (View v, @Nullable TdApi.User user, @Nullable TdApi.Sticker sticker, @Nullable Text.ClickListener clickListener, @Nullable TextColorSet textColorSet, int defaultStarIconId, int textSize) {
@@ -220,16 +224,26 @@ public class EmojiStatusHelper implements Destroyable {
       this.textMediaListener = null;
       this.clickListener = clickListener;
       this.starDrawable = user != null && user.emojiStatus == null && needDrawEmojiStatus ? Drawables.get(defaultStarIconId): null;
+      this.needRepainting = TD.needRepainting(sticker);
 
       if (sticker != null && TD.isFileLoaded(sticker.sticker)) {
         this.imageReceiver = new ImageReceiver(v, 0);
         this.gifReceiver = new GifReceiver(v);
+        this.preview = new ImageReceiver(v, 0);
         if (Td.isAnimated(sticker.format)) {
-          gifReceiver.requestFile(new GifFile(null, sticker));
+          GifFile gifFile = new GifFile(null, sticker);
+          gifFile.setScaleType(GifFile.FIT_CENTER);
+          gifFile.setOptimizationMode(GifFile.OptimizationMode.EMOJI);
+          gifFile.setRepeatCount(2);
+          gifReceiver.requestFile(gifFile);
         } else {
-          imageReceiver.requestFile(new ImageFile(null, sticker.sticker));
+          ImageFile imageFile = new ImageFile(null, sticker.sticker);
+          imageFile.setScaleType(GifFile.FIT_CENTER);
+          imageReceiver.requestFile(imageFile);
         }
+        preview.requestFile(TD.toImageFile(null, sticker.thumbnail));
       } else {
+        this.preview = null;
         this.imageReceiver = null;
         this.gifReceiver = null;
       }
@@ -338,13 +352,30 @@ public class EmojiStatusHelper implements Destroyable {
       lastDrawX = startX;
       lastDrawY = startY;
       lastDrawScale = scale;
-      if (imageReceiver != null && gifReceiver != null) {
+      if (imageReceiver != null && gifReceiver != null && preview != null) {
+        if (needRepainting) {
+          c.saveLayerAlpha(startX, startY, startX + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)), startY + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)), 255, Canvas.ALL_SAVE_FLAG);
+        }
+
         imageReceiver.setBounds(startX, startY, startX + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)), startY + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)));
+        preview.setBounds(startX, startY, startX + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)), startY + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)));
         gifReceiver.setBounds(startX, startY, startX + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)), startY + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)));
         if (!gifReceiver.isEmpty()) {
+          if (gifReceiver.needPlaceholder()) {
+            preview.draw(c);
+          }
           gifReceiver.draw(c);
         } else if (!imageReceiver.isEmpty()) {
+          if (imageReceiver.needPlaceholder()) {
+            preview.draw(c);
+          }
           imageReceiver.draw(c);
+        }
+        if (needRepainting) {
+          if (textColorSet != null) {
+            c.drawRect(startX, startY, startX + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)), startY + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)), Paints.getSrcInPaint(textColorSet.emojiStatusColor()));
+          }
+          c.restore();
         }
       } else if (emojiStatus != null) {
         emojiStatus.draw(c, startX, startY, null, alpha, emojiStatusReceiver);
