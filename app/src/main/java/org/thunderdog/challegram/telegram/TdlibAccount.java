@@ -49,8 +49,6 @@ import me.vkryl.leveldb.LevelDB;
 import me.vkryl.td.Td;
 
 public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
-  private static int CURRENT_ID = ImageFile.EMOJI_START_ID;
-
   public static final int NO_ID = -1;
   public static final int ID_MAX = 0xffff;
 
