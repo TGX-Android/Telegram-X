@@ -381,11 +381,12 @@ public class CallController extends ViewController<CallController.Arguments> imp
 
     nameView = new EmojiTextView(context) {
       @Override
-      protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+      protected void onLayout (boolean changed, int left, int top, int right, int bottom) {
+        super.onLayout(changed, left, top, right, bottom);
         nameTextWidth = U.measureText(TD.getUserName(user), nameTextPaint);
         if (nameTextWidth > getMeasuredWidth() - getPaddingRight()) {
-          nameTextWidth = U.measureText(TextUtils.ellipsize(TD.getUserName(user), nameTextPaint, getMeasuredWidth() - getPaddingRight(), TextUtils.TruncateAt.END), nameTextPaint);
+          CharSequence text = getText().subSequence(0, getLayout().getEllipsisStart(0)) + "...";
+          nameTextWidth = U.measureText(text, nameTextPaint);
         }
       }
 
@@ -639,11 +640,12 @@ public class CallController extends ViewController<CallController.Arguments> imp
         public int emojiStatusColor () {
           return 0xffffffff;
         }
-      }, R.drawable.baseline_premium_star_28, 28);
+      }, R.drawable.baseline_premium_star_28, 32);
     }
     if (nameView != null) {
       this.nameView.setText(TD.getUserName(user));
       this.nameView.setPadding(0, 0, user != null && user.isPremium ? emojiStatusHelper.getWidth(Screen.dp(7)): 0, 0);
+      this.nameView.requestLayout();
     }
     if (emojiViewHint != null)
       this.emojiViewHint.setText(Lang.getString(R.string.CallEmojiHint, TD.getUserSingleName(call.userId, user)));
