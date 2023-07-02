@@ -566,7 +566,7 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
       int emojiStatusStickerWidth = BitwiseUtils.splitLongToFirstInt(size);
       int emojiStatusStickerHeight = BitwiseUtils.splitLongToSecondInt(size);
 
-      TdApi.File file = TD.newFile(CURRENT_ID--, Integer.toString(CURRENT_ID), emojiStatusStickerPath, 1);
+      TdApi.File file = ImageFileLocal.newFakeLocalFile(emojiStatusStickerPath);
       TdApi.StickerFormat format = fromStickerFormatInt(emojiStatusStickerType);
       if (format != null) {
         return new TdApi.Sticker(0, 0,
