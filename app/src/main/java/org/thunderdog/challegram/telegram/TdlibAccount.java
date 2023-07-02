@@ -716,8 +716,9 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
             emojiStatusStickerRepainting = entry.asBoolean();
             break;
           case Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_SIZE:
-            emojiStatusStickerWidth = BitwiseUtils.splitLongToFirstInt(entry.asLong());
-            emojiStatusStickerHeight = BitwiseUtils.splitLongToSecondInt(entry.asLong());
+            long size = entry.asLong();
+            emojiStatusStickerWidth = BitwiseUtils.splitLongToFirstInt(size);
+            emojiStatusStickerHeight = BitwiseUtils.splitLongToSecondInt(size);
             break;
         }
       }
