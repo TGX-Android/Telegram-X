@@ -576,6 +576,16 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       strings.append(R.string.Copy);
       icons.append(R.drawable.baseline_content_copy_24);
 
+      if (msg.isTranslated()) {
+        ids.append(R.id.btn_chatTranslateOff);
+        strings.append(R.string.TranslateOff);
+        icons.append(R.drawable.baseline_translate_off_24);
+      } else if (!isMore && msg.isTranslatable() && msg.translationStyleMode() != Settings.TRANSLATE_MODE_NONE) {
+        ids.append(R.id.btn_chatTranslate);
+        strings.append(R.string.Translate);
+        icons.append(R.drawable.baseline_translate_24);
+      }
+      
       ids.append(R.id.btn_messageSponsorInfo);
       strings.append(R.string.SponsoredInfoMenu);
       icons.append(R.drawable.baseline_info_24);
