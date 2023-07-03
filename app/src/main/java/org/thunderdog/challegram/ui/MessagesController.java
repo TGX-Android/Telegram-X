@@ -11339,7 +11339,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
   TranslationControllerV2.Wrapper translationPopup;
 
   public void startTranslateMessages (TGMessage message) {
-    if (message.translationStyleMode() == Settings.TRANSLATE_MODE_INLINE && !(message instanceof TGMessageBotInfo)) {
+    startTranslateMessages(message, false);
+  }
+
+  public void startTranslateMessages (TGMessage message, boolean forcePopup) {
+    if (message.translationStyleMode() == Settings.TRANSLATE_MODE_INLINE && !(message instanceof TGMessageBotInfo) && !forcePopup) {
       message.startTranslated();
     } else {
       translationPopup = new TranslationControllerV2.Wrapper(context, tdlib, this);

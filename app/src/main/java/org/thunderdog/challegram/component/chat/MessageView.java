@@ -540,7 +540,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     boolean isSent = !msg.isNotSent();
 
     if (msg.isEventLog()) {
-      showEventLogOptions(m, msg);
+      msg.checkTranslatableText(() -> showEventLogOptions(m, msg));
       return true;
     }
 
@@ -1157,6 +1157,8 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
           m.navigateTo(c2);
         } else if (optionItemId == R.id.btn_blockSender) {
           m.tdlib().ui().kickMember(m, m.getChatId(), sender, member.status);
+        } else if (optionItemId == R.id.btn_chatTranslate) {
+          manager.controller().startTranslateMessages(msg, true);
         }
 
         return true;
@@ -1181,6 +1183,13 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
         ids.append(R.id.btn_messageCopy);
         strings.append(R.string.Copy);
         icons.append(R.drawable.baseline_content_copy_24);
+        colors.append(ViewController.OPTION_COLOR_NORMAL);
+      }
+
+      if (msg.isTranslatable() && msg.translationStyleMode() != Settings.TRANSLATE_MODE_NONE) {
+        ids.append(R.id.btn_chatTranslate);
+        strings.append(R.string.Translate);
+        icons.append(R.drawable.baseline_translate_24);
         colors.append(ViewController.OPTION_COLOR_NORMAL);
       }
 
