@@ -21,6 +21,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.FillingDrawable;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.charts.LayoutHelper;
@@ -39,6 +40,7 @@ import org.thunderdog.challegram.navigation.MenuMoreWrap;
 import org.thunderdog.challegram.navigation.ToggleHeaderView2;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
+import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ColorState;
@@ -71,14 +73,10 @@ import me.vkryl.android.animator.ReplaceAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
+import me.vkryl.core.lambda.RunnableData;
 
 public class TranslationControllerV2 extends BottomSheetViewController.BottomSheetBaseRecyclerViewController<TranslationControllerV2.Args>
  implements BottomSheetViewController.BottomSheetBaseControllerPage, Menu {
-
-  public interface TextClickable {
-    TextColorSet getTextColorSet ();
-    Text.ClickCallback clickCallback ();
-  }
 
   private final TranslationCounterDrawable translationCounterDrawable;
   private final ReplaceAnimator<TextWrapper> text;
@@ -88,6 +86,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
   private TranslationsManager mTranslationsManager;
   private TranslationsManager.Translatable messageToTranslate;
   private TdApi.FormattedText originalText;
+  private TdApi.FormattedText currentText;
   private String messageOriginalLanguage;
 
   private FrameLayoutFix wrapView;
@@ -97,6 +96,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
   private HeaderButton translationHeaderButton;
   private @Nullable View senderAvatarView;
   private @Nullable LinearLayout linearLayout;
+  private @Nullable android.widget.TextView applyTranslationButton;
   private @Nullable AvatarReceiver avatarReceiver;
   private @Nullable SenderTextView senderTextView;
   private @Nullable TextView dateTextView;
@@ -195,6 +195,22 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
 
     }
 
+    if (parent.translationApplyCallback != null) {
+      applyTranslationButton = new android.widget.TextView(context);
+      Views.setClickable(applyTranslationButton);
+      applyTranslationButton.setGravity(Gravity.CENTER);
+      applyTranslationButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16f);
+      applyTranslationButton.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(56f)));
+      applyTranslationButton.setTextColor(Theme.getColor(ColorId.fillingPositiveContent));
+      ViewSupport.setThemedBackground(applyTranslationButton, ColorId.fillingPositive);
+      applyTranslationButton.setText(Lang.getString(R.string.Translate));
+      applyTranslationButton.setOnClickListener(v -> {
+        parent.translationApplyCallback.runWithData(currentText);
+        parent.hidePopupWindow(true);
+      });
+      wrapView.addView(applyTranslationButton, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(56), Gravity.BOTTOM));
+    }
+
     messageTextView = new MessageTextView(context);
     textMediaReceiver = new ComplexReceiver(messageTextView);
 
@@ -222,12 +238,17 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     });
 
     FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) recyclerView.getLayoutParams();
-    if (message != null) {
+    if (parent.translationApplyCallback != null) {
+      layoutParams.bottomMargin = Screen.dp(56 + 8 - 6);
+    } else if (message != null) {
       layoutParams.bottomMargin = Screen.dp(48 - 6);
     }
 
-    text.replace(makeTextWrapper(originalText), false);
+    text.replace(makeTextWrapper(currentText = originalText), false);
     mTranslationsManager.requestTranslation(Lang.getDefaultLanguageToTranslateV2(messageOriginalLanguage));
+    if (parent.translationApplyCallback != null) { // todo remove cond ???
+      wrapView.setPadding(0, 0, 0, Screen.needsKeyboardPadding(context()) ? Screen.getNavigationBarFrameDifference() : 0);
+    }
     return wrapView;
   }
 
@@ -243,6 +264,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
 
     if (senderAvatarView != null) senderAvatarView.setTranslationY(translation);
     if (linearLayout != null) linearLayout.setTranslationY(translation);
+    if (applyTranslationButton != null) applyTranslationButton.setTranslationY(translation);
   }
 
   private void showTranslateOptions () {
@@ -347,7 +369,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
 
   private void setTranslationResult (TdApi.FormattedText translated) {
     TdApi.FormattedText textToSet = translated != null ? translated : originalText;
-    text.replace(makeTextWrapper(textToSet), true);
+    text.replace(makeTextWrapper(currentText = textToSet), true);
     updateTexts(text);
   }
 
@@ -516,6 +538,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
 
     private TextColorSet textColorSet;
     private Text.ClickCallback clickCallback;
+    private RunnableData<TdApi.FormattedText> translationApplyCallback;
 
     public final void setTextColorSet (TextColorSet textColorSet) {
       this.textColorSet = textColorSet;
@@ -523,6 +546,10 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
 
     public final void setClickCallback (Text.ClickCallback clickCallback) {
       this.clickCallback = clickCallback;
+    }
+
+    public final void setTranslationApplyCallback (RunnableData<TdApi.FormattedText> callback) {
+      this.translationApplyCallback = callback;
     }
 
     @Override

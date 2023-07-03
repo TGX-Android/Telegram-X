@@ -573,6 +573,13 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     return true;
   }
 
+  public void setText (TdApi.FormattedText text) {
+    setText(text.text);
+    for (TdApi.TextEntity entity: text.entities) {
+      setSpan(entity.offset, entity.offset + entity.length, entity.type);
+    }
+  }
+
   private void setSpan (int start, int end, TdApi.TextEntityType newType) {
     if (!TD.canConvertToSpan(newType)) {
       return;

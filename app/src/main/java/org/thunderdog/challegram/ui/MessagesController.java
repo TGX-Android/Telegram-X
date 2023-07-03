@@ -147,6 +147,7 @@ import org.thunderdog.challegram.data.TGRecord;
 import org.thunderdog.challegram.data.TGSwitchInline;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.data.ThreadInfo;
+import org.thunderdog.challegram.data.TranslationsManager;
 import org.thunderdog.challegram.filegen.PhotoGenerationInfo;
 import org.thunderdog.challegram.filegen.VideoGenerationInfo;
 import org.thunderdog.challegram.helper.BotHelper;
@@ -219,11 +220,13 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Test;
 import org.thunderdog.challegram.util.CancellableResultHandler;
 import org.thunderdog.challegram.util.HapticMenuHelper;
+import org.thunderdog.challegram.util.LanguageDetector;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.Permissions;
 import org.thunderdog.challegram.util.SenderPickerDelegate;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.Unlockable;
+import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.v.HeaderEditText;
 import org.thunderdog.challegram.v.MessagesLayoutManager;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
@@ -372,6 +375,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         items.add(new HapticMenuHelper.MenuItem(R.id.btn_sendNoMarkdown, Lang.getString(R.string.SendDiceAsEmoji), Drawables.emojiDrawable(currentText.text)));
       }
     }
+    items.add(new HapticMenuHelper.MenuItem(R.id.btn_translateInputField, Lang.getString(R.string.Translate), R.drawable.baseline_translate_24));
     if (BuildConfig.DEBUG) {
       items.add(new HapticMenuHelper.MenuItem(R.id.btn_sendToast, "Show toast", R.drawable.baseline_warning_24));
     }
@@ -426,8 +430,38 @@ public class MessagesController extends ViewController<MessagesController.Argume
           sendText(true, modifiedSendOptions);
         }
       });
+    } else if (viewId == R.id.btn_translateInputField) {
+      TdApi.FormattedText text = inputView != null ? inputView.getOutputText(true): null;
+      if (text != null) {
+        LanguageDetector.detectLanguage(context, text.text,
+          (lang) -> showTranslateInputField(text, lang),
+          (err) -> showTranslateInputField(text, null));
+      }
     }
     return true;
+  }
+
+  private void showTranslateInputField (TdApi.FormattedText text, String lang) {
+    translationPopup = new TranslationControllerV2.Wrapper(context, tdlib, this);
+    translationPopup.setArguments(new TranslationControllerV2.Args(new TranslationsManager.Translatable() {
+      @Nullable
+      @Override
+      public String getOriginalMessageLanguage () {
+        return lang;
+      }
+
+      @Override
+      public TdApi.FormattedText getTextToTranslate () {
+        return text;
+      }
+    }));
+    translationPopup.setTextColorSet(TextColorSets.Regular.NORMAL);
+    translationPopup.setTranslationApplyCallback(r -> {
+      if (r == null || inputView == null) return;
+      inputView.setText(r);
+    });
+    translationPopup.show();
+    translationPopup.setDismissListener(popup -> translationPopup = null);
   }
 
   public void pickDateOrProceed (@NonNull TdApi.MessageSendOptions initialSendOptions, TdlibUi.SimpleSendCallback sendCallback) {
