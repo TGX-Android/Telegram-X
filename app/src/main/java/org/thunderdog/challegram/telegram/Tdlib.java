@@ -9266,7 +9266,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   private TdApi.ProfilePhoto myProfilePhoto;
   private Long myEmojiStatusId;
-  private TdApi.File myEmojiStatusFile;
+  private TdApi.Sticker myEmojiStatusSticker;
 
   private Client.ResultHandler profilePhotoHandler (boolean isBig) {
     return result -> {
@@ -9294,14 +9294,22 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private RunnableData<TdlibEmojiManager.Entry> emojiStatusHandler () {
     return result -> {
       if (result.value != null) {
-        TdApi.File downloadedFile = result.value.sticker;
         long emojiStatusId = TD.getStickerCustomEmojiId(result.value);
         if (myEmojiStatusId != null && myEmojiStatusId == emojiStatusId) {
-          myEmojiStatusFile = downloadedFile;
-          if (TD.isFileLoaded(downloadedFile)) {
-            emojiStatusFileHandler(result.value).onResult(downloadedFile);
+          myEmojiStatusSticker = result.value;
+          if (TD.isFileLoaded(myEmojiStatusSticker.sticker)) {
+            emojiStatusFileHandler(false).onResult(myEmojiStatusSticker.sticker);
           } else {
-            client().send(new TdApi.DownloadFile(downloadedFile.id, TdlibFilesManager.CLOUD_PRIORITY + 1, 0, 0, true), emojiStatusFileHandler(result.value));
+            client().send(new TdApi.DownloadFile(myEmojiStatusSticker.sticker.id, TdlibFilesManager.CLOUD_PRIORITY + 1, 0, 0, true), emojiStatusFileHandler(false));
+          }
+          if (myEmojiStatusSticker.thumbnail != null) {
+            if (TD.isFileLoaded(myEmojiStatusSticker.thumbnail.file)) {
+              if (!TD.isFileLoaded(myEmojiStatusSticker.sticker)) {
+                emojiStatusFileHandler(true).onResult(myEmojiStatusSticker.thumbnail.file);
+              }
+            } else {
+              client().send(new TdApi.DownloadFile(myEmojiStatusSticker.thumbnail.file.id, TdlibFilesManager.CLOUD_PRIORITY + 1, 0, 0, true), emojiStatusFileHandler(true));
+            }
           }
         }
       } else {
@@ -9310,19 +9318,26 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     };
   }
 
-  private Client.ResultHandler emojiStatusFileHandler (TdApi.Sticker sticker) {
+  private Client.ResultHandler emojiStatusFileHandler (boolean isThumb) {
     return result -> {
       switch (result.getConstructor()) {
         case TdApi.File.CONSTRUCTOR: {
           TdApi.File downloadedFile = (TdApi.File) result;
-          if (TD.isFileLoaded(downloadedFile)) {
-            TdApi.File currentFile = myEmojiStatusFile;
-            if (currentFile != null && currentFile.id == downloadedFile.id) {
-              Td.copyTo(downloadedFile, currentFile);
-              account().storeUserEmojiStatusSticker(sticker);
+          if (myEmojiStatusSticker == null || !TD.isFileLoaded(downloadedFile) || isThumb && myEmojiStatusSticker.thumbnail == null) {
+            Log.e("Failed to load emoji status, accountId:%d internall error", accountId);
+            return;
+          }
+
+          TdApi.File currentFile = isThumb ? myEmojiStatusSticker.thumbnail.file: myEmojiStatusSticker.sticker;
+          if (currentFile != null && currentFile.id == downloadedFile.id) {
+            Td.copyTo(downloadedFile, currentFile);
+
+            if ((isThumb && TD.isFileLoaded(myEmojiStatusSticker.sticker)) || (!isThumb && (myEmojiStatusSticker.thumbnail == null || TD.isFileLoaded(myEmojiStatusSticker.thumbnail.file)))) {
+              account().storeUserEmojiStatusSticker(myEmojiStatusSticker);
               context.onUpdateEmojiStatus(accountId);
             }
           }
+
           break;
         }
         case TdApi.Error.CONSTRUCTOR: {

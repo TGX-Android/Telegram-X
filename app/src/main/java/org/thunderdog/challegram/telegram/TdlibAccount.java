@@ -31,9 +31,7 @@ import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageFileLocal;
-import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
-import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.unsorted.Settings;
 
@@ -563,19 +561,13 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
       boolean emojiStatusStickerRepainting = Settings.instance().getBoolean(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_REPAINTING, false);
 
       long size = Settings.instance().getLong(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_SIZE, 0);
-      int emojiStatusStickerWidth = BitwiseUtils.splitLongToFirstInt(size);
-      int emojiStatusStickerHeight = BitwiseUtils.splitLongToSecondInt(size);
 
-      TdApi.File file = ImageFileLocal.newFakeLocalFile(emojiStatusStickerPath);
-      TdApi.StickerFormat format = fromStickerFormatInt(emojiStatusStickerType);
-      if (format != null) {
-        return new TdApi.Sticker(0, 0,
-          emojiStatusStickerWidth, emojiStatusStickerHeight, null, format,
-          new TdApi.StickerFullTypeCustomEmoji(1, emojiStatusStickerRepainting),
-          new TdApi.ClosedVectorPath[0], null, file
-        );
-      }
-      return null;
+      String emojiStatusThumbPath = Settings.instance().getString(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_THUMBNAIL_FILE, null);
+      long thumbSize = Settings.instance().getLong(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_THUMBNAIL_SIZE, 0);
+      int thumbFormat = Settings.instance().getInt(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_THUMBNAIL_TYPE, -1);
+
+      return newFakeLocalSticker(emojiStatusStickerPath, emojiStatusStickerType, size, emojiStatusStickerRepainting,
+        newFakeLocalThumbnail(emojiStatusThumbPath, thumbFormat, thumbSize));
     }
 
     void setEmojiStatusSticker (@Nullable TdApi.Sticker sticker) {
@@ -587,18 +579,36 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
       setEmojiStatusSticker(Settings.accountInfoPrefix(accountId), sticker);
     }
 
-    static void setEmojiStatusSticker (String prefix, @Nullable TdApi.Sticker sticker) {
+    static void saveEmojiStatusSticker (String prefix, @Nullable TdApi.Sticker sticker, LevelDB editor) {
       if (sticker != null && TD.isFileLoaded(sticker.sticker)) {
-        Settings.instance().putString(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_FILE, sticker.sticker.local.path);
-        Settings.instance().putInt(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_TYPE, toStickerFormatInt(sticker.format));
-        Settings.instance().putBoolean(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_REPAINTING, TD.needRepainting(sticker));
-        Settings.instance().putLong(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_SIZE, BitwiseUtils.mergeLong(sticker.width, sticker.height));
+        editor.putString(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_FILE, sticker.sticker.local.path);
+        editor.putInt(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_TYPE, toStickerFormatInt(sticker.format));
+        editor.putBoolean(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_REPAINTING, TD.needRepainting(sticker));
+        editor.putLong(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_SIZE, BitwiseUtils.mergeLong(sticker.width, sticker.height));
+        if (sticker.thumbnail != null && TD.isFileLoaded(sticker.thumbnail.file)) {
+          editor.putString(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_THUMBNAIL_FILE, sticker.thumbnail.file.local.path);
+          editor.putInt(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_THUMBNAIL_TYPE, toStickerThumbFormat(sticker.thumbnail.format));
+          editor.putLong(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_THUMBNAIL_SIZE, BitwiseUtils.mergeLong(sticker.thumbnail.width, sticker.thumbnail.height));
+        } else {
+          editor.remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_THUMBNAIL_FILE);
+          editor.remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_THUMBNAIL_SIZE);
+          editor.remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_THUMBNAIL_TYPE);
+        }
       } else {
-        Settings.instance().remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_FILE);
-        Settings.instance().remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_TYPE);
-        Settings.instance().remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_REPAINTING);
-        Settings.instance().remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_SIZE);
+        editor.remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_FILE);
+        editor.remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_TYPE);
+        editor.remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_REPAINTING);
+        editor.remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_SIZE);
+        editor.remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_THUMBNAIL_FILE);
+        editor.remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_THUMBNAIL_SIZE);
+        editor.remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_THUMBNAIL_TYPE);
       }
+    }
+
+    static void setEmojiStatusSticker (String prefix, @Nullable TdApi.Sticker sticker) {
+      LevelDB editor = Settings.instance().edit();
+      saveEmojiStatusSticker(prefix, sticker, editor);
+      editor.apply();
     }
 
     static String getUserProfilePhotoPath (int accountId, boolean big) {
@@ -656,25 +666,16 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
       } else {
         editor.remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_PHOTO_FULL);
       }
-      if (emojiStatusSticker != null && TD.isFileLoaded(emojiStatusSticker.sticker)) {
-        editor.putString(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_FILE, emojiStatusSticker.sticker.local.path);
-        editor.putInt(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_TYPE, toStickerFormatInt(emojiStatusSticker.format));
-        editor.putBoolean(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_REPAINTING, TD.needRepainting(emojiStatusSticker));
-        editor.putLong(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_SIZE, BitwiseUtils.mergeLong(emojiStatusSticker.width, emojiStatusSticker.height));
-      } else {
-        editor.remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_FILE);
-        editor.remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_TYPE);
-        editor.remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_REPAINTING);
-        editor.remove(prefix + Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_SIZE);
-      }
+      saveEmojiStatusSticker(prefix, emojiStatusSticker, editor);
       editor.apply();
     }
 
     static DisplayInformation fullRestore (String prefix, long expectedUserId) {
       DisplayInformation info = null;
-      String emojiStatusStickerPath = null;
+      String emojiStatusStickerPath = null, emojiStatusThumbPath = null;
       boolean emojiStatusStickerRepainting = false;
-      int emojiStatusStickerType = 0, emojiStatusStickerWidth = 0, emojiStatusStickerHeight = 0;
+      int emojiStatusThumbType = -1, emojiStatusStickerType = -1;
+      long emojiStatusThumbSize = 0, emojiStatusStickerSize = 0;
 
       for (LevelDB.Entry entry : Settings.instance().pmc().find(prefix)) {
         /*if (entry.key().length() == prefix.length()) {
@@ -716,24 +717,28 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
             emojiStatusStickerRepainting = entry.asBoolean();
             break;
           case Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_SIZE:
-            long size = entry.asLong();
-            emojiStatusStickerWidth = BitwiseUtils.splitLongToFirstInt(size);
-            emojiStatusStickerHeight = BitwiseUtils.splitLongToSecondInt(size);
+            emojiStatusStickerSize = entry.asLong();
+            break;
+          case Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_THUMBNAIL_SIZE:
+            emojiStatusThumbSize = entry.asLong();
+            break;
+          case Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_THUMBNAIL_TYPE:
+            emojiStatusThumbType = entry.asInt();
+            break;
+          case Settings.KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_THUMBNAIL_FILE:
+            emojiStatusThumbPath = entry.asString();
             break;
         }
       }
-      if (info != null && !StringUtils.isEmpty(emojiStatusStickerPath)) {
-        TdApi.File file = ImageFileLocal.newFakeLocalFile(emojiStatusStickerPath);
-        TdApi.StickerFormat format = fromStickerFormatInt(emojiStatusStickerType);
-        if (format != null) {
-          info.emojiStatusSticker = new TdApi.Sticker(0, 0,
-            emojiStatusStickerWidth, emojiStatusStickerHeight, null, format,
-            new TdApi.StickerFullTypeCustomEmoji(1, emojiStatusStickerRepainting),
-            new TdApi.ClosedVectorPath[0], null, file
-          );
-        }
+      if (info != null && info.userId == expectedUserId) {
+        info.emojiStatusSticker = newFakeLocalSticker(
+          emojiStatusStickerPath, emojiStatusStickerType, emojiStatusStickerSize, emojiStatusStickerRepainting,
+          newFakeLocalThumbnail(emojiStatusThumbPath, emojiStatusThumbType, emojiStatusThumbSize)
+        );
+
+        return info;
       }
-      return info != null && info.userId == expectedUserId ? info : null;
+      return null;
     }
   }
 
@@ -770,6 +775,10 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
   private static final int TYPE_TGS = 1;
   private static final int TYPE_WEBM = 2;
   private static final int TYPE_WEBP = 3;
+  private static final int TYPE_PNG = 4;
+  private static final int TYPE_MPEG4 = 5;
+  private static final int TYPE_GIF = 6;
+  private static final int TYPE_JPEG = 7;
 
   static int toStickerFormatInt (TdApi.StickerFormat format) {
     final int constructor = format.getConstructor();
@@ -1022,4 +1031,72 @@ public class TdlibAccount implements Comparable<TdlibAccount>, TdlibProvider {
     }
     return firstName + " " + Strings.formatPhone(phoneNumber);
   }
+
+  static int toStickerThumbFormat (TdApi.ThumbnailFormat format) {
+    final int constructor = format.getConstructor();
+    if (constructor == TdApi.ThumbnailFormatTgs.CONSTRUCTOR) {
+      return TYPE_TGS;
+    } else if (constructor == TdApi.ThumbnailFormatWebm.CONSTRUCTOR) {
+      return TYPE_WEBM;
+    } else if (constructor == TdApi.ThumbnailFormatWebp.CONSTRUCTOR) {
+      return TYPE_WEBP;
+    } else if (constructor == TdApi.ThumbnailFormatGif.CONSTRUCTOR) {
+      return TYPE_GIF;
+    } else if (constructor == TdApi.ThumbnailFormatPng.CONSTRUCTOR) {
+      return TYPE_PNG;
+    } else if (constructor == TdApi.ThumbnailFormatMpeg4.CONSTRUCTOR) {
+      return TYPE_MPEG4;
+    } else if (constructor == TdApi.ThumbnailFormatJpeg.CONSTRUCTOR) {
+      return TYPE_JPEG;
+    }
+    return -1;
+  }
+
+  static TdApi.ThumbnailFormat fromStickerThumbFormat (int type) {
+    if (type == TYPE_TGS) {
+      return new TdApi.ThumbnailFormatTgs();
+    } else if (type == TYPE_WEBM) {
+      return new TdApi.ThumbnailFormatWebm();
+    } else if (type == TYPE_WEBP) {
+      return new TdApi.ThumbnailFormatWebp();
+    } else if (type == TYPE_GIF) {
+      return new TdApi.ThumbnailFormatGif();
+    } else if (type == TYPE_PNG) {
+      return new TdApi.ThumbnailFormatPng();
+    } else if (type == TYPE_MPEG4) {
+      return new TdApi.ThumbnailFormatMpeg4();
+    } else if (type == TYPE_JPEG) {
+      return new TdApi.ThumbnailFormatJpeg();
+    } else {
+      return null;
+    }
+  }
+
+  static @Nullable TdApi.Thumbnail newFakeLocalThumbnail (String path, int type, long size) {
+    if (StringUtils.isEmpty(path)) return null;
+
+    TdApi.ThumbnailFormat format = fromStickerThumbFormat(type);
+    if (format == null) return null;
+
+    return new TdApi.Thumbnail(format,
+      BitwiseUtils.splitLongToFirstInt(size),
+      BitwiseUtils.splitLongToSecondInt(size),
+      ImageFileLocal.newFakeLocalFile(path));
+  }
+
+  static @Nullable TdApi.Sticker newFakeLocalSticker (String path, int type, long size, boolean repainting, TdApi.Thumbnail thumbnail) {
+    if (StringUtils.isEmpty(path)) return null;
+
+    TdApi.StickerFormat format = fromStickerFormatInt(type);
+    if (format == null) return null;
+
+    TdApi.Sticker sticker = new TdApi.Sticker(0, 0, BitwiseUtils.splitLongToFirstInt(size),
+      BitwiseUtils.splitLongToSecondInt(size), null, format,
+      new TdApi.StickerFullTypeCustomEmoji(1, repainting),
+      new TdApi.ClosedVectorPath[0], thumbnail, ImageFileLocal.newFakeLocalFile(path)
+    );
+
+    return sticker;
+  }
+
 }

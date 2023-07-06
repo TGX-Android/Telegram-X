@@ -254,11 +254,9 @@ public class Settings {
   public static final String KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_TYPE = "emoji_status_type";
   public static final String KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_SIZE = "emoji_status_size";
   public static final String KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_REPAINTING = "emoji_status_repainting";
-  /* todo save thumb
   public static final String KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_THUMBNAIL_FILE = "emoji_status_file_thumb";
   public static final String KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_THUMBNAIL_TYPE = "emoji_status_type_thumb";
   public static final String KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_THUMBNAIL_SIZE = "emoji_status_size_thumb";
-  */
 
   public static String accountInfoPrefix (int accountId) {
     return KEY_ACCOUNT_INFO + accountId + "_";
