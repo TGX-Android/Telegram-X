@@ -240,6 +240,7 @@ public class Settings {
 
   private static final String KEY_ACCOUNT_INFO = "account";
   public static final String KEY_ACCOUNT_INFO_SUFFIX_ID = ""; // user_id
+  public static final String KEY_ACCOUNT_INFO_SUFFIX_FLAGS = "flags"; // first_name
   public static final String KEY_ACCOUNT_INFO_SUFFIX_NAME1 = "name1"; // first_name
   public static final String KEY_ACCOUNT_INFO_SUFFIX_NAME2 = "name2"; // last_name
   public static final String KEY_ACCOUNT_INFO_SUFFIX_USERNAME = "username"; // username
@@ -250,13 +251,11 @@ public class Settings {
   public static final String KEY_ACCOUNT_INFO_SUFFIX_PHOTO_FULL = "photo_full"; // path, if loaded
   public static final String KEY_ACCOUNT_INFO_SUFFIX_COUNTER = "counter_"; // counter
 
-  public static final String KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_FILE = "emoji_status_file"; // path, if loaded
-  public static final String KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_TYPE = "emoji_status_type";
-  public static final String KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_SIZE = "emoji_status_size";
-  public static final String KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_REPAINTING = "emoji_status_repainting";
-  public static final String KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_THUMBNAIL_FILE = "emoji_status_file_thumb";
-  public static final String KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_THUMBNAIL_TYPE = "emoji_status_type_thumb";
-  public static final String KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_THUMBNAIL_SIZE = "emoji_status_size_thumb";
+  public static final String KEY_ACCOUNT_INFO_SUFFIX_EMOJI_STATUS_PREFIX = "emoji_"; // emoji status
+  public static final String KEY_EMOJI_STATUS_SUFFIX_ID = "id";
+  public static final String KEY_EMOJI_STATUS_SUFFIX_METADATA = "data";
+  public static final String KEY_EMOJI_STATUS_SUFFIX_THUMBNAIL = "thumb";
+  public static final String KEY_EMOJI_STATUS_SUFFIX_STICKER = "sticker";
 
   public static String accountInfoPrefix (int accountId) {
     return KEY_ACCOUNT_INFO + accountId + "_";

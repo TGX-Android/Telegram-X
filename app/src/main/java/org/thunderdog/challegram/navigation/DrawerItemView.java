@@ -40,6 +40,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.util.EmojiStatusHelper;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.Text;
+import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.util.text.TextColorSetOverride;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.widget.AttachDelegate;
@@ -196,12 +197,13 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
   }
 
   public void setEmojiStatus (TdlibAccount account) {
-    emojiStatusHelper.updateEmojiWithoutTdlib(account.getUser(), account.getEmojiStatusSticker(), new TextColorSetOverride(TextColorSets.Regular.NORMAL) {
+    TextColorSet colorSet = new TextColorSetOverride(TextColorSets.Regular.NORMAL) {
       @Override
       public int emojiStatusColor () {
         return Theme.getColor(ColorId.iconActive);
       }
-    });
+    };
+    emojiStatusHelper.updateEmoji(account, colorSet);
     trimText(true);
   }
 

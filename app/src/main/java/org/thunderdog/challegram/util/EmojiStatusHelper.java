@@ -20,6 +20,8 @@ import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 import android.view.View;
 
+import androidx.annotation.DrawableRes;
+import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
@@ -33,6 +35,7 @@ import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -75,11 +78,26 @@ public class EmojiStatusHelper implements Destroyable {
     }
   }
 
-  public void updateEmojiWithoutTdlib (@Nullable TdApi.User user, @Nullable TdApi.Sticker sticker, TextColorSet textColorSet) {
-    updateEmojiWithoutTdlib(user, sticker, textColorSet, R.drawable.baseline_premium_star_16, 15);
+  public void updateEmoji (TdlibAccount account, TextColorSet textColorSet) {
+    updateEmoji(account, textColorSet, R.drawable.baseline_premium_star_16, 15);
   }
-  public void updateEmojiWithoutTdlib (@Nullable TdApi.User user, @Nullable TdApi.Sticker sticker, TextColorSet textColorSet, int defaultStarIconId, int textSize) {
-    emojiStatusDrawable = new EmojiStatusDrawable(parentView, user, sticker, clickListenerToSet, textColorSet, defaultStarIconId, textSize);
+
+  public void updateEmoji (TdlibAccount account, TextColorSet textColorSet, @DrawableRes int defaultStarIconId, int textSize) {
+    TdApi.User user = account.getUser();
+    if (user != null) {
+      updateEmoji(account.tdlib(), user, textColorSet, defaultStarIconId, textSize);
+    } else {
+      TdApi.Sticker cachedSticker = account.getEmojiStatusSticker();
+      if (cachedSticker != null) {
+        updateEmojiWithoutTdlib(account.isPremium(), cachedSticker, textColorSet, defaultStarIconId, textSize);
+      } else {
+        clear();
+      }
+    }
+  }
+
+  public void updateEmojiWithoutTdlib (boolean isPremium, @Nullable TdApi.Sticker sticker, TextColorSet textColorSet, int defaultStarIconId, int textSize) {
+    emojiStatusDrawable = new EmojiStatusDrawable(parentView, isPremium, sticker, clickListenerToSet, textColorSet, defaultStarIconId, textSize);
     emojiStatusDrawable.ignoreDraw = ignoreDraw;
     invalidateEmojiStatusReceiver(null, null);
   }
@@ -97,6 +115,10 @@ public class EmojiStatusHelper implements Destroyable {
   }
 
   public void updateEmoji (Tdlib tdlib, @Nullable TdApi.User user, TextColorSet textColorSet, int defaultStarIconId, int textSize) {
+    if (user == null || !user.isPremium) {
+      clear();
+      return;
+    }
     emojiStatusDrawable = new EmojiStatusDrawable(tdlib, user, clickListenerToSet, textColorSet, this::invalidateEmojiStatusReceiver, defaultStarIconId, textSize);
     emojiStatusDrawable.ignoreDraw = ignoreDraw;
     invalidateEmojiStatusReceiver(emojiStatusDrawable.emojiStatus, null);
@@ -220,14 +242,14 @@ public class EmojiStatusHelper implements Destroyable {
       this.needRepainting = false;
     }
 
-    private EmojiStatusDrawable (View v, @Nullable TdApi.User user, @Nullable TdApi.Sticker sticker, @Nullable Text.ClickListener clickListener, @Nullable TextColorSet textColorSet, int defaultStarIconId, int textSize) {
+    private EmojiStatusDrawable (View v, boolean isPremium, @Nullable TdApi.Sticker sticker, @Nullable Text.ClickListener clickListener, @Nullable TextColorSet textColorSet, int defaultStarIconId, int textSize) {
       this.emojiStatus = null;
-      this.needDrawEmojiStatus = user != null && user.isPremium;
+      this.needDrawEmojiStatus = isPremium;
       this.textSize = textSize;
       this.textColorSet = textColorSet;
       this.textMediaListener = null;
       this.clickListener = clickListener;
-      this.starDrawable = user != null && user.emojiStatus == null && needDrawEmojiStatus ? Drawables.get(defaultStarIconId): null;
+      this.starDrawable = needDrawEmojiStatus && sticker == null ? Drawables.get(defaultStarIconId): null;
       this.needRepainting = TD.needRepainting(sticker);
 
       if (sticker != null && TD.isFileLoaded(sticker.sticker)) {

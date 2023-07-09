@@ -6786,6 +6786,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     accessibleChatTimers.clear();
     chatOnlineMemberCount.clear();
     myProfilePhoto = null;
+    myEmojiStatusId = 0;
     pendingMessageTexts.clear();
     pendingMessageCaptions.clear();
     animatedDiceExplicit.clear();
@@ -9264,9 +9265,37 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
+  // Loading user data
+
+  @TdlibThread
+  void downloadMyUser (@Nullable TdApi.User user) {
+    TdApi.EmojiStatus emojiStatus = user != null && user.isPremium ? user.emojiStatus : null;
+    long newEmojiStatusId = emojiStatus != null ? emojiStatus.customEmojiId : 0;
+    TdlibEmojiManager.Entry emojiEntry = newEmojiStatusId != 0 ? emoji().find(newEmojiStatusId) : null;
+    TdApi.Sticker emojiStatusSticker = emojiEntry != null && !emojiEntry.isNotFound() ? emojiEntry.value : null;
+
+    account().storeUserInformation(user, emojiStatusSticker);
+    downloadMyProfilePhoto(user);
+    downloadMyUserEmojiStatus(user);
+  }
+
+  // Loading user data: profile photo
+
   private TdApi.ProfilePhoto myProfilePhoto;
-  private Long myEmojiStatusId;
-  private TdApi.Sticker myEmojiStatusSticker;
+
+  @TdlibThread
+  private void downloadMyProfilePhoto (TdApi.User user) {
+    TdApi.ProfilePhoto newProfilePhoto = user != null ? user.profilePhoto : null;
+    if (newProfilePhoto == null && myProfilePhoto == null)
+      return;
+    if (newProfilePhoto != null && myProfilePhoto != null && (newProfilePhoto.id == myProfilePhoto.id && newProfilePhoto.small.id == myProfilePhoto.small.id && newProfilePhoto.big.id == myProfilePhoto.big.id))
+      return;
+    myProfilePhoto = newProfilePhoto;
+    if (newProfilePhoto != null) {
+      client().send(new TdApi.DownloadFile(newProfilePhoto.small.id, TdlibFilesManager.CLOUD_PRIORITY + 2, 0, 0, true), profilePhotoHandler(false));
+      client().send(new TdApi.DownloadFile(newProfilePhoto.big.id, TdlibFilesManager.CLOUD_PRIORITY, 0, 0, true), profilePhotoHandler(true));
+    }
+  }
 
   private Client.ResultHandler profilePhotoHandler (boolean isBig) {
     return result -> {
@@ -9291,93 +9320,49 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     };
   }
 
-  private RunnableData<TdlibEmojiManager.Entry> emojiStatusHandler () {
-    return result -> {
-      if (result.value != null) {
-        long emojiStatusId = TD.getStickerCustomEmojiId(result.value);
-        if (myEmojiStatusId != null && myEmojiStatusId == emojiStatusId) {
-          myEmojiStatusSticker = result.value;
-          if (TD.isFileLoaded(myEmojiStatusSticker.sticker)) {
-            emojiStatusFileHandler(false).onResult(myEmojiStatusSticker.sticker);
-          } else {
-            client().send(new TdApi.DownloadFile(myEmojiStatusSticker.sticker.id, TdlibFilesManager.CLOUD_PRIORITY + 1, 0, 0, true), emojiStatusFileHandler(false));
-          }
-          if (myEmojiStatusSticker.thumbnail != null) {
-            if (TD.isFileLoaded(myEmojiStatusSticker.thumbnail.file)) {
-              if (!TD.isFileLoaded(myEmojiStatusSticker.sticker)) {
-                emojiStatusFileHandler(true).onResult(myEmojiStatusSticker.thumbnail.file);
-              }
-            } else {
-              client().send(new TdApi.DownloadFile(myEmojiStatusSticker.thumbnail.file.id, TdlibFilesManager.CLOUD_PRIORITY + 1, 0, 0, true), emojiStatusFileHandler(true));
-            }
+  // Loading user data: emoji status
+
+  private long myEmojiStatusId;
+
+  @TdlibThread
+  private void downloadMyUserEmojiStatus (@Nullable TdApi.User user) {
+    TdApi.EmojiStatus emojiStatus = user != null && user.isPremium ? user.emojiStatus : null;
+    long newEmojiStatusId = emojiStatus != null ? emojiStatus.customEmojiId : 0;
+    if (newEmojiStatusId == myEmojiStatusId)
+      return;
+    myEmojiStatusId = newEmojiStatusId;
+    if (newEmojiStatusId != 0) {
+      emoji().findOrRequest(newEmojiStatusId, entry -> {
+        if (!entry.isNotFound() && newEmojiStatusId == myEmojiStatusId) {
+          account().storeUserEmojiStatusMetadata(newEmojiStatusId, entry.value);
+          client().send(new TdApi.DownloadFile(entry.value.sticker.id, TdlibFilesManager.CLOUD_PRIORITY + 1, 0, 0, true), emojiStatusHandler(entry, false));
+          if (entry.value.thumbnail != null) {
+            client().send(new TdApi.DownloadFile(entry.value.thumbnail.file.id, TdlibFilesManager.CLOUD_PRIORITY, 0, 0, true), emojiStatusHandler(entry, true));
           }
         }
-      } else {
-        Log.e("Failed to load emoji status, accountId:%d", accountId);
-      }
-    };
+      });
+    }
   }
 
-  private Client.ResultHandler emojiStatusFileHandler (boolean isThumb) {
+  private Client.ResultHandler emojiStatusHandler (@NonNull TdlibEmojiManager.Entry entry, boolean isThumbnail) {
     return result -> {
       switch (result.getConstructor()) {
         case TdApi.File.CONSTRUCTOR: {
           TdApi.File downloadedFile = (TdApi.File) result;
-          if (myEmojiStatusSticker == null || !TD.isFileLoaded(downloadedFile) || isThumb && myEmojiStatusSticker.thumbnail == null) {
-            Log.e("Failed to load emoji status, accountId:%d internall error", accountId);
-            return;
+          TdApi.File targetFile = isThumbnail ? entry.value.thumbnail.file : entry.value.sticker;
+          if (TD.isFileLoaded(downloadedFile) && myEmojiStatusId == entry.key && targetFile.id == downloadedFile.id) {
+            Td.copyTo(downloadedFile, targetFile);
+            account().storeUserEmojiStatusPath(entry.key, entry.value, isThumbnail, downloadedFile.local.path);
+            context.onUpdateEmojiStatus(accountId, isThumbnail);
           }
-
-          TdApi.File currentFile = isThumb ? myEmojiStatusSticker.thumbnail.file: myEmojiStatusSticker.sticker;
-          if (currentFile != null && currentFile.id == downloadedFile.id) {
-            Td.copyTo(downloadedFile, currentFile);
-
-            if ((isThumb && TD.isFileLoaded(myEmojiStatusSticker.sticker)) || (!isThumb && (myEmojiStatusSticker.thumbnail == null || TD.isFileLoaded(myEmojiStatusSticker.thumbnail.file)))) {
-              account().storeUserEmojiStatusSticker(myEmojiStatusSticker);
-              context.onUpdateEmojiStatus(accountId);
-            }
-          }
-
           break;
         }
         case TdApi.Error.CONSTRUCTOR: {
-          Log.e("Failed to load emoji status, accountId:%d", accountId);
+          Log.e("Failed to load emoji status, accountId:%d, isThumbnail:%b", accountId, isThumbnail);
           break;
         }
       }
     };
-  }
-
-  @TdlibThread
-  void downloadMyUserEmojiStatus (@Nullable TdApi.User user) {
-    Long newEmojiStatusId = user != null && user.isPremium ? (user.emojiStatus != null ? user.emojiStatus.customEmojiId: 0) : null;
-
-    if (newEmojiStatusId == null && myEmojiStatusId == null)
-      return;
-    if (newEmojiStatusId != null && myEmojiStatusId != null && (newEmojiStatusId.longValue() == myEmojiStatusId.longValue()))
-      return;
-    myEmojiStatusId = newEmojiStatusId;
-    if (newEmojiStatusId != null && newEmojiStatusId != 0) {
-      emoji().findOrRequest(newEmojiStatusId, emojiStatusHandler());
-    }
-  }
-
-  @TdlibThread
-  void downloadMyUser (@Nullable TdApi.User user) {
-    account().storeUserInformation(user);
-
-    downloadMyUserEmojiStatus(user);
-
-    TdApi.ProfilePhoto newProfilePhoto = user != null ? user.profilePhoto : null;
-    if (newProfilePhoto == null && myProfilePhoto == null)
-      return;
-    if (newProfilePhoto != null && myProfilePhoto != null && (newProfilePhoto.id == myProfilePhoto.id && newProfilePhoto.small.id == myProfilePhoto.small.id && newProfilePhoto.big.id == myProfilePhoto.big.id))
-      return;
-    myProfilePhoto = newProfilePhoto;
-    if (newProfilePhoto != null) {
-      client().send(new TdApi.DownloadFile(newProfilePhoto.small.id, TdlibFilesManager.CLOUD_PRIORITY + 1, 0, 0, true), profilePhotoHandler(false));
-      client().send(new TdApi.DownloadFile(newProfilePhoto.big.id, TdlibFilesManager.CLOUD_PRIORITY, 0, 0, true), profilePhotoHandler(true));
-    }
   }
 
   // Periodic sync

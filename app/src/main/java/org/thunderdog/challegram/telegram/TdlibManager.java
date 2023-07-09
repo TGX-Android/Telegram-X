@@ -1294,8 +1294,8 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     handler.sendMessage(Message.obtain(handler, ACTION_DISPATCH_ACCOUNT_PROFILE_PHOTO, accountId, big ? 1 : 0));
   }
 
-  void onUpdateEmojiStatus (int accountId) {
-    handler.sendMessage(Message.obtain(handler, ACTION_DISPATCH_ACCOUNT_EMOJI_STATUS, accountId));
+  void onUpdateEmojiStatus (int accountId, boolean isThumbnail) {
+    handler.sendMessage(Message.obtain(handler, ACTION_DISPATCH_ACCOUNT_EMOJI_STATUS, accountId, isThumbnail ? 1 : 0));
   }
 
   public TdlibAccount currentAccount () {
