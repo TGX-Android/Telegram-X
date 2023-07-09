@@ -7,8 +7,10 @@ import androidx.annotation.Nullable;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageFileLocal;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 
+import java.io.File;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
@@ -313,14 +315,53 @@ public class DisplayInformation {
     return info != null && info.userId == expectedUserId ? info : null;
   }
 
-  private static String toRelativePath (String absolutePath) {
-    // TODO make path relative (remove mount dir)
-    return absolutePath;
-  }
+  private static final String EXTERNAL_PREFIX = "external://";
+  private static final String INTERNAL_PREFIX = "internal://";
 
   private static String toAbsolutePath (String relativePath) {
-    // TODO make path absolute (prepend mount dir)
+    if (!StringUtils.isEmpty(relativePath) && !relativePath.startsWith("/")) {
+      if (relativePath.startsWith(EXTERNAL_PREFIX)) {
+        String externalRelativePath = relativePath.substring(EXTERNAL_PREFIX.length());
+        File parentDir = UI.getAppContext().getExternalFilesDir(null);
+        if (parentDir == null) {
+          // Assuming that external storage path was the same as internal one
+          parentDir = UI.getAppContext().getFilesDir();
+        }
+        if (parentDir != null) {
+          return new File(parentDir, externalRelativePath).getAbsolutePath();
+        }
+      }
+      if (relativePath.startsWith(INTERNAL_PREFIX)) {
+        String internalRelativePath = relativePath.substring(INTERNAL_PREFIX.length());
+        File parentDir = UI.getAppContext().getFilesDir();
+        if (parentDir != null) {
+          return new File(parentDir, internalRelativePath).getAbsolutePath();
+        }
+      }
+    }
     return relativePath;
+  }
+
+  private static String toRelativePath (String absoluteFilePath) {
+    if (!StringUtils.isEmpty(absoluteFilePath)) {
+      File externalDir = UI.getAppContext().getExternalFilesDir(null);
+      if (externalDir != null) {
+        final String prefix = externalDir.getAbsolutePath() + "/";
+        if (absoluteFilePath.startsWith(prefix)) {
+          String externalRelativePath = absoluteFilePath.substring(prefix.length());
+          return EXTERNAL_PREFIX + externalRelativePath;
+        }
+      }
+      File internalDir = UI.getAppContext().getFilesDir();
+      if (internalDir != null) {
+        final String prefix = internalDir.getAbsolutePath() + "/";
+        if (absoluteFilePath.startsWith(prefix)) {
+          String internalRelativePath = absoluteFilePath.substring(prefix.length());
+          return INTERNAL_PREFIX + internalRelativePath;
+        }
+      }
+    }
+    return absoluteFilePath;
   }
 
   private static class EmojiStatusCache {
