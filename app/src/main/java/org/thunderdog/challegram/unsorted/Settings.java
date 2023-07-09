@@ -240,7 +240,7 @@ public class Settings {
 
   private static final String KEY_ACCOUNT_INFO = "account";
   public static final String KEY_ACCOUNT_INFO_SUFFIX_ID = ""; // user_id
-  public static final String KEY_ACCOUNT_INFO_SUFFIX_FLAGS = "flags"; // first_name
+  public static final String KEY_ACCOUNT_INFO_SUFFIX_FLAGS = "flags"; // premium, verified, etc
   public static final String KEY_ACCOUNT_INFO_SUFFIX_NAME1 = "name1"; // first_name
   public static final String KEY_ACCOUNT_INFO_SUFFIX_NAME2 = "name2"; // last_name
   public static final String KEY_ACCOUNT_INFO_SUFFIX_USERNAME = "username"; // username
