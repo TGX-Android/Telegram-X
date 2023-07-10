@@ -134,7 +134,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     super(context);
     this.tdlib = tdlib;
     this.complexReceiver = new ComplexReceiver(this);
-    this.emojiStatusHelper = new EmojiStatusHelper(tdlib, this);
+    this.emojiStatusHelper = new EmojiStatusHelper(tdlib, this, null);
     setWillNotDraw(false);
   }
 
@@ -222,7 +222,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     if (receiver != null)
       receiver.destroy();
     complexReceiver.performDestroy();
-    emojiStatusHelper.destroy();
+    emojiStatusHelper.performDestroy();
     if (subscribedToEmojiUpdates) {
       TGLegacyManager.instance().removeEmojiListener(this);
       subscribedToEmojiUpdates = false;

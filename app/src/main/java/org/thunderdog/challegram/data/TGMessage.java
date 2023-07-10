@@ -3047,7 +3047,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     };
 
     if (!(tdlib.isSelfChat(chat) && forwardInfo != null) && !hasBot) {
-      hAuthorEmojiStatus = EmojiStatusHelper.makeDrawable(tdlib, tdlib.cache().user(sender.getUserId()), colorTheme, (text1, specificMedia) -> invalidateEmojiStatusReceiver());
+      hAuthorEmojiStatus = EmojiStatusHelper.makeDrawable(null, tdlib, tdlib.cache().user(sender.getUserId()), colorTheme, (text1, specificMedia) -> invalidateEmojiStatusReceiver());
       hAuthorEmojiStatus.invalidateTextMedia();
       maxWidth -= hAuthorEmojiStatus.getWidth(Screen.dp(3));
     }

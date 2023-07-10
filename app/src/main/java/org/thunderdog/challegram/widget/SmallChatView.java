@@ -49,7 +49,7 @@ public class SmallChatView extends BaseView implements AttachDelegate, TooltipOv
 
     int viewHeight = Screen.dp(62f);
     this.avatarReceiver = new AvatarReceiver(this);
-    this.emojiStatusHelper = new EmojiStatusHelper(tdlib, this);
+    this.emojiStatusHelper = new EmojiStatusHelper(tdlib, this, null);
     layoutReceiver();
     setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, viewHeight));
   }
@@ -83,7 +83,7 @@ public class SmallChatView extends BaseView implements AttachDelegate, TooltipOv
 
   @Override
   public void performDestroy () {
-    emojiStatusHelper.destroy();
+    emojiStatusHelper.performDestroy();
     setChat(null);
   }
 

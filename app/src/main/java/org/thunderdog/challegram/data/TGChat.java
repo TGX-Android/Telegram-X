@@ -892,7 +892,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     }
 
     if (!tdlib.isSelfChat(chat)) {
-      emojiStatusDrawable = EmojiStatusHelper.makeDrawable(tdlib, chat != null ? tdlib.chatUser(chat) : null, new TextColorSetOverride(TextColorSets.Regular.NORMAL) {
+      emojiStatusDrawable = EmojiStatusHelper.makeDrawable(null, tdlib, chat != null ? tdlib.chatUser(chat) : null, new TextColorSetOverride(TextColorSets.Regular.NORMAL) {
         @Override
         public int emojiStatusColor () {
           return Theme.getColor(ColorId.iconActive);

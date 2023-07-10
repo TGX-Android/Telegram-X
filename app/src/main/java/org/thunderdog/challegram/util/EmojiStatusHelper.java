@@ -21,8 +21,6 @@ import android.view.MotionEvent;
 import android.view.View;
 
 import androidx.annotation.DrawableRes;
-import androidx.annotation.IdRes;
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
@@ -55,10 +53,17 @@ public class EmojiStatusHelper implements Destroyable {
   private @Nullable EmojiStatusDrawable emojiStatusDrawable;
   private @Nullable Text.ClickListener clickListenerToSet;
 
-  public EmojiStatusHelper (@Nullable Tdlib tdlib, View v) {
+  private @Nullable String sharedUsageId;
+
+  public EmojiStatusHelper (@Nullable Tdlib tdlib, View v, @Nullable String sharedUsageId) {
     this.tdlib = tdlib;
     this.parentView = v;
+    this.sharedUsageId = sharedUsageId;
     emojiStatusReceiver = new ComplexReceiver(v, Config.MAX_ANIMATED_EMOJI_REFRESH_RATE);
+  }
+
+  public void setSharedUsageId (@Nullable String sharedUsageId) {
+    this.sharedUsageId = sharedUsageId;
   }
 
   public void setClickListener (@Nullable Text.ClickListener clickListenerToSet) {
@@ -97,7 +102,7 @@ public class EmojiStatusHelper implements Destroyable {
   }
 
   public void updateEmojiWithoutTdlib (boolean isPremium, @Nullable TdApi.Sticker sticker, TextColorSet textColorSet, int defaultStarIconId, int textSize) {
-    emojiStatusDrawable = new EmojiStatusDrawable(parentView, isPremium, sticker, clickListenerToSet, textColorSet, defaultStarIconId, textSize);
+    emojiStatusDrawable = new EmojiStatusDrawable(parentView, sharedUsageId, isPremium, sticker, clickListenerToSet, textColorSet, defaultStarIconId, textSize);
     emojiStatusDrawable.ignoreDraw = ignoreDraw;
     invalidateEmojiStatusReceiver(null, null);
   }
@@ -119,7 +124,7 @@ public class EmojiStatusHelper implements Destroyable {
       clear();
       return;
     }
-    emojiStatusDrawable = new EmojiStatusDrawable(tdlib, user, clickListenerToSet, textColorSet, this::invalidateEmojiStatusReceiver, defaultStarIconId, textSize);
+    emojiStatusDrawable = new EmojiStatusDrawable(sharedUsageId, tdlib, user, clickListenerToSet, textColorSet, this::invalidateEmojiStatusReceiver, defaultStarIconId, textSize);
     emojiStatusDrawable.ignoreDraw = ignoreDraw;
     invalidateEmojiStatusReceiver(emojiStatusDrawable.emojiStatus, null);
   }
@@ -140,13 +145,9 @@ public class EmojiStatusHelper implements Destroyable {
     emojiStatusReceiver.detach();
   }
 
-  public void destroy () {
-    emojiStatusReceiver.performDestroy();
-  }
-
   @Override
   public void performDestroy () {
-    emojiStatusReceiver.performDestroy();
+    clear();
   }
 
   public boolean needDrawEmojiStatus () {
@@ -192,7 +193,11 @@ public class EmojiStatusHelper implements Destroyable {
   private boolean ignoreDraw;
 
   public void clear () {
-    emojiStatusDrawable = null;
+    if (emojiStatusDrawable != null) {
+      emojiStatusDrawable.performDestroy();
+      emojiStatusDrawable = null;
+    }
+    emojiStatusReceiver.performDestroy();
   }
 
   public void setIgnoreDraw (boolean ignoreDraw) {
@@ -208,11 +213,11 @@ public class EmojiStatusHelper implements Destroyable {
     }
   }
 
-  public static EmojiStatusDrawable makeDrawable (Tdlib tdlib, @Nullable TdApi.User user, TextColorSet textColorSet, Text.TextMediaListener textMediaListener) {
-    return new EmojiStatusDrawable(tdlib, user, null, textColorSet, textMediaListener, R.drawable.baseline_premium_star_16, 15);
+  public static EmojiStatusDrawable makeDrawable (String sharedUsageId, Tdlib tdlib, @Nullable TdApi.User user, TextColorSet textColorSet, Text.TextMediaListener textMediaListener) {
+    return new EmojiStatusDrawable(sharedUsageId, tdlib, user, null, textColorSet, textMediaListener, R.drawable.baseline_premium_star_16, 15);
   }
 
-  public static class EmojiStatusDrawable {
+  public static class EmojiStatusDrawable implements Destroyable {
     private final @Nullable Text emojiStatus;
     private final @Nullable Drawable starDrawable;
     private final @Nullable TextColorSet textColorSet;
@@ -228,8 +233,8 @@ public class EmojiStatusHelper implements Destroyable {
     private float lastDrawScale = 1f;
     private boolean ignoreDraw;
 
-    private EmojiStatusDrawable (Tdlib tdlib, @Nullable TdApi.User user, @Nullable Text.ClickListener clickListener, @Nullable TextColorSet textColorSet, Text.TextMediaListener textMediaListener, int defaultStarIconId, int textSize) {
-      this.emojiStatus = makeText(tdlib, user, clickListener, textColorSet, textMediaListener, textSize);
+    private EmojiStatusDrawable (@Nullable String sharedUsageId, Tdlib tdlib, @Nullable TdApi.User user, @Nullable Text.ClickListener clickListener, @Nullable TextColorSet textColorSet, Text.TextMediaListener textMediaListener, int defaultStarIconId, int textSize) {
+      this.emojiStatus = makeText(sharedUsageId, tdlib, user, clickListener, textColorSet, textMediaListener, textSize);
       this.needDrawEmojiStatus = user != null && user.isPremium;
       this.textSize = textSize;
       this.textColorSet = textColorSet;
@@ -242,7 +247,7 @@ public class EmojiStatusHelper implements Destroyable {
       this.needRepainting = false;
     }
 
-    private EmojiStatusDrawable (View v, boolean isPremium, @Nullable TdApi.Sticker sticker, @Nullable Text.ClickListener clickListener, @Nullable TextColorSet textColorSet, int defaultStarIconId, int textSize) {
+    private EmojiStatusDrawable (View v, @Nullable String sharedUsageId, boolean isPremium, @Nullable TdApi.Sticker sticker, @Nullable Text.ClickListener clickListener, @Nullable TextColorSet textColorSet, int defaultStarIconId, int textSize) {
       this.emojiStatus = null;
       this.needDrawEmojiStatus = isPremium;
       this.textSize = textSize;
@@ -261,6 +266,7 @@ public class EmojiStatusHelper implements Destroyable {
           gifFile.setScaleType(GifFile.FIT_CENTER);
           gifFile.setOptimizationMode(GifFile.OptimizationMode.EMOJI);
           gifFile.setRepeatCount(2);
+          gifFile.setPlayOnceId(sharedUsageId);
           gifReceiver.requestFile(gifFile);
         } else {
           ImageFile imageFile = new ImageFile(null, sticker.sticker);
@@ -274,6 +280,19 @@ public class EmojiStatusHelper implements Destroyable {
         this.preview = null;
         this.imageReceiver = null;
         this.gifReceiver = null;
+      }
+    }
+
+    @Override
+    public void performDestroy () {
+      if (imageReceiver != null) {
+        imageReceiver.destroy();
+      }
+      if (preview != null) {
+        preview.destroy();
+      }
+      if (gifReceiver != null) {
+        gifReceiver.destroy();
       }
     }
 
@@ -428,7 +447,7 @@ public class EmojiStatusHelper implements Destroyable {
 
 
 
-  private static @Nullable Text makeText (Tdlib tdlib, @Nullable TdApi.User user, Text.ClickListener clickListener, TextColorSet textColorSet, Text.TextMediaListener textMediaListener, int textSize) {
+  private static @Nullable Text makeText (@Nullable String sharedUsageId, Tdlib tdlib, @Nullable TdApi.User user, Text.ClickListener clickListener, TextColorSet textColorSet, Text.TextMediaListener textMediaListener, int textSize) {
     TdApi.FormattedText text = makeEmojiText(user);
     if (text == null) return null;
 
@@ -439,7 +458,7 @@ public class EmojiStatusHelper implements Destroyable {
 
     TextMedia part = result.getTextMediaFromLastPart();
     if (part != null) {
-      part.setIsEmojiStatus();
+      part.setIsEmojiStatus(sharedUsageId);
     }
 
     return result;

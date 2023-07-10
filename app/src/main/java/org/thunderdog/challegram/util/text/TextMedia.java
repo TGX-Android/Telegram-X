@@ -16,6 +16,7 @@ import android.graphics.Canvas;
 import android.graphics.Path;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BuildConfig;
@@ -129,10 +130,11 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
 
   private boolean isEmojiStatus;
 
-  public void setIsEmojiStatus () {
+  public void setIsEmojiStatus (@Nullable String sharedUsageId) {
     isEmojiStatus = true;
     if (gifFile != null) {
       gifFile.setRepeatCount(2);
+      gifFile.setPlayOnceId(sharedUsageId);
     }
   }
 

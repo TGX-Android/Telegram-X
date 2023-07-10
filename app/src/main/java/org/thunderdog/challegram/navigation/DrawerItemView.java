@@ -24,7 +24,6 @@ import android.view.ViewGroup;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.Nullable;
 
-import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.loader.AvatarReceiver;
@@ -70,7 +69,7 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
 
   public DrawerItemView (Context context, Tdlib tdlib) {
     super(context, tdlib);
-    emojiStatusHelper = new EmojiStatusHelper(tdlib, this);
+    emojiStatusHelper = new EmojiStatusHelper(tdlib, this, null);
     TGLegacyManager.instance().addEmojiListener(this);
   }
 
@@ -203,6 +202,7 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
         return Theme.getColor(ColorId.iconActive);
       }
     };
+    emojiStatusHelper.setSharedUsageId("account_" + account.id);
     emojiStatusHelper.updateEmoji(account, colorSet);
     trimText(true);
   }
@@ -289,7 +289,7 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
     if (receiver != null) {
       receiver.destroy();
     }
-    emojiStatusHelper.destroy();
+    emojiStatusHelper.performDestroy();
     TGLegacyManager.instance().removeEmojiListener(this);
   }
 

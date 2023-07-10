@@ -419,7 +419,7 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
       availWidth -= chatMark.getWidth() + Screen.dp(8f);
     }
 
-    emojiStatusDrawable = EmojiStatusHelper.makeDrawable(tdlib, user, new TextColorSetOverride(TextColorSets.Regular.NORMAL) {
+    emojiStatusDrawable = EmojiStatusHelper.makeDrawable(null, tdlib, user, new TextColorSetOverride(TextColorSets.Regular.NORMAL) {
       @Override
       public int emojiStatusColor () {
         return Theme.getColor(ColorId.iconActive);

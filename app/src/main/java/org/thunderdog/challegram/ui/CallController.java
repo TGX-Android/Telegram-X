@@ -409,7 +409,7 @@ public class CallController extends ViewController<CallController.Arguments> imp
     nameTextPaint = new TextPaint();
     nameTextPaint.setTextSize(Screen.dp(40));
     nameTextPaint.setTypeface(Typeface.create("sans-serif-light", Typeface.NORMAL));
-    emojiStatusHelper = new EmojiStatusHelper(tdlib, nameView);
+    emojiStatusHelper = new EmojiStatusHelper(tdlib, nameView, null);
 
     params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
     params.topMargin = Screen.dp(136f);

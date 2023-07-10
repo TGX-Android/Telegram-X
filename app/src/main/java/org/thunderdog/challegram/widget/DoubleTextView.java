@@ -21,7 +21,6 @@ import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
 
 import androidx.annotation.DrawableRes;
@@ -52,7 +51,6 @@ import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.EmojiStatusHelper;
 import org.thunderdog.challegram.util.text.TextColorSets;
 
-import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.lambda.Destroyable;
 
 public class DoubleTextView extends RelativeLayout implements RtlCheckListener, Destroyable {
@@ -95,7 +93,7 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
   public DoubleTextView (Context context) {
     super(context);
 
-    this.emojiStatusHelper = new EmojiStatusHelper(null, this);
+    this.emojiStatusHelper = new EmojiStatusHelper(null, this, null);
 
     int viewHeight = Screen.dp(72f);
     setPadding(0, Math.max(1, Screen.dp(.5f)), 0, 0);

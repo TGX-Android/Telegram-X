@@ -114,7 +114,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
     super(context, tdlib);
     this.avatarReceiver = new AvatarReceiver(this);
     this.subtitleMediaReceiver = new ComplexReceiver(this, Config.MAX_ANIMATED_EMOJI_REFRESH_RATE);
-    this.emojiStatusHelper = new EmojiStatusHelper(tdlib, this);
+    this.emojiStatusHelper = new EmojiStatusHelper(tdlib, this, null);
     avatarReceiver.setBounds(Screen.dp(11f), Screen.dp(10f), Screen.dp(11f) + Screen.dp(52f), Screen.dp(10f) + Screen.dp(52f));
   }
 
@@ -134,7 +134,7 @@ public class BetterChatView extends BaseView implements Destroyable, RemoveHelpe
   public void performDestroy () {
     avatarReceiver.destroy();
     subtitleMediaReceiver.performDestroy();
-    emojiStatusHelper.destroy();
+    emojiStatusHelper.performDestroy();
     setChatImpl(null);
     setMessageImpl(null);
   }

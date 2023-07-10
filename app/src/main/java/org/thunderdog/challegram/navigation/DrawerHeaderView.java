@@ -52,8 +52,6 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.EmojiStatusHelper;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
-import org.thunderdog.challegram.util.text.TextColorSetOverride;
-import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextPart;
 import org.thunderdog.challegram.widget.ExpanderView;
 
@@ -70,8 +68,6 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
   private static final int DRAWER_ALPHA = 90;
 
   // private final TextPaint namePaint, phonePaint;
-  private final EmojiStatusHelper emojiStatusHelper;
-
   private DoubleImageReceiver receiver;
   private DoubleImageReceiver receiver2;
 
@@ -102,9 +98,6 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
     this.receiver.setRadius(0);
     this.receiver2.setRadius(0);
 
-    emojiStatusHelper = new EmojiStatusHelper(parent.tdlib, this);
-    emojiStatusHelper.setClickListener(this::onEmojiStatusClick);
-
     TdlibAccount account = TdlibManager.instance().currentAccount();
     TdlibManager.instance().global().addAccountListener(this);
     TdlibManager.instance().global().addCountersListener(this);
@@ -121,7 +114,7 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
     });
   }
 
-  public boolean onEmojiStatusClick (View v, Text text, TextPart part, @Nullable TdlibUi.UrlOpenParameters openParameters) {
+  public boolean onEmojiStatusClick (View v, Text text, TextPart part, @Nullable TdlibUi.UrlOpenParameters openParameters, EmojiStatusHelper emojiStatusHelper) {
     int[] pos = new int[2];
     getLocationOnScreen(pos);
     EmojiStatusSelectorEmojiPage.Wrapper c = new EmojiStatusSelectorEmojiPage.Wrapper(parent.context, currentAccount.tdlib(), parent, new EmojiStatusSelectorEmojiPage.AnimationsEmojiStatusSetDelegate() {
@@ -181,9 +174,14 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
     }
   }
 
+  private EmojiStatusHelper findActiveEmojiStatusHelper () {
+    return displayInfoFuture != null ? displayInfoFuture.emojiStatusHelper : displayInfo != null ? displayInfo.emojiStatusHelper : null;
+  }
+
   @Override
   public boolean onTouchEvent (MotionEvent event) {
-    return emojiStatusHelper.onTouchEvent(this, event) || clickHelper.onTouchEvent(this, event);
+    EmojiStatusHelper emojiStatus = findActiveEmojiStatusHelper();
+    return (emojiStatus != null && emojiStatus.onTouchEvent(this, event)) || clickHelper.onTouchEvent(this, event);
   }
 
   // Other
@@ -193,7 +191,14 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
     TdlibManager.instance().global().removeAccountListener(this);
     TdlibManager.instance().global().removeCountersListener(this);
     TGLegacyManager.instance().removeEmojiListener(this);
-    emojiStatusHelper.destroy();
+    if (displayInfoFuture != null) {
+      displayInfoFuture.performDestroy();
+      displayInfoFuture = null;
+    }
+    if (displayInfo != null) {
+      displayInfo.performDestroy();
+      displayInfo = null;
+    }
   }
 
   @Override
@@ -259,7 +264,7 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
 
   private DisplayInfo displayInfo;
 
-  private static class DisplayInfo implements TextColorSet {
+  private static class DisplayInfo implements TextColorSet, Destroyable {
     private final DrawerHeaderView context;
     private final TdlibAccount account;
 
@@ -267,6 +272,14 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
     private final String name, phone;
     private ImageFile avatar, avatarFull;
     private final AvatarPlaceholder avatarPlaceholder;
+    private final EmojiStatusHelper emojiStatusHelper;
+
+    @Override
+    public void performDestroy () {
+      if (emojiStatusHelper != null) {
+        emojiStatusHelper.performDestroy();
+      }
+    }
 
     private void setAvatar () {
       ImageFile imageFile = account.getAvatarFile(false);
@@ -288,9 +301,14 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
       }
     }
 
-    public DisplayInfo (DrawerHeaderView context, TdlibAccount account) {
+    public DisplayInfo (DrawerHeaderView context, TdlibAccount account, @Nullable EmojiStatusHelper statusHelper) {
       this.context = context;
       this.account = account;
+
+      this.emojiStatusHelper = statusHelper;
+      if (statusHelper != null) {
+        statusHelper.updateEmoji(account, this, R.drawable.baseline_premium_star_24, EmojiStatusHelper.emojiSizeToTextSize(24));
+      }
 
       userId = account.getKnownUserId();
       if (account.hasUserInfo()) {
@@ -329,6 +347,7 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
 
     private static final int FLAG_EQUAL_NUMBERS = 1;
     private static final int FLAG_EQUAL_NAMES = 1 << 1;
+    private static final int FLAG_EQUAL_STATUSES = 1 << 2;
     private int equalFlags;
 
     public void calculateDiff (DisplayInfo info) {
@@ -337,6 +356,8 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
         flags |= FLAG_EQUAL_NUMBERS;
       if (StringUtils.equalsOrBothEmpty(info.name, this.name))
         flags |= FLAG_EQUAL_NAMES;
+      if (info.account.isPremium() && this.account.isPremium() && info.account.getEmojiStatusCustomEmojiId() == this.account.getEmojiStatusCustomEmojiId())
+        flags |= FLAG_EQUAL_STATUSES;
       equalFlags = flags;
     }
 
@@ -414,6 +435,9 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
         if (trimmedPhone != null) {
           trimmedPhone.draw(c, contentLeft, contentLeft + trimmedPhone.getWidth(), 0, Screen.dp(119f) + HeaderView.getTopOffset(), null, (equalFlags & FLAG_EQUAL_NUMBERS) != 0 ? (drawEqual ? 1f : 0f) : factor);
         }
+        if (emojiStatusHelper != null) {
+          emojiStatusHelper.draw(c, rtl ? Screen.dp(16 + 24 * 2) : viewWidth - Screen.dp(88), viewHeight - Screen.dp(18 + 24), (equalFlags & FLAG_EQUAL_STATUSES) != 0 ? (drawEqual ? 1f : 0f) : factor);
+        }
         /*c.drawText(trimmedName != null ? trimmedName : name.text, rtl ? (viewWidth - contentLeft - (trimmedName != null ? trimmedNameWidth : nameWidth)) : contentLeft, nameTop, context.namePaint(name.needFakeBold, avatarFactor, (equalFlags & FLAG_EQUAL_NAMES) != 0 ? (drawEqual ? 1f : 0f) : factor));
         c.drawText(trimmedPhone != null ? trimmedPhone : phone, rtl ? (viewWidth - contentLeft - (trimmedPhone != null ? trimmedPhoneWidth : phoneWidth)) : contentLeft, phoneTop, context.phonePaint(avatarFactor, (equalFlags & FLAG_EQUAL_NUMBERS) != 0 ? (drawEqual ? 1f : 0f) : factor));*/
       }
@@ -437,11 +461,28 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
 
   public synchronized void setUser (final TdlibAccount account) {
     boolean animate = parent.getShowFactor() > 0f && this.displayInfo != null /*&& !displayInfo.compareTo(account, true)*/;
-    DisplayInfo info = new DisplayInfo(this, account);
+
+    EmojiStatusHelper emojiStatusHelper;
+    if (account.isPremium()) {
+      emojiStatusHelper = new EmojiStatusHelper(parent.tdlib, this, null);
+      emojiStatusHelper.setClickListener((v, text, part, openParameters) ->
+        onEmojiStatusClick(v, text, part, openParameters, emojiStatusHelper)
+      );
+      emojiStatusHelper.setSharedUsageId("account_" + account.id);
+    } else {
+      emojiStatusHelper = null;
+    }
+
+    DisplayInfo info = new DisplayInfo(this, account, emojiStatusHelper);
     info.trim(getMeasuredWidth());
 
     currentAccount = account;
-    emojiStatusHelper.updateEmoji(account, info, R.drawable.baseline_premium_star_24, EmojiStatusHelper.emojiSizeToTextSize(24));
+
+    if (account.isPremium()) {
+
+    } else {
+      // Cleared in onFactorChangeFinished
+    }
 
     if (this.animator != null) {
       this.animator.cancel();
@@ -456,9 +497,13 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
       animator = new FactorAnimator(0, this, AnimatorUtils.DECELERATE_INTERPOLATOR, SWITCH_DURATION);
       animator.animateTo(1f);
     } else {
+      DisplayInfo oldDisplayInfo = this.displayInfo;
       this.displayInfo = info;
       receiver.requestFile(info.avatar, info.avatarFull);
       invalidate();
+      if (oldDisplayInfo != null) {
+        oldDisplayInfo.performDestroy();
+      }
     }
   }
 
@@ -471,21 +516,30 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
   }
 
   public void onAppear () {
-    emojiStatusHelper.onAppear();
+    EmojiStatusHelper helper = findActiveEmojiStatusHelper();
+    if (helper != null) {
+      helper.onAppear();
+    }
   }
 
   @Override
   protected void onAttachedToWindow () {
     super.onAttachedToWindow();
     receiver.attach();
-    emojiStatusHelper.attach();
+    EmojiStatusHelper helper = findActiveEmojiStatusHelper();
+    if (helper != null) {
+      helper.attach();
+    }
   }
 
   @Override
   protected void onDetachedFromWindow () {
     super.onDetachedFromWindow();
     receiver.detach();
-    emojiStatusHelper.detach();
+    EmojiStatusHelper helper = findActiveEmojiStatusHelper();
+    if (helper != null) {
+      helper.detach();
+    }
   }
 
   @Override
@@ -497,12 +551,16 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
   }
 
   private void applyFuture () {
+    DisplayInfo oldDisplayInfo = displayInfo;
     displayInfo = displayInfoFuture;
     displayInfoFuture = null;
     DoubleImageReceiver temp = receiver2;
     receiver2 = receiver;
     receiver = temp;
     receiver2.requestFile(null, null);
+    if (oldDisplayInfo != null) {
+      oldDisplayInfo.performDestroy();
+    }
     futureFactor = 0f;
     animator = null;
     invalidate();
@@ -556,6 +614,5 @@ public class DrawerHeaderView extends View implements Destroyable, GlobalAccount
     }
 
     expanderView.draw(c, rtl ? Screen.dp(54f) / 2 : viewWidth - Screen.dp(54f) / 2, viewHeight - Screen.dp(54f) / 2, getTextColor(avatarFactor));
-    emojiStatusHelper.draw(c, rtl ? Screen.dp(16 + 24 * 2) : viewWidth - Screen.dp(88), viewHeight - Screen.dp(18 + 24));
   }
 }

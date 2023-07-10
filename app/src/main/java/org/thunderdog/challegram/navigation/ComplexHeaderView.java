@@ -60,7 +60,6 @@ import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.util.EmojiStatusHelper;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
-import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.widget.BaseView;
 
@@ -119,7 +118,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
     setUseDefaultClickListener(false);
     this.receiver = new AvatarReceiver(this);
     this.receiver.setDisplayFullSizeOnlyInFullScreen(true);
-    this.emojiStatusHelper = new EmojiStatusHelper(tdlib, this);
+    this.emojiStatusHelper = new EmojiStatusHelper(tdlib, this, null);
     setCustomControllerProvider(this);
     TGLegacyManager.instance().addEmojiListener(this);
   }

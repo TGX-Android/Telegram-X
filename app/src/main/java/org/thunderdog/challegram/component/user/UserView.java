@@ -100,7 +100,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
 
     avatarReceiver = new AvatarReceiver(this);
     complexReceiver = new ComplexReceiver(this);
-    emojiStatusHelper = new EmojiStatusHelper(tdlib, this);
+    emojiStatusHelper = new EmojiStatusHelper(tdlib, this, null);
     layoutReceiver();
 
     removeHelper = new RemoveHelper(this, R.drawable.baseline_remove_circle_24);
@@ -300,7 +300,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
   @Override
   public void performDestroy () {
     complexReceiver.performDestroy();
-    emojiStatusHelper.destroy();
+    emojiStatusHelper.performDestroy();
     avatarReceiver.destroy();
   }
 
