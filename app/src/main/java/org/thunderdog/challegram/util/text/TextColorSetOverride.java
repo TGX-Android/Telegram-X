@@ -57,4 +57,9 @@ public class TextColorSetOverride implements TextColorSet {
   public int outlineColorId (boolean isPressed) {
     return colorSet.outlineColorId(isPressed);
   }
+
+  @Override
+  public int emojiStatusColor () {
+    return colorSet.emojiStatusColor();
+  }
 }

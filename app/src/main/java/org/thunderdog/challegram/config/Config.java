@@ -79,6 +79,8 @@ public class Config {
 
   public static final boolean NEED_NETWORK_SYNC_REQUEST = false;
 
+  public static final boolean AWAKE_ALL_TDLIB_INSTANCES = !BuildConfig.DEBUG;
+
   // Fields from default config.
 
   public static final int STATUS_BAR_COLOR_ID = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? ColorId.statusBar : ColorId.statusBarLegacy;

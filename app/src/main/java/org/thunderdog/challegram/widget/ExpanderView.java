@@ -109,7 +109,7 @@ public class ExpanderView implements FactorAnimator.Target {
     if (counter != null && expandFactor < 1f) {
       boolean rtl = Lang.rtl();
       cx += Screen.dp(24f) * (rtl ? 1 : -1);
-      // cy -= Screen.dp(13f);
+      cy -= Screen.dp(2f);
       c.save();
       c.scale(.85f, .85f, cx, cy);
       counter.draw(c, cx, cy, rtl ? Gravity.LEFT : Gravity.RIGHT, 1f - expandFactor);

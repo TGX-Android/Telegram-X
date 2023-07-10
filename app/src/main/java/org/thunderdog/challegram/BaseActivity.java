@@ -1817,7 +1817,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   private StickerPreviewView stickerPreview;
   private StickerSmallView stickerPreviewControllerView;
 
-  public void openStickerPreview (Tdlib tdlib, StickerSmallView stickerView, TGStickerObj sticker, int cx, int cy, int maxWidth, int viewportHeight, boolean disableEmojis) {
+  public void openStickerPreview (Tdlib tdlib, StickerSmallView stickerView, TGStickerObj sticker, int cx, int cy, int maxWidth, int viewportHeight, boolean disableEmojis, boolean isEmojiStatus) {
     if (stickerPreview != null) {
       return;
     }
@@ -1827,6 +1827,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     stickerPreview = new StickerPreviewView(this);
     stickerPreview.setControllerView(stickerPreviewControllerView);
     stickerPreview.setSticker(tdlib, sticker, cx, cy, maxWidth, viewportHeight, disableEmojis);
+    stickerPreview.setIsEmojiStatus(isEmojiStatus);
 
     stickerPreviewWindow = new PopupLayout(this);
     stickerPreviewWindow.setBackListener(stickerPreview);

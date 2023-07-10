@@ -20,6 +20,8 @@ import android.graphics.Rect;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.annotation.Nullable;
+
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.DoubleTextWrapper;
@@ -29,12 +31,16 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.util.EmojiStatusHelper;
+import org.thunderdog.challegram.util.text.Text;
+import org.thunderdog.challegram.util.text.TextMedia;
 
 import me.vkryl.android.util.InvalidateContentProvider;
 import me.vkryl.core.lambda.Destroyable;
 
-public class SmallChatView extends BaseView implements AttachDelegate, TooltipOverlayView.LocationProvider, InvalidateContentProvider, Destroyable {
+public class SmallChatView extends BaseView implements AttachDelegate, TooltipOverlayView.LocationProvider, InvalidateContentProvider, Destroyable, EmojiStatusHelper.EmojiStatusReceiverInvalidateDelegate {
   private final AvatarReceiver avatarReceiver;
+  private final EmojiStatusHelper emojiStatusHelper;
 
   private DoubleTextWrapper chat;
 
@@ -43,6 +49,7 @@ public class SmallChatView extends BaseView implements AttachDelegate, TooltipOv
 
     int viewHeight = Screen.dp(62f);
     this.avatarReceiver = new AvatarReceiver(this);
+    this.emojiStatusHelper = new EmojiStatusHelper(tdlib, this, null);
     layoutReceiver();
     setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, viewHeight));
   }
@@ -65,15 +72,18 @@ public class SmallChatView extends BaseView implements AttachDelegate, TooltipOv
   @Override
   public void attach () {
     avatarReceiver.attach();
+    emojiStatusHelper.attach();
   }
 
   @Override
   public void detach () {
     avatarReceiver.detach();
+    emojiStatusHelper.detach();
   }
 
   @Override
   public void performDestroy () {
+    emojiStatusHelper.performDestroy();
     setChat(null);
   }
 
@@ -111,8 +121,12 @@ public class SmallChatView extends BaseView implements AttachDelegate, TooltipOv
       chat.getViewProvider().attachToView(this);
     }
 
+    invalidateEmojiStatusReceiver(null, null);
     requestFile();
     invalidate();
+    if (chat != null) {
+      chat.onAttachToView();
+    }
   }
 
   private void requestFile () {
@@ -151,7 +165,7 @@ public class SmallChatView extends BaseView implements AttachDelegate, TooltipOv
     }
     avatarReceiver.draw(c);
 
-    chat.draw(this, avatarReceiver, c);
+    chat.draw(this, avatarReceiver, c, emojiStatusHelper.emojiStatusReceiver);
 
     if (checkboxVisible) {
       c.save();
@@ -185,5 +199,12 @@ public class SmallChatView extends BaseView implements AttachDelegate, TooltipOv
     this.checkboxVisible = checkboxVisible;
     chat.setAdminSignVisible(!checkboxVisible, true);
     invalidate();
+  }
+
+  @Override
+  public void invalidateEmojiStatusReceiver (Text text, @Nullable TextMedia specificMedia) {
+    if (emojiStatusHelper != null && chat != null) {
+      chat.requestEmojiStatusReceiver(emojiStatusHelper.emojiStatusReceiver);
+    }
   }
 }

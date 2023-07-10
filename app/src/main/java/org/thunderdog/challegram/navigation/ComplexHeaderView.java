@@ -21,6 +21,7 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -56,6 +57,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.SimpleMediaViewController;
 import org.thunderdog.challegram.unsorted.Size;
+import org.thunderdog.challegram.util.EmojiStatusHelper;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.util.text.TextEntity;
@@ -93,6 +95,7 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
 
   private @NonNull final AvatarReceiver receiver;
 
+  private final EmojiStatusHelper emojiStatusHelper;
   private String title, subtitle, expandedSubtitle;
   private TextEntity[] subtitleEntities;
   private @Nullable Text trimmedTitle, trimmedTitleExpanded, trimmedSubtitle, trimmedSubtitleExpanded;
@@ -115,8 +118,38 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
     setUseDefaultClickListener(false);
     this.receiver = new AvatarReceiver(this);
     this.receiver.setDisplayFullSizeOnlyInFullScreen(true);
+    this.emojiStatusHelper = new EmojiStatusHelper(tdlib, this, null);
     setCustomControllerProvider(this);
     TGLegacyManager.instance().addEmojiListener(this);
+  }
+
+  public void setIgnoreDrawEmojiStatus (boolean ignoreDrawEmojiStatus) {
+    emojiStatusHelper.setIgnoreDraw(ignoreDrawEmojiStatus);
+    invalidate();
+  }
+
+  public void setOnEmojiStatusClickListener (Text.ClickListener clickListener) {
+    emojiStatusHelper.setClickListener(clickListener);
+  }
+
+  public int getEmojiStatusLastDrawX () {
+    return emojiStatusHelper.getLastDrawX();
+  }
+
+  public int getEmojiStatusLastDrawY () {
+    return emojiStatusHelper.getLastDrawY();
+  }
+
+  @Override
+  protected void onAttachedToWindow () {
+    super.onAttachedToWindow();
+    emojiStatusHelper.attach();
+  }
+
+  @Override
+  protected void onDetachedFromWindow () {
+    super.onDetachedFromWindow();
+    emojiStatusHelper.detach();
   }
 
   protected final boolean hasSubtitle () {
@@ -397,6 +430,18 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
     invalidate();
   }
 
+  public void setEmojiStatus (TdApi.User user) {
+    emojiStatusHelper.updateEmoji(tdlib, user, getTitleColorSet(), R.drawable.baseline_premium_star_16, 18);
+    emojiStatusHelper.invalidateEmojiStatusReceiver(trimmedTitleExpanded, null);
+    buildLayout();
+    invalidate();
+  }
+
+  @Override
+  public boolean onTouchEvent (MotionEvent e) {
+    return emojiStatusHelper.onTouchEvent(this, e) || super.onTouchEvent(e);
+  }
+
   public void setExpandedSubtitle (CharSequence expandedSubtitleCs) {
     String expandedSubtitle = expandedSubtitleCs != null ? expandedSubtitleCs.toString() : null;
     if ((this.expandedSubtitle == null) != (expandedSubtitle == null) || (expandedSubtitle != null && !expandedSubtitle.equals(this.expandedSubtitle))) {
@@ -597,6 +642,10 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
         additionalTextEndPadding = getOutlinedWidth(Lang.getString(showFake ? R.string.FakeMark : R.string.ScamMark));
       } else {
         additionalTextEndPadding = 0;
+      }
+
+      if (emojiStatusHelper.needDrawEmojiStatus()) {
+        additionalTextEndPadding += emojiStatusHelper.getWidth();
       }
 
       avatarTextScale = DEFAULT_AVATAR_TEXT_SCALE;
@@ -847,7 +896,9 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
           trimmedTitle.draw(c, 0, 0, null, 1f);
         }
 
-        float baseIconLeft = trimmedTitle.getWidth() + (showLock ? Screen.dp(16f) : 0);
+        float baseIconLeft = trimmedTitle.getWidth()
+          + (showLock ? Screen.dp(16f) : 0)
+          + (emojiStatusHelper.needDrawEmojiStatus() ? emojiStatusHelper.getWidth() + Screen.dp(6): 0);
         float toIconLeft = trimmedTitleExpanded != null ? trimmedTitleExpanded.getLastLineWidth() : baseIconLeft;
         float iconLeft = baseIconLeft + (toIconLeft - baseIconLeft) * avatarExpandFactor;
         float iconTop = trimmedTitleExpanded != null ? (trimmedTitleExpanded.getHeight() - trimmedTitle.getHeight()) * avatarExpandFactor : 0;
@@ -878,6 +929,18 @@ public class ComplexHeaderView extends BaseView implements RtlCheckListener, Str
         }
 
         c.restore();
+        int statusDrawLeft = (int) (baseTextLeft + (trimmedTitle.getWidth() + Screen.dp(6)) * textScaleFactor) + (showLock ? Screen.dp(16f) : 0);
+        int statusDrawTop = (int) baseTitleTop;
+        if (trimmedTitleExpanded != null && avatarExpandFactor > 0f) {
+          if (avatarExpandFactor < 1f) {
+            emojiStatusHelper.draw(c, statusDrawLeft, statusDrawTop, 1f - avatarExpandFactor, textScaleFactor);
+          }
+          int statusDrawLeft2 = (int) (baseTextLeft + (trimmedTitleExpanded.getLastLineWidth() + Screen.dp(6)) * textScaleFactor) + (showLock ? Screen.dp(16f) : 0);
+          int statusDrawTop2 = (int) (baseTitleTop + (trimmedTitleExpanded.getNextLineHeight() - trimmedTitleExpanded.getLineHeight(trimmedTitleExpanded.getLineCount() - 1)) * textScaleFactor);
+          emojiStatusHelper.draw(c, statusDrawLeft2, statusDrawTop2, avatarExpandFactor, textScaleFactor);
+        } else {
+          emojiStatusHelper.draw(c, statusDrawLeft, statusDrawTop, 1f, textScaleFactor);
+        }
       }
 
       if (trimmedSubtitle != null) {

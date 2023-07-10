@@ -15,6 +15,7 @@
 package org.thunderdog.challegram.data;
 
 import android.graphics.Path;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -31,12 +32,16 @@ import org.thunderdog.challegram.widget.EmojiLayout;
 
 import java.util.ArrayList;
 
+import me.vkryl.core.BitwiseUtils;
+import me.vkryl.core.StringUtils;
 import me.vkryl.td.Td;
 
 public class TGStickerSetInfo {
-  private static final int FLAG_RECENT = 0x01;
-  private static final int FLAG_TRENDING = 0x04;
-  private static final int FLAG_FAVORITE = 0x08;
+  private static final int FLAG_RECENT = 1;
+  private static final int FLAG_TRENDING = 1 << 2;
+  private static final int FLAG_FAVORITE = 1 << 3;
+  private static final int FLAG_TRENDING_EMOJI = 1 << 4;
+  private static final int FLAG_DEFAULT_EMOJI = 1 << 5;
 
   private final Tdlib tdlib;
   private final @Nullable TdApi.StickerSetInfo info;
@@ -75,7 +80,8 @@ public class TGStickerSetInfo {
   public TGStickerSetInfo (Tdlib tdlib, @NonNull TdApi.StickerSetInfo info) {
     this.tdlib = tdlib;
     this.info = info;
-    if (info.thumbnail != null) {
+    boolean ignoreThumbnailAnimation = info.id == 7489288727785635874L;
+    if (info.thumbnail != null && !ignoreThumbnailAnimation) {
       this.previewOutline = info.thumbnailOutline;
       this.previewWidth = info.thumbnail.width;
       this.previewHeight = info.thumbnail.height;
@@ -111,7 +117,7 @@ public class TGStickerSetInfo {
       this.previewOutline = info.covers[0].outline;
       this.previewWidth = info.covers[0].width;
       this.previewHeight = info.covers[0].height;
-      if (Td.isAnimated(info.covers[0].format)) {
+      if (Td.isAnimated(info.covers[0].format) && !ignoreThumbnailAnimation) {
         this.previewImage = null;
         this.previewAnimation = new GifFile(tdlib, info.covers[0].sticker, info.covers[0].format);
         this.previewAnimation.setOptimizationMode(GifFile.OptimizationMode.STICKER_PREVIEW);
@@ -199,6 +205,27 @@ public class TGStickerSetInfo {
     if (wrap != null && isTrending()) {
       wrap.setIsOneShot();
     }
+  }
+
+  public void setIsDefaultEmoji () {
+    flags |= FLAG_DEFAULT_EMOJI;
+  }
+
+  public boolean isDefaultEmoji () {
+    return (flags & FLAG_DEFAULT_EMOJI) != 0;
+  }
+
+
+  public void setIsTrendingEmoji () {
+    flags |= FLAG_TRENDING_EMOJI;
+  }
+
+  public void unsetIsTrendingEmoji () {
+    flags = BitwiseUtils.setFlag(flags, FLAG_TRENDING_EMOJI, false);
+  }
+
+  public boolean isTrendingEmoji () {
+    return (flags & FLAG_TRENDING_EMOJI) != 0;
   }
 
   public void setIsTrending () {
@@ -367,6 +394,6 @@ public class TGStickerSetInfo {
   }
 
   public String getTitle () {
-    return isFavorite() ? "" : isRecent() ? Lang.getString(R.string.RecentStickers) : info != null ? info.title : null;
+    return isDefaultEmoji() ? Lang.getString(R.string.TrendingStatuses): isFavorite() ? "" : isRecent() ? Lang.getString(R.string.RecentStickers) : info != null ? info.title : null;
   }
 }

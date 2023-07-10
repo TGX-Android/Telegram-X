@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import me.vkryl.core.BitwiseUtils;
+import me.vkryl.core.StringUtils;
 
 public class GifFile {
   public static final int TYPE_GIF = 1;
@@ -63,6 +64,7 @@ public class GifFile {
   private final int type;
   private int scaleType;
   private int flags;
+  private String playOnceId;
   private @OptimizationMode int optimizationMode;
   private long chatId, messageId;
   private boolean isLooped, isFrozen;
@@ -211,6 +213,10 @@ public class GifFile {
     this.flags = BitwiseUtils.setFlag(flags, FLAG_PLAY_ONCE, playOnce);
   }
 
+  public void setPlayOnceId (String playOnceId) {
+    this.playOnceId = playOnceId;
+  }
+
   public void setPlayOnce () {
     setPlayOnce(Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_STICKERS_LOOP));
   }
@@ -236,7 +242,23 @@ public class GifFile {
     loopListeners.add(callback);
   }
 
+
+  private int repeatsCounter = -1;
+
+  public void setRepeatCount (int count) {
+    setPlayOnce(true);
+    setLooped(false);
+    repeatsCounter = count;
+  }
+
   public void onLoop () {
+    if (repeatsCounter >= 0) {
+      repeatsCounter -= 1;
+      if (repeatsCounter > 0) {
+        setLooped(false);
+      }
+    }
+
     if (loopListeners != null) {
       tdlib.ui().post(() -> {
         if (loopListeners != null) {
@@ -335,8 +357,10 @@ public class GifFile {
     if (fitzpatrickType != 0) {
       b.append(",f").append(fitzpatrickType);
     }
-    if (isUnique() || isPlayOnce()) {
+    if (isUnique() || (isPlayOnce() && StringUtils.isEmpty(playOnceId))) {
       b.append(",o").append(creationTime);
+    } else if (isPlayOnce()) {
+      b.append(",p").append(playOnceId);
     }
     if (startMediaTimestamp != 0) {
       b.append(",t").append(startMediaTimestamp);

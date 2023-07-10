@@ -16,6 +16,7 @@ import android.graphics.Canvas;
 import android.graphics.Path;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BuildConfig;
@@ -127,6 +128,16 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
     return "emoji_" + customEmojiId + "_" + size;
   }
 
+  private boolean isEmojiStatus;
+
+  public void setIsEmojiStatus (@Nullable String sharedUsageId) {
+    isEmojiStatus = true;
+    if (gifFile != null) {
+      gifFile.setRepeatCount(2);
+      gifFile.setPlayOnceId(sharedUsageId);
+    }
+  }
+
   private void buildCustomEmoji (@NonNull TdlibEmojiManager.Entry customEmoji) {
     TdApi.Sticker sticker = customEmoji.value;
     if (sticker == null)
@@ -148,6 +159,9 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
         this.gifFile.setScaleType(GifFile.FIT_CENTER);
         this.gifFile.setOptimizationMode(GifFile.OptimizationMode.EMOJI);
         this.gifFile.setRequestedSize(Math.max(width, height));
+        if (isEmojiStatus) {
+          this.gifFile.setRepeatCount(2);
+        }
         break;
       }
       case TdApi.StickerFormatWebp.CONSTRUCTOR: {
@@ -157,6 +171,17 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
         break;
       }
     }
+  }
+
+  public void rebuild () {
+    if (customEmoji != null && !customEmoji.isNotFound()) {
+      buildCustomEmoji(customEmoji);
+    }
+    tdlib.ui().post(() -> {
+      if (!isDestroyed) {
+        source.notifyMediaChanged(this);
+      }
+    });
   }
 
   @TdlibThread
@@ -203,6 +228,10 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
       return 120.0f / 100.0f - (size != 0 ? Screen.dp(1f) * 2 / (float) size : 0);
     }
     return 1f;
+  }
+
+  public boolean needsRepainting () {
+    return isCustomEmoji() && customEmoji != null && TD.needRepainting(customEmoji.value);
   }
 
   public boolean isCustomEmoji () {
@@ -255,6 +284,12 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
       }
       return;
     }
+
+    final boolean needRepainting = needsRepainting();
+    if (needRepainting) {
+      c.saveLayerAlpha(left - width / 4f, top - height / 4f, right + width / 4f, bottom + height / 4f, 255, Canvas.ALL_SAVE_FLAG);
+    }
+
     //noinspection ConstantConditions
     float scale = customEmoji != null && !customEmoji.isNotFound() ? getScale(customEmoji.value, (right - left)) : 1f;
     boolean needScaleUp = scale != 1f;
@@ -302,6 +337,10 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
     }
     if (needScaleUp) {
       Views.restore(c, restoreToCount);
+    }
+    if (needRepainting) {
+      c.drawRect(left - width / 4f, top - height / 4f, right + width / 4f, bottom + height / 4f, Paints.getSrcInPaint(source.getEmojiStatusColor()));
+      c.restore();
     }
   }
 }

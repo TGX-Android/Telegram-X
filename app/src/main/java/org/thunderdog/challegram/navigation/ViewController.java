@@ -2435,7 +2435,12 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     }, forcedTheme);
   }
 
+
   public final PopupLayout showDateTimePicker (CharSequence title, @StringRes int todayRes, @StringRes int tomorrowRes, @StringRes int futureRes, final RunnableLong callback, final @Nullable ThemeDelegate forcedTheme) {
+    return showDateTimePicker(tdlib, title, todayRes, tomorrowRes, futureRes, callback, forcedTheme);
+  }
+
+  public final PopupLayout showDateTimePicker (Tdlib tdlib, CharSequence title, @StringRes int todayRes, @StringRes int tomorrowRes, @StringRes int futureRes, final RunnableLong callback, final @Nullable ThemeDelegate forcedTheme) {
     return showPopup(title, true, (popupLayout, optionsWrap) -> {
       int contentHeight = 0;
       int pickerHeight = InfiniteRecyclerView.getItemHeight() * 5;

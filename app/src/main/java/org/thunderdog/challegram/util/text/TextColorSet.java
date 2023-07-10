@@ -25,6 +25,10 @@ public interface TextColorSet {
   default int iconColor () {
     return defaultTextColor();
   }
+  @ColorInt
+  default int emojiStatusColor () {
+    return defaultTextColor();
+  }
 
   @ColorInt
   default int clickableTextColor (boolean isPressed) {

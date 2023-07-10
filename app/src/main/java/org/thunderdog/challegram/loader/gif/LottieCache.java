@@ -20,6 +20,7 @@ import android.os.SystemClock;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.core.BaseThread;
 import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.unsorted.Settings;
 
 import java.io.File;
@@ -88,9 +89,9 @@ public class LottieCache {
       String[] fileData = key.substring(LOTTIE_KEY_PREFIX.length()).split("/", 3);
       if (fileData.length != 3)
         return false;
-      int accountId = StringUtils.parseInt(fileData[0], -1);
+      /*int accountId = StringUtils.parseInt(fileData[0], -1);
       if (accountId == -1)
-        return false;
+        return false;*/
       String directory = fileData[1];
       String fileName = fileData[2];
       if (StringUtils.isEmpty(directory) || StringUtils.isEmpty(fileName))
@@ -257,7 +258,7 @@ public class LottieCache {
       keepAliveMs = 0;
     }
     String colorKey = fitzpatrickType != 0 ? Integer.toString(fitzpatrickType) : null;
-    int accountId = file.tdlib().id();
+    int accountId = file.tdlib() != null ? file.tdlib().id(): TdlibAccount.NO_ID;
     File cacheDir = getCacheDir(accountId, size, optimize, colorKey);
     if (cacheDir == null)
       return null;
@@ -284,7 +285,7 @@ public class LottieCache {
         cacheFile.delete();
       } else {
         String colorKey = fitzpatrickType != 0 ? Integer.toString(fitzpatrickType) : null;
-        String key = getCacheFileKey(file.tdlib.accountId(), optimize, size, colorKey, new File(file.getFilePath()).getName());
+        String key = getCacheFileKey(file.tdlib != null ? file.tdlib.accountId(): TdlibAccount.NO_ID, optimize, size, colorKey, new File(file.getFilePath()).getName());
         long time = Settings.instance().getLong(key, 0);
         if (time == 0 || System.currentTimeMillis() >= time) {
           cacheFile.delete();

@@ -837,6 +837,20 @@ public class Paints {
     return xorPaint;
   }
 
+  private static Paint srcInPaint;
+  public static Paint getSrcInPaint (int color) {
+    if (srcInPaint == null) {
+      synchronized (Paints.class) {
+        if (srcInPaint == null) {
+          srcInPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+          srcInPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+        }
+      }
+    }
+    srcInPaint.setColor(color);
+    return srcInPaint;
+  }
+
   private static Paint bitmapPaint;
 
   public static Paint getBitmapPaint () {

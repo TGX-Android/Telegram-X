@@ -796,7 +796,7 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
   }
 
   @UiThread
-  void notifyMediaChanged (@Nullable TextMedia media) {
+  public void notifyMediaChanged (@Nullable TextMedia media) {
     if (textMediaListener != null) {
       textMediaListener.onInvalidateTextMedia(this, media);
     }
@@ -2915,6 +2915,15 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
     return isClickable ? theme.clickableTextColor(isPressed) : theme.defaultTextColor();
   }
 
+  public int getEmojiSize () {
+    return emojiSize;
+  }
+
+  public int getEmojiStatusColor () {
+    TextColorSet theme = pickTheme(null, null);
+    return theme.emojiStatusColor();
+  }
+
   @ColorInt
   public int getTextColor () {
     return getTextColor(null, null, BitwiseUtils.hasFlag(textFlags, FLAG_ALL_CLICKABLE), false);
@@ -3011,5 +3020,10 @@ public class Text implements Runnable, Emoji.CountLimiter, CounterAnimator.TextD
       i -= Character.charCount(codePoint);
     }
     return -1;
+  }
+
+  public @Nullable TextMedia getTextMediaFromLastPart () {
+    if (parts == null || parts.isEmpty()) return null;
+    return parts.get(0).getMedia();
   }
 }

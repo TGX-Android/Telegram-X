@@ -51,6 +51,7 @@ import org.thunderdog.challegram.widget.ProgressComponentView;
 import org.thunderdog.challegram.widget.SeparatorView;
 
 import java.util.ArrayList;
+import java.util.Random;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 
@@ -105,7 +106,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
 
     for (int i = 0; i < sectionIndex + 1 && position > 0 && i < sections.size(); i++) {
       TGStickerSetInfo stickerSet = sections.get(i);
-      if (!stickerSet.isSystem()) {
+      if (!stickerSet.isSystem() || stickerSet.isDefaultEmoji()) {
         scrollY += Screen.dp(stickerSet.isTrending() ? 52f : 32f);
         position--;
       } else if (stickerSet.isFavorite()) {
@@ -118,7 +119,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
         }
       }
       if (position > 0) {
-        int itemCount = Math.min(stickerSet.isTrending() ? 5 : stickerSet.getSize(), position);
+        int itemCount = Math.min(stickerSet.isDefaultEmoji() ? stickerSet.getSize() + 1: stickerSet.isTrending() ? 5 : stickerSet.getSize(), position);
         int rowCount = (int) Math.ceil((double) itemCount / (double) spanCount);
         scrollY += rowCount * rowSize;
         position -= itemCount;
@@ -253,6 +254,10 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
   @Override
   public void onBindViewHolder (StickerHolder holder, int position) {
     switch (holder.getItemViewType()) {
+      case StickerHolder.TYPE_EMOJI_STATUS_DEFAULT: {
+        ((StickerSmallView) holder.itemView).setSticker(TGStickerObj.makeDefaultPremiumStar(context.tdlib()));
+        break;
+      }
       case StickerHolder.TYPE_STICKER: {
         TGStickerObj sticker = getSticker(position);
         if (sticker != null && sticker.isEmpty()) {
@@ -348,6 +353,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
   @Override
   public void onViewAttachedToWindow (StickerHolder holder) {
     switch (holder.getItemViewType()) {
+      case StickerHolder.TYPE_EMOJI_STATUS_DEFAULT:
       case StickerHolder.TYPE_STICKER: {
         ((StickerSmallView) holder.itemView).attach();
         break;
@@ -362,6 +368,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
   @Override
   public void onViewDetachedFromWindow (StickerHolder holder) {
     switch (holder.getItemViewType()) {
+      case StickerHolder.TYPE_EMOJI_STATUS_DEFAULT:
       case StickerHolder.TYPE_STICKER: {
         ((StickerSmallView) holder.itemView).detach();
         break;
@@ -376,6 +383,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
   @Override
   public void onViewRecycled (StickerHolder holder) {
     switch (holder.getItemViewType()) {
+      case StickerHolder.TYPE_EMOJI_STATUS_DEFAULT:
       case StickerHolder.TYPE_STICKER: {
         ((StickerSmallView) holder.itemView).performDestroy();
         break;
@@ -553,6 +561,8 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
     public static final int TYPE_COME_AGAIN_LATER = 7;
     public static final int TYPE_HEADER_TRENDING = 8;
     public static final int TYPE_SEPARATOR = 10;
+    public static final int TYPE_EMOJI_STATUS_DEFAULT = 11;
+    public static final int TYPE_NO_EMOJISETS = 12;
 
     public StickerHolder (View itemView) {
       super(itemView);
@@ -560,6 +570,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
 
     public static @NonNull StickerHolder create (Context context, Tdlib tdlib, int viewType, boolean isTrending, View.OnClickListener onClickListener, StickerSmallView.StickerMovementCallback callback, boolean isBig, @Nullable ViewController<?> themeProvider) {
       switch (viewType) {
+        case TYPE_EMOJI_STATUS_DEFAULT:
         case TYPE_STICKER: {
           StickerSmallView view;
           view = new StickerSmallView(context);
@@ -569,6 +580,9 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
           }
           view.setStickerMovementCallback(callback);
           view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+          if (viewType == TYPE_EMOJI_STATUS_DEFAULT) {
+            view.setIsPremiumStar();
+          }
           return new StickerHolder(view);
         }
         case TYPE_EMPTY: {
@@ -726,6 +740,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
           return new StickerHolder(separatorView);
         }
         case TYPE_COME_AGAIN_LATER:
+        case TYPE_NO_EMOJISETS:
         case TYPE_NO_STICKERSETS: {
           TextView textView = new NoScrollTextView(context);
           textView.setTypeface(Fonts.getRobotoRegular());
@@ -736,7 +751,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
           }
           textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
           textView.setSingleLine(true);
-          textView.setText(Lang.getString(viewType == TYPE_COME_AGAIN_LATER ? R.string.ComeAgainLater : R.string.NoStickerSets));
+          textView.setText(Lang.getString(viewType == TYPE_NO_EMOJISETS ? R.string.NoEmojiSetsFound: viewType == TYPE_COME_AGAIN_LATER ? R.string.ComeAgainLater : R.string.NoStickerSets));
           textView.setGravity(Gravity.CENTER);
           textView.setEllipsize(TextUtils.TruncateAt.END);
           //noinspection ResourceType

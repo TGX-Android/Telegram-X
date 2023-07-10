@@ -300,6 +300,7 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
           view.setChecked(account.id == account.context().preferredAccountId(), isUpdate);
           view.setUnreadCount(badge.getCount(), badge.isMuted(), isUpdate);
           view.setAvatar(account);
+          view.setEmojiStatus(account);
           view.setText(Lang.getDebugString(account.getName(), account.isDebug()));
           view.setCustomControllerProvider(DrawerController.this);
           view.setPreviewActionListProvider(DrawerController.this);
@@ -714,6 +715,15 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
   }
 
   @Override
+  public void onAccountProfileEmojiStatusChanged (TdlibAccount account, boolean isCurrent) {
+    if (showingAccounts) {
+      int i = adapter.indexOfViewByData(account);
+      if (i != -1)
+        adapter.updateValuedSettingByPosition(i);
+    }
+  }
+
+  @Override
   public void onActiveAccountRemoved (TdlibAccount account, int position) {
     if (showingAccounts) {
       adapter.removeItem(1 + position);
@@ -1001,6 +1011,9 @@ public class DrawerController extends ViewController<Void> implements View.OnCli
   }
 
   private void showView () {
+    if (headerView != null) {
+      headerView.onAppear();
+    }
     if (navigationController != null) {
       navigationController.preventLayout();
     }

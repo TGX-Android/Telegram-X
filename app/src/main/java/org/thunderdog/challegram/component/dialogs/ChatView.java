@@ -53,8 +53,10 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.ChatsController;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.EmojiStatusHelper;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.Text;
+import org.thunderdog.challegram.util.text.TextMedia;
 import org.thunderdog.challegram.widget.BaseView;
 
 import me.vkryl.android.AnimatorUtils;
@@ -64,7 +66,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.td.ChatPosition;
 
-public class ChatView extends BaseView implements TdlibSettingsManager.PreferenceChangeListener, InvalidateContentProvider {
+public class ChatView extends BaseView implements TdlibSettingsManager.PreferenceChangeListener, InvalidateContentProvider, EmojiStatusHelper.EmojiStatusReceiverInvalidateDelegate {
   private static Paint timePaint;
   private static TextPaint titlePaint, titlePaintFake; // counterTextPaint
 
@@ -170,6 +172,7 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
 
   private TGChat chat;
   private final AvatarReceiver avatarReceiver;
+  private final ComplexReceiver emojiStatusReceiver;
   private final ComplexReceiver textMediaReceiver;
 
   private final BoolAnimator isSelected = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
@@ -182,6 +185,7 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
     setId(R.id.chat);
     RippleSupport.setTransparentSelector(this);
     int chatListMode = getChatListMode();
+    emojiStatusReceiver = new ComplexReceiver(this, Config.MAX_ANIMATED_EMOJI_REFRESH_RATE);
     avatarReceiver = new AvatarReceiver(this);
     avatarReceiver.setAvatarRadiusPropertyIds(PropertyId.AVATAR_RADIUS_CHAT_LIST, PropertyId.AVATAR_RADIUS_CHAT_LIST_FORUM);
     avatarReceiver.setBounds(getAvatarLeft(chatListMode), getAvatarTop(chatListMode), getAvatarLeft(chatListMode) + getAvatarSize(chatListMode), getAvatarTop(chatListMode) + getAvatarSize(chatListMode));
@@ -196,6 +200,7 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
   public void setAnimationsDisabled (boolean disabled) {
     avatarReceiver.setAnimationDisabled(disabled);
     textMediaReceiver.setAnimationDisabled(disabled);
+    emojiStatusReceiver.setAnimationDisabled(disabled);
   }
 
   public static int getViewHeight (int chatListMode) {
@@ -328,11 +333,13 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
   public void attach () {
     avatarReceiver.attach();
     textMediaReceiver.attach();
+    emojiStatusReceiver.attach();
   }
 
   public void detach () {
     avatarReceiver.detach();
     textMediaReceiver.detach();
+    emojiStatusReceiver.detach();
   }
 
   public void setChat (TGChat chat) {
@@ -380,8 +387,25 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
       } else {
         setCustomControllerProvider(null);
       }
+      if (chat != null) {
+        chat.onAttachToView();
+      }
     }
     requestContent();
+  }
+
+  @Override
+  public void invalidateEmojiStatusReceiver (Text text, @Nullable TextMedia specificMedia) {
+    requestEmojiStatus();
+  }
+
+  private void requestEmojiStatus () {
+    EmojiStatusHelper.EmojiStatusDrawable text = chat != null ? chat.getEmojiStatus() : null;
+    if (text != null) {
+      text.requestMedia(emojiStatusReceiver);
+    } else {
+      emojiStatusReceiver.clear();
+    }
   }
 
   private void requestTextContent () {
@@ -395,6 +419,7 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
 
   private void requestContent () {
     requestTextContent();
+    requestEmojiStatus();
     if (chat != null) {
       AvatarPlaceholder.Metadata avatarPlaceholder = chat.getAvatarPlaceholder();
       if (avatarPlaceholder != null) {
@@ -501,6 +526,7 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
   public boolean invalidateContent (Object cause) {
     if (this.chat == cause) {
       requestTextContent();
+      requestEmojiStatus();
       return true;
     }
     return false;
@@ -534,6 +560,11 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
       }
 
       title.draw(c, titleX, titleTop);
+    }
+
+    EmojiStatusHelper.EmojiStatusDrawable emojiStatus = chat.getEmojiStatus();
+    if (emojiStatus != null) {
+      emojiStatus.draw(c, chat.getEmojiStatusLeft(), getTitleTop2(chatListMode), 1f, emojiStatusReceiver);
     }
 
     if (chat.showVerify()) {

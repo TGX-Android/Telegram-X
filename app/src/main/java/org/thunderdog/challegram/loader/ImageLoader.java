@@ -167,12 +167,20 @@ public class ImageLoader {
 
     persistentFile.updateRemoteFile(file);
 
-    if (TD.isFileLoadedAndExists(file)) {
+    if (isFileLoaded(tdlib, file)) {
       onLoad(tdlib, file);
     } else {
       if (!Config.DEBUG_DISABLE_DOWNLOAD) {
         tdlib.client().send(new TdApi.DownloadFile(file.id, 1, 0, 0, false), tdlib.imageLoadHandler());
       }
+    }
+  }
+
+  public static boolean isFileLoaded (Tdlib tdlib, TdApi.File file) {
+    if (tdlib != null) {
+      return TD.isFileLoadedAndExists(file);
+    } else {
+      return TD.isFileLoaded(file);
     }
   }
 

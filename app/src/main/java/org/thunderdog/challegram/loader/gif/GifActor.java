@@ -183,7 +183,8 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
   public void act () {
     TdApi.File file = this.file.getFile();
 
-    if (TD.isFileLoadedAndExists(file)) {
+    boolean isLoaded = this.file.tdlib() == null ? TD.isFileLoaded(file) : TD.isFileLoadedAndExists(file);
+    if (isLoaded) {
       onLoad(file);
       return;
     }

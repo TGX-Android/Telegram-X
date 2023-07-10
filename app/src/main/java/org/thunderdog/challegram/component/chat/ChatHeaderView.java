@@ -105,11 +105,13 @@ public class ChatHeaderView extends ComplexHeaderView {
     setShowMute(tdlib.chatNeedsMuteIcon(chat));
     setShowLock(ChatId.isSecret(chat.id));
     if (messageThread != null) {
+      setEmojiStatus(null);
       setText(messageThread.chatHeaderTitle(), !StringUtils.isEmpty(forcedSubtitle) ? forcedSubtitle : messageThread.chatHeaderSubtitle());
       setExpandedSubtitle(null);
       setUseRedHighlight(false);
       attachChatStatus(messageThread.getChatId(), messageThread.getMessageThreadId());
     } else {
+      setEmojiStatus(tdlib.isSelfChat(chat) ? null: tdlib.chatUser(chat));
       setText(tdlib.chatTitle(chat), !StringUtils.isEmpty(forcedSubtitle) ? forcedSubtitle : tdlib.status().chatStatus(chat));
       setExpandedSubtitle(tdlib.status().chatStatusExpanded(chat));
       setUseRedHighlight(tdlib.isRedTeam(chat.id));

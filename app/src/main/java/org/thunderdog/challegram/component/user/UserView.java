@@ -44,7 +44,9 @@ import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.util.DrawModifier;
+import org.thunderdog.challegram.util.EmojiStatusHelper;
 import org.thunderdog.challegram.util.text.Text;
+import org.thunderdog.challegram.util.text.TextColorSetOverride;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.widget.BaseView;
 import org.thunderdog.challegram.widget.SimplestCheckBoxHelper;
@@ -70,6 +72,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
   private final AvatarReceiver avatarReceiver;
   private final ComplexReceiver complexReceiver;
 
+  private final EmojiStatusHelper emojiStatusHelper;
   private int offsetLeft;
 
   public static final float DEFAULT_HEIGHT = 72f;
@@ -97,6 +100,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
 
     avatarReceiver = new AvatarReceiver(this);
     complexReceiver = new ComplexReceiver(this);
+    emojiStatusHelper = new EmojiStatusHelper(tdlib, this, null);
     layoutReceiver();
 
     removeHelper = new RemoveHelper(this, R.drawable.baseline_remove_circle_24);
@@ -132,11 +136,13 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
 
   public void attachReceiver () {
     complexReceiver.attach();
+    emojiStatusHelper.attach();
     avatarReceiver.attach();
   }
 
   public void detachReceiver () {
     complexReceiver.detach();
+    emojiStatusHelper.detach();
     avatarReceiver.detach();
   }
 
@@ -198,6 +204,17 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
       name = null;
     }
     float availWidth = getMeasuredWidth() - textLeftMargin - offsetLeft - paddingRight - (unregisteredContact != null ? Screen.dp(32f) : 0);
+
+    emojiStatusHelper.updateEmoji(user != null ? user.getUser(): null, new TextColorSetOverride(TextColorSets.Regular.NORMAL) {
+      @Override
+      public int emojiStatusColor () {
+        return Theme.getColor(ColorId.iconActive);
+      }
+    });
+    if (emojiStatusHelper.needDrawEmojiStatus()) {
+      availWidth -= emojiStatusHelper.getWidth() + Screen.dp(6);
+    }
+
     if (availWidth > 0) {
       sourceName = name;
       trimmedName = StringUtils.isEmpty(name) ? null : new Text.Builder(name, (int) availWidth, Paints.robotoStyleProvider(16), TextColorSets.Regular.NORMAL).singleLine().allBold().build();
@@ -283,6 +300,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
   @Override
   public void performDestroy () {
     complexReceiver.performDestroy();
+    emojiStatusHelper.performDestroy();
     avatarReceiver.destroy();
   }
 
@@ -295,6 +313,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
     if (trimmedName != null) {
       trimmedName.draw(c, offsetLeft + textLeftMargin, (int) ((height - Screen.dp(DEFAULT_HEIGHT)) / 2f + Screen.dp(17f)));
     }
+    emojiStatusHelper.draw(c, offsetLeft + textLeftMargin + (trimmedName != null ? trimmedName.getWidth(): 0) + Screen.dp(6f), (int) ((height - Screen.dp(DEFAULT_HEIGHT)) / 2f + Screen.dp(17f)));
     if (trimmedStatus != null) {
       statusPaint.setColor(Theme.getColor(user != null && user.isOnline() ? ColorId.textNeutral : ColorId.textLight));
       c.drawText(trimmedStatus, rtl ? viewWidth - offsetLeft - textLeftMargin - trimmedStatusWidth : offsetLeft + textLeftMargin,
