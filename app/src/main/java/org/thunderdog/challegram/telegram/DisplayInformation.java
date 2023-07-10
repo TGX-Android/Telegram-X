@@ -19,12 +19,16 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
+import org.drinkmore.Tracer;
+import org.thunderdog.challegram.N;
+import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.loader.ImageFileLocal;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
@@ -342,14 +346,24 @@ public class DisplayInformation {
           parentDir = UI.getAppContext().getFilesDir();
         }
         if (parentDir != null) {
-          return new File(parentDir, externalRelativePath).getAbsolutePath();
+          File file = new File(parentDir, externalRelativePath);
+          try {
+            return file.getCanonicalPath();
+          } catch (IOException | SecurityException ignored) {
+            return file.getAbsolutePath();
+          }
         }
       }
       if (relativePath.startsWith(INTERNAL_PREFIX)) {
         String internalRelativePath = relativePath.substring(INTERNAL_PREFIX.length());
         File parentDir = UI.getAppContext().getFilesDir();
         if (parentDir != null) {
-          return new File(parentDir, internalRelativePath).getAbsolutePath();
+          File file = new File(parentDir, internalRelativePath);
+          try {
+            return file.getCanonicalPath();
+          } catch (IOException | SecurityException ignored) {
+            return file.getAbsolutePath();
+          }
         }
       }
     }
@@ -357,7 +371,7 @@ public class DisplayInformation {
   }
 
   private static String toRelativePath (String absoluteFilePath) {
-    if (!StringUtils.isEmpty(absoluteFilePath)) {
+    if (!StringUtils.isEmpty(absoluteFilePath) && absoluteFilePath.startsWith("/") && !absoluteFilePath.contains("://")) {
       File externalDir = UI.getAppContext().getExternalFilesDir(null);
       if (externalDir != null) {
         final String prefix = externalDir.getAbsolutePath() + "/";
@@ -373,6 +387,24 @@ public class DisplayInformation {
           String internalRelativePath = absoluteFilePath.substring(prefix.length());
           return INTERNAL_PREFIX + internalRelativePath;
         }
+      }
+      if (externalDir != null) {
+        try {
+          final String prefix = externalDir.getCanonicalPath() + "/";
+          if (absoluteFilePath.startsWith(prefix)) {
+            String externalRelativePath = absoluteFilePath.substring(prefix.length());
+            return EXTERNAL_PREFIX + externalRelativePath;
+          }
+        } catch (IOException | SecurityException ignored) { }
+      }
+      if (internalDir != null) {
+        try {
+          final String prefix = internalDir.getCanonicalPath() + "/";
+          if (absoluteFilePath.startsWith(prefix)) {
+            String internalRelativePath = absoluteFilePath.substring(prefix.length());
+            return INTERNAL_PREFIX + internalRelativePath;
+          }
+        } catch (IOException | SecurityException ignored) { }
       }
     }
     return absoluteFilePath;
@@ -618,6 +650,7 @@ public class DisplayInformation {
         if (command == null) {
           return null;
         }
+        commands[i] = command;
       }
       return new TdApi.ClosedVectorPath(commands);
     }
@@ -633,6 +666,7 @@ public class DisplayInformation {
         if (path == null) {
           return null;
         }
+        result[i] = path;
       }
       return result;
     }
@@ -722,7 +756,7 @@ public class DisplayInformation {
       return new TdApi.Thumbnail(
         format,
         width, height,
-        ImageFileLocal.newFakeLocalFile(absolutePath)
+        ImageFileLocal.newFakeLocalFile(absolutePath, false)
       );
     }
 
@@ -735,7 +769,7 @@ public class DisplayInformation {
         return null;
       }
       String relativePath = blob.readString();
-      return ImageFileLocal.newFakeLocalFile(toAbsolutePath(relativePath));
+      return ImageFileLocal.newFakeLocalFile(toAbsolutePath(relativePath), false);
     }
 
     public static EmojiStatusCache deserialize (long customEmojiId, byte[] metadata, byte[] fileData, byte[] thumbnailData) {

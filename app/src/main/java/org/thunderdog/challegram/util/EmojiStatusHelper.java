@@ -88,7 +88,7 @@ public class EmojiStatusHelper implements Destroyable {
       updateEmoji(account.tdlib(), user, textColorSet, defaultStarIconId, textSize);
     } else {
       TdApi.Sticker cachedSticker = account.getEmojiStatusSticker();
-      if (cachedSticker != null) {
+      if (cachedSticker != null || account.isPremium()) {
         updateEmojiWithoutTdlib(account.isPremium(), cachedSticker, textColorSet, defaultStarIconId, textSize);
       } else {
         clear();
@@ -249,7 +249,7 @@ public class EmojiStatusHelper implements Destroyable {
       this.textColorSet = textColorSet;
       this.textMediaListener = null;
       this.clickListener = clickListener;
-      this.starDrawable = needDrawEmojiStatus && sticker == null ? Drawables.get(defaultStarIconId): null;
+      this.starDrawable = needDrawEmojiStatus && (sticker == null || !TD.isFileLoaded(sticker.sticker)) ? Drawables.get(defaultStarIconId): null;
       this.needRepainting = TD.needRepainting(sticker);
 
       if (sticker != null && TD.isFileLoaded(sticker.sticker)) {
