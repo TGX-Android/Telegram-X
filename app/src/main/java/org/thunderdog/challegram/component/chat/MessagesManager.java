@@ -16,7 +16,6 @@ package org.thunderdog.challegram.component.chat;
 
 import android.content.Context;
 import android.view.View;
-import android.view.ViewTreeObserver;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -65,6 +64,7 @@ import org.thunderdog.challegram.ui.MessagesController;
 import org.thunderdog.challegram.ui.SettingHolder;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.CancellableResultHandler;
+import org.thunderdog.challegram.util.ScrollJumpCompensator;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
 
 import java.util.ArrayList;
@@ -1517,46 +1517,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   private void scrollCompensation (View view, int offset) {
-    OnGlobalLayoutListener listener = new OnGlobalLayoutListener(controller.getMessagesView(), view, offset);
+    ScrollJumpCompensator listener = new ScrollJumpCompensator(controller.getMessagesView(), view, offset);
     listener.add();
-  }
-
-  public static class OnGlobalLayoutListener implements ViewTreeObserver.OnGlobalLayoutListener {
-    private final RecyclerView recyclerView;
-    private final ViewTreeObserver observer;
-    private int offset;
-
-    public OnGlobalLayoutListener (RecyclerView r, View v, int offset) {
-      this.recyclerView = r;
-      this.observer = v.getViewTreeObserver();
-      this.offset = offset;
-    }
-
-    public void add () {
-      add(observer, this);
-    }
-
-    @Override
-    public void onGlobalLayout () {
-      if (offset != 0) {
-        recyclerView.scrollBy(0, offset);
-        offset = 0;
-      }
-
-      remove(observer, this);
-    }
-
-    public static void add (ViewTreeObserver v, OnGlobalLayoutListener listener) {
-      v.addOnGlobalLayoutListener(listener);
-    }
-
-    public static boolean remove (ViewTreeObserver v, OnGlobalLayoutListener listener) {
-      if (v.isAlive()) {
-        v.removeOnGlobalLayoutListener(listener);
-        return true;
-      }
-      return false;
-    }
   }
 
   public void modifyRecycler (Context context, RecyclerView recyclerView, LinearLayoutManager manager) {

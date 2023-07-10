@@ -90,7 +90,7 @@ public class ImageActor implements ImageReader.Listener, AudioController.ApicLis
 
     final TdApi.File rawFile = file.getFile();
 
-    if (isCustomFile(file) || TD.isFileLoadedAndExists(rawFile)) {
+    if (isCustomFile(file) || ImageLoader.isFileLoaded(file.tdlib(), rawFile)) {
       act(file.getFilePath());
       return false;
     }

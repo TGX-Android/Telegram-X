@@ -1315,6 +1315,16 @@ public class TD {
     }
   }
 
+  public static boolean needRepainting (TdApi.Sticker sticker) {
+    return (sticker != null && sticker.fullType instanceof TdApi.StickerFullTypeCustomEmoji
+      && ((TdApi.StickerFullTypeCustomEmoji) sticker.fullType).needsRepainting);
+  }
+
+  public static long getStickerCustomEmojiId (TdApi.Sticker sticker) {
+    return (sticker != null && sticker.fullType instanceof TdApi.StickerFullTypeCustomEmoji) ?
+      ((TdApi.StickerFullTypeCustomEmoji) sticker.fullType).customEmojiId: 0;
+  }
+
   public static class Size {
     public final int width, height;
 
@@ -3533,6 +3543,10 @@ public class TD {
 
   public static String getStickerPackLink (String name) {
     return "https://" + getTelegramMeHost() + "/addstickers/" + name;
+  }
+
+  public static String getEmojiPackLink (String name) {
+    return "https://" + getTelegramMeHost() + "/addemoji/" + name;
   }
 
   public static String getLink (TdApi.User user) {

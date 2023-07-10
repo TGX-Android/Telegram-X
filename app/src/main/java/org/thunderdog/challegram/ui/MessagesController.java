@@ -8692,6 +8692,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
             switch (item.getViewType()) {
               case ListItem.TYPE_CHECKBOX_OPTION:
               case ListItem.TYPE_CHECKBOX_OPTION_WITH_AVATAR:
+                view.setEmojiStatus(tdlib.cache().user(item.getLongValue()));
                 ((CheckBoxView) view.getChildAt(0)).setChecked(item.isSelected(), isUpdate);
                 break;
             }
@@ -9909,7 +9910,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   @Override
-  public void onUserUpdated (TdApi.User user) { }
+  public void onUserUpdated (TdApi.User user) {
+    if (chat != null && user != null && headerCell != null && TD.getUserId(chat) == user.id) {
+      runOnUiThreadOptional(() -> {
+        headerCell.setEmojiStatus(user);
+      });
+    }
+  }
 
   @Override
   public void onUserFullUpdated (final long userId, final TdApi.UserFullInfo userFull) {

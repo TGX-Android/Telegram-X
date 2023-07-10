@@ -234,6 +234,12 @@ public class TdlibListenersGlobal {
     }
   }
 
+  void notifyAccountProfileEmojiStatusChanged (TdlibAccount account, boolean isCurrent) {
+    for (GlobalAccountListener listener : accountListeners) {
+      listener.onAccountProfileEmojiStatusChanged(account, isCurrent);
+    }
+  }
+
   void notifyAuthorizationStateChanged (TdlibAccount account, TdApi.AuthorizationState authorizationState, int status) {
     for (GlobalAccountListener listener : accountListeners) {
       listener.onAuthorizationStateChanged(account, authorizationState, status);

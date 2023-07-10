@@ -428,6 +428,31 @@ public class SettingsController extends ViewController<Void> implements
     this.headerCell.initWithController(this, true);
     this.headerCell.setInnerMargins(Screen.dp(56f), Screen.dp(49f));
     this.headerCell.setPhotoOpenCallback(this);
+    this.headerCell.setOnEmojiStatusClickListener((v, text, part, openParameters) -> {
+      EmojiStatusSelectorEmojiPage.Wrapper c = new EmojiStatusSelectorEmojiPage.Wrapper(context, tdlib, SettingsController.this, new EmojiStatusSelectorEmojiPage.AnimationsEmojiStatusSetDelegate() {
+        @Override
+        public void onAnimationStart () {
+          headerCell.setIgnoreDrawEmojiStatus(true);
+        }
+
+        @Override
+        public void onAnimationEnd () {
+          headerCell.setIgnoreDrawEmojiStatus(false);
+        }
+
+        @Override
+        public int getDestX () {
+          return headerCell.getEmojiStatusLastDrawX() + Screen.dp(12);
+        }
+
+        @Override
+        public int getDestY () {
+          return headerCell.getEmojiStatusLastDrawY() + Screen.dp(12);
+        }
+      });
+      c.show();
+      return false;
+    });
     updateHeader();
 
     initMyUser();
@@ -815,6 +840,7 @@ public class SettingsController extends ViewController<Void> implements
     if (headerCell != null) {
       headerCell.getAvatarReceiver().requestUser(tdlib, tdlib.myUserId(), AvatarReceiver.Options.FULL_SIZE);
       headerCell.setText(user != null ? TD.getUserName(user) : Lang.getString(R.string.LoadingUser), getSubtext());
+      headerCell.setEmojiStatus(user);
       headerCell.invalidate();
     }
   }

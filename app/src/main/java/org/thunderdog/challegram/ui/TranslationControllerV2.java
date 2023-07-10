@@ -24,7 +24,6 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.charts.LayoutHelper;
-import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGSource;
@@ -50,6 +49,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.ScrollJumpCompensator;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.TranslationCounterDrawable;
 import org.thunderdog.challegram.util.text.Text;
@@ -293,7 +293,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
   }
 
   private void scrollCompensation (int heightDiff) {
-    MessagesManager.OnGlobalLayoutListener listener = new MessagesManager.OnGlobalLayoutListener(recyclerView, messageTextView, heightDiff);
+    ScrollJumpCompensator listener = new ScrollJumpCompensator(recyclerView, messageTextView, heightDiff);
     listener.add();
   }
 

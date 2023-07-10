@@ -34,6 +34,7 @@
   <item type="id" name="menu_chatBulkActions" />
   <item type="id" name="menu_search" />
   <item type="id" name="menu_clear" />
+  <item type="id" name="menu_emoji" />
   <item type="id" name="menu_editLangPack" />
   <item type="id" name="menu_editLangPackString" />
   <item type="id" name="menu_proxy" />
@@ -57,6 +58,8 @@
   <item type="id" name="menu_btn_clearCache" />
   <item type="id" name="menu_btn_send" />
   <item type="id" name="menu_btn_edit" />
+  <item type="id" name="menu_btn_emoji" />
+  <item type="id" name="menu_btn_emoji_close" />
   <item type="id" name="menu_btn_delete" />
   <item type="id" name="menu_btn_retry" />
   <item type="id" name="menu_btn_view" />
@@ -132,6 +135,8 @@
   <item type="id" name="controller_linkChat" />
   <item type="id" name="controller_enabledReactions"/>
 
+  <item type="id" name="controller_setEmojiStatusPager" />
+
   <item type="id" name="controller_messageOptionsPager" />
   <item type="id" name="controller_messageOptions" />
   <item type="id" name="controller_messageOptionsSeen" />
@@ -180,6 +185,7 @@
   <item type="id" name="controller_newChannel_link" />
   <item type="id" name="controller_newGroup" />
   <item type="id" name="controller_emoji" />
+  <item type="id" name="controller_emojiCustom" />
   <item type="id" name="controller_emojiSets" />
   <item type="id" name="controller_iconSets" />
   <item type="id" name="controller_media__new" />
@@ -316,6 +322,13 @@
   <item type="id" name="btn_membersWriting" />
   <item type="id" name="btn_messages" />
   <item type="id" name="btn_send" />
+  <item type="id" name="btn_setEmojiStatus" />
+  <item type="id" name="btn_setEmojiStatusTimed" />
+  <item type="id" name="btn_setEmojiStatusTimed1Hour" />
+  <item type="id" name="btn_setEmojiStatusTimed2Hours" />
+  <item type="id" name="btn_setEmojiStatusTimed8Hours" />
+  <item type="id" name="btn_setEmojiStatusTimed2Days" />
+  <item type="id" name="btn_setEmojiStatusTimedCustom" />
   <item type="id" name="btn_places" />
   <item type="id" name="btn_shareLiveLocation" />
   <item type="id" name="btn_messageLiveStop" />

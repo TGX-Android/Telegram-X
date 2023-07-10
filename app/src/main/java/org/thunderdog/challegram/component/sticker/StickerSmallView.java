@@ -17,6 +17,7 @@ package org.thunderdog.challegram.component.sticker;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Path;
+import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.Interpolator;
@@ -27,6 +28,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
+import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.loader.ImageFile;
@@ -34,6 +36,10 @@ import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.tool.Drawables;
+import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 
@@ -51,6 +57,7 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
   private GifReceiver gifReceiver;
   private FactorAnimator animator;
   private @Nullable TGStickerObj sticker;
+  private @Nullable Drawable premiumStarDrawable;
   private Path contour;
   private Tdlib tdlib;
   private int padding;
@@ -94,6 +101,10 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     contour = sticker != null ? sticker.getContour(Math.min(imageReceiver.getWidth(), imageReceiver.getHeight())) : null;
     imageReceiver.requestFile(imageFile);
     gifReceiver.requestFile(gifFile);
+  }
+
+  public void setIsPremiumStar () {
+    premiumStarDrawable = Drawables.get(R.drawable.baseline_premium_star_28);
   }
 
   public void refreshSticker () {
@@ -185,14 +196,26 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
   protected void onDraw (Canvas c) {
     float originalScale = sticker != null ? sticker.getDisplayScale() : 1f;
     boolean saved = originalScale != 1f || factor != 0f;
+    boolean repainting = sticker != null && sticker.isNeedRepainting();
+    int cx = imageReceiver.centerX();
+    int cy = imageReceiver.centerY();
     if (saved) {
       c.save();
       float scale = originalScale * (MIN_SCALE + (1f - MIN_SCALE) * (1f - factor));
-      int cx = imageReceiver.centerX();
-      int cy = imageReceiver.centerY();
       c.scale(scale, scale, cx, cy);
     }
-    if (isAnimation) {
+    if (repainting) {
+      c.saveLayerAlpha(
+        cx - imageReceiver.getWidth(),
+        cy - imageReceiver.getHeight(),
+        cx + imageReceiver.getWidth(),
+        cy + imageReceiver.getHeight(),
+        255, Canvas.ALL_SAVE_FLAG
+      );
+    }
+    if (premiumStarDrawable != null) {
+      Drawables.drawCentered(c, premiumStarDrawable, cx, cy, null);
+    } else if (isAnimation) {
       if (gifReceiver.needPlaceholder()) {
         if (imageReceiver.needPlaceholder()) {
           imageReceiver.drawPlaceholderContour(c, contour);
@@ -208,6 +231,16 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     }
     if (Config.DEBUG_STICKER_OUTLINES) {
       imageReceiver.drawPlaceholderContour(c, contour);
+    }
+    if (repainting) {
+      c.drawRect(
+        cx - imageReceiver.getWidth(),
+        cy - imageReceiver.getHeight(),
+        cx + imageReceiver.getWidth(),
+        cy + imageReceiver.getHeight(),
+        Paints.getSrcInPaint(Theme.getColor(ColorId.iconActive))
+      );
+      c.restore();
     }
     if (saved) {
       c.restore();
@@ -258,6 +291,8 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     default int getStickerViewTop (StickerSmallView v) { return -1; }
     default StickerSmallView getStickerViewUnder (StickerSmallView v, int x, int y) { return null; }
     default TGReaction getReactionForPreview (StickerSmallView v) { return null; }
+    default void onSetEmojiStatusFromPreview (StickerSmallView view, View clickView, TGStickerObj sticker, long emojiId, int duration) { }
+    default boolean isEmojiStatus () { return false; }
   }
 
   private @Nullable StickerMovementCallback callback;
@@ -466,7 +501,7 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
       }
     }
 
-    ((BaseActivity) getContext()).openStickerPreview(tdlib, this, sticker, left + width / 2, top + height / 2 + (callback != null ? callback.getStickersListTop() : 0), Math.min(width, height) - Screen.dp(PADDING) * 2, callback.getViewportHeight(), isSuggestion || emojiDisabled);
+    ((BaseActivity) getContext()).openStickerPreview(tdlib, this, sticker, left + width / 2, top + height / 2 + (callback != null ? callback.getStickersListTop() : 0), Math.min(width, height) - Screen.dp(PADDING) * 2, callback.getViewportHeight(), isSuggestion || emojiDisabled, callback != null && callback.isEmojiStatus());
   }
 
   private int getRealLeft () {
@@ -503,6 +538,12 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     if (ignoreNextStickerChanges) {
       ignoreNextStickerChanges = false;
       closePreview(null);
+    }
+  }
+
+  public void onSetEmojiStatus (View view, TGStickerObj sticker, long emojiId, int duration) {
+    if (callback != null) {
+      callback.onSetEmojiStatusFromPreview(this, view, sticker, emojiId, duration);
     }
   }
 

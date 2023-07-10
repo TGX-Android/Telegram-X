@@ -18,16 +18,29 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.data.TD;
 
+import java.io.File;
+
 public class ImageFileLocal extends ImageFile {
   private static int CURRENT_ID = ImageFile.LOCAL_START_ID;
 
   private final String path;
-  public static TdApi.File newFakeLocalFile (String path) {
-    return TD.newFile(CURRENT_ID--, Integer.toString(CURRENT_ID), path, 1);
+  public static TdApi.File newFakeLocalFile (String path, boolean accurateSize) {
+    long size = 1;
+    if (accurateSize) {
+      File storageFile = new File(path);
+      if (storageFile.exists()) {
+        size = storageFile.length();
+      }
+    }
+    return newFakeLocalFile(path, size);
+  }
+
+  public static TdApi.File newFakeLocalFile (String path, long size) {
+    return TD.newFile(CURRENT_ID--, Integer.toString(CURRENT_ID), path, size);
   }
 
   public ImageFileLocal (String path) {
-    super(null, newFakeLocalFile(path));
+    super(null, newFakeLocalFile(path, false));
     this.path = path;
   }
 
@@ -36,7 +49,7 @@ public class ImageFileLocal extends ImageFile {
   }
 
   public ImageFileLocal (byte[] jpeg, boolean noBlur) {
-    super(null, newFakeLocalFile(null), jpeg);
+    super(null, newFakeLocalFile(null, jpeg.length), jpeg);
     String fakePath = U.base64(U.sha1(jpeg));
     this.path = noBlur ? fakePath + "_noblur" : fakePath;
     if (noBlur) {

@@ -1005,6 +1005,7 @@
   <string name="Default">Default</string>
   <string name="OnlyIfSilent">Only on silent</string>
   <string name="NoStickerSets">No sticker sets installed</string>
+  <string name="NoEmojiSetsFound">No emoji status found</string>
   <string name="NoMasks">No masks installed</string>
   <string name="ArchivedStickersInfo">You can have up to %1$s sticker sets installed. Unused stickers are archived when you install new sets.</string>
   <string name="MasksHint">In future versions, you will be able to add masks to photos and videos you send.</string>
@@ -1372,13 +1373,16 @@
   <string name="CustomNotifications">Custom notifications</string>
   <string name="Send">Send</string>
   <string name="ClearRecentStickers">Clear Recent Stickers</string>
+  <string name="ClearRecentEmojiStatuses">Clear Recent Emoji Statuses</string>
   <string name="CropSquare">Square</string>
   <string name="Wallpaper">Wallpaper</string>
   <string name="ChatPreview">Chat preview</string>
   <string name="AndroidVersionWarning">Sorry, this feature is available yet only on Android %1$s (%2$s) or higher</string>
   <string name="RemoveStickerSet">Remove sticker set %1$s?</string>
+  <string name="RemoveEmojiSet">Remove emoji set %1$s?</string>
   <string name="RemoveStickerSetAction">Remove</string>
   <string name="DeletePack">Delete pack</string>
+  <string name="AddPack">Add pack</string>
   <string name="DeleteArchivedPack">Delete from archive</string>
   <string name="Folders">Folders</string>
   <string name="StartEncryptedChat">Start secret chat</string>
@@ -2086,6 +2090,7 @@
   <string name="UntilX">Until %1$s</string>
   <string name="NetworkUsage">Network Usage</string>
   <string name="RecentStickers">Recently Used</string>
+  <string name="TrendingStatuses">Trending statuses</string>
   <string name="AddToFavorites">Add to Favorites</string>
   <string name="RemoveFromFavorites">Remove from Favorites</string>
   <string name="HoldToAudio">Hold to record audio. Tap to switch to video.</string>
@@ -4659,5 +4664,19 @@
 
   <string name="DoNotTranslateLanguages_one">%1$s language</string>
   <string name="DoNotTranslateLanguages_other">%1$s languages</string>
+
+  <string name="SelectEmojiStatus">Select Emoji Status</string>
+  <string name="FilterByEmoji">Filter by Emoji</string>
+  <string name="SetEmojiAsStatus">Set as status</string>
+  <string name="SetEmojiAsStatusTimed">Set timed</string>
+  <string name="SetEmojiAsStatusTimed1Hour">For 1 hour</string>
+  <string name="SetEmojiAsStatusTimed2Hours">For 2 hours</string>
+  <string name="SetEmojiAsStatusTimed8Hours">For 8 hours</string>
+  <string name="SetEmojiAsStatusTimed2Days">For 2 days</string>
+  <string name="SetEmojiAsStatusTimedCustom">Set custom timer...</string>
+
+  <string name="SetTodayAt">Set until today at %1$s</string>
+  <string name="SetTomorrowAt">Set until tomorrow at %1$s</string>
+  <string name="SetDateAt">Set until %1$s at %2$s</string>
 
 </resources>

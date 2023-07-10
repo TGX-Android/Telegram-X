@@ -638,6 +638,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   private static final int ACTION_DISPATCH_TOTAL_UNREAD_COUNT = 6;
   private static final int ACTION_RESET_UNREAD_COUNTERS = 7;
   private static final int ACTION_DISPATCH_NETWORK_DISPLAY_STATUS_CHANGED = 8;
+  private static final int ACTION_DISPATCH_ACCOUNT_EMOJI_STATUS = 9;
 
   private void handleUiMessage (Message msg) {
     switch (msg.what) {
@@ -659,6 +660,10 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       }
       case ACTION_DISPATCH_ACCOUNT_PROFILE_PHOTO: {
         onAccountProfilePhotoChanged(account(msg.arg1), msg.arg2 == 1,msg.arg1 == currentAccount.id);
+        break;
+      }
+      case ACTION_DISPATCH_ACCOUNT_EMOJI_STATUS: {
+        onAccountProfileEmojiStatusChanged(account(msg.arg1), msg.arg1 == currentAccount.id);
         break;
       }
       case ACTION_DISPATCH_TOTAL_UNREAD_COUNT:
@@ -1287,6 +1292,10 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
 
   void onUpdateAccountProfilePhoto (int accountId, boolean big) {
     handler.sendMessage(Message.obtain(handler, ACTION_DISPATCH_ACCOUNT_PROFILE_PHOTO, accountId, big ? 1 : 0));
+  }
+
+  void onUpdateEmojiStatus (int accountId, boolean isThumbnail) {
+    handler.sendMessage(Message.obtain(handler, ACTION_DISPATCH_ACCOUNT_EMOJI_STATUS, accountId, isThumbnail ? 1 : 0));
   }
 
   public TdlibAccount currentAccount () {
@@ -2009,6 +2018,12 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     if (account.isUnauthorized())
       return;
     global().notifyAccountProfilePhotoChanged(account, big, isCurrent);
+  }
+
+  private void onAccountProfileEmojiStatusChanged (TdlibAccount account, boolean isCurrent) {
+    if (account.isUnauthorized())
+      return;
+    global().notifyAccountProfileEmojiStatusChanged(account, isCurrent);
   }
 
   // Event managements

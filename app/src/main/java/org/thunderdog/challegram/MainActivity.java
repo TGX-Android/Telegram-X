@@ -32,6 +32,7 @@ import androidx.annotation.Nullable;
 import androidx.collection.SparseArrayCompat;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.helper.LiveLocationHelper;
@@ -141,17 +142,19 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
       initController(account.tdlib(), account.tdlib().authorizationStatus());
     }
 
-    Tdlib currentTdlib = TdlibManager.instance().current();
-    currentTdlib.awaitConnection(() -> {
-      long pushId = Settings.instance().newPushId();
-      TDLib.Tag.notifications(pushId, currentTdlib.id(), "Syncing other accounts, since user launched the app.");
-      AtomicBoolean sentChangeLogs = new AtomicBoolean(currentTdlib.checkChangeLogs(false, false));
-      TdlibManager.instance().sync(pushId, TdlibAccount.NO_ID, null, false, false, 3, tdlib -> {
-        if (tdlib.checkChangeLogs(sentChangeLogs.get(), false))
-          sentChangeLogs.set(true);
-        LottieCache.instance().gc();
+    if (Config.AWAKE_ALL_TDLIB_INSTANCES) {
+      Tdlib currentTdlib = TdlibManager.instance().current();
+      currentTdlib.awaitConnection(() -> {
+        long pushId = Settings.instance().newPushId();
+        TDLib.Tag.notifications(pushId, currentTdlib.id(), "Syncing other accounts, since user launched the app.");
+        AtomicBoolean sentChangeLogs = new AtomicBoolean(currentTdlib.checkChangeLogs(false, false));
+        TdlibManager.instance().sync(pushId, TdlibAccount.NO_ID, null, false, false, 3, tdlib -> {
+          if (tdlib.checkChangeLogs(sentChangeLogs.get(), false))
+            sentChangeLogs.set(true);
+          LottieCache.instance().gc();
+        });
       });
-    });
+    }
   }
 
   public void proceedFromRecovery () {

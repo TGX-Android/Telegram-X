@@ -27,6 +27,7 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
@@ -39,10 +40,13 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.util.DrawableProvider;
+import org.thunderdog.challegram.util.EmojiStatusHelper;
 import org.thunderdog.challegram.util.MessageSourceProvider;
 import org.thunderdog.challegram.util.UserProvider;
 import org.thunderdog.challegram.util.text.Text;
+import org.thunderdog.challegram.util.text.TextColorSetOverride;
 import org.thunderdog.challegram.util.text.TextColorSets;
+import org.thunderdog.challegram.util.text.TextMedia;
 
 import me.vkryl.android.animator.BounceAnimator;
 import me.vkryl.android.util.MultipleViewProvider;
@@ -72,6 +76,7 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
   private Text trimmedSubtitle;
 
   private AvatarPlaceholder avatarPlaceholder;
+  private EmojiStatusHelper.EmojiStatusDrawable emojiStatusDrawable;
 
   private ImageFile avatarFile;
 
@@ -414,12 +419,35 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
       availWidth -= chatMark.getWidth() + Screen.dp(8f);
     }
 
+    emojiStatusDrawable = EmojiStatusHelper.makeDrawable(null, tdlib, user, new TextColorSetOverride(TextColorSets.Regular.NORMAL) {
+      @Override
+      public int emojiStatusColor () {
+        return Theme.getColor(ColorId.iconActive);
+      }
+    }, this::invalidateEmojiStatusReceiver);
+    emojiStatusDrawable.invalidateTextMedia();
+    availWidth -= emojiStatusDrawable.getWidth(Screen.dp(6));
+
     if (availWidth <= 0) {
       trimmedTitle = null;
       return;
     }
 
     this.trimmedTitle = StringUtils.isEmpty(title) ? null : new Text.Builder(title, availWidth, Paints.robotoStyleProvider(15), TextColorSets.Regular.NORMAL).allBold().singleLine().build();
+  }
+
+  public void invalidateEmojiStatusReceiver (Text text, @Nullable TextMedia specificMedia) {
+    currentViews.performWithViews(view -> {
+      if (view instanceof EmojiStatusHelper.EmojiStatusReceiverInvalidateDelegate) {
+        ((EmojiStatusHelper.EmojiStatusReceiverInvalidateDelegate) view).invalidateEmojiStatusReceiver(text, specificMedia);
+      }
+    });
+  }
+
+  public void requestEmojiStatusReceiver (ComplexReceiver receiver) {
+    if (emojiStatusDrawable != null) {
+      emojiStatusDrawable.requestMedia(receiver);
+    }
   }
 
   private void buildSubtitle () {
@@ -451,7 +479,13 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
     }
   }
 
-  public <T extends View & DrawableProvider> void draw (T view, Receiver receiver, Canvas c) {
+  public void onAttachToView () {
+    if (emojiStatusDrawable != null) {
+      emojiStatusDrawable.onAppear();
+    }
+  }
+
+  public <T extends View & DrawableProvider> void draw (T view, Receiver receiver, Canvas c, ComplexReceiver emojiStatusReceiver) {
     int left = Screen.dp(72f);
     boolean rtl = Lang.rtl();
     int viewWidth = view.getMeasuredWidth();
@@ -502,8 +536,14 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
       float y = receiver.centerY();
       Drawables.draw(c, incognitoIcon, x, y - incognitoIcon.getMinimumHeight() / 2f, Paints.getPorterDuffPaint(Theme.getColor(ColorId.text)));
     }
+    int offset = 0;
     if (trimmedTitle != null) {
       trimmedTitle.draw(c, left, Screen.dp(13f));
+      offset += trimmedTitle.getWidth();
+    }
+    if (emojiStatusDrawable != null) {
+      emojiStatusDrawable.draw(c, left + offset + Screen.dp(6f), Screen.dp(13f), 1f, emojiStatusReceiver);
+      offset += emojiStatusDrawable.getWidth(Screen.dp(6f));
     }
 
     if (adminSign != null) {
@@ -515,7 +555,7 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
     }
 
     if (trimmedTitle != null && chatMark != null) {
-      int cmLeft = left + trimmedTitle.getWidth() + Screen.dp(6f);
+      int cmLeft = left + offset + Screen.dp(6f);
       RectF rct = Paints.getRectF();
       rct.set(cmLeft, Screen.dp(13f), cmLeft + chatMark.getWidth() + Screen.dp(8f), Screen.dp(13f) + trimmedTitle.getLineHeight(false));
       c.drawRoundRect(rct, Screen.dp(2f), Screen.dp(2f), Paints.getProgressPaint(Theme.getColor(ColorId.textNegative), Screen.dp(1.5f)));

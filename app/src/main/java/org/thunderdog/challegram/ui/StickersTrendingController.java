@@ -229,7 +229,7 @@ public class StickersTrendingController extends ViewController<Void> implements 
             TdApi.StickerSetInfo[] sets = trendingStickerSets.sets;
             if (sets.length > 0) {
               stickerSets = new ArrayList<>(sets.length);
-              EmojiMediaListController.parseTrending(tdlib, stickerSets, stickerItems, cellCount, sets, this, this, true);
+              EmojiMediaListController.parseTrending(tdlib, stickerSets, stickerItems, cellCount, sets, this, this, true, false);
             } else {
               stickerSets = null;
               if (offset == 0)

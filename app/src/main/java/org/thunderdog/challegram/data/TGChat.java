@@ -34,15 +34,19 @@ import org.thunderdog.challegram.telegram.TdlibCounter;
 import org.thunderdog.challegram.telegram.TdlibStatusManager;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.PorterDuffColorId;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Icons;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.EmojiStatusHelper;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.Text;
+import org.thunderdog.challegram.util.text.TextColorSetOverride;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.util.text.TextEntityCustom;
+import org.thunderdog.challegram.util.text.TextMedia;
 import org.thunderdog.challegram.util.text.TextStyleProvider;
 
 import java.util.ArrayList;
@@ -96,6 +100,8 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
   private String title;
   private Text trimmedTitle;
 
+  private @Nullable EmojiStatusHelper.EmojiStatusDrawable emojiStatusDrawable;
+
   private String time;
   private int timeWidth;
 
@@ -112,6 +118,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
   private int textLeft;
   private int timeLeft;
   private int muteLeft, verifyLeft;
+  private int emojiStatusLeft;
   private int checkRight;
 
   private Text chatMark;
@@ -212,6 +219,12 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
       layoutText();
     } else {
       setPrefix();
+    }
+  }
+
+  public void onAttachToView () {
+    if (emojiStatusDrawable != null) {
+      emojiStatusDrawable.onAppear();
     }
   }
 
@@ -877,6 +890,18 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     if (isSecret) {
       avail = avail - Screen.dp(14f);
     }
+
+    if (!tdlib.isSelfChat(chat)) {
+      emojiStatusDrawable = EmojiStatusHelper.makeDrawable(null, tdlib, chat != null ? tdlib.chatUser(chat) : null, new TextColorSetOverride(TextColorSets.Regular.NORMAL) {
+        @Override
+        public int emojiStatusColor () {
+          return Theme.getColor(ColorId.iconActive);
+        }
+      }, this::invalidateEmojiStatusReceiver);
+      emojiStatusDrawable.invalidateTextMedia();
+      avail -= emojiStatusDrawable.getWidth(Screen.dp(6));
+    }
+
     if (changed || lastAvailWidth != avail) {
       lastAvailWidth = avail;
       if (StringUtils.isEmpty(title)) {
@@ -892,6 +917,11 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     int titleWidth = getTitleWidth();
     verifyLeft = ChatView.getLeftPadding(listMode) + titleWidth;
     muteLeft = ChatView.getLeftPadding(listMode) + titleWidth + ChatView.getMutePadding();
+    emojiStatusLeft = ChatView.getLeftPadding(listMode) + titleWidth + Screen.dp(6);
+    if (emojiStatusDrawable != null) {
+      muteLeft += emojiStatusDrawable.getWidth(Screen.dp(6));
+      verifyLeft += emojiStatusDrawable.getWidth(Screen.dp(6));
+    }
     if (showVerify) {
       muteLeft += Screen.dp(20f);
     }
@@ -905,6 +935,18 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     if (changed && avatarPlaceholder != null) {
       setAvatar();
     }
+  }
+
+  public @Nullable EmojiStatusHelper.EmojiStatusDrawable getEmojiStatus () {
+    return emojiStatusDrawable;
+  }
+
+  public void invalidateEmojiStatusReceiver (Text text, @Nullable TextMedia specificMedia) {
+    currentViews.performWithViews(view -> {
+      if (view instanceof EmojiStatusHelper.EmojiStatusReceiverInvalidateDelegate) {
+        ((EmojiStatusHelper.EmojiStatusReceiverInvalidateDelegate) view).invalidateEmojiStatusReceiver(text, specificMedia);
+      }
+    });
   }
 
   private void setTitleImpl (String title) {
@@ -1005,6 +1047,10 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
 
   public int getVerifyLeft () {
     return verifyLeft;
+  }
+
+  public int getEmojiStatusLeft () {
+    return emojiStatusLeft + (isSecretChat() ? Screen.dp(12): 0);
   }
 
   public int getChecksRight () {
