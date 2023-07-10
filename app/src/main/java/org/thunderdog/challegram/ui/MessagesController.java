@@ -375,7 +375,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         items.add(new HapticMenuHelper.MenuItem(R.id.btn_sendNoMarkdown, Lang.getString(R.string.SendDiceAsEmoji), Drawables.emojiDrawable(currentText.text)));
       }
     }
-    items.add(new HapticMenuHelper.MenuItem(R.id.btn_translateInputField, Lang.getString(R.string.Translate), R.drawable.baseline_translate_24));
+    items.add(new HapticMenuHelper.MenuItem(R.id.btn_translateInputField, Lang.getString(R.string.TranslateDraft), R.drawable.baseline_translate_24));
     if (BuildConfig.DEBUG) {
       items.add(new HapticMenuHelper.MenuItem(R.id.btn_sendToast, "Show toast", R.drawable.baseline_warning_24));
     }
