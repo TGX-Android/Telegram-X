@@ -225,6 +225,7 @@ public class Settings {
   private static final String KEY_CHAT_DO_NOT_TRANSLATE_LIST = "settings_chat_do_not_translate_list";
   private static final String KEY_CHAT_TRANSLATE_RECENTS = "language_recents";
   private static final String KEY_INSTANT_VIEW = "settings_iv_mode";
+  private static final String KEY_RESOLUTION_OPTION = "settings_resolution_options";
   private static final String KEY_RESTRICT_CONTENT = "settings_restrict_content";
   private static final String KEY_CAMERA_ASPECT_RATIO = "settings_camera_ratio";
   private static final String KEY_CAMERA_TYPE = "settings_camera_type";
@@ -728,6 +729,11 @@ public class Settings {
   public static final int INSTANT_VIEW_MODE_NONE = 0;
   public static final int INSTANT_VIEW_MODE_INTERNAL = 1;
   public static final int INSTANT_VIEW_MODE_ALL = 2;
+
+  public static final int RESOLUTION_OPTION_DEFAULT = 1;
+  public static final int RESOLUTION_OPTION_LOW = 0;
+  public static final int RESOLUTION_OPTION_MEDIUM = 1;
+  public static final int RESOLUTION_OPTION_HIGH = 2;
 
   @Nullable
   private Float _chatFontSize;
@@ -2550,6 +2556,18 @@ public class Settings {
       remove(KEY_INSTANT_VIEW);
     } else {
       putInt(KEY_INSTANT_VIEW, mode);
+    }
+  }
+
+  public int getResolutionOption () {
+    return getInt(KEY_RESOLUTION_OPTION, RESOLUTION_OPTION_DEFAULT);
+  }
+
+  public void setResolutionOption (int option) {
+    if (option == RESOLUTION_OPTION_DEFAULT) {
+      remove(KEY_RESOLUTION_OPTION);
+    } else {
+      putInt(KEY_RESOLUTION_OPTION, option);
     }
   }
 

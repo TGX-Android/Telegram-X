@@ -4679,4 +4679,11 @@
   <string name="SetTomorrowAt">Set until tomorrow at %1$s</string>
   <string name="SetDateAt">Set until %1$s at %2$s</string>
 
+  <!-- RESOLUTION STRING SECTION -->
+
+  <string name="ResolutionOption">Photo Resolution Selector</string>
+  <string name="ResolutionDesc">Resolution Selector (Experimental): Possible instability or app crashes.</string>
+  <string name="ResolutionLow">Low (800px)</string>
+  <string name="ResolutionMedium">Medium (1280px)</string>
+  <string name="ResolutionHigh">High (2560px)</string>
 </resources>
