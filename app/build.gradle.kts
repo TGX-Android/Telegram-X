@@ -64,7 +64,6 @@ android {
     buildConfigString("EMOJI_BUILTIN_ID", Emoji.BUILTIN_ID)
 
     buildConfigString("LANGUAGE_PACK", Telegram.LANGUAGE_PACK)
-    buildConfigString("YOUTUBE_API_KEY", properties.getProperty("youtube.api_key", ""))
 
     buildConfigString("THEME_FILE_EXTENSION", App.THEME_EXTENSION)
   }
@@ -244,9 +243,6 @@ dependencies {
 
   // subsampling-scale-image-view: https://github.com/davemorrissey/subsampling-scale-image-view
   implementation("com.davemorrissey.labs:subsampling-scale-image-view-androidx:3.10.0")
-
-  // YouTube: https://developers.google.com/youtube/android/player/
-  implementation(files("thirdparty/YouTubeAndroidPlayerApi.jar"))
 
   // TODO: upgrade to "com.googlecode.mp4parser:isoparser:1.1.22" or latest
   // mp4parser: https://github.com/sannies/mp4parser/releases

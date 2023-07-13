@@ -11,11 +11,6 @@ done
 while [[ ! ($TELEGRAM_API_HASH =~ ^[0-9a-z]+$) ]]; do
   read -r -p "Telegram API_HASH: " TELEGRAM_API_HASH
 done
-while [[ ! ($YOUTUBE_API_KEY =~ ^[0-9a-zA-Z_\-]+$) ]]; do
-  echo "YouTube API credentials required."
-  echo "To obtain them, see https://developers.google.com/youtube/android/player/register"
-  read -r -p "YouTube API_KEY: " YOUTUBE_API_KEY
-done
 while [[ ! -f $KEYSTORE_FILE ]]; do
   read -e -r -p "Enter a path to keystore settings file: " KEYSTORE_FILE
 done
@@ -43,5 +38,4 @@ app.download_url=$APP_DOWNLOAD_URL
 app.sources_url=$APP_SOURCES_URL
 telegram.api_id=$TELEGRAM_API_ID
 telegram.api_hash=$TELEGRAM_API_HASH
-youtube.api_key=$YOUTUBE_API_KEY
 EOF

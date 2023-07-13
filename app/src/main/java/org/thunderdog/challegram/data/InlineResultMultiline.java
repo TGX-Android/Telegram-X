@@ -45,11 +45,12 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.td.Td;
 
-public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult> {
+public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult> implements Text.ClickCallback {
   private String title, description;
   private TdApi.TextEntity[] descriptionEntities;
   private boolean isEmail;
   private String url;
+  private TdApi.WebPage webPage;
 
   private final AvatarPlaceholder avatarPlaceholder;
 
@@ -95,6 +96,7 @@ public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult>
       this.title = Strings.any(webPage.title, webPage.document != null ? webPage.document.fileName : null, webPage.audio != null ? webPage.audio.title : null, webPage.siteName);
       this.description = webPage.description.text;
       this.descriptionEntities = webPage.description.entities;
+      this.webPage = webPage;
       String urlInText = Td.findUrl(text, webPage.url, true);
       this.url = !StringUtils.isEmpty(urlInText) ? urlInText : webPage.url;
     } else if (text != null) {
@@ -252,6 +254,9 @@ public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult>
       urlWrap = new TextWrapper(displayUrl, TGMessage.simpleTextStyleProvider(), TextColorSets.Regular.NORMAL)
         .setEntities(TextEntity.valueOf(tdlib, displayUrl, new TdApi.TextEntity[] { new TdApi.TextEntity(0, displayUrl.length(), isEmail ? new TdApi.TextEntityTypeEmailAddress() : new TdApi.TextEntityTypeUrl() )}, null), null);
       urlWrap.setMaxLines(2);
+      if (webPage != null) {
+        urlWrap.setClickCallback(this);
+      }
       urlWrap.setViewProvider(currentViews);
       urlWrap.addTextFlags(Text.FLAG_CUSTOM_LONG_PRESS);
     }
@@ -265,6 +270,14 @@ public class InlineResultMultiline extends InlineResult<TdApi.InlineQueryResult>
     if (urlWrap != null) {
       urlWrap.prepare(availWidth);
     }
+  }
+
+  @Override
+  public TdApi.WebPage findWebPage (String link) {
+    if (TGWebPage.isPreviewOf(webPage.url, link)) {
+      return webPage;
+    }
+    return null;
   }
 
   @Override
