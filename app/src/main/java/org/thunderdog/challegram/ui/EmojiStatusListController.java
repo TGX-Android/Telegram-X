@@ -885,14 +885,14 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
           pendingRecentStickers = null;
           pendingTrendingStickers = null;
 
-          if (rawStickerSets.length == 0 && recentStickers.length == 0) {
+          if (rawStickerSets.length == 0 && (recentStickers == null || recentStickers.length == 0) && (trendingStickers == null || trendingStickers.length == 0)) {
             items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_NO_EMOJISETS));
           } else {
             items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_KEYBOARD_TOP));
             int startIndex = 1;
 
-            final int totalRecentCount = recentStickers.length;
-            final int totalTrendingCount = trendingStickers.length;
+            final int totalRecentCount = recentStickers != null ? recentStickers.length: 0;
+            final int totalTrendingCount = trendingStickers != null ? trendingStickers.length : 0;
             if (totalRecentCount > 0) {
               TGStickerSetInfo info = new TGStickerSetInfo(tdlib, recentStickers, false, totalRecentCount);
               info.setStartIndex(startIndex);
@@ -951,7 +951,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
 
           runOnUiThreadOptional(() -> {
             if (getArguments() != null) {
-              getArguments().setStickerSets(stickerSets, false, recentStickers.length > 0, trendingStickers.length > 0, !needAddDefaultPremiumStar);
+              getArguments().setStickerSets(stickerSets, false, recentStickers != null && recentStickers.length > 0, trendingStickers != null && trendingStickers.length > 0, !needAddDefaultPremiumStar);
             }
             setStickers(stickerSets, items);
             stickersLoaded = true;
