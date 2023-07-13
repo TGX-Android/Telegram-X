@@ -318,6 +318,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       client.send(startup, (result) -> {
         if (result.getConstructor() == TdApi.Proxies.CONSTRUCTOR) {
           TdApi.Proxy[] proxies = ((TdApi.Proxies) result).proxies;
+          boolean foundEnabledProxy = false;
           for (TdApi.Proxy proxy : proxies) {
             TdApi.InternalLinkTypeProxy proxyDetails = new TdApi.InternalLinkTypeProxy(
               proxy.server,
@@ -328,7 +329,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
             if (proxy.isEnabled) {
               tdlib.setEffectiveProxyId(proxyId);
               tdlib.setProxy(proxyId, proxyDetails);
+              foundEnabledProxy = true;
             }
+          }
+          if (!foundEnabledProxy) {
+            tdlib.setEffectiveProxyId(Settings.PROXY_ID_NONE);
           }
         } else {
           int proxyId = Settings.instance().getEffectiveProxyId();
@@ -8086,11 +8091,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       if (state == ConnectionState.CONNECTED || state == ConnectionState.WAITING_FOR_NETWORK) {
         final long connectionLossTime = this.connectionLossTime;
         this.connectionLossTime = 0;
+        final int proxyId = effectiveProxyId;
         cancelConnectionResolver();
-        if (state == ConnectionState.CONNECTED && connectionLossTime != 0) {
+        if (state == ConnectionState.CONNECTED && connectionLossTime != 0 && proxyId != Settings.PROXY_ID_UNKNOWN) {
           long connectedWithinMs = SystemClock.uptimeMillis() - connectionLossTime;
           Settings.instance().trackSuccessfulConnection(
-            effectiveProxyId,
+            proxyId,
             currentTimeMillis(),
             connectedWithinMs,
             false
