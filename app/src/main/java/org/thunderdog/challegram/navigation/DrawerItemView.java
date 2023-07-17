@@ -24,7 +24,6 @@ import android.view.ViewGroup;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.Nullable;
 
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.loader.AvatarReceiver;
@@ -32,12 +31,16 @@ import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.util.EmojiStatusHelper;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.Text;
+import org.thunderdog.challegram.util.text.TextColorSet;
+import org.thunderdog.challegram.util.text.TextColorSetOverride;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.widget.AttachDelegate;
 import org.thunderdog.challegram.widget.BaseView;
@@ -61,10 +64,12 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
   private float checkFactor;
   private BoolAnimator checkAnimator;
   private AvatarReceiver receiver;
+  private final EmojiStatusHelper emojiStatusHelper;
   private Counter counter;
 
   public DrawerItemView (Context context, Tdlib tdlib) {
     super(context, tdlib);
+    emojiStatusHelper = new EmojiStatusHelper(tdlib, this, null);
     TGLegacyManager.instance().addEmojiListener(this);
   }
 
@@ -151,6 +156,9 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
     if (counter != null) {
       availWidth -= counter.getScaledWidth(Screen.dp(24f) + Screen.dp(8f));
     }
+    if (emojiStatusHelper.needDrawEmojiStatus()) {
+      availWidth -= emojiStatusHelper.getWidth() + Screen.dp(12);
+    }
     if (availWidth <= 0) {
       trimmedText = null;
       return;
@@ -185,6 +193,18 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
 
   public void setAvatar (Tdlib tdlib, long chatId) {
     this.receiver.requestChat(tdlib, chatId, AvatarReceiver.Options.NONE);
+  }
+
+  public void setEmojiStatus (TdlibAccount account) {
+    TextColorSet colorSet = new TextColorSetOverride(TextColorSets.Regular.NORMAL) {
+      @Override
+      public int emojiStatusColor () {
+        return Theme.getColor(ColorId.iconActive);
+      }
+    };
+    emojiStatusHelper.setSharedUsageId("account_" + account.id);
+    emojiStatusHelper.updateEmoji(account, colorSet);
+    trimText(true);
   }
 
   public void setAvatar (TdlibAccount account) {
@@ -253,6 +273,7 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
     if (receiver != null) {
       receiver.attach();
     }
+    emojiStatusHelper.attach();
   }
 
   @Override
@@ -260,6 +281,7 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
     if (receiver != null) {
       receiver.detach();
     }
+    emojiStatusHelper.detach();
   }
 
   @Override
@@ -267,6 +289,7 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
     if (receiver != null) {
       receiver.destroy();
     }
+    emojiStatusHelper.performDestroy();
     TGLegacyManager.instance().removeEmojiListener(this);
   }
 
@@ -300,7 +323,7 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
     if (trimmedText != null) {
       trimmedText.draw(c, textLeft, textLeft + trimmedText.getWidth(), 0, Screen.dp(17f));
     }
-
+    emojiStatusHelper.draw(c, textLeft + (trimmedText != null ? trimmedText.getWidth() + Screen.dp(6): 0), Screen.dp(17f));
     if (receiver != null) {
       layoutReceiver();
       if (receiver.needPlaceholder()) {
@@ -324,7 +347,7 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
 
     }
     if (counter != null) {
-      counter.draw(c, rtl ? Screen.dp(24f) : viewWidth - Screen.dp(24f), getMeasuredHeight() / 2f, Lang.rtl() ? Gravity.LEFT : Gravity.RIGHT, 1f, this, R.id.theme_color_badgeFailedText);
+      counter.draw(c, rtl ? Screen.dp(24f) : viewWidth - Screen.dp(24f), getMeasuredHeight() / 2f, Lang.rtl() ? Gravity.LEFT : Gravity.RIGHT, 1f, this, ColorId.badgeFailedText);
     }
   }
 }

@@ -27,7 +27,7 @@ import androidx.annotation.Nullable;
 import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.Lang;
@@ -42,8 +42,8 @@ import org.thunderdog.challegram.telegram.ChatListListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibChatList;
 import org.thunderdog.challegram.telegram.TdlibChatListSlice;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Icons;
 import org.thunderdog.challegram.tool.Paints;
@@ -91,35 +91,35 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
 
   public static class Arguments {
     private final @Mode int mode;
-    private final int chatFilterId;
-    private final @Nullable TdApi.ChatFilter chatFilter;
+    private final int chatFolderId;
+    private final @Nullable TdApi.ChatFolder chatFolder;
     private final @Nullable Delegate delegate;
     private final Set<Long> selectedChatIds;
     private final Set<Integer> selectedChatTypes;
 
-    private Arguments (@Mode int mode, @Nullable Delegate delegate, int chatFilterId, @Nullable TdApi.ChatFilter chatFilter, Set<Long> selectedChatIds, Set<Integer> selectedChatTypes) {
+    private Arguments (@Mode int mode, @Nullable Delegate delegate, int chatFolderId, @Nullable TdApi.ChatFolder chatFolder, Set<Long> selectedChatIds, Set<Integer> selectedChatTypes) {
       this.mode = mode;
       this.delegate = delegate;
-      this.chatFilter = chatFilter;
-      this.chatFilterId = chatFilterId;
+      this.chatFolder = chatFolder;
+      this.chatFolderId = chatFolderId;
       this.selectedChatIds = selectedChatIds;
       this.selectedChatTypes = selectedChatTypes;
     }
 
-    public static Arguments includedChats (int chatFilterId, TdApi.ChatFilter chatFilter) {
-      return includedChats(null, chatFilterId, chatFilter);
+    public static Arguments includedChats (int chatFolderId, TdApi.ChatFolder chatFolder) {
+      return includedChats(null, chatFolderId, chatFolder);
     }
 
-    public static Arguments includedChats (@Nullable Delegate delegate, int chatFilterId, TdApi.ChatFilter chatFilter) {
-      Set<Long> selectedChatIds = unmodifiableLinkedHashSetOf(chatFilter.pinnedChatIds, chatFilter.includedChatIds);
-      Set<Integer> selectedChatTypes = U.unmodifiableTreeSetOf(TD.includedChatTypes(chatFilter));
-      return new Arguments(MODE_FOLDER_INCLUDE_CHATS, delegate, chatFilterId, chatFilter, selectedChatIds, selectedChatTypes);
+    public static Arguments includedChats (@Nullable Delegate delegate, int chatFolderId, TdApi.ChatFolder chatFolder) {
+      Set<Long> selectedChatIds = unmodifiableLinkedHashSetOf(chatFolder.pinnedChatIds, chatFolder.includedChatIds);
+      Set<Integer> selectedChatTypes = U.unmodifiableTreeSetOf(TD.includedChatTypes(chatFolder));
+      return new Arguments(MODE_FOLDER_INCLUDE_CHATS, delegate, chatFolderId, chatFolder, selectedChatIds, selectedChatTypes);
     }
 
-    public static Arguments excludedChats (@Nullable Delegate delegate, int chatFilterId, TdApi.ChatFilter chatFilter) {
-      Set<Long> selectedChatIds = unmodifiableLinkedHashSetOf(chatFilter.excludedChatIds);
-      Set<Integer> selectedChatTypes = U.unmodifiableTreeSetOf(TD.excludedChatTypes(chatFilter));
-      return new Arguments(MODE_FOLDER_EXCLUDE_CHATS, delegate, chatFilterId, chatFilter, selectedChatIds, selectedChatTypes);
+    public static Arguments excludedChats (@Nullable Delegate delegate, int chatFolderId, TdApi.ChatFolder chatFolder) {
+      Set<Long> selectedChatIds = unmodifiableLinkedHashSetOf(chatFolder.excludedChatIds);
+      Set<Integer> selectedChatTypes = U.unmodifiableTreeSetOf(TD.excludedChatTypes(chatFolder));
+      return new Arguments(MODE_FOLDER_EXCLUDE_CHATS, delegate, chatFolderId, chatFolder, selectedChatIds, selectedChatTypes);
     }
 
     private static Set<Long> unmodifiableLinkedHashSetOf (long[]... arrays) {
@@ -222,10 +222,10 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
     if (arguments.mode == MODE_FOLDER_INCLUDE_CHATS || arguments.mode == MODE_FOLDER_EXCLUDE_CHATS) {
       items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL));
       if (mode == MODE_FOLDER_INCLUDE_CHATS) {
-        CharSequence description = Lang.pluralBold(R.string.IncludeChatsInfo, tdlib.chatFilterChosenChatCountMax());
+        CharSequence description = Lang.pluralBold(R.string.IncludeChatsInfo, tdlib.chatFolderChosenChatCountMax());
         items.add(new ListItem(ListItem.TYPE_DESCRIPTION, R.id.description, 0, description));
       } else if (mode == MODE_FOLDER_EXCLUDE_CHATS) {
-        CharSequence description = Lang.pluralBold(R.string.ExcludeChatsInfo, tdlib.chatFilterChosenChatCountMax());
+        CharSequence description = Lang.pluralBold(R.string.ExcludeChatsInfo, tdlib.chatFolderChosenChatCountMax());
         items.add(new ListItem(ListItem.TYPE_DESCRIPTION, R.id.description, 0, description));
       }
 
@@ -397,17 +397,17 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
       }
     } else {
       Arguments arguments = getArgumentsStrict();
-      if (arguments.chatFilter != null && (mode == MODE_FOLDER_INCLUDE_CHATS || mode == MODE_FOLDER_EXCLUDE_CHATS)) {
-        int chatFilterId = arguments.chatFilterId;
-        TdApi.ChatFilter chatFilter = TD.copyOf(arguments.chatFilter);
+      if (arguments.chatFolder != null && (mode == MODE_FOLDER_INCLUDE_CHATS || mode == MODE_FOLDER_EXCLUDE_CHATS)) {
+        int chatFolderId = arguments.chatFolderId;
+        TdApi.ChatFolder chatFolder = TD.copyOf(arguments.chatFolder);
         if (mode == MODE_FOLDER_INCLUDE_CHATS) {
-          TD.updateIncludedChats(chatFilter, selectedChatIds);
-          TD.updateIncludedChatTypes(chatFilter, selectedChatTypes);
+          TD.updateIncludedChats(chatFolder, selectedChatIds);
+          TD.updateIncludedChatTypes(chatFolder, selectedChatTypes);
         } else {
-          TD.updateExcludedChats(chatFilter, selectedChatIds);
-          TD.updateExcludedChatTypes(chatFilter, selectedChatTypes);
+          TD.updateExcludedChats(chatFolder, selectedChatIds);
+          TD.updateExcludedChatTypes(chatFolder, selectedChatTypes);
         }
-        tdlib.send(new TdApi.EditChatFilter(chatFilterId, chatFilter), tdlib.resultHandler(TdApi.ChatFilterInfo.class, after != null ? () -> {
+        tdlib.send(new TdApi.EditChatFolder(chatFolderId, chatFolder), tdlib.resultHandler(TdApi.ChatFolderInfo.class, after != null ? () -> {
           if (!isDestroyed()) {
             after.run();
           }
@@ -430,14 +430,14 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
         nonSecretChatCount--;
       }
     } else {
-      long chosenChatCountMax = tdlib.chatFilterChosenChatCountMax();
+      long chosenChatCountMax = tdlib.chatFolderChosenChatCountMax();
       long chosenChatCount = isSecretChat ? secretChatCount : nonSecretChatCount;
       if (chosenChatCount >= chosenChatCountMax) {
         if (tdlib.hasPremium()) {
           CharSequence text = Lang.getMarkdownString(this, R.string.ChatsInFolderLimitReached, chosenChatCountMax);
           UI.showCustomToast(text, Toast.LENGTH_LONG, 0);
         } else {
-          tdlib.send(new TdApi.GetPremiumLimit(new TdApi.PremiumLimitTypeChatFilterChosenChatCount()), (result) -> runOnUiThreadOptional(() -> {
+          tdlib.send(new TdApi.GetPremiumLimit(new TdApi.PremiumLimitTypeChatFolderChosenChatCount()), (result) -> runOnUiThreadOptional(() -> {
             CharSequence text;
             if (result.getConstructor() == TdApi.PremiumLimit.CONSTRUCTOR) {
               TdApi.PremiumLimit premiumLimit = (TdApi.PremiumLimit) result;
@@ -558,16 +558,16 @@ public class SelectChatsController extends RecyclerViewController<SelectChatsCon
     if (chatPositions != null && chatPositions.length > 0) {
       StringBuilder sb = new StringBuilder();
       for (TdApi.ChatPosition chatPosition : chatPositions) {
-        if (!TD.isChatListFilter(chatPosition.list))
+        if (!TD.isChatListFolder(chatPosition.list))
           continue;
-        TdApi.ChatListFilter chatListFilter = (TdApi.ChatListFilter) chatPosition.list;
-        TdApi.ChatFilterInfo chatFilterInfo = tdlib.chatFilterInfo(chatListFilter.chatFilterId);
-        if (chatFilterInfo == null || StringUtils.isEmptyOrBlank(chatFilterInfo.title))
+        TdApi.ChatListFolder chatListFilter = (TdApi.ChatListFolder) chatPosition.list;
+        TdApi.ChatFolderInfo chatFolderInfo = tdlib.chatFolderInfo(chatListFilter.chatFolderId);
+        if (chatFolderInfo == null || StringUtils.isEmptyOrBlank(chatFolderInfo.title))
           continue;
         if (sb.length() > 0) {
           sb.append(", ");
         }
-        sb.append(chatFilterInfo.title);
+        sb.append(chatFolderInfo.title);
       }
       return sb.toString();
     }
@@ -671,10 +671,10 @@ class Chip extends Drawable implements FlowListAnimator.Measurable, Drawable.Cal
     this.isSecretChat = ChatId.isSecret(chatId);
     if (tdlib.isSelfChat(chatId)) {
       this.avatarFile = null;
-      this.avatarPlaceholder = new AvatarPlaceholder(AVATAR_RADIUS, new AvatarPlaceholder.Metadata(R.id.theme_color_avatarSavedMessages, R.drawable.baseline_bookmark_16), drawableProvider);
+      this.avatarPlaceholder = new AvatarPlaceholder(AVATAR_RADIUS, new AvatarPlaceholder.Metadata(ColorId.avatarSavedMessages, R.drawable.baseline_bookmark_16), drawableProvider);
     } else if (tdlib.isRepliesChat(chatId)) {
       this.avatarFile = null;
-      this.avatarPlaceholder = new AvatarPlaceholder(AVATAR_RADIUS, new AvatarPlaceholder.Metadata(R.id.theme_color_avatarReplies, R.drawable.baseline_reply_16), drawableProvider);
+      this.avatarPlaceholder = new AvatarPlaceholder(AVATAR_RADIUS, new AvatarPlaceholder.Metadata(ColorId.avatarReplies, R.drawable.baseline_reply_16), drawableProvider);
     } else {
       this.avatarFile = tdlib.chatAvatar(chatId, Screen.dp(AVATAR_RADIUS * 2));
       this.avatarPlaceholder = tdlib.chatPlaceholder(chatId, tdlib.chat(chatId), true, AVATAR_RADIUS, drawableProvider);
@@ -718,7 +718,7 @@ class Chip extends Drawable implements FlowListAnimator.Measurable, Drawable.Cal
   }
 
   private void initCrossDrawable () {
-    crossIcon = drawableProvider.getSparseDrawable(R.drawable.baseline_close_18, ThemeColorId.NONE);
+    crossIcon = drawableProvider.getSparseDrawable(R.drawable.baseline_close_18, ColorId.NONE);
     ShapeDrawable mask = new ShapeDrawable(new OvalShape());
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       mask.setTint(Color.WHITE);
@@ -828,7 +828,7 @@ class Chip extends Drawable implements FlowListAnimator.Measurable, Drawable.Cal
       crossIconRipple.setBounds(iconX - rippleRadius, iconY - rippleRadius, iconX + rippleRadius, iconY + rippleRadius);
       crossIconRipple.draw(canvas);
     }
-    Drawables.drawCentered(canvas, crossIcon, iconX, iconY, PorterDuffPaint.get(R.id.theme_color_inlineIcon));
+    Drawables.drawCentered(canvas, crossIcon, iconX, iconY, PorterDuffPaint.get(ColorId.inlineIcon));
 
     if (alpha < 0xFF) {
       canvas.restoreToCount(saveCount);

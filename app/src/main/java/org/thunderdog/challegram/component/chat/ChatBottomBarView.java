@@ -27,8 +27,8 @@ import android.view.View;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
@@ -55,7 +55,7 @@ public class ChatBottomBarView extends BaseView {
       public void draw (@NonNull Canvas c) {
         RectF rectF = buildRectF();
         int radius = calculateRadius();
-        int color = ColorUtils.fromToArgb(Theme.fillingColor(), Theme.getColor(R.id.theme_color_circleButtonChat), collapseFactor);
+        int color = ColorUtils.fromToArgb(Theme.fillingColor(), Theme.getColor(ColorId.circleButtonChat), collapseFactor);
         if (radius == 0) {
           c.drawRect(rectF.left, rectF.top, rectF.right, rectF.bottom, Paints.fillingPaint(color));
         } else {
@@ -68,7 +68,7 @@ public class ChatBottomBarView extends BaseView {
       public void draw (@NonNull Canvas c) {
         RectF rectF = buildRectF();
         int radius = calculateRadius();
-        int color = Theme.getColor(R.id.theme_color_fillingPressed);
+        int color = Theme.getColor(ColorId.fillingPressed);
         if (radius == 0) {
           c.drawRect(rectF.left, rectF.top, rectF.right, rectF.bottom, Paints.fillingPaint(color));
         } else {
@@ -174,7 +174,7 @@ public class ChatBottomBarView extends BaseView {
         drawingText.draw(c, cx - drawingText.getWidth() / 2, cy - drawingText.getHeight() / 2, null, factor * (1f - collapseFactor));
       }
       if (collapseFactor > 0f && drawable != null) {
-        Paint paint = Paints.getPorterDuffPaint(Theme.getColor(R.id.theme_color_circleButtonChatIcon));
+        Paint paint = Paints.getPorterDuffPaint(Theme.getColor(ColorId.circleButtonChatIcon));
         final int restoreAlpha = paint.getAlpha();
         paint.setAlpha((int) ((float) restoreAlpha * factor * collapseFactor));
         Drawables.draw(c, drawable, cx - drawable.getMinimumWidth() / 2, cy - drawable.getMinimumHeight() / 2, paint);

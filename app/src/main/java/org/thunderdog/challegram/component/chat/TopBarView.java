@@ -29,6 +29,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
@@ -76,7 +77,7 @@ public class TopBarView extends FrameLayoutFix {
     super(context);
 
     setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(36f)));
-    ViewSupport.setThemedBackground(this, R.id.theme_color_filling, null);
+    ViewSupport.setThemedBackground(this, ColorId.filling, null);
 
     actionsList = new LinearLayout(context);
     actionsList.setOrientation(LinearLayout.HORIZONTAL);
@@ -113,7 +114,7 @@ public class TopBarView extends FrameLayoutFix {
   public void addThemeListeners (@Nullable ViewController<?> themeProvider) {
     this.themeProvider = themeProvider;
     if (themeProvider != null) {
-      themeProvider.addThemeFilterListener(topDismissButton, R.id.theme_color_icon);
+      themeProvider.addThemeFilterListener(topDismissButton, ColorId.icon);
       themeProvider.addThemeInvalidateListener(this);
     }
   }
@@ -143,7 +144,7 @@ public class TopBarView extends FrameLayoutFix {
       if (!item.noDismiss) {
         canDismiss = true;
       }
-      int textColorId = item.isNegative ? R.id.theme_color_textNegative : R.id.theme_color_textNeutral;
+      int textColorId = item.isNegative ? ColorId.textNegative : ColorId.textNeutral;
       TextView button = Views.newTextView(getContext(), 15f, Theme.getColor(textColorId), Gravity.CENTER, Views.TEXT_FLAG_BOLD | Views.TEXT_FLAG_HORIZONTAL_PADDING);
       button.setId(item.id);
       if (themeProvider != null) {

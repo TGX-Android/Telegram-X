@@ -23,7 +23,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationManagerCompat;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.drinkmore.Tracer;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.config.Config;

@@ -10,8 +10,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 
-import org.drinkless.td.libcore.telegram.TdApi;
-import org.thunderdog.challegram.R;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.loader.gif.GifFile;
@@ -19,9 +18,9 @@ import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
+import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PropertyId;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
-import org.thunderdog.challegram.theme.ThemeProperty;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
@@ -67,8 +66,8 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   private boolean isDetached;
 
   private boolean displayFullSizeOnlyInFullScreen;
-  private @ThemeProperty int defaultAvatarRadiusPropertyId, forumAvatarRadiusPropertyId;
-  private @ThemeColorId int contentCutOutColorId;
+  private @PropertyId int defaultAvatarRadiusPropertyId, forumAvatarRadiusPropertyId;
+  private @ColorId int contentCutOutColorId;
   private @ScaleMode int scaleMode;
   private float primaryPlaceholderRadius;
 
@@ -128,7 +127,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
     }
   }
 
-  public void setAvatarRadiusPropertyIds (@ThemeProperty int defaultAvatarRadiusPropertyId, @ThemeProperty int forumAvatarRadiusPropertyId) {
+  public void setAvatarRadiusPropertyIds (@PropertyId int defaultAvatarRadiusPropertyId, @PropertyId int forumAvatarRadiusPropertyId) {
     if (this.defaultAvatarRadiusPropertyId != defaultAvatarRadiusPropertyId || this.forumAvatarRadiusPropertyId != forumAvatarRadiusPropertyId) {
       this.defaultAvatarRadiusPropertyId = defaultAvatarRadiusPropertyId;
       this.forumAvatarRadiusPropertyId = forumAvatarRadiusPropertyId;
@@ -136,7 +135,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
     }
   }
 
-  public void setContentCutOutColorId (@ThemeColorId int colorId) {
+  public void setContentCutOutColorId (@ColorId int colorId) {
     if (this.contentCutOutColorId != colorId) {
       this.contentCutOutColorId = colorId;
       invalidate();
@@ -1080,11 +1079,11 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
       float maxRadius = Math.min(getWidth(), getHeight()) / 2f;
       float defaultAvatarRadius = defaultAvatarRadiusPropertyId != 0 ? Theme.getProperty(defaultAvatarRadiusPropertyId) : -1.0f;
       if (defaultAvatarRadius == -1.0f) {
-        defaultAvatarRadius = Theme.getProperty(ThemeProperty.AVATAR_RADIUS);
+        defaultAvatarRadius = Theme.getProperty(PropertyId.AVATAR_RADIUS);
       }
       float forumAvatarRadius = forumAvatarRadiusPropertyId != 0 ? Theme.getProperty(forumAvatarRadiusPropertyId) : -1.0f;
       if (forumAvatarRadius == -1.0f) {
-        forumAvatarRadius = Theme.getProperty(ThemeProperty.AVATAR_RADIUS_FORUM);
+        forumAvatarRadius = Theme.getProperty(PropertyId.AVATAR_RADIUS_FORUM);
       }
       float radiusFactor = MathUtils.clamp(
         MathUtils.fromTo(
@@ -1139,7 +1138,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
         isFullScreen.getFloatValue()
       ) : Theme.getColor(requestedPlaceholder.colorId);
       drawPlaceholderRounded(c, displayRadius, ColorUtils.alphaColor(alpha, placeholderColor));
-      int avatarContentColorId = R.id.theme_color_avatar_content;
+      int avatarContentColorId = ColorId.avatar_content;
       float primaryContentAlpha = requestedPlaceholder.extraDrawableRes != 0 ? 1f - isFullScreen.getFloatValue() : 1f;
       if (primaryContentAlpha > 0f) {
         if (requestedPlaceholder.drawableRes != 0) {
@@ -1154,9 +1153,9 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
     }
 
     int contentCutOutColor = ColorUtils.alphaColor(alpha,
-      Theme.getColor(contentCutOutColorId != 0 ? contentCutOutColorId : R.id.theme_color_filling)
+      Theme.getColor(contentCutOutColorId != 0 ? contentCutOutColorId : ColorId.filling)
     );
-    int onlineColor = ColorUtils.alphaColor(alpha, Theme.getColor(R.id.theme_color_online));
+    int onlineColor = ColorUtils.alphaColor(alpha, Theme.getColor(ColorId.online));
     DrawAlgorithms.drawOnline(c,
       this,
       allowOnline.getFloatValue() * isOnline.getFloatValue(),

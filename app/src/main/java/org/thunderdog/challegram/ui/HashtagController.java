@@ -22,6 +22,7 @@ import org.thunderdog.challegram.component.dialogs.SearchManager;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.TelegramViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 
@@ -42,17 +43,17 @@ public class HashtagController extends TelegramViewController<String> {
 
   @Override
   protected int getHeaderColorId () {
-    return R.id.theme_color_filling;
+    return ColorId.filling;
   }
 
   @Override
   protected int getHeaderIconColorId () {
-    return R.id.theme_color_headerLightIcon;
+    return ColorId.headerLightIcon;
   }
 
   @Override
   protected int getHeaderTextColorId () {
-    return R.id.theme_color_text;
+    return ColorId.text;
   }
 
   @Override

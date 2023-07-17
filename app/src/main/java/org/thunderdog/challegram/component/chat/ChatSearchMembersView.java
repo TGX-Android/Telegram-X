@@ -14,7 +14,7 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
@@ -23,6 +23,7 @@ import org.thunderdog.challegram.data.DoubleTextWrapper;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
@@ -104,7 +105,7 @@ public class ChatSearchMembersView extends FrameLayout implements TdlibCache.Bas
         }
       }
     });
-    controller.addThemeBackgroundColorListener(usersRecyclerView, R.id.theme_color_background);
+    controller.addThemeBackgroundColorListener(usersRecyclerView, ColorId.background);
     Views.setScrollBarPosition(usersRecyclerView);
     addView(usersRecyclerView);
 
@@ -115,13 +116,13 @@ public class ChatSearchMembersView extends FrameLayout implements TdlibCache.Bas
         return true;
       }
     };
-    ViewSupport.setThemedBackground(footerView, R.id.theme_color_filling, controller);
+    ViewSupport.setThemedBackground(footerView, ColorId.filling, controller);
     footerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(56f), Gravity.BOTTOM));
     addView(footerView);
 
     for (int i = 0; i < 2; i++) {
       TextView button = new NoScrollTextView(context);
-      int colorId = R.id.theme_color_textNeutral;
+      int colorId = ColorId.textNeutral;
       button.setTextColor(Theme.getColor(colorId));
       controller.addThemeTextColorListener(button, colorId);
       button.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16f);
@@ -513,20 +514,16 @@ public class ChatSearchMembersView extends FrameLayout implements TdlibCache.Bas
   }
 
   private void onClickControlButtons (View v) {
-    switch (v.getId()) {
-      case R.id.btn_cancel: {
+    final int viewId = v.getId();
+    if (viewId == R.id.btn_cancel) {
+      if (delegate != null) {
+        delegate.onClose();
+      }
+    } else if (viewId == R.id.btn_clear) {
+      if (!setMessageSender(null, false)) {
         if (delegate != null) {
           delegate.onClose();
         }
-        break;
-      }
-      case R.id.btn_clear: {
-        if (!setMessageSender(null, false)) {
-          if (delegate != null) {
-            delegate.onClose();
-          }
-        }
-        break;
       }
     }
   }

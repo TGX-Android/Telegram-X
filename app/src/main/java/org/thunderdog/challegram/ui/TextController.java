@@ -44,6 +44,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.TGMimeType;
@@ -125,21 +126,15 @@ public class TextController extends ViewController<TextController.Arguments> imp
 
   @Override
   public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
-    switch (id) {
-      case R.id.menu_text: {
-        header.addMoreButton(menu, this);
-        break;
-      }
+    if (id == R.id.menu_text) {
+      header.addMoreButton(menu, this);
     }
   }
 
   @Override
   public void onMenuItemPressed (int id, View view) {
-    switch (id) {
-      case R.id.menu_btn_more: {
-        showMore();
-        break;
-      }
+    if (id == R.id.menu_btn_more) {
+      showMore();
     }
   }
 
@@ -171,24 +166,15 @@ public class TextController extends ViewController<TextController.Arguments> imp
 
   @Override
   public void onMoreItemPressed (int id) {
-    switch (id) {
-      case R.id.btn_openLink: {
-        File file = new File(filePath);
-        Intents.openFile(context, file, mimeType);
-        break;
-      }
-      case R.id.btn_share: {
-        Intents.shareText(rawText);
-        break;
-      }
-      case R.id.btn_copyText: {
-        copyText();
-        break;
-      }
-      case R.id.btn_search: {
-        openSearchMode();
-        break;
-      }
+    if (id == R.id.btn_openLink) {
+      File file = new File(filePath);
+      Intents.openFile(context, file, mimeType);
+    } else if (id == R.id.btn_share) {
+      Intents.shareText(rawText);
+    } else if (id == R.id.btn_copyText) {
+      copyText();
+    } else if (id == R.id.btn_search) {
+      openSearchMode();
     }
   }
 
@@ -215,7 +201,7 @@ public class TextController extends ViewController<TextController.Arguments> imp
     loadText();
 
     FrameLayoutFix wrapperView = new FrameLayoutFix(context);
-    ViewSupport.setThemedBackground(wrapperView, R.id.theme_color_filling, this);
+    ViewSupport.setThemedBackground(wrapperView, ColorId.filling, this);
     wrapperView.addView(contentView);
 
     return wrapperView;
@@ -273,15 +259,10 @@ public class TextController extends ViewController<TextController.Arguments> imp
 
   @Override
   public boolean onOptionItemPressed (View optionItemView, int id) {
-    switch (id) {
-      case R.id.btn_copyLine: {
-        UI.copyText(copyLine, R.string.CopiedText);
-        break;
-      }
-      case R.id.btn_copyText: {
-        copyText();
-        break;
-      }
+    if (id == R.id.btn_copyLine) {
+      UI.copyText(copyLine, R.string.CopiedText);
+    } else if (id == R.id.btn_copyText) {
+      copyText();
     }
     return true;
   }

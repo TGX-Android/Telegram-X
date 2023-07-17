@@ -37,6 +37,7 @@ import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.emoji.EmojiInfo;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.EmojiData;
 import org.thunderdog.challegram.tool.Fonts;
@@ -408,9 +409,9 @@ public class EmojiToneHelper implements FactorAnimator.Target {
     sendView = new NoScrollTextView(context);
     sendView.setId(R.id.btn_send);
     sendView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
-    sendView.setTextColor(Theme.getColor(R.id.theme_color_textNeutral));
+    sendView.setTextColor(Theme.getColor(ColorId.textNeutral));
     if (themeProvider != null) {
-      themeProvider.addThemeTextColorListener(sendView, R.id.theme_color_textNeutral);
+      themeProvider.addThemeTextColorListener(sendView, ColorId.textNeutral);
     }
     sendView.setTypeface(Fonts.getRobotoMedium());
     Views.setMediumText(sendView, Lang.getString(R.string.ApplyToAll).toUpperCase());
@@ -489,8 +490,8 @@ public class EmojiToneHelper implements FactorAnimator.Target {
 
     private void init (ViewController<?> themeProvider, boolean is2d) {
       this.tones = new EmojiInfo[EmojiData.emojiColors.length - (is2d ? 1 : 0)];
-      this.backgroundDrawable = Theme.filteredDrawable(R.drawable.stickers_back_all, R.id.theme_color_overlayFilling, themeProvider);
-      this.cornerDrawable = Theme.filteredDrawable(R.drawable.stickers_back_arrow, R.id.theme_color_overlayFilling, themeProvider);
+      this.backgroundDrawable = Theme.filteredDrawable(R.drawable.stickers_back_all, ColorId.overlayFilling, themeProvider);
+      this.cornerDrawable = Theme.filteredDrawable(R.drawable.stickers_back_arrow, ColorId.overlayFilling, themeProvider);
     }
 
     private View boundView;

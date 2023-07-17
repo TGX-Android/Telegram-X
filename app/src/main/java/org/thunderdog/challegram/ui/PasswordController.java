@@ -36,7 +36,7 @@ import androidx.annotation.StringRes;
 
 import com.google.android.gms.safetynet.SafetyNet;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.TDLib;
@@ -51,6 +51,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.AuthorizationListener;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Intents;
@@ -295,7 +296,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
   @Override
   protected View onCreateView (Context context) {
     final FrameLayoutFix contentView = new FrameLayoutFix(context);
-    ViewSupport.setThemedBackground(contentView, R.id.theme_color_filling, this);
+    ViewSupport.setThemedBackground(contentView, ColorId.filling, this);
 
     final int topMargin = (Screen.smallestActualSide() - HeaderView.getSize(false) - Screen.dp(175f)) / 2;
 
@@ -394,7 +395,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     nextButton = new CircleButton(context);
     addThemeInvalidateListener(nextButton);
     nextButton.setId(R.id.btn_done);
-    nextButton.init(getDoneIcon(), 56f, 4f, R.id.theme_color_circleButtonRegular, R.id.theme_color_circleButtonRegularIcon);
+    nextButton.init(getDoneIcon(), 56f, 4f, ColorId.circleButtonRegular, ColorId.circleButtonRegularIcon);
     nextButton.setOnClickListener(this);
     nextButton.setLayoutParams(params);
     nextButton.setAlpha(0f);
@@ -406,8 +407,8 @@ public class PasswordController extends ViewController<PasswordController.Args> 
 
     forgotView = new NoScrollTextView(context);
     forgotView.setId(R.id.btn_forgotPassword);
-    forgotView.setTextColor(Theme.getColor(R.id.theme_color_textNeutral));
-    addThemeTextColorListener(forgotView, R.id.theme_color_textNeutral);
+    forgotView.setTextColor(Theme.getColor(ColorId.textNeutral));
+    addThemeTextColorListener(forgotView, ColorId.textNeutral);
     forgotView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
     forgotView.setPadding(Screen.dp(16f), Screen.dp(16f), Screen.dp(16f), Screen.dp(16f));
     forgotView.setOnClickListener(this);
@@ -416,8 +417,8 @@ public class PasswordController extends ViewController<PasswordController.Args> 
 
     cancelResetView = new NoScrollTextView(context);
     cancelResetView.setId(R.id.btn_cancelReset);
-    cancelResetView.setTextColor(Theme.getColor(R.id.theme_color_textNeutral));
-    addThemeTextColorListener(cancelResetView, R.id.theme_color_textNeutral);
+    cancelResetView.setTextColor(Theme.getColor(ColorId.textNeutral));
+    addThemeTextColorListener(cancelResetView, ColorId.textNeutral);
     cancelResetView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
     cancelResetView.setPadding(Screen.dp(16f), Screen.dp(16f), Screen.dp(16f), Screen.dp(6f));
     cancelResetView.setOnClickListener(this);
@@ -428,7 +429,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     resetWaitView = new NoScrollTextView(context);
     resetWaitView.setId(R.id.btn_cancelResetWait);
     resetWaitView.setTextColor(Theme.textDecentColor());
-    addThemeTextColorListener(resetWaitView, R.id.theme_color_textLight);
+    addThemeTextColorListener(resetWaitView, ColorId.textLight);
     resetWaitView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
     resetWaitView.setPadding(Screen.dp(16f), Screen.dp(16f), Screen.dp(16f), Screen.dp(6f));
     resetWaitView.setAlpha(0f);
@@ -506,8 +507,8 @@ public class PasswordController extends ViewController<PasswordController.Args> 
 
       progressView = new ProgressComponentView(context);
       progressView.initMedium(0f);
-      progressView.setProgressColor(Theme.getColor(R.id.theme_color_textNeutral));
-      addThemeTextColorListener(progressView, R.id.theme_color_textNeutral);
+      progressView.setProgressColor(Theme.getColor(ColorId.textNeutral));
+      addThemeTextColorListener(progressView, ColorId.textNeutral);
       progressView.setAlpha(0f);
       progressView.setLayoutParams(rp);
       forgotWrap.addView(progressView);
@@ -526,11 +527,11 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     hintView.setMovementMethod(LinkMovementMethod.getInstance());
     hintView.setLinkTextColor(Theme.textLinkColor());
     hintView.setHighlightColor(Theme.textLinkHighlightColor());
-    addThemeLinkTextColorListener(hintView, R.id.theme_color_textLink);
-    addThemeHighlightColorListener(hintView, R.id.theme_color_textLinkPressHighlight);
+    addThemeLinkTextColorListener(hintView, ColorId.textLink);
+    addThemeHighlightColorListener(hintView, ColorId.textLinkPressHighlight);
     hintView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
     hintView.setTextColor(Theme.textDecentColor());
-    addThemeTextColorListener(hintView, R.id.theme_color_textLight);
+    addThemeTextColorListener(hintView, ColorId.textLight);
     hintView.setTypeface(Fonts.getRobotoRegular());
     hintView.setLayoutParams(params);
 
@@ -652,13 +653,13 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     editText.setHint(Lang.getString(R.string.login_Code));
     switch (type.getConstructor()) {
       case TdApi.AuthenticationCodeTypeCall.CONSTRUCTOR: {
-        return Strings.replaceBoldTokens(Lang.getString(R.string.SentCallCode, formattedPhone), R.id.theme_color_textLight);
+        return Strings.replaceBoldTokens(Lang.getString(R.string.SentCallCode, formattedPhone), ColorId.textLight);
       }
       case TdApi.AuthenticationCodeTypeFlashCall.CONSTRUCTOR: {
-        return Strings.replaceBoldTokens(Lang.getString(R.string.SentCallOnly, formattedPhone), R.id.theme_color_textLight);
+        return Strings.replaceBoldTokens(Lang.getString(R.string.SentCallOnly, formattedPhone), ColorId.textLight);
       }
       case TdApi.AuthenticationCodeTypeTelegramMessage.CONSTRUCTOR: {
-        return Strings.replaceBoldTokens(Lang.getString(R.string.SentAppCode), R.id.theme_color_textLight);
+        return Strings.replaceBoldTokens(Lang.getString(R.string.SentAppCode), ColorId.textLight);
       }
       case TdApi.AuthenticationCodeTypeSms.CONSTRUCTOR:
       case TdApi.AuthenticationCodeTypeFirebaseAndroid.CONSTRUCTOR: {
@@ -666,12 +667,12 @@ public class PasswordController extends ViewController<PasswordController.Args> 
         if (type.getConstructor() == TdApi.AuthenticationCodeTypeFirebaseAndroid.CONSTRUCTOR && !isFirebaseSmsSent) {
           resId = R.string.SendingSmsCode;
         }
-        return Strings.replaceBoldTokens(Lang.getString(resId, formattedPhone), R.id.theme_color_textLight);
+        return Strings.replaceBoldTokens(Lang.getString(resId, formattedPhone), ColorId.textLight);
       }
       case TdApi.AuthenticationCodeTypeMissedCall.CONSTRUCTOR: {
         TdApi.AuthenticationCodeTypeMissedCall missedCall = (TdApi.AuthenticationCodeTypeMissedCall) type;
         editText.setHint(Lang.pluralBold(R.string.login_LastDigits, missedCall.length));
-        return Strings.replaceBoldTokens(Lang.getString(R.string.format_doubleLines, Lang.getString(R.string.SentMissedCall, Strings.formatPhone(missedCall.phoneNumberPrefix)), Lang.plural(R.string.SentMissedCallXDigits, missedCall.length)), R.id.theme_color_textLight);
+        return Strings.replaceBoldTokens(Lang.getString(R.string.format_doubleLines, Lang.getString(R.string.SentMissedCall, Strings.formatPhone(missedCall.phoneNumberPrefix)), Lang.plural(R.string.SentMissedCallXDigits, missedCall.length)), ColorId.textLight);
       }
       case TdApi.AuthenticationCodeTypeFragment.CONSTRUCTOR: {
         TdApi.AuthenticationCodeTypeFragment fragment = (TdApi.AuthenticationCodeTypeFragment) type;
@@ -821,7 +822,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
     hintView.setText(text);
     hintView.setTextColor(isError ? Theme.textRedColor() : Theme.textDecentColor());
     removeThemeListenerByTarget(hintView);
-    addOrUpdateThemeTextColorListener(hintView, isError ? R.id.theme_color_textNegative : R.id.theme_color_textLight);
+    addOrUpdateThemeTextColorListener(hintView, isError ? ColorId.textNegative : ColorId.textLight);
     editText.setInErrorState(isError);
   }
 
@@ -918,7 +919,7 @@ public class PasswordController extends ViewController<PasswordController.Args> 
       for (CustomTypefaceSpan span : spans) {
         if (span.getEntityType() != null && span.getEntityType().getConstructor() == TdApi.TextEntityTypeItalic.CONSTRUCTOR) {
           span.setTypeface(null);
-          span.setColorId(R.id.theme_color_textLink);
+          span.setColorId(ColorId.textLink);
           span.setEntityType(new TdApi.TextEntityTypeEmailAddress());
           int start = ((Spannable) message).getSpanStart(span);
           int end = ((Spannable) message).getSpanEnd(span);
@@ -1702,19 +1703,15 @@ public class PasswordController extends ViewController<PasswordController.Args> 
 
   @Override
   public void onClick (View v) {
-    switch (v.getId()) {
-      case R.id.btn_done: {
-        proceed();
-        break;
-      }
-      case R.id.btn_cancelReset: {
-        openAlert(R.string.ResetPassword, R.string.CancelPasswordReset, Lang.getString(R.string.CancelPasswordResetYes), (dialog, which) -> { cancelResetPassword(); });
-        break;
-      }
-      case R.id.btn_forgotPassword: {
-        proceedForgot();
-        break;
-      }
+    final int viewId = v.getId();
+    if (viewId == R.id.btn_done) {
+      proceed();
+    } else if (viewId == R.id.btn_cancelReset) {
+      openAlert(R.string.ResetPassword, R.string.CancelPasswordReset, Lang.getString(R.string.CancelPasswordResetYes), (dialog, which) -> {
+        cancelResetPassword();
+      });
+    } else if (viewId == R.id.btn_forgotPassword) {
+      proceedForgot();
     }
   }
 

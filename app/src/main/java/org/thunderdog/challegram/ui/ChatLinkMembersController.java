@@ -18,8 +18,8 @@ import android.view.View;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
@@ -128,13 +128,10 @@ public class ChatLinkMembersController extends RecyclerViewController<ChatLinkMe
 
               @Override
               public void onAfterForceTouchAction (ForceTouchView.ForceTouchContext context, int actionId, Object arg) {
-                switch (actionId) {
-                  case R.id.btn_openChat:
-                    tdlib.ui().openChat(ChatLinkMembersController.this, user.getChatId(), new TdlibUi.ChatOpenParameters().keepStack());
-                    break;
-                  case R.id.btn_restrictMember:
-                    openRightsScreen(user.getUserId());
-                    break;
+                if (actionId == R.id.btn_openChat) {
+                  tdlib.ui().openChat(ChatLinkMembersController.this, user.getChatId(), new TdlibUi.ChatOpenParameters().keepStack());
+                } else if (actionId == R.id.btn_restrictMember) {
+                  openRightsScreen(user.getUserId());
                 }
               }
             };

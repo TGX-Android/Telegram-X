@@ -9,14 +9,17 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Screen;
@@ -28,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.StringUtils;
 
 public class ChatFolderIconSelector {
 
@@ -57,13 +61,14 @@ public class ChatFolderIconSelector {
           }
         };
         imageView.setScaleType(ImageView.ScaleType.CENTER);
-        imageView.setColorFilter(Theme.getColor(R.id.theme_color_icon));
-        owner.addThemeFilterListener(imageView, R.id.theme_color_icon);
+        imageView.setColorFilter(Theme.getColor(ColorId.icon));
+        owner.addThemeFilterListener(imageView, ColorId.icon);
         Views.setClickable(imageView);
         imageView.setOnClickListener(v -> {
           ListItem item = (ListItem) imageView.getTag();
           String iconName = item.getStringValue();
-          delegate.onIconClick(iconName);
+          TdApi.ChatFolderIcon icon = !StringUtils.isEmpty(iconName) ? new TdApi.ChatFolderIcon(iconName) : null;
+          delegate.onIconClick(icon);
           hide(/* animated */ true);
         });
         RippleSupport.setTransparentSelector(imageView);
@@ -87,7 +92,7 @@ public class ChatFolderIconSelector {
     RecyclerView recyclerView = new RecyclerView(context);
     recyclerView.setLayoutManager(layoutManager);
     recyclerView.setAdapter(popupAdapter);
-    ViewSupport.setThemedBackground(recyclerView, R.id.theme_color_background);
+    ViewSupport.setThemedBackground(recyclerView, ColorId.background);
 
     ShadowView shadowView = new ShadowView(context);
     shadowView.setSimpleTopShadow(true);
@@ -135,7 +140,7 @@ public class ChatFolderIconSelector {
   }
 
   public interface Delegate {
-    void onIconClick (String iconName);
+    void onIconClick (@Nullable TdApi.ChatFolderIcon icon);
 
     default void onShow () {}
 

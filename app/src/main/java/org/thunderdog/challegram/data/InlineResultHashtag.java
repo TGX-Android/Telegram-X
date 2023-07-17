@@ -19,11 +19,11 @@ import android.text.Layout;
 import android.text.TextUtils;
 
 import org.thunderdog.challegram.BaseActivity;
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.inline.CustomResultView;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeId;
 import org.thunderdog.challegram.tool.Paints;
@@ -68,7 +68,7 @@ public class InlineResultHashtag extends InlineResult<String> {
     if (trimmedHashtag != null) {
       int startX = Screen.dp(12f);
       startY += Screen.dp(4f) + Screen.dp(14f) + Screen.dp(5f);
-      final int textColor = forceDarkMode ? Theme.getColor(R.id.theme_color_text, ThemeId.NIGHT_BLACK) : Theme.textAccentColor();
+      final int textColor = forceDarkMode ? Theme.getColor(ColorId.text, ThemeId.NIGHT_BLACK) : Theme.textAccentColor();
       if (hashtagLayout != null) {
         int savedColor = Paints.getCommandPaint().getColor();
         Paints.getCommandPaint().setColor(textColor);

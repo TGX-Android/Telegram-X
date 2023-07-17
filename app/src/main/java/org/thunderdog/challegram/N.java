@@ -117,4 +117,5 @@ public final class N {
   public native static void onFatalError (String msg, int cause);
   public native static void throwDirect (String msg);
 
+  public static native String[] getTgCallsVersions ();
 }

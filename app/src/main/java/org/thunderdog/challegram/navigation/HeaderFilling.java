@@ -28,7 +28,7 @@ import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
@@ -41,6 +41,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.telegram.TdlibContext;
 import org.thunderdog.challegram.telegram.TdlibManager;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
@@ -53,7 +54,7 @@ import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.util.text.TextColorSets;
-import org.thunderdog.challegram.voip.VoIPController;
+import org.thunderdog.challegram.voip.annotation.CallState;
 import org.thunderdog.challegram.voip.gui.CallSettings;
 import org.thunderdog.challegram.widget.ShadowView;
 
@@ -62,11 +63,11 @@ import java.util.concurrent.TimeUnit;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.util.ClickHelper;
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
-import me.vkryl.core.BitwiseUtils;
 
 public class HeaderFilling extends Drawable implements TGLegacyAudioManager.PlayListener, FactorAnimator.Target, CallManager.CurrentCallListener, TdlibCache.CallStateChangeListener, Runnable, TGPlayerController.TrackChangeListener, TGPlayerController.TrackListener, ClickHelper.Delegate, Destroyable, TGLegacyManager.EmojiLoadListener {
   private HeaderView headerView; // Header that holds the filling
@@ -394,7 +395,7 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
     /*if (needStatusBar) {
       final int offset = getTopOffset();
       if (navigationController == null && offset > 0) {
-        c.drawRect(0, 0, width, offset, Paints.fillingPaint(Theme.getColor(R.id.theme_color_statusBar)));
+        c.drawRect(0, 0, width, offset, Paints.fillingPaint(Theme.getColor(ColorId.statusBar)));
       }
     }*/
   }
@@ -608,7 +609,7 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
 
     c.drawRect(0, playerTop, rectWidth, playerBottom, Paints.fillingPaint(playerFillingColor));
     if (seekFactor != 0f) {
-      c.drawRect(0, playerBottom - (Screen.dp(1f) + 1), (int) (width * seekFactor), playerBottom, Paints.fillingPaint(ColorUtils.alphaColor(dropShadowAlpha, Theme.getColor(R.id.theme_color_headerBarCallActive))));
+      c.drawRect(0, playerBottom - (Screen.dp(1f) + 1), (int) (width * seekFactor), playerBottom, Paints.fillingPaint(ColorUtils.alphaColor(dropShadowAlpha, Theme.getColor(ColorId.headerBarCallActive))));
     }
 
     TdApi.File file = TD.getFile(playingMessage);
@@ -745,7 +746,7 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
 
   @Override
   public void onCallStateChanged (final int callId, final int newState) {
-    if (getCallId() == callId && newState == VoIPController.STATE_ESTABLISHED) {
+    if (getCallId() == callId && newState == CallState.ESTABLISHED) {
       buildCall();
       invalidateOngoingBar();
     }
@@ -989,7 +990,7 @@ public class HeaderFilling extends Drawable implements TGLegacyAudioManager.Play
   }
 
   private void drawOngoingCall (Canvas c, int playerTop, float rectWidth, int playerBottom) {
-    final int backgroundColor = ColorUtils.fromToArgb(Theme.getColor(R.id.theme_color_headerBarCallMuted), ColorUtils.fromToArgb(Theme.getColor(R.id.theme_color_headerBarCallActive), Theme.getColor(R.id.theme_color_headerBarCallIncoming), callIncomingFactor), (1f - callMuteFactor) * callActiveFactor);
+    final int backgroundColor = ColorUtils.fromToArgb(Theme.getColor(ColorId.headerBarCallMuted), ColorUtils.fromToArgb(Theme.getColor(ColorId.headerBarCallActive), Theme.getColor(ColorId.headerBarCallIncoming), callIncomingFactor), (1f - callMuteFactor) * callActiveFactor);
     if (restoreRect && restorePixels > 0) {
       c.drawRect(rectWidth, playerTop, width, playerBottom, Paints.fillingPaint(backgroundColor));
     }

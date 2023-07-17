@@ -21,14 +21,14 @@ import android.view.MotionEvent;
 
 import androidx.annotation.DrawableRes;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.PorterDuffPaint;
@@ -52,7 +52,7 @@ public class TGMessageCall extends TGMessage {
 
   // private Drawable phoneIcon, callIcon;
   private @DrawableRes int callIconId;
-  private @ThemeColorId
+  private @ColorId
   int callIconColorId;
   // private String title, subtitle;
 
@@ -95,11 +95,11 @@ public class TGMessageCall extends TGMessage {
     Drawable phoneIcon = view.getSparseDrawable(callRaw.isVideo ? R.drawable.baseline_videocam_24 : R.drawable.baseline_phone_24, 0);
     Drawable callIcon = view.getSparseDrawable(callIconId, 0);
     if (useBubbles()) {
-      int colorId = isOutgoingBubble() ? R.id.theme_color_bubbleOut_file : R.id.theme_color_file;
+      int colorId = isOutgoingBubble() ? ColorId.bubbleOut_file : ColorId.file;
       Drawables.draw(c, phoneIcon, startX + getContentWidth() - getContentHeight() / 2f - phoneIcon.getMinimumWidth() / 2f, startY + getContentHeight() / 2f - phoneIcon.getMinimumHeight() / 2f, PorterDuffPaint.get(colorId));
     } else {
       int radius = Screen.dp(FileProgressComponent.DEFAULT_FILE_RADIUS);
-      c.drawCircle(startX + radius, startY + radius, radius, Paints.fillingPaint(Theme.getColor(R.id.theme_color_file)));
+      c.drawCircle(startX + radius, startY + radius, radius, Paints.fillingPaint(Theme.getColor(ColorId.file)));
       Drawables.draw(c, phoneIcon, startX + radius - phoneIcon.getMinimumWidth() / 2f, startY + radius - phoneIcon.getMinimumHeight() / 2f, Paints.getPorterDuffPaint(0xffffffff));
       startX += radius * 2 + Screen.dp(11f);
     }

@@ -27,6 +27,7 @@ import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeListenerList;
 import org.thunderdog.challegram.tool.Fonts;
@@ -53,7 +54,7 @@ public class ProgressWrap extends FrameLayoutFix {
     int width = Math.min(Screen.smallestSide() - Screen.dp(56f), Screen.dp(300f));
     int height = Screen.dp(94f);
 
-    ViewSupport.setThemedBackground(this, R.id.theme_color_filling);
+    ViewSupport.setThemedBackground(this, ColorId.filling);
 
     FrameLayoutFix.LayoutParams params = FrameLayoutFix.newParams(Screen.dp(36f), Screen.dp(36f), Gravity.LEFT | Gravity.CENTER_VERTICAL);
     params.setMargins(Screen.dp(12f), 0, 0, 0);

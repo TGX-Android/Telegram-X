@@ -17,7 +17,7 @@ package org.thunderdog.challegram.telegram;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.voip.gui.CallSettings;
@@ -231,6 +231,12 @@ public class TdlibListenersGlobal {
   void notifyAccountProfilePhotoChanged (TdlibAccount account, boolean big, boolean isCurrent) {
     for (GlobalAccountListener listener : accountListeners) {
       listener.onAccountProfilePhotoChanged(account, big, isCurrent);
+    }
+  }
+
+  void notifyAccountProfileEmojiStatusChanged (TdlibAccount account, boolean isCurrent) {
+    for (GlobalAccountListener listener : accountListeners) {
+      listener.onAccountProfileEmojiStatusChanged(account, isCurrent);
     }
   }
 

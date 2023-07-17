@@ -23,7 +23,7 @@ import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Icons;
 import org.thunderdog.challegram.tool.Paints;
@@ -41,7 +41,7 @@ import me.vkryl.core.StringUtils;
 
 public class AvatarPlaceholder {
   public static class Metadata {
-    public final @ThemeColorId int colorId, iconColorId;
+    public final @ColorId int colorId, iconColorId;
     public final @Nullable String letters;
     public final @DrawableRes int drawableRes, extraDrawableRes;
 
@@ -50,7 +50,7 @@ public class AvatarPlaceholder {
     }
 
     public Metadata () {
-      this(R.id.theme_color_avatarInactive);
+      this(ColorId.avatarInactive);
     }
 
     public Metadata (int colorId) {
@@ -74,7 +74,7 @@ public class AvatarPlaceholder {
     }
 
     public Metadata (int colorId, @Nullable String letters, int drawableRes, int extraDrawableRes) {
-      this(colorId, letters, drawableRes, extraDrawableRes, R.id.theme_color_avatar_content);
+      this(colorId, letters, drawableRes, extraDrawableRes, ColorId.avatar_content);
     }
 
     public Metadata (int colorId, @Nullable String letters, int drawableRes, int extraDrawableRes, int iconColorId) {
@@ -98,7 +98,7 @@ public class AvatarPlaceholder {
   @NonNull
   public final Metadata metadata;
 
-  public AvatarPlaceholder (float radius, @ThemeColorId int colorId) {
+  public AvatarPlaceholder (float radius, @ColorId int colorId) {
     this(radius, new Metadata(colorId), null);
   }
 
@@ -110,17 +110,12 @@ public class AvatarPlaceholder {
     this.radius = radius;
     this.letters = StringUtils.isEmpty(metadata.letters) ? null : new Text.Builder(metadata.letters, Screen.dp(radius) * 3, Paints.robotoStyleProvider((int) (radius * .75f)), TextColorSets.Regular.AVATAR_CONTENT).allBold().singleLine().build();
     if (provider != null) {
-      this.drawable = provider.getSparseDrawable(metadata.drawableRes, R.id.theme_color_avatar_content);
+      this.drawable = provider.getSparseDrawable(metadata.drawableRes, ColorId.avatar_content);
     } else {
-      switch (metadata.drawableRes) {
-        case R.drawable.baseline_bookmark_24: {
-          this.drawable = Icons.getChatSelfDrawable();
-          break;
-        }
-        default: {
-          this.drawable = Drawables.get(metadata.drawableRes);
-          break;
-        }
+      if (metadata.drawableRes == R.drawable.baseline_bookmark_24) {
+        this.drawable = Icons.getChatSelfDrawable();
+      } else {
+        this.drawable = Drawables.get(metadata.drawableRes);
       }
     }
   }

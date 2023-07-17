@@ -18,7 +18,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.collection.SparseArrayCompat;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.theme.TGBackground;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeId;
@@ -30,7 +30,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.StringUtils;
-import me.vkryl.td.TdConstants;
 
 public class TdlibWallpaperManager {
   public interface Callback {

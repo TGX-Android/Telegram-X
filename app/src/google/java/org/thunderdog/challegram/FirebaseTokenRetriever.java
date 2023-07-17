@@ -19,7 +19,7 @@ import android.content.Context;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.messaging.FirebaseMessaging;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.util.TokenRetriever;
 
 import java.util.regex.Matcher;

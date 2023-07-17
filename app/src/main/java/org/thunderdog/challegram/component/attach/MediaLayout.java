@@ -40,7 +40,7 @@ import androidx.collection.LongSparseArray;
 
 import com.google.android.gms.maps.MapsInitializer;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
@@ -61,6 +61,7 @@ import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.RightId;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeChangeListener;
@@ -162,14 +163,14 @@ public class MediaLayout extends FrameLayoutFix implements
     switch (mode) {
       case MODE_LOCATION: {
         items = new MediaBottomBar.BarItem[] {
-          new MediaBottomBar.BarItem(R.drawable.baseline_location_on_24, R.string.Location, R.id.theme_color_attachLocation, Screen.dp(1f))
+          new MediaBottomBar.BarItem(R.drawable.baseline_location_on_24, R.string.Location, ColorId.attachLocation, Screen.dp(1f))
         };
         index = 0;
         break;
       }
       case MODE_GALLERY: {
         items = new MediaBottomBar.BarItem[] {
-          new MediaBottomBar.BarItem(R.drawable.baseline_location_on_24, R.string.Gallery, R.id.theme_color_attachPhoto, Screen.dp(1f))
+          new MediaBottomBar.BarItem(R.drawable.baseline_location_on_24, R.string.Gallery, ColorId.attachPhoto, Screen.dp(1f))
         };
         index = 0;
         break;
@@ -179,22 +180,22 @@ public class MediaLayout extends FrameLayoutFix implements
         if (rtl) {
           items = new MediaBottomBar.BarItem[]{
             needVote ?
-              new MediaBottomBar.BarItem(R.drawable.baseline_poll_24, R.string.CreatePoll, R.id.theme_color_attachInlineBot) :
-              new MediaBottomBar.BarItem(R.drawable.deproko_baseline_bots_24, R.string.InlineBot, R.id.theme_color_attachInlineBot),
-            new MediaBottomBar.BarItem(R.drawable.baseline_location_on_24, R.string.Location, R.id.theme_color_attachLocation, Screen.dp(1f)),
-            new MediaBottomBar.BarItem(R.drawable.baseline_image_24, R.string.Gallery, R.id.theme_color_attachPhoto),
-            new MediaBottomBar.BarItem(R.drawable.baseline_insert_drive_file_24, R.string.File, R.id.theme_color_attachFile),
-            new MediaBottomBar.BarItem(R.drawable.baseline_person_24, R.string.AttachContact, R.id.theme_color_attachContact, Screen.dp(1f))
+              new MediaBottomBar.BarItem(R.drawable.baseline_poll_24, R.string.CreatePoll, ColorId.attachInlineBot) :
+              new MediaBottomBar.BarItem(R.drawable.deproko_baseline_bots_24, R.string.InlineBot, ColorId.attachInlineBot),
+            new MediaBottomBar.BarItem(R.drawable.baseline_location_on_24, R.string.Location, ColorId.attachLocation, Screen.dp(1f)),
+            new MediaBottomBar.BarItem(R.drawable.baseline_image_24, R.string.Gallery, ColorId.attachPhoto),
+            new MediaBottomBar.BarItem(R.drawable.baseline_insert_drive_file_24, R.string.File, ColorId.attachFile),
+            new MediaBottomBar.BarItem(R.drawable.baseline_person_24, R.string.AttachContact, ColorId.attachContact, Screen.dp(1f))
           };
         } else {
           items = new MediaBottomBar.BarItem[]{
-            new MediaBottomBar.BarItem(R.drawable.baseline_person_24, R.string.AttachContact, R.id.theme_color_attachContact, Screen.dp(1f)),
-            new MediaBottomBar.BarItem(R.drawable.baseline_insert_drive_file_24, R.string.File, R.id.theme_color_attachFile),
-            new MediaBottomBar.BarItem(R.drawable.baseline_image_24, R.string.Gallery, R.id.theme_color_attachPhoto),
-            new MediaBottomBar.BarItem(R.drawable.baseline_location_on_24, R.string.Location, R.id.theme_color_attachLocation, Screen.dp(1f)),
+            new MediaBottomBar.BarItem(R.drawable.baseline_person_24, R.string.AttachContact, ColorId.attachContact, Screen.dp(1f)),
+            new MediaBottomBar.BarItem(R.drawable.baseline_insert_drive_file_24, R.string.File, ColorId.attachFile),
+            new MediaBottomBar.BarItem(R.drawable.baseline_image_24, R.string.Gallery, ColorId.attachPhoto),
+            new MediaBottomBar.BarItem(R.drawable.baseline_location_on_24, R.string.Location, ColorId.attachLocation, Screen.dp(1f)),
             needVote ?
-              new MediaBottomBar.BarItem(R.drawable.baseline_poll_24, R.string.CreatePoll, R.id.theme_color_attachInlineBot) :
-              new MediaBottomBar.BarItem(R.drawable.deproko_baseline_bots_24, R.string.InlineBot, R.id.theme_color_attachInlineBot)
+              new MediaBottomBar.BarItem(R.drawable.baseline_poll_24, R.string.CreatePoll, ColorId.attachInlineBot) :
+              new MediaBottomBar.BarItem(R.drawable.deproko_baseline_bots_24, R.string.InlineBot, ColorId.attachInlineBot)
           };
         }
         index = 2;
@@ -1237,38 +1238,30 @@ public class MediaLayout extends FrameLayoutFix implements
 
   @Override
   public void onClick (View v) {
-    switch (v.getId()) {
-      case R.id.btn_send: {
-        pickDateOrProceed((sendOptions, disableMarkdown) ->
-          getCurrentController().onMultiSendPress(v, sendOptions, false)
-        );
-        break;
-      }
-      case R.id.btn_spoiler: {
-        if (allowSpoiler) {
-          setNeedSpoiler(!needSpoiler);
-          if (needSpoiler) {
-            tooltipInfo = UI.getContext(getContext()).tooltipManager().builder(v)
-              .icon(R.drawable.baseline_whatshot_24)
-              .offset(rect -> rect.offset(0, Screen.dp(12f))).show(tdlib(), R.string.MediaSpoilerHint).hideDelayed();
-          } else {
-            if (tooltipInfo != null) {
-              tooltipInfo.hideNow();
-              tooltipInfo = null;
-            }
+    int viewId = v.getId();
+    if (viewId == R.id.btn_send) {
+      pickDateOrProceed((sendOptions, disableMarkdown) ->
+        getCurrentController().onMultiSendPress(v, sendOptions, false)
+      );
+    } else if (viewId == R.id.btn_spoiler) {
+      if (allowSpoiler) {
+        setNeedSpoiler(!needSpoiler);
+        if (needSpoiler) {
+          tooltipInfo = UI.getContext(getContext()).tooltipManager().builder(v)
+            .icon(R.drawable.baseline_whatshot_24)
+            .offset(rect -> rect.offset(0, Screen.dp(12f))).show(tdlib(), R.string.MediaSpoilerHint).hideDelayed();
+        } else {
+          if (tooltipInfo != null) {
+            tooltipInfo.hideNow();
+            tooltipInfo = null;
           }
         }
-        break;
       }
-      case R.id.btn_mosaic: {
-        setNeedGroupMedia(!needGroupMedia, true);
-        break;
-      }
-      case R.id.btn_close: {
-        if (!getCurrentController().showExitWarning(true)) {
-          cancelMultiSelection();
-        }
-        break;
+    } else if (viewId == R.id.btn_mosaic) {
+      setNeedGroupMedia(!needGroupMedia, true);
+    } else if (viewId == R.id.btn_close) {
+      if (!getCurrentController().showExitWarning(true)) {
+        cancelMultiSelection();
       }
     }
   }
@@ -1296,7 +1289,7 @@ public class MediaLayout extends FrameLayoutFix implements
   private void setGroupMediaFactor (float factor) {
     if (this.groupMediaFactor != factor) {
       this.groupMediaFactor = factor;
-      groupMediaView.setColorFilter(ColorUtils.fromToArgb(Theme.getColor(R.id.theme_color_icon), Theme.getColor(R.id.theme_color_iconActive), factor));
+      groupMediaView.setColorFilter(ColorUtils.fromToArgb(Theme.getColor(ColorId.icon), Theme.getColor(ColorId.iconActive), factor));
     }
   }
 
@@ -1305,7 +1298,7 @@ public class MediaLayout extends FrameLayoutFix implements
       this.needGroupMedia = needGroupMedia;
       Settings.instance().setNeedGroupMedia(needGroupMedia);
       themeListeners.removeThemeListenerByTarget(groupMediaView);
-      themeListeners.addThemeFilterListener(groupMediaView, needGroupMedia ? R.id.theme_color_iconActive : R.id.theme_color_icon);
+      themeListeners.addThemeFilterListener(groupMediaView, needGroupMedia ? ColorId.iconActive : ColorId.icon);
       checkCounterHintText();
       if (animated) {
         if (groupMediaAnimator == null) {
@@ -1329,7 +1322,7 @@ public class MediaLayout extends FrameLayoutFix implements
       params.rightMargin = Screen.dp(56f);
       counterView = new CounterHeaderView(getContext());
       counterView.setFactorChangeListener(v -> checkCounterHint());
-      counterView.initDefault(R.id.theme_color_text);
+      counterView.initDefault(ColorId.text);
       themeListeners.addThemeInvalidateListener(counterView);
       counterView.setSuffix(Lang.plural(R.string.SelectedSuffix, 1), false);
       counterView.setLayoutParams(params);
@@ -1363,7 +1356,7 @@ public class MediaLayout extends FrameLayoutFix implements
       sendButton.setScaleType(ImageView.ScaleType.CENTER);
       sendButton.setImageResource(R.drawable.deproko_baseline_send_24);
       sendButton.setColorFilter(Theme.chatSendButtonColor());
-      themeListeners.addThemeFilterListener(sendButton, R.id.theme_color_chatSendButton);
+      themeListeners.addThemeFilterListener(sendButton, ColorId.chatSendButton);
       sendButton.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(55f), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.RIGHT));
       Views.setClickable(sendButton);
       sendButton.setOnClickListener(this);
@@ -1387,33 +1380,27 @@ public class MediaLayout extends FrameLayoutFix implements
         }
         return !items.isEmpty() ? items : null;
       }, (menuItem, parentView, item) -> {
-        switch (menuItem.getId()) {
-          case R.id.btn_openSendersMenu: {
-            openSetSenderPopup();
-            break;
+        final int menuItemId = menuItem.getId();
+        if (menuItemId == R.id.btn_openSendersMenu) {
+          openSetSenderPopup();
+        } else if (menuItemId == R.id.btn_sendNoMarkdown) {
+          pickDateOrProceed((sendOptions, disableMarkdown) ->
+            getCurrentController().onMultiSendPress(sendButton, sendOptions, true)
+          );
+        } else if (menuItemId == R.id.btn_sendNoSound) {
+          pickDateOrProceed((sendOptions, disableMarkdown) ->
+            getCurrentController().onMultiSendPress(sendButton, sendOptions, false)
+          );
+        } else if (menuItemId == R.id.btn_sendOnceOnline) {
+          getCurrentController().onMultiSendPress(sendButton, Td.newSendOptions(new TdApi.MessageSchedulingStateSendWhenOnline()), false);
+        } else if (menuItemId == R.id.btn_sendScheduled) {
+          if (target != null) {
+            tdlib().ui().pickSchedulingState(target,
+              schedule ->
+                getCurrentController().onMultiSendPress(sendButton, Td.newSendOptions(schedule), false),
+              getTargetChatId(), false, false, null, null
+            );
           }
-          case R.id.btn_sendNoMarkdown:
-            pickDateOrProceed((sendOptions, disableMarkdown) ->
-              getCurrentController().onMultiSendPress(sendButton, sendOptions, true)
-            );
-            break;
-          case R.id.btn_sendNoSound:
-            pickDateOrProceed((sendOptions, disableMarkdown) ->
-              getCurrentController().onMultiSendPress(sendButton, sendOptions, false)
-            );
-            break;
-          case R.id.btn_sendOnceOnline:
-            getCurrentController().onMultiSendPress(sendButton, Td.newSendOptions(new TdApi.MessageSchedulingStateSendWhenOnline()), false);
-            break;
-          case R.id.btn_sendScheduled:
-            if (target != null) {
-              tdlib().ui().pickSchedulingState(target,
-                schedule ->
-                  getCurrentController().onMultiSendPress(sendButton, Td.newSendOptions(schedule), false),
-                getTargetChatId(), false, false, null, null
-              );
-            }
-            break;
         }
         return true;
       }, themeListeners, null).attachToView(sendButton);
@@ -1431,8 +1418,8 @@ public class MediaLayout extends FrameLayoutFix implements
       hotMediaView.setScaleType(ImageView.ScaleType.CENTER);
       hotMediaView.setImageResource(R.drawable.baseline_whatshot_24);
       hotMediaView.setAlpha(allowSpoiler ? 1f : 0f);
-      hotMediaView.setColorFilter(Theme.getColor(needSpoiler ? R.id.theme_color_iconActive : R.id.theme_color_icon));
-      themeListeners.addThemeFilterListener(hotMediaView, needSpoiler ? R.id.theme_color_iconActive : R.id.theme_color_icon);
+      hotMediaView.setColorFilter(Theme.getColor(needSpoiler ? ColorId.iconActive : ColorId.icon));
+      themeListeners.addThemeFilterListener(hotMediaView, needSpoiler ? ColorId.iconActive : ColorId.icon);
       hotMediaView.setLayoutParams(params);
       bottomBar.addView(hotMediaView);
 
@@ -1448,7 +1435,7 @@ public class MediaLayout extends FrameLayoutFix implements
       groupMediaView.setId(R.id.btn_mosaic);
       groupMediaView.setScaleType(ImageView.ScaleType.CENTER);
       groupMediaView.setImageResource(R.drawable.deproko_baseline_mosaic_group_24);
-      int colorId = needGroupMedia ? R.id.theme_color_iconActive : R.id.theme_color_icon;
+      int colorId = needGroupMedia ? ColorId.iconActive : ColorId.icon;
       groupMediaView.setColorFilter(Theme.getColor(colorId));
       themeListeners.addThemeFilterListener(groupMediaView, colorId);
       groupMediaView.setLayoutParams(params);
@@ -1465,7 +1452,7 @@ public class MediaLayout extends FrameLayoutFix implements
       closeButton.setButtonFactor(BackHeaderButton.TYPE_CLOSE);
       closeButton.setOnClickListener(this);
       closeButton.setColor(Theme.iconColor());
-      themeListeners.addThemeColorListener(closeButton, R.id.theme_color_icon);
+      themeListeners.addThemeColorListener(closeButton, ColorId.icon);
       closeButton.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(56f), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.LEFT));
       bottomBar.addView(closeButton);
 
@@ -1521,9 +1508,9 @@ public class MediaLayout extends FrameLayoutFix implements
     if (this.needSpoiler != needSpoiler) {
       this.needSpoiler = needSpoiler;
       if (hotMediaView != null) {
-        hotMediaView.setColorFilter(Theme.getColor(needSpoiler ? R.id.theme_color_iconActive : R.id.theme_color_icon));
+        hotMediaView.setColorFilter(Theme.getColor(needSpoiler ? ColorId.iconActive : ColorId.icon));
         themeListeners.removeThemeListenerByTarget(hotMediaView);
-        themeListeners.addThemeFilterListener(hotMediaView, needSpoiler ? R.id.theme_color_iconActive : R.id.theme_color_icon);
+        themeListeners.addThemeFilterListener(hotMediaView, needSpoiler ? ColorId.iconActive : ColorId.icon);
       }
     }
   }
@@ -1814,7 +1801,7 @@ public class MediaLayout extends FrameLayoutFix implements
       super(context);
       this.tdlib = tdlib;
       this.chatId = chatId;
-      this.backgroundColorId = R.id.theme_color_filling;
+      this.backgroundColorId = ColorId.filling;
 
       setWillNotDraw(false);
       setLayoutParams(FrameLayoutFix.newParams(Screen.dp(19), Screen.dp(19)));
@@ -1851,7 +1838,7 @@ public class MediaLayout extends FrameLayoutFix implements
       if (isAnonymous) {
         c.drawCircle(cx, cy, Screen.dp(15f / 2f), Paints.fillingPaint(Theme.iconLightColor()));
         Drawable drawable = Drawables.get(getResources(), R.drawable.infanf_baseline_incognito_11);
-        Drawables.draw(c, drawable, cx - Screen.dp(5.5f), cy - Screen.dp(5.5f), Paints.getPorterDuffPaint(Theme.getColor(R.id.theme_color_badgeMutedText)));
+        Drawables.draw(c, drawable, cx - Screen.dp(5.5f), cy - Screen.dp(5.5f), Paints.getPorterDuffPaint(Theme.getColor(ColorId.badgeMutedText)));
       }
 
       super.onDraw(c);

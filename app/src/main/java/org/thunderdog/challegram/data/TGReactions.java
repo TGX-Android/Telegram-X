@@ -10,9 +10,8 @@ import android.view.View;
 
 import androidx.annotation.Nullable;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
-import org.thunderdog.challegram.R;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.loader.ComplexReceiver;
@@ -24,6 +23,7 @@ import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.ReactionLoadListener;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -195,7 +195,7 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
         .callback(parent)
         .textSize(TGMessage.reactionsTextStyleProvider().getTextSizeInDp())
         .noBackground()
-        .textColor(R.id.theme_color_badgeText, R.id.theme_color_badgeText, R.id.theme_color_badgeText);
+        .textColor(ColorId.badgeText, ColorId.badgeText, ColorId.badgeText);
       entry = new MessageReactionEntry(tdlib, delegate, parent, reactionObj, counterBuilder);
       if (complexReceiver != null) {
         entry.setComplexReceiver(complexReceiver);
@@ -852,13 +852,13 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
 
       if (visibility > 0f) {
         c.drawRoundRect(rect, radius, radius, Paints.fillingPaint( ColorUtils.alphaColor(alpha, backgroundColor)));
-        counter.draw(c, textX, getReactionBubbleHeight() / 2f, Gravity.LEFT, alpha, view, R.id.theme_color_badgeFailedText);
+        counter.draw(c, textX, getReactionBubbleHeight() / 2f, Gravity.LEFT, alpha, view, ColorId.badgeFailedText);
         if (!isHidden) {
           drawReceiver(c, Screen.dp(-1), imgY, Screen.dp(-1) + imageSize, imgY + imageSize, alpha);
         }
       }
 
-      int selectionColor = message.useBubbles() ? message.getBubbleButtonRippleColor() : ColorUtils.alphaColor(0.25f, Theme.getColor(R.id.theme_color_bubbleIn_time));
+      int selectionColor = message.useBubbles() ? message.getBubbleButtonRippleColor() : ColorUtils.alphaColor(0.25f, Theme.getColor(ColorId.bubbleIn_time));
       if (fadeFactor != 0f) {
         selectionColor = ColorUtils.color((int) ((float) Color.alpha(selectionColor) * (1f - fadeFactor)), selectionColor);
       }
@@ -939,34 +939,34 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
     @Override
     public int defaultTextColor () {
       if (!message.useBubbles()) {
-        return counter.getColor(counter.getMuteFactor(), R.id.theme_color_fillingPositiveContent, R.id.theme_color_fillingActiveContent);
+        return counter.getColor(counter.getMuteFactor(), ColorId.fillingPositiveContent, ColorId.fillingActiveContent);
       } else if (message.useStickerBubbleReactions() || message.useMediaBubbleReactions()) {
         return ColorUtils.fromToArgb(
-          Theme.getColor(message.isOutgoing() ? R.id.theme_color_bubbleOut_fillingPositiveContent_overlay : R.id.theme_color_bubbleIn_fillingPositiveContent_overlay),
+          Theme.getColor(message.isOutgoing() ? ColorId.bubbleOut_fillingPositiveContent_overlay : ColorId.bubbleIn_fillingPositiveContent_overlay),
           message.getBubbleDateTextColor(),
           counter.getMuteFactor()
         );
       } else if (message.isOutgoing()) {
-        return counter.getColor(counter.getMuteFactor(), R.id.theme_color_bubbleOut_fillingPositiveContent, R.id.theme_color_bubbleOut_fillingActiveContent);
+        return counter.getColor(counter.getMuteFactor(), ColorId.bubbleOut_fillingPositiveContent, ColorId.bubbleOut_fillingActiveContent);
       } else {
-        return counter.getColor(counter.getMuteFactor(), R.id.theme_color_bubbleIn_fillingPositiveContent, R.id.theme_color_bubbleIn_fillingActiveContent);
+        return counter.getColor(counter.getMuteFactor(), ColorId.bubbleIn_fillingPositiveContent, ColorId.bubbleIn_fillingActiveContent);
       }
     }
 
     @Override
     public int backgroundColor (boolean isPressed) {
       if (!message.useBubbles()) {
-        return counter.getColor(counter.getMuteFactor(), R.id.theme_color_fillingPositive, R.id.theme_color_fillingActive);
+        return counter.getColor(counter.getMuteFactor(), ColorId.fillingPositive, ColorId.fillingActive);
       } else if (message.useStickerBubbleReactions() || message.useMediaBubbleReactions()) {
         return ColorUtils.fromToArgb(
-          Theme.getColor(message.isOutgoing() ? R.id.theme_color_bubbleOut_fillingPositive_overlay : R.id.theme_color_bubbleIn_fillingPositive_overlay),
+          Theme.getColor(message.isOutgoing() ? ColorId.bubbleOut_fillingPositive_overlay : ColorId.bubbleIn_fillingPositive_overlay),
           message.getBubbleDateBackgroundColor(),
           counter.getMuteFactor()
         );
       } else if (message.isOutgoing()) {
-        return counter.getColor(counter.getMuteFactor(), R.id.theme_color_bubbleOut_fillingPositive, R.id.theme_color_bubbleOut_fillingActive);
+        return counter.getColor(counter.getMuteFactor(), ColorId.bubbleOut_fillingPositive, ColorId.bubbleOut_fillingActive);
       } else {
-        return counter.getColor(counter.getMuteFactor(), R.id.theme_color_bubbleIn_fillingPositive, R.id.theme_color_bubbleIn_fillingActive);
+        return counter.getColor(counter.getMuteFactor(), ColorId.bubbleIn_fillingPositive, ColorId.bubbleIn_fillingActive);
       }
     }
   }

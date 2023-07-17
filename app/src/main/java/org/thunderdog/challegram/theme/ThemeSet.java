@@ -38,18 +38,18 @@ public class ThemeSet {
     return themeId > ThemeId.CUSTOM ? getBuiltinTheme(themeId) : loadTheme(prefs, themeId);
   }
 
-  public static @ColorInt int getColor (@ThemeId int themeId, @ThemeColorId int colorId) {
+  public static @ColorInt int getColor (@ThemeId int themeId, @ColorId int colorId) {
     if (themeId > ThemeId.CUSTOM)
       return getOrLoadTheme(themeId, true).getColor(colorId);
     else
       return Settings.instance().getCustomThemeColor(ThemeManager.resolveCustomThemeId(themeId), colorId);
   }
 
-  public static float getProperty (@ThemeId int themeId, @ThemeProperty int propertyId) {
+  public static float getProperty (@ThemeId int themeId, @PropertyId int propertyId) {
     return getProperty(Settings.instance(), themeId, propertyId);
   }
 
-  public static float getProperty (Settings prefs, @ThemeId int themeId, @ThemeProperty int propertyId) {
+  public static float getProperty (Settings prefs, @ThemeId int themeId, @PropertyId int propertyId) {
     if (themeId > ThemeId.CUSTOM)
       return getOrLoadTheme(prefs, themeId, true).getProperty(propertyId);
     else
@@ -62,7 +62,7 @@ public class ThemeSet {
     String wallpaper = Settings.instance().getCustomThemeWallpaper(ThemeManager.resolveCustomThemeId(themeId));
     if (wallpaper != null)
       return wallpaper;
-    return TGBackground.getBackgroundForLegacyWallpaperId((int) getProperty(themeId, ThemeProperty.WALLPAPER_ID));
+    return TGBackground.getBackgroundForLegacyWallpaperId((int) getProperty(themeId, PropertyId.WALLPAPER_ID));
   }
 
   private static ThemeDelegate[] builtinThemes;

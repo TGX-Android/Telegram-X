@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <opusfile.h>
+#include <string.h>
 
 #define NO_AUDIO_LOG
 
@@ -111,7 +112,7 @@ static int write_chars(Packet *p, const unsigned char *str, int nb_chars)
     return 1;
 }
 
-static int read_uint32(ROPacket *p, ogg_uint32_t *val)
+/*static int read_uint32(ROPacket *p, ogg_uint32_t *val)
 {
     if (p->pos>p->maxlen-4)
         return 0;
@@ -121,9 +122,9 @@ static int read_uint32(ROPacket *p, ogg_uint32_t *val)
     *val |= (ogg_uint32_t)p->data[p->pos+3]<<24;
     p->pos += 4;
     return 1;
-}
+}*/
 
-static int read_uint16(ROPacket *p, ogg_uint16_t *val)
+/*static int read_uint16(ROPacket *p, ogg_uint16_t *val)
 {
     if (p->pos>p->maxlen-2)
         return 0;
@@ -131,9 +132,9 @@ static int read_uint16(ROPacket *p, ogg_uint16_t *val)
     *val |= (ogg_uint16_t)p->data[p->pos+1]<<8;
     p->pos += 2;
     return 1;
-}
+}*/
 
-static int read_chars(ROPacket *p, unsigned char *str, int nb_chars)
+/*static int read_chars(ROPacket *p, unsigned char *str, int nb_chars)
 {
     int i;
     if (p->pos>p->maxlen-nb_chars)
@@ -141,7 +142,7 @@ static int read_chars(ROPacket *p, unsigned char *str, int nb_chars)
     for (i=0;i<nb_chars;i++)
         str[i] = p->data[p->pos++];
     return 1;
-}
+}*/
 
 int opus_header_to_packet(const OpusHeader *h, unsigned char *packet, int len) {
     int i;
@@ -561,8 +562,8 @@ int _isSeekable = 0;
 ogg_int64_t _totalPcmDuration = 0;
 ogg_int64_t _currentPcmOffset = 0;
 int _finished = 0;
-static const int playerBuffersCount = 3;
-static const int playerSampleRate = 48000;
+// static const int playerBuffersCount = 3;
+// static const int playerSampleRate = 48000;
 
 void cleanupPlayer() {
     if (_opusFile) {
@@ -790,7 +791,7 @@ JNIEXPORT jbyteArray Java_org_thunderdog_challegram_N_getWaveform(JNIEnv *env, j
 
     for (int i = 0; i < resultSamples; i++) {
         int32_t value = min(31, abs((int32_t) samples[i]) * 31 / peak);
-        set_bits(bytes, i * 5, value & 31);
+        set_bits((uint8_t *) bytes, i * 5, value & 31);
     }
 
     (*env)->ReleaseByteArrayElements(env, result, bytes, JNI_COMMIT);

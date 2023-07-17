@@ -29,6 +29,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.SimpleShapeDrawable;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -52,7 +53,7 @@ public class FloatingButton extends View implements Destroyable, Screen.StatusBa
     super(context);
 
     heightDiff = -Size.getMaximumHeaderSizeDifference();
-    RippleSupport.setCircleBackground(this, 56f, 4f, R.id.theme_color_headerButton, null);
+    RippleSupport.setCircleBackground(this, 56f, 4f, ColorId.headerButton, null);
 
     int padding = Screen.dp(4f);
     int size = Screen.dp(56f);
@@ -229,17 +230,13 @@ public class FloatingButton extends View implements Destroyable, Screen.StatusBa
     if (resource == 0 || icon == null) {
       return 0;
     }
-    switch (resource) {
-      case R.drawable.baseline_chat_bubble_24: {
-        return Screen.dp(17f) + Screen.dp(4f);
-      }
+    if (resource == R.drawable.baseline_chat_bubble_24) {
+      return Screen.dp(17f) + Screen.dp(4f);
       /*case R.drawable.ic_camera_gray: {
         return Screen.dp(19f) + Screen.dp(4f);
       }*/
-      default: {
-        return center - icon.getMinimumHeight() / 2;
-      }
     }
+    return center - icon.getMinimumHeight() / 2f;
   }
 
   private static void draw (Canvas c, int res, Drawable d, float cx, float top, Paint paint, float alpha) {

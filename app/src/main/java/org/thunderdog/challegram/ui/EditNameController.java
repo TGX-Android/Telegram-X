@@ -23,8 +23,8 @@ import android.view.inputmethod.EditorInfo;
 
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
@@ -251,11 +251,8 @@ public class EditNameController extends EditBaseController<EditNameController.Ar
 
   @Override
   public void onClick (View v) {
-    switch (v.getId()) {
-      case R.id.btn_shareMyContact: {
-        shareMyNumber.setSelected(adapter.toggleView(v));
-        break;
-      }
+    if (v.getId() == R.id.btn_shareMyContact) {
+      shareMyNumber.setSelected(adapter.toggleView(v));
     }
   }
 
@@ -354,17 +351,12 @@ public class EditNameController extends EditBaseController<EditNameController.Ar
 
   @Override
   public void onTextChanged (int id, ListItem item, MaterialEditTextGroup v, String text) {
-    switch (id) {
-      case R.id.edit_first_name: {
-        firstName.setStringValue(text);
-        updateDoneState();
-        break;
-      }
-      case R.id.edit_last_name: {
-        lastName.setStringValue(text);
-        updateDoneState();
-        break;
-      }
+    if (id == R.id.edit_first_name) {
+      firstName.setStringValue(text);
+      updateDoneState();
+    } else if (id == R.id.edit_last_name) {
+      lastName.setStringValue(text);
+      updateDoneState();
     }
   }
 

@@ -26,6 +26,16 @@
 -keep class org.thunderdog.challegram.N { *; }
 -keep class org.thunderdog.challegram.N$* { *; }
 -keepclassmembers class org.thunderdog.challegram.N { *; }
+# Keep TdApi.java
+-keep class org.drinkless.tdlib.TdApi { *; }
+-keep class org.drinkless.tdlib.TdApi$* { *; }
+-keepclassmembers class org.drinkless.tdlib.TdApi { *; }
+# Keep
+-keepclassmembers class org.drinkless.tdlib.Client$LogMessageHandler {
+    *;
+}
+-keep,allowoptimization interface org.drinkless.tdlib.Client$LogMessageHandler
+
 # Keep log
 -keep class org.thunderdog.challegram.Log
 -keepclassmembers class org.thunderdog.challegram.Log { *; }
@@ -34,6 +44,9 @@
 -keepclassmembers class org.thunderdog.challegram.voip.** { *; }
 # Keep sync services
 -keep class org.thunderdog.challegram.sync.**
+
+# https://developers.google.com/ml-kit/known-issues#android_issues
+-keep class com.google.mlkit.nl.languageid.internal.LanguageIdentificationJni { *; }
 
 # == THIRDPARTY ==
 
@@ -56,6 +69,34 @@
 # OkHttp platform used only on JVM and when Conscrypt dependency is available.
 -dontwarn okhttp3.internal.platform.ConscryptPlatform
 -dontwarn org.conscrypt.ConscryptHostnameVerifier
+-dontwarn org.conscrypt.Conscrypt$Version
+-dontwarn org.conscrypt.Conscrypt
 
-# TODO remove once fixed in Android Gradle Plugin
--dontoptimize
+# WebRTC
+
+# Keep items annotated with @CalledByNative
+-keep @org.webrtc.CalledByNative public class *
+-keepclassmembers class * {
+    @org.webrtc.CalledByNative *;
+}
+
+# Keep items annotated with @CalledByNativeUnchecked
+-keep @org.webrtc.CalledByNativeUnchecked public class *
+-keepclassmembers class * {
+    @org.webrtc.CalledByNativeUnchecked *;
+}
+
+-keep class org.webrtc.** { *; }
+-keepclassmembers class org.webrtc.** { *; }
+
+# Other
+
+-dontwarn org.bouncycastle.jsse.BCSSLParameters
+-dontwarn org.bouncycastle.jsse.BCSSLSocket
+-dontwarn org.bouncycastle.jsse.provider.BouncyCastleJsseProvider
+
+-dontwarn org.openjsse.javax.net.ssl.SSLParameters
+-dontwarn org.openjsse.javax.net.ssl.SSLSocket
+-dontwarn org.openjsse.net.ssl.OpenJSSE
+
+-dontwarn com.google.firebase.analytics.connector.AnalyticsConnector

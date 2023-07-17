@@ -34,6 +34,7 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeInvalidateListener;
 import org.thunderdog.challegram.tool.Screen;
@@ -101,8 +102,8 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
     this.needShowViews = needShowViews;
 
     ViewPagerTopView topView = new ViewPagerTopView(context);
-    topView.setSelectionColorId(R.id.theme_color_headerTabActive);
-    topView.setTextFromToColorId(R.id.theme_color_headerTabInactiveText, R.id.theme_color_headerTabActiveText);
+    topView.setSelectionColorId(ColorId.headerTabActive);
+    topView.setTextFromToColorId(ColorId.headerTabInactiveText, ColorId.headerTabActiveText);
     topView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
     topView.setSelectionChangeListener(this);
 

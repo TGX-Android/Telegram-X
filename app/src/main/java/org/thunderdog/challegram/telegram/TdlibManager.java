@@ -29,8 +29,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 import org.drinkmore.Tracer;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
@@ -316,15 +316,12 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   private @Nullable String tdlibCommitHash, tdlibVersion;
 
   private TdlibManager (int firstInstanceId, boolean forceService) {
-    Client.setFatalErrorHandler((client, errorMessage, isLayerError) -> {
-      final int accountId = findAccountIdByClient(client);
-      Crash.Builder b = new Crash.Builder()
-        .accountId(accountId)
-        .message(StringUtils.isEmpty(errorMessage) ? "empty" : errorMessage)
-        .flags(Crash.Flags.SOURCE_TDLIB | Crash.Flags.SAVE_APPLICATION_LOG_EVENT);
-      Settings.instance().storeCrash(b);
-      if (isLayerError) {
-        Tracer.onTdlibLostPromiseError(errorMessage);
+    Client.setLogMessageHandler(0, (verbosityLevel, errorMessage) -> {
+      if (verbosityLevel == 0) {
+        Crash.Builder b = new Crash.Builder()
+          .message(StringUtils.isEmpty(errorMessage) ? "empty" : errorMessage)
+          .flags(Crash.Flags.SOURCE_TDLIB | Crash.Flags.SAVE_APPLICATION_LOG_EVENT);
+        Settings.instance().storeCrash(b);
       }
     });
 
@@ -641,6 +638,7 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
   private static final int ACTION_DISPATCH_TOTAL_UNREAD_COUNT = 6;
   private static final int ACTION_RESET_UNREAD_COUNTERS = 7;
   private static final int ACTION_DISPATCH_NETWORK_DISPLAY_STATUS_CHANGED = 8;
+  private static final int ACTION_DISPATCH_ACCOUNT_EMOJI_STATUS = 9;
 
   private void handleUiMessage (Message msg) {
     switch (msg.what) {
@@ -662,6 +660,10 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
       }
       case ACTION_DISPATCH_ACCOUNT_PROFILE_PHOTO: {
         onAccountProfilePhotoChanged(account(msg.arg1), msg.arg2 == 1,msg.arg1 == currentAccount.id);
+        break;
+      }
+      case ACTION_DISPATCH_ACCOUNT_EMOJI_STATUS: {
+        onAccountProfileEmojiStatusChanged(account(msg.arg1), msg.arg1 == currentAccount.id);
         break;
       }
       case ACTION_DISPATCH_TOTAL_UNREAD_COUNT:
@@ -1290,6 +1292,10 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
 
   void onUpdateAccountProfilePhoto (int accountId, boolean big) {
     handler.sendMessage(Message.obtain(handler, ACTION_DISPATCH_ACCOUNT_PROFILE_PHOTO, accountId, big ? 1 : 0));
+  }
+
+  void onUpdateEmojiStatus (int accountId, boolean isThumbnail) {
+    handler.sendMessage(Message.obtain(handler, ACTION_DISPATCH_ACCOUNT_EMOJI_STATUS, accountId, isThumbnail ? 1 : 0));
   }
 
   public TdlibAccount currentAccount () {
@@ -2012,6 +2018,12 @@ public class TdlibManager implements Iterable<TdlibAccount>, UI.StateListener {
     if (account.isUnauthorized())
       return;
     global().notifyAccountProfilePhotoChanged(account, big, isCurrent);
+  }
+
+  private void onAccountProfileEmojiStatusChanged (TdlibAccount account, boolean isCurrent) {
+    if (account.isUnauthorized())
+      return;
+    global().notifyAccountProfileEmojiStatusChanged(account, isCurrent);
   }
 
   // Event managements

@@ -20,7 +20,7 @@ import androidx.core.view.ViewCompat;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.base.SettingView;
@@ -34,6 +34,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Screen;
@@ -53,44 +54,45 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.td.Td;
 
 public class EditChatFolderController extends RecyclerViewController<EditChatFolderController.Arguments> implements View.OnClickListener, SettingsAdapter.TextChangeListener, SelectChatsController.Delegate {
 
-  private static final int NO_CHAT_FILTER_ID = 0;
+  private static final int NO_CHAT_FOLDER_ID = 0;
   private static final int COLLAPSED_CHAT_COUNT = 3;
-  private static final int MAX_CHAT_FILTER_TITLE_LENGTH = 12;
-  private static final TdApi.ChatFilter EMPTY_CHAT_FILTER = TD.newChatFilter();
+  private static final int MAX_CHAT_FOLDER_TITLE_LENGTH = 12;
+  private static final TdApi.ChatFolder EMPTY_CHAT_FOLDER = TD.newChatFolder();
   private static final ArrayList<ListItem> TEMP_ITEM_LIST = new ArrayList<>(0);
 
   public static class Arguments {
-    private final int chatFilterId;
-    private final String chatFilterName;
-    private final @Nullable TdApi.ChatFilter chatFilter;
+    private final int chatFolderId;
+    private final String chatFolderName;
+    private final @Nullable TdApi.ChatFolder chatFolder;
 
     public static Arguments newFolder () {
-      return new Arguments(NO_CHAT_FILTER_ID, (TdApi.ChatFilter) null);
+      return new Arguments(NO_CHAT_FOLDER_ID, (TdApi.ChatFolder) null);
     }
 
-    public static Arguments newFolder (@Nullable TdApi.ChatFilter chatFilter) {
-      return new Arguments(NO_CHAT_FILTER_ID, chatFilter);
+    public static Arguments newFolder (@Nullable TdApi.ChatFolder chatFolder) {
+      return new Arguments(NO_CHAT_FOLDER_ID, chatFolder);
     }
 
-    public Arguments (TdApi.ChatFilterInfo chatFilterInfo) {
-      this(chatFilterInfo.id, chatFilterInfo.title);
+    public Arguments (TdApi.ChatFolderInfo chatFolderInfo) {
+      this(chatFolderInfo.id, chatFolderInfo.title);
     }
 
-    public Arguments (int chatFilterId, @Nullable TdApi.ChatFilter chatFilter) {
-      this(chatFilterId, chatFilter != null ? chatFilter.title : "", chatFilter);
+    public Arguments (int chatFolderId, @Nullable TdApi.ChatFolder chatFolder) {
+      this(chatFolderId, chatFolder != null ? chatFolder.title : "", chatFolder);
     }
 
-    public Arguments (int chatFilterId, String chatFilterName) {
-      this(chatFilterId, chatFilterName, null);
+    public Arguments (int chatFolderId, String chatFolderName) {
+      this(chatFolderId, chatFolderName, null);
     }
 
-    private Arguments (int chatFilterId, String chatFilterName, @Nullable TdApi.ChatFilter chatFilter) {
-      this.chatFilter = chatFilter;
-      this.chatFilterId = chatFilterId;
-      this.chatFilterName = chatFilterName;
+    private Arguments (int chatFolderId, String chatFolderName, @Nullable TdApi.ChatFolder chatFolder) {
+      this.chatFolder = chatFolder;
+      this.chatFolderId = chatFolderId;
+      this.chatFolderName = chatFolderName;
     }
   }
 
@@ -100,9 +102,9 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
     return controller;
   }
 
-  public static EditChatFolderController newFolder (Context context, Tdlib tdlib, TdApi.ChatFilter chatFilter) {
+  public static EditChatFolderController newFolder (Context context, Tdlib tdlib, TdApi.ChatFolder chatFolder) {
     EditChatFolderController controller = new EditChatFolderController(context, tdlib);
-    controller.setArguments(Arguments.newFolder(chatFilter));
+    controller.setArguments(Arguments.newFolder(chatFolder));
     return controller;
   }
 
@@ -119,9 +121,9 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
   private SettingsAdapter adapter;
   private ListItem input;
 
-  private int chatFilterId;
-  private TdApi.ChatFilter originChatFilter;
-  private TdApi.ChatFilter editedChatFilter;
+  private int chatFolderId;
+  private TdApi.ChatFolder originChatFolder;
+  private TdApi.ChatFolder editedChatFolder;
 
   public EditChatFolderController (Context context, Tdlib tdlib) {
     super(context, tdlib);
@@ -129,7 +131,7 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
 
   @Override
   public boolean needAsynchronousAnimation () {
-    return originChatFilter == null && chatFilterId != NO_CHAT_FILTER_ID;
+    return originChatFolder == null && chatFolderId != NO_CHAT_FOLDER_ID;
   }
 
   @Override
@@ -145,15 +147,15 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
   @Override
   public CharSequence getName () {
     Arguments arguments = getArgumentsStrict();
-    return chatFilterId != NO_CHAT_FILTER_ID ? arguments.chatFilterName : Lang.getString(R.string.NewFolder);
+    return chatFolderId != NO_CHAT_FOLDER_ID ? arguments.chatFolderName : Lang.getString(R.string.NewFolder);
   }
 
   @Override
   public void setArguments (Arguments args) {
     super.setArguments(args);
-    this.chatFilterId = args.chatFilterId;
-    this.originChatFilter = args.chatFilter;
-    this.editedChatFilter = args.chatFilter != null ? TD.copyOf(args.chatFilter) : TD.newChatFilter(args.chatFilterName);
+    this.chatFolderId = args.chatFolderId;
+    this.originChatFolder = args.chatFolder;
+    this.editedChatFolder = args.chatFolder != null ? TD.copyOf(args.chatFolder) : TD.newChatFolder(args.chatFolderName);
   }
 
   @Override
@@ -161,32 +163,32 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
     ArrayList<ListItem> items = new ArrayList<>();
     items.add(new ListItem(ListItem.TYPE_HEADER_PADDED, 0, 0, R.string.FolderName));
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-    items.add(input = new ListItem(ListItem.TYPE_CUSTOM_SINGLE, R.id.input).setStringValue(editedChatFilter.title));
+    items.add(input = new ListItem(ListItem.TYPE_CUSTOM_SINGLE, R.id.input).setStringValue(editedChatFolder.title));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     items.add(new ListItem(ListItem.TYPE_HEADER_PADDED, 0, 0, R.string.FolderIncludedChats));
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_folderIncludeChats, R.drawable.baseline_add_24, R.string.FolderActionIncludeChats).setTextColorId(R.id.theme_color_inlineText));
-    fillIncludedChats(editedChatFilter, items);
+    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_folderIncludeChats, R.drawable.baseline_add_24, R.string.FolderActionIncludeChats).setTextColorId(ColorId.inlineText));
+    fillIncludedChats(editedChatFolder, items);
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM, includedChatsNextItemId));
     items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getMarkdownString(this, R.string.FolderIncludedChatsInfo)));
 
     items.add(new ListItem(ListItem.TYPE_HEADER_PADDED, 0, 0, R.string.FolderExcludedChats));
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_folderExcludeChats, R.drawable.baseline_add_24, R.string.FolderActionExcludeChats).setTextColorId(R.id.theme_color_inlineText));
-    fillExcludedChats(editedChatFilter, items);
+    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_folderExcludeChats, R.drawable.baseline_add_24, R.string.FolderActionExcludeChats).setTextColorId(ColorId.inlineText));
+    fillExcludedChats(editedChatFolder, items);
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM, excludedChatsNextItemId));
     items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getMarkdownString(this, R.string.FolderExcludedChatsInfo)));
 
-    if (chatFilterId != NO_CHAT_FILTER_ID) {
+    if (chatFolderId != NO_CHAT_FOLDER_ID) {
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_removeFolder, R.drawable.baseline_folder_delete_24, R.string.RemoveFolder).setTextColorId(R.id.theme_color_textNegative));
+      items.add(new ListItem(ListItem.TYPE_SETTING, R.id.btn_removeFolder, R.drawable.baseline_folder_delete_24, R.string.RemoveFolder).setTextColorId(ColorId.textNegative));
       items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
       items.add(new ListItem(ListItem.TYPE_PADDING).setHeight(Screen.dp(12f)));
     }
 
     adapter = new Adapter(this);
-    adapter.setLockFocusOn(this, /* showAlways */ StringUtils.isEmpty(editedChatFilter.title));
+    adapter.setLockFocusOn(this, /* showAlways */ StringUtils.isEmpty(editedChatFolder.title));
     adapter.setTextChangeListener(this);
     adapter.setItems(items, false);
     CustomItemAnimator itemAnimator = new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
@@ -195,8 +197,8 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
     recyclerView.setAdapter(adapter);
     RemoveHelper.attach(recyclerView, new RemoveHelperCallback());
 
-    if (originChatFilter == null && chatFilterId != NO_CHAT_FILTER_ID) {
-      loadChatFilter();
+    if (originChatFolder == null && chatFolderId != NO_CHAT_FOLDER_ID) {
+      loadChatFolder();
     }
   }
 
@@ -204,10 +206,10 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
   public boolean saveInstanceState (Bundle outState, String keyPrefix) {
     super.saveInstanceState(outState, keyPrefix);
     Arguments arguments = getArgumentsStrict();
-    outState.putInt(keyPrefix + "_chatFilterId", arguments.chatFilterId);
-    outState.putString(keyPrefix + "_chatFilterName", arguments.chatFilterName);
-    TD.saveChatFilter(outState, keyPrefix + "_originChatFilter", originChatFilter);
-    TD.saveChatFilter(outState, keyPrefix + "_editedChatFilter", editedChatFilter);
+    outState.putInt(keyPrefix + "_chatFolderId", arguments.chatFolderId);
+    outState.putString(keyPrefix + "_chatFolderName", arguments.chatFolderName);
+    TD.saveChatFolder(outState, keyPrefix + "_originChatFolder", originChatFolder);
+    TD.saveChatFolder(outState, keyPrefix + "_editedChatFolder", editedChatFolder);
     outState.putBoolean(keyPrefix + "_showAllIncludedChats", showAllIncludedChats);
     outState.putBoolean(keyPrefix + "_showAllExcludedChats", showAllExcludedChats);
     return true;
@@ -216,15 +218,15 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
   @Override
   public boolean restoreInstanceState (Bundle in, String keyPrefix) {
     super.restoreInstanceState(in, keyPrefix);
-    int chatFilterId = in.getInt(keyPrefix + "_chatFilterId", NO_CHAT_FILTER_ID);
-    String chatFilterName = in.getString(keyPrefix + "_chatFilterName");
-    TdApi.ChatFilter originChatFilter = TD.restoreChatFilter(in, keyPrefix + "_originChatFilter");
-    TdApi.ChatFilter editedChatFilter = TD.restoreChatFilter(in, keyPrefix + "_editedChatFilter");
-    if (chatFilterName != null && editedChatFilter != null) {
-      super.setArguments(new Arguments(chatFilterId, chatFilterName, originChatFilter));
-      this.chatFilterId = chatFilterId;
-      this.originChatFilter = originChatFilter;
-      this.editedChatFilter = editedChatFilter;
+    int chatFolderId = in.getInt(keyPrefix + "_chatFolderId", NO_CHAT_FOLDER_ID);
+    String chatFolderName = in.getString(keyPrefix + "_chatFolderName");
+    TdApi.ChatFolder originChatFolder = TD.restoreChatFolder(in, keyPrefix + "_originChatFolder");
+    TdApi.ChatFolder editedChatFolder = TD.restoreChatFolder(in, keyPrefix + "_editedChatFolder");
+    if (chatFolderName != null && editedChatFolder != null) {
+      super.setArguments(new Arguments(chatFolderId, chatFolderName, originChatFolder));
+      this.chatFolderId = chatFolderId;
+      this.originChatFolder = originChatFolder;
+      this.editedChatFolder = editedChatFolder;
       this.showAllIncludedChats = in.getBoolean(keyPrefix + "_showAllIncludedChats");
       this.showAllExcludedChats = in.getBoolean(keyPrefix + "_showAllExcludedChats");
       return true;
@@ -256,11 +258,11 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
     int id = v.getId();
     if (id == R.id.btn_folderIncludeChats) {
       SelectChatsController selectChats = new SelectChatsController(context, tdlib);
-      selectChats.setArguments(SelectChatsController.Arguments.includedChats(this, chatFilterId, editedChatFilter));
+      selectChats.setArguments(SelectChatsController.Arguments.includedChats(this, chatFolderId, editedChatFolder));
       navigateTo(selectChats);
     } else if (id == R.id.btn_folderExcludeChats) {
       SelectChatsController selectChats = new SelectChatsController(context, tdlib);
-      selectChats.setArguments(SelectChatsController.Arguments.excludedChats(this, chatFilterId, editedChatFilter));
+      selectChats.setArguments(SelectChatsController.Arguments.excludedChats(this, chatFolderId, editedChatFolder));
       navigateTo(selectChats);
     } else if (id == R.id.btn_showAdvanced) {
       ListItem item = (ListItem) v.getTag();
@@ -308,31 +310,31 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
 
   @Override
   public void onTextChanged (int id, ListItem item, MaterialEditTextGroup v, String text) {
-    editedChatFilter.title = text;
+    editedChatFolder.title = text;
     updateMenuButton();
   }
 
-  private void fillIncludedChats (TdApi.ChatFilter chatFilter, List<ListItem> outList) {
-    int chatTypeCount = TD.countIncludedChatTypes(chatFilter);
-    int chatCount = chatFilter.pinnedChatIds.length + chatFilter.includedChatIds.length;
+  private void fillIncludedChats (TdApi.ChatFolder chatFolder, List<ListItem> outList) {
+    int chatTypeCount = TD.countIncludedChatTypes(chatFolder);
+    int chatCount = chatFolder.pinnedChatIds.length + chatFolder.includedChatIds.length;
     int visibleChatCount = showAllIncludedChats || (chatCount <= COLLAPSED_CHAT_COUNT + 1) ? chatCount : COLLAPSED_CHAT_COUNT;
     int moreCount = chatCount - visibleChatCount;
     int itemCount = (chatTypeCount + visibleChatCount) * 2 + (moreCount > 0 ? 2 : 0);
     if (itemCount == 0)
       return;
     ArrayUtils.ensureCapacity(outList, itemCount);
-    for (int includedChatType : TD.includedChatTypes(chatFilter)) {
+    for (int includedChatType : TD.includedChatTypes(chatFolder)) {
       outList.add(new ListItem(ListItem.TYPE_SEPARATOR).setIntValue(includedChatType));
       outList.add(chatTypeItem(includedChatType));
     }
     int count = 0;
-    for (long pinnedChatId : chatFilter.pinnedChatIds) {
+    for (long pinnedChatId : chatFolder.pinnedChatIds) {
       if (count++ >= visibleChatCount)
         break;
       outList.add(new ListItem(ListItem.TYPE_SEPARATOR).setLongValue(pinnedChatId));
       outList.add(chatItem(pinnedChatId).setBoolValue(true /* included chat */));
     }
-    for (long includedChatId : chatFilter.includedChatIds) {
+    for (long includedChatId : chatFolder.includedChatIds) {
       if (count++ >= visibleChatCount)
         break;
       outList.add(new ListItem(ListItem.TYPE_SEPARATOR).setLongValue(includedChatId));
@@ -344,21 +346,21 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
     }
   }
 
-  private void fillExcludedChats (TdApi.ChatFilter chatFilter, List<ListItem> outList) {
-    int chatTypeCount = TD.countExcludedChatTypes(chatFilter);
-    int chatCount = chatFilter.excludedChatIds.length;
+  private void fillExcludedChats (TdApi.ChatFolder chatFolder, List<ListItem> outList) {
+    int chatTypeCount = TD.countExcludedChatTypes(chatFolder);
+    int chatCount = chatFolder.excludedChatIds.length;
     int visibleChatCount = showAllExcludedChats || (chatCount <= COLLAPSED_CHAT_COUNT + 1) ? chatCount : COLLAPSED_CHAT_COUNT;
     int moreCount = chatCount - visibleChatCount;
     int itemCount = (chatTypeCount + visibleChatCount) * 2 + (moreCount > 0 ? 2 : 0);
     if (itemCount == 0)
       return;
     ArrayUtils.ensureCapacity(outList, itemCount);
-    for (int excludedChatType : TD.excludedChatTypes(chatFilter)) {
+    for (int excludedChatType : TD.excludedChatTypes(chatFolder)) {
       outList.add(new ListItem(ListItem.TYPE_SEPARATOR).setIntValue(excludedChatType));
       outList.add(chatTypeItem(excludedChatType));
     }
     for (int index = 0; index < visibleChatCount; index++) {
-      long excludedChatId = chatFilter.excludedChatIds[index];
+      long excludedChatId = chatFolder.excludedChatIds[index];
       outList.add(new ListItem(ListItem.TYPE_SEPARATOR).setLongValue(excludedChatId));
       outList.add(chatItem(excludedChatId).setBoolValue(false /* excluded chat */));
     }
@@ -378,11 +380,11 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
     return new ListItem(ListItem.TYPE_CHAT_BETTER, id, TD.chatTypeIcon24(id), TD.chatTypeName(id)).setIntValue(TD.chatTypeColor(id));
   }
 
-  private void loadChatFilter () {
-    tdlib.send(new TdApi.GetChatFilter(chatFilterId), (result) -> runOnUiThreadOptional(() -> {
+  private void loadChatFolder () {
+    tdlib.send(new TdApi.GetChatFolder(chatFolderId), (result) -> runOnUiThreadOptional(() -> {
       switch (result.getConstructor()) {
-        case TdApi.ChatFilter.CONSTRUCTOR:
-          updateChatFilter((TdApi.ChatFilter) result);
+        case TdApi.ChatFolder.CONSTRUCTOR:
+          updateChatFolder((TdApi.ChatFolder) result);
           break;
         case TdApi.Error.CONSTRUCTOR:
           UI.showError(result);
@@ -391,8 +393,8 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
     }));
   }
 
-  private void updateChatFilter (TdApi.ChatFilter chatFilter) {
-    this.editedChatFilter = chatFilter;
+  private void updateChatFolder (TdApi.ChatFolder chatFolder) {
+    this.editedChatFolder = chatFolder;
     updateMenuButton();
     updateIncludedChats();
     updateExcludedChats();
@@ -405,7 +407,7 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
       return;
     int firstItemIndex = previousItemIndex + 1;
     TEMP_ITEM_LIST.clear();
-    fillIncludedChats(editedChatFilter, TEMP_ITEM_LIST);
+    fillIncludedChats(editedChatFolder, TEMP_ITEM_LIST);
     if (firstItemIndex < nextItemIndex) {
       List<ListItem> oldList = adapter.getItems().subList(firstItemIndex, nextItemIndex);
       DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffUtilCallback(oldList, TEMP_ITEM_LIST));
@@ -425,7 +427,7 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
       return;
     int firstItemIndex = previousItemIndex + 1;
     TEMP_ITEM_LIST.clear();
-    fillExcludedChats(editedChatFilter, TEMP_ITEM_LIST);
+    fillExcludedChats(editedChatFolder, TEMP_ITEM_LIST);
     if (firstItemIndex < nextItemIndex) {
       List<ListItem> oldList = adapter.getItems().subList(firstItemIndex, nextItemIndex);
       DiffUtil.DiffResult diffResult = DiffUtil.calculateDiff(new DiffUtilCallback(oldList, TEMP_ITEM_LIST));
@@ -439,20 +441,20 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
   }
 
   private void updateFolderName () {
-    if (StringUtils.isEmpty(editedChatFilter.title) && editedChatFilter.pinnedChatIds.length == 0 && editedChatFilter.includedChatIds.length == 0) {
-      int[] includedChatTypes = TD.includedChatTypes(editedChatFilter);
+    if (StringUtils.isEmpty(editedChatFolder.title) && editedChatFolder.pinnedChatIds.length == 0 && editedChatFolder.includedChatIds.length == 0) {
+      int[] includedChatTypes = TD.includedChatTypes(editedChatFolder);
       if (includedChatTypes.length == 1) {
         int includedChatType = includedChatTypes[0];
         String chatTypeName = Lang.getString(TD.chatTypeName(includedChatType));
         boolean hasChanges = false;
         if (input.setStringValueIfChanged(chatTypeName)) {
-          editedChatFilter.title = chatTypeName;
+          editedChatFolder.title = chatTypeName;
           hasChanges = true;
         }
-        if (StringUtils.isEmpty(editedChatFilter.iconName)) {
-          String chatTypeIconName = TD.chatTypeIconName(includedChatType);
-          if (!StringUtils.isEmpty(chatTypeIconName)) {
-            editedChatFilter.iconName = chatTypeIconName;
+        if (editedChatFolder.icon == null) {
+          TdApi.ChatFolderIcon chatTypeIcon = TD.chatTypeIcon(includedChatType);
+          if (chatTypeIcon != null) {
+            editedChatFolder.icon = chatTypeIcon;
             hasChanges = true;
           }
         }
@@ -466,16 +468,16 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
   @Override
   public void onSelectedChatsChanged (int mode, Set<Long> chatIds, Set<Integer> chatTypes) {
     if (mode == SelectChatsController.MODE_FOLDER_INCLUDE_CHATS) {
-      TD.updateIncludedChats(editedChatFilter, originChatFilter, chatIds);
-      TD.updateIncludedChatTypes(editedChatFilter, chatTypes);
+      TD.updateIncludedChats(editedChatFolder, originChatFolder, chatIds);
+      TD.updateIncludedChatTypes(editedChatFolder, chatTypes);
     } else if (mode == SelectChatsController.MODE_FOLDER_EXCLUDE_CHATS) {
-      TD.updateExcludedChats(editedChatFilter, chatIds);
-      TD.updateExcludedChatTypes(editedChatFilter, chatTypes);
+      TD.updateExcludedChats(editedChatFolder, chatIds);
+      TD.updateExcludedChatTypes(editedChatFolder, chatTypes);
     } else {
       throw new UnsupportedOperationException();
     }
     updateFolderName();
-    updateChatFilter(editedChatFilter);
+    updateChatFolder(editedChatFolder);
   }
 
   private void showRemoveConditionConfirm (int position, ListItem item) {
@@ -495,27 +497,27 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
       if (item.getId() == R.id.chat) {
         long chatId = item.getLongId();
         if (inclusion) {
-          editedChatFilter.pinnedChatIds = ArrayUtils.removeElement(editedChatFilter.pinnedChatIds, ArrayUtils.indexOf(editedChatFilter.pinnedChatIds, chatId));
-          editedChatFilter.includedChatIds = ArrayUtils.removeElement(editedChatFilter.includedChatIds, ArrayUtils.indexOf(editedChatFilter.includedChatIds, chatId));
+          editedChatFolder.pinnedChatIds = ArrayUtils.removeElement(editedChatFolder.pinnedChatIds, ArrayUtils.indexOf(editedChatFolder.pinnedChatIds, chatId));
+          editedChatFolder.includedChatIds = ArrayUtils.removeElement(editedChatFolder.includedChatIds, ArrayUtils.indexOf(editedChatFolder.includedChatIds, chatId));
         } else {
-          editedChatFilter.excludedChatIds = ArrayUtils.removeElement(editedChatFilter.excludedChatIds, ArrayUtils.indexOf(editedChatFilter.excludedChatIds, chatId));
+          editedChatFolder.excludedChatIds = ArrayUtils.removeElement(editedChatFolder.excludedChatIds, ArrayUtils.indexOf(editedChatFolder.excludedChatIds, chatId));
         }
       } else if (item.getId() == R.id.chatType_contact) {
-        editedChatFilter.includeContacts = false;
+        editedChatFolder.includeContacts = false;
       } else if (item.getId() == R.id.chatType_nonContact) {
-        editedChatFilter.includeNonContacts = false;
+        editedChatFolder.includeNonContacts = false;
       } else if (item.getId() == R.id.chatType_group) {
-        editedChatFilter.includeGroups = false;
+        editedChatFolder.includeGroups = false;
       } else if (item.getId() == R.id.chatType_channel) {
-        editedChatFilter.includeChannels = false;
+        editedChatFolder.includeChannels = false;
       } else if (item.getId() == R.id.chatType_bot) {
-        editedChatFilter.includeBots = false;
+        editedChatFolder.includeBots = false;
       } else if (item.getId() == R.id.chatType_muted) {
-        editedChatFilter.excludeMuted = false;
+        editedChatFolder.excludeMuted = false;
       } else if (item.getId() == R.id.chatType_read) {
-        editedChatFilter.excludeRead = false;
+        editedChatFolder.excludeRead = false;
       } else if (item.getId() == R.id.chatType_archived) {
-        editedChatFilter.excludeArchived = false;
+        editedChatFolder.excludeArchived = false;
       }
       updateFolderName();
       updateMenuButton();
@@ -524,47 +526,47 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
 
   private void showRemoveFolderConfirm () {
     showConfirm(Lang.getString(R.string.RemoveFolderConfirm), Lang.getString(R.string.Remove), R.drawable.baseline_delete_24, OPTION_COLOR_RED, () -> {
-      deleteChatFilter(chatFilterId);
+      deleteChatFolder(chatFolderId);
     });
   }
 
   private boolean hasChanges () {
-    TdApi.ChatFilter originChatFilter = this.originChatFilter != null ? this.originChatFilter : EMPTY_CHAT_FILTER;
-    TdApi.ChatFilter editedChatFilter = this.editedChatFilter != null ? this.editedChatFilter : EMPTY_CHAT_FILTER;
-    return !TD.contentEquals(originChatFilter, editedChatFilter);
+    TdApi.ChatFolder originChatFolder = this.originChatFolder != null ? this.originChatFolder : EMPTY_CHAT_FOLDER;
+    TdApi.ChatFolder editedChatFolder = this.editedChatFolder != null ? this.editedChatFolder : EMPTY_CHAT_FOLDER;
+    return !TD.contentEquals(originChatFolder, editedChatFolder);
   }
 
   private boolean canSaveChanges () {
-    String title = editedChatFilter.title.trim();
+    String title = editedChatFolder.title.trim();
     if (StringUtils.isEmpty(title)) {
       return false;
     }
     int codePointCount = Character.codePointCount(title, 0, title.length());
-    if (codePointCount > MAX_CHAT_FILTER_TITLE_LENGTH) {
+    if (codePointCount > MAX_CHAT_FOLDER_TITLE_LENGTH) {
       return false;
     }
-    return (editedChatFilter.includeContacts || editedChatFilter.includeNonContacts || editedChatFilter.includeGroups || editedChatFilter.includeChannels || editedChatFilter.includeBots || editedChatFilter.pinnedChatIds.length > 0 || editedChatFilter.includedChatIds.length > 0) &&
-      (chatFilterId == NO_CHAT_FILTER_ID || hasChanges());
+    return (editedChatFolder.includeContacts || editedChatFolder.includeNonContacts || editedChatFolder.includeGroups || editedChatFolder.includeChannels || editedChatFolder.includeBots || editedChatFolder.pinnedChatIds.length > 0 || editedChatFolder.includedChatIds.length > 0) &&
+      (chatFolderId == NO_CHAT_FOLDER_ID || hasChanges());
   }
 
   private void saveChanges () {
-    if (chatFilterId != NO_CHAT_FILTER_ID) {
-      editChatFilter(chatFilterId, TD.copyOf(editedChatFilter));
+    if (chatFolderId != NO_CHAT_FOLDER_ID) {
+      editChatFolder(chatFolderId, TD.copyOf(editedChatFolder));
     } else {
-      createChatFilter(TD.copyOf(editedChatFilter));
+      createChatFolder(TD.copyOf(editedChatFolder));
     }
   }
 
-  private void createChatFilter (TdApi.ChatFilter chatFilter) {
-    tdlib.send(new TdApi.CreateChatFilter(chatFilter), tdlib.resultHandler(TdApi.ChatFilterInfo.class, this::closeSelf));
+  private void createChatFolder (TdApi.ChatFolder chatFolder) {
+    tdlib.send(new TdApi.CreateChatFolder(chatFolder), tdlib.resultHandler(TdApi.ChatFolderInfo.class, this::closeSelf));
   }
 
-  private void editChatFilter (int chatFilterId, TdApi.ChatFilter chatFilter) {
-    tdlib.send(new TdApi.EditChatFilter(chatFilterId, chatFilter), tdlib.resultHandler(TdApi.ChatFilterInfo.class, this::closeSelf));
+  private void editChatFolder (int chatFolderId, TdApi.ChatFolder chatFolder) {
+    tdlib.send(new TdApi.EditChatFolder(chatFolderId, chatFolder), tdlib.resultHandler(TdApi.ChatFolderInfo.class, this::closeSelf));
   }
 
-  private void deleteChatFilter (int chatFilterId) {
-    tdlib.send(new TdApi.DeleteChatFilter(chatFilterId), tdlib.okHandler(this::closeSelf));
+  private void deleteChatFolder (int chatFolderId) {
+    tdlib.send(new TdApi.DeleteChatFolder(chatFolderId, null), tdlib.okHandler(this::closeSelf));
   }
 
   private void closeSelf () {
@@ -602,7 +604,7 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
     protected SettingHolder initCustom (ViewGroup parent) {
       FrameLayoutFix frameLayout = new FrameLayoutFix(parent.getContext());
       frameLayout.setLayoutParams(new RecyclerView.LayoutParams(MATCH_PARENT, Screen.dp(57f)));
-      ViewSupport.setThemedBackground(frameLayout, R.id.theme_color_filling, EditChatFolderController.this);
+      ViewSupport.setThemedBackground(frameLayout, ColorId.filling, EditChatFolderController.this);
 
       MaterialEditTextGroup editText = new MaterialEditTextGroup(parent.getContext(), false);
       editText.setId(android.R.id.input);
@@ -611,7 +613,7 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
       editText.setTextListener(this);
       editText.setFocusListener(this);
       editText.addLengthCounter(true);
-      editText.setMaxLength(MAX_CHAT_FILTER_TITLE_LENGTH);
+      editText.setMaxLength(MAX_CHAT_FOLDER_TITLE_LENGTH);
       editText.getEditText().setLineDisabled(true);
       editText.getEditText().setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
 
@@ -624,8 +626,8 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
       ImageView imageView = new ImageView(parent.getContext());
       imageView.setId(android.R.id.icon);
       imageView.setScaleType(ImageView.ScaleType.CENTER);
-      imageView.setColorFilter(Theme.getColor(R.id.theme_color_icon));
-      addThemeFilterListener(imageView, R.id.theme_color_icon);
+      imageView.setColorFilter(Theme.getColor(ColorId.icon));
+      addThemeFilterListener(imageView, ColorId.icon);
       RippleSupport.setTransparentSelector(imageView);
       Views.setClickable(imageView);
       imageView.setOnClickListener(v -> showIconSelector());
@@ -648,16 +650,16 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
       editText.setText(item.getStringValue());
 
       ImageView imageView = holder.itemView.findViewById(android.R.id.icon);
-      int iconResource = TD.iconByName(editedChatFilter.iconName, R.drawable.baseline_folder_24);
+      int iconResource = TD.findFolderIcon(editedChatFolder.icon, R.drawable.baseline_folder_24);
       imageView.setImageDrawable(Drawables.get(imageView.getResources(), iconResource));
     }
 
     @Override
     protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
       if (item.getId() == R.id.btn_folderIncludeChats || item.getId() == R.id.btn_folderExcludeChats) {
-        view.setIconColorId(R.id.theme_color_inlineIcon);
+        view.setIconColorId(ColorId.inlineIcon);
       } else if (item.getId() == R.id.btn_removeFolder) {
-        view.setIconColorId(R.id.theme_color_iconNegative);
+        view.setIconColorId(ColorId.iconNegative);
       } else {
         view.setIconColorId(0 /* theme_color_icon */);
       }
@@ -702,9 +704,9 @@ public class EditChatFolderController extends RecyclerViewController<EditChatFol
   }
 
   private void showIconSelector () {
-    ChatFolderIconSelector.show(this, iconName -> {
-      if (!ObjectsCompat.equals(editedChatFilter.iconName, iconName)) {
-        editedChatFilter.iconName = iconName;
+    ChatFolderIconSelector.show(this, icon -> {
+      if (!Td.equalsTo(editedChatFolder.icon, icon)) {
+        editedChatFolder.icon = icon;
         adapter.updateSimpleItemById(input.getId());
         updateMenuButton();
       }

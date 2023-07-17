@@ -22,7 +22,7 @@ import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessagesManager;
@@ -35,6 +35,7 @@ import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.unsorted.Settings;
@@ -91,7 +92,7 @@ public class TGMessageText extends TGMessage {
     }
     MediaViewThumbLocation location = webPage.getMediaWrapper().getMediaThumbLocation(view, viewTop, viewBottom, top);
     if (location != null) {
-      location.setColorId(useBubbles() && isOutgoing() ? R.id.theme_color_bubbleOut_background : R.id.theme_color_filling);
+      location.setColorId(useBubbles() && isOutgoing() ? ColorId.bubbleOut_background : ColorId.filling);
     }
     return location;
   }
@@ -207,7 +208,12 @@ public class TGMessageText extends TGMessage {
           invalidateTextMediaReceiver(updatedText, specificTextMedia);
         }
       };
-      if (text.entities != null || !parseEntities) {
+      if (translatedText != null) {
+        this.wrapper = new TextWrapper(translatedText.text, getTextStyleProvider(), colorSet)
+          .setEntities(TextEntity.valueOf(tdlib, translatedText, openParameters()), textMediaListener)
+          .setHighlightText(getHighlightedText(Highlight.Pool.KEY_TEXT, translatedText.text))
+          .setClickCallback(clickCallback());
+      } else if (text.entities != null || !parseEntities) {
         this.wrapper = new TextWrapper(text.text, getTextStyleProvider(), colorSet)
           .setEntities(TextEntity.valueOf(tdlib, text, openParameters()), textMediaListener)
           .setHighlightText(getHighlightedText(Highlight.Pool.KEY_TEXT, text.text))
@@ -415,9 +421,10 @@ public class TGMessageText extends TGMessage {
 
   @Override
   protected void drawContent (MessageView view, Canvas c, int startX, int startY, int maxWidth, Receiver preview, Receiver receiver) {
-    wrapper.draw(c, startX, getStartXRtl(startX, maxWidth), Config.MOVE_BUBBLE_TIME_RTL_TO_LEFT ? 0 : getBubbleTimePartWidth(), startY + getTextTopOffset(), null, 1f, view.getTextMediaReceiver());
+    float alpha = getTranslationLoadingAlphaValue();
+    wrapper.draw(c, startX, getStartXRtl(startX, maxWidth), Config.MOVE_BUBBLE_TIME_RTL_TO_LEFT ? 0 : getBubbleTimePartWidth(), startY + getTextTopOffset(), null, alpha, view.getTextMediaReceiver());
     if (webPage != null && receiver != null) {
-      webPage.draw(view, c, Lang.rtl() ? startX + maxWidth - webPage.getWidth() : startX, getWebY(), preview, receiver, 1f, view.getTextMediaReceiver());
+      webPage.draw(view, c, Lang.rtl() ? startX + maxWidth - webPage.getWidth() : startX, getWebY(), preview, receiver, alpha, view.getTextMediaReceiver());
     }
   }
 
@@ -621,5 +628,22 @@ public class TGMessageText extends TGMessage {
 
   public long getSponsorChatId () {
     return isSponsored() ? sponsoredMetadata.sponsorChatId : 0;
+  }
+
+  private TdApi.FormattedText translatedText;
+
+  @Nullable
+  @Override
+  public TdApi.FormattedText getTextToTranslateImpl () {
+    return text;
+  }
+
+  @Override
+  protected void setTranslationResult (@Nullable TdApi.FormattedText text) {
+    translatedText = text;
+    setText(this.text, false, true);
+    rebuildAndUpdateContent();
+    invalidateTextMediaReceiver();
+    super.setTranslationResult(text);
   }
 }

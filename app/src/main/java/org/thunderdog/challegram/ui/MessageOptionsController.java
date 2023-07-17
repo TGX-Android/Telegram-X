@@ -22,6 +22,7 @@ import org.thunderdog.challegram.navigation.OptionsLayout;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeListenerList;
 import org.thunderdog.challegram.tool.Drawables;
@@ -67,7 +68,7 @@ public class MessageOptionsController extends BottomSheetViewController.BottomSh
 
   @Override
   protected int getRecyclerBackground () {
-    return R.id.theme_color_filling;
+    return ColorId.filling;
   }
 
   @Override
@@ -119,7 +120,7 @@ public class MessageOptionsController extends BottomSheetViewController.BottomSh
         return new OptionHolder(text);
       } else {
         CustomTextView textView = new CustomTextView(context, tdlib);
-        textView.setTextColorId(R.id.theme_color_textLight);
+        textView.setTextColorId(ColorId.textLight);
         textView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         textView.setPadding(Screen.dp(16f), Screen.dp(14f), Screen.dp(16f), Screen.dp(6f));
         return new OptionHolder(textView);
@@ -173,7 +174,7 @@ public class MessageOptionsController extends BottomSheetViewController.BottomSh
         if (item.icon != 0) {
           Drawable drawable = Drawables.get(context.getResources(), item.icon);
           if (drawable != null) {
-            final int drawableColorId = item.color == ViewController.OPTION_COLOR_NORMAL ? R.id.theme_color_icon : colorId;
+            final int drawableColorId = item.color == ViewController.OPTION_COLOR_NORMAL ? ColorId.icon : colorId;
             drawable.setColorFilter(Paints.getColorFilter(Theme.getColor(drawableColorId)));
             if (themeProvider != null) {
               themeProvider.addThemeFilterListener(drawable, drawableColorId);
@@ -195,7 +196,7 @@ public class MessageOptionsController extends BottomSheetViewController.BottomSh
         String str = options.info.toString();
         TextEntity[] parsed = TD.collectAllEntities(parent, tdlib, options.info, false, null);
         textView.setTextSize(15f);
-        textView.setTextColorId(R.id.theme_color_textLight);
+        textView.setTextColorId(ColorId.textLight);
         textView.setText(str, parsed, false);
       }
     }

@@ -23,7 +23,7 @@ import android.view.View;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 
@@ -35,7 +35,7 @@ public class SliderView extends View implements FactorAnimator.Target {
   public static final int ANCHOR_MODE_START = 0;
   public static final int ANCHOR_MODE_CENTER = 1;
 
-  private @ThemeColorId int colorId = R.id.theme_color_sliderActive;
+  private @ColorId int colorId = ColorId.sliderActive;
   private int anchorMode;
   private boolean slideEnabled;
   private int valueCount;
@@ -104,14 +104,14 @@ public class SliderView extends View implements FactorAnimator.Target {
     }
   }
 
-  private @ThemeColorId int forceBackgroundColorId;
-  private @ThemeColorId int forceSecondaryColorId;
+  private @ColorId int forceBackgroundColorId;
+  private @ColorId int forceSecondaryColorId;
 
-  public void setForceBackgroundColorId (@ThemeColorId int colorId) {
+  public void setForceBackgroundColorId (@ColorId int colorId) {
     this.forceBackgroundColorId = colorId;
   }
 
-  public void setForceSecondaryColorId (@ThemeColorId int colorId) {
+  public void setForceSecondaryColorId (@ColorId int colorId) {
     this.forceSecondaryColorId = colorId;
   }
 
@@ -119,7 +119,7 @@ public class SliderView extends View implements FactorAnimator.Target {
   private static final int ANIMATOR_COLOR = 0;
   private static final int ANIMATOR_TOUCH = 1;
 
-  public void setColorId (@ThemeColorId int colorId, boolean animated) {
+  public void setColorId (@ColorId int colorId, boolean animated) {
     if (animated) {
       if (colorAnimator == null) {
         if (this.colorId == colorId) {
@@ -143,7 +143,7 @@ public class SliderView extends View implements FactorAnimator.Target {
     }
   }
 
-  private @ThemeColorId int fromColorId, toColorId;
+  private @ColorId int fromColorId, toColorId;
 
   private void setColorId (int colorId) {
     if (this.colorId != colorId) {

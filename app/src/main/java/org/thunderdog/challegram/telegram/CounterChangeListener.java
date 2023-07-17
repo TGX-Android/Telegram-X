@@ -16,7 +16,7 @@ package org.thunderdog.challegram.telegram;
 
 import androidx.annotation.NonNull;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 
 public interface CounterChangeListener {
   default void onChatCounterChanged (@NonNull TdApi.ChatList chatList, boolean availabilityChanged, int totalCount, int unreadCount, int unreadUnmutedCount) { }

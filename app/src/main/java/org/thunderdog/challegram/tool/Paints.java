@@ -34,6 +34,7 @@ import androidx.collection.SparseArrayCompat;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeManager;
 import org.thunderdog.challegram.util.text.Letters;
@@ -124,7 +125,7 @@ public class Paints {
       placeholder = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
       placeholder.setStyle(Paint.Style.FILL);
       placeholder.setColor(Theme.placeholderColor());
-      ThemeManager.addThemeListener(placeholder, R.id.theme_color_placeholder);
+      ThemeManager.addThemeListener(placeholder, ColorId.placeholder);
     }
     return placeholder;
   }
@@ -135,7 +136,7 @@ public class Paints {
       smallTitlePaint.setColor(Theme.textAccentColor());
       smallTitlePaint.setTextSize(Screen.dp(13f));
       smallTitlePaint.setTypeface(Fonts.getRobotoRegular());
-      ThemeManager.addThemeListener(smallTitlePaint, R.id.theme_color_text);
+      ThemeManager.addThemeListener(smallTitlePaint, ColorId.text);
     }
     return smallTitlePaint;
   }
@@ -396,7 +397,7 @@ public class Paints {
         titlePaintFake.setTextSize(Screen.dp(15f));
         titlePaintFake.setTypeface(Fonts.getRobotoRegular());
         titlePaintFake.setFakeBoldText(true);
-        ThemeManager.addThemeListener(titlePaintFake, R.id.theme_color_text);
+        ThemeManager.addThemeListener(titlePaintFake, ColorId.text);
       }
       return titlePaintFake;
     } else {
@@ -405,7 +406,7 @@ public class Paints {
         titlePaint.setColor(Theme.textAccentColor());
         titlePaint.setTextSize(Screen.dp(15f));
         titlePaint.setTypeface(Fonts.getRobotoMedium());
-        ThemeManager.addThemeListener(titlePaint, R.id.theme_color_text);
+        ThemeManager.addThemeListener(titlePaint, ColorId.text);
       }
       return titlePaint;
     }
@@ -423,7 +424,7 @@ public class Paints {
         titleBigPaintFake.setTextSize(Screen.dp(16f));
         titleBigPaintFake.setTypeface(Fonts.getRobotoRegular());
         titleBigPaintFake.setFakeBoldText(true);
-        ThemeManager.addThemeListener(titleBigPaintFake, R.id.theme_color_text);
+        ThemeManager.addThemeListener(titleBigPaintFake, ColorId.text);
       }
       return titleBigPaintFake;
     } else {
@@ -432,7 +433,7 @@ public class Paints {
         titleBigPaint.setColor(Theme.textAccentColor());
         titleBigPaint.setTextSize(Screen.dp(16f));
         titleBigPaint.setTypeface(Fonts.getRobotoMedium());
-        ThemeManager.addThemeListener(titleBigPaint, R.id.theme_color_text);
+        ThemeManager.addThemeListener(titleBigPaint, ColorId.text);
       }
       return titleBigPaint;
     }
@@ -444,7 +445,7 @@ public class Paints {
       subtitlePaint.setColor(Theme.textDecentColor());
       subtitlePaint.setTextSize(Screen.dp(13f));
       subtitlePaint.setTypeface(Fonts.getRobotoRegular());
-      ThemeManager.addThemeListener(subtitlePaint, R.id.theme_color_textLight);
+      ThemeManager.addThemeListener(subtitlePaint, ColorId.textLight);
     }
     return subtitlePaint;
   }
@@ -543,91 +544,91 @@ public class Paints {
   }
 
   public static Paint getNotePorterDuffPaint () {
-    return PorterDuffPaint.get(R.id.theme_color_playerCoverIcon);
+    return PorterDuffPaint.get(ColorId.playerCoverIcon);
   }
 
   public static Paint getHeaderPorterDuffPaint () {
-    return PorterDuffPaint.get(R.id.theme_color_headerText);
+    return PorterDuffPaint.get(ColorId.headerText);
   }
 
   public static Paint getVerifyPaint () {
-    return PorterDuffPaint.get(R.id.theme_color_chatListVerify);
+    return PorterDuffPaint.get(ColorId.chatListVerify);
   }
 
   public static Paint getHeaderIconPaint () {
-    return PorterDuffPaint.get(R.id.theme_color_headerIcon);
+    return PorterDuffPaint.get(ColorId.headerIcon);
   }
 
   public static Paint getPasscodeIconPaint () {
-    return PorterDuffPaint.get(R.id.theme_color_passcodeIcon);
+    return PorterDuffPaint.get(ColorId.passcodeIcon);
   }
 
   public static Paint getBadgeTextPorterDuffPaint () {
-    return PorterDuffPaint.get(R.id.theme_color_badgeText);
+    return PorterDuffPaint.get(ColorId.badgeText);
   }
 
   public static Paint getBubbleOutTimePaint () {
-    return PorterDuffPaint.get(R.id.theme_color_bubbleOut_time);
+    return PorterDuffPaint.get(ColorId.bubbleOut_time);
   }
 
   public static Paint getBubbleInTimePaint () {
-    return PorterDuffPaint.get(R.id.theme_color_bubbleIn_time);
+    return PorterDuffPaint.get(ColorId.bubbleIn_time);
   }
 
   public static Paint getGreenPorterDuffPaint () {
-    return PorterDuffPaint.get(R.id.theme_color_textSecure);
+    return PorterDuffPaint.get(ColorId.textSecure);
   }
 
   public static Paint getIconGrayPorterDuffPaint () {
-    return PorterDuffPaint.get(R.id.theme_color_icon);
+    return PorterDuffPaint.get(ColorId.icon);
   }
 
   public static Paint getBackgroundIconPorterDuffPaint () {
-    return PorterDuffPaint.get(R.id.theme_color_background_icon);
+    return PorterDuffPaint.get(ColorId.background_icon);
   }
 
   public static Paint getIconLightPorterDuffPaint () {
-    return PorterDuffPaint.get(R.id.theme_color_iconLight);
+    return PorterDuffPaint.get(ColorId.iconLight);
   }
 
   public static Paint getChatsMutePaint () {
-    return PorterDuffPaint.get(R.id.theme_color_chatListMute);
+    return PorterDuffPaint.get(ColorId.chatListMute);
   }
 
   public static Paint getActiveKeyboardPaint () {
-    return PorterDuffPaint.get(R.id.theme_color_iconActive);
+    return PorterDuffPaint.get(ColorId.iconActive);
   }
 
   public static Paint getTicksPaint () {
-    return PorterDuffPaint.get(R.id.theme_color_ticks);
+    return PorterDuffPaint.get(ColorId.ticks);
   }
 
   public static Paint getBubbleTicksPaint () {
-    return PorterDuffPaint.get(R.id.theme_color_bubbleOut_ticks);
+    return PorterDuffPaint.get(ColorId.bubbleOut_ticks);
   }
 
   public static Paint getTicksReadPaint () {
-    return PorterDuffPaint.get(R.id.theme_color_ticksRead);
+    return PorterDuffPaint.get(ColorId.ticksRead);
   }
 
   public static Paint getBubbleTicksReadPaint () {
-    return PorterDuffPaint.get(R.id.theme_color_bubbleOut_ticksRead);
+    return PorterDuffPaint.get(ColorId.bubbleOut_ticksRead);
   }
 
   public static Paint getSendButtonPaint () {
-    return PorterDuffPaint.get(R.id.theme_color_chatSendButton);
+    return PorterDuffPaint.get(ColorId.chatSendButton);
   }
 
   public static Paint getHeaderFloatIconPorterDuffPaint () {
-    return PorterDuffPaint.get(R.id.theme_color_headerButtonIcon);
+    return PorterDuffPaint.get(ColorId.headerButtonIcon);
   }
 
   public static Paint getDecentPorterDuffPaint () {
-    return PorterDuffPaint.get(R.id.theme_color_textLight);
+    return PorterDuffPaint.get(ColorId.textLight);
   }
 
   public static Paint getInlineIconPorterDuffPaint (boolean isOutBubble) {
-    int colorId = isOutBubble ? R.id.theme_color_bubbleOut_inlineIcon : R.id.theme_color_inlineIcon;
+    int colorId = isOutBubble ? ColorId.bubbleOut_inlineIcon : ColorId.inlineIcon;
     return PorterDuffPaint.get(colorId);
   }
 
@@ -661,7 +662,7 @@ public class Paints {
 
   public static Paint getPorterDuffPaint (int color) {
     if (color == 0xffffffff) {
-      return PorterDuffPaint.get(R.id.theme_color_white);
+      return PorterDuffPaint.get(ColorId.white);
     }
 
     PorterDuffColorFilter filter = getColorFilter(color);
@@ -863,6 +864,20 @@ public class Paints {
       }
     }
     return xorPaint;
+  }
+
+  private static Paint srcInPaint;
+  public static Paint getSrcInPaint (int color) {
+    if (srcInPaint == null) {
+      synchronized (Paints.class) {
+        if (srcInPaint == null) {
+          srcInPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+          srcInPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
+        }
+      }
+    }
+    srcInPaint.setColor(color);
+    return srcInPaint;
   }
 
   private static Paint bitmapPaint;

@@ -23,7 +23,7 @@ import android.view.View;
 
 import androidx.annotation.Nullable;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
@@ -244,7 +244,7 @@ public class JoinRequestsView extends BaseView implements Destroyable, ComplexRe
       ImageReceiver receiver = avatarFile != null ? complexReceiver.getImageReceiver(userId) : null;
       int radius = Screen.dp(AVATAR_RADIUS);
 
-      //c.drawRect(cx - radius, cy - radius, cx + radius, cy + radius, Paints.fillingPaint(Theme.getColor(R.id.theme_color_textNegative)));
+      //c.drawRect(cx - radius, cy - radius, cx + radius, cy + radius, Paints.fillingPaint(Theme.getColor(ColorId.textNegative)));
 
       boolean needRestore = alpha != 1f;
       int restoreToCount;

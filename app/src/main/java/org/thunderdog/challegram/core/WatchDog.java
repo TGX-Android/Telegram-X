@@ -21,7 +21,7 @@ import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.SystemClock;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.telegram.TdlibManager;

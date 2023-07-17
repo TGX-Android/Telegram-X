@@ -32,7 +32,7 @@ import com.google.android.play.core.install.model.InstallErrorCode;
 import com.google.android.play.core.install.model.InstallStatus;
 import com.google.android.play.core.install.model.UpdateAvailability;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
@@ -354,13 +354,10 @@ public class AppUpdater implements InstallStateUpdatedListener, FileUpdateListen
           }
           b.cancelItem();
           c.showOptions(b.build(), (optionItemView, id) -> {
-            switch (id) {
-              case R.id.btn_update:
-                downloadUpdate();
-                break;
-              case R.id.btn_sourceCode:
-                UI.openUrl(changesUrl);
-                break;
+            if (id == R.id.btn_update) {
+              downloadUpdate();
+            } else if (id == R.id.btn_sourceCode) {
+              UI.openUrl(changesUrl);
             }
             return true;
           });

@@ -25,7 +25,7 @@ import androidx.annotation.DrawableRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
@@ -43,8 +43,8 @@ import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibFilesManager;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -123,7 +123,7 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
 
     if (getMediaPreview() == null) {
       Letters letters = TD.getLetters(data.contact.firstName, data.contact.lastName);
-      int placeholderColorId = data.contact.userId != 0 ? TD.getAvatarColorId(data.contact.userId, tdlib.myUserId()) : R.id.theme_color_avatarInactive; //TD.getColorIdForString(TD.getUserName(data.contact.firstName, data.contact.lastName));
+      int placeholderColorId = data.contact.userId != 0 ? TD.getAvatarColorId(data.contact.userId, tdlib.myUserId()) : ColorId.avatarInactive; //TD.getColorIdForString(TD.getUserName(data.contact.firstName, data.contact.lastName));
       avatarPlaceholder = new AvatarPlaceholder(AVATAR_PLACEHOLDER_RADIUS, new AvatarPlaceholder.Metadata(placeholderColorId, letters), null);
     }
   }
@@ -169,7 +169,7 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
     if (getMediaPreview() != null) {
       this.fileProgress.setBackgroundColor(0x44000000);
     } else {
-      this.fileProgress.setBackgroundColorId(R.id.theme_color_file);
+      this.fileProgress.setBackgroundColorId(ColorId.file);
     }
     if (msg != null) {
       this.fileProgress.setPlayPauseFile(msg, builder);
@@ -193,7 +193,7 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
     if (this.getMediaPreview() != null) {
       this.getMediaPreview().setCornerRadius(isQueueSong ? Screen.dp(4f) : Screen.dp(50f) / 2);
     }
-    this.fileProgress.setBackgroundColorId(R.id.theme_color_file);
+    this.fileProgress.setBackgroundColorId(ColorId.file);
     this.trackDuration = Strings.buildDuration(audio.duration);
     this.trackDurationWidth = U.measureText(trackDuration, Paints.getRegularTextPaint(11f));
   }
@@ -312,7 +312,7 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
     this.fileProgress = new FileProgressComponent(context, tdlib, TdlibFilesManager.DOWNLOAD_FLAG_VOICE, false, message != null ? message.chatId : 0, message != null ? message.id : 0);
     this.fileProgress.setViewProvider(currentViews);
     this.fileProgress.setDownloadedIconRes(FileProgressComponent.PLAY_ICON);
-    this.fileProgress.setBackgroundColorId(R.id.theme_color_file);
+    this.fileProgress.setBackgroundColorId(ColorId.file);
     this.fileProgress.setPlayPauseFile(message != null ? message : TD.newFakeMessage(voiceNote), null);
   }
 
@@ -322,7 +322,7 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
   private int customColorId;
   private Drawable customIcon;
 
-  public InlineResultCommon (BaseActivity context, Tdlib tdlib, String path, @ThemeColorId int colorId, @DrawableRes int icon, String title, String subtitle) {
+  public InlineResultCommon (BaseActivity context, Tdlib tdlib, String path, @ColorId int colorId, @DrawableRes int icon, String title, String subtitle) {
     super(context, tdlib, TYPE_DOCUMENT, path, null);
 
     this.title = title;
@@ -393,7 +393,7 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
     if (getMediaPreview() != null) {
       this.fileProgress.setBackgroundColor(0x44000000);
     } else {
-      this.fileProgress.setBackgroundColorId(R.id.theme_color_file);
+      this.fileProgress.setBackgroundColorId(ColorId.file);
     }
   }
 
@@ -427,7 +427,7 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
     if (getMediaPreview() != null) {
       this.fileProgress.setBackgroundColor(Color.TRANSPARENT);
     } else {
-      this.fileProgress.setBackgroundColorId(R.id.theme_color_file);
+      this.fileProgress.setBackgroundColorId(ColorId.file);
     }
     String fileName = U.getFileName(entry.getPath());
     TdApi.Audio audio = new TdApi.Audio((int) (entry.getDuration() / 1000l), entry.getTitle(), entry.getArtist(), fileName, U.resolveMimeType(U.getExtension(fileName)), null, null, null, targetFile);
@@ -579,10 +579,10 @@ public class InlineResultCommon extends InlineResult<TdApi.InlineQueryResult> im
     if (fileProgress != null) {
       if (fileProgress.isTrack()) {
         if (!trackIsQueued && getMediaPreview() == null) {
-          c.drawCircle(rectF.centerX(), rectF.centerY(), radius, Paints.fillingPaint(Theme.getColor(R.id.theme_color_file)));
+          c.drawCircle(rectF.centerX(), rectF.centerY(), radius, Paints.fillingPaint(Theme.getColor(ColorId.file)));
         } else {
           if (getMediaPreview() == null || getMediaPreview().needPlaceholder(receiver)) {
-            c.drawRoundRect(rectF, radius, radius, Paints.fillingPaint(Theme.getColor(R.id.theme_color_playerCoverPlaceholder)));
+            c.drawRoundRect(rectF, radius, radius, Paints.fillingPaint(Theme.getColor(ColorId.playerCoverPlaceholder)));
             Drawable drawable = view.getSparseDrawable(R.drawable.baseline_music_note_24, 0);
             Drawables.draw(c, drawable, rectF.centerX() - drawable.getMinimumWidth() / 2f, rectF.centerY() - drawable.getMinimumHeight() / 2f, Paints.getNotePorterDuffPaint());
           }

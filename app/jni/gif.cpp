@@ -47,7 +47,7 @@ static const std::string av_make_error_str (int errnum) {
 #undef av_err2str
 #define av_err2str(errnum) av_make_error_str(errnum).c_str()
 
-typedef struct LottieInfo {
+struct LottieInfo {
   const std::string path;
   std::unique_ptr<rlottie::Animation> animation;
   FILE *cacheFile = nullptr;
@@ -84,7 +84,7 @@ typedef struct LottieInfo {
   }
 };
 
-typedef struct VideoInfo {
+struct VideoInfo {
 
   const std::string path;
 
@@ -458,7 +458,7 @@ JNI_FUNC(jint, getVideoFrame, jlong ptr, jobject bitmap, jintArray data) {
             info->dst_linesize[0] = bitmapInfo.stride;
             // TODO: find out why sws_scale doesn't support transparency (AV_PIX_FMT_YUVA420P) properly
             // note: for now, updated libyuv + kYvuI601Constants in I420AlphaToARGBMatrix fixes AV_PIX_FMT_YUVA420P issue - but still needs to be researched
-            int res = sws_scale(info->scale_ctx, frame->data, frame->linesize, 0, frame->height, dst_data, info->dst_linesize);
+            /*int res =*/ sws_scale(info->scale_ctx, frame->data, frame->linesize, 0, frame->height, dst_data, info->dst_linesize);
           } else {
             // TODO: find out why libyuv damages the color palette
             switch (fmt) {
@@ -536,9 +536,9 @@ JNI_FUNC(jlong, createLottieDecoder, jstring jPath, jstring jsonData, jdoubleArr
   std::string json = jni::from_jstring(env, jsonData);
   std::string path = jni::from_jstring(env, jPath);
 
-  int color = 0;
+  /*int color = 0;
   std::map<int32_t, int32_t> *colorReplacement = nullptr;
-  /*if (jColorReplacement != nullptr) {
+  if (jColorReplacement != nullptr) {
     jsize colorReplacementLength = env->GetArrayLength(jColorReplacement);
     if (colorReplacementLength > 0) {
       jint *elements = jni::array_get<jint>(env, jColorReplacement);

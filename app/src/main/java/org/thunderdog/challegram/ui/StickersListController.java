@@ -23,12 +23,11 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
-import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
@@ -42,6 +41,7 @@ import org.thunderdog.challegram.navigation.MoreDelegate;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.StickersListener;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
@@ -98,88 +98,73 @@ public class StickersListController extends ViewController<StickersListControlle
 
   @Override
   public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
-    switch (id) {
-      case R.id.menu_more: {
-        header.addMoreButton(menu, this);
-        break;
-      }
+    if (id == R.id.menu_more) {
+      header.addMoreButton(menu, this);
     }
   }
 
   @Override
   protected int getHeaderIconColorId () {
-    return R.id.theme_color_headerLightIcon;
+    return ColorId.headerLightIcon;
   }
 
   @Override
   protected int getHeaderTextColorId () {
-    return R.id.theme_color_text;
+    return ColorId.text;
   }
 
   @Override
   protected int getHeaderColorId () {
-    return R.id.theme_color_filling;
+    return ColorId.filling;
   }
 
   @Override
   public void onMenuItemPressed (int id, View view) {
-    switch (id) {
-      case R.id.menu_btn_more: {
-        if (info != null) {
-          IntList ids = new IntList(4);
-          StringList strings = new StringList(4);
-          IntList icons = new IntList(4);
+    if (id == R.id.menu_btn_more) {
+      if (info != null) {
+        IntList ids = new IntList(4);
+        StringList strings = new StringList(4);
+        IntList icons = new IntList(4);
 
-          ids.append(R.id.btn_share);
-          strings.append(R.string.Share);
-          icons.append(R.drawable.baseline_forward_24);
+        ids.append(R.id.btn_share);
+        strings.append(R.string.Share);
+        icons.append(R.drawable.baseline_forward_24);
 
-          ids.append(R.id.btn_copyLink);
-          strings.append(R.string.CopyLink);
-          icons.append(R.drawable.baseline_link_24);
+        ids.append(R.id.btn_copyLink);
+        strings.append(R.string.CopyLink);
+        icons.append(R.drawable.baseline_link_24);
 
-          if (getArguments() != null) {
-            if (getArguments().canArchiveStickerSet()) {
-              ids.append(R.id.btn_archive);
-              strings.append(R.string.StickersHide);
-              icons.append(R.drawable.baseline_archive_24);
-            }
-            if (getArguments().canRemoveStickerSet()) {
-              ids.append(R.id.btn_delete);
-              strings.append(R.string.DeleteArchivedPack);
-              icons.append(R.drawable.baseline_delete_24);
-            }
+        if (getArguments() != null) {
+          if (getArguments().canArchiveStickerSet()) {
+            ids.append(R.id.btn_archive);
+            strings.append(R.string.StickersHide);
+            icons.append(R.drawable.baseline_archive_24);
           }
-
-          showMore(ids.get(), strings.get(), icons.get(), 0);
+          if (getArguments().canRemoveStickerSet()) {
+            ids.append(R.id.btn_delete);
+            strings.append(R.string.DeleteArchivedPack);
+            icons.append(R.drawable.baseline_delete_24);
+          }
         }
-        break;
+
+        showMore(ids.get(), strings.get(), icons.get(), 0);
       }
     }
   }
 
   @Override
   public void onMoreItemPressed (int id) {
-    switch (id) {
-      case R.id.btn_share: {
-        tdlib.ui().shareStickerSetUrl(this, info);
-        break;
+    if (id == R.id.btn_share) {
+      tdlib.ui().shareStickerSetUrl(this, info);
+    } else if (id == R.id.btn_copyLink) {
+      UI.copyText(TD.getStickerPackLink(info.name), R.string.CopiedLink);
+    } else if (id == R.id.btn_archive) {
+      if (getArguments() != null) {
+        getArguments().archiveStickerSet();
       }
-      case R.id.btn_copyLink: {
-        UI.copyText(TD.getStickerPackLink(info.name), R.string.CopiedLink);
-        break;
-      }
-      case R.id.btn_archive: {
-        if (getArguments() != null) {
-          getArguments().archiveStickerSet();
-        }
-        break;
-      }
-      case R.id.btn_delete: {
-        if (getArguments() != null) {
-          getArguments().removeStickerSet();
-        }
-        break;
+    } else if (id == R.id.btn_delete) {
+      if (getArguments() != null) {
+        getArguments().removeStickerSet();
       }
     }
   }

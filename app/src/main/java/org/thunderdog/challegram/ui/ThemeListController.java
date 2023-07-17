@@ -47,7 +47,7 @@ import androidx.annotation.StringRes;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.FillingDrawable;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
@@ -73,16 +73,16 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibManager;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ColorState;
+import org.thunderdog.challegram.theme.PropertyId;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.theme.ThemeColors;
 import org.thunderdog.challegram.theme.ThemeCustom;
 import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.theme.ThemeId;
 import org.thunderdog.challegram.theme.ThemeInfo;
 import org.thunderdog.challegram.theme.ThemeManager;
-import org.thunderdog.challegram.theme.ThemeProperty;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
@@ -364,17 +364,17 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
 
   @Override
   protected int getHeaderColorId () {
-    return isLookupMode ? R.id.theme_color_filling : super.getHeaderColorId();
+    return isLookupMode ? ColorId.filling : super.getHeaderColorId();
   }
 
   @Override
   protected int getHeaderIconColorId () {
-    return isLookupMode ? R.id.theme_color_icon : super.getHeaderIconColorId();
+    return isLookupMode ? ColorId.icon : super.getHeaderIconColorId();
   }
 
   @Override
   protected int getHeaderTextColorId () {
-    return isLookupMode ? R.id.theme_color_text : super.getHeaderTextColorId();
+    return isLookupMode ? ColorId.text : super.getHeaderTextColorId();
   }
 
   @Override
@@ -441,18 +441,15 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
       @Override
       protected void setInfo (ListItem item, int position, ListInfoView infoView) {
         final int resId;
-        switch (getArgumentsStrict().specificSectionId) {
-          case 0:
-          case R.id.theme_category_bubbles:
-          case R.id.theme_category_navigation:
-            resId = R.string.xItem;
-            break;
-          case R.id.theme_category_settings:
-            resId = R.string.xProperty;
-            break;
-          default:
-            resId = R.string.xColors;
-            break;
+        final int specificSectionId = getArgumentsStrict().specificSectionId;
+        if (specificSectionId == 0 ||
+          specificSectionId == R.id.theme_category_bubbles ||
+          specificSectionId == R.id.theme_category_navigation) {
+          resId = R.string.xItem;
+        } else if (specificSectionId == R.id.theme_category_settings) {
+          resId = R.string.xProperty;
+        } else {
+          resId = R.string.xColors;
         }
         infoView.showInfo(Lang.pluralBold(resId, itemCount));
       }
@@ -463,7 +460,7 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
         int id = getDataId(item);
         switch (customViewType) {
           case VIEW_TYPE_INLINE_OUTLINE:
-            /*int backgroundColorId = id == R.id.theme_color_bubbleOut_inlineOutline ? R.id.theme_color_bubbleOut_background : 0;
+            /*int backgroundColorId = id == ColorId.bubbleOut_inlineOutline ? ColorId.bubbleOut_background : 0;
             ViewGroup parent = (ViewGroup) ((ViewGroup) holder.itemView).getChildAt(0);
             Theme.changeBackgroundColorId(parent, backgroundColorId);
             NonMaterialButton btn = ((NonMaterialButton) parent.getChildAt(0));*/
@@ -479,13 +476,13 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
             ViewGroup viewGroup = (ViewGroup) ((ViewGroup) holder.itemView).getChildAt(0);
             for (int i = 0; i < viewGroup.getChildCount(); i++) {
               View v = viewGroup.getChildAt(i);
-              boolean checked = id == R.id.theme_color_controlActive;
+              boolean checked = id == ColorId.controlActive;
               if (v instanceof CheckBoxView) {
                 ((CheckBoxView) v).setChecked(checked, false);
               } else if (v instanceof RadioView) {
                 ((RadioView) v).setChecked(checked, false);
               } else if (v instanceof MaterialEditTextGroup) {
-                boolean isActive = id != R.id.theme_color_inputInactive;
+                boolean isActive = id != ColorId.inputInactive;
                 ((MaterialEditTextGroup) v).setAlwaysActive(isActive);
                 ((MaterialEditTextGroup) v).setText(isActive ? Lang.getString(R.string.Demo) : "");
                 ((MaterialEditTextGroup) v).getEditText().setForceColorId(isActive ? id : 0);
@@ -496,57 +493,57 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
                   float size;
                   float rotation = 0f;
                   switch (id) {
-                    case R.id.theme_color_headerButton:
+                    case ColorId.headerButton:
                       size = 52f;
                       iconRes = R.drawable.baseline_create_24;
-                      iconColorId = R.id.theme_color_headerButtonIcon;
+                      iconColorId = ColorId.headerButtonIcon;
                       break;
-                    case R.id.theme_color_circleButtonRegular:
+                    case ColorId.circleButtonRegular:
                       size = 52f;
                       iconRes = R.drawable.baseline_create_24;
-                      iconColorId = R.id.theme_color_circleButtonRegularIcon;
+                      iconColorId = ColorId.circleButtonRegularIcon;
                       break;
-                    case R.id.theme_color_circleButtonChat:
+                    case ColorId.circleButtonChat:
                       size = 48f;
                       iconRes = R.drawable.baseline_arrow_downward_24;
-                      iconColorId = R.id.theme_color_circleButtonChatIcon;
+                      iconColorId = ColorId.circleButtonChatIcon;
                       break;
-                    case R.id.theme_color_circleButtonOverlay:
+                    case ColorId.circleButtonOverlay:
                       size = 46f;
                       iconRes = R.drawable.baseline_backspace_24;
-                      iconColorId = R.id.theme_color_circleButtonOverlayIcon;
+                      iconColorId = ColorId.circleButtonOverlayIcon;
                       break;
-                    case R.id.theme_color_circleButtonTheme:
+                    case ColorId.circleButtonTheme:
                       size = 52f;
                       iconRes = R.drawable.baseline_palette_24;
-                      iconColorId = R.id.theme_color_circleButtonThemeIcon;
+                      iconColorId = ColorId.circleButtonThemeIcon;
                       break;
-                    case R.id.theme_color_circleButtonNewSecret:
+                    case ColorId.circleButtonNewSecret:
                       size = 40f;
                       iconRes = R.drawable.baseline_lock_24;
-                      iconColorId = R.id.theme_color_circleButtonNewSecretIcon;
+                      iconColorId = ColorId.circleButtonNewSecretIcon;
                       break;
-                    case R.id.theme_color_circleButtonNewChat:
+                    case ColorId.circleButtonNewChat:
                       size = 40f;
                       iconRes = R.drawable.baseline_person_24;
-                      iconColorId = R.id.theme_color_circleButtonNewChatIcon;
+                      iconColorId = ColorId.circleButtonNewChatIcon;
                       break;
-                    case R.id.theme_color_circleButtonNewGroup:
+                    case ColorId.circleButtonNewGroup:
                       iconRes = R.drawable.baseline_group_24;
-                      iconColorId = R.id.theme_color_circleButtonNewGroupIcon;
+                      iconColorId = ColorId.circleButtonNewGroupIcon;
                       size = 40f;
                       break;
-                    case R.id.theme_color_circleButtonNewChannel:
+                    case ColorId.circleButtonNewChannel:
                       iconRes = R.drawable.baseline_bullhorn_24;
-                      iconColorId = R.id.theme_color_circleButtonNewChannelIcon;
+                      iconColorId = ColorId.circleButtonNewChannelIcon;
                       size = 40f;
                       break;
-                    case R.id.theme_color_circleButtonPositive:
-                    case R.id.theme_color_circleButtonNegative:
-                      iconColorId = id == R.id.theme_color_circleButtonPositive ? R.id.theme_color_circleButtonPositiveIcon : R.id.theme_color_circleButtonNegativeIcon;
+                    case ColorId.circleButtonPositive:
+                    case ColorId.circleButtonNegative:
+                      iconColorId = id == ColorId.circleButtonPositive ? ColorId.circleButtonPositiveIcon : ColorId.circleButtonNegativeIcon;
                       iconRes = R.drawable.baseline_phone_24;
                       size = 52f;
-                      rotation = id == R.id.theme_color_circleButtonNegative ? 135f : 0f;
+                      rotation = id == ColorId.circleButtonNegative ? 135f : 0f;
                       break;
                     default:
                       return;
@@ -586,7 +583,7 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
 
         switch (customViewType) {
           case VIEW_TYPE_INLINE_OUTLINE: {
-            ViewSupport.setThemedBackground(ll, 0, ThemeListController.this);
+            ViewSupport.setThemedBackground(ll, ColorId.NONE, ThemeListController.this);
 
             NonMaterialButton btn;
 
@@ -645,8 +642,8 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
               }
             });
             sliderView.setLayoutParams(lp);
-            sliderView.setForceBackgroundColorId(R.id.theme_color_sliderInactive);
-            sliderView.setColorId(R.id.theme_color_sliderActive, false);
+            sliderView.setForceBackgroundColorId(ColorId.sliderInactive);
+            sliderView.setColorId(ColorId.sliderActive, false);
             ll.addView(sliderView);
             break;
           }
@@ -727,12 +724,12 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
             lp.rightMargin = Screen.dp(18f);
 
             TextView newView = new NoScrollTextView(context);
-            ViewSupport.setThemedBackground(newView, R.id.theme_color_promo, ThemeListController.this).setCornerRadius(3f);
+            ViewSupport.setThemedBackground(newView, ColorId.promo, ThemeListController.this).setCornerRadius(3f);
             newView.setId(R.id.btn_new);
             newView.setSingleLine(true);
             newView.setPadding(Screen.dp(4f), Screen.dp(1f), Screen.dp(4f), 0);
-            newView.setTextColor(Theme.getColor(R.id.theme_color_promoContent));
-            addThemeTextColorListener(newView, R.id.theme_color_promoContent);
+            newView.setTextColor(Theme.getColor(ColorId.promoContent));
+            addThemeTextColorListener(newView, ColorId.promoContent);
             addThemeInvalidateListener(newView);
             newView.setTypeface(Fonts.getRobotoBold());
             newView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 10f);
@@ -805,25 +802,21 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
         if (state == null)
           return;
         final int id = view.getId();
-        switch (id) {
-          case R.id.color_alphaPalette: {
-            int alpha = (int) (value * 255f);
-            int newColor = ColorUtils.color(alpha, state.getColor());
-            if (!changeColor(item, contentView, view, state, newColor, !isFinished, false)) {
-              ignoreTextEvents = true;
-              setColor(item, -1, contentView, view);
-              ignoreTextEvents = false;
-            }
-            break;
+        if (id == R.id.color_alphaPalette) {
+          int alpha = (int) (value * 255f);
+          int newColor = ColorUtils.color(alpha, state.getColor());
+          if (!changeColor(item, contentView, view, state, newColor, !isFinished, false)) {
+            ignoreTextEvents = true;
+            setColor(item, -1, contentView, view);
+            ignoreTextEvents = false;
           }
-          case R.id.color_huePalette:
-            float degrees = 360f * value;
-            if (!changeHsv(item, contentView, view, state, 0, degrees, !isFinished, false)) {
-              ignoreTextEvents = true;
-              setColor(item, -1, contentView, view);
-              ignoreTextEvents = false;
-            }
-            break;
+        } else if (id == R.id.color_huePalette) {
+          float degrees = 360f * value;
+          if (!changeHsv(item, contentView, view, state, 0, degrees, !isFinished, false)) {
+            ignoreTextEvents = true;
+            setColor(item, -1, contentView, view);
+            ignoreTextEvents = false;
+          }
         }
 
       }
@@ -847,66 +840,54 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
         int newColor = 0;
         boolean success = false;
         try {
-          switch (id) {
-            case R.id.color_hex: { // Hex
-              newColor = ColorUtils.parseHexColor(v, false);
+          // RGBA 0..255
+          if (id == R.id.color_hex) {// Hex
+            newColor = ColorUtils.parseHexColor(v, false);
+            success = true;
+          } else if (id == R.id.color_red || id == R.id.color_green || id == R.id.color_blue || id == R.id.color_alpha) {
+            int value = v.isEmpty() ? 0 : Integer.parseInt(v);
+            if (value >= 0 && value <= 255) {
+              int alpha = id != R.id.color_alpha ? Color.alpha(currentColor) : value;
+              int red = id != R.id.color_red ? Color.red(currentColor) : value;
+              int green = id != R.id.color_green ? Color.green(currentColor) : value;
+              int blue = id != R.id.color_blue ? Color.blue(currentColor) : value;
+              newColor = Color.argb(alpha, red, green, blue);
               success = true;
-              break;
             }
-            case R.id.color_red: // RGBA 0..255
-            case R.id.color_green:
-            case R.id.color_blue:
-            case R.id.color_alpha: {
-              int value = v.isEmpty() ? 0 : Integer.parseInt(v);
-              if (value >= 0 && value <= 255) {
-                int alpha = id != R.id.color_alpha ? Color.alpha(currentColor) : value;
-                int red = id != R.id.color_red ? Color.red(currentColor) : value;
-                int green = id != R.id.color_green ? Color.green(currentColor) : value;
-                int blue = id != R.id.color_blue ? Color.blue(currentColor) : value;
-                newColor = Color.argb(alpha, red, green, blue);
-                success = true;
-              }
-              break;
-            }
-            case R.id.color_hue:
-            case R.id.color_saturation:
-            case R.id.color_lightness:
-            case R.id.color_alphaPercentage:
-              if (!v.isEmpty()) {
-                float value = Float.parseFloat(v);
-                success = id == R.id.color_hue ? value >= 0f && value <= 360f : value >= 0f && value <= 100f;
-                if (success) {
-                  if (id == R.id.color_alphaPercentage) {
-                    newColor = ColorUtils.color((int) (255f * (value / 100f)), currentColor);
-                    success = true;
-                  } else {
-                    int prop = id == R.id.color_hue ? 0 : id == R.id.color_saturation ? 1 : 2;
-                    if (id != R.id.color_hue) {
-                      value /= 100f;
-                    }
-                    view.setInErrorState(false);
-                    if (!changeHsv(item, contentView, view, state, prop, value, false, false)) {
-                      setColor(item, -1, contentView, view);
-                    }
-                    // float hue = id == R.id.color_hue ? value : U.parseFloat(((MaterialEditTextGroup) contentView.findViewById(R.id.color_hue)).getText().toString(), state.getHsv(0));
-                    // float saturation = (id == R.id.color_saturation ? value : U.parseFloat(((MaterialEditTextGroup) contentView.findViewById(R.id.color_saturation)).getText().toString(), state.getHsv(1) * 100f)) / 100f;
-                    // float lightness = (id == R.id.color_lightness ? value : U.parseFloat(((MaterialEditTextGroup) contentView.findViewById(R.id.color_lightness)).getText().toString(), state.getHsv(2) * 100f)) / 100f;
+          } else if (id == R.id.color_hue || id == R.id.color_saturation || id == R.id.color_lightness || id == R.id.color_alphaPercentage) {
+            if (!v.isEmpty()) {
+              float value = Float.parseFloat(v);
+              success = id == R.id.color_hue ? value >= 0f && value <= 360f : value >= 0f && value <= 100f;
+              if (success) {
+                if (id == R.id.color_alphaPercentage) {
+                  newColor = ColorUtils.color((int) (255f * (value / 100f)), currentColor);
+                  success = true;
+                } else {
+                  int prop = id == R.id.color_hue ? 0 : id == R.id.color_saturation ? 1 : 2;
+                  if (id != R.id.color_hue) {
+                    value /= 100f;
+                  }
+                  view.setInErrorState(false);
+                  if (!changeHsv(item, contentView, view, state, prop, value, false, false)) {
+                    setColor(item, -1, contentView, view);
+                  }
+                  // float hue = id == R.id.color_hue ? value : U.parseFloat(((MaterialEditTextGroup) contentView.findViewById(R.id.color_hue)).getText().toString(), state.getHsv(0));
+                  // float saturation = (id == R.id.color_saturation ? value : U.parseFloat(((MaterialEditTextGroup) contentView.findViewById(R.id.color_saturation)).getText().toString(), state.getHsv(1) * 100f)) / 100f;
+                  // float lightness = (id == R.id.color_lightness ? value : U.parseFloat(((MaterialEditTextGroup) contentView.findViewById(R.id.color_lightness)).getText().toString(), state.getHsv(2) * 100f)) / 100f;
                     /*Color.colorToHSV(currentColor, hsv);
                     float hue = id == R.id.color_hue ? value : U.parseFloat(((MaterialEditTextGroup) contentView.findViewById(R.id.color_hue)).getText().toString(), hsv[0]);
                     */
                     /*hsv[0] = hue;
                     hsv[1] = saturation / 100f;
                     hsv[2] = lightness / 100f;*/
-                    // newColor = Color.HSVToColor(Color.alpha(currentColor), hsv);
+                  // newColor = Color.HSVToColor(Color.alpha(currentColor), hsv);
 
-                    return;
-                  }
+                  return;
                 }
               }
-              break;
-
-            default:
-              throw Theme.newError(id, "viewId");
+            }
+          } else {
+            throw Theme.newError(id, "viewId");
           }
         } catch (Throwable t) {
           Log.i("Cannot parse color input", t);
@@ -990,124 +971,121 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
       protected void setValuedSetting (ListItem item, SettingView view, boolean isUpdate) {
         view.setDrawModifier(item.getDrawModifier());
         ThemeCustom theme = getTheme();
-        switch (item.getId()) {
-          case R.id.btn_property: {
-            final int propertyId = getDataId(item);
-            final float value = theme.getProperty(propertyId);
-            boolean set = false;
-            if (propertyId == ThemeProperty.PARENT_THEME) {
-              try {
-                view.setData(ThemeManager.getBuiltinThemeName((int) value));
-                set = true;
-              } catch (Throwable ignored) { }
+        final int viewId = item.getId();
+        if (viewId == R.id.btn_property) {
+          final int propertyId = getDataId(item);
+          final float value = theme.getProperty(propertyId);
+          boolean set = false;
+          if (propertyId == PropertyId.PARENT_THEME) {
+            try {
+              view.setData(ThemeManager.getBuiltinThemeName((int) value));
+              set = true;
+            } catch (Throwable ignored) {
             }
-            if (!set) {
-              view.setData(U.formatFloat(value, true));
-            }
-            if (ThemeManager.isBoolProperty(propertyId)) {
-              view.getToggler().setUseNegativeState(false);
-              view.getToggler().setRadioEnabled(value == 1f, isUpdate);
-            }
-            break;
           }
-          case R.id.btn_color: {
-            final ItemModifier modifier = (ItemModifier) item.getDrawModifier();
-            final int colorId = getDataId(item);
-            final int color = theme.getColor(colorId);
-            String colorName = view.getName().toString();
+          if (!set) {
+            view.setData(U.formatFloat(value, true));
+          }
+          if (ThemeManager.isBoolProperty(propertyId)) {
+            view.getToggler().setUseNegativeState(false);
+            view.getToggler().setRadioEnabled(value == 1f, isUpdate);
+          }
+        } else if (viewId == R.id.btn_color) {
+          final ItemModifier modifier = (ItemModifier) item.getDrawModifier();
+          final int colorId = getDataId(item);
+          final int color = theme.getColor(colorId);
+          String colorName = view.getName().toString();
 
-            final boolean needStaticFilling = colorId == R.id.theme_color_fillingPressed;
-            boolean hasColor = item.getViewType() >= 0;
-            boolean colorVisible = true;
+          final boolean needStaticFilling = colorId == ColorId.fillingPressed;
+          boolean hasColor = item.getViewType() >= 0;
+          boolean colorVisible = true;
 
-            switch (colorId) {
-              case R.id.theme_color_togglerActive:
-                view.getToggler().setUseNegativeState(false).setRadioEnabled(true, false);
-                hasColor = false;
-                break;
-              case R.id.theme_color_togglerInactive:
-                view.getToggler().setUseNegativeState(false).setRadioEnabled(false, false);
-                hasColor = false;
-                break;
-              case R.id.theme_color_togglerPositive:
-                view.getToggler().setUseNegativeState(true).setRadioEnabled(true, false);
-                hasColor = false;
-                break;
-              case R.id.theme_color_togglerNegative:
-                view.getToggler().setUseNegativeState(true).setRadioEnabled(false, false);
-                hasColor = false;
-                break;
-              case R.id.theme_color_togglerActiveBackground:
-              case R.id.theme_color_togglerInactiveBackground:
-              case R.id.theme_color_togglerPositiveBackground:
-              case R.id.theme_color_togglerPositiveContent:
-              case R.id.theme_color_togglerNegativeBackground:
-              case R.id.theme_color_togglerNegativeContent:
-                colorVisible = false;
-                break;
-              case R.id.theme_color_filling:
-                colorVisible = false;
-                break;
-            }
-            if (modifier.noColorPreview || modifier.drawables != null || modifier.circleColorId != 0 || colorName.startsWith("avatar") || colorName.startsWith("name") || colorName.startsWith("file")) {
+          switch (colorId) {
+            case ColorId.togglerActive:
+              view.getToggler().setUseNegativeState(false).setRadioEnabled(true, false);
+              hasColor = false;
+              break;
+            case ColorId.togglerInactive:
+              view.getToggler().setUseNegativeState(false).setRadioEnabled(false, false);
+              hasColor = false;
+              break;
+            case ColorId.togglerPositive:
+              view.getToggler().setUseNegativeState(true).setRadioEnabled(true, false);
+              hasColor = false;
+              break;
+            case ColorId.togglerNegative:
+              view.getToggler().setUseNegativeState(true).setRadioEnabled(false, false);
+              hasColor = false;
+              break;
+            case ColorId.togglerActiveBackground:
+            case ColorId.togglerInactiveBackground:
+            case ColorId.togglerPositiveBackground:
+            case ColorId.togglerPositiveContent:
+            case ColorId.togglerNegativeBackground:
+            case ColorId.togglerNegativeContent:
               colorVisible = false;
-            }
-
-            int backgroundColorId = getBackgroundColorId(colorId, colorName);
-            Theme.changeBackgroundColorId(view, backgroundColorId);
-            Theme.changeSelector(view, needStaticFilling, backgroundColorId);
-
-            if (hasColor) {
-              ColorPreviewView previewView = (ColorPreviewView) view.getChildAt(0);
-              previewView.setColor(color, -1);
-              int visibility = colorVisible ? View.VISIBLE : View.INVISIBLE;
-              if (previewView.getVisibility() != visibility) {
-                previewView.setVisibility(visibility);
-              }
-            }
-
-            view.setData(getColorRepresentation(color, false));
-
-            int dataColorId;
-            boolean dataIsSubtitle = false;
-            switch (colorId) {
-              case R.id.theme_color_background:
-              case R.id.theme_color_background_text:
-              case R.id.theme_color_background_textLight:
-              case R.id.theme_color_background_icon:
-                dataColorId = R.id.theme_color_background_textLight;
-                break;
-              case R.id.theme_color_caption_textLink:
-              case R.id.theme_color_caption_textLinkPressHighlight:
-                dataColorId = R.id.theme_color_caption_textLink;
-                break;
-              /*case R.id.theme_color_headerRemoveBackground:
-                dataColorId = R.id.theme_color_headerText;
-                dataIsSubtitle = true;
-                break;*/
-              /*case R.id.theme_color_headerBackground:
-              case R.id.theme_color_headerText:
-              case R.id.theme_color_headerIcon:
-                dataColorId = R.id.theme_color_headerText;
-                dataIsSubtitle = true;
-                break;
-              case R.id.theme_color_headerLightBackground:
-              case R.id.theme_color_headerLightText:
-              case R.id.theme_color_headerLightIcon:
-                dataColorId = R.id.theme_color_headerLightText;
-                dataIsSubtitle = true;
-                break;*/
-              default:
-                if (colorName.startsWith("iv_")) {
-                  dataColorId = R.id.theme_color_iv_caption;
-                } else {
-                  dataColorId = R.id.theme_color_textLight;
-                }
-                break;
-            }
-            view.setDataColorId(dataColorId, dataIsSubtitle);
-            break;
+              break;
+            case ColorId.filling:
+              colorVisible = false;
+              break;
           }
+          if (modifier.noColorPreview || modifier.drawables != null || modifier.circleColorId != 0 || colorName.startsWith("avatar") || colorName.startsWith("name") || colorName.startsWith("file")) {
+            colorVisible = false;
+          }
+
+          int backgroundColorId = getBackgroundColorId(colorId, colorName);
+          Theme.changeBackgroundColorId(view, backgroundColorId);
+          Theme.changeSelector(view, needStaticFilling, backgroundColorId);
+
+          if (hasColor) {
+            ColorPreviewView previewView = (ColorPreviewView) view.getChildAt(0);
+            previewView.setColor(color, -1);
+            int visibility = colorVisible ? View.VISIBLE : View.INVISIBLE;
+            if (previewView.getVisibility() != visibility) {
+              previewView.setVisibility(visibility);
+            }
+          }
+
+          view.setData(getColorRepresentation(color, false));
+
+          int dataColorId;
+          boolean dataIsSubtitle = false;
+          switch (colorId) {
+            case ColorId.background:
+            case ColorId.background_text:
+            case ColorId.background_textLight:
+            case ColorId.background_icon:
+              dataColorId = ColorId.background_textLight;
+              break;
+            case ColorId.caption_textLink:
+            case ColorId.caption_textLinkPressHighlight:
+              dataColorId = ColorId.caption_textLink;
+              break;
+              /*case ColorId.headerRemoveBackground:
+                dataColorId = ColorId.headerText;
+                dataIsSubtitle = true;
+                break;*/
+              /*case ColorId.headerBackground:
+              case ColorId.headerText:
+              case ColorId.headerIcon:
+                dataColorId = ColorId.headerText;
+                dataIsSubtitle = true;
+                break;
+              case ColorId.headerLightBackground:
+              case ColorId.headerLightText:
+              case ColorId.headerLightIcon:
+                dataColorId = ColorId.headerLightText;
+                dataIsSubtitle = true;
+                break;*/
+            default:
+              if (colorName.startsWith("iv_")) {
+                dataColorId = ColorId.iv_caption;
+              } else {
+                dataColorId = ColorId.textLight;
+              }
+              break;
+          }
+          view.setDataColorId(dataColorId, dataIsSubtitle);
         }
       }
     };
@@ -1170,11 +1148,12 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
     });
 
     List<ListItem> items = new ArrayList<>();
+    //noinspection WrongConstant
     this.itemCount = buildCells(items, args.theme.getId(), currentQuery);
 
     adapter.setItems(items, false);
 
-    items.add(new ListItem(ListItem.TYPE_SETTING, R.id.theme_color_filling));
+    items.add(new ListItem(ListItem.TYPE_SETTING, ColorId.filling));
 
     recyclerView.setItemAnimator(isLookupMode ? null : new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 120l));
     recyclerView.setAdapter(adapter);
@@ -1183,7 +1162,7 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
       @Override
       public boolean canRemove (RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, int position) {
         ListItem item = (ListItem) viewHolder.itemView.getTag();
-        return item.getId() == R.id.btn_color && getDataId(item) == R.id.theme_color_fillingNegative;
+        return item.getId() == R.id.btn_color && getDataId(item) == ColorId.fillingNegative;
       }
 
       @Override
@@ -1200,44 +1179,44 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
       adapter.setLockFocusOn(getParentOrSelf(), false);
   }
 
-  private static int getPickerBackgroundColorId (@ThemeColorId int colorId, @NonNull String colorName) {
+  private static int getPickerBackgroundColorId (@ColorId int colorId, @NonNull String colorName) {
     int backgroundColorId = getBackgroundColorId(colorId, colorName);
     switch (backgroundColorId) {
-      case R.id.theme_color_black:
-        return R.id.theme_color_filling;
+      case ColorId.black:
+        return ColorId.filling;
     }
     return backgroundColorId;
   }
 
-  private static int getBackgroundColorId (@ThemeColorId int colorId, @NonNull String colorName) {
+  private static int getBackgroundColorId (@ColorId int colorId, @NonNull String colorName) {
     switch (colorId) {
-      case R.id.theme_color_background:
-      case R.id.theme_color_background_text:
-      case R.id.theme_color_background_textLight:
-      case R.id.theme_color_background_icon:
-        return R.id.theme_color_background;
-      /*case R.id.theme_color_headerRemoveBackground:
-        return R.id.theme_color_headerBackground;
-      case R.id.theme_color_headerBackground:
-      case R.id.theme_color_headerText:
-      case R.id.theme_color_headerIcon:
-        return R.id.theme_color_headerBackground;
-      case R.id.theme_color_headerLightBackground:
-      case R.id.theme_color_headerLightText:
-      case R.id.theme_color_headerLightIcon:
-        return R.id.theme_color_headerLightBackground;*/
-      case R.id.theme_color_iv_preBlockBackground:
-      case R.id.theme_color_iv_textCodeBackground:
+      case ColorId.background:
+      case ColorId.background_text:
+      case ColorId.background_textLight:
+      case ColorId.background_icon:
+        return ColorId.background;
+      /*case ColorId.headerRemoveBackground:
+        return ColorId.headerBackground;
+      case ColorId.headerBackground:
+      case ColorId.headerText:
+      case ColorId.headerIcon:
+        return ColorId.headerBackground;
+      case ColorId.headerLightBackground:
+      case ColorId.headerLightText:
+      case ColorId.headerLightIcon:
+        return ColorId.headerLightBackground;*/
+      case ColorId.iv_preBlockBackground:
+      case ColorId.iv_textCodeBackground:
         return colorId;
-      case R.id.theme_color_caption_textLink:
-      case R.id.theme_color_caption_textLinkPressHighlight:
-        return R.id.theme_color_black;
-      /*case R.id.theme_color_snackbarUpdate:
-      case R.id.theme_color_snackbarUpdateAction:
-      case R.id.theme_color_snackbarUpdateText:
-        return R.id.theme_color_snackbarUpdate;*/
+      case ColorId.caption_textLink:
+      case ColorId.caption_textLinkPressHighlight:
+        return ColorId.black;
+      /*case ColorId.snackbarUpdate:
+      case ColorId.snackbarUpdateAction:
+      case ColorId.snackbarUpdateText:
+        return ColorId.snackbarUpdate;*/
     }
-    return R.id.theme_color_filling;
+    return ColorId.filling;
   }
 
   private static class ItemModifier implements DrawModifier {
@@ -1248,7 +1227,7 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
     private DrawModifier otherModifier;
 
     private int backgroundColorId;
-    private int circleColorId, circleIconColorId = R.id.theme_color_white;
+    private int circleColorId, circleIconColorId = ColorId.white;
     private Letters letters;
     private float lettersWidth;
     private Drawable circleIcon;
@@ -1306,7 +1285,7 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
 
     public void setCounter (int count) {
       this.counter = new Counter.Builder().build();
-      this.counter.setCount(count, colorId == R.id.theme_color_badgeMuted, false);
+      this.counter.setCount(count, colorId == ColorId.badgeMuted, false);
     }
 
     public void setHasHistory (boolean hasHistory) {
@@ -1338,7 +1317,7 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
         float cx = Screen.dp(8f);
         float cy = view.getMeasuredHeight() / 2 - Screen.dp(9f);
         // Drawables.draw(c, editDrawable, cx, cy, Paints.getIconGrayLightPorterDuffPaint());
-        c.drawCircle(cx, cy, Screen.dp(3f), Paints.fillingPaint(theme.getColor(isOverridden ? R.id.theme_color_iconActive : R.id.theme_color_iconLight)));
+        c.drawCircle(cx, cy, Screen.dp(3f), Paints.fillingPaint(theme.getColor(isOverridden ? ColorId.iconActive : ColorId.iconLight)));
       }
       if (circleColorId != 0) {
         int circleRadius = ChatView.getAvatarRadius(Settings.CHAT_MODE_2LINE);
@@ -1354,7 +1333,7 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
         } else if (letters != null) {
           Paint paint = Paints.whiteMediumPaint(20, letters.needFakeBold, false);
           int saved = paint.getColor();
-          paint.setColor(Theme.getColor(R.id.theme_color_avatar_content));
+          paint.setColor(Theme.getColor(ColorId.avatar_content));
           c.drawText(letters.text, cx - lettersWidth / 2, cy + Screen.dp(7f), paint);
           paint.setColor(saved);
         } else if (playPausePath != null) {
@@ -1430,141 +1409,141 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
     int spanStart = 0, spanEnd = name.length();
     viewType = ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_COLOR;
     switch (id) {
-      case R.id.theme_color_togglerActive:
-      case R.id.theme_color_togglerInactive:
-      case R.id.theme_color_togglerPositive:
-      case R.id.theme_color_togglerNegative:
+      case ColorId.togglerActive:
+      case ColorId.togglerInactive:
+      case ColorId.togglerPositive:
+      case ColorId.togglerNegative:
         viewType = ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_TOGGLER;
         break;
 
-      case R.id.theme_color_background_text:
-      case R.id.theme_color_background_textLight:
-      case R.id.theme_color_caption_textLink:
+      case ColorId.background_text:
+      case ColorId.background_textLight:
+      case ColorId.caption_textLink:
         span = new CustomTypefaceSpan(null, id);
         break;
-      /*case R.id.theme_color_headerBackground:
-      case R.id.theme_color_headerText:
-      case R.id.theme_color_headerIcon:
-        span = new CustomTypefaceSpan(null, R.id.theme_color_headerText);
+      /*case ColorId.headerBackground:
+      case ColorId.headerText:
+      case ColorId.headerIcon:
+        span = new CustomTypefaceSpan(null, ColorId.headerText);
         break;
-      case R.id.theme_color_headerLightBackground:
-      case R.id.theme_color_headerLightText:
-      case R.id.theme_color_headerLightIcon:
-        span = new CustomTypefaceSpan(null, R.id.theme_color_headerLightText);
+      case ColorId.headerLightBackground:
+      case ColorId.headerLightText:
+      case ColorId.headerLightIcon:
+        span = new CustomTypefaceSpan(null, ColorId.headerLightText);
         break;*/
-      case R.id.theme_color_background:
-      case R.id.theme_color_background_icon:
-        span = new CustomTypefaceSpan(null, R.id.theme_color_background_text);
-        if (id == R.id.theme_color_background_icon) {
+      case ColorId.background:
+      case ColorId.background_icon:
+        span = new CustomTypefaceSpan(null, ColorId.background_text);
+        if (id == ColorId.background_icon) {
           modifier.setIcons(R.drawable.baseline_devices_other_24);
         } else {
           modifier.noColorPreview = true;
         }
         break;
-      case R.id.theme_color_icon:
+      case ColorId.icon:
         modifier.setIcons(R.drawable.baseline_settings_24, R.drawable.baseline_alternate_email_24, R.drawable.deproko_baseline_pin_24);
         break;
-      case R.id.theme_color_iconLight:
+      case ColorId.iconLight:
         modifier.setIcons(R.drawable.deproko_baseline_clock_24, R.drawable.baseline_visibility_14, R.drawable.baseline_edit_12);
         break;
-      case R.id.theme_color_playerButton:
+      case ColorId.playerButton:
         modifier.setIcons(R.drawable.baseline_skip_next_24_white, R.drawable.baseline_pause_24, R.drawable.baseline_skip_previous_24_white);
         break;
-      case R.id.theme_color_playerButtonActive:
+      case ColorId.playerButtonActive:
         modifier.setIcons(R.drawable.round_repeat_24, R.drawable.round_shuffle_24, R.drawable.round_repeat_one_24);
         break;
-      case R.id.theme_color_iconActive:
+      case ColorId.iconActive:
         modifier.setIcons(R.drawable.deproko_baseline_mosaic_group_24, R.drawable.baseline_emoticon_outline_24, R.drawable.baseline_restaurant_menu_24);
         break;
-      case R.id.theme_color_iconPositive:
+      case ColorId.iconPositive:
         modifier.setIcons(R.drawable.baseline_call_made_18, R.drawable.baseline_call_received_18);
         break;
-      case R.id.theme_color_iconNegative:
+      case ColorId.iconNegative:
         modifier.setIcons(R.drawable.baseline_call_made_18, R.drawable.baseline_call_received_18, R.drawable.baseline_call_missed_18);
         break;
-      case R.id.theme_color_ticks:
+      case ColorId.ticks:
         modifier.setIcons(R.drawable.deproko_baseline_check_single_24);
         break;
-      case R.id.theme_color_ticksRead:
+      case ColorId.ticksRead:
         modifier.setIcons(R.drawable.deproko_baseline_check_double_24);
         break;
-      case R.id.theme_color_bubbleOut_ticks:
+      case ColorId.bubbleOut_ticks:
         modifier.setIcons(R.drawable.deproko_baseline_check_single_24);
-        modifier.iconBackgroundColorId = R.id.theme_color_bubbleOut_background;
+        modifier.iconBackgroundColorId = ColorId.bubbleOut_background;
         break;
-      case R.id.theme_color_bubbleOut_ticksRead:
+      case ColorId.bubbleOut_ticksRead:
         modifier.setIcons(R.drawable.deproko_baseline_check_double_24);
-        modifier.iconBackgroundColorId = R.id.theme_color_bubbleOut_background;
+        modifier.iconBackgroundColorId = ColorId.bubbleOut_background;
         break;
-      case R.id.theme_color_chatListVerify:
+      case ColorId.chatListVerify:
         modifier.setIcons(R.drawable.deproko_baseline_verify_chat_24);
         break;
-      case R.id.theme_color_chatSendButton:
+      case ColorId.chatSendButton:
         modifier.setIcons(R.drawable.deproko_baseline_send_24);
         break;
-      case R.id.theme_color_chatListMute:
+      case ColorId.chatListMute:
         modifier.setIcons(R.drawable.deproko_baseline_notifications_off_24);
         break;
-      case R.id.theme_color_chatListIcon:
+      case ColorId.chatListIcon:
         modifier.setIcons(R.drawable.baseline_camera_alt_16, R.drawable.baseline_videocam_16, R.drawable.baseline_collections_16, R.drawable.ivanliana_baseline_video_collections_16, R.drawable.ivanliana_baseline_audio_collections_16, R.drawable.ivanliana_baseline_file_collections_16);
         break;
-      case R.id.theme_color_badge:
-      case R.id.theme_color_badgeMuted:
-      case R.id.theme_color_badgeFailed:
-        modifier.setCounter(id == R.id.theme_color_badgeFailed ? Tdlib.CHAT_FAILED: 1);
+      case ColorId.badge:
+      case ColorId.badgeMuted:
+      case ColorId.badgeFailed:
+        modifier.setCounter(id == ColorId.badgeFailed ? Tdlib.CHAT_FAILED: 1);
         modifier.noColorPreview = true;
         break;
-      case R.id.theme_color_textSelectionHighlight:
-        span = new CustomTypefaceSpan(null, R.id.theme_color_text).setBackgroundColorId(id);
+      case ColorId.textSelectionHighlight:
+        span = new CustomTypefaceSpan(null, ColorId.text).setBackgroundColorId(id);
         break;
-      case R.id.theme_color_textLinkPressHighlight:
-        span = new CustomTypefaceSpan(null, R.id.theme_color_textLink).setBackgroundColorId(id);
+      case ColorId.textLinkPressHighlight:
+        span = new CustomTypefaceSpan(null, ColorId.textLink).setBackgroundColorId(id);
         break;
-      case R.id.theme_color_iv_textMarkedBackground:
-        span = new CustomTypefaceSpan(null, R.id.theme_color_iv_textMarked).setBackgroundColorId(id);
+      case ColorId.iv_textMarkedBackground:
+        span = new CustomTypefaceSpan(null, ColorId.iv_textMarked).setBackgroundColorId(id);
         break;
-      case R.id.theme_color_iv_textMarkedLinkPressHighlight:
-        span = new CustomTypefaceSpan(null, R.id.theme_color_iv_textMarkedLink).setBackgroundColorId(id);
+      case ColorId.iv_textMarkedLinkPressHighlight:
+        span = new CustomTypefaceSpan(null, ColorId.iv_textMarkedLink).setBackgroundColorId(id);
         break;
-      case R.id.theme_color_iv_textLinkPressHighlight:
-        span = new CustomTypefaceSpan(null, R.id.theme_color_iv_textLink).setBackgroundColorId(id);
+      case ColorId.iv_textLinkPressHighlight:
+        span = new CustomTypefaceSpan(null, ColorId.iv_textLink).setBackgroundColorId(id);
         break;
-      case R.id.theme_color_textSearchQueryHighlight:
+      case ColorId.textSearchQueryHighlight:
         span = new CustomTypefaceSpan(null, id);
         spanEnd = name.length() / 2; // name.indexOf("Prefix") + "Prefix".length();
         break;
-      case R.id.theme_color_caption_textLinkPressHighlight:
-        span = new CustomTypefaceSpan(null, R.id.theme_color_caption_textLink).setBackgroundColorId(id);
+      case ColorId.caption_textLinkPressHighlight:
+        span = new CustomTypefaceSpan(null, ColorId.caption_textLink).setBackgroundColorId(id);
         break;
-      case R.id.theme_color_snackbarUpdate:
-      case R.id.theme_color_snackbarUpdateAction:
-        span = new CustomTypefaceSpan(null, R.id.theme_color_snackbarUpdateAction).setBackgroundColorId(R.id.theme_color_snackbarUpdate);
+      case ColorId.snackbarUpdate:
+      case ColorId.snackbarUpdateAction:
+        span = new CustomTypefaceSpan(null, ColorId.snackbarUpdateAction).setBackgroundColorId(ColorId.snackbarUpdate);
         break;
-      case R.id.theme_color_snackbarUpdateText:
-        span = new CustomTypefaceSpan(null, id).setBackgroundColorId(R.id.theme_color_snackbarUpdate);
+      case ColorId.snackbarUpdateText:
+        span = new CustomTypefaceSpan(null, id).setBackgroundColorId(ColorId.snackbarUpdate);
         break;
 
-      case R.id.theme_color_iv_pageTitle:
-      case R.id.theme_color_iv_pageSubtitle:
+      case ColorId.iv_pageTitle:
+      case ColorId.iv_pageSubtitle:
         span = new CustomTypefaceSpan(null, id).setTextSizeDp(18f);
         break;
-      case R.id.theme_color_iv_pullQuote:
+      case ColorId.iv_pullQuote:
         span = new CustomTypefaceSpan(null, id).setFakeBold(true);
         break;
 
-      case R.id.theme_color_iv_blockQuoteLine:
-      case R.id.theme_color_messageVerticalLine:
-      case R.id.theme_color_bubbleOut_chatVerticalLine:
+      case ColorId.iv_blockQuoteLine:
+      case ColorId.messageVerticalLine:
+      case ColorId.bubbleOut_chatVerticalLine:
         modifier.setOtherModifier(new LineDrawModifier(id, theme));
         break;
-      case R.id.theme_color_iv_preBlockBackground:
-      case R.id.theme_color_iv_textCodeBackground:
-      case R.id.theme_color_iv_separator:
-      case R.id.theme_color_ivHeaderIcon:
-      case R.id.theme_color_iv_header:
+      case ColorId.iv_preBlockBackground:
+      case ColorId.iv_textCodeBackground:
+      case ColorId.iv_separator:
+      case ColorId.ivHeaderIcon:
+      case ColorId.iv_header:
         // Do nothing
         break;
-      case R.id.theme_color_checkActive:
+      case ColorId.checkActive:
         modifier.noColorPreview = true;
         modifier.setOtherModifier(new DrawModifier() {
           @Override
@@ -1573,55 +1552,55 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
           }
         });
         break;
-      case R.id.theme_color_online:
-        modifier.setCircle(R.id.theme_color_avatarSavedMessages, StringUtils.random(name, 2).toUpperCase());
+      case ColorId.online:
+        modifier.setCircle(ColorId.avatarSavedMessages, StringUtils.random(name, 2).toUpperCase());
         modifier.needOnline = true;
         modifier.noColorPreview = true;
         break;
-      case R.id.theme_color_inlineOutline:
+      case ColorId.inlineOutline:
         viewType = ListItem.TYPE_CUSTOM - VIEW_TYPE_INLINE_OUTLINE;
         break;
-      case R.id.theme_color_progress:
+      case ColorId.progress:
         viewType = ListItem.TYPE_CUSTOM - VIEW_TYPE_PROGRESS;
         break;
-      case R.id.theme_color_controlActive:
-      case R.id.theme_color_controlInactive:
+      case ColorId.controlActive:
+      case ColorId.controlInactive:
         viewType = ListItem.TYPE_CUSTOM - VIEW_TYPE_CONTROLS;
         break;
-      case R.id.theme_color_promo:
+      case ColorId.promo:
         viewType = ListItem.TYPE_CUSTOM - VIEW_TYPE_NEW;
         break;
-      case R.id.theme_color_inputActive:
-      case R.id.theme_color_inputInactive:
-      case R.id.theme_color_inputPositive:
-      case R.id.theme_color_inputNegative:
+      case ColorId.inputActive:
+      case ColorId.inputInactive:
+      case ColorId.inputPositive:
+      case ColorId.inputNegative:
         viewType = ListItem.TYPE_CUSTOM - VIEW_TYPE_INPUT;
         break;
-      case R.id.theme_color_sliderActive:
+      case ColorId.sliderActive:
         viewType = ListItem.TYPE_CUSTOM - VIEW_TYPE_SLIDER;
         break;
-      case R.id.theme_color_playerCoverIcon:
+      case ColorId.playerCoverIcon:
         modifier.setIcons(R.drawable.baseline_music_note_24);
-        modifier.iconBackgroundColorId = R.id.theme_color_playerCoverPlaceholder;
+        modifier.iconBackgroundColorId = ColorId.playerCoverPlaceholder;
         break;
-      case R.id.theme_color_headerButton:
-      case R.id.theme_color_circleButtonRegular:
-      case R.id.theme_color_circleButtonOverlay:
-      case R.id.theme_color_circleButtonChat:
-      case R.id.theme_color_circleButtonTheme:
-      case R.id.theme_color_circleButtonNewSecret:
-      case R.id.theme_color_circleButtonNewChat:
-      case R.id.theme_color_circleButtonNewGroup:
-      case R.id.theme_color_circleButtonNewChannel:
-      case R.id.theme_color_circleButtonPositive:
-      case R.id.theme_color_circleButtonNegative:
+      case ColorId.headerButton:
+      case ColorId.circleButtonRegular:
+      case ColorId.circleButtonOverlay:
+      case ColorId.circleButtonChat:
+      case ColorId.circleButtonTheme:
+      case ColorId.circleButtonNewSecret:
+      case ColorId.circleButtonNewChat:
+      case ColorId.circleButtonNewGroup:
+      case ColorId.circleButtonNewChannel:
+      case ColorId.circleButtonPositive:
+      case ColorId.circleButtonNegative:
         viewType = ListItem.TYPE_CUSTOM - VIEW_TYPE_CIRCLE;
         break;
 
-      case R.id.theme_color_placeholder:
+      case ColorId.placeholder:
         modifier.setCircle(id, 0);
         break;
-      case R.id.theme_color_seekDone:
+      case ColorId.seekDone:
         modifier.setOtherModifier(new DrawModifier() {
           @Override
           public void afterDraw (View view, Canvas c) {
@@ -1629,15 +1608,15 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
             int cx = view.getMeasuredWidth() - Screen.dp(12f) - width;
             int cy = view.getMeasuredHeight() / 2;
             final int seekStroke = Screen.dp(2f);
-            c.drawLine(cx, cy, cx + width, cy, Paints.getProgressPaint(theme.getColor(R.id.theme_color_seekEmpty), seekStroke));
-            c.drawLine(cx, cy, cx + width / 3 * 2, cy, Paints.getProgressPaint(theme.getColor(R.id.theme_color_seekReady), seekStroke));
-            c.drawLine(cx, cy, cx + width / 3, cy, Paints.getProgressPaint(theme.getColor(R.id.theme_color_seekDone), seekStroke));
-            c.drawCircle(cx + width / 3, cy, Screen.dp(6f), Paints.fillingPaint(theme.getColor(R.id.theme_color_seekDone)));
+            c.drawLine(cx, cy, cx + width, cy, Paints.getProgressPaint(theme.getColor(ColorId.seekEmpty), seekStroke));
+            c.drawLine(cx, cy, cx + width / 3 * 2, cy, Paints.getProgressPaint(theme.getColor(ColorId.seekReady), seekStroke));
+            c.drawLine(cx, cy, cx + width / 3, cy, Paints.getProgressPaint(theme.getColor(ColorId.seekDone), seekStroke));
+            c.drawCircle(cx + width / 3, cy, Screen.dp(6f), Paints.fillingPaint(theme.getColor(ColorId.seekDone)));
           }
         });
         modifier.noColorPreview = true;
         break;
-      case R.id.theme_color_introSectionActive:
+      case ColorId.introSectionActive:
         modifier.noColorPreview = true;
         modifier.setOtherModifier(new DrawModifier() {
           @Override
@@ -1649,14 +1628,14 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
             int count = 6;
             for (int i = 0; i < count; i++) {
                cx -= radius;
-               c.drawCircle(cx, cy, radius, Paints.fillingPaint(Theme.getColor(i == count - 1 ? R.id.theme_color_introSectionActive : R.id.theme_color_introSection)));
+               c.drawCircle(cx, cy, radius, Paints.fillingPaint(Theme.getColor(i == count - 1 ? ColorId.introSectionActive : ColorId.introSection)));
                cx -= radius + spacing;
             }
           }
         });
         break;
-      case R.id.theme_color_headerRemoveBackground:
-        // span = new CustomTypefaceSpan(null, R.id.theme_color_headerText);
+      case ColorId.headerRemoveBackground:
+        // span = new CustomTypefaceSpan(null, ColorId.headerText);
         modifier.noColorPreview = true;
         modifier.setOtherModifier(new DrawModifier() {
           private String text;
@@ -1679,16 +1658,16 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
             int cx = view.getMeasuredWidth() - Screen.dp(12f) - width;
             int cy = view.getMeasuredHeight() / 2 - avatarRadius;
             int endX = view.getMeasuredWidth();
-            c.drawRect(cx - (endX - cx - width), 0, endX, view.getMeasuredHeight(), Paints.fillingPaint(theme.getColor(R.id.theme_color_headerBackground)));
+            c.drawRect(cx - (endX - cx - width), 0, endX, view.getMeasuredHeight(), Paints.fillingPaint(theme.getColor(ColorId.headerBackground)));
             rectF.set(cx, cy, cx + width, cy + avatarRadius + avatarRadius);
-            c.drawRoundRect(rectF, avatarRadius, avatarRadius, Paints.fillingPaint(theme.getColor(R.id.theme_color_headerRemoveBackground)));
-            c.drawCircle(cx + avatarRadius, cy + avatarRadius, avatarRadius, Paints.fillingPaint(theme.getColor(R.id.theme_color_headerRemoveBackgroundHighlight)));
+            c.drawRoundRect(rectF, avatarRadius, avatarRadius, Paints.fillingPaint(theme.getColor(ColorId.headerRemoveBackground)));
+            c.drawCircle(cx + avatarRadius, cy + avatarRadius, avatarRadius, Paints.fillingPaint(theme.getColor(ColorId.headerRemoveBackgroundHighlight)));
             Drawables.draw(c, icon, cx + avatarRadius - icon.getMinimumWidth() / 2, cy + avatarRadius - icon.getMinimumHeight() / 2, Paints.getPorterDuffPaint(0xffffffff));
             c.drawText(text, cx + avatarRadius * 2 + padding, cy + avatarRadius + Screen.dp(5f), paint);
           }
         });
         break;
-      case R.id.theme_color_waveformActive:
+      case ColorId.waveformActive:
         modifier.noColorPreview = true;
         modifier.setOtherModifier(new DrawModifier() {
           private Waveform waveform;
@@ -1703,14 +1682,14 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
           }
         });
         break;
-      case R.id.theme_color_bubbleOut_waveformActive:
+      case ColorId.bubbleOut_waveformActive:
         modifier.noColorPreview = true;
         modifier.setOtherModifier(new DrawModifier() {
           private Waveform waveform;
           @Override
           public void afterDraw (View view, Canvas c) {
             int width = Screen.dp(122f);
-            c.drawRect(view.getMeasuredWidth() - width - Screen.dp(12f) * 2, 0, view.getMeasuredWidth(), view.getMeasuredHeight(), Paints.fillingPaint(theme.getColor(R.id.theme_color_bubbleOut_background)));
+            c.drawRect(view.getMeasuredWidth() - width - Screen.dp(12f) * 2, 0, view.getMeasuredWidth(), view.getMeasuredHeight(), Paints.fillingPaint(theme.getColor(ColorId.bubbleOut_background)));
             if (waveform == null) {
               waveform = new Waveform(TD.newRandomWaveform(), Waveform.MODE_RECT, true);
               waveform.layout(width);
@@ -1719,72 +1698,72 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
           }
         });
         break;
-      case R.id.theme_color_headerRemoveBackgroundHighlight:
-      case R.id.theme_color_checkContent:
-      case R.id.theme_color_textPlaceholder:
-      case R.id.theme_color_promoContent:
-      case R.id.theme_color_controlContent:
-      case R.id.theme_color_inlineText:
-      case R.id.theme_color_inlineIcon:
-      case R.id.theme_color_inlineContentActive:
-      case R.id.theme_color_badgeText:
-      case R.id.theme_color_badgeMutedText:
-      case R.id.theme_color_badgeFailedText:
-      case R.id.theme_color_sliderInactive:
-      case R.id.theme_color_playerCoverPlaceholder:
-      case R.id.theme_color_seekEmpty:
-      case R.id.theme_color_seekReady:
-      case R.id.theme_color_introSection:
-      case R.id.theme_color_headerButtonIcon:
-      case R.id.theme_color_waveformInactive:
-      case R.id.theme_color_bubbleOut_waveformInactive:
-      case R.id.theme_color_filling:
-      case R.id.theme_color_circleButtonRegularIcon:
-      case R.id.theme_color_circleButtonChatIcon:
-      case R.id.theme_color_circleButtonOverlayIcon:
-      case R.id.theme_color_circleButtonThemeIcon:
-      case R.id.theme_color_circleButtonNewSecretIcon:
-      case R.id.theme_color_circleButtonNewChatIcon:
-      case R.id.theme_color_circleButtonNewGroupIcon:
-      case R.id.theme_color_circleButtonNewChannelIcon:
-      case R.id.theme_color_circleButtonPositiveIcon:
-      case R.id.theme_color_circleButtonNegativeIcon:
+      case ColorId.headerRemoveBackgroundHighlight:
+      case ColorId.checkContent:
+      case ColorId.textPlaceholder:
+      case ColorId.promoContent:
+      case ColorId.controlContent:
+      case ColorId.inlineText:
+      case ColorId.inlineIcon:
+      case ColorId.inlineContentActive:
+      case ColorId.badgeText:
+      case ColorId.badgeMutedText:
+      case ColorId.badgeFailedText:
+      case ColorId.sliderInactive:
+      case ColorId.playerCoverPlaceholder:
+      case ColorId.seekEmpty:
+      case ColorId.seekReady:
+      case ColorId.introSection:
+      case ColorId.headerButtonIcon:
+      case ColorId.waveformInactive:
+      case ColorId.bubbleOut_waveformInactive:
+      case ColorId.filling:
+      case ColorId.circleButtonRegularIcon:
+      case ColorId.circleButtonChatIcon:
+      case ColorId.circleButtonOverlayIcon:
+      case ColorId.circleButtonThemeIcon:
+      case ColorId.circleButtonNewSecretIcon:
+      case ColorId.circleButtonNewChatIcon:
+      case ColorId.circleButtonNewGroupIcon:
+      case ColorId.circleButtonNewChannelIcon:
+      case ColorId.circleButtonPositiveIcon:
+      case ColorId.circleButtonNegativeIcon:
         modifier.noColorPreview = true;
         break;
-      case R.id.theme_color_fileAttach:
+      case ColorId.fileAttach:
         modifier.setCircle(id, R.drawable.baseline_location_on_24);
         break;
-      case R.id.theme_color_attachContact:
+      case ColorId.attachContact:
         modifier.setCircle(id, R.drawable.baseline_person_24);
-        modifier.circleIconColorId = R.id.theme_color_attachText;
+        modifier.circleIconColorId = ColorId.attachText;
         break;
-      case R.id.theme_color_attachFile:
+      case ColorId.attachFile:
         modifier.setCircle(id, R.drawable.baseline_insert_drive_file_24);
-        modifier.circleIconColorId = R.id.theme_color_attachText;
+        modifier.circleIconColorId = ColorId.attachText;
         break;
-      case R.id.theme_color_attachInlineBot:
+      case ColorId.attachInlineBot:
         modifier.setCircle(id, R.drawable.deproko_baseline_bots_24);
-        modifier.circleIconColorId = R.id.theme_color_attachText;
+        modifier.circleIconColorId = ColorId.attachText;
         break;
-      case R.id.theme_color_attachPhoto:
+      case ColorId.attachPhoto:
         modifier.setCircle(id, R.drawable.baseline_image_24);
-        modifier.circleIconColorId = R.id.theme_color_attachText;
+        modifier.circleIconColorId = ColorId.attachText;
         break;
-      case R.id.theme_color_attachLocation:
+      case ColorId.attachLocation:
         modifier.setCircle(id, R.drawable.baseline_location_on_24);
-        modifier.circleIconColorId = R.id.theme_color_attachText;
+        modifier.circleIconColorId = ColorId.attachText;
         break;
-      case R.id.theme_color_messageAuthor:
-      case R.id.theme_color_messageAuthorPsa:
+      case ColorId.messageAuthor:
+      case ColorId.messageAuthorPsa:
         span = new CustomTypefaceSpan(null, id).setFakeBold(true);
         break;
-      case R.id.theme_color_bubbleOut_messageAuthor:
-      case R.id.theme_color_bubbleOut_messageAuthorPsa:
-        span = new CustomTypefaceSpan(null, id).setFakeBold(true).setBackgroundColorId(R.id.theme_color_bubbleOut_background);
+      case ColorId.bubbleOut_messageAuthor:
+      case ColorId.bubbleOut_messageAuthorPsa:
+        span = new CustomTypefaceSpan(null, id).setFakeBold(true).setBackgroundColorId(ColorId.bubbleOut_background);
         break;
-      case R.id.theme_color_bubbleOut_file:
+      case ColorId.bubbleOut_file:
         modifier.setCircle(id, R.drawable.baseline_insert_drive_file_24);
-        // modifier.backgroundColorId = R.id.theme_color_bubbleOut_background;
+        // modifier.backgroundColorId = ColorId.bubbleOut_background;
         break;
 
       default:
@@ -1798,25 +1777,25 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
           }*/
         } else if (name.startsWith("avatar")) {
           switch (id) {
-            case R.id.theme_color_avatar_content: {
+            case ColorId.avatar_content: {
               modifier.setCircle(0, 0);
               break;
             }
-            case R.id.theme_color_avatarArchive:
-            case R.id.theme_color_avatarArchivePinned:
-            case R.id.theme_color_avatarReplies:
-            case R.id.theme_color_avatarReplies_big:
-            case R.id.theme_color_avatarSavedMessages:
-            case R.id.theme_color_avatarSavedMessages_big: {
+            case ColorId.avatarArchive:
+            case ColorId.avatarArchivePinned:
+            case ColorId.avatarReplies:
+            case ColorId.avatarReplies_big:
+            case ColorId.avatarSavedMessages:
+            case ColorId.avatarSavedMessages_big: {
               int circleIcon;
 
               switch (id) {
-                case R.id.theme_color_avatarArchive:
-                case R.id.theme_color_avatarArchivePinned:
+                case ColorId.avatarArchive:
+                case ColorId.avatarArchivePinned:
                   circleIcon = R.drawable.baseline_archive_24;
                   break;
-                case R.id.theme_color_avatarReplies:
-                case R.id.theme_color_avatarReplies_big:
+                case ColorId.avatarReplies:
+                case ColorId.avatarReplies_big:
                   circleIcon = R.drawable.baseline_reply_24;
                   break;
                 default:
@@ -1825,7 +1804,7 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
               }
 
               modifier.setCircle(id, circleIcon);
-              modifier.circleIconColorId = R.id.theme_color_avatar_content;
+              modifier.circleIconColorId = ColorId.avatar_content;
               break;
             }
             default: {
@@ -1843,17 +1822,17 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
           }
         } else if (name.startsWith("file")) {
           switch (id) {
-            case R.id.theme_color_file:
+            case ColorId.file:
               modifier.setCircle(id, null);
               modifier.setPlayPausePath();
               break;
-            case R.id.theme_color_fileYellow:
+            case ColorId.fileYellow:
               modifier.setCircle(id, R.drawable.baseline_file_download_24);
               break;
-            case R.id.theme_color_fileGreen:
+            case ColorId.fileGreen:
               modifier.setCircle(id, R.drawable.deproko_baseline_close_24);
               break;
-            case R.id.theme_color_fileRed:
+            case ColorId.fileRed:
               modifier.setCircle(id, R.drawable.baseline_insert_drive_file_24);
               break;
           }
@@ -1915,7 +1894,7 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
                 tdlib.ui().switchInline(ThemeListController.this, username, "", true);
               }
             });
-            spans.add(new CustomTypefaceSpan(null, R.id.theme_color_textLink).setEntityType(entity.type).setRemoveUnderline(true));
+            spans.add(new CustomTypefaceSpan(null, ColorId.textLink).setEntityType(entity.type).setRemoveUnderline(true));
             break;
           }
         }
@@ -1933,23 +1912,25 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
     return text;
   }
 
-  private static boolean needSeparate (int prevColorId, int colorId) {
-    return prevColorId != R.id.theme_color_caption_textLink || colorId != R.id.theme_color_caption_textLinkPressHighlight;
+  private static boolean needSeparate (@ColorId int prevColorId, @ColorId int colorId) {
+    return prevColorId != ColorId.caption_textLink || colorId != ColorId.caption_textLinkPressHighlight;
   }
 
-  private int addGroup (List<ListItem> items, @IdRes int sectionId, @StringRes int sectionName, @StringRes int sectionDesc, int[] ids, boolean areProperties, @Nullable String searchQuery, boolean needSeparators, @Nullable List<Integer> sortedIds) {
+  private int addGroup (List<ListItem> items, @IdRes int sectionId, @StringRes int sectionName, @StringRes int sectionDesc, int[] themeContentIds, boolean areProperties, @Nullable String searchQuery, boolean needSeparators, @Nullable List<Integer> sortedIds) {
     if (sortedIds != null) {
-      ArrayUtils.ensureCapacity(sortedIds, sortedIds.size() + ids.length);
+      ArrayUtils.ensureCapacity(sortedIds, sortedIds.size() + themeContentIds.length);
     }
     int addedColorCount = 0;
     boolean first = true;
-    int prevColorId = 0;
-    for (final int id : ids) {
+    int prevThemeContentId = 0;
+    for (final int themeContentId : themeContentIds) {
       if (sortedIds != null)
-        sortedIds.add(id);
-      if (canDisplay(sectionId, id, areProperties) && matches(id, areProperties, searchQuery)) {
+        sortedIds.add(themeContentId);
+      if (canDisplay(sectionId, themeContentId, areProperties) && matches(themeContentId, areProperties, searchQuery)) {
         addedColorCount++;
-        int descriptionRes = LangUtils.getThemeDescription(id);
+        int descriptionRes = areProperties ?
+          LangUtils.getPropertyIdDescription(themeContentId) :
+          LangUtils.getColorIdDescription(themeContentId);
         if (first) {
           if (sectionName != 0 && !items.isEmpty()) {
             items.add(new ListItem(items.isEmpty() ? ListItem.TYPE_HEADER_PADDED : ListItem.TYPE_HEADER, 0, 0, sectionName));
@@ -1958,15 +1939,15 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
           if (needSeparators && !items.isEmpty())
             items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
           first = false;
-        } else if (needSeparators && (prevColorId == 0 || needSeparate(prevColorId, id))) {
+        } else if (needSeparators && !areProperties && (prevThemeContentId == 0 || needSeparate(prevThemeContentId, themeContentId))) {
           items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
         }
-        items.add(newItem(getArgumentsStrict().theme.getTheme(), id, areProperties));
+        items.add(newItem(getArgumentsStrict().theme.getTheme(), themeContentId, areProperties));
         if (descriptionRes != 0) {
           CharSequence text = makeDescription(descriptionRes);
-          items.add(new ListItem(ListItem.TYPE_DESCRIPTION_SMALL, 0, 0, text, false).setTextColorId(R.id.theme_color_textLight));
+          items.add(new ListItem(ListItem.TYPE_DESCRIPTION_SMALL, 0, 0, text, false).setTextColorId(ColorId.textLight));
         }
-        prevColorId = id;
+        prevThemeContentId = themeContentId;
       }
     }
     if (!first) {
@@ -2032,115 +2013,115 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
 
     // MAIN
     int[] mainColorIds = new int[] {
-      R.id.theme_color_filling,
-      R.id.theme_color_separator,
-      R.id.theme_color_fillingPressed,
-      R.id.theme_color_placeholder,
-      R.id.theme_color_previewBackground,
-      R.id.theme_color_overlayFilling,
-      R.id.theme_color_fillingNegative,
-      R.id.theme_color_fillingPositive,
-      R.id.theme_color_fillingPositiveContent,
+      ColorId.filling,
+      ColorId.separator,
+      ColorId.fillingPressed,
+      ColorId.placeholder,
+      ColorId.previewBackground,
+      ColorId.overlayFilling,
+      ColorId.fillingNegative,
+      ColorId.fillingPositive,
+      ColorId.fillingPositiveContent,
     };
     totalCount += addGroup(items, R.id.theme_category_content,0, 0, mainColorIds, false, searchQuery, true, sortedIds);
     
     // TEXT
 
     int[] textColorIds = new int[] {
-      R.id.theme_color_text,
-      R.id.theme_color_textSelectionHighlight,
-      R.id.theme_color_textLight,
-      R.id.theme_color_textSecure,
-      R.id.theme_color_textLink,
-      R.id.theme_color_textLinkPressHighlight,
-      R.id.theme_color_textNeutral,
-      R.id.theme_color_textNegative,
-      R.id.theme_color_textSearchQueryHighlight,
+      ColorId.text,
+      ColorId.textSelectionHighlight,
+      ColorId.textLight,
+      ColorId.textSecure,
+      ColorId.textLink,
+      ColorId.textLinkPressHighlight,
+      ColorId.textNeutral,
+      ColorId.textNegative,
+      ColorId.textSearchQueryHighlight,
     };
     totalCount += addGroup(items, R.id.theme_category_content, R.string.ThemeSectionText, 0, textColorIds, false, searchQuery, true, sortedIds);
 
     // BACKGROUND
     
     int[] backgroundTextColorIds = new int[] {
-      R.id.theme_color_background,
-      R.id.theme_color_background_text,
-      R.id.theme_color_background_textLight,
-      R.id.theme_color_background_icon,
+      ColorId.background,
+      ColorId.background_text,
+      ColorId.background_textLight,
+      ColorId.background_icon,
     };
     totalCount += addGroup(items, R.id.theme_category_content, R.string.ThemeSectionBackground, 0, backgroundTextColorIds, false, searchQuery, false, sortedIds);
 
     // ICONS
 
     int[] iconColorIds = new int[] {
-      R.id.theme_color_icon,
-      R.id.theme_color_iconLight,
-      R.id.theme_color_iconActive,
-      R.id.theme_color_iconPositive,
-      R.id.theme_color_iconNegative,
+      ColorId.icon,
+      ColorId.iconLight,
+      ColorId.iconActive,
+      ColorId.iconPositive,
+      ColorId.iconNegative,
     };
     totalCount += addGroup(items, R.id.theme_category_content, R.string.ThemeSectionIcons, 0, iconColorIds, false, searchQuery, true, sortedIds);
 
     // NAVIGATION
 
     int[] headerColorIds = new int[] {
-      R.id.theme_color_headerBackground,
-      R.id.theme_color_headerText,
-      R.id.theme_color_headerIcon,
+      ColorId.headerBackground,
+      ColorId.headerText,
+      ColorId.headerIcon,
     };
     int[] headerLightColorIds = new int[] {
-      R.id.theme_color_headerLightBackground,
-      R.id.theme_color_headerLightText,
-      R.id.theme_color_headerLightIcon,
+      ColorId.headerLightBackground,
+      ColorId.headerLightText,
+      ColorId.headerLightIcon,
     };
     int[] headerPickerColorIds = new int[] {
-      R.id.theme_color_headerPickerBackground,
-      R.id.theme_color_headerPickerText,
+      ColorId.headerPickerBackground,
+      ColorId.headerPickerText,
     };
     int[] headerButtonColorIds = new int[] {
-      R.id.theme_color_headerButton,
-      R.id.theme_color_headerButtonIcon,
+      ColorId.headerButton,
+      ColorId.headerButtonIcon,
     };
     int[] headerRemoveColorIds = new int[] {
-      R.id.theme_color_headerRemoveBackground,
-      R.id.theme_color_headerRemoveBackgroundHighlight,
+      ColorId.headerRemoveBackground,
+      ColorId.headerRemoveBackgroundHighlight,
     };
     int[] headerBarColorIds = new int[] {
-      R.id.theme_color_headerBarCallIncoming,
-      R.id.theme_color_headerBarCallActive,
-      R.id.theme_color_headerBarCallMuted,
+      ColorId.headerBarCallIncoming,
+      ColorId.headerBarCallActive,
+      ColorId.headerBarCallMuted,
     };
     int[] headerOtherColorIds = new int[] {
-      R.id.theme_color_headerPlaceholder,
-      R.id.theme_color_statusBarLegacy,
-      R.id.theme_color_statusBarLegacyContent,
-      R.id.theme_color_statusBar,
-      R.id.theme_color_statusBarContent,
+      ColorId.headerPlaceholder,
+      ColorId.statusBarLegacy,
+      ColorId.statusBarLegacyContent,
+      ColorId.statusBar,
+      ColorId.statusBarContent,
     };
     int[] lightStatusBarId = new int[] {
-      ThemeProperty.LIGHT_STATUS_BAR
+      PropertyId.LIGHT_STATUS_BAR
     };
     int[] headerTabColorIds = new int[] {
-      R.id.theme_color_headerTabActive,
-      R.id.theme_color_headerTabActiveText,
-      R.id.theme_color_headerTabInactiveText,
+      ColorId.headerTabActive,
+      ColorId.headerTabActiveText,
+      ColorId.headerTabInactiveText,
     };
     int[] profileColorIds = new int[] {
-      R.id.theme_color_profileSectionActive,
-      R.id.theme_color_profileSectionActiveContent,
+      ColorId.profileSectionActive,
+      ColorId.profileSectionActiveContent,
     };
     int[] drawerColorIds = new int[] {
-      R.id.theme_color_drawer,
-      R.id.theme_color_drawerText,
+      ColorId.drawer,
+      ColorId.drawerText,
     };
     int[] passcodeColorIds = new int[] {
-      R.id.theme_color_passcode,
-      R.id.theme_color_passcodeIcon,
-      R.id.theme_color_passcodeText,
+      ColorId.passcode,
+      ColorId.passcodeIcon,
+      ColorId.passcodeText,
     };
     int[] notificationColorIds = new int[] {
-      R.id.theme_color_notification,
-      R.id.theme_color_notificationPlayer,
-      R.id.theme_color_notificationSecure,
+      ColorId.notification,
+      ColorId.notificationPlayer,
+      ColorId.notificationSecure,
     };
     count = 0;
     count += addGroup(items, R.id.theme_category_navigation, R.string.ThemeCategoryNavigation, 0, headerColorIds, false, searchQuery, true, sortedIds);
@@ -2161,82 +2142,82 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
     // CONTROLS
 
     int[] progressColorIds = new int[] {
-      R.id.theme_color_progress,
+      ColorId.progress,
     };
     int[] controlColorIds = new int[] {
-      R.id.theme_color_controlInactive,
-      R.id.theme_color_controlActive,
-      R.id.theme_color_controlContent,
+      ColorId.controlInactive,
+      ColorId.controlActive,
+      ColorId.controlContent,
     };
     int[] checkColorIds = new int[] {
-      R.id.theme_color_checkActive,
-      R.id.theme_color_checkContent,
+      ColorId.checkActive,
+      ColorId.checkContent,
     };
     int[] sliderColorIds = new int[] {
-      R.id.theme_color_sliderActive,
-      R.id.theme_color_sliderInactive,
+      ColorId.sliderActive,
+      ColorId.sliderInactive,
     };
     int[] togglerActiveColorIds = new int[] {
-      R.id.theme_color_togglerActive,
-      R.id.theme_color_togglerActiveBackground,
+      ColorId.togglerActive,
+      ColorId.togglerActiveBackground,
     };
     int[] togglerInactiveColorIds = new int[] {
-      R.id.theme_color_togglerInactive,
-      R.id.theme_color_togglerInactiveBackground,
+      ColorId.togglerInactive,
+      ColorId.togglerInactiveBackground,
     };
     int[] togglerPositiveColorIds = new int[] {
-      R.id.theme_color_togglerPositive,
-      R.id.theme_color_togglerPositiveBackground,
-      R.id.theme_color_togglerPositiveContent,
+      ColorId.togglerPositive,
+      ColorId.togglerPositiveBackground,
+      ColorId.togglerPositiveContent,
     };
     int[] togglerNegativeColorIds = new int[] {
-      R.id.theme_color_togglerNegative,
-      R.id.theme_color_togglerNegativeBackground,
-      R.id.theme_color_togglerNegativeContent,
+      ColorId.togglerNegative,
+      ColorId.togglerNegativeBackground,
+      ColorId.togglerNegativeContent,
     };
     int[] inputColorIds = new int[] {
-      R.id.theme_color_inputInactive,
-      R.id.theme_color_inputActive,
-      R.id.theme_color_inputPositive,
-      R.id.theme_color_inputNegative,
-      R.id.theme_color_textPlaceholder,
+      ColorId.inputInactive,
+      ColorId.inputActive,
+      ColorId.inputPositive,
+      ColorId.inputNegative,
+      ColorId.textPlaceholder,
     };
     int[] inlineColorIds = new int[] {
-      R.id.theme_color_inlineOutline,
-      R.id.theme_color_inlineText,
-      R.id.theme_color_inlineIcon,
-      R.id.theme_color_inlineContentActive,
+      ColorId.inlineOutline,
+      ColorId.inlineText,
+      ColorId.inlineIcon,
+      ColorId.inlineContentActive,
     };
     int[] circleColorIds = new int[] {
-      R.id.theme_color_circleButtonRegular,
-      R.id.theme_color_circleButtonRegularIcon,
-      R.id.theme_color_circleButtonNewChat,
-      R.id.theme_color_circleButtonNewChatIcon,
-      R.id.theme_color_circleButtonNewGroup,
-      R.id.theme_color_circleButtonNewGroupIcon,
-      R.id.theme_color_circleButtonNewChannel,
-      R.id.theme_color_circleButtonNewChannelIcon,
-      R.id.theme_color_circleButtonNewSecret,
-      R.id.theme_color_circleButtonNewSecretIcon,
-      R.id.theme_color_circleButtonPositive,
-      R.id.theme_color_circleButtonPositiveIcon,
-      R.id.theme_color_circleButtonNegative,
-      R.id.theme_color_circleButtonNegativeIcon,
-      R.id.theme_color_circleButtonOverlay,
-      R.id.theme_color_circleButtonOverlayIcon,
-      R.id.theme_color_circleButtonChat,
-      R.id.theme_color_circleButtonChatIcon,
-      R.id.theme_color_circleButtonTheme,
-      R.id.theme_color_circleButtonThemeIcon,
+      ColorId.circleButtonRegular,
+      ColorId.circleButtonRegularIcon,
+      ColorId.circleButtonNewChat,
+      ColorId.circleButtonNewChatIcon,
+      ColorId.circleButtonNewGroup,
+      ColorId.circleButtonNewGroupIcon,
+      ColorId.circleButtonNewChannel,
+      ColorId.circleButtonNewChannelIcon,
+      ColorId.circleButtonNewSecret,
+      ColorId.circleButtonNewSecretIcon,
+      ColorId.circleButtonPositive,
+      ColorId.circleButtonPositiveIcon,
+      ColorId.circleButtonNegative,
+      ColorId.circleButtonNegativeIcon,
+      ColorId.circleButtonOverlay,
+      ColorId.circleButtonOverlayIcon,
+      ColorId.circleButtonChat,
+      ColorId.circleButtonChatIcon,
+      ColorId.circleButtonTheme,
+      ColorId.circleButtonThemeIcon,
     };
     int[] statusColorIds = new int[] {
-      R.id.theme_color_online,
-      R.id.theme_color_promo,
-      R.id.theme_color_promoContent,
+      ColorId.online,
+      ColorId.promo,
+      ColorId.promoContent,
     };
     int[] introColorIds = new int[] {
-      R.id.theme_color_introSectionActive,
-      R.id.theme_color_introSection,
+      ColorId.introSectionActive,
+      ColorId.introSection,
     };
     count = 0;
     count += addGroup(items, R.id.theme_category_controls, R.string.ThemeCategoryControls, 0, progressColorIds, false, searchQuery, true, sortedIds);
@@ -2257,13 +2238,13 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
     // PLAYER
 
     int[] playerColorIds = new int[] {
-      R.id.theme_color_seekDone,
-      R.id.theme_color_seekReady,
-      R.id.theme_color_seekEmpty,
-      R.id.theme_color_playerButtonActive,
-      R.id.theme_color_playerButton,
-      R.id.theme_color_playerCoverIcon,
-      R.id.theme_color_playerCoverPlaceholder,
+      ColorId.seekDone,
+      ColorId.seekReady,
+      ColorId.seekEmpty,
+      ColorId.playerButtonActive,
+      ColorId.playerButton,
+      ColorId.playerCoverIcon,
+      ColorId.playerCoverPlaceholder,
     };
 
     totalCount += addGroup(items, R.id.theme_category_controls, R.string.ThemeSectionPlayer, 0, playerColorIds, false, searchQuery, true, sortedIds);
@@ -2271,169 +2252,169 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
     // PROPERTIES
 
     int[] propertyIds = new int[] {
-      ThemeProperty.PARENT_THEME,
-      ThemeProperty.BUBBLE_CORNER,
-      ThemeProperty.BUBBLE_CORNER_MERGED,
-      ThemeProperty.BUBBLE_CORNER_LEGACY,
-      // TODO ThemeProperty.BUBBLE_OUTER_MARGIN,
-      ThemeProperty.BUBBLE_OUTLINE,
-      ThemeProperty.BUBBLE_OUTLINE_SIZE,
-      ThemeProperty.BUBBLE_DATE_CORNER,
-      ThemeProperty.BUBBLE_UNREAD_SHADOW,
-      ThemeProperty.AVATAR_RADIUS,
-      ThemeProperty.AVATAR_RADIUS_FORUM,
-      ThemeProperty.AVATAR_RADIUS_CHAT_LIST,
-      ThemeProperty.AVATAR_RADIUS_CHAT_LIST_FORUM,
-      ThemeProperty.LIGHT_STATUS_BAR,
-      ThemeProperty.IMAGE_CORNER,
-      ThemeProperty.DATE_CORNER,
-      ThemeProperty.REPLACE_SHADOWS_WITH_SEPARATORS,
-      ThemeProperty.SHADOW_DEPTH,
-      ThemeProperty.SUBTITLE_ALPHA,
-      ThemeProperty.WALLPAPER_USAGE_ID,
-      ThemeProperty.WALLPAPER_ID,
-      ThemeProperty.DARK,
-      ThemeProperty.WALLPAPER_OVERRIDE_UNREAD,
-      ThemeProperty.WALLPAPER_OVERRIDE_DATE,
-      ThemeProperty.WALLPAPER_OVERRIDE_BUTTON,
-      ThemeProperty.WALLPAPER_OVERRIDE_MEDIA_REPLY,
-      ThemeProperty.WALLPAPER_OVERRIDE_TIME,
-      ThemeProperty.WALLPAPER_OVERRIDE_OVERLAY,
+      PropertyId.PARENT_THEME,
+      PropertyId.BUBBLE_CORNER,
+      PropertyId.BUBBLE_CORNER_MERGED,
+      PropertyId.BUBBLE_CORNER_LEGACY,
+      // TODO PropertyId.BUBBLE_OUTER_MARGIN,
+      PropertyId.BUBBLE_OUTLINE,
+      PropertyId.BUBBLE_OUTLINE_SIZE,
+      PropertyId.BUBBLE_DATE_CORNER,
+      PropertyId.BUBBLE_UNREAD_SHADOW,
+      PropertyId.AVATAR_RADIUS,
+      PropertyId.AVATAR_RADIUS_FORUM,
+      PropertyId.AVATAR_RADIUS_CHAT_LIST,
+      PropertyId.AVATAR_RADIUS_CHAT_LIST_FORUM,
+      PropertyId.LIGHT_STATUS_BAR,
+      PropertyId.IMAGE_CORNER,
+      PropertyId.DATE_CORNER,
+      PropertyId.REPLACE_SHADOWS_WITH_SEPARATORS,
+      PropertyId.SHADOW_DEPTH,
+      PropertyId.SUBTITLE_ALPHA,
+      PropertyId.WALLPAPER_USAGE_ID,
+      PropertyId.WALLPAPER_ID,
+      PropertyId.DARK,
+      PropertyId.WALLPAPER_OVERRIDE_UNREAD,
+      PropertyId.WALLPAPER_OVERRIDE_DATE,
+      PropertyId.WALLPAPER_OVERRIDE_BUTTON,
+      PropertyId.WALLPAPER_OVERRIDE_MEDIA_REPLY,
+      PropertyId.WALLPAPER_OVERRIDE_TIME,
+      PropertyId.WALLPAPER_OVERRIDE_OVERLAY,
     };
     totalCount += addGroup(items, R.id.theme_category_settings, R.string.ThemeAdvanced, 0, propertyIds, true, searchQuery, true, sortedIds);
 
     // CHAT
 
     int[] chatListColorIds = new int[] {
-      R.id.theme_color_chatListAction,
-      R.id.theme_color_chatListMute,
-      R.id.theme_color_chatListIcon,
-      R.id.theme_color_chatListVerify,
+      ColorId.chatListAction,
+      ColorId.chatListMute,
+      ColorId.chatListIcon,
+      ColorId.chatListVerify,
 
-      R.id.theme_color_ticks,
-      R.id.theme_color_ticksRead,
+      ColorId.ticks,
+      ColorId.ticksRead,
 
-      R.id.theme_color_badge,
-      R.id.theme_color_badgeText,
-      R.id.theme_color_badgeFailed,
-      R.id.theme_color_badgeFailedText,
-      R.id.theme_color_badgeMuted,
-      R.id.theme_color_badgeMutedText,
+      ColorId.badge,
+      ColorId.badgeText,
+      ColorId.badgeFailed,
+      ColorId.badgeFailedText,
+      ColorId.badgeMuted,
+      ColorId.badgeMutedText,
     };
     int[] chatColorIds = new int[] {
-      R.id.theme_color_chatSendButton,
-      R.id.theme_color_chatKeyboard,
-      R.id.theme_color_chatKeyboardButton,
+      ColorId.chatSendButton,
+      ColorId.chatKeyboard,
+      ColorId.chatKeyboardButton,
     };
     int[] plainColorIds = new int[] {
-      R.id.theme_color_chatBackground,
-      R.id.theme_color_chatSeparator,
+      ColorId.chatBackground,
+      ColorId.chatSeparator,
 
-      R.id.theme_color_unread,
-      R.id.theme_color_unreadText,
+      ColorId.unread,
+      ColorId.unreadText,
 
-      R.id.theme_color_messageVerticalLine,
-      R.id.theme_color_messageSelection,
-      R.id.theme_color_messageSwipeBackground,
-      R.id.theme_color_messageSwipeContent,
-      R.id.theme_color_messageAuthor,
-      R.id.theme_color_messageAuthorPsa,
+      ColorId.messageVerticalLine,
+      ColorId.messageSelection,
+      ColorId.messageSwipeBackground,
+      ColorId.messageSwipeContent,
+      ColorId.messageAuthor,
+      ColorId.messageAuthorPsa,
     };
     int[] chatOtherColorIds = new int[] {
-      R.id.theme_color_shareSeparator
+      ColorId.shareSeparator
     };
     int[] bubbleColorIds = new int[] {
-      R.id.theme_color_bubble_chatBackground,
-      R.id.theme_color_bubble_chatSeparator,
-      R.id.theme_color_bubble_messageSelection,
-      R.id.theme_color_bubble_messageSelectionNoWallpaper,
-      R.id.theme_color_bubble_messageCheckOutline,
-      R.id.theme_color_bubble_messageCheckOutlineNoWallpaper,
+      ColorId.bubble_chatBackground,
+      ColorId.bubble_chatSeparator,
+      ColorId.bubble_messageSelection,
+      ColorId.bubble_messageSelectionNoWallpaper,
+      ColorId.bubble_messageCheckOutline,
+      ColorId.bubble_messageCheckOutlineNoWallpaper,
     };
     int[] bubbleInColorIds = new int[] {
-      R.id.theme_color_bubbleIn_background,
-      R.id.theme_color_bubbleIn_time,
-      R.id.theme_color_bubbleIn_progress,
-      R.id.theme_color_bubbleIn_text,
-      R.id.theme_color_bubbleIn_textLink,
-      R.id.theme_color_bubbleIn_textLinkPressHighlight,
-      R.id.theme_color_bubbleIn_outline,
-      R.id.theme_color_bubbleIn_pressed,
-      R.id.theme_color_bubbleIn_separator,
+      ColorId.bubbleIn_background,
+      ColorId.bubbleIn_time,
+      ColorId.bubbleIn_progress,
+      ColorId.bubbleIn_text,
+      ColorId.bubbleIn_textLink,
+      ColorId.bubbleIn_textLinkPressHighlight,
+      ColorId.bubbleIn_outline,
+      ColorId.bubbleIn_pressed,
+      ColorId.bubbleIn_separator,
     };
     int[] bubbleOutColorIds = new int[] {
-      R.id.theme_color_bubbleOut_background,
-      R.id.theme_color_bubbleOut_ticks,
-      R.id.theme_color_bubbleOut_ticksRead,
-      R.id.theme_color_bubbleOut_time,
-      R.id.theme_color_bubbleOut_progress,
-      R.id.theme_color_bubbleOut_text,
-      R.id.theme_color_bubbleOut_textLink,
-      R.id.theme_color_bubbleOut_textLinkPressHighlight,
-      R.id.theme_color_bubbleOut_messageAuthor,
-      R.id.theme_color_bubbleOut_messageAuthorPsa,
-      R.id.theme_color_bubbleOut_chatVerticalLine,
-      R.id.theme_color_bubbleOut_inlineOutline,
-      R.id.theme_color_bubbleOut_inlineText,
-      R.id.theme_color_bubbleOut_inlineIcon,
-      R.id.theme_color_bubbleOut_waveformActive,
-      R.id.theme_color_bubbleOut_waveformInactive,
-      R.id.theme_color_bubbleOut_file,
-      R.id.theme_color_bubbleOut_outline,
-      R.id.theme_color_bubbleOut_pressed,
-      R.id.theme_color_bubbleOut_separator,
+      ColorId.bubbleOut_background,
+      ColorId.bubbleOut_ticks,
+      ColorId.bubbleOut_ticksRead,
+      ColorId.bubbleOut_time,
+      ColorId.bubbleOut_progress,
+      ColorId.bubbleOut_text,
+      ColorId.bubbleOut_textLink,
+      ColorId.bubbleOut_textLinkPressHighlight,
+      ColorId.bubbleOut_messageAuthor,
+      ColorId.bubbleOut_messageAuthorPsa,
+      ColorId.bubbleOut_chatVerticalLine,
+      ColorId.bubbleOut_inlineOutline,
+      ColorId.bubbleOut_inlineText,
+      ColorId.bubbleOut_inlineIcon,
+      ColorId.bubbleOut_waveformActive,
+      ColorId.bubbleOut_waveformInactive,
+      ColorId.bubbleOut_file,
+      ColorId.bubbleOut_outline,
+      ColorId.bubbleOut_pressed,
+      ColorId.bubbleOut_separator,
     };
     int[] bubbleOverlayNoWallpaperColorIds = new int[] {
-      R.id.theme_color_bubble_unread_noWallpaper,
-      R.id.theme_color_bubble_unreadText_noWallpaper,
-      R.id.theme_color_bubble_date_noWallpaper,
-      R.id.theme_color_bubble_dateText_noWallpaper,
-      R.id.theme_color_bubble_button_noWallpaper,
-      R.id.theme_color_bubble_buttonRipple_noWallpaper,
-      R.id.theme_color_bubble_buttonText_noWallpaper,
-      R.id.theme_color_bubble_mediaReply_noWallpaper,
-      R.id.theme_color_bubble_mediaReplyText_noWallpaper,
-      R.id.theme_color_bubble_mediaTime_noWallpaper,
-      R.id.theme_color_bubble_mediaTimeText_noWallpaper,
-      R.id.theme_color_bubble_overlay_noWallpaper,
-      R.id.theme_color_bubble_overlayText_noWallpaper,
+      ColorId.bubble_unread_noWallpaper,
+      ColorId.bubble_unreadText_noWallpaper,
+      ColorId.bubble_date_noWallpaper,
+      ColorId.bubble_dateText_noWallpaper,
+      ColorId.bubble_button_noWallpaper,
+      ColorId.bubble_buttonRipple_noWallpaper,
+      ColorId.bubble_buttonText_noWallpaper,
+      ColorId.bubble_mediaReply_noWallpaper,
+      ColorId.bubble_mediaReplyText_noWallpaper,
+      ColorId.bubble_mediaTime_noWallpaper,
+      ColorId.bubble_mediaTimeText_noWallpaper,
+      ColorId.bubble_overlay_noWallpaper,
+      ColorId.bubble_overlayText_noWallpaper,
     };
     int[] bubbleOverlayColorIds = new int[] {
-      R.id.theme_color_bubble_unread,
-      R.id.theme_color_bubble_unreadText,
-      R.id.theme_color_bubble_date,
-      R.id.theme_color_bubble_dateText,
-      R.id.theme_color_bubble_button,
-      R.id.theme_color_bubble_buttonRipple,
-      R.id.theme_color_bubble_buttonText,
-      R.id.theme_color_bubble_mediaReply,
-      R.id.theme_color_bubble_mediaReplyText,
-      R.id.theme_color_bubble_mediaTime,
-      R.id.theme_color_bubble_mediaTimeText,
-      R.id.theme_color_bubble_mediaOverlay,
-      R.id.theme_color_bubble_mediaOverlayText,
-      R.id.theme_color_bubble_overlay,
-      R.id.theme_color_bubble_overlayText,
+      ColorId.bubble_unread,
+      ColorId.bubble_unreadText,
+      ColorId.bubble_date,
+      ColorId.bubble_dateText,
+      ColorId.bubble_button,
+      ColorId.bubble_buttonRipple,
+      ColorId.bubble_buttonText,
+      ColorId.bubble_mediaReply,
+      ColorId.bubble_mediaReplyText,
+      ColorId.bubble_mediaTime,
+      ColorId.bubble_mediaTimeText,
+      ColorId.bubble_mediaOverlay,
+      ColorId.bubble_mediaOverlayText,
+      ColorId.bubble_overlay,
+      ColorId.bubble_overlayText,
     };
     int[] bubbleVisualProperties = new int[] {
-      ThemeProperty.BUBBLE_CORNER,
-      ThemeProperty.BUBBLE_CORNER_MERGED,
-      ThemeProperty.BUBBLE_CORNER_LEGACY,
-      // TODO ThemeProperty.BUBBLE_OUTER_MARGIN,
-      ThemeProperty.BUBBLE_OUTLINE,
-      ThemeProperty.BUBBLE_OUTLINE_SIZE,
-      ThemeProperty.BUBBLE_DATE_CORNER,
-      ThemeProperty.BUBBLE_UNREAD_SHADOW,
-      ThemeProperty.IMAGE_CORNER,
-      ThemeProperty.DATE_CORNER,
-      ThemeProperty.WALLPAPER_USAGE_ID,
-      ThemeProperty.WALLPAPER_ID,
-      ThemeProperty.WALLPAPER_OVERRIDE_UNREAD,
-      ThemeProperty.WALLPAPER_OVERRIDE_DATE,
-      ThemeProperty.WALLPAPER_OVERRIDE_BUTTON,
-      ThemeProperty.WALLPAPER_OVERRIDE_MEDIA_REPLY,
-      ThemeProperty.WALLPAPER_OVERRIDE_TIME,
-      ThemeProperty.WALLPAPER_OVERRIDE_OVERLAY,
+      PropertyId.BUBBLE_CORNER,
+      PropertyId.BUBBLE_CORNER_MERGED,
+      PropertyId.BUBBLE_CORNER_LEGACY,
+      // TODO PropertyId.BUBBLE_OUTER_MARGIN,
+      PropertyId.BUBBLE_OUTLINE,
+      PropertyId.BUBBLE_OUTLINE_SIZE,
+      PropertyId.BUBBLE_DATE_CORNER,
+      PropertyId.BUBBLE_UNREAD_SHADOW,
+      PropertyId.IMAGE_CORNER,
+      PropertyId.DATE_CORNER,
+      PropertyId.WALLPAPER_USAGE_ID,
+      PropertyId.WALLPAPER_ID,
+      PropertyId.WALLPAPER_OVERRIDE_UNREAD,
+      PropertyId.WALLPAPER_OVERRIDE_DATE,
+      PropertyId.WALLPAPER_OVERRIDE_BUTTON,
+      PropertyId.WALLPAPER_OVERRIDE_MEDIA_REPLY,
+      PropertyId.WALLPAPER_OVERRIDE_TIME,
+      PropertyId.WALLPAPER_OVERRIDE_OVERLAY,
     };
     count = 0;
     count += addGroup(items, R.id.theme_category_chat, 0, 0, chatListColorIds, false, searchQuery, true, sortedIds);
@@ -2451,52 +2432,52 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
     // USERS
 
     int[] placeholderColorIds = new int[] {
-      R.id.theme_color_avatar_content,
+      ColorId.avatar_content,
 
-      R.id.theme_color_avatarArchive,
-      R.id.theme_color_avatarArchivePinned,
+      ColorId.avatarArchive,
+      ColorId.avatarArchivePinned,
 
-      R.id.theme_color_avatarSavedMessages,
-      R.id.theme_color_avatarSavedMessages_big,
+      ColorId.avatarSavedMessages,
+      ColorId.avatarSavedMessages_big,
 
-      R.id.theme_color_avatarReplies,
-      R.id.theme_color_avatarReplies_big,
+      ColorId.avatarReplies,
+      ColorId.avatarReplies_big,
 
-      R.id.theme_color_avatarInactive,
-      R.id.theme_color_avatarInactive_big,
-      R.id.theme_color_nameInactive,
+      ColorId.avatarInactive,
+      ColorId.avatarInactive_big,
+      ColorId.nameInactive,
 
-      R.id.theme_color_avatarRed,
-      R.id.theme_color_avatarRed_big,
-      R.id.theme_color_nameRed,
+      ColorId.avatarRed,
+      ColorId.avatarRed_big,
+      ColorId.nameRed,
 
-      R.id.theme_color_avatarOrange,
-      R.id.theme_color_avatarOrange_big,
-      R.id.theme_color_nameOrange,
+      ColorId.avatarOrange,
+      ColorId.avatarOrange_big,
+      ColorId.nameOrange,
 
-      R.id.theme_color_avatarYellow,
-      R.id.theme_color_avatarYellow_big,
-      R.id.theme_color_nameYellow,
+      ColorId.avatarYellow,
+      ColorId.avatarYellow_big,
+      ColorId.nameYellow,
 
-      R.id.theme_color_avatarGreen,
-      R.id.theme_color_avatarGreen_big,
-      R.id.theme_color_nameGreen,
+      ColorId.avatarGreen,
+      ColorId.avatarGreen_big,
+      ColorId.nameGreen,
 
-      R.id.theme_color_avatarCyan,
-      R.id.theme_color_avatarCyan_big,
-      R.id.theme_color_nameCyan,
+      ColorId.avatarCyan,
+      ColorId.avatarCyan_big,
+      ColorId.nameCyan,
 
-      R.id.theme_color_avatarBlue,
-      R.id.theme_color_avatarBlue_big,
-      R.id.theme_color_nameBlue,
+      ColorId.avatarBlue,
+      ColorId.avatarBlue_big,
+      ColorId.nameBlue,
 
-      R.id.theme_color_avatarViolet,
-      R.id.theme_color_avatarViolet_big,
-      R.id.theme_color_nameViolet,
+      ColorId.avatarViolet,
+      ColorId.avatarViolet_big,
+      ColorId.nameViolet,
 
-      R.id.theme_color_avatarPink,
-      R.id.theme_color_avatarPink_big,
-      R.id.theme_color_namePink,
+      ColorId.avatarPink,
+      ColorId.avatarPink_big,
+      ColorId.namePink,
     };
     
     count = 0;
@@ -2507,14 +2488,14 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
     // MEDIA
     
     int[] fileColorIds = new int[] {
-      R.id.theme_color_file,
-      R.id.theme_color_fileYellow,
-      R.id.theme_color_fileGreen,
-      R.id.theme_color_fileRed,
+      ColorId.file,
+      ColorId.fileYellow,
+      ColorId.fileGreen,
+      ColorId.fileRed,
     };
     int[] waveformColorIds = new int[] {
-      R.id.theme_color_waveformActive,
-      R.id.theme_color_waveformInactive,
+      ColorId.waveformActive,
+      ColorId.waveformInactive,
     };
     count = 0;
     count += addGroup(items, R.id.theme_category_colors, R.string.ThemeSectionMedia, 0, fileColorIds, false, searchQuery, true, sortedIds);
@@ -2524,95 +2505,95 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
     // ATTACH MENU
 
     int[] attachColorIds = new int[] {
-      R.id.theme_color_attachPhoto,
-      R.id.theme_color_attachFile,
-      R.id.theme_color_attachLocation,
-      R.id.theme_color_attachContact,
-      R.id.theme_color_attachInlineBot,
-      R.id.theme_color_attachText,
-      R.id.theme_color_fileAttach,
+      ColorId.attachPhoto,
+      ColorId.attachFile,
+      ColorId.attachLocation,
+      ColorId.attachContact,
+      ColorId.attachInlineBot,
+      ColorId.attachText,
+      ColorId.fileAttach,
     };
     totalCount += addGroup(items, R.id.theme_category_colors, R.string.ThemeSectionAttach, 0, attachColorIds, false, searchQuery, true, sortedIds);
 
     // INSTANT VIEW
 
     int[] ivColorIds = new int[] {
-      R.id.theme_color_iv_pageTitle,
-      R.id.theme_color_iv_pageSubtitle,
+      ColorId.iv_pageTitle,
+      ColorId.iv_pageSubtitle,
 
-      R.id.theme_color_iv_text,
-      R.id.theme_color_iv_textLink,
-      R.id.theme_color_iv_textLinkPressHighlight,
-      R.id.theme_color_iv_textMarked,
-      R.id.theme_color_iv_textMarkedBackground,
-      R.id.theme_color_iv_textMarkedLink,
-      R.id.theme_color_iv_textMarkedLinkPressHighlight,
-      R.id.theme_color_iv_textReference,
-      R.id.theme_color_iv_textReferenceBackground,
-      R.id.theme_color_iv_textReferenceBackgroundPressed,
-      R.id.theme_color_iv_textReferenceOutline,
-      R.id.theme_color_iv_textReferenceOutlinePressed,
-      R.id.theme_color_iv_textCode,
-      R.id.theme_color_iv_pageAuthor,
-      R.id.theme_color_iv_caption,
-      R.id.theme_color_iv_pageFooter,
-      R.id.theme_color_iv_header,
+      ColorId.iv_text,
+      ColorId.iv_textLink,
+      ColorId.iv_textLinkPressHighlight,
+      ColorId.iv_textMarked,
+      ColorId.iv_textMarkedBackground,
+      ColorId.iv_textMarkedLink,
+      ColorId.iv_textMarkedLinkPressHighlight,
+      ColorId.iv_textReference,
+      ColorId.iv_textReferenceBackground,
+      ColorId.iv_textReferenceBackgroundPressed,
+      ColorId.iv_textReferenceOutline,
+      ColorId.iv_textReferenceOutlinePressed,
+      ColorId.iv_textCode,
+      ColorId.iv_pageAuthor,
+      ColorId.iv_caption,
+      ColorId.iv_pageFooter,
+      ColorId.iv_header,
 
-      R.id.theme_color_iv_pullQuote,
-      R.id.theme_color_iv_blockQuote,
-      R.id.theme_color_iv_blockQuoteLine,
+      ColorId.iv_pullQuote,
+      ColorId.iv_blockQuote,
+      ColorId.iv_blockQuoteLine,
 
-      R.id.theme_color_iv_preBlockBackground,
-      R.id.theme_color_iv_textCodeBackground,
-      R.id.theme_color_iv_textCodeBackgroundPressed,
-      R.id.theme_color_iv_separator,
+      ColorId.iv_preBlockBackground,
+      ColorId.iv_textCodeBackground,
+      ColorId.iv_textCodeBackgroundPressed,
+      ColorId.iv_separator,
 
-      R.id.theme_color_ivHeaderIcon,
-      R.id.theme_color_ivHeader
+      ColorId.ivHeaderIcon,
+      ColorId.ivHeader
     };
     totalCount += addGroup(items, R.id.theme_category_iv, R.string.ThemeCategoryIV, 0, ivColorIds, false, searchQuery, true, sortedIds);
     
     // THEME RADIOS
     
     int[] themeColorIds = new int[] {
-      R.id.theme_color_themeClassic,
-      R.id.theme_color_themeBlue,
-      R.id.theme_color_themeRed,
-      R.id.theme_color_themeOrange,
-      R.id.theme_color_themeGreen,
-      R.id.theme_color_themePink,
-      R.id.theme_color_themeCyan,
-      R.id.theme_color_themeNightBlue,
-      R.id.theme_color_themeNightBlack,
+      ColorId.themeClassic,
+      ColorId.themeBlue,
+      ColorId.themeRed,
+      ColorId.themeOrange,
+      ColorId.themeGreen,
+      ColorId.themePink,
+      ColorId.themeCyan,
+      ColorId.themeNightBlue,
+      ColorId.themeNightBlack,
 
-      R.id.theme_color_themeBlackWhite,
-      R.id.theme_color_themeWhiteBlack,
+      ColorId.themeBlackWhite,
+      ColorId.themeWhiteBlack,
     };
     count = addGroup(items, R.id.theme_category_other, R.string.ThemeCategoryOther, R.string.ThemeSectionRadios_info, themeColorIds, false, searchQuery, true, sortedIds);
     
     // Wallpaper overlays
     
     int[] wallpaperColorIds = new int[] {
-      R.id.theme_color_wp_cats,
-      R.id.theme_color_wp_catsPink,
-      R.id.theme_color_wp_catsGreen,
-      R.id.theme_color_wp_catsOrange,
-      R.id.theme_color_wp_catsBeige,
-      R.id.theme_color_wp_circlesBlue,
+      ColorId.wp_cats,
+      ColorId.wp_catsPink,
+      ColorId.wp_catsGreen,
+      ColorId.wp_catsOrange,
+      ColorId.wp_catsBeige,
+      ColorId.wp_circlesBlue,
     };
     count += addGroup(items, R.id.theme_category_other, count == 0 ? R.string.ThemeCategoryOther : 0, R.string.ThemeSectionWP_info, wallpaperColorIds, false, searchQuery, true, sortedIds);
 
     int[] scrollBarColorIds = new int[] {
-      R.id.theme_color_sectionedScrollBar,
-      R.id.theme_color_sectionedScrollBarActive,
-      R.id.theme_color_sectionedScrollBarActiveContent,
+      ColorId.sectionedScrollBar,
+      ColorId.sectionedScrollBarActive,
+      ColorId.sectionedScrollBarActiveContent,
     };
     count += addGroup(items, R.id.theme_category_other, count == 0 ? R.string.ThemeCategoryOther : 0, 0, scrollBarColorIds, false, searchQuery, true, sortedIds);
 
     int[] snackBarColorIds = new int[] {
-      R.id.theme_color_snackbarUpdate,
-      R.id.theme_color_snackbarUpdateAction,
-      R.id.theme_color_snackbarUpdateText,
+      ColorId.snackbarUpdate,
+      ColorId.snackbarUpdateAction,
+      ColorId.snackbarUpdateText,
     };
     count += addGroup(items, R.id.theme_category_other, count == 0 ? R.string.ThemeCategoryOther : 0, 0, snackBarColorIds, false, searchQuery, true, sortedIds);
 
@@ -2621,42 +2602,42 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
     // INTERNAL
 
     int[] internalColorIds = new int[] {
-      R.id.theme_color_caption_textLink,
-      R.id.theme_color_caption_textLinkPressHighlight,
+      ColorId.caption_textLink,
+      ColorId.caption_textLinkPressHighlight,
 
-      R.id.theme_color_videoSliderActive,
-      R.id.theme_color_videoSliderInactive,
+      ColorId.videoSliderActive,
+      ColorId.videoSliderInactive,
 
-      R.id.theme_color_white,
-      R.id.theme_color_black,
-      R.id.theme_color_transparentEditor,
+      ColorId.white,
+      ColorId.black,
+      ColorId.transparentEditor,
     };
     int[] photoShadowColorIds = new int[] {
-      R.id.theme_color_photoShadowTint1,
-      R.id.theme_color_photoShadowTint2,
-      R.id.theme_color_photoShadowTint3,
-      R.id.theme_color_photoShadowTint4,
-      R.id.theme_color_photoShadowTint5,
-      R.id.theme_color_photoShadowTint6,
-      R.id.theme_color_photoShadowTint7,
-      R.id.theme_color_photoHighlightTint1,
-      R.id.theme_color_photoHighlightTint2,
-      R.id.theme_color_photoHighlightTint3,
-      R.id.theme_color_photoHighlightTint4,
-      R.id.theme_color_photoHighlightTint5,
-      R.id.theme_color_photoHighlightTint6,
-      R.id.theme_color_photoHighlightTint7,
+      ColorId.photoShadowTint1,
+      ColorId.photoShadowTint2,
+      ColorId.photoShadowTint3,
+      ColorId.photoShadowTint4,
+      ColorId.photoShadowTint5,
+      ColorId.photoShadowTint6,
+      ColorId.photoShadowTint7,
+      ColorId.photoHighlightTint1,
+      ColorId.photoHighlightTint2,
+      ColorId.photoHighlightTint3,
+      ColorId.photoHighlightTint4,
+      ColorId.photoHighlightTint5,
+      ColorId.photoHighlightTint6,
+      ColorId.photoHighlightTint7,
     };
     int[] ledColorIds = new int[] {
-      R.id.theme_color_ledBlue,
-      R.id.theme_color_ledOrange,
-      R.id.theme_color_ledYellow,
-      R.id.theme_color_ledGreen,
-      R.id.theme_color_ledCyan,
-      R.id.theme_color_ledRed,
-      R.id.theme_color_ledPurple,
-      R.id.theme_color_ledPink,
-      R.id.theme_color_ledWhite,
+      ColorId.ledBlue,
+      ColorId.ledOrange,
+      ColorId.ledYellow,
+      ColorId.ledGreen,
+      ColorId.ledCyan,
+      ColorId.ledRed,
+      ColorId.ledPurple,
+      ColorId.ledPink,
+      ColorId.ledWhite,
     };
 
     count = 0;
@@ -2706,35 +2687,33 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
       return;
     }
     ListItem foundItem = (ListItem) v.getTag();
-    switch (v.getId()) {
-      case R.id.btn_color: {
-        if (isLookupMode) {
-          getArgumentsStrict().lookupParent.highlightColor(getDataId(foundItem));
-          hideSoftwareKeyboard();
-          tdlib.ui().postDelayed(() -> {
-            navigateBack();
-          }, 120);
-        } else {
-          editColor(getRecyclerView().getChildAdapterPosition(v), getDataId(foundItem));
-        }
-        return;
+    final int viewId = v.getId();
+    if (viewId == R.id.btn_color) {
+      if (isLookupMode) {
+        getArgumentsStrict().lookupParent.highlightColor(getDataId(foundItem));
+        hideSoftwareKeyboard();
+        tdlib.ui().postDelayed(() -> {
+          navigateBack();
+        }, 120);
+      } else {
+        editColor(getRecyclerView().getChildAdapterPosition(v), getDataId(foundItem));
       }
-      case R.id.btn_property: {
-        int propertyId = getDataId(foundItem);
-        if (ThemeManager.isBoolProperty(propertyId)) {
-          TogglerView togglerView = ((SettingView) v).getToggler();
-          if (togglerView != null) {
-            ignorePropertyEvents = true;
-            if (saveProperty(propertyId, togglerView.isEnabled() ? 0f : 1f)) {
-              adapter.setValuedSetting(foundItem, (SettingView) v, true);
-            }
-            ignorePropertyEvents = false;
+      return;
+    } else if (viewId == R.id.btn_property) {
+      int propertyId = getDataId(foundItem);
+      if (ThemeManager.isBoolProperty(propertyId)) {
+        TogglerView togglerView = ((SettingView) v).getToggler();
+        if (togglerView != null) {
+          ignorePropertyEvents = true;
+          if (saveProperty(propertyId, togglerView.isEnabled() ? 0f : 1f)) {
+            adapter.setValuedSetting(foundItem, (SettingView) v, true);
           }
-        } else {
-          editProperty(propertyId);
+          ignorePropertyEvents = false;
         }
-        return;
+      } else {
+        editProperty(propertyId);
       }
+      return;
     }
     if (foundItem != null)
       return;
@@ -2748,73 +2727,57 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
 
     final int currentEditPosition = editPosition;
 
-    int id = v.getId();
-    switch (id) {
-      case R.id.btn_colorCopy: {
-        int color = state.getColor();
-        UI.copyText(Theme.getColorName(state.getColorId()) + ": " + getColorRepresentation(color, true), R.string.CopiedColor);
-        break;
+    if (viewId == R.id.btn_colorCopy) {
+      int color = state.getColor();
+      UI.copyText(Theme.getColorName(state.getColorId()) + ": " + getColorRepresentation(color, true), R.string.CopiedColor);
+    } else if (viewId == R.id.btn_colorPaste) {
+      try {
+        int newColor = getPasteColor();
+        if (state.getColor() != newColor)
+          state.saveLastColor();
+        changeColor(item, contentView, v, state, newColor, false, false);
+      } catch (Throwable ignored) {
+        // Should be unreachable
       }
-      case R.id.btn_colorPaste: {
+    } else if (viewId == R.id.btn_colorSave) {
+      if (state.saveLastColor()) {
+        v.setEnabled(false);
+      }
+    } else if (viewId == R.id.btn_colorUndo || viewId == R.id.btn_colorRedo) {
+      boolean done = viewId == R.id.btn_colorUndo ? state.undo() : state.redo();
+      if (done && !changeColor(item, contentView, v, state, state.getColor(), false, false)) {
+        adapter.setColor(item, -1, contentView, v);
+      }
+      ViewGroup viewGroup = (ViewGroup) v.getParent();
+      ThemeController c = findThemeController();
+      if (c != null && c.isDetached()) {
+        if (!isInTransparentMode() || opaqueChild == viewGroup) {
+          setInTransparentMode(true, viewGroup);
+          clearTransparentModeDelayed();
+        }
+      }
+    } else if (viewId == R.id.btn_colorClear) {
+      removeColor(v, !state.canUndo());
+    } else if (viewId == R.id.btn_colorCalculate) {
+      openInputAlert(Lang.getString(R.string.ThemeCalcTitle), Lang.getString(R.string.ThemeCalcHint), R.string.ThemeCalcSave, R.string.Cancel, Strings.getHexColor(getTheme().getColor(ColorId.filling), false), (inputView, result) -> {
         try {
-          int newColor = getPasteColor();
-          if (state.getColor() != newColor)
-            state.saveLastColor();
-          changeColor(item, contentView, v, state, newColor, false, false);
-        } catch (Throwable ignored) {
-          // Should be unreachable
-        }
-        break;
-      }
-      case R.id.btn_colorSave: {
-        if (state.saveLastColor()) {
-          v.setEnabled(false);
-        }
-        break;
-      }
-      case R.id.btn_colorUndo:
-      case R.id.btn_colorRedo: {
-        boolean done = id == R.id.btn_colorUndo ? state.undo() : state.redo();
-        if (done && !changeColor(item, contentView, v, state, state.getColor(), false, false)) {
-          adapter.setColor(item, -1, contentView, v);
-        }
-        ViewGroup viewGroup = (ViewGroup) v.getParent();
-        ThemeController c = findThemeController();
-        if (c != null && c.isDetached()) {
-          if (!isInTransparentMode() || opaqueChild == viewGroup) {
-            setInTransparentMode(true, viewGroup);
-            clearTransparentModeDelayed();
+          int parsedColor = parseAnyColor(result);
+          if (Color.alpha(parsedColor) == 255 && currentEditPosition == editPosition) {
+            changeColor(item, contentView, v, state, ColorUtils.compositeColor(parsedColor, state.getColor()), false, false);
+            return true;
           }
+        } catch (Throwable ignored) {
         }
-        break;
-      }
-      case R.id.btn_colorClear: {
-        removeColor(v, !state.canUndo());
-        break;
-      }
-      case R.id.btn_colorCalculate: {
-        openInputAlert(Lang.getString(R.string.ThemeCalcTitle), Lang.getString(R.string.ThemeCalcHint), R.string.ThemeCalcSave, R.string.Cancel, Strings.getHexColor(getTheme().getColor(R.id.theme_color_filling), false), (inputView, result) -> {
-          try {
-            int parsedColor = parseAnyColor(result);
-            if (Color.alpha(parsedColor) == 255 && currentEditPosition == editPosition) {
-              changeColor(item, contentView, v, state, ColorUtils.compositeColor(parsedColor, state.getColor()), false, false);
-              return true;
-            }
-          } catch (Throwable ignored) { }
-          return false;
-        }, true);
-        break;
-      }
+        return false;
+      }, true);
     }
   }
 
   @Override
   public boolean onLongClick (View v) {
-    switch (v.getId()) {
-      case R.id.btn_colorClear: {
-        removeColor(v, true);
-        return true;
-      }
+    if (v.getId() == R.id.btn_colorClear) {
+      removeColor(v, true);
+      return true;
     }
     return false;
   }
@@ -2977,7 +2940,7 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
     }
   }
 
-  private void editColor (int position, @ThemeColorId int colorId) {
+  private void editColor (int position, @ColorId int colorId) {
     setEditPosition(position, colorId, true);
     /*if (position != -1)
       return;
@@ -3011,70 +2974,70 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
 
   public static boolean isMainColor (int colorId) {
     switch (colorId) {
-      case R.id.theme_color_profileSectionActive:
-      case R.id.theme_color_profileSectionActiveContent:
-      case R.id.theme_color_textLink:
-      case R.id.theme_color_textLinkPressHighlight:
-      case R.id.theme_color_textSearchQueryHighlight:
-      case R.id.theme_color_textNeutral:
-      case R.id.theme_color_iconActive:
-      case R.id.theme_color_headerBackground:
-      case R.id.theme_color_fillingPositive:
-      case R.id.theme_color_ticks:
-      case R.id.theme_color_passcode:
-      case R.id.theme_color_bubbleOut_ticks:
-      case R.id.theme_color_messageVerticalLine:
-      case R.id.theme_color_chatSendButton:
-      case R.id.theme_color_messageSwipeBackground:
-      case R.id.theme_color_unread:
-      case R.id.theme_color_unreadText:
-      case R.id.theme_color_messageAuthor:
-      case R.id.theme_color_messageAuthorPsa:
-      case R.id.theme_color_chatListAction:
-      case R.id.theme_color_badge:
-      case R.id.theme_color_online:
-      case R.id.theme_color_messageSelection:
-      case R.id.theme_color_textSelectionHighlight:
-      case R.id.theme_color_bubbleOut_background:
-      case R.id.theme_color_bubbleOut_time:
-      case R.id.theme_color_bubbleOut_progress:
-      case R.id.theme_color_bubbleIn_progress:
-      case R.id.theme_color_bubbleIn_textLink:
-      case R.id.theme_color_bubbleIn_textLinkPressHighlight:
-      case R.id.theme_color_checkActive:
-      case R.id.theme_color_file:
-      case R.id.theme_color_playerButtonActive:
-      case R.id.theme_color_bubbleOut_file:
-      case R.id.theme_color_waveformActive:
-      case R.id.theme_color_bubbleOut_waveformActive:
-      case R.id.theme_color_waveformInactive:
-      case R.id.theme_color_bubbleOut_waveformInactive:
-      case R.id.theme_color_sliderActive:
-      case R.id.theme_color_seekReady:
-      case R.id.theme_color_seekDone:
-      case R.id.theme_color_inlineText:
-      case R.id.theme_color_inlineOutline:
-      case R.id.theme_color_inlineIcon:
-      case R.id.theme_color_progress:
-      case R.id.theme_color_togglerActive:
-      case R.id.theme_color_togglerActiveBackground:
-      case R.id.theme_color_circleButtonRegular:
-      case R.id.theme_color_circleButtonTheme:
-      case R.id.theme_color_inputActive:
-      case R.id.theme_color_controlActive:
-      case R.id.theme_color_promo:
-      case R.id.theme_color_headerBarCallActive:
-      case R.id.theme_color_chatListVerify:
-      case R.id.theme_color_bubbleOut_textLink:
-      case R.id.theme_color_bubbleOut_textLinkPressHighlight:
-      case R.id.theme_color_bubbleOut_messageAuthor:
-      case R.id.theme_color_bubbleOut_messageAuthorPsa:
-      case R.id.theme_color_bubbleOut_chatVerticalLine:
-      case R.id.theme_color_bubbleOut_inlineOutline:
-      case R.id.theme_color_bubbleOut_inlineIcon:
-      case R.id.theme_color_bubbleOut_inlineText:
-      case R.id.theme_color_notification:
-      case R.id.theme_color_notificationPlayer:
+      case ColorId.profileSectionActive:
+      case ColorId.profileSectionActiveContent:
+      case ColorId.textLink:
+      case ColorId.textLinkPressHighlight:
+      case ColorId.textSearchQueryHighlight:
+      case ColorId.textNeutral:
+      case ColorId.iconActive:
+      case ColorId.headerBackground:
+      case ColorId.fillingPositive:
+      case ColorId.ticks:
+      case ColorId.passcode:
+      case ColorId.bubbleOut_ticks:
+      case ColorId.messageVerticalLine:
+      case ColorId.chatSendButton:
+      case ColorId.messageSwipeBackground:
+      case ColorId.unread:
+      case ColorId.unreadText:
+      case ColorId.messageAuthor:
+      case ColorId.messageAuthorPsa:
+      case ColorId.chatListAction:
+      case ColorId.badge:
+      case ColorId.online:
+      case ColorId.messageSelection:
+      case ColorId.textSelectionHighlight:
+      case ColorId.bubbleOut_background:
+      case ColorId.bubbleOut_time:
+      case ColorId.bubbleOut_progress:
+      case ColorId.bubbleIn_progress:
+      case ColorId.bubbleIn_textLink:
+      case ColorId.bubbleIn_textLinkPressHighlight:
+      case ColorId.checkActive:
+      case ColorId.file:
+      case ColorId.playerButtonActive:
+      case ColorId.bubbleOut_file:
+      case ColorId.waveformActive:
+      case ColorId.bubbleOut_waveformActive:
+      case ColorId.waveformInactive:
+      case ColorId.bubbleOut_waveformInactive:
+      case ColorId.sliderActive:
+      case ColorId.seekReady:
+      case ColorId.seekDone:
+      case ColorId.inlineText:
+      case ColorId.inlineOutline:
+      case ColorId.inlineIcon:
+      case ColorId.progress:
+      case ColorId.togglerActive:
+      case ColorId.togglerActiveBackground:
+      case ColorId.circleButtonRegular:
+      case ColorId.circleButtonTheme:
+      case ColorId.inputActive:
+      case ColorId.controlActive:
+      case ColorId.promo:
+      case ColorId.headerBarCallActive:
+      case ColorId.chatListVerify:
+      case ColorId.bubbleOut_textLink:
+      case ColorId.bubbleOut_textLinkPressHighlight:
+      case ColorId.bubbleOut_messageAuthor:
+      case ColorId.bubbleOut_messageAuthorPsa:
+      case ColorId.bubbleOut_chatVerticalLine:
+      case ColorId.bubbleOut_inlineOutline:
+      case ColorId.bubbleOut_inlineIcon:
+      case ColorId.bubbleOut_inlineText:
+      case ColorId.notification:
+      case ColorId.notificationPlayer:
         return true;
     }
     return false;
@@ -3212,10 +3175,10 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
     }
 
     switch (colorId) {
-      case R.id.theme_color_filling:
-      case R.id.theme_color_background:
-      case R.id.theme_color_iv_preBlockBackground:
-      case R.id.theme_color_iv_textCodeBackground:
+      case ColorId.filling:
+      case ColorId.background:
+      case ColorId.iv_preBlockBackground:
+      case ColorId.iv_textCodeBackground:
         getRecyclerView().invalidate();
         break;
     }
@@ -3223,12 +3186,12 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
 
   // Properties
 
-  private void editProperty (@ThemeProperty int propertyId) {
+  private void editProperty (@PropertyId int propertyId) {
     ThemeCustom theme = getTheme();
     float currentValue = theme.getProperty(propertyId);
     float originalValue = theme.getParentTheme().getProperty(propertyId);
     String defaultValue = U.formatFloat(originalValue, true);
-    if (propertyId == ThemeProperty.PARENT_THEME)
+    if (propertyId == PropertyId.PARENT_THEME)
       defaultValue = null;
     openInputAlert(Lang.getString(R.string.ThemeAdvancedEdit), Theme.getPropertyName(propertyId), R.string.Save, R.string.Cancel, U.formatFloat(currentValue,  true), defaultValue, (v, result) -> {
       float rawValue;
@@ -3247,8 +3210,8 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
     }, true, null, null);
   }
 
-  private boolean saveProperty (@ThemeProperty int propertyId, float rawValue) {
-    if (propertyId == ThemeProperty.WALLPAPER_ID && !tdlib.wallpaper().isValidWallpaperId((int) rawValue)) {
+  private boolean saveProperty (@PropertyId int propertyId, float rawValue) {
+    if (propertyId == PropertyId.WALLPAPER_ID && !tdlib.wallpaper().isValidWallpaperId((int) rawValue)) {
       return false;
     }
     if (!ThemeManager.isValidProperty(propertyId, rawValue)) {
@@ -3257,21 +3220,21 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
     ThemeCustom theme = getTheme();
     float originalValue = theme.getProperty(propertyId);
     Float value;
-    if (originalValue != rawValue || propertyId == ThemeProperty.PARENT_THEME) {
+    if (originalValue != rawValue || propertyId == PropertyId.PARENT_THEME) {
       value = rawValue;
     } else {
       value = null;
     }
     theme.setProperty(propertyId, value);
     Settings.instance().setCustomThemeProperty(ThemeManager.resolveCustomThemeId(theme.getId()), propertyId, value);
-    if (propertyId == ThemeProperty.DARK) {
+    if (propertyId == PropertyId.DARK) {
       TdlibManager.instance().checkThemeId(theme.getId(), rawValue == 1f, theme.getParentTheme().getId());
     }
     ThemeManager.instance().notifyPropertyChanged(theme.getId(), propertyId, rawValue, originalValue);
-    if (propertyId == ThemeProperty.DARK) {
+    if (propertyId == PropertyId.DARK) {
       context().forceNightMode(rawValue == 1f);
     }
-    if (propertyId == ThemeProperty.WALLPAPER_ID) {
+    if (propertyId == PropertyId.WALLPAPER_ID) {
       tdlib.wallpaper().notifyDefaultWallpaperChanged(theme.getId());
     }
     return true;

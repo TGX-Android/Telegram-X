@@ -24,7 +24,7 @@ import android.view.ViewParent;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.chat.MessageView;
@@ -36,6 +36,7 @@ import org.thunderdog.challegram.mediaview.MediaViewController;
 import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
@@ -165,7 +166,7 @@ public class TGMessageMedia extends TGMessage {
   public MediaViewThumbLocation getMediaThumbLocation (long messageId, View view, int viewTop, int viewBottom, int top) {
     MediaViewThumbLocation location = mosaicWrapper.getMediaThumbLocation(messageId, view, viewTop, viewBottom, top);
     if (location != null) {
-      location.setColorId(useBubbles() && isOutgoingBubble() ? R.id.theme_color_bubbleOut_background : R.id.theme_color_filling);
+      location.setColorId(useBubbles() && isOutgoingBubble() ? ColorId.bubbleOut_background : ColorId.filling);
     }
     return location;
   }
@@ -277,13 +278,14 @@ public class TGMessageMedia extends TGMessage {
         this.wrapper.performDestroy();
       }
       if (!Td.isEmpty(caption)) {
-        this.wrapper = new TextWrapper(caption.text, getTextStyleProvider(), getTextColorSet())
-          .setEntities(TextEntity.valueOf(tdlib, caption, openParameters()), (wrapper, text, specificMedia) -> {
+        TdApi.FormattedText fText = translatedText != null ? translatedText: caption;
+        this.wrapper = new TextWrapper(fText.text, getTextStyleProvider(), getTextColorSet())
+          .setEntities(TextEntity.valueOf(tdlib, fText, openParameters()), (wrapper, text, specificMedia) -> {
             if (this.wrapper == wrapper) {
               invalidateTextMediaReceiver(text, specificMedia);
             }
           })
-          .setHighlightText(getHighlightedText(Highlight.Pool.KEY_MEDIA_CAPTION, caption.text))
+          .setHighlightText(getHighlightedText(Highlight.Pool.KEY_MEDIA_CAPTION, fText.text))
           .addTextFlags(Text.FLAG_BIG_EMOJI)
           .setClickCallback(clickCallback());
         this.wrapper.setViewProvider(currentViews);
@@ -592,7 +594,8 @@ public class TGMessageMedia extends TGMessage {
     }
 
     if (wrapper != null) {
-      wrapper.draw(c, getTextX(view, wrapper, false), getTextX(view, wrapper, true), Config.MOVE_BUBBLE_TIME_RTL_TO_LEFT ? 0 : getBubbleTimePartWidth(), startY + mosaicWrapper.getHeight() + Screen.dp(TEXT_MARGIN), null, 1f, view.getTextMediaReceiver());
+      float alpha = getTranslationLoadingAlphaValue();
+      wrapper.draw(c, getTextX(view, wrapper, false), getTextX(view, wrapper, true), Config.MOVE_BUBBLE_TIME_RTL_TO_LEFT ? 0 : getBubbleTimePartWidth(), startY + mosaicWrapper.getHeight() + Screen.dp(TEXT_MARGIN), null, alpha, view.getTextMediaReceiver());
     }
   }
 
@@ -858,5 +861,22 @@ public class TGMessageMedia extends TGMessage {
 
   public boolean isVideoFirstInMosaic (int mediaId) {
     return mosaicWrapper.isSingular() || (mosaicWrapper.getSingularItem() != null && mosaicWrapper.getSingularItem().isVideo() && mosaicWrapper.getSingularItem().getVideo().video.id == mediaId);
+  }
+
+  private TdApi.FormattedText translatedText;
+
+  @Nullable
+  @Override
+  public TdApi.FormattedText getTextToTranslateImpl () {
+    return caption;
+  }
+
+  @Override
+  protected void setTranslationResult (@Nullable TdApi.FormattedText text) {
+    translatedText = text;
+    checkCommonCaption(true);
+    rebuildAndUpdateContent();
+    invalidateTextMediaReceiver();
+    super.setTranslationResult(text);
   }
 }

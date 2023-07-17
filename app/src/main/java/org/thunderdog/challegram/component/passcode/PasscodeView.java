@@ -30,6 +30,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.HeaderView;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
@@ -253,7 +254,7 @@ public class PasscodeView extends View {
   protected void onDraw (Canvas c) {
     // int decentColor = ;
     if (lineTop != -1) {
-      c.drawRect(lineLeft, lineTop, lineRight, lineTop + Screen.dp(1f), Paints.fillingPaint(ColorUtils.alphaColor(.3f, Theme.getColor(R.id.theme_color_passcodeText))));
+      c.drawRect(lineLeft, lineTop, lineRight, lineTop + Screen.dp(1f), Paints.fillingPaint(ColorUtils.alphaColor(.3f, Theme.getColor(ColorId.passcodeText))));
     }
     switch (mode) {
       case Passcode.MODE_PATTERN: {

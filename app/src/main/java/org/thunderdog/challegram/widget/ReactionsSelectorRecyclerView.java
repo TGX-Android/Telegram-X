@@ -3,7 +3,6 @@ package org.thunderdog.challegram.widget;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.RectF;
-import android.os.Build;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -13,7 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
@@ -22,6 +21,7 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -97,7 +97,7 @@ public class ReactionsSelectorRecyclerView extends RecyclerView {
       rectF = new RectF();
       counter = new Counter.Builder()
         .noBackground()
-        .textColor(R.id.theme_color_fillingPositiveContent, R.id.theme_color_text, R.id.theme_color_text)
+        .textColor(ColorId.fillingPositiveContent, ColorId.text, ColorId.text)
         .textSize(13f)
         .allBold(false)
         .callback(this)
@@ -139,7 +139,7 @@ public class ReactionsSelectorRecyclerView extends RecyclerView {
     @Override
     protected void dispatchDraw (Canvas c) {
       if (chosen) {
-        c.drawRoundRect(rectF, Screen.dp(18), Screen.dp(18), Paints.fillingPaint(Theme.getColor(R.id.theme_color_fillingPositive)));
+        c.drawRoundRect(rectF, Screen.dp(18), Screen.dp(18), Paints.fillingPaint(Theme.getColor(ColorId.fillingPositive)));
       }
       if (useCounter) {
         counter.draw(c, Screen.dp(35), getMeasuredHeight() / 2f, Gravity.LEFT, 1f);

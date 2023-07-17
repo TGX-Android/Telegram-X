@@ -52,8 +52,8 @@ import androidx.annotation.RawRes;
 import androidx.annotation.StringRes;
 import androidx.collection.LongSparseArray;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
@@ -75,7 +75,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.telegram.TdlibManager;
 import org.thunderdog.challegram.telegram.TdlibUi;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Intents;
 import org.thunderdog.challegram.tool.Screen;
@@ -217,15 +217,15 @@ public class TD {
     throw new IllegalArgumentException(Lang.getResourceEntryName(rightId));
   }
 
-  private static final int[] color_ids = {
-    R.id.theme_color_avatarRed      /* red 0 */,
-    R.id.theme_color_avatarOrange   /* orange 1 */,
-    R.id.theme_color_avatarYellow   /* yellow 2 */,
-    R.id.theme_color_avatarGreen    /* green 3 */,
-    R.id.theme_color_avatarCyan     /* cyan 4 */,
-    R.id.theme_color_avatarBlue     /* blue 5 */,
-    R.id.theme_color_avatarViolet   /* violet 6 */,
-    R.id.theme_color_avatarPink     /* pink 7 */
+  private static final int[] color_ids =  {
+    ColorId.avatarRed      /* red 0 */,
+    ColorId.avatarOrange   /* orange 1 */,
+    ColorId.avatarYellow   /* yellow 2 */,
+    ColorId.avatarGreen    /* green 3 */,
+    ColorId.avatarCyan     /* cyan 4 */,
+    ColorId.avatarBlue     /* blue 5 */,
+    ColorId.avatarViolet   /* violet 6 */,
+    ColorId.avatarPink     /* pink 7 */
   };
 
   public static boolean isSameSource (TdApi.Message a, TdApi.Message b, boolean splitAuthors) {
@@ -286,7 +286,7 @@ public class TD {
         case TdApi.TextEntityTypeHashtag.CONSTRUCTOR:
         case TdApi.TextEntityTypeCashtag.CONSTRUCTOR: {
           String hashtag = Td.substring(text, entity);
-          span = new CustomTypefaceSpan(defaultTypeface, R.id.theme_color_textLink)
+          span = new CustomTypefaceSpan(defaultTypeface, ColorId.textLink)
             .setOnClickListener((view, span1, clickedText) -> {
               if (onClickListener == null || !onClickListener.onClick(view, span1, clickedText)) {
                 if (context != null) {
@@ -301,7 +301,7 @@ public class TD {
         }
         case TdApi.TextEntityTypeEmailAddress.CONSTRUCTOR: {
           String emailAddress = Td.substring(text, entity);
-          span = new CustomTypefaceSpan(defaultTypeface, R.id.theme_color_textLink)
+          span = new CustomTypefaceSpan(defaultTypeface, ColorId.textLink)
             .setOnClickListener((view, span1, clickedText) -> {
               if (onClickListener == null || !onClickListener.onClick(view, span1, clickedText)) {
                 Intents.sendEmail(emailAddress);
@@ -312,7 +312,7 @@ public class TD {
         }
         case TdApi.TextEntityTypeMention.CONSTRUCTOR: {
           String username = Td.substring(text, entity);
-          span = new CustomTypefaceSpan(defaultTypeface, R.id.theme_color_textLink)
+          span = new CustomTypefaceSpan(defaultTypeface, ColorId.textLink)
             .setOnClickListener((view, span1, clickedText) -> {
               if (onClickListener == null || !onClickListener.onClick(view, span1, clickedText)) {
                 if (context != null)
@@ -324,7 +324,7 @@ public class TD {
         }
         case TdApi.TextEntityTypeBankCardNumber.CONSTRUCTOR: {
           String cardNumber = Td.substring(text, entity);
-          span = new CustomTypefaceSpan(defaultTypeface, R.id.theme_color_textLink)
+          span = new CustomTypefaceSpan(defaultTypeface, ColorId.textLink)
             .setOnClickListener((view, span1, clickedText) -> {
               if (onClickListener == null || !onClickListener.onClick(view, span1, clickedText)) {
                 if (context != null)
@@ -336,7 +336,7 @@ public class TD {
         }
         case TdApi.TextEntityTypePhoneNumber.CONSTRUCTOR: {
           String phoneNumber = Td.substring(text, entity);
-          span = new CustomTypefaceSpan(defaultTypeface, R.id.theme_color_textLink)
+          span = new CustomTypefaceSpan(defaultTypeface, ColorId.textLink)
             .setOnClickListener((view, span1, clickedText) -> {
               if (onClickListener == null || !onClickListener.onClick(view, span1, clickedText)) {
                 Intents.openNumber(phoneNumber);
@@ -347,7 +347,7 @@ public class TD {
         }
         case TdApi.TextEntityTypeUrl.CONSTRUCTOR:
           String url = Td.substring(text, entity);
-          span = new CustomTypefaceSpan(defaultTypeface, R.id.theme_color_textLink)
+          span = new CustomTypefaceSpan(defaultTypeface, ColorId.textLink)
             .setOnClickListener((view, span1, clickedText) -> {
               if (onClickListener == null || !onClickListener.onClick(view, span1, clickedText)) {
                 if (context != null)
@@ -358,7 +358,7 @@ public class TD {
           break;
         case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
           String textUrl = ((TdApi.TextEntityTypeTextUrl) entity.type).url;
-          span = new CustomTypefaceSpan(defaultTypeface, R.id.theme_color_textLink)
+          span = new CustomTypefaceSpan(defaultTypeface, ColorId.textLink)
             .setOnClickListener((view, span1, clickedText) -> {
               if (onClickListener == null || !onClickListener.onClick(view, span1, clickedText)) {
                 if (context != null)
@@ -663,11 +663,11 @@ public class TD {
 
   public static int getColorIdForString (String string) {
     switch (Math.abs(string.hashCode()) % 3) {
-      case 0: return R.id.theme_color_fileYellow;
-      case 1: return R.id.theme_color_fileRed;
-      case 2: return R.id.theme_color_fileGreen;
+      case 0: return ColorId.fileYellow;
+      case 1: return ColorId.fileRed;
+      case 2: return ColorId.fileGreen;
     }
-    return R.id.theme_color_file;
+    return ColorId.file;
   }
 
   public static int getColorIdForName (String name) {
@@ -685,7 +685,7 @@ public class TD {
 
     // Android APKs
     if ("application/vnd.android.package-archive".equals(mime) || "apk".equals(ext)) {
-      return R.id.theme_color_fileGreen;
+      return ColorId.fileGreen;
     }
 
     if (
@@ -693,16 +693,16 @@ public class TD {
       "zip".equals(ext) || "application/zip".equals(mime) ||
       "rar".equals(ext) || "application/x-rar-compressed".equals(mime)
       ) {
-      return R.id.theme_color_fileYellow;
+      return ColorId.fileYellow;
     }
 
     if (
       "pdf".equals(ext) || "application/pdf".equals(mime)
       ) {
-      return R.id.theme_color_fileRed;
+      return ColorId.fileRed;
     }
 
-    return isOutBubble ? R.id.theme_color_bubbleOut_file : R.id.theme_color_file;
+    return isOutBubble ? ColorId.bubbleOut_file : ColorId.file;
   }
 
   public static String getPhoneNumber (String in) {
@@ -1091,6 +1091,7 @@ public class TD {
     return new TdApi.MessageReplyInfo(replyCount, recentReplierIds, lastReadInboxMessageId, lastReadOutboxMessageId, lastMessageId);
   }
 
+  public static final String KEY_PREFIX_FOLDER = "filter";
   public static TdApi.ChatList chatListFromKey (String key) {
     if (StringUtils.isEmpty(key))
       return null;
@@ -1100,8 +1101,8 @@ public class TD {
       case "archive":
         return new TdApi.ChatListArchive();
       default:
-        if (key.startsWith("filter")) {
-          return new TdApi.ChatListFilter(StringUtils.parseInt(key.substring("filter".length())));
+        if (key.startsWith(KEY_PREFIX_FOLDER)) {
+          return new TdApi.ChatListFolder(StringUtils.parseInt(key.substring(KEY_PREFIX_FOLDER.length())));
         }
         break;
     }
@@ -1125,8 +1126,8 @@ public class TD {
         return "main";
       case TdApi.ChatListArchive.CONSTRUCTOR:
         return "archive";
-      case TdApi.ChatListFilter.CONSTRUCTOR:
-        return "filter" + ((TdApi.ChatListFilter) chatList).chatFilterId;
+      case TdApi.ChatListFolder.CONSTRUCTOR:
+        return KEY_PREFIX_FOLDER + ((TdApi.ChatListFolder) chatList).chatFolderId;
     }
     throw new UnsupportedOperationException(chatList.toString());
   }
@@ -1319,6 +1320,16 @@ public class TD {
     }
   }
 
+  public static boolean needRepainting (TdApi.Sticker sticker) {
+    return (sticker != null && sticker.fullType instanceof TdApi.StickerFullTypeCustomEmoji
+      && ((TdApi.StickerFullTypeCustomEmoji) sticker.fullType).needsRepainting);
+  }
+
+  public static long getStickerCustomEmojiId (TdApi.Sticker sticker) {
+    return (sticker != null && sticker.fullType instanceof TdApi.StickerFullTypeCustomEmoji) ?
+      ((TdApi.StickerFullTypeCustomEmoji) sticker.fullType).customEmojiId: 0;
+  }
+
   public static class Size {
     public final int width, height;
 
@@ -1411,28 +1422,28 @@ public class TD {
 
   public static int getNameColorId (int avatarColorId) {
     switch (avatarColorId) {
-      case R.id.theme_color_avatarRed:
-        return R.id.theme_color_nameRed;
-      case R.id.theme_color_avatarOrange:
-        return R.id.theme_color_nameOrange;
-      case R.id.theme_color_avatarYellow:
-        return R.id.theme_color_nameYellow;
-      case R.id.theme_color_avatarGreen:
-        return R.id.theme_color_nameGreen;
-      case R.id.theme_color_avatarCyan:
-        return R.id.theme_color_nameCyan;
-      case R.id.theme_color_avatarBlue:
-        return R.id.theme_color_nameBlue;
-      case R.id.theme_color_avatarViolet:
-        return R.id.theme_color_nameViolet;
-      case R.id.theme_color_avatarPink:
-        return R.id.theme_color_namePink;
-      case R.id.theme_color_avatarSavedMessages:
-        return R.id.theme_color_messageAuthor;
-      case R.id.theme_color_avatarInactive:
-        return R.id.theme_color_nameInactive;
+      case ColorId.avatarRed:
+        return ColorId.nameRed;
+      case ColorId.avatarOrange:
+        return ColorId.nameOrange;
+      case ColorId.avatarYellow:
+        return ColorId.nameYellow;
+      case ColorId.avatarGreen:
+        return ColorId.nameGreen;
+      case ColorId.avatarCyan:
+        return ColorId.nameCyan;
+      case ColorId.avatarBlue:
+        return ColorId.nameBlue;
+      case ColorId.avatarViolet:
+        return ColorId.nameViolet;
+      case ColorId.avatarPink:
+        return ColorId.namePink;
+      case ColorId.avatarSavedMessages:
+        return ColorId.messageAuthor;
+      case ColorId.avatarInactive:
+        return ColorId.nameInactive;
     }
-    return R.id.theme_color_messageAuthor;
+    return ColorId.messageAuthor;
   }
 
   public static boolean isMultiChat (TdApi.Chat chat) {
@@ -1452,11 +1463,11 @@ public class TD {
   }
 
   public static int getAuthorColorId (int selfUserId, int id) {
-    return selfUserId != 0 && selfUserId == id ? R.id.theme_color_chatAuthor : id == -1 ? R.id.theme_color_chatAuthorDead : color_ids[getColorIndex(selfUserId, id)];
+    return selfUserId != 0 && selfUserId == id ? ColorId.chatAuthor : id == -1 ? ColorId.chatAuthorDead : color_ids[getColorIndex(selfUserId, id)];
   }*/
 
   public static int getAvatarColorId (long id, long selfUserId) {
-    return id == -1 ? R.id.theme_color_avatarInactive : color_ids[getColorIndex(selfUserId, id)];
+    return id == -1 ? ColorId.avatarInactive : color_ids[getColorIndex(selfUserId, id)];
   }
 
   public static boolean hasEncryptionKey (TdApi.SecretChat secretChat) {
@@ -3539,6 +3550,10 @@ public class TD {
     return "https://" + getTelegramMeHost() + "/addstickers/" + name;
   }
 
+  public static String getEmojiPackLink (String name) {
+    return "https://" + getTelegramMeHost() + "/addemoji/" + name;
+  }
+
   public static String getLink (TdApi.User user) {
     return "https://" + getTelegramMeHost() + "/" + Td.primaryUsername(user);
   }
@@ -5444,7 +5459,7 @@ public class TD {
     switch (type.getConstructor()) {
       case TdApi.TextEntityTypeTextUrl.CONSTRUCTOR:
       case TdApi.TextEntityTypeMentionName.CONSTRUCTOR:
-        span = new CustomTypefaceSpan(defaultTypeface, R.id.theme_color_textLink);
+        span = new CustomTypefaceSpan(defaultTypeface, ColorId.textLink);
         break;
       case TdApi.TextEntityTypeBold.CONSTRUCTOR:
         if (needFakeBold)
@@ -5546,7 +5561,7 @@ public class TD {
       case TdApi.TextEntityTypeSpoiler.CONSTRUCTOR:
         return new BackgroundColorSpan(SPOILER_BACKGROUND_COLOR);
       case TdApi.TextEntityTypeMentionName.CONSTRUCTOR:
-        return allowInternal ? new CustomTypefaceSpan(null, R.id.theme_color_textLink).setEntityType(type) : null;
+        return allowInternal ? new CustomTypefaceSpan(null, ColorId.textLink).setEntityType(type) : null;
       case TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR:
         return new CustomEmojiId(((TdApi.TextEntityTypeCustomEmoji) type).customEmojiId);
       // auto-detected entities
@@ -5909,6 +5924,10 @@ public class TD {
 
     public ContentPreview (@Nullable Emoji emoji, ContentPreview copy) {
       this(copy.emoji, copy.placeholderText, copy.formattedText, copy.isTranslatable, copy.hideAuthor, emoji);
+    }
+
+    public ContentPreview (@Nullable TdApi.FormattedText text, ContentPreview copy) {
+      this(copy.emoji, copy.placeholderText, text != null ? text: copy.formattedText, copy.isTranslatable, copy.hideAuthor, copy.parentEmoji);
     }
 
     public ContentPreview (@Nullable Emoji emoji, int placeholderText, @Nullable TdApi.FormattedText formattedText, boolean isTranslatable, boolean hideAuthor, @Nullable Emoji parentEmoji) {
@@ -6969,110 +6988,116 @@ public class TD {
     return chatList != null && chatList.getConstructor() == TdApi.ChatListArchive.CONSTRUCTOR;
   }
 
-  public static boolean isChatListFilter (@Nullable TdApi.ChatList chatList) {
-    return chatList != null && chatList.getConstructor() == TdApi.ChatListFilter.CONSTRUCTOR;
+  public static boolean isChatListFolder (@Nullable TdApi.ChatList chatList) {
+    return chatList != null && chatList.getConstructor() == TdApi.ChatListFolder.CONSTRUCTOR;
   }
 
-  public static void saveChatFilter (Bundle bundle, String prefix, @Nullable TdApi.ChatFilter chatFilter) {
-    if (chatFilter == null) {
+  public static void saveChatFolder (Bundle bundle, String prefix, @Nullable TdApi.ChatFolder chatFolder) {
+    if (chatFolder == null) {
       return;
     }
-    bundle.putString(prefix + "_title", chatFilter.title);
-    bundle.putString(prefix + "_iconName", chatFilter.iconName);
-    bundle.putLongArray(prefix + "_pinnedChatIds", chatFilter.pinnedChatIds);
-    bundle.putLongArray(prefix + "_includedChatIds", chatFilter.includedChatIds);
-    bundle.putLongArray(prefix + "_excludedChatIds", chatFilter.excludedChatIds);
-    bundle.putIntArray(prefix + "_includedChatTypes", includedChatTypes(chatFilter));
-    bundle.putIntArray(prefix + "_excludedChatTypes", excludedChatTypes(chatFilter));
+    bundle.putString(prefix + "_title", chatFolder.title);
+    if (chatFolder.icon != null) {
+      bundle.putString(prefix + "_iconName", chatFolder.icon.name);
+    }
+    bundle.putLongArray(prefix + "_pinnedChatIds", chatFolder.pinnedChatIds);
+    bundle.putLongArray(prefix + "_includedChatIds", chatFolder.includedChatIds);
+    bundle.putLongArray(prefix + "_excludedChatIds", chatFolder.excludedChatIds);
+    bundle.putIntArray(prefix + "_includedChatTypes", includedChatTypes(chatFolder));
+    bundle.putIntArray(prefix + "_excludedChatTypes", excludedChatTypes(chatFolder));
   }
 
-  public static @Nullable TdApi.ChatFilter restoreChatFilter (Bundle bundle, String prefix) {
+  public static @Nullable TdApi.ChatFolder restoreChatFolder (Bundle bundle, String prefix) {
     String title = bundle.getString(prefix + "_title");
     if (title == null) {
       return null;
     }
-    TdApi.ChatFilter chatFilter = newChatFilter(title);
-    chatFilter.iconName = bundle.getString(prefix + "_iconName");
-    chatFilter.pinnedChatIds = bundle.getLongArray(prefix + "_pinnedChatIds");
-    chatFilter.includedChatIds = bundle.getLongArray(prefix + "_includedChatIds");
-    chatFilter.excludedChatIds = bundle.getLongArray(prefix + "_excludedChatIds");
+    TdApi.ChatFolder chatFolder = newChatFolder(title);
+    String iconName = bundle.getString(prefix + "_iconName", null);
+    if (iconName != null) {
+      chatFolder.icon = new TdApi.ChatFolderIcon(iconName);
+    }
+    chatFolder.pinnedChatIds = bundle.getLongArray(prefix + "_pinnedChatIds");
+    chatFolder.includedChatIds = bundle.getLongArray(prefix + "_includedChatIds");
+    chatFolder.excludedChatIds = bundle.getLongArray(prefix + "_excludedChatIds");
     int[] includedChatTypes = bundle.getIntArray(prefix + "_includedChatTypes");
     int[] excludedChatTypes = bundle.getIntArray(prefix + "_excludedChatTypes");
-    updateIncludedChatTypes(chatFilter, (chatType) -> ArrayUtils.contains(includedChatTypes, chatType));
-    updateExcludedChatTypes(chatFilter, (chatType) -> ArrayUtils.contains(excludedChatTypes, chatType));
-    return chatFilter;
+    updateIncludedChatTypes(chatFolder, (chatType) -> ArrayUtils.contains(includedChatTypes, chatType));
+    updateExcludedChatTypes(chatFolder, (chatType) -> ArrayUtils.contains(excludedChatTypes, chatType));
+    return chatFolder;
   }
 
-  public static TdApi.ChatFilter newChatFilter () {
-    return new TdApi.ChatFilter("", "", ArrayUtils.EMPTY_LONGS, ArrayUtils.EMPTY_LONGS, ArrayUtils.EMPTY_LONGS, false, false, false, false, false, false, false, false);
+  public static TdApi.ChatFolder newChatFolder () {
+    return new TdApi.ChatFolder("", null, false, ArrayUtils.EMPTY_LONGS, ArrayUtils.EMPTY_LONGS, ArrayUtils.EMPTY_LONGS, false, false, false, false, false, false, false, false);
   }
 
-  public static TdApi.ChatFilter newChatFilter (String title) {
-    TdApi.ChatFilter chatFilter = newChatFilter();
-    chatFilter.title = title;
-    return chatFilter;
+  public static TdApi.ChatFolder newChatFolder (String title) {
+    TdApi.ChatFolder chatFolder = newChatFolder();
+    chatFolder.title = title;
+    return chatFolder;
   }
 
-  public static TdApi.ChatFilter newChatFilter (long[] includedChatIds) {
-    TdApi.ChatFilter chatFilter = newChatFilter();
-    chatFilter.includedChatIds = includedChatIds;
-    return chatFilter;
+  public static TdApi.ChatFolder newChatFolder (long[] includedChatIds) {
+    TdApi.ChatFolder chatFolder = newChatFolder();
+    chatFolder.includedChatIds = includedChatIds;
+    return chatFolder;
   }
 
-  public static void updateIncludedChats (TdApi.ChatFilter chatFilter, Set<Long> chatIds) {
-    updateIncludedChats(chatFilter, null, chatIds);
+  public static void updateIncludedChats (TdApi.ChatFolder chatFolder, Set<Long> chatIds) {
+    updateIncludedChats(chatFolder, null, chatIds);
   }
 
-  public static void updateIncludedChats (TdApi.ChatFilter chatFilter, @Nullable TdApi.ChatFilter originChatFilter, Set<Long> chatIds) {
+  public static void updateIncludedChats (TdApi.ChatFolder chatFolder, @Nullable TdApi.ChatFolder originChatFolder, Set<Long> chatIds) {
     if (chatIds.isEmpty()) {
-      chatFilter.pinnedChatIds = ArrayUtils.EMPTY_LONGS;
-      chatFilter.includedChatIds = ArrayUtils.EMPTY_LONGS;
+      chatFolder.pinnedChatIds = ArrayUtils.EMPTY_LONGS;
+      chatFolder.includedChatIds = ArrayUtils.EMPTY_LONGS;
     } else {
       LongList pinnedChatIds = new LongList(chatIds.size());
       LongList includedChatIds = new LongList(chatIds.size());
       for (long chatId : chatIds) {
-        if (ArrayUtils.contains(chatFilter.pinnedChatIds, chatId) || (originChatFilter != null && ArrayUtils.contains(originChatFilter.pinnedChatIds, chatId))) {
+        if (ArrayUtils.contains(chatFolder.pinnedChatIds, chatId) || (originChatFolder != null && ArrayUtils.contains(originChatFolder.pinnedChatIds, chatId))) {
           pinnedChatIds.append(chatId);
         } else {
           includedChatIds.append(chatId);
         }
       }
-      chatFilter.pinnedChatIds = pinnedChatIds.get();
-      chatFilter.includedChatIds = includedChatIds.get();
+      chatFolder.pinnedChatIds = pinnedChatIds.get();
+      chatFolder.includedChatIds = includedChatIds.get();
     }
-    chatFilter.excludedChatIds = U.removeAll(chatFilter.excludedChatIds, chatIds);
+    chatFolder.excludedChatIds = U.removeAll(chatFolder.excludedChatIds, chatIds);
   }
 
-  public static void updateExcludedChats (TdApi.ChatFilter chatFilter, Set<Long> chatIds) {
-    chatFilter.pinnedChatIds = U.removeAll(chatFilter.pinnedChatIds, chatIds);
-    chatFilter.includedChatIds = U.removeAll(chatFilter.includedChatIds, chatIds);
-    chatFilter.excludedChatIds = U.toArray(chatIds);
+  public static void updateExcludedChats (TdApi.ChatFolder chatFolder, Set<Long> chatIds) {
+    chatFolder.pinnedChatIds = U.removeAll(chatFolder.pinnedChatIds, chatIds);
+    chatFolder.includedChatIds = U.removeAll(chatFolder.includedChatIds, chatIds);
+    chatFolder.excludedChatIds = U.toArray(chatIds);
   }
 
-  public static TdApi.ChatFilter copyOf (TdApi.ChatFilter filter) {
-    return new TdApi.ChatFilter(
-      filter.title,
-      filter.iconName,
-      filter.pinnedChatIds,
-      filter.includedChatIds,
-      filter.excludedChatIds,
-      filter.excludeMuted,
-      filter.excludeRead,
-      filter.excludeArchived,
-      filter.includeContacts,
-      filter.includeNonContacts,
-      filter.includeBots,
-      filter.includeGroups,
-      filter.includeChannels
+  public static TdApi.ChatFolder copyOf (TdApi.ChatFolder folder) {
+    return new TdApi.ChatFolder(
+      folder.title,
+      folder.icon,
+      folder.isShareable,
+      folder.pinnedChatIds,
+      folder.includedChatIds,
+      folder.excludedChatIds,
+      folder.excludeMuted,
+      folder.excludeRead,
+      folder.excludeArchived,
+      folder.includeContacts,
+      folder.includeNonContacts,
+      folder.includeBots,
+      folder.includeGroups,
+      folder.includeChannels
     );
   }
 
-  public static boolean contentEquals (TdApi.ChatFilter lhs, TdApi.ChatFilter rhs) {
+  public static boolean contentEquals (TdApi.ChatFolder lhs, TdApi.ChatFolder rhs) {
     if (lhs == rhs) {
       return true;
     }
     return Objects.equals(lhs.title, rhs.title) &&
-      Objects.equals(lhs.iconName, rhs.iconName) &&
+      Objects.equals(lhs.icon != null ? lhs.icon.name : null, rhs.icon != null ? rhs.icon.name : rhs.icon.name) &&
       lhs.includeContacts == rhs.includeContacts &&
       lhs.includeNonContacts == rhs.includeNonContacts &&
       lhs.includeGroups == rhs.includeGroups &&
@@ -7089,70 +7114,70 @@ public class TD {
       U.unmodifiableTreeSetOf(lhs.excludedChatIds).equals(U.unmodifiableTreeSetOf(rhs.excludedChatIds));
   }
 
-  public static int countIncludedChatTypes (@Nullable TdApi.ChatFilter chatFilter) {
-    if (chatFilter == null)
+  public static int countIncludedChatTypes (@Nullable TdApi.ChatFolder chatFolder) {
+    if (chatFolder == null)
       return 0;
     int count = 0;
-    if (chatFilter.includeContacts) count++;
-    if (chatFilter.includeNonContacts) count++;
-    if (chatFilter.includeGroups) count++;
-    if (chatFilter.includeChannels) count++;
-    if (chatFilter.includeBots) count++;
+    if (chatFolder.includeContacts) count++;
+    if (chatFolder.includeNonContacts) count++;
+    if (chatFolder.includeGroups) count++;
+    if (chatFolder.includeChannels) count++;
+    if (chatFolder.includeBots) count++;
     return count;
   }
 
-  public static int countExcludedChatTypes (@Nullable TdApi.ChatFilter chatFilter) {
-    if (chatFilter == null)
+  public static int countExcludedChatTypes (@Nullable TdApi.ChatFolder chatFolder) {
+    if (chatFolder == null)
       return 0;
     int count = 0;
-    if (chatFilter.excludeMuted) count++;
-    if (chatFilter.excludeRead) count++;
-    if (chatFilter.excludeArchived) count++;
+    if (chatFolder.excludeMuted) count++;
+    if (chatFolder.excludeRead) count++;
+    if (chatFolder.excludeArchived) count++;
     return count;
   }
 
-  public static int[] includedChatTypes (@Nullable TdApi.ChatFilter chatFilter) {
-    if (chatFilter == null)
+  public static int[] includedChatTypes (@Nullable TdApi.ChatFolder chatFolder) {
+    if (chatFolder == null)
       return ArrayUtils.EMPTY_INTS;
-    IntList chatTypes = new IntList(countIncludedChatTypes(chatFilter));
-    if (chatFilter.includeContacts) chatTypes.append(R.id.chatType_contact);
-    if (chatFilter.includeNonContacts) chatTypes.append(R.id.chatType_nonContact);
-    if (chatFilter.includeGroups) chatTypes.append(R.id.chatType_group);
-    if (chatFilter.includeChannels) chatTypes.append(R.id.chatType_channel);
-    if (chatFilter.includeBots) chatTypes.append(R.id.chatType_bot);
+    IntList chatTypes = new IntList(countIncludedChatTypes(chatFolder));
+    if (chatFolder.includeContacts) chatTypes.append(R.id.chatType_contact);
+    if (chatFolder.includeNonContacts) chatTypes.append(R.id.chatType_nonContact);
+    if (chatFolder.includeGroups) chatTypes.append(R.id.chatType_group);
+    if (chatFolder.includeChannels) chatTypes.append(R.id.chatType_channel);
+    if (chatFolder.includeBots) chatTypes.append(R.id.chatType_bot);
     return chatTypes.get();
   }
 
-  public static int[] excludedChatTypes (@Nullable TdApi.ChatFilter chatFilter) {
-    if (chatFilter == null)
+  public static int[] excludedChatTypes (@Nullable TdApi.ChatFolder chatFolder) {
+    if (chatFolder == null)
       return ArrayUtils.EMPTY_INTS;
-    IntList chatTypes = new IntList(countExcludedChatTypes(chatFilter));
-    if (chatFilter.excludeMuted) chatTypes.append(R.id.chatType_muted);
-    if (chatFilter.excludeRead) chatTypes.append(R.id.chatType_read);
-    if (chatFilter.excludeArchived) chatTypes.append(R.id.chatType_archived);
+    IntList chatTypes = new IntList(countExcludedChatTypes(chatFolder));
+    if (chatFolder.excludeMuted) chatTypes.append(R.id.chatType_muted);
+    if (chatFolder.excludeRead) chatTypes.append(R.id.chatType_read);
+    if (chatFolder.excludeArchived) chatTypes.append(R.id.chatType_archived);
     return chatTypes.get();
   }
 
-  public static void updateIncludedChatTypes (TdApi.ChatFilter chatFilter, Set<Integer> chatTypes) {
-    updateIncludedChatTypes(chatFilter, chatTypes::contains);
+  public static void updateIncludedChatTypes (TdApi.ChatFolder chatFolder, Set<Integer> chatTypes) {
+    updateIncludedChatTypes(chatFolder, chatTypes::contains);
   }
 
-  public static void updateIncludedChatTypes (TdApi.ChatFilter chatFilter, Filter<Integer> filter) {
-    chatFilter.includeContacts = filter.accept(R.id.chatType_contact);
-    chatFilter.includeNonContacts = filter.accept(R.id.chatType_nonContact);
-    chatFilter.includeGroups = filter.accept(R.id.chatType_group);
-    chatFilter.includeChannels = filter.accept(R.id.chatType_channel);
-    chatFilter.includeBots = filter.accept(R.id.chatType_bot);
+  public static void updateIncludedChatTypes (TdApi.ChatFolder chatFolder, Filter<Integer> filter) {
+    chatFolder.includeContacts = filter.accept(R.id.chatType_contact);
+    chatFolder.includeNonContacts = filter.accept(R.id.chatType_nonContact);
+    chatFolder.includeGroups = filter.accept(R.id.chatType_group);
+    chatFolder.includeChannels = filter.accept(R.id.chatType_channel);
+    chatFolder.includeBots = filter.accept(R.id.chatType_bot);
   }
 
-  public static void updateExcludedChatTypes (TdApi.ChatFilter chatFilter, Set<Integer> chatTypes) {
-    updateExcludedChatTypes(chatFilter, chatTypes::contains);
+  public static void updateExcludedChatTypes (TdApi.ChatFolder chatFolder, Set<Integer> chatTypes) {
+    updateExcludedChatTypes(chatFolder, chatTypes::contains);
   }
 
-  public static void updateExcludedChatTypes (TdApi.ChatFilter chatFilter, Filter<Integer> filter) {
-    chatFilter.excludeMuted = filter.accept(R.id.chatType_muted);
-    chatFilter.excludeRead = filter.accept(R.id.chatType_read);
-    chatFilter.excludeArchived = filter.accept(R.id.chatType_archived);
+  public static void updateExcludedChatTypes (TdApi.ChatFolder chatFolder, Filter<Integer> filter) {
+    chatFolder.excludeMuted = filter.accept(R.id.chatType_muted);
+    chatFolder.excludeRead = filter.accept(R.id.chatType_read);
+    chatFolder.excludeArchived = filter.accept(R.id.chatType_archived);
   }
 
   public static final int[] CHAT_TYPES = {
@@ -7216,25 +7241,40 @@ public class TD {
     throw new IllegalArgumentException();
   }
 
-  public static @ThemeColorId int chatTypeColor (@IdRes int chatType) {
-    if (chatType == R.id.chatType_contact) return R.id.theme_color_avatarBlue;
-    if (chatType == R.id.chatType_nonContact) return R.id.theme_color_avatarCyan;
-    if (chatType == R.id.chatType_group) return R.id.theme_color_avatarGreen;
-    if (chatType == R.id.chatType_channel) return R.id.theme_color_avatarOrange;
-    if (chatType == R.id.chatType_bot) return R.id.theme_color_avatarRed;
-    if (chatType == R.id.chatType_muted) return R.id.theme_color_avatarPink;
-    if (chatType == R.id.chatType_read) return R.id.theme_color_avatarBlue;
-    if (chatType == R.id.chatType_archived) return R.id.theme_color_avatarArchive;
+  public static @ColorId int chatTypeColor (@IdRes int chatType) {
+    if (chatType == R.id.chatType_contact) return ColorId.avatarBlue;
+    if (chatType == R.id.chatType_nonContact) return ColorId.avatarCyan;
+    if (chatType == R.id.chatType_group) return ColorId.avatarGreen;
+    if (chatType == R.id.chatType_channel) return ColorId.avatarOrange;
+    if (chatType == R.id.chatType_bot) return ColorId.avatarRed;
+    if (chatType == R.id.chatType_muted) return ColorId.avatarPink;
+    if (chatType == R.id.chatType_read) return ColorId.avatarBlue;
+    if (chatType == R.id.chatType_archived) return ColorId.avatarArchive;
     throw new IllegalArgumentException();
   }
 
-  public static String chatTypeIconName (@IdRes int chatType) {
-    if (chatType == R.id.chatType_contact) return "Private";
-    if (chatType == R.id.chatType_nonContact) return "Private";
-    if (chatType == R.id.chatType_group) return "Groups";
-    if (chatType == R.id.chatType_channel) return "Channels";
-    if (chatType == R.id.chatType_bot) return "Bots";
-    return "";
+  public static @Nullable TdApi.ChatFolderIcon chatTypeIcon (@IdRes int chatType) {
+    if (chatType == R.id.chatType_contact || chatType == R.id.chatType_nonContact) {
+      return new TdApi.ChatFolderIcon("Private");
+    }
+    if (chatType == R.id.chatType_group) {
+      return new TdApi.ChatFolderIcon( "Groups");
+    }
+    if (chatType == R.id.chatType_channel) {
+      return new TdApi.ChatFolderIcon("Channels");
+    }
+    if (chatType == R.id.chatType_bot) {
+      return new TdApi.ChatFolderIcon("Bots");
+    }
+    return null;
+  }
+
+  public static @DrawableRes int findFolderIcon (TdApi.ChatFolderIcon icon, @DrawableRes int defaultIcon) {
+    if (icon != null && !StringUtils.isEmpty(icon.name)) {
+      return iconByName(icon.name, defaultIcon);
+    } else {
+      return defaultIcon;
+    }
   }
 
   public static @DrawableRes int iconByName (String iconName, @DrawableRes int defaultIcon) {

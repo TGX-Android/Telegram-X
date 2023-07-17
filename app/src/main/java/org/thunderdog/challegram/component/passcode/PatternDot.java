@@ -17,7 +17,7 @@ package org.thunderdog.challegram.component.passcode;
 import android.animation.ValueAnimator;
 import android.graphics.Canvas;
 
-import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -99,6 +99,6 @@ public class PatternDot {
   }
 
   public void draw (Canvas c) {
-    c.drawCircle(x, y, getRadius(), Paints.fillingPaint(Theme.getColor(R.id.theme_color_passcodeIcon)));
+    c.drawCircle(x, y, getRadius(), Paints.fillingPaint(Theme.getColor(ColorId.passcodeIcon)));
   }
 }

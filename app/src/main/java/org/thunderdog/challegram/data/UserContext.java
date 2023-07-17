@@ -21,13 +21,13 @@ import android.text.TextUtils;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.util.text.Letters;
@@ -43,7 +43,7 @@ public class UserContext {
 
   private @Nullable ImageFile imageFile;
 
-  private @ThemeColorId
+  private @ColorId
   int avatarColorId;
   private @Nullable
   Letters letters;

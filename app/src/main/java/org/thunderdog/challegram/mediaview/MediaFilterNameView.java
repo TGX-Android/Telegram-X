@@ -26,7 +26,7 @@ import androidx.annotation.Nullable;
 
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 
@@ -108,7 +108,7 @@ public class MediaFilterNameView extends FrameLayoutFix implements FactorAnimato
     addView(value);
   }
 
-  private @ThemeColorId int nameColorId, valueColorId;
+  private @ColorId int nameColorId, valueColorId;
 
   public void addThemeListeners (@Nullable ViewController<?> themeProvider) {
     if (themeProvider != null) {
@@ -121,7 +121,7 @@ public class MediaFilterNameView extends FrameLayoutFix implements FactorAnimato
     }
   }
 
-  public void setColors (@ThemeColorId int nameColorId, @ThemeColorId int valueColorId) {
+  public void setColors (@ColorId int nameColorId, @ColorId int valueColorId) {
     name.setTextColor(Theme.getColor(this.nameColorId = nameColorId));
     value.setTextColor(Theme.getColor(this.valueColorId = valueColorId));
   }

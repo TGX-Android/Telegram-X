@@ -31,8 +31,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.ListUpdateCallback;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.emoji.GifView;
@@ -380,15 +380,12 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
     ViewController<?> c = context().navigation().getCurrentStackItem();
     if (c != null) {
       c.showOptions(Lang.getString(R.string.RemoveGifConfirm), new int[]{R.id.btn_deleteGif, R.id.btn_cancel}, new String[]{Lang.getString(R.string.Delete), Lang.getString(R.string.Cancel)}, new int[]{ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
-        switch (id) {
-          case R.id.btn_deleteGif: {
-            gifsAdapter.removeSavedGif(animation.animation.id);
-            if (gifsAdapter.getItemCount() == 0) {
-              showStickers();
-            }
-            tdlib.client().send(new TdApi.RemoveSavedAnimation(new TdApi.InputFileId(animation.animation.id)), tdlib.okHandler());
-            break;
+        if (id == R.id.btn_deleteGif) {
+          gifsAdapter.removeSavedGif(animation.animation.id);
+          if (gifsAdapter.getItemCount() == 0) {
+            showStickers();
           }
+          tdlib.client().send(new TdApi.RemoveSavedAnimation(new TdApi.InputFileId(animation.animation.id)), tdlib.okHandler());
         }
         return true;
       });
@@ -489,15 +486,10 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
 
   @Override
   public void onAfterForceTouchAction (ForceTouchView.ForceTouchContext context, int actionId, Object arg) {
-    switch (actionId) {
-      case R.id.btn_deleteGif: {
-        removeGif((TdApi.Animation) arg);
-        break;
-      }
-      case R.id.btn_send: {
-        sendGif(context.getSourceView(), (TdApi.Animation) arg);
-        break;
-      }
+    if (actionId == R.id.btn_deleteGif) {
+      removeGif((TdApi.Animation) arg);
+    } else if (actionId == R.id.btn_send) {
+      sendGif(context.getSourceView(), (TdApi.Animation) arg);
     }
   }
 
@@ -550,7 +542,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
     this.trendingLoading = false;
   }
 
-  public static int parseTrending (Tdlib tdlib, ArrayList<TGStickerSetInfo> parsedStickerSets, ArrayList<MediaStickersAdapter.StickerItem> items, int offset, TdApi.StickerSetInfo[] stickerSets, TGStickerObj.DataProvider dataProvider, @Nullable TGStickerSetInfo.ViewCallback viewCallback, boolean needSeparators) {
+  public static int parseTrending (Tdlib tdlib, ArrayList<TGStickerSetInfo> parsedStickerSets, ArrayList<MediaStickersAdapter.StickerItem> items, int offset, TdApi.StickerSetInfo[] stickerSets, TGStickerObj.DataProvider dataProvider, @Nullable TGStickerSetInfo.ViewCallback viewCallback, boolean needSeparators, boolean isEmojiStatuses) {
     int unreadItemCount = 0;
     parsedStickerSets.ensureCapacity(stickerSets.length);
     items.ensureCapacity(items.size() + stickerSets.length * 2 + 1);
@@ -562,7 +554,11 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
       }
       TGStickerSetInfo stickerSet = new TGStickerSetInfo(tdlib, stickerSetInfo);
       stickerSet.setViewCallback(viewCallback);
-      stickerSet.setIsTrending();
+      if (isEmojiStatuses) {
+        stickerSet.setIsTrendingEmoji();
+      } else {
+        stickerSet.setIsTrending();
+      }
       if (needSeparators) {
         if (first) {
           first = false;
@@ -573,8 +569,12 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
       }
       parsedStickerSets.add(stickerSet);
       stickerSet.setStartIndex(startIndex);
-      items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_HEADER_TRENDING, stickerSet));
-      int itemCount = 5;
+      if (isEmojiStatuses) {
+        items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_HEADER, stickerSet));
+      } else {
+        items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_HEADER_TRENDING, stickerSet));
+      }
+      int itemCount = isEmojiStatuses ? stickerSetInfo.size :5;
       for (int i = 0; i < itemCount; i++) {
         TGStickerObj stickerObj = new TGStickerObj(tdlib, i < stickerSetInfo.covers.length ? stickerSetInfo.covers[i] : null, null, stickerSetInfo.stickerType);
         stickerObj.setStickerSetId(stickerSetInfo.id, null);
@@ -599,7 +599,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
           TdApi.TrendingStickerSets trendingStickerSets = (TdApi.TrendingStickerSets) object;
           if (offset == 0)
             items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_KEYBOARD_TOP));
-          unreadItemCount = parseTrending(tdlib, parsedStickerSets, items,  cellCount, trendingStickerSets.sets, EmojiMediaListController.this, EmojiMediaListController.this, false);
+          unreadItemCount = parseTrending(tdlib, parsedStickerSets, items,  cellCount, trendingStickerSets.sets, EmojiMediaListController.this, EmojiMediaListController.this, false, false);
         } else {
           if (offset == 0)
             items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_COME_AGAIN_LATER));
@@ -1693,7 +1693,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
       final ArrayList<MediaStickersAdapter.StickerItem> stickerItems = new ArrayList<>(sets.sets.length * 2 + 1);
       final ArrayList<TGStickerSetInfo> stickerSetInfos = new ArrayList<>(sets.sets.length);
       stickerItems.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_KEYBOARD_TOP));
-      final int unreadItemCount = parseTrending(tdlib, stickerSetInfos, stickerItems, 0, sets.sets, this, this, false);
+      final int unreadItemCount = parseTrending(tdlib, stickerSetInfos, stickerItems, 0, sets.sets, this, this, false, false);
       addTrendingStickers(stickerSetInfos, stickerItems, unreadItemCount > 0, 0);
     }
   }

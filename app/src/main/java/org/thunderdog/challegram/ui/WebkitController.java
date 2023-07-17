@@ -34,6 +34,7 @@ import org.thunderdog.challegram.navigation.DoubleHeaderView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
 
 import me.vkryl.android.widget.FrameLayoutFix;
@@ -64,7 +65,7 @@ public class WebkitController<T> extends ViewController<T> {
         return true;
       }
     };
-    ViewSupport.setThemedBackground(contentView, R.id.theme_color_filling, this);
+    ViewSupport.setThemedBackground(contentView, ColorId.filling, this);
     contentView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
     // FIXME android.webkit.WebViewFactory$MissingWebViewPackageException

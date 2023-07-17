@@ -24,12 +24,10 @@ import android.view.View;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.annotation.UiThread;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGFoundChat;
 import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
@@ -39,6 +37,7 @@ import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.NotificationSettingsListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeListenerEntry;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
@@ -51,8 +50,6 @@ import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
 
-import me.vkryl.android.AnimatorUtils;
-import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
@@ -73,7 +70,7 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
     RippleSupport.setTransparentSelector(this);
 
     avatarReceiver = new AvatarReceiver(this);
-    counter = new Counter.Builder().callback(this).outlineColor(R.id.theme_color_filling).build();
+    counter = new Counter.Builder().callback(this).outlineColor(ColorId.filling).build();
     identityAvatarReceiver = new AvatarReceiver(this);
   }
 
@@ -141,8 +138,8 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
 
   private void updateTextColor () {
     /*final float checkFactor = checkBoxHelper != null ? checkBoxHelper.getCheckFactor() : 0f;
-    final int colorId = checkFactor == 1f ? R.id.theme_color_textLink : chat.isSecret() ? R.id.theme_color_textGreen : R.id.theme_color_textAccent;
-    titleView.setTextColor(checkFactor == 0f ? TGTheme.getColor(colorId) : ColorChanger.inlineChange(TGTheme.getColor(colorId), TGTheme.getColor(R.id.theme_color_textLink), checkFactor));
+    final int colorId = checkFactor == 1f ? ColorId.textLink : chat.isSecret() ? ColorId.textGreen : ColorId.textAccent;
+    titleView.setTextColor(checkFactor == 0f ? TGTheme.getColor(colorId) : ColorChanger.inlineChange(TGTheme.getColor(colorId), TGTheme.getColor(ColorId.textLink), checkFactor));
     if (themeProvider != null) {
       if (themeEntry != null) {
         themeEntry.setTargetColorId(colorId);
@@ -297,7 +294,7 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
   public int defaultTextColor () {
     boolean isSecret = chat != null && chat.isSecret();
     final float checkFactor = checkBoxHelper != null ? checkBoxHelper.getCheckFactor() : 0f;
-    return isSecret ? Theme.getColor(R.id.theme_color_textSecure) : checkFactor == 0f ? Theme.textAccentColor() : ColorUtils.fromToArgb(Theme.textAccentColor(), Theme.getColor(R.id.theme_color_textSearchQueryHighlight), checkFactor);
+    return isSecret ? Theme.getColor(ColorId.textSecure) : checkFactor == 0f ? Theme.textAccentColor() : ColorUtils.fromToArgb(Theme.textAccentColor(), Theme.getColor(ColorId.textSearchQueryHighlight), checkFactor);
   }
 
   @Override
@@ -375,8 +372,8 @@ public class VerticalChatView extends BaseView implements Destroyable, ChatListe
       identityAvatarReceiver.drawPlaceholderRounded(c, identityAvatarReceiver.getDisplayRadius(), Theme.fillingColor(), Screen.dp(1.5f));
 
       if (drawAnonymousSender) {
-        identityAvatarReceiver.drawPlaceholderRounded(c, identityAvatarReceiver.getDisplayRadius(), Theme.getColor(R.id.theme_color_iconLight));
-        Drawables.draw(c, Drawables.get(R.drawable.infanf_baseline_incognito_14), identityAvatarReceiver.centerX() - Screen.dp(7), identityAvatarReceiver.centerY() - Screen.dp(7), Paints.getPorterDuffPaint(Theme.getColor(R.id.theme_color_badgeMutedText)));
+        identityAvatarReceiver.drawPlaceholderRounded(c, identityAvatarReceiver.getDisplayRadius(), Theme.getColor(ColorId.iconLight));
+        Drawables.draw(c, Drawables.get(R.drawable.infanf_baseline_incognito_14), identityAvatarReceiver.centerX() - Screen.dp(7), identityAvatarReceiver.centerY() - Screen.dp(7), Paints.getPorterDuffPaint(Theme.getColor(ColorId.badgeMutedText)));
       } else {
         identityAvatarReceiver.draw(c);
       }

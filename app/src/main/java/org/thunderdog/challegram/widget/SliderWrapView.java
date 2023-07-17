@@ -33,7 +33,7 @@ import org.thunderdog.challegram.mediaview.MediaFilterNameView;
 import org.thunderdog.challegram.mediaview.SliderView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
@@ -147,14 +147,14 @@ public class SliderWrapView extends LinearLayout implements SliderView.Listener,
     sliderView.setAnchorMode(SliderView.ANCHOR_MODE_START);
     sliderView.setSlideEnabled(true, false);
     sliderView.setListener(this);
-    sliderView.setColorId(R.id.theme_color_sliderActive, false);
-    sliderView.setForceBackgroundColorId(R.id.theme_color_sliderInactive);
+    sliderView.setColorId(ColorId.sliderActive, false);
+    sliderView.setForceBackgroundColorId(ColorId.sliderInactive);
 
     setOrientation(HORIZONTAL);
     setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(56f)));
   }
 
-  public void setColors (@ThemeColorId int sliderColorId, @ThemeColorId int inactiveSliderColorId, @ThemeColorId int textColorId, @ThemeColorId int valueColorId) {
+  public void setColors (@ColorId int sliderColorId, @ColorId int inactiveSliderColorId, @ColorId int textColorId, @ColorId int valueColorId) {
     sliderView.setColorId(sliderColorId, false);
     sliderView.setForceBackgroundColorId(inactiveSliderColorId);
     if (nameView != null) {
@@ -166,7 +166,7 @@ public class SliderWrapView extends LinearLayout implements SliderView.Listener,
     nameView = new MediaFilterNameView(getContext());
     nameView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
     nameView.setPadding(Screen.dp(16f), 0, 0, 0);
-    nameView.setColors(R.id.theme_color_text, R.id.theme_color_textNeutral);
+    nameView.setColors(ColorId.text, ColorId.textNeutral);
     addView(nameView);
 
     sliderView.setPadding(Screen.dp(16f), Screen.dp(1f), Screen.dp(16f), 0);
@@ -195,10 +195,10 @@ public class SliderWrapView extends LinearLayout implements SliderView.Listener,
         nameView.addThemeListeners(themeProvider);
       }
       if (currentBrightness != null) {
-        themeProvider.addThemeFilterListener(currentBrightness, R.id.theme_color_icon);
+        themeProvider.addThemeFilterListener(currentBrightness, ColorId.icon);
       }
       if (fullBrightness != null) {
-        themeProvider.addThemeFilterListener(fullBrightness, R.id.theme_color_icon);
+        themeProvider.addThemeFilterListener(fullBrightness, ColorId.icon);
       }
       themeProvider.addThemeInvalidateListener(sliderView);
     }

@@ -35,6 +35,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.Px;
 import androidx.annotation.StringRes;
 
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.user.RemoveHelper;
@@ -47,13 +48,14 @@ import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.DrawModifier;
+import org.thunderdog.challegram.util.EmojiStatusHelper;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
@@ -107,6 +109,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
   private CharSequence itemData;
   private CharSequence displayItemData;
   private Layout displayItemDataLayout;
+  private EmojiStatusHelper emojiStatusHelper;
 
   private TogglerView togglerView;
 
@@ -117,9 +120,9 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
   private int displayItemNameWidth;
   private int displayItemDataWidth;
 
-  private @ThemeColorId
-  int textColorId = R.id.theme_color_text;
-  private @ThemeColorId
+  private @ColorId
+  int textColorId = ColorId.text;
+  private @ColorId
   int dataColorId;
 
   private final Tdlib tdlib;
@@ -132,6 +135,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     super(context);
     this.tdlib = tdlib;
     this.complexReceiver = new ComplexReceiver(this);
+    this.emojiStatusHelper = new EmojiStatusHelper(tdlib, this, null);
     setWillNotDraw(false);
   }
 
@@ -200,6 +204,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     if (receiver != null)
       receiver.attach();
     complexReceiver.attach();
+    emojiStatusHelper.attach();
   }
 
   @Override
@@ -209,6 +214,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     if (receiver != null)
       receiver.detach();
     complexReceiver.detach();
+    emojiStatusHelper.detach();
   }
 
   @Override
@@ -217,6 +223,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     if (receiver != null)
       receiver.destroy();
     complexReceiver.performDestroy();
+    emojiStatusHelper.performDestroy();
     if (subscribedToEmojiUpdates) {
       TGLegacyManager.instance().removeEmojiListener(this);
       subscribedToEmojiUpdates = false;
@@ -248,9 +255,9 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     return displayItemNameWidth;
   }
 
-  public void setTextColorId (@ThemeColorId int textColorId) {
-    if (textColorId == ThemeColorId.NONE)
-      textColorId = R.id.theme_color_text;
+  public void setTextColorId (@ColorId int textColorId) {
+    if (textColorId == ColorId.NONE)
+      textColorId = ColorId.text;
     if (this.textColorId != textColorId) {
       this.textColorId = textColorId;
       invalidate();
@@ -416,9 +423,9 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     }
   }
 
-  private int colorDataId = ThemeColorId.NONE;
+  private int colorDataId = ColorId.NONE;
 
-  public void setColorDataId (@ThemeColorId int color) {
+  public void setColorDataId (@ColorId int color) {
     if (this.colorDataId != color) {
       this.colorDataId = color;
       invalidate();
@@ -444,6 +451,10 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
       requestLayout();
     }
     invalidate();
+  }
+
+  public void setEmojiStatus (@Nullable TdApi.User user) {
+    emojiStatusHelper.updateEmoji(user, TextColorSets.Regular.NORMAL);
   }
 
   public int getType () {
@@ -570,6 +581,8 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     if (counter != null) {
       availWidth -= counter.getScaledWidth(Screen.dp(24f) + Screen.dp(8f));
     }
+
+    availWidth -= emojiStatusHelper.getWidth(Screen.dp(6));
 
     if (type == TYPE_INFO_COMPACT) {
       pTop = Screen.dp(15f + 13f);
@@ -702,7 +715,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     return isEnabled.getFloatValue();
   }
 
-  private static void drawText (Canvas c, CharSequence text, Layout layout, float x, float y, int textY, Paint paint, boolean rtl, int viewWidth, float textWidth, Text wrap, TextColorSet textColorSet) {
+  private static void drawText (Canvas c, CharSequence text, Layout layout, float x, float y, int textY, Paint paint, boolean rtl, int viewWidth, float textWidth, Text wrap, TextColorSet textColorSet, EmojiStatusHelper emojiStatusHelper) {
     if (wrap != null) {
       wrap.draw(c, (int) x, (int) (viewWidth - x), 0, textY, textColorSet != null ? textColorSet : TextColorSets.Regular.NEGATIVE);
     } else if (layout != null) {
@@ -712,6 +725,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
       c.restore();
     } else {
       c.drawText((String) text, rtl ? viewWidth - textWidth - x : x, y, paint);
+      emojiStatusHelper.draw(c, (int) (x + textWidth + Screen.dp(6)), (int) textY);
     }
   }
 
@@ -771,7 +785,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
 
   @Override
   public long backgroundId (boolean isPressed) {
-    return isPressed ? R.id.theme_color_textLinkPressHighlight : 0;
+    return isPressed ? ColorId.textLinkPressHighlight : 0;
   }
 
   @Override
@@ -787,7 +801,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
   private final TextColorSet subtitleColorSet = new TextColorSetOverride(this) {
     @Override
     public int defaultTextColor () {
-      int subtitleColor = Theme.getColor(dataColorId != 0 ? dataColorId : R.id.theme_color_textLight);
+      int subtitleColor = Theme.getColor(dataColorId != 0 ? dataColorId : ColorId.textLight);
       if ((flags & FLAG_DATA_SUBTITLE) != 0) {
         subtitleColor = ColorUtils.alphaColor(Theme.getSubtitleAlpha(), subtitleColor);
       }
@@ -828,23 +842,23 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
 
     if (type == TYPE_INFO || type == TYPE_INFO_COMPACT || (type == TYPE_INFO_MULTILINE && text == null)) {
       if (displayItemName != null) {
-        int subtitleColor = Theme.getColor(dataColorId != 0 ? dataColorId : R.id.theme_color_textLight);
+        int subtitleColor = Theme.getColor(dataColorId != 0 ? dataColorId : ColorId.textLight);
         if ((flags & FLAG_DATA_SUBTITLE) != 0) {
           subtitleColor = ColorUtils.alphaColor(Theme.getSubtitleAlpha(), subtitleColor);
         }
-        drawText(c, displayItemName, displayItemNameLayout, pLeft, pTop, (int) (pTop - Screen.dp(12f)), Paints.getRegularTextPaint(13f, subtitleColor), rtl, width, displayItemNameWidth, displayItemNameText, subtitleColorSet);
+        drawText(c, displayItemName, displayItemNameLayout, pLeft, pTop, (int) (pTop - Screen.dp(12f)), Paints.getRegularTextPaint(13f, subtitleColor), rtl, width, displayItemNameWidth, displayItemNameText, subtitleColorSet, emojiStatusHelper);
       }
       if (displayItemData != null) {
-        drawText(c, displayItemData, displayItemDataLayout, pDataLeft, pDataTop,  (int) (pDataTop - Screen.dp(15f)), Paints.getTextPaint16(dataColor), rtl, width, displayItemDataWidth, null, null);
+        drawText(c, displayItemData, displayItemDataLayout, pDataLeft, pDataTop,  (int) (pDataTop - Screen.dp(15f)), Paints.getTextPaint16(dataColor), rtl, width, displayItemDataWidth, null, null, emojiStatusHelper);
       }
     } else if (type == TYPE_INFO_MULTILINE) {
       if (displayItemName != null) {
-        int subtitleColor = Theme.getColor(dataColorId != 0 ? dataColorId : R.id.theme_color_textLight);
+        int subtitleColor = Theme.getColor(dataColorId != 0 ? dataColorId : ColorId.textLight);
         if ((flags & FLAG_DATA_SUBTITLE) != 0) {
           subtitleColor = ColorUtils.alphaColor(Theme.getSubtitleAlpha(), subtitleColor);
         }
         float top = (int) pDataTop - Screen.dp(13f) + text.getHeight() + Screen.dp(17f);
-        drawText(c, displayItemName, displayItemNameLayout, pLeft, (int) pDataTop - Screen.dp(13f) + text.getHeight() + Screen.dp(17f), (int) (top - Screen.dp(12f)), Paints.getRegularTextPaint(13f, subtitleColor), rtl, width, displayItemNameWidth, displayItemNameText, subtitleColorSet);
+        drawText(c, displayItemName, displayItemNameLayout, pLeft, (int) pDataTop - Screen.dp(13f) + text.getHeight() + Screen.dp(17f), (int) (top - Screen.dp(12f)), Paints.getRegularTextPaint(13f, subtitleColor), rtl, width, displayItemNameWidth, displayItemNameText, subtitleColorSet, emojiStatusHelper);
       }
       if (text != null) {
         if (rtl) {
@@ -855,10 +869,10 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
       }
     } else {
       if (displayItemData != null) {
-        drawText(c, displayItemData, displayItemDataLayout, pDataLeft, pDataTop, (int) (pDataTop - Screen.dp(15)), Paints.getTextPaint16(dataColor), rtl, width, displayItemDataWidth, null, null);
+        drawText(c, displayItemData, displayItemDataLayout, pDataLeft, pDataTop, (int) (pDataTop - Screen.dp(15)), Paints.getTextPaint16(dataColor), rtl, width, displayItemDataWidth, null, null, emojiStatusHelper);
       }
       if (displayItemName != null) {
-        drawText(c, displayItemName, displayItemNameLayout, pLeft, pTop, (int) (pTop - Screen.dp(15f)), Paints.getTextPaint16(dataColor), rtl, width, displayItemNameWidth, displayItemNameText, this);
+        drawText(c, displayItemName, displayItemNameLayout, pLeft, pTop, (int) (pTop - Screen.dp(15f)), Paints.getTextPaint16(dataColor), rtl, width, displayItemNameWidth, displayItemNameText, this, emojiStatusHelper);
       }
     }
     if (progressComponent != null) {

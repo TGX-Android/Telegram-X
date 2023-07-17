@@ -19,7 +19,7 @@ import android.graphics.Bitmap;
 import androidx.annotation.Keep;
 import androidx.collection.ArraySet;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.TD;
@@ -167,12 +167,20 @@ public class ImageLoader {
 
     persistentFile.updateRemoteFile(file);
 
-    if (TD.isFileLoadedAndExists(file)) {
+    if (isFileLoaded(tdlib, file)) {
       onLoad(tdlib, file);
     } else {
       if (!Config.DEBUG_DISABLE_DOWNLOAD) {
         tdlib.client().send(new TdApi.DownloadFile(file.id, 1, 0, 0, false), tdlib.imageLoadHandler());
       }
+    }
+  }
+
+  public static boolean isFileLoaded (Tdlib tdlib, TdApi.File file) {
+    if (tdlib != null) {
+      return TD.isFileLoadedAndExists(file);
+    } else {
+      return TD.isFileLoaded(file);
     }
   }
 

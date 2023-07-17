@@ -21,9 +21,9 @@ import android.graphics.RectF;
 import android.os.Build;
 import android.view.MotionEvent;
 
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.navigation.CounterHeaderView;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
@@ -31,7 +31,7 @@ import org.thunderdog.challegram.tool.Views;
 public class CounterView extends CounterHeaderView {
   public CounterView (Context context) {
     super(context);
-    init(14f, R.id.theme_color_white, Screen.dp(16f), 0, Screen.dp(9f) + Screen.dp(10f));
+    init(14f, ColorId.white, Screen.dp(16f), 0, Screen.dp(9f) + Screen.dp(10f));
     if (Config.HARDWARE_CLIP_PATH_FIX) {
       Views.setLayerType(this, LAYER_TYPE_HARDWARE);
     }

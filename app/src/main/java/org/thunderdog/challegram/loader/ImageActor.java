@@ -21,7 +21,7 @@ import androidx.palette.graphics.Palette;
 
 import com.google.android.exoplayer2.metadata.id3.ApicFrame;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.TD;
@@ -90,7 +90,7 @@ public class ImageActor implements ImageReader.Listener, AudioController.ApicLis
 
     final TdApi.File rawFile = file.getFile();
 
-    if (isCustomFile(file) || TD.isFileLoadedAndExists(rawFile)) {
+    if (isCustomFile(file) || ImageLoader.isFileLoaded(file.tdlib(), rawFile)) {
       act(file.getFilePath());
       return false;
     }

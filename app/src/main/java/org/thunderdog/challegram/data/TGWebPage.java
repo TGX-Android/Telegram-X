@@ -23,8 +23,8 @@ import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
@@ -602,13 +602,17 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
   }
 
   public boolean isPreviewOf (String url) {
+    return isPreviewOf(webPage.url, url);
+  }
+
+  public static boolean isPreviewOf (String webPageUrl, String url) {
     if (StringUtils.isEmpty(url))
       return false;
     if (!url.contains("://"))
       url = "https://" + url;
     try {
       Uri uri = Uri.parse(url);
-      Uri webPageUri = Uri.parse(webPage.url);
+      Uri webPageUri = Uri.parse(webPageUrl);
 
       String host = uri.getHost().toLowerCase(Locale.ROOT).replaceAll("^(?:www\\.|m\\.)", "");
       String webPageHost = webPageUri.getHost().toLowerCase(Locale.ROOT).replaceAll("^(?:www\\.|m\\.)", "");

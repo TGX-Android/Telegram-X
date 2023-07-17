@@ -29,8 +29,9 @@ import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
 import org.thunderdog.challegram.loader.AvatarReceiver;
@@ -41,22 +42,26 @@ import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.navigation.RtlCheckListener;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.util.EmojiStatusHelper;
+import org.thunderdog.challegram.util.text.TextColorSets;
 
 import me.vkryl.core.lambda.Destroyable;
 
 public class DoubleTextView extends RelativeLayout implements RtlCheckListener, Destroyable {
   private final TextView titleView, subtitleView;
   private final ComplexReceiver receiver;
+  private final EmojiStatusHelper emojiStatusHelper;
   private @Nullable NonMaterialButton button;
 
   private boolean ignoreStartOffset;
   private int currentStartOffset;
+  private float textWidth;
 
   @Override
   public void checkRtl () {
@@ -65,7 +70,7 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
     if (subtitleView.getGravity() != Lang.gravity())
       subtitleView.setGravity(Lang.gravity());
     int leftMargin = Screen.dp(72f) - (ignoreStartOffset ? currentStartOffset / 2 : 0);
-    int rightMargin = Screen.dp(16f);
+    int rightMargin = Screen.dp(16f) + emojiStatusHelper.getWidth(Screen.dp(6));
     updateLayoutParams(titleView, leftMargin, rightMargin, Screen.dp(15f));
     updateLayoutParams(subtitleView, leftMargin, rightMargin, Screen.dp(38f));
   }
@@ -87,6 +92,8 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
 
   public DoubleTextView (Context context) {
     super(context);
+
+    this.emojiStatusHelper = new EmojiStatusHelper(null, this, null);
 
     int viewHeight = Screen.dp(72f);
     setPadding(0, Math.max(1, Screen.dp(.5f)), 0, 0);
@@ -224,14 +231,17 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
   @Override
   public void performDestroy () {
     receiver.performDestroy();
+    emojiStatusHelper.performDestroy();
   }
 
   public void attach () {
     receiver.attach();
+    emojiStatusHelper.attach();
   }
 
   public void detach () {
     receiver.detach();
+    emojiStatusHelper.detach();
   }
 
   private @Nullable TGStickerSetInfo stickerSetInfo;
@@ -254,9 +264,16 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
   public void setText (CharSequence title, CharSequence subtitle) {
     titleView.setText(title);
     subtitleView.setText(subtitle);
+    textWidth = U.measureText(titleView.getText(), Paints.getMediumTextPaint(16, false));
+    checkRtl();
   }
 
-  public void setTitleColorId (@ThemeColorId int colorId) {
+  public void setEmojiStatus (Tdlib tdlib, @Nullable TdApi.User user) {
+    emojiStatusHelper.updateEmoji(tdlib, user, TextColorSets.Regular.NORMAL);
+    checkRtl();
+  }
+
+  public void setTitleColorId (@ColorId int colorId) {
     titleView.setTextColor(Theme.getColor(colorId));
   }
 
@@ -318,5 +335,8 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
         c.drawRect(offset, 0, getMeasuredWidth(), height, Paints.fillingPaint(Theme.separatorColor()));
       }
     }
+
+    int x = (int) (titleView.getX() + Math.min((textWidth) + Screen.dp(6), titleView.getMeasuredWidth() + Screen.dp(6)));
+    emojiStatusHelper.draw(c, x, (int) titleView.getY());
   }
 }

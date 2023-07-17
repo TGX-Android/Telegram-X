@@ -21,8 +21,8 @@ import android.widget.LinearLayout;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.user.RemoveHelper;
 import org.thunderdog.challegram.component.user.UserView;
@@ -35,6 +35,7 @@ import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibCache;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.util.SenderPickerDelegate;
@@ -75,21 +76,15 @@ public class SettingsBlockedController extends RecyclerViewController<SettingsPr
 
   @Override
   public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
-    switch (id) {
-      case R.id.menu_contacts: {
-        header.addButton(menu, R.id.menu_btn_addContact, R.drawable.baseline_person_add_24, getHeaderIconColorId(), this, Screen.dp(49f));
-        break;
-      }
+    if (id == R.id.menu_contacts) {
+      header.addButton(menu, R.id.menu_btn_addContact, R.drawable.baseline_person_add_24, getHeaderIconColorId(), this, Screen.dp(49f));
     }
   }
 
   @Override
   public void onMenuItemPressed (int id, View view) {
-    switch (id) {
-      case R.id.menu_btn_addContact: {
-        blockContact();
-        break;
-      }
+    if (id == R.id.menu_btn_addContact) {
+      blockContact();
     }
   }
 
@@ -219,7 +214,7 @@ public class SettingsBlockedController extends RecyclerViewController<SettingsPr
       }
     };
     buildCells();
-    ViewSupport.setThemedBackground(recyclerView, R.id.theme_color_filling, this);
+    ViewSupport.setThemedBackground(recyclerView, ColorId.filling, this);
     RemoveHelper.attach(recyclerView, new RemoveHelper.Callback() {
       @Override
       public boolean canRemove (RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, int position) {
@@ -399,13 +394,10 @@ public class SettingsBlockedController extends RecyclerViewController<SettingsPr
 
   @Override
   public void onClick (View v) {
-    switch (v.getId()) {
-      case R.id.user: {
-        TGUser user = ((UserView) v).getUser();
-        if (user != null) {
-          tdlib.ui().openChat(this, user.getSenderId(), new TdlibUi.ChatOpenParameters().keepStack());
-        }
-        break;
+    if (v.getId() == R.id.user) {
+      TGUser user = ((UserView) v).getUser();
+      if (user != null) {
+        tdlib.ui().openChat(this, user.getSenderId(), new TdlibUi.ChatOpenParameters().keepStack());
       }
     }
   }

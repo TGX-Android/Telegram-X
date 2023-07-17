@@ -22,6 +22,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.base.SettingView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.ui.ListItem;
 import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.TimerView;
@@ -57,10 +58,10 @@ public class SettingsWrapBuilder {
   public boolean needSeparators = true, needRootInsets = false;
 
   public String saveStr = Lang.getString(R.string.Save);
-  public int saveColorId = R.id.theme_color_textNeutral;
+  public int saveColorId = ColorId.textNeutral;
 
   public String cancelStr = Lang.getString(R.string.Cancel);
-  public int cancelColorId = R.id.theme_color_textNeutral;
+  public int cancelColorId = ColorId.textNeutral;
 
   public boolean allowResize = true;
 

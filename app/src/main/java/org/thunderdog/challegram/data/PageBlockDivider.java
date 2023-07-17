@@ -20,11 +20,11 @@ import android.view.View;
 
 import androidx.annotation.NonNull;
 
-import org.drinkless.td.libcore.telegram.TdApi;
-import org.thunderdog.challegram.R;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -65,6 +65,6 @@ public class PageBlockDivider extends PageBlock {
     int top = Screen.dp(9f);
     int viewWidth = (view.getMeasuredWidth() - getTotalContentPadding()) / 2;
     int x = viewWidth - viewWidth / 2 + getMinimumContentPadding(true);
-    c.drawRect(x, top, x + viewWidth, top + Screen.dp(1f), Paints.fillingPaint(Theme.getColor(R.id.theme_color_iv_separator)));
+    c.drawRect(x, top, x + viewWidth, top + Screen.dp(1f), Paints.fillingPaint(Theme.getColor(ColorId.iv_separator)));
   }
 }

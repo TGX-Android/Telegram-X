@@ -25,8 +25,8 @@ import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.loader.ImageGalleryFile;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.tool.Fonts;
@@ -61,10 +61,10 @@ public class VideoControlView extends FrameLayoutFix implements FactorAnimator.T
 
     sliderView = new SliderView(context);
     sliderView.setAnchorMode(SliderView.ANCHOR_MODE_START);
-    sliderView.setForceBackgroundColorId(R.id.theme_color_videoSliderInactive);
-    sliderView.setForceSecondaryColorId(R.id.theme_color_videoSliderInactive);
+    sliderView.setForceBackgroundColorId(ColorId.videoSliderInactive);
+    sliderView.setForceSecondaryColorId(ColorId.videoSliderInactive);
     sliderView.setSlideEnabled(true, false);
-    sliderView.setColorId(R.id.theme_color_videoSliderActive, false);
+    sliderView.setColorId(ColorId.videoSliderActive, false);
     sliderView.setPadding(Screen.dp(56f), 0, Screen.dp(56f), 0);
     sliderView.setLayoutParams(params);
     addView(sliderView);
@@ -101,7 +101,7 @@ public class VideoControlView extends FrameLayoutFix implements FactorAnimator.T
 
     timelineView = new VideoTimelineView(getContext());
     timelineView.setShowSlider(true, false);
-    timelineView.setColors(R.id.theme_color_white, R.id.theme_color_black, R.id.theme_color_transparentEditor);
+    timelineView.setColors(ColorId.white, ColorId.black, ColorId.transparentEditor);
     timelineView.setPadding(Screen.dp(54f) + Screen.dp(32f), Screen.dp(6f), Screen.dp(54f), Screen.dp(6f));
     timelineView.setLayoutParams(params);
     timelineView.setDelegate(delegate);
@@ -292,6 +292,6 @@ public class VideoControlView extends FrameLayoutFix implements FactorAnimator.T
 
   @Override
   protected void onDraw (Canvas c) {
-    c.drawRect(0, getMeasuredHeight() - Screen.dp(56f), getMeasuredWidth(), getMeasuredHeight(), Paints.fillingPaint(Theme.getColor(R.id.theme_color_transparentEditor)));
+    c.drawRect(0, getMeasuredHeight() - Screen.dp(56f), getMeasuredWidth(), getMeasuredHeight(), Paints.fillingPaint(Theme.getColor(ColorId.transparentEditor)));
   }
 }

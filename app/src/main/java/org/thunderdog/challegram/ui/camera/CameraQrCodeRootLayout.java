@@ -26,6 +26,7 @@ import androidx.annotation.StringRes;
 
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -89,7 +90,7 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
   public CameraQrCodeRootLayout (@NonNull Context context) {
     super(context);
     dimmerPaint.setColor(0x7f000000);
-    cornerPaint.setColor(Theme.getColor(R.id.theme_color_white));
+    cornerPaint.setColor(Theme.getColor(ColorId.white));
     cornerPaint.setStyle(Paint.Style.STROKE);
     cornerPaint.setStrokeWidth(Screen.dp(2));
     cornerPaint.setStrokeJoin(Paint.Join.ROUND);
@@ -349,7 +350,7 @@ class CameraQrCodeRootLayout extends CameraRootLayout implements FactorAnimator.
         //if (qrDebugRegions) {
         //  dbgPaint.setColor(Color.MAGENTA);
         //  canvas.drawRect(activeGuideLinePart3.left, yBaseline - titleTextSize - vertPadding, activeGuideLinePart3.right, yBaseline + qrTextSubtitle.getHeight() + vertPadding, dbgPaint);
-        //  dbgPaint.setColor(Theme.getColor(R.id.theme_color_textNegative));
+        //  dbgPaint.setColor(Theme.getColor(ColorId.textNegative));
         //}
         canvas.restore();
       }

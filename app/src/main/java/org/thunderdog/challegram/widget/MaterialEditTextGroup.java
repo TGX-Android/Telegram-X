@@ -38,7 +38,7 @@ import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
@@ -109,10 +109,10 @@ public class MaterialEditTextGroup extends FrameLayoutFix implements View.OnFocu
     this.heightChangeListener = heightChangeListener;
   }
 
-  @ThemeColorId
-  private int textColorId = R.id.theme_color_text;
+  @ColorId
+  private int textColorId = ColorId.text;
 
-  public void setTextColorId (@ThemeColorId int colorId) {
+  public void setTextColorId (@ColorId int colorId) {
     if (this.textColorId != colorId) {
       this.textColorId = colorId;
       editText.setTextColor(Theme.getColor(colorId));
@@ -124,7 +124,7 @@ public class MaterialEditTextGroup extends FrameLayoutFix implements View.OnFocu
 
   public void setInputEnabled (boolean enabled) {
     editText.setEnabled(enabled);
-    setTextColorId(enabled ? R.id.theme_color_text : R.id.theme_color_textLight);
+    setTextColorId(enabled ? ColorId.text : ColorId.textLight);
   }
 
   public interface NextCallback {
@@ -229,7 +229,7 @@ public class MaterialEditTextGroup extends FrameLayoutFix implements View.OnFocu
           lengthCounter.setText("");
         } else {
           lengthCounter.setText(Strings.buildCounter(remaining));
-          lengthCounter.setTextColor(Theme.getColor(remaining <= 0 ? R.id.theme_color_textNegative : R.id.theme_color_textLight));
+          lengthCounter.setTextColor(Theme.getColor(remaining <= 0 ? ColorId.textNegative : ColorId.textLight));
         }
       }
     }
@@ -293,12 +293,12 @@ public class MaterialEditTextGroup extends FrameLayoutFix implements View.OnFocu
     if (themeProvider != null) {
       themeProvider.addThemeTextColorListener(editText, textColorId);
       if (hintView != null)
-        themeProvider.addThemeTextColorListener(hintView, R.id.theme_color_textPlaceholder);
+        themeProvider.addThemeTextColorListener(hintView, ColorId.textPlaceholder);
       themeProvider.addThemeInvalidateListener(editText);
-      themeProvider.addThemeHighlightColorListener(editText, R.id.theme_color_textSelectionHighlight);
-      themeProvider.addThemeHintTextColorListener(editText, R.id.theme_color_textPlaceholder);
+      themeProvider.addThemeHighlightColorListener(editText, ColorId.textSelectionHighlight);
+      themeProvider.addThemeHintTextColorListener(editText, ColorId.textPlaceholder);
       if (lengthCounter != null) {
-        themeProvider.addThemeTextColorListener(lengthCounter, R.id.theme_color_textLight);
+        themeProvider.addThemeTextColorListener(lengthCounter, ColorId.textLight);
       }
       if (radioView != null) {
         themeProvider.addThemeInvalidateListener(radioView);

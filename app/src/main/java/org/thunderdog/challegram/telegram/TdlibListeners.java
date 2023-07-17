@@ -18,8 +18,7 @@ import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.drinkless.td.libcore.telegram.TdApi;
-import org.thunderdog.challegram.BuildConfig;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.data.TD;
 
 import java.util.ArrayList;
@@ -41,7 +40,7 @@ public class TdlibListeners {
   final ReferenceList<MessageListener> messageListeners;
   final ReferenceList<MessageEditListener> messageEditListeners;
   final ReferenceList<ChatListener> chatListeners;
-  final ReferenceList<ChatFiltersListener> chatFiltersListeners;
+  final ReferenceList<ChatFoldersListener> chatFoldersListeners;
   final ReferenceMap<String, ChatListListener> chatListListeners;
   final ReferenceList<NotificationSettingsListener> settingsListeners;
   final ReferenceList<StickersListener> stickersListeners;
@@ -54,7 +53,10 @@ public class TdlibListeners {
   final ReferenceList<CounterChangeListener> totalCountersListeners;
   final ReferenceList<ChatsNearbyListener> chatsNearbyListeners;
   final ReferenceList<PrivacySettingsListener> privacySettingsListeners;
-  final ReferenceList<CallsListener> callsListeners;
+  final ReferenceList<PrivateCallListener> privateCallListeners;
+  final ReferenceIntMap<PrivateCallListener> specificPrivateCallListeners;
+  final ReferenceList<GroupCallListener> groupCallListeners;
+  final ReferenceIntMap<GroupCallListener> specificGroupCallListeners;
   final ReferenceList<SessionListener> sessionListeners;
   final ReferenceList<DownloadsListUpdateListener> downloadsListListener;
 
@@ -79,7 +81,7 @@ public class TdlibListeners {
     this.messageEditListeners = new ReferenceList<>();
     this.chatListeners = new ReferenceList<>();
     this.chatListListeners = new ReferenceMap<>(true);
-    this.chatFiltersListeners = new ReferenceList<>(true);
+    this.chatFoldersListeners = new ReferenceList<>(true);
     this.settingsListeners = new ReferenceList<>(true);
     this.stickersListeners = new ReferenceList<>(true);
     this.animationsListeners = new ReferenceList<>();
@@ -91,7 +93,10 @@ public class TdlibListeners {
     this.totalCountersListeners = new ReferenceList<>(true);
     this.chatsNearbyListeners = new ReferenceList<>(true);
     this.privacySettingsListeners = new ReferenceList<>();
-    this.callsListeners = new ReferenceList<>(true);
+    this.privateCallListeners = new ReferenceList<>(true);
+    this.specificPrivateCallListeners = new ReferenceIntMap<>(true);
+    this.groupCallListeners = new ReferenceList<>(true);
+    this.specificGroupCallListeners = new ReferenceIntMap<>(true);
     this.sessionListeners = new ReferenceList<>(true);
     this.downloadsListListener = new ReferenceList<>(true);
 
@@ -168,8 +173,11 @@ public class TdlibListeners {
       if (any instanceof PrivacySettingsListener) {
         privacySettingsListeners.add((PrivacySettingsListener) any);
       }
-      if (any instanceof CallsListener) {
-        callsListeners.add((CallsListener) any);
+      if (any instanceof PrivateCallListener) {
+        privateCallListeners.add((PrivateCallListener) any);
+      }
+      if (any instanceof GroupCallListener) {
+        groupCallListeners.add((GroupCallListener) any);
       }
       if (any instanceof SessionListener) {
         sessionListeners.add((SessionListener) any);
@@ -219,8 +227,11 @@ public class TdlibListeners {
       if (any instanceof PrivacySettingsListener) {
         privacySettingsListeners.remove((PrivacySettingsListener) any);
       }
-      if (any instanceof CallsListener) {
-        callsListeners.remove((CallsListener) any);
+      if (any instanceof PrivateCallListener) {
+        privateCallListeners.remove((PrivateCallListener) any);
+      }
+      if (any instanceof GroupCallListener) {
+        groupCallListeners.remove((GroupCallListener) any);
       }
       if (any instanceof SessionListener) {
         sessionListeners.remove((SessionListener) any);
@@ -296,13 +307,23 @@ public class TdlibListeners {
   }
 
   @AnyThread
-  public void addCallsListener (CallsListener listener) {
-    callsListeners.add(listener);
+  public void addCallsListener (PrivateCallListener listener) {
+    privateCallListeners.add(listener);
   }
 
   @AnyThread
-  public void removeCallsListener (CallsListener listener) {
-    callsListeners.remove(listener);
+  public void removeCallsListener (PrivateCallListener listener) {
+    privateCallListeners.remove(listener);
+  }
+
+  @AnyThread
+  public void subscribeToCallUpdates (int callId, PrivateCallListener listener) {
+    specificPrivateCallListeners.add(callId, listener);
+  }
+
+  @AnyThread
+  public void unsubscribeFromCallUpdates (int callId, PrivateCallListener listener) {
+    specificPrivateCallListeners.remove(callId, listener);
   }
 
   public void performStartup (boolean isAfterRestart) {
@@ -404,13 +425,13 @@ public class TdlibListeners {
   }
 
   @AnyThread
-  public void subscribeToChatFiltersUpdates (ChatFiltersListener listener) {
-    chatFiltersListeners.add(listener);
+  public void subscribeToChatFoldersUpdates (ChatFoldersListener listener) {
+    chatFoldersListeners.add(listener);
   }
 
   @AnyThread
-  public void unsubscribeFromChatFiltersUpdates (ChatFiltersListener listener) {
-    chatFiltersListeners.remove(listener);
+  public void unsubscribeFromChatFoldersUpdates (ChatFoldersListener listener) {
+    chatFoldersListeners.remove(listener);
   }
 
   @AnyThread
@@ -1149,9 +1170,9 @@ public class TdlibListeners {
 
   // updateChatFilters
 
-  void updateChatFilters (TdApi.UpdateChatFilters update) {
-    for (ChatFiltersListener listener : chatFiltersListeners) {
-      listener.onChatFiltersChanged(update.chatFilters, update.mainChatListPosition);
+  void updateChatFolders (TdApi.UpdateChatFolders update) {
+    for (ChatFoldersListener listener : chatFoldersListeners) {
+      listener.onChatFoldersChanged(update.chatFolders, update.mainChatListPosition);
     }
   }
 
@@ -1172,7 +1193,7 @@ public class TdlibListeners {
 
   // updateCall
 
-  private static void updateCall (TdApi.Call call, @Nullable Iterator<CallsListener> list) {
+  private static void updateCall (TdApi.Call call, @Nullable Iterator<PrivateCallListener> list) {
     if (list != null) {
       while (list.hasNext()) {
         list.next().onCallUpdated(call);
@@ -1181,26 +1202,28 @@ public class TdlibListeners {
   }
 
   void updateCall (TdApi.UpdateCall update) {
-    updateCall(update.call, callsListeners.iterator());
+    updateCall(update.call, privateCallListeners.iterator());
+    updateCall(update.call, specificPrivateCallListeners.iterator(update.call.id));
   }
 
   // updateNewCallSignalingData
 
-  private static void updateNewCallSignalingData (int callId, byte[] data, @Nullable Iterator<CallsListener> list) {
+  private static void updateNewCallSignalingData (int callId, byte[] data, @Nullable Iterator<PrivateCallListener> list) {
     if (list != null) {
       while (list.hasNext()) {
-        list.next().onNewCallSignallingDataArrived(callId, data);
+        list.next().onNewCallSignalingDataArrived(callId, data);
       }
     }
   }
 
   void updateNewCallSignalingData (TdApi.UpdateNewCallSignalingData update) {
-    updateNewCallSignalingData(update.callId, update.data, callsListeners.iterator());
+    updateNewCallSignalingData(update.callId, update.data, privateCallListeners.iterator());
+    updateNewCallSignalingData(update.callId, update.data, specificPrivateCallListeners.iterator(update.callId));
   }
 
   // updateGroupCallParticipant
 
-  private static void updateGroupCallParticipant (int groupCallId, TdApi.GroupCallParticipant groupCallParticipant, @Nullable Iterator<CallsListener> list) {
+  private static void updateGroupCallParticipant (int groupCallId, TdApi.GroupCallParticipant groupCallParticipant, @Nullable Iterator<GroupCallListener> list) {
     if (list != null) {
       while (list.hasNext()) {
         list.next().onGroupCallParticipantUpdated(groupCallId, groupCallParticipant);
@@ -1209,12 +1232,13 @@ public class TdlibListeners {
   }
 
   void updateGroupCallParticipant (TdApi.UpdateGroupCallParticipant update) {
-    updateGroupCallParticipant(update.groupCallId, update.participant, callsListeners.iterator());
+    updateGroupCallParticipant(update.groupCallId, update.participant, groupCallListeners.iterator());
+    updateGroupCallParticipant(update.groupCallId, update.participant, specificGroupCallListeners.iterator(update.groupCallId));
   }
 
   // updateGroupCall
 
-  private static void updateGroupCall (TdApi.GroupCall groupCall, @Nullable Iterator<CallsListener> list) {
+  private static void updateGroupCall (TdApi.GroupCall groupCall, @Nullable Iterator<GroupCallListener> list) {
     if (list != null) {
       while (list.hasNext()) {
         list.next().onGroupCallUpdated(groupCall);
@@ -1223,7 +1247,8 @@ public class TdlibListeners {
   }
 
   void updateGroupCall (TdApi.UpdateGroupCall update) {
-    updateGroupCall(update.groupCall, callsListeners.iterator());
+    updateGroupCall(update.groupCall, groupCallListeners.iterator());
+    updateGroupCall(update.groupCall, specificGroupCallListeners.iterator(update.groupCall.id));
   }
 
   // updateChatOnlineMemberCount
@@ -1329,6 +1354,21 @@ public class TdlibListeners {
   void updateChatIsMarkedAsUnread (TdApi.UpdateChatIsMarkedAsUnread update) {
     updateChatIsMarkedAsUnread(update.chatId, update.isMarkedAsUnread, chatListeners.iterator());
     updateChatIsMarkedAsUnread(update.chatId, update.isMarkedAsUnread, specificChatListeners.iterator(update.chatId));
+  }
+
+  // updateChatBackground
+
+  private static void updateChatBackground (long chatId, @Nullable TdApi.ChatBackground background, @Nullable Iterator<ChatListener> list) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onChatBackgroundChanged(chatId, background);
+      }
+    }
+  }
+
+  void updateChatBackground (TdApi.UpdateChatBackground update) {
+    updateChatBackground(update.chatId, update.background, chatListeners.iterator());
+    updateChatBackground(update.chatId, update.background, specificChatListeners.iterator(update.chatId));
   }
 
   // updateChatIsTranslatable

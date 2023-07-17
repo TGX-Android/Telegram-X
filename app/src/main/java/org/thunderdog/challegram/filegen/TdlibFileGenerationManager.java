@@ -30,7 +30,7 @@ import androidx.annotation.AnyThread;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
@@ -44,13 +44,13 @@ import org.thunderdog.challegram.loader.ImageFilteredFile;
 import org.thunderdog.challegram.loader.ImageReader;
 import org.thunderdog.challegram.mediaview.paint.PaintState;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.PropertyId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeColors;
 import org.thunderdog.challegram.theme.ThemeDelegate;
 import org.thunderdog.challegram.theme.ThemeId;
 import org.thunderdog.challegram.theme.ThemeManager;
 import org.thunderdog.challegram.theme.ThemeProperties;
-import org.thunderdog.challegram.theme.ThemeProperty;
 import org.thunderdog.challegram.theme.ThemeSet;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
@@ -74,9 +74,9 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.unit.ByteUnit;
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -386,7 +386,7 @@ public final class TdlibFileGenerationManager {
       String[] args = arg.split(",");
       final int themeId = StringUtils.parseInt(args[0]);
       final int flags = args.length > 1 ? StringUtils.parseInt(args[1]) : 0;
-      if (ThemeManager.isCustomTheme(themeId) || BitwiseUtils.hasFlag(flags, Theme.EXPORT_FLAG_INCLUDE_DEFAULT_VALUES) || ThemeSet.getProperty(themeId, ThemeProperty.PARENT_THEME) != 0) {
+      if (ThemeManager.isCustomTheme(themeId) || BitwiseUtils.hasFlag(flags, Theme.EXPORT_FLAG_INCLUDE_DEFAULT_VALUES) || ThemeSet.getProperty(themeId, PropertyId.PARENT_THEME) != 0) {
         String author = args.length > 2 ? args[2] : null;
         exportTheme(generationId, themeId, flags, author, destinationPath);
       } else {

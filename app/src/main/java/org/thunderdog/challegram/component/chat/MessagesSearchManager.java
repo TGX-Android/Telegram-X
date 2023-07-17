@@ -16,8 +16,8 @@ package org.thunderdog.challegram.component.chat;
 
 import androidx.collection.LongSparseArray;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 import org.jetbrains.annotations.Nullable;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.telegram.Tdlib;

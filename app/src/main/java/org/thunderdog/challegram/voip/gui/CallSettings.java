@@ -14,7 +14,7 @@
  */
 package org.thunderdog.challegram.voip.gui;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
@@ -82,16 +82,12 @@ public class CallSettings {
 
     if (voip.isBluetoothHeadsetConnected() && voip.hasEarpiece()) {
       controller.showOptions(null, new int[]{R.id.btn_routingBluetooth, R.id.btn_routingEarpiece, R.id.btn_routingSpeaker}, new String[] {Lang.getString(R.string.VoipAudioRoutingBluetooth), Lang.getString(R.string.VoipAudioRoutingEarpiece), Lang.getString(R.string.VoipAudioRoutingSpeaker)}, null, new int[] {R.drawable.baseline_bluetooth_24, R.drawable.baseline_phone_in_talk_24, R.drawable.baseline_volume_up_24}, (itemView, id) -> {
-        switch (id) {
-          case R.id.btn_routingBluetooth:
-            setSpeakerMode(SPEAKER_MODE_BLUETOOTH);
-            break;
-          case R.id.btn_routingEarpiece:
-            setSpeakerMode(SPEAKER_MODE_NONE);
-            break;
-          case R.id.btn_routingSpeaker:
-            setSpeakerMode(SPEAKER_MODE_SPEAKER);
-            break;
+        if (id == R.id.btn_routingBluetooth) {
+          setSpeakerMode(SPEAKER_MODE_BLUETOOTH);
+        } else if (id == R.id.btn_routingEarpiece) {
+          setSpeakerMode(SPEAKER_MODE_NONE);
+        } else if (id == R.id.btn_routingSpeaker) {
+          setSpeakerMode(SPEAKER_MODE_SPEAKER);
         }
         return true;
       });

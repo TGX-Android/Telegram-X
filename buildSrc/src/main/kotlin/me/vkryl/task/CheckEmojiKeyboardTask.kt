@@ -15,6 +15,7 @@ package me.vkryl.task
 import com.beust.klaxon.Klaxon
 import org.gradle.api.tasks.TaskAction
 import java.io.File
+import java.util.*
 import kotlin.contracts.ExperimentalContracts
 import kotlin.streams.asSequence
 
@@ -28,7 +29,7 @@ open class CheckEmojiKeyboardTask : BaseTask() {
   }
 
   private fun hex(text: String): String {
-    return text.chars().asSequence().joinToString("") { "\\u" + it.toString(16).toUpperCase() }
+    return text.chars().asSequence().joinToString("") { "\\u" + it.toString(16).uppercase(Locale.US) }
   }
 
   private fun javaWrap(text: String): String {
@@ -59,7 +60,7 @@ open class CheckEmojiKeyboardTask : BaseTask() {
   }
 
   @Suppress("SameParameterValue", "unused")
-  private fun findTones(emoji: String, defaultSkinTone: Char): Pair<String, List<Char>?> {
+  private fun findTones(emoji: String/*, defaultSkinTone: Char*/): Pair<String, List<Char>?> {
     var open = false
     var tones: MutableList<Char>? = null
     var result = emoji
@@ -151,7 +152,7 @@ open class CheckEmojiKeyboardTask : BaseTask() {
       "\uD83E\uDDB3", // 🦳
       "\uD83E\uDDB2"  // 🦲
     )
-    val defaultSkinTone = '\uDFFD' // 🏽
+    // val defaultSkinTone = '\uDFFD' // 🏽
 
     val genderOrder = listOf(
       '\u2640',
@@ -178,7 +179,7 @@ open class CheckEmojiKeyboardTask : BaseTask() {
 
     for (chunk in supported) {
       for (emoji in chunk) {
-        val toned = findTones(emoji, defaultSkinTone)
+        val toned = findTones(emoji/*, defaultSkinTone*/)
         val originalEmoji = tone2dAliases[toned.first] ?: toned.first
         val tones = toned.second
         if (tones.isNullOrEmpty()) {

@@ -20,7 +20,7 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
 import android.view.View;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.TD;

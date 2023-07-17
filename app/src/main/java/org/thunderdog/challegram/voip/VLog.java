@@ -2,7 +2,6 @@ package org.thunderdog.challegram.voip;
 
 import org.thunderdog.challegram.Log;
 
-@Deprecated
 class VLog{
 	public static void v(String msg) {
 		Log.v(Log.TAG_VOIP, "%s", msg);

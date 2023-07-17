@@ -54,8 +54,8 @@ if [ ! "$IGNORE_SDK" ]; then
     fi
   fi
 
-  NDK_VERSION=$("$(dirname "$0")"/read-property.sh version.properties version.ndk)
-  CMAKE_VERSION=$("$(dirname "$0")"/read-property.sh version.properties version.cmake)
+  NDK_VERSION=$(scripts/./read-property.sh version.properties version.ndk)
+  CMAKE_VERSION=$(scripts/./read-property.sh version.properties version.cmake)
   if [[ ! "$NDK_VERSION" =~ ^[_0-9\.]+$ ]]; then
     echo "${STYLE_ERROR}Invalid NDK version: $NDK_VERSION!${STYLE_END}"
     exit 1
@@ -94,7 +94,7 @@ export STYLE_INFO
 
 export SED
 
-THIRDPARTY_LIBRARIES=$(pwd)/app/jni/thirdparty
+THIRDPARTY_LIBRARIES="$(pwd)/app/jni/third_party"
 export THIRDPARTY_LIBRARIES
 
 PATH="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin:$(pwd)/scripts:$(pwd)/scripts/private:$PATH"

@@ -36,7 +36,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.Px;
 
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.core.Lang;
@@ -45,9 +44,9 @@ import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
+import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PropertyId;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
-import org.thunderdog.challegram.theme.ThemeProperty;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -219,10 +218,10 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
   private final ComplexReceiver complexReceiver;
   private CounterAlphaProvider counterAlphaProvider = DEFAULT_COUNTER_ALPHA_PROVIDER;
 
-  private @ThemeColorId int fromTextColorId = ThemeColorId.NONE, toTextColorId = R.id.theme_color_headerText;
-  private @ThemeProperty int fromTextColorAlphaId = ThemeProperty.NONE;
+  private @ColorId int fromTextColorId = ColorId.NONE, toTextColorId = ColorId.headerText;
+  private @PropertyId int fromTextColorAlphaId = PropertyId.NONE;
 
-  private @ThemeColorId int selectionColorId = ThemeColorId.NONE;
+  private @ColorId int selectionColorId = ColorId.NONE;
   private @FloatRange(from = 0.0, to = 1.0) float selectionAlpha = 1f;
 
   public ViewPagerTopView (Context context) {
@@ -692,11 +691,11 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     }
   }
 
-  public boolean setTextFromToColorId (@ThemeColorId int fromColorId, @ThemeColorId int toColorId) {
-    return setTextFromToColorId(fromColorId, toColorId, ThemeProperty.NONE);
+  public boolean setTextFromToColorId (@ColorId int fromColorId, @ColorId int toColorId) {
+    return setTextFromToColorId(fromColorId, toColorId, PropertyId.NONE);
   }
 
-  public boolean setTextFromToColorId (@ThemeColorId int fromColorId, @ThemeColorId int toColorId, @ThemeProperty int fromColorAlphaId) {
+  public boolean setTextFromToColorId (@ColorId int fromColorId, @ColorId int toColorId, @PropertyId int fromColorAlphaId) {
     if (this.fromTextColorId != fromColorId || this.toTextColorId != toColorId || this.fromTextColorAlphaId != fromColorAlphaId) {
       this.fromTextColorId = fromColorId;
       this.fromTextColorAlphaId = fromColorAlphaId;
@@ -707,11 +706,11 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
     return false;
   }
 
-  public boolean setSelectionColorId (@ThemeColorId int colorId) {
+  public boolean setSelectionColorId (@ColorId int colorId) {
     return setSelectionColorId(colorId, 1f);
   }
 
-  public boolean setSelectionColorId (@ThemeColorId int colorId, @FloatRange(from = 0.0, to = 1.0) float alpha) {
+  public boolean setSelectionColorId (@ColorId int colorId, @FloatRange(from = 0.0, to = 1.0) float alpha) {
     if (this.selectionColorId != colorId || this.selectionAlpha != alpha) {
       this.selectionColorId = colorId;
       this.selectionAlpha = alpha;
@@ -782,12 +781,12 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
 
     if (overlayFactor != 1f) {
       int textToColor = Theme.getColor(toTextColorId);
-      int textFromColor = fromTextColorId != ThemeColorId.NONE ?
-        ColorUtils.alphaColor(fromTextColorAlphaId != ThemeProperty.NONE ? Theme.getProperty(fromTextColorAlphaId) : 1f, Theme.getColor(fromTextColorId)) :
-        ColorUtils.alphaColor(Theme.getSubtitleAlpha(), Theme.getColor(R.id.theme_color_headerText));
-      int selectionColor = selectionColorId != ThemeColorId.NONE ?
+      int textFromColor = fromTextColorId != ColorId.NONE ?
+        ColorUtils.alphaColor(fromTextColorAlphaId != PropertyId.NONE ? Theme.getProperty(fromTextColorAlphaId) : 1f, Theme.getColor(fromTextColorId)) :
+        ColorUtils.alphaColor(Theme.getSubtitleAlpha(), Theme.getColor(ColorId.headerText));
+      int selectionColor = selectionColorId != ColorId.NONE ?
         ColorUtils.alphaColor(selectionAlpha, Theme.getColor(selectionColorId)) :
-        ColorUtils.alphaColor(.9f, Theme.getColor(R.id.theme_color_headerText));
+        ColorUtils.alphaColor(.9f, Theme.getColor(ColorId.headerText));
 
       boolean rtl = Lang.rtl();
 
@@ -866,7 +865,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
               item.ellipsizedStringLayout.getPaint().setColor(color);
               item.ellipsizedStringLayout.draw(c);
               c.translate(-stringX, -stringY);
-              item.counter.draw(c, cx + itemWidth - horizontalPadding - item.counter.getWidth() / 2f, viewHeight / 2f, Gravity.CENTER, textAlpha, backgroundAlpha, imageAlpha, item.provider, ThemeColorId.NONE);
+              item.counter.draw(c, cx + itemWidth - horizontalPadding - item.counter.getWidth() / 2f, viewHeight / 2f, Gravity.CENTER, textAlpha, backgroundAlpha, imageAlpha, item.provider, ColorId.NONE);
             } else if (item.imageReceiver != null) {
               int size = item.imageReceiverSize;
               int imgY = (viewHeight - size) / 2;
@@ -877,7 +876,7 @@ public class ViewPagerTopView extends FrameLayoutFix implements RtlCheckListener
             } else if (item.iconRes != 0) {
               Drawable drawable = item.getIcon();
               Drawables.draw(c, drawable, cx + horizontalPadding, viewHeight / 2 - drawable.getMinimumHeight() / 2, Paints.getPorterDuffPaint(color));
-              item.counter.draw(c, cx + itemWidth - horizontalPadding - item.counter.getWidth() / 2f, viewHeight / 2f, Gravity.CENTER, textAlpha, backgroundAlpha, imageAlpha, item.provider, ThemeColorId.NONE);
+              item.counter.draw(c, cx + itemWidth - horizontalPadding - item.counter.getWidth() / 2f, viewHeight / 2f, Gravity.CENTER, textAlpha, backgroundAlpha, imageAlpha, item.provider, ColorId.NONE);
             } else {
               item.counter.draw(c, cx + itemWidth / 2f, viewHeight / 2f, Gravity.CENTER, textAlpha, backgroundAlpha, imageAlpha, item.provider, 0);
             }

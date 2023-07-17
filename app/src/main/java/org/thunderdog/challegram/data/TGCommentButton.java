@@ -18,7 +18,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.Px;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.MessageView;
@@ -28,7 +28,8 @@ import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.theme.PorterDuffThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
@@ -410,7 +411,7 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
       drawSelection(c, selectionFactor, selectionColor);
     }
 
-    int iconColorId = R.id.theme_color_inlineIcon;
+    int iconColorId = ColorId.inlineIcon;
     Drawable icon = drawableProvider.getSparseDrawable(R.drawable.baseline_forum_18, iconColorId);
     float iconX = useBubbles ? left + Screen.dp(16f) : (TGMessage.getContentLeft() - icon.getMinimumWidth()) / 2f;
     float iconY = rect.centerY() - icon.getMinimumHeight() / 2f;
@@ -422,7 +423,7 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
 
     float arrowVisibility = arrowVisibilityAnimator.getFloatValue();
     if (arrowVisibility > 0f) {
-      int arrowColor = ColorUtils.alphaColor(alpha * arrowVisibility, Theme.getColor(R.id.theme_color_iconLight));
+      int arrowColor = ColorUtils.alphaColor(alpha * arrowVisibility, Theme.getColor(ColorId.iconLight));
       int arrowX = right - (useBubbles ? Screen.dp(22f) : Screen.dp(18f));
       int arrowY = rect.centerY();
 
@@ -618,8 +619,8 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
     return useDarkTheme() ? 0x80FFFFFF : ColorUtils.alphaColor(0.5f, Theme.getColor(getBubbleIconColorId()));
   }
 
-  private @PorterDuffThemeColorId int getBubbleIconColorId () {
-    return useDarkTheme() ? R.id.theme_color_white : R.id.theme_color_bubble_mediaTimeText;
+  private @PorterDuffColorId int getBubbleIconColorId () {
+    return useDarkTheme() ? ColorId.white : ColorId.bubble_mediaTimeText;
   }
 
   private void openCommentsPreviewAsync (int x, int y) {

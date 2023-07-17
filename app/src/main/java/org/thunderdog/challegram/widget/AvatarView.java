@@ -22,7 +22,7 @@ import android.view.View;
 
 import androidx.annotation.Nullable;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.data.AvatarPlaceholder;
@@ -32,14 +32,14 @@ import org.thunderdog.challegram.telegram.ChatListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.telegram.TdlibCache;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 
-import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.core.BitwiseUtils;
+import me.vkryl.core.lambda.Destroyable;
 
 public class AvatarView extends View implements Destroyable, TdlibCache.UserDataChangeListener, ChatListener, AttachDelegate {
   private static final int FLAG_NO_PLACEHOLDERS = 0x01;
@@ -368,7 +368,7 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
     return (flags & FLAG_NO_ROUND) == 0;
   }
 
-  private void drawPlaceholder (Canvas c, @ThemeColorId int colorId) {
+  private void drawPlaceholder (Canvas c, @ColorId int colorId) {
     if (needRounds()) {
       c.drawCircle(receiver.centerX(), receiver.centerY(), receiver.getRadius(), Paints.fillingPaint(
         Theme.getColor(colorId)
@@ -383,7 +383,7 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
     if (account != null || getUserId() != 0 || getChatId() != 0) {
       if (hasPhoto) {
         if (receiver.needPlaceholder() && (preview == null || preview.needPlaceholder())) {
-          drawPlaceholder(c, R.id.theme_color_placeholder);
+          drawPlaceholder(c, ColorId.placeholder);
         }
         if (preview != null && receiver.needPlaceholder()) {
           preview.draw(c);
@@ -397,13 +397,13 @@ public class AvatarView extends View implements Destroyable, TdlibCache.UserData
             avatarPlaceholder.draw(c, receiver.centerX(), receiver.centerY());
           }
         } else {
-          drawPlaceholder(c, avatarPlaceholderMetadata != null ? avatarPlaceholderMetadata.colorId : R.id.theme_color_placeholder);
+          drawPlaceholder(c, avatarPlaceholderMetadata != null ? avatarPlaceholderMetadata.colorId : ColorId.placeholder);
         }
       }
     }
     if ((flags & FLAG_NEED_OVERLAY) != 0) {
       if (hasPhoto) {
-        drawPlaceholder(c, R.id.theme_color_statusBar);
+        drawPlaceholder(c, ColorId.statusBar);
       }
       if (overlayIcon != null)
         Drawables.draw(c, overlayIcon, receiver.centerX() - overlayIcon.getMinimumWidth() / 2, receiver.centerY() - overlayIcon.getMinimumHeight() / 2, Paints.getPorterDuffPaint(0xffffffff));

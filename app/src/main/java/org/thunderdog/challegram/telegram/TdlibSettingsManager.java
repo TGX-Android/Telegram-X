@@ -16,13 +16,12 @@ package org.thunderdog.challegram.telegram;
 
 import android.content.SharedPreferences;
 
-import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.collection.LongSparseArray;
 import androidx.collection.SparseArrayCompat;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
@@ -35,17 +34,15 @@ import org.thunderdog.challegram.theme.ThemeManager;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.DeviceTokenType;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
+import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntSet;
 import me.vkryl.core.collection.LongSparseLongArray;
 import me.vkryl.core.reference.ReferenceList;
-import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.util.Blob;
 import me.vkryl.leveldb.LevelDB;
 import me.vkryl.td.Td;
@@ -77,7 +74,10 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   public static final String DEVICE_TOKEN_TYPE_KEY = "registered_device_token_type";
   public static final String DEVICE_UID_KEY = "registered_device_uid";
   public static final String DEVICE_OTHER_UID_KEY = "registered_device_uid_other";
-  public static final String DEVICE_TDLIB_VERSION_KEY = "registered_device_tdlib";
+  @Deprecated
+  @SuppressWarnings("DeprecatedIsStillUsed")
+  public static final String __DEVICE_TDLIB_VERSION_KEY = "registered_device_tdlib";
+  public static final String DEVICE_TDLIB_VERSION2_KEY = "registered_device_td";
 
   public static final String NOTIFICATION_ERROR_KEY = "notification_error";
   public static final String NOTIFICATION_VERSION_KEY = "notification_version";
@@ -197,7 +197,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     _archiveChatListPosition = null;
     _chatFolderStyle = null;
     _displayFoldersAtTop = null;
-    _disabledChatFilterIds = null;
+    _disabledChatFolderIds = null;
     remoteToLocalChatIds.clear();
     localToRemoteChatIds.clear();
 
@@ -605,8 +605,8 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     return Settings.instance().getLong(key(DEVICE_UID_KEY, accountId), 0);
   }
 
-  private static int getRegisteredDeviceTdlibVersion (int accountId) {
-    return Settings.instance().getInt(key(DEVICE_TDLIB_VERSION_KEY, accountId), 0);
+  private static String getRegisteredDeviceTdlibVersion2 (int accountId) {
+    return Settings.instance().getString(key(DEVICE_TDLIB_VERSION2_KEY, accountId), "");
   }
 
   @Nullable
@@ -647,7 +647,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
         }
       }
       pmc.putLong(key(DEVICE_UID_KEY, accountId), userId);
-      pmc.putInt(key(DEVICE_TDLIB_VERSION_KEY, accountId), BuildConfig.TDLIB_VERSION);
+      pmc.putString(key(DEVICE_TDLIB_VERSION2_KEY, accountId), BuildConfig.TDLIB_VERSION);
       if (otherUserIds != null && otherUserIds.length > 0) {
         pmc.putLongArray(key(DEVICE_OTHER_UID_KEY, accountId), otherUserIds);
       } else {
@@ -659,7 +659,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
 
   public static boolean checkRegisteredDeviceToken (int accountId, long userId, TdApi.DeviceToken token, long[] otherUserIds, boolean skipOtherUserIdsCheck) {
     return
-      getRegisteredDeviceTdlibVersion(accountId) == BuildConfig.TDLIB_VERSION &&
+      BuildConfig.TDLIB_VERSION.equals(getRegisteredDeviceTdlibVersion2(accountId)) &&
       getRegisteredDeviceUserId(accountId) == userId &&
       Td.equalsTo(getRegisteredDeviceToken(accountId), token) &&
       (skipOtherUserIdsCheck || Arrays.equals(getRegisteredDeviceOtherUserIds(accountId), otherUserIds != null && otherUserIds.length > 0 ? otherUserIds : null));
@@ -671,7 +671,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
       .remove(key(DEVICE_TOKEN_TYPE_KEY, accountId))
       .remove(key(DEVICE_UID_KEY, accountId))
       .remove(key(DEVICE_OTHER_UID_KEY, accountId))
-      .remove(key(DEVICE_TDLIB_VERSION_KEY, accountId))
+      .remove(key(DEVICE_TDLIB_VERSION2_KEY, accountId))
       .apply();
   }
 
@@ -1068,7 +1068,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   private @Nullable Boolean _displayFoldersAtTop;
   private @Nullable Integer _archiveChatListPosition;
   private @Nullable Integer _chatFolderStyle;
-  private @Nullable IntSet _disabledChatFilterIds;
+  private @Nullable IntSet _disabledChatFolderIds;
   private static final String MAIN_CHAT_LIST_ENABLED = "main_chat_list_enabled";
   private static final String ARCHIVE_CHAT_LIST_ENABLED = "archive_chat_list_enabled";
   private static final String ARCHIVE_CHAT_LIST_POSITION = "archive_chat_list_position";
@@ -1081,14 +1081,6 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
   private static final boolean DEFAULT_ARCHIVE_CHAT_LIST_ENABLED = false;
   private static final boolean DEFAULT_DISPLAY_FOLDERS_AT_TOP = true;
   private static final boolean DEFAULT_COUNT_MUTED_CHATS = false;
-
-  @Retention(RetentionPolicy.SOURCE)
-  @IntDef({CHAT_FOLDER_STYLE_LABEL_ONLY, CHAT_FOLDER_STYLE_ICON_ONLY, CHAT_FOLDER_STYLE_LABEL_AND_ICON})
-  public @interface ChatFolderStyle { }
-
-  public static final int CHAT_FOLDER_STYLE_LABEL_ONLY = 0;
-  public static final int CHAT_FOLDER_STYLE_ICON_ONLY = 1;
-  public static final int CHAT_FOLDER_STYLE_LABEL_AND_ICON = 2;
 
   public boolean isMainChatListEnabled () {
     if (_mainChatListEnabled == null) {
@@ -1149,7 +1141,7 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
 
   public @ChatFolderStyle int chatFolderStyle () {
     if (_chatFolderStyle == null) {
-      _chatFolderStyle = Settings.instance().getInt(key(CHAT_FOLDER_STYLE, tdlib.accountId()), CHAT_FOLDER_STYLE_LABEL_ONLY);
+      _chatFolderStyle = Settings.instance().getInt(key(CHAT_FOLDER_STYLE, tdlib.accountId()), ChatFolderStyle.LABEL_ONLY);
     }
     return _chatFolderStyle;
   }
@@ -1166,38 +1158,38 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     }
   }
 
-  public boolean isChatFilterEnabled (int chatFilterId) {
-    IntSet disabledChatFilterIds = disabledChatFilterIds();
-    return !disabledChatFilterIds.has(chatFilterId);
+  public boolean isChatFolderEnabled (int chatFolderId) {
+    IntSet disabledChatFolderIds = disabledChatFolderIds();
+    return !disabledChatFolderIds.has(chatFolderId);
   }
 
-  public void setChatFilterEnabled (int chatFilterId, boolean isEnabled) {
-    IntSet disabledChatFilterIds = disabledChatFilterIds();
-    if (disabledChatFilterIds.has(chatFilterId) == isEnabled) {
+  public void setChatFolderEnabled (int chatFolderId, boolean isEnabled) {
+    IntSet disabledChatFolderIds = disabledChatFolderIds();
+    if (disabledChatFolderIds.has(chatFolderId) == isEnabled) {
       if (isEnabled) {
-        disabledChatFilterIds.remove(chatFilterId);
+        disabledChatFolderIds.remove(chatFolderId);
       } else {
-        disabledChatFilterIds.add(chatFilterId);
+        disabledChatFolderIds.add(chatFolderId);
       }
-      if (disabledChatFilterIds.isEmpty()) {
+      if (disabledChatFolderIds.isEmpty()) {
         Settings.instance().remove(key(DISABLED_CHAT_FILTER_IDS, tdlib.accountId()));
       } else {
-        Settings.instance().putIntArray(key(DISABLED_CHAT_FILTER_IDS, tdlib.accountId()), disabledChatFilterIds.toArray());
+        Settings.instance().putIntArray(key(DISABLED_CHAT_FILTER_IDS, tdlib.accountId()), disabledChatFolderIds.toArray());
       }
       if (chatListPositionListeners != null) {
         for (ChatListPositionListener chatListPositionListener : chatListPositionListeners) {
-          chatListPositionListener.onChatFilterStateChanged(chatFilterId, isEnabled);
+          chatListPositionListener.onChatFolderStateChanged(chatFolderId, isEnabled);
         }
       }
     }
   }
 
-  private IntSet disabledChatFilterIds () {
-    if (_disabledChatFilterIds == null) {
-      int[] disabledChatFilterIds = Settings.instance().getIntArray(key(DISABLED_CHAT_FILTER_IDS, tdlib.accountId()));
-      _disabledChatFilterIds = disabledChatFilterIds != null ? new IntSet(disabledChatFilterIds) : new IntSet(0);
+  private IntSet disabledChatFolderIds () {
+    if (_disabledChatFolderIds == null) {
+      int[] disabledChatFolderIds = Settings.instance().getIntArray(key(DISABLED_CHAT_FILTER_IDS, tdlib.accountId()));
+      _disabledChatFolderIds = disabledChatFolderIds != null ? new IntSet(disabledChatFolderIds) : new IntSet(0);
     }
-    return _disabledChatFilterIds;
+    return _disabledChatFolderIds;
   }
 
   public interface ChatListPositionListener {
@@ -1205,8 +1197,8 @@ public class TdlibSettingsManager implements CleanupStartupDelegate {
     default void onArchiveChatListStateChanged (boolean isEnabled) { }
     default void onArchiveChatListPositionChanged (int archiveChatListPosition) { }
     default void onChatFolderStyleChanged (@ChatFolderStyle int chatFolderStyle) { }
-    default void onChatFilterStateChanged (int chatFilterId, boolean isEnabled) { }
-    default void onShouldCountMutedChatsChanged (boolean shouldCountMutedChats) { }
+    default void onChatFolderStateChanged (int chatFolderId, boolean isEnabled)  { }
+    default void onShouldCountMutedChatsChanged (boolean shouldCountMutedChats)  { }
   }
 
   private @Nullable ReferenceList<ChatListPositionListener> chatListPositionListeners;

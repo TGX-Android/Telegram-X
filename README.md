@@ -73,7 +73,7 @@ After submitting a pull request and its initial review, special build including 
 
 ## Reproducing public builds
 
-In order to verify that there is no additional source code injected inside official APKs, you must use **Ubuntu 21.04** and comply with the following requirements:
+In order to verify that there is no additional source code injected inside official APKs, you must use **Ubuntu 21.04** for builds published before [26th May 2023](https://github.com/TGX-Android/Telegram-X/commit/e9a054a0f469a98a13f7e0d751539687fef8759b) or **Ubuntu 22.04.2 LTS** for any newer releases, and comply with the following requirements:
 
 1. Create user called `vk` with the home directory located at `/home/vk`
 2. Clone `tgx` repository to `/home/vk/tgx`
@@ -88,7 +88,6 @@ In future build reproduction might become easier. Here's a list of related PR-we
 
 * Project path must not affect the resulting `.so` files, so user & project location requirement could be removed
 * When building native binaries on **macOS**, `.comment` ELF section differs from the one built with **Linux** version of NDK. It must be removed or made deterministic without any side-effects like breaking `native-debug-symbols.zip` (or should be reported to NDK team?)
-* It might be a good idea to use `--build-id=0x<commit>` instead of `--build-id=none`
 * Checksums of cold APK builds always differ, even though the same keystore applied and generated inner APK contents do not differ. Real cause must be investigated and fixed, if possible.<br/>To generate cold build, invoke `$ scripts/./reset.sh` and `$ scripts/./setup.sh --skip-sdk-setup`.<br/>**Warning**: this will also reset changes inside some of the submodules ([ffmpeg](/app/jni/thirdparty/ffmpeg), [libvpx](/app/jni/thirdparty/libvpx), [webp](/app/jni/thirdparty/webp), [opus](/app/jni/thirdparty/opus) and [ExoPlayer](/app/jni/thirdparty/exoplayer))
 * Move local pull requests squash-merging from [Publisher](https://github.com/TGX-Android/Publisher) to some script inside this repository to make reproduction of builds that include them easier.
 

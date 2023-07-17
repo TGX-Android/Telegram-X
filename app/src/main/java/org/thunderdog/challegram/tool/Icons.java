@@ -23,7 +23,7 @@ import androidx.annotation.Nullable;
 import androidx.collection.LongSparseArray;
 
 import org.thunderdog.challegram.R;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 
 import me.vkryl.core.BitwiseUtils;
 
@@ -81,18 +81,15 @@ public class Icons {
 
   private static LongSparseArray<Drawable> sparseDrawables;
 
-  public static @Nullable Drawable getSparseDrawable (@DrawableRes int res, @ThemeColorId int colorId) {
+  public static @Nullable Drawable getSparseDrawable (@DrawableRes int res, @ColorId int colorId) {
     if (colorId == 0) {
       return null;
     }
-    switch (res) {
-      case R.drawable.deproko_baseline_check_single_24:
-      case R.drawable.deproko_baseline_check_double_24:
-      case R.drawable.deproko_baseline_clock_24:
-      case R.drawable.deproko_baseline_notifications_off_24:
-        break;
-      default:
-        return null;
+    if (!(res == R.drawable.deproko_baseline_check_single_24 ||
+      res == R.drawable.deproko_baseline_check_double_24 ||
+      res == R.drawable.deproko_baseline_clock_24 ||
+      res == R.drawable.deproko_baseline_notifications_off_24)) {
+      return null;
     }
     long key = BitwiseUtils.mergeLong(res, colorId);
     if (sparseDrawables == null) {
@@ -124,7 +121,7 @@ public class Icons {
     return livePinIcon;
   }
 
-  public static Drawable getChatMuteDrawable (@ThemeColorId int colorId) {
+  public static Drawable getChatMuteDrawable (@ColorId int colorId) {
     return getSparseDrawable(R.drawable.deproko_baseline_notifications_off_24, colorId);
   }
 
@@ -132,7 +129,7 @@ public class Icons {
     return Screen.dp(18f);
   }
 
-  public static Drawable getSingleTick (@ThemeColorId int colorId) {
+  public static Drawable getSingleTick (@ColorId int colorId) {
     return getSparseDrawable(R.drawable.deproko_baseline_check_single_24, colorId);
   }
 
@@ -140,11 +137,11 @@ public class Icons {
     return Screen.dp(18f);
   }
 
-  public static Drawable getDoubleTick (@ThemeColorId int colorId) {
+  public static Drawable getDoubleTick (@ColorId int colorId) {
     return getSparseDrawable(R.drawable.deproko_baseline_check_double_24, colorId);
   }
 
-  public static Drawable getClockIcon (@ThemeColorId int colorId) {
+  public static Drawable getClockIcon (@ColorId int colorId) {
     return getSparseDrawable(R.drawable.deproko_baseline_clock_24, colorId);
   }
 

@@ -18,8 +18,8 @@ import androidx.annotation.IntDef;
 import androidx.annotation.Keep;
 import androidx.annotation.Nullable;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.data.TD;
@@ -35,10 +35,24 @@ import java.util.Locale;
 @SuppressWarnings("unused")
 public class Tracer {
   static String format (String message) {
-    return String.format(Locale.US, "Client fatal error (%d): %s", Client.getClientCount(), message);
+    return String.format(Locale.US, "Client fatal error: %s", message);
+  }
+
+  private static void throwErrorOnAnotherThread (Throwable throwable) {
+    new Thread(() -> {
+      throwError(throwable);
+      System.exit(1);
+    }).start();
+    do {
+      try {
+        Thread.sleep(1000);
+      } catch (InterruptedException ignored) { }
+    } while (true);
   }
 
   private static void throwError (Throwable throwable) {
+    Settings.instance().pmc().apply(); // Release any locks
+
     if (throwable instanceof ClientException)
       throw (ClientException) throwable;
     if (throwable instanceof RuntimeException) {
@@ -97,7 +111,6 @@ public class Tracer {
       case Cause.TDLIB_LOST_PROMISE_ERROR:
         throw new ClientException.TdlibLostPromiseError(error.getMessage());
       case Cause.LAUNCH_ERROR:
-      case Cause.TDLIB_HANDLER_ERROR:
       case Cause.NOTIFICATION_ERROR:
       case Cause.UI_ERROR:
       case Cause.OTHER_ERROR:
@@ -106,6 +119,9 @@ public class Tracer {
         break;
       case Cause.TEST_INDIRECT:
         ClientException.throwTestError(error);
+        break;
+      case Cause.TDLIB_HANDLER_ERROR:
+        throwErrorOnAnotherThread(error);
         break;
     }
   }

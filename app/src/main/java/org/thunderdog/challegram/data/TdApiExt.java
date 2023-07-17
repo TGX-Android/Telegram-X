@@ -16,7 +16,7 @@ package org.thunderdog.challegram.data;
 
 import androidx.annotation.NonNull;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 
 public class TdApiExt {
   public static class MessageChatEvent extends TdApi.MessageContent {

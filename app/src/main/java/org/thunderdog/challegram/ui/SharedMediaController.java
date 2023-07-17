@@ -22,7 +22,7 @@ import android.view.ViewConfiguration;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.GridLayoutManager;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.GridSpacingItemDecoration;
 import org.thunderdog.challegram.config.Config;
@@ -35,6 +35,7 @@ import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibSender;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
@@ -139,7 +140,7 @@ public class SharedMediaController extends SharedBaseController<MediaItem> imple
     spanCount = calculateSpanCount(Screen.currentWidth(), Screen.currentHeight());
     decoration = new GridSpacingItemDecoration(spanCount, Screen.dp(3f), false, true, true);
     decoration.setNeedDraw(true, ListItem.TYPE_SMALL_MEDIA);
-    decoration.setDrawColorId(R.id.theme_color_filling);
+    decoration.setDrawColorId(ColorId.filling);
     decoration.setSpanSizeLookup(lookup);
     GridLayoutManager manager = new RtlGridLayoutManager(context, spanCount);
     manager.setSpanSizeLookup(lookup);
@@ -531,26 +532,17 @@ public class SharedMediaController extends SharedBaseController<MediaItem> imple
 
   @Override
   public void onForceTouchAction (ForceTouchView.ForceTouchContext context, int actionId, Object arg) {
-    switch (actionId) {
-      case R.id.btn_messageDelete: {
-        tdlib.ui().showDeleteOptions(this, ((MediaItem) ((ListItem) arg).getData()).getMessage());
-        break;
-      }
-      case R.id.btn_messageSelect: {
-        toggleSelected((ListItem) arg);
-        break;
-      }
-      case R.id.btn_messageShare: {
-        ShareController c = new ShareController(this.context, tdlib);
-        c.setArguments(new ShareController.Args(((MediaItem) ((ListItem) arg).getData()).getMessage()).setAllowCopyLink(true));
-        c.show();
-        break;
-      }
-      case R.id.btn_showInChat: {
-        TdApi.Message message = ((MediaItem) ((ListItem) arg).getData()).getMessage();
-        tdlib.ui().openChat(this, message.chatId, new TdlibUi.ChatOpenParameters().highlightMessage(message).passcodeUnlocked());
-        break;
-      }
+    if (actionId == R.id.btn_messageDelete) {
+      tdlib.ui().showDeleteOptions(this, ((MediaItem) ((ListItem) arg).getData()).getMessage());
+    } else if (actionId == R.id.btn_messageSelect) {
+      toggleSelected((ListItem) arg);
+    } else if (actionId == R.id.btn_messageShare) {
+      ShareController c = new ShareController(this.context, tdlib);
+      c.setArguments(new ShareController.Args(((MediaItem) ((ListItem) arg).getData()).getMessage()).setAllowCopyLink(true));
+      c.show();
+    } else if (actionId == R.id.btn_showInChat) {
+      TdApi.Message message = ((MediaItem) ((ListItem) arg).getData()).getMessage();
+      tdlib.ui().openChat(this, message.chatId, new TdlibUi.ChatOpenParameters().highlightMessage(message).passcodeUnlocked());
     }
   }
 

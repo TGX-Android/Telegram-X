@@ -22,8 +22,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.U;
@@ -183,7 +183,8 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
   public void act () {
     TdApi.File file = this.file.getFile();
 
-    if (TD.isFileLoadedAndExists(file)) {
+    boolean isLoaded = this.file.tdlib() == null ? TD.isFileLoaded(file) : TD.isFileLoadedAndExists(file);
+    if (isLoaded) {
       onLoad(file);
       return;
     }

@@ -25,7 +25,7 @@ import android.view.ViewGroup;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
@@ -38,6 +38,7 @@ import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeListenerList;
 import org.thunderdog.challegram.tool.Fonts;
@@ -117,7 +118,7 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
     themeListener.addThemeInvalidateListener(shadowView);
 
     FrameLayoutFix buttonWrap = new FrameLayoutFix(context);
-    ViewSupport.setThemedBackground(buttonWrap, R.id.theme_color_filling);
+    ViewSupport.setThemedBackground(buttonWrap, ColorId.filling);
     themeListener.addThemeInvalidateListener(buttonWrap);
     buttonWrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(56f), Gravity.BOTTOM));
 
@@ -425,7 +426,7 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
 
   private void updateButton (String str, boolean positive, boolean animated) {
     str = str.toUpperCase();
-    int colorId = positive ? R.id.theme_color_textNeutral : R.id.theme_color_textNegative;
+    int colorId = positive ? ColorId.textNeutral : ColorId.textNegative;
     if (!textButton.getText().toString().equals(str) || textButton.getCurrentTextColor() != Theme.getColor(colorId)) {
       if (animated) {
         if (animator == null) {

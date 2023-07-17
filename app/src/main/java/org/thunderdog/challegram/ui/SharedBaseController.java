@@ -27,7 +27,7 @@ import androidx.collection.SparseArrayCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.MediaCollectorDelegate;
@@ -45,6 +45,7 @@ import org.thunderdog.challegram.telegram.MessageListener;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
@@ -162,7 +163,7 @@ public abstract class SharedBaseController <T extends MessageSourceProvider> ext
     addThemeInvalidateListener(recyclerView);
     if (alternateParent != null) {
       recyclerView.setBackgroundColor(Theme.backgroundColor());
-      addThemeBackgroundColorListener(recyclerView, R.id.theme_color_background);
+      addThemeBackgroundColorListener(recyclerView, ColorId.background);
     }
     recyclerView.setHasFixedSize(true);
     recyclerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));

@@ -21,8 +21,8 @@ import android.view.View;
 
 import androidx.annotation.Nullable;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessagesManager;
@@ -68,8 +68,11 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
     @Nullable
     private GifFile animatedFile;
 
+    public boolean needRepainting;
+
     public Representation (TdApi.Sticker sticker, int fitzpatrickType, boolean allowNoLoop, boolean forcePlayOnce) {
       this.sticker = sticker;
+      this.needRepainting = TD.needRepainting(sticker);
 
       if (fitzpatrickType == 0 || !Td.isAnimated(sticker.format)) {
         this.preview = TD.toImageFile(tdlib, sticker.thumbnail);
@@ -531,9 +534,26 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
 
       index = 0;
       for (Representation representation : representation) {
+        if (representation.needRepainting) {
+          c.saveLayerAlpha(
+            left - width / 4f,
+            top - height / 4f,
+            right + width / 4f,
+            bottom + height / 4f,
+            255, Canvas.ALL_SAVE_FLAG);
+        }
         DoubleImageReceiver preview = receiver.getPreviewReceiver(index);
         Receiver target = representation.isAnimated() ? receiver.getGifReceiver(index) : receiver.getImageReceiver(index);
         DrawAlgorithms.drawReceiver(c, preview, target, !representation.isAnimated(), false, left, top, right, bottom);
+        if (representation.needRepainting) {
+          c.drawRect(
+            left - width / 4f,
+            top - height / 4f,
+            right + width / 4f,
+            bottom + height / 4f,
+            Paints.getSrcInPaint(getTextColorSet().emojiStatusColor()));
+          c.restore();
+        }
         index++;
       }
 

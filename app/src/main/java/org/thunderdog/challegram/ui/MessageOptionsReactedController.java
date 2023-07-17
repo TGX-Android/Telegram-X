@@ -7,7 +7,7 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
@@ -18,15 +18,13 @@ import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.util.ReactionModifier;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.ListInfoView;
 import org.thunderdog.challegram.widget.PopupLayout;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-
-import me.vkryl.core.StringUtils;
 
 public class MessageOptionsReactedController extends BottomSheetViewController.BottomSheetBaseRecyclerViewController<Void> implements View.OnClickListener {
   private SettingsAdapter adapter;
@@ -54,7 +52,13 @@ public class MessageOptionsReactedController extends BottomSheetViewController.B
       @Override
       protected void setUser (ListItem item, int position, UserView userView, boolean isUpdate) {
         final TGReaction reactionObj = tdlib.getReaction(TD.toReactionType(item.getStringValue()));
-        TGUser user = new TGUser(tdlib, tdlib.chatUser(item.getLongId()));
+        TdApi.MessageSender senderId = (TdApi.MessageSender) item.getData();       
+        TGUser user;
+        if (senderId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR) {
+          user = new TGUser(tdlib, tdlib.cache().userStrict(((TdApi.MessageSenderUser) senderId).userId));
+        } else {
+          user = new TGUser(tdlib, tdlib.chatStrict(((TdApi.MessageSenderChat) senderId).chatId));
+        }
         user.setActionDateStatus(item.getIntValue(), R.string.reacted);
         userView.setUser(user);
         if (item.getStringValue().length() > 0 && reactionObj != null && reactionType == null) {
@@ -81,7 +85,7 @@ public class MessageOptionsReactedController extends BottomSheetViewController.B
         }
       }
     });
-    ViewSupport.setThemedBackground(recyclerView, R.id.theme_color_background);
+    ViewSupport.setThemedBackground(recyclerView, ColorId.background);
     addThemeInvalidateListener(recyclerView);
     loadMore();
   }
@@ -106,14 +110,14 @@ public class MessageOptionsReactedController extends BottomSheetViewController.B
 
   private void processNewAddedReactions (TdApi.AddedReactions addedReactions) {
     final TdApi.AddedReaction[] reactions = addedReactions.reactions;
-
     List<ListItem> items = adapter.getItems();
     for (TdApi.AddedReaction reaction : reactions) {
       if (!items.isEmpty()) {
         items.add(new ListItem(ListItem.TYPE_SEPARATOR));
       }
-      ListItem item = new ListItem(ListItem.TYPE_USER_SMALL, R.id.user)
-        .setLongId(((TdApi.MessageSenderUser) reaction.senderId).userId)
+
+      ListItem item = new ListItem(ListItem.TYPE_USER_SMALL, R.id.sender)
+        .setData(reaction.senderId)
         .setIntValue(reaction.date)
         .setStringValue(TD.makeReactionKey(reaction.type));
       items.add(item);
@@ -129,9 +133,11 @@ public class MessageOptionsReactedController extends BottomSheetViewController.B
 
   @Override
   public void onClick (View v) {
-    if (v.getId() == R.id.user) {
+    if (v.getId() == R.id.sender) {
       popupLayout.hideWindow(true);
-      tdlib.ui().openPrivateProfile(this, ((ListItem) v.getTag()).getLongId(), new TdlibUi.UrlOpenParameters().tooltip(context().tooltipManager().builder(v)));
+      ListItem item = (ListItem) v.getTag();
+      TdApi.MessageSender senderId = (TdApi.MessageSender) item.getData();
+      tdlib.ui().openSenderProfile(this, senderId, new TdlibUi.UrlOpenParameters().tooltip(context().tooltipManager().builder(v)));
     }
   }
 

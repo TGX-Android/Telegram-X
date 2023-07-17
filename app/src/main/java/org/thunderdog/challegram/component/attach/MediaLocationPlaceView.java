@@ -35,7 +35,7 @@ import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
@@ -92,7 +92,7 @@ public class MediaLocationPlaceView extends FrameLayoutFix implements AttachDele
       if (themeProvider != null) {
         themeProvider.removeThemeListenerByTarget(titleView);
       }
-      int colorId = isRed ? R.id.theme_color_textNegative : R.id.theme_color_text;
+      int colorId = isRed ? ColorId.textNegative : ColorId.text;
       titleView.setTextColor(Theme.getColor(colorId));
       if (themeProvider != null) {
         themeProvider.addThemeTextColorListener(titleView, colorId);
@@ -168,7 +168,7 @@ public class MediaLocationPlaceView extends FrameLayoutFix implements AttachDele
     timerView.setListener(this);
     timerView.setTextColor(Theme.progressColor());
     if (themeProvider != null) {
-      themeProvider.addThemeTextColorListener(timerView, R.id.theme_color_progress);
+      themeProvider.addThemeTextColorListener(timerView, ColorId.progress);
     }
     timerView.setLayoutParams(params);
     addView(timerView);
@@ -214,11 +214,11 @@ public class MediaLocationPlaceView extends FrameLayoutFix implements AttachDele
 
   // Data
 
-  private int circleColorId = R.id.theme_color_fileAttach;
+  private int circleColorId = ColorId.fileAttach;
   private Letters letters;
   private float lettersWidth;
 
-  public void setLocation (String title, String subtitle, @ThemeColorId int circleColorId, Letters letters, boolean isFaded, int livePeriod, long expiresAt) {
+  public void setLocation (String title, String subtitle, @ColorId int circleColorId, Letters letters, boolean isFaded, int livePeriod, long expiresAt) {
     clearLiveLocation();
     setIsFaded(isFaded);
     timerView.setLivePeriod(livePeriod, expiresAt);
@@ -368,7 +368,7 @@ public class MediaLocationPlaceView extends FrameLayoutFix implements AttachDele
 
     if ((flags & FLAG_LIVE_LOCATION) != 0) {
       float progressFactor = progressAnimator != null ? progressAnimator.getFloatValue() : 0f;
-      c.drawCircle(cx, cy, Screen.dp(IMAGE_RADIUS), Paints.fillingPaint(ColorUtils.alphaColor(alpha, Theme.getColor(R.id.theme_color_fileRed))));
+      c.drawCircle(cx, cy, Screen.dp(IMAGE_RADIUS), Paints.fillingPaint(ColorUtils.alphaColor(alpha, Theme.getColor(ColorId.fileRed))));
 
       if (progressFactor < 1f) {
         Paint bitmapPaint = Paints.getPorterDuffPaint(0xffffffff);

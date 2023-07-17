@@ -29,8 +29,8 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
@@ -52,8 +52,8 @@ import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ThemeColorId;
 import org.thunderdog.challegram.theme.ThemeDeprecated;
 import org.thunderdog.challegram.theme.ThemeManager;
 import org.thunderdog.challegram.tool.Paints;
@@ -104,11 +104,8 @@ public class InstantViewController extends ViewController<InstantViewController.
 
   @Override
   public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
-    switch (id) {
-      case R.id.menu_iv: {
-        menu.addView(header.genButton(R.id.menu_btn_forward, R.drawable.baseline_share_arrow_24, getHeaderIconColorId(), this, Screen.dp(52f), ThemeDeprecated.headerSelector(), header), Lang.rtl() ? 0 : -1);
-        break;
-      }
+    if (id == R.id.menu_iv) {
+      menu.addView(header.genButton(R.id.menu_btn_forward, R.drawable.baseline_share_arrow_24, getHeaderIconColorId(), this, Screen.dp(52f), ThemeDeprecated.headerSelector(), header), Lang.rtl() ? 0 : -1);
     }
   }
 
@@ -142,19 +139,16 @@ public class InstantViewController extends ViewController<InstantViewController.
 
   @Override
   public void onMenuItemPressed (int id, View view) {
-    switch (id) {
-      case R.id.menu_btn_forward: {
-        String link = getArgumentsStrict().webPage.url;
-        ShareController c = new ShareController(context, tdlib);
-        ShareController.Args args = new ShareController.Args(link);
-        args.setCustomCopyLinkAction(R.string.OpenInExternalApp, () -> UI.openUrl(getArgumentsStrict().webPage.url));
-        if (Strings.isValidLink(link)) {
-          args.setExport(link);
-        }
-        c.setArguments(args);
-        c.show();
-        break;
+    if (id == R.id.menu_btn_forward) {
+      String link = getArgumentsStrict().webPage.url;
+      ShareController c = new ShareController(context, tdlib);
+      ShareController.Args args = new ShareController.Args(link);
+      args.setCustomCopyLinkAction(R.string.OpenInExternalApp, () -> UI.openUrl(getArgumentsStrict().webPage.url));
+      if (Strings.isValidLink(link)) {
+        args.setExport(link);
       }
+      c.setArguments(args);
+      c.show();
     }
   }
 
@@ -313,7 +307,7 @@ public class InstantViewController extends ViewController<InstantViewController.
 
   // private static final float PADDING_FACTOR = .25f;
 
-  public static int getColor (@ThemeColorId int color) {
+  public static int getColor (@ColorId int color) {
     return Theme.getColor(color); // TODO separate themes for instant view
   }
 
@@ -322,17 +316,17 @@ public class InstantViewController extends ViewController<InstantViewController.
 
   @Override
   protected int getHeaderColorId () {
-    return R.id.theme_color_ivHeader;
+    return ColorId.ivHeader;
   }
 
   @Override
   protected int getHeaderIconColorId () {
-    return R.id.theme_color_ivHeaderIcon;
+    return ColorId.ivHeaderIcon;
   }
 
   @Override
   protected int getHeaderTextColorId () {
-    return R.id.theme_color_ivHeaderIcon;
+    return ColorId.ivHeaderIcon;
   }
 
   @Override
@@ -362,7 +356,7 @@ public class InstantViewController extends ViewController<InstantViewController.
 
     FrameLayout contentView = new FrameLayout(context);
     contentView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-    ViewSupport.setThemedBackground(contentView, R.id.theme_color_background, this);
+    ViewSupport.setThemedBackground(contentView, ColorId.background, this);
 
     recyclerView = (RecyclerView) Views.inflate(context(), R.layout.recycler, contentView);
     recyclerView.setHasFixedSize(true);
@@ -376,12 +370,12 @@ public class InstantViewController extends ViewController<InstantViewController.
       @Override
       protected int getFillingColor (int i, @NonNull View view) {
         PageBlock pageBlock = getPageBlock(view);
-        int colorId = pageBlock != null ? pageBlock.getBackgroundColorId() : ThemeColorId.NONE;
-        if (colorId == ThemeColorId.NONE) {
+        int colorId = pageBlock != null ? pageBlock.getBackgroundColorId() : ColorId.NONE;
+        if (colorId == ColorId.NONE) {
           return 0;
         }
-        if (colorId != R.id.theme_color_filling) {
-          return ColorUtils.compositeColor(Theme.getColor(R.id.theme_color_filling), ColorUtils.alphaColor(view.getAlpha(), Theme.getColor(colorId)));
+        if (colorId != ColorId.filling) {
+          return ColorUtils.compositeColor(Theme.getColor(ColorId.filling), ColorUtils.alphaColor(view.getAlpha(), Theme.getColor(colorId)));
         }
         return Theme.getColor(colorId);
       }

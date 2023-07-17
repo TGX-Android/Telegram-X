@@ -30,8 +30,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import org.drinkless.td.libcore.telegram.Client;
-import org.drinkless.td.libcore.telegram.TdApi;
+import org.drinkless.tdlib.Client;
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
@@ -45,6 +45,7 @@ import org.thunderdog.challegram.navigation.EditHeaderView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Keyboard;
@@ -82,7 +83,7 @@ public class CreateChannelController extends ViewController<String[]> implements
 
     contentView = new LinearLayout(context);
     contentView.setOrientation(LinearLayout.VERTICAL);
-    ViewSupport.setThemedBackground(contentView, R.id.theme_color_filling, this);
+    ViewSupport.setThemedBackground(contentView, ColorId.filling, this);
     contentView.setPadding(0, Size.getHeaderSizeDifference(false), 0, 0);
 
     FrameLayoutFix frameLayout = new FrameLayoutFix(context);
@@ -93,7 +94,7 @@ public class CreateChannelController extends ViewController<String[]> implements
     iconView.setScaleType(ImageView.ScaleType.CENTER);
     iconView.setImageResource(R.drawable.baseline_info_24);
     iconView.setColorFilter(Theme.iconColor());
-    addThemeFilterListener(iconView, R.id.theme_color_icon);
+    addThemeFilterListener(iconView, ColorId.icon);
     iconView.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(24f), Screen.dp(46f), Lang.gravity(), Lang.rtl() ? 0 : Screen.dp(6f), 0, Lang.rtl() ? Screen.dp(6f) : 0, 0));
     frameLayout.addView(iconView);
 
@@ -110,7 +111,7 @@ public class CreateChannelController extends ViewController<String[]> implements
     descView.setOnFocusChangeListener((v, hasFocus) -> {
       removeThemeListenerByTarget(iconView);
       iconView.setColorFilter(hasFocus ? Theme.togglerActiveColor() : Theme.iconColor());
-      int id = hasFocus ? R.id.theme_color_togglerActive : R.id.theme_color_icon;
+      int id = hasFocus ? ColorId.togglerActive : ColorId.icon;
       addThemeFilterListener(iconView, id);
     });
     descView.setPadding(0, padding, 0, padding);
