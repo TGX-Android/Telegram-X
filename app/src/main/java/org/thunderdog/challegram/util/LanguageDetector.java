@@ -9,6 +9,10 @@ import org.thunderdog.challegram.Log;
 import me.vkryl.core.lambda.RunnableData;
 
 public class LanguageDetector {
+  public static void detectLanguage (Context context, String text, RunnableData<String> callback) {
+    detectLanguage(context, text, callback, t -> callback.runWithData(null));
+  }
+
   public static void detectLanguage (Context context, String text, RunnableData<String> onSuccess, @Nullable RunnableData<Throwable> onFail) {
     detectLanguage(context, text, onSuccess, onFail, false);
   }

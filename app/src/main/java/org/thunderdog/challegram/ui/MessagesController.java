@@ -56,6 +56,7 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -243,6 +244,7 @@ import org.thunderdog.challegram.widget.ProgressComponentView;
 import org.thunderdog.challegram.widget.RippleRevealView;
 import org.thunderdog.challegram.widget.SendButton;
 import org.thunderdog.challegram.widget.SeparatorView;
+import org.thunderdog.challegram.widget.TextFormattingLayout;
 import org.thunderdog.challegram.widget.TripleAvatarView;
 import org.thunderdog.challegram.widget.ViewPager;
 import org.thunderdog.challegram.widget.WallpaperParametersView;
@@ -298,7 +300,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   RecordAudioVideoController.RecordStateListeners,
   ViewPager.OnPageChangeListener, ViewPagerTopView.OnItemClickListener,
   TGMessage.SelectableDelegate, GlobalAccountListener, EmojiToneHelper.Delegate, ComplexHeaderView.Callback, LiveLocationHelper.Callback, CreatePollController.Callback,
-  HapticMenuHelper.Provider, HapticMenuHelper.OnItemClickListener, TdlibSettingsManager.DismissRequestsListener {
+  HapticMenuHelper.Provider, HapticMenuHelper.OnItemClickListener, TdlibSettingsManager.DismissRequestsListener, InputView.SelectionChangeListener {
   private boolean reuseEnabled;
   private boolean destroyInstance;
 
@@ -331,6 +333,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private boolean enableOnResume;
 
   private EmojiLayout emojiLayout;
+  private TextFormattingLayout textFormattingLayout;
   private AttachLinearLayout attachButtons;
   private ImageView emojiButton;
   private VoiceVideoButtonView recordButton;
@@ -375,7 +378,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
         items.add(new HapticMenuHelper.MenuItem(R.id.btn_sendNoMarkdown, Lang.getString(R.string.SendDiceAsEmoji), Drawables.emojiDrawable(currentText.text)));
       }
     }
-    items.add(new HapticMenuHelper.MenuItem(R.id.btn_translateInputField, Lang.getString(R.string.TranslateDraft), R.drawable.baseline_translate_24));
     if (BuildConfig.DEBUG) {
       items.add(new HapticMenuHelper.MenuItem(R.id.btn_sendToast, "Show toast", R.drawable.baseline_warning_24));
     }
@@ -430,38 +432,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
           sendText(true, modifiedSendOptions);
         }
       });
-    } else if (viewId == R.id.btn_translateInputField) {
-      TdApi.FormattedText text = inputView != null ? inputView.getOutputText(true): null;
-      if (text != null) {
-        LanguageDetector.detectLanguage(context, text.text,
-          (lang) -> showTranslateInputField(text, lang),
-          (err) -> showTranslateInputField(text, null));
-      }
     }
     return true;
-  }
-
-  private void showTranslateInputField (TdApi.FormattedText text, String lang) {
-    translationPopup = new TranslationControllerV2.Wrapper(context, tdlib, this);
-    translationPopup.setArguments(new TranslationControllerV2.Args(new TranslationsManager.Translatable() {
-      @Nullable
-      @Override
-      public String getOriginalMessageLanguage () {
-        return lang;
-      }
-
-      @Override
-      public TdApi.FormattedText getTextToTranslate () {
-        return text;
-      }
-    }));
-    translationPopup.setTextColorSet(TextColorSets.Regular.NORMAL);
-    translationPopup.setTranslationApplyCallback(r -> {
-      if (r == null || inputView == null) return;
-      inputView.setText(r);
-    });
-    translationPopup.show();
-    translationPopup.setDismissListener(popup -> translationPopup = null);
   }
 
   public void pickDateOrProceed (@NonNull TdApi.MessageSendOptions initialSendOptions, TdlibUi.SimpleSendCallback sendCallback) {
@@ -741,6 +713,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         inputView.setEnabled(false);
         inputView.setInputPlaceholder(R.string.Message);
       }
+      inputView.setSelectionChangeListener(this);
     }
 
     params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(48f));
@@ -8146,6 +8119,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
         emojiLayout = new EmojiLayout(context());
         emojiLayout.initWithMediasEnabled(this, true, this, this, false);
         bottomWrap.addView(emojiLayout);
+        if (inputView != null) {
+          textFormattingLayout = new TextFormattingLayout(context(), this, inputView);
+          textFormattingLayout.setVisibility(View.GONE);
+          emojiLayout.addView(textFormattingLayout, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        }
         contentView.getViewTreeObserver().addOnPreDrawListener(emojiLayout);
       } else {
         emojiLayout.setVisibility(View.VISIBLE);
@@ -8192,6 +8170,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
         hideSoftwareKeyboard();
       }
       updateEmojiStatus();
+      setTextFormattingLayoutVisible(textInputHasSelection);
+
+      if (inputView != null) {
+        inputView.setActionModeVisibility(!textInputHasSelection || !emojiShown);
+      }
     }
   }
 
@@ -8201,7 +8184,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         emojiLayout.setVisibility(View.GONE);
       }
       setEmojiShown(false, false);
-      emojiButton.setImageResource(EmojiLayout.getTargetIcon(true));
+      emojiButton.setImageResource(getTargetIcon(true));
     }
   }
 
@@ -8218,7 +8201,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         emojiLayout.showKeyboard(inputView);
       }
       setEmojiShown(false, true);
-      emojiButton.setImageResource(EmojiLayout.getTargetIcon(true));
+      emojiButton.setImageResource(getTargetIcon(true));
     }
   }
 
@@ -11400,4 +11383,38 @@ public class MessagesController extends ViewController<MessagesController.Argume
     message.stopTranslated();
   }
 
+  /**/
+
+  private boolean textInputHasSelection;
+  private boolean textFormattingVisible;
+
+  @Override
+  public void onInputSelectionChanged (InputView v, int start, int end) {
+    if (textFormattingLayout != null) {
+      textFormattingLayout.checkButtonsActive(true);
+    }
+  }
+
+  @Override
+  public void onInputSelectionExistChanged (InputView v, boolean hasSelection) {
+    textInputHasSelection = hasSelection;
+    if (!textFormattingVisible) {
+      emojiButton.setImageResource(getTargetIcon(true));
+    }
+  }
+
+  private void setTextFormattingLayoutVisible (boolean visible) {
+    textFormattingVisible = visible;
+    if (emojiLayout != null && textFormattingLayout != null) {
+      textFormattingLayout.setVisibility(visible ? View.VISIBLE: View.GONE);
+      emojiLayout.setCircleViewVisibility(!visible);
+      if (visible) {
+        textFormattingLayout.checkButtonsActive(false);
+      }
+    }
+  }
+
+  public @DrawableRes int getTargetIcon (boolean isMessage) {
+    return (textInputHasSelection || textFormattingVisible) ? R.drawable.baseline_format_text_24: EmojiLayout.getTargetIcon(isMessage);
+  }
 }

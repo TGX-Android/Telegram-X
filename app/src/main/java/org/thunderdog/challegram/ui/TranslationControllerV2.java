@@ -198,12 +198,13 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     if (parent.translationApplyCallback != null) {
       applyTranslationButton = new android.widget.TextView(context);
       Views.setClickable(applyTranslationButton);
+      RippleSupport.setSimpleWhiteBackground(applyTranslationButton);
       applyTranslationButton.setGravity(Gravity.CENTER);
       applyTranslationButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16f);
       applyTranslationButton.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(56f)));
-      applyTranslationButton.setTextColor(Theme.getColor(ColorId.fillingPositiveContent));
-      ViewSupport.setThemedBackground(applyTranslationButton, ColorId.fillingPositive);
-      applyTranslationButton.setText(Lang.getString(R.string.Translate));
+      applyTranslationButton.setTextColor(Theme.getColor(ColorId.textNeutral));
+      applyTranslationButton.setText(Lang.getString(R.string.TranslationPaste).toUpperCase());
+      applyTranslationButton.setTypeface(Fonts.getRobotoMedium());
       applyTranslationButton.setOnClickListener(v -> {
         parent.translationApplyCallback.runWithData(currentText);
         parent.hidePopupWindow(true);
@@ -245,7 +246,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     }
 
     text.replace(makeTextWrapper(currentText = originalText), false);
-    mTranslationsManager.requestTranslation(Lang.getDefaultLanguageToTranslateV2(messageOriginalLanguage));
+    mTranslationsManager.requestTranslation(StringUtils.isEmpty(parent.defaultLanguageToTranslate) ? Lang.getDefaultLanguageToTranslateV2(messageOriginalLanguage): parent.defaultLanguageToTranslate);
     if (parent.translationApplyCallback != null) { // todo remove cond ???
       wrapView.setPadding(0, 0, 0, Screen.needsKeyboardPadding(context()) ? Screen.getNavigationBarFrameDifference() : 0);
     }
@@ -539,6 +540,11 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     private TextColorSet textColorSet;
     private Text.ClickCallback clickCallback;
     private RunnableData<TdApi.FormattedText> translationApplyCallback;
+    private @Nullable String defaultLanguageToTranslate;
+
+    public void setDefaultLanguageToTranslate (@Nullable String defaultLanguageToTranslate) {
+      this.defaultLanguageToTranslate = defaultLanguageToTranslate;
+    }
 
     public final void setTextColorSet (TextColorSet textColorSet) {
       this.textColorSet = textColorSet;
@@ -702,6 +708,10 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
 
   @SuppressLint("ViewConstructor")
   public static class LanguageSelectorPopup extends PopupLayout {
+    public final static int WIDTH = 178;
+    public final static int HEIGHT = 280;
+    public final static int PADDING = 8;
+
     public final MenuMoreWrap languageRecyclerWrap;
     private final LanguageSelectorPopup.OnLanguageSelectListener delegate;
 
@@ -722,11 +732,11 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
       languageRecyclerWrap = new MenuMoreWrap(context) {
         @Override
         public int getItemsHeight () {
-          return Screen.dp(280);
+          return Screen.dp(HEIGHT);
         }
       };
       languageRecyclerWrap.init(null, null);
-      languageRecyclerWrap.addView(languageRecyclerView, FrameLayoutFix.newParams(Screen.dp(178), Screen.dp(280)));
+      languageRecyclerWrap.addView(languageRecyclerView, FrameLayoutFix.newParams(Screen.dp(WIDTH), Screen.dp(HEIGHT)));
       languageRecyclerWrap.setAnchorMode(MenuMoreWrap.ANCHOR_MODE_HEADER);
     }
 

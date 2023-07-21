@@ -224,6 +224,7 @@ public class Settings {
   private static final String KEY_CHAT_DO_NOT_TRANSLATE_MODE = "settings_chat_do_not_translate_mode";
   private static final String KEY_CHAT_DO_NOT_TRANSLATE_LIST = "settings_chat_do_not_translate_list";
   private static final String KEY_CHAT_TRANSLATE_RECENTS = "language_recents";
+  private static final String KEY_DEFAULT_LANGUAGE_FOR_TRANSLATE_DRAFT = "language_draft_translate";
   private static final String KEY_INSTANT_VIEW = "settings_iv_mode";
   private static final String KEY_RESTRICT_CONTENT = "settings_restrict_content";
   private static final String KEY_CAMERA_ASPECT_RATIO = "settings_camera_ratio";
@@ -6706,5 +6707,13 @@ public class Settings {
 
   public long getReportedPushServiceErrorDate () {
     return pmc.getLong(KEY_PUSH_REPORTED_ERROR_DATE, 0);
+  }
+
+  public String getDefaultLanguageForTranslateDraft () {
+    return pmc.getString(KEY_DEFAULT_LANGUAGE_FOR_TRANSLATE_DRAFT, "en");
+  }
+
+  public void setDefaultLanguageForTranslateDraft (String language) {
+    pmc.putString(KEY_DEFAULT_LANGUAGE_FOR_TRANSLATE_DRAFT, language);
   }
 }

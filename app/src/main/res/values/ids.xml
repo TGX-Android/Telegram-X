@@ -576,6 +576,7 @@
   <item type="id" name="btn_showAdvanced" />
   <item type="id" name="btn_autoplayGIFs" />
   <item type="id" name="btn_quickTranslate" />
+  <item type="id" name="btn_translate" />
   <item type="id" name="btn_toggleCollapseRecentStickers" />
   <item type="id" name="btn_stickerSuggestions" />
   <item type="id" name="btn_stickerSuggestionsAll" />
@@ -722,7 +723,6 @@
   <item type="id" name="btn_setMsgSender" />
   <item type="id" name="btn_sendNoSound" />
   <item type="id" name="btn_sendAsFile" />
-  <item type="id" name="btn_translateInputField" />
 
   <item type="id" name="btn_ledDisabled" />
 

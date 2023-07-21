@@ -1358,6 +1358,12 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     }
   }
 
+  public void setCircleViewVisibility (boolean isVisible) { // temporary solution
+    if (circleButton != null) {
+      circleButton.setVisibility(isVisible ? VISIBLE : GONE);
+    }
+  }
+
   public int getCurrentItem () {
     int p = pager.getCurrentItem();
     return p;
