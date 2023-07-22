@@ -453,15 +453,6 @@ public class VideoPlayerView implements Player.Listener, CallManager.CurrentCall
     }
   }
 
-  @Override
-  public void onShuffleModeEnabledChanged (boolean b) { }
-
-  @Override
-  public void onPositionDiscontinuity (int i) { }
-
-  @Override
-  public void onSeekProcessed () { }
-
   public interface Callback {
     void onPlayReady ();
     void onPlayPause (boolean isPlaying);
