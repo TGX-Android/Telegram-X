@@ -24,7 +24,6 @@ import org.thunderdog.challegram.component.chat.InputView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TranslationsManager;
 import org.thunderdog.challegram.navigation.ViewController;
-import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
@@ -36,7 +35,7 @@ import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.TranslationControllerV2;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.LanguageDetector;
-import org.thunderdog.challegram.util.text.TextColorSets;
+import org.thunderdog.challegram.util.TranslationCounterDrawable;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
@@ -45,11 +44,12 @@ import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
+import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.td.Td;
 
 @SuppressLint("ViewConstructor")
-public class TextFormattingLayout extends FrameLayout {
+public class TextFormattingLayout extends FrameLayout implements TranslationsManager.Translatable {
   private static final int SIZE = 40;
 
   public static final int FLAG_BOLD = 1;
@@ -84,9 +84,15 @@ public class TextFormattingLayout extends FrameLayout {
   private final LangSelector langSelector;
   private final Tdlib tdlib;
   private final InputView inputView;
-  private String languageToTranslate;
-  private TranslationControllerV2.Wrapper translationPopup;
   private final BoolAnimator clearButtonIsEnabled;
+
+  private final TranslationsManager translationsManager;
+  private final TranslationCounterDrawable translationCounterDrawable;
+
+  private TranslationControllerV2.Wrapper translationPopup;
+  private TdApi.FormattedText originalTextToTranslate;
+  private boolean ignoreSelectionChangesForTranslatedText;
+  private String languageToTranslate;
 
   public TextFormattingLayout (@NonNull Context context, ViewController<?> parent, InputView inputView) {
     super(context);
@@ -125,7 +131,22 @@ public class TextFormattingLayout extends FrameLayout {
     langSelector.setOnClickListener(this::onClickLanguageSelector);
     addView(langSelector);
 
+    translationsManager = new TranslationsManager(tdlib, this, this::setTranslatedStatus, this::setTranslationResult, this::setTranslationError);
+    translationCounterDrawable = new TranslationCounterDrawable(Drawables.get(R.drawable.baseline_translate_24));
+    translationCounterDrawable.setColors(ColorId.icon, ColorId.background ,ColorId.iconActive);
+    translationCounterDrawable.setInvalidateCallback(() -> buttons[10].invalidate());
+    buttons[10].setDrawable(translationCounterDrawable);
+    buttons[10].setNeedDrawWithoutRepainting(true);
+
     setLanguageToTranslate(Settings.instance().getDefaultLanguageForTranslateDraft());
+  }
+
+  public void onInputSelectionChanged (int start, int end) {
+    if (!ignoreSelectionChangesForTranslatedText) {
+      originalTextToTranslate = null;
+      translationsManager.stopTranslation();
+    }
+    checkButtonsActive(true);
   }
 
   public void checkButtonsActive (boolean animated) {
@@ -247,8 +268,17 @@ public class TextFormattingLayout extends FrameLayout {
   }
 
   private void startTranslate () {
-    final int start =  inputView.getSelectionStart();
+    final int start = inputView.getSelectionStart();
     TdApi.FormattedText text = Td.substring(inputView.getOutputText(false), start, inputView.getSelectionEnd());
+
+    if (!StringUtils.equalsOrBothEmpty(translationsManager.getCurrentTranslatedLanguage(), languageToTranslate)) {
+      originalTextToTranslate = text;
+      translationsManager.requestTranslation(languageToTranslate);
+    } else {
+      translationsManager.stopTranslation();
+    }
+
+    /*
     checkLanguage(language -> {
       if (translationPopup != null) return;
 
@@ -275,6 +305,7 @@ public class TextFormattingLayout extends FrameLayout {
       translationPopup.show();
       translationPopup.setDismissListener(popup -> translationPopup = null);
     });
+    */
   }
 
   private boolean isSelectionEmpty () {
@@ -283,6 +314,35 @@ public class TextFormattingLayout extends FrameLayout {
 
   private int checkSpans () {
     return isSelectionEmpty() ? 0: checkSpans(inputView.getOutputText(false), inputView.getSelectionStart(), inputView.getSelectionEnd());
+  }
+
+  private void setTranslatedStatus (int status, boolean animated) {
+    translationCounterDrawable.setStatus(status, animated);
+  }
+
+  private void setTranslationResult (TdApi.FormattedText translationResult) {
+    ignoreSelectionChangesForTranslatedText = true;
+    if (translationResult != null) {
+      inputView.paste(translationResult, true);
+    } else if (originalTextToTranslate != null) {
+      inputView.paste(originalTextToTranslate, true);
+    }
+    ignoreSelectionChangesForTranslatedText = false;
+  }
+
+  private void setTranslationError (String string) {
+
+  }
+
+  @Nullable
+  @Override
+  public String getOriginalMessageLanguage () {
+    return null;
+  }
+
+  @Override
+  public TdApi.FormattedText getTextToTranslate () {
+    return originalTextToTranslate;
   }
 
   /* * */
@@ -382,6 +442,7 @@ public class TextFormattingLayout extends FrameLayout {
   private static class Button extends FrameLayout implements FactorAnimator.Target {
     private final BoolAnimator isActive;
     private final BoolAnimator isEnabled;
+    private boolean needDrawWithoutRepainting;
     private Drawable drawable;
 
     public Button (Context context) {
@@ -407,6 +468,10 @@ public class TextFormattingLayout extends FrameLayout {
       super.onMeasure(widthMeasureSpec, heightMeasureSpec);
     }
 
+    public void setNeedDrawWithoutRepainting (boolean needDrawWithoutRepainting) {
+      this.needDrawWithoutRepainting = needDrawWithoutRepainting;
+    }
+
     public void setIsActive (boolean active, boolean animated) {
       isActive.setValue(active, animated);
     }
@@ -420,12 +485,16 @@ public class TextFormattingLayout extends FrameLayout {
       drawable = Drawables.get(getResources(), drawableRes);
     }
 
+    public void setDrawable (Drawable drawable) {
+      this.drawable = drawable;
+    }
+
     @Override
     protected void dispatchDraw (Canvas canvas) {
       super.dispatchDraw(canvas);
       if (drawable != null) {
         int color = ColorUtils.fromToArgb(Theme.iconColor(), Theme.getColor(ColorId.iconActive), isActive.getFloatValue());
-        Drawables.drawCentered(canvas, drawable, getMeasuredWidth() / 2f, getMeasuredHeight() / 2f, Paints.getPorterDuffPaint(color));
+        Drawables.drawCentered(canvas, drawable, getMeasuredWidth() / 2f, getMeasuredHeight() / 2f, needDrawWithoutRepainting ? null: Paints.getPorterDuffPaint(color));
       }
     }
 

@@ -11391,7 +11391,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Override
   public void onInputSelectionChanged (InputView v, int start, int end) {
     if (textFormattingLayout != null) {
-      textFormattingLayout.checkButtonsActive(true);
+      textFormattingLayout.onInputSelectionChanged(start, end);
       closeTextFormattingKeyboardDelay(start == end);
     }
   }
