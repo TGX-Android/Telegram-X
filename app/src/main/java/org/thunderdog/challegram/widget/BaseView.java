@@ -475,7 +475,7 @@ public class BaseView extends SparseDrawableView implements ClickHelper.Delegate
   public final MessagesController.Arguments createChatPreviewArguments (TdApi.ChatList chatList, TdApi.Chat chat, @Nullable ThreadInfo messageThread, TdApi.SearchMessagesFilter filter) {
     ViewController<?> controller = context().navigation().getCurrentStackItem();
     if (controller != null) {
-      String query = controller.getLastSearchInput();
+      String query = controller.inSearchMode() ? controller.getLastSearchInput() : null;
       if (!StringUtils.isEmpty(query) && highlightMode != MessagesManager.HIGHLIGHT_MODE_NONE) {
         controller.preventLeavingSearchMode();
         return new MessagesController.Arguments(chatList, chat, messageThread, highlightMessageId, highlightMode, filter, highlightMessageId, query);
