@@ -47,6 +47,7 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -263,6 +264,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
+import me.vkryl.android.util.ClickHelper;
 import me.vkryl.android.widget.AnimatedFrameLayout;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ArrayUtils;
@@ -301,6 +303,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
   ViewPager.OnPageChangeListener, ViewPagerTopView.OnItemClickListener,
   TGMessage.SelectableDelegate, GlobalAccountListener, EmojiToneHelper.Delegate, ComplexHeaderView.Callback, LiveLocationHelper.Callback, CreatePollController.Callback,
   HapticMenuHelper.Provider, HapticMenuHelper.OnItemClickListener, TdlibSettingsManager.DismissRequestsListener, InputView.SelectionChangeListener {
+
+  private static final long DOUBLE_TAP_TIMEOUT = ViewConfiguration.getDoubleTapTimeout();
+
   private boolean reuseEnabled;
   private boolean destroyInstance;
 
@@ -684,6 +689,23 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     if (previewMode == PREVIEW_MODE_NONE && !isInForceTouchMode()) {
       inputView = new InputView(context, tdlib, this) {
+        private final ClickHelper clickHelper = new ClickHelper(new ClickHelper.Delegate() {
+          @Override
+          public boolean needClickAt (View view, float x, float y) {
+            return true;
+          }
+
+          @Override
+          public void onClickAt (View view, float x, float y) {
+
+          }
+
+          @Override
+          public void onClickTouchDown (View view, float x, float y) {
+            closeTextFormattingKeyboardDelay(true);
+          }
+        });
+
         @Override
         protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
           super.onMeasure(widthMeasureSpec, heightMeasureSpec);
@@ -694,6 +716,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
         protected void onLayout (boolean changed, int left, int top, int right, int bottom) {
           super.onLayout(changed, left, top, right, bottom);
           updateButtonsY();
+        }
+
+        @Override
+        public boolean onTouchEvent (MotionEvent event) {
+          clickHelper.onTouchEvent(this, event);
+          return super.onTouchEvent(event);
         }
       };
       inputView.setNoPersonalizedLearning(Settings.instance().needsIncognitoMode(chat));
@@ -11392,7 +11420,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void onInputSelectionChanged (InputView v, int start, int end) {
     if (textFormattingLayout != null) {
       textFormattingLayout.onInputSelectionChanged(start, end);
-      closeTextFormattingKeyboardDelay(start == end);
+      if (start != end) {
+        closeTextFormattingKeyboardDelay(false);
+      }
     }
   }
 
@@ -11424,7 +11454,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       UI.cancel(closeTextFormattingKeyboardRunnable);
     }
     if (needClose) {
-      UI.post(closeTextFormattingKeyboardRunnable = this::closeTextFormattingKeyboard, 1000);
+      UI.post(closeTextFormattingKeyboardRunnable = this::closeTextFormattingKeyboard, DOUBLE_TAP_TIMEOUT);
     }
   }
 
