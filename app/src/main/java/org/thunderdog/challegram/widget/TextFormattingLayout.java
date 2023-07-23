@@ -59,6 +59,7 @@ public class TextFormattingLayout extends FrameLayout {
   private static final int FLAG_STRIKETHROUGH = 1 << 4;
   private static final int FLAG_LINK = 1 << 5;
   private static final int FLAG_SPOILER = 1 << 6;
+  private static final int FLAG_CLEAR = 1 << 30;
 
   private static final int[] buttonIds = new int[]{
     R.id.btn_bold, R.id.btn_italic, R.id.btn_monospace, R.id.btn_underline,
@@ -78,12 +79,14 @@ public class TextFormattingLayout extends FrameLayout {
   private final ViewController<?> parent;
   private final TextView editHeader;
   private final TextView translateHeader;
+  private final TextView clearButton;
   private final Button[] buttons;
   private final LangSelector langSelector;
   private final Tdlib tdlib;
   private final InputView inputView;
   private String languageToTranslate;
   private TranslationControllerV2.Wrapper translationPopup;
+  private final BoolAnimator clearButtonIsEnabled;
 
   public TextFormattingLayout (@NonNull Context context, ViewController<?> parent, InputView inputView) {
     super(context);
@@ -99,11 +102,14 @@ public class TextFormattingLayout extends FrameLayout {
     addView(editHeader = createHeader(context, Lang.getString(R.string.TextFormattingTools)));
     addView(translateHeader = createHeader(context, Lang.getString(R.string.TextFormattingTranslate)));
 
-    TextView clearButton = createHeader(context, Lang.getString(R.string.Clear));
+    clearButton = createHeader(context, Lang.getString(R.string.Clear));
     clearButton.setOnClickListener(this::onButtonClick);
     clearButton.setTypeface(Fonts.getRobotoRegular());
     clearButton.setId(R.id.btn_plain);
     addView(clearButton, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT));
+
+    clearButtonIsEnabled = new BoolAnimator(0, (id, factor, fraction, callee) -> clearButton.setAlpha(factor),
+      AnimatorUtils.DECELERATE_INTERPOLATOR, 200L, true);
 
     buttons = new Button[buttonIds.length];
     for (int a = 0; a < buttonIds.length; a++) {
@@ -127,10 +133,11 @@ public class TextFormattingLayout extends FrameLayout {
     final int flags = checkSpans();
 
     for (int a = 0; a < 11; a++) {
-      if (a < 7) buttons[a].setIsActive(((flags >> a) & 1) == 1, animated);
+      if (a < 7) buttons[a].setIsActive(BitwiseUtils.hasFlag(flags, 1 << a), animated);
       if (a != 9) buttons[a].setIsEnabled(!isEmpty, animated);
     }
     langSelector.setIsEnabled(!isEmpty, animated);
+    clearButtonIsEnabled.setValue(BitwiseUtils.hasFlag(flags, FLAG_CLEAR), animated);
   }
 
   private void setLanguageToTranslate (String language) {
@@ -261,7 +268,7 @@ public class TextFormattingLayout extends FrameLayout {
       translationPopup.setTextColorSet(TextColorSets.Regular.NORMAL);
       translationPopup.setTranslationApplyCallback(r -> {
         if (r == null) return;
-        inputView.paste(r);
+        inputView.paste(r, true);
         checkButtonsActive(true);
       });
       translationPopup.setDefaultLanguageToTranslate(languageToTranslate);
@@ -285,11 +292,17 @@ public class TextFormattingLayout extends FrameLayout {
     int flags = 0;
 
     for (TdApi.TextEntity entity: text.entities) {
-      if (!(entity.offset <= start && (entity.offset + entity.length) >= end)) continue;
-      int flag = getTypeFlagFromEntityType(entity.type);
-      if (flag == -1) continue;
+      final int entityStart = entity.offset, entityEnd = entity.offset + entity.length;
 
-      flags = BitwiseUtils.setFlag(flags, flag, true);
+      if (!(entityStart >= end || start >= entityEnd)) {
+        int flag = getTypeFlagFromEntityType(entity.type);
+        if (flag == -1) continue;
+
+        flags = BitwiseUtils.setFlag(flags, FLAG_CLEAR, true);
+        if (entityStart <= start && entityEnd >= end) {
+          flags = BitwiseUtils.setFlag(flags, flag, true);
+        }
+      }
     }
 
     return flags;

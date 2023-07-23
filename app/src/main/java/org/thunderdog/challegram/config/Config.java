@@ -148,7 +148,7 @@ public class Config {
 
   public static final boolean FORCE_TOUCH_ENABLED = true;
   public static final boolean HOLD_TO_PREVIEW_AVAILABLE = true;
-  public static final boolean USE_CUSTOM_INPUT_STYLING = false;
+  public static final boolean USE_CUSTOM_INPUT_STYLING = true;
 
   public static final int ICON_MARK_AS_READ = R.drawable.baseline_done_all_24;
   public static final int ICON_MARK_AS_UNREAD = R.drawable.baseline_unsubscribe_24;

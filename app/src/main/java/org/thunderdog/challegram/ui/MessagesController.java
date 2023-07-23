@@ -11398,7 +11398,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Override
   public void onInputSelectionExistChanged (InputView v, boolean hasSelection) {
     textInputHasSelection = hasSelection;
-    if (!textFormattingVisible) {
+    if (!emojiShown) {
       emojiButton.setImageResource(getTargetIcon(true));
     }
   }
@@ -11415,6 +11415,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public @DrawableRes int getTargetIcon (boolean isMessage) {
-    return (textInputHasSelection || textFormattingVisible) ? R.drawable.baseline_format_text_24: EmojiLayout.getTargetIcon(isMessage);
+    return (textInputHasSelection || (textFormattingVisible && emojiShown)) ? R.drawable.baseline_format_text_24: EmojiLayout.getTargetIcon(isMessage);
   }
 }

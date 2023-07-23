@@ -1563,7 +1563,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         case android.R.id.paste: {
           CharSequence pasteText = U.getPasteText(getContext());
           if (pasteText != null) {
-            paste(pasteText);
+            paste(pasteText, false);
             return true;
           }
           break;
@@ -1575,16 +1575,16 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     return super.onTextContextMenuItem(id);
   }
 
-  public void paste (TdApi.FormattedText pasteText) {
+  public void paste (TdApi.FormattedText pasteText, boolean needSelectPastedText) {
     int start = getSelectionStart();
 
-    paste(pasteText.text);
+    paste(pasteText.text, needSelectPastedText);
     for (TdApi.TextEntity entity: pasteText.entities) {
       setSpan(start + entity.offset, start+ entity.offset + entity.length, entity.type);
     }
   }
 
-  public void paste (CharSequence pasteText) {
+  public void paste (CharSequence pasteText, boolean needSelectPastedText) {
     TextSelection selection = getTextSelection();
     if (selection == null) return;
 
@@ -1598,7 +1598,11 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       // TODO: should this be a part of EmojiFilter?
       removeCustomEmoji(editable, selection.start, selection.start + pasteText.length());
     }
-    setSelection(selection.start + pasteText.length());
+    if (needSelectPastedText) {
+      setSelection(selection.start, selection.start + pasteText.length());
+    } else {
+      setSelection(selection.start + pasteText.length());
+    }
   }
 
   private static void removeCustomEmoji (Editable editable, int start, int end) {
