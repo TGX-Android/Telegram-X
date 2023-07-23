@@ -11392,6 +11392,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public void onInputSelectionChanged (InputView v, int start, int end) {
     if (textFormattingLayout != null) {
       textFormattingLayout.checkButtonsActive(true);
+      closeTextFormattingKeyboardDelay(start == end);
     }
   }
 
@@ -11416,5 +11417,23 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   public @DrawableRes int getTargetIcon (boolean isMessage) {
     return (textInputHasSelection || (textFormattingVisible && emojiShown)) ? R.drawable.baseline_format_text_24: EmojiLayout.getTargetIcon(isMessage);
+  }
+
+  private void closeTextFormattingKeyboardDelay (boolean needClose) {
+    if (closeTextFormattingKeyboardRunnable != null) {
+      UI.cancel(closeTextFormattingKeyboardRunnable);
+    }
+    if (needClose) {
+      UI.post(closeTextFormattingKeyboardRunnable = this::closeTextFormattingKeyboard, 1000);
+    }
+  }
+
+  private Runnable closeTextFormattingKeyboardRunnable;
+
+  private void closeTextFormattingKeyboard () {
+    closeTextFormattingKeyboardRunnable = null;
+    if (textFormattingVisible && emojiShown) {
+      closeEmojiKeyboard();
+    }
   }
 }
