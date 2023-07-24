@@ -1576,32 +1576,39 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   }
 
   public void paste (TdApi.FormattedText pasteText, boolean needSelectPastedText) {
-    int start = getSelectionStart();
+    TextSelection selection = getTextSelection();
+    if (selection == null) return;
 
-    paste(pasteText.text, needSelectPastedText);
+    final int start = selection.start;
+    paste(selection, pasteText.text, needSelectPastedText);
     for (TdApi.TextEntity entity: pasteText.entities) {
-      setSpan(start + entity.offset, start+ entity.offset + entity.length, entity.type);
+      setSpan(start + entity.offset, start + entity.offset + entity.length, entity.type);
     }
   }
 
   public void paste (CharSequence pasteText, boolean needSelectPastedText) {
-    TextSelection selection = getTextSelection();
+    paste(getTextSelection(), pasteText, needSelectPastedText);
+  }
+
+  public void paste (TextSelection selection, CharSequence pasteText, boolean needSelectPastedText) {
     if (selection == null) return;
+    final int start = selection.start;
+    final int end = selection.end;
 
     Editable editable = getText();
     if (selection.isEmpty()) {
-      editable.insert(selection.start, pasteText);
+      editable.insert(start, pasteText);
     } else {
-      editable.replace(selection.start, selection.end, pasteText);
+      editable.replace(start, end, pasteText);
     }
     if (pasteText instanceof Spanned) {
       // TODO: should this be a part of EmojiFilter?
-      removeCustomEmoji(editable, selection.start, selection.start + pasteText.length());
+      removeCustomEmoji(editable, start, start + pasteText.length());
     }
     if (needSelectPastedText) {
-      setSelection(selection.start, selection.start + pasteText.length());
+      setSelection(start, start + pasteText.length());
     } else {
-      setSelection(selection.start + pasteText.length());
+      setSelection(start + pasteText.length());
     }
   }
 

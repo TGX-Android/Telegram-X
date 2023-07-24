@@ -701,8 +701,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
           }
 
           @Override
+          public void onClickTouchUp (View view, float x, float y) {
+            closeTextFormattingKeyboardDelay(!textInputHasSelection);
+          }
+
+          @Override
           public void onClickTouchDown (View view, float x, float y) {
-            closeTextFormattingKeyboardDelay(true);
+           // closeTextFormattingKeyboardDelay(true);
           }
         });
 
@@ -11454,7 +11459,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       UI.cancel(closeTextFormattingKeyboardRunnable);
     }
     if (needClose) {
-      UI.post(closeTextFormattingKeyboardRunnable = this::closeTextFormattingKeyboard, DOUBLE_TAP_TIMEOUT);
+      UI.post(closeTextFormattingKeyboardRunnable = this::closeTextFormattingKeyboard, DOUBLE_TAP_TIMEOUT + 50);
     }
   }
 

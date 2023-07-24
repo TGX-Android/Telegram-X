@@ -35,6 +35,7 @@ import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.TranslationControllerV2;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.LanguageDetector;
+import org.thunderdog.challegram.util.TextSelection;
 import org.thunderdog.challegram.util.TranslationCounterDrawable;
 
 import me.vkryl.android.AnimatorUtils;
@@ -143,8 +144,10 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
 
   public void onInputSelectionChanged (int start, int end) {
     if (!ignoreSelectionChangesForTranslatedText) {
-      originalTextToTranslate = null;
-      translationsManager.stopTranslation();
+      if (originalTextToTranslate != null) {
+        originalTextToTranslate = null;
+        translationsManager.stopTranslation();
+      }
     }
     checkButtonsActive(true);
   }
@@ -257,22 +260,26 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
   }
 
   private void checkLanguage (RunnableData<String> callback) {
+    TextSelection selection = inputView.getTextSelection();
     String text = inputView.getOutputText(false).text;
-    if (text == null) {
+    if (text == null || selection == null || selection.isEmpty()) {
       callback.runWithData(null);
       return;
     }
 
-    String textToDetect = text.substring(inputView.getSelectionStart(), inputView.getSelectionEnd());
+    String textToDetect = text.substring(selection.start, selection.end);
     LanguageDetector.detectLanguage(getContext(), textToDetect, callback);
   }
 
   private void startTranslate () {
-    final int start = inputView.getSelectionStart();
-    TdApi.FormattedText text = Td.substring(inputView.getOutputText(false), start, inputView.getSelectionEnd());
+    TextSelection selection = inputView.getTextSelection();
+    if (selection == null || selection.isEmpty()) return;
 
+    TdApi.FormattedText text = Td.substring(inputView.getOutputText(false), selection.start, selection.end);
     if (!StringUtils.equalsOrBothEmpty(translationsManager.getCurrentTranslatedLanguage(), languageToTranslate)) {
-      originalTextToTranslate = text;
+      if (originalTextToTranslate == null) {
+        originalTextToTranslate = text;
+      }
       translationsManager.requestTranslation(languageToTranslate);
     } else {
       translationsManager.stopTranslation();
@@ -309,11 +316,17 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
   }
 
   private boolean isSelectionEmpty () {
-    return inputView.getSelectionStart() == inputView.getSelectionEnd();
+    TextSelection selection = inputView.getTextSelection();
+    return selection == null || selection.isEmpty();
   }
 
   private int checkSpans () {
-    return isSelectionEmpty() ? 0: checkSpans(inputView.getOutputText(false), inputView.getSelectionStart(), inputView.getSelectionEnd());
+    TextSelection selection = inputView.getTextSelection();
+    if (selection == null || selection.isEmpty()) {
+      return 0;
+    }
+
+    return checkSpans(inputView.getOutputText(false), selection.start, selection.end);
   }
 
   private void setTranslatedStatus (int status, boolean animated) {
