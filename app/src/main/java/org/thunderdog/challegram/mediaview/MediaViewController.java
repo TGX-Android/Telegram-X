@@ -36,6 +36,7 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.animation.Interpolator;
@@ -49,6 +50,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -146,6 +148,7 @@ import org.thunderdog.challegram.widget.FileProgressComponent;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.ShadowView;
+import org.thunderdog.challegram.widget.TextFormattingLayout;
 import org.thunderdog.challegram.widget.VideoTimelineView;
 
 import java.io.File;
@@ -178,7 +181,10 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   PopupLayout.AnimatedPopupProvider, FactorAnimator.Target, View.OnClickListener,
   MediaStackCallback, MediaFiltersAdapter.Callback, Watcher, RotationControlView.Callback, MediaView.ClickListener,
   EmojiLayout.Listener, InputView.InputListener, InlineResultsWrap.OffsetProvider,
-  MediaCellView.Callback, SliderView.Listener, TGLegacyManager.EmojiLoadListener, Menu, MoreDelegate, PopupLayout.TouchSectionProvider, FlingDetector.Callback, CallManager.CurrentCallListener, ColorPreviewView.BrushChangeListener, PaintState.UndoStateListener, MediaView.FactorChangeListener, EmojiToneHelper.Delegate, MessageListener {
+  MediaCellView.Callback, SliderView.Listener, TGLegacyManager.EmojiLoadListener, Menu, MoreDelegate,
+  PopupLayout.TouchSectionProvider, FlingDetector.Callback, CallManager.CurrentCallListener,
+  ColorPreviewView.BrushChangeListener, PaintState.UndoStateListener, MediaView.FactorChangeListener,
+  EmojiToneHelper.Delegate, MessageListener, InputView.SelectionChangeListener {
 
   private static final long REVEAL_ANIMATION_DURATION = /*BuildConfig.DEBUG ? 1800l :*/ 180;
   private static final long REVEAL_OPEN_ANIMATION_DURATION = /*BuildConfig.DEBUG ? 1800l :*/ 180l;
@@ -557,13 +563,14 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   private EmojiLayout emojiLayout;
+  private TextFormattingLayout textFormattingLayout;
 
   private boolean emojiShown, emojiState;
 
   private void processEmojiClick () {
     if (emojiShown) {
       setInCaption(emojiState || getKeyboardState());
-      closeEmojiKeyboard(false);
+      closeEmojiKeyboard();
     } else {
       openEmojiKeyboard();
       setInCaption();
@@ -606,6 +613,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         emojiLayout.initWithMediasEnabled(this, false, this, this, false); // FIXME shall we use dark mode?
         emojiLayout.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
         bottomWrap.addView(emojiLayout);
+        if (inputView != null) {
+          textFormattingLayout = new TextFormattingLayout(context(), this, inputView);
+          textFormattingLayout.setVisibility(View.GONE);
+          emojiLayout.addView(textFormattingLayout, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        }
         popupView.getViewTreeObserver().addOnPreDrawListener(emojiLayout);
       } else if (emojiLayout.getParent() == null) {
         bottomWrap.addView(emojiLayout);
@@ -613,7 +625,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
       emojiState = getKeyboardState();
 
-      emojiShown = true;
+      setEmojiShown(true);
       if (emojiState) {
         captionEmojiButton.setImageResource(R.drawable.baseline_keyboard_24);
         emojiLayout.hideKeyboard((EditText) captionView);
@@ -634,25 +646,21 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private void forceCloseEmojiKeyboard () {
     if (emojiShown) {
       removeEmojiView();
-      emojiShown = false;
+      setEmojiShown(false);
       captionEmojiButton.setImageResource(R.drawable.deproko_baseline_insert_emoticon_26);
       setInCaption();
     }
   }
 
-  private void closeEmojiKeyboard (boolean eventually) {
+  private void closeEmojiKeyboard () {
     if (emojiShown) {
       if (emojiLayout != null) {
         removeEmojiView();
         if (emojiState) {
-          if (eventually) {
-            emojiLayout.showKeyboard((EditText) captionView);
-          } else {
-            emojiLayout.showKeyboard((EditText) captionView);
-          }
+          emojiLayout.showKeyboard((EditText) captionView);
         }
       }
-      emojiShown = false;
+      setEmojiShown(false);
       captionEmojiButton.setImageResource(R.drawable.deproko_baseline_insert_emoticon_26);
     }
   }
@@ -854,7 +862,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   public boolean onKeyboardStateChanged (boolean visible) {
     if (mode == MODE_GALLERY) {
       if (visible && !getKeyboardState()) {
-        closeEmojiKeyboard(true);
+        closeEmojiKeyboard();
       }
       boolean res = super.onKeyboardStateChanged(visible);
       if (emojiLayout != null) {
@@ -2927,6 +2935,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private FrameLayoutFix bottomWrap;
   private LinearLayout captionWrapView;
   private View captionView;
+  private InputView inputView;
   private ImageView captionEmojiButton, captionDoneButton;
   private @Nullable VideoControlView videoSliderView;
 
@@ -5128,7 +5137,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         captionView.setTypeface(Fonts.getRobotoRegular());
         captionView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         captionView.setInputType(captionView.getInputType() | EditorInfo.TYPE_TEXT_FLAG_CAP_SENTENCES | EditorInfo.TYPE_TEXT_FLAG_MULTI_LINE);
+        captionView.setSelectionChangeListener(this);
         this.captionView = captionView;
+        this.inputView = captionView;
 
         captionDoneButton = new ImageView(context);
         captionDoneButton.setId(R.id.btn_caption_done);
@@ -8433,5 +8444,50 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         }
       });
     });
+  }
+
+  private void setEmojiShown (boolean emojiShown) {
+    if (this.emojiShown != emojiShown) {
+      this.emojiShown = emojiShown;
+      setTextFormattingLayoutVisible(textInputHasSelection);
+      if (inputView != null) {
+        inputView.setActionModeVisibility(!textInputHasSelection || !emojiShown);
+      }
+    }
+  }
+
+  /**/
+
+  private boolean textInputHasSelection;
+  private boolean textFormattingVisible;
+
+  @Override
+  public void onInputSelectionChanged (InputView v, int start, int end) {
+    if (textFormattingLayout != null) {
+      textFormattingLayout.onInputSelectionChanged(start, end);
+    }
+  }
+
+  @Override
+  public void onInputSelectionExistChanged (InputView v, boolean hasSelection) {
+    textInputHasSelection = hasSelection;
+    if (!emojiShown) {
+      captionEmojiButton.setImageResource(getTargetIcon());
+    }
+  }
+
+  private void setTextFormattingLayoutVisible (boolean visible) {
+    textFormattingVisible = visible;
+    if (emojiLayout != null && textFormattingLayout != null) {
+      textFormattingLayout.setVisibility(visible ? View.VISIBLE: View.GONE);
+      emojiLayout.setCircleViewVisibility(!visible);
+      if (visible) {
+        textFormattingLayout.checkButtonsActive(false);
+      }
+    }
+  }
+
+  public @DrawableRes int getTargetIcon () {
+    return (textInputHasSelection || (textFormattingVisible && emojiShown)) ? R.drawable.baseline_format_text_24: R.drawable.deproko_baseline_insert_emoticon_26;
   }
 }

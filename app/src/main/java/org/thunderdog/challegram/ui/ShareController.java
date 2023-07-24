@@ -39,6 +39,7 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
+import androidx.annotation.DrawableRes;
 import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -103,6 +104,7 @@ import org.thunderdog.challegram.widget.EmojiLayout;
 import org.thunderdog.challegram.widget.ForceTouchView;
 import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.SeparatorView;
+import org.thunderdog.challegram.widget.TextFormattingLayout;
 import org.thunderdog.challegram.widget.VerticalChatView;
 
 import java.io.File;
@@ -133,7 +135,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
   FactorAnimator.Target, Runnable, PopupLayout.PopupHeightProvider,
   View.OnClickListener, Menu, PopupLayout.TouchSectionProvider,
   EmojiLayout.Listener, BaseView.ActionListProvider, EmojiToneHelper.Delegate,
-  ChatListListener, Filter<TdApi.Chat> {
+  ChatListListener, Filter<TdApi.Chat>, InputView.SelectionChangeListener {
   private static final int MODE_MESSAGES = 0;
   private static final int MODE_TEXT = 1;
   private static final int MODE_GAME = 2;
@@ -1258,6 +1260,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     inputView.setInputType(inputView.getInputType() | EditorInfo.TYPE_TEXT_FLAG_CAP_SENTENCES | EditorInfo.TYPE_TEXT_FLAG_MULTI_LINE);
     inputView.setSingleLine(false);
     inputView.setMaxLines(4);
+    inputView.setSelectionChangeListener(this);
     bottomWrap.addView(inputView);
 
     if (OPEN_KEYBOARD_WITH_AUTOSCROLL) {
@@ -2660,6 +2663,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
   }
 
   private EmojiLayout emojiLayout;
+  private TextFormattingLayout textFormattingLayout;
 
   private boolean emojiShown, emojiState;
 
@@ -2681,6 +2685,11 @@ public class ShareController extends TelegramViewController<ShareController.Args
         emojiLayout = new EmojiLayout(context());
         emojiLayout.initWithMediasEnabled(this, false, this, this, false);
         bottomWrap.addView(emojiLayout);
+        if (inputView != null) {
+          textFormattingLayout = new TextFormattingLayout(context(), this, inputView);
+          textFormattingLayout.setVisibility(View.GONE);
+          emojiLayout.addView(textFormattingLayout, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        }
         wrapView.getViewTreeObserver().addOnPreDrawListener(emojiLayout);
       } else {
         emojiLayout.setVisibility(View.VISIBLE);
@@ -2688,7 +2697,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
 
       emojiState = getKeyboardState();
 
-      emojiShown = true;
+      setEmojiShown(true);
       if (emojiState) {
         emojiButton.setImageResource(R.drawable.baseline_keyboard_24);
         emojiLayout.hideKeyboard(inputView);
@@ -2705,7 +2714,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
       if (emojiLayout != null) {
         emojiLayout.setVisibility(View.GONE);
       }
-      emojiShown = false;
+      setEmojiShown(false);
       emojiButton.setImageResource(R.drawable.deproko_baseline_insert_emoticon_26);
 
       checkKeyboardVisible();
@@ -2720,7 +2729,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
           emojiLayout.showKeyboard(inputView);
         }
       }
-      emojiShown = false;
+      setEmojiShown(false);
       emojiButton.setImageResource(R.drawable.deproko_baseline_insert_emoticon_26);
       checkKeyboardVisible();
     }
@@ -3225,5 +3234,50 @@ public class ShareController extends TelegramViewController<ShareController.Args
     TGLegacyManager.instance().removeEmojiListener(adapter);
     cancelDownloadingFiles();
     context().removeFullScreenView(this, false);
+  }
+
+  private void setEmojiShown (boolean emojiShown) {
+    if (this.emojiShown != emojiShown) {
+      this.emojiShown = emojiShown;
+      setTextFormattingLayoutVisible(textInputHasSelection);
+      if (inputView != null) {
+        inputView.setActionModeVisibility(!textInputHasSelection || !emojiShown);
+      }
+    }
+  }
+
+  /**/
+
+  private boolean textInputHasSelection;
+  private boolean textFormattingVisible;
+
+  @Override
+  public void onInputSelectionChanged (InputView v, int start, int end) {
+    if (textFormattingLayout != null) {
+      textFormattingLayout.onInputSelectionChanged(start, end);
+    }
+  }
+
+  @Override
+  public void onInputSelectionExistChanged (InputView v, boolean hasSelection) {
+    textInputHasSelection = hasSelection;
+    if (!emojiShown) {
+     emojiButton.setImageResource(getTargetIcon());
+    }
+  }
+
+  private void setTextFormattingLayoutVisible (boolean visible) {
+    textFormattingVisible = visible;
+    if (emojiLayout != null && textFormattingLayout != null) {
+      textFormattingLayout.setVisibility(visible ? View.VISIBLE: View.GONE);
+      emojiLayout.setCircleViewVisibility(!visible);
+      if (visible) {
+        textFormattingLayout.checkButtonsActive(false);
+      }
+    }
+  }
+
+  public @DrawableRes int getTargetIcon () {
+    return (textInputHasSelection || (textFormattingVisible && emojiShown)) ? R.drawable.baseline_format_text_24: R.drawable.deproko_baseline_insert_emoticon_26;
   }
 }
