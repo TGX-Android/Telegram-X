@@ -680,6 +680,7 @@
   <item type="id" name="btn_cacheSettings" />
   <item type="id" name="btn_deleteMember" />
   <item type="id" name="btn_circle" />
+  <item type="id" name="btn_circleBackspace" />
   <item type="id" name="btn_shareMyContact" />
   <item type="id" name="btn_showPinnedMessage" />
   <item type="id" name="btn_botHelp" />

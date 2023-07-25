@@ -47,7 +47,6 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -149,7 +148,6 @@ import org.thunderdog.challegram.data.TGRecord;
 import org.thunderdog.challegram.data.TGSwitchInline;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.data.ThreadInfo;
-import org.thunderdog.challegram.data.TranslationsManager;
 import org.thunderdog.challegram.filegen.PhotoGenerationInfo;
 import org.thunderdog.challegram.filegen.VideoGenerationInfo;
 import org.thunderdog.challegram.helper.BotHelper;
@@ -222,13 +220,11 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Test;
 import org.thunderdog.challegram.util.CancellableResultHandler;
 import org.thunderdog.challegram.util.HapticMenuHelper;
-import org.thunderdog.challegram.util.LanguageDetector;
 import org.thunderdog.challegram.util.OptionDelegate;
 import org.thunderdog.challegram.util.Permissions;
 import org.thunderdog.challegram.util.SenderPickerDelegate;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.util.Unlockable;
-import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.v.HeaderEditText;
 import org.thunderdog.challegram.v.MessagesLayoutManager;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
@@ -264,7 +260,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
-import me.vkryl.android.util.ClickHelper;
 import me.vkryl.android.widget.AnimatedFrameLayout;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ArrayUtils;
@@ -303,8 +298,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
   ViewPager.OnPageChangeListener, ViewPagerTopView.OnItemClickListener,
   TGMessage.SelectableDelegate, GlobalAccountListener, EmojiToneHelper.Delegate, ComplexHeaderView.Callback, LiveLocationHelper.Callback, CreatePollController.Callback,
   HapticMenuHelper.Provider, HapticMenuHelper.OnItemClickListener, TdlibSettingsManager.DismissRequestsListener, InputView.SelectionChangeListener {
-
-  private static final long DOUBLE_TAP_TIMEOUT = ViewConfiguration.getDoubleTapTimeout();
 
   private boolean reuseEnabled;
   private boolean destroyInstance;
@@ -689,28 +682,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     if (previewMode == PREVIEW_MODE_NONE && !isInForceTouchMode()) {
       inputView = new InputView(context, tdlib, this) {
-        private final ClickHelper clickHelper = new ClickHelper(new ClickHelper.Delegate() {
-          @Override
-          public boolean needClickAt (View view, float x, float y) {
-            return true;
-          }
-
-          @Override
-          public void onClickAt (View view, float x, float y) {
-
-          }
-
-          @Override
-          public void onClickTouchUp (View view, float x, float y) {
-            // closeTextFormattingKeyboardDelay(!textInputHasSelection);
-          }
-
-          @Override
-          public void onClickTouchDown (View view, float x, float y) {
-            closeTextFormattingKeyboardDelay(true);
-          }
-        });
-
         @Override
         protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
           super.onMeasure(widthMeasureSpec, heightMeasureSpec);
@@ -725,8 +696,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
         @Override
         public boolean onTouchEvent (MotionEvent event) {
-          clickHelper.onTouchEvent(this, event);
-          return super.onTouchEvent(event);
+          boolean r = super.onTouchEvent(event);
+          if (textFormattingLayout != null) {
+            textFormattingLayout.onInputViewTouchEvent(event);
+          }
+          return r;
         }
       };
       inputView.setNoPersonalizedLearning(Settings.instance().needsIncognitoMode(chat));
@@ -849,7 +823,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       @Override
       public void onShowAllRequest (PinnedMessagesBar view) {
         MessagesController c = new MessagesController(context, tdlib);
-        c.setArguments(new MessagesController.Arguments(null, chat, null, null, new TdApi.SearchMessagesFilterPinned()));
+        c.setArguments(new Arguments(null, chat, null, null, new TdApi.SearchMessagesFilterPinned()));
         navigateTo(c);
       }
     });
@@ -8154,6 +8128,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         bottomWrap.addView(emojiLayout);
         if (inputView != null) {
           textFormattingLayout = new TextFormattingLayout(context(), this, inputView);
+          textFormattingLayout.setDelegate(this::closeTextFormattingKeyboard);
           textFormattingLayout.setVisibility(View.GONE);
           emojiLayout.addView(textFormattingLayout, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         }
@@ -11424,10 +11399,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Override
   public void onInputSelectionChanged (InputView v, int start, int end) {
     if (textFormattingLayout != null) {
-      textFormattingLayout.onInputSelectionChanged(start, end);
-      if (start != end) {
-        closeTextFormattingKeyboardDelay(false);
-      }
+      textFormattingLayout.onInputViewSelectionChanged(start, end);
     }
   }
 
@@ -11443,32 +11415,20 @@ public class MessagesController extends ViewController<MessagesController.Argume
     textFormattingVisible = visible;
     if (emojiLayout != null && textFormattingLayout != null) {
       textFormattingLayout.setVisibility(visible ? View.VISIBLE: View.GONE);
-      emojiLayout.setCircleViewVisibility(!visible);
+      emojiLayout.optimizeForDisplayTextFormattingLayout(!visible);
       if (visible) {
         textFormattingLayout.checkButtonsActive(false);
       }
     }
   }
 
-  public @DrawableRes int getTargetIcon (boolean isMessage) {
-    return (textInputHasSelection || (textFormattingVisible && emojiShown)) ? R.drawable.baseline_format_text_24: EmojiLayout.getTargetIcon(isMessage);
-  }
-
-  private void closeTextFormattingKeyboardDelay (boolean needClose) {
-    if (closeTextFormattingKeyboardRunnable != null) {
-      UI.cancel(closeTextFormattingKeyboardRunnable);
-    }
-    if (needClose) {
-      UI.post(closeTextFormattingKeyboardRunnable = this::closeTextFormattingKeyboard, DOUBLE_TAP_TIMEOUT + 50);
-    }
-  }
-
-  private Runnable closeTextFormattingKeyboardRunnable;
-
   private void closeTextFormattingKeyboard () {
-    closeTextFormattingKeyboardRunnable = null;
     if (textFormattingVisible && emojiShown) {
       closeEmojiKeyboard();
     }
+  }
+
+  public @DrawableRes int getTargetIcon (boolean isMessage) {
+    return (textInputHasSelection || (textFormattingVisible && emojiShown)) ? R.drawable.baseline_format_text_24: EmojiLayout.getTargetIcon(isMessage);
   }
 }

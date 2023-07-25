@@ -36,7 +36,6 @@ import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
-import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.animation.Interpolator;
@@ -615,6 +614,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         bottomWrap.addView(emojiLayout);
         if (inputView != null) {
           textFormattingLayout = new TextFormattingLayout(context(), this, inputView);
+          textFormattingLayout.setDelegate(this::closeTextFormattingKeyboard);
           textFormattingLayout.setVisibility(View.GONE);
           emojiLayout.addView(textFormattingLayout, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         }
@@ -5082,6 +5082,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
                 isDown = false;
                 break;
             }
+            if (textFormattingLayout != null) {
+              textFormattingLayout.onInputViewTouchEvent(event);
+            }
             return res;
           }
 
@@ -8464,7 +8467,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   @Override
   public void onInputSelectionChanged (InputView v, int start, int end) {
     if (textFormattingLayout != null) {
-      textFormattingLayout.onInputSelectionChanged(start, end);
+      textFormattingLayout.onInputViewSelectionChanged(start, end);
     }
   }
 
@@ -8480,10 +8483,16 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     textFormattingVisible = visible;
     if (emojiLayout != null && textFormattingLayout != null) {
       textFormattingLayout.setVisibility(visible ? View.VISIBLE: View.GONE);
-      emojiLayout.setCircleViewVisibility(!visible);
+      emojiLayout.optimizeForDisplayTextFormattingLayout(!visible);
       if (visible) {
         textFormattingLayout.checkButtonsActive(false);
       }
+    }
+  }
+
+  private void closeTextFormattingKeyboard () {
+    if (textFormattingVisible && emojiShown) {
+      closeEmojiKeyboard();
     }
   }
 

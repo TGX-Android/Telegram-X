@@ -19,7 +19,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
-import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.view.Gravity;
@@ -1358,10 +1357,12 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     }
   }
 
-  public void setCircleViewVisibility (boolean isVisible) { // temporary solution
-    if (circleButton != null) {
-      circleButton.setVisibility(isVisible ? VISIBLE : GONE);
-    }
+  public void optimizeForDisplayTextFormattingLayout (boolean needOptimize) {
+    int visibility = needOptimize ? VISIBLE : GONE;
+    // if (headerView != null) headerView.setVisibility(visibility);
+    if (shadowView != null) shadowView.setVisibility(visibility);
+    if (pager != null) pager.setVisibility(visibility);
+    if (circleButton != null) circleButton.setVisibility(visibility);
   }
 
   public int getCurrentItem () {

@@ -1203,6 +1203,15 @@ public class ShareController extends TelegramViewController<ShareController.Args
         super.onLayout(changed, left, top, right, bottom);
         checkButtonsPosition();
       }
+
+      @Override
+      public boolean onTouchEvent (MotionEvent event) {
+        boolean r = super.onTouchEvent(event);
+        if (textFormattingLayout != null) {
+          textFormattingLayout.onInputViewTouchEvent(event);
+        }
+        return r;
+      }
     };
     inputView.setInputListener(new InputView.InputListener() {
       @Override
@@ -2687,6 +2696,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
         bottomWrap.addView(emojiLayout);
         if (inputView != null) {
           textFormattingLayout = new TextFormattingLayout(context(), this, inputView);
+          textFormattingLayout.setDelegate(this::closeTextFormattingKeyboard);
           textFormattingLayout.setVisibility(View.GONE);
           emojiLayout.addView(textFormattingLayout, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         }
@@ -3254,7 +3264,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
   @Override
   public void onInputSelectionChanged (InputView v, int start, int end) {
     if (textFormattingLayout != null) {
-      textFormattingLayout.onInputSelectionChanged(start, end);
+      textFormattingLayout.onInputViewSelectionChanged(start, end);
     }
   }
 
@@ -3270,10 +3280,16 @@ public class ShareController extends TelegramViewController<ShareController.Args
     textFormattingVisible = visible;
     if (emojiLayout != null && textFormattingLayout != null) {
       textFormattingLayout.setVisibility(visible ? View.VISIBLE: View.GONE);
-      emojiLayout.setCircleViewVisibility(!visible);
+      emojiLayout.optimizeForDisplayTextFormattingLayout(!visible);
       if (visible) {
         textFormattingLayout.checkButtonsActive(false);
       }
+    }
+  }
+
+  private void closeTextFormattingKeyboard () {
+    if (textFormattingVisible && emojiShown) {
+      closeEmojiKeyboard();
     }
   }
 

@@ -48,6 +48,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkmore.Tracer;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.component.chat.InputView;
 import org.thunderdog.challegram.core.DiffMatchPatch;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -927,4 +928,22 @@ public class Views {
       view.setPaintFlags(newFlags);
     }
   }
+
+  public static void showSelectionCursorsAndActionMode (InputView inputView) {
+    try {
+      TextSelection textSelection = inputView.getTextSelection();
+      final int start = textSelection != null ? textSelection.start: -1;
+      final int end = textSelection != null ? textSelection.end: -1;
+
+      inputView.performLongClick();
+      inputView.dispatchTouchEvent(MotionEvent.obtain(0, 0, MotionEvent.ACTION_UP, 0, 0, 0));
+      if (textSelection != null) {
+        inputView.setSelection(start, end);
+      }
+    } catch (Throwable t) {
+      Log.e("Cannot show cursors", t);
+    }
+  }
+
+
 }

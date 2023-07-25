@@ -7,8 +7,10 @@ import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.TextView;
@@ -31,6 +33,7 @@ import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.TranslationControllerV2;
 import org.thunderdog.challegram.unsorted.Settings;
@@ -41,6 +44,7 @@ import org.thunderdog.challegram.util.TranslationCounterDrawable;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
+import me.vkryl.android.util.ClickHelper;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
@@ -83,17 +87,39 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
   private final TextView clearButton;
   private final Button[] buttons;
   private final LangSelector langSelector;
+  private final CircleButton circleButton;
   private final Tdlib tdlib;
   private final InputView inputView;
   private final BoolAnimator clearButtonIsEnabled;
 
   private final TranslationsManager translationsManager;
   private final TranslationCounterDrawable translationCounterDrawable;
+  private final ClickHelper clickHelper = new ClickHelper(new ClickHelper.Delegate() {
+    @Override
+    public boolean needClickAt (View view, float x, float y) {
+      return true;
+    }
+
+    @Override
+    public void onClickAt (View view, float x, float y) {
+      closeTextFormattingKeyboardDelay(isSelectionEmpty());
+    }
+
+    @Override
+    public void onClickTouchDown (View view, float x, float y) {
+      closeTextFormattingKeyboardDelay(false);
+    }
+  });
 
   private TranslationControllerV2.Wrapper translationPopup;
   private TdApi.FormattedText originalTextToTranslate;
   private boolean ignoreSelectionChangesForTranslatedText;
   private String languageToTranslate;
+  private Delegate delegate;
+
+  public interface Delegate {
+    void onWantsCloseTextFormattingKeyboard ();
+  }
 
   public TextFormattingLayout (@NonNull Context context, ViewController<?> parent, InputView inputView) {
     super(context);
@@ -132,6 +158,13 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
     langSelector.setOnClickListener(this::onClickLanguageSelector);
     addView(langSelector);
 
+    circleButton = new CircleButton(getContext());
+    circleButton.setId(R.id.btn_circleBackspace);
+    circleButton.init(R.drawable.baseline_backspace_24, -Screen.dp(1.5f), 46f, 4f, ColorId.circleButtonOverlay, ColorId.circleButtonOverlayIcon);
+    circleButton.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(54), Screen.dp(54), Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 0, Screen.dp(12f)));
+    circleButton.setOnClickListener(this::onButtonClick);
+    addView(circleButton);
+
     translationsManager = new TranslationsManager(tdlib, this, this::setTranslatedStatus, this::setTranslationResult, this::setTranslationError);
     translationCounterDrawable = new TranslationCounterDrawable(Drawables.get(R.drawable.baseline_translate_24));
     translationCounterDrawable.setColors(ColorId.icon, ColorId.background ,ColorId.iconActive);
@@ -142,14 +175,25 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
     setLanguageToTranslate(Settings.instance().getDefaultLanguageForTranslateDraft());
   }
 
-  public void onInputSelectionChanged (int start, int end) {
+  public void onInputViewSelectionChanged (int start, int end) {
     if (!ignoreSelectionChangesForTranslatedText) {
       if (originalTextToTranslate != null) {
         originalTextToTranslate = null;
         translationsManager.stopTranslation();
       }
     }
+    if (start != end) {
+      closeTextFormattingKeyboardDelay(false);
+    }
     checkButtonsActive(true);
+  }
+
+  public void onInputViewTouchEvent (MotionEvent event) {
+    clickHelper.onTouchEvent(inputView, event);
+  }
+
+  public void setDelegate (Delegate delegate) {
+    this.delegate = delegate;
   }
 
   public void checkButtonsActive (boolean animated) {
@@ -215,7 +259,9 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
   private void onButtonClick (View v) {
     int id = v.getId();
 
-    if (id == R.id.btn_translate) {
+    if (id == R.id.btn_circleBackspace) {
+      inputView.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL));
+    } else if (id == R.id.btn_translate) {
       startTranslate();
     } else if (id == android.R.id.copy || id == android.R.id.cut || id == android.R.id.paste) {
       inputView.onTextContextMenuItem(id);
@@ -329,6 +375,27 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
     return checkSpans(inputView.getOutputText(false), selection.start, selection.end);
   }
 
+
+  private Runnable closeTextFormattingKeyboardRunnable;
+
+  private void closeTextFormattingKeyboardDelay (boolean needClose) {
+    if (closeTextFormattingKeyboardRunnable != null) {
+      UI.cancel(closeTextFormattingKeyboardRunnable);
+    }
+    if (needClose) {
+      UI.post(closeTextFormattingKeyboardRunnable = this::closeTextFormattingKeyboard, ViewConfiguration.getDoubleTapTimeout() + 50);
+    }
+  }
+
+  private void closeTextFormattingKeyboard () {
+    closeTextFormattingKeyboardRunnable = null;
+    if (delegate != null) {
+      delegate.onWantsCloseTextFormattingKeyboard();
+    }
+  }
+
+  /* * */
+
   private void setTranslatedStatus (int status, boolean animated) {
     translationCounterDrawable.setStatus(status, animated);
   }
@@ -340,6 +407,8 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
     } else if (originalTextToTranslate != null) {
       inputView.paste(originalTextToTranslate, true);
     }
+
+    Views.showSelectionCursorsAndActionMode(inputView);
     ignoreSelectionChangesForTranslatedText = false;
   }
 
