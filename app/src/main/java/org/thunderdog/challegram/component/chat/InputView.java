@@ -761,6 +761,17 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     }
   }
 
+  public void hideSelectionCursors () {
+    TextSelection selection = getTextSelection();
+    if (selection == null || selection.isEmpty()) return;
+    final int start = selection.start;
+    final int end = selection.end;
+
+    clearFocus();
+    requestFocus();
+    setSelection(start, end);
+  }
+
   public boolean canFormatText () {
     TextSelection selection = getTextSelection();
     return selection != null && !selection.isEmpty() && selection.end <= getText().length();

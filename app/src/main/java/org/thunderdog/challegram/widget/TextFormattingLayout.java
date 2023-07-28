@@ -102,6 +102,10 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
 
     @Override
     public void onClickAt (View view, float x, float y) {
+      if (inputView.isEmpty()) {
+        closeTextFormattingKeyboard();
+        return;
+      }
       closeTextFormattingKeyboardDelay(isSelectionEmpty());
     }
 
@@ -303,6 +307,8 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
     languagePopupLayout.show();
     languagePopupLayout.languageRecyclerWrap.setPivotX(Screen.dp(TranslationControllerV2.LanguageSelectorPopup.WIDTH + TranslationControllerV2.LanguageSelectorPopup.PADDING));
     languagePopupLayout.languageRecyclerWrap.setPivotY(Screen.dp(TranslationControllerV2.LanguageSelectorPopup.HEIGHT + TranslationControllerV2.LanguageSelectorPopup.PADDING));
+
+    inputView.hideSelectionCursors();
   }
 
   private void checkLanguage (RunnableData<String> callback) {
@@ -408,7 +414,7 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
       inputView.paste(originalTextToTranslate, true);
     }
 
-    Views.showSelectionCursorsAndActionMode(inputView);
+    // bugs: Views.showSelectionCursorsAndActionMode(inputView);
     ignoreSelectionChangesForTranslatedText = false;
   }
 

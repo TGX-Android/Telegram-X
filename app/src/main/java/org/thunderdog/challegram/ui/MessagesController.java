@@ -382,6 +382,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (canSelectSender()) {
       items.add(0, createHapticSenderItem(R.id.btn_openSendersMenu, chat.messageSenderId, false, false));
     }
+    hideCursorsForInputView();
     return items;
   }
 
@@ -2038,6 +2039,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
               ShareController c = new ShareController(context(), tdlib());
               c.setArguments(new ShareController.Args(url.url));
               c.show();
+              hideCursorsForInputView();
             }
           });
         }
@@ -4391,6 +4393,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private void showMessageOptions (Options options, TGMessage message, @Nullable TdApi.ReactionType reactionType, OptionDelegate optionsDelegate) {
     MessageOptionsPagerController r = new MessageOptionsPagerController(context, tdlib, options, message, reactionType, optionsDelegate);
     r.show();
+    hideCursorsForInputView();
   }
 
   private void patchReadReceiptsOptions (PopupLayout layout, MessageContext messageContext) {
@@ -6493,6 +6496,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     final ShareController c = new ShareController(context, tdlib);
     c.setArguments(new ShareController.Args(messages).setAfter(() -> finishSelectMode(-1)));
     c.show();
+    hideCursorsForInputView();
   }
 
   // Markup utils
@@ -10993,6 +10997,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       c.setArguments(new SetSenderController.Args(chat, chatAvailableSenders, chat.messageSenderId));
       c.setDelegate(this::setNewMessageSender);
       c.show();
+      hideCursorsForInputView();
     });
   }
 
@@ -11018,6 +11023,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         items.add(0, new HapticMenuHelper.MenuItem(R.id.btn_openSendersMenu, Lang.getString(R.string.MoreMessageSenders), R.drawable.baseline_more_horiz_24));
       }
 
+      hideCursorsForInputView();
       return items;
     }
 
@@ -11384,6 +11390,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       translationPopup.setTextColorSet(message.getTextColorSet());
       translationPopup.show();
       translationPopup.setDismissListener(popup -> translationPopup = null);
+      hideCursorsForInputView();
     }
   }
 
@@ -11430,5 +11437,16 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   public @DrawableRes int getTargetIcon (boolean isMessage) {
     return (textInputHasSelection || (textFormattingVisible && emojiShown)) ? R.drawable.baseline_format_text_24: EmojiLayout.getTargetIcon(isMessage);
+  }
+
+  @Override
+  protected void onCreatePopupLayout (PopupLayout popupLayout) {
+    hideCursorsForInputView();
+  }
+
+  public void hideCursorsForInputView () {
+    if (inputView != null) {
+      inputView.hideSelectionCursors();
+    }
   }
 }
