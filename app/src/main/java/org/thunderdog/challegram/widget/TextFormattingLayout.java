@@ -25,7 +25,6 @@ import org.thunderdog.challegram.charts.LayoutHelper;
 import org.thunderdog.challegram.component.chat.InputView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TranslationsManager;
-import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
@@ -37,7 +36,6 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.TranslationControllerV2;
 import org.thunderdog.challegram.unsorted.Settings;
-import org.thunderdog.challegram.util.LanguageDetector;
 import org.thunderdog.challegram.util.TextSelection;
 import org.thunderdog.challegram.util.TranslationCounterDrawable;
 
@@ -50,7 +48,6 @@ import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
-import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.td.Td;
 
 @SuppressLint("ViewConstructor")
@@ -81,14 +78,11 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
     R.drawable.baseline_translate_24
   };
 
-  private final ViewController<?> parent;
   private final TextView editHeader;
   private final TextView translateHeader;
   private final TextView clearButton;
   private final Button[] buttons;
   private final LangSelector langSelector;
-  private final CircleButton circleButton;
-  private final Tdlib tdlib;
   private final InputView inputView;
   private final BoolAnimator clearButtonIsEnabled;
 
@@ -115,7 +109,6 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
     }
   });
 
-  private TranslationControllerV2.Wrapper translationPopup;
   private TdApi.FormattedText originalTextToTranslate;
   private boolean ignoreSelectionChangesForTranslatedText;
   private String languageToTranslate;
@@ -125,12 +118,10 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
     void onWantsCloseTextFormattingKeyboard ();
   }
 
-  public TextFormattingLayout (@NonNull Context context, ViewController<?> parent, InputView inputView) {
+  public TextFormattingLayout (@NonNull Context context, Tdlib tdlib, InputView inputView) {
     super(context);
 
     this.inputView = inputView;
-    this.tdlib = parent.tdlib();
-    this.parent = parent;
 
     setBackgroundColor(Theme.backgroundColor());
     setPadding(Screen.dp(15), 0, Screen.dp(15), 0);
@@ -162,7 +153,7 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
     langSelector.setOnClickListener(this::onClickLanguageSelector);
     addView(langSelector);
 
-    circleButton = new CircleButton(getContext());
+    CircleButton circleButton = new CircleButton(getContext());
     circleButton.setId(R.id.btn_circleBackspace);
     circleButton.init(R.drawable.baseline_backspace_24, -Screen.dp(1.5f), 46f, 4f, ColorId.circleButtonOverlay, ColorId.circleButtonOverlayIcon);
     circleButton.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(54), Screen.dp(54), Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 0, Screen.dp(12f)));
@@ -311,18 +302,6 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
     inputView.hideSelectionCursors();
   }
 
-  private void checkLanguage (RunnableData<String> callback) {
-    TextSelection selection = inputView.getTextSelection();
-    String text = inputView.getOutputText(false).text;
-    if (text == null || selection == null || selection.isEmpty()) {
-      callback.runWithData(null);
-      return;
-    }
-
-    String textToDetect = text.substring(selection.start, selection.end);
-    LanguageDetector.detectLanguage(getContext(), textToDetect, callback);
-  }
-
   private void startTranslate () {
     TextSelection selection = inputView.getTextSelection();
     if (selection == null || selection.isEmpty()) return;
@@ -336,35 +315,6 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
     } else {
       translationsManager.stopTranslation();
     }
-
-    /*
-    checkLanguage(language -> {
-      if (translationPopup != null) return;
-
-      translationPopup = new TranslationControllerV2.Wrapper(getContext(), tdlib, parent);
-      translationPopup.setArguments(new TranslationControllerV2.Args(new TranslationsManager.Translatable() {
-        @Nullable
-        @Override
-        public String getOriginalMessageLanguage () {
-          return language;
-        }
-
-        @Override
-        public TdApi.FormattedText getTextToTranslate () {
-          return text;
-        }
-      }));
-      translationPopup.setTextColorSet(TextColorSets.Regular.NORMAL);
-      translationPopup.setTranslationApplyCallback(r -> {
-        if (r == null) return;
-        inputView.paste(r, true);
-        checkButtonsActive(true);
-      });
-      translationPopup.setDefaultLanguageToTranslate(languageToTranslate);
-      translationPopup.show();
-      translationPopup.setDismissListener(popup -> translationPopup = null);
-    });
-    */
   }
 
   private boolean isSelectionEmpty () {
@@ -414,7 +364,6 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
       inputView.paste(originalTextToTranslate, true);
     }
 
-    // bugs: Views.showSelectionCursorsAndActionMode(inputView);
     ignoreSelectionChangesForTranslatedText = false;
   }
 

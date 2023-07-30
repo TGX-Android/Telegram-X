@@ -613,7 +613,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         emojiLayout.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
         bottomWrap.addView(emojiLayout);
         if (inputView != null) {
-          textFormattingLayout = new TextFormattingLayout(context(), this, inputView);
+          textFormattingLayout = new TextFormattingLayout(context(), tdlib, inputView);
           textFormattingLayout.setDelegate(this::closeTextFormattingKeyboard);
           textFormattingLayout.setVisibility(View.GONE);
           emojiLayout.addView(textFormattingLayout, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
