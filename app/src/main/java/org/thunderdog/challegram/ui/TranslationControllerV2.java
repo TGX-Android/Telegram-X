@@ -38,6 +38,7 @@ import org.thunderdog.challegram.navigation.MenuMoreWrap;
 import org.thunderdog.challegram.navigation.ToggleHeaderView2;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
+import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ColorState;
@@ -119,6 +120,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     headerCell.setSubtitle(Lang.getString(R.string.TranslateOriginal), false);
     headerCell.setOnClickListener(v -> showTranslateOptions());
     headerCell.setTranslationY(Screen.dp(7.5f));
+    addThemeInvalidateListener(headerCell);
 
     headerView.initWithSingleController(this, false);
     headerView.getFilling().setShadowAlpha(0f);
@@ -249,6 +251,19 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
       wrapView.setPadding(0, 0, 0, Screen.needsKeyboardPadding(context()) ? Screen.getNavigationBarFrameDifference() : 0);
     }
     return wrapView;
+  }
+
+  @Override
+  public boolean needsTempUpdates () {
+    return true;
+  }
+
+  @Override
+  public void onThemeColorsChanged (boolean areTemp, ColorState state) {
+    super.onThemeColorsChanged(areTemp, state);
+    if (headerView != null) {
+      headerView.resetColors(this, null);
+    }
   }
 
   @Override
