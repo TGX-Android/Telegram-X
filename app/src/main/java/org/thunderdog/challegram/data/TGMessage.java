@@ -8558,7 +8558,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       }
     }
 
-    TranslationControllerV2.LanguageSelectorPopup languagePopupLayout = new TranslationControllerV2.LanguageSelectorPopup(v.getContext(), this::onLanguageChanged, mTranslationsManager.getCurrentTranslatedLanguage(), getOriginalMessageLanguage());
+    TranslationControllerV2.LanguageSelectorPopup languagePopupLayout = new TranslationControllerV2.LanguageSelectorPopup(v.getContext(), null, this::onLanguageChanged, mTranslationsManager.getCurrentTranslatedLanguage(), getOriginalMessageLanguage());
     // languagePopupLayout.languageRecyclerWrap.setAnchorMode(MenuMoreWrap.ANCHOR_MODE_RIGHT);
     languagePopupLayout.languageRecyclerWrap.setTranslationX(x);
     languagePopupLayout.languageRecyclerWrap.setTranslationY(y);

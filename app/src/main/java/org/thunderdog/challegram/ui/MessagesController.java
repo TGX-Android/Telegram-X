@@ -8131,7 +8131,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         emojiLayout.initWithMediasEnabled(this, true, this, this, false);
         bottomWrap.addView(emojiLayout);
         if (inputView != null) {
-          textFormattingLayout = new TextFormattingLayout(context(), tdlib, inputView);
+          textFormattingLayout = new TextFormattingLayout(context(), this, inputView);
           textFormattingLayout.setDelegate(this::closeTextFormattingKeyboard);
           textFormattingLayout.setVisibility(View.GONE);
           emojiLayout.addView(textFormattingLayout, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));

@@ -25,7 +25,9 @@ import org.thunderdog.challegram.charts.LayoutHelper;
 import org.thunderdog.challegram.component.chat.InputView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TranslationsManager;
-import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.support.RippleSupport;
+import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
@@ -78,6 +80,7 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
     R.drawable.baseline_translate_24
   };
 
+  private final @NonNull ViewController<?> parent;
   private final TextView editHeader;
   private final TextView translateHeader;
   private final TextView clearButton;
@@ -118,19 +121,19 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
     void onWantsCloseTextFormattingKeyboard ();
   }
 
-  public TextFormattingLayout (@NonNull Context context, Tdlib tdlib, InputView inputView) {
+  public TextFormattingLayout (@NonNull Context context, @NonNull ViewController<?> parent, InputView inputView) {
     super(context);
-
+    this.parent = parent;
     this.inputView = inputView;
 
-    setBackgroundColor(Theme.backgroundColor());
+    ViewSupport.setThemedBackground(this, ColorId.background, parent);
     setPadding(Screen.dp(15), 0, Screen.dp(15), 0);
 
-    addView(createHeader(context, Lang.getString(R.string.TextFormatting)));
-    addView(editHeader = createHeader(context, Lang.getString(R.string.TextFormattingTools)));
-    addView(translateHeader = createHeader(context, Lang.getString(R.string.TextFormattingTranslate)));
+    addView(createHeader(context, parent, Lang.getString(R.string.TextFormatting)));
+    addView(editHeader = createHeader(context, parent, Lang.getString(R.string.TextFormattingTools)));
+    addView(translateHeader = createHeader(context, parent, Lang.getString(R.string.TextFormattingTranslate)));
 
-    clearButton = createHeader(context, Lang.getString(R.string.Clear));
+    clearButton = createHeader(context, parent, Lang.getString(R.string.Clear));
     clearButton.setOnClickListener(this::onButtonClick);
     clearButton.setTypeface(Fonts.getRobotoRegular());
     clearButton.setId(R.id.btn_plain);
@@ -144,12 +147,12 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
       Button button = new Button(context);
       button.setId(buttonIds[a]);
       button.setDrawable(buttonIcons[a]);
-      button.setBackground(a < 7);
+      button.setBackground(a < 7, parent);
       button.setOnClickListener(this::onButtonClick);
       addView(buttons[a] = button);
     }
 
-    langSelector = new LangSelector(context);
+    langSelector = new LangSelector(context, parent);
     langSelector.setOnClickListener(this::onClickLanguageSelector);
     addView(langSelector);
 
@@ -158,9 +161,10 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
     circleButton.init(R.drawable.baseline_backspace_24, -Screen.dp(1.5f), 46f, 4f, ColorId.circleButtonOverlay, ColorId.circleButtonOverlayIcon);
     circleButton.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(54), Screen.dp(54), Gravity.RIGHT | Gravity.BOTTOM, 0, 0, 0, Screen.dp(12f)));
     circleButton.setOnClickListener(this::onButtonClick);
+    parent.addThemeInvalidateListener(circleButton);
     addView(circleButton);
 
-    translationsManager = new TranslationsManager(tdlib, this, this::setTranslatedStatus, this::setTranslationResult, this::setTranslationError);
+    translationsManager = new TranslationsManager(parent.tdlib(), this, this::setTranslatedStatus, this::setTranslationResult, this::setTranslationError);
     translationCounterDrawable = new TranslationCounterDrawable(Drawables.get(R.drawable.baseline_translate_24));
     translationCounterDrawable.setColors(ColorId.icon, ColorId.background ,ColorId.iconActive);
     translationCounterDrawable.setInvalidateCallback(() -> buttons[10].invalidate());
@@ -288,7 +292,7 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
     int x = langSelector.getMeasuredWidth() + cords[0] - Screen.dp(TranslationControllerV2.LanguageSelectorPopup.WIDTH + TranslationControllerV2.LanguageSelectorPopup.PADDING * 2);
     int y = langSelector.getMeasuredHeight() +  cords[1] - Screen.dp(TranslationControllerV2.LanguageSelectorPopup.HEIGHT + TranslationControllerV2.LanguageSelectorPopup.PADDING * 2);
 
-    TranslationControllerV2.LanguageSelectorPopup languagePopupLayout = new TranslationControllerV2.LanguageSelectorPopup(v.getContext(), this::setLanguageToTranslate, languageToTranslate, null);
+    TranslationControllerV2.LanguageSelectorPopup languagePopupLayout = new TranslationControllerV2.LanguageSelectorPopup(v.getContext(), parent, this::setLanguageToTranslate, languageToTranslate, null);
 
     FrameLayoutFix.LayoutParams params = (FrameLayoutFix.LayoutParams) languagePopupLayout.languageRecyclerWrap.getLayoutParams();
     params.gravity = Gravity.TOP | Gravity.LEFT;
@@ -463,7 +467,7 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
     return null;
   }
 
-  private static TextView createHeader (Context context, String text) {
+  private static TextView createHeader (Context context, ViewController<?> parent, String text) {
     TextView textView = new NoScrollTextView(context);
     textView.setPadding(Screen.dp(6), Screen.dp(20), Screen.dp(6), Screen.dp(8));
     textView.setSingleLine(true);
@@ -473,6 +477,7 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
     textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
     textView.setLayoutParams(FrameLayoutFix.newParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
     textView.setText(text);
+    parent.addThemeTextColorListener(textView, ColorId.background_text);
     return textView;
   }
 
@@ -492,11 +497,11 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
       Views.setClickable(this);
     }
 
-    public void setBackground (boolean isToggle) {
+    public void setBackground (boolean isToggle, ViewController<?> themeProvider) {
       if (isToggle) {
-        setBackground(Theme.createSimpleSelectorRoundRectDrawable(Screen.dp(6), Theme.getColor(ColorId.filling), Theme.getColor(ColorId.fillingPressed)));
+        RippleSupport.setSimpleWhiteBackground(this, ColorId.filling, 6f, themeProvider);
       } else {
-        setBackground(Theme.createSimpleSelectorRoundRectDrawable(Screen.dp(6), Theme.getColor(ColorId.background), Theme.getColor(ColorId.iv_textReferenceBackgroundPressed)));
+        RippleSupport.setTransparentSelector(this, 6f, themeProvider);
       }
     }
 
@@ -547,7 +552,7 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
     private final Drawable arrowDrawable;
     private final TextView textView;
 
-    public LangSelector (Context context) {
+    public LangSelector (Context context, ViewController<?> parent) {
       super(context);
 
       arrowDrawable = Drawables.get(R.drawable.baseline_keyboard_arrow_down_20);
@@ -560,10 +565,11 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
       textView.setEllipsize(TextUtils.TruncateAt.END);
       textView.setTypeface(Fonts.getRobotoRegular());
       textView.setSingleLine(true);
+      parent.addThemeTextColorListener(textView, ColorId.text);
       addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
       Views.setClickable(this);
-      setBackground(true);
+      setBackground(true, parent);
     }
 
     public void setText (String text) {

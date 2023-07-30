@@ -545,6 +545,22 @@ public class Theme {
     }
   }
 
+  public static Drawable fillingSelector (@ColorId int backgroundColorId, float radius) {
+    if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP) {
+      return fillingRippleSelector(backgroundColorId, radius);
+    } else {
+      return fillingSimpleSelector(backgroundColorId, radius);
+    }
+  }
+
+  @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+  private static Drawable fillingRippleSelector (@ColorId int backgroundColorId, float radius) {
+    return new android.graphics.drawable.RippleDrawable(
+      new ColorStateList(new int[][] {StateSet.WILD_CARD}, new int[] {RIPPLE_COLOR}),
+      new FillingDrawable(backgroundColorId, radius), createRoundRectDrawable(0xFFFFFFFF, radius)
+    );
+  }
+
   @TargetApi(Build.VERSION_CODES.LOLLIPOP)
   private static Drawable fillingRippleSelector (@ColorId int backgroundColorId) {
     return new android.graphics.drawable.RippleDrawable(
@@ -703,7 +719,11 @@ public class Theme {
   public static final int HALF_RIPPLE_COLOR = 0x28a0a0a0;
 
   private static Drawable fillingSimpleSelector (@ColorId int backgroundColorId) {
-    return Drawables.getColorSelector(new FillingDrawable(backgroundColorId), new FillingDrawable(ColorId.fillingPressed));
+    return fillingSimpleSelector(backgroundColorId, 0);
+  }
+
+  private static Drawable fillingSimpleSelector (@ColorId int backgroundColorId, float radius) {
+    return Drawables.getColorSelector(new FillingDrawable(backgroundColorId, radius), new FillingDrawable(ColorId.fillingPressed, radius));
   }
 
   // Transparent drawable
@@ -728,6 +748,18 @@ public class Theme {
     return transparentSelector(0x40a0a0a0);
   }
 
+  public static Drawable transparentRoundSelector (float radius) {
+    return transparentSelector(RIPPLE_COLOR, radius);
+  }
+
+  private static Drawable transparentSelector (final int color, final float radius) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+      return transparentRippleSelector(color, radius);
+    } else {
+      return transparentSimpleSelector(color, radius);
+    }
+  }
+
   private static Drawable transparentSelector (final int color) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
       return transparentRippleSelector(color);
@@ -745,8 +777,21 @@ public class Theme {
     );
   }
 
+  @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+  private static Drawable transparentRippleSelector (final int color, final float radius) {
+    return new android.graphics.drawable.RippleDrawable(
+      new ColorStateList(new int[][] {StateSet.WILD_CARD}, new int[] {color}),
+      null,
+      createRoundRectDrawable(color, radius)
+    );
+  }
+
   private static Drawable transparentSimpleSelector (final int color) {
     return Drawables.getColorSelector(null, new ColorDrawable(color));
+  }
+
+  private static Drawable transparentSimpleSelector (final int color, final float radius) {
+    return Drawables.getColorSelector(null, createRoundRectDrawable(color, radius));
   }
 
   // Custom selector
@@ -907,6 +952,13 @@ public class Theme {
 
   public static float getBubbleUnreadShadow () {
     return Theme.getProperty(PropertyId.BUBBLE_UNREAD_SHADOW);
+  }
+
+  private static Drawable createRoundRectDrawable (int color, float radius) {
+    final int rad = Screen.dp(radius);
+    ShapeDrawable defaultDrawable = new ShapeDrawable(new RoundRectShape(new float[]{rad, rad, rad, rad, rad, rad, rad, rad}, null, null));
+    defaultDrawable.getPaint().setColor(color);
+    return defaultDrawable;
   }
 
   // TODO REMOVE
