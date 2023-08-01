@@ -412,11 +412,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
   public void removeSpan (TdApi.TextEntityType type) {
     TextSelection selection = getTextSelection();
-    if (selection == null || selection.isEmpty()) {
-      return;
+    if (selection != null && !selection.isEmpty()) {
+      clearSpans(selection.start, selection.end, type);
     }
-
-    clearSpans(selection.start, selection.end, type);
   }
 
   public boolean canClearTextFormat () {
