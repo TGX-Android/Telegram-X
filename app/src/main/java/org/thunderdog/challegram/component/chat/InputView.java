@@ -229,9 +229,12 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
         @Override
         public boolean onPrepareActionMode (ActionMode actionMode, Menu menu) {
-          int N = menu.size();
-          for (int a = 0; a < N; a++) {
-            menu.getItem(a).setVisible(actionModeVisibility);
+          final int menuSize = menu.size();
+          for (int i = 0; i < menuSize; i++) {
+            MenuItem item = menu.getItem(i);
+            if (item != null) {
+              item.setVisible(actionModeVisibility);
+            }
           }
           return true;
         }
