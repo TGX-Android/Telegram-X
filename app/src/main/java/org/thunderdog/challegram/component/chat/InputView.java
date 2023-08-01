@@ -459,7 +459,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
               }
             }
           }
-          if (needContinue) continue;
+          if (needContinue) {
+            continue;
+          }
         }
 
         int existingSpanStart = editable.getSpanStart(existingSpan);
