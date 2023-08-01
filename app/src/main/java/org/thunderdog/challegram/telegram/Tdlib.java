@@ -8556,10 +8556,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           case "favorite_stickers_limit":
             this.favoriteStickersMaxCount = (int) longValue;
             break;
-          case "chat_filter_count_max":
+          case "chat_folder_count_max":
             this.chatFolderCountMax = longValue;
             break;
-          case "chat_filter_chosen_chat_count_max":
+          case "chat_folder_chosen_chat_count_max":
             this.chatFolderChosenChatCountMax = longValue;
             break;
         }
