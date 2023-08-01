@@ -472,6 +472,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private int disableTopChats = -1;
   private boolean disableSentScheduledMessageNotifications;
   private long antiSpamBotUserId;
+  private long channelBotUserId = TdConstants.TELEGRAM_CHANNEL_BOT_ACCOUNT_ID;
+  private long groupAnonymousBotUserId;
+  private long repliesBotUserId = TdConstants.TELEGRAM_REPLIES_BOT_ACCOUNT_ID;
+  private long repliesBotChatId = ChatId.fromUserId(TdConstants.TELEGRAM_REPLIES_BOT_ACCOUNT_ID);
+  private long telegramServiceNotificationsChatId = TdConstants.TELEGRAM_ACCOUNT_ID;
   private String animationSearchBotUsername = "gif";
   private String venueSearchBotUsername = "foursquare";
   private String photoSearchBotUsername = "pic";
@@ -489,9 +494,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   private long callConnectTimeoutMs = 30000;
   private long callPacketTimeoutMs = 10000;
-
-  private long repliesBotChatId = TdConstants.TELEGRAM_REPLIES_BOT_ACCOUNT_ID;
-  private long telegramServiceNotificationsChatId = TdConstants.TELEGRAM_ACCOUNT_ID;
 
   private final Map<String, TdlibCounter> counters = new HashMap<>();
   private final TdlibBadgeCounter tempCounter = new TdlibBadgeCounter();
@@ -3173,7 +3175,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   public void withChannelBotUserId (RunnableLong runnable) {
     client().send(new TdApi.SearchPublicChat("Channel_Bot"), result -> ui().post(() -> {
       long userId = result.getConstructor() == TdApi.Chat.CONSTRUCTOR ? chatUserId((TdApi.Chat) result) : 0;
-      runnable.runWithLong(userId != 0 ? userId : TdConstants.TELEGRAM_CHANNEL_BOT_ACCOUNT_ID);
+      runnable.runWithLong(userId != 0 ? userId : telegramChannelBotUserId());
     }));
   }
 
@@ -3720,7 +3722,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public boolean isRepliesChat (long chatId) {
-    return (repliesBotChatId != 0 && repliesBotChatId == chatId) || (chatId == ChatId.fromUserId(TdConstants.TELEGRAM_REPLIES_BOT_ACCOUNT_ID));
+    return (repliesBotChatId != 0 && repliesBotChatId == chatId) || (chatId == ChatId.fromUserId(repliesBotUserId));
   }
 
   public boolean isServiceNotificationsChat (long chatId) {
@@ -6613,6 +6615,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return antiSpamBotUserId;
   }
 
+  public long telegramChannelBotUserId () {
+    return channelBotUserId;
+  }
+
   public @ConnectionState int connectionState () {
     return connectionState;
   }
@@ -8452,11 +8458,20 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           case "message_text_length_max":
             this.maxMessageTextLength = (int) longValue;
             break;
+          case "message_caption_length_max":
+            this.maxMessageCaptionLength = (int) longValue;
+            break;
           case "anti_spam_bot_user_id":
             this.antiSpamBotUserId = longValue;
             break;
-          case "message_caption_length_max":
-            this.maxMessageCaptionLength = (int) longValue;
+          case "channel_bot_user_id":
+            this.channelBotUserId = longValue;
+            break;
+          case "group_anonymous_bot_user_id":
+            this.groupAnonymousBotUserId = longValue;
+            break;
+          case "replies_bot_user_id":
+            this.repliesBotUserId = longValue;
             break;
           case "replies_bot_chat_id":
             this.repliesBotChatId = longValue;

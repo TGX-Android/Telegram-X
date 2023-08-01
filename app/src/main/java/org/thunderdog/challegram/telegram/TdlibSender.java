@@ -24,7 +24,6 @@ import org.thunderdog.challegram.util.text.Letters;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.Td;
-import me.vkryl.td.TdConstants;
 
 public class TdlibSender {
   private static final int FLAG_BOT = 1;
@@ -190,7 +189,7 @@ public class TdlibSender {
   // flags
 
   public boolean isServiceChannelBot () {
-    return getUserId() == TdConstants.TELEGRAM_CHANNEL_BOT_ACCOUNT_ID;
+    return getUserId() == tdlib.telegramChannelBotUserId();
   }
 
   public boolean isBot () {
