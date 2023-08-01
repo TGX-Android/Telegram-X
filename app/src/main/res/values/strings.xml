@@ -894,7 +894,6 @@
   <string name="Other">Other</string>
   <string name="AutoplayGifs">Autoplay GIFs</string>
   <string name="QuickTranslate">Quick translate</string>
-  <string name="TranslateDraft">Translate draft</string>
   <string name="RestrictOnWiFi">Restrict on Wi-Fi</string>
   <string name="RestrictOverMobile">Restrict on mobile data</string>
   <string name="RestrictOnRoaming">Restrict on roaming</string>
