@@ -45,6 +45,11 @@ public class FillingDrawable extends Drawable {
     this.colorId = colorId;
   }
 
+  public FillingDrawable (int colorId, float radius) {
+    this.colorId = colorId;
+    this.cornerRadius = radius;
+  }
+
   public final void setForcedTheme (ThemeDelegate forcedTheme) {
     if (this.forcedTheme != forcedTheme) {
       this.forcedTheme = forcedTheme;

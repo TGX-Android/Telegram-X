@@ -575,6 +575,8 @@
   <item type="id" name="btn_proxyQr" />
   <item type="id" name="btn_showAdvanced" />
   <item type="id" name="btn_autoplayGIFs" />
+  <item type="id" name="btn_quickTranslate" />
+  <item type="id" name="btn_translate" />
   <item type="id" name="btn_toggleCollapseRecentStickers" />
   <item type="id" name="btn_stickerSuggestions" />
   <item type="id" name="btn_stickerSuggestionsAll" />
@@ -678,6 +680,7 @@
   <item type="id" name="btn_cacheSettings" />
   <item type="id" name="btn_deleteMember" />
   <item type="id" name="btn_circle" />
+  <item type="id" name="btn_circleBackspace" />
   <item type="id" name="btn_shareMyContact" />
   <item type="id" name="btn_showPinnedMessage" />
   <item type="id" name="btn_botHelp" />

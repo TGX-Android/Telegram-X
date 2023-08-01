@@ -893,6 +893,7 @@
   <string name="NoMusic">No Music</string>
   <string name="Other">Other</string>
   <string name="AutoplayGifs">Autoplay GIFs</string>
+  <string name="QuickTranslate">Quick translate</string>
   <string name="RestrictOnWiFi">Restrict on Wi-Fi</string>
   <string name="RestrictOverMobile">Restrict on mobile data</string>
   <string name="RestrictOnRoaming">Restrict on roaming</string>
@@ -4641,6 +4642,7 @@
 
   <string name="TranslateLangUnknown">Unknown</string>
   <string name="Translate">Translate</string>
+  <string name="TranslationPaste">Paste translation</string>
   <string name="TranslateOff">Disable translation</string>
   <string name="Translation">Translation</string>
   <string name="TranslationCopy">Copy translation</string>
@@ -4679,4 +4681,8 @@
   <string name="SetTomorrowAt">Set until tomorrow at %1$s</string>
   <string name="SetDateAt">Set until %1$s at %2$s</string>
 
+
+  <string name="TextFormatting">Text formatting</string>
+  <string name="TextFormattingTools">Tools</string>
+  <string name="TextFormattingTranslate">Translate</string>
 </resources>
