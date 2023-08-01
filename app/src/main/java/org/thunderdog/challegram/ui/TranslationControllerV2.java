@@ -38,6 +38,7 @@ import org.thunderdog.challegram.navigation.MenuMoreWrap;
 import org.thunderdog.challegram.navigation.ToggleHeaderView2;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
+import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ColorState;
@@ -71,14 +72,10 @@ import me.vkryl.android.animator.ReplaceAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
+import me.vkryl.core.lambda.RunnableData;
 
 public class TranslationControllerV2 extends BottomSheetViewController.BottomSheetBaseRecyclerViewController<TranslationControllerV2.Args>
  implements BottomSheetViewController.BottomSheetBaseControllerPage, Menu {
-
-  public interface TextClickable {
-    TextColorSet getTextColorSet ();
-    Text.ClickCallback clickCallback ();
-  }
 
   private final TranslationCounterDrawable translationCounterDrawable;
   private final ReplaceAnimator<TextWrapper> text;
@@ -88,6 +85,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
   private TranslationsManager mTranslationsManager;
   private TranslationsManager.Translatable messageToTranslate;
   private TdApi.FormattedText originalText;
+  private TdApi.FormattedText currentText;
   private String messageOriginalLanguage;
 
   private FrameLayoutFix wrapView;
@@ -97,6 +95,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
   private HeaderButton translationHeaderButton;
   private @Nullable View senderAvatarView;
   private @Nullable LinearLayout linearLayout;
+  private @Nullable android.widget.TextView applyTranslationButton;
   private @Nullable AvatarReceiver avatarReceiver;
   private @Nullable SenderTextView senderTextView;
   private @Nullable TextView dateTextView;
@@ -121,6 +120,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     headerCell.setSubtitle(Lang.getString(R.string.TranslateOriginal), false);
     headerCell.setOnClickListener(v -> showTranslateOptions());
     headerCell.setTranslationY(Screen.dp(7.5f));
+    addThemeInvalidateListener(headerCell);
 
     headerView.initWithSingleController(this, false);
     headerView.getFilling().setShadowAlpha(0f);
@@ -195,6 +195,23 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
 
     }
 
+    if (parent.translationApplyCallback != null) {
+      applyTranslationButton = new android.widget.TextView(context);
+      Views.setClickable(applyTranslationButton);
+      RippleSupport.setSimpleWhiteBackground(applyTranslationButton);
+      applyTranslationButton.setGravity(Gravity.CENTER);
+      applyTranslationButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16f);
+      applyTranslationButton.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(56f)));
+      applyTranslationButton.setTextColor(Theme.getColor(ColorId.textNeutral));
+      applyTranslationButton.setText(Lang.getString(R.string.TranslationPaste).toUpperCase());
+      applyTranslationButton.setTypeface(Fonts.getRobotoMedium());
+      applyTranslationButton.setOnClickListener(v -> {
+        parent.translationApplyCallback.runWithData(currentText);
+        parent.hidePopupWindow(true);
+      });
+      wrapView.addView(applyTranslationButton, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(56), Gravity.BOTTOM));
+    }
+
     messageTextView = new MessageTextView(context);
     textMediaReceiver = new ComplexReceiver(messageTextView);
 
@@ -222,13 +239,31 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     });
 
     FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) recyclerView.getLayoutParams();
-    if (message != null) {
+    if (parent.translationApplyCallback != null) {
+      layoutParams.bottomMargin = Screen.dp(56 + 8 - 6);
+    } else if (message != null) {
       layoutParams.bottomMargin = Screen.dp(48 - 6);
     }
 
-    text.replace(makeTextWrapper(originalText), false);
-    mTranslationsManager.requestTranslation(Lang.getDefaultLanguageToTranslateV2(messageOriginalLanguage));
+    text.replace(makeTextWrapper(currentText = originalText), false);
+    mTranslationsManager.requestTranslation(StringUtils.isEmpty(parent.defaultLanguageToTranslate) ? Lang.getDefaultLanguageToTranslateV2(messageOriginalLanguage): parent.defaultLanguageToTranslate);
+    if (parent.translationApplyCallback != null) { // todo remove cond ???
+      wrapView.setPadding(0, 0, 0, Screen.needsKeyboardPadding(context()) ? Screen.getNavigationBarFrameDifference() : 0);
+    }
     return wrapView;
+  }
+
+  @Override
+  public boolean needsTempUpdates () {
+    return true;
+  }
+
+  @Override
+  public void onThemeColorsChanged (boolean areTemp, ColorState state) {
+    super.onThemeColorsChanged(areTemp, state);
+    if (headerView != null) {
+      headerView.resetColors(this, null);
+    }
   }
 
   @Override
@@ -243,6 +278,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
 
     if (senderAvatarView != null) senderAvatarView.setTranslationY(translation);
     if (linearLayout != null) linearLayout.setTranslationY(translation);
+    if (applyTranslationButton != null) applyTranslationButton.setTranslationY(translation);
   }
 
   private void showTranslateOptions () {
@@ -255,7 +291,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     }
 
 
-    LanguageSelectorPopup languagePopupLayout = new LanguageSelectorPopup(context, mTranslationsManager::requestTranslation, mTranslationsManager.getCurrentTranslatedLanguage(), messageOriginalLanguage);
+    LanguageSelectorPopup languagePopupLayout = new LanguageSelectorPopup(context, parent, mTranslationsManager::requestTranslation, mTranslationsManager.getCurrentTranslatedLanguage(), messageOriginalLanguage);
     languagePopupLayout.languageRecyclerWrap.setTranslationY(y);
     languagePopupLayout.show();
     languagePopupLayout.languageRecyclerWrap.setPivotY(pivotY);
@@ -347,7 +383,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
 
   private void setTranslationResult (TdApi.FormattedText translated) {
     TdApi.FormattedText textToSet = translated != null ? translated : originalText;
-    text.replace(makeTextWrapper(textToSet), true);
+    text.replace(makeTextWrapper(currentText = textToSet), true);
     updateTexts(text);
   }
 
@@ -516,6 +552,12 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
 
     private TextColorSet textColorSet;
     private Text.ClickCallback clickCallback;
+    private RunnableData<TdApi.FormattedText> translationApplyCallback;
+    private @Nullable String defaultLanguageToTranslate;
+
+    public void setDefaultLanguageToTranslate (@Nullable String defaultLanguageToTranslate) {
+      this.defaultLanguageToTranslate = defaultLanguageToTranslate;
+    }
 
     public final void setTextColorSet (TextColorSet textColorSet) {
       this.textColorSet = textColorSet;
@@ -523,6 +565,10 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
 
     public final void setClickCallback (Text.ClickCallback clickCallback) {
       this.clickCallback = clickCallback;
+    }
+
+    public final void setTranslationApplyCallback (RunnableData<TdApi.FormattedText> callback) {
+      this.translationApplyCallback = callback;
     }
 
     @Override
@@ -675,6 +721,10 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
 
   @SuppressLint("ViewConstructor")
   public static class LanguageSelectorPopup extends PopupLayout {
+    public final static int WIDTH = 178;
+    public final static int HEIGHT = 280;
+    public final static int PADDING = 8;
+
     public final MenuMoreWrap languageRecyclerWrap;
     private final LanguageSelectorPopup.OnLanguageSelectListener delegate;
 
@@ -682,24 +732,24 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
       void onSelect (String langCode);
     }
 
-    public LanguageSelectorPopup (Context context, LanguageSelectorPopup.OnLanguageSelectListener delegate, String selected, String original) {
+    public LanguageSelectorPopup (Context context, @Nullable ViewController<?> themeProvider, LanguageSelectorPopup.OnLanguageSelectListener delegate, String selected, String original) {
       super(context);
       this.delegate = delegate;
 
       RecyclerView languageRecyclerView = new CustomRecyclerView(context);
       languageRecyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
       languageRecyclerView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
-      languageRecyclerView.setAdapter(new LanguageAdapter(context, this::onOptionClick, selected, original));
+      languageRecyclerView.setAdapter(new LanguageAdapter(context, themeProvider, this::onOptionClick, selected, original));
       languageRecyclerView.setItemAnimator(null);
 
       languageRecyclerWrap = new MenuMoreWrap(context) {
         @Override
         public int getItemsHeight () {
-          return Screen.dp(280);
+          return Screen.dp(HEIGHT);
         }
       };
       languageRecyclerWrap.init(null, null);
-      languageRecyclerWrap.addView(languageRecyclerView, FrameLayoutFix.newParams(Screen.dp(178), Screen.dp(280)));
+      languageRecyclerWrap.addView(languageRecyclerView, FrameLayoutFix.newParams(Screen.dp(WIDTH), Screen.dp(HEIGHT)));
       languageRecyclerWrap.setAnchorMode(MenuMoreWrap.ANCHOR_MODE_HEADER);
     }
 
@@ -733,6 +783,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
   }
 
   public static class LanguageAdapter extends RecyclerView.Adapter<LanguageViewHolder> {
+    private final @Nullable ViewController<?> themeProvider;
     private final ArrayList<String> languages;
     private final View.OnClickListener listener;
     private final Context context;
@@ -740,9 +791,10 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     private final int selectedPosition;
     private final int originalPosition;
 
-    public LanguageAdapter (Context context, View.OnClickListener listener, String selected, String original) {
+    public LanguageAdapter (Context context, @Nullable ViewController<?> themeProvider, View.OnClickListener listener, String selected, String original) {
       this.recents = Settings.instance().getTranslateLanguageRecents();
       this.languages = new ArrayList<>(Lang.getSupportedLanguagesForTranslate().length);
+      this.themeProvider = themeProvider;
       this.listener = listener;
       this.context = context;
 
@@ -783,7 +835,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     @NonNull
     @Override
     public LanguageViewHolder onCreateViewHolder (@NonNull ViewGroup parent, int viewType) {
-      return LanguageViewHolder.create(context, listener);
+      return LanguageViewHolder.create(context, listener, themeProvider);
     }
 
     @Override
@@ -803,11 +855,9 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
       super(view);
     }
 
-    public static LanguageViewHolder create (Context context, View.OnClickListener onClickListener) {
-      LanguageView view = new LanguageView(context);
+    public static LanguageViewHolder create (Context context, View.OnClickListener onClickListener, @Nullable ViewController<?> themeProvider) {
+      LanguageView view = new LanguageView(context, themeProvider);
       view.setOnClickListener(onClickListener);
-      Views.setClickable(view);
-      RippleSupport.setSimpleWhiteBackground(view);
       return new LanguageViewHolder(view);
     }
 
@@ -835,8 +885,11 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     private boolean isOriginal;
     private boolean isRecent;
 
-    public LanguageView (@NonNull Context context) {
+    public LanguageView (@NonNull Context context, @Nullable ViewController<?> themeProvider) {
       super(context);
+
+      Views.setClickable(this);
+      RippleSupport.setSimpleWhiteBackground(this, themeProvider);
 
       titleView = new TextView(context);
       titleView.setTextColor(Theme.getColor(ColorId.text));
@@ -852,6 +905,10 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
       subtitleView.setEllipsize(TextUtils.TruncateAt.END);
       subtitleView.setMaxLines(1);
       addView(subtitleView, FrameLayoutFix.newParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 0, 0, 0, Screen.dp(6)));
+      if (themeProvider != null) {
+        themeProvider.addThemeTextColorListener(titleView, ColorId.text);
+        themeProvider.addThemeTextColorListener(subtitleView, ColorId.textLight);
+      }
     }
 
     public void updateDrawable () {

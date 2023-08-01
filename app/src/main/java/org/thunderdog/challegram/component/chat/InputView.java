@@ -38,6 +38,7 @@ import android.text.style.StyleSpan;
 import android.text.style.URLSpan;
 import android.util.TypedValue;
 import android.view.ActionMode;
+import android.view.ContextMenu;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -164,6 +165,16 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   private final RefreshRateLimiter refreshRateLimiter;
   private final ViewController<?> boundController;
 
+  public interface SelectionChangeListener {
+    void onInputSelectionExistChanged (InputView v, boolean hasSelection);
+    void onInputSelectionChanged (InputView v, int start, int end);
+  }
+
+  private SelectionChangeListener selectionChangeListener;
+  private boolean actionModeVisibility = true;
+  private ActionMode currentActionMode;
+  private boolean hasSelection;
+
   public InputView (Context context, Tdlib tdlib, ViewController<?> boundController) {
     super(context);
     this.tdlib = tdlib;
@@ -208,81 +219,125 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       public void afterTextChanged (Editable s) { }
     });
 
-    if (Config.USE_CUSTOM_INPUT_STYLING) {
-      setCustomSelectionActionModeCallback(new ActionMode.Callback() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      setCustomInsertionActionModeCallback(new ActionMode.Callback() {
         @Override
-        public boolean onCreateActionMode (ActionMode mode, Menu menu) {
-          MenuInflater inflater = mode.getMenuInflater();
-          if (inflater == null) {
-            return true;
-          }
-          inflater.inflate(R.menu.text, menu);
-          try {
-            for (int i = 0; i < menu.size(); i++) {
-              MenuItem item = menu.getItem(i);
-              final int overrideResId;
-              final TdApi.TextEntityType type;
-              final int itemId = item.getItemId();
-              if (itemId == R.id.btn_plain) {
-                overrideResId = R.string.TextFormatClear;
-                type = null;
-              } else if (itemId == R.id.btn_bold) {
-                overrideResId = R.string.TextFormatBold;
-                type = new TdApi.TextEntityTypeBold();
-              } else if (itemId == R.id.btn_italic) {
-                overrideResId = R.string.TextFormatItalic;
-                type = new TdApi.TextEntityTypeItalic();
-              } else if (itemId == R.id.btn_spoiler) {
-                overrideResId = R.string.TextFormatSpoiler;
-                type = new TdApi.TextEntityTypeSpoiler();
-              } else if (itemId == R.id.btn_underline) {
-                overrideResId = R.string.TextFormatUnderline;
-                type = new TdApi.TextEntityTypeUnderline();
-              } else if (itemId == R.id.btn_strikethrough) {
-                overrideResId = R.string.TextFormatStrikethrough;
-                type = new TdApi.TextEntityTypeStrikethrough();
-              } else if (itemId == R.id.btn_monospace) {
-                overrideResId = R.string.TextFormatMonospace;
-                type = new TdApi.TextEntityTypeCode();
-              } else if (itemId == R.id.btn_link) {
-                overrideResId = R.string.TextFormatLink;
-                type = null;
-              } else {
-                if (BuildConfig.DEBUG) {
-                  Log.i("Menu item: %s %s", UI.getAppContext().getResources().getResourceName(item.getItemId()), item.getTitle());
-                }
-                continue;
-              }
-              item.setTitle(type != null ? Lang.wrap(Lang.getString(overrideResId), Lang.entityCreator(type)) : Lang.getString(overrideResId));
-            }
-          } catch (Throwable ignored) { }
-          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            menu.removeItem(android.R.id.shareText);
-          }
-          if (!canClearTextFormat()) {
-            menu.removeItem(R.id.btn_plain);
-          }
+        public boolean onCreateActionMode (ActionMode actionMode, Menu menu) {
+          currentActionMode = actionMode;
           return true;
         }
 
         @Override
-        public boolean onPrepareActionMode (ActionMode mode, Menu menu) {
+        public boolean onPrepareActionMode (ActionMode actionMode, Menu menu) {
+          updateMenuVisibility(menu);
+          return true;
+        }
+
+        @Override
+        public boolean onActionItemClicked (ActionMode actionMode, MenuItem menuItem) {
           return false;
         }
 
         @Override
-        public boolean onActionItemClicked (ActionMode mode, MenuItem item) {
-          return setSpan(item.getItemId());
-        }
-
-        @Override
-        public void onDestroyActionMode (ActionMode mode) {
-
+        public void onDestroyActionMode (ActionMode actionMode) {
+          if (currentActionMode == actionMode) {
+            currentActionMode = null;
+          }
         }
       });
     }
 
+    setCustomSelectionActionModeCallback(new ActionMode.Callback() {
+      @Override
+      public boolean onCreateActionMode (ActionMode mode, Menu menu) {
+        currentActionMode = mode;
+        if (!Config.USE_CUSTOM_INPUT_STYLING) {
+          return true;
+        }
+
+        MenuInflater inflater = mode.getMenuInflater();
+        if (inflater == null) {
+          return true;
+        }
+        inflater.inflate(R.menu.text, menu);
+        try {
+          for (int i = 0; i < menu.size(); i++) {
+            MenuItem item = menu.getItem(i);
+            final int overrideResId;
+            final TdApi.TextEntityType type;
+            final int itemId = item.getItemId();
+            if (itemId == R.id.btn_plain) {
+              overrideResId = R.string.TextFormatClear;
+              type = null;
+            } else if (itemId == R.id.btn_bold) {
+              overrideResId = R.string.TextFormatBold;
+              type = new TdApi.TextEntityTypeBold();
+            } else if (itemId == R.id.btn_italic) {
+              overrideResId = R.string.TextFormatItalic;
+              type = new TdApi.TextEntityTypeItalic();
+            } else if (itemId == R.id.btn_spoiler) {
+              overrideResId = R.string.TextFormatSpoiler;
+              type = new TdApi.TextEntityTypeSpoiler();
+            } else if (itemId == R.id.btn_underline) {
+              overrideResId = R.string.TextFormatUnderline;
+              type = new TdApi.TextEntityTypeUnderline();
+            } else if (itemId == R.id.btn_strikethrough) {
+              overrideResId = R.string.TextFormatStrikethrough;
+              type = new TdApi.TextEntityTypeStrikethrough();
+            } else if (itemId == R.id.btn_monospace) {
+              overrideResId = R.string.TextFormatMonospace;
+              type = new TdApi.TextEntityTypeCode();
+            } else if (itemId == R.id.btn_link) {
+              overrideResId = R.string.TextFormatLink;
+              type = null;
+            } else {
+              if (BuildConfig.DEBUG) {
+                Log.i("Menu item: %s %s", UI.getAppContext().getResources().getResourceName(item.getItemId()), item.getTitle());
+              }
+              continue;
+            }
+            item.setTitle(type != null ? Lang.wrap(Lang.getString(overrideResId), Lang.entityCreator(type)) : Lang.getString(overrideResId));
+          }
+        } catch (Throwable ignored) { }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+          menu.removeItem(android.R.id.shareText);
+        }
+        if (!canClearTextFormat()) {
+          menu.removeItem(R.id.btn_plain);
+        }
+        return true;
+      }
+
+      @Override
+      public boolean onPrepareActionMode (ActionMode mode, Menu menu) {
+        updateMenuVisibility(menu);
+        return true;
+      }
+
+      @Override
+      public boolean onActionItemClicked (ActionMode mode, MenuItem item) {
+        return setSpan(item.getItemId());
+      }
+
+      @Override
+      public void onDestroyActionMode (ActionMode mode) {
+        if (currentActionMode == mode) {
+          currentActionMode = null;
+        }
+      }
+    });
+
     showPlaceholder.setValue(true, false);
+  }
+
+  private void updateMenuVisibility (Menu menu) {
+    final int menuSize = menu.size();
+    for (int i = 0; i < menuSize; i++) {
+      MenuItem item = menu.getItem(i);
+      if (item != null) {
+        item.setVisible(actionModeVisibility);
+      }
+    }
   }
 
   @Override
@@ -359,6 +414,13 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     return true;
   }
 
+  public void removeSpan (TdApi.TextEntityType type) {
+    TextSelection selection = getTextSelection();
+    if (selection != null && !selection.isEmpty()) {
+      clearSpans(selection.start, selection.end, type);
+    }
+  }
+
   public boolean canClearTextFormat () {
     TextSelection selection = getTextSelection();
     if (selection != null && !selection.isEmpty()) {
@@ -377,6 +439,10 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   }
 
   private void clearSpans (int start, int end) {
+    clearSpans(start, end, null);
+  }
+
+  private void clearSpans (int start, int end, @Nullable TdApi.TextEntityType typeForRemove) {
     Editable editable = getText();
     CharacterStyle[] spans = editable.getSpans(start, end, CharacterStyle.class);
     boolean updated = false;
@@ -385,6 +451,23 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         if (existingSpan instanceof NoCopySpan || existingSpan instanceof EmojiSpan || isComposingSpan(editable, existingSpan) || !TD.canConvertToEntityType(existingSpan)) {
           continue;
         }
+
+        if (typeForRemove != null) {
+          boolean needContinue = true;
+          TdApi.TextEntityType[] textEntityTypes = TD.toEntityType(existingSpan);
+          if (textEntityTypes != null) {
+            for (TdApi.TextEntityType textEntityType: textEntityTypes) {
+              if (textEntityType.getConstructor() == typeForRemove.getConstructor()) {
+                needContinue = false;
+                break;
+              }
+            }
+          }
+          if (needContinue) {
+            continue;
+          }
+        }
+
         int existingSpanStart = editable.getSpanStart(existingSpan);
         int existingSpanEnd = editable.getSpanEnd(existingSpan);
         boolean reused = false;
@@ -411,7 +494,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         updated = true;
       }
     }
-    setSelection(end);
+    setSelection(start, end);
     if (updated) {
       inlineContext.forceCheck();
       if (spanChangeListener != null) {
@@ -578,7 +661,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       return;
     }
     boolean spansChanged = setSpanImpl(start, end, newType);
-    setSelection(end);
+    setSelection(start, end);
     if (spansChanged) {
       inlineContext.forceCheck();
       if (spanChangeListener != null) {
@@ -654,9 +737,45 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   @Override
   protected void onSelectionChanged (int selStart, int selEnd) {
     super.onSelectionChanged(selStart, selEnd);
+    if (selectionChangeListener != null) {
+      selectionChangeListener.onInputSelectionChanged(this, selStart, selEnd);
+    }
     if (inlineContext != null) {
       inlineContext.onCursorPositionChanged(selStart == selEnd ? selStart : -1);
     }
+    boolean newHasSelection = selStart != selEnd;
+    if (hasSelection != newHasSelection) {
+      hasSelection = newHasSelection;
+      if (selectionChangeListener != null) {
+        selectionChangeListener.onInputSelectionExistChanged(this, hasSelection);
+      }
+    }
+  }
+
+  public void setSelectionChangeListener (SelectionChangeListener selectionChangeListener) {
+    this.selectionChangeListener = selectionChangeListener;
+  }
+
+  public void setActionModeVisibility (boolean actionModeVisibility) {
+    this.actionModeVisibility = actionModeVisibility;
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+      setShowSoftInputOnFocus(actionModeVisibility);
+    }
+
+    if (currentActionMode != null) {
+      currentActionMode.invalidate();
+    }
+  }
+
+  public void hideSelectionCursors () {
+    TextSelection selection = getTextSelection();
+    if (selection == null || selection.isEmpty()) return;
+    final int start = selection.start;
+    final int end = selection.end;
+
+    clearFocus();
+    requestFocus();
+    setSelection(start, end);
   }
 
   public boolean canFormatText () {
@@ -1462,16 +1581,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         case android.R.id.paste: {
           CharSequence pasteText = U.getPasteText(getContext());
           if (pasteText != null) {
-            if (selection.isEmpty()) {
-              editable.insert(selection.start, pasteText);
-            } else {
-              editable.replace(selection.start, selection.end, pasteText);
-            }
-            if (pasteText instanceof Spanned) {
-              // TODO: should this be a part of EmojiFilter?
-              removeCustomEmoji(editable, selection.start, selection.start + pasteText.length());
-            }
-            setSelection(selection.start + pasteText.length());
+            paste(pasteText, false);
             return true;
           }
           break;
@@ -1481,6 +1591,43 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       Log.e("onTextContextMenuItem failed for id %s", t, Lang.getResourceEntryName(id));
     }
     return super.onTextContextMenuItem(id);
+  }
+
+  public void paste (TdApi.FormattedText pasteText, boolean needSelectPastedText) {
+    TextSelection selection = getTextSelection();
+    if (selection == null) return;
+
+    final int start = selection.start;
+    paste(selection, pasteText.text, needSelectPastedText);
+    for (TdApi.TextEntity entity: pasteText.entities) {
+      setSpan(start + entity.offset, start + entity.offset + entity.length, entity.type);
+    }
+  }
+
+  public void paste (CharSequence pasteText, boolean needSelectPastedText) {
+    paste(getTextSelection(), pasteText, needSelectPastedText);
+  }
+
+  public void paste (TextSelection selection, CharSequence pasteText, boolean needSelectPastedText) {
+    if (selection == null) return;
+    final int start = selection.start;
+    final int end = selection.end;
+
+    Editable editable = getText();
+    if (selection.isEmpty()) {
+      editable.insert(start, pasteText);
+    } else {
+      editable.replace(start, end, pasteText);
+    }
+    if (pasteText instanceof Spanned) {
+      // TODO: should this be a part of EmojiFilter?
+      removeCustomEmoji(editable, start, start + pasteText.length());
+    }
+    if (needSelectPastedText) {
+      setSelection(start, start + pasteText.length());
+    } else {
+      setSelection(start + pasteText.length());
+    }
   }
 
   private static void removeCustomEmoji (Editable editable, int start, int end) {
