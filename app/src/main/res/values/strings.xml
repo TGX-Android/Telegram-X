@@ -28,7 +28,7 @@
   <string name="network_LookupAttempt">Trying direct connection…</string>
   <string name="network_LookupAttemptProxy">Trying another proxy…</string>
   <string name="network_LookupFailed">No routes found, connecting directly…</string>
-  <string name="network_LookupFailedProxy">No routes found, using last proxy…</string>
+  <string name="network_LookupFailedProxy">No routes found, using the previous proxy…</string>
 
   <string name="AppNameAndVersion">Telegram X %1$s</string>
   <string name="language_code">en</string>
@@ -472,7 +472,7 @@
   <string name="passcode_fingerprint">Unlock with Fingerprint</string>
   <string name="LoadingInformation">Loading information…</string>
   <string name="BlockContact">Block</string>
-  <string name="BlockBot">Stop and Block</string>
+  <string name="BlockBot">Block Bot</string>
   <string name="Unblock">Unblock</string>
   <string name="UnblockBot">Unblock</string>
   <string name="RestartBot">Restart</string>
@@ -492,7 +492,7 @@
   <string name="Cancel">Cancel</string>
   <string name="AddMember">Add Members</string>
   <string name="AddMembers">Add members</string>
-  <string name="DeleteAndLeave">Delete and exit</string>
+  <string name="DeleteAndLeave">Delete and leave</string>
   <string name="justAdd">Just add to group</string>
   <string name="KickFromGroup">Remove from group</string>
   <string name="DeleteChat">Delete chat</string>
@@ -905,7 +905,7 @@
   <string name="NoRestrictions">No restrictions</string>
   <string name="Save">Save</string>
   <string name="PrivacyTitle">Privacy</string>
-  <string name="BlockedSenders">Blocked Senders</string>
+  <string name="BlockedSenders">Blocked Chats</string>
   <string name="LastSeen">Last Seen &amp; Online</string>
   <string name="GroupsAndChannels">Groups and Channels</string>
   <string name="SecurityTitle">Security</string>
@@ -1261,7 +1261,7 @@
   <string name="TapToSetup">Tap to set</string>
   <string name="ViewGroupsInCommon">View groups in common</string>
   <string name="OpenChat">Open Chat</string>
-  <string name="DeleteAndStop">Delete and Stop</string>
+  <string name="DeleteAndStop">Delete and Block</string>
   <string name="DeleteContact">Delete contact</string>
   <string name="PastWeek">Past week</string>
   <string name="Today">Today</string>
@@ -1572,7 +1572,7 @@
   <string name="UseProxyPort">Port</string>
   <string name="ProxySettings">Proxy settings</string>
   <string name="ProxyAutoSwitch">Switch automatically</string>
-  <string name="ProxyAutoSwitchHint">Automatically try different connections when app takes too long to connect. This may increase time needed to establish connection on weak networks.</string>
+  <string name="ProxyAutoSwitchHint">Automatically try different connections when the app takes too long to connect. This may increase the time needed to establish connection on weak networks.</string>
   <string name="EnableProxyAlertTitle">Are you sure you want to enable this proxy?</string>
   <string name="EnableProxyAlertHint">You can change your proxy server later in Settings &gt; Data and Storage.</string>
   <string name="EnableProxyAlertHintMtproto">This proxy may display a sponsored channel in your chat list. This doesn\'t reveal any of your Telegram traffic.</string>
@@ -2047,8 +2047,8 @@
   <string name="EventLogForumTopicEditedNameYou">You changed topic name from %1$s to %2$s</string>
   <string name="EventLogForumTopicClosed">%1$s closed topic %2$s</string>
   <string name="EventLogForumTopicClosedYou">You closed topic %1$s</string>
-  <string name="EventLogForumTopicReopened">%1$s reopened topic %2$s</string>
-  <string name="EventLogForumTopicReopenedYou">You reopened topic %1$s</string>
+  <string name="EventLogForumTopicReopened">%1$s reopened the topic %2$s</string>
+  <string name="EventLogForumTopicReopenedYou">You reopened the topic %1$s</string>
   <string name="EventLogForumTopicHidden">%1$s made topic %2$s hidden</string>
   <string name="EventLogForumTopicHiddenYou">You made topic %1$s hidden</string>
   <string name="EventLogForumTopicUnhidden">%1$s made topic %2$s visible</string>
@@ -2145,7 +2145,7 @@
   <string name="EditMarkdown">Edit Markdown</string>
   <string name="ForceBuiltinDecoding">Force built-in media decoding</string>
   <string name="CompressAudio">Compress audio in videos</string>
-  <string name="EditMarkdownHint2">Edit text in messages using the old-school way: `**`**bold**`**`, `__`__italic__`__`, `~~`~~strikethrough~~`~~`, ````monospace````, `||`||spoiler||`||`, `[`text`](`url`)`</string>
+  <string name="EditMarkdownHint2">Edit text in messages using shortcuts: `**`**bold**`**`, `__`__italic__`__`, `~~`~~strikethrough~~`~~`, ````monospace````, `||`||spoiler||`||`, `[`text`](`url`)`</string>
   <string name="MessageNotFound">Message not found</string>
   <string name="SyncHintTitle">Find Contacts</string>
   <string name="SyncHint">To help you connect with friends and family, allow %1$s access to your contacts.</string>
@@ -2522,7 +2522,7 @@
   <string name="LeaveReturnPublicLinkHintChannel">You will be able to return to this channel by its public link</string>
   <string name="LeaveReturnPublicLinkHintGroup">You will be able to return to this group by its public link</string>
   <string name="DeleteUserChatConfirm">Are you sure you want to delete the chat with %1$s? This action cannot be undone.</string>
-  <string name="DeleteAndStopBotConfirm">Are you sure you want to stop %1$s and delete the chat with it? This action cannot be undone.</string>
+  <string name="DeleteAndStopBotConfirm">Are you sure you want to block %1$s and delete the chat with it? This action cannot be undone.</string>
   <string name="DeleteSavedMessagesConfirm">Are you sure you want to delete all **Saved Messages**? This action cannot be undone.</string>
   <string name="DeleteSecretChatPendingConfirm">Are you sure you want to cancel the secret chat with %1$s?</string>
   <string name="DeleteSecretChatClosedConfirm">Are you sure you want to delete the secret chat with %1$s? This action cannot be undone.</string>
@@ -3727,7 +3727,7 @@
   <string name="BlockUserConfirm">Are you sure you want to block %1$s?</string>
   <string name="BlockBotConfirm">Are you sure you want to stop and block %1$s?</string>
   <string name="BlockedUser">%1$s has been blocked.</string>
-  <string name="BlockedBot">%1$s has been stopped.</string>
+  <string name="BlockedBot">%1$s is now blocked.</string>
   <string name="UnblockedUser">%1$s has been unblocked.</string>
   <string name="UnblockedBot">%1$s has been unblocked.</string>
 
@@ -4290,11 +4290,11 @@
   <string name="ChannelTtlDisabled">Choose a period of time after which posts will be automatically deleted for subscribers of the channel.</string>
   <string name="ChannelTtlEnabled">Automatically delete new posts after %1$s for subscribers of the channel.</string>
 
-  <string name="ChatBackgroundPreview">Chat Background Preview</string>
-  <string name="ChatBackgroundNotSupported">Sorry, this type of chat background is not yet supported.</string>
-  <string name="ChatBackgroundApply">Apply Chat Background</string>
-  <string name="ChatBackgroundView">View Chat Background</string>
-  <string name="ChatBackground">Chat Background</string>
+  <string name="ChatBackgroundPreview">Chat Wallpaper Preview</string>
+  <string name="ChatBackgroundNotSupported">Sorry, this type of chat wallpaper is not yet supported.</string>
+  <string name="ChatBackgroundApply">Apply Chat Wallpaper</string>
+  <string name="ChatBackgroundView">View Wallpaper</string>
+  <string name="ChatBackground">Chat Wallpaper</string>
   <string name="ChatBackgroundTypePattern">pattern</string>
   <string name="ChatBackgroundTypeSolid">solid color</string>
   <string name="ChatBackgroundTypeGradient">gradient</string>
@@ -4550,9 +4550,9 @@
   <string name="ExperimentalBuildTitle">Caution: experimental build</string>
   <string name="ExperimentalBuildInfo">This version of **Telegram X** is not designed for long-term use.\n\nIt may completely stop working over a time and you cannot turn notifications on.\n\nIf you are looking for the proper Telegram X APK file, see https://t.me/tgx_log</string>
 
-  <string name="PremiumRequiredSticker">Sending this sticker requires **Telegram Premium** subscription.</string>
-  <string name="PremiumRequiredVoiceVideo">This setting requires **Telegram Premium** subscription.</string>
-  <string name="PremiumRequired">This feature requires **Telegram Premium** subscription.</string>
+  <string name="PremiumRequiredSticker">Sending this sticker requires a **Telegram Premium** subscription.</string>
+  <string name="PremiumRequiredVoiceVideo">This setting requires a **Telegram Premium** subscription.</string>
+  <string name="PremiumRequired">This feature requires a **Telegram Premium** subscription.</string>
 
   <string name="XRestrictedVoiceMessages">%1$s doesn\'t accept voice messages.</string>
   <string name="XRestrictedVideoMessages">%1$s doesn\'t accept video messages.</string>
@@ -4656,7 +4656,7 @@
   <string name="ChatTranslateStyleDisabled">Disabled</string>
   <string name="ChatTranslateOriginal">Original</string>
   <string name="TranslateTryAgain">Try again later</string>
-  <string name="TranslateWait">Please wait...</string>
+  <string name="TranslateWait">Please wait…</string>
   <string name="TranslateOriginal">Original message</string>
   <string name="DoNotTranslate">Do not translate</string>
   <string name="ApplicationLanguage">Application language</string>

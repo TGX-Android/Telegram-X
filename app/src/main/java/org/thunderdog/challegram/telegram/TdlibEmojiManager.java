@@ -18,6 +18,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.Log;
 
 import java.util.Collection;
 
@@ -98,22 +99,18 @@ public final class TdlibEmojiManager extends TdlibDataManager<Long, TdApi.Sticke
   }
 
   @TdlibThread
-  private void processStickers (int contextId, long[] customEmojiIds, TdApi.Sticker[] stickers) {
-    LongSet remainingIds = stickers.length < customEmojiIds.length ? new LongSet(customEmojiIds) : null;
-    int index = 0;
+  private void processStickers (int contextId, long[] requestedCustomEmojiIds, TdApi.Sticker[] stickers) {
+    LongSet remainingCustomEmojiIds = new LongSet(requestedCustomEmojiIds);
     for (TdApi.Sticker sticker : stickers) {
-      long customEmojiId = customEmojiIds[index];
-      if (customEmojiId != Td.customEmojiId(sticker)) {
-        throw new IllegalArgumentException(customEmojiId + " != " + Td.customEmojiId(sticker));
+      long customEmojiId = Td.customEmojiId(sticker);
+      if (remainingCustomEmojiIds.remove(customEmojiId)) {
+        processData(contextId, customEmojiId, sticker);
+      } else {
+        throw new IllegalArgumentException("GetCustomEmojiStickers returned arbitrary emoji: " + customEmojiId);
       }
-      processData(contextId, customEmojiId, sticker);
-      if (remainingIds != null) {
-        remainingIds.remove(customEmojiId);
-      }
-      index++;
     }
-    if (remainingIds != null && !remainingIds.isEmpty()) {
-      for (long customEmojiId : remainingIds) {
+    if (!remainingCustomEmojiIds.isEmpty()) {
+      for (long customEmojiId : remainingCustomEmojiIds) {
         processData(contextId, customEmojiId, null);
       }
     }

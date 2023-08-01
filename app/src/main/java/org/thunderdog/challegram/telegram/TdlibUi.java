@@ -4285,8 +4285,10 @@ public class TdlibUi extends Handler {
   private void showDeleteChatConfirm (final ViewController<?> context, final long chatId, boolean allowClearHistory, boolean blockUser, @Nullable Runnable after) {
     RunnableBool deleter = revoke -> {
       tdlib.deleteChat(chatId, revoke, null);
-      exitToChatScreen(context, chatId);
-      U.run(after);
+      UI.post(() -> {
+        exitToChatScreen(context, chatId);
+        U.run(after);
+      });
     };
     switch (ChatId.getType(chatId)) {
       case TdApi.ChatTypePrivate.CONSTRUCTOR: {
