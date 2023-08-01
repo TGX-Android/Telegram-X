@@ -229,13 +229,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
         @Override
         public boolean onPrepareActionMode (ActionMode actionMode, Menu menu) {
-          final int menuSize = menu.size();
-          for (int i = 0; i < menuSize; i++) {
-            MenuItem item = menu.getItem(i);
-            if (item != null) {
-              item.setVisible(actionModeVisibility);
-            }
-          }
+          updateMenuVisibility(menu);
           return true;
         }
 
@@ -316,10 +310,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
       @Override
       public boolean onPrepareActionMode (ActionMode mode, Menu menu) {
-        int N = menu.size();
-        for (int a = 0; a < N; a++) {
-          menu.getItem(a).setVisible(actionModeVisibility);
-        }
+        updateMenuVisibility(menu);
         return true;
       }
 
@@ -337,6 +328,16 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     });
 
     showPlaceholder.setValue(true, false);
+  }
+
+  private void updateMenuVisibility (Menu menu) {
+    final int menuSize = menu.size();
+    for (int i = 0; i < menuSize; i++) {
+      MenuItem item = menu.getItem(i);
+      if (item != null) {
+        item.setVisible(actionModeVisibility);
+      }
+    }
   }
 
   @Override
