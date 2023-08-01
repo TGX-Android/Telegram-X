@@ -254,7 +254,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       @Override
       public boolean onCreateActionMode (ActionMode mode, Menu menu) {
         currentActionMode = mode;
-        if (!Config.USE_CUSTOM_INPUT_STYLING) return true;
+        if (!Config.USE_CUSTOM_INPUT_STYLING) {
+          return true;
+        }
 
         MenuInflater inflater = mode.getMenuInflater();
         if (inflater == null) {
