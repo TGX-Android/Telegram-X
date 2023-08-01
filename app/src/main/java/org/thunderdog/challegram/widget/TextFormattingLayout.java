@@ -460,9 +460,9 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
     } else if (flag == FLAG_STRIKETHROUGH) {
       return new TdApi.TextEntityTypeStrikethrough();
     } else if (flag == FLAG_LINK) {
-      return  new TdApi.TextEntityTypeTextUrl();
+      return new TdApi.TextEntityTypeTextUrl();
     } else if (flag == FLAG_SPOILER) {
-      return  new TdApi.TextEntityTypeSpoiler();
+      return new TdApi.TextEntityTypeSpoiler();
     }
     return null;
   }
