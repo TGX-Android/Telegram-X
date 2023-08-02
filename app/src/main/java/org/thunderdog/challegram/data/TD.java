@@ -7097,7 +7097,7 @@ public class TD {
       return true;
     }
     return Objects.equals(lhs.title, rhs.title) &&
-      Objects.equals(lhs.icon != null ? lhs.icon.name : null, rhs.icon != null ? rhs.icon.name : rhs.icon.name) &&
+      Objects.equals(lhs.icon != null ? lhs.icon.name : null, rhs.icon != null ? rhs.icon.name : null) &&
       lhs.includeContacts == rhs.includeContacts &&
       lhs.includeNonContacts == rhs.includeNonContacts &&
       lhs.includeGroups == rhs.includeGroups &&
