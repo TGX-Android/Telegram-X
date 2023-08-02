@@ -80,8 +80,7 @@ public class TGStickerSetInfo {
   public TGStickerSetInfo (Tdlib tdlib, @NonNull TdApi.StickerSetInfo info) {
     this.tdlib = tdlib;
     this.info = info;
-    boolean ignoreThumbnailAnimation = info.id == 7489288727785635874L;
-    if (info.thumbnail != null && !ignoreThumbnailAnimation) {
+    if (info.thumbnail != null) {
       this.previewOutline = info.thumbnailOutline;
       this.previewWidth = info.thumbnail.width;
       this.previewHeight = info.thumbnail.height;
@@ -117,7 +116,7 @@ public class TGStickerSetInfo {
       this.previewOutline = info.covers[0].outline;
       this.previewWidth = info.covers[0].width;
       this.previewHeight = info.covers[0].height;
-      if (Td.isAnimated(info.covers[0].format) && !ignoreThumbnailAnimation) {
+      if (Td.isAnimated(info.covers[0].format)) {
         this.previewImage = null;
         this.previewAnimation = new GifFile(tdlib, info.covers[0].sticker, info.covers[0].format);
         this.previewAnimation.setOptimizationMode(GifFile.OptimizationMode.STICKER_PREVIEW);
