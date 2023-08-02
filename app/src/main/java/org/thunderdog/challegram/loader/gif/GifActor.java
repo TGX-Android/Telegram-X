@@ -349,7 +349,7 @@ public class GifActor implements GifState.Callback, TGPlayerController.TrackChan
           throw new UnsupportedOperationException();
       }
       width = height = file.getRequestedSize() != 0 ? Math.min(file.getRequestedSize(), resolution) : resolution;
-      error = totalFrameCount <= 0 || frameRate <= 0 || durationSeconds <= 0;
+      error = totalFrameCount <= 0 || frameRate <= 0 || (durationSeconds <= 0 && totalFrameCount > 1);
       if (totalFrameCount == 1) {
         file.setIsStill(true);
       }
