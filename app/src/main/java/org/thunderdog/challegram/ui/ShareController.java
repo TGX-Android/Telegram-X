@@ -2725,7 +2725,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
         emojiLayout.setVisibility(View.GONE);
       }
       setEmojiShown(false);
-      emojiButton.setImageResource(R.drawable.deproko_baseline_insert_emoticon_26);
+      emojiButton.setImageResource(getTargetIcon());
 
       checkKeyboardVisible();
     }
@@ -2740,7 +2740,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
         }
       }
       setEmojiShown(false);
-      emojiButton.setImageResource(R.drawable.deproko_baseline_insert_emoticon_26);
+      emojiButton.setImageResource(getTargetIcon());
       checkKeyboardVisible();
     }
   }

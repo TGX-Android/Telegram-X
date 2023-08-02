@@ -68,7 +68,9 @@ import me.vkryl.td.Td;
 
 @SuppressLint("ViewConstructor")
 public class TextFormattingLayout extends FrameLayout implements TranslationsManager.Translatable {
-  private static final int SIZE = 40;
+  private static final int MIN_PADDING_BETWEEN_BUTTONS = 4;
+  private static final int MAX_BUTTON_SIZE = 40;
+  private static final int PADDING = 15;
 
   public static final int FLAG_BOLD = 1;
   public static final int FLAG_ITALIC = 1 << 1;
@@ -141,7 +143,7 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
     this.inputView = inputView;
 
     ViewSupport.setThemedBackground(this, ColorId.background, parent);
-    setPadding(Screen.dp(15), 0, Screen.dp(15), 0);
+    setPadding(Screen.dp(PADDING), 0, Screen.dp(PADDING), 0);
 
     addView(createHeader(context, parent, Lang.getString(R.string.TextFormatting)));
     addView(editHeader = createHeader(context, parent, Lang.getString(R.string.TextFormattingTools)));
@@ -228,36 +230,38 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
 
   @Override
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
-    int width = MeasureSpec.getSize(widthMeasureSpec);
-    float padding = Math.max(Screen.dp(5), (width - Screen.dp(30 + 7 * SIZE)) / 6f);
+    final int width = MeasureSpec.getSize(widthMeasureSpec);
+
+    final int button_size_px = Math.min((width - Screen.dp(PADDING * 2 + MIN_PADDING_BETWEEN_BUTTONS * 6)) / 7, Screen.dp(MAX_BUTTON_SIZE));
+    final float padding = Math.max(Screen.dp(MIN_PADDING_BETWEEN_BUTTONS), (width - Screen.dp(PADDING * 2) - 7 * button_size_px) / 6f);
 
     ViewGroup.MarginLayoutParams params;
 
     params = (ViewGroup.MarginLayoutParams) editHeader.getLayoutParams();
-    params.topMargin = Screen.dp(46 + SIZE);
+    params.topMargin = Screen.dp(46) + button_size_px;
 
     params = (ViewGroup.MarginLayoutParams) translateHeader.getLayoutParams();
-    params.leftMargin = (int) ((padding + Screen.dp(SIZE)) * 3);
-    params.topMargin = Screen.dp(46 + SIZE);
+    params.leftMargin = (int) ((padding + button_size_px) * 3);
+    params.topMargin = Screen.dp(46) + button_size_px;
 
     params = (ViewGroup.MarginLayoutParams) langSelector.getLayoutParams();
-    params.topMargin = Screen.dp(92 + SIZE);
-    params.leftMargin = (int) ((padding + Screen.dp(SIZE)) * 3);
-    params.height = Screen.dp(SIZE);
-    params.width = (int) (Screen.dp(SIZE * 3) + padding * 2);
+    params.topMargin = Screen.dp(92) + button_size_px;
+    params.leftMargin = (int) ((padding + button_size_px) * 3);
+    params.height = button_size_px;
+    params.width = (int) (button_size_px * 3 + padding * 2);
 
     for (int a = 0; a < buttonIds.length; a++) {
       params = (ViewGroup.MarginLayoutParams) buttons[a].getLayoutParams();
-      params.width = params.height = Screen.dp(SIZE);
+      params.width = params.height = button_size_px;
       if (a < 7) {
-        params.leftMargin = (int) ((padding + Screen.dp(SIZE)) * a);
+        params.leftMargin = (int) ((padding + button_size_px) * a);
         params.topMargin = Screen.dp(46);
       } else if (a < 10) {
-        params.leftMargin = (int) ((padding + Screen.dp(SIZE)) * (a - 7));
-        params.topMargin = Screen.dp(92 + SIZE);
+        params.leftMargin = (int) ((padding + button_size_px) * (a - 7));
+        params.topMargin = Screen.dp(92) + button_size_px;
       } else {
-        params.leftMargin = (int) ((padding + Screen.dp(SIZE)) * 6);
-        params.topMargin = Screen.dp(92 + SIZE);
+        params.leftMargin = (int) ((padding + button_size_px) * 6);
+        params.topMargin = Screen.dp(92) + button_size_px;
       }
     }
 
