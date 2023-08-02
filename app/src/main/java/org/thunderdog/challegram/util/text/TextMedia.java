@@ -325,7 +325,7 @@ public class TextMedia implements Destroyable, TdlibEmojiManager.Watcher {
       preview.restorePaintAlpha();
     }
     if (content != null) {
-      if (outline != null && content.needPlaceholder()) {
+      if (preview == null && outline != null && content.needPlaceholder()) {
         content.drawPlaceholderContour(c, outline, alpha);
       }
       content.draw(c);
