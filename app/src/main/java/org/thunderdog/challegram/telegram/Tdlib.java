@@ -153,6 +153,15 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       READY = 2;
   }
 
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef(value = {
+    GiftPremiumOption.FROM_INPUT_FIELD,
+    GiftPremiumOption.FROM_ATTACHMENT_MENU
+  }, flag = true)
+  public @interface GiftPremiumOption {
+    int FROM_INPUT_FIELD = 1, FROM_ATTACHMENT_MENU = 1 << 1;
+  }
+
   public static final int CHAT_ACCESS_TEMPORARY = 1;
   public static final int CHAT_ACCESS_OK = 0;
   public static final int CHAT_ACCESS_FAIL = -1;
@@ -448,12 +457,17 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private long authorizationDate = 0;
   private int supergroupMaxSize = 100000;
   private int maxBioLength = 70;
+  private int chatFolderMaxCount = 10, folderChosenChatMaxCount = 100;
+  private int addedShareableChatFolderMaxCount = 2, chatFolderInviteLinkMaxCount = 3;
+  private long chatFolderUpdatePeriod = 300; // Seconds
+  private boolean isPremium, isPremiumAvailable;
+  private @GiftPremiumOption int giftPremiumOptions;
   private boolean suggestOnlyApiStickers;
   private int maxGroupCallParticipantCount = 10000;
   private long roundVideoBitrate = 1000, roundAudioBitrate = 64, roundVideoMaxSize = 12582912, roundVideoDiameter = 384;
   private int forwardMaxCount = 100;
   private int groupMaxSize = 200;
-  private int pinnedChatsMaxCount = 5, pinnedArchivedChatsMaxCount = 100;
+  private int pinnedChatsMaxCount = 5, pinnedArchivedChatsMaxCount = 100, pinnedForumTopicMaxCount = 5;
   private int favoriteStickersMaxCount = 5;
   private double emojiesAnimatedZoom = .75f;
   private boolean youtubePipDisabled, qrLoginCamera, dialogFiltersTooltip, dialogFiltersEnabled;
@@ -468,8 +482,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   private long unixTime;
   private long unixTimeReceived;
+  private long utcTimeOffset;
 
-  private int disableTopChats = -1;
+  private Boolean disableTopChats;
   private boolean disableSentScheduledMessageNotifications;
   private long antiSpamBotUserId;
   private long channelBotUserId = TdConstants.TELEGRAM_CHANNEL_BOT_ACCOUNT_ID;
@@ -485,8 +500,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private String languagePackId;
   private String suggestedLanguagePackId;
   private TdApi.LanguagePackInfo suggestedLanguagePackInfo;
-
-  private String authenticationToken;
 
   private long connectionLossTime = SystemClock.uptimeMillis();
 
@@ -2355,7 +2368,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public boolean hasPremium () {
     TdApi.User user = cache().myUser();
-    return user != null && user.isPremium;
+    if (user != null) {
+      return user.isPremium;
+    }
+    return isPremium;
   }
 
   public TdApi.MessageSender mySender () {
@@ -5592,8 +5608,20 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         case "test":
           // Nothing to do?
           break;
+        case "ios_disable_parallel_channel_reset":
+        case "small_queue_max_active_operations_count": // Number
+        case "large_queue_max_active_operations_count": // Number
+          break;
         case "youtube_pip":
           this.youtubePipDisabled = member.value instanceof TdApi.JsonValueString && "disabled".equals(((TdApi.JsonValueString) member.value).value);
+          break;
+        case "premium_playmarket_direct_currency_list":
+          if (member.value instanceof TdApi.JsonValueArray) {
+            TdApi.JsonValueArray array = (TdApi.JsonValueArray) member.value;
+            for (TdApi.JsonValue value : array.values) {
+              // ...
+            }
+          }
           break;
         case "qr_login_camera":
           if (member.value instanceof TdApi.JsonValueBoolean)
@@ -6264,6 +6292,29 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
+  private void setDisableTopChatsImpl (boolean disableTopChats) {
+    if (this.disableTopChats == null) {
+      this.disableTopChats = disableTopChats;
+    } else if (this.disableTopChats != disableTopChats) {
+      this.disableTopChats = disableTopChats;
+      listeners().updateTopChatsDisabled(disableTopChats);
+    }
+  }
+
+  private void setDisableSentScheduledMessageNotificationsImpl (boolean disableSentScheduledMessageNotifications) {
+    if (this.disableSentScheduledMessageNotifications != disableSentScheduledMessageNotifications) {
+      this.disableSentScheduledMessageNotifications = disableSentScheduledMessageNotifications;
+      listeners().updatedSentScheduledMessageNotificationsDisabled(disableSentScheduledMessageNotifications);
+    }
+  }
+
+  private void setArchiveAndMuteNewChatsFromUnknownUsersImpl (boolean archiveAndMuteNewChatsFromUnknownUsers) {
+    if (this.archiveAndMuteNewChatsFromUnknownUsers != archiveAndMuteNewChatsFromUnknownUsers) {
+      this.archiveAndMuteNewChatsFromUnknownUsers = archiveAndMuteNewChatsFromUnknownUsers;
+      listeners().updateArchiveAndMuteChatsFromUnknownUsersEnabled(archiveAndMuteNewChatsFromUnknownUsers);
+    }
+  }
+
   /*public boolean disablePinnedMessageNotifications () {
     return disablePinnedMessageNotifications;
   }
@@ -6447,12 +6498,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public boolean areTopChatsDisabled () {
-    return disableTopChats == 1;
+    return disableTopChats != null ? disableTopChats : false;
   }
 
-  public void setDisableTopChats (boolean disable) {
-    this.disableTopChats = disable ? 1 : 0;
-    client().send(new TdApi.SetOption("disable_top_chats", new TdApi.OptionValueBoolean(disable)), okHandler());
+  public void setDisableTopChats (boolean disableTopChats) {
+    this.disableTopChats = disableTopChats;
+    client().send(new TdApi.SetOption("disable_top_chats", new TdApi.OptionValueBoolean(disableTopChats)), okHandler());
   }
 
   public boolean areSentScheduledMessageNotificationsDisabled () {
@@ -8403,231 +8454,282 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private void updateOption (ClientHolder context, TdApi.UpdateOption update) {
     final String name = update.name;
 
+    if (Log.isEnabled(Log.TAG_TDLIB_OPTIONS)) {
+      switch (update.value.getConstructor()) {
+        case TdApi.OptionValueEmpty.CONSTRUCTOR: {
+          Log.v(Log.TAG_TDLIB_OPTIONS, "optionEmpty %s", name);
+          break;
+        }
+        case TdApi.OptionValueInteger.CONSTRUCTOR: {
+          long value = Td.longValue(update.value);
+          Log.v(Log.TAG_TDLIB_OPTIONS, "optionInteger %s -> %d", name, value);
+          break;
+        }
+        case TdApi.OptionValueString.CONSTRUCTOR: {
+          String value = Td.stringValue(update.value);
+          Log.v(Log.TAG_TDLIB_OPTIONS, "optionString %s -> %s", name, value);
+          break;
+        }
+        case TdApi.OptionValueBoolean.CONSTRUCTOR: {
+          boolean value = Td.boolValue(update.value);
+          Log.v(Log.TAG_TDLIB_OPTIONS, "optionString %s -> %s", name, value);
+          break;
+        }
+      }
+    }
+
     if (!name.isEmpty() && name.charAt(0) == 'x') {
       // TGSettingsManager.instance().onUpdateOption(name, update.value);
       return;
     }
 
-    switch (update.value.getConstructor()) {
-      case TdApi.OptionValueInteger.CONSTRUCTOR: {
-        long longValue = ((TdApi.OptionValueInteger) update.value).value;
+    switch (name) {
+      // Service
 
-        if (Log.isEnabled(Log.TAG_TDLIB_OPTIONS)) {
-          Log.v(Log.TAG_TDLIB_OPTIONS,"optionInteger %s -> %d", name, longValue);
+      case "version":
+        context().setTdlibVersion(Td.stringValue(update.value));
+        break;
+      case "commit_hash":
+        context().setTdlibCommitHash(Td.stringValue(update.value));
+        break;
+      case "unix_time": {
+        final long receivedTime = SystemClock.elapsedRealtime();
+        final long value =  Td.longValue(update.value);
+        synchronized (dataLock) {
+          this.unixTime = value;
+          this.unixTimeReceived = receivedTime;
         }
+        break;
+      }
+      case "utc_time_offset":
+        this.utcTimeOffset = Td.longValue(update.value);
+        break;
+      case "test_mode":
+        break;
 
-        switch (name) {
-          case "my_id":
-            onUpdateMyUserId(longValue);
-            break;
-          case "unix_time": {
-            final long receivedTime = SystemClock.elapsedRealtime();
-            synchronized (dataLock) {
-              this.unixTime = longValue;
-              this.unixTimeReceived = receivedTime;
-            }
-            break;
-          }
-          case "supergroup_size_max":
-            this.supergroupMaxSize = (int) longValue;
-            break;
-          case "bio_length_max":
-            this.maxBioLength = (int) longValue;
-            break;
-          case "forwarded_messages_count_max":
-            this.forwardMaxCount = (int) longValue;
-            break;
-          case "basic_group_size_max":
-            this.groupMaxSize = (int) longValue;
-            break;
-          case "authorization_date":
-            this.authorizationDate = longValue;
-            break;
-          case "pinned_chat_count_max":
-            this.pinnedChatsMaxCount = (int) longValue;
-            break;
-          case "pinned_archived_chat_count_max":
-            this.pinnedArchivedChatsMaxCount = (int) longValue;
-            break;
-          case "call_connect_timeout_ms":
-            this.callConnectTimeoutMs = longValue;
-            break;
-          case "call_packet_timeout_ms":
-            this.callPacketTimeoutMs = longValue;
-            break;
-          case "message_text_length_max":
-            this.maxMessageTextLength = (int) longValue;
-            break;
-          case "message_caption_length_max":
-            this.maxMessageCaptionLength = (int) longValue;
-            break;
-          case "anti_spam_bot_user_id":
-            this.antiSpamBotUserId = longValue;
-            break;
-          case "channel_bot_user_id":
-            this.channelBotUserId = longValue;
-            break;
-          case "group_anonymous_bot_user_id":
-            this.groupAnonymousBotUserId = longValue;
-            break;
-          case "replies_bot_user_id":
-            this.repliesBotUserId = longValue;
-            break;
-          case "replies_bot_chat_id":
-            this.repliesBotChatId = longValue;
-            break;
-          case "telegram_service_notifications_chat_id":
-            this.telegramServiceNotificationsChatId = longValue;
-            break;
-          case "favorite_stickers_limit":
-            this.favoriteStickersMaxCount = (int) longValue;
-            break;
+      // Auth
+
+      case "my_id":
+        onUpdateMyUserId(Td.longValue(update.value));
+        break;
+      case "authorization_date":
+        this.authorizationDate = Td.longValue(update.value);
+        break;
+      case "authentication_token": {
+        final String token = Td.stringValue(update.value);
+        if (!StringUtils.isEmpty(token)) {
+          Settings.instance().trackAuthenticationToken(token);
         }
-
         break;
       }
 
-      case TdApi.OptionValueBoolean.CONSTRUCTOR: {
-        boolean boolValue = ((TdApi.OptionValueBoolean) update.value).value;
+      // Configuration
 
-        if (Log.isEnabled(Log.TAG_TDLIB_OPTIONS)) {
-          Log.v(Log.TAG_TDLIB_OPTIONS,"optionBool %s -> %b", name, boolValue);
+      case "call_connect_timeout_ms":
+        this.callConnectTimeoutMs = Td.longValue(update.value);
+        break;
+      case "call_packet_timeout_ms":
+        this.callPacketTimeoutMs = Td.longValue(update.value);
+        break;
+      case "suggested_video_note_video_bitrate":
+        this.roundVideoBitrate = Td.longValue(update.value);
+        break;
+      case "suggested_video_note_audio_bitrate":
+        this.roundAudioBitrate = Td.longValue(update.value);
+        break;
+      case "suggested_video_note_length":
+        this.roundVideoDiameter = Td.longValue(update.value);
+        break;
+
+      // Telegram Premium
+
+      case "is_premium":
+        this.isPremium = Td.boolValue(update.value);
+        break;
+      case "is_premium_available":
+        this.isPremiumAvailable = Td.boolValue(update.value);
+        break;
+      case "gift_premium_from_attachment_menu":
+        this.giftPremiumOptions = BitwiseUtils.setFlag(this.giftPremiumOptions, GiftPremiumOption.FROM_ATTACHMENT_MENU, Td.boolValue(update.value));
+        break;
+      case "gift_premium_from_input_field":
+        this.giftPremiumOptions = BitwiseUtils.setFlag(this.giftPremiumOptions, GiftPremiumOption.FROM_INPUT_FIELD, Td.boolValue(update.value));
+        break;
+
+      // Constants
+
+      case "t_me_url":
+        this.tMeUrl = Td.stringValue(update.value);
+        break;
+      case "animation_search_bot_username":
+        this.animationSearchBotUsername = Td.stringValue(update.value);
+        break;
+      case "venue_search_bot_username":
+        this.venueSearchBotUsername = Td.stringValue(update.value);
+        break;
+      case "photo_search_bot_username":
+        this.photoSearchBotUsername = Td.stringValue(update.value);
+        break;
+
+      // Limits
+
+      case "basic_group_size_max":
+        this.groupMaxSize = Td.intValue(update.value);
+        break;
+      case "supergroup_size_max":
+        this.supergroupMaxSize = Td.intValue(update.value);
+        break;
+
+      case "pinned_chat_count_max":
+        this.pinnedChatsMaxCount = Td.intValue(update.value);
+        break;
+      case "pinned_archived_chat_count_max":
+        this.pinnedArchivedChatsMaxCount = Td.intValue(update.value);
+        break;
+      case "pinned_forum_topic_count_max":
+        this.pinnedForumTopicMaxCount = Td.intValue(update.value);
+        break;
+
+      case "message_text_length_max":
+        this.maxMessageTextLength = Td.intValue(update.value);
+        break;
+      case "message_caption_length_max":
+        this.maxMessageCaptionLength = Td.intValue(update.value);
+        break;
+
+      case "forwarded_message_count_max":
+        this.forwardMaxCount = Td.intValue(update.value);
+        break;
+
+      case "chat_folder_count_max":
+        this.chatFolderMaxCount = Td.intValue(update.value);
+        break;
+      case "chat_folder_chosen_chat_count_max":
+        this.folderChosenChatMaxCount = Td.intValue(update.value);
+        break;
+      case "added_shareable_chat_folder_count_max":
+        this.addedShareableChatFolderMaxCount = Td.intValue(update.value);
+        break;
+      case "chat_folder_invite_link_count_max":
+        this.chatFolderInviteLinkMaxCount = Td.intValue(update.value);
+        break;
+      case "chat_folder_new_chats_update_period":
+        this.chatFolderUpdatePeriod = Td.longValue(update.value);
+        break;
+
+      case "favorite_stickers_limit":
+        this.favoriteStickersMaxCount = Td.intValue(update.value);
+        break;
+      case "bio_length_max":
+        this.maxBioLength = Td.intValue(update.value);
+        break;
+
+      // Service accounts and chats
+
+      case "anti_spam_bot_user_id":
+        this.antiSpamBotUserId = Td.longValue(update.value);
+        break;
+      case "channel_bot_user_id":
+        this.channelBotUserId = Td.longValue(update.value);
+        break;
+      case "group_anonymous_bot_user_id":
+        this.groupAnonymousBotUserId = Td.longValue(update.value);
+        break;
+      case "replies_bot_user_id":
+        this.repliesBotUserId = Td.longValue(update.value);
+        break;
+      case "replies_bot_chat_id":
+        this.repliesBotChatId = Td.longValue(update.value);
+        break;
+      case "telegram_service_notifications_chat_id":
+        this.telegramServiceNotificationsChatId = Td.longValue(update.value);
+        break;
+
+      // Settings
+
+      case "expect_blocking":
+        this.expectBlocking = Td.boolValue(update.value);
+        break;
+      case "calls_enabled":
+        this.callsEnabled = Td.boolValue(update.value);
+        break;
+      case "is_location_visible":
+        this.isLocationVisible = Td.boolValue(update.value);
+        break;
+      case "can_ignore_sensitive_content_restrictions":
+        this.canIgnoreSensitiveContentRestrictions = Td.boolValue(update.value);
+        break;
+      case "ignore_sensitive_content_restrictions":
+        this.ignoreSensitiveContentRestrictions = Td.boolValue(update.value);
+        break;
+      case "can_archive_and_mute_new_chats_from_unknown_users":
+        this.canArchiveAndMuteNewChatsFromUnknownUsers = Td.boolValue(update.value);
+        break;
+      case "disable_top_chats":
+        setDisableTopChatsImpl(Td.boolValue(update.value));
+        break;
+      case "disable_contact_registered_notifications":
+        setDisableContactRegisteredNotificationsImpl(Td.boolValue(update.value));
+        break;
+      case "disable_sent_scheduled_message_notifications":
+        setDisableSentScheduledMessageNotificationsImpl(Td.boolValue(update.value));
+        break;
+      case "archive_and_mute_new_chats_from_unknown_users":
+        setArchiveAndMuteNewChatsFromUnknownUsersImpl(Td.boolValue(update.value));
+        break;
+
+      // Language
+
+      case "language_pack_id":
+        setLanguagePackIdImpl(Td.stringValue(update.value), false);
+        break;
+      case "suggested_language_pack_id": {
+        final String languagePackId = Td.stringValue(update.value);
+        if (this.suggestedLanguagePackId == null || !this.suggestedLanguagePackId.equals(languagePackId)) {
+          this.suggestedLanguagePackId = languagePackId;
+          this.suggestedLanguagePackInfo = null;
+          listeners().updateSuggestedLanguageChanged(languagePackId, null);
+          context.client.send(new TdApi.GetLanguagePackInfo(languagePackId), result -> {
+            switch (result.getConstructor()) {
+              case TdApi.LanguagePackInfo.CONSTRUCTOR:
+                setSuggestedLanguagePackInfo(languagePackId, (TdApi.LanguagePackInfo) result);
+                break;
+              case TdApi.Error.CONSTRUCTOR:
+                Log.e("Failed to fetch suggested language, code: %s %s", languagePackId, TD.toErrorString(result));
+                setSuggestedLanguagePackInfo(languagePackId, null);
+                break;
+              default:
+                Log.unexpectedTdlibResponse(result, TdApi.GetLanguagePackInfo.class, TdApi.LanguagePackInfo.class, TdApi.Error.class);
+                break;
+            }
+          });
         }
-
-        switch (name) {
-          case "disable_contact_registered_notifications": {
-            setDisableContactRegisteredNotificationsImpl(boolValue);
-            break;
-          }
-          case "disable_top_chats": {
-            if (disableTopChats == -1) {
-              disableTopChats = boolValue ? 1 : 0;
-            } else {
-              int desiredValue = boolValue ? 1 : 0;
-              if (disableTopChats != desiredValue) {
-                this.disableTopChats = desiredValue;
-                listeners().updateTopChatsDisabled(boolValue);
-              }
-            }
-            break;
-          }
-          case "disable_sent_scheduled_message_notifications": {
-            if (this.disableSentScheduledMessageNotifications != boolValue) {
-              this.disableSentScheduledMessageNotifications = boolValue;
-              listeners().updatedSentScheduledMessageNotificationsDisabled(boolValue);
-            }
-            break;
-          }
-          case "calls_enabled": {
-            this.callsEnabled = boolValue;
-            break;
-          }
-          case "is_location_visible": {
-            this.isLocationVisible = boolValue;
-            break;
-          }
-          case "expect_blocking": {
-            this.expectBlocking = boolValue;
-            break;
-          }
-          case "can_ignore_sensitive_content_restrictions": {
-            this.canIgnoreSensitiveContentRestrictions = boolValue;
-            break;
-          }
-          case "can_archive_and_mute_new_chats_from_unknown_users": {
-            this.canArchiveAndMuteNewChatsFromUnknownUsers = boolValue;
-            break;
-          }
-          case "archive_and_mute_new_chats_from_unknown_users": {
-            if (this.archiveAndMuteNewChatsFromUnknownUsers != boolValue) {
-              this.archiveAndMuteNewChatsFromUnknownUsers = boolValue;
-              listeners().updateArchiveAndMuteChatsFromUnknownUsersEnabled(boolValue);
-            }
-            break;
-          }
-          case "ignore_sensitive_content_restrictions": {
-            this.ignoreSensitiveContentRestrictions = boolValue;
-            break;
-          }
-        }
-
-        /*if ("network_unreachable".equals(name)) {
-          WatchDog.instance().setTGUnreachable(boolValue);
-        }*/
-
         break;
       }
-      case TdApi.OptionValueEmpty.CONSTRUCTOR: {
-        if (Log.isEnabled(Log.TAG_TDLIB_OPTIONS)) {
-          Log.v(Log.TAG_TDLIB_OPTIONS,"optionEmpty %s -> empty", name);
-        }
 
-        switch (name) {
-          case "my_id":
-            cache.onUpdateMyUserId(0);
-            break;
-        }
+      // Ignored & Unknown
 
+      case "notification_sound_count_max":
+      case "notification_sound_duration_max":
+      case "notification_sound_size_max":
+      case "localization_target":
+      case "language_pack_database_path":
+      case "ignore_file_names":
+      case "ignore_platform_restrictions":
+      case "is_emulator":
+      case "use_storage_optimizer":
+      case "storage_max_files_size":
+      case "use_pfs":
+      case "use_quick_ack":
+      case "connection_parameters":
+      case "notification_group_count_max":
+      case "notification_group_size_max":
+      case "ignore_default_disable_notification":
         break;
-      }
-      case TdApi.OptionValueString.CONSTRUCTOR: {
-        String stringValue = ((TdApi.OptionValueString) update.value).value;
 
+      default: {
         if (Log.isEnabled(Log.TAG_TDLIB_OPTIONS)) {
-          Log.v(Log.TAG_TDLIB_OPTIONS, "optionString %s -> %s", name, stringValue);
-        }
-
-        switch (name) {
-          case "t_me_url":
-            this.tMeUrl = stringValue;
-            break;
-          case "version":
-            context().setTdlibVersion(stringValue);
-            break;
-          case "commit_hash":
-            context().setTdlibCommitHash(stringValue);
-            break;
-          case "animation_search_bot_username":
-            this.animationSearchBotUsername = stringValue;
-            break;
-          case "venue_search_bot_username":
-            this.venueSearchBotUsername = stringValue;
-            break;
-          case "photo_search_bot_username":
-            this.photoSearchBotUsername = stringValue;
-            break;
-          case "language_pack_id":
-            setLanguagePackIdImpl(stringValue, false);
-            break;
-          case "suggested_language_pack_id": {
-            if (this.suggestedLanguagePackId == null || !this.suggestedLanguagePackId.equals(stringValue)) {
-              this.suggestedLanguagePackId = stringValue;
-              this.suggestedLanguagePackInfo = null;
-              listeners().updateSuggestedLanguageChanged(stringValue, null);
-              context.client.send(new TdApi.GetLanguagePackInfo(stringValue), result -> {
-                switch (result.getConstructor()) {
-                  case TdApi.LanguagePackInfo.CONSTRUCTOR:
-                    setSuggestedLanguagePackInfo(stringValue, (TdApi.LanguagePackInfo) result);
-                    break;
-                  case TdApi.Error.CONSTRUCTOR:
-                    Log.e("Failed to fetch suggested language, code: %s %s", stringValue, TD.toErrorString(result));
-                    setSuggestedLanguagePackInfo(stringValue, null);
-                    break;
-                  default:
-                    Log.unexpectedTdlibResponse(result, TdApi.GetLanguagePackInfo.class, TdApi.LanguagePackInfo.class, TdApi.Error.class);
-                    break;
-                }
-              });
-            }
-            break;
-          }
-          case "authentication_token": {
-            if (!StringUtils.isEmpty(stringValue) && (this.authenticationToken == null || !this.authenticationToken.equals(stringValue))) {
-              this.authenticationToken = stringValue;
-              Settings.instance().trackAuthenticationToken(stringValue);
-            }
-            break;
-          }
+          Log.w(Log.TAG_TDLIB_OPTIONS, "Unknown TDLib option: %s %s", name, update.value);
         }
         break;
       }
