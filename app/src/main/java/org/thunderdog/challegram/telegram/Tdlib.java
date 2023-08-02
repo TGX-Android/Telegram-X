@@ -531,9 +531,6 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   private int installedStickerSetLimit = 200;
 
-  private long chatFolderCountMax = 10;
-  private long chatFolderChosenChatCountMax = 100;
-
   private boolean disableContactRegisteredNotifications = false;
 
   private int[] favoriteStickerIds;
@@ -6734,11 +6731,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
   
   public long chatFolderCountMax () {
-    return chatFolderCountMax;
+    return chatFolderMaxCount;
   }
 
   public long chatFolderChosenChatCountMax () {
-    return chatFolderChosenChatCountMax;
+    return folderChosenChatMaxCount;
   }
 
   public long telegramAntiSpamUserId () {
