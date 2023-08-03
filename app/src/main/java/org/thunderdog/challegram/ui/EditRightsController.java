@@ -623,9 +623,9 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         if (args.senderId.getConstructor() == TdApi.MessageSenderChat.CONSTRUCTOR) {
           return Lang.getString(tdlib.isChannel(Td.getSenderId(args.senderId)) ? R.string.BanChannelHint : R.string.BanChatHint);
         }
-        if (item.getId() == R.id.btn_date && !TD.checkRight(tdlib.chatPermissions(args.chatId), rightId)) {
+        /*if (item.getId() == R.id.btn_date && !TD.checkRight(tdlib.chatPermissions(args.chatId), rightId)) {
           return Lang.getString(R.string.ChatPermissionsRestrictHint);
-        }
+        }*/
         break;
       }
     }

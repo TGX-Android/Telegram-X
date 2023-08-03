@@ -21,6 +21,7 @@ import android.view.View;
 import org.thunderdog.challegram.charts.CubicBezierInterpolator;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Views;
 
 import java.util.ArrayList;
 
@@ -213,7 +214,7 @@ public class AnimatedEmojiEffect {
         }
       }
       float sizeHalf = size / 2f * outAlpha;
-      canvas.save();
+      final int saveCount = Views.save(canvas);
       if (mirror) {
         canvas.scale(-1f, 1f, cx, cy);
       }
@@ -222,7 +223,7 @@ public class AnimatedEmojiEffect {
       animatedEmojiDrawable.setBounds((int) (cx - sizeHalf), (int) (cy - sizeHalf), (int) (cx + sizeHalf), (int) (cy + sizeHalf));
       animatedEmojiDrawable.draw(canvas);
       animatedEmojiDrawable.setAlpha(255);
-      canvas.restore();
+      Views.restore(canvas, saveCount);
     }
   }
 }

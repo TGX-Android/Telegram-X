@@ -37,6 +37,7 @@ import org.thunderdog.challegram.telegram.TdlibAccount;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.util.text.TextMedia;
@@ -392,16 +393,19 @@ public class EmojiStatusHelper implements Destroyable {
     public void draw (Canvas c, int startX, int startY, float alpha, float scale, ComplexReceiver emojiStatusReceiver) {
       if (ignoreDraw) return;
 
-      if (scale != 1f) {
-        c.save();
+      final boolean isScaled = scale != 1f;
+      int restoreToCount = -1;
+      if (isScaled) {
+        restoreToCount = Views.save(c);
         c.scale(scale, scale, startX, startY);
       }
       lastDrawX = startX;
       lastDrawY = startY;
       lastDrawScale = scale;
       if (imageReceiver != null && gifReceiver != null && preview != null) {
+        int repaintRestoreToCount = -1;
         if (needRepainting) {
-          c.saveLayerAlpha(startX, startY, startX + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)), startY + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)), 255, Canvas.ALL_SAVE_FLAG);
+          repaintRestoreToCount = c.saveLayerAlpha(startX, startY, startX + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)), startY + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)), 255, Canvas.ALL_SAVE_FLAG);
         }
 
         imageReceiver.setBounds(startX, startY, startX + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)), startY + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)));
@@ -422,7 +426,7 @@ public class EmojiStatusHelper implements Destroyable {
           if (textColorSet != null) {
             c.drawRect(startX, startY, startX + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)), startY + Screen.dp(EmojiStatusHelper.textSizeToEmojiSize(textSize)), Paints.getSrcInPaint(textColorSet.emojiStatusColor()));
           }
-          c.restore();
+          Views.restore(c, repaintRestoreToCount);
         }
       } else if (emojiStatus != null) {
         emojiStatus.draw(c, startX, startY, null, alpha, emojiStatusReceiver);
@@ -430,8 +434,8 @@ public class EmojiStatusHelper implements Destroyable {
         Paint p = Paints.getPorterDuffPaint(ColorUtils.alphaColor(alpha, textColorSet.emojiStatusColor()));
         Drawables.draw(c, starDrawable, startX, startY + (Screen.dp(textSize + 2) - starDrawable.getMinimumHeight()) / 2f, p);
       }
-      if (scale != 1f) {
-        c.restore();
+      if (isScaled) {
+        Views.restore(c, restoreToCount);
       }
     }
 
