@@ -41,6 +41,8 @@ public class SettingsLanguageTranslateController extends RecyclerViewController<
     return true;
   }
 
+  private int headerItemCount, doNotTranslateItemCount;
+
   @Override
   protected void onCreateView (Context context, CustomRecyclerView recyclerView) {
     adapter = new SettingsAdapter(this) {
@@ -95,9 +97,11 @@ public class SettingsLanguageTranslateController extends RecyclerViewController<
     items.add(new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_chatTranslateStyleNone, 0, R.string.ChatTranslateStyle3, R.id.btn_chatTranslateStyle, chatTranslateMode == Settings.TRANSLATE_MODE_NONE));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.TranslateSettingsDesc));
+    headerItemCount = items.size();
 
     if (Settings.instance().getChatTranslateMode() != Settings.TRANSLATE_MODE_NONE) {
       addDoNotTranslateItems(items);
+      doNotTranslateItemCount = items.size() - headerItemCount;
       if (Settings.instance().getChatDoNotTranslateMode() == Settings.DO_NOT_TRANSLATE_MODE_SELECTED) {
         addLanguagesItems(items);
       }
@@ -106,7 +110,7 @@ public class SettingsLanguageTranslateController extends RecyclerViewController<
     adapter.setItems(items, true);
   }
 
-  private void addDoNotTranslateItems (List<ListItem> items) {
+  private static void addDoNotTranslateItems (List<ListItem> items) {
     int chatDoNotTranslateMode = Settings.instance().getChatDoNotTranslateMode();
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_quickTranslate, 0, R.string.QuickTranslate));
@@ -119,7 +123,7 @@ public class SettingsLanguageTranslateController extends RecyclerViewController<
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT_WITH_RADIO_2, R.id.btn_chatDoNotTranslateSelected, 0, R.string.SelectedLanguages, R.id.btn_chatDoNotTranslate, chatDoNotTranslateMode == Settings.DO_NOT_TRANSLATE_MODE_SELECTED));
   }
 
-  private void addLanguagesItems (List<ListItem> items) {
+  private static void addLanguagesItems (List<ListItem> items) {
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
     for (int a = 0; a < Lang.getSupportedLanguagesForTranslate().length; a++) {
@@ -183,14 +187,17 @@ public class SettingsLanguageTranslateController extends RecyclerViewController<
     Settings.instance().setChatTranslateMode(mode);
 
     if (mode == Settings.TRANSLATE_MODE_NONE) {
-      adapter.removeRange(7, adapter.getItemCount() - 7);
+      adapter.removeRange(headerItemCount, adapter.getItemCount() - headerItemCount);
+      doNotTranslateItemCount = 0;
     } else if (oldMode == Settings.TRANSLATE_MODE_NONE) {
       List<ListItem> items = adapter.getItems();
+      final int index = items.size();
       addDoNotTranslateItems(items);
+      doNotTranslateItemCount = items.size() - index;
       if (Settings.instance().getChatDoNotTranslateMode() == Settings.DO_NOT_TRANSLATE_MODE_SELECTED) {
         addLanguagesItems(items);
       }
-      adapter.notifyItemRangeInserted(7, items.size() - 7);
+      adapter.notifyItemRangeInserted(index, items.size() - index);
     }
   }
 
@@ -203,11 +210,13 @@ public class SettingsLanguageTranslateController extends RecyclerViewController<
     adapter.updateAllValuedSettingsById(R.id.btn_chatDoNotTranslateSelected);
 
     if (mode == Settings.DO_NOT_TRANSLATE_MODE_APP_LANG) {
-      adapter.removeRange(15, adapter.getItemCount() - 15);
+      final int index = headerItemCount + doNotTranslateItemCount;
+      adapter.removeRange(index, adapter.getItemCount() - index);
     } else {
       List<ListItem> items = adapter.getItems();
+      final int index = items.size();
       addLanguagesItems(items);
-      adapter.notifyItemRangeInserted(15, items.size() - 15);
+      adapter.notifyItemRangeInserted(index, items.size() - index);
     }
   }
 
