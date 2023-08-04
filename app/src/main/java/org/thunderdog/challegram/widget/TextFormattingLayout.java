@@ -191,16 +191,15 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
   }
 
   public void onInputViewSelectionChanged (int start, int end) {
-    if (!ignoreSelectionChangesForTranslatedText) {
-      if (originalTextToTranslate != null) {
-        originalTextToTranslate = null;
-        translationsManager.stopTranslation();
-      }
-    }
+    stopTranslationIfNeeded();
     if (start != end) {
       closeTextFormattingKeyboardDelay(false);
     }
     checkButtonsActive(true);
+  }
+
+  public void onInputViewSpansChanged () {
+    stopTranslationIfNeeded();
   }
 
   public void onInputViewTouchEvent (MotionEvent event) {
@@ -221,6 +220,13 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
     }
     langSelector.setIsEnabled(!isEmpty, animated);
     clearButtonIsEnabled.setValue(BitwiseUtils.hasFlag(flags, FLAG_CLEAR), animated);
+  }
+
+  private void stopTranslationIfNeeded () {
+    if (!ignoreSelectionChangesForTranslatedText && originalTextToTranslate != null) {
+      originalTextToTranslate = null;
+      translationsManager.stopTranslation();
+    }
   }
 
   private void setLanguageToTranslate (String language) {
