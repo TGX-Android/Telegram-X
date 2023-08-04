@@ -1270,6 +1270,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     inputView.setSingleLine(false);
     inputView.setMaxLines(4);
     inputView.setSelectionChangeListener(this);
+    inputView.setSpanChangeListener(this::onInputSpansChanged);
     bottomWrap.addView(inputView);
 
     if (OPEN_KEYBOARD_WITH_AUTOSCROLL) {
@@ -3273,6 +3274,12 @@ public class ShareController extends TelegramViewController<ShareController.Args
     textInputHasSelection = hasSelection;
     if (!emojiShown) {
      emojiButton.setImageResource(getTargetIcon());
+    }
+  }
+
+  public void onInputSpansChanged (InputView view) {
+    if (textFormattingLayout != null) {
+      textFormattingLayout.onInputViewSpansChanged();
     }
   }
 

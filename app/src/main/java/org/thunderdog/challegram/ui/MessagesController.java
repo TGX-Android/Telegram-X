@@ -722,6 +722,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         inputView.setInputPlaceholder(R.string.Message);
       }
       inputView.setSelectionChangeListener(this);
+      inputView.setSpanChangeListener(this::onInputSpansChanged);
     }
 
     params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(48f));
@@ -11415,6 +11416,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
     textInputHasSelection = hasSelection;
     if (!emojiShown) {
       emojiButton.setImageResource(getTargetIcon(true));
+    }
+  }
+
+  public void onInputSpansChanged (InputView view) {
+    if (textFormattingLayout != null) {
+      textFormattingLayout.onInputViewSpansChanged();
     }
   }
 

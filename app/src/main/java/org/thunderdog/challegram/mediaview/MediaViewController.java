@@ -5129,6 +5129,9 @@ public class MediaViewController extends ViewController<MediaViewController.Args
           if (!ignoreCaptionUpdate) {
             stack.getCurrent().setCaption(v.getOutputText(false));
           }
+          if (textFormattingLayout != null) {
+            textFormattingLayout.onInputViewSpansChanged();
+          }
         });
         captionView.setHint(Lang.getString(R.string.AddCaption));
         captionView.setMaxLines(4);

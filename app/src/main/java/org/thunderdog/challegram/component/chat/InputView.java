@@ -1599,9 +1599,12 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
     final int start = selection.start;
     paste(selection, pasteText.text, needSelectPastedText);
-    if (pasteText.entities != null) {
+    if (pasteText.entities != null && pasteText.entities.length > 0) {
       for (TdApi.TextEntity entity: pasteText.entities) {
         setSpan(start + entity.offset, start + entity.offset + entity.length, entity.type);
+      }
+      if (pasteText.text != null) {
+        setSelection(start, pasteText.text.length());
       }
     }
   }
