@@ -1101,6 +1101,25 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     setSelection(after);
   }
 
+  public void onCustomEmojiSelected (TGStickerObj stickerObj) {
+    TextSelection selection = getTextSelection();
+    if (selection == null)
+      return;
+
+    String emoji = stickerObj.getFirstEmoji("*");
+
+    int after = selection.start + emoji.length();
+    SpannableString s = new SpannableString(emoji);
+    s.setSpan(
+      Emoji.instance().newCustomSpan(emoji, null, this, tdlib, stickerObj.getCustomEmojiId()), 0, s.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+    if (selection.isEmpty()) {
+      getText().insert(selection.start, s);
+    } else {
+      getText().replace(selection.start, selection.end, s);
+    }
+    setSelection(after);
+  }
+
   private boolean textChangedSinceChatOpened, ignoreFirstLinkPreview;
 
   public void setChat (TdApi.Chat chat, @Nullable ThreadInfo messageThread, @Nullable String customInputField, boolean isSilent) {

@@ -57,12 +57,14 @@ public class StickersController extends RecyclerViewController<StickersControlle
 
   public static class Args {
     public final int mode;
+    public final boolean isEmoji;
     public final boolean doNotLoad;
 
     public @Nullable ArrayList<TGStickerSetInfo> stickerSets;
 
-    public Args (int mode, boolean doNotLoad) {
+    public Args (int mode, boolean isEmoji, boolean doNotLoad) {
       this.mode = mode;
+      this.isEmoji = isEmoji;
       this.doNotLoad = doNotLoad;
     }
 
@@ -87,12 +89,14 @@ public class StickersController extends RecyclerViewController<StickersControlle
   }
 
   private int mode;
+  private boolean isEmoji;
   private boolean doNotLoad;
 
   @Override
   public void setArguments (Args args) {
     super.setArguments(args);
     this.mode = args.mode;
+    this.isEmoji = args.isEmoji;
     this.doNotLoad = args.doNotLoad;
     this.stickerSets = args.stickerSets;
   }
@@ -261,6 +265,9 @@ public class StickersController extends RecyclerViewController<StickersControlle
   }
 
   private TdApi.StickerType getStickerType () {
+    if (isEmoji) {
+      return new TdApi.StickerTypeCustomEmoji();
+    }
     switch (mode) {
       case MODE_STICKERS:
       case MODE_STICKERS_ARCHIVED:
@@ -461,6 +468,7 @@ public class StickersController extends RecyclerViewController<StickersControlle
         }
         items.add(shadow);
         adapter.notifyItemRangeInserted(startIndex, stickerSets.size());
+        updateEmojiPacksCount();
         break;
       }
     }
@@ -479,7 +487,7 @@ public class StickersController extends RecyclerViewController<StickersControlle
     if (!stickerSets.isEmpty() || (archivedSets != null && !archivedSets.isEmpty())) {
       if (mode == MODE_STICKERS_ARCHIVED) {
         items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL));
-        items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getString(R.string.ArchivedStickersInfo, Strings.buildCounter(tdlib.getInstalledStickerSetLimit())), false));
+        items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getString(!isEmoji ? R.string.ArchivedStickersInfo: R.string.ArchivedEmojiInfo, Strings.buildCounter(tdlib.getInstalledStickerSetLimit())), false));
         items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
       } else if (mode == MODE_MASKS) {
         items.add(new ListItem(ListItem.TYPE_EMPTY_OFFSET_SMALL));
@@ -512,16 +520,31 @@ public class StickersController extends RecyclerViewController<StickersControlle
         items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
       }
 
-      if (mode == MODE_STICKERS) {
+      if (isEmoji) {
+        items.add(new ListItem(ListItem.TYPE_DESCRIPTION_CENTERED, R.id.view_emojiPacksCount, 0, Lang.pluralBold(R.string.xEmojiPacks, stickerSets != null ? stickerSets.size(): 0), false));
+      } else if (mode == MODE_STICKERS) {
         items.add(new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, Lang.getString(R.string.ArchivedStickersInfo, Strings.buildCounter(tdlib.getInstalledStickerSetLimit())), false));
       }
     } else if (mode == MODE_STICKERS_ARCHIVED) {
-      items.add(new ListItem(ListItem.TYPE_EMPTY, 0, 0, Lang.getString(R.string.ArchivedStickersInfo, Strings.buildCounter(tdlib.getInstalledStickerSetLimit())), false));
+      items.add(new ListItem(ListItem.TYPE_EMPTY, 0, 0, Lang.getString(!isEmoji ? R.string.ArchivedStickersInfo: R.string.ArchivedEmojiInfo, Strings.buildCounter(tdlib.getInstalledStickerSetLimit())), false));
     } else {
       items.add(new ListItem(ListItem.TYPE_EMPTY, 0, 0, mode == MODE_STICKERS ? R.string.NoStickerSets : R.string.NoMasks));
     }
 
     adapter.setItems(items, false);
+  }
+
+  private void updateEmojiPacksCount () {
+    if (mode != MODE_STICKERS || !isEmoji) return;
+
+    int i = adapter.indexOfViewById(R.id.view_emojiPacksCount);
+    if (i != -1) {
+      ListItem item = adapter.getItems().get(i);
+      boolean changed = item.setStringIfChanged(Lang.pluralBold(R.string.xEmojiPacks, stickerSets != null ? stickerSets.size(): 0));
+      if (changed) {
+        adapter.notifyItemChanged(i);
+      }
+    }
   }
 
   private void removeArchivedStickerSet (TGStickerSetInfo info) {
@@ -539,6 +562,7 @@ public class StickersController extends RecyclerViewController<StickersControlle
       } else {
         adapter.getItems().remove(3 + i);
         adapter.notifyItemRemoved(3 + i);
+        updateEmojiPacksCount();
       }
     }
   }
@@ -558,6 +582,7 @@ public class StickersController extends RecyclerViewController<StickersControlle
     } else {
       adapter.getItems().add(3, new ListItem(ListItem.TYPE_ARCHIVED_STICKER_SET, R.id.btn_stickerSetInfo, 0, 0).setLongId(info.getId()));
       adapter.notifyItemInserted(3);
+      updateEmojiPacksCount();
     }
   }
 
@@ -756,7 +781,7 @@ public class StickersController extends RecyclerViewController<StickersControlle
       adapter.getItems().add(index, item);
       adapter.notifyItemInserted(index);
     }
-
+    updateEmojiPacksCount();
     ((LinearLayoutManager) getRecyclerView().getLayoutManager()).scrollToPositionWithOffset(firstVisiblePosition, offset);
   }
 
@@ -778,6 +803,7 @@ public class StickersController extends RecyclerViewController<StickersControlle
       if (mode == MODE_MASKS) {
         i += 2;
         adapter.removeRange(i, 3);
+        updateEmojiPacksCount();
       } else {
         buildCells();
       }
@@ -785,6 +811,7 @@ public class StickersController extends RecyclerViewController<StickersControlle
       i += getStartIndex();
       adapter.getItems().remove(i);
       adapter.notifyItemRemoved(i);
+      updateEmojiPacksCount();
     }
   }
 

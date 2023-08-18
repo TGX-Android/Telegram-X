@@ -58,6 +58,7 @@ import org.thunderdog.challegram.component.attach.GridSpacingItemDecoration;
 import org.thunderdog.challegram.component.chat.EmojiToneHelper;
 import org.thunderdog.challegram.component.chat.InputView;
 import org.thunderdog.challegram.component.dialogs.SearchManager;
+import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.InlineResult;
@@ -2749,6 +2750,11 @@ public class ShareController extends TelegramViewController<ShareController.Args
   @Override
   public void onEnterEmoji (String emoji) {
     inputView.onEmojiSelected(emoji);
+  }
+
+  @Override
+  public void onEnterCustomEmoji (TGStickerObj sticker) {
+    inputView.onCustomEmojiSelected(sticker);
   }
 
   @Override

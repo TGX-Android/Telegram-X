@@ -65,6 +65,7 @@ import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
@@ -79,6 +80,7 @@ import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
+import org.thunderdog.challegram.telegram.TdlibEmojiManager;
 import org.thunderdog.challegram.telegram.TdlibSender;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
@@ -87,6 +89,7 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeManager;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
+import org.thunderdog.challegram.tool.Emojis;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Icons;
 import org.thunderdog.challegram.tool.Paints;
@@ -8643,8 +8646,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
   }
 
-
-
   protected @Nullable TdApi.FormattedText getTextToTranslateImpl () {
     return null; // override
   }
@@ -8676,4 +8677,33 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   protected void setTranslationResult (@Nullable TdApi.FormattedText text) {
     manager.updateMessageTranslation(getChatId(), getSmallestId(), text);
   };
+
+  /*  */
+
+  public long getFirstEmojiId () {
+    TdApi.FormattedText text = getTextToTranslate();
+    if (text == null || text.text == null || text.entities == null || text.entities.length == 0) return -1;
+
+    for (TdApi.TextEntity entity: text.entities) {
+      if (entity.type.getConstructor() == TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR) {
+        return ((TdApi.TextEntityTypeCustomEmoji) entity.type).customEmojiId;
+      }
+    }
+
+    return -1;
+  }
+
+  public long[] getUniqueEmojiPackIdList () {
+    long[] emojiIds = TD.getUniqueEmojiIdList(getTextToTranslate());
+
+    LongSet emojiSets = new LongSet();
+    for (long emojiId: emojiIds) {
+      TdlibEmojiManager.Entry entry = tdlib().emoji().find(emojiId);
+      if (entry == null || entry.value == null) continue;
+      emojiSets.add(entry.value.setId);
+    }
+
+    return emojiSets.toArray();
+  }
+
 }

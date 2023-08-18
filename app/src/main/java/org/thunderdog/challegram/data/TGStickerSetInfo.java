@@ -19,6 +19,7 @@ import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
@@ -42,6 +43,7 @@ public class TGStickerSetInfo {
   private static final int FLAG_FAVORITE = 1 << 3;
   private static final int FLAG_TRENDING_EMOJI = 1 << 4;
   private static final int FLAG_DEFAULT_EMOJI = 1 << 5;
+  private static final int FLAG_FAKE_CLASSIC_EMOJI = 1 << 6;
 
   private final Tdlib tdlib;
   private final @Nullable TdApi.StickerSetInfo info;
@@ -53,6 +55,7 @@ public class TGStickerSetInfo {
   private int size;
   private int startIndex;
   private @Nullable TdApi.StickerSet stickerSet;
+  private @StringRes int titleRes;
 
   private @Nullable ArrayList<TGStickerSetInfo> boundList;
   private TdApi.Sticker[] allStickers;
@@ -148,6 +151,19 @@ public class TGStickerSetInfo {
     this(tdlib, Td.toStickerSetInfo(info));
   }
 
+  public TGStickerSetInfo (Tdlib tdlib, int titleRes, int size) {
+    this.tdlib = tdlib;
+    this.info = null;
+    this.previewAnimation = null;
+    this.previewImage = null;
+    this.previewOutline = null;
+    this.previewWidth = 0;
+    this.previewHeight = 0;
+    this.flags = FLAG_FAKE_CLASSIC_EMOJI;
+    this.titleRes = titleRes;
+    this.size = size;
+  }
+
   public void setBoundList (@Nullable ArrayList<TGStickerSetInfo> list) {
     this.boundList = list;
   }
@@ -214,6 +230,9 @@ public class TGStickerSetInfo {
     return (flags & FLAG_DEFAULT_EMOJI) != 0;
   }
 
+  public boolean isFakeClassicEmoji () {
+    return (flags & FLAG_FAKE_CLASSIC_EMOJI) != 0;
+  }
 
   public void setIsTrendingEmoji () {
     flags |= FLAG_TRENDING_EMOJI;
@@ -267,7 +286,7 @@ public class TGStickerSetInfo {
     if (info != null) {
       return info.size + 1;
     }
-    if (isFavorite()) {
+    if (isFavorite() || isFakeClassicEmoji()) {
       return size;
     }
     return size + 1;
@@ -352,6 +371,10 @@ public class TGStickerSetInfo {
     return info != null && info.stickerType.getConstructor() == TdApi.StickerTypeMask.CONSTRUCTOR;
   }
 
+  public boolean isEmoji () {
+    return info != null && info.stickerType.getConstructor() == TdApi.StickerTypeCustomEmoji.CONSTRUCTOR;
+  }
+
   public long getId () {
     return info != null ? info.id : 0;
   }
@@ -388,11 +411,18 @@ public class TGStickerSetInfo {
     return getFullSize() > getSize();
   }
 
+  public int getTitleRes () {
+    return titleRes;
+  }
+
   public String getName () {
     return info != null ? info.name : null;
   }
 
   public String getTitle () {
+    if (isFakeClassicEmoji()) {
+      return titleRes != -1 ? Lang.getString(titleRes): null;
+    }
     return isDefaultEmoji() ? Lang.getString(R.string.TrendingStatuses): isFavorite() ? "" : isRecent() ? Lang.getString(R.string.RecentStickers) : info != null ? info.title : null;
   }
 }

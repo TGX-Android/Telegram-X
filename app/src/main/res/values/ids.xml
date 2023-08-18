@@ -1287,4 +1287,11 @@
   <item type="id" name="btn_themeExportSetAuthor" />
 
   <item type="id" name="btn_featureToggles" />
+
+  <!-- * -->
+
+  <item type="id" name="view_emojiPacksCount" />
+  <item type="id" name="btn_animatedEmojiSettings" />
+  <item type="id" name="btn_stickerSettingsAndEmoji" />
+  <item type="id" name="controller_stickersAndEmoji" />
 </resources>

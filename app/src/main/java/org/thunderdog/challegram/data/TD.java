@@ -112,6 +112,7 @@ import me.vkryl.core.FileUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.LongList;
+import me.vkryl.core.collection.LongSet;
 import me.vkryl.core.lambda.Future;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.unit.ByteUnit;
@@ -6974,4 +6975,19 @@ public class TD {
     }
     return false;
   }
+
+  public static long[] getUniqueEmojiIdList (@Nullable TdApi.FormattedText text) {
+    if (text == null || text.text == null || text.entities == null || text.entities.length == 0) return new long[0];
+
+    LongSet emojis = new LongSet();
+    for (TdApi.TextEntity entity: text.entities) {
+      if (entity.type.getConstructor() == TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR) {
+        emojis.add(((TdApi.TextEntityTypeCustomEmoji) entity.type).customEmojiId);
+      }
+    }
+
+    return emojis.toArray();
+  }
+
+
 }

@@ -251,7 +251,7 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
   public void setStickerSet (@NonNull TGStickerSetInfo stickerSet) {
     needPlaceholder = false;
     titleView.setText(stickerSet.getTitle());
-    subtitleView.setText(Lang.plural(stickerSet.isMasks() ? R.string.xMasks : R.string.xStickers, stickerSet.getSize()));
+    subtitleView.setText(Lang.plural(stickerSet.isMasks() ? R.string.xMasks : stickerSet.isEmoji() ? R.string.xEmoji : R.string.xStickers, stickerSet.getSize()));
     receiver.getImageReceiver(0).requestFile(stickerSet.getPreviewImage());
     receiver.getGifReceiver(0).requestFile(stickerSet.getPreviewAnimation());
     receiver.getAvatarReceiver(0).clear();

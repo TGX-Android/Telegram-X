@@ -80,6 +80,10 @@ public class TGStickerObj {
     return reactionType != null && reactionType.getConstructor() == TdApi.ReactionTypeCustomEmoji.CONSTRUCTOR;
   }
 
+  public boolean isCustomEmoji () {
+    return stickerType != null && stickerType.getConstructor() == TdApi.StickerTypeCustomEmoji.CONSTRUCTOR;
+  }
+
   public boolean needGenericAnimation () {
     return isCustomReaction();
   }
@@ -164,6 +168,10 @@ public class TGStickerObj {
 
   public String getAllEmoji () {
     return emojis != null && emojis.length > 0 ? TextUtils.join(" ", emojis) : sticker != null ? sticker.emoji : "";
+  }
+
+  public String getFirstEmoji (String defaultEmoji) {
+    return emojis != null && emojis.length > 0 ? emojis[0]: defaultEmoji;
   }
 
   public @Nullable TdApi.Sticker getSticker () {

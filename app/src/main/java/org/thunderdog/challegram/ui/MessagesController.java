@@ -41,6 +41,7 @@ import android.text.InputType;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils;
+import android.text.style.ClickableSpan;
 import android.util.SparseIntArray;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -234,6 +235,7 @@ import org.thunderdog.challegram.widget.CircleButton;
 import org.thunderdog.challegram.widget.CollapseListView;
 import org.thunderdog.challegram.widget.CustomTextView;
 import org.thunderdog.challegram.widget.EmojiLayout;
+import org.thunderdog.challegram.widget.EmojiPacksInfoView;
 import org.thunderdog.challegram.widget.ForceTouchView;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.PopupLayout;
@@ -4382,6 +4384,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         } else {
           PopupLayout popupLayout = showOptions(StringUtils.isEmpty(text) ? null : text, ids, options, null, icons, messageHandler);
           patchReadReceiptsOptions(popupLayout, messageContext);
+          patchUsedEmojiPacks(popupLayout, messageContext);
         }
       });
     });
@@ -4395,6 +4398,26 @@ public class MessagesController extends ViewController<MessagesController.Argume
     MessageOptionsPagerController r = new MessageOptionsPagerController(context, tdlib, options, message, reactionType, optionsDelegate);
     r.show();
     hideCursorsForInputView();
+  }
+
+  private void patchUsedEmojiPacks (PopupLayout layout, MessageContext messageContext) {
+    TGMessage message = messageContext.message;
+    long[] emojiPackIds = message.getUniqueEmojiPackIdList();
+    if (emojiPackIds.length == 0) {
+      return;
+    }
+
+    OptionsLayout optionsLayout = (OptionsLayout) layout.getChildAt(1);
+    EmojiPacksInfoView emojiPacksInfoView = new EmojiPacksInfoView(layout.getContext(), this, tdlib);
+    emojiPacksInfoView.update(message.getFirstEmojiId(), emojiPackIds, new ClickableSpan() {
+      @Override
+      public void onClick (@NonNull View widget) {
+        tdlib.ui().showStickerSets(MessagesController.this, emojiPackIds, true, null);
+        layout.hideWindow(true);
+      }
+    }, false);
+    optionsLayout.addView(emojiPacksInfoView, 1);
+
   }
 
   private void patchReadReceiptsOptions (PopupLayout layout, MessageContext messageContext) {
@@ -8239,6 +8262,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Override
   public void onEnterEmoji (String emoji) {
     inputView.onEmojiSelected(emoji);
+  }
+
+  @Override
+  public void onEnterCustomEmoji (TGStickerObj sticker) {
+    inputView.onCustomEmojiSelected(sticker);
   }
 
   @Override

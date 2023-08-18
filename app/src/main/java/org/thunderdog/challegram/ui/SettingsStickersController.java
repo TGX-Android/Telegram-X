@@ -15,11 +15,15 @@
 package org.thunderdog.challegram.ui;
 
 import android.content.Context;
+import android.view.View;
+import android.widget.LinearLayout;
 
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
+import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.navigation.ViewPagerController;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -30,8 +34,14 @@ import java.util.ArrayList;
 import me.vkryl.android.widget.FrameLayoutFix;
 
 public class SettingsStickersController extends ViewPagerController<SettingsController> implements SettingsController.StickerSetLoadListener {
-  public SettingsStickersController (Context context, Tdlib tdlib) {
+  public static final int TYPE_STICKER = 0;
+  public static final int TYPE_EMOJI = 1;
+
+  private final int type;
+
+  public SettingsStickersController (Context context, Tdlib tdlib, int type) {
     super(context, tdlib);
+    this.type = type;
   }
 
   @Override
@@ -46,7 +56,7 @@ public class SettingsStickersController extends ViewPagerController<SettingsCont
 
   @Override
   public CharSequence getName () {
-    return Lang.getString(R.string.Stickers);
+    return Lang.getString(type == TYPE_STICKER ? R.string.Stickers: R.string.EmojiPacks);
   }
 
   @Override
@@ -59,9 +69,9 @@ public class SettingsStickersController extends ViewPagerController<SettingsCont
   @Override
   public void setArguments (SettingsController args) {
     super.setArguments(args);
-    ArrayList<TGStickerSetInfo> stickerSets = args.getStickerSets();
+    ArrayList<TGStickerSetInfo> stickerSets = args.getStickerSets(isEmoji());
     if (stickerSets == null) {
-      args.setStickerSetListener(this);
+      args.addStickerSetListener(isEmoji(), this);
     } else {
       setStickers(stickerSets);
     }
@@ -79,14 +89,14 @@ public class SettingsStickersController extends ViewPagerController<SettingsCont
   public void destroy () {
     super.destroy();
     if (getArguments() != null) {
-      getArguments().setStickerSetListener(null);
+      getArguments().removeStickerSetListener(isEmoji(), this);
     }
   }
 
   @Override
-  public void onStickerSetsLoaded (ArrayList<TGStickerSetInfo> stickerSets) {
+  public void onStickerSetsLoaded (ArrayList<TGStickerSetInfo> stickerSets, TdApi.StickerType type) {
     if (getArguments() != null) {
-      getArguments().setStickerSetListener(null);
+      getArguments().removeStickerSetListener(isEmoji(), this);
     }
     setStickers(stickerSets);
     ViewController<?> c = getCachedControllerForId(R.id.controller_stickers);
@@ -122,16 +132,20 @@ public class SettingsStickersController extends ViewPagerController<SettingsCont
 
   @Override
   protected int getPagerItemCount () {
-    return 4;
+    return type == TYPE_STICKER ? 4: 3;
   }
 
   @Override
   protected String[] getPagerSections () {
-    return new String[] {
+    return type == TYPE_STICKER ? new String[] {
       Lang.getString(R.string.Trending).toUpperCase(),
       Lang.getString(R.string.Installed).toUpperCase(),
       Lang.getString(R.string.Archived).toUpperCase(),
       Lang.getString(R.string.Masks).toUpperCase()
+    }: new String[] {
+      Lang.getString(R.string.Trending).toUpperCase(),
+      Lang.getString(R.string.Installed).toUpperCase(),
+      Lang.getString(R.string.Archived).toUpperCase()
     };
   }
 
@@ -151,23 +165,55 @@ public class SettingsStickersController extends ViewPagerController<SettingsCont
     switch (position) {
       case STICKERS_POSITION: {
         StickersController c = new StickersController(this.context, this.tdlib);
-        c.setArguments(new StickersController.Args(StickersController.MODE_STICKERS, true).setStickerSets(stickerSets));
+        c.setArguments(new StickersController.Args(StickersController.MODE_STICKERS, isEmoji(), false).setStickerSets(type == TYPE_STICKER ? stickerSets: null));
         return c;
       }
       case ARCHIVED_POSITION: {
         StickersController c = new StickersController(this.context, this.tdlib);
-        c.setArguments(new StickersController.Args(StickersController.MODE_STICKERS_ARCHIVED, false));
+        c.setArguments(new StickersController.Args(StickersController.MODE_STICKERS_ARCHIVED, isEmoji(), false));
         return c;
       }
       case MASKS_POSITION: {
         StickersController c = new StickersController(this.context, this.tdlib);
-        c.setArguments(new StickersController.Args(StickersController.MODE_MASKS, false));
+        c.setArguments(new StickersController.Args(StickersController.MODE_MASKS, isEmoji(), false));
         return c;
       }
       case TRENDING_POSITION: {
-        return new StickersTrendingController(this.context, this.tdlib);
+        return new StickersTrendingController(this.context, this.tdlib, isEmoji());
       }
     }
     throw new IllegalArgumentException("position == " + position);
+  }
+
+  public boolean isEmoji () {
+    return type == TYPE_EMOJI;
+  }
+
+  @Override
+  protected int getMenuId () {
+    return R.id.menu_search;
+  }
+
+  @Override
+  protected int getSearchMenuId () {
+    return R.id.menu_clear;
+  }
+
+  @Override
+  public void fillMenuItems (int id, HeaderView header, LinearLayout menu) {
+    if (id == R.id.menu_search) {
+      header.addSearchButton(menu, this, getHeaderIconColorId()).setTouchDownListener((v, e) -> {});
+    } else if (id == R.id.menu_clear) {
+      header.addClearButton(menu, this);
+    }
+  }
+
+  @Override
+  public void onMenuItemPressed (int id, View view) {
+    if (id == R.id.menu_btn_search) {
+      openSearchMode();
+    } else if (id == R.id.menu_btn_clear) {
+      clearSearchInput();
+    }
   }
 }

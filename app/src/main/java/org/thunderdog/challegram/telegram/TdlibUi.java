@@ -1672,21 +1672,11 @@ public class TdlibUi extends Handler {
       switch (object.getConstructor()) {
         case TdApi.StickerSet.CONSTRUCTOR: {
           TdApi.StickerSet stickerSet = (TdApi.StickerSet) object;
-          if (stickerSet.stickerType.getConstructor() == TdApi.StickerTypeCustomEmoji.CONSTRUCTOR) {
-            // TODO support custom emoji sets
-            showLinkTooltip(context.tdlib(), R.drawable.baseline_warning_24, Lang.getString(R.string.InternalUrlUnsupported), openParameters);
-            return;
-          }
           StickerSetWrap.showStickerSet(context, stickerSet);
           break;
         }
         case TdApi.StickerSetInfo.CONSTRUCTOR: {
           TdApi.StickerSetInfo stickerSetInfo = (TdApi.StickerSetInfo) object;
-          if (stickerSetInfo.stickerType.getConstructor() == TdApi.StickerTypeCustomEmoji.CONSTRUCTOR) {
-            // TODO support custom emoji sets
-            showLinkTooltip(context.tdlib(), R.drawable.baseline_warning_24, Lang.getString(R.string.InternalUrlUnsupported), openParameters);
-            return;
-          }
           StickerSetWrap.showStickerSet(context, stickerSetInfo);
           break;
         }
@@ -1706,6 +1696,14 @@ public class TdlibUi extends Handler {
   public void showStickerSet (TdlibDelegate context, long setId, @Nullable UrlOpenParameters openParameters) {
     // TODO progress
     tdlib.client().send(new TdApi.GetStickerSet(setId), newStickerSetHandler(context, openParameters));
+  }
+
+  public void showStickerSets (TdlibDelegate context, long[] setIds, boolean isEmojiPacks, @Nullable UrlOpenParameters openParameters) {
+    if (setIds.length == 1) {
+      showStickerSet(context, setIds[0], openParameters);
+    } else {
+      StickerSetWrap.showStickerSets(context, setIds, isEmojiPacks);
+    }
   }
 
   // Confirm phone

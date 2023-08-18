@@ -66,6 +66,7 @@ import org.thunderdog.challegram.component.chat.EmojiToneHelper;
 import org.thunderdog.challegram.component.chat.InlineResultsWrap;
 import org.thunderdog.challegram.component.chat.InputView;
 import org.thunderdog.challegram.component.preview.FlingDetector;
+import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.InlineResult;
@@ -583,6 +584,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   @Override
   public void onEnterEmoji (String emoji) {
     ((InputView) captionView).onEmojiSelected(emoji);
+  }
+
+  @Override
+  public void onEnterCustomEmoji (TGStickerObj sticker) {
+    ((InputView) captionView).onCustomEmojiSelected(sticker);
   }
 
   @Override
