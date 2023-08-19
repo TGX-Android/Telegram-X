@@ -22,6 +22,7 @@ import org.thunderdog.challegram.emoji.RecentEmoji;
 import org.thunderdog.challegram.telegram.EmojiMediaType;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.v.RtlGridLayoutManager;
@@ -39,12 +40,11 @@ public abstract class EmojiLayoutAbstractController implements
   TGLegacyManager.EmojiLoadListener,
   Emoji.EmojiChangeListener {
 
-
-
   private static final int SCROLLBY_SECTION_LIMIT = 8;
 
   protected final Tdlib tdlib;
   protected final Context context;
+  protected final int controllerId;
 
   protected EmojiLayout emojiLayout;
   protected GridLayoutManager manager;
@@ -56,9 +56,10 @@ public abstract class EmojiLayoutAbstractController implements
   public ArrayList<TGStickerSetInfo> classicEmojiSets;
   public ArrayList<TGStickerSetInfo> stickerSets;
 
-  public EmojiLayoutAbstractController (Context context, Tdlib tdlib) {
+  public EmojiLayoutAbstractController (Context context, Tdlib tdlib, int controllerId) {
     this.tdlib = tdlib;
     this.context = context;
+    this.controllerId = controllerId;
   }
 
   public void setAdapter (MediaStickersAdapter adapter) {
@@ -244,6 +245,19 @@ public abstract class EmojiLayoutAbstractController implements
     return -1;
   }
 
+  public int indexOfStickerSetById (long setId) {
+    int index = 0;
+    for (TGStickerSetInfo setInfo : stickerSets) {
+      if (!setInfo.isSystem() && !setInfo.isFakeClassicEmoji()) {
+        if (setInfo.getId() == setId) {
+          return index;
+        }
+        index++;
+      }
+    }
+    return -1;
+  }
+
   public @Nullable TGStickerSetInfo lastStickerSetInfo;
   private int lastStickerSetIndex;
 
@@ -338,8 +352,8 @@ public abstract class EmojiLayoutAbstractController implements
     setIgnoreRequests(true, stickerSets.get(futureSection).getId());
     if (emojiLayout != null) {
       emojiLayout.setIgnoreMovement(true);
+      emojiLayout.setCurrentStickerSectionByPosition(controllerId, futureSection, true, true);
     }
-    onScrollToSectionStart(futureSection);
 
     lastScrollAnimator = new FactorAnimator(0, new FactorAnimator.Target() {
       @Override
@@ -411,9 +425,6 @@ public abstract class EmojiLayoutAbstractController implements
     Emoji.instance().removeEmojiChangeListener(this);
     Views.destroyRecyclerView(recyclerView);
   }
-
-  protected abstract int calculateSpanCount ();
-  protected abstract void onScrollToSectionStart (int section);
 
   public void scrollToStickerSet (int stickerSetIndex, boolean showRecentTitle, boolean animated) {
     final int futureSection = indexOfStickerSetByAdapterPosition(stickerSetIndex);
@@ -679,4 +690,112 @@ public abstract class EmojiLayoutAbstractController implements
       i++;
     }
   }
+
+
+  /* * */
+
+  private int ignoreStickersScroll;
+
+  public boolean isNeedIgnoreScroll () {
+    return ignoreStickersScroll != 0;
+  }
+
+  private void beforeStickerChanges () {
+    ignoreStickersScroll++;
+  }
+
+  private void resetScrollCache () {
+    // lastStickerSetInfo = null; // FIXME removing current sticker set does not update selection
+    // ignoreStickersScroll--;
+
+    if (emojiLayout != null) {
+      emojiLayout.resetScrollState(true); // FIXME upd: ... fixme what?
+    }
+    UI.post(() -> {
+      /*if (emojiLayout != null && contentView.getCurrentSection() == SECTION_STICKERS) {
+        emojiLayout.setCurrentStickerSectionByPosition(getStickerSetSection(), true, true);
+        emojiLayout.resetScrollState(true);
+      }*/
+      ignoreStickersScroll--;
+    }, 400);
+  }
+
+  public void addStickerSet (TGStickerSetInfo stickerSet, ArrayList<MediaStickersAdapter.StickerItem> items, int index) {
+    if (index < 0 || index >= stickerSets.size()) {
+      return;
+    }
+
+    beforeStickerChanges();
+
+    if (emojiLayout != null) {
+      emojiLayout.addStickerSection(controllerId, index, stickerSet);
+    }
+
+    int startIndex = stickerSets.get(index).getStartIndex();
+    stickerSets.add(index, stickerSet);
+    for (int i = index; i < stickerSets.size(); i++) {
+      TGStickerSetInfo nextStickerSet = stickerSets.get(i);
+      nextStickerSet.setStartIndex(startIndex);
+      startIndex += nextStickerSet.getSize() + 1;
+    }
+
+    adapter.addRange(stickerSet.getStartIndex(), items);
+    resetScrollCache();
+  }
+
+  public int removeStickerSet (TGStickerSetInfo stickerSet) {
+    int i = stickerSets.indexOf(stickerSet);
+    if (i != -1) {
+      beforeStickerChanges();
+      stickerSets.remove(i);
+      if (emojiLayout != null) {
+        emojiLayout.removeStickerSection(controllerId, i);
+      }
+      int startIndex = stickerSet.getStartIndex();
+      adapter.removeRange(startIndex, stickerSet.getSize() + 1);
+      for (int j = i; j < stickerSets.size(); j++) {
+        TGStickerSetInfo nextStickerSet = stickerSets.get(j);
+        nextStickerSet.setStartIndex(startIndex);
+        startIndex += nextStickerSet.getSize() + 1;
+      }
+      resetScrollCache();
+    }
+    return i;
+  }
+
+  public void moveStickerSet (int oldPosition, int newPosition) {
+    beforeStickerChanges();
+
+    if (emojiLayout != null) {
+      emojiLayout.moveStickerSection(controllerId, oldPosition, newPosition);
+    }
+
+    TGStickerSetInfo stickerSet = stickerSets.remove(oldPosition);
+
+    final int startIndex = stickerSet.getStartIndex();
+    final int itemCount = stickerSet.getSize() + 1;
+
+    int startPosition;
+    if (oldPosition < newPosition) {
+      startPosition = startIndex;
+    } else {
+      startPosition = stickerSets.get(newPosition).getStartIndex();
+    }
+
+    stickerSets.add(newPosition, stickerSet);
+
+    for (int i = Math.min(oldPosition, newPosition); i < stickerSets.size(); i++) {
+      TGStickerSetInfo nextSet = stickerSets.get(i);
+      nextSet.setStartIndex(startPosition);
+      startPosition += nextSet.getSize() + 1;
+    }
+
+    adapter.moveRange(startIndex, itemCount, stickerSet.getStartIndex());
+    resetScrollCache();
+  }
+
+
+  /**/
+
+  protected abstract int calculateSpanCount ();
 }

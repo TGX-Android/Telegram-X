@@ -15,11 +15,6 @@
 package org.thunderdog.challegram.widget;
 
 import android.content.Context;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.Path;
-import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -33,13 +28,11 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.collection.SparseArrayCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
-import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.component.chat.EmojiToneHelper;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
@@ -47,25 +40,24 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
 import org.thunderdog.challegram.emoji.Emoji;
-import org.thunderdog.challegram.loader.ImageReceiver;
-import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.EmojiMediaType;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeId;
-import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Keyboard;
-import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
-import org.thunderdog.challegram.ui.EmojiStatusListController;
 import org.thunderdog.challegram.ui.EmojiListController;
 import org.thunderdog.challegram.ui.EmojiMediaListController;
+import org.thunderdog.challegram.ui.EmojiStatusListController;
 import org.thunderdog.challegram.unsorted.Settings;
-import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiHeaderView;
-import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiHeaderSectionView;
+import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSection;
+import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSectionView;
+import org.thunderdog.challegram.widget.EmojiMediaLayout.Headers.EmojiHeaderView;
+import org.thunderdog.challegram.widget.EmojiMediaLayout.Headers.MediaHeaderView;
+import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.StickerSectionView;
 import org.thunderdog.challegram.widget.rtl.RtlViewPager;
 
 import java.util.ArrayList;
@@ -73,8 +65,6 @@ import java.util.ArrayList;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
-import me.vkryl.core.ColorUtils;
-import me.vkryl.core.lambda.Destroyable;
 
 public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPreDrawListener, ViewPager.OnPageChangeListener, FactorAnimator.Target, View.OnClickListener, View.OnLongClickListener, Lang.Listener {
   public interface Listener {
@@ -119,36 +109,18 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     return Screen.dp(6f);
   }
 
-  public static int getHeaderImagePadding () {
-    return Screen.dp(10f);
-  }
-
   public static int getHorizontalPadding () {
     return Screen.dp(2.5f);
   }
 
   private ShadowView shadowView;
   private @Nullable EmojiHeaderView emojiHeaderView;
+  private @Nullable MediaHeaderView mediaSectionsView;
 
-  private @Nullable RecyclerView mediaSectionsView;
-
-  // private ArrayList<EmojiSection> emojiSections;
   private int emojiSectionsSize = 0;
 
-  public void setCurrentEmojiSection (int section) {
-    if (emojiHeaderView != null) {
-      emojiHeaderView.setCurrentEmojiSection(section);
-    }
-  }
-
-  private static final int OFFSET = 2;
-
-  public void removeStickerSection (int section) {
-    mediaAdapter.removeStickerSet(section - mediaAdapter.getAddItemCount(true));
-  }
-
-  private void clearRecentStickers () {
-    if (themeProvider != null && mediaAdapter.hasRecents) {
+  public void clearRecentStickers () {
+    if (themeProvider != null && mediaSectionsView.hasRecents()) {
       themeProvider.showOptions(null, new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {
         Lang.getString(animatedEmojiOnly ? R.string.ClearRecentEmojiStatuses: R.string.ClearRecentStickers),
         Lang.getString(R.string.Cancel)
@@ -189,7 +161,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     }
   }
 
-  private void openEmojiSetOptions (final TGStickerSetInfo info) {
+  public void openEmojiSetOptions (final TGStickerSetInfo info) {
     if (themeProvider == null) return;
 
     boolean isTrending = info.isTrendingEmoji();
@@ -229,7 +201,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     });
   }
 
-  private void removeStickerSet (final TGStickerSetInfo info) {
+  public void removeStickerSet (final TGStickerSetInfo info) {
     if (animatedEmojiOnly) return;
 
     if (themeProvider != null) {
@@ -260,56 +232,8 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     }
   }
 
-  public void addStickerSection (int section, TGStickerSetInfo info) {
-    mediaAdapter.addStickerSet(section - mediaAdapter.getAddItemCount(true), info);
-  }
-
-  public void moveStickerSection (int fromSection, int toSection) {
-    int addItems = mediaAdapter.getAddItemCount(true);
-    mediaAdapter.moveStickerSet(fromSection - addItems, toSection - addItems);
-  }
-
-  public void setCurrentStickerSectionByPosition (int i, boolean isStickerSection, boolean animated) {
-    if (mediaAdapter.hasRecents && mediaAdapter.hasFavorite && isStickerSection && i >= 1) {
-      i--;
-    }
-    if (isStickerSection) {
-      i += mediaAdapter.headerItems.size() - mediaAdapter.getAddItemCount(false);
-    }
-    setCurrentStickerSection(mediaAdapter.getObject(i), animated);
-  }
-
-  private void setCurrentStickerSection (Object obj, boolean animated) {
-    if (mediaAdapter.setSelectedObject(obj, animated, mediaSectionsView.getLayoutManager())) {
-      int section = mediaAdapter.indexOfObject(obj);
-      int first = ((LinearLayoutManager) mediaSectionsView.getLayoutManager()).findFirstVisibleItemPosition();
-      int last = ((LinearLayoutManager) mediaSectionsView.getLayoutManager()).findLastVisibleItemPosition();
-      int itemWidth = (Screen.currentWidth() - getHorizontalPadding() * 2) / emojiSectionsSize;
-
-      if (first != -1) {
-        int scrollX = first * itemWidth;
-        View v = mediaSectionsView.getLayoutManager().findViewByPosition(first);
-        if (v != null) {
-          scrollX += -v.getLeft();
-        }
-
-        if (section - OFFSET < first) {
-          int desiredScrollX = section * itemWidth - itemWidth / 2 - itemWidth;
-          if (animated && headerHideFactor != 1f) {
-            mediaSectionsView.smoothScrollBy(desiredScrollX - scrollX, 0);
-          } else {
-            mediaSectionsView.scrollBy(desiredScrollX - scrollX, 0);
-          }
-        } else if (section + OFFSET > last) {
-          int desiredScrollX = Math.max(0, (section - emojiSectionsSize) * itemWidth + itemWidth * OFFSET + (animatedEmojiOnly ? -itemWidth: itemWidth / 2));
-          if (animated && headerHideFactor != 1f) {
-            mediaSectionsView.smoothScrollBy(desiredScrollX - scrollX, 0);
-          } else {
-            mediaSectionsView.scrollBy(desiredScrollX - scrollX, 0);
-          }
-        }
-      }
-    }
+  public boolean isUseDarkMode () {
+    return useDarkMode;
   }
 
   private CircleButton circleButton;
@@ -320,787 +244,6 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     }
   }
 
-  public static class EmojiSection implements FactorAnimator.Target {
-    public final int index;
-    public float selectionFactor;
-
-    private int iconRes;
-    public Drawable icon;
-    public @Nullable Drawable activeIcon;
-
-    private boolean activeDisabled;
-    private boolean isTrending;
-
-    private @Nullable View view;
-    private final EmojiLayout parent;
-
-    private int activeIconRes;
-
-    public EmojiSection (EmojiLayout parent, int sectionIndex, @DrawableRes int iconRes, @DrawableRes int activeIconRes) {
-      this.parent = parent;
-      this.index = sectionIndex;
-      this.activeIconRes = activeIconRes;
-      this.activeIcon = Drawables.get(parent.getResources(), activeIconRes);
-      changeIcon(iconRes);
-    }
-
-    public void setIsTrending () {
-      this.isTrending = true;
-    }
-
-    public boolean isTrending () {
-      return isTrending;
-    }
-
-    @Nullable public View getView () {
-      return view;
-    }
-
-    public EmojiSection setActiveDisabled () {
-      activeDisabled = true;
-      return this;
-    }
-
-    public void changeIcon (final int iconRes, final int activeIconRes) {
-      changeIcon(iconRes);
-      if (this.activeIconRes != activeIconRes) {
-        this.activeIcon = Drawables.get(parent.getResources(), this.activeIconRes = activeIconRes);
-        if (view != null) {
-          view.invalidate();
-        }
-      }
-    }
-
-    public void changeIcon (final int iconRes) {
-      if (this.iconRes != iconRes) {
-        this.icon = Drawables.get(parent.getResources(), this.iconRes = iconRes);
-        if (view != null) {
-          view.invalidate();
-        }
-      }
-    }
-
-    @Override
-    public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
-      setFactor(factor);
-    }
-
-    @Override
-    public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) { }
-
-    private @Nullable FactorAnimator animator;
-
-    public EmojiSection setFactor (float toFactor, boolean animated) {
-      if (selectionFactor != toFactor && animated && view != null) {
-        if (animator == null) {
-          animator = new FactorAnimator(0, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180, selectionFactor);
-        }
-        animator.animateTo(toFactor);
-      } else {
-        if (animator != null) {
-          animator.forceFactor(toFactor);
-        }
-        setFactor(toFactor);
-      }
-      return this;
-    }
-
-    private void setFactor (float factor) {
-      if (this.selectionFactor != factor) {
-        this.selectionFactor = factor;
-
-        if (isPanda) {
-          if (factor == 1f) {
-            startPandaTimer();
-          } else {
-            cancelPandaTimer();
-          }
-        }
-
-        if (view != null) {
-          view.invalidate();
-        }
-      }
-    }
-
-    public void setCurrentView (View view) {
-      this.view = view;
-    }
-
-    private boolean makeFirstTransparent;
-
-    public EmojiSection setMakeFirstTransparent () {
-      this.makeFirstTransparent = true;
-      return this;
-    }
-
-    private int offsetHalf;
-
-    public EmojiSection setOffsetHalf (boolean fromRight) {
-      this.offsetHalf = fromRight ? 1 : -1;
-      return this;
-    }
-
-    private boolean isPanda, doesPandaBlink, isPandaBlinking;
-    private Runnable pandaBlink;
-
-    public EmojiSection setIsPanda (boolean isPanda) {
-      this.isPanda = isPanda;
-      return this;
-    }
-
-    private void setPandaBlink (boolean inBlink) {
-      if (this.doesPandaBlink != inBlink) {
-        this.doesPandaBlink = inBlink;
-        this.activeIcon = Drawables.get(parent.getResources(), inBlink ? R.drawable.deproko_baseline_animals_filled_blink_24 : activeIconRes);
-        if (view != null) {
-          view.invalidate();
-        }
-      }
-    }
-
-    private void startPandaTimer () {
-      if (!isPandaBlinking) {
-        this.isPandaBlinking = true;
-        if (pandaBlink == null) {
-          this.pandaBlink = () -> {
-            if (isPandaBlinking || doesPandaBlink) {
-              setPandaBlink(!doesPandaBlink);
-              if (isPandaBlinking) {
-                scheduleBlink(false);
-              }
-            }
-          };
-        }
-        blinkNum = 0;
-        scheduleBlink(true);
-      }
-    }
-
-    private int blinkNum;
-
-    private void scheduleBlink (boolean firstTime) {
-      if (view != null) {
-        long delay;
-        switch (blinkNum++) {
-          case 0: {
-            setPandaBlink(false);
-            delay = firstTime ? 6000 : 1000;
-            break;
-          }
-          case 1: case 3: case 5: {
-            delay = 140;
-            break;
-          }
-          case 2:
-          case 4: {
-            delay = 4000;
-            break;
-          }
-          case 6: {
-            delay = 370;
-            break;
-          }
-          case 7: {
-            delay = 130;
-            break;
-          }
-          case 8: {
-            delay = 4000;
-            blinkNum = 0;
-            break;
-          }
-          default: {
-            delay = 1000;
-            blinkNum = 0;
-            break;
-          }
-        }
-        view.postDelayed(pandaBlink, delay);
-      }
-
-    }
-
-    private void cancelPandaTimer () {
-      if (isPandaBlinking) {
-        isPandaBlinking = false;
-        setPandaBlink(false);
-        if (view != null) {
-          view.removeCallbacks(pandaBlink);
-        }
-      }
-    }
-
-    public void draw (Canvas c, int cx, int cy) {
-      if (selectionFactor == 0f || activeDisabled) {
-        Drawables.draw(c, icon, cx - icon.getMinimumWidth() / 2, cy - icon.getMinimumHeight() / 2, parent.useDarkMode ? Paints.getPorterDuffPaint(Theme.getColor(ColorId.icon, ThemeId.NIGHT_BLACK)) : Paints.getIconGrayPorterDuffPaint());
-      } else if (selectionFactor == 1f) {
-        final Drawable icon = this.activeIcon != null ? activeIcon : this.icon;
-        Drawables.draw(c, icon, cx - icon.getMinimumWidth() / 2, cy - icon.getMinimumHeight() / 2, parent.useDarkMode ? Paints.getPorterDuffPaint(Theme.getColor(ColorId.iconActive, ThemeId.NIGHT_BLACK)) : Paints.getActiveKeyboardPaint());
-      } else {
-        final Paint grayPaint = parent.useDarkMode ? Paints.getPorterDuffPaint(Theme.getColor(ColorId.icon, ThemeId.NIGHT_BLACK)) : Paints.getIconGrayPorterDuffPaint();
-        final int grayAlpha = grayPaint.getAlpha();
-
-        if (makeFirstTransparent) {
-          int newAlpha = (int) ((float) grayAlpha * (1f - selectionFactor));
-          grayPaint.setAlpha(newAlpha);
-        } else if (isPanda) {
-          int newAlpha = (int) ((float) grayAlpha * (1f - (1f - AnimatorUtils.DECELERATE_INTERPOLATOR.getInterpolation(1f - selectionFactor))));
-          grayPaint.setAlpha(newAlpha);
-        }
-
-        Drawables.draw(c, icon, cx - icon.getMinimumWidth() / 2, cy - icon.getMinimumHeight() / 2, grayPaint);
-        grayPaint.setAlpha(grayAlpha);
-
-        final Drawable icon = this.activeIcon != null ? activeIcon : this.icon;
-        final Paint iconPaint = Paints.getActiveKeyboardPaint();
-        final int sourceIconAlpha = iconPaint.getAlpha();
-        int alpha = (int) ((float) sourceIconAlpha * selectionFactor);
-        iconPaint.setAlpha(alpha);
-        Drawables.draw(c, icon, cx - icon.getMinimumWidth() / 2, cy - icon.getMinimumHeight() / 2, iconPaint);
-        iconPaint.setAlpha(sourceIconAlpha);
-      }
-    }
-  }
-
-  private MediaAdapter mediaAdapter;
-
-  private static class MediaHolder extends RecyclerView.ViewHolder {
-    public static final int TYPE_EMOJI_SECTION = 0;
-    public static final int TYPE_STICKER_SECTION = 1;
-
-    public MediaHolder (View itemView) {
-      super(itemView);
-    }
-
-    public static MediaHolder create (Context context, int viewType, View.OnClickListener onClickListener, View.OnLongClickListener onLongClickListener, int emojiSectionCount, @Nullable ViewController<?> themeProvider) {
-      switch (viewType) {
-        case TYPE_EMOJI_SECTION: {
-          EmojiHeaderSectionView sectionView = new EmojiHeaderSectionView(context);
-          if (themeProvider != null) {
-            themeProvider.addThemeInvalidateListener(sectionView);
-          }
-          sectionView.setId(R.id.btn_section);
-          sectionView.setOnClickListener(onClickListener);
-          sectionView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-          return new MediaHolder(sectionView);
-        }
-        case TYPE_STICKER_SECTION: {
-          StickerSectionView sectionView = new StickerSectionView(context);
-          if (themeProvider != null) {
-            themeProvider.addThemeInvalidateListener(sectionView);
-          }
-          sectionView.setOnLongClickListener(onLongClickListener);
-          sectionView.setId(R.id.btn_stickerSet);
-          sectionView.setOnClickListener(onClickListener);
-          sectionView.setItemCount(emojiSectionCount);
-          sectionView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
-          return new MediaHolder(sectionView);
-        }
-      }
-      throw new RuntimeException("viewType == " + viewType);
-    }
-  }
-
-  public static class StickerSectionView extends View implements Destroyable, FactorAnimator.Target {
-    private final ImageReceiver receiver;
-    private final GifReceiver gifReceiver;
-
-    private int itemCount;
-
-    private float selectionFactor;
-
-    public StickerSectionView (Context context) {
-      super(context);
-      receiver = new ImageReceiver(this, 0);
-      gifReceiver = new GifReceiver(this);
-    }
-
-    public void setItemCount (int itemCount) {
-      this.itemCount = itemCount;
-    }
-
-    public void attach () {
-      receiver.attach();
-      gifReceiver.attach();
-    }
-
-    public void detach () {
-      receiver.detach();
-      gifReceiver.detach();
-    }
-
-    @Override
-    public void performDestroy () {
-      receiver.destroy();
-      gifReceiver.destroy();
-    }
-
-    private TGStickerSetInfo info;
-    private Path contour;
-
-    public void setStickerSet (@NonNull TGStickerSetInfo info) {
-      this.info = info;
-      this.contour = info.getPreviewContour(Math.min(receiver.getWidth(), receiver.getHeight()));
-      receiver.requestFile(info.getPreviewImage());
-      gifReceiver.requestFile(info.getPreviewAnimation());
-    }
-
-    private FactorAnimator animator;
-
-    public void setSelectionFactor (float factor, boolean animated) {
-      if (animated && this.selectionFactor != factor) {
-        if (animator == null) {
-          animator = new FactorAnimator(0, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180L, selectionFactor);
-        }
-        animator.animateTo(factor);
-      } else {
-        if (animator != null) {
-          animator.forceFactor(factor);
-        }
-        setSelectionFactor(factor);
-      }
-    }
-
-    @Override
-    public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
-      if (id == 0) {
-        setSelectionFactor(factor);
-      }
-    }
-
-    @Override
-    public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
-
-    }
-
-    private void setSelectionFactor (float factor) {
-      if (this.selectionFactor != factor) {
-        this.selectionFactor = factor;
-        invalidate();
-      }
-    }
-
-    public @Nullable TGStickerSetInfo getStickerSet () {
-      return info;
-    }
-
-    @Override
-    protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
-      int itemWidth = (Screen.currentWidth() - getHorizontalPadding() * 2) / itemCount; // FIXME MeasureSpec.getSize()
-      setMeasuredDimension(MeasureSpec.makeMeasureSpec(itemWidth, MeasureSpec.EXACTLY), getDefaultSize(getSuggestedMinimumHeight(), heightMeasureSpec));
-      setBounds();
-    }
-
-    private void setBounds () {
-      int padding = getHeaderImagePadding();
-      int width = receiver.getWidth(), height = receiver.getHeight();
-      receiver.setBounds(padding, padding, getMeasuredWidth() - padding, getMeasuredHeight() - padding);
-      gifReceiver.setBounds(padding, padding, getMeasuredWidth() - padding, getMeasuredHeight() - padding);
-      if (info != null && (width != receiver.getWidth() || height != receiver.getHeight())) {
-        this.contour = info.getPreviewContour(Math.min(receiver.getWidth(), receiver.getHeight()));
-      }
-    }
-
-    @Override
-    protected void onDraw (Canvas c) {
-      int cx = getMeasuredWidth() / 2;
-      int cy = getMeasuredHeight() / 2;
-      final boolean saved = selectionFactor != 0f;
-      if (saved) {
-        final int selectionColor = Theme.chatSelectionColor();
-        final int selectionAlpha = Color.alpha(selectionColor);
-        int color = ColorUtils.color((int) ((float) selectionAlpha * selectionFactor), selectionColor);
-        int radius = Screen.dp(18f) - (int) ((float) Screen.dp(4f) * (1f - selectionFactor));
-
-        c.drawCircle(cx, cy, radius, Paints.fillingPaint(color));
-        c.save();
-        float scale = .85f + .15f * (1f - selectionFactor);
-        c.scale(scale, scale, cx, cy);
-      }
-
-      if (info != null && info.isAnimated()) {
-        if (gifReceiver.needPlaceholder()) {
-          if (receiver.needPlaceholder()) {
-            receiver.drawPlaceholderContour(c, contour);
-          }
-          receiver.draw(c);
-        }
-        gifReceiver.draw(c);
-      } else {
-        if (receiver.needPlaceholder()) {
-          receiver.drawPlaceholderContour(c, contour);
-        }
-        receiver.draw(c);
-      }
-      if (Config.DEBUG_STICKER_OUTLINES) {
-        receiver.drawPlaceholderContour(c, contour);
-      }
-      if (saved) {
-        c.restore();
-      }
-    }
-  }
-
-  private static class MediaAdapter extends RecyclerView.Adapter<MediaHolder> implements View.OnLongClickListener {
-    private final Context context;
-    private final View.OnClickListener onClickListener;
-    private final ArrayList<EmojiSection> headerItems;
-    private final int sectionItemCount;
-    private final EmojiLayout parent;
-
-    private final @Nullable ViewController<?> themeProvider;
-
-    private Object selectedObject;
-    private boolean hasRecents, hasFavorite;
-
-    public MediaAdapter (Context context, EmojiLayout parent, OnClickListener onClickListener, int sectionItemCount, boolean selectedIsGifs, @Nullable ViewController<?> themeProvider, boolean hideSectionsExceptRecent) {
-      this.context = context;
-      this.parent = parent;
-      this.onClickListener = onClickListener;
-      this.themeProvider = themeProvider;
-      this.headerItems = new ArrayList<>();
-      if (!hideSectionsExceptRecent) {
-        this.headerItems.add(new EmojiSection(parent, -1, R.drawable.baseline_emoticon_outline_24, 0).setActiveDisabled());
-        this.headerItems.add(new EmojiSection(parent, -2, R.drawable.deproko_baseline_gif_24, R.drawable.deproko_baseline_gif_filled_24));
-        this.headerItems.add(new EmojiSection(parent, -3, R.drawable.outline_whatshot_24, R.drawable.baseline_whatshot_24).setMakeFirstTransparent());
-      }
-      // this.favoriteSection = new EmojiSection(parent, -4, R.drawable.baseline_star_border_24, R.drawable.baseline_star_24).setMakeFirstTransparent();
-      this.recentSection = new EmojiSection(parent, -4, R.drawable.baseline_access_time_24, R.drawable.baseline_watch_later_24).setMakeFirstTransparent();
-      this.trendingSection = new EmojiSection(parent, -5, R.drawable.outline_whatshot_24, R.drawable.baseline_whatshot_24).setMakeFirstTransparent();
-      this.trendingSection.setIsTrending();
-
-      this.selectedObject = selectedIsGifs ? headerItems.get(1) : recentSection;
-      if (selectedIsGifs) {
-        this.headerItems.get(1).setFactor(1f, false);
-      } else {
-        this.recentSection.setFactor(1f, false);
-      }
-
-      this.sectionItemCount = sectionItemCount;
-      this.stickerSets = new ArrayList<>();
-    }
-
-    public void addHeaderItem (EmojiSection emojiSection) {
-      this.headerItems.add(emojiSection);
-    }
-
-    public void setHasRecents (boolean hasRecents) {
-      if (this.hasRecents != hasRecents) {
-        this.hasRecents = hasRecents;
-        checkRecent();
-      }
-    }
-
-    public void setShowRecentsAsFound (boolean showRecentAsFound) {
-      recentSection.changeIcon(
-        showRecentAsFound ? R.drawable.baseline_emoticon_outline_24: R.drawable.baseline_access_time_24,
-        showRecentAsFound ? 0: R.drawable.baseline_watch_later_24);
-    }
-
-    public int getAddItemCount (boolean allowHidden) {
-      int i = 0;
-      if (allowHidden) {
-        if (hasFavorite) {
-          i++;
-        }
-        if (hasRecents) {
-          i++;
-        }
-        if (hasTrending) {
-          i++;
-        }
-      } else {
-        if (showingRecentSection) {
-          i++;
-        }
-        if (showingTrendingSection) {
-          i++;
-        }
-      }
-      return i;
-    }
-
-    private boolean showingRecentSection;
-
-    private void checkRecent () {
-      boolean showRecent = hasFavorite || hasRecents;
-      if (this.showingRecentSection != showRecent) {
-        this.showingRecentSection = showRecent;
-        if (showRecent) {
-          headerItems.add(recentSection);
-          notifyItemInserted(headerItems.size() - 1);
-        } else {
-          int i = headerItems.indexOf(recentSection);
-          if (i != -1) {
-            headerItems.remove(i);
-            notifyItemRemoved(i);
-          }
-        }
-      } else if (selectedObject != null) {
-        int i = indexOfObject(selectedObject);
-        if (i != -1) {
-          notifyItemRangeChanged(i, 2);
-        }
-      }
-    }
-
-    private boolean showingTrendingSection;
-
-    private void checkTrending () {
-      boolean showTrending = hasTrending;
-      if (this.showingTrendingSection != showTrending) {
-        this.showingTrendingSection = showTrending;
-        if (showTrending) {
-          headerItems.add(trendingSection);
-          notifyItemInserted(headerItems.size() - 1);
-        } else {
-          int i = headerItems.indexOf(trendingSection);
-          if (i != -1) {
-            headerItems.remove(i);
-            notifyItemRemoved(i);
-          }
-        }
-      } else if (selectedObject != null) {
-        int i = indexOfObject(selectedObject);
-        if (i != -1) {
-          notifyItemRangeChanged(i, 2);
-        }
-      }
-    }
-
-    public void setHasFavorite (boolean hasFavorite) {
-      if (this.hasFavorite != hasFavorite) {
-        this.hasFavorite = hasFavorite;
-        checkRecent();
-      }
-      /*if (this.showFavorite != showFavorite) {
-        this.showFavorite = showFavorite;
-        if (showFavorite) {
-          int i = showRecents ? headerItems.size() - 1 : headerItems.size();
-          headerItems.add(i, favoriteSection);
-          notifyItemInserted(i);
-        } else {
-          int i = headerItems.indexOf(favoriteSection);
-          if (i != -1) {
-            headerItems.remove(i);
-            notifyItemRemoved(i);
-          }
-        }
-      }*/
-    }
-
-    private boolean hasNewHots;
-
-    public void setHasNewHots (boolean hasHots) {
-      if (this.hasNewHots != hasHots) {
-        this.hasNewHots = hasHots;
-        // TODO
-      }
-    }
-
-    private boolean hasTrending;
-
-    public void setHasTrending (boolean hasTrending) {
-      if (this.hasTrending != hasTrending) {
-        this.hasTrending = hasTrending;
-        checkTrending();
-      }
-    }
-
-    public boolean setSelectedObject (Object obj, boolean animated, RecyclerView.LayoutManager manager) {
-      if (this.selectedObject != obj) {
-        setSelected(this.selectedObject, false, animated, manager);
-        this.selectedObject = obj;
-        setSelected(obj, true, animated, manager);
-        return true;
-      }
-      return false;
-    }
-
-    private Object getObject (int i) {
-      if (i < 0) return null;
-      if (i < headerItems.size()) {
-        return headerItems.get(i);
-      } else {
-        int index = i - headerItems.size();
-        return index >= 0 && index < stickerSets.size() ? stickerSets.get(index) : null;
-      }
-    }
-
-    private int indexOfObject (Object obj) {
-      int itemCount = getItemCount();
-      for (int i = 0; i < itemCount; i++) {
-        if (getObject(i) == obj) {
-          return i;
-        }
-      }
-      return -1;
-    }
-
-    private void setSelected (Object obj, boolean selected, boolean animated, RecyclerView.LayoutManager manager) {
-      int index = indexOfObject(obj);
-      if (index != -1) {
-        switch (getItemViewType(index)) {
-          case MediaHolder.TYPE_EMOJI_SECTION: {
-            if (index >= 0 && index < headerItems.size()) {
-              headerItems.get(index).setFactor(selected ? 1f : 0f, animated);
-            }
-            break;
-          }
-          case MediaHolder.TYPE_STICKER_SECTION: {
-            View view = manager.findViewByPosition(index);
-            if (view != null && view instanceof StickerSectionView) {
-              ((StickerSectionView) view).setSelectionFactor(selected ? 1f : 0f, animated);
-            } else {
-              notifyItemChanged(index);
-            }
-            break;
-          }
-        }
-      }
-    }
-
-    private final ArrayList<TGStickerSetInfo> stickerSets;
-    private final EmojiSection recentSection; // favoriteSection
-    private final EmojiSection trendingSection; // favoriteSection
-
-    public void removeStickerSet (int index) {
-      if (index >= 0 && index < stickerSets.size()) {
-        stickerSets.remove(index);
-        notifyItemRemoved(index + headerItems.size());
-      }
-    }
-
-    public void addStickerSet (int index, TGStickerSetInfo info) {
-      stickerSets.add(index, info);
-      notifyItemInserted(index + headerItems.size());
-    }
-
-    public void moveStickerSet (int fromIndex, int toIndex) {
-      TGStickerSetInfo info = stickerSets.remove(fromIndex);
-      stickerSets.add(toIndex, info);
-      fromIndex += headerItems.size();
-      toIndex += headerItems.size();
-      notifyItemMoved(fromIndex, toIndex);
-    }
-
-    public void setStickerSets (ArrayList<TGStickerSetInfo> stickers) {
-      if (!stickerSets.isEmpty()) {
-        int removedCount = stickerSets.size();
-        stickerSets.clear();
-        notifyItemRangeRemoved(headerItems.size(), removedCount);
-      }
-      if (stickers != null && !stickers.isEmpty()) {
-        int addedCount;
-        if (!stickers.get(0).isSystem()) {
-          stickerSets.addAll(stickers);
-          addedCount = stickers.size();
-        } else {
-          addedCount = 0;
-          for (int i = 0; i < stickers.size(); i++) {
-            TGStickerSetInfo stickerSet = stickers.get(i);
-            if (stickerSet.isSystem()) {
-              continue;
-            }
-            stickerSets.add(stickerSet);
-            addedCount++;
-          }
-        }
-        notifyItemRangeInserted(headerItems.size(), addedCount);
-      }
-    }
-
-    @Override
-    public MediaHolder onCreateViewHolder (ViewGroup parent, int viewType) {
-      return MediaHolder.create(context, viewType, onClickListener, this, sectionItemCount, themeProvider);
-    }
-
-    @Override
-    public boolean onLongClick (View v) {
-      // if (parent != null && parent.animatedEmojiOnly) return false;
-      if (v instanceof StickerSectionView) {
-        StickerSectionView sectionView = (StickerSectionView) v;
-        TGStickerSetInfo info = sectionView.getStickerSet();
-        if (parent != null) {
-          if (parent.animatedEmojiOnly) {
-            parent.openEmojiSetOptions(info);
-          } else {
-            parent.removeStickerSet(info);
-          }
-          return true;
-        }
-        return false;
-      }
-      if ((v instanceof EmojiHeaderSectionView)) {
-        EmojiHeaderSectionView sectionView = (EmojiHeaderSectionView) v;
-        EmojiSection section = sectionView.getSection();
-
-        if (parent != null) {
-          if (section == recentSection) {
-            parent.clearRecentStickers();
-            return true;
-          }
-        }
-      }
-
-      return false;
-    }
-
-    @Override
-    public void onBindViewHolder (MediaHolder holder, int position) {
-      switch (holder.getItemViewType()) {
-        case MediaHolder.TYPE_EMOJI_SECTION: {
-          EmojiSection section = headerItems.get(position);
-          ((EmojiHeaderSectionView) holder.itemView).setSection(section);
-          holder.itemView.setOnLongClickListener(section == recentSection ? this : null);
-          break;
-        }
-        case MediaHolder.TYPE_STICKER_SECTION: {
-          Object obj = getObject(position);
-          ((StickerSectionView) holder.itemView).setSelectionFactor(selectedObject == obj ? 1f : 0f, false);
-          ((StickerSectionView) holder.itemView).setStickerSet((TGStickerSetInfo) obj);
-          break;
-        }
-      }
-    }
-
-    @Override
-    public int getItemViewType (int position) {
-      if (position < headerItems.size()) {
-        return MediaHolder.TYPE_EMOJI_SECTION;
-      } else {
-        return MediaHolder.TYPE_STICKER_SECTION;
-      }
-    }
-
-    @Override
-    public int getItemCount () {
-      return headerItems.size() + (stickerSets != null ? stickerSets.size() : 0);
-    }
-
-    @Override
-    public void onViewAttachedToWindow (MediaHolder holder) {
-      if (holder.getItemViewType() == MediaHolder.TYPE_STICKER_SECTION) {
-        ((StickerSectionView) holder.itemView).attach();
-      }
-    }
-
-    @Override
-    public void onViewDetachedFromWindow (MediaHolder holder) {
-      if (holder.getItemViewType() == MediaHolder.TYPE_STICKER_SECTION) {
-        ((StickerSectionView) holder.itemView).detach();
-      }
-    }
-
-    @Override
-    public void onViewRecycled (MediaHolder holder) {
-      if (holder.getItemViewType() == MediaHolder.TYPE_STICKER_SECTION) {
-        ((StickerSectionView) holder.itemView).performDestroy();
-      }
-    }
-  }
-
   private @Nullable ViewController<?> themeProvider;
   private boolean allowMedia;
   private boolean animatedEmojiOnly;
@@ -1108,6 +251,10 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
 
   public EmojiToneHelper.Delegate getToneDelegate () {
     return parentController != null && parentController instanceof EmojiToneHelper.Delegate ? (EmojiToneHelper.Delegate) parentController : null;
+  }
+
+  public boolean isAnimatedEmojiOnly () {
+    return animatedEmojiOnly;
   }
 
   public boolean useDarkMode () {
@@ -1128,6 +275,10 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
 
   public void initWithMediasEnabled (ViewController<?> context, boolean allowMedia, @NonNull Listener listener, @Nullable ViewController<?> themeProvider, boolean useDarkMode) {
     initWithMediasEnabled(context, allowMedia, false, listener, themeProvider, useDarkMode);
+  }
+
+  public int getEmojiSectionsSize () {
+    return emojiSectionsSize;
   }
 
   public void initWithMediasEnabled (ViewController<?> context, boolean allowMedia, boolean animatedEmojiOnly, @NonNull Listener listener, @Nullable ViewController<?> themeProvider, boolean useDarkMode) {
@@ -1192,20 +343,11 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     // Media sections
 
     if (allowMedia || animatedEmojiOnly) {
-      mediaSectionsView = new RecyclerView(getContext());
-      mediaSectionsView.setHasFixedSize(true);
-      mediaSectionsView.setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 180));
-      mediaSectionsView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? OVER_SCROLL_IF_CONTENT_SCROLLS :OVER_SCROLL_NEVER);
-      mediaSectionsView.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, Lang.rtl()));
-      mediaSectionsView.setPadding(getHorizontalPadding(), 0, getHorizontalPadding(), 0);
-      mediaSectionsView.setClipToPadding(false);
-      mediaSectionsView.setAdapter(mediaAdapter = new MediaAdapter(getContext(), this, this, animatedEmojiOnly ? 8: emojiSectionsSize, !animatedEmojiOnly && Settings.instance().getEmojiMediaSection() == EmojiMediaType.GIF, themeProvider, animatedEmojiOnly));
-      mediaSectionsView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, headerSize));
-
+      mediaSectionsView = new MediaHeaderView(getContext());
+      mediaSectionsView.init(this, themeProvider, this);
       headerView.addView(mediaSectionsView);
     } else {
       mediaSectionsView = null;
-      mediaAdapter = null;
     }
 
     // Shadow and etc
@@ -1351,15 +493,15 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
   }
 
   public void setShowRecents (boolean showRecents) {
-    mediaAdapter.setHasRecents(showRecents);
+    mediaSectionsView.setShowRecents(showRecents);
   }
 
   public void setShowFavorite (boolean showFavorite) {
-    mediaAdapter.setHasFavorite(showFavorite);
+    mediaSectionsView.setShowFavorite(showFavorite);
   }
 
   public void setHasNewHots (boolean hasHots) {
-    mediaAdapter.setHasNewHots(hasHots);
+    mediaSectionsView.setHasNewHots(hasHots);
   }
 
   public void setStickerSets (ArrayList<TGStickerSetInfo> stickers, boolean showFavorite, boolean showRecents) {
@@ -1367,11 +509,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
   }
 
   public void setStickerSets (ArrayList<TGStickerSetInfo> stickers, boolean showFavorite, boolean showRecents, boolean showTrending, boolean isFound) {
-    mediaAdapter.setHasFavorite(showFavorite);
-    mediaAdapter.setHasRecents(showRecents);
-    mediaAdapter.setShowRecentsAsFound(isFound);
-    mediaAdapter.setHasTrending(showTrending);
-    mediaAdapter.setStickerSets(stickers);
+    mediaSectionsView.setStickerSets(stickers, showFavorite, showRecents, showTrending, isFound);
   }
 
   public void setEmojiPacks (ArrayList<TGStickerSetInfo> stickers) {
@@ -1381,7 +519,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
   }
 
   public void invalidateStickerSets () {
-    mediaAdapter.notifyDataSetChanged();
+    mediaSectionsView.invalidateStickerSets();
   }
 
   private void scrollToStickerSet (@NonNull TGStickerSetInfo stickerSet) {
@@ -1437,34 +575,11 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     return listener != null && listener.onSendGIF(view, animation);
   }
 
-  public void resetScrollState () {
-    resetScrollState(false);
-  }
-
-  public void resetScrollState (boolean silent) {
-    switch (pager.getCurrentItem()) {
-      case 0: {
-        ViewController<?> c = adapter.getCachedItem(0);
-        if (c != null && !animatedEmojiOnly) {
-          resetScrollingCache(((EmojiListController) c).getCurrentScrollY(), silent);
-        }
-        break;
-      }
-      case 1: {
-        ViewController<?> c = adapter.getCachedItem(1);
-        if (c != null) {
-          resetScrollingCache(((EmojiMediaListController) c).getCurrentScrollY(), silent);
-        }
-        break;
-      }
-    }
-  }
-
   @Override
   public boolean onLongClick (View v) {
     int viewId = v.getId();
     if (viewId == R.id.btn_section) {
-      EmojiSection section = ((EmojiHeaderSectionView) v).getSection();
+      EmojiSection section = ((EmojiSectionView) v).getSection();
 
       if (section.index == 0 && Emoji.instance().canClearRecents()) {
         clearRecentEmoji();
@@ -1503,7 +618,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
         }
       }
     } else if (viewId == R.id.btn_section) {
-      EmojiSection section = ((EmojiHeaderSectionView) v).getSection();
+      EmojiSection section = ((EmojiSectionView) v).getSection();
 
       int prevSection = getCurrentEmojiSection();
       int newSection = -1;
@@ -1511,7 +626,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
       if (animatedEmojiOnly) {
         ViewController<?> c = adapter.getCachedItem(0);
         if (c != null) {
-          if (section.isTrending) {
+          if (section.isTrending()) {
             ((EmojiStatusListController) c).scrollToTrendingStickers(true);
           } else {
             ((EmojiStatusListController) c).scrollToSystemStickers(true);
@@ -1602,7 +717,6 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
       float alpha = 1f - AnimatorUtils.DECELERATE_INTERPOLATOR.getInterpolation(Math.max(0f, Math.min(1f, factor / .5f)));
       if (emojiHeaderView != null) {
         emojiHeaderView.setAlpha(alpha);
-        emojiHeaderView.setHeaderHideFactor(factor);
       }
       if (mediaSectionsView != null) {
         mediaSectionsView.setAlpha(alpha);
@@ -1691,14 +805,14 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
       if (ignoreMovement) {
         ignoreFirstScrollEvent = true;
       } else {
-        resetScrollState();
+        resetScrollState(false);
       }
     }
   }
 
   public void moveHeaderFull (int y) {
     if (ignoreFirstScrollEvent) {
-      resetScrollState();
+      resetScrollState(false);
       ignoreFirstScrollEvent = false;
       return;
     }
@@ -1714,7 +828,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
   private void moveHeader (int y) {
     lastY = y;
     if (ignoreFirstScrollEvent) {
-      resetScrollState();
+      resetScrollState(false);
       ignoreFirstScrollEvent = false;
       return;
     }
@@ -1800,7 +914,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
           ((EmojiStatusListController) c).checkSpanCount();
         }
       }
-      parent.resetScrollState();
+      parent.resetScrollState(false);
     }
 
     public void invalidateCachedItems () {
@@ -1873,9 +987,6 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     if (this.currentPageFactor != factor) {
       this.currentPageFactor = factor;
       updatePositions();
-      if (emojiHeaderView != null) {
-        emojiHeaderView.setCurrentPageFactor(factor);
-      }
     }
   }
 
@@ -1928,7 +1039,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     } else if (hasLeft || hasRight) {
       setCircleVisible((hasLeft && position == 0) || (hasRight && position == 1), true, position == 0 ? R.drawable.baseline_backspace_24 : R.drawable.baseline_search_24, position == 0 ? -Screen.dp(BACKSPACE_OFFSET) : 0);
     }
-    resetScrollState();
+    resetScrollState(false);
   }
 
   private boolean affectHeight;
@@ -2133,4 +1244,63 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
       }
     }
   }
+
+
+  /* Interface */
+
+  public static final int STICKERS_INSTALLED_CONTROLLER_ID = 0;
+  public static final int STICKERS_TRENDING_CONTROLLER_ID = 1;
+  public static final int EMOJI_INSTALLED_CONTROLLER_ID = 2;
+
+  public void addStickerSection (int controllerId, int section, TGStickerSetInfo info) {
+    if (controllerId == EmojiLayout.STICKERS_INSTALLED_CONTROLLER_ID && mediaSectionsView != null) {
+      mediaSectionsView.addStickerSection(section, info);
+    } else if (controllerId == EmojiLayout.EMOJI_INSTALLED_CONTROLLER_ID && emojiHeaderView != null) {
+      emojiHeaderView.addStickerSection(section, info);
+    }
+  }
+
+  public void moveStickerSection (int controllerId, int fromSection, int toSection) {
+    if (controllerId == EmojiLayout.STICKERS_INSTALLED_CONTROLLER_ID && mediaSectionsView != null) {
+      mediaSectionsView.moveStickerSection(fromSection, toSection);
+    } else if (controllerId == EmojiLayout.EMOJI_INSTALLED_CONTROLLER_ID && emojiHeaderView != null) {
+      emojiHeaderView.moveStickerSection(fromSection, toSection);
+    }
+  }
+
+  public void removeStickerSection (int controllerId, int section) {
+    if (controllerId == EmojiLayout.STICKERS_INSTALLED_CONTROLLER_ID && mediaSectionsView != null) {
+      mediaSectionsView.removeStickerSection(section);
+    } else if (controllerId == EmojiLayout.EMOJI_INSTALLED_CONTROLLER_ID && emojiHeaderView != null) {
+      emojiHeaderView.removeStickerSection(section);
+    }
+  }
+
+  public void setCurrentStickerSectionByPosition (int controllerId, int i, boolean isStickerSection, boolean animated) {
+    if (controllerId == STICKERS_INSTALLED_CONTROLLER_ID && mediaSectionsView != null) {
+      mediaSectionsView.setCurrentStickerSectionByPosition(i, isStickerSection, animated);
+    } else if (controllerId == EMOJI_INSTALLED_CONTROLLER_ID && emojiHeaderView != null) {
+      emojiHeaderView.setCurrentStickerSectionByPosition(i, isStickerSection, animated);
+    }
+  }
+
+  public void resetScrollState (boolean silent) {
+    switch (pager.getCurrentItem()) {
+      case 0: {
+        ViewController<?> c = adapter.getCachedItem(0);
+        if (c != null && !animatedEmojiOnly) {
+          resetScrollingCache(((EmojiListController) c).getCurrentScrollY(), silent);
+        }
+        break;
+      }
+      case 1: {
+        ViewController<?> c = adapter.getCachedItem(1);
+        if (c != null) {
+          resetScrollingCache(((EmojiMediaListController) c).getCurrentScrollY(), silent);
+        }
+        break;
+      }
+    }
+  }
+
 }

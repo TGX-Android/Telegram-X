@@ -56,6 +56,7 @@ public class TGStickerSetInfo {
   private int startIndex;
   private @Nullable TdApi.StickerSet stickerSet;
   private @StringRes int titleRes;
+  private boolean needRepainting;
 
   private @Nullable ArrayList<TGStickerSetInfo> boundList;
   private TdApi.Sticker[] allStickers;
@@ -130,6 +131,7 @@ public class TGStickerSetInfo {
         this.previewImage = null;
         this.previewAnimation = null;
       }
+      this.needRepainting = TD.needRepainting(info.covers[0]);
     } else {
       this.previewOutline = null;
       this.previewImage = null;
@@ -162,6 +164,10 @@ public class TGStickerSetInfo {
     this.flags = FLAG_FAKE_CLASSIC_EMOJI;
     this.titleRes = titleRes;
     this.size = size;
+  }
+
+  public boolean isNeedRepaintingPreview () {
+    return needRepainting;
   }
 
   public void setBoundList (@Nullable ArrayList<TGStickerSetInfo> list) {

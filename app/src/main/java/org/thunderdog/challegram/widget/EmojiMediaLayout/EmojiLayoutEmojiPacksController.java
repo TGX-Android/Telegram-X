@@ -8,8 +8,8 @@ import org.thunderdog.challegram.tool.Screen;
 public class EmojiLayoutEmojiPacksController extends EmojiLayoutAbstractController {
   private static final int MINIMUM_EMOJI_COUNT = 8;
 
-  public EmojiLayoutEmojiPacksController (Context context, Tdlib tdlib) {
-    super(context, tdlib);
+  public EmojiLayoutEmojiPacksController (Context context, Tdlib tdlib, int controllerId) {
+    super(context, tdlib, controllerId);
   }
 
   @Override
@@ -19,12 +19,5 @@ public class EmojiLayoutEmojiPacksController extends EmojiLayoutAbstractControll
       width = Screen.currentWidth();
     }
     return Math.max(MINIMUM_EMOJI_COUNT, width / Screen.dp(48f));
-  }
-
-  @Override
-  protected void onScrollToSectionStart (int section) {
-    if (emojiLayout != null) {
-      emojiLayout.setCurrentEmojiSection(section);
-    }
   }
 }

@@ -1,23 +1,22 @@
-package org.thunderdog.challegram.widget.EmojiMediaLayout;
+package org.thunderdog.challegram.widget.EmojiMediaLayout.Sections;
 
 import android.content.Context;
 import android.graphics.Canvas;
 import android.view.View;
 
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.widget.EmojiLayout;
 
-public class EmojiHeaderSectionView extends View {
+public class EmojiSectionView extends View {
   private int forceWidth = -1;
   private int additionParentPadding = 0;
 
-  public EmojiHeaderSectionView (Context context) {
+  public EmojiSectionView (Context context) {
     super(context);
   }
 
-  private EmojiLayout.EmojiSection section;
+  private EmojiSection section;
 
-  public void setSection (EmojiLayout.EmojiSection section) {
+  public void setSection (EmojiSection section) {
     if (this.section != null) {
       this.section.setCurrentView(null);
     }
@@ -27,7 +26,7 @@ public class EmojiHeaderSectionView extends View {
     }
   }
 
-  public EmojiLayout.EmojiSection getSection () {
+  public EmojiSection getSection () {
     return section;
   }
 

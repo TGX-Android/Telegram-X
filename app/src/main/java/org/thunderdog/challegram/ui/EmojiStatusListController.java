@@ -190,7 +190,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
       if (getArguments() != null && getArguments().isWatchingMovements() && getArguments().getCurrentItem() == 0) {
         int y = getStickersScrollY();
         getArguments().onScroll(y);
-        getArguments().setCurrentStickerSectionByPosition(getStickerSetSection(), true, true);
+        getArguments().setCurrentStickerSectionByPosition(EmojiLayout.STICKERS_INSTALLED_CONTROLLER_ID, getStickerSetSection(), true, true);
         getArguments().onSectionScroll(EmojiMediaType.STICKER, movedDy != 0);
       }
     }
@@ -712,7 +712,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
     beforeStickerChanges();
 
     if (getArguments() != null) {
-      getArguments().moveStickerSection(oldPosition, newPosition);
+      getArguments().moveStickerSection(EmojiLayout.STICKERS_INSTALLED_CONTROLLER_ID, oldPosition, newPosition);
     }
 
     TGStickerSetInfo stickerSet = stickerSets.remove(oldPosition);
@@ -748,12 +748,12 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
     // ignoreStickersScroll--;
 
     if (getArguments() != null) {
-      getArguments().resetScrollState(true); // FIXME upd: ... fixme what?
+      getArguments().resetScrollState(false); // FIXME upd: ... fixme what?
     }
     UI.post(() -> {
       if (getArguments() != null) {
-        getArguments().setCurrentStickerSectionByPosition(getStickerSetSection(), true, true);
-        getArguments().resetScrollState(true);
+        getArguments().setCurrentStickerSectionByPosition(EmojiLayout.STICKERS_INSTALLED_CONTROLLER_ID, getStickerSetSection(), true, true);
+        getArguments().resetScrollState(false);
       }
       ignoreStickersScroll--;
     }, 400);
@@ -767,7 +767,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
     beforeStickerChanges();
 
     if (getArguments() != null) {
-      getArguments().addStickerSection(index, stickerSet);
+      getArguments().addStickerSection(EmojiLayout.STICKERS_INSTALLED_CONTROLLER_ID, index, stickerSet);
     }
 
     int startIndex = stickerSets.get(index).getStartIndex();
@@ -795,7 +795,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
       beforeStickerChanges();
       stickerSets.remove(i);
       if (getArguments() != null) {
-        getArguments().removeStickerSection(i);
+        getArguments().removeStickerSection(EmojiLayout.STICKERS_INSTALLED_CONTROLLER_ID, i);
       }
       int startIndex = stickerSet.getStartIndex();
       stickersAdapter.removeRange(startIndex, stickerSet.getSize() + 1);
@@ -1145,7 +1145,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
       setIgnoreRequests(true, stickerSets.get(futureSection).getId());
       if (getArguments() != null) {
         getArguments().setIgnoreMovement(true);
-        getArguments().setCurrentStickerSectionByPosition(futureSection, true, true);
+        getArguments().setCurrentStickerSectionByPosition(EmojiLayout.STICKERS_INSTALLED_CONTROLLER_ID, futureSection, true, true);
       }
 
       lastScrollAnimator = new FactorAnimator(0, new FactorAnimator.Target() {
@@ -1379,7 +1379,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
       }
       this.trendingSets.addAll(trendingSets);
       for (TGStickerSetInfo info: trendingSets) {
-        getArguments().addStickerSection(stickerSets.size(), info);
+        getArguments().addStickerSection(EmojiLayout.STICKERS_INSTALLED_CONTROLLER_ID, stickerSets.size(), info);
         stickerSets.add(info);
       }
     }

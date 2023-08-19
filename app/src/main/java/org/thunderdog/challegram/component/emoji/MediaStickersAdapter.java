@@ -82,7 +82,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
     this.themeProvider = themeProvider;
     this.items = new ArrayList<>();
     this.offsetProvider = null;
-    this.canViewStickerPackByClick = false;
+    this.canViewStickerPackByClick = true;
     this.emojiToneHelper = null;
   }
 

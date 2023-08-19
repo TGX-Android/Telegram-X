@@ -171,7 +171,7 @@ public class TGStickerObj {
   }
 
   public String getFirstEmoji (String defaultEmoji) {
-    return emojis != null && emojis.length > 0 ? emojis[0]: defaultEmoji;
+    return emojis != null && emojis.length > 0 ? emojis[0]: (sticker != null ? sticker.emoji: defaultEmoji);
   }
 
   public @Nullable TdApi.Sticker getSticker () {

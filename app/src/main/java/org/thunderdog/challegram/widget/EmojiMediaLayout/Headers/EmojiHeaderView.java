@@ -1,4 +1,4 @@
-package org.thunderdog.challegram.widget.EmojiMediaLayout;
+package org.thunderdog.challegram.widget.EmojiMediaLayout.Headers;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -25,6 +25,10 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.widget.EmojiLayout;
+import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiHeaderCollapsibleSectionView;
+import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSectionView;
+import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.StickerSectionView;
+import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSection;
 
 import java.util.ArrayList;
 
@@ -35,29 +39,33 @@ import me.vkryl.core.MathUtils;
 @SuppressLint("ViewConstructor")
 public class EmojiHeaderView extends FrameLayout {
   public static final int DEFAULT_PADDING = 4;
-
   public static final int TRENDING_SECTION = -12;
 
-  private final ArrayList<EmojiLayout.EmojiSection> emojiSections;
   private final EmojiLayoutEmojiHeaderAdapter adapter;
   private final RecyclerView recyclerView;
-  private final EmojiHeaderSectionView goToMediaPageSection;
+  private final EmojiSectionView goToMediaPageSection;
 
   private Paint shadowPaint;
-
-  private int currentEmojiSection;
-  private float currentPageFactor;
-  private float headerHideFactor;
 
   public EmojiHeaderView (@NonNull Context context, EmojiLayout emojiLayout, ViewController<?> themeProvider) {
     super(context);
     setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(48)));
 
-    emojiSections = new ArrayList<>(7);
-    emojiSections.add(new EmojiLayout.EmojiSection(emojiLayout, TRENDING_SECTION, R.drawable.outline_whatshot_24, R.drawable.baseline_whatshot_24).setMakeFirstTransparent());
-    emojiSections.add(new EmojiLayout.EmojiSection(emojiLayout, 0, R.drawable.baseline_access_time_24, R.drawable.baseline_watch_later_24)/*.setFactor(1f, false)*/.setMakeFirstTransparent().setOffsetHalf(false));
-
     LinearLayoutManager manager = new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, Lang.rtl());
+
+    ArrayList<EmojiSection> emojiSections = new ArrayList<>(2);
+    emojiSections.add(new EmojiSection(emojiLayout, TRENDING_SECTION, R.drawable.outline_whatshot_24, R.drawable.baseline_whatshot_24).setMakeFirstTransparent());
+    emojiSections.add(new EmojiSection(emojiLayout, 0, R.drawable.baseline_access_time_24, R.drawable.baseline_watch_later_24)/*.setFactor(1f, false)*/.setMakeFirstTransparent().setOffsetHalf(false));
+
+    ArrayList<EmojiSection> expandableSections = new ArrayList<>(6);
+    expandableSections.add(new EmojiSection(emojiLayout, 1, R.drawable.baseline_emoticon_outline_24, R.drawable.baseline_emoticon_24).setMakeFirstTransparent());
+    expandableSections.add(new EmojiSection(emojiLayout, 2, R.drawable.deproko_baseline_animals_outline_24, R.drawable.deproko_baseline_animals_24));/*.setIsPanda(!useDarkMode)*/
+    expandableSections.add(new EmojiSection(emojiLayout, 3, R.drawable.baseline_restaurant_menu_24, R.drawable.baseline_restaurant_menu_24));
+    expandableSections.add(new EmojiSection(emojiLayout, 4, R.drawable.baseline_directions_car_24, R.drawable.baseline_directions_car_24));
+    expandableSections.add(new EmojiSection(emojiLayout, 5, R.drawable.deproko_baseline_lamp_24, R.drawable.deproko_baseline_lamp_filled_24));
+    expandableSections.add(new EmojiSection(emojiLayout, 6, R.drawable.deproko_baseline_flag_outline_24, R.drawable.deproko_baseline_flag_filled_24).setMakeFirstTransparent());
+
+    adapter = new EmojiLayoutEmojiHeaderAdapter(manager, themeProvider, emojiLayout, emojiSections, expandableSections);
 
     recyclerView = new RecyclerView(context);
     recyclerView.setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 180));
@@ -65,7 +73,7 @@ public class EmojiHeaderView extends FrameLayout {
     recyclerView.setLayoutManager(manager);
     recyclerView.setPadding(Screen.dp(DEFAULT_PADDING), 0, Screen.dp(DEFAULT_PADDING + 44), 0);
     recyclerView.setClipToPadding(false);
-    recyclerView.setAdapter(adapter = new EmojiLayoutEmojiHeaderAdapter(manager, themeProvider, emojiLayout, emojiSections));
+    recyclerView.setAdapter(adapter);
     recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
       @Override
       public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
@@ -81,15 +89,15 @@ public class EmojiHeaderView extends FrameLayout {
     });
     addView(recyclerView, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-    goToMediaPageSection = new EmojiHeaderSectionView(context);
-    goToMediaPageSection.setSection(new EmojiLayout.EmojiSection(emojiLayout, 7, R.drawable.deproko_baseline_stickers_24, 0).setActiveDisabled());
+    goToMediaPageSection = new EmojiSectionView(context);
+    goToMediaPageSection.setSection(new EmojiSection(emojiLayout, 7, R.drawable.deproko_baseline_stickers_24, 0).setActiveDisabled());
     goToMediaPageSection.setForceWidth(Screen.dp(48));
     goToMediaPageSection.setId(R.id.btn_section);
 
     addView(goToMediaPageSection, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.RIGHT));
 
     updatePaints(Theme.fillingColor());
-    adapter.setSelectedIndex(0, true);
+    adapter.setSelectedObject(emojiSections.get(1), false, manager);
   }
 
   public void setSectionsOnClickListener (OnClickListener onClickListener) {
@@ -102,32 +110,52 @@ public class EmojiHeaderView extends FrameLayout {
     this.goToMediaPageSection.setOnLongClickListener(onLongClickListener);
   }
 
-  public void setCurrentEmojiSection (int section) {
-    if (this.currentEmojiSection != section && section != -1) {
-      adapter.setSelectedIndex(section, true);
-      this.currentEmojiSection = section;
+  public void setCurrentStickerSectionByPosition (int i, boolean isStickerSection, boolean animated) {
+    if (isStickerSection) {
+      i += 1;
     }
+    setSelectedObjectByPosition(i, isStickerSection, animated);
   }
 
-  public void setHeaderHideFactor (float headerHideFactor) {
-    this.headerHideFactor = headerHideFactor;
+  public void setSelectedObjectByPosition (int i, boolean isStickerSection, boolean animated) {
+    /*if (mediaAdapter.hasRecents && mediaAdapter.hasFavorite && isStickerSection && i >= 1) {
+      i--;
+    }
+    if (isStickerSection) {
+      i += mediaAdapter.headerItems.size() - mediaAdapter.getAddItemCount(false);
+    }*/
+    setSelectedObject(adapter.getObject(i), animated, adapter.manager);
   }
 
-  public void setCurrentPageFactor (float currentPageFactor) {
-    this.currentPageFactor = currentPageFactor;
+  public boolean setSelectedObject (Object obj, boolean animated, RecyclerView.LayoutManager manager) {
+    return adapter.setSelectedObject(debugLog(obj), animated, manager);
   }
 
-  public void addStickerSet (int index, TGStickerSetInfo info) {
-    adapter.addStickerSet(index, info);
+  public static Object debugLog (Object obj) {
+    String s = "SetSelectedObject2";
+    if (obj instanceof EmojiSection) {
+      s += "emoji section" + ((EmojiSection) obj).index;
+    } else if (obj instanceof TGStickerSetInfo) {
+      s += "sticker set" + (((TGStickerSetInfo) obj).getTitle()) + " " + ((TGStickerSetInfo) obj).getStartIndex();
+    }
+    Log.i("WTF_DEBUG", s);
+
+    return obj;
   }
 
-  public void removeStickerSet (int index) {
-    adapter.removeStickerSet(index);
+  public void addStickerSection (int index, TGStickerSetInfo info) {
+    adapter.addStickerSection(index - adapter.getAddIndexCount(), info);
   }
 
-  public void moveStickerSet (int fromIndex, int toIndex) {
-    adapter.moveStickerSet(fromIndex, toIndex);
+  public void moveStickerSection (int fromIndex, int toIndex) {
+    int addItems = adapter.getAddIndexCount();
+    adapter.moveStickerSection(fromIndex - addItems, toIndex - addItems);
   }
+
+  public void removeStickerSection (int index) {
+    adapter.removeStickerSection(index - adapter.getAddIndexCount());
+  }
+
 
   public void setStickerSets (ArrayList<TGStickerSetInfo> stickers) {
     adapter.setStickerSets(stickers);
@@ -166,9 +194,9 @@ public class EmojiHeaderView extends FrameLayout {
       super(itemView);
     }
 
-    public static ViewHolder create (Context context, int viewType, ViewController<?> themeProvider, EmojiLayout emojiLayout, View.OnClickListener onClickListener, View.OnLongClickListener onLongClickListener) {
+    public static ViewHolder create (Context context, int viewType, ViewController<?> themeProvider, EmojiLayout emojiLayout, ArrayList<EmojiSection> expandableSections, View.OnClickListener onClickListener, View.OnLongClickListener onLongClickListener) {
       if (viewType == TYPE_SECTION) {
-        EmojiHeaderSectionView sectionView = new EmojiHeaderSectionView(context);
+        EmojiSectionView sectionView = new EmojiSectionView(context);
         if (themeProvider != null) {
           themeProvider.addThemeInvalidateListener(sectionView);
         }
@@ -179,26 +207,18 @@ public class EmojiHeaderView extends FrameLayout {
         sectionView.setAdditionParentPadding(Screen.dp(44));
         return new ViewHolder(sectionView);
       } else if (viewType == TYPE_STICKER_SET) {
-        EmojiLayout.StickerSectionView sectionView = new EmojiLayout.StickerSectionView(context);
+        StickerSectionView sectionView = new StickerSectionView(context);
         if (themeProvider != null) {
           themeProvider.addThemeInvalidateListener(sectionView);
         }
         sectionView.setOnLongClickListener(onLongClickListener);
         sectionView.setId(R.id.btn_stickerSet);
         sectionView.setOnClickListener(onClickListener);
-        sectionView.setItemCount(8);
         sectionView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
         return new ViewHolder(sectionView);
       } else if (viewType == TYPE_SECTIONS_EXPANDABLE) {
         EmojiHeaderCollapsibleSectionView v = new EmojiHeaderCollapsibleSectionView(context);
-        v.init(new EmojiLayout.EmojiSection[]{
-          new EmojiLayout.EmojiSection(emojiLayout, 1, R.drawable.baseline_emoticon_outline_24, R.drawable.baseline_emoticon_24).setMakeFirstTransparent(),
-          new EmojiLayout.EmojiSection(emojiLayout, 2, R.drawable.deproko_baseline_animals_outline_24, R.drawable.deproko_baseline_animals_24)/*.setIsPanda(!useDarkMode)*/,
-          new EmojiLayout.EmojiSection(emojiLayout, 3, R.drawable.baseline_restaurant_menu_24, R.drawable.baseline_restaurant_menu_24),
-          new EmojiLayout.EmojiSection(emojiLayout, 4, R.drawable.baseline_directions_car_24, R.drawable.baseline_directions_car_24),
-          new EmojiLayout.EmojiSection(emojiLayout, 5, R.drawable.deproko_baseline_lamp_24, R.drawable.deproko_baseline_lamp_filled_24),
-          new EmojiLayout.EmojiSection(emojiLayout, 6, R.drawable.deproko_baseline_flag_outline_24, R.drawable.deproko_baseline_flag_filled_24).setMakeFirstTransparent()
-        });
+        v.init(expandableSections);
         v.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         v.setOnButtonClickListener(onClickListener);
         v.setThemeInvalidateListener(themeProvider);
@@ -210,24 +230,28 @@ public class EmojiHeaderView extends FrameLayout {
   }
 
   public static class EmojiLayoutEmojiHeaderAdapter extends RecyclerView.Adapter<ViewHolder> {
-    private final ArrayList<EmojiLayout.EmojiSection> emojiSections;
+    private final ArrayList<EmojiSection> emojiSections;
+    private final ArrayList<EmojiSection> expandableSections;
     private final ViewController<?> themeProvider;
     private final ArrayList<TGStickerSetInfo> stickerSets;
     private final LinearLayoutManager manager;
     private final EmojiLayout emojiLayout;
-    private final int expandableItemSize = 6;
-    private final int expandableItemPosition = 2;
+    private final int expandableItemSize;
+    private final int expandableItemPosition;
 
     private View.OnClickListener onClickListener;
     private View.OnLongClickListener onLongClickListener;
-    private int selectedIndex = -1;
+    private Object selectedObject;
 
-    public EmojiLayoutEmojiHeaderAdapter (LinearLayoutManager manager, ViewController<?> themeProvider, EmojiLayout emojiLayout, ArrayList<EmojiLayout.EmojiSection> emojiSections) {
+    public EmojiLayoutEmojiHeaderAdapter (LinearLayoutManager manager, ViewController<?> themeProvider, EmojiLayout emojiLayout, ArrayList<EmojiSection> emojiSections, ArrayList<EmojiSection> expandableSections) {
       this.themeProvider = themeProvider;
       this.emojiSections = emojiSections;
+      this.expandableSections = expandableSections;
       this.stickerSets = new ArrayList<>();
       this.emojiLayout = emojiLayout;
       this.manager = manager;
+      this.expandableItemPosition = emojiSections.size();
+      this.expandableItemSize = expandableSections.size();
     }
 
     public void setOnClickListener (OnClickListener onClickListener) {
@@ -238,34 +262,37 @@ public class EmojiHeaderView extends FrameLayout {
       this.onLongClickListener = onLongClickListener;
     }
 
-    public void addStickerSet (int index, TGStickerSetInfo info) {
-      // todo: move selectedIndex
-      stickerSets.add(index, info);
-      notifyItemInserted(index + emojiSections.size());
+    public int getAddIndexCount () {
+      return emojiSections.size() + expandableSections.size() - 1;
     }
 
-    public void removeStickerSet (int index) {
-      // todo: move selectedIndex
+    public int getAddItemCount () {
+      return emojiSections.size() + (expandableItemSize > 0 ? 1: 0);
+    }
+
+    public void addStickerSection (int index, TGStickerSetInfo info) {
+      stickerSets.add(index, info);
+      notifyItemInserted(index + getAddItemCount());
+    }
+
+    public void removeStickerSection (int index) {
       if (index >= 0 && index < stickerSets.size()) {
         stickerSets.remove(index);
-        notifyItemRemoved(index + emojiSections.size());
+        notifyItemRemoved(index + getAddItemCount());
       }
     }
 
-    public void moveStickerSet (int fromIndex, int toIndex) {
-      // todo: move selectedIndex
+    public void moveStickerSection (int fromIndex, int toIndex) {
       TGStickerSetInfo info = stickerSets.remove(fromIndex);
       stickerSets.add(toIndex, info);
-      fromIndex += emojiSections.size();
-      toIndex += emojiSections.size();
-      notifyItemMoved(fromIndex, toIndex);
+      notifyItemMoved(fromIndex + getAddItemCount(), toIndex + getAddItemCount());
     }
 
     public void setStickerSets (ArrayList<TGStickerSetInfo> stickers) {
       if (!stickerSets.isEmpty()) {
         int removedCount = stickerSets.size();
         stickerSets.clear();
-        notifyItemRangeRemoved(emojiSections.size(), removedCount);
+        notifyItemRangeRemoved(getAddItemCount(), removedCount);
       }
       if (stickers != null && !stickers.isEmpty()) {
         int addedCount;
@@ -283,94 +310,118 @@ public class EmojiHeaderView extends FrameLayout {
             addedCount++;
           }
         }
-        notifyItemRangeInserted(emojiSections.size(), addedCount);
+        notifyItemRangeInserted(getAddItemCount(), addedCount);
       }
     }
 
-    public void setSelectedIndex (int index, boolean animated) {
-      Log.i("WTF_DEBUG", "offset" + index);
 
-      //if (newSelectedViewType == ViewHolder.TYPE_SECTION) {
-        index += 1;
-     // }
 
-      final int oldIndex = selectedIndex;
-      final int oldSelectedPosition = getSelectedPosition(oldIndex);
+
+    public boolean setSelectedObject (Object obj, boolean animated, RecyclerView.LayoutManager manager) {
+      Log.i("WTF_DEBUG", "setSelectedObject");
+      if (this.selectedObject == obj) return false;
+
+      final int oldIndex = indexOfObject(selectedObject);
+      final int oldSelectedPosition = getPositionFromIndex(oldIndex);
       final int oldSelectedViewType = getItemViewType(oldSelectedPosition);
-      final int newSelectedPosition = getSelectedPosition(index);
+
+      final int index = indexOfObject(obj);
+      final int newSelectedPosition = getPositionFromIndex(index);
       final int newSelectedViewType = getItemViewType(newSelectedPosition);
 
-      this.selectedIndex = index;
+      this.selectedObject = obj;
 
       if (newSelectedViewType == ViewHolder.TYPE_SECTIONS_EXPANDABLE) {
         View view = manager.findViewByPosition(expandableItemPosition);
         if (view instanceof EmojiHeaderCollapsibleSectionView) {
-          ((EmojiHeaderCollapsibleSectionView) view).setSelectedIndex(index - expandableItemPosition, animated);
+          ((EmojiHeaderCollapsibleSectionView) view).setSelectedObject((EmojiSection) obj, animated);
         }
       }
 
       if (oldSelectedPosition == newSelectedPosition) {
-        return;
+        return true;
       }
 
       if (newSelectedViewType == ViewHolder.TYPE_STICKER_SET) {
         View view = manager.findViewByPosition(newSelectedPosition);
-        if (view instanceof EmojiLayout.StickerSectionView) {
-          ((EmojiLayout.StickerSectionView) view).setSelectionFactor(1f, animated);
+        if (view instanceof StickerSectionView) {
+          ((StickerSectionView) view).setSelectionFactor(1f, animated);
         }
       } else if (newSelectedViewType == ViewHolder.TYPE_SECTION) {
-        View view = manager.findViewByPosition(newSelectedPosition);
-        if (view instanceof EmojiHeaderSectionView) {
-          ((EmojiHeaderSectionView) view).getSection().setFactor(1f, animated);
-        }
+        ((EmojiSection) getObject(index)).setFactor(1f, animated);
       }
 
       if (oldSelectedViewType == ViewHolder.TYPE_STICKER_SET) {
         View view = manager.findViewByPosition(oldSelectedPosition);
-        if (view instanceof EmojiLayout.StickerSectionView) {
-          ((EmojiLayout.StickerSectionView) view).setSelectionFactor(0f, animated);
+        if (view instanceof StickerSectionView) {
+          ((StickerSectionView) view).setSelectionFactor(0f, animated);
         }
       } else if (oldSelectedViewType == ViewHolder.TYPE_SECTION) {
-        View view = manager.findViewByPosition(oldSelectedPosition);
-        if (view instanceof EmojiHeaderSectionView) {
-          ((EmojiHeaderSectionView) view).getSection().setFactor(0f, animated);
-        }
+        ((EmojiSection) getObject(oldIndex)).setFactor(0f, animated);
       } else if (oldSelectedViewType == ViewHolder.TYPE_SECTIONS_EXPANDABLE) {
         View view = manager.findViewByPosition(oldSelectedPosition);
         if (view instanceof EmojiHeaderCollapsibleSectionView) {
-          ((EmojiHeaderCollapsibleSectionView) view).setSelectedIndex(-1, animated);
+          ((EmojiHeaderCollapsibleSectionView) view).setSelectedObject(null, animated);
         }
       }
+
+      return true;
+    }
+
+    private Object getObject (int i) {
+      if (i < 0) return null;
+      if (i < emojiSections.size()) {
+        return emojiSections.get(i);
+      }
+      i -= emojiSections.size();
+      if (i < expandableSections.size()) {
+        return expandableSections.get(i);
+      }
+      i-= expandableSections.size();
+
+      return i < stickerSets.size() ? stickerSets.get(i) : null;
+    }
+
+    private int indexOfObject (Object obj) {
+      Object item;
+      int i = 0;
+      do {
+        item = getObject(i);
+        if (obj == item) {
+          return i;
+        }
+        i++;
+      } while (item != null);
+      return -1;
     }
 
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder (@NonNull ViewGroup parent, int viewType) {
-      return ViewHolder.create(parent.getContext(), viewType, themeProvider, emojiLayout, onClickListener, onLongClickListener);
+      return ViewHolder.create(parent.getContext(), viewType, themeProvider, emojiLayout, expandableSections, onClickListener, onLongClickListener);
     }
 
     @Override
     public void onBindViewHolder (@NonNull ViewHolder holder, int position) {
       final int viewType = getItemViewType(position);
-      final boolean isSelected = position == getSelectedPosition(selectedIndex);
 
       if (position > expandableItemPosition && expandableItemSize > 0) {
         position -= 1;
       }
 
       if (viewType == ViewHolder.TYPE_SECTION) {
-        ((EmojiHeaderSectionView) holder.itemView).setSection(emojiSections.get(position));
+        ((EmojiSectionView) holder.itemView).setSection(emojiSections.get(position));
       } else if (viewType == ViewHolder.TYPE_STICKER_SET) {
         TGStickerSetInfo info = stickerSets.get(position - emojiSections.size());
-        ((EmojiLayout.StickerSectionView) holder.itemView).setSelectionFactor(isSelected ? 1f : 0f, false);
-        ((EmojiLayout.StickerSectionView) holder.itemView).setStickerSet(info);
+        ((StickerSectionView) holder.itemView).setSelectionFactor(info == selectedObject? 1f : 0f, false);
+        ((StickerSectionView) holder.itemView).setStickerSet(info);
       } else if (viewType == ViewHolder.TYPE_SECTIONS_EXPANDABLE) {
-
-        ((EmojiHeaderCollapsibleSectionView) holder.itemView).setSelectedIndex(isSelected ? (selectedIndex - expandableItemPosition): -1, false);
+        EmojiSection obj = selectedObject instanceof EmojiSection ? ((EmojiSection) selectedObject): null;
+        ((EmojiHeaderCollapsibleSectionView) holder.itemView).setSelectedObject(obj, false);
       }
     }
 
-    private int getSelectedPosition (int index) {
+    private int getPositionFromIndex (int index) {
       if (expandableItemSize > 0 && index >= expandableItemPosition) {
         if (index < expandableItemPosition + expandableItemSize) {
           return expandableItemPosition;
@@ -404,21 +455,21 @@ public class EmojiHeaderView extends FrameLayout {
     @Override
     public void onViewAttachedToWindow (ViewHolder holder) {
       if (holder.getItemViewType() == ViewHolder.TYPE_STICKER_SET) {
-        ((EmojiLayout.StickerSectionView) holder.itemView).attach();
+        ((StickerSectionView) holder.itemView).attach();
       }
     }
 
     @Override
     public void onViewDetachedFromWindow (ViewHolder holder) {
       if (holder.getItemViewType() == ViewHolder.TYPE_STICKER_SET) {
-        ((EmojiLayout.StickerSectionView) holder.itemView).detach();
+        ((StickerSectionView) holder.itemView).detach();
       }
     }
 
     @Override
     public void onViewRecycled (ViewHolder holder) {
       if (holder.getItemViewType() == ViewHolder.TYPE_STICKER_SET) {
-        ((EmojiLayout.StickerSectionView) holder.itemView).performDestroy();
+        ((StickerSectionView) holder.itemView).performDestroy();
       }
     }
   }

@@ -7,8 +7,8 @@ import org.thunderdog.challegram.telegram.Tdlib;
 public class EmojiLayoutStickersSetsController extends EmojiLayoutAbstractController {
   private int spanCountToSet;
 
-  public EmojiLayoutStickersSetsController (Context context, Tdlib tdlib) {
-    super(context, tdlib);
+  public EmojiLayoutStickersSetsController (Context context, Tdlib tdlib, int controllerId) {
+    super(context, tdlib, controllerId);
   }
 
   public void setSpanCount (int spanCount) {
@@ -19,12 +19,5 @@ public class EmojiLayoutStickersSetsController extends EmojiLayoutAbstractContro
   @Override
   protected int calculateSpanCount () {
     return spanCountToSet;
-  }
-
-  @Override
-  protected void onScrollToSectionStart (int section) {
-    if (emojiLayout != null) {
-      emojiLayout.setCurrentStickerSectionByPosition(section, true, true);
-    }
   }
 }

@@ -93,8 +93,8 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
 
   public EmojiMediaListController (Context context, Tdlib tdlib) {
     super(context, tdlib);
-    stickersController = new EmojiLayoutStickersSetsController(context, tdlib);
-    trendingSetsController = new EmojiLayoutTrendingSetsController(context, tdlib);
+    stickersController = new EmojiLayoutStickersSetsController(context, tdlib, EmojiLayout.STICKERS_INSTALLED_CONTROLLER_ID);
+    trendingSetsController = new EmojiLayoutTrendingSetsController(context, tdlib, EmojiLayout.STICKERS_TRENDING_CONTROLLER_ID);
     trendingSetsController.stickerSets = new ArrayList<>();
   }
 
@@ -175,7 +175,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
               getArguments().setCircleVisible(true, true);
             }
           }
-          getArguments().setCurrentStickerSectionByPosition(
+          getArguments().setCurrentStickerSectionByPosition(EmojiLayout.STICKERS_INSTALLED_CONTROLLER_ID,
             nextSection == SECTION_STICKERS ? (stickerSetSection != -1 ? stickerSetSection: stickersController.getStickerSetSection()) :
               nextSection == SECTION_TRENDING ? 2 : 1
             , nextSection == SECTION_STICKERS,true);
@@ -203,7 +203,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
             int newSection = currentSection == SECTION_GIFS ? EmojiMediaType.GIF : EmojiMediaType.STICKER;
             listener.onSectionSwitched(getArguments(), newSection, prevSectionX);
           }
-          getArguments().resetScrollState();
+          getArguments().resetScrollState(false);
         }
       }
     };
@@ -219,7 +219,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
       }
       case EmojiMediaType.GIF: {
         if (getArguments() != null) {
-          getArguments().setCurrentStickerSectionByPosition(1, false, false);
+          getArguments().setCurrentStickerSectionByPosition(EmojiLayout.STICKERS_INSTALLED_CONTROLLER_ID, 1, false, false);
           getArguments().setMediaSection(true);
         }
         this.contentView.init(SECTION_GIFS);
@@ -286,11 +286,11 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
   }
 
   private void onStickersScroll (boolean force, int movedDy) {
-    if (ignoreStickersScroll == 0) {
+    if (!stickersController.isNeedIgnoreScroll()) {
       if (contentView.isSectionStable() && contentView.getCurrentSection() == SECTION_STICKERS && getArguments() != null && getArguments().isWatchingMovements() && getArguments().getCurrentItem() == 1) {
         int y = stickersController.getStickersScrollY(showRecentTitle);
         getArguments().onScroll(y);
-        getArguments().setCurrentStickerSectionByPosition(stickersController.getStickerSetSection(), true, true);
+        getArguments().setCurrentStickerSectionByPosition(EmojiLayout.STICKERS_INSTALLED_CONTROLLER_ID, stickersController.getStickerSetSection(), true, true);
         getArguments().onSectionScroll(EmojiMediaType.STICKER, movedDy != 0);
       }
     }
@@ -662,6 +662,8 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
   public void destroy () {
     super.destroy();
     tdlib.listeners().unsubscribeFromAnyUpdates(this);
+    stickersController.destroy();
+    trendingSetsController.destroy();
   }
 
   // When rotation, etc
@@ -758,7 +760,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
   @Override
   public boolean onStickerClick (StickerSmallView view, View clickView, TGStickerObj sticker, boolean isMenuClick, TdApi.MessageSendOptions sendOptions) {
     if (sticker.isTrending() && !isMenuClick) {
-      int i = indexOfTrendingStickerSetById(sticker.getStickerSetId());
+      int i = trendingSetsController.indexOfStickerSetById(sticker.getStickerSetId());
       if (i != -1) {
         trendingSetsController.stickerSets.get(i).show(this);
         return true;
@@ -1262,7 +1264,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
     final int removedCount = removedStickerSets.size();
     for (int i = 0; i < removedCount; i++) {
       TGStickerSetInfo stickerSet = removedStickerSets.valueAt(i);
-      removeStickerSet(stickerSet);
+      stickersController.removeStickerSet(stickerSet);
     }
 
     // Then, move items
@@ -1270,13 +1272,13 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
       for (int j = 0; j < positions.size(); j++) {
         long setId = positions.keyAt(j);
         int newPosition = positions.valueAt(j);
-        int currentPosition = indexOfStickerSetById(setId);
+        int currentPosition = stickersController.indexOfStickerSetById(setId);
         if (currentPosition == -1) {
           throw new RuntimeException();
         }
         if (currentPosition != newPosition) {
           int systemSetsCount = getSystemSetsCount();
-          moveStickerSet(currentPosition + systemSetsCount, newPosition + systemSetsCount);
+          stickersController.moveStickerSet(currentPosition + systemSetsCount, newPosition + systemSetsCount);
         }
       }
     }
@@ -1314,7 +1316,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
               i++;
             }
 
-            runOnUiThreadOptional(() -> addStickerSet(stickerSet, items, insertIndex + getSystemSetsCount()));
+            runOnUiThreadOptional(() -> stickersController.addStickerSet(stickerSet, items, insertIndex + getSystemSetsCount()));
           }
 
           if (++index[0] < addedCount) {
@@ -1327,126 +1329,6 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
         }
       });
     }
-  }
-
-  private int indexOfTrendingStickerSetById (long setId) {
-    int index = 0;
-    for (TGStickerSetInfo setInfo : trendingSetsController.stickerSets) {
-      if (setInfo.getId() == setId) {
-        return index;
-      }
-      index++;
-    }
-    return -1;
-  }
-
-  private int indexOfStickerSetById (long setId) {
-    int index = 0;
-    for (TGStickerSetInfo setInfo : stickersController.stickerSets) {
-      if (!setInfo.isSystem()) {
-        if (setInfo.getId() == setId) {
-          return index;
-        }
-        index++;
-      }
-    }
-    return -1;
-  }
-
-  private int ignoreStickersScroll;
-
-  private void moveStickerSet (int oldPosition, int newPosition) {
-    beforeStickerChanges();
-
-    if (getArguments() != null) {
-      getArguments().moveStickerSection(oldPosition, newPosition);
-    }
-
-    TGStickerSetInfo stickerSet = stickersController.stickerSets.remove(oldPosition);
-
-    final int startIndex = stickerSet.getStartIndex();
-    final int itemCount = stickerSet.getSize() + 1;
-
-    int startPosition;
-    if (oldPosition < newPosition) {
-      startPosition = startIndex;
-    } else {
-      startPosition = stickersController.stickerSets.get(newPosition).getStartIndex();
-    }
-
-    stickersController.stickerSets.add(newPosition, stickerSet);
-
-    for (int i = Math.min(oldPosition, newPosition); i < stickersController.stickerSets.size(); i++) {
-      TGStickerSetInfo nextSet = stickersController.stickerSets.get(i);
-      nextSet.setStartIndex(startPosition);
-      startPosition += nextSet.getSize() + 1;
-    }
-
-    stickersAdapter.moveRange(startIndex, itemCount, stickerSet.getStartIndex());
-    resetScrollCache();
-  }
-
-  private void beforeStickerChanges () {
-    ignoreStickersScroll++;
-  }
-
-  private void resetScrollCache () {
-    // lastStickerSetInfo = null; // FIXME removing current sticker set does not update selection
-    // ignoreStickersScroll--;
-
-    if (getArguments() != null) {
-      getArguments().resetScrollState(true); // FIXME upd: ... fixme what?
-    }
-    UI.post(() -> {
-      if (getArguments() != null && contentView.getCurrentSection() == SECTION_STICKERS) {
-        getArguments().setCurrentStickerSectionByPosition(stickersController.getStickerSetSection(), true, true);
-        getArguments().resetScrollState(true);
-      }
-      ignoreStickersScroll--;
-    }, 400);
-  }
-
-  private void addStickerSet (TGStickerSetInfo stickerSet, ArrayList<MediaStickersAdapter.StickerItem> items, int index) {
-    if (index < 0 || index >= stickersController.stickerSets.size()) {
-      return;
-    }
-
-    beforeStickerChanges();
-
-    if (getArguments() != null) {
-      getArguments().addStickerSection(index, stickerSet);
-    }
-
-    int startIndex = stickersController.stickerSets.get(index).getStartIndex();
-    stickersController.stickerSets.add(index, stickerSet);
-    for (int i = index; i < stickersController.stickerSets.size(); i++) {
-      TGStickerSetInfo nextStickerSet = stickersController.stickerSets.get(i);
-      nextStickerSet.setStartIndex(startIndex);
-      startIndex += nextStickerSet.getSize() + 1;
-    }
-
-    stickersAdapter.addRange(stickerSet.getStartIndex(), items);
-    resetScrollCache();
-  }
-
-  private int removeStickerSet (TGStickerSetInfo stickerSet) {
-    int i = stickersController.stickerSets.indexOf(stickerSet);
-    if (i != -1) {
-      beforeStickerChanges();
-      stickersController.stickerSets.remove(i);
-      if (getArguments() != null) {
-        getArguments().removeStickerSection(i);
-      }
-      int startIndex = stickerSet.getStartIndex();
-      stickersAdapter.removeRange(startIndex, stickerSet.getSize() + 1);
-      for (int j = i; j < stickersController.stickerSets.size(); j++) {
-        TGStickerSetInfo nextStickerSet = stickersController.stickerSets.get(j);
-        nextStickerSet.setStartIndex(startIndex);
-        startIndex += nextStickerSet.getSize() + 1;
-      }
-      resetScrollCache();
-    }
-    return i;
   }
 
   @Override
