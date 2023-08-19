@@ -85,7 +85,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
     void showInlineResults (ArrayList<InlineResult<?>> items, boolean isContent);
     void addInlineResults (ArrayList<InlineResult<?>> items);
     void hideInlineResults ();
-    void showInlineStickers (ArrayList<TGStickerObj> stickers, boolean isMore);
+    void showInlineStickers (ArrayList<TGStickerObj> stickers, boolean isEmoji, boolean isMore);
     boolean needsLinkPreview ();
     boolean showLinkPreview (@Nullable String link, @Nullable TdApi.WebPage webPage);
 
@@ -384,24 +384,57 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
   // Stickers
 
   private CancellableResultHandler stickerRequest;
+  private CancellableResultHandler emojiRequest;
 
   private void cancelStickerRequest () {
     if (stickerRequest != null) {
       stickerRequest.cancel();
       stickerRequest = null;
     }
+    if (emojiRequest != null) {
+      emojiRequest.cancel();
+      emojiRequest = null;
+    }
   }
 
   private void searchStickers (final String emoji, final boolean more, @Nullable final int[] ignoreStickerIds) {
-    final int stickerMode = Settings.instance().getStickerMode();
+    stickerRequest = searchStickersImpl(emoji, false, more, ignoreStickerIds);
+    emojiRequest = searchStickersImpl(emoji, true, more, ignoreStickerIds);
+  }
+
+  private int getSearchStickersMode (boolean isEmoji) {
+    if (isEmoji) {
+      return Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_SUGGEST_ANIMATED_EMOJI) ?
+        Settings.STICKER_MODE_NONE: Settings.STICKER_MODE_ALL;
+    } else {
+      return Settings.instance().getStickerMode();
+    }
+  }
+
+  private @Nullable CancellableResultHandler searchStickersImpl (final String emoji, final boolean isEmoji, final boolean more, @Nullable final int[] ignoreStickerIds) {
+    final int stickerMode = getSearchStickersMode(isEmoji);
     if (stickerMode == Settings.STICKER_MODE_NONE) {
-      return;
+      return null;
     }
     if (stickerMode == Settings.STICKER_MODE_ALL && !more && tdlib.suggestOnlyApiStickers()) {
-      searchStickers(emoji, true, ignoreStickerIds);
-      return;
+      return searchStickersImpl(emoji, isEmoji, true, ignoreStickerIds);
     }
-    stickerRequest = new CancellableResultHandler() {
+    final long chatId = callback.provideInlineSearchChatId();
+    final TdApi.StickerType type = isEmoji ? new TdApi.StickerTypeCustomEmoji(): new TdApi.StickerTypeRegular();
+    TdApi.Function<?> function;
+    if (more) {
+      function = new TdApi.SearchStickers(type, emoji, 1000);
+    } else {
+      function = new TdApi.GetStickers(type, emoji, 1000, chatId);
+    }
+    CancellableResultHandler handler = stickersHandler(emoji, isEmoji, stickerMode, more, ignoreStickerIds);
+    tdlib.client().send(function, handler);
+
+    return handler;
+  }
+
+  private CancellableResultHandler stickersHandler (final String emoji, final boolean isEmoji, final int stickerMode, final boolean more, @Nullable final int[] ignoreStickerIds) {
+    return new CancellableResultHandler() {
       @Override
       public void processResult (TdApi.Object object) {
         switch (object.getConstructor()) {
@@ -434,7 +467,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
             }
             tdlib.ui().post(() -> {
               if (!isCancelled()) {
-                displayStickers(displayingStickers, emoji, more);
+                displayStickers(displayingStickers, isEmoji, emoji, more);
                 if (!more && stickerMode == Settings.STICKER_MODE_ALL) {
                   searchStickers(emoji, true, futureIgnoreStickerIds);
                 }
@@ -445,23 +478,15 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
         }
       }
     };
-    final long chatId = callback.provideInlineSearchChatId();
-    TdApi.Function<?> function;
-    if (more) {
-      function = new TdApi.SearchStickers(new TdApi.StickerTypeRegular(), emoji, 1000);
-    } else {
-      function = new TdApi.GetStickers(new TdApi.StickerTypeRegular(), emoji, 1000, chatId);
-    }
-    tdlib.client().send(function, stickerRequest);
   }
 
   @UiThread
-  private void displayStickers (TdApi.Sticker[] stickers, String foundByEmoji, boolean isMore) {
+  private void displayStickers (TdApi.Sticker[] stickers, boolean isEmoji, String foundByEmoji, boolean isMore) {
     ArrayList<TGStickerObj> list = new ArrayList<>(stickers.length);
     for (TdApi.Sticker sticker : stickers) {
       list.add(new TGStickerObj(tdlib, sticker, foundByEmoji, sticker.fullType));
     }
-    callback.showInlineStickers(list, isMore);
+    callback.showInlineStickers(list, isEmoji, isMore);
   }
 
   // Inline query

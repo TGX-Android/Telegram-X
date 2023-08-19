@@ -43,7 +43,7 @@ import me.vkryl.android.widget.FrameLayoutFix;
 public class StickerSuggestionAdapter extends RecyclerView.Adapter<StickerSuggestionAdapter.StickerSuggestionHolder> implements StickerSmallView.StickerMovementCallback {
   public interface Callback {
     boolean onSendStickerSuggestion (View view, TGStickerObj sticker, TdApi.MessageSendOptions sendOptions);
-    int getStickerSuggestionsTop ();
+    int getStickerSuggestionsTop (boolean isEmoji);
     int getStickerSuggestionPreviewViewportHeight ();
     long getStickerSuggestionsChatId ();
   }
@@ -51,14 +51,16 @@ public class StickerSuggestionAdapter extends RecyclerView.Adapter<StickerSugges
   private final RecyclerView.LayoutManager manager;
   private final ViewController<?> context;
   private final Callback callback;
+  private final boolean isEmoji;
   private @Nullable ArrayList<TGStickerObj> stickers;
   private @Nullable ViewController<?> themeProvider;
 
-  public StickerSuggestionAdapter (ViewController<?> context, Callback callback, RecyclerView.LayoutManager manager, @Nullable ViewController<?> themeProvider) {
+  public StickerSuggestionAdapter (ViewController<?> context, Callback callback, RecyclerView.LayoutManager manager, @Nullable ViewController<?> themeProvider, boolean isEmoji) {
     this.context = context;
     this.callback = callback;
     this.manager = manager;
     this.themeProvider = themeProvider;
+    this.isEmoji = isEmoji;
   }
 
   public boolean hasStickers () {
@@ -212,7 +214,7 @@ public class StickerSuggestionAdapter extends RecyclerView.Adapter<StickerSugges
 
   @Override
   public int getStickersListTop () {
-    return callback.getStickerSuggestionsTop();
+    return callback.getStickerSuggestionsTop(isEmoji);
   }
 
   // Holder

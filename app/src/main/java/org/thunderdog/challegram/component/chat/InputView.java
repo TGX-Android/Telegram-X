@@ -961,9 +961,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   }
 
   @Override
-  public void showInlineStickers (ArrayList<TGStickerObj> stickers, boolean isMore) {
+  public void showInlineStickers (ArrayList<TGStickerObj> stickers, boolean isEmoji, boolean isMore) {
     if (controller != null) {
-      controller.showStickerSuggestions(stickers, isMore);
+      controller.showStickerSuggestions(stickers, isEmoji, isMore);
     }
   }
 
@@ -1102,6 +1102,10 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   }
 
   public void onCustomEmojiSelected (TGStickerObj stickerObj) {
+    onCustomEmojiSelected(stickerObj, false);
+  }
+
+  public void onCustomEmojiSelected (TGStickerObj stickerObj, boolean needReplace) {
     TextSelection selection = getTextSelection();
     if (selection == null)
       return;
@@ -1112,10 +1116,16 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     SpannableString s = new SpannableString(emoji);
     s.setSpan(
       Emoji.instance().newCustomSpan(emoji, null, this, tdlib, stickerObj.getCustomEmojiId()), 0, s.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+    /*if (needReplace && !isEmpty() && selection.isEmpty()) {
+      int start = Math.max(selection.start - 1, 0);
+      getText().replace(start, start + 1, s);
+    } else {*/
     if (selection.isEmpty()) {
       getText().insert(selection.start, s);
     } else {
       getText().replace(selection.start, selection.end, s);
+    //}
+    //}
     }
     setSelection(after);
   }
