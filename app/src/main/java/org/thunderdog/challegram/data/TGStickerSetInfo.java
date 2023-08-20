@@ -44,6 +44,7 @@ public class TGStickerSetInfo {
   private static final int FLAG_TRENDING_EMOJI = 1 << 4;
   private static final int FLAG_DEFAULT_EMOJI = 1 << 5;
   private static final int FLAG_FAKE_CLASSIC_EMOJI = 1 << 6;
+  private static final int FLAG_COLLAPSABLE_EMOJI = 1 << 7;
 
   private final Tdlib tdlib;
   private final @Nullable TdApi.StickerSetInfo info;
@@ -82,6 +83,10 @@ public class TGStickerSetInfo {
   }
 
   public TGStickerSetInfo (Tdlib tdlib, @NonNull TdApi.StickerSetInfo info) {
+    this(tdlib, info, -1);
+  }
+
+  public TGStickerSetInfo (Tdlib tdlib, @NonNull TdApi.StickerSetInfo info, int trimToSize) {
     this.tdlib = tdlib;
     this.info = info;
     if (info.thumbnail != null) {
@@ -146,6 +151,11 @@ public class TGStickerSetInfo {
     if (this.previewAnimation != null) {
       this.previewAnimation.setOptimizationMode(GifFile.OptimizationMode.STICKER_PREVIEW);
       this.previewAnimation.setScaleType(ImageFile.FIT_CENTER);
+    }
+
+    if (trimToSize > 0 && info.size > trimToSize) {
+      this.size = trimToSize;
+      this.flags |= FLAG_COLLAPSABLE_EMOJI;
     }
   }
 
@@ -260,6 +270,10 @@ public class TGStickerSetInfo {
     return (flags & FLAG_TRENDING) != 0;
   }
 
+  public boolean isCollapsableEmojiSet () {
+    return BitwiseUtils.hasFlag(flags, FLAG_COLLAPSABLE_EMOJI);
+  }
+
   @Override
   public boolean equals (Object obj) {
     if (obj == null || !(obj instanceof TGStickerSetInfo)) {
@@ -289,6 +303,9 @@ public class TGStickerSetInfo {
     if (isTrending()) {
       return 5;
     }
+    if (isCollapsableEmojiSet()) {
+      return size + 1;
+    }
     if (info != null) {
       return info.size + 1;
     }
@@ -308,7 +325,7 @@ public class TGStickerSetInfo {
   }
 
   public void setSize (int size) {
-    if (info != null) {
+    if (info != null && !isCollapsableEmojiSet()) {
       info.size = size;
     } else {
       this.size = size;
@@ -406,10 +423,16 @@ public class TGStickerSetInfo {
   }
 
   public int getSize () {
+    if (isCollapsableEmojiSet()) {
+      return size;
+    }
     return info != null ? info.size : size;
   }
 
   public int getFullSize () {
+    if (isCollapsableEmojiSet()) {
+      return info != null ? info.size: getSize();
+    }
     return allStickers != null ? allStickers.length : getSize();
   }
 

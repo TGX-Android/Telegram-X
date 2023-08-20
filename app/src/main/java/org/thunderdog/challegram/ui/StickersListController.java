@@ -20,6 +20,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -53,6 +54,7 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.RtlGridLayoutManager;
@@ -304,7 +306,34 @@ public class StickersListController extends ViewController<StickersListControlle
     recyclerView.setItemAnimator(null);
     recyclerView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? View.OVER_SCROLL_IF_CONTENT_SCROLLS : View.OVER_SCROLL_NEVER);
     recyclerView.setLayoutManager(manager = new RtlGridLayoutManager(context, spanCount).setAlignOnly(true));
-    recyclerView.setAdapter(adapter = new MediaStickersAdapter(this, this, false, this, offsetProvider, false, null));
+    recyclerView.setAdapter(adapter = new MediaStickersAdapter(this, this, false, this, offsetProvider, false, null) {
+      @Override
+      protected void onToggleCollapseRecentStickers (TextView collapseView, TGStickerSetInfo recentSet) {
+        int existingIndex = getStickerSetSectionIndexById(recentSet.getId());
+        if (existingIndex == -1) return;
+
+        StickerSection section = stickerSections.get(existingIndex);
+        boolean needExpand = recentSet.isCollapsed();
+        int endIndex = recentSet.getEndIndex();
+        int visibleItemCount = recentSet.getItemCount();
+
+        if (needExpand) {
+          recentSet.setSize(recentSet.getFullSize());
+
+          ArrayList<MediaStickersAdapter.StickerItem> stickers = section.toItems(true);
+          for (int a = 0; a < visibleItemCount; a++) {
+            stickers.remove(0);
+          }
+
+          shiftStickerSets(existingIndex, stickers.size());
+          adapter.addRange(endIndex, stickers);
+        } else {
+          recentSet.setSize(Config.DEFAULT_SHOW_EMOJI_STICKERS_COUNT);
+          adapter.removeRange(recentSet.getEndIndex(), endIndex - recentSet.getEndIndex());
+          shiftStickerSets(existingIndex, recentSet.getEndIndex() - endIndex);
+        }
+      }
+    });
     recyclerView.setLayoutParams(params);
     recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
       @Override
@@ -334,6 +363,8 @@ public class StickersListController extends ViewController<StickersListControlle
       public int getSpanSize (int position) {
         int type = adapter.getItemViewType(position);
         return position == 0
+          || type == MediaStickersAdapter.StickerHolder.TYPE_HEADER
+          || type == MediaStickersAdapter.StickerHolder.TYPE_HEADER_COLLAPSABLE
           || type == MediaStickersAdapter.StickerHolder.TYPE_PROGRESS_OFFSETABLE
           || type == MediaStickersAdapter.StickerHolder.TYPE_HEADER_TRENDING
           || type == MediaStickersAdapter.StickerHolder.TYPE_SEPARATOR ? spanCount : 1;
@@ -376,7 +407,12 @@ public class StickersListController extends ViewController<StickersListControlle
 
   private boolean isEmojiPack;
 
-
+  private void shiftStickerSets (int startPosition, int offset) {
+    for (int i = startPosition + 1; i < stickerSections.size(); i++) {
+      TGStickerSetInfo stickerSet = stickerSections.get(i).info;
+      stickerSet.setStartIndex(stickerSet.getStartIndex() + offset);
+    }
+  }
 
   @Override
   public void destroy () {
@@ -662,12 +698,23 @@ public class StickersListController extends ViewController<StickersListControlle
     adapter.setItems(items);
   }
 
+  private int getStickerSetSectionIndexById (long id) {
+    int i = 0;
+    for (StickerSection section: stickerSections) {
+      if (section.info != null && section.info.getId() == id) {
+        return i;
+      }
+      i++;
+    }
+    return -1;
+  }
+
   private static class StickerSection {
     public @Nullable TGStickerSetInfo info;
     public ArrayList<TGStickerObj> stickers;
 
     public StickerSection (Tdlib tdlib, TdApi.StickerSet stickerSet) {
-      this.info = new TGStickerSetInfo(tdlib, Td.toStickerSetInfo(stickerSet));
+      this.info = new TGStickerSetInfo(tdlib, Td.toStickerSetInfo(stickerSet), Config.DEFAULT_SHOW_EMOJI_STICKERS_COUNT);
       this.stickers = new ArrayList<>(stickerSet.stickers.length);
 
       for (TdApi.Sticker sticker: stickerSet.stickers) {
@@ -691,10 +738,21 @@ public class StickersListController extends ViewController<StickersListControlle
     public ArrayList<MediaStickersAdapter.StickerItem> toItems (boolean needInfo) {
       ArrayList<MediaStickersAdapter.StickerItem> items = new ArrayList<>((info != null && needInfo ? 1: 0) + stickers.size());
       if (info != null && needInfo) {
-        items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_HEADER_TRENDING, info));
+        items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_HEADER_COLLAPSABLE, info));
       }
-      for (TGStickerObj stickerObj: stickers) {
-        items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, stickerObj));
+
+      if (info != null && info.isCollapsed()) {
+        int i = 0;
+        for (TGStickerObj stickerObj: stickers) {
+          if (i++ == Config.DEFAULT_SHOW_EMOJI_STICKERS_COUNT) {
+            break;
+          }
+          items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, stickerObj));
+        }
+      } else {
+        for (TGStickerObj stickerObj: stickers) {
+          items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, stickerObj));
+        }
       }
 
       return items;
