@@ -328,7 +328,7 @@ public class StickersListController extends ViewController<StickersListControlle
           shiftStickerSets(existingIndex, stickers.size());
           adapter.addRange(endIndex, stickers);
         } else {
-          recentSet.setSize(Config.DEFAULT_SHOW_EMOJI_STICKERS_COUNT);
+          recentSet.setSize(spanCount * 2);
           adapter.removeRange(recentSet.getEndIndex(), endIndex - recentSet.getEndIndex());
           shiftStickerSets(existingIndex, recentSet.getEndIndex() - endIndex);
         }
@@ -576,7 +576,7 @@ public class StickersListController extends ViewController<StickersListControlle
           for (TdApi.StickerSet set: loadSetsResult) {
             if (set != null) {
               sets.add(set);
-              stickerSections.add(new StickerSection(tdlib, set));
+              stickerSections.add(new StickerSection(tdlib, set, Math.max(16, spanCount * 2)));
             }
           }
 
@@ -713,8 +713,8 @@ public class StickersListController extends ViewController<StickersListControlle
     public @Nullable TGStickerSetInfo info;
     public ArrayList<TGStickerObj> stickers;
 
-    public StickerSection (Tdlib tdlib, TdApi.StickerSet stickerSet) {
-      this.info = new TGStickerSetInfo(tdlib, Td.toStickerSetInfo(stickerSet), Config.DEFAULT_SHOW_EMOJI_STICKERS_COUNT);
+    public StickerSection (Tdlib tdlib, TdApi.StickerSet stickerSet, int trimToSize) {
+      this.info = new TGStickerSetInfo(tdlib, Td.toStickerSetInfo(stickerSet), trimToSize);
       this.stickers = new ArrayList<>(stickerSet.stickers.length);
 
       for (TdApi.Sticker sticker: stickerSet.stickers) {
@@ -744,7 +744,7 @@ public class StickersListController extends ViewController<StickersListControlle
       if (info != null && info.isCollapsed()) {
         int i = 0;
         for (TGStickerObj stickerObj: stickers) {
-          if (i++ == Config.DEFAULT_SHOW_EMOJI_STICKERS_COUNT) {
+          if (i++ == info.getSize()) {
             break;
           }
           items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, stickerObj));

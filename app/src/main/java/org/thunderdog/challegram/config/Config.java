@@ -167,7 +167,6 @@ public class Config {
 
   public static final boolean FORCE_SHOW_RECENTS_STICKERS_TITLE = false;
   public static final int DEFAULT_SHOW_RECENT_STICKERS_COUNT = 10;
-  public static final int DEFAULT_SHOW_EMOJI_STICKERS_COUNT = 16;
 
   public static final boolean USE_TEXT_ADVANCE = true; // Build.VERSION.SDK_INT >= Build.VERSION_CODES.M;
 

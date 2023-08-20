@@ -702,7 +702,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
                 .show(tdlib, Lang.getString(TD.EMOJI_DART.textRepresentation.equals(dice.emoji) ? R.string.SendDartHint : TD.EMOJI_DICE.textRepresentation.equals(dice.emoji) ? R.string.SendDiceHint : R.string.SendUnknownDiceHint, dice.emoji));
               break;
             }
-            case SPECIAL_TYPE_ANIMATED_EMOJI: {
+            /*case SPECIAL_TYPE_ANIMATED_EMOJI: {
               GifFile animatedFile = view.getComplexReceiver() != null ? view.getComplexReceiver().getGifReceiver(0).getCurrentFile() : null;
               if (Config.LOOP_BIG_CUSTOM_EMOJI && Td.customEmojiId(sticker) != 0) {
                 tapProcessed = fallbackAct.getBoolValue();
@@ -714,7 +714,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
                 }
               }
               break;
-            }
+            }*/
             default: {
               tapProcessed = fallbackAct.getBoolValue();
               break;
@@ -730,5 +730,28 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
     }
 
     return isCaught;
+  }
+
+  @Override
+  public long getFirstEmojiId () {
+    if (sticker != null && sticker.getConstructor() == TdApi.DiceStickersRegular.CONSTRUCTOR) {
+      TdApi.Sticker sticker1 = ((TdApi.DiceStickersRegular) sticker).sticker;
+      return Td.customEmojiId(sticker1);
+    }
+    return 0;
+  }
+
+  @Override
+  public long[] getUniqueEmojiPackIdList () {
+    if (sticker != null && sticker.getConstructor() == TdApi.DiceStickersRegular.CONSTRUCTOR) {
+      TdApi.Sticker sticker1 = ((TdApi.DiceStickersRegular) sticker).sticker;
+      if (Td.customEmojiId(sticker1) != 0) {
+        return new long[] {
+          sticker1.setId
+        };
+      }
+    }
+
+    return new long[0];
   }
 }

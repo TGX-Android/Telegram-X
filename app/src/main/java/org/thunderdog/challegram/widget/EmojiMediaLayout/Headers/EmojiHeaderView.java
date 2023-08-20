@@ -45,10 +45,12 @@ public class EmojiHeaderView extends FrameLayout {
   private final RecyclerView recyclerView;
   private final EmojiSectionView goToMediaPageSection;
 
+  private EmojiLayout emojiLayout;
   private Paint shadowPaint;
 
   public EmojiHeaderView (@NonNull Context context, EmojiLayout emojiLayout, ViewController<?> themeProvider) {
     super(context);
+    this.emojiLayout = emojiLayout;
     setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(48)));
 
     LinearLayoutManager manager = new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, Lang.rtl());
@@ -114,21 +116,48 @@ public class EmojiHeaderView extends FrameLayout {
     if (isStickerSection) {
       i += 1;
     }
-    setSelectedObjectByPosition(i, isStickerSection, animated);
+    setSelectedObjectByPosition(i, animated);
   }
 
-  public void setSelectedObjectByPosition (int i, boolean isStickerSection, boolean animated) {
-    /*if (mediaAdapter.hasRecents && mediaAdapter.hasFavorite && isStickerSection && i >= 1) {
-      i--;
+  public void setSelectedObjectByPosition (int i, boolean animated) {
+    setSelectedObject(adapter.getObject(i), animated);
+  }
+
+  private static final int OFFSET = 2;
+
+  private void setSelectedObject (Object obj, boolean animated) {
+    if (!adapter.setSelectedObject(debugLog(obj), animated, adapter.manager)) {
+      return;
     }
-    if (isStickerSection) {
-      i += mediaAdapter.headerItems.size() - mediaAdapter.getAddItemCount(false);
-    }*/
-    setSelectedObject(adapter.getObject(i), animated, adapter.manager);
-  }
 
-  public boolean setSelectedObject (Object obj, boolean animated, RecyclerView.LayoutManager manager) {
-    return adapter.setSelectedObject(debugLog(obj), animated, manager);
+    int section = adapter.getPositionFromIndex(adapter.indexOfObject(obj));
+    int first = adapter.manager.findFirstVisibleItemPosition();
+    int last = adapter.manager.findLastVisibleItemPosition();
+    int itemWidth = (Screen.currentWidth() - EmojiLayout.getHorizontalPadding() * 2) / emojiLayout.getEmojiSectionsSize();
+
+    if (first != -1) {
+      int scrollX = first * itemWidth;
+      View v = adapter.manager.findViewByPosition(first);
+      if (v != null) {
+        scrollX += -v.getLeft();
+      }
+
+      if (section - OFFSET < first) {
+        int desiredScrollX = section * itemWidth - itemWidth / 2 - itemWidth;
+        if (animated && emojiLayout.getHeaderHideFactor() != 1f) {
+          recyclerView.smoothScrollBy(desiredScrollX - scrollX, 0);
+        } else {
+          recyclerView.scrollBy(desiredScrollX - scrollX, 0);
+        }
+      } else if (section + OFFSET > last) {
+        int desiredScrollX = Math.max(0, (section - emojiLayout.getEmojiSectionsSize()) * itemWidth + itemWidth * OFFSET + (emojiLayout.isAnimatedEmojiOnly() ? -itemWidth: itemWidth / 2));
+        if (animated && emojiLayout.getHeaderHideFactor() != 1f) {
+          recyclerView.smoothScrollBy(desiredScrollX - scrollX, 0);
+        } else {
+          recyclerView.scrollBy(desiredScrollX - scrollX, 0);
+        }
+      }
+    }
   }
 
   public static Object debugLog (Object obj) {
