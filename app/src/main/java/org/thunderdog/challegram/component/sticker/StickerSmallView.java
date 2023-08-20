@@ -160,9 +160,16 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
   }
 
   private boolean isSuggestion;
+  private boolean isEmojiSuggestion;
 
   public void setIsSuggestion () {
     isSuggestion = true;
+    isEmojiSuggestion = false;
+  }
+
+  public void setIsSuggestion (boolean isEmoji) {
+    isSuggestion = true;
+    isEmojiSuggestion = isEmoji;
   }
 
   private boolean emojiDisabled;
@@ -174,7 +181,7 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
   @Override
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
     if (isSuggestion) {
-      super.onMeasure(MeasureSpec.makeMeasureSpec(Screen.dp(72f), MeasureSpec.EXACTLY), heightMeasureSpec);
+      super.onMeasure(MeasureSpec.makeMeasureSpec(Screen.dp(isEmojiSuggestion ? 36: 72), MeasureSpec.EXACTLY), heightMeasureSpec);
     } else if (isTrending) {
       super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(Screen.smallestSide() / 5, MeasureSpec.EXACTLY));
     } else {

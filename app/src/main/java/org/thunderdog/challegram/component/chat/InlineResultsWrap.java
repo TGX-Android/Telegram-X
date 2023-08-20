@@ -251,6 +251,10 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
     return itemsVisible;
   }
 
+  public RecyclerView getRecyclerView () {
+    return recyclerView;
+  }
+
   public void setUseDarkMode (boolean useDarkMode) {
     adapter.setUseDarkMode(useDarkMode);
   }

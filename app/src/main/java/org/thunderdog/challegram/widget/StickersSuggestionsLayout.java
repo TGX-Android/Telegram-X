@@ -40,11 +40,13 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
   public final RecyclerView stickerSuggestionsView;
   public StickerSuggestionAdapter stickerSuggestionAdapter;
 
+  private MessagesController parent;
   private FactorAnimator stickersAnimator;
   private Delegate delegate;
   private ViewGroup contentView;
   private boolean choosingSuggestionSent;
   private boolean areStickersVisible;
+  private boolean needAddToRoot;
   private boolean isEmoji;
 
   public interface Delegate {
@@ -53,16 +55,6 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
 
   public StickersSuggestionsLayout (Context context) {
     super(context);
-
-    int stickersListTopHeight = Screen.dp(72f) + Screen.dp(2.5f);
-    int stickersListTotalHeight = stickersListTopHeight + Screen.dp(6.5f);
-    int stickerArrowHeight = Screen.dp(12f);
-
-    RelativeLayout.LayoutParams params;
-    params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, stickersListTotalHeight + stickerArrowHeight);
-    params.addRule(RelativeLayout.ABOVE, R.id.msg_bottom);
-    params.bottomMargin = -(Screen.dp(8f) + stickerArrowHeight);
-    setLayoutParams(params);
 
     manager = new LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false);
 
@@ -75,7 +67,6 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
     stickerSuggestionsView.setItemAnimator(null);
     stickerSuggestionsView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? View.OVER_SCROLL_IF_CONTENT_SCROLLS : View.OVER_SCROLL_NEVER);
     stickerSuggestionsView.setLayoutManager(manager);
-    stickerSuggestionsView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, stickersListTotalHeight));
     stickerSuggestionsView.addOnScrollListener(new RecyclerView.OnScrollListener() {
       @Override
       public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
@@ -88,27 +79,18 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
 
     addView(stickerSuggestionsView);
 
-
-
-    FrameLayoutFix.LayoutParams fparams;
-    fparams = FrameLayoutFix.newParams(Screen.dp(27f), stickerArrowHeight);
-    fparams.topMargin = stickersListTopHeight;
-    fparams.leftMargin = Screen.dp(55f) + Screen.dp(2.5f);
-
-    setPivotX(fparams.leftMargin + Screen.dp(27f) / 2f);
-    setPivotY(stickersListTopHeight + stickerArrowHeight);
-
     stickerSuggestionArrowView = new ImageView(context);
     stickerSuggestionArrowView.setScaleType(ImageView.ScaleType.CENTER);
     stickerSuggestionArrowView.setImageResource(R.drawable.stickers_back_arrow);
     stickerSuggestionArrowView.setColorFilter(new PorterDuffColorFilter(Theme.headerFloatBackgroundColor(), PorterDuff.Mode.MULTIPLY));
-    stickerSuggestionArrowView.setLayoutParams(fparams);
     addView(stickerSuggestionArrowView);
   }
 
-  public void init (@NonNull MessagesController parent, ViewGroup contentView, @Nullable ArrayList<TGStickerObj> stickers, boolean isEmoji) {
+  public void init (@NonNull MessagesController parent, ViewGroup contentView, @Nullable ArrayList<TGStickerObj> stickers, boolean isEmoji, boolean needAddToRoot) {
     this.contentView = contentView;
+    this.parent = parent;
     this.isEmoji = isEmoji;
+    this.needAddToRoot = needAddToRoot;
     this.stickerSuggestionAdapter = new StickerSuggestionAdapter(parent, parent, manager, parent, isEmoji) {
       @Override
       public void onStickerPreviewOpened (StickerSmallView view, TGStickerObj sticker) {
@@ -137,6 +119,29 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
     this.stickerSuggestionsView.setAdapter(stickerSuggestionAdapter);
 
     parent.addThemeSpecialFilterListener(stickerSuggestionArrowView, ColorId.overlayFilling);
+
+
+    int stickersListTopHeight = Screen.dp(isEmoji ? 36: 72) + Screen.dp(2.5f);
+    int stickersListTotalHeight = stickersListTopHeight + Screen.dp(6.5f);
+    int stickerArrowHeight = Screen.dp(12f);
+
+    RelativeLayout.LayoutParams params;
+    params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, stickersListTotalHeight + stickerArrowHeight);
+    params.addRule(RelativeLayout.ABOVE, R.id.msg_bottom);
+    params.bottomMargin = -(Screen.dp(8f) + stickerArrowHeight);
+    setLayoutParams(params);
+
+    stickerSuggestionsView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, stickersListTotalHeight));
+
+    FrameLayoutFix.LayoutParams fparams;
+    fparams = FrameLayoutFix.newParams(Screen.dp(27f), stickerArrowHeight);
+    fparams.topMargin = stickersListTopHeight;
+    fparams.leftMargin = Screen.dp(55f) + Screen.dp(2.5f);
+
+    setPivotX(fparams.leftMargin + Screen.dp(27f) / 2f);
+    setPivotY(stickersListTopHeight + stickerArrowHeight);
+
+    stickerSuggestionArrowView.setLayoutParams(fparams);
   }
 
   public void setChoosingDelegate (Delegate delegate) {
@@ -150,8 +155,8 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
       this.stickersFactor = factor;
 
       final float scale = .8f + .2f * factor;
-      setScaleX(scale * (isEmoji ? 0.5f: 1f));
-      setScaleY(scale * (isEmoji ? 0.5f: 1f));
+      setScaleX(scale /* (isEmoji ? 0.5f: 1f)*/);
+      setScaleY(scale /* (isEmoji ? 0.5f: 1f)*/);
       setAlpha(Math.min(1f, Math.max(0f, factor)));
     }
   }
@@ -181,7 +186,11 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
       }
       boolean onLayout = getParent() == null && areVisible;
       if (onLayout) {
-        contentView.addView(this);
+        if (needAddToRoot) {
+          parent.context().addToRoot(this, false);
+        } else {
+          contentView.addView(this);
+        }
       }
       animateStickersFactor(areVisible ? 1f : 0f, onLayout);
     }
@@ -193,7 +202,11 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
 
   private void onStickersDisappeared () {
     stickerSuggestionAdapter.setStickers(null);
-    contentView.removeView(this);
+    if (needAddToRoot) {
+      parent.context().removeFromRoot(this);
+    } else {
+      contentView.removeView(this);
+    }
   }
 
   @Override

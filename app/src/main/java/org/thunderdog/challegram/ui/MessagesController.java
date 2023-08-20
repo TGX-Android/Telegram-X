@@ -132,8 +132,10 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.core.Media;
+import org.thunderdog.challegram.data.InlineResult;
 import org.thunderdog.challegram.data.InlineResultButton;
 import org.thunderdog.challegram.data.InlineResultCommand;
+import org.thunderdog.challegram.data.InlineResultSticker;
 import org.thunderdog.challegram.data.MessageListManager;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGAudio;
@@ -686,6 +688,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
         @Override
         protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
           super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+          if (inlineResultsView != null) {
+            inlineResultsView.updatePosition(true);
+          }
           updateButtonsY();
         }
 
@@ -3249,18 +3254,22 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     int baseY = Views.getLocationInWindow(navigationController.getValue())[1];
 
-    if (stickerSuggestionsWrap != null && stickerSuggestionsWrap.isStickersVisible()) {
-      int locationY = Views.getLocationInWindow(stickerSuggestionsWrap)[1];
+    if (emojiSuggestionsWrap != null && emojiSuggestionsWrap.isStickersVisible()) {
+      int locationY = Views.getLocationInWindow(emojiSuggestionsWrap)[1];
       locationY -= baseY;
-      if (y >= locationY && y < locationY + stickerSuggestionsWrap.getMeasuredHeight()) {
-        int i = ((LinearLayoutManager)  stickerSuggestionsWrap.stickerSuggestionsView.getLayoutManager()).findFirstVisibleItemPosition();
+      if (y >= locationY && y < locationY + emojiSuggestionsWrap.getMeasuredHeight()) {
+        int i = ((LinearLayoutManager)  emojiSuggestionsWrap.stickerSuggestionsView.getLayoutManager()).findFirstVisibleItemPosition();
         if (i == 0) {
-          View view =  stickerSuggestionsWrap.stickerSuggestionsView.getLayoutManager().findViewByPosition(0);
+          View view =  emojiSuggestionsWrap.stickerSuggestionsView.getLayoutManager().findViewByPosition(0);
           return view == null || view.getLeft() >= 0;
         }
         return false;
       }
     }
+
+    /*if (areInlineResultsVisible()) {
+      return false;
+    }*/
 
     int bound = (getSlideBackBound());
 
@@ -6700,6 +6709,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
     attachButtons.setTranslationY(y);
     messageSenderButton.setTranslationY(y);
 
+    if (inlineResultsView != null) {
+      inlineResultsView.updatePosition(true);
+    }
+
     if (prevButtonsY != y) {
       prevButtonsY = y;
       onMessagesFrameChanged();
@@ -7687,12 +7700,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   // Stickers suggestions
 
-  private @Nullable StickersSuggestionsLayout stickerSuggestionsWrap;
   private @Nullable StickersSuggestionsLayout emojiSuggestionsWrap;
-
-  public StickersSuggestionsLayout getSuggestionsLayout (boolean isEmoji) {
-    return isEmoji ? emojiSuggestionsWrap: stickerSuggestionsWrap;
-  }
 
   @Override
   public boolean onSendStickerSuggestion (View view, TGStickerObj sticker, TdApi.MessageSendOptions initialSendOptions) {
@@ -7716,7 +7724,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Override
   public int getStickerSuggestionsTop (boolean isEmoji) {
-    return Views.getLocationInWindow(getSuggestionsLayout(isEmoji))[1];
+    return Views.getLocationInWindow(emojiSuggestionsWrap)[1];
   }
 
   @Override
@@ -7725,41 +7733,49 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public void hideStickerSuggestions () {
-    if (stickerSuggestionsWrap != null) {
-      stickerSuggestionsWrap.setStickersVisible(false);
-    }
     if (emojiSuggestionsWrap != null) {
       emojiSuggestionsWrap.setStickersVisible(false);
     }
+   setInlineResultsHidden(true);
   }
 
-  public void showStickerSuggestions (@Nullable ArrayList<TGStickerObj> stickers, boolean isEmoji, boolean isMore) {
-    StickersSuggestionsLayout suggestionsWrap = getSuggestionsLayout(isEmoji);
-
+  public void showStickerSuggestions (@Nullable ArrayList<TGStickerObj> stickers, boolean isMore) {
     if (stickers == null || stickers.isEmpty()) {
-      if (!isMore && suggestionsWrap != null) {
-        suggestionsWrap.setStickersVisible(false);
+      return;
+    }
+
+    ArrayList<InlineResult<?>> items = new ArrayList<>(stickers.size());
+    for (TGStickerObj sticker : stickers) {
+      items.add(new InlineResultSticker(context, tdlib, "x", new TdApi.InlineQueryResultSticker("x", sticker.getSticker())));
+    }
+    if (!isMore) {
+      // context.showInlineResults(this, tdlib, items, true, null);
+      showInlineResults(items);
+    } else {
+      // context.addInlineResults(this, items, null);
+      addInlineResults(items);
+    }
+  }
+
+  public void showEmojiSuggestions (@Nullable ArrayList<TGStickerObj> stickers, boolean isMore) {
+    if (stickers == null || stickers.isEmpty()) {
+      if (!isMore && emojiSuggestionsWrap != null) {
+        emojiSuggestionsWrap.setStickersVisible(false);
       }
       return;
     }
 
-    if (suggestionsWrap == null) {
-      suggestionsWrap = new StickersSuggestionsLayout(context());
-      suggestionsWrap.init(this, contentView, stickers, isEmoji);
-      suggestionsWrap.setChoosingDelegate(this::notifyChoosingEmoji);
-    } else if (isMore && suggestionsWrap.stickerSuggestionAdapter.hasStickers() ) {
-      suggestionsWrap.stickerSuggestionAdapter.addStickers(stickers);
+    if (emojiSuggestionsWrap == null) {
+      emojiSuggestionsWrap = new StickersSuggestionsLayout(context());
+      emojiSuggestionsWrap.init(this, contentView, stickers, true, false);
+      emojiSuggestionsWrap.setChoosingDelegate(this::notifyChoosingEmoji);
+    } else if (isMore && emojiSuggestionsWrap.stickerSuggestionAdapter.hasStickers() ) {
+      emojiSuggestionsWrap.stickerSuggestionAdapter.addStickers(stickers);
     } else {
-      suggestionsWrap.stickerSuggestionAdapter.setStickers(stickers);
+      emojiSuggestionsWrap.stickerSuggestionAdapter.setStickers(stickers);
     }
 
-    if (isEmoji) {
-      emojiSuggestionsWrap = suggestionsWrap;
-    } else {
-      stickerSuggestionsWrap = suggestionsWrap;
-    }
-
-    suggestionsWrap.setStickersVisible(true);
+    emojiSuggestionsWrap.setStickersVisible(true);
   }
 
   public void onUsernamePick (String username) {
@@ -9533,9 +9549,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           }
           break;
         case EmojiMediaType.EMOJI:
-          if (stickerSuggestionsWrap != null) {
-            stickerSuggestionsWrap.setStickersVisible(false);
-          }
+          setInlineResultsHidden(true);
           return;
         case EmojiMediaType.GIF:
         default:
@@ -11362,5 +11376,68 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (inputView != null) {
       inputView.hideSelectionCursors();
     }
+  }
+
+  /* TODO: use BaseAcivity  inlineResultsView */
+
+  private InlineResultsWrap inlineResultsView;
+  private boolean choosingSuggestionSent;
+
+  private void showInlineResults (ArrayList<InlineResult<?>> results) {
+    if (inlineResultsView == null) {
+      if (results == null || results.isEmpty()) {
+        return;
+      }
+
+      FrameLayoutFix.LayoutParams params = FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM);
+      inlineResultsView = new InlineResultsWrap(context()) {
+        @Override
+        public boolean onStickerClick (StickerSmallView view, View clickView, TGStickerObj sticker, boolean isMenuClick, TdApi.MessageSendOptions sendOptions) {
+          hideStickerSuggestions();
+          return onSendSticker(view, sticker, sendOptions);
+        }
+      };
+      inlineResultsView.setLayoutParams(params);
+      inlineResultsView.getRecyclerView().addOnScrollListener(new RecyclerView.OnScrollListener() {
+        @Override
+        public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
+          if (dy != 0) {
+            notifyChoosingEmoji(EmojiMediaType.STICKER, true);
+            choosingSuggestionSent = true;
+          }
+        }
+      });
+    }
+
+    if (results != null && !results.isEmpty()) {
+      if (inlineResultsView.getParent() == null) {
+        contentView.addView(inlineResultsView);
+      }
+    }
+
+    inlineResultsView.showItems(this, results, true, null, false);
+  }
+
+  private void addInlineResults (ArrayList<InlineResult<?>> items) {
+    if (inlineResultsView != null) {
+      inlineResultsView.addItems(this, items, null);
+    }
+  }
+
+  private void setInlineResultsHidden (boolean hidden) {
+    if (inlineResultsView != null) {
+      inlineResultsView.updatePosition(false);
+      inlineResultsView.setHidden(hidden);
+      if (choosingSuggestionSent) {
+        if (hidden) {
+          notifyChoosingEmoji(EmojiMediaType.STICKER, false);
+        }
+        choosingSuggestionSent = false;
+      }
+    }
+  }
+
+  private boolean areInlineResultsVisible () {
+    return inlineResultsView != null && inlineResultsView.isDisplayingItems();
   }
 }

@@ -963,7 +963,11 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   @Override
   public void showInlineStickers (ArrayList<TGStickerObj> stickers, boolean isEmoji, boolean isMore) {
     if (controller != null) {
-      controller.showStickerSuggestions(stickers, isEmoji, isMore);
+      if (!isEmoji) {
+        controller.showStickerSuggestions(stickers, isMore);
+      } else {
+        controller.showEmojiSuggestions(stickers, isMore);
+      }
     }
   }
 

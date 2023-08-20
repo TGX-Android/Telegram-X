@@ -237,7 +237,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
         setCurrentMode(MODE_NONE);
       } else {
         setCurrentMode(MODE_STICKERS);
-        searchStickers(newText, false, null);
+        searchStickers(newText, false, false, null);
       }
     } else {
       final String inlineUsername = getInlineUsername();
@@ -397,9 +397,17 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
     }
   }
 
-  private void searchStickers (final String emoji, final boolean more, @Nullable final int[] ignoreStickerIds) {
-    stickerRequest = searchStickersImpl(emoji, false, more, ignoreStickerIds);
-    emojiRequest = searchStickersImpl(emoji, true, more, ignoreStickerIds);
+  private void searchStickers (final String emoji, final boolean more, final boolean isEmoji, @Nullable final int[] ignoreStickerIds) {
+    if (!more) {
+      stickerRequest = searchStickersImpl(emoji, false, false, ignoreStickerIds);
+      emojiRequest = searchStickersImpl(emoji, true, false, ignoreStickerIds);
+    } else {
+      if (isEmoji) {
+        emojiRequest = searchStickersImpl(emoji, true, true, ignoreStickerIds);
+      } else {
+        stickerRequest = searchStickersImpl(emoji, false, true, ignoreStickerIds);
+      }
+    }
   }
 
   private int getSearchStickersMode (boolean isEmoji) {
@@ -469,7 +477,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
               if (!isCancelled()) {
                 displayStickers(displayingStickers, isEmoji, emoji, more);
                 if (!more && stickerMode == Settings.STICKER_MODE_ALL) {
-                  searchStickers(emoji, true, futureIgnoreStickerIds);
+                  searchStickers(emoji, true, isEmoji, futureIgnoreStickerIds);
                 }
               }
             });
