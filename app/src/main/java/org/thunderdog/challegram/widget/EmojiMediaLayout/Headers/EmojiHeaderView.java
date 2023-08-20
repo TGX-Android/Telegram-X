@@ -156,7 +156,6 @@ public class EmojiHeaderView extends FrameLayout {
     adapter.removeStickerSection(index - adapter.getAddIndexCount());
   }
 
-
   public void setStickerSets (ArrayList<TGStickerSetInfo> stickers) {
     adapter.setStickerSets(stickers);
   }
@@ -318,7 +317,6 @@ public class EmojiHeaderView extends FrameLayout {
 
 
     public boolean setSelectedObject (Object obj, boolean animated, RecyclerView.LayoutManager manager) {
-      Log.i("WTF_DEBUG", "setSelectedObject");
       if (this.selectedObject == obj) return false;
 
       final int oldIndex = indexOfObject(selectedObject);
@@ -335,6 +333,8 @@ public class EmojiHeaderView extends FrameLayout {
         View view = manager.findViewByPosition(expandableItemPosition);
         if (view instanceof EmojiHeaderCollapsibleSectionView) {
           ((EmojiHeaderCollapsibleSectionView) view).setSelectedObject((EmojiSection) obj, animated);
+        } else {
+          notifyItemChanged(newSelectedPosition);
         }
       }
 
@@ -346,6 +346,8 @@ public class EmojiHeaderView extends FrameLayout {
         View view = manager.findViewByPosition(newSelectedPosition);
         if (view instanceof StickerSectionView) {
           ((StickerSectionView) view).setSelectionFactor(1f, animated);
+        } else {
+          notifyItemChanged(newSelectedPosition);
         }
       } else if (newSelectedViewType == ViewHolder.TYPE_SECTION) {
         ((EmojiSection) getObject(index)).setFactor(1f, animated);
@@ -355,6 +357,8 @@ public class EmojiHeaderView extends FrameLayout {
         View view = manager.findViewByPosition(oldSelectedPosition);
         if (view instanceof StickerSectionView) {
           ((StickerSectionView) view).setSelectionFactor(0f, animated);
+        } else {
+          notifyItemChanged(newSelectedPosition);
         }
       } else if (oldSelectedViewType == ViewHolder.TYPE_SECTION) {
         ((EmojiSection) getObject(oldIndex)).setFactor(0f, animated);
@@ -362,6 +366,8 @@ public class EmojiHeaderView extends FrameLayout {
         View view = manager.findViewByPosition(oldSelectedPosition);
         if (view instanceof EmojiHeaderCollapsibleSectionView) {
           ((EmojiHeaderCollapsibleSectionView) view).setSelectedObject(null, animated);
+        } else {
+          notifyItemChanged(newSelectedPosition);
         }
       }
 

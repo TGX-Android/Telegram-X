@@ -427,7 +427,7 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
     if (contentView.canChangeSection()) {
       int i = emojiController.indexOfStickerSet(stickerSet);
       if (i != -1) {
-        emojiController.scrollToStickerSet(i, false, contentView.getCurrentSection() == SECTION_STICKERS && !contentView.isAnimationNotActive());
+        emojiController.scrollToStickerSet(i, false, contentView.getCurrentSection() == SECTION_STICKERS && contentView.isAnimationNotActive());
         return contentView.changeSection(SECTION_STICKERS, false, emojiController.indexOfStickerSetByAdapterPosition(i));
       }
     }

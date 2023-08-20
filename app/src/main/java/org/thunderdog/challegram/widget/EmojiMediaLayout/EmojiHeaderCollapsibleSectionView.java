@@ -96,9 +96,7 @@ public class EmojiHeaderCollapsibleSectionView extends FrameLayout implements Fa
     int defaultWidth = Screen.dp(48);
     int expandedWidth = Math.max(Screen.dp(35 * emojiSectionsViews.size() + 9), defaultWidth);
     int width = MathUtils.fromTo(defaultWidth, expandedWidth, expandAnimator.getFloatValue());
-    Log.i("WTF_DEBUG", "width " + width);
     super.onMeasure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), heightMeasureSpec);
-
     updatePositions();
   }
 

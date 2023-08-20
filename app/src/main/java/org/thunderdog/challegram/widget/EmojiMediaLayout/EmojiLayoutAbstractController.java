@@ -439,11 +439,14 @@ public abstract class EmojiLayoutAbstractController implements
     if (!animated || Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP || emojiLayout == null || Math.abs(futureSection - currentSection) > SCROLLBY_SECTION_LIMIT) {
       if (emojiLayout != null) {
         emojiLayout.setIgnoreMovement(true);
+        emojiLayout.setCurrentStickerSectionByPosition(controllerId, futureSection, true, true);
       }
       manager.scrollToPositionWithOffset(stickerSetIndex, stickerSetIndex == 0 ? 0 : EmojiLayout.getHeaderSize() + EmojiLayout.getHeaderPadding());
-      if (emojiLayout != null) {
-        emojiLayout.setIgnoreMovement(false);
-      }
+      UI.post(() -> {
+        if (emojiLayout != null) {
+          emojiLayout.setIgnoreMovement(false);
+        }
+      });
     } else {
       final int scrollTop;
 
