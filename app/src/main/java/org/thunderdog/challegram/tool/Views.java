@@ -50,6 +50,7 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.core.DiffMatchPatch;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewTranslator;
 import org.thunderdog.challegram.theme.Theme;
@@ -363,6 +364,15 @@ public class Views {
 
   public static View inflate (Context context, int resource, ViewGroup contentView) {
     return LayoutInflater.from(context).inflate(resource, contentView, false);
+  }
+
+  public static int saveRepainting (Canvas c, Receiver receiver) {
+    return c.saveLayerAlpha(receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom(), 255, Canvas.ALL_SAVE_FLAG);
+  }
+
+  public static void restoreRepainting (Canvas c, Receiver receiver, int count, int color) {
+    c.drawRect(receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom(), Paints.getSrcInPaint(color));
+    restore(c, count);
   }
 
   public static int save (Canvas c) {

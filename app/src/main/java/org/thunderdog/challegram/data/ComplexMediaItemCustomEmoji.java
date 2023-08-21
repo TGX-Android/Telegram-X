@@ -26,6 +26,8 @@ import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Views;
 
 import me.vkryl.td.Td;
@@ -112,6 +114,9 @@ public class ComplexMediaItemCustomEmoji implements ComplexMediaItem {
       translate = false;
     }
 
+    int restoreToCountRepainting = -1;
+    boolean needRepainting = TD.needRepainting(sticker);
+
     Receiver receiver;
     if (imageFile != null) {
       receiver = mediaReceiver.getImageReceiver(displayMediaKey);
@@ -132,6 +137,9 @@ public class ComplexMediaItemCustomEmoji implements ComplexMediaItem {
     } else {
       receiver.setBounds(rect.left, rect.top, rect.right, rect.bottom);
     }
+    if (needRepainting) {
+      restoreToCountRepainting = Views.saveRepainting(c, receiver);
+    }
     if (receiver.needPlaceholder()) {
       DoubleImageReceiver preview = mediaReceiver.getPreviewReceiver(displayMediaKey);
       if (translate) {
@@ -144,6 +152,9 @@ public class ComplexMediaItemCustomEmoji implements ComplexMediaItem {
       }
     }
     receiver.draw(c);
+    if (needRepainting) {
+      Views.restoreRepainting(c, receiver, restoreToCountRepainting, Theme.getColor(ColorId.text));
+    }
     if (translate) {
       Views.restore(c, restoreToCount);
     }

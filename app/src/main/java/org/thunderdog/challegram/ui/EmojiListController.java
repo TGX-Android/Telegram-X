@@ -36,6 +36,7 @@ import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.emoji.RecentEmoji;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.telegram.EmojiMediaType;
 import org.thunderdog.challegram.telegram.StickersListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
@@ -93,7 +94,7 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
     this.useDarkMode = getArgumentsStrict().useDarkMode();
 
     emojiController.setAdapter(adapter);
-    emojiController.init(getArguments());
+    emojiController.init(getArguments(), EmojiMediaType.EMOJI);
     emojiController.recyclerView.setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 140L));
     emojiController.recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
       @Override

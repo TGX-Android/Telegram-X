@@ -52,6 +52,7 @@ public abstract class EmojiLayoutAbstractController implements
 
   protected MediaStickersAdapter adapter;
   protected int spanCount;
+  protected int mediaType;
 
   public ArrayList<TGStickerSetInfo> classicEmojiSets;
   public ArrayList<TGStickerSetInfo> stickerSets;
@@ -66,8 +67,9 @@ public abstract class EmojiLayoutAbstractController implements
     this.adapter = adapter;
   }
 
-  public CustomRecyclerView init (EmojiLayout emojiLayout) {
+  public CustomRecyclerView init (EmojiLayout emojiLayout, int mediaType) {
     this.emojiLayout = emojiLayout;
+    this.mediaType = mediaType;
 
     manager = new RtlGridLayoutManager(context, spanCount = Math.max(1, calculateSpanCount())).setAlignOnly(true);
     manager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
@@ -485,21 +487,21 @@ public abstract class EmojiLayoutAbstractController implements
   @Override
   public void onStickerPreviewOpened (StickerSmallView view, TGStickerObj sticker) {
     if (emojiLayout != null) {
-     emojiLayout.onSectionInteracted(EmojiMediaType.STICKER, false);
+     emojiLayout.onSectionInteracted(mediaType, false);
     }
   }
 
   @Override
   public void onStickerPreviewChanged (StickerSmallView view, TGStickerObj otherOrThisSticker) {
     if (emojiLayout != null) {
-      emojiLayout.onSectionInteracted(EmojiMediaType.STICKER, false);
+      emojiLayout.onSectionInteracted(mediaType, false);
     }
   }
 
   @Override
   public void onStickerPreviewClosed (StickerSmallView view, TGStickerObj thisSticker) {
     if (emojiLayout != null) {
-      emojiLayout.onSectionInteracted(EmojiMediaType.STICKER, true);
+      emojiLayout.onSectionInteracted(mediaType, true);
     }
   }
 

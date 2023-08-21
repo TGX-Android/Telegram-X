@@ -266,7 +266,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
 
   private void initStickers () {
     if (stickersController.recyclerView == null) {
-      stickersController.init(getArguments());
+      stickersController.init(getArguments(), EmojiMediaType.STICKER);
       stickersController.recyclerView.setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 180));
       stickersController.recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
         @Override
@@ -626,7 +626,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
 
   private void initHots () {
     if (trendingSetsController.recyclerView == null) {
-      trendingSetsController.init(getArguments());
+      trendingSetsController.init(getArguments(), EmojiMediaType.STICKER);
       trendingSetsController.recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
         @Override
         public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {
