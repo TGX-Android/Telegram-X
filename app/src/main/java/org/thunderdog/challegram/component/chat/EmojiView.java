@@ -23,6 +23,7 @@ import android.view.ViewParent;
 
 import androidx.annotation.Nullable;
 
+import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.emoji.EmojiInfo;
 import org.thunderdog.challegram.tool.EmojiData;
@@ -161,12 +162,12 @@ public class EmojiView extends View implements ClickHelper.Delegate {
 
   @Override
   public boolean needLongPress (float x, float y) {
-    return colorState != EmojiData.STATE_NO_COLORS && toneHelper != null && toneHelper.canBeShown();
+    return toneHelper != null && toneHelper.canBeShown() && (toneHelper.getSuggestionsFromCacheOrRequest(emoji) || colorState != EmojiData.STATE_NO_COLORS);
   }
 
   @Override
   public boolean onLongPressRequestedAt (View view, float x, float y) {
-    if (colorState != EmojiData.STATE_NO_COLORS) {
+    if (toneHelper.getSuggestionsFromCacheOrRequest(emoji) || colorState != EmojiData.STATE_NO_COLORS) {
       UI.forceVibrate(view, false);
       setInLongPress(true);
       return toneHelper.openForEmoji(view, x, y, emoji, colorState, emojiTone, emojiOtherTones);
@@ -196,9 +197,12 @@ public class EmojiView extends View implements ClickHelper.Delegate {
     String emoji = toneHelper.getSelectedEmoji();
     String selectedTone = toneHelper.getSelectedTone();
     String[] selectedOtherTones = toneHelper.getSelectedOtherTones();
+    TGStickerObj selectedCustomEmoji = toneHelper.getSelectedCustomEmoji();
     boolean needApplyToAll = toneHelper.needApplyToAll();
 
-    if (needApplyToAll) {
+    if (selectedCustomEmoji != null) {
+      toneHelper.onCustomEmojiSelected(selectedCustomEmoji);
+    } else if (needApplyToAll) {
       if (toneHelper.needForgetApplyToAll()) {
         Settings.instance().markTutorialAsComplete(Settings.TUTORIAL_EMOJI_TONE_ALL);
       }

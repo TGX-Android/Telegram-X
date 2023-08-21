@@ -85,8 +85,9 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
 
   @Override
   protected View onCreateView (Context context) {
-    toneHelper = new EmojiToneHelper(context, getArgumentsStrict().getToneDelegate(), this);
-    adapter = new MediaStickersAdapter(this, emojiController, false, this, null, false, toneHelper);
+    toneHelper = new EmojiToneHelper(context, getArgumentsStrict().getToneDelegate(), tdlib, this);
+    toneHelper.setOnCustomEmojiSelectedListener(this::onCustomEmojiSelected);
+    adapter = new MediaStickersAdapter(this, emojiController, false, this, null, false,  toneHelper);
     adapter.setClassicEmojiClickListener(this);
 
     this.useDarkMode = getArgumentsStrict().useDarkMode();
@@ -208,6 +209,12 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
     }
     if (getArguments() != null) {
       getArguments().onEnterEmoji(emoji);
+    }
+  }
+
+  private void onCustomEmojiSelected (TGStickerObj stickerObj) {
+    if (getArguments() != null) {
+      getArguments().onEnterCustomEmoji(stickerObj);
     }
   }
 
