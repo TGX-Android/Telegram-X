@@ -211,7 +211,11 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
         return false;
       }
       if (c instanceof MessagesController && ((MessagesController) c).canWriteMessages()) {
-        if (((MessagesController) c).onSendSticker(view, sticker, sendOptions)) {
+        if (sticker.isCustomEmoji()) {
+          ((MessagesController) c).onEnterCustomEmoji(sticker);
+          popupLayout.hideWindow(true);
+          return true;
+        } else if (((MessagesController) c).onSendSticker(view, sticker, sendOptions)) {
           popupLayout.hideWindow(true);
           return true;
         }

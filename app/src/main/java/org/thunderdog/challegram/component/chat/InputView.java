@@ -1109,17 +1109,25 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     onCustomEmojiSelected(stickerObj, false);
   }
 
+  public void onCustomEmojiSelected (TdApi.Sticker sticker) {
+    onCustomEmojiSelected(sticker, false);
+  }
+
   public void onCustomEmojiSelected (TGStickerObj stickerObj, boolean needReplace) {
+    onCustomEmojiSelected(stickerObj.getSticker(), needReplace);
+  }
+
+  public void onCustomEmojiSelected (TdApi.Sticker stickerObj, boolean needReplace) {
     TextSelection selection = getTextSelection();
     if (selection == null)
       return;
 
-    String emoji = stickerObj.getFirstEmoji("*");
+    String emoji = !StringUtils.isEmpty(stickerObj.emoji) ? stickerObj.emoji: "*";   //stickerObj.getFirstEmoji("*");
 
     int after = selection.start + emoji.length();
     SpannableString s = new SpannableString(emoji);
     s.setSpan(
-      Emoji.instance().newCustomSpan(emoji, null, this, tdlib, stickerObj.getCustomEmojiId()), 0, s.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+      Emoji.instance().newCustomSpan(emoji, null, this, tdlib, Td.customEmojiId(stickerObj)), 0, s.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
     /*if (needReplace && !isEmpty() && selection.isEmpty()) {
       int start = Math.max(selection.start - 1, 0);
       getText().replace(start, start + 1, s);
