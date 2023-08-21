@@ -758,6 +758,7 @@
   <item type="id" name="btn_openLink" />
   <item type="id" name="btn_copyLink" />
   <item type="id" name="btn_archive" />
+  <item type="id" name="btn_installStickerSet" />
   <item type="id" name="btn_shareLink" />
   <item type="id" name="btn_disabled" />
   <item type="id" name="membersList" />

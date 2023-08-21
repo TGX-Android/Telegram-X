@@ -250,6 +250,12 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
   }
 
   @Override
+  public boolean canInstallStickerSet (long id) {
+    TGStickerSetInfo info = stickerSets.get(id);
+    return info != null && !info.isInstalled();
+  }
+
+  @Override
   public void removeStickerSet (long setId) {
     makeRequest(STATE_UNINSTALLED, setId);
   }
@@ -262,6 +268,11 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
   @Override
   public void archiveStickerSet (long setId) {
     archive(setId);
+  }
+
+  @Override
+  public void installStickerSet (long setId) {
+    makeRequest(STATE_INSTALLED, setId);
   }
 
   private float statusBarFactor;

@@ -77,8 +77,10 @@ public class StickersListController extends ViewController<StickersListControlle
   public interface StickerSetProvider {
     boolean canArchiveStickerSet (long setId);
     boolean canRemoveStickerSet (long setId);
+    boolean canInstallStickerSet (long setId);
     boolean canViewPack ();
     void archiveStickerSet (long setId);
+    void installStickerSet (long setId);
     void removeStickerSet (long setId);
     boolean onStickerClick (View view, TGStickerObj obj, boolean isMenuClick, TdApi.MessageSendOptions sendOptions);
     long getStickerOutputChatId ();
@@ -128,35 +130,58 @@ public class StickersListController extends ViewController<StickersListControlle
 
   @Override
   public void onMenuItemPressed (int id, View view) {
-    if (id == R.id.menu_btn_more) {
-      if (stickerSetInfoToLoad != null) {
-        IntList ids = new IntList(4);
-        StringList strings = new StringList(4);
-        IntList icons = new IntList(4);
+    if (getArguments() == null) return;
 
+    if (id == R.id.menu_btn_more) {
+      IntList ids = new IntList(4);
+      StringList strings = new StringList(4);
+      IntList icons = new IntList(4);
+
+      if (stickerSetInfoToLoad != null) {
         ids.append(R.id.btn_share);
         strings.append(R.string.Share);
         icons.append(R.drawable.baseline_forward_24);
+      }
 
-        ids.append(R.id.btn_copyLink);
-        strings.append(R.string.CopyLink);
-        icons.append(R.drawable.baseline_link_24);
+      ids.append(R.id.btn_copyLink);
+      strings.append(R.string.CopyLink);
+      icons.append(R.drawable.baseline_link_24);
 
-        if (stickerSetInfoToLoad != null) {
-          if (getArguments() != null) {
-            if (getArguments().canArchiveStickerSet(stickerSetInfoToLoad != null ? stickerSetInfoToLoad.id : -1)) {
-              ids.append(R.id.btn_archive);
-              strings.append(R.string.StickersHide);
-              icons.append(R.drawable.baseline_archive_24);
-            }
-            if (getArguments().canRemoveStickerSet(stickerSetInfoToLoad != null ? stickerSetInfoToLoad.id : -1)) {
-              ids.append(R.id.btn_delete);
-              strings.append(R.string.DeleteArchivedPack);
-              icons.append(R.drawable.baseline_delete_24);
-            }
+      if (stickerSetInfoToLoad != null) {
+        if (getArguments().canArchiveStickerSet(stickerSetInfoToLoad != null ? stickerSetInfoToLoad.id : -1)) {
+          ids.append(R.id.btn_archive);
+          strings.append(R.string.StickersHide);
+          icons.append(R.drawable.baseline_archive_24);
+        }
+        if (getArguments().canRemoveStickerSet(stickerSetInfoToLoad != null ? stickerSetInfoToLoad.id : -1)) {
+          ids.append(R.id.btn_delete);
+          strings.append(R.string.DeleteArchivedPack);
+          icons.append(R.drawable.baseline_delete_24);
+        }
+        showMore(ids.get(), strings.get(), icons.get(), 0);
+      } else if (!stickerSections.isEmpty() ) {
+        int setsToInstall = 0;
+        int setsToArchive = 0;
+
+        for (StickerSection section: stickerSections) {
+          if (section.info == null) continue;
+          if (getArguments().canArchiveStickerSet(section.info.getId())) {
+            setsToArchive += 1;
+          }
+          if (getArguments().canInstallStickerSet(section.info.getId())) {
+            setsToInstall += 1;
           }
         }
-
+        if (setsToInstall > 0) {
+          ids.append(R.id.btn_installStickerSet);
+          strings.append(Lang.plural(R.string.xStickersInstall, setsToInstall));
+          icons.append(R.drawable.deproko_baseline_stickers_24);
+        }
+        if (setsToArchive > 0) {
+          ids.append(R.id.btn_archive);
+          strings.append(Lang.plural(R.string.xStickersHide, setsToArchive));
+          icons.append(R.drawable.baseline_archive_24);
+        }
         showMore(ids.get(), strings.get(), icons.get(), 0);
       }
     }
@@ -164,18 +189,54 @@ public class StickersListController extends ViewController<StickersListControlle
 
   @Override
   public void onMoreItemPressed (int id) {
-    if (stickerSetInfoToLoad == null) return;
     if (id == R.id.btn_share) {
       tdlib.ui().shareStickerSetUrl(this, stickerSetInfoToLoad);
     } else if (id == R.id.btn_copyLink) {
-      UI.copyText(TD.getStickerPackLink(stickerSetInfoToLoad.name), R.string.CopiedLink);
+      if (stickerSetInfoToLoad != null) {
+        UI.copyText(TD.getStickerPackLink(stickerSetInfoToLoad.name), R.string.CopiedLink);
+      } else {
+        StringBuilder b = new StringBuilder();
+        for (StickerSection section: stickerSections) {
+          if (section.info == null) continue;
+          if (b.length() != 0) {
+            b.append("\n");
+          }
+          b.append(section.info.isEmoji() ?
+            TD.getEmojiPackLink(section.info.getName()):
+            TD.getStickerPackLink(section.info.getName())
+          );
+        }
+        UI.copyText(b.toString(), R.string.CopiedLink);
+      }
     } else if (id == R.id.btn_archive) {
       if (getArguments() != null) {
-        getArguments().archiveStickerSet(stickerSetInfoToLoad != null ? stickerSetInfoToLoad.id: -1);
+        if (stickerSetInfoToLoad != null) {
+          getArguments().archiveStickerSet(stickerSetInfoToLoad.id);
+        } else {
+          for (StickerSection section: stickerSections) {
+            if (section.info == null) continue;
+            if (getArguments().canArchiveStickerSet(section.info.getId())) {
+              getArguments().archiveStickerSet(section.info.getId());
+            }
+          }
+        }
       }
     } else if (id == R.id.btn_delete) {
       if (getArguments() != null) {
         getArguments().removeStickerSet(stickerSetInfoToLoad != null ? stickerSetInfoToLoad.id: -1);
+      }
+    } else if (id == R.id.btn_installStickerSet) {
+      if (getArguments() != null) {
+        if (stickerSetInfoToLoad != null) {
+          getArguments().installStickerSet(stickerSetInfoToLoad.id);
+        } else {
+          for (StickerSection section: stickerSections) {
+            if (section.info == null) continue;
+            if (getArguments().canInstallStickerSet(section.info.getId())) {
+              getArguments().installStickerSet(section.info.getId());
+            }
+          }
+        }
       }
     }
   }

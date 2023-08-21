@@ -4723,4 +4723,8 @@
   <string name="xEmojiSetsInstalled_one">%1$s set installed</string>
   <string name="xEmojiSetsInstalled_other">%1$s set installed</string>
   <string name="xEmojiSetsInstalledUnknown">Emoji packs settings</string>
+  <string name="xStickersHide_one">Archive %1$s pack</string>
+  <string name="xStickersHide_other">Archive %1$s packs</string>
+  <string name="xStickersInstall_one">Install %1$s pack</string>
+  <string name="xStickersInstall_other">Install %1$s packs</string>
 </resources>
