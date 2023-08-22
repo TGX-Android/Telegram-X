@@ -260,7 +260,7 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
     setCount(count, muted, null, animated);
   }
 
-  public void setCount (long count, boolean muted, @Nullable String prefix, boolean animated) {
+  public void setCount (long count, boolean muted, @Nullable String textRepresentation, boolean animated) {
     if (animated && (callback == null || !callback.needAnimateChanges(this)))
       animated = false;
     if (animated && !UI.inUiThread())
@@ -274,8 +274,7 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
     } else if (count == Tdlib.CHAT_FAILED && drawableRes == 0) {
       counter.setCounter(count, "!", animateChanges);
     } else if (count > 0 || (visibleIfZero && count == 0)) {
-      String representation = prefix != null ? prefix + Strings.buildCounter(count): Strings.buildCounter(count);
-      counter.setCounter(count, representation, animateChanges);
+      counter.setCounter(count, textRepresentation != null ? textRepresentation: Strings.buildCounter(count), animateChanges);
     } else {
       counter.hideCounter(animateChanges);
     }

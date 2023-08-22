@@ -27,6 +27,7 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.util.ReactionsListAnimator;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.TextColorSet;
@@ -306,6 +307,18 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
     return Screen.dp((TGMessage.reactionsTextStyleProvider().getTextSizeInDp() + 1) * 1.25f + 17);
   }
 
+  public static int getReactionAvatarRadiusDp () {
+    return (int) ((TGMessage.reactionsTextStyleProvider().getTextSizeInDp() + 1) * 0.625f + 2.5f);
+  }
+
+  public static int getReactionAvatarOutlineDp () {
+    return (int) ((TGMessage.reactionsTextStyleProvider().getTextSizeInDp() + 1) / 6f);
+  }
+
+  public static int getReactionAvatarSpacingDp () {
+    return (int) -((TGMessage.reactionsTextStyleProvider().getTextSizeInDp() + 1) / 3f);
+  }
+
   // target values
 
   public int getWidth () {
@@ -556,6 +569,7 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
 
       this.counter = counter.colorSet(this).build();
       this.avatars = new TGAvatars(tdlib, message, message.currentViews);
+      this.avatars.setDimensions(getReactionAvatarRadiusDp(), getReactionAvatarOutlineDp(), getReactionAvatarSpacingDp());
 
       TGStickerObj stickerObj = reactionObj.newCenterAnimationSicker();
       animation = stickerObj.getFullAnimation();
@@ -818,9 +832,11 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
 
     public void setCount (TdApi.MessageSender[] senders, int count, boolean chosen, boolean animated) {
       boolean hasSenders = senders != null && senders.length > 0;
-      int value = count - (hasSenders ? senders.length: 0);
+      int countToDisplay = count - (hasSenders ? senders.length: 0);
+      int value = countToDisplay > 0 ? BitwiseUtils.setFlag(countToDisplay, 1 << 30, hasSenders): 0;
+      String text = hasSenders ? "+" + Strings.buildCounter(countToDisplay): Strings.buildCounter(countToDisplay);
 
-      counter.setCount(value, !chosen, hasSenders ? "+": null, animated);
+      counter.setCount(value, !chosen, text, animated);
       avatars.setSenders(senders, false);
     }
 
@@ -951,17 +967,18 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
     }
 
     public int getBubbleWidth () {
-      float avatarsWidth = avatars.getAnimatedWidth();
+      float avatarsWidth = avatars.getTargetWidth(Screen.dp(counter.getVisibilityTarget() ? 2: 0)); // avatars.getAnimatedWidth();
       float avatarsOffset = Screen.dp(2f * avatars.getAvatarsVisibility() * counter.getVisibility());
       int addW = Screen.dp((TGMessage.reactionsTextStyleProvider().getTextSizeInDp() + 1f) / 3f);
       int subW = Screen.dp(6f - counter.getVisibility() * 6f);
-      return (int) (counter.getWidth() + getReactionImageSize() + addW - subW + avatarsWidth + avatarsOffset);
+      return (int) (counter.getWidth() + getReactionImageSize() + addW - subW + avatarsWidth /*+ avatarsOffset*/);
     }
 
     public int getBubbleTargetWidth () {
+      float avatarsWidth = avatars.getTargetWidth(Screen.dp(counter.getVisibilityTarget() ? 2: 0));
       int addW = Screen.dp((TGMessage.reactionsTextStyleProvider().getTextSizeInDp() + 1f) / 3f);
       int subW = Screen.dp(counter.getVisibilityTarget() ? 0: 6);
-      return (int) (counter.getTargetWidth() + getReactionImageSize() + addW - subW + avatars.getTargetWidth(Screen.dp(counter.getVisibilityTarget() ? 2: 0)));
+      return (int) (counter.getTargetWidth() + getReactionImageSize() + addW - subW + avatarsWidth);
     }
 
     public int getBubbleHeight () {
