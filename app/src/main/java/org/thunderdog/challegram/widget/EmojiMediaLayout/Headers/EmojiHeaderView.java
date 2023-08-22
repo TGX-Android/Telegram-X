@@ -387,7 +387,7 @@ public class EmojiHeaderView extends FrameLayout {
         if (view instanceof StickerSectionView) {
           ((StickerSectionView) view).setSelectionFactor(0f, animated);
         } else {
-          notifyItemChanged(newSelectedPosition);
+          notifyItemChanged(oldSelectedPosition);
         }
       } else if (oldSelectedViewType == ViewHolder.TYPE_SECTION) {
         ((EmojiSection) getObject(oldIndex)).setFactor(0f, animated);
@@ -396,7 +396,7 @@ public class EmojiHeaderView extends FrameLayout {
         if (view instanceof EmojiHeaderCollapsibleSectionView) {
           ((EmojiHeaderCollapsibleSectionView) view).setSelectedObject(null, animated);
         } else {
-          notifyItemChanged(newSelectedPosition);
+          notifyItemChanged(oldSelectedPosition);
         }
       }
 
