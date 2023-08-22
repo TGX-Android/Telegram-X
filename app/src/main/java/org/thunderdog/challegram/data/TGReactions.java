@@ -222,7 +222,23 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
       String reactionKey = TD.makeReactionKey(reaction.type);
       TGReactions.MessageReactionEntry entry = reactionsMapEntry.get(reactionKey);
       if (entry != null) {
-        entry.setCount(reaction.totalCount, reaction.isChosen, animated);
+        entry.setCount(reaction.recentSenderIds, reaction.totalCount, reaction.isChosen, animated);
+      }
+    }
+  }
+
+  public void requestAvatarFiles (ComplexReceiver complexReceiver, boolean isUpdate) {
+    if (reactions == null) {
+      return;
+    }
+    if (!isUpdate) {
+      complexReceiver.clear();
+    }
+    for (TdApi.MessageReaction reaction : reactions) {
+      String reactionKey = TD.makeReactionKey(reaction.type);
+      TGReactions.MessageReactionEntry entry = reactionsMapEntry.get(reactionKey);
+      if (entry != null) {
+        entry.requestAvatars(complexReceiver);
       }
     }
   }
@@ -507,6 +523,7 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
     public static final int TYPE_APPEAR_OPACITY_FLAG = 2;
 
     private final Counter counter;
+    private final TGAvatars avatars;
     private final TdApi.ReactionType reactionType;
     private final TGReaction reactionObj;
     private final TGMessage message;
@@ -538,6 +555,7 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
       this.rect = new RectF();
 
       this.counter = counter.colorSet(this).build();
+      this.avatars = new TGAvatars(tdlib, message, message.currentViews);
 
       TGStickerObj stickerObj = reactionObj.newCenterAnimationSicker();
       animation = stickerObj.getFullAnimation();
@@ -798,8 +816,16 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
       return reactionObj;
     }
 
-    public void setCount (int count, boolean chosen, boolean animated) {
-      counter.setCount(count, !chosen, animated);
+    public void setCount (TdApi.MessageSender[] senders, int count, boolean chosen, boolean animated) {
+      boolean hasSenders = senders != null && senders.length > 0;
+      int value = count - (hasSenders ? senders.length: 0);
+
+      counter.setCount(value, !chosen, hasSenders ? "+": null, animated);
+      avatars.setSenders(senders, false);
+    }
+
+    public void requestAvatars (ComplexReceiver complexReceiver) {
+      avatars.requestFiles(complexReceiver, true);
     }
 
     // Render
@@ -838,11 +864,14 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
         c.scale(visibility, visibility, 0, 0);
       }
 
+      int avatarsWidth = (int) avatars.getAnimatedWidth();
+      int avatarsOffset = (Screen.dp(2f * avatars.getAvatarsVisibility()));
       int width = getBubbleWidth();
       int height = getBubbleHeight();
       int imageSize = getReactionImageSize();
       int imgY = (height - imageSize) / 2;
-      int textX = height + Screen.dp(1);
+      int avatarsX = height + Screen.dp(1);
+      int textX = avatarsX + avatarsOffset + avatarsWidth;
       int radius = height / 2;
       int backgroundColor = backgroundColor(false);
 
@@ -852,6 +881,7 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
 
       if (visibility > 0f) {
         c.drawRoundRect(rect, radius, radius, Paints.fillingPaint( ColorUtils.alphaColor(alpha, backgroundColor)));
+        avatars.draw(view, c, view.getReactionAvatarsReceiver(), avatarsX, getReactionBubbleHeight() / 2, Gravity.LEFT, alpha);
         counter.draw(c, textX, getReactionBubbleHeight() / 2f, Gravity.LEFT, alpha, view, ColorId.badgeFailedText);
         if (!isHidden) {
           drawReceiver(c, Screen.dp(-1), imgY, Screen.dp(-1) + imageSize, imgY + imageSize, alpha);
@@ -921,13 +951,17 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
     }
 
     public int getBubbleWidth () {
+      float avatarsWidth = avatars.getAnimatedWidth();
+      float avatarsOffset = Screen.dp(2f * avatars.getAvatarsVisibility() * counter.getVisibility());
       int addW = Screen.dp((TGMessage.reactionsTextStyleProvider().getTextSizeInDp() + 1f) / 3f);
-      return (int) (counter.getWidth() + getReactionImageSize() + addW);
+      int subW = Screen.dp(6f - counter.getVisibility() * 6f);
+      return (int) (counter.getWidth() + getReactionImageSize() + addW - subW + avatarsWidth + avatarsOffset);
     }
 
     public int getBubbleTargetWidth () {
       int addW = Screen.dp((TGMessage.reactionsTextStyleProvider().getTextSizeInDp() + 1f) / 3f);
-      return (int) (counter.getTargetWidth() + getReactionImageSize() + addW);
+      int subW = Screen.dp(counter.getVisibilityTarget() ? 0: 6);
+      return (int) (counter.getTargetWidth() + getReactionImageSize() + addW - subW + avatars.getTargetWidth(Screen.dp(counter.getVisibilityTarget() ? 2: 0)));
     }
 
     public int getBubbleHeight () {

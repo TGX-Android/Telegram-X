@@ -65,7 +65,6 @@ import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
@@ -89,7 +88,6 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeManager;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Drawables;
-import org.thunderdog.challegram.tool.Emojis;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Icons;
 import org.thunderdog.challegram.tool.Paints;
@@ -155,7 +153,7 @@ import me.vkryl.td.ChatId;
 import me.vkryl.td.MessageId;
 import me.vkryl.td.Td;
 
-public abstract class TGMessage implements InvalidateContentProvider, TdlibDelegate, FactorAnimator.Target, Comparable<TGMessage>, Counter.Callback, TranslationsManager.Translatable {
+public abstract class TGMessage implements InvalidateContentProvider, TdlibDelegate, FactorAnimator.Target, Comparable<TGMessage>, Counter.Callback, TGAvatars.Callback, TranslationsManager.Translatable {
   private static final int MAXIMUM_CHANNEL_MERGE_TIME_DIFF = 150;
   private static final int MAXIMUM_COMMON_MERGE_TIME_DIFF = 900;
 
@@ -3889,6 +3887,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
   }
 
+  public final void requestReactionsResources (ComplexReceiver complexReceiver, boolean isUpdate) {
+    if (messageReactions != null) {
+      messageReactions.requestAvatarFiles(complexReceiver, isUpdate);
+    }
+  }
+
+
   public final void requestAllTextMedia (MessageView view) {
     requestTextMedia(view.getTextMediaReceiver());
     requestAuthorTextMedia(view.getEmojiStatusReceiver());
@@ -6107,6 +6112,20 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     } else {
       postInvalidate();
     }
+  }
+
+  @Override
+  public void onSizeChanged () {
+    if (UI.inUiThread()) { // FIXME remove this after reworking combineWith method
+      invalidate();
+    } else {
+      postInvalidate();
+    }
+  }
+
+  @Override
+  public void onInvalidateMedia (TGAvatars avatars) {
+    performWithViews(view -> requestReactionsResources(view.getReactionAvatarsReceiver(), true));
   }
 
   @Override
