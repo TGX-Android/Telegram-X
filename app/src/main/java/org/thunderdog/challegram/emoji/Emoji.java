@@ -511,14 +511,13 @@ public class Emoji {
   }
 
   @Nullable
-  public static CharSequence extractSingleEmojiLast (CharSequence str) {
-    CharSequence emoji = Emoji.instance().replaceEmoji(str);
+  public static CharSequence extractSingleEmojiLast (CharSequence emoji) {
     if (emoji instanceof Spanned) {
       EmojiSpan[] emojis = ((Spanned) emoji).getSpans(0, emoji.length(), EmojiSpan.class);
       if (emojis != null && emojis.length > 0) {
         int start = ((Spanned) emoji).getSpanStart(emojis[emojis.length - 1]);
         int end = ((Spanned) emoji).getSpanEnd(emojis[emojis.length - 1]);
-        return start == 0 && end == emoji.length() ? emoji.toString() : emoji.subSequence(start, end).toString();
+        return start == 0 && end == emoji.length() ? emoji : emoji.subSequence(start, end);
       }
     }
     return null;

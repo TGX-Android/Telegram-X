@@ -179,7 +179,7 @@ public class StickerSuggestionAdapter extends RecyclerView.Adapter<StickerSugges
     int i = indexOfSticker(sticker);
     if (i != -1) {
       final View childView = manager != null ? manager.findViewByPosition(i + 1) : null;
-      if (childView != null && childView instanceof StickerSmallView) {
+      if (childView instanceof StickerSmallView) {
         ((StickerSmallView) childView).setStickerPressed(isPressed);
       } else {
         notifyItemChanged(i + 1);
@@ -231,9 +231,6 @@ public class StickerSuggestionAdapter extends RecyclerView.Adapter<StickerSugges
     public static StickerSuggestionHolder create (Context context, Tdlib tdlib, int viewType, StickerSmallView.StickerMovementCallback callback, @Nullable ViewController<?> themeProvider, boolean isEmoji) {
       switch (viewType) {
         case TYPE_START: {
-          FrameLayoutFix contentView = new FrameLayoutFix(context);
-          contentView.setLayoutParams(new RecyclerView.LayoutParams(Screen.dp(34f), ViewGroup.LayoutParams.MATCH_PARENT));
-
           Drawable drawable = Theme.filteredDrawable(R.drawable.stickers_back_left, ColorId.overlayFilling, themeProvider);
 
           View view = new View(context);
@@ -241,15 +238,10 @@ public class StickerSuggestionAdapter extends RecyclerView.Adapter<StickerSugges
           if (themeProvider != null) {
             themeProvider.addThemeInvalidateListener(view);
           }
-          view.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(12f), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.RIGHT));
-          contentView.addView(view);
-
-          return new StickerSuggestionHolder(contentView);
+          view.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(4f), ViewGroup.LayoutParams.MATCH_PARENT));
+          return new StickerSuggestionHolder(view);
         }
         case TYPE_END: {
-          FrameLayoutFix contentView = new FrameLayoutFix(context);
-          contentView.setLayoutParams(new RecyclerView.LayoutParams(Screen.dp(34f), ViewGroup.LayoutParams.MATCH_PARENT));
-
           Drawable drawable = Theme.filteredDrawable(R.drawable.stickers_back_right, ColorId.overlayFilling, themeProvider);
 
           View view = new View(context);
@@ -257,10 +249,8 @@ public class StickerSuggestionAdapter extends RecyclerView.Adapter<StickerSugges
           if (themeProvider != null) {
             themeProvider.addThemeInvalidateListener(view);
           }
-          view.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(12f), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.LEFT));
-          contentView.addView(view);
-
-          return new StickerSuggestionHolder(contentView);
+          view.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(4f), ViewGroup.LayoutParams.MATCH_PARENT));
+          return new StickerSuggestionHolder(view);
         }
         case TYPE_STICKER: {
           StickerSmallView stickerView = new StickerSmallView(context);
@@ -274,7 +264,7 @@ public class StickerSuggestionAdapter extends RecyclerView.Adapter<StickerSugges
             themeProvider.addThemeInvalidateListener(stickerView);
           }
           stickerView.setIsSuggestion(isEmoji);
-          stickerView.setPadding(0, Screen.dp(2.5f), 0, Screen.dp(6.5f));
+          stickerView.setPadding(0, Screen.dp(4f), 0, Screen.dp(4f));
           stickerView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
           if (isEmoji) {
             stickerView.setPadding(Screen.dp(2));

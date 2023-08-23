@@ -38,7 +38,6 @@ import android.text.style.StyleSpan;
 import android.text.style.URLSpan;
 import android.util.TypedValue;
 import android.view.ActionMode;
-import android.view.ContextMenu;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -997,7 +996,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   @Override
   public void hideInlineResults () {
     if (controller != null) {
-      controller.hideStickerSuggestions();
+      controller.onHideEmojiAndStickerSuggestionsFinally();
     }
     if (inputListener != null && inputListener.canSearchInline(this)) {
       inputListener.showInlineResults(this, null, false);
@@ -1122,22 +1121,29 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     if (selection == null)
       return;
 
+    final int start = selection.start;
+
     String emoji = !StringUtils.isEmpty(stickerObj.emoji) ? stickerObj.emoji: "*";   //stickerObj.getFirstEmoji("*");
 
     int after = selection.start + emoji.length();
     SpannableString s = new SpannableString(emoji);
-    s.setSpan(
-      Emoji.instance().newCustomSpan(emoji, null, this, tdlib, Td.customEmojiId(stickerObj)), 0, s.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-    /*if (needReplace && !isEmpty() && selection.isEmpty()) {
-      int start = Math.max(selection.start - 1, 0);
-      getText().replace(start, start + 1, s);
-    } else {*/
+    s.setSpan(Emoji.instance().newCustomSpan(emoji, null, this, tdlib, Td.customEmojiId(stickerObj)), 0, s.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+    if (needReplace && !isEmpty() && selection.isEmpty()) {
+      CharSequence emojiToRemove = Emoji.extractSingleEmojiLast(getText().subSequence(0, selection.start));
+      if (emojiToRemove != null && start >= emojiToRemove.length()) {
+        getText().replace(start - emojiToRemove.length(), start, s);
+        int newStart = start - emojiToRemove.length() + s.length();
+        setSelection(newStart);
+        if (inlineContext != null && newStart == start) {
+          inlineContext.reset();
+        }
+        return;
+      }
+    }
     if (selection.isEmpty()) {
       getText().insert(selection.start, s);
     } else {
       getText().replace(selection.start, selection.end, s);
-    //}
-    //}
     }
     setSelection(after);
   }
@@ -1748,5 +1754,26 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     if (visibility == View.VISIBLE) {
       doBugfix();
     }
+  }
+
+  public int[] getSymbolUnderCursorPosition () {
+    TextSelection selection = getTextSelection();
+    if (selection == null) return new int[]{0, 0};
+
+    int[] cords1 = Views.getCharacterCoordinates(this, selection.start);
+    int[] cords2 = new int[]{ cords1[0], cords1[1]};
+
+    for (int a = selection.start - 1; a >= 0; a--) {
+      int[] cords3 = Views.getCharacterCoordinates(this, a);
+      if (cords3[1] != cords1[1]) {
+        cords2[0] /= 2;
+        break;
+      };
+      if (cords3[0] == cords1[0]) continue;
+      cords2 = cords3;
+      break;
+    }
+
+    return new int[]{ (cords1[0] + cords2[0]) / 2, cords1[1] };
   }
 }

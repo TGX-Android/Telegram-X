@@ -25,6 +25,7 @@ import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.os.Build;
 import android.text.Editable;
+import android.text.Layout;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -936,5 +937,22 @@ public class Views {
     if (flags != newFlags) {
       view.setPaintFlags(newFlags);
     }
+  }
+
+  public static int[] getCharacterCoordinates(TextView textView, int offset) {
+    int[] coordinates = new int[2];
+
+    Layout layout = textView.getLayout();
+
+    if (layout != null) {
+      int line = layout.getLineForOffset(offset);
+      int lineStartOffset = layout.getLineStart(line);
+      int xPos = (int) layout.getPrimaryHorizontal(offset - lineStartOffset);
+      int yPos = layout.getLineBaseline(line);
+      coordinates[0] = xPos;
+      coordinates[1] = yPos;
+    }
+
+    return coordinates;
   }
 }

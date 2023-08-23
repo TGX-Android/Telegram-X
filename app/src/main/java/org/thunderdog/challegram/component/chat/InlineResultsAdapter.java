@@ -57,6 +57,7 @@ public class InlineResultsAdapter extends RecyclerView.Adapter<InlineResultsAdap
   private final InlineResultsWrap parent;
   private final ArrayList<InlineResult<?>> items;
   private final ThemeListenerList themeProvider;
+  private StickerSmallView.StickerMovementCallback stickerMovementCallback;
 
   private Tdlib tdlib;
 
@@ -71,6 +72,12 @@ public class InlineResultsAdapter extends RecyclerView.Adapter<InlineResultsAdap
     this.items = new ArrayList<>();
     this.parent = parent;
     this.themeProvider = themeProvider;
+    this.stickerMovementCallback = parent;
+  }
+
+  public void setStickerMovementCallback (StickerSmallView.StickerMovementCallback stickerMovementCallback) {
+    this.stickerMovementCallback = stickerMovementCallback;
+    notifyDataSetChanged();
   }
 
   public void setTdlib (Tdlib tdlib) {
@@ -107,7 +114,7 @@ public class InlineResultsAdapter extends RecyclerView.Adapter<InlineResultsAdap
 
   @Override
   public ViewHolder onCreateViewHolder (@NonNull ViewGroup parent, int viewType) {
-    return ViewHolder.create(context, tdlib, viewType, useDarkMode, this.parent, this.parent, this.parent, this.parent, this.parent, themeProvider);
+    return ViewHolder.create(context, tdlib, viewType, useDarkMode, this.parent, this.parent, this.parent, this.stickerMovementCallback, this.parent, themeProvider);
   }
 
   @Override
@@ -166,6 +173,7 @@ public class InlineResultsAdapter extends RecyclerView.Adapter<InlineResultsAdap
       case ViewHolder.TYPE_STICKER: {
         InlineResult<?> result = items.get(position - 1);
         ((StickerSmallView) holder.itemView).setSticker(((InlineResultSticker) result).getSticker());
+        ((StickerSmallView) holder.itemView).setStickerMovementCallback(stickerMovementCallback);
         holder.itemView.setTag(result);
         break;
       }

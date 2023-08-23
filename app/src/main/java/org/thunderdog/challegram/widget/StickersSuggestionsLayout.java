@@ -65,17 +65,10 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
       }
     };
     stickerSuggestionsView.setItemAnimator(null);
+    stickerSuggestionsView.setPadding(Screen.dp(48), 0, Screen.dp(48), 0);
+    stickerSuggestionsView.setClipToPadding(false);
     stickerSuggestionsView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? View.OVER_SCROLL_IF_CONTENT_SCROLLS : View.OVER_SCROLL_NEVER);
     stickerSuggestionsView.setLayoutManager(manager);
-    stickerSuggestionsView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-      @Override
-      public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
-        if (dx != 0) {
-          delegate.notifyChoosingEmoji(isEmoji ? EmojiMediaType.EMOJI: EmojiMediaType.STICKER, true);
-          choosingSuggestionSent = true;
-        }
-      }
-    });
 
     addView(stickerSuggestionsView);
 
@@ -136,12 +129,21 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
     FrameLayoutFix.LayoutParams fparams;
     fparams = FrameLayoutFix.newParams(Screen.dp(27f), stickerArrowHeight);
     fparams.topMargin = stickersListTopHeight;
-    fparams.leftMargin = Screen.dp(55f) + Screen.dp(2.5f);
+    // fparams.leftMargin = Screen.dp(55f) + Screen.dp(2.5f);
 
-    setPivotX(fparams.leftMargin + Screen.dp(27f) / 2f);
+    // setPivotX(fparams.leftMargin + Screen.dp(27f) / 2f);
     setPivotY(stickersListTopHeight + stickerArrowHeight);
 
     stickerSuggestionArrowView.setLayoutParams(fparams);
+  }
+
+  public void setOnScrollListener (RecyclerView.OnScrollListener onScrollListener) {
+    stickerSuggestionsView.setOnScrollListener(onScrollListener);
+  }
+
+  public void setArrowX (int arrowX) {
+    stickerSuggestionArrowView.setTranslationX(arrowX - Screen.dp(27) / 2f);
+    setPivotX(arrowX);
   }
 
   public void setChoosingDelegate (Delegate delegate) {
@@ -201,7 +203,7 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
   }
 
   private void onStickersDisappeared () {
-    stickerSuggestionAdapter.setStickers(null);
+    // stickerSuggestionAdapter.setStickers(null); // todo: clear stickers ??
     if (needAddToRoot) {
       parent.context().removeFromRoot(this);
     } else {

@@ -210,6 +210,11 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
     }
   }
 
+  public void reset () {
+    cancelPendingQueries();
+    setCurrentMode(MODE_NONE);
+  }
+
   public void onTextChanged (CharSequence newCs, String newText, @IntRange(from = -1, to = Integer.MAX_VALUE) int cursorPosition) {
     lastKnownCursorPosition = cursorPosition;
     if (StringUtils.equalsOrBothEmpty(this.currentText, newText)) {
@@ -228,7 +233,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
 
       // Do nothing with empty text
       setCurrentMode(MODE_NONE);
-    } else if (Emoji.instance().isSingleEmoji(newCs, false)) {
+    } /*else if (singleEmoji != null) {
       probablyHasWebPagePreview = false;
       clearInlineMode();
 
@@ -237,9 +242,10 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
         setCurrentMode(MODE_NONE);
       } else {
         setCurrentMode(MODE_STICKERS);
-        searchStickers(newText, false, false, null);
+        searchStickers(singleEmoji, false, false, null);
+        searchStickers(singleEmoji, false, true, null);
       }
-    } else {
+    }*/ else {
       final String inlineUsername = getInlineUsername();
       if (inlineUsername != null) {
         probablyHasWebPagePreview = false;
@@ -398,15 +404,10 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
   }
 
   private void searchStickers (final String emoji, final boolean more, final boolean isEmoji, @Nullable final int[] ignoreStickerIds) {
-    if (!more) {
-      stickerRequest = searchStickersImpl(emoji, false, false, ignoreStickerIds);
-      emojiRequest = searchStickersImpl(emoji, true, false, ignoreStickerIds);
+    if (isEmoji) {
+      emojiRequest = searchStickersImpl(emoji, true, more, ignoreStickerIds);
     } else {
-      if (isEmoji) {
-        emojiRequest = searchStickersImpl(emoji, true, true, ignoreStickerIds);
-      } else {
-        stickerRequest = searchStickersImpl(emoji, false, true, ignoreStickerIds);
-      }
+      stickerRequest = searchStickersImpl(emoji, false, more, ignoreStickerIds);
     }
   }
 
@@ -888,6 +889,16 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
   private boolean searchOther (int cursorPosition) {
     this.canHandlePositionChange = true;
     this.lastHandledPosition = cursorPosition;
+
+    CharSequence se = Emoji.instance().lastSymbolIsSingleEmoji(currentCs.subSequence(0, cursorPosition));
+    String singleEmoji = se != null ? se.toString() : null;
+    if (singleEmoji != null && !isCaption() && !disallowInlineResults()) {
+      setCurrentMode(MODE_STICKERS);
+      searchStickers(singleEmoji, false, false, null);
+      searchStickers(singleEmoji, false, true, null);
+      return true;
+    }
+
     if (currentText.charAt(0) == '/') {
       boolean isOk = true;
 

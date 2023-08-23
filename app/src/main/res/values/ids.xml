@@ -1292,6 +1292,7 @@
   <!-- * -->
 
   <item type="id" name="view_emojiPacksCount" />
+  <item type="id" name="view_customEmojiSuggestions" />
   <item type="id" name="btn_animatedEmojiSettings" />
   <item type="id" name="btn_stickerSettingsAndEmoji" />
   <item type="id" name="controller_stickersAndEmoji" />
