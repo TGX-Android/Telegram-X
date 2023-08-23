@@ -510,6 +510,28 @@ public class Emoji {
     return null;
   }
 
+  @Nullable
+  public static CharSequence extractSingleEmojiLast (CharSequence str) {
+    CharSequence emoji = Emoji.instance().replaceEmoji(str);
+    if (emoji instanceof Spanned) {
+      EmojiSpan[] emojis = ((Spanned) emoji).getSpans(0, emoji.length(), EmojiSpan.class);
+      if (emojis != null && emojis.length > 0) {
+        int start = ((Spanned) emoji).getSpanStart(emojis[emojis.length - 1]);
+        int end = ((Spanned) emoji).getSpanEnd(emojis[emojis.length - 1]);
+        return start == 0 && end == emoji.length() ? emoji.toString() : emoji.subSequence(start, end).toString();
+      }
+    }
+    return null;
+  }
+
+  public @Nullable CharSequence lastSymbolIsSingleEmoji (CharSequence cs) {
+    CharSequence emoji = extractSingleEmojiLast(cs);
+    if (emoji != null && isSingleEmoji(emoji, false) && cs.toString().endsWith(emoji.toString())) {
+      return emoji;
+    }
+    return null;
+  }
+
   public boolean isSingleEmoji (TdApi.FormattedText text) {
     boolean hasEntities = false;
     if (text.entities != null) {
