@@ -159,7 +159,7 @@ public class TrendingPackHeaderView extends RelativeLayout {
     premiumLockIcon.setTag(stickerSet);
 
     Views.setMediumText(titleView, stickerSet != null ? stickerSet.getTitle() : "");
-    subtitleView.setText(stickerSet != null ? Lang.plural(stickerSet.isEmoji() ? R.string.xEmoji: R.string.xStickers, stickerSet.getSize()) : "");
+    subtitleView.setText(stickerSet != null ? Lang.plural(stickerSet.isEmoji() ? R.string.xEmoji: R.string.xStickers, stickerSet.getFullSize()) : "");
 
     if (Views.setAlignParent(newView, Lang.rtl())) {
       int rightMargin = Screen.dp(6f);

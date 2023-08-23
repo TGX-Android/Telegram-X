@@ -347,12 +347,6 @@ public class StickersListController extends ViewController<StickersListControlle
 
     recyclerView = new RecyclerView(context) {
       @Override
-      public void draw (Canvas c) {
-        c.drawRect(0, offsetProvider.provideOffset() - offsetScroll, getMeasuredWidth(), getMeasuredHeight(), Paints.fillingPaint(Theme.fillingColor()));
-        super.draw(c);
-      }
-
-      @Override
       public boolean onTouchEvent (MotionEvent e) {
         if (e.getAction() == MotionEvent.ACTION_DOWN) {
           int topEdge = offsetProvider.provideOffset() - offsetScroll;
@@ -382,16 +376,17 @@ public class StickersListController extends ViewController<StickersListControlle
           recentSet.setSize(recentSet.getFullSize());
 
           ArrayList<MediaStickersAdapter.StickerItem> stickers = section.toItems(true);
-          for (int a = 0; a < visibleItemCount; a++) {
+          for (int a = 0; a < visibleItemCount - 1; a++) {
             stickers.remove(0);
           }
 
-          shiftStickerSets(existingIndex, stickers.size());
-          adapter.addRange(endIndex, stickers);
+          shiftStickerSets(existingIndex, stickers.size() - 1);
+          adapter.removeRange(endIndex - 1, 1);
+          adapter.addRange(endIndex - 1, stickers);
         } else {
-          recentSet.setSize(spanCount * 2);
-          adapter.removeRange(recentSet.getEndIndex(), endIndex - recentSet.getEndIndex());
-          shiftStickerSets(existingIndex, recentSet.getEndIndex() - endIndex);
+         // recentSet.setSize(spanCount * 2);
+         // adapter.removeRange(recentSet.getEndIndex(), endIndex - recentSet.getEndIndex());
+         // shiftStickerSets(existingIndex, recentSet.getEndIndex() - endIndex);
         }
       }
     });
@@ -428,10 +423,12 @@ public class StickersListController extends ViewController<StickersListControlle
           || type == MediaStickersAdapter.StickerHolder.TYPE_HEADER_COLLAPSABLE
           || type == MediaStickersAdapter.StickerHolder.TYPE_PROGRESS_OFFSETABLE
           || type == MediaStickersAdapter.StickerHolder.TYPE_HEADER_TRENDING
+          || type == MediaStickersAdapter.StickerHolder.TYPE_FOOTER_COLLAPSABLE
           || type == MediaStickersAdapter.StickerHolder.TYPE_SEPARATOR ? spanCount : 1;
       }
     });
     adapter.setManager(manager);
+    adapter.setIsBig();
 
     contentView.addView(recyclerView);
 
@@ -799,7 +796,7 @@ public class StickersListController extends ViewController<StickersListControlle
     public ArrayList<MediaStickersAdapter.StickerItem> toItems (boolean needInfo) {
       ArrayList<MediaStickersAdapter.StickerItem> items = new ArrayList<>((info != null && needInfo ? 1: 0) + stickers.size());
       if (info != null && needInfo) {
-        items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_HEADER_COLLAPSABLE, info));
+        items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_HEADER_TRENDING, info));
       }
 
       if (info != null && info.isCollapsed()) {
@@ -809,6 +806,9 @@ public class StickersListController extends ViewController<StickersListControlle
             break;
           }
           items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, stickerObj));
+        }
+        if (info.isCollapsableEmojiSet() && info.isCollapsed()) {
+          items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_FOOTER_COLLAPSABLE, info));
         }
       } else {
         for (TGStickerObj stickerObj: stickers) {

@@ -25,6 +25,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 import androidx.collection.LongSparseArray;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -40,7 +41,9 @@ import org.thunderdog.challegram.data.TGDefaultEmoji;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
+import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Screen;
@@ -265,10 +268,14 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
   }
 
   public void updateCollapseView (TextView collapseView, TGStickerSetInfo stickerSet) {
+    updateCollapseView(collapseView, stickerSet, R.string.ShowXMoreStickers);
+  }
+
+  public void updateCollapseView (TextView collapseView, TGStickerSetInfo stickerSet, @StringRes int showMoreRes) {
     if (stickerSet != null && stickerSet.getFullSize() > Config.DEFAULT_SHOW_RECENT_STICKERS_COUNT) {
       if (stickerSet.isCollapsed()) {
         int moreSize = stickerSet.getFullSize() - stickerSet.getSize();
-        collapseView.setText(Lang.pluralBold(R.string.ShowXMoreStickers, moreSize));
+        collapseView.setText(Lang.pluralBold(showMoreRes, moreSize));
       } else {
         collapseView.setText(R.string.ShowLessStickers);
       }
@@ -297,6 +304,13 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
         TGStickerSetInfo stickerSet = getStickerSet(position);
         Views.setMediumText(((TextView) holder.itemView), stickerSet != null ? stickerSet.getTitle() : "");
         Views.setTextGravity((TextView) holder.itemView, Lang.gravity());
+        break;
+      }
+      case StickerHolder.TYPE_FOOTER_COLLAPSABLE: {
+        TGStickerSetInfo stickerSet = getStickerSet(position);
+        TextView collapseView = (TextView) ((ViewGroup)((ViewGroup) holder.itemView).getChildAt(0)).getChildAt(0);
+        updateCollapseView(collapseView, stickerSet, R.string.ShowXMore);
+        collapseView.setTag(stickerSet);
         break;
       }
       case StickerHolder.TYPE_HEADER_COLLAPSABLE: {
@@ -598,6 +612,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
     public static final int TYPE_PROGRESS_OFFSETABLE = 13;
     public static final int TYPE_PADDING_OFFSETABLE = 14;
     public static final int TYPE_DEFAULT_EMOJI = 15;
+    public static final int TYPE_FOOTER_COLLAPSABLE = 16;
 
 
     public StickerHolder (View itemView) {
@@ -640,6 +655,34 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
           textView.setPadding(Screen.dp(14f), Screen.dp(5f), Screen.dp(14f), Screen.dp(5f));
           textView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(32f)));
           return new StickerHolder(textView);
+        }
+        case TYPE_FOOTER_COLLAPSABLE: {
+          TextView textView = new NoScrollTextView(context);
+          textView.setTextColor(Theme.textDecentColor());
+          textView.setGravity(Lang.gravity() | Gravity.CENTER_VERTICAL);
+          textView.setSingleLine(true);
+          textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13f);
+          textView.setTypeface(Fonts.getRobotoRegular());
+          textView.setId(R.id.btn_toggleCollapseRecentStickers);
+          textView.setOnClickListener(onClickListener);
+          textView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER_VERTICAL));
+          if (themeProvider != null) {
+            themeProvider.addThemeTextDecentColorListener(textView);
+          }
+
+          LinearLayout textLayout = new LinearLayout(context);
+          textLayout.setOrientation(LinearLayout.HORIZONTAL);
+          textLayout.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER));
+          textLayout.addView(textView);
+          ViewSupport.setThemedBackground(textLayout, ColorId.filling);
+          if (themeProvider != null) {
+            themeProvider.addThemeInvalidateListener(textLayout);
+          }
+
+          FrameLayoutFix viewGroup = new FrameLayoutFix(context);
+          viewGroup.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(16f)));
+          viewGroup.addView(textLayout);
+          return new StickerHolder(viewGroup);
         }
         case TYPE_HEADER_COLLAPSABLE: {
           LinearLayout viewGroup = new LinearLayout(context);

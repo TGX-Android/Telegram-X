@@ -304,7 +304,7 @@ public class TGStickerSetInfo {
       return 5;
     }
     if (isCollapsableEmojiSet()) {
-      return size + 1;
+      return size + 1 + (isCollapsed() ? 1: 0);
     }
     if (info != null) {
       return info.size + 1;

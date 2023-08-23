@@ -11376,6 +11376,11 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
+  private void hideEmojiAndStickerSuggestionsFinally () {
+    onHideEmojiAndStickerSuggestionsFinally();
+    context.showInlineResults(this, tdlib, null, false, null);
+  }
+
   public void onHideEmojiAndStickerSuggestionsFinally () {
     canShowEmojiSuggestions = false;
     stickerSuggestionItems = null;
@@ -11386,6 +11391,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return new StickerSmallView.StickerMovementCallback() {
       @Override
       public boolean onStickerClick (StickerSmallView view, View clickView, TGStickerObj sticker, boolean isMenuClick, TdApi.MessageSendOptions sendOptions) {
+        hideEmojiAndStickerSuggestionsFinally();
         return MessagesController.this.onSendSticker(view, sticker, sendOptions);
       }
 

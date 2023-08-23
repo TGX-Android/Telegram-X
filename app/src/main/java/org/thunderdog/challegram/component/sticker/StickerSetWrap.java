@@ -324,6 +324,8 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
     if (headerView.getFilling() != null) {
       headerView.getFilling().setShadowAlpha(factor);
     }
+
+    super.invalidate();
   }
 
   @Override
@@ -574,6 +576,12 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
     }
     addView(headerView);
     addView(bottomWrap);
+  }
+
+  @Override
+  protected void dispatchDraw (Canvas canvas) {
+    canvas.drawRect(0, provideOffset() - stickersController.getOffsetScroll(), getMeasuredWidth(), getMeasuredHeight(), Paints.fillingPaint(Theme.fillingColor()));
+    super.dispatchDraw(canvas);
   }
 
   private int getHeaderTop () {
