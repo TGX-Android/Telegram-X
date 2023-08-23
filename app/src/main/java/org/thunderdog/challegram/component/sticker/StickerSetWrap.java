@@ -193,13 +193,14 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
       topLick = new LickView(context);
       themeListener.addThemeInvalidateListener(topLick);
     }
-
+    themeListener.addThemeInvalidateListener(this);
     updateHeader();
   }
 
   @Override
   public void invalidate () {
     headerView.resetColors(stickersController, null);
+    super.invalidate();
   }
 
   @Override
