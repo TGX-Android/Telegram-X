@@ -133,7 +133,8 @@ public class EmojiHeaderView extends FrameLayout {
     int section = adapter.getPositionFromIndex(adapter.indexOfObject(obj));
     int first = adapter.manager.findFirstVisibleItemPosition();
     int last = adapter.manager.findLastVisibleItemPosition();
-    int itemWidth = (Screen.currentWidth() - EmojiLayout.getHorizontalPadding() * 2) / emojiLayout.getEmojiSectionsSize();
+    int itemWidth = Screen.dp(44);
+    float sectionsCount = (float) Screen.currentWidth() / itemWidth;
 
     if (first != -1) {
       int scrollX = first * itemWidth;
@@ -150,7 +151,7 @@ public class EmojiHeaderView extends FrameLayout {
           recyclerView.scrollBy(desiredScrollX - scrollX, 0);
         }
       } else if (section + OFFSET > last) {
-        int desiredScrollX = Math.max(0, (section - emojiLayout.getEmojiSectionsSize()) * itemWidth + itemWidth * OFFSET + (emojiLayout.isAnimatedEmojiOnly() ? -itemWidth: itemWidth / 2));
+        int desiredScrollX = (int) Math.max(0, (section - sectionsCount + 1) * itemWidth + itemWidth * OFFSET + (emojiLayout.isAnimatedEmojiOnly() ? -itemWidth: itemWidth / 2));
         if (animated && emojiLayout.getHeaderHideFactor() != 1f) {
           recyclerView.smoothScrollBy(desiredScrollX - scrollX, 0);
         } else {
@@ -232,7 +233,6 @@ public class EmojiHeaderView extends FrameLayout {
         sectionView.setOnClickListener(onClickListener);
         sectionView.setOnLongClickListener(onLongClickListener);
         sectionView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-        sectionView.setAdditionParentPadding(Screen.dp(44));
         return new ViewHolder(sectionView);
       } else if (viewType == TYPE_STICKER_SET) {
         StickerSectionView sectionView = new StickerSectionView(context);
@@ -341,9 +341,6 @@ public class EmojiHeaderView extends FrameLayout {
         notifyItemRangeInserted(getAddItemCount(), addedCount);
       }
     }
-
-
-
 
     public boolean setSelectedObject (Object obj, boolean animated, RecyclerView.LayoutManager manager) {
       if (this.selectedObject == obj) return false;

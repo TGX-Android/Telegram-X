@@ -93,7 +93,7 @@ public class EmojiHeaderCollapsibleSectionView extends FrameLayout implements Fa
 
   @Override
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
-    int defaultWidth = Screen.dp(48);
+    int defaultWidth = Screen.dp(44);
     int expandedWidth = Math.max(Screen.dp(35 * emojiSectionsViews.size() + 9), defaultWidth);
     int width = MathUtils.fromTo(defaultWidth, expandedWidth, expandAnimator.getFloatValue());
     super.onMeasure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY), heightMeasureSpec);
@@ -105,11 +105,8 @@ public class EmojiHeaderCollapsibleSectionView extends FrameLayout implements Fa
     for (int a = 0; a < emojiSectionsViews.size(); a++) {
       EmojiSectionView view = emojiSectionsViews.get(a);
       view.setForceWidth(Screen.dp(35));
-
-      if (a == 0) {
-        view.setTranslationX(MathUtils.fromTo(Screen.dp(48 - 35) / 2f, Screen.dp(4.5f), factor));
-      } else {
-        view.setTranslationX(Screen.dp(4.5f + 35 * a));
+      view.setTranslationX(Screen.dp(4.5f + 35 * a));
+      if (a != 0) {
         view.setAlpha(factor);
       }
     }

@@ -8,7 +8,6 @@ import org.thunderdog.challegram.tool.Screen;
 
 public class EmojiSectionView extends View {
   private int forceWidth = -1;
-  private int additionParentPadding = 0;
 
   public EmojiSectionView (Context context) {
     super(context);
@@ -34,14 +33,9 @@ public class EmojiSectionView extends View {
     forceWidth = width;
   }
 
-  public void setAdditionParentPadding (int additionParentPadding) {
-    this.additionParentPadding = additionParentPadding;
-  }
-
   @Override
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
-    int width = Math.min(MeasureSpec.getSize(widthMeasureSpec) + additionParentPadding, Screen.currentWidth());
-    int itemWidth = forceWidth > 0 ? forceWidth: getWidth(width);
+    int itemWidth = forceWidth > 0 ? forceWidth: Screen.dp(44);
     setMeasuredDimension(MeasureSpec.makeMeasureSpec(itemWidth, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(heightMeasureSpec, MeasureSpec.EXACTLY));
   }
 
@@ -50,9 +44,5 @@ public class EmojiSectionView extends View {
     if (section != null) {
       section.draw(c, getMeasuredWidth() / 2, getMeasuredHeight() / 2);
     }
-  }
-
-  public static int getWidth (int parentWidth) {
-    return Screen.dp(48); // parentWidth / 8;
   }
 }

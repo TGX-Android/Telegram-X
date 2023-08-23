@@ -107,7 +107,8 @@ public class MediaHeaderView extends RecyclerView {
       int section = mediaAdapter.indexOfObject(obj);
       int first = ((LinearLayoutManager) getLayoutManager()).findFirstVisibleItemPosition();
       int last = ((LinearLayoutManager) getLayoutManager()).findLastVisibleItemPosition();
-      int itemWidth = (Screen.currentWidth() - EmojiLayout.getHorizontalPadding() * 2) / emojiLayout.getEmojiSectionsSize();
+      int itemWidth = Screen.dp(44);
+      float sectionsCount = (float) Screen.currentWidth() / itemWidth;
 
       if (first != -1) {
         int scrollX = first * itemWidth;
@@ -124,7 +125,7 @@ public class MediaHeaderView extends RecyclerView {
             scrollBy(desiredScrollX - scrollX, 0);
           }
         } else if (section + OFFSET > last) {
-          int desiredScrollX = Math.max(0, (section - emojiLayout.getEmojiSectionsSize()) * itemWidth + itemWidth * OFFSET + (emojiLayout.isAnimatedEmojiOnly() ? -itemWidth: itemWidth / 2));
+          int desiredScrollX = (int) Math.max(0, (section - sectionsCount) * itemWidth + itemWidth * OFFSET + (emojiLayout.isAnimatedEmojiOnly() ? -itemWidth: itemWidth / 2));
           if (animated && emojiLayout.getHeaderHideFactor() != 1f) {
             smoothScrollBy(desiredScrollX - scrollX, 0);
           } else {
