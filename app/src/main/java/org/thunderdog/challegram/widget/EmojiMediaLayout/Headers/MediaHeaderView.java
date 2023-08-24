@@ -119,17 +119,30 @@ public class MediaHeaderView extends RecyclerView {
 
         if (section - OFFSET < first) {
           int desiredScrollX = section * itemWidth - itemWidth / 2 - itemWidth;
-          if (animated && emojiLayout.getHeaderHideFactor() != 1f) {
-            smoothScrollBy(desiredScrollX - scrollX, 0);
-          } else {
-            scrollBy(desiredScrollX - scrollX, 0);
+          int scrollLimit = scrollX + getPaddingLeft();
+          int scrollValue = Math.max(desiredScrollX - scrollX, -scrollLimit);
+          if (scrollValue < 0) {
+            if (animated && emojiLayout.getHeaderHideFactor() != 1f) {
+              smoothScrollBy(scrollValue, 0);
+            } else {
+              scrollBy(scrollValue, 0);
+            }
           }
         } else if (section + OFFSET > last) {
           int desiredScrollX = (int) Math.max(0, (section - sectionsCount) * itemWidth + itemWidth * OFFSET + (emojiLayout.isAnimatedEmojiOnly() ? -itemWidth: itemWidth / 2));
-          if (animated && emojiLayout.getHeaderHideFactor() != 1f) {
-            smoothScrollBy(desiredScrollX - scrollX, 0);
-          } else {
-            scrollBy(desiredScrollX - scrollX, 0);
+          int scrollValue = desiredScrollX - scrollX;
+          if (last != -1 && last == mediaAdapter.getItemCount() - 1) {
+            View vr = getLayoutManager().findViewByPosition(last);
+            if (vr != null) {
+              scrollValue = Math.min(scrollValue, vr.getRight() + getPaddingRight() - getMeasuredWidth());
+            }
+          }
+          if (scrollValue > 0) {
+            if (animated && emojiLayout.getHeaderHideFactor() != 1f) {
+              smoothScrollBy(scrollValue, 0);
+            } else {
+              scrollBy(scrollValue, 0);
+            }
           }
         }
       }
