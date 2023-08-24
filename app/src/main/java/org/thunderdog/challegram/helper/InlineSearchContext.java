@@ -108,9 +108,10 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
   public static final int MODE_MENTION = 1;
   public static final int MODE_HASHTAGS = 2;
   public static final int MODE_EMOJI_SUGGESTION = 3;
-  public static final int MODE_STICKERS = 4;
+  public static final int MODE_STICKERS_AND_EMOJI = 4;
   public static final int MODE_COMMAND = 5;
   public static final int MODE_INLINE_SEARCH = 6;
+  public static final int MODE_EMOJI = 7;
 
   private static final int FLAG_CAPTION = 1;
   private static final int FLAG_DISALLOW_INLINE_RESULTS = 1 << 1;
@@ -233,7 +234,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
 
       // Do nothing with empty text
       setCurrentMode(MODE_NONE);
-    } /*else if (singleEmoji != null) {
+    } else if (Emoji.instance().isSingleEmoji(newCs, false)) {
       probablyHasWebPagePreview = false;
       clearInlineMode();
 
@@ -241,11 +242,11 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
       if (isCaption() || disallowInlineResults()) {
         setCurrentMode(MODE_NONE);
       } else {
-        setCurrentMode(MODE_STICKERS);
-        searchStickers(singleEmoji, false, false, null);
-        searchStickers(singleEmoji, false, true, null);
+        setCurrentMode(MODE_STICKERS_AND_EMOJI);
+        searchStickers(newText, false, false, null);
+        searchStickers(newText, false, true, null);
       }
-    }*/ else {
+    } else {
       final String inlineUsername = getInlineUsername();
       if (inlineUsername != null) {
         probablyHasWebPagePreview = false;
@@ -893,8 +894,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
     CharSequence se = Emoji.instance().lastSymbolIsSingleEmoji(currentCs.subSequence(0, cursorPosition));
     String singleEmoji = se != null ? se.toString() : null;
     if (singleEmoji != null && !isCaption() && !disallowInlineResults()) {
-      setCurrentMode(MODE_STICKERS);
-      searchStickers(singleEmoji, false, false, null);
+      setCurrentMode(MODE_EMOJI);
       searchStickers(singleEmoji, false, true, null);
       return true;
     }

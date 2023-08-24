@@ -73,7 +73,13 @@ public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Targe
 
     adapter = new EmojiLayoutEmojiHeaderAdapter(manager, themeProvider, emojiLayout, emojiSections, expandableSections);
 
-    recyclerView = new RecyclerView(context);
+    recyclerView = new RecyclerView(context) {
+      @Override
+      protected void onLayout (boolean changed, int l, int t, int r, int b) {
+        super.onLayout(changed, l, t, r, b);
+        checkShadow();
+      }
+    };
     recyclerView.setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 180));
     recyclerView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? OVER_SCROLL_IF_CONTENT_SCROLLS : OVER_SCROLL_NEVER);
     recyclerView.setLayoutManager(manager);
@@ -84,14 +90,7 @@ public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Targe
     recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
       @Override
       public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
-        float range = recyclerView.computeHorizontalScrollRange();
-        float offset = recyclerView.computeHorizontalScrollOffset();
-        float extent = recyclerView.computeHorizontalScrollExtent();
-        float s = range - offset - extent;
-
-        int alpha = (int) (MathUtils.clamp(s / Screen.dp(20f)) * 255);
-        shadowPaint.setAlpha(alpha);
-        invalidate();
+        checkShadow();
       }
     });
     addView(recyclerView, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -223,6 +222,7 @@ public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Targe
   }
 
   private int shadowColor;
+
   private void updatePaints (int color) {
     if (color == shadowColor && shadowPaint != null) {
       return;
@@ -234,6 +234,17 @@ public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Targe
     }
     shadowPaint.setShader(shader);
     shadowColor = color;
+    invalidate();
+  }
+
+  private void checkShadow () {
+    float range = recyclerView.computeHorizontalScrollRange();
+    float offset = recyclerView.computeHorizontalScrollOffset();
+    float extent = recyclerView.computeHorizontalScrollExtent();
+    float s = range - offset - extent;
+
+    int alpha = (int) (MathUtils.clamp(s / Screen.dp(20f)) * 255);
+    shadowPaint.setAlpha(alpha);
     invalidate();
   }
 

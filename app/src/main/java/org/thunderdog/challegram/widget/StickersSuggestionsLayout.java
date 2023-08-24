@@ -142,6 +142,9 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
   }
 
   public void setArrowX (int arrowX) {
+    int width = stickerSuggestionsView.getMeasuredWidth();
+    int paddingLeft = Math.max(arrowX - Screen.dp(24), Screen.dp(48));
+    stickerSuggestionsView.setPadding(paddingLeft, 0, Screen.dp(48), 0);
     stickerSuggestionArrowView.setTranslationX(arrowX - Screen.dp(27) / 2f);
     setPivotX(arrowX);
   }
