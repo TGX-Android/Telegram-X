@@ -95,6 +95,10 @@ public class EmojiHeaderView extends FrameLayout {
     goToMediaPageSection.setSection(new EmojiSection(emojiLayout, 7, R.drawable.deproko_baseline_stickers_24, 0).setActiveDisabled());
     goToMediaPageSection.setForceWidth(Screen.dp(48));
     goToMediaPageSection.setId(R.id.btn_section);
+    if (themeProvider != null) {
+      themeProvider.addThemeInvalidateListener(goToMediaPageSection);
+      themeProvider.addThemeInvalidateListener(this);
+    }
 
     addView(goToMediaPageSection, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.RIGHT));
 
@@ -207,18 +211,25 @@ public class EmojiHeaderView extends FrameLayout {
     goToMediaPageSection.getSection().changeIcon(isGif ? R.drawable.deproko_baseline_gif_24 : R.drawable.deproko_baseline_stickers_24);
   }
 
+  private int shadowColor;
   private void updatePaints (int color) {
+    if (color == shadowColor && shadowPaint != null) {
+      return;
+    }
+
     LinearGradient shader = new LinearGradient(0, 0, Screen.dp(48), 0, 0, color, Shader.TileMode.CLAMP);
     if (shadowPaint == null) {
       shadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
     }
     shadowPaint.setShader(shader);
+    shadowColor = color;
     invalidate();
   }
 
   @Override
   protected boolean drawChild (Canvas canvas, View child, long drawingTime) {
     if (child == goToMediaPageSection) {
+      updatePaints(Theme.fillingColor());
       canvas.save();
       canvas.translate(getMeasuredWidth() - Screen.dp(96), 0);
       canvas.drawRect(0, 0, Screen.dp(96), getMeasuredHeight(), shadowPaint);
@@ -262,7 +273,10 @@ public class EmojiHeaderView extends FrameLayout {
         v.init(expandableSections);
         v.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         v.setOnButtonClickListener(onClickListener);
-        v.setThemeInvalidateListener(themeProvider);
+        if (themeProvider != null) {
+          v.setThemeInvalidateListener(themeProvider);
+          themeProvider.addThemeInvalidateListener(v);
+        }
         return new ViewHolder(v);
       }
 

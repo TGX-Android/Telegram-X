@@ -333,7 +333,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     // Emoji sections
 
     if (!animatedEmojiOnly) {
-      emojiHeaderView = new EmojiHeaderView(getContext(), this, null);
+      emojiHeaderView = new EmojiHeaderView(getContext(), this, themeProvider);
       emojiHeaderView.setSectionsOnClickListener(this);
       emojiHeaderView.setSectionsOnLongClickListener(this);
       headerView.addView(emojiHeaderView);

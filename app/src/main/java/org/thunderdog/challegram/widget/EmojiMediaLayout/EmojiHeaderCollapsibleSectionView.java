@@ -3,8 +3,7 @@ package org.thunderdog.challegram.widget.EmojiMediaLayout;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.drawable.Drawable;
-import android.util.Log;
+import android.graphics.RectF;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -12,9 +11,10 @@ import android.widget.FrameLayout;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSectionView;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSection;
+import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSectionView;
 
 import java.util.ArrayList;
 
@@ -22,12 +22,13 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 
 @SuppressLint("ViewConstructor")
 public class EmojiHeaderCollapsibleSectionView extends FrameLayout implements FactorAnimator.Target {
   private final BoolAnimator expandAnimator;
-  private final Drawable background;
+  private final RectF bgRect = new RectF();
   private final ArrayList<EmojiSectionView> emojiSectionsViews;
   private ArrayList<EmojiSection> emojiSections;
   private int currentSelectedIndex = -1;
@@ -36,7 +37,6 @@ public class EmojiHeaderCollapsibleSectionView extends FrameLayout implements Fa
     super(context);
     emojiSectionsViews = new ArrayList<>(6);
     expandAnimator = new BoolAnimator(0, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 220L);
-    background = Theme.createRoundRectDrawable(Screen.dp(20), Theme.backgroundColor());
   }
 
   public void init (ArrayList<EmojiSection> sections) {
@@ -110,8 +110,7 @@ public class EmojiHeaderCollapsibleSectionView extends FrameLayout implements Fa
         view.setAlpha(factor);
       }
     }
-    background.setBounds(Screen.dp(2), Screen.dp(4), getMeasuredWidth() - Screen.dp(2), getMeasuredHeight() - Screen.dp(4));
-    background.setAlpha((int) (factor * 255));
+    bgRect.set(Screen.dp(2), Screen.dp(4), getMeasuredWidth() - Screen.dp(2), getMeasuredHeight() - Screen.dp(4));
   }
 
   @Override
@@ -121,7 +120,8 @@ public class EmojiHeaderCollapsibleSectionView extends FrameLayout implements Fa
 
   @Override
   protected void dispatchDraw (Canvas canvas) {
-    background.draw(canvas);
+    canvas.drawRoundRect(bgRect, Screen.dp(20), Screen.dp(20),
+      Paints.fillingPaint(ColorUtils.alphaColor(expandAnimator.getFloatValue(), Theme.backgroundColor())));
     super.dispatchDraw(canvas);
   }
 }
