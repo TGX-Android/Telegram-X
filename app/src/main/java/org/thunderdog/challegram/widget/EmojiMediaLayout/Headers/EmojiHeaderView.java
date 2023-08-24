@@ -6,7 +6,6 @@ import android.graphics.Canvas;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.Shader;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -33,20 +32,25 @@ import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSection;
 import java.util.ArrayList;
 
 import me.vkryl.android.AnimatorUtils;
+import me.vkryl.android.animator.BoolAnimator;
+import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.MathUtils;
 
 @SuppressLint("ViewConstructor")
-public class EmojiHeaderView extends FrameLayout {
+public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Target {
   public static final int DEFAULT_PADDING = 4;
   public static final int TRENDING_SECTION = -12;
 
   private final EmojiLayoutEmojiHeaderAdapter adapter;
   private final RecyclerView recyclerView;
   private final EmojiSectionView goToMediaPageSection;
+  private final EmojiHeaderViewNonPremium emojiHeaderViewNonPremium;
+  private final BoolAnimator hasStickers = new BoolAnimator(0, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 220L);
 
-  private EmojiLayout emojiLayout;
+  private final EmojiLayout emojiLayout;
   private Paint shadowPaint;
+  private boolean isPremium;
 
   public EmojiHeaderView (@NonNull Context context, EmojiLayout emojiLayout, ViewController<?> themeProvider) {
     super(context);
@@ -76,6 +80,7 @@ public class EmojiHeaderView extends FrameLayout {
     recyclerView.setPadding(Screen.dp(DEFAULT_PADDING), 0, Screen.dp(DEFAULT_PADDING + 44), 0);
     recyclerView.setClipToPadding(false);
     recyclerView.setAdapter(adapter);
+    recyclerView.setVisibility(GONE);
     recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
       @Override
       public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
@@ -95,6 +100,7 @@ public class EmojiHeaderView extends FrameLayout {
     goToMediaPageSection.setSection(new EmojiSection(emojiLayout, 7, R.drawable.deproko_baseline_stickers_24, 0).setActiveDisabled());
     goToMediaPageSection.setForceWidth(Screen.dp(48));
     goToMediaPageSection.setId(R.id.btn_section);
+    goToMediaPageSection.setVisibility(GONE);
     if (themeProvider != null) {
       themeProvider.addThemeInvalidateListener(goToMediaPageSection);
       themeProvider.addThemeInvalidateListener(this);
@@ -102,18 +108,24 @@ public class EmojiHeaderView extends FrameLayout {
 
     addView(goToMediaPageSection, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.RIGHT));
 
+    emojiHeaderViewNonPremium = new EmojiHeaderViewNonPremium(context);
+    emojiHeaderViewNonPremium.init(emojiLayout, themeProvider);
+    addView(emojiHeaderViewNonPremium, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
     updatePaints(Theme.fillingColor());
-    adapter.setSelectedObject(emojiSections.get(1), false, manager);
+    setSelectedObjectByPosition(1, false);
   }
 
   public void setSectionsOnClickListener (OnClickListener onClickListener) {
     this.adapter.setOnClickListener(onClickListener);
     this.goToMediaPageSection.setOnClickListener(onClickListener);
+    this.emojiHeaderViewNonPremium.setOnClickListener(onClickListener);
   }
 
   public void setSectionsOnLongClickListener (OnLongClickListener onLongClickListener) {
     this.adapter.setOnLongClickListener(onLongClickListener);
     this.goToMediaPageSection.setOnLongClickListener(onLongClickListener);
+    this.emojiHeaderViewNonPremium.setOnLongClickListener(onLongClickListener);
   }
 
   public void setCurrentStickerSectionByPosition (int i, boolean isStickerSection, boolean animated) {
@@ -124,13 +136,14 @@ public class EmojiHeaderView extends FrameLayout {
   }
 
   public void setSelectedObjectByPosition (int i, boolean animated) {
+    emojiHeaderViewNonPremium.setSelectedIndex(i, animated);
     setSelectedObject(adapter.getObject(i), animated);
   }
 
   private static final int OFFSET = 2;
 
   private void setSelectedObject (Object obj, boolean animated) {
-    if (!adapter.setSelectedObject(debugLog(obj), animated, adapter.manager)) {
+    if (!adapter.setSelectedObject(obj, animated, adapter.manager)) {
       return;
     }
 
@@ -144,7 +157,7 @@ public class EmojiHeaderView extends FrameLayout {
       int scrollX = first * itemWidth;
       View v = adapter.manager.findViewByPosition(first);
       if (v != null) {
-        scrollX += -v.getLeft();
+        scrollX -= v.getLeft();
       }
 
       if (section - OFFSET < first) {
@@ -159,7 +172,7 @@ public class EmojiHeaderView extends FrameLayout {
           }
         }
       } else if (section + OFFSET > last) {
-        int desiredScrollX = (int) Math.max(0, (section - sectionsCount + 1) * itemWidth + itemWidth * OFFSET + (emojiLayout.isAnimatedEmojiOnly() ? -itemWidth: itemWidth / 2));
+        int desiredScrollX = (int) Math.max(0, (section - sectionsCount + 1) * itemWidth + itemWidth * OFFSET + (emojiLayout.isAnimatedEmojiOnly() ? -itemWidth: itemWidth / 2f));
         int scrollValue = desiredScrollX - scrollX;
         if (last != -1 && last == adapter.getItemCount() - 1) {
           View vr = adapter.manager.findViewByPosition(last);
@@ -178,20 +191,9 @@ public class EmojiHeaderView extends FrameLayout {
     }
   }
 
-  public static Object debugLog (Object obj) {
-    String s = "SetSelectedObject2";
-    if (obj instanceof EmojiSection) {
-      s += "emoji section" + ((EmojiSection) obj).index;
-    } else if (obj instanceof TGStickerSetInfo) {
-      s += "sticker set" + (((TGStickerSetInfo) obj).getTitle()) + " " + ((TGStickerSetInfo) obj).getStartIndex();
-    }
-    Log.i("WTF_DEBUG", s);
-
-    return obj;
-  }
-
   public void addStickerSection (int index, TGStickerSetInfo info) {
     adapter.addStickerSection(index - adapter.getAddIndexCount(), info);
+    checkStickerSections(true);
   }
 
   public void moveStickerSection (int fromIndex, int toIndex) {
@@ -201,14 +203,23 @@ public class EmojiHeaderView extends FrameLayout {
 
   public void removeStickerSection (int index) {
     adapter.removeStickerSection(index - adapter.getAddIndexCount());
+    checkStickerSections(true);
   }
 
   public void setStickerSets (ArrayList<TGStickerSetInfo> stickers) {
     adapter.setStickerSets(stickers);
+    checkStickerSections(false);
   }
 
   public void setMediaSection (boolean isGif) {
+    emojiHeaderViewNonPremium.setMediaSection(isGif);
     goToMediaPageSection.getSection().changeIcon(isGif ? R.drawable.deproko_baseline_gif_24 : R.drawable.deproko_baseline_stickers_24);
+  }
+
+  public void setIsPremium (boolean isPremium, boolean animated) {
+    this.isPremium = isPremium;
+    emojiHeaderViewNonPremium.setIsPremium(isPremium);
+    checkStickerSections(animated);
   }
 
   private int shadowColor;
@@ -238,6 +249,34 @@ public class EmojiHeaderView extends FrameLayout {
     return super.drawChild(canvas, child, drawingTime);
   }
 
+  private void checkStickerSections (boolean animated) {
+    boolean value = adapter.hasStickers() && isPremium;
+    hasStickers.setValue(value, animated);
+    if (value) {
+      recyclerView.setVisibility(VISIBLE);
+      goToMediaPageSection.setVisibility(VISIBLE);
+    } else {
+      emojiHeaderViewNonPremium.setVisibility(VISIBLE);
+    }
+  }
+
+  @Override
+  public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
+    recyclerView.setAlpha(hasStickers.getFloatValue());
+    goToMediaPageSection.setAlpha(hasStickers.getFloatValue());
+    emojiHeaderViewNonPremium.setAlpha(1f - hasStickers.getFloatValue());
+  }
+
+  @Override
+  public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
+    if (hasStickers.getValue()) {
+      emojiHeaderViewNonPremium.setVisibility(GONE);
+    } else {
+      recyclerView.setVisibility(GONE);
+      goToMediaPageSection.setVisibility(GONE);
+    }
+  }
+
   public static class ViewHolder extends RecyclerView.ViewHolder {
     public static final int TYPE_SECTION = 0;
     public static final int TYPE_STICKER_SET = 1;
@@ -247,7 +286,7 @@ public class EmojiHeaderView extends FrameLayout {
       super(itemView);
     }
 
-    public static ViewHolder create (Context context, int viewType, ViewController<?> themeProvider, EmojiLayout emojiLayout, ArrayList<EmojiSection> expandableSections, View.OnClickListener onClickListener, View.OnLongClickListener onLongClickListener) {
+    public static ViewHolder create (Context context, int viewType, ViewController<?> themeProvider, ArrayList<EmojiSection> expandableSections, View.OnClickListener onClickListener, View.OnLongClickListener onLongClickListener) {
       if (viewType == TYPE_SECTION) {
         EmojiSectionView sectionView = new EmojiSectionView(context);
         if (themeProvider != null) {
@@ -323,6 +362,10 @@ public class EmojiHeaderView extends FrameLayout {
 
     public int getAddItemCount () {
       return emojiSections.size() + (expandableItemSize > 0 ? 1: 0);
+    }
+
+    public boolean hasStickers () {
+      return !stickerSets.isEmpty();
     }
 
     public void addStickerSection (int index, TGStickerSetInfo info) {
@@ -457,7 +500,7 @@ public class EmojiHeaderView extends FrameLayout {
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder (@NonNull ViewGroup parent, int viewType) {
-      return ViewHolder.create(parent.getContext(), viewType, themeProvider, emojiLayout, expandableSections, onClickListener, onLongClickListener);
+      return ViewHolder.create(parent.getContext(), viewType, themeProvider, expandableSections, onClickListener, onLongClickListener);
     }
 
     @Override

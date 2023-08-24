@@ -336,6 +336,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
       emojiHeaderView = new EmojiHeaderView(getContext(), this, themeProvider);
       emojiHeaderView.setSectionsOnClickListener(this);
       emojiHeaderView.setSectionsOnLongClickListener(this);
+      emojiHeaderView.setIsPremium(context.tdlib().hasPremium(), false);
       headerView.addView(emojiHeaderView);
     }
 

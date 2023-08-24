@@ -4703,7 +4703,7 @@
   <string name="AddXStickerPacks_other">Add %1$s sticker sets</string>
   <string name="RemoveXStickerPacks_one">Remove %1$s sticker set</string>
   <string name="RemoveXStickerPacks_other">Remove %1$s sticker sets</string>
-  <string name="EmojiOnlyForPremium">Remove %1$s emoji packs</string>
+  <string name="EmojiOnlyForPremium">Available only with Telegram Premium subscription</string>
   <string name="LoadingMessageEmojiPack">Loading…</string>
   <string name="EmojiUsedFromSingle">Emoji used from %1$s pack</string>
   <string name="EmojiUsedFromX">Emoji used from %1$s</string>

@@ -111,6 +111,7 @@ public class EmojiHeaderCollapsibleSectionView extends FrameLayout implements Fa
       }
     }
     bgRect.set(Screen.dp(2), Screen.dp(4), getMeasuredWidth() - Screen.dp(2), getMeasuredHeight() - Screen.dp(4));
+    invalidate();
   }
 
   @Override

@@ -352,7 +352,6 @@ public class MediaHeaderView extends RecyclerView {
     }
 
     public boolean setSelectedObject (Object obj, boolean animated, RecyclerView.LayoutManager manager) {
-      EmojiHeaderView.debugLog(obj);
       if (this.selectedObject != obj) {
         setSelected(this.selectedObject, false, animated, manager);
         this.selectedObject = obj;

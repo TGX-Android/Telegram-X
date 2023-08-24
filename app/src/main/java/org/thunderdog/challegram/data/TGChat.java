@@ -917,7 +917,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     int titleWidth = getTitleWidth();
     verifyLeft = ChatView.getLeftPadding(listMode) + titleWidth;
     muteLeft = ChatView.getLeftPadding(listMode) + titleWidth + ChatView.getMutePadding();
-    emojiStatusLeft = ChatView.getLeftPadding(listMode) + titleWidth + Screen.dp(6);
+    emojiStatusLeft = ChatView.getLeftPadding(listMode) + titleWidth + Screen.dp(3);
     if (emojiStatusDrawable != null) {
       muteLeft += emojiStatusDrawable.getWidth(Screen.dp(6));
       verifyLeft += emojiStatusDrawable.getWidth(Screen.dp(6));
