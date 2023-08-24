@@ -1266,7 +1266,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       lickView.setTranslationY(y - headerHeight + getTopViewTopPadding());
       lickShadow.setTranslationY(y - (headerHeight * expandFactor));
       if (getSearchTransformFactor() != 0f) {
-        HeaderEditText editText = getSearchHeaderView(headerView);
+        View editText = getSearchHeaderView(headerView).view();
         editText.setTranslationY(Math.max(0f, lickShadow.getTranslationY() - HeaderView.getSize(false)));
       }
     }

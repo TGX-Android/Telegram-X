@@ -1358,7 +1358,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
             }
           }
 
-          EmojiMediaListController.parseTrending(tdlib, parsedStickerSets, items,  stickersAdapter.getItemCount(), filtered.toArray(new TdApi.StickerSetInfo[0]), this, null, false, true);
+          EmojiMediaListController.parseTrending(tdlib, parsedStickerSets, items,  stickersAdapter.getItemCount(), filtered.toArray(new TdApi.StickerSetInfo[0]), this, null, false, true, null);
         }
 
         runOnUiThreadOptional(() -> {

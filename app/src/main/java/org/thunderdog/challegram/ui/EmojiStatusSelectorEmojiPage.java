@@ -359,7 +359,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
   public void onEnterEmoji (String emoji) {
     closeEmojiSelectMode();
     setSearchInput(emojiSearchRequest = emoji);
-    getSearchHeaderView(headerView).setEnabled(false);
+    getSearchHeaderView(headerView).editView().setEnabled(false);
   }
 
   private boolean inEmojiSelectMode;
@@ -383,7 +383,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
   protected void onEnterSearchMode () {
     super.onEnterSearchMode();
     searchModeVisibility.setValue(true, true);
-    getSearchHeaderView(headerView).setEnabled(true);
+    getSearchHeaderView(headerView).editView().setEnabled(true);
     scheduleScrollOffsetDisable();
   }
 
@@ -402,8 +402,8 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
     super.onSearchInputChanged(currentSearchInput = input);
     if (StringUtils.isEmpty(input)) {
       searchModeVisibility.setValue(true, true);
-      getSearchHeaderView(headerView).setEnabled(true);
-      Keyboard.show(getSearchHeaderView(headerView));
+      getSearchHeaderView(headerView).editView().setEnabled(true);
+      Keyboard.show(getSearchHeaderView(headerView).editView());
       if (!StringUtils.isEmpty(emojiSearchRequest)) {
         emojiSearchRequest = null;
       }

@@ -978,4 +978,8 @@ public class StickersController extends RecyclerViewController<StickersControlle
       });
     }
   }
+
+  public void search (String request) {
+
+  }
 }

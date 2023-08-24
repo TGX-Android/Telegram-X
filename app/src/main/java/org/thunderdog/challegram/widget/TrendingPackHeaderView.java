@@ -17,7 +17,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
-import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
@@ -25,11 +25,15 @@ import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
+import org.thunderdog.challegram.util.text.FormattedText;
+import org.thunderdog.challegram.util.text.Highlight;
+import org.thunderdog.challegram.util.text.Text;
+import org.thunderdog.challegram.util.text.TextColorSets;
+import org.thunderdog.challegram.util.text.TextMedia;
 
-public class TrendingPackHeaderView extends RelativeLayout {
+public class TrendingPackHeaderView extends RelativeLayout implements Text.TextMediaListener {
   private final android.widget.TextView newView;
   private final NonMaterialButton button;
-  private final android.widget.TextView titleView;
   private final TextView subtitleView;
   private final View premiumLockIcon;
   private final Drawable lockDrawable;
@@ -100,14 +104,6 @@ public class TrendingPackHeaderView extends RelativeLayout {
       params.addRule(RelativeLayout.RIGHT_OF, R.id.btn_new);
       params.addRule(RelativeLayout.LEFT_OF, R.id.btn_addStickerSet);
     }
-    titleView = new NoScrollTextView(context);
-    titleView.setTypeface(Fonts.getRobotoMedium());
-    titleView.setTextColor(Theme.textAccentColor());
-    titleView.setGravity(Lang.gravity());
-    titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16f);
-    titleView.setSingleLine(true);
-    titleView.setEllipsize(TextUtils.TruncateAt.END);
-    titleView.setLayoutParams(params);
 
     params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
     params.addRule(Lang.alignParent());
@@ -123,7 +119,6 @@ public class TrendingPackHeaderView extends RelativeLayout {
     addView(newView);
     addView(button);
     addView(premiumLockIcon);
-    addView(titleView);
     addView(subtitleView);
   }
 
@@ -136,18 +131,20 @@ public class TrendingPackHeaderView extends RelativeLayout {
     if (themeProvider != null) {
       themeProvider.addThemeTextColorListener(newView, ColorId.promoContent);
       themeProvider.addThemeInvalidateListener(newView);
+      themeProvider.addThemeInvalidateListener(this);
       themeProvider.addThemeInvalidateListener(button);
       themeProvider.addThemeInvalidateListener(premiumLockIcon);
-      themeProvider.addThemeTextAccentColorListener(titleView);
       themeProvider.addThemeTextDecentColorListener(subtitleView);
       ViewSupport.setThemedBackground(newView, ColorId.promo, themeProvider).setCornerRadius(3f);
     }
   }
 
-  public void setStickerSetInfo (Tdlib tdlib, @Nullable TGStickerSetInfo stickerSet, boolean isInProgress, boolean isNew) {
+  private FormattedText title;
+
+  public void setStickerSetInfo (TdlibDelegate context, @Nullable TGStickerSetInfo stickerSet, @Nullable String highlight, boolean isInProgress, boolean isNew) {
     setTag(stickerSet);
 
-    boolean needLock = stickerSet != null && stickerSet.isEmoji() && !stickerSet.isInstalled() && !tdlib.account().isPremium();
+    boolean needLock = stickerSet != null && stickerSet.isEmoji() && !stickerSet.isInstalled() && !context.tdlib().account().isPremium();
 
     newView.setVisibility(!isNew ? View.GONE : View.VISIBLE);
     button.setVisibility(needLock ? GONE: VISIBLE);
@@ -158,7 +155,11 @@ public class TrendingPackHeaderView extends RelativeLayout {
     premiumLockIcon.setVisibility(needLock ? VISIBLE: GONE);
     premiumLockIcon.setTag(stickerSet);
 
-    Views.setMediumText(titleView, stickerSet != null ? stickerSet.getTitle() : "");
+
+    String t = stickerSet != null ? stickerSet.getTitle() : "";
+    title = FormattedText.valueOf(context, t, null);
+    titleHighlight = Highlight.valueOf(t, highlight);
+
     subtitleView.setText(stickerSet != null ? Lang.plural(stickerSet.isEmoji() ? R.string.xEmoji: R.string.xStickers, stickerSet.getFullSize()) : "");
 
     if (Views.setAlignParent(newView, Lang.rtl())) {
@@ -175,31 +176,61 @@ public class TrendingPackHeaderView extends RelativeLayout {
       Views.updateLayoutParams(button);
     }
 
-    RelativeLayout.LayoutParams params;
-    params = (RelativeLayout.LayoutParams) titleView.getLayoutParams();
-    if (Lang.rtl()) {
-      int leftMargin = Screen.dp(12f);
-      if (params.leftMargin != leftMargin) {
-        params.leftMargin = leftMargin;
-        params.rightMargin = 0;
-        params.addRule(RelativeLayout.LEFT_OF, R.id.btn_new);
-        params.addRule(RelativeLayout.RIGHT_OF, R.id.btn_addStickerSet);
-        Views.updateLayoutParams(titleView);
-      }
-    } else {
-      int rightMargin = Screen.dp(12f);
-      if (params.rightMargin != rightMargin) {
-        params.rightMargin = rightMargin;
-        params.leftMargin = 0;
-        params.addRule(RelativeLayout.RIGHT_OF, R.id.btn_new);
-        params.addRule(RelativeLayout.LEFT_OF, R.id.btn_addStickerSet);
-        Views.updateLayoutParams(titleView);
-      }
-    }
-    Views.setTextGravity(titleView, Lang.gravity());
-
     if (Views.setAlignParent(subtitleView, Lang.rtl())) {
       Views.updateLayoutParams(subtitleView);
     }
+    buildTitle();
+  }
+
+  private int titleX, titleY;
+  private Highlight titleHighlight;
+  private Text displayTitle;
+
+  private int lastWidth;
+
+  @Override
+  protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
+    super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+    int width = getMeasuredWidth();
+    if (lastWidth != width) {
+      lastWidth = width;
+      buildTitle();
+    }
+  }
+
+  private void buildTitle () {
+    if (title == null) return;
+
+    int isNewWidth = newView.getVisibility() == VISIBLE ? newView.getMeasuredWidth() + Screen.dp(6): 0;
+
+    int width = getMeasuredWidth();
+    int avail = width - Screen.dp(24) - isNewWidth - button.getMeasuredWidth() - premiumLockIcon.getMeasuredWidth();
+
+    this.titleX = Screen.dp(12 + 4) + isNewWidth;
+    this.titleY = getPaddingTop() + Screen.dp(2);
+    this.displayTitle = new Text.Builder(
+      title, avail,
+      Paints.robotoStyleProvider(16f),
+      TextColorSets.Regular.NORMAL,
+      this
+    ).singleLine()
+      .highlight(titleHighlight)
+      .allBold()
+      .view(this)
+      .noClickable()
+      .build();
+  }
+
+  @Override
+  protected void dispatchDraw (Canvas canvas) {
+    super.dispatchDraw(canvas);
+    if (displayTitle != null) {
+      displayTitle.draw(canvas, titleX, titleY);
+    }
+  }
+
+  @Override
+  public void onInvalidateTextMedia (Text text, @Nullable TextMedia specificMedia) {
+    invalidate();
   }
 }

@@ -16,7 +16,11 @@ package org.thunderdog.challegram.ui;
 
 import android.content.Context;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.LinearLayout;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
@@ -26,12 +30,16 @@ import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.navigation.ViewPagerController;
+import org.thunderdog.challegram.navigation.ViewPagerHeaderViewCompact;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.v.HeaderEditText;
 import org.thunderdog.challegram.widget.ViewPager;
 
 import java.util.ArrayList;
 
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.StringUtils;
 
 public class SettingsStickersController extends ViewPagerController<SettingsController> implements SettingsController.StickerSetLoadListener {
   public static final int TYPE_STICKER = 0;
@@ -166,20 +174,25 @@ public class SettingsStickersController extends ViewPagerController<SettingsCont
       case STICKERS_POSITION: {
         StickersController c = new StickersController(this.context, this.tdlib);
         c.setArguments(new StickersController.Args(StickersController.MODE_STICKERS, isEmoji(), false).setStickerSets(type == TYPE_STICKER ? stickerSets: null));
+        c.search(searchRequest);
         return c;
       }
       case ARCHIVED_POSITION: {
         StickersController c = new StickersController(this.context, this.tdlib);
         c.setArguments(new StickersController.Args(StickersController.MODE_STICKERS_ARCHIVED, isEmoji(), false));
+        c.search(searchRequest);
         return c;
       }
       case MASKS_POSITION: {
         StickersController c = new StickersController(this.context, this.tdlib);
         c.setArguments(new StickersController.Args(StickersController.MODE_MASKS, isEmoji(), false));
+        c.search(searchRequest);
         return c;
       }
       case TRENDING_POSITION: {
-        return new StickersTrendingController(this.context, this.tdlib, isEmoji());
+        StickersTrendingController c = new StickersTrendingController(this.context, this.tdlib, isEmoji());
+        c.search(searchRequest);
+        return c;
       }
     }
     throw new IllegalArgumentException("position == " + position);
@@ -214,6 +227,97 @@ public class SettingsStickersController extends ViewPagerController<SettingsCont
       openSearchMode();
     } else if (id == R.id.menu_btn_clear) {
       clearSearchInput();
+    }
+  }
+
+  /* Search */
+
+  private ViewPagerHeaderViewCompact searchHeaderCell;
+  private float lastSelectionFactor;
+  private @Nullable String searchRequest;
+
+  @Override
+  protected void onSearchInputChanged (String input) {
+    super.onSearchInputChanged(input);
+    startSearch(input);
+  }
+
+  @Override
+  protected void onLeaveSearchMode () {
+    super.onLeaveSearchMode();
+    startSearch(null);
+  }
+
+  private void startSearch (String request) {
+    if (StringUtils.equalsOrBothEmpty(request, searchRequest)) {
+      return;
+    }
+    searchRequest = request;
+
+    for (int a = 0; a < getPagerItemCount(); a++) {
+      ViewController<?> c = getCachedControllerForPosition(a);
+      if (c instanceof StickersController) {
+        ((StickersController) c).search(request);
+      } else if (c instanceof StickersTrendingController) {
+        ((StickersTrendingController) c).search(request);
+      }
+    }
+  }
+
+  @Override
+  protected SearchEditTextDelegate genSearchHeader (HeaderView headerView) {
+    HeaderEditText editText = super.genSearchHeader(headerView).editView();
+    searchHeaderCell = new ViewPagerHeaderViewCompact(context) {
+      boolean ignoreLayoutParams;
+      @Override
+      public void setLayoutParams (ViewGroup.LayoutParams params) {
+        if (!ignoreLayoutParams) {
+          ignoreLayoutParams = true;
+          super.setLayoutParams(params);
+        }
+      }
+
+      @Override
+      protected boolean canTouchAt (float x, float y) {
+        y -= getRecyclerView().getTop() + (int) getRecyclerView().getTranslationY();
+        return y < getTopView().getMeasuredHeight();
+      }
+    };
+    searchHeaderCell.getTopView().setTextPadding(Screen.dp(12f));
+    searchHeaderCell.getTopView().setOnItemClickListener(this);
+    searchHeaderCell.getTopView().setItems(getPagerSections());
+    searchHeaderCell.getTopView().setSelectionFactor(lastSelectionFactor);
+    searchHeaderCell.addView(editText);
+
+    return new SearchEditTextDelegate() {
+      @NonNull
+      @Override
+      public View view () {
+        return searchHeaderCell;
+      }
+
+      @NonNull
+      @Override
+      public HeaderEditText editView () {
+        return editText;
+      }
+    };
+  }
+
+  @Override
+  public void onPageScrolled (int position, float positionOffset, int positionOffsetPixels) {
+    super.onPageScrolled(position, positionOffset, positionOffsetPixels);
+    lastSelectionFactor = positionOffset + position;
+    if (searchHeaderCell != null) {
+      searchHeaderCell.getTopView().setSelectionFactor(lastSelectionFactor);
+    }
+  }
+
+  @Override
+  protected void setCurrentPagerPosition (int position, boolean animated) {
+    super.setCurrentPagerPosition(position, animated);
+    if (searchHeaderCell != null && animated) {
+      searchHeaderCell.getTopView().setFromTo(getViewPager().getCurrentItem(), position);
     }
   }
 }

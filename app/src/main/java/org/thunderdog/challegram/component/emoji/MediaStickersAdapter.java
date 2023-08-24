@@ -326,11 +326,12 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
       }
       case StickerHolder.TYPE_HEADER_TRENDING: {
         TGStickerSetInfo stickerSet = getStickerSet(position);
+        String highlight = getHighlightText(position);
         if (stickerSet != null && !stickerSet.isViewed()) {
           stickerSet.view();
         }
         TrendingPackHeaderView contentView = (TrendingPackHeaderView) holder.itemView;
-        contentView.setStickerSetInfo(context.tdlib(), stickerSet,
+        contentView.setStickerSetInfo(context, stickerSet, highlight,
           stickerSet != null && isInProgress(stickerSet.getId()),
           stickerSet != null && !stickerSet.isViewed()
         );
@@ -490,6 +491,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
     public final TGStickerObj sticker;
     public final TGStickerSetInfo stickerSet;
     public final TGDefaultEmoji defaultEmoji;
+    public String highlight;
 
     public StickerItem (int viewType) {
       this.viewType = viewType;
@@ -517,6 +519,11 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
       this.sticker = null;
       this.stickerSet = null;
       this.defaultEmoji = defaultEmojiString;
+    }
+
+    public StickerItem setHighlightValue (String highlight) {
+      this.highlight = highlight;
+      return this;
     }
 
     public boolean setViewType (int viewType) {
@@ -594,6 +601,10 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
 
   public @Nullable TGDefaultEmoji getDefaultEmojiString (int position) {
     return position >= 0 && position < items.size() ? items.get(position).defaultEmoji : null;
+  }
+
+  public @Nullable String getHighlightText (int position) {
+    return position >= 0 && position < items.size() ? items.get(position).highlight : null;
   }
 
   public static class StickerHolder extends RecyclerView.ViewHolder {
