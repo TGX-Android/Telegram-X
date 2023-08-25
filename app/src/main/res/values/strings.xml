@@ -4716,6 +4716,7 @@
   <string name="EmojiHeader">Emoji</string>
   <string name="StickersAndEmoji">Stickers and Emoji</string>
   <string name="SendCustomEmoji">Send Emoji</string>
+  <string name="LoopAnimatedEmoji">Loop Animated Emoji</string>
 
   <string name="xStickerSetsInstalled_one">%1$s set installed</string>
   <string name="xStickerSetsInstalled_other">%1$s set installed</string>

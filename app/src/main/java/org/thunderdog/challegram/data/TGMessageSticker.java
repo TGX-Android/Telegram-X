@@ -88,7 +88,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
         if (allowNoLoop) {
           this.animatedFile.setPlayOnce(
             forcePlayOnce ||
-            (specialType != SPECIAL_TYPE_NONE && !(Config.LOOP_BIG_CUSTOM_EMOJI && specialType == SPECIAL_TYPE_ANIMATED_EMOJI && Td.customEmojiId(sticker) != 0)) ||
+            (specialType != SPECIAL_TYPE_NONE && !(Config.LOOP_BIG_CUSTOM_EMOJI/*!Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI_LOOP)*/ && specialType == SPECIAL_TYPE_ANIMATED_EMOJI && Td.customEmojiId(sticker) != 0)) ||
             Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_STICKERS_LOOP)
           );
           if (specialType == SPECIAL_TYPE_DICE) {
@@ -691,7 +691,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
               break;
             }
             case SPECIAL_TYPE_ANIMATED_EMOJI: {
-              tapProcessed = openOrLoopSticker(view, sticker, !Config.LOOP_BIG_CUSTOM_EMOJI);
+              tapProcessed = openOrLoopSticker(view, sticker, !Config.LOOP_BIG_CUSTOM_EMOJI /*Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI_LOOP)*/);
               break;
             }
             default: {

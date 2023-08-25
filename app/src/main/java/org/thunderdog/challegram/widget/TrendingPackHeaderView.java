@@ -202,9 +202,11 @@ public class TrendingPackHeaderView extends RelativeLayout implements Text.TextM
     if (title == null) return;
 
     int isNewWidth = newView.getVisibility() == VISIBLE ? newView.getMeasuredWidth() + Screen.dp(6): 0;
+    int addButtonWidth = button.getVisibility() == VISIBLE ? button.getMeasuredWidth() + Screen.dp(12): 0;
+    int premiumLockWidth = premiumLockIcon.getVisibility() == VISIBLE ? premiumLockIcon.getMeasuredWidth() + Screen.dp(12): 0;
 
     int width = getMeasuredWidth();
-    int avail = width - Screen.dp(24) - isNewWidth - button.getMeasuredWidth() - premiumLockIcon.getMeasuredWidth();
+    int avail = width - Screen.dp(24) - isNewWidth - addButtonWidth - premiumLockWidth;
 
     this.titleX = Screen.dp(12 + 4) + isNewWidth;
     this.titleY = getPaddingTop() + Screen.dp(2);

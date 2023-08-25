@@ -145,6 +145,8 @@ public class SettingsStickersAndEmojiController extends RecyclerViewController<S
     items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.AnimatedEmoji).setLongId(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI).setBoolValue(true));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_useBigEmoji, 0, R.string.BigEmoji));
+    // items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
+    // items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.LoopAnimatedEmoji).setLongId(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI_LOOP).setBoolValue(true));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
     items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.Stickers));
     items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));

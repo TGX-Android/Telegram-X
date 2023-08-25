@@ -15,11 +15,14 @@
 package org.thunderdog.challegram.component.emoji;
 
 import android.content.Context;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -31,6 +34,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.charts.LayoutHelper;
 import org.thunderdog.challegram.component.chat.EmojiToneHelper;
 import org.thunderdog.challegram.component.chat.EmojiView;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
@@ -306,9 +310,9 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
         Views.setTextGravity((TextView) holder.itemView, Lang.gravity());
         break;
       }
-      case StickerHolder.TYPE_FOOTER_COLLAPSABLE: {
+      case StickerHolder.TYPE_SEPARATOR_COLLAPSABLE: {
         TGStickerSetInfo stickerSet = getStickerSet(position);
-        TextView collapseView = (TextView) ((ViewGroup)((ViewGroup) holder.itemView).getChildAt(0)).getChildAt(0);
+        TextView collapseView = ((CollapsableSeparatorView) holder.itemView).textView;
         updateCollapseView(collapseView, stickerSet, R.string.ShowXMore);
         collapseView.setTag(stickerSet);
         break;
@@ -623,8 +627,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
     public static final int TYPE_PROGRESS_OFFSETABLE = 13;
     public static final int TYPE_PADDING_OFFSETABLE = 14;
     public static final int TYPE_DEFAULT_EMOJI = 15;
-    public static final int TYPE_FOOTER_COLLAPSABLE = 16;
-
+    public static final int TYPE_SEPARATOR_COLLAPSABLE = 16;
 
     public StickerHolder (View itemView) {
       super(itemView);
@@ -667,33 +670,10 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
           textView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(32f)));
           return new StickerHolder(textView);
         }
-        case TYPE_FOOTER_COLLAPSABLE: {
-          TextView textView = new NoScrollTextView(context);
-          textView.setTextColor(Theme.textDecentColor());
-          textView.setGravity(Lang.gravity() | Gravity.CENTER_VERTICAL);
-          textView.setSingleLine(true);
-          textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13f);
-          textView.setTypeface(Fonts.getRobotoRegular());
-          textView.setId(R.id.btn_toggleCollapseRecentStickers);
-          textView.setOnClickListener(onClickListener);
-          textView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER_VERTICAL));
-          if (themeProvider != null) {
-            themeProvider.addThemeTextDecentColorListener(textView);
-          }
-
-          LinearLayout textLayout = new LinearLayout(context);
-          textLayout.setOrientation(LinearLayout.HORIZONTAL);
-          textLayout.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER));
-          textLayout.addView(textView);
-          ViewSupport.setThemedBackground(textLayout, ColorId.filling);
-          if (themeProvider != null) {
-            themeProvider.addThemeInvalidateListener(textLayout);
-          }
-
-          FrameLayoutFix viewGroup = new FrameLayoutFix(context);
-          viewGroup.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(16f)));
-          viewGroup.addView(textLayout);
-          return new StickerHolder(viewGroup);
+        case TYPE_SEPARATOR_COLLAPSABLE: {
+          CollapsableSeparatorView v = new CollapsableSeparatorView(context);
+          v.init(themeProvider, onClickListener);
+          return new StickerHolder(v);
         }
         case TYPE_HEADER_COLLAPSABLE: {
           LinearLayout viewGroup = new LinearLayout(context);
@@ -810,5 +790,66 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
       }
       throw new UnsupportedOperationException("viewType == " + viewType);
     }
+  }
+
+  public static class CollapsableSeparatorView extends FrameLayoutFix {
+    private final TextView textView;
+    private final LinearLayout linearLayout;
+    private final ImageView imageView;
+    private final SeparatorView separatorView;
+
+    public CollapsableSeparatorView (@NonNull Context context) {
+      super(context);
+
+      textView = new NoScrollTextView(context);
+      textView.setTextColor(Theme.textDecentColor());
+      textView.setGravity(Lang.gravity() | Gravity.CENTER_VERTICAL);
+      textView.setSingleLine(true);
+      textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13f);
+      textView.setTypeface(Fonts.getRobotoRegular());
+      textView.setId(R.id.btn_toggleCollapseRecentStickers);
+      textView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER_VERTICAL));
+      //textView.setBackgroundColor(0xFFFF0000);
+
+      imageView = new ImageView(context);
+      imageView.setScaleType(ImageView.ScaleType.CENTER);
+      imageView.setImageResource(R.drawable.baseline_small_arrow_down_18);
+      imageView.setColorFilter(new PorterDuffColorFilter(Theme.iconColor(), PorterDuff.Mode.SRC_IN));
+      //imageView.setBackgroundColor(0xFF00FF00);
+      imageView.setLayoutParams(LayoutHelper.createLinear(18, 18, 0, Gravity.NO_GRAVITY, 0, 0, 4, 0));
+
+      separatorView = new SeparatorView(context);
+      separatorView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(5f), Gravity.CENTER));
+
+      linearLayout = new LinearLayout(context);
+      linearLayout.setOrientation(LinearLayout.HORIZONTAL);
+      linearLayout.setGravity(Gravity.CENTER);
+      linearLayout.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER));
+      linearLayout.addView(imageView);
+      linearLayout.addView(textView);
+      linearLayout.setPadding(Screen.dp(8), 0, Screen.dp(8), 0);
+      ViewSupport.setThemedBackground(linearLayout, ColorId.filling);
+
+      setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(18f)));
+      addView(separatorView);
+      addView(linearLayout);
+    }
+
+    public void init (ViewController<?> themeProvider, View.OnClickListener onClickListener) {
+      if (themeProvider != null) {
+        themeProvider.addThemeTextDecentColorListener(textView);
+        themeProvider.addThemeInvalidateListener(linearLayout);
+        themeProvider.addThemeSpecialFilterListener(imageView, ColorId.icon);
+        themeProvider.addThemeInvalidateListener(separatorView);
+      }
+      textView.setOnClickListener(onClickListener);
+    }
+/*
+    @Override
+    protected void dispatchDraw (Canvas canvas) {
+      float y = getMeasuredHeight() / 2f;
+      canvas.drawRect(0, y, getMeasuredWidth(), y + 1, Paints.fillingPaint(Theme.separatorColor()));
+      super.dispatchDraw(canvas);
+    }*/
   }
 }

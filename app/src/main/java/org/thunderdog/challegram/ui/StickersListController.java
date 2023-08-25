@@ -15,7 +15,6 @@
 package org.thunderdog.challegram.ui;
 
 import android.content.Context;
-import android.graphics.Canvas;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -49,12 +48,9 @@ import org.thunderdog.challegram.telegram.StickersListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ColorState;
-import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
-import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.unsorted.Size;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.RtlGridLayoutManager;
@@ -379,6 +375,9 @@ public class StickersListController extends ViewController<StickersListControlle
           for (int a = 0; a < visibleItemCount - 1; a++) {
             stickers.remove(0);
           }
+          if (existingIndex != stickerSections.size() - 1) {
+            stickers.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_SEPARATOR));
+          }
 
           shiftStickerSets(existingIndex, stickers.size() - 1);
           adapter.removeRange(endIndex - 1, 1);
@@ -423,7 +422,7 @@ public class StickersListController extends ViewController<StickersListControlle
           || type == MediaStickersAdapter.StickerHolder.TYPE_HEADER_COLLAPSABLE
           || type == MediaStickersAdapter.StickerHolder.TYPE_PROGRESS_OFFSETABLE
           || type == MediaStickersAdapter.StickerHolder.TYPE_HEADER_TRENDING
-          || type == MediaStickersAdapter.StickerHolder.TYPE_FOOTER_COLLAPSABLE
+          || type == MediaStickersAdapter.StickerHolder.TYPE_SEPARATOR_COLLAPSABLE
           || type == MediaStickersAdapter.StickerHolder.TYPE_SEPARATOR ? spanCount : 1;
       }
     });
@@ -743,13 +742,13 @@ public class StickersListController extends ViewController<StickersListControlle
     } else {
       for (int a = 0; a < stickerSections.size(); a++) {
         StickerSection section = stickerSections.get(a);
-        if (a > 0) {
-          items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_SEPARATOR));
-        }
         if (section.info != null && needInfo) {
           section.info.setStartIndex(items.size());
         }
         items.addAll(section.toItems(needInfo));
+        if (a != stickerSections.size() - 1 && !(section.info != null && section.info.isCollapsableEmojiSet() && section.info.isCollapsed())) {
+          items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_SEPARATOR));
+        }
       }
     }
 
@@ -808,7 +807,7 @@ public class StickersListController extends ViewController<StickersListControlle
           items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, stickerObj));
         }
         if (info.isCollapsableEmojiSet() && info.isCollapsed()) {
-          items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_FOOTER_COLLAPSABLE, info));
+          items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_SEPARATOR_COLLAPSABLE, info));
         }
       } else {
         for (TGStickerObj stickerObj: stickers) {

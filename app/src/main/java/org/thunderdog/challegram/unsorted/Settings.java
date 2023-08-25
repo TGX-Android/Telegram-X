@@ -389,6 +389,7 @@ public class Settings {
   public static final long SETTING_FLAG_FORCE_EXO_PLAYER_EXTENSIONS = 1 << 7;
   public static final long SETTING_FLAG_NO_AUDIO_COMPRESSION = 1 << 8;
   public static final long SETTING_FLAG_DOWNLOAD_BETAS = 1 << 9;
+  public static final long SETTING_FLAG_NO_ANIMATED_EMOJI_LOOP = 1 << 10;
 
   public static final long SETTING_FLAG_CAMERA_NO_FLIP = 1 << 10;
   public static final long SETTING_FLAG_CAMERA_KEEP_DISCARDED_MEDIA = 1 << 11;

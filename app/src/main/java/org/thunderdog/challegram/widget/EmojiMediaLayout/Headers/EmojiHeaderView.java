@@ -261,7 +261,7 @@ public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Targe
   }
 
   private void checkStickerSections (boolean animated) {
-    boolean value = adapter.hasStickers() && isPremium;
+    boolean value = /*adapter.hasStickers() &&*/ isPremium;
     hasStickers.setValue(value, animated);
     if (value) {
       recyclerView.setVisibility(VISIBLE);
