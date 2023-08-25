@@ -891,12 +891,14 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
     this.canHandlePositionChange = true;
     this.lastHandledPosition = cursorPosition;
 
-    CharSequence se = Emoji.instance().lastSymbolIsSingleEmoji(currentCs.subSequence(0, cursorPosition));
-    String singleEmoji = se != null ? se.toString() : null;
-    if (singleEmoji != null && !isCaption() && !disallowInlineResults()) {
-      setCurrentMode(MODE_EMOJI);
-      searchStickers(singleEmoji, false, true, null);
-      return true;
+    if (cursorPosition >= 0) {
+      CharSequence se = Emoji.instance().lastSymbolIsSingleEmoji(currentCs.subSequence(0, cursorPosition));
+      String singleEmoji = se != null ? se.toString() : null;
+      if (singleEmoji != null && !isCaption() && !disallowInlineResults()) {
+        setCurrentMode(MODE_EMOJI);
+        searchStickers(singleEmoji, false, true, null);
+        return true;
+      }
     }
 
     if (currentText.charAt(0) == '/') {
