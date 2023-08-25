@@ -19,9 +19,10 @@ import org.thunderdog.challegram.data.TGDefaultEmoji;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.emoji.RecentEmoji;
-import org.thunderdog.challegram.telegram.EmojiMediaType;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibEmojiManager;
+import org.thunderdog.challegram.telegram.TdlibThread;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.v.CustomRecyclerView;
@@ -34,13 +35,14 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.StringUtils;
+import me.vkryl.td.Td;
 
-public abstract class EmojiLayoutAbstractController implements
+public class EmojiLayoutRecyclerController implements
   StickerSmallView.StickerMovementCallback,
   TGLegacyManager.EmojiLoadListener,
-  Emoji.EmojiChangeListener {
+  Emoji.EmojiChangeListener, TdlibEmojiManager.Watcher {
 
-  private static final int SCROLLBY_SECTION_LIMIT = 8;
+  private static final int SCROLL_BY_SECTION_LIMIT = 8;
 
   protected final Tdlib tdlib;
   protected final Context context;
@@ -54,10 +56,10 @@ public abstract class EmojiLayoutAbstractController implements
   protected int spanCount;
   protected int mediaType;
 
-  public ArrayList<TGStickerSetInfo> classicEmojiSets;
+  private ArrayList<TGStickerSetInfo> classicEmojiSets;
   public ArrayList<TGStickerSetInfo> stickerSets;
 
-  public EmojiLayoutAbstractController (Context context, Tdlib tdlib, int controllerId) {
+  public EmojiLayoutRecyclerController (Context context, Tdlib tdlib, int controllerId) {
     this.tdlib = tdlib;
     this.context = context;
     this.controllerId = controllerId;
@@ -438,7 +440,7 @@ public abstract class EmojiLayoutAbstractController implements
 
     final int currentSection = getStickerSetSection();
 
-    if (!animated || Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP || emojiLayout == null || Math.abs(futureSection - currentSection) > SCROLLBY_SECTION_LIMIT) {
+    if (!animated || Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP || emojiLayout == null || Math.abs(futureSection - currentSection) > SCROLL_BY_SECTION_LIMIT) {
       if (emojiLayout != null) {
         emojiLayout.setIgnoreMovement(true);
         emojiLayout.setCurrentStickerSectionByPosition(controllerId, futureSection, true, true);
@@ -622,8 +624,11 @@ public abstract class EmojiLayoutAbstractController implements
         info.setStartIndex(info.getStartIndex() + 1);
       }
     }
-    adapter.getItems().add(newIndex, new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_DEFAULT_EMOJI, new TGDefaultEmoji(emoji.emoji, true)));
+    adapter.getItems().add(newIndex, processRecentEmojiItem(emoji));
     adapter.notifyItemInserted(newIndex);
+    if (emoji.isCustomEmoji()) {
+      tdlib.emoji().performPostponedRequests();
+    }
     if (emojiLayout != null) {
       recyclerView.post(() -> emojiLayout.setIgnoreMovement(false));
     }
@@ -696,6 +701,52 @@ public abstract class EmojiLayoutAbstractController implements
     }
   }
 
+  public ArrayList<MediaStickersAdapter.StickerItem> makeRecentEmojiItems () {
+    ArrayList<RecentEmoji> recents = Emoji.instance().getRecents();
+    ArrayList<MediaStickersAdapter.StickerItem> items = new ArrayList<>(recents.size());
+    for (RecentEmoji recentEmoji : recents) {
+      items.add(processRecentEmojiItem(recentEmoji));
+    }
+    tdlib.emoji().performPostponedRequests();
+    return items;
+  }
+
+  private MediaStickersAdapter.StickerItem processRecentEmojiItem (RecentEmoji recentEmoji) {
+    if (recentEmoji.isCustomEmoji()) {
+      final TdlibEmojiManager.Entry entry = tdlib.emoji().findOrPostponeRequest(recentEmoji.customEmojiId, this);
+      final TGStickerObj stickerObj;
+      if (entry != null && entry.value != null) {
+        stickerObj = new TGStickerObj(tdlib, entry.value, null, entry.value.fullType);
+      } else {
+        stickerObj = new TGStickerObj(tdlib, null, null, new TdApi.StickerFullTypeCustomEmoji(recentEmoji.customEmojiId, false));
+        stickerObj.setTag(recentEmoji.customEmojiId);
+      }
+      return new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, stickerObj);
+    } else {
+      return new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_DEFAULT_EMOJI, new TGDefaultEmoji(recentEmoji.emoji, true));
+    }
+  }
+
+  @TdlibThread
+  @Override
+  public void onCustomEmojiLoaded (TdlibEmojiManager context, TdlibEmojiManager.Entry entry) {
+    UI.post(() -> onRecentCustomEmojiLoaded(entry));     // bad solution: Multiple call to UI.post
+  }
+
+  public void onRecentCustomEmojiLoaded (TdlibEmojiManager.Entry entry) {
+    if (entry == null || entry.value == null || stickerSets == null || stickerSets.isEmpty()) return;
+
+    int startIndex = stickerSets.get(0).getStartIndex();
+    int endIndex = stickerSets.get(0).getEndIndex();
+    for (int a = startIndex; a < endIndex; a++) {
+      TGStickerObj stickerObj = adapter.getItem(a).sticker;
+      if (stickerObj != null && stickerObj.getTag() == Td.customEmojiId(entry.value)) {
+        stickerObj.set(tdlib, entry.value, entry.value.fullType, null);
+        adapter.notifyItemChanged(a);
+        return;
+      }
+    }
+  }
 
   /* * */
 
@@ -802,5 +853,29 @@ public abstract class EmojiLayoutAbstractController implements
 
   /**/
 
-  protected abstract int calculateSpanCount ();
+  public interface SpanCountDelegate {
+    int calculateSpanCount ();
+  }
+
+  private SpanCountDelegate spanCountDelegate;
+  private int forceSpanCount;
+
+  public final void setSpanCount (int spanCount) {
+    forceSpanCount = spanCount;
+    checkSpanCount();
+  }
+
+  public final void setSpanCount (SpanCountDelegate spanCountDelegate) {
+    this.spanCountDelegate = spanCountDelegate;
+    checkSpanCount();
+  }
+
+  private int calculateSpanCount () {
+    if (forceSpanCount != 0) {
+      return forceSpanCount;
+    } else if (spanCountDelegate != null) {
+      return spanCountDelegate.calculateSpanCount();
+    }
+    return 1;
+  }
 }

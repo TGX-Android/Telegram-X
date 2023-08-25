@@ -58,9 +58,8 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.NewFlowLayoutManager;
 import org.thunderdog.challegram.widget.EmojiLayout;
+import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutRecyclerController;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutSectionPager;
-import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutStickersSetsController;
-import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutTrendingSetsController;
 import org.thunderdog.challegram.widget.ForceTouchView;
 
 import java.util.ArrayList;
@@ -88,13 +87,13 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
   private static final int SECTION_TRENDING = 2;
 
   private EmojiLayoutSectionPager contentView;
-  private final EmojiLayoutStickersSetsController stickersController;
-  private final EmojiLayoutTrendingSetsController trendingSetsController;
+  private final EmojiLayoutRecyclerController stickersController;
+  private final EmojiLayoutRecyclerController trendingSetsController;
 
   public EmojiMediaListController (Context context, Tdlib tdlib) {
     super(context, tdlib);
-    stickersController = new EmojiLayoutStickersSetsController(context, tdlib, EmojiLayout.STICKERS_INSTALLED_CONTROLLER_ID);
-    trendingSetsController = new EmojiLayoutTrendingSetsController(context, tdlib, EmojiLayout.STICKERS_TRENDING_CONTROLLER_ID);
+    stickersController = new EmojiLayoutRecyclerController(context, tdlib, EmojiLayout.STICKERS_INSTALLED_CONTROLLER_ID);
+    trendingSetsController = new EmojiLayoutRecyclerController(context, tdlib, EmojiLayout.STICKERS_TRENDING_CONTROLLER_ID);
     trendingSetsController.stickerSets = new ArrayList<>();
   }
 

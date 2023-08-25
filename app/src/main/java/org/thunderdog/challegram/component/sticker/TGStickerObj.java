@@ -142,6 +142,16 @@ public class TGStickerObj {
     return stickerSetId != 0 ? stickerSetId : sticker != null ? sticker.setId : 0;
   }
 
+  private long tag;
+
+  public void setTag (long tag) {
+    this.tag = tag;
+  }
+
+  public long getTag () {
+    return tag;
+  }
+
   public boolean isPremium () {
     return Td.isPremium(sticker);
   }
@@ -168,10 +178,6 @@ public class TGStickerObj {
 
   public String getAllEmoji () {
     return emojis != null && emojis.length > 0 ? TextUtils.join(" ", emojis) : sticker != null ? sticker.emoji : "";
-  }
-
-  public String getFirstEmoji (String defaultEmoji) {
-    return emojis != null && emojis.length > 0 ? emojis[0]: (sticker != null ? sticker.emoji: defaultEmoji);
   }
 
   public @Nullable TdApi.Sticker getSticker () {

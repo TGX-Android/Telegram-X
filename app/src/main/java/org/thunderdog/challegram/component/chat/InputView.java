@@ -1123,8 +1123,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
 
     final int start = selection.start;
 
-    String emoji = !StringUtils.isEmpty(stickerObj.emoji) ? stickerObj.emoji: "*";   //stickerObj.getFirstEmoji("*");
-
+    String emoji = TD.stickerEmoji(stickerObj);
     int after = selection.start + emoji.length();
     SpannableString s = new SpannableString(emoji);
     s.setSpan(Emoji.instance().newCustomSpan(emoji, null, this, tdlib, Td.customEmojiId(stickerObj)), 0, s.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);

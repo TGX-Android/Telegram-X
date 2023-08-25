@@ -66,7 +66,7 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 
-public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPreDrawListener, ViewPager.OnPageChangeListener, FactorAnimator.Target, View.OnClickListener, View.OnLongClickListener, Lang.Listener {
+public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPreDrawListener, ViewPager.OnPageChangeListener, FactorAnimator.Target, View.OnClickListener, Lang.Listener {
   public interface Listener {
     default void onEnterEmoji (String emoji) {}
     default void onEnterCustomEmoji (TGStickerObj sticker) {}
@@ -195,7 +195,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
         info.unsetIsTrendingEmoji();
         parentController.tdlib().client().send(new TdApi.ChangeStickerSet(info.getId(), true, false), parentController.tdlib().okHandler());
       } else if (id == R.id.btn_copyLink) {
-        UI.copyText(TD.getEmojiPackLink(info.getName()), R.string.CopiedLink);
+        UI.copyText(TD.getStickerPackLink(info.getInfo()), R.string.CopiedLink);
       }
       return true;
     });
@@ -225,7 +225,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
             });
           }
         } else if (id == R.id.btn_copyLink) {
-          UI.copyText(TD.getStickerPackLink(info.getName()), R.string.CopiedLink);
+          UI.copyText(TD.getStickerPackLink(info.getInfo()), R.string.CopiedLink);
         }
         return true;
       });
@@ -335,7 +335,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     if (!animatedEmojiOnly) {
       emojiHeaderView = new EmojiHeaderView(getContext(), this, themeProvider);
       emojiHeaderView.setSectionsOnClickListener(this);
-      emojiHeaderView.setSectionsOnLongClickListener(this);
+      emojiHeaderView.setSectionsOnLongClickListener(this::onEmojiHeaderLongClick);
       emojiHeaderView.setIsPremium(context.tdlib().hasPremium(), false);
       headerView.addView(emojiHeaderView);
     }
@@ -563,6 +563,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
   }
 
   public void onEnterCustomEmoji (TGStickerObj sticker) {
+    Emoji.instance().saveRecentCustomEmoji(sticker.getCustomEmojiId());
     if (listener != null) {
       listener.onEnterCustomEmoji(sticker);
     }
@@ -576,10 +577,15 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     return listener != null && listener.onSendGIF(view, animation);
   }
 
-  @Override
-  public boolean onLongClick (View v) {
+  public boolean onEmojiHeaderLongClick (View v) {
     int viewId = v.getId();
-    if (viewId == R.id.btn_section) {
+
+    if (v instanceof StickerSectionView) {
+      StickerSectionView sectionView = (StickerSectionView) v;
+      TGStickerSetInfo info = sectionView.getStickerSet();
+      removeStickerSet(info);
+      return true;
+    } else if (viewId == R.id.btn_section) {
       EmojiSection section = ((EmojiSectionView) v).getSection();
 
       if (section.index == 0 && Emoji.instance().canClearRecents()) {

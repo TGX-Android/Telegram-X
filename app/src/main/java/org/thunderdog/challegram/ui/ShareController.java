@@ -233,8 +233,13 @@ public class ShareController extends TelegramViewController<ShareController.Args
     }
 
     public Args (TdApi.Sticker sticker) {
-      this.mode = MODE_STICKER;
-      this.sticker = sticker;
+      if (Td.customEmojiId(sticker) != 0) {
+        this.mode = MODE_TEXT;
+        this.text = TD.toSingleEmojiText(sticker);
+      } else {
+        this.mode = MODE_STICKER;
+        this.sticker = sticker;
+      }
     }
 
     public Args (ShareProviderDelegate delegate) {

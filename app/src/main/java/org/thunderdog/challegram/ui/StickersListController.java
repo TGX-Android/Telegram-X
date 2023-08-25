@@ -189,7 +189,7 @@ public class StickersListController extends ViewController<StickersListControlle
       tdlib.ui().shareStickerSetUrl(this, stickerSetInfoToLoad);
     } else if (id == R.id.btn_copyLink) {
       if (stickerSetInfoToLoad != null) {
-        UI.copyText(TD.getStickerPackLink(stickerSetInfoToLoad.name), R.string.CopiedLink);
+        UI.copyText(TD.getStickerPackLink(stickerSetInfoToLoad), R.string.CopiedLink);
       } else {
         StringBuilder b = new StringBuilder();
         for (StickerSection section: stickerSections) {
@@ -197,10 +197,7 @@ public class StickersListController extends ViewController<StickersListControlle
           if (b.length() != 0) {
             b.append("\n");
           }
-          b.append(section.info.isEmoji() ?
-            TD.getEmojiPackLink(section.info.getName()):
-            TD.getStickerPackLink(section.info.getName())
-          );
+          b.append(TD.getStickerPackLink(section.info.getInfo()));
         }
         UI.copyText(b.toString(), R.string.CopiedLink);
       }

@@ -460,6 +460,10 @@ public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Targe
         ((EmojiSection) getObject(index)).setFactor(1f, animated);
       }
 
+      if (oldIndex == -1) {
+        return true;
+      }
+
       if (oldSelectedViewType == ViewHolder.TYPE_STICKER_SET) {
         View view = manager.findViewByPosition(oldSelectedPosition);
         if (view instanceof StickerSectionView) {

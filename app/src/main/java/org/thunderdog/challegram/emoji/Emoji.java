@@ -31,10 +31,13 @@ import com.coremedia.iso.Hex;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.component.emoji.MediaStickersAdapter;
 import org.thunderdog.challegram.core.Media;
 import org.thunderdog.challegram.data.TD;
+import org.thunderdog.challegram.data.TGDefaultEmoji;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibEmojiManager;
 import org.thunderdog.challegram.tool.EmojiCode;
 import org.thunderdog.challegram.tool.EmojiData;
 import org.thunderdog.challegram.tool.Paints;
@@ -54,11 +57,14 @@ import java.util.Map;
 
 import me.vkryl.core.FileUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.collection.LongList;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.reference.ReferenceList;
 import me.vkryl.core.util.LocalVar;
 
 public class Emoji {
+  public static final String CUSTOM_EMOJI_CACHE = "custom_emoji_id_";
+
   private static Emoji instance;
 
   public static Emoji instance () {
@@ -232,6 +238,10 @@ public class Emoji {
     void replaceEmoji (int newIndex, RecentEmoji emoji);
     void onToneChanged (@Nullable String newDefaultTone);
     void onCustomToneApplied (String emoji, @Nullable String newTone, @Nullable String[] newOtherTones);
+  }
+
+  public void saveRecentCustomEmoji (long id) {
+    saveRecentEmoji(Emoji.CUSTOM_EMOJI_CACHE + id);
   }
 
   public void saveRecentEmoji (String emoji) {

@@ -3542,12 +3542,14 @@ public class TD {
     return "https://" + getTelegramMeHost() + "/" + Td.primaryUsername(supergroup);
   }
 
-  public static String getStickerPackLink (String name) {
-    return "https://" + getTelegramMeHost() + "/addstickers/" + name;
-  }
+  public static String getStickerPackLink (@Nullable TdApi.StickerSetInfo info) {
+    if (info == null) return "";
 
-  public static String getEmojiPackLink (String name) {
-    return "https://" + getTelegramMeHost() + "/addemoji/" + name;
+    if (info.stickerType.getConstructor() == TdApi.StickerTypeCustomEmoji.CONSTRUCTOR) {
+      return "https://" + getTelegramMeHost() + "/addemoji/" + info.name;
+    } else {
+      return "https://" + getTelegramMeHost() + "/addstickers/" + info.name;
+    }
   }
 
   public static String getLink (TdApi.User user) {
@@ -6989,5 +6991,14 @@ public class TD {
     return emojis.toArray();
   }
 
+  public static String stickerEmoji (TdApi.Sticker sticker) {
+    return !StringUtils.isEmpty(sticker.emoji) ? sticker.emoji: "😀";
+  }
 
+  public static TdApi.FormattedText toSingleEmojiText (TdApi.Sticker sticker) {
+    String emoji = stickerEmoji(sticker);
+    return new TdApi.FormattedText(emoji, new TdApi.TextEntity[]{
+      new TdApi.TextEntity(0, emoji.length(), new TdApi.TextEntityTypeCustomEmoji(Td.customEmojiId(sticker)))
+    });
+  }
 }

@@ -39,11 +39,13 @@ import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.EmojiMediaType;
 import org.thunderdog.challegram.telegram.StickersListener;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibEmojiManager;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.EmojiData;
+import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.widget.EmojiLayout;
-import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutEmojiPacksController;
+import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutRecyclerController;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutSectionPager;
 
 import java.util.ArrayList;
@@ -54,17 +56,24 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.LongList;
 import me.vkryl.core.collection.LongSparseIntArray;
 
-public class EmojiListController extends ViewController<EmojiLayout> implements View.OnClickListener, TGStickerObj.DataProvider, StickersListener {
+public class EmojiListController extends ViewController<EmojiLayout> implements TGStickerObj.DataProvider, StickersListener {
 
   private static final int SECTION_STICKERS = 0;
   private static final int SECTION_TRENDING = 2;
 
   private EmojiLayoutSectionPager contentView;
-  private final EmojiLayoutEmojiPacksController emojiController;
+  private final EmojiLayoutRecyclerController emojiController;
 
   public EmojiListController (Context context, Tdlib tdlib) {
     super(context, tdlib);
-    emojiController = new EmojiLayoutEmojiPacksController(context, tdlib, EmojiLayout.EMOJI_INSTALLED_CONTROLLER_ID);
+    emojiController = new EmojiLayoutRecyclerController(context, tdlib, EmojiLayout.EMOJI_INSTALLED_CONTROLLER_ID);
+    emojiController.setSpanCount(() -> {
+      int width = emojiController.recyclerView != null ? emojiController.recyclerView.getMeasuredWidth(): 0;
+      if (width == 0) {
+        width = Screen.currentWidth();
+      }
+      return Math.max(8, width / Screen.dp(48f));
+    });
   }
 
   @Override
@@ -89,7 +98,7 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
     toneHelper = new EmojiToneHelper(context, getArgumentsStrict().getToneDelegate(), tdlib, this);
     toneHelper.setOnCustomEmojiSelectedListener(this::onCustomEmojiSelected);
     adapter = new MediaStickersAdapter(this, emojiController, false, this, null, false,  toneHelper);
-    adapter.setClassicEmojiClickListener(this);
+    adapter.setClassicEmojiClickListener(this::onClassicEmojiClick);
 
     this.useDarkMode = getArgumentsStrict().useDarkMode();
 
@@ -191,8 +200,7 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
     }
   }
 
-  @Override
-  public void onClick (View v) {
+  private void onClassicEmojiClick (View v) {
     if (!(v instanceof EmojiView)) {
       return;
     }
@@ -235,7 +243,7 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
     }
   }
 
-  public void buildEmojis () {
+  private void buildEmojis () {
     ArrayList<MediaStickersAdapter.StickerItem> items = new ArrayList<>(1);
     ArrayList<TGStickerSetInfo> emojiPacks = new ArrayList<>(8);
 
@@ -247,10 +255,7 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
       pack.setStartIndex(items.size());
       pack.setIsRecent();
       emojiPacks.add(pack);
-      items.ensureCapacity(recents.size());
-      for (RecentEmoji recentEmoji : recents) {
-        items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_DEFAULT_EMOJI, new TGDefaultEmoji(recentEmoji.emoji, true)));
-      }
+      items.addAll(emojiController.makeRecentEmojiItems());
     }
 
     for (int i = 0; i < EmojiData.dataColored.length; i++) {
@@ -611,9 +616,7 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
           if (++index[0] < addedCount) {
             tdlib.client().send(new TdApi.GetStickerSet(setIds[index[0]]), this);
           } else {
-            runOnUiThreadOptional(() -> {
-              setApplyingChanges(false);
-            });
+            runOnUiThreadOptional(() -> setApplyingChanges(false));
           }
         }
       });
