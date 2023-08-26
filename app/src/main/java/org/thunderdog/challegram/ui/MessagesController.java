@@ -9465,9 +9465,19 @@ public class MessagesController extends ViewController<MessagesController.Argume
       switch (emojiType) {
         case EmojiMediaType.STICKER:
           action = TdApi.ChatActionChoosingSticker.CONSTRUCTOR;
-          hideEmojiSuggestionsTemporarily();
+          if (suggestionYDiff > Screen.dp(50) || stickerPreviewIsVisible) {
+            hideEmojiSuggestionsTemporarily();
+          } else if (suggestionYDiff <= 0) {
+            showEmojiSuggestionsIfTemporarilyHidden();
+          }
           break;
         case EmojiMediaType.EMOJI:
+          if (suggestionXDiff > Screen.dp(50)) {
+            hideStickersSuggestionsTemporarily();
+          } else if (suggestionXDiff <= 0) {
+            showStickersSuggestionsIfTemporarilyHidden();
+          }
+          return;
         case EmojiMediaType.GIF:
         default:
           return;
@@ -11430,58 +11440,45 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
       @Override
       public void onStickerPreviewOpened (StickerSmallView view, TGStickerObj sticker) {
-
+        notifyChoosingEmoji(EmojiMediaType.STICKER, stickerPreviewIsVisible = true);
       }
 
       @Override
       public void onStickerPreviewChanged (StickerSmallView view, TGStickerObj otherOrThisSticker) {
-
+        notifyChoosingEmoji(EmojiMediaType.STICKER, stickerPreviewIsVisible = true);
       }
 
       @Override
       public void onStickerPreviewClosed (StickerSmallView view, TGStickerObj thisSticker) {
-
+        notifyChoosingEmoji(EmojiMediaType.STICKER, stickerPreviewIsVisible = false);
       }
     };
   }
 
-  private RecyclerView.OnScrollListener getInlineResultsStickerScrollListener () {
-    return new RecyclerView.OnScrollListener() {
-      int scrollDiff = 0;
+  private int suggestionXDiff = 0;
+  private int suggestionYDiff = 0;
+  private boolean stickerPreviewIsVisible;
 
+  private RecyclerView.OnScrollListener getInlineResultsStickerScrollListener () {
+    suggestionYDiff = 0;
+    return new RecyclerView.OnScrollListener() {
       @Override
       public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
         if (dy == 0) return;
-        scrollDiff += dy;
-        if (emojiSuggestionsWrap != null && emojiSuggestionsWrap.isStickersVisible() && scrollDiff > Screen.dp(50)) {
-          hideEmojiSuggestionsTemporarily();
-          return;
-        }
-
-        if (emojiSuggestionsWrap != null && !emojiSuggestionsWrap.isStickersVisible() && canShowEmojiSuggestions && scrollDiff <= 0) {
-          showEmojiSuggestionsIfTemporarilyHidden();
-        }
+        suggestionYDiff = recyclerView.computeVerticalScrollOffset();
+        notifyChoosingEmoji(EmojiMediaType.STICKER, true);
       }
     };
   }
 
   private RecyclerView.OnScrollListener getInlineEmojiStickerScrollListener () {
+    suggestionYDiff = 0;
     return new RecyclerView.OnScrollListener() {
-      int scrollDiff = 0;
-
       @Override
       public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
         if (dx == 0) return;
-        scrollDiff += dx;
-
-        if (scrollDiff > Screen.dp(50)) {
-          hideStickersSuggestionsTemporarily();
-          return;
-        }
-
-        if (scrollDiff <= 0) {
-          showStickersSuggestionsIfTemporarilyHidden();
-        }
+        suggestionXDiff = recyclerView.computeHorizontalScrollOffset();
+        notifyChoosingEmoji(EmojiMediaType.EMOJI, true);
       }
     };
   }
