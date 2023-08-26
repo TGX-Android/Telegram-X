@@ -478,6 +478,7 @@ public class CustomTextView extends View implements TGLegacyManager.EmojiLoadLis
 
   @Override
   public void performDestroy () {
+    TGLegacyManager.instance().removeEmojiListener(this);
     for (ListAnimator.Entry<TextEntry> entry : text) {
       entry.item.performDestroy();
     }

@@ -1161,6 +1161,10 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     if (c != null) {
       ((EmojiMediaListController) c).applyScheduledChanges();
     }
+    ViewController<?> c2 = adapter.getCachedItem(0);
+    if (c2 instanceof EmojiListController) {
+      ((EmojiListController) c2).applyScheduledChanges();
+    }
   }
 
   public void destroy () {

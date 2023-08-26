@@ -17,6 +17,7 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
@@ -31,7 +32,9 @@ import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextMedia;
 
-public class TrendingPackHeaderView extends RelativeLayout implements Text.TextMediaListener {
+import me.vkryl.core.lambda.Destroyable;
+
+public class TrendingPackHeaderView extends RelativeLayout implements Text.TextMediaListener, TGLegacyManager.EmojiLoadListener, Destroyable {
   private final android.widget.TextView newView;
   private final NonMaterialButton button;
   private final TextView subtitleView;
@@ -120,6 +123,8 @@ public class TrendingPackHeaderView extends RelativeLayout implements Text.TextM
     addView(button);
     addView(premiumLockIcon);
     addView(subtitleView);
+
+    TGLegacyManager.instance().addEmojiListener(this);
   }
 
   public void setButtonOnClickListener (View.OnClickListener listener) {
@@ -228,5 +233,15 @@ public class TrendingPackHeaderView extends RelativeLayout implements Text.TextM
   @Override
   public void onInvalidateTextMedia (Text text, @Nullable TextMedia specificMedia) {
     invalidate();
+  }
+
+  @Override
+  public void onEmojiUpdated (boolean isPackSwitch) {
+    invalidate();
+  }
+
+  @Override
+  public void performDestroy () {
+    TGLegacyManager.instance().removeEmojiListener(this);
   }
 }

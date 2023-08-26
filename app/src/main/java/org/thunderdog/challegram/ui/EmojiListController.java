@@ -97,6 +97,8 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
     super.handleLanguageDirectionChange();
     if (emojiController.recyclerView != null)
       emojiController.recyclerView.requestLayout();
+    if (trendingAdapter != null)
+      trendingAdapter.notifyDataSetChanged();
   }
 
   @Override
@@ -325,7 +327,7 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
     if (contentView.canChangeSection()) {
       initTrending();
       if (contentView.getCurrentSection() == SECTION_TRENDING) {
-        // trendingView.smoothScrollBy(0, -getTrendingScrollY());
+        trendingSetsController.recyclerView.smoothScrollBy(0, -trendingSetsController.getStickersScrollY(false));
       } else {
         contentView.changeSection(SECTION_TRENDING, true, -1);
         if (getArguments() != null && getArguments().getCurrentItem() == 0) {
@@ -417,6 +419,7 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
 
   private LongSparseIntArray loadingStickerSets;
 
+  private static final int FLAG_TRENDING = 0x01;
   private static final int FLAG_REGULAR = 0x02;
 
   private void setStickers (ArrayList<TGStickerSetInfo> stickerSets, ArrayList<MediaStickersAdapter.StickerItem> items) {
@@ -441,8 +444,14 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
       currentFlags = loadingStickerSets.get(stickerSetId, 0);
     }
     if (currentFlags == 0) {
-      loadingStickerSets.put(stickerSetId, FLAG_REGULAR);
+      loadingStickerSets.put(stickerSetId, stickerObj.isTrending() ? FLAG_TRENDING : FLAG_REGULAR);
       tdlib.client().send(new TdApi.GetStickerSet(stickerSetId), singleStickerSetHandler());
+    } else if ((currentFlags & FLAG_TRENDING) == 0 && stickerObj.isTrending()) {
+      currentFlags |= FLAG_TRENDING;
+      loadingStickerSets.put(stickerSetId, currentFlags);
+    } else if ((currentFlags & FLAG_REGULAR) == 0 && !stickerObj.isTrending()) {
+      currentFlags |= FLAG_REGULAR;
+      loadingStickerSets.put(stickerSetId, currentFlags);
     }
   }
 
@@ -475,6 +484,14 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
     if ((flags & FLAG_REGULAR) != 0) {
       emojiController.applyStickerSet(stickerSet, this);
     }
+
+    if ((flags & FLAG_TRENDING) != 0) {
+      trendingSetsController.applyStickerSet(stickerSet, this);
+    }
+  }
+
+  public void applyScheduledChanges () {
+    trendingSetsController.applyScheduledFeaturedSets();
   }
 
   public boolean showStickerSet (TGStickerSetInfo stickerSet) {
