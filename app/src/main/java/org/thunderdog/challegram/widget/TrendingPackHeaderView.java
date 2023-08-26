@@ -186,16 +186,10 @@ public class TrendingPackHeaderView extends RelativeLayout implements Text.TextM
   private Highlight titleHighlight;
   private Text displayTitle;
 
-  private int lastWidth;
-
   @Override
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
     super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-    int width = getMeasuredWidth();
-    if (lastWidth != width) {
-      lastWidth = width;
-      buildTitle();
-    }
+    buildTitle();
   }
 
   private void buildTitle () {

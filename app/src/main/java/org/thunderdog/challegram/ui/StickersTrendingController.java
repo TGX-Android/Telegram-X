@@ -216,7 +216,7 @@ public class StickersTrendingController extends ViewController<Void> implements 
   public boolean canFindChildViewUnder (StickerSmallView view, int recyclerX, int recyclerY) {
     return true;
   }
-
+/*
   @Override
   public void onTrendingStickersUpdated (final TdApi.StickerType stickerType, final TdApi.TrendingStickerSets stickerSets, int unreadCount) {
     if (isNeedIgnoreStickersUpdate(stickerType) || stickerSets.sets.length == 0)
@@ -227,6 +227,7 @@ public class StickersTrendingController extends ViewController<Void> implements 
       }
     });
   }
+*/
 
   @Override
   public void onFavoriteStickersUpdated (int[] stickerIds) { }
