@@ -967,11 +967,11 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
     }
 
     public int getBubbleWidth () {
-      float avatarsWidth = avatars.getTargetWidth(Screen.dp(counter.getVisibilityTarget() ? 2: 0)); // avatars.getAnimatedWidth();
+      float avatarsWidth = avatars.getAnimatedWidth();
       float avatarsOffset = Screen.dp(2f * avatars.getAvatarsVisibility() * counter.getVisibility());
       int addW = Screen.dp((TGMessage.reactionsTextStyleProvider().getTextSizeInDp() + 1f) / 3f);
       int subW = Screen.dp(6f - counter.getVisibility() * 6f);
-      return (int) (counter.getWidth() + getReactionImageSize() + addW - subW + avatarsWidth /*+ avatarsOffset*/);
+      return (int) (counter.getWidth() + getReactionImageSize() + addW - subW + avatarsWidth + avatarsOffset);
     }
 
     public int getBubbleTargetWidth () {
