@@ -239,7 +239,7 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
       String reactionKey = TD.makeReactionKey(reaction.type);
       TGReactions.MessageReactionEntry entry = reactionsMapEntry.get(reactionKey);
       if (entry != null) {
-        entry.requestAvatars(complexReceiver);
+        entry.requestAvatars(complexReceiver, isUpdate);
       }
     }
   }
@@ -837,11 +837,11 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
       String text = hasSenders ? "+" + Strings.buildCounter(countToDisplay): Strings.buildCounter(countToDisplay);
 
       counter.setCount(value, !chosen, text, animated);
-      avatars.setSenders(senders, false);
+      avatars.setSenders(senders, animated);
     }
 
-    public void requestAvatars (ComplexReceiver complexReceiver) {
-      avatars.requestFiles(complexReceiver, true);
+    public void requestAvatars (ComplexReceiver complexReceiver, boolean isUpdate) {
+      avatars.requestFiles(complexReceiver, isUpdate, true);
     }
 
     // Render

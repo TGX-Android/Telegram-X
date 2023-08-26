@@ -135,17 +135,17 @@ public final class TGAvatars implements FactorAnimator.Target {
     }
   }
 
-  public void requestFiles (ComplexReceiver complexReceiver, boolean isUpdate) {
+  public void requestFiles (ComplexReceiver complexReceiver, boolean isUpdate, boolean neverClear) {
     if (complexReceiver != null) {
       if (entries != null && !entries.isEmpty()) {
         for (AvatarEntry entry : entries) {
           AvatarReceiver receiver = complexReceiver.getAvatarReceiver(entry.id());
           receiver.requestMessageSender(tdlib, entry.senderId, AvatarReceiver.Options.NONE);
         }
-        if (!isUpdate) {
+        if (!isUpdate && !neverClear) {
           complexReceiver.clearReceivers((receiverType, receiver, key) -> receiverType == ComplexReceiver.RECEIVER_TYPE_AVATAR && entriesIds != null && entriesIds.contains(key));
         }
-      } else {
+      } else if (!neverClear) {
         complexReceiver.clear();
       }
     }
@@ -260,17 +260,17 @@ public final class TGAvatars implements FactorAnimator.Target {
 
       receiver.drawPlaceholderRounded(c, receiver.getDisplayRadius(), outline, Paints.getErasePaint());
 
-      if (alpha != 1f) {
+      //if (alpha != 1f) {
         receiver.setPaintAlpha(receiver.getPaintAlpha() * alpha);
-      }
+      //}
       receiver.setBounds(cx - radius, cy - radius, cx + radius, cy + radius);
       if (receiver.needPlaceholder()) {
         receiver.drawPlaceholder(c);
       }
       receiver.draw(c);
-      if (alpha != 1f) {
+      //if (alpha != 1f) {
         receiver.restorePaintAlpha();
-      }
+      //}
 
       if (scale != 1f) {
         c.restore();

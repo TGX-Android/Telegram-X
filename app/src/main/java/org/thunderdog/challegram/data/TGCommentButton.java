@@ -136,7 +136,7 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
   }
 
   public void requestResources (@Nullable ComplexReceiver complexReceiver, boolean isUpdate) {
-    this.avatars.requestFiles(complexReceiver, isUpdate);
+    this.avatars.requestFiles(complexReceiver, isUpdate, false);
   }
 
   public void setViewMode (@ViewMode int viewMode, boolean animated) {
