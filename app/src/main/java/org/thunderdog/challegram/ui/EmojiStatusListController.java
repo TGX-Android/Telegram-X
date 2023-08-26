@@ -42,7 +42,6 @@ import org.thunderdog.challegram.mediaview.MediaCellView;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.AnimationsListener;
-import org.thunderdog.challegram.telegram.EmojiMediaType;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
@@ -189,9 +188,8 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
     if (ignoreStickersScroll == 0) {
       if (getArguments() != null && getArguments().isWatchingMovements() && getArguments().getCurrentItem() == 0) {
         int y = getStickersScrollY();
-        getArguments().onScroll(y);
+        getArguments().moveHeader(y);
         getArguments().setCurrentStickerSectionByPosition(EmojiLayout.STICKERS_INSTALLED_CONTROLLER_ID, getStickerSetSection(), true, true);
-        getArguments().onSectionScroll(EmojiMediaType.STICKER, movedDy != 0);
       }
     }
   }
@@ -401,27 +399,6 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
   public boolean canFindChildViewUnder (StickerSmallView view, int recyclerX, int recyclerY) {
     EmojiLayout parent = getArguments();
     return parent != null && recyclerY > parent.getHeaderBottom();
-  }
-
-  @Override
-  public void onStickerPreviewOpened (StickerSmallView view, TGStickerObj sticker) {
-    if (getArguments() != null) {
-      getArguments().onSectionInteracted(EmojiMediaType.STICKER, false);
-    }
-  }
-
-  @Override
-  public void onStickerPreviewChanged (StickerSmallView view, TGStickerObj otherOrThisSticker) {
-    if (getArguments() != null) {
-      getArguments().onSectionInteracted(EmojiMediaType.STICKER, false);
-    }
-  }
-
-  @Override
-  public void onStickerPreviewClosed (StickerSmallView view, TGStickerObj thisSticker) {
-    if (getArguments() != null) {
-      getArguments().onSectionInteracted(EmojiMediaType.STICKER, true);
-    }
   }
 
   @Override

@@ -1296,4 +1296,9 @@
   <item type="id" name="btn_animatedEmojiSettings" />
   <item type="id" name="btn_stickerSettingsAndEmoji" />
   <item type="id" name="controller_stickersAndEmoji" />
+
+  <item type="id" name="controller_emojiLayoutStickers" />
+  <item type="id" name="controller_emojiLayoutStickersTrending" />
+  <item type="id" name="controller_emojiLayoutEmoji" />
+  <item type="id" name="controller_emojiLayoutEmojiTrending" />
 </resources>

@@ -24,6 +24,7 @@ import android.view.ViewTreeObserver;
 import android.widget.LinearLayout;
 
 import androidx.annotation.DrawableRes;
+import androidx.annotation.IdRes;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.collection.SparseArrayCompat;
@@ -34,6 +35,7 @@ import androidx.viewpager.widget.ViewPager;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.EmojiToneHelper;
+import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
@@ -446,8 +448,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
   }
 
   public int getCurrentItem () {
-    int p = pager.getCurrentItem();
-    return p;
+    return pager.getCurrentItem();
   }
 
   private void setCircleFactor (float toFactor, boolean animated) {
@@ -499,10 +500,6 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
 
   public void setShowFavorite (boolean showFavorite) {
     mediaSectionsView.setShowFavorite(showFavorite);
-  }
-
-  public void setHasNewHots (boolean hasHots) {
-    mediaSectionsView.setHasNewHots(hasHots);
   }
 
   public void setStickerSets (ArrayList<TGStickerSetInfo> stickers, boolean showFavorite, boolean showRecents) {
@@ -738,11 +735,11 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
   private void showOrHideHeader () {
     if (headerHideFactor != 0f && headerHideFactor != 1f) {
       float hideFactor = headerHideFactor > .25f && lastY - getHeaderSize() > 0 ? 1f : 0f;
-      moveHeader(hideFactor, true);
+      moveHeaderImpl(hideFactor, true);
     }
   }
 
-  private void moveHeader (float factor, boolean animated) {
+  private void moveHeaderImpl (float factor, boolean animated) {
     if (factor == 1f) {
       lastHeaderVisibleY = Math.max(0, lastY - getHeaderSize());
     } else  {
@@ -832,7 +829,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     setCircleVisible(headerHideFactor == 0f, true);
   }
 
-  private void moveHeader (int y) {
+  private void moveHeaderImpl (int y) {
     lastY = y;
     if (ignoreFirstScrollEvent) {
       resetScrollState(false);
@@ -867,22 +864,6 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
         applyHeaderVisibleY();
         showOrHideHeader();
       }
-    }
-  }
-
-  public void onScroll (int totalDy) {
-    moveHeader(totalDy);
-  }
-
-  public void onSectionInteracted (@EmojiMediaType int mediaType, boolean interactionFinished) {
-    if (listener != null) {
-      listener.onSectionInteracted(this, mediaType, interactionFinished);
-    }
-  }
-
-  public void onSectionScroll (@EmojiMediaType int mediaType, boolean moved) {
-    if (moved) {
-      onSectionInteracted(mediaType, false);
     }
   }
 
@@ -1028,7 +1009,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
 
     if (affectHeight) {
       float factor = fromHeightHideFactor + Math.abs(fromPageFactor - currentPageFactor) * heightFactorDiff;
-      moveHeader(factor, false);
+      moveHeaderImpl(factor, false);
     }
   }
 
@@ -1255,11 +1236,17 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
 
   /* Interface */
 
-  public static final int STICKERS_INSTALLED_CONTROLLER_ID = 0;
-  public static final int STICKERS_TRENDING_CONTROLLER_ID = 1;
-  public static final int EMOJI_INSTALLED_CONTROLLER_ID = 2;
+  public static final @IdRes int STICKERS_INSTALLED_CONTROLLER_ID = R.id.controller_emojiLayoutStickers;
+  public static final @IdRes int STICKERS_TRENDING_CONTROLLER_ID = R.id.controller_emojiLayoutStickersTrending;
+  public static final @IdRes int EMOJI_INSTALLED_CONTROLLER_ID = R.id.controller_emojiLayoutEmoji;
+  public static final @IdRes int EMOJI_TRENDING_CONTROLLER_ID = R.id.controller_emojiLayoutEmojiTrending;
 
-  public void addStickerSection (int controllerId, int section, TGStickerSetInfo info) {
+  public static final @EmojiMediaType int getEmojiMediaType (int controllerId) {
+    return controllerId == R.id.controller_emojiLayoutEmojiTrending
+      || controllerId == R.id.controller_emojiLayoutEmoji ? EmojiMediaType.EMOJI : EmojiMediaType.STICKER;
+  }
+
+  public void addStickerSection (@IdRes int controllerId, int section, TGStickerSetInfo info) {
     if (controllerId == EmojiLayout.STICKERS_INSTALLED_CONTROLLER_ID && mediaSectionsView != null) {
       mediaSectionsView.addStickerSection(section, info);
     } else if (controllerId == EmojiLayout.EMOJI_INSTALLED_CONTROLLER_ID && emojiHeaderView != null) {
@@ -1267,7 +1254,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     }
   }
 
-  public void moveStickerSection (int controllerId, int fromSection, int toSection) {
+  public void moveStickerSection (@IdRes int controllerId, int fromSection, int toSection) {
     if (controllerId == EmojiLayout.STICKERS_INSTALLED_CONTROLLER_ID && mediaSectionsView != null) {
       mediaSectionsView.moveStickerSection(fromSection, toSection);
     } else if (controllerId == EmojiLayout.EMOJI_INSTALLED_CONTROLLER_ID && emojiHeaderView != null) {
@@ -1275,7 +1262,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     }
   }
 
-  public void removeStickerSection (int controllerId, int section) {
+  public void removeStickerSection (@IdRes int controllerId, int section) {
     if (controllerId == EmojiLayout.STICKERS_INSTALLED_CONTROLLER_ID && mediaSectionsView != null) {
       mediaSectionsView.removeStickerSection(section);
     } else if (controllerId == EmojiLayout.EMOJI_INSTALLED_CONTROLLER_ID && emojiHeaderView != null) {
@@ -1283,12 +1270,49 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     }
   }
 
-  public void setCurrentStickerSectionByPosition (int controllerId, int i, boolean isStickerSection, boolean animated) {
-    if (controllerId == STICKERS_INSTALLED_CONTROLLER_ID && mediaSectionsView != null) {
+  public void setCurrentStickerSectionByPosition (@IdRes int controllerId, int i, boolean isStickerSection, boolean animated) {
+    if (controllerId == R.id.controller_emojiLayoutStickers && mediaSectionsView != null) {
       mediaSectionsView.setCurrentStickerSectionByPosition(i, isStickerSection, animated);
     } else if (controllerId == EMOJI_INSTALLED_CONTROLLER_ID && emojiHeaderView != null) {
       emojiHeaderView.setCurrentStickerSectionByPosition(i, isStickerSection, animated);
     }
+  }
+
+  public boolean onStickerClick (@IdRes int controllerId, StickerSmallView view, View clickView, TGStickerSetInfo stickerSet, TGStickerObj sticker, boolean isMenuClick, TdApi.MessageSendOptions sendOptions) {
+    if (sticker.isTrending() && !isMenuClick) {
+      if (stickerSet != null) {
+        stickerSet.show(parentController);
+        return true;
+      }
+      return false;
+    } else if (sticker.isCustomEmoji()) {
+      onEnterCustomEmoji(sticker);
+      return true;
+    } else {
+      return sendSticker(clickView, sticker, sendOptions);
+    }
+  }
+
+  public void setHasNewHots (@IdRes int controllerId, boolean hasHots) {
+    if (controllerId == STICKERS_TRENDING_CONTROLLER_ID && mediaSectionsView != null) {
+      mediaSectionsView.setHasNewHots(hasHots);
+    }
+  }
+
+  public void onSectionInteracted (@EmojiMediaType int mediaType, boolean interactionFinished) {
+    if (listener != null) {
+      listener.onSectionInteracted(this, mediaType, interactionFinished);
+    }
+  }
+
+  public void onSectionInteractedScroll (@EmojiMediaType int mediaType, boolean moved) {
+    if (moved) {
+      onSectionInteracted(mediaType, false);
+    }
+  }
+
+  public void moveHeader (int totalDy) {
+    moveHeaderImpl(totalDy);
   }
 
   public void resetScrollState (boolean silent) {

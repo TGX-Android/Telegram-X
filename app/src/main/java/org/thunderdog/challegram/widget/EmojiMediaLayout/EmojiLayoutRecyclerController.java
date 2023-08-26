@@ -6,10 +6,12 @@ import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.annotation.IdRes;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.GridLayoutManager;
 
 import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.EmojiView;
 import org.thunderdog.challegram.component.emoji.MediaStickersAdapter;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
@@ -19,6 +21,8 @@ import org.thunderdog.challegram.data.TGDefaultEmoji;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.emoji.RecentEmoji;
+import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.telegram.EmojiMediaType;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibEmojiManager;
@@ -37,42 +41,45 @@ import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.StringUtils;
 import me.vkryl.td.Td;
 
-public class EmojiLayoutRecyclerController implements
+public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> implements
   StickerSmallView.StickerMovementCallback,
   TGLegacyManager.EmojiLoadListener,
-  Emoji.EmojiChangeListener, TdlibEmojiManager.Watcher {
+  Emoji.EmojiChangeListener,
+  TdlibEmojiManager.Watcher {
 
   private static final int SCROLL_BY_SECTION_LIMIT = 8;
 
-  protected final Tdlib tdlib;
-  protected final Context context;
-  protected final int controllerId;
+  private final @IdRes int controllerId;
+  protected @EmojiMediaType int mediaType;
 
   protected EmojiLayout emojiLayout;
   protected GridLayoutManager manager;
   public CustomRecyclerView recyclerView;
-
   protected MediaStickersAdapter adapter;
   protected int spanCount;
-  protected int mediaType;
 
   private ArrayList<TGStickerSetInfo> classicEmojiSets;
   public ArrayList<TGStickerSetInfo> stickerSets;
 
-  public EmojiLayoutRecyclerController (Context context, Tdlib tdlib, int controllerId) {
-    this.tdlib = tdlib;
-    this.context = context;
+  public EmojiLayoutRecyclerController (Context context, Tdlib tdlib, @IdRes int controllerId) {
+    super(context, tdlib);
     this.controllerId = controllerId;
+    this.mediaType = EmojiLayout.getEmojiMediaType(controllerId);
   }
 
-  public void setAdapter (MediaStickersAdapter adapter) {
-    this.adapter = adapter;
+  @Override
+  public int getId () {
+    return controllerId;
   }
 
-  public CustomRecyclerView init (EmojiLayout emojiLayout, int mediaType) {
-    this.emojiLayout = emojiLayout;
-    this.mediaType = mediaType;
+  @Override
+  public void setArguments (EmojiLayout args) {
+    super.setArguments(args);
+    this.emojiLayout = args;
+  }
 
+  @Override
+  protected View onCreateView (Context context) {
     manager = new RtlGridLayoutManager(context, spanCount = Math.max(1, calculateSpanCount())).setAlignOnly(true);
     manager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
       @Override
@@ -91,6 +98,10 @@ public class EmojiLayoutRecyclerController implements
     adapter.setManager(manager);
 
     return recyclerView;
+  }
+
+  public void setAdapter (MediaStickersAdapter adapter) {
+    this.adapter = adapter;
   }
 
   @Nullable public GridLayoutManager getManager () {
@@ -424,7 +435,9 @@ public class EmojiLayoutRecyclerController implements
     Views.invalidateChildren(recyclerView);
   }
 
+  @Override
   public void destroy () {
+    super.destroy();
     TGLegacyManager.instance().removeEmojiListener(this);
     Emoji.instance().removeEmojiChangeListener(this);
     Views.destroyRecyclerView(recyclerView);
@@ -525,12 +538,8 @@ public class EmojiLayoutRecyclerController implements
   @Override
   public boolean onStickerClick (StickerSmallView view, View clickView, TGStickerObj sticker, boolean isMenuClick, TdApi.MessageSendOptions sendOptions) {
     if (emojiLayout != null) {
-      if (sticker.isCustomEmoji()) {
-        emojiLayout.onEnterCustomEmoji(sticker);
-        return true;
-      } else {
-        return emojiLayout.sendSticker(clickView, sticker, sendOptions);
-      }
+      int i = indexOfStickerSetById(sticker.getStickerSetId());
+      return emojiLayout.onStickerClick(controllerId, view, clickView, i != -1 ? stickerSets.get(i): null, sticker, isMenuClick, sendOptions);
     }
     return false;
   }
@@ -854,7 +863,7 @@ public class EmojiLayoutRecyclerController implements
   /**/
 
   public interface SpanCountDelegate {
-    int calculateSpanCount ();
+    int calculateSpanCount (int controllerId);
   }
 
   private SpanCountDelegate spanCountDelegate;
@@ -874,7 +883,7 @@ public class EmojiLayoutRecyclerController implements
     if (forceSpanCount != 0) {
       return forceSpanCount;
     } else if (spanCountDelegate != null) {
-      return spanCountDelegate.calculateSpanCount();
+      return spanCountDelegate.calculateSpanCount(getId());
     }
     return 1;
   }

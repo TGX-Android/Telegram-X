@@ -301,7 +301,7 @@ public class TGStickerSetInfo {
 
   public int getItemCount () {
     if (isTrending()) {
-      return 5;
+      return isEmoji() ? 16: 5;
     }
     if (isCollapsableEmojiSet()) {
       return size + 1 + (isCollapsed() ? 1: 0);

@@ -15,6 +15,7 @@
 package org.thunderdog.challegram.ui;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -30,23 +31,22 @@ import org.thunderdog.challegram.component.chat.EmojiToneHelper;
 import org.thunderdog.challegram.component.chat.EmojiView;
 import org.thunderdog.challegram.component.emoji.MediaStickersAdapter;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
+import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGDefaultEmoji;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.emoji.RecentEmoji;
 import org.thunderdog.challegram.navigation.ViewController;
-import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.EmojiMediaType;
 import org.thunderdog.challegram.telegram.StickersListener;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.telegram.TdlibEmojiManager;
-import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.EmojiData;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.widget.EmojiLayout;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutRecyclerController;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutSectionPager;
+import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutTrendingController;
 
 import java.util.ArrayList;
 
@@ -63,17 +63,22 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
 
   private EmojiLayoutSectionPager contentView;
   private final EmojiLayoutRecyclerController emojiController;
+  private final EmojiLayoutTrendingController trendingSetsController;
 
   public EmojiListController (Context context, Tdlib tdlib) {
     super(context, tdlib);
     emojiController = new EmojiLayoutRecyclerController(context, tdlib, EmojiLayout.EMOJI_INSTALLED_CONTROLLER_ID);
-    emojiController.setSpanCount(() -> {
+    emojiController.setSpanCount(controllerId -> {
       int width = emojiController.recyclerView != null ? emojiController.recyclerView.getMeasuredWidth(): 0;
       if (width == 0) {
         width = Screen.currentWidth();
       }
       return Math.max(8, width / Screen.dp(48f));
     });
+
+    trendingSetsController = new EmojiLayoutTrendingController(context, tdlib, EmojiLayout.EMOJI_TRENDING_CONTROLLER_ID);
+    trendingSetsController.setCallbacks(this, new TdApi.StickerTypeCustomEmoji());
+    trendingSetsController.stickerSets = new ArrayList<>();
   }
 
   @Override
@@ -82,6 +87,7 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
   }
 
   private MediaStickersAdapter adapter;
+  private MediaStickersAdapter trendingAdapter;
   private EmojiToneHelper toneHelper;
 
   private boolean useDarkMode;
@@ -102,8 +108,9 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
 
     this.useDarkMode = getArgumentsStrict().useDarkMode();
 
+    emojiController.setArguments(getArguments());
     emojiController.setAdapter(adapter);
-    emojiController.init(getArguments(), EmojiMediaType.EMOJI);
+    emojiController.getValue();
     emojiController.recyclerView.setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 140L));
     emojiController.recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
       @Override
@@ -120,7 +127,7 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
 
         if (contentView.isSectionStable() && contentView.getCurrentSection() == SECTION_STICKERS && getArguments() != null && getArguments().isWatchingMovements() && getArguments().getCurrentItem() == 0) {
           int y = emojiController.getStickersScrollY(false);
-          getArguments().onScroll(y);
+          getArguments().moveHeader(y);
           getArguments().setCurrentStickerSectionByPosition(EmojiLayout.EMOJI_INSTALLED_CONTROLLER_ID, emojiController.getStickerSetSection(), true, true);
          //  getArguments().onSectionScroll(EmojiMediaType.STICKER, dy != 0);
         }
@@ -134,6 +141,12 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
       }
     });
 
+    trendingAdapter = new MediaStickersAdapter(this, trendingSetsController, false, this);
+    trendingAdapter.setItem(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_PROGRESS));
+    trendingSetsController.setArguments(getArguments());
+    trendingSetsController.setAdapter(trendingAdapter);
+    trendingSetsController.setSpanCount(8);
+
     contentView = new EmojiLayoutSectionPager(context) {
       @Override
       protected View getSectionView (int section) {
@@ -141,7 +154,8 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
           return emojiController.recyclerView;
         } else if (section == SECTION_TRENDING) {
           initTrending();
-          return trendingView;
+          return trendingSetsController.recyclerView;
+          /*return trendingView;*/
         }
         return null;
       }
@@ -160,6 +174,10 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
         if (getArguments() != null) {
           getArguments().resetScrollState(false);
         }
+
+        if (prevSection == SECTION_TRENDING && currentSection != SECTION_TRENDING) {
+          trendingSetsController.applyScheduledFeaturedSets();
+        }
       }
     };
     contentView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -167,6 +185,7 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
 
     buildEmojis();
     loadStickers();
+    trendingSetsController.loadTrending(0, 20, 0);
 
     return contentView;
   }
@@ -180,10 +199,19 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
     super.destroy();
     tdlib.listeners().unsubscribeFromStickerUpdates(this);
     emojiController.destroy();
+    trendingSetsController.destroy();
   }
 
   public int getCurrentScrollY () {
-    return emojiController.getStickersScrollY(false);
+    switch (contentView.getCurrentSection()) {
+      case SECTION_STICKERS: {
+        return emojiController.getStickersScrollY(false);
+      }
+      case SECTION_TRENDING: {
+        return trendingSetsController.getStickersScrollY(false);
+      }
+    }
+    return -1;
   }
 
   public void invalidateItems () {
@@ -285,7 +313,7 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
 
   /* * */
 
-  private RecyclerView trendingView;
+  // private RecyclerView trendingView;
 
   public void showStickers () {
     if (contentView.canChangeSection()) {
@@ -308,11 +336,24 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
   }
 
   private void initTrending () {
-    if (trendingView == null) {
-      StickersTrendingController c = new StickersTrendingController(context, tdlib, true, true);
+    if (trendingSetsController.recyclerView == null) {
+      trendingSetsController.getValue();
+      trendingSetsController.recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+        @Override
+        public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {
+          if (contentView.isSectionStable() && contentView.getCurrentSection() == SECTION_TRENDING && getArguments() != null && getArguments().getCurrentItem() == 0) {
+            boolean isScrolling = newState == RecyclerView.SCROLL_STATE_DRAGGING || newState == RecyclerView.SCROLL_STATE_SETTLING;
+            getArguments().setIsScrolling(isScrolling);
+          }
+        }
 
-      trendingView = (RecyclerView) c.getValue();
-      ViewSupport.setThemedBackground(trendingView, ColorId.background, this);
+        @Override
+        public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
+          if (contentView.isSectionStable() && contentView.getCurrentSection() == SECTION_TRENDING && getArguments() != null && getArguments().getCurrentItem() == 0) {
+            trendingSetsController.onScrolledImpl(dy, false);
+          }
+        }
+      });
     }
   }
 
@@ -492,6 +533,7 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
   }
 
   private void changeStickers (long[] stickerSetIds) {
+    trendingSetsController.updateTrendingSets(stickerSetIds);
     if (applyingChanges) {
       if (pendingChanges == null) {
         pendingChanges = new ArrayList<>();
@@ -621,6 +663,18 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
         }
       });
     }
+  }
+
+  @Override
+  public void onTrendingStickersUpdated (final TdApi.StickerType stickerType, final TdApi.TrendingStickerSets stickerSets, int unreadCount) {
+    if (stickerType.getConstructor() != TdApi.StickerTypeCustomEmoji.CONSTRUCTOR)
+      return;
+    runOnUiThreadOptional(() -> {
+      if (getArguments() != null) {
+        getArguments().setHasNewHots(EmojiLayout.EMOJI_TRENDING_CONTROLLER_ID, TD.getStickerSetsUnreadCount(stickerSets.sets) > 0);
+      }
+      trendingSetsController.scheduleFeaturedSets(stickerSets, contentView.getCurrentSection() == SECTION_TRENDING);
+    });
   }
 
   @Override

@@ -7001,4 +7001,14 @@ public class TD {
       new TdApi.TextEntity(0, emoji.length(), new TdApi.TextEntityTypeCustomEmoji(Td.customEmojiId(sticker)))
     });
   }
+
+  public static int getStickerSetsUnreadCount (TdApi.StickerSetInfo[] stickerSets) {
+    int unreadCount = 0;
+    for (TdApi.StickerSetInfo stickerSet : stickerSets) {
+      if (!stickerSet.isViewed) {
+        unreadCount++;
+      }
+    }
+    return unreadCount;
+  }
 }

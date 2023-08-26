@@ -149,7 +149,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
         }
       }
       if (position > 0) {
-        int itemCount = Math.min(stickerSet.isDefaultEmoji() ? stickerSet.getSize() + 1: stickerSet.isTrending() ? 5 : stickerSet.getSize(), position);
+        int itemCount = Math.min(stickerSet.isDefaultEmoji() ? stickerSet.getSize() + 1: stickerSet.isTrending() ? (stickerSet.isEmoji() ? 16: 5) : stickerSet.getSize(), position);
         int rowCount = (int) Math.ceil((double) itemCount / (double) spanCount);
         scrollY += rowCount * rowSize;
         position -= itemCount;
