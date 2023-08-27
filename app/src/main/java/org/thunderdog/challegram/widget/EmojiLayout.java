@@ -560,7 +560,9 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
   }
 
   public void onEnterCustomEmoji (TGStickerObj sticker) {
-    Emoji.instance().saveRecentCustomEmoji(sticker.getCustomEmojiId());
+    if (!sticker.isRecent()) {
+      Emoji.instance().saveRecentCustomEmoji(sticker.getCustomEmojiId());
+    }
     if (listener != null) {
       listener.onEnterCustomEmoji(sticker);
     }

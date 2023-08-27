@@ -725,10 +725,12 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> i
       final TdlibEmojiManager.Entry entry = tdlib.emoji().findOrPostponeRequest(recentEmoji.customEmojiId, this);
       final TGStickerObj stickerObj;
       if (entry != null && entry.value != null) {
-        stickerObj = new TGStickerObj(tdlib, entry.value, null, entry.value.fullType);
+        stickerObj = new TGStickerObj(tdlib, entry.value, entry.value.fullType, null);
+        stickerObj.setIsRecent();
       } else {
-        stickerObj = new TGStickerObj(tdlib, null, null, new TdApi.StickerFullTypeCustomEmoji(recentEmoji.customEmojiId, false));
+        stickerObj = new TGStickerObj(tdlib, null, new TdApi.StickerFullTypeCustomEmoji(recentEmoji.customEmojiId, false), null);
         stickerObj.setTag(recentEmoji.customEmojiId);
+        stickerObj.setIsRecent();
       }
       return new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, stickerObj);
     } else {
