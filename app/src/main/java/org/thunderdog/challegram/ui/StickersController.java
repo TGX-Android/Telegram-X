@@ -460,13 +460,15 @@ public class StickersController extends RecyclerViewController<StickersControlle
         }
         this.stickerSets.addAll(stickerSets);
         List<ListItem> items = adapter.getItems();
-        int startIndex = items.size() - 1;
-        ListItem shadow = items.remove(startIndex);
+        int startIndex = items.size() - 1 - (isEmoji ? 1: 0);
+        // ListItem shadow = items.remove(startIndex);
+        int i = startIndex;
         for (TGStickerSetInfo info : stickerSets) {
           info.setBoundList(this.stickerSets);
-          items.add(new ListItem(ListItem.TYPE_ARCHIVED_STICKER_SET, R.id.btn_stickerSetInfo, 0, 0).setLongId(info.getId()));
+          items.add(i, new ListItem(ListItem.TYPE_ARCHIVED_STICKER_SET, R.id.btn_stickerSetInfo, 0, 0).setLongId(info.getId()));
+          i++;
         }
-        items.add(shadow);
+        // items.add(shadow);
         adapter.notifyItemRangeInserted(startIndex, stickerSets.size());
         updateEmojiPacksCount();
         break;
@@ -535,7 +537,7 @@ public class StickersController extends RecyclerViewController<StickersControlle
   }
 
   private void updateEmojiPacksCount () {
-    if (mode != MODE_STICKERS || !isEmoji) return;
+    if (mode != MODE_STICKERS && mode != MODE_STICKERS_ARCHIVED || !isEmoji) return;
 
     int i = adapter.indexOfViewById(R.id.view_emojiPacksCount);
     if (i != -1) {
