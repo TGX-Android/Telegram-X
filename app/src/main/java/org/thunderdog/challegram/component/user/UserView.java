@@ -174,6 +174,13 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
       statusWidth = 0;
     }
     float availWidth = getMeasuredWidth() - textLeftMargin - offsetLeft - paddingRight - (unregisteredContact != null ? Screen.dp(32f) : 0);
+    if (drawModifiers != null) {
+      int maxWidth = 0;
+      for (DrawModifier modifier : drawModifiers) {
+        maxWidth = Math.max(maxWidth, modifier.getWidth());
+      }
+      availWidth -= maxWidth;
+    }
     if (availWidth > 0) {
       sourceStatus = status;
       if (statusWidth > availWidth) {
@@ -204,7 +211,13 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
       name = null;
     }
     float availWidth = getMeasuredWidth() - textLeftMargin - offsetLeft - paddingRight - (unregisteredContact != null ? Screen.dp(32f) : 0);
-
+    if (drawModifiers != null) {
+      int maxWidth = 0;
+      for (DrawModifier modifier : drawModifiers) {
+        maxWidth = Math.max(maxWidth, modifier.getWidth());
+      }
+      availWidth -= maxWidth - Screen.dp(12);
+    }
     emojiStatusHelper.updateEmoji(user != null ? user.getUser(): null, new TextColorSetOverride(TextColorSets.Regular.NORMAL) {
       @Override
       public int emojiStatusColor () {
@@ -374,7 +387,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
 
     if (drawModifiers != null) {
       for (int i = drawModifiers.size() - 1; i >= 0; i--) {
-        drawModifiers.get(i).afterDraw(this, c);
+        drawModifiers.get(i).afterDraw(this, c, getComplexReceiver());
       }
     }
   }

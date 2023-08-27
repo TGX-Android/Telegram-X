@@ -859,7 +859,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     }
     if (drawModifiers != null) {
       for (int i = drawModifiers.size() - 1; i >= 0; i--) {
-        drawModifiers.get(i).afterDraw(this, c);
+        drawModifiers.get(i).afterDraw(this, c, getComplexReceiver());
       }
     }
     if (counter != null)

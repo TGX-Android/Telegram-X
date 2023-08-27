@@ -13,25 +13,27 @@ import org.thunderdog.challegram.component.user.UserView;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
-import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.util.ReactionModifier;
+import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.ListInfoView;
 import org.thunderdog.challegram.widget.PopupLayout;
 
 import java.util.List;
 
+import me.vkryl.td.Td;
+
 public class MessageOptionsReactedController extends BottomSheetViewController.BottomSheetBaseRecyclerViewController<Void> implements View.OnClickListener {
   private SettingsAdapter adapter;
-  private PopupLayout popupLayout;
-  private TGMessage message;
+  private final PopupLayout popupLayout;
+  private final TGMessage message;
   @Nullable
-  private TdApi.ReactionType reactionType;
+  private final TdApi.ReactionType reactionType;
   private String offset = "";
 
   private boolean canLoadMore = true;
@@ -51,7 +53,6 @@ public class MessageOptionsReactedController extends BottomSheetViewController.B
     adapter = new SettingsAdapter(this) {
       @Override
       protected void setUser (ListItem item, int position, UserView userView, boolean isUpdate) {
-        final TGReaction reactionObj = tdlib.getReaction(TD.toReactionType(item.getStringValue()));
         TdApi.MessageSender senderId = (TdApi.MessageSender) item.getData();       
         TGUser user;
         if (senderId.getConstructor() == TdApi.MessageSenderUser.CONSTRUCTOR) {
@@ -61,8 +62,8 @@ public class MessageOptionsReactedController extends BottomSheetViewController.B
         }
         user.setActionDateStatus(item.getIntValue(), R.string.reacted);
         userView.setUser(user);
-        if (item.getStringValue().length() > 0 && reactionObj != null && reactionType == null) {
-          userView.setDrawModifier(new ReactionModifier(userView.getComplexReceiver(), 8, reactionObj));
+        if (item.getSliderValues() != null && item.getSliderValues().length > 0 && reactionType == null) {
+          userView.setDrawModifier(new ReactionModifier(tdlib, item.getSliderValues()).setMode(ReactionModifier.MODE_INLINE).setOffset(8).requestFiles(userView.getComplexReceiver()));
         } else {
           userView.setDrawModifier(null);
         }
@@ -110,16 +111,34 @@ public class MessageOptionsReactedController extends BottomSheetViewController.B
 
   private void processNewAddedReactions (TdApi.AddedReactions addedReactions) {
     final TdApi.AddedReaction[] reactions = addedReactions.reactions;
-    List<ListItem> items = adapter.getItems();
+    final List<ListItem> items = adapter.getItems();
+    final int itemsCount = items.size();
+
+    StringList reactionKeys = new StringList(3);
+    TdApi.AddedReaction lastReaction = null;
     for (TdApi.AddedReaction reaction : reactions) {
+      if (lastReaction != null && !Td.equalsTo(reaction.senderId, lastReaction.senderId)) {
+        if (!items.isEmpty()) {
+          items.add(new ListItem(ListItem.TYPE_SEPARATOR));
+        }
+        ListItem item = new ListItem(ListItem.TYPE_USER_SMALL, R.id.sender)
+          .setData(lastReaction.senderId)
+          .setIntValue(lastReaction.date)
+          .setSliderInfo(reactionKeys.get(), 0);
+        items.add(item);
+        reactionKeys.clear();
+      }
+      lastReaction = reaction;
+      reactionKeys.append(TD.makeReactionKey(lastReaction.type));
+    }
+    if (lastReaction != null) {
       if (!items.isEmpty()) {
         items.add(new ListItem(ListItem.TYPE_SEPARATOR));
       }
-
       ListItem item = new ListItem(ListItem.TYPE_USER_SMALL, R.id.sender)
-        .setData(reaction.senderId)
-        .setIntValue(reaction.date)
-        .setStringValue(TD.makeReactionKey(reaction.type));
+        .setData(lastReaction.senderId)
+        .setIntValue(lastReaction.date)
+        .setSliderInfo(reactionKeys.get(), 0);
       items.add(item);
     }
 
@@ -128,7 +147,7 @@ public class MessageOptionsReactedController extends BottomSheetViewController.B
       items.add(new ListItem(ListItem.TYPE_LIST_INFO_VIEW));
     }
 
-    adapter.notifyAllStringsChanged();
+    adapter.notifyItemRangeChanged(itemsCount, items.size() - itemsCount);
   }
 
   @Override

@@ -62,7 +62,7 @@ public class SettingsStickersAndEmojiController extends RecyclerViewController<S
                 stringBuilder.append(tgReaction.getTitle());
               }
             }
-            v.setDrawModifier(new ReactionModifier(v.getComplexReceiver(), tgReactions.toArray(new TGReaction[0])));
+            v.setDrawModifier(new ReactionModifier(tgReactions.toArray(new TGReaction[0])).requestFiles(v.getComplexReceiver()));
             v.setData(stringBuilder.toString());
           } else {
             v.setDrawModifier(null);
