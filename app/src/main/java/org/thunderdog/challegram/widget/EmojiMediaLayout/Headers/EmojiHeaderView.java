@@ -340,7 +340,6 @@ public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Targe
     private final ViewController<?> themeProvider;
     private final ArrayList<TGStickerSetInfo> stickerSets;
     private final LinearLayoutManager manager;
-    private final EmojiLayout emojiLayout;
     private final int expandableItemSize;
     private final int expandableItemPosition;
 
@@ -353,7 +352,6 @@ public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Targe
       this.emojiSections = emojiSections;
       this.expandableSections = expandableSections;
       this.stickerSets = new ArrayList<>();
-      this.emojiLayout = emojiLayout;
       this.manager = manager;
       this.expandableItemPosition = emojiSections.size();
       this.expandableItemSize = expandableSections.size();

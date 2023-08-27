@@ -162,10 +162,8 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
 
       @Override
       protected void onSectionChangeStart (int prevSection, int nextSection, int stickerSetSection) {
-        if (getArguments() != null) {
-          getArguments().setCurrentStickerSectionByPosition(EmojiLayout.EMOJI_INSTALLED_CONTROLLER_ID,
-            nextSection == SECTION_STICKERS ? (stickerSetSection != -1 ? stickerSetSection: emojiController.getStickerSetSection()): 0,
-            nextSection == SECTION_STICKERS, true);
+        if (getArguments() != null && stickerSetSection != -1) {
+          getArguments().setCurrentStickerSectionByPosition(EmojiLayout.EMOJI_INSTALLED_CONTROLLER_ID, nextSection == SECTION_STICKERS ? stickerSetSection : 0, nextSection == SECTION_STICKERS, true);
         }
       }
 
