@@ -570,7 +570,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
       UI.setSoftInputMode(UI.getContext(context), Config.DEFAULT_WINDOW_PARAMS);
     }
 
-    contentView = new MessagesLayout(context);
+    contentView = new MessagesLayout(context) {
+      @Override
+      public void setTranslationX (float translationX) {
+        super.setTranslationX(translationX);
+        if (emojiSuggestionsWrap != null) {
+          emojiSuggestionsWrap.setTranslationX(translationX);
+        }
+      }
+    };
     contentView.setController(this);
     contentView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
@@ -3853,6 +3861,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       openKeyboard = false;
       Keyboard.show(inputView);
     }
+    // showEmojiSuggestionsIfTemporarilyHidden();
     // tdlib.context().changePreferredAccountId(tdlib.id(), TdlibManager.SWITCH_REASON_CHAT_FOCUS);
   }
 
@@ -3963,6 +3972,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (translationPopup != null) {
       translationPopup.hidePopupWindow(true);
     }
+    // hideEmojiSuggestionsTemporarily();
     // closeEmojiKeyboard();
     // Media.instance().stopVoice();
   }
@@ -11369,6 +11379,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       emojiSuggestionsWrap.init(this, contentView, stickers, true, true);
       emojiSuggestionsWrap.setChoosingDelegate(this::notifyChoosingEmoji);
       emojiSuggestionsWrap.setOnScrollListener(getInlineEmojiStickerScrollListener());
+      emojiSuggestionsWrap.setTranslationX(contentView.getTranslationX());
     } else if (isMore && emojiSuggestionsWrap.stickerSuggestionAdapter.hasStickers() && emojiSuggestionsWrap.isStickersVisible() ) {
       emojiSuggestionsWrap.stickerSuggestionAdapter.addStickers(stickers);
     } else {
