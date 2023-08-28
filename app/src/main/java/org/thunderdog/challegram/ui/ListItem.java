@@ -170,6 +170,7 @@ public class ListItem {
   private final int checkId;
   private int flags;
   private long longId;
+  private String highlight;
 
   private @Nullable String[] sliderValues;
   private int sliderValue;
@@ -413,6 +414,11 @@ public class ListItem {
     return this;
   }
 
+  public ListItem setHighlightValue (String highlight) {
+    this.highlight = highlight;
+    return this;
+  }
+
   public int decrementSelectionIndex () {
     if ((flags & FLAG_USE_SELECTION_INDEX) != 0) {
       intValue--;
@@ -509,6 +515,10 @@ public class ListItem {
 
   public int getStringResource () {
     return stringResource;
+  }
+
+  public String getHighlightValue () {
+    return highlight;
   }
 
   private int[] stringResources;

@@ -49,6 +49,7 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.EmojiStatusHelper;
+import org.thunderdog.challegram.util.text.Highlight;
 import org.thunderdog.challegram.util.text.TextColorSets;
 
 import me.vkryl.core.lambda.Destroyable;
@@ -248,9 +249,9 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
   private @Nullable Path stickerSetContour;
   private boolean useAvatarReceiver;
 
-  public void setStickerSet (@NonNull TGStickerSetInfo stickerSet) {
+  public void setStickerSet (@NonNull TGStickerSetInfo stickerSet, String highlight) {
     needPlaceholder = false;
-    titleView.setText(stickerSet.getTitle());
+    titleView.setText(Highlight.toSpannable(stickerSet.getTitle(), highlight));
     subtitleView.setText(Lang.plural(stickerSet.isMasks() ? R.string.xMasks : stickerSet.isEmoji() ? R.string.xEmoji : R.string.xStickers, stickerSet.getSize()));
     receiver.getImageReceiver(0).requestFile(stickerSet.getPreviewImage());
     receiver.getGifReceiver(0).requestFile(stickerSet.getPreviewAnimation());

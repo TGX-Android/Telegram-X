@@ -34,9 +34,10 @@ import org.thunderdog.challegram.util.text.TextMedia;
 
 import me.vkryl.core.lambda.Destroyable;
 
-public class TrendingPackHeaderView extends RelativeLayout implements Text.TextMediaListener, TGLegacyManager.EmojiLoadListener, Destroyable {
+public class TrendingPackHeaderView extends RelativeLayout {
   private final android.widget.TextView newView;
   private final NonMaterialButton button;
+  private final TextView titleView;
   private final TextView subtitleView;
   private final View premiumLockIcon;
   private final Drawable lockDrawable;
@@ -107,6 +108,25 @@ public class TrendingPackHeaderView extends RelativeLayout implements Text.TextM
       params.addRule(RelativeLayout.RIGHT_OF, R.id.btn_new);
       params.addRule(RelativeLayout.LEFT_OF, R.id.btn_addStickerSet);
     }
+    titleView = new NoScrollTextView(context);
+    titleView.setTypeface(Fonts.getRobotoMedium());
+    titleView.setTextColor(Theme.textAccentColor());
+    titleView.setGravity(Lang.gravity());
+    titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16f);
+    titleView.setSingleLine(true);
+    titleView.setEllipsize(TextUtils.TruncateAt.END);
+    titleView.setLayoutParams(params);
+
+    params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+    if (Lang.rtl()) {
+      params.leftMargin = Screen.dp(12f);
+      params.addRule(RelativeLayout.LEFT_OF, R.id.btn_new);
+      params.addRule(RelativeLayout.RIGHT_OF, R.id.btn_addStickerSet);
+    } else {
+      params.rightMargin = Screen.dp(12f);
+      params.addRule(RelativeLayout.RIGHT_OF, R.id.btn_new);
+      params.addRule(RelativeLayout.LEFT_OF, R.id.btn_addStickerSet);
+    }
 
     params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
     params.addRule(Lang.alignParent());
@@ -122,9 +142,8 @@ public class TrendingPackHeaderView extends RelativeLayout implements Text.TextM
     addView(newView);
     addView(button);
     addView(premiumLockIcon);
+    addView(titleView);
     addView(subtitleView);
-
-    TGLegacyManager.instance().addEmojiListener(this);
   }
 
   public void setButtonOnClickListener (View.OnClickListener listener) {
@@ -139,12 +158,11 @@ public class TrendingPackHeaderView extends RelativeLayout implements Text.TextM
       themeProvider.addThemeInvalidateListener(this);
       themeProvider.addThemeInvalidateListener(button);
       themeProvider.addThemeInvalidateListener(premiumLockIcon);
+      themeProvider.addThemeTextAccentColorListener(titleView);
       themeProvider.addThemeTextDecentColorListener(subtitleView);
       ViewSupport.setThemedBackground(newView, ColorId.promo, themeProvider).setCornerRadius(3f);
     }
   }
-
-  private FormattedText title;
 
   public void setStickerSetInfo (TdlibDelegate context, @Nullable TGStickerSetInfo stickerSet, @Nullable String highlight, boolean isInProgress, boolean isNew) {
     setTag(stickerSet);
@@ -160,11 +178,7 @@ public class TrendingPackHeaderView extends RelativeLayout implements Text.TextM
     premiumLockIcon.setVisibility(needLock ? VISIBLE: GONE);
     premiumLockIcon.setTag(stickerSet);
 
-
-    String t = stickerSet != null ? stickerSet.getTitle() : "";
-    title = FormattedText.valueOf(context, t, null);
-    titleHighlight = Highlight.valueOf(t, highlight);
-
+    Views.setMediumText(titleView, Highlight.toSpannable(stickerSet != null ? stickerSet.getTitle(): "", highlight));
     subtitleView.setText(stickerSet != null ? Lang.plural(stickerSet.isEmoji() ? R.string.xEmoji: R.string.xStickers, stickerSet.getFullSize()) : "");
 
     if (Views.setAlignParent(newView, Lang.rtl())) {
@@ -180,68 +194,30 @@ public class TrendingPackHeaderView extends RelativeLayout implements Text.TextM
       Views.setMargins(button, Lang.rtl() ? 0 : leftMargin, topMargin, Lang.rtl() ? leftMargin : 0, 0);
       Views.updateLayoutParams(button);
     }
-
+    RelativeLayout.LayoutParams params;
+    params = (RelativeLayout.LayoutParams) titleView.getLayoutParams();
+    if (Lang.rtl()) {
+      int leftMargin = Screen.dp(12f);
+      if (params.leftMargin != leftMargin) {
+        params.leftMargin = leftMargin;
+        params.rightMargin = 0;
+        params.addRule(RelativeLayout.LEFT_OF, R.id.btn_new);
+        params.addRule(RelativeLayout.RIGHT_OF, R.id.btn_addStickerSet);
+        Views.updateLayoutParams(titleView);
+      }
+    } else {
+      int rightMargin = Screen.dp(12f);
+      if (params.rightMargin != rightMargin) {
+        params.rightMargin = rightMargin;
+        params.leftMargin = 0;
+        params.addRule(RelativeLayout.RIGHT_OF, R.id.btn_new);
+        params.addRule(RelativeLayout.LEFT_OF, R.id.btn_addStickerSet);
+        Views.updateLayoutParams(titleView);
+      }
+    }
+    Views.setTextGravity(titleView, Lang.gravity());
     if (Views.setAlignParent(subtitleView, Lang.rtl())) {
       Views.updateLayoutParams(subtitleView);
     }
-    buildTitle();
-  }
-
-  private int titleX, titleY;
-  private Highlight titleHighlight;
-  private Text displayTitle;
-
-  @Override
-  protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
-    super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-    buildTitle();
-  }
-
-  private void buildTitle () {
-    if (title == null) return;
-
-    int isNewWidth = newView.getVisibility() == VISIBLE ? newView.getMeasuredWidth() + Screen.dp(6): 0;
-    int addButtonWidth = button.getVisibility() == VISIBLE ? button.getMeasuredWidth() + Screen.dp(12): 0;
-    int premiumLockWidth = premiumLockIcon.getVisibility() == VISIBLE ? premiumLockIcon.getMeasuredWidth() + Screen.dp(12): 0;
-
-    int width = getMeasuredWidth();
-    int avail = width - Screen.dp(24) - isNewWidth - addButtonWidth - premiumLockWidth;
-
-    this.titleX = Screen.dp(12 + 4) + isNewWidth;
-    this.titleY = getPaddingTop() + Screen.dp(2);
-    this.displayTitle = new Text.Builder(
-      title, avail,
-      Paints.robotoStyleProvider(16f),
-      TextColorSets.Regular.NORMAL,
-      this
-    ).singleLine()
-      .highlight(titleHighlight)
-      .allBold()
-      .view(this)
-      .noClickable()
-      .build();
-  }
-
-  @Override
-  protected void dispatchDraw (Canvas canvas) {
-    super.dispatchDraw(canvas);
-    if (displayTitle != null) {
-      displayTitle.draw(canvas, titleX, titleY);
-    }
-  }
-
-  @Override
-  public void onInvalidateTextMedia (Text text, @Nullable TextMedia specificMedia) {
-    invalidate();
-  }
-
-  @Override
-  public void onEmojiUpdated (boolean isPackSwitch) {
-    invalidate();
-  }
-
-  @Override
-  public void performDestroy () {
-    TGLegacyManager.instance().removeEmojiListener(this);
   }
 }

@@ -4691,6 +4691,8 @@
   <string name="xEmoji_other">%1$s emoji</string>
   <string name="xEmojiPacks_one">%1$s emoji pack</string>
   <string name="xEmojiPacks_other">%1$s emoji packs</string>
+  <string name="xStickerPacks_one">%1$s sticker pack</string>
+  <string name="xStickerPacks_other">%1$s sticker packs</string>
   <string name="AddXEmoji_one">Add %1$s emoji</string>
   <string name="AddXEmoji_other">Add %1$s emoji</string>
   <string name="RemoveXEmoji_one">Remove %1$s emoji</string>
