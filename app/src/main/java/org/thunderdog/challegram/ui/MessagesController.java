@@ -11334,15 +11334,34 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
   }
 
-  public void showEmojiSuggestions (@Nullable ArrayList<TGStickerObj> stickers, boolean isMore) {
+  private String lastFoundByEmoji;
+  private boolean needSkipMoreEmojiSuggestions;
+
+  public void showEmojiSuggestions (@Nullable ArrayList<TGStickerObj> stickers, String foundByEmoji,  boolean isMore) {
+    int[] cords = inputView.getSymbolUnderCursorPosition();
+
+    if (StringUtils.equalsOrBothEmpty(lastFoundByEmoji, foundByEmoji)) {
+      if (!isMore || needSkipMoreEmojiSuggestions) {
+        if (emojiSuggestionsWrap != null && emojiSuggestionsWrap.stickerSuggestionAdapter.hasStickers()) {
+          emojiSuggestionsWrap.setTranslationY(cords[1] - inputView.getLineHeight() + Screen.currentHeight() - getInputOffset(false) - Screen.dp(40));
+          emojiSuggestionsWrap.setArrowX(inputView.getLeft() + inputView.getPaddingLeft() + cords[0]);
+          emojiSuggestionsWrap.setStickersVisible(true);
+          canShowEmojiSuggestions = true;
+        }
+        return;
+      }
+      needSkipMoreEmojiSuggestions = true;
+    } else {
+      lastFoundByEmoji = foundByEmoji;
+      needSkipMoreEmojiSuggestions = false;
+    }
+
     if (stickers == null || stickers.isEmpty()) {
       if (!isMore && emojiSuggestionsWrap != null) {
         emojiSuggestionsWrap.setStickersVisible(false);
       }
       return;
     }
-
-    int[] cords = inputView.getSymbolUnderCursorPosition();
 
     if (emojiSuggestionsWrap == null) {
       emojiSuggestionsWrap = new StickersSuggestionsLayout(context());

@@ -49,6 +49,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkmore.Tracer;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.DiffMatchPatch;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.Receiver;
@@ -942,12 +943,13 @@ public class Views {
   public static int[] getCharacterCoordinates(TextView textView, int offset) {
     int[] coordinates = new int[2];
 
+    Editable editable = textView.getEditableText();
     Layout layout = textView.getLayout();
 
     if (layout != null) {
       int line = layout.getLineForOffset(offset);
       int lineStartOffset = layout.getLineStart(line);
-      int xPos = (int) layout.getPrimaryHorizontal(offset - lineStartOffset);
+      int xPos = (int) U.measureEmojiText(editable.subSequence(lineStartOffset, offset), layout.getPaint());
       int yPos = layout.getLineBaseline(line);
       coordinates[0] = xPos;
       coordinates[1] = yPos;

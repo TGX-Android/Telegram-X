@@ -85,7 +85,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
     void showInlineResults (ArrayList<InlineResult<?>> items, boolean isContent);
     void addInlineResults (ArrayList<InlineResult<?>> items);
     void hideInlineResults ();
-    void showInlineStickers (ArrayList<TGStickerObj> stickers, boolean isEmoji, boolean isMore);
+    void showInlineStickers (ArrayList<TGStickerObj> stickers, String foundByEmoji, boolean isEmoji, boolean isMore);
     boolean needsLinkPreview ();
     boolean showLinkPreview (@Nullable String link, @Nullable TdApi.WebPage webPage);
 
@@ -496,7 +496,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
     for (TdApi.Sticker sticker : stickers) {
       list.add(new TGStickerObj(tdlib, sticker, foundByEmoji, sticker.fullType));
     }
-    callback.showInlineStickers(list, isEmoji, isMore);
+    callback.showInlineStickers(list, foundByEmoji, isEmoji, isMore);
   }
 
   // Inline query
