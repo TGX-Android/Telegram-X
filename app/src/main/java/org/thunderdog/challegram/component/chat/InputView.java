@@ -38,7 +38,6 @@ import android.text.style.StyleSpan;
 import android.text.style.URLSpan;
 import android.util.TypedValue;
 import android.view.ActionMode;
-import android.view.ContextMenu;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -104,6 +103,7 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.CharacterStyleFilter;
 import org.thunderdog.challegram.util.ExternalEmojiFilter;
 import org.thunderdog.challegram.util.FinalNewLineFilter;
+import org.thunderdog.challegram.emoji.PreserveCustomEmojiFilter;
 import org.thunderdog.challegram.util.TextSelection;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
@@ -1505,6 +1505,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   public void setMaxCodePointCount (int maxCodePointCount) {
     if (maxCodePointCount > 0) {
       setFilters(new InputFilter[] {
+        new PreserveCustomEmojiFilter(),
         new ExternalEmojiFilter(),
         new CodePointCountFilter(maxCodePointCount),
         new EmojiFilter(this),
@@ -1513,6 +1514,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       });
     } else {
       setFilters(new InputFilter[] {
+        new PreserveCustomEmojiFilter(),
         new ExternalEmojiFilter(),
         new EmojiFilter(this),
         new CharacterStyleFilter(true),
