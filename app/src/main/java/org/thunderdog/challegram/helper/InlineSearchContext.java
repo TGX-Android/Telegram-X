@@ -193,7 +193,12 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
   // Public entry
 
   public void forceCheck () {
-    onQueryResultsChanged(currentText);
+    if (!currentText.isEmpty()) {
+      String oCurrentText = currentText;
+      CharSequence oCurrentCs = currentCs;
+      currentText = ""; currentCs = "";
+      onTextChanged(oCurrentCs, oCurrentText, lastKnownCursorPosition);
+    }
   }
 
   public void onQueryResultsChanged (String queryText) {
@@ -240,7 +245,8 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
 
       // Display stickers in case of a single emoji
       if (isCaption() || disallowInlineResults()) {
-        setCurrentMode(MODE_NONE);
+        setCurrentMode(MODE_EMOJI);
+        searchStickers(newText, false, true, null);
       } else {
         setCurrentMode(MODE_STICKERS_AND_EMOJI);
         searchStickers(newText, false, false, null);
@@ -894,7 +900,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
     if (cursorPosition >= 0) {
       CharSequence se = Emoji.instance().lastSymbolIsSingleEmoji(currentCs.subSequence(0, cursorPosition));
       String singleEmoji = se != null ? se.toString() : null;
-      if (singleEmoji != null && !isCaption() && !disallowInlineResults()) {
+      if (singleEmoji != null) {
         setCurrentMode(MODE_EMOJI);
         searchStickers(singleEmoji, false, true, null);
         return true;
