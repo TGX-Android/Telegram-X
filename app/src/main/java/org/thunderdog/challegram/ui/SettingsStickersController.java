@@ -72,7 +72,7 @@ public class SettingsStickersController extends ViewPagerController<SettingsCont
     return TITLE_STYLE_COMPACT_BIG;
   }
 
-  private ArrayList<TGStickerSetInfo> stickerSets;
+  private ArrayList<TGStickerSetInfo> cachedInstalledSets;
 
   @Override
   public void setArguments (SettingsController args) {
@@ -86,10 +86,10 @@ public class SettingsStickersController extends ViewPagerController<SettingsCont
   }
 
   private void setStickers (ArrayList<TGStickerSetInfo> stickerSets) {
-    this.stickerSets = new ArrayList<>(stickerSets.size());
+    this.cachedInstalledSets = new ArrayList<>(stickerSets.size());
     for (TGStickerSetInfo info : stickerSets) {
-      info.setBoundList(this.stickerSets);
-      this.stickerSets.add(info);
+      info.setBoundList(this.cachedInstalledSets);
+      this.cachedInstalledSets.add(info);
     }
   }
 
@@ -103,13 +103,18 @@ public class SettingsStickersController extends ViewPagerController<SettingsCont
 
   @Override
   public void onStickerSetsLoaded (ArrayList<TGStickerSetInfo> stickerSets, TdApi.StickerType type) {
+    if (!isEmoji() && type.getConstructor() != TdApi.StickerTypeRegular.CONSTRUCTOR
+      || isEmoji() && type.getConstructor() != TdApi.StickerTypeCustomEmoji.CONSTRUCTOR) {
+      return;
+    }
+
     if (getArguments() != null) {
       getArguments().removeStickerSetListener(isEmoji(), this);
     }
     setStickers(stickerSets);
     ViewController<?> c = getCachedControllerForId(R.id.controller_stickers);
     if (c != null) {
-      ((StickersController) c).setStickerSets(this.stickerSets, null);
+      ((StickersController) c).setStickerSets(this.cachedInstalledSets);
     }
   }
 
@@ -173,7 +178,7 @@ public class SettingsStickersController extends ViewPagerController<SettingsCont
     switch (position) {
       case STICKERS_POSITION: {
         StickersController c = new StickersController(this.context, this.tdlib);
-        c.setArguments(new StickersController.Args(StickersController.MODE_STICKERS, isEmoji(), false).setStickerSets(type == TYPE_STICKER ? stickerSets: null));
+        c.setArguments(new StickersController.Args(StickersController.MODE_STICKERS, isEmoji(), true).setStickerSets(cachedInstalledSets));
         c.search(searchRequest);
         return c;
       }
