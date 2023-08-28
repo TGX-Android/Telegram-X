@@ -8153,7 +8153,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     context().updateHackyOverlaysPositions();
     if (emojiSuggestionsWrap != null) {
       int[] cords = inputView.getSymbolUnderCursorPosition();
-      emojiSuggestionsWrap.setTranslationY(cords[1] - inputView.getLineHeight() + Screen.currentHeight() - getInputOffset(false) - Screen.dp(40));
+      emojiSuggestionsWrap.setTranslationY(cords[1] - inputView.getLineHeight() + Screen.currentHeight() - getInputOffset(true) - Screen.dp(40));
     }
     manager.onViewportMeasure();
   }
@@ -11353,7 +11353,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (StringUtils.equalsOrBothEmpty(lastFoundByEmoji, foundByEmoji)) {
       if (!isMore || needSkipMoreEmojiSuggestions) {
         if (emojiSuggestionsWrap != null && emojiSuggestionsWrap.stickerSuggestionAdapter.hasStickers()) {
-          emojiSuggestionsWrap.setTranslationY(cords[1] - inputView.getLineHeight() + Screen.currentHeight() - getInputOffset(false) - Screen.dp(40));
+          emojiSuggestionsWrap.setTranslationY(cords[1] - inputView.getLineHeight() + Screen.currentHeight() - getInputOffset(true) - Screen.dp(40));
           emojiSuggestionsWrap.setArrowX(inputView.getLeft() + inputView.getPaddingLeft() + cords[0]);
           emojiSuggestionsWrap.setStickersVisible(true);
           canShowEmojiSuggestions = true;
@@ -11386,7 +11386,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       emojiSuggestionsWrap.stickerSuggestionAdapter.setStickers(stickers);
     }
 
-    emojiSuggestionsWrap.setTranslationY(cords[1] - inputView.getLineHeight() + Screen.currentHeight() - getInputOffset(false) - Screen.dp(40));
+    emojiSuggestionsWrap.setTranslationY(cords[1] - inputView.getLineHeight() + Screen.currentHeight() - getInputOffset(true) - Screen.dp(40));
     emojiSuggestionsWrap.setArrowX(inputView.getLeft() + inputView.getPaddingLeft() + cords[0]);
     emojiSuggestionsWrap.setStickersVisible(true);
     canShowEmojiSuggestions = true;
