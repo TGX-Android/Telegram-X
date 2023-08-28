@@ -134,7 +134,7 @@ public class StickersController extends RecyclerViewController<StickersControlle
         } else {
           return;
         }
-        group.setStickerSet(stickerSet);
+        group.setStickerSet(stickerSet, null);
         if (isArchived) {
           NonMaterialButton button = group.getButton();
           if (button != null) {
@@ -474,6 +474,11 @@ public class StickersController extends RecyclerViewController<StickersControlle
         break;
       }
     }
+  }
+
+  @UiThread
+  public void setStickerSets (ArrayList<TGStickerSetInfo> stickerSets) {
+    setStickerSets(stickerSets, null);
   }
 
   @UiThread
