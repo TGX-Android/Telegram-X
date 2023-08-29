@@ -131,6 +131,7 @@ import org.thunderdog.challegram.widget.DragDropLayout;
 import org.thunderdog.challegram.widget.ForceTouchView;
 import org.thunderdog.challegram.widget.NetworkStatusBarView;
 import org.thunderdog.challegram.widget.PopupLayout;
+import org.thunderdog.challegram.widget.StickersSuggestionsLayout;
 
 import java.lang.ref.Reference;
 import java.util.ArrayList;
@@ -1957,9 +1958,13 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
   // Inline results
 
+  private StickersSuggestionsLayout emojiSuggestionsWrap;
   private InlineResultsWrap inlineResultsView;
 
   public void updateHackyOverlaysPositions () {
+    if (emojiSuggestionsWrap != null && emojiSuggestionsWrap.getParent() != null) {
+      emojiSuggestionsWrap.updatePosition(true);
+    }
     if (inlineResultsView != null && inlineResultsView.getParent() != null) {
       inlineResultsView.updatePosition(true);
     }
@@ -2016,6 +2021,43 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   @Nullable
   public InlineResultsWrap getInlineResultsView () {
     return inlineResultsView;
+  }
+
+  public void setEmojiSuggestions (MessagesController context, @Nullable ArrayList<TGStickerObj> stickers, @Nullable RecyclerView.OnScrollListener scrollCallback, StickersSuggestionsLayout.Delegate choosingDelegate) {
+    if (emojiSuggestionsWrap == null) {
+      emojiSuggestionsWrap = new StickersSuggestionsLayout(context.context());
+      emojiSuggestionsWrap.setId(R.id.view_customEmojiSuggestions);
+      emojiSuggestionsWrap.init(context, stickers, true);
+      emojiSuggestionsWrap.setChoosingDelegate(choosingDelegate);
+      emojiSuggestionsWrap.setOnScrollListener(scrollCallback);
+    }
+    emojiSuggestionsWrap.stickerSuggestionAdapter.setStickers(stickers);
+  }
+
+  public void addEmojiSuggestions (ArrayList<TGStickerObj> stickers) {
+    if (emojiSuggestionsWrap != null && stickers != null && !stickers.isEmpty()) {
+      emojiSuggestionsWrap.stickerSuggestionAdapter.addStickers(stickers);
+    }
+  }
+
+  public void setEmojiSuggestionsVisible (boolean visible) {
+    if (emojiSuggestionsWrap != null) {
+      emojiSuggestionsWrap.updatePosition(false);
+      emojiSuggestionsWrap.setStickersVisible(visible);
+    }
+  }
+
+  public boolean hasEmojiSuggestions () {
+    return emojiSuggestionsWrap != null && emojiSuggestionsWrap.stickerSuggestionAdapter.hasStickers();
+  }
+
+  public boolean isEmojiSuggestionsVisible () {
+    return emojiSuggestionsWrap != null && emojiSuggestionsWrap.isStickersVisible();
+  }
+
+  @Nullable
+  public StickersSuggestionsLayout getEmojiSuggestionsView () {
+    return emojiSuggestionsWrap;
   }
 
   // etc

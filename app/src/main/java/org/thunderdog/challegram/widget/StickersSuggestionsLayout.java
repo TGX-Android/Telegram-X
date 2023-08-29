@@ -19,10 +19,13 @@ import org.thunderdog.challegram.component.chat.StickerSuggestionAdapter;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
+import org.thunderdog.challegram.navigation.NavigationController;
+import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.EmojiMediaType;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.MessagesController;
 
 import java.util.ArrayList;
@@ -43,10 +46,8 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
   private MessagesController parent;
   private FactorAnimator stickersAnimator;
   private Delegate delegate;
-  private ViewGroup contentView;
   private boolean choosingSuggestionSent;
   private boolean areStickersVisible;
-  private boolean needAddToRoot;
   private boolean isEmoji;
 
   public interface Delegate {
@@ -79,11 +80,9 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
     addView(stickerSuggestionArrowView);
   }
 
-  public void init (@NonNull MessagesController parent, ViewGroup contentView, @Nullable ArrayList<TGStickerObj> stickers, boolean isEmoji, boolean needAddToRoot) {
-    this.contentView = contentView;
+  public void init (@NonNull MessagesController parent, @Nullable ArrayList<TGStickerObj> stickers, boolean isEmoji) {
     this.parent = parent;
     this.isEmoji = isEmoji;
-    this.needAddToRoot = needAddToRoot;
     this.stickerSuggestionAdapter = new StickerSuggestionAdapter(parent, parent, manager, parent, isEmoji) {
       @Override
       public void onStickerPreviewOpened (StickerSmallView view, TGStickerObj sticker) {
@@ -108,7 +107,6 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
         }
       }
     };
-    this.stickerSuggestionAdapter.setStickers(stickers);
     this.stickerSuggestionsView.setAdapter(stickerSuggestionAdapter);
 
     parent.addThemeSpecialFilterListener(stickerSuggestionArrowView, ColorId.overlayFilling);
@@ -183,6 +181,9 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
   public void setStickersVisible (boolean areVisible) {
     if (this.areStickersVisible != areVisible) {
       this.areStickersVisible = areVisible;
+      if (areVisible) {
+        updatePosition(true);
+      }
       if (choosingSuggestionSent) {
         if (!areVisible) {
           delegate.notifyChoosingEmoji(isEmoji ? EmojiMediaType.EMOJI: EmojiMediaType.STICKER, false);
@@ -191,11 +192,7 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
       }
       boolean onLayout = getParent() == null && areVisible;
       if (onLayout) {
-        if (needAddToRoot) {
-          parent.context().addToRoot(this, false);
-        } else {
-          contentView.addView(this);
-        }
+        parent.context().addToRoot(this, false);
       }
       animateStickersFactor(areVisible ? 1f : 0f, onLayout);
     }
@@ -207,11 +204,7 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
 
   private void onStickersDisappeared () {
     // stickerSuggestionAdapter.setStickers(null); // todo: clear stickers ??
-    if (needAddToRoot) {
-      parent.context().removeFromRoot(this);
-    } else {
-      contentView.removeView(this);
-    }
+    parent.context().removeFromRoot(this);
   }
 
   @Override
@@ -229,4 +222,32 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
       }
     }
   }
+
+  @Override
+  protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
+    super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+    updatePosition(true);
+  }
+
+  public void updatePosition (boolean needTranslate) {
+    ViewController<?> c = UI.getCurrentStackItem(getContext());
+    float tx = 0;
+    if (c instanceof MessagesController) {
+      int[] cords = ((MessagesController) c).getInputCursorOffset();
+      setArrowX(cords[0]);
+      setTranslationY(cords[1]);
+      tx -= ((MessagesController) c).getPagerScrollOffsetInPixels();
+    } else {
+      setTranslationY(0);
+    }
+    NavigationController navigation = UI.getContext(getContext()).navigation();
+    if (needTranslate && navigation != null && navigation.isAnimating()) {
+      float translate = navigation.getHorizontalTranslate();
+      if (c instanceof MessagesController) {
+        tx = translate;
+      }
+    }
+    setTranslationX(tx);
+  }
+
 }

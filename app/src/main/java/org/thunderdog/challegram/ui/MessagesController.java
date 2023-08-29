@@ -243,7 +243,6 @@ import org.thunderdog.challegram.widget.ProgressComponentView;
 import org.thunderdog.challegram.widget.RippleRevealView;
 import org.thunderdog.challegram.widget.SendButton;
 import org.thunderdog.challegram.widget.SeparatorView;
-import org.thunderdog.challegram.widget.StickersSuggestionsLayout;
 import org.thunderdog.challegram.widget.TextFormattingLayout;
 import org.thunderdog.challegram.widget.TripleAvatarView;
 import org.thunderdog.challegram.widget.ViewPager;
@@ -570,15 +569,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       UI.setSoftInputMode(UI.getContext(context), Config.DEFAULT_WINDOW_PARAMS);
     }
 
-    contentView = new MessagesLayout(context) {
-      @Override
-      public void setTranslationX (float translationX) {
-        super.setTranslationX(translationX);
-        if (emojiSuggestionsWrap != null) {
-          emojiSuggestionsWrap.setTranslationX(translationX);
-        }
-      }
-    };
+    contentView = new MessagesLayout(context);
     contentView.setController(this);
     contentView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
@@ -2925,6 +2916,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private void checkInlineResults () {
     context().setInlineResultsHidden(this, !isFocused() || pagerScrollOffset >= 1f);
+    context().setEmojiSuggestionsVisible(isFocused() && !(pagerScrollOffset >= 1f) && canShowEmojiSuggestions);
   }
 
   public void checkRoundVideo () {
@@ -3258,19 +3250,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
 
     int baseY = Views.getLocationInWindow(navigationController.getValue())[1];
-
-    if (emojiSuggestionsWrap != null && emojiSuggestionsWrap.isStickersVisible()) {
-      int locationY = Views.getLocationInWindow(emojiSuggestionsWrap)[1];
-      locationY -= baseY;
-      if (y >= locationY && y < locationY + emojiSuggestionsWrap.getMeasuredHeight()) {
-        int i = ((LinearLayoutManager)  emojiSuggestionsWrap.stickerSuggestionsView.getLayoutManager()).findFirstVisibleItemPosition();
-        if (i == 0) {
-          View view =  emojiSuggestionsWrap.stickerSuggestionsView.getLayoutManager().findViewByPosition(0);
-          return view == null || view.getLeft() >= 0;
-        }
-        return false;
-      }
-    }
 
     /*if (areInlineResultsVisible()) {
       return false;
@@ -8151,11 +8130,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   public final void onMessagesFrameChanged () {
     context().updateHackyOverlaysPositions();
-    if (emojiSuggestionsWrap != null) {
-      int[] cords = inputView.getSymbolUnderCursorPosition();
-      emojiSuggestionsWrap.setTranslationY(cords[1] - inputView.getLineHeight() + Screen.currentHeight() - getInputOffset(true) - Screen.dp(40));
-    }
     manager.onViewportMeasure();
+  }
+
+  public int[] getInputCursorOffset () {
+    int[] cords = inputView.getSymbolUnderCursorPosition();
+    cords[0] = cords[0] + inputView.getLeft() + inputView.getPaddingLeft();
+    cords[1] = cords[1] - inputView.getLineHeight() + Screen.currentHeight() - getInputOffset(true) - Screen.dp(40);
+    return cords;
   }
 
   public int getInputOffset (boolean excludeTranslation) {
@@ -11317,7 +11299,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   /* * */
 
-  private @Nullable StickersSuggestionsLayout emojiSuggestionsWrap;
+
   private ArrayList<InlineResult<?>> stickerSuggestionItems;
   private boolean canShowEmojiSuggestions;
   private boolean isStickerSuggestionsTemporarilyHidden;
@@ -11348,14 +11330,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private boolean needSkipMoreEmojiSuggestions;
 
   public void showEmojiSuggestions (@Nullable ArrayList<TGStickerObj> stickers, String foundByEmoji,  boolean isMore) {
-    int[] cords = inputView.getSymbolUnderCursorPosition();
-
     if (StringUtils.equalsOrBothEmpty(lastFoundByEmoji, foundByEmoji)) {
       if (!isMore || needSkipMoreEmojiSuggestions) {
-        if (emojiSuggestionsWrap != null && emojiSuggestionsWrap.stickerSuggestionAdapter.hasStickers()) {
-          emojiSuggestionsWrap.setTranslationY(cords[1] - inputView.getLineHeight() + Screen.currentHeight() - getInputOffset(true) - Screen.dp(40));
-          emojiSuggestionsWrap.setArrowX(inputView.getLeft() + inputView.getPaddingLeft() + cords[0]);
-          emojiSuggestionsWrap.setStickersVisible(true);
+        if (context.hasEmojiSuggestions()) {
+          if (isFocused() && pagerScrollOffset < 1f) {
+            context.setEmojiSuggestionsVisible(true);
+          }
           canShowEmojiSuggestions = true;
         }
         return;
@@ -11367,28 +11347,22 @@ public class MessagesController extends ViewController<MessagesController.Argume
     }
 
     if (stickers == null || stickers.isEmpty()) {
-      if (!isMore && emojiSuggestionsWrap != null) {
-        emojiSuggestionsWrap.setStickersVisible(false);
+      if (!isMore) {
+        context().setEmojiSuggestionsVisible(false);
+        canShowEmojiSuggestions = false;
       }
       return;
     }
 
-    if (emojiSuggestionsWrap == null) {
-      emojiSuggestionsWrap = new StickersSuggestionsLayout(context());
-      emojiSuggestionsWrap.setId(R.id.view_customEmojiSuggestions);
-      emojiSuggestionsWrap.init(this, contentView, stickers, true, true);
-      emojiSuggestionsWrap.setChoosingDelegate(this::notifyChoosingEmoji);
-      emojiSuggestionsWrap.setOnScrollListener(getInlineEmojiStickerScrollListener());
-      emojiSuggestionsWrap.setTranslationX(contentView.getTranslationX());
-    } else if (isMore && emojiSuggestionsWrap.stickerSuggestionAdapter.hasStickers() && emojiSuggestionsWrap.isStickersVisible() ) {
-      emojiSuggestionsWrap.stickerSuggestionAdapter.addStickers(stickers);
+    if (isMore && context.hasEmojiSuggestions() && context.isEmojiSuggestionsVisible()) {
+      context.addEmojiSuggestions(stickers);
     } else {
-      emojiSuggestionsWrap.stickerSuggestionAdapter.setStickers(stickers);
+      context.setEmojiSuggestions(this, stickers, getInlineEmojiStickerScrollListener(), this::notifyChoosingEmoji);
+    }
+    if (isFocused() && pagerScrollOffset < 1f) {
+      context.setEmojiSuggestionsVisible(true);
     }
 
-    emojiSuggestionsWrap.setTranslationY(cords[1] - inputView.getLineHeight() + Screen.currentHeight() - getInputOffset(true) - Screen.dp(40));
-    emojiSuggestionsWrap.setArrowX(inputView.getLeft() + inputView.getPaddingLeft() + cords[0]);
-    emojiSuggestionsWrap.setStickersVisible(true);
     canShowEmojiSuggestions = true;
   }
 
@@ -11405,15 +11379,13 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private void showEmojiSuggestionsIfTemporarilyHidden () {
-    if (emojiSuggestionsWrap != null && canShowEmojiSuggestions) {
-      emojiSuggestionsWrap.setStickersVisible(true);
+    if (canShowEmojiSuggestions) {
+      context().setEmojiSuggestionsVisible(true);
     }
   }
 
   private void hideEmojiSuggestionsTemporarily () {
-    if (emojiSuggestionsWrap != null) {
-      emojiSuggestionsWrap.setStickersVisible(false);
-    }
+    context().setEmojiSuggestionsVisible(false);
   }
 
   private void hideEmojiAndStickerSuggestionsFinally () {
@@ -11536,7 +11508,8 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   @Override
   public int getStickerSuggestionsTop (boolean isEmoji) {
-    return Views.getLocationInWindow(emojiSuggestionsWrap)[1];
+    View v = context().getEmojiSuggestionsView();
+    return v != null ? Views.getLocationInWindow(v)[1]: 0;
   }
 
   @Override

@@ -354,7 +354,7 @@ public class StickersListController extends ViewController<StickersListControlle
     recyclerView.setItemAnimator(null);
     recyclerView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? View.OVER_SCROLL_IF_CONTENT_SCROLLS : View.OVER_SCROLL_NEVER);
     recyclerView.setLayoutManager(manager = new RtlGridLayoutManager(context, spanCount).setAlignOnly(true));
-    recyclerView.setAdapter(adapter = new MediaStickersAdapter(this, this, false, this, offsetProvider, false, null) {
+    recyclerView.setAdapter(adapter = new MediaStickersAdapter(this, this, false, this, offsetProvider, true, null) {
       @Override
       protected void onToggleCollapseRecentStickers (TextView collapseView, TGStickerSetInfo recentSet) {
         int existingIndex = getStickerSetSectionIndexById(recentSet.getId());

@@ -809,13 +809,11 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
       textView.setTypeface(Fonts.getRobotoRegular());
       textView.setId(R.id.btn_toggleCollapseRecentStickers);
       textView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER_VERTICAL));
-      //textView.setBackgroundColor(0xFFFF0000);
 
       imageView = new ImageView(context);
       imageView.setScaleType(ImageView.ScaleType.CENTER);
       imageView.setImageResource(R.drawable.baseline_small_arrow_down_18);
       imageView.setColorFilter(new PorterDuffColorFilter(Theme.iconColor(), PorterDuff.Mode.SRC_IN));
-      //imageView.setBackgroundColor(0xFF00FF00);
       imageView.setLayoutParams(LayoutHelper.createLinear(18, 18, 0, Gravity.NO_GRAVITY, 0, 0, 4, 0));
 
       separatorView = new SeparatorView(context);
@@ -827,10 +825,10 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
       linearLayout.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER));
       linearLayout.addView(imageView);
       linearLayout.addView(textView);
-      linearLayout.setPadding(Screen.dp(8), 0, Screen.dp(8), 0);
+      linearLayout.setPadding(Screen.dp(24), Screen.dp(3), Screen.dp(24), Screen.dp(3));
       ViewSupport.setThemedBackground(linearLayout, ColorId.filling);
 
-      setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(18f)));
+      setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(24f)));
       addView(separatorView);
       addView(linearLayout);
     }
@@ -842,14 +840,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
         themeProvider.addThemeSpecialFilterListener(imageView, ColorId.icon);
         themeProvider.addThemeInvalidateListener(separatorView);
       }
-      textView.setOnClickListener(onClickListener);
+      linearLayout.setOnClickListener(v -> onClickListener.onClick(textView));
     }
-/*
-    @Override
-    protected void dispatchDraw (Canvas canvas) {
-      float y = getMeasuredHeight() / 2f;
-      canvas.drawRect(0, y, getMeasuredWidth(), y + 1, Paints.fillingPaint(Theme.separatorColor()));
-      super.dispatchDraw(canvas);
-    }*/
   }
 }
