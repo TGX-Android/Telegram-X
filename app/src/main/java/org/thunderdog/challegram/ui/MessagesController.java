@@ -11404,7 +11404,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       @Override
       public boolean onStickerClick (StickerSmallView view, View clickView, TGStickerObj sticker, boolean isMenuClick, TdApi.MessageSendOptions sendOptions) {
         hideEmojiAndStickerSuggestionsFinally();
-        return MessagesController.this.onSendSticker(view, sticker, sendOptions);
+        return onSendStickerSuggestion(clickView, sticker, sendOptions);
       }
 
       @Override
