@@ -301,6 +301,9 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
 
   @Override
   protected void onDraw (Canvas c) {
+    final boolean needRepainting = stickerSetInfo != null && stickerSetInfo.isNeedRepaintingPreview();
+    int saveCount = -1;
+
     if (useAvatarReceiver) {
       AvatarReceiver avatarReceiver = receiver.getAvatarReceiver(0);
       if (avatarReceiver.needPlaceholder()) {
@@ -309,12 +312,21 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
       avatarReceiver.draw(c);
     } else if (stickerSetInfo != null && stickerSetInfo.isAnimated()) {
       GifReceiver gifReceiver = receiver.getGifReceiver(0);
+      if (needRepainting) {
+        saveCount = Views.saveRepainting(c, gifReceiver);
+      }
       if (gifReceiver.needPlaceholder()) {
         gifReceiver.drawPlaceholderContour(c, stickerSetContour);
       }
       gifReceiver.draw(c);
+      if (needRepainting) {
+        Views.restoreRepainting(c, gifReceiver, saveCount, Theme.getColor(ColorId.iconActive));
+      }
     } else {
       ImageReceiver imageReceiver = receiver.getImageReceiver(0);
+      if (needRepainting) {
+        saveCount = Views.saveRepainting(c, imageReceiver);
+      }
       if (imageReceiver.needPlaceholder()) {
         if (stickerSetContour != null) {
           imageReceiver.drawPlaceholderContour(c, stickerSetContour);
@@ -323,6 +335,9 @@ public class DoubleTextView extends RelativeLayout implements RtlCheckListener, 
         }
       }
       imageReceiver.draw(c);
+      if (needRepainting) {
+        Views.restoreRepainting(c, imageReceiver, saveCount, Theme.getColor(ColorId.iconActive));
+      }
     }
     if (stickerSetInfo != null && stickerSetInfo.needSeparatorOnTop()) {
       int height = Math.max(1, Screen.dp(.5f));

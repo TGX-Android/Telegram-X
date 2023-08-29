@@ -42,6 +42,7 @@ import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.tool.Views;
 
 import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.FactorAnimator;
@@ -199,11 +200,18 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     contour = sticker != null ? sticker.getContour(Math.min(imageReceiver.getWidth(), imageReceiver.getHeight())) : null;
   }
 
+  private @ColorId int repaintingColorId = ColorId.iconActive;
+
+  public void setRepaintingColorId (@ColorId int repaintingColorId) {
+    this.repaintingColorId = repaintingColorId;
+  }
+
   @Override
   protected void onDraw (Canvas c) {
     float originalScale = sticker != null ? sticker.getDisplayScale() : 1f;
     boolean saved = originalScale != 1f || factor != 0f;
     boolean repainting = sticker != null && sticker.isNeedRepainting();
+    int saveCount = -1;
     int cx = imageReceiver.centerX();
     int cy = imageReceiver.centerY();
     if (saved) {
@@ -212,13 +220,7 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
       c.scale(scale, scale, cx, cy);
     }
     if (repainting) {
-      c.saveLayerAlpha(
-        cx - imageReceiver.getWidth(),
-        cy - imageReceiver.getHeight(),
-        cx + imageReceiver.getWidth(),
-        cy + imageReceiver.getHeight(),
-        255, Canvas.ALL_SAVE_FLAG
-      );
+      saveCount = Views.saveRepainting(c, imageReceiver);
     }
     if (premiumStarDrawable != null) {
       Drawables.drawCentered(c, premiumStarDrawable, cx, cy, null);
@@ -240,14 +242,7 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
       imageReceiver.drawPlaceholderContour(c, contour);
     }
     if (repainting) {
-      c.drawRect(
-        cx - imageReceiver.getWidth(),
-        cy - imageReceiver.getHeight(),
-        cx + imageReceiver.getWidth(),
-        cy + imageReceiver.getHeight(),
-        Paints.getSrcInPaint(Theme.getColor(ColorId.iconActive))
-      );
-      c.restore();
+      Views.restoreRepainting(c, imageReceiver, saveCount, Theme.getColor(repaintingColorId));
     }
     if (saved) {
       c.restore();

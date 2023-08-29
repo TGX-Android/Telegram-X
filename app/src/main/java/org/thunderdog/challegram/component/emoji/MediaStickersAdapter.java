@@ -114,7 +114,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
 
   @NonNull @Override
   public StickerHolder onCreateViewHolder (@NonNull ViewGroup parent, int viewType) {
-    return StickerHolder.create(context.context(), context.tdlib(), viewType, isTrending, this, classicEmojiClickListener, callback, isBig, themeProvider, offsetProvider, emojiToneHelper);
+    return StickerHolder.create(context.context(), context.tdlib(), viewType, isTrending, this, classicEmojiClickListener, callback, isBig, themeProvider, offsetProvider, emojiToneHelper, repaintingColorId);
   }
 
   public int measureScrollTop (int position, int spanCount, int sectionIndex, ArrayList<TGStickerSetInfo> sections, boolean haveRecentsTitle) {
@@ -611,6 +611,12 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
     return position >= 0 && position < items.size() ? items.get(position).highlight : null;
   }
 
+  private @ColorId int repaintingColorId = ColorId.iconActive;
+
+  public void setRepaintingColorId (@ColorId int repaintingColorId) {
+    this.repaintingColorId = repaintingColorId;
+  }
+
   public static class StickerHolder extends RecyclerView.ViewHolder {
     public static final int TYPE_STICKER = 0;
     public static final int TYPE_EMPTY = 1;
@@ -633,13 +639,14 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
       super(itemView);
     }
 
-    public static @NonNull StickerHolder create (Context context, Tdlib tdlib, int viewType, boolean isTrending, View.OnClickListener onClickListener, View.OnClickListener classicEmojiClickListener, StickerSmallView.StickerMovementCallback callback, boolean isBig, @Nullable ViewController<?> themeProvider, @Nullable OffsetProvider offsetProvider, @Nullable EmojiToneHelper toneHelper) {
+    public static @NonNull StickerHolder create (Context context, Tdlib tdlib, int viewType, boolean isTrending, View.OnClickListener onClickListener, View.OnClickListener classicEmojiClickListener, StickerSmallView.StickerMovementCallback callback, boolean isBig, @Nullable ViewController<?> themeProvider, @Nullable OffsetProvider offsetProvider, @Nullable EmojiToneHelper toneHelper, @ColorId int repaintingColorId) {
       switch (viewType) {
         case TYPE_EMOJI_STATUS_DEFAULT:
         case TYPE_STICKER: {
           StickerSmallView view;
           view = new StickerSmallView(context);
           view.init(tdlib);
+          view.setRepaintingColorId(repaintingColorId);
           if (isTrending) {
             view.setIsTrending();
           }

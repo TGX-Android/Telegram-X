@@ -38,6 +38,7 @@ import org.thunderdog.challegram.emoji.RecentEmoji;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.StickersListener;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.EmojiData;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
@@ -105,6 +106,7 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
     toneHelper.setOnCustomEmojiSelectedListener(this::onCustomEmojiSelected);
     adapter = new MediaStickersAdapter(this, emojiController, false, this, null, false,  toneHelper);
     adapter.setClassicEmojiClickListener(this::onClassicEmojiClick);
+    adapter.setRepaintingColorId(ColorId.text);
 
     this.useDarkMode = getArgumentsStrict().useDarkMode();
 

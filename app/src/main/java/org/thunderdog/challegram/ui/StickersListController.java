@@ -423,6 +423,7 @@ public class StickersListController extends ViewController<StickersListControlle
           || type == MediaStickersAdapter.StickerHolder.TYPE_SEPARATOR ? spanCount : 1;
       }
     });
+    adapter.setRepaintingColorId(ColorId.text);
     adapter.setManager(manager);
     adapter.setIsBig();
 
