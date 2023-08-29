@@ -11516,4 +11516,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
   public int getStickerSuggestionPreviewViewportHeight () {
     return HeaderView.getSize(true) + messagesView.getMeasuredHeight();
   }
+
+  @Override
+  public long getCurrentChatId () {
+    return getChatId();
+  }
 }

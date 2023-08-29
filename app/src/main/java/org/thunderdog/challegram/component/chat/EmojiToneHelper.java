@@ -60,6 +60,7 @@ import me.vkryl.core.lambda.RunnableData;
 
 public class EmojiToneHelper implements FactorAnimator.Target {
   public interface Delegate {
+    default long getCurrentChatId () { return 0; };
     int[] displayBaseViewWithAnchor (EmojiToneHelper context, View anchorView, View viewToDisplay, int viewWidth, int viewHeight, int horizontalMargin, int horizontalOffset, int verticalOffset);
     void removeView (EmojiToneHelper context, View displayedView);
   }
@@ -485,7 +486,24 @@ public class EmojiToneHelper implements FactorAnimator.Target {
 
   private final HashMap<String, ArrayList<TGStickerObj>> emojiSuggestionsCache = new HashMap<>();
 
+  public void invalidateSuggestionsCache () {
+    emojiSuggestionsCache.clear();
+  }
+
+  private boolean isInSelfChat () {
+    long chatId = delegate != null ? delegate.getCurrentChatId(): 0;
+    return chatId != 0 && tdlib.isSelfChat(chatId);
+  }
+
+  private boolean canSearchCustomEmoji () {
+    return tdlib.account().isPremium() || isInSelfChat();
+  }
+
   public boolean getSuggestionsFromCacheOrRequest (String emoji) {
+    if (!canSearchCustomEmoji()) {
+      return false;
+    }
+
     if (emojiSuggestionsCache.containsKey(emoji)) {
       ArrayList<TGStickerObj> stickers = emojiSuggestionsCache.get(emoji);
       return stickers == null || stickers.size() > 0;

@@ -694,6 +694,7 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
   public void onInstalledStickerSetsUpdated (final long[] stickerSetIds, TdApi.StickerType stickerType) {
     if (stickerType.getConstructor() == TdApi.StickerTypeCustomEmoji.CONSTRUCTOR) {
       runOnUiThreadOptional(() -> {
+        toneHelper.invalidateSuggestionsCache();
         if (!loadingStickers) {
           changeStickers(stickerSetIds);
         }

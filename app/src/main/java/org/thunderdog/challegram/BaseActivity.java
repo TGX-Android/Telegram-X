@@ -2028,9 +2028,9 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       emojiSuggestionsWrap = new StickersSuggestionsLayout(context.context());
       emojiSuggestionsWrap.setId(R.id.view_customEmojiSuggestions);
       emojiSuggestionsWrap.init(context, stickers, true);
-      emojiSuggestionsWrap.setChoosingDelegate(choosingDelegate);
-      emojiSuggestionsWrap.setOnScrollListener(scrollCallback);
     }
+    emojiSuggestionsWrap.setChoosingDelegate(choosingDelegate);
+    emojiSuggestionsWrap.setOnScrollListener(scrollCallback);
     emojiSuggestionsWrap.stickerSuggestionAdapter.setStickers(stickers);
   }
 

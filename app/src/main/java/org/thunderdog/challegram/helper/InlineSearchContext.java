@@ -243,14 +243,20 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
       probablyHasWebPagePreview = false;
       clearInlineMode();
 
-      // Display stickers in case of a single emoji
+      final boolean canSearchCustomEmoji = canSearchCustomEmoji();
       if (isCaption() || disallowInlineResults()) {
-        setCurrentMode(MODE_EMOJI);
-        searchStickers(newText, false, true, null);
+        if (canSearchCustomEmoji) {
+          setCurrentMode(MODE_EMOJI);
+          searchStickers(newText, false, true, null);
+        } else {
+          setCurrentMode(MODE_NONE);
+        }
       } else {
         setCurrentMode(MODE_STICKERS_AND_EMOJI);
         searchStickers(newText, false, false, null);
-        searchStickers(newText, false, true, null);
+        if (canSearchCustomEmoji) {
+          searchStickers(newText, false, true, null);
+        }
       }
     } else {
       final String inlineUsername = getInlineUsername();
@@ -897,7 +903,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
     this.canHandlePositionChange = true;
     this.lastHandledPosition = cursorPosition;
 
-    if (cursorPosition >= 0) {
+    if (cursorPosition >= 0 && canSearchCustomEmoji()) {
       CharSequence se = Emoji.instance().lastSymbolIsSingleEmoji(currentCs.subSequence(0, cursorPosition));
       String singleEmoji = se != null ? se.toString() : null;
       if (singleEmoji != null) {
@@ -1514,5 +1520,14 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
 
   private void closeLinkPreview () {
     callback.showLinkPreview(null, null);
+  }
+
+  private boolean isInSelfChat () {
+    long chatId = callback.provideInlineSearchChatId();
+    return chatId != 0 && tdlib.isSelfChat(chatId);
+  }
+
+  private boolean canSearchCustomEmoji () {
+    return tdlib.account().isPremium() || isInSelfChat();
   }
 }
