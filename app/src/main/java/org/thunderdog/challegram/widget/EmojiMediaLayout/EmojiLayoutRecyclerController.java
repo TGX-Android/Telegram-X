@@ -620,6 +620,9 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> i
 
   @Override
   public void addEmoji (int newIndex, RecentEmoji emoji) {
+    MediaStickersAdapter.StickerItem item = processRecentEmojiItem(emoji);
+    if (item == null) return;
+
     if (emojiLayout != null) {
       emojiLayout.setIgnoreMovement(true);
     }
@@ -633,7 +636,7 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> i
         info.setStartIndex(info.getStartIndex() + 1);
       }
     }
-    adapter.getItems().add(newIndex, processRecentEmojiItem(emoji));
+    adapter.getItems().add(newIndex, item);
     adapter.notifyItemInserted(newIndex);
     if (emoji.isCustomEmoji()) {
       tdlib.emoji().performPostponedRequests();
@@ -714,13 +717,19 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> i
     ArrayList<RecentEmoji> recents = Emoji.instance().getRecents();
     ArrayList<MediaStickersAdapter.StickerItem> items = new ArrayList<>(recents.size());
     for (RecentEmoji recentEmoji : recents) {
-      items.add(processRecentEmojiItem(recentEmoji));
+      MediaStickersAdapter.StickerItem item = processRecentEmojiItem(recentEmoji);
+      if (item == null) {
+        continue;
+      }
+      items.add(item);
     }
     tdlib.emoji().performPostponedRequests();
     return items;
   }
 
+  @Nullable
   private MediaStickersAdapter.StickerItem processRecentEmojiItem (RecentEmoji recentEmoji) {
+    if (recentEmoji.isBroken()) return null;
     if (recentEmoji.isCustomEmoji()) {
       final TdlibEmojiManager.Entry entry = tdlib.emoji().findOrPostponeRequest(recentEmoji.customEmojiId, this);
       final TGStickerObj stickerObj;

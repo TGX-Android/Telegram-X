@@ -903,7 +903,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
     this.canHandlePositionChange = true;
     this.lastHandledPosition = cursorPosition;
 
-    if (cursorPosition >= 0 && canSearchCustomEmoji()) {
+    if (cursorPosition > 0 && canSearchCustomEmoji() && cursorPosition <= currentCs.length()) {
       CharSequence se = Emoji.instance().lastSymbolIsSingleEmoji(currentCs.subSequence(0, cursorPosition));
       String singleEmoji = se != null ? se.toString() : null;
       if (singleEmoji != null) {

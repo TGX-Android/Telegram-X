@@ -17,12 +17,13 @@ package org.thunderdog.challegram.emoji;
 public class RecentEmoji {
   public final String emoji;
   public final RecentInfo info;
+  public final boolean isCustomEmoji;
   public final long customEmojiId;
 
   public RecentEmoji (String emoji, RecentInfo info) {
     this.emoji = emoji;
     this.info = info;
-    boolean isCustomEmoji = emoji.startsWith(Emoji.CUSTOM_EMOJI_CACHE);
+    this.isCustomEmoji = emoji.startsWith(Emoji.CUSTOM_EMOJI_CACHE);
     long customEmojiId = 0;
     if (isCustomEmoji) {
       try {
@@ -32,7 +33,11 @@ public class RecentEmoji {
     this.customEmojiId = customEmojiId;
   }
 
+  public boolean isBroken () {
+    return isCustomEmoji ? customEmojiId == 0: !Emoji.instance().isSingleEmoji(emoji);
+  }
+
   public boolean isCustomEmoji () {
-    return customEmojiId != 0;
+    return isCustomEmoji;
   }
 }

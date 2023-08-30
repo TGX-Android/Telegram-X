@@ -7788,6 +7788,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     });
   }
 
+  public final boolean isCustomEmojiReactionsAvailable () {
+    if (messageAvailableReactions == null)
+      return false;
+
+    return messageAvailableReactions.allowCustomEmoji;
+  }
+
   public final TdApi.AvailableReaction[] getMessageAvailableReactions () {
     if (messageAvailableReactions == null)
       return null;
