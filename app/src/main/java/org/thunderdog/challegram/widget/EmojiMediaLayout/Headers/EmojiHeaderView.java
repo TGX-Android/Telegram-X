@@ -99,7 +99,7 @@ public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Targe
     goToMediaPageSection.setSection(new EmojiSection(emojiLayout, 7, R.drawable.deproko_baseline_stickers_24, 0).setActiveDisabled());
     goToMediaPageSection.setForceWidth(Screen.dp(48));
     goToMediaPageSection.setId(R.id.btn_section);
-    goToMediaPageSection.setVisibility(GONE);
+    checkAllowMedia();
     if (themeProvider != null) {
       themeProvider.addThemeInvalidateListener(goToMediaPageSection);
       themeProvider.addThemeInvalidateListener(this);
@@ -113,6 +113,19 @@ public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Targe
 
     updatePaints(Theme.fillingColor());
     setSelectedObjectByPosition(1, false);
+  }
+
+  private boolean allowMedia = true;
+  private boolean mediaMustBeVisibility = false;
+
+  private void checkAllowMedia () {
+    goToMediaPageSection.setVisibility(allowMedia && mediaMustBeVisibility ? VISIBLE: GONE);
+    recyclerView.setPadding(Screen.dp(DEFAULT_PADDING), 0, Screen.dp(DEFAULT_PADDING + (allowMedia? 44: 0)), 0);
+  }
+
+  public void setAllowMedia (boolean allowMedia) {
+    this.allowMedia = allowMedia;
+    checkAllowMedia();
   }
 
   public void setSectionsOnClickListener (OnClickListener onClickListener) {
@@ -265,7 +278,8 @@ public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Targe
     hasStickers.setValue(value, animated);
     if (value) {
       recyclerView.setVisibility(VISIBLE);
-      goToMediaPageSection.setVisibility(VISIBLE);
+      mediaMustBeVisibility = true;
+      checkAllowMedia();
     } else {
       emojiHeaderViewNonPremium.setVisibility(VISIBLE);
     }
@@ -284,7 +298,8 @@ public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Targe
       emojiHeaderViewNonPremium.setVisibility(GONE);
     } else {
       recyclerView.setVisibility(GONE);
-      goToMediaPageSection.setVisibility(GONE);
+      mediaMustBeVisibility = false;
+      checkAllowMedia();
     }
   }
 
