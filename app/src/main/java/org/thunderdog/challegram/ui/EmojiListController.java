@@ -277,13 +277,13 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
 
     items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_KEYBOARD_TOP));
 
-    ArrayList<RecentEmoji> recents = Emoji.instance().getRecents();
-    if (!recents.isEmpty()) {
-      TGStickerSetInfo pack = new TGStickerSetInfo(tdlib, -1, recents.size());
+    ArrayList<MediaStickersAdapter.StickerItem> recentEmojiItems = emojiController.makeRecentEmojiItems();
+    if (!recentEmojiItems.isEmpty()) {
+      TGStickerSetInfo pack = new TGStickerSetInfo(tdlib, -1, recentEmojiItems.size());
       pack.setStartIndex(items.size());
       pack.setIsRecent();
       emojiPacks.add(pack);
-      items.addAll(emojiController.makeRecentEmojiItems());
+      items.addAll(recentEmojiItems);
     }
 
     for (int i = 0; i < EmojiData.dataColored.length; i++) {
