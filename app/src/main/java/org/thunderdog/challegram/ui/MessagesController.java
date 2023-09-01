@@ -8134,6 +8134,9 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public int[] getInputCursorOffset () {
+    if (inputView == null) {
+      return new int[]{0, 0};
+    }
     int[] cords = inputView.getSymbolUnderCursorPosition();
     cords[0] = cords[0] + inputView.getLeft() + inputView.getPaddingLeft();
     cords[1] = cords[1] - inputView.getLineHeight() + Screen.currentHeight() - getInputOffset(true) - Screen.dp(40);

@@ -238,7 +238,7 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
       setTranslationY(cords[1]);
       tx -= ((MessagesController) c).getPagerScrollOffsetInPixels();
     } else {
-      setTranslationY(0);
+      // setTranslationY(0);
     }
     NavigationController navigation = UI.getContext(getContext()).navigation();
     if (needTranslate && navigation != null && navigation.isAnimating()) {
