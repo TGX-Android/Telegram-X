@@ -138,7 +138,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
 
   public void setControllerView (StickerSmallView stickerView) {
     this.controllerView = stickerView;
-    this.repaintingColorId = stickerView.getRepaintingColorId();
+    this.repaintingColorId = stickerView != null ? stickerView.getRepaintingColorId(): ColorId.iconActive;
   }
 
   @Override
