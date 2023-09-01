@@ -824,6 +824,8 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
     @Override
     protected void onDraw (Canvas c) {
       final boolean needRepainting = currentSticker != null && currentSticker.isNeedRepainting();
+      int restoreToRepainting = -1;
+
       final boolean savedAppear = appearFactor != 1f;
       if (savedAppear) {
         final float fromScale = (float) fromWidth / (float) stickerWidth;
@@ -856,12 +858,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
       }
 
       if (needRepainting) {
-        c.saveLayerAlpha(
-          receiver.getLeft() - receiver.getWidth() / 4f,
-          receiver.getTop() - receiver.getHeight() / 4f,
-          receiver.getRight() + receiver.getWidth() / 4f,
-          receiver.getBottom() + receiver.getHeight() / 4f,
-          255, Canvas.ALL_SAVE_FLAG);
+        restoreToRepainting = Views.saveRepainting(c, receiver);
       }
 
       final boolean savedReplace = replaceFactor != 0f;
@@ -911,13 +908,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
       }
 
       if (needRepainting) {
-        c.drawRect(
-          receiver.getLeft() - receiver.getWidth() / 4f,
-          receiver.getTop() - receiver.getHeight() / 4f,
-          receiver.getRight() + receiver.getWidth() / 4f,
-          receiver.getBottom() + receiver.getHeight() / 4f,
-          Paints.getSrcInPaint(Theme.getColor(ColorId.iconActive)));
-        c.restore();
+        Views.restoreRepainting(c, receiver, restoreToRepainting, Theme.getColor(ColorId.text));
       }
 
       if (savedAppear) {
