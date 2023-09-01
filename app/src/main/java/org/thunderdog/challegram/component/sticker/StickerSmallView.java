@@ -206,6 +206,10 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     this.repaintingColorId = repaintingColorId;
   }
 
+  public int getRepaintingColorId () {
+    return repaintingColorId;
+  }
+
   @Override
   protected void onDraw (Canvas c) {
     float originalScale = sticker != null ? sticker.getDisplayScale() : 1f;

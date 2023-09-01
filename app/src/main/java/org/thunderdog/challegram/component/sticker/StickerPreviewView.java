@@ -134,9 +134,11 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
   }
 
   private StickerSmallView controllerView;
+  private @ColorId int repaintingColorId;
 
   public void setControllerView (StickerSmallView stickerView) {
     this.controllerView = stickerView;
+    this.repaintingColorId = stickerView.getRepaintingColorId();
   }
 
   @Override
@@ -908,7 +910,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
       }
 
       if (needRepainting) {
-        Views.restoreRepainting(c, receiver, restoreToRepainting, Theme.getColor(ColorId.text));
+        Views.restoreRepainting(c, receiver, restoreToRepainting, Theme.getColor(repaintingColorId));
       }
 
       if (savedAppear) {
