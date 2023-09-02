@@ -2048,7 +2048,9 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
   public void setEmojiSuggestionsVisible (boolean visible) {
     if (emojiSuggestionsWrap != null) {
-      emojiSuggestionsWrap.updatePosition(false);
+      if (visible) {
+        emojiSuggestionsWrap.updatePosition(false);
+      }
       emojiSuggestionsWrap.setStickersVisible(visible);
     }
   }
