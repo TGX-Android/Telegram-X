@@ -104,6 +104,13 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     gifReceiver.requestFile(gifFile);
   }
 
+  private boolean isChosen;
+
+  public void setChosen (boolean chosen) {
+    isChosen = chosen;
+    invalidate();
+  }
+
   public void setIsPremiumStar () {
     premiumStarDrawable = Drawables.get(R.drawable.baseline_premium_star_28);
   }
@@ -212,6 +219,11 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
 
   @Override
   protected void onDraw (Canvas c) {
+    if (isChosen) {
+      float radius = Math.min(getMeasuredWidth(), getMeasuredHeight()) / 2f;
+      c.drawCircle(getMeasuredWidth() / 2f, getMeasuredHeight() / 2f, radius, Paints.fillingPaint(Theme.getColor(ColorId.fillingPositive)));
+    }
+
     float originalScale = sticker != null ? sticker.getDisplayScale() : 1f;
     boolean saved = originalScale != 1f || factor != 0f;
     boolean repainting = sticker != null && sticker.isNeedRepainting();
@@ -283,6 +295,7 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
 
   public interface StickerMovementCallback {
     boolean onStickerClick (StickerSmallView view, View clickView, TGStickerObj sticker, boolean isMenuClick, TdApi.MessageSendOptions sendOptions);
+    default boolean onStickerLongClick (StickerSmallView view, TGStickerObj sticker) { return false; }
     long getStickerOutputChatId ();
     void setStickerPressed (StickerSmallView view, TGStickerObj sticker, boolean isPressed);
     boolean canFindChildViewUnder (StickerSmallView view, int recyclerX, int recyclerY);
@@ -465,6 +478,10 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
 
   private void openPreview () {
     if (previewOpened || sticker == null || sticker.isEmpty()) {
+      return;
+    }
+
+    if (callback != null && callback.onStickerLongClick(this, sticker)) {
       return;
     }
 

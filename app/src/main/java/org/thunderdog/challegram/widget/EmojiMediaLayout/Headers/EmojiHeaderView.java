@@ -15,6 +15,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.jetbrains.annotations.Nullable;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.attach.CustomItemAnimator;
 import org.thunderdog.challegram.config.Config;
@@ -23,8 +24,8 @@ import org.thunderdog.challegram.data.TGStickerSetInfo;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.widget.EmojiLayout;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiHeaderCollapsibleSectionView;
+import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutRecyclerController;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSectionView;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.StickerSectionView;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSection;
@@ -48,30 +49,18 @@ public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Targe
   private final EmojiHeaderViewNonPremium emojiHeaderViewNonPremium;
   private final BoolAnimator hasStickers = new BoolAnimator(0, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 220L);
 
-  private final EmojiLayout emojiLayout;
+  private final EmojiLayoutRecyclerController.Callback emojiLayout;
   private Paint shadowPaint;
   private boolean isPremium;
 
-  public EmojiHeaderView (@NonNull Context context, EmojiLayout emojiLayout, ViewController<?> themeProvider) {
+  public EmojiHeaderView (@NonNull Context context, EmojiLayoutRecyclerController.Callback emojiLayout, ViewController<?> themeProvider, ArrayList<EmojiSection> emojiSections, @Nullable ArrayList<EmojiSection> expandableSections) {
     super(context);
     this.emojiLayout = emojiLayout;
     setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(48)));
 
     LinearLayoutManager manager = new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, Lang.rtl());
 
-    ArrayList<EmojiSection> emojiSections = new ArrayList<>(2);
-    emojiSections.add(new EmojiSection(emojiLayout, TRENDING_SECTION, R.drawable.outline_whatshot_24, R.drawable.baseline_whatshot_24).setMakeFirstTransparent());
-    emojiSections.add(new EmojiSection(emojiLayout, 0, R.drawable.baseline_access_time_24, R.drawable.baseline_watch_later_24)/*.setFactor(1f, false)*/.setMakeFirstTransparent().setOffsetHalf(false));
-
-    ArrayList<EmojiSection> expandableSections = new ArrayList<>(6);
-    expandableSections.add(new EmojiSection(emojiLayout, 1, R.drawable.baseline_emoticon_outline_24, R.drawable.baseline_emoticon_24).setMakeFirstTransparent());
-    expandableSections.add(new EmojiSection(emojiLayout, 2, R.drawable.deproko_baseline_animals_outline_24, R.drawable.deproko_baseline_animals_24));/*.setIsPanda(!useDarkMode)*/
-    expandableSections.add(new EmojiSection(emojiLayout, 3, R.drawable.baseline_restaurant_menu_24, R.drawable.baseline_restaurant_menu_24));
-    expandableSections.add(new EmojiSection(emojiLayout, 4, R.drawable.baseline_directions_car_24, R.drawable.baseline_directions_car_24));
-    expandableSections.add(new EmojiSection(emojiLayout, 5, R.drawable.deproko_baseline_lamp_24, R.drawable.deproko_baseline_lamp_filled_24));
-    expandableSections.add(new EmojiSection(emojiLayout, 6, R.drawable.deproko_baseline_flag_outline_24, R.drawable.deproko_baseline_flag_filled_24).setMakeFirstTransparent());
-
-    adapter = new EmojiLayoutEmojiHeaderAdapter(manager, themeProvider, emojiLayout, emojiSections, expandableSections);
+    adapter = new EmojiLayoutEmojiHeaderAdapter(manager, themeProvider, emojiSections, expandableSections);
 
     recyclerView = new RecyclerView(context) {
       @Override
@@ -140,10 +129,7 @@ public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Targe
     this.emojiHeaderViewNonPremium.setOnLongClickListener(onLongClickListener);
   }
 
-  public void setCurrentStickerSectionByPosition (int i, boolean isStickerSection, boolean animated) {
-    if (isStickerSection) {
-      i += 1;
-    }
+  public void setCurrentStickerSectionByPosition (int i, boolean animated) {
     setSelectedObjectByPosition(i, animated);
   }
 
@@ -351,7 +337,7 @@ public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Targe
 
   public static class EmojiLayoutEmojiHeaderAdapter extends RecyclerView.Adapter<ViewHolder> {
     private final ArrayList<EmojiSection> emojiSections;
-    private final ArrayList<EmojiSection> expandableSections;
+    private final @Nullable ArrayList<EmojiSection> expandableSections;
     private final ViewController<?> themeProvider;
     private final ArrayList<TGStickerSetInfo> stickerSets;
     private final LinearLayoutManager manager;
@@ -362,14 +348,14 @@ public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Targe
     private View.OnLongClickListener onLongClickListener;
     private Object selectedObject;
 
-    public EmojiLayoutEmojiHeaderAdapter (LinearLayoutManager manager, ViewController<?> themeProvider, EmojiLayout emojiLayout, ArrayList<EmojiSection> emojiSections, ArrayList<EmojiSection> expandableSections) {
+    public EmojiLayoutEmojiHeaderAdapter (LinearLayoutManager manager, ViewController<?> themeProvider, ArrayList<EmojiSection> emojiSections, @Nullable ArrayList<EmojiSection> expandableSections) {
       this.themeProvider = themeProvider;
       this.emojiSections = emojiSections;
-      this.expandableSections = expandableSections;
       this.stickerSets = new ArrayList<>();
       this.manager = manager;
       this.expandableItemPosition = emojiSections.size();
-      this.expandableItemSize = expandableSections.size();
+      this.expandableSections = expandableSections;
+      this.expandableItemSize = expandableSections != null ? expandableSections.size(): -1;
     }
 
     public void setOnClickListener (OnClickListener onClickListener) {
@@ -381,7 +367,7 @@ public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Targe
     }
 
     public int getAddIndexCount () {
-      return emojiSections.size() + expandableSections.size() - 1;
+      return emojiSections.size() + (expandableSections != null ? expandableSections.size() - 1: 0);
     }
 
     public int getAddItemCount () {
@@ -504,10 +490,12 @@ public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Targe
         return emojiSections.get(i);
       }
       i -= emojiSections.size();
-      if (i < expandableSections.size()) {
-        return expandableSections.get(i);
+      if (expandableSections != null) {
+        if (i < expandableSections.size()) {
+          return expandableSections.get(i);
+        }
+        i -= expandableSections.size();
       }
-      i-= expandableSections.size();
 
       return i < stickerSets.size() ? stickerSets.get(i) : null;
     }
@@ -564,7 +552,7 @@ public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Targe
 
     @Override
     public int getItemViewType (int position) {
-      if (position == expandableItemPosition) {
+      if (position == expandableItemPosition && expandableItemSize > 0) {
         return ViewHolder.TYPE_SECTIONS_EXPANDABLE;
       } else if (position > expandableItemPosition && expandableItemSize > 0) {
         position -= 1;

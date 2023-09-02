@@ -2,7 +2,6 @@ package org.thunderdog.challegram.widget.EmojiMediaLayout;
 
 import android.content.Context;
 import android.os.Build;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -11,7 +10,6 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.GridLayoutManager;
 
 import org.drinkless.tdlib.TdApi;
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.EmojiView;
 import org.thunderdog.challegram.component.emoji.MediaStickersAdapter;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
@@ -27,6 +25,7 @@ import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibEmojiManager;
 import org.thunderdog.challegram.telegram.TdlibThread;
+import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.v.CustomRecyclerView;
@@ -41,7 +40,7 @@ import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.StringUtils;
 import me.vkryl.td.Td;
 
-public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> implements
+public class EmojiLayoutRecyclerController extends ViewController<EmojiLayoutRecyclerController.Callback> implements
   StickerSmallView.StickerMovementCallback,
   TGLegacyManager.EmojiLoadListener,
   Emoji.EmojiChangeListener,
@@ -52,8 +51,8 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> i
   private final @IdRes int controllerId;
   protected @EmojiMediaType int mediaType;
 
-  protected EmojiLayout emojiLayout;
-  protected GridLayoutManager manager;
+  protected Callback callbacks;
+  protected RtlGridLayoutManager manager;
   public CustomRecyclerView recyclerView;
   protected MediaStickersAdapter adapter;
   protected int spanCount;
@@ -73,9 +72,9 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> i
   }
 
   @Override
-  public void setArguments (EmojiLayout args) {
+  public void setArguments (Callback args) {
     super.setArguments(args);
-    this.emojiLayout = args;
+    this.callbacks = args;
   }
 
   @Override
@@ -104,7 +103,7 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> i
     this.adapter = adapter;
   }
 
-  @Nullable public GridLayoutManager getManager () {
+  @Nullable public RtlGridLayoutManager getManager () {
     return manager;
   }
 
@@ -120,6 +119,10 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> i
         manager.setSpanCount(spanCount);
       }
     }
+  }
+
+  public void clearAllItems () {
+    adapter.removeRange(0, adapter.getItemCount());
   }
 
   public void setDefaultEmojiPacks (ArrayList<TGStickerSetInfo> stickerSets, ArrayList<MediaStickersAdapter.StickerItem> items) {
@@ -160,8 +163,8 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> i
         // If something has suddenly changed with this sticker set
         if (oldSize != actualSize) {
           if (actualSize == 0) {
-            if (emojiLayout != null) {
-              emojiLayout.setIgnoreMovement(true);
+            if (callbacks != null) {
+              callbacks.setIgnoreMovement(true);
             }
             stickerSets.remove(i);
             if (stickerSets.isEmpty()) {
@@ -183,8 +186,8 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> i
               adapter.removeRange(oldStickerSet.getStartIndex(), oldStickerSet.getSize() + 1);
             }
 
-            if (emojiLayout != null) {
-              emojiLayout.setIgnoreMovement(false);
+            if (callbacks != null) {
+              callbacks.setIgnoreMovement(false);
             }
 
             return;
@@ -214,8 +217,8 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> i
             }
           }
 
-          if (emojiLayout != null) {
-            emojiLayout.setIgnoreMovement(false);
+          if (callbacks != null) {
+            callbacks.setIgnoreMovement(false);
           }
         }
 
@@ -329,7 +332,6 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> i
     }
     if (i != -1) {
       int r = indexOfStickerSetByAdapterPosition(i);
-      Log.i("WTF_DEBUG", "Set index " + r + " " + i);
       return r;
     }
     return 0;
@@ -344,7 +346,7 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> i
       View v = manager.findViewByPosition(i);
       int additional = v != null ? -v.getTop() : 0;
       int stickerSet = indexOfStickerSetByAdapterPosition(i);
-      return additional + adapter.measureScrollTop(i, spanCount, stickerSet, stickerSets, showRecentTitle);
+      return additional + adapter.measureScrollTop(i, spanCount, stickerSet, stickerSets, recyclerView, showRecentTitle);
     }
     return 0;
   }
@@ -365,9 +367,9 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> i
     }
     recyclerView.setScrollDisabled(true);
     setIgnoreRequests(true, stickerSets.get(futureSection).getId());
-    if (emojiLayout != null) {
-      emojiLayout.setIgnoreMovement(true);
-      emojiLayout.setCurrentStickerSectionByPosition(controllerId, futureSection, true, true);
+    if (callbacks != null) {
+      callbacks.setIgnoreMovement(true);
+      callbacks.setCurrentStickerSectionByPosition(controllerId, futureSection, true, true);
     }
 
     lastScrollAnimator = new FactorAnimator(0, new FactorAnimator.Target() {
@@ -382,8 +384,8 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> i
       public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
         recyclerView.setScrollDisabled(false);
         setIgnoreRequests(false, 0);
-        if (emojiLayout != null) {
-          emojiLayout.setIgnoreMovement(false);
+        if (callbacks != null) {
+          callbacks.setIgnoreMovement(false);
         }
       }
     }, AnimatorUtils.DECELERATE_INTERPOLATOR, Math.min(450, Math.max(250, Math.abs(currentSection - futureSection) * 150)));
@@ -444,6 +446,10 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> i
   }
 
   public void scrollToStickerSet (int stickerSetIndex, boolean showRecentTitle, boolean animated) {
+    scrollToStickerSet(stickerSetIndex, EmojiLayout.getHeaderSize() + EmojiLayout.getHeaderPadding(), showRecentTitle, animated);
+  }
+
+  public void scrollToStickerSet (int stickerSetIndex, int scrollOffset, boolean showRecentTitle, boolean animated) {
     final int futureSection = indexOfStickerSetByAdapterPosition(stickerSetIndex);
     if (futureSection == -1) {
       return;
@@ -453,15 +459,15 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> i
 
     final int currentSection = getStickerSetSection();
 
-    if (!animated || Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP || emojiLayout == null || Math.abs(futureSection - currentSection) > SCROLL_BY_SECTION_LIMIT) {
-      if (emojiLayout != null) {
-        emojiLayout.setIgnoreMovement(true);
-        emojiLayout.setCurrentStickerSectionByPosition(controllerId, futureSection, true, true);
+    if (!animated || Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP || callbacks == null || Math.abs(futureSection - currentSection) > SCROLL_BY_SECTION_LIMIT) {
+      if (callbacks != null) {
+        callbacks.setIgnoreMovement(true);
+        callbacks.setCurrentStickerSectionByPosition(controllerId, futureSection, true, true);
       }
-      manager.scrollToPositionWithOffset(stickerSetIndex, stickerSetIndex == 0 ? 0 : EmojiLayout.getHeaderSize() + EmojiLayout.getHeaderPadding());
+      manager.scrollToPositionWithOffset(stickerSetIndex, stickerSetIndex == 0 ? 0 : scrollOffset);
       UI.post(() -> {
-        if (emojiLayout != null) {
-          emojiLayout.setIgnoreMovement(false);
+        if (callbacks != null) {
+          callbacks.setIgnoreMovement(false);
         }
       });
     } else {
@@ -470,7 +476,7 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> i
       if (stickerSetIndex == 0) {
         scrollTop = 0;
       } else {
-        scrollTop = Math.max(0, adapter.measureScrollTop(stickerSetIndex, spanCount, futureSection, stickerSets, showRecentTitle) - EmojiLayout.getHeaderSize() - EmojiLayout.getHeaderPadding());
+        scrollTop = Math.max(0, adapter.measureScrollTop(stickerSetIndex, spanCount, futureSection, stickerSets, recyclerView, showRecentTitle) - scrollOffset);
       }
 
       final int currentScrollTop = getStickersScrollY(showRecentTitle);
@@ -496,27 +502,27 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> i
 
   @Override
   public boolean canFindChildViewUnder (StickerSmallView view, int recyclerX, int recyclerY) {
-    return emojiLayout != null && recyclerY > emojiLayout.getHeaderBottom();
+    return callbacks != null && callbacks.canFindChildViewUnder(controllerId, view, recyclerX, recyclerY);
   }
 
   @Override
   public void onStickerPreviewOpened (StickerSmallView view, TGStickerObj sticker) {
-    if (emojiLayout != null) {
-     emojiLayout.onSectionInteracted(mediaType, false);
+    if (callbacks != null) {
+     callbacks.onSectionInteracted(mediaType, false);
     }
   }
 
   @Override
   public void onStickerPreviewChanged (StickerSmallView view, TGStickerObj otherOrThisSticker) {
-    if (emojiLayout != null) {
-      emojiLayout.onSectionInteracted(mediaType, false);
+    if (callbacks != null) {
+      callbacks.onSectionInteracted(mediaType, false);
     }
   }
 
   @Override
   public void onStickerPreviewClosed (StickerSmallView view, TGStickerObj thisSticker) {
-    if (emojiLayout != null) {
-      emojiLayout.onSectionInteracted(mediaType, true);
+    if (callbacks != null) {
+      callbacks.onSectionInteracted(mediaType, true);
     }
   }
 
@@ -537,16 +543,16 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> i
 
   @Override
   public boolean onStickerClick (StickerSmallView view, View clickView, TGStickerObj sticker, boolean isMenuClick, TdApi.MessageSendOptions sendOptions) {
-    if (emojiLayout != null) {
+    if (callbacks != null) {
       int i = indexOfStickerSetById(sticker.getStickerSetId());
-      return emojiLayout.onStickerClick(controllerId, view, clickView, i != -1 ? stickerSets.get(i): null, sticker, isMenuClick, sendOptions);
+      return callbacks.onStickerClick(controllerId, view, clickView, i != -1 ? stickerSets.get(i): null, sticker, isMenuClick, sendOptions);
     }
     return false;
   }
 
   @Override
   public long getStickerOutputChatId () {
-    return emojiLayout != null ? emojiLayout.findOutputChatId() : 0;
+    return callbacks != null ? callbacks.findOutputChatId() : 0;
   }
 
   /* * */
@@ -605,16 +611,16 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> i
 
   @Override
   public void moveEmoji (int oldIndex, int newIndex) {
-    if (emojiLayout != null) {
-      emojiLayout.setIgnoreMovement(true);
+    if (callbacks != null) {
+      callbacks.setIgnoreMovement(true);
     }
     oldIndex += getHeaderItemCount();
     newIndex += getHeaderItemCount();
     MediaStickersAdapter.StickerItem item = adapter.getItems().remove(oldIndex);
     adapter.getItems().add(newIndex, item);
     adapter.notifyItemMoved(oldIndex, newIndex);
-    if (emojiLayout != null) {
-      recyclerView.post(() -> emojiLayout.setIgnoreMovement(false));
+    if (callbacks != null) {
+      recyclerView.post(() -> callbacks.setIgnoreMovement(false));
     }
   }
 
@@ -623,8 +629,8 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> i
     MediaStickersAdapter.StickerItem item = processRecentEmojiItem(emoji);
     if (item == null) return;
 
-    if (emojiLayout != null) {
-      emojiLayout.setIgnoreMovement(true);
+    if (callbacks != null) {
+      callbacks.setIgnoreMovement(true);
     }
     newIndex += getHeaderItemCount();
 
@@ -641,8 +647,8 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> i
     if (emoji.isCustomEmoji()) {
       tdlib.emoji().performPostponedRequests();
     }
-    if (emojiLayout != null) {
-      recyclerView.post(() -> emojiLayout.setIgnoreMovement(false));
+    if (callbacks != null) {
+      recyclerView.post(() -> callbacks.setIgnoreMovement(false));
     }
   }
 
@@ -784,8 +790,8 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> i
     // lastStickerSetInfo = null; // FIXME removing current sticker set does not update selection
     // ignoreStickersScroll--;
 
-    if (emojiLayout != null) {
-      emojiLayout.resetScrollState(true); // FIXME upd: ... fixme what?
+    if (callbacks != null) {
+      callbacks.resetScrollState(true); // FIXME upd: ... fixme what?
     }
     UI.post(() -> {
       /*if (emojiLayout != null && contentView.getCurrentSection() == SECTION_STICKERS) {
@@ -803,8 +809,8 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> i
 
     beforeStickerChanges();
 
-    if (emojiLayout != null) {
-      emojiLayout.addStickerSection(controllerId, index, stickerSet);
+    if (callbacks != null) {
+      callbacks.onAddStickerSection(controllerId, index, stickerSet);
     }
 
     int startIndex = stickerSets.get(index).getStartIndex();
@@ -824,8 +830,8 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> i
     if (i != -1) {
       beforeStickerChanges();
       stickerSets.remove(i);
-      if (emojiLayout != null) {
-        emojiLayout.removeStickerSection(controllerId, i);
+      if (callbacks != null) {
+        callbacks.onRemoveStickerSection(controllerId, i);
       }
       int startIndex = stickerSet.getStartIndex();
       adapter.removeRange(startIndex, stickerSet.getSize() + 1);
@@ -842,8 +848,8 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> i
   public void moveStickerSet (int oldPosition, int newPosition) {
     beforeStickerChanges();
 
-    if (emojiLayout != null) {
-      emojiLayout.moveStickerSection(controllerId, oldPosition, newPosition);
+    if (callbacks != null) {
+      callbacks.onMoveStickerSection(controllerId, oldPosition, newPosition);
     }
 
     TGStickerSetInfo stickerSet = stickerSets.remove(oldPosition);
@@ -880,6 +886,15 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> i
   private SpanCountDelegate spanCountDelegate;
   private int forceSpanCount;
 
+  public final void setItemWidth (int minSpan, int itemWidthDp) {
+    setSpanCount(id -> {
+      final int width = recyclerView != null ?
+        recyclerView.getMeasuredWidth() - recyclerView.getPaddingLeft() - recyclerView.getPaddingRight():
+        Screen.currentWidth();
+      return Math.max(minSpan, width / Screen.dp(itemWidthDp));
+    });
+  }
+
   public final void setSpanCount (int spanCount) {
     forceSpanCount = spanCount;
     checkSpanCount();
@@ -897,5 +912,32 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> i
       return spanCountDelegate.calculateSpanCount(getId());
     }
     return 1;
+  }
+
+  /*  */
+
+  public interface Callback {
+    void setIgnoreMovement (boolean silent);
+    void resetScrollState (boolean silent);
+    void moveHeader (int totalDy);
+    void setHasNewHots (@IdRes int controllerId, boolean hasHots);
+
+    boolean onStickerClick (@IdRes int controllerId, StickerSmallView view, View clickView, TGStickerSetInfo stickerSet, TGStickerObj sticker, boolean isMenuClick, TdApi.MessageSendOptions sendOptions);
+    boolean canFindChildViewUnder (@IdRes int controllerId, StickerSmallView view, int recyclerX, int recyclerY);
+
+    Context getContext ();
+    boolean isUseDarkMode ();
+    long findOutputChatId ();
+    void onSectionInteracted (@EmojiMediaType int mediaType, boolean interactionFinished);
+    void onSectionInteractedScroll (@EmojiMediaType int mediaType, boolean moved);
+    void setCurrentStickerSectionByPosition (@IdRes int controllerId, int i, boolean isStickerSection, boolean animated);
+
+    void onAddStickerSection (@IdRes int controllerId, int section, TGStickerSetInfo info);
+    void onMoveStickerSection (@IdRes int controllerId, int fromSection, int toSection);
+    void onRemoveStickerSection (@IdRes int controllerId, int section);
+
+    @Deprecated
+    boolean isAnimatedEmojiOnly ();
+    float getHeaderHideFactor ();
   }
 }

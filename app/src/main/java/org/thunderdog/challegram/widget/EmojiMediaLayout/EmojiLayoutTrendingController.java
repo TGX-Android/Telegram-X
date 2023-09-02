@@ -11,7 +11,6 @@ import org.thunderdog.challegram.component.emoji.MediaStickersAdapter;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
-import org.thunderdog.challegram.telegram.EmojiMediaType;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.EmojiMediaListController;
@@ -73,8 +72,8 @@ public class EmojiLayoutTrendingController extends EmojiLayoutRecyclerController
       stickerSets.addAll(trendingSets);
     }
     this.canLoadMoreTrending = trendingSets != null && !trendingSets.isEmpty();
-    if (emojiLayout != null && (hasUnread || offset == 0)) {
-      emojiLayout.setHasNewHots(getId(), hasUnread);
+    if (callbacks != null && (hasUnread || offset == 0)) {
+      callbacks.setHasNewHots(getId(), hasUnread);
     }
     if (offset == 0) {
       if (recyclerView != null) {
@@ -181,9 +180,9 @@ public class EmojiLayoutTrendingController extends EmojiLayoutRecyclerController
   }
 
   public void onScrolledImpl (int dy, boolean showRecentTitle) {
-    if (emojiLayout != null) {
-      emojiLayout.moveHeader(getStickersScrollY(showRecentTitle));
-      emojiLayout.onSectionInteractedScroll(mediaType, dy != 0);
+    if (callbacks != null) {
+      callbacks.moveHeader(getStickersScrollY(showRecentTitle));
+      callbacks.onSectionInteractedScroll(mediaType, dy != 0);
     }
     if (!trendingLoading && canLoadMoreTrending) {
       int lastVisiblePosition = manager.findLastVisibleItemPosition();

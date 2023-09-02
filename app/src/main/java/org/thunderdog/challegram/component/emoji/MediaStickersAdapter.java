@@ -43,6 +43,7 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGDefaultEmoji;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
+import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
@@ -117,20 +118,23 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
     return StickerHolder.create(context.context(), context.tdlib(), viewType, isTrending, this, classicEmojiClickListener, callback, isBig, themeProvider, offsetProvider, emojiToneHelper, repaintingColorId);
   }
 
-  public int measureScrollTop (int position, int spanCount, int sectionIndex, ArrayList<TGStickerSetInfo> sections, boolean haveRecentsTitle) {
+  public int measureScrollTop (int position, int spanCount, int sectionIndex, ArrayList<TGStickerSetInfo> sections, @Nullable RecyclerView recyclerView, boolean haveRecentsTitle) {
     if (position == 0 || sections == null || sectionIndex == -1) {
       return 0;
     }
 
     position--;
 
-    int scrollY = EmojiLayout.getHeaderSize() + EmojiLayout.getHeaderPadding();
+    int scrollY = items.get(0).viewType == StickerHolder.TYPE_EMPTY ? 0: EmojiLayout.getHeaderSize() + EmojiLayout.getHeaderPadding();
+    //int scrollY = EmojiLayout.getHeaderSize() + EmojiLayout.getHeaderPadding();
     if (position == 0) {
       return scrollY;
     }
 
 
-    final int rowSize = ((sections.get(0).isTrending() ? Screen.smallestSide() : Screen.currentWidth()) / spanCount);
+    final int recyclerWidth = recyclerView != null ? recyclerView.getMeasuredWidth() - recyclerView.getPaddingLeft() - recyclerView.getPaddingRight(): 0;
+    final int rowSize = ((sections.get(0).isTrending() ? Screen.smallestSide() : (recyclerWidth > 0 ? recyclerWidth: Screen.currentWidth())) / spanCount);
+    // final int rowSize = ((sections.get(0).isTrending() ? Screen.smallestSide() : Screen.currentWidth()) / spanCount);
 
     boolean hadFavorite = false;
 

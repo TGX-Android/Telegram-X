@@ -171,7 +171,7 @@ public class ReactionsSelectorRecyclerView extends RecyclerView {
       this.tdlib = message.tdlib();
       this.message = message;
       this.chosen = message.getMessageReactions().getChosen();
-      this.reactions = prioritizeElements(message.getMessageAvailableReactions(), chosen);
+      this.reactions = message.getMessageAvailableReactions();
     }
 
     public void setDelegate (ReactionSelectDelegate delegate) {
@@ -232,30 +232,5 @@ public class ReactionsSelectorRecyclerView extends RecyclerView {
   public interface ReactionSelectDelegate {
     void onClick (View v, TGReaction reaction);
     void onLongClick (View v, TGReaction reaction);
-  }
-
-  public static TdApi.AvailableReaction[] prioritizeElements(TdApi.AvailableReaction[] inputArray, Set<String> set) {
-    if (inputArray == null) {
-      return null;
-    }
-
-    List<TdApi.AvailableReaction> resultList = new ArrayList<>();
-
-    for (TdApi.AvailableReaction element : inputArray) {
-      if (set.contains(TD.makeReactionKey(element.type))) {
-        resultList.add(element);
-      }
-    }
-
-    for (TdApi.AvailableReaction element : inputArray) {
-      if (!set.contains(TD.makeReactionKey(element.type))) {
-        resultList.add(element);
-      }
-    }
-
-    TdApi.AvailableReaction[] resultArray = new TdApi.AvailableReaction[resultList.size()];
-    resultList.toArray(resultArray);
-
-    return resultArray;
   }
 }

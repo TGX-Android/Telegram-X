@@ -4731,6 +4731,8 @@
   <string name="xStickersInstall_one">Install %1$s pack</string>
   <string name="xStickersInstall_other">Install %1$s packs</string>
 
+  <string name="ReactionsPickerHeader">Reactions</string>
+
   <string name="ShowXMore_one">%1$s more</string>
   <string name="ShowXMore_other">%1$s more</string>
 </resources>

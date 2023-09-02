@@ -9,6 +9,7 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.widget.EmojiLayout;
+import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutRecyclerController;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSection;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSectionView;
 
@@ -26,7 +27,7 @@ public class EmojiHeaderViewNonPremium extends FrameLayoutFix {
     super(context);
   }
 
-  public void init (EmojiLayout emojiLayout, ViewController<?> themeProvider) {
+  public void init (EmojiLayoutRecyclerController.Callback emojiLayout, ViewController<?> themeProvider) {
     emojiSections.add(new EmojiSection(emojiLayout, EmojiHeaderView.TRENDING_SECTION, R.drawable.outline_whatshot_24, R.drawable.baseline_whatshot_24).setMakeFirstTransparent());
     emojiSections.add(new EmojiSection(emojiLayout, 0, R.drawable.baseline_access_time_24, R.drawable.baseline_watch_later_24)/*.setFactor(1f, false)*/.setMakeFirstTransparent().setOffsetHalf(false));
     emojiSections.add(new EmojiSection(emojiLayout, 1, R.drawable.baseline_emoticon_outline_24, R.drawable.baseline_emoticon_24).setMakeFirstTransparent());

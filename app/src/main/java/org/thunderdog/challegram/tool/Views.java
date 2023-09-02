@@ -53,6 +53,7 @@ import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.DiffMatchPatch;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.Receiver;
+import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewTranslator;
 import org.thunderdog.challegram.theme.Theme;
@@ -938,6 +939,19 @@ public class Views {
     if (flags != newFlags) {
       view.setPaintFlags(newFlags);
     }
+  }
+
+  public static int getRecyclerFirstElementTop (RecyclerView recyclerView) {
+    if (recyclerView == null || recyclerView.getLayoutManager() == null) {
+      return 0;
+    }
+
+    View view = recyclerView.getLayoutManager().findViewByPosition(0);
+    if (view != null) {
+      return Math.max(view.getTop() + recyclerView.getTop(), 0);
+    }
+
+    return 0;
   }
 
   public static int[] getCharacterCoordinates(TextView textView, int offset) {

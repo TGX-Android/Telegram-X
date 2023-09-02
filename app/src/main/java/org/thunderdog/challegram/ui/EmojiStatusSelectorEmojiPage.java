@@ -269,7 +269,6 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
     } catch (Throwable t) {
       Log.w("Cannot scroll to top", t);
     }
-
   }
 
   @Override

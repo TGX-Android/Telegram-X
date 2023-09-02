@@ -1301,4 +1301,6 @@
   <item type="id" name="controller_emojiLayoutStickersTrending" />
   <item type="id" name="controller_emojiLayoutEmoji" />
   <item type="id" name="controller_emojiLayoutEmojiTrending" />
+  <item type="id" name="controller_emojiLayoutReactions" />
+  <item type="id" name="controller_reactionsPicker" />
 </resources>

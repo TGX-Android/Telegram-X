@@ -28,6 +28,7 @@ import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.LickView;
 import org.thunderdog.challegram.widget.PopupLayout;
@@ -79,7 +80,7 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
       @Override
       protected void onDraw (Canvas canvas) {
         if (headerView != null) {
-          canvas.drawRect(0, headerView.getTranslationY(), getMeasuredWidth(), getMeasuredHeight(), Paints.fillingPaint(Theme.getColor(getBackgroundColorId())));
+          canvas.drawRect(0, headerTranslationY + (isHeaderHasStaticPosition() ? getHeaderHeight(): 0) /*+ HeaderView.getTopOffset()*/, getMeasuredWidth(), getMeasuredHeight(), Paints.fillingPaint(Theme.getColor(getBackgroundColorId())));
         }
         super.onDraw(canvas);
       }
@@ -88,7 +89,7 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
       protected boolean drawChild (Canvas canvas, View child, long drawingTime) {
         if (child == pagerInFrameLayoutFix && headerView != null) {
           canvas.save();
-          canvas.clipRect(0, headerView.getTranslationY() + HeaderView.getTopOffset(), getMeasuredWidth(), getMeasuredHeight());
+          canvas.clipRect(0, headerTranslationY + HeaderView.getTopOffset(), getMeasuredWidth(), getMeasuredHeight());
           boolean result = super.drawChild(canvas, child, drawingTime);
           canvas.restore();
           return result;
@@ -110,12 +111,14 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
     wrapView = new FrameLayoutFix(context) {
       @Override
       public boolean onInterceptTouchEvent (MotionEvent e) {
-        return (e.getAction() == MotionEvent.ACTION_DOWN && headerView != null && e.getY() < headerView.getTranslationY()) || super.onInterceptTouchEvent(e);
+        boolean b = (e.getAction() == MotionEvent.ACTION_DOWN && headerView != null && e.getY() < (getTopEdge() + HeaderView.getTopOffset()));
+        return b || super.onInterceptTouchEvent(e);
       }
 
       @Override
       public boolean onTouchEvent (MotionEvent e) {
-        return !(e.getAction() == MotionEvent.ACTION_DOWN && headerView != null && e.getY() < headerView.getTranslationY()) && super.onTouchEvent(e);
+        boolean b = (e.getAction() == MotionEvent.ACTION_DOWN && headerView != null && e.getY() < (getTopEdge() + HeaderView.getTopOffset()));
+        return b && super.onTouchEvent(e);
       }
 
       private int oldHeight = -1;
@@ -218,6 +221,9 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
   protected float lastHeaderPosition;
 
   protected void checkHeaderPosition (RecyclerView recyclerView) {
+    lastHeaderPosition = Views.getRecyclerFirstElementTop(recyclerView) + HeaderView.getTopOffset();
+    setHeaderPosition(lastHeaderPosition);
+    /*
     View view = null;
     if (recyclerView != null) {
       view = recyclerView.getLayoutManager().findViewByPosition(0);
@@ -230,6 +236,7 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
     if (headerView != null) {
       setHeaderPosition(lastHeaderPosition = top);
     }
+    */
   }
 
   protected int getTargetHeight () {
@@ -252,19 +259,22 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
   }
 
   protected float headerBackgroundFactor;
+  protected float headerTranslationY;
 
   protected void setHeaderPosition (float y) {
     y = Math.max(y, HeaderView.getTopOffset());
+    headerTranslationY = y;
+    float realHeaderOffset = isHeaderHasStaticPosition() ? HeaderView.getTopOffset(): y;
     if (headerView != null) {
-      headerView.setTranslationY(y);
+      headerView.setTranslationY(realHeaderOffset);
     }
-    fixView.setTranslationY(y);
+    fixView.setTranslationY(realHeaderOffset);
     contentView.invalidate();
     fixView.invalidate();
     if (lickView != null) {
       final int topOffset = HeaderView.getTopOffset();
       final float top = y - topOffset;
-      lickView.setTranslationY(top);
+      lickView.setTranslationY(realHeaderOffset - topOffset);
       float factor = top > topOffset ? 0f : 1f - ((float) top / (float) topOffset);
       lickView.setFactor(factor);
       onUpdateLickViewFactor(factor);
@@ -273,17 +283,21 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
     }
   }
 
+  protected boolean isHeaderHasStaticPosition () {
+    return false;
+  }
+
   protected void setHeaderBackgroundFactor (float headerBackgroundFactor) {
     this.headerBackgroundFactor = headerBackgroundFactor;
   }
 
   protected int getTopEdge () {
-    return Math.max(0, (int) ((headerView != null ? headerView.getTranslationY(): 0) - HeaderView.getTopOffset()));
+    return Math.max(0, (int) ((headerView != null ? headerTranslationY: 0) - HeaderView.getTopOffset()));
   }
 
   @Override
   public boolean shouldTouchOutside (float x, float y) {
-    return headerView != null && y < headerView.getTranslationY() - HeaderView.getSize(true);
+    return headerView != null && y < headerTranslationY - HeaderView.getSize(true);
   }
 
   @Override
@@ -301,7 +315,7 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
 
   public void checkContentScrollY (BottomSheetBaseControllerPage c) {
     int maxScrollY = maxItemsScrollYOffset();
-    int scrollY = (int) (getContentOffset() - (headerView != null ? headerView.getTranslationY(): 0) + HeaderView.getTopOffset()); //();
+    int scrollY = (int) (getContentOffset() - (headerView != null ? headerTranslationY: 0) + HeaderView.getTopOffset()); //();
     if (c != null) {
       c.ensureMaxScrollY(scrollY, maxScrollY);
     }

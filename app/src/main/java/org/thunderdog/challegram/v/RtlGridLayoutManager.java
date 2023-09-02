@@ -45,4 +45,25 @@ public class RtlGridLayoutManager extends GridLayoutManager {
   protected final boolean isLayoutRTL () {
     return !alignOnly && Lang.rtl();
   }
+
+  private boolean isCanScrollVertically = true;
+  private boolean isCanScrollHorizontally = true;
+
+  public void setCanScrollVertically (boolean canScrollVertically) {
+    isCanScrollVertically = canScrollVertically;
+  }
+
+  public void setCanScrollHorizontally (boolean canScrollHorizontally) {
+    isCanScrollHorizontally = canScrollHorizontally;
+  }
+
+  @Override
+  public boolean canScrollVertically () {
+    return isCanScrollVertically && super.canScrollVertically();
+  }
+
+  @Override
+  public boolean canScrollHorizontally () {
+    return isCanScrollHorizontally && super.canScrollHorizontally();
+  }
 }

@@ -107,9 +107,8 @@ public abstract class RecyclerViewController<T> extends TelegramViewController<T
       ViewSupport.setThemedBackground(wrap, getRecyclerBackground(), this);
     }
     wrap.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-    recyclerView = (CustomRecyclerView) Views.inflate(context(), R.layout.recycler_custom, null);
+    recyclerView = onCreateRecyclerView();
     Views.setScrollBarPosition(recyclerView);
-    recyclerView.setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 180l));
     recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
       @Override
       public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {
@@ -119,6 +118,20 @@ public abstract class RecyclerViewController<T> extends TelegramViewController<T
         }
       }
     });
+    onCreateView(context, recyclerView);
+    wrap.addView(recyclerView);
+    if (needPersistentScrollPosition()) {
+      restorePersistentScrollPosition();
+    }
+    if (needSearch()) {
+      generateChatSearchView(wrap);
+    }
+    return wrap;
+  }
+
+  protected CustomRecyclerView onCreateRecyclerView () {
+    CustomRecyclerView recyclerView = (CustomRecyclerView) Views.inflate(context(), R.layout.recycler_custom, null);
+    recyclerView.setItemAnimator(new CustomItemAnimator(AnimatorUtils.DECELERATE_INTERPOLATOR, 180L));
     recyclerView.setLayoutManager(new LinearLayoutManager(context, RecyclerView.VERTICAL, false) {
       @Override
       public int scrollVerticallyBy(int dx, RecyclerView.Recycler recycler, RecyclerView.State state) {
@@ -131,15 +144,7 @@ public abstract class RecyclerViewController<T> extends TelegramViewController<T
       }
     });
     recyclerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-    onCreateView(context, recyclerView);
-    wrap.addView(recyclerView);
-    if (needPersistentScrollPosition()) {
-      restorePersistentScrollPosition();
-    }
-    if (needSearch()) {
-      generateChatSearchView(wrap);
-    }
-    return wrap;
+    return recyclerView;
   }
 
   protected final void restorePersistentScrollPosition () {
