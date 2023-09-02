@@ -950,7 +950,7 @@ public class Views {
       int line = layout.getLineForOffset(offset);
       int lineStartOffset = layout.getLineStart(line);
       int xPos = (int) U.measureEmojiText(editable.subSequence(lineStartOffset, offset), layout.getPaint());
-      int yPos = layout.getLineBaseline(line);
+      int yPos = layout.getLineBaseline(line) - textView.getScrollY();
       coordinates[0] = xPos;
       coordinates[1] = yPos;
     }

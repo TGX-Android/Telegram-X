@@ -2034,6 +2034,12 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     emojiSuggestionsWrap.stickerSuggestionAdapter.setStickers(stickers);
   }
 
+  public void updateEmojiSuggestionsPosition (boolean needTranslate) {
+    if (emojiSuggestionsWrap != null) {
+      emojiSuggestionsWrap.updatePosition(needTranslate);
+    }
+  }
+
   public void addEmojiSuggestions (ArrayList<TGStickerObj> stickers) {
     if (emojiSuggestionsWrap != null && stickers != null && !stickers.isEmpty()) {
       emojiSuggestionsWrap.stickerSuggestionAdapter.addStickers(stickers);
