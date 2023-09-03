@@ -10,17 +10,20 @@ import android.widget.FrameLayout;
 
 import androidx.annotation.Nullable;
 
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.emoji.EmojiInfo;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.EmojiData;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.util.StickerSuggestionsProvider;
 
 import java.util.ArrayList;
 
@@ -40,18 +43,21 @@ public class EmojiToneListView extends FrameLayout {
 
   private EmojiInfo[] tones;
   private Drawable backgroundDrawable, cornerDrawable;
-  private ArrayList<TGStickerObj> stickers;
+  private StickerSuggestionsProvider.Result stickers;
   private ArrayList<StickerSmallView> stickerViews;
+  private ArrayList<TGStickerObj> stickerObjs;
+  private Tdlib tdlib;
   private int emojiColorState;
 
   public EmojiToneListView (Context context) {
     super(context);
   }
 
-  public void init (ViewController<?> themeProvider) {
+  public void init (ViewController<?> themeProvider, Tdlib tdlib) {
     this.tones = new EmojiInfo[EmojiData.emojiColors.length];
     this.backgroundDrawable = Theme.filteredDrawable(R.drawable.stickers_back_all, ColorId.overlayFilling, themeProvider);
     this.cornerDrawable = Theme.filteredDrawable(R.drawable.stickers_back_arrow, ColorId.overlayFilling, themeProvider);
+    this.tdlib = tdlib;
   }
 
   private View boundView;
@@ -95,24 +101,52 @@ public class EmojiToneListView extends FrameLayout {
 
   @Nullable
   public TGStickerObj getSelectedCustomEmoji () {
-    if (toneIndexVertical == 0 && !hasToneEmoji() || toneIndexVertical == 1) {
-      if (stickers != null && toneIndex >= 0 && toneIndex < stickers.size()) {
-        return stickers.get(toneIndex);
-      }
+    boolean hasToneEmoji = hasToneEmoji();
+    if (hasToneEmoji && toneIndexVertical == 0) {
+      return null;
+    }
+    int rowStart = hasToneEmoji ? 1: 0;
+    int index = toneIndex;
+    for (int a = rowStart; a < toneIndexVertical; a++) {
+      index += getRowSize(a);
+    }
+    if (stickers != null && index >= 0 && index < stickerObjs.size()) {
+      return stickerObjs.get(index);
     }
     return null;
   }
 
-  public void setCustomEmoji (@Nullable ArrayList<TGStickerObj> stickers) {
+  public void setCustomEmoji (@Nullable StickerSuggestionsProvider.Result stickers) {
     this.stickers = stickers;
     if (stickers == null || stickers.isEmpty()) {
       return;
     }
-    stickerViews = new ArrayList<>(stickers.size());
-    for (TGStickerObj stickerObj: stickers) {
+
+    int a = Math.min(stickers.stickersFromLocal.stickers.length, 6);
+    int b = Math.min(stickers.stickersFromServer.stickers.length, 6);
+    int size = a + b;
+
+    stickerViews = new ArrayList<>(size);
+    stickerObjs = new ArrayList<>(size);
+
+    for (int i = 0; i < b; i++) {
+      TdApi.Sticker sticker = stickers.stickersFromServer.stickers[i];
+      TGStickerObj stickerObj = new TGStickerObj(tdlib, sticker, sticker.emoji, sticker.fullType);
       StickerSmallView v = new StickerSmallView(getContext(), Screen.dp(2));
       v.setSticker(stickerObj);
       v.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(ITEM_SIZE), Screen.dp(ITEM_SIZE)));
+      stickerObjs.add(stickerObj);
+      stickerViews.add(v);
+      addView(v);
+    }
+
+    for (int i = 0; i < a; i++) {
+      TdApi.Sticker sticker = stickers.stickersFromLocal.stickers[i];
+      TGStickerObj stickerObj = new TGStickerObj(tdlib, sticker, sticker.emoji, sticker.fullType);
+      StickerSmallView v = new StickerSmallView(getContext(), Screen.dp(2));
+      v.setSticker(stickerObj);
+      v.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(ITEM_SIZE), Screen.dp(ITEM_SIZE)));
+      stickerObjs.add(stickerObj);
       stickerViews.add(v);
       addView(v);
     }
@@ -149,6 +183,12 @@ public class EmojiToneListView extends FrameLayout {
       v.setTranslationX(x + Screen.dp(ITEM_SIZE * i));
       v.setTranslationY(y);
       i++;
+      if (i == getRowSize(row)) {
+        row++;
+        i = 0;
+        x = getRowX(row);
+        y = getRowY(row);
+      }
     }
   }
 
@@ -233,13 +273,26 @@ public class EmojiToneListView extends FrameLayout {
 
   public int getRowSize (int rowIndex) {
     boolean hasTones = emojiColorState != EmojiData.STATE_NO_COLORS;
-    boolean hasEmoji = stickers != null && !stickers.isEmpty();
-
-    if (rowIndex == 0) {
-      return hasTones ? tones.length: hasEmoji ? stickers.size(): 0;
-    } else {
-      return hasEmoji ? stickers.size(): 0;
+    if (hasTones) {
+      if (rowIndex == 0) {
+        return tones.length;
+      } else {
+        rowIndex -= 1;
+      }
     }
+
+    boolean isStickersSmall = stickers != null && stickers.size() <= 6 && stickers.size() >= 0;
+    if (isStickersSmall) {
+      return rowIndex == 0 ? Math.min(6, stickers.size()): 0;
+    }
+
+    if (stickers != null) {
+      int count = (rowIndex == 0 && stickers.stickersFromServer.stickers.length > 0) ?
+          stickers.stickersFromServer.stickers.length:
+          stickers.stickersFromLocal.stickers.length;
+      return Math.min(6, count);
+    }
+    return 0;
   }
 
   public boolean hasToneEmoji () {
@@ -247,7 +300,17 @@ public class EmojiToneListView extends FrameLayout {
   }
 
   public int getRowsCount () {
-    return ((stickers != null && !stickers.isEmpty()) ? 1: 0) + (emojiColorState != EmojiData.STATE_NO_COLORS ? 1: 0);
+    boolean isStickersSmall = stickers != null && stickers.size() <= 6 && stickers.size() >= 0;
+
+    int count = (emojiColorState != EmojiData.STATE_NO_COLORS ? 1: 0);
+    if (isStickersSmall) {
+      count += 1;
+    } else {
+      count += ((stickers != null && stickers.stickersFromServer.stickers.length > 0) ? 1: 0);
+      count += ((stickers != null && stickers.stickersFromLocal.stickers.length > 0) ? 1: 0);
+    }
+
+    return count;
   }
 
   public int calcViewWidth () {

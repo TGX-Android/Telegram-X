@@ -44,6 +44,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.StickerSuggestionsProvider;
 import org.thunderdog.challegram.widget.BubbleLayout;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiToneListView;
 import org.thunderdog.challegram.widget.NoScrollTextView;
@@ -88,12 +89,14 @@ public class EmojiToneHelper implements FactorAnimator.Target {
   private final Context context;
   private final Delegate delegate;
   private final @Nullable ViewController<?> themeProvider;
+  private final StickerSuggestionsProvider stickerSuggestionsProvider;
 
   public EmojiToneHelper (Context context, Delegate delegate, Tdlib tdlib, @Nullable ViewController<?> themeProvider) {
     this.tdlib = tdlib;
     this.context = context;
     this.delegate = delegate;
     this.themeProvider = themeProvider;
+    this.stickerSuggestionsProvider = new StickerSuggestionsProvider(tdlib);
   }
 
   // Entry point
@@ -442,7 +445,7 @@ public class EmojiToneHelper implements FactorAnimator.Target {
     }
 
     emojiTonePicker = new EmojiToneListView(context);
-    emojiTonePicker.init(themeProvider);
+    emojiTonePicker.init(themeProvider, tdlib);
     emojiTonePicker.setEmoji(emoji, currentTone, emojiColorState);
     emojiTonePicker.setCustomEmoji(emojiSuggestionsCache.get(emoji));
     if (themeProvider != null) {
@@ -484,7 +487,7 @@ public class EmojiToneHelper implements FactorAnimator.Target {
     }
   }
 
-  private final HashMap<String, ArrayList<TGStickerObj>> emojiSuggestionsCache = new HashMap<>();
+  private final HashMap<String, StickerSuggestionsProvider.Result> emojiSuggestionsCache = new HashMap<>();
 
   public void invalidateSuggestionsCache () {
     emojiSuggestionsCache.clear();
@@ -505,32 +508,22 @@ public class EmojiToneHelper implements FactorAnimator.Target {
     }
 
     if (emojiSuggestionsCache.containsKey(emoji)) {
-      ArrayList<TGStickerObj> stickers = emojiSuggestionsCache.get(emoji);
-      return stickers == null || stickers.size() > 0;
+      StickerSuggestionsProvider.Result stickers = emojiSuggestionsCache.get(emoji);
+      return stickers == null || !stickers.isEmpty();
     } else {
       emojiSuggestionsCache.put(emoji, null);
-      tdlib.client().send(new TdApi.SearchStickers(new TdApi.StickerTypeCustomEmoji(), emoji, 6), emojiSuggestionsHandler(emoji));
-      return true;
-    }
-  }
-
-  private Client.ResultHandler emojiSuggestionsHandler (final String emoji) {
-    return object -> {
-      if (object.getConstructor() == TdApi.Stickers.CONSTRUCTOR) {
-        final TdApi.Stickers stickers = (TdApi.Stickers) object;
-        UI.post(() -> {
-          ArrayList<TGStickerObj> result = new ArrayList<>(stickers.stickers.length);
-          for (TdApi.Sticker sticker: stickers.stickers) {
-            result.add(new TGStickerObj(tdlib, sticker, sticker.emoji, sticker.fullType));
-          }
-
+      stickerSuggestionsProvider.getSuggestions(emoji, new TdApi.StickerTypeCustomEmoji(), 0, new StickerSuggestionsProvider.Callback() {
+        @Override
+        public void onResultFull (StickerSuggestionsProvider.Result result) {
           emojiSuggestionsCache.put(emoji, result);
-          if (StringUtils.equalsOrBothEmpty(this.emoji, emoji) && visibleAnchorView != null) {
+          if (StringUtils.equalsOrBothEmpty(EmojiToneHelper.this.emoji, emoji) && visibleAnchorView != null) {
             setIsVisible(visibleAnchorView, emojiColorState != EmojiData.STATE_NO_COLORS || !result.isEmpty());
           }
-        });
-      }
-    };
+        }
+      });
+
+      return true;
+    }
   }
 
   private boolean isEmojiSuggestionsLoading (String emoji) {
