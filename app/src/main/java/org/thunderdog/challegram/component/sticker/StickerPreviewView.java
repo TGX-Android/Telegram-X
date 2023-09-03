@@ -687,7 +687,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
         menu.addView(viewView);
     }
 
-    if (sticker.isRecent()) {
+    if (sticker.isRecent() && !sticker.isCustomEmoji()) {
       ImageView removeRecentView = new ImageView(getContext());
       removeRecentView.setId(R.id.btn_removeRecent);
       removeRecentView.setScaleType(ImageView.ScaleType.CENTER);

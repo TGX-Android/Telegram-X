@@ -578,10 +578,11 @@
   <item type="id" name="btn_quickTranslate" />
   <item type="id" name="btn_translate" />
   <item type="id" name="btn_toggleCollapseRecentStickers" />
+  <item type="id" name="btn_emojiSuggestions" />
   <item type="id" name="btn_stickerSuggestions" />
-  <item type="id" name="btn_stickerSuggestionsAll" />
-  <item type="id" name="btn_stickerSuggestionsInstalled" />
-  <item type="id" name="btn_stickerSuggestionsNone" />
+  <item type="id" name="btn_stickerOrEmojiSuggestionsAll" />
+  <item type="id" name="btn_stickerOrEmojiSuggestionsInstalled" />
+  <item type="id" name="btn_stickerOrEmojiSuggestionsNone" />
   <item type="id" name="btn_switchPmButton" />
   <item type="id" name="btn_updateAutomatically" />
   <item type="id" name="btn_updateAutomaticallyWiFi" />

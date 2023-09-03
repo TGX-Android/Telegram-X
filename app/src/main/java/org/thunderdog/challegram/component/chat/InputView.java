@@ -326,6 +326,11 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         }
       }
     });
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
+        ((BaseActivity) getContext()).updateEmojiSuggestionsPosition(false);
+      });
+    }
 
     showPlaceholder.setValue(true, false);
   }

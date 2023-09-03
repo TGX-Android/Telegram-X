@@ -40,8 +40,8 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
 
   private final ImageView stickerSuggestionArrowView;
   private final LinearLayoutManager manager;
-  public final RecyclerView stickerSuggestionsView;
-  public StickerSuggestionAdapter stickerSuggestionAdapter;
+  private final RecyclerView stickerSuggestionsView;
+  private StickerSuggestionAdapter stickerSuggestionAdapter;
 
   private MessagesController parent;
   private FactorAnimator stickersAnimator;
@@ -80,10 +80,10 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
     addView(stickerSuggestionArrowView);
   }
 
-  public void init (@NonNull MessagesController parent, @Nullable ArrayList<TGStickerObj> stickers, boolean isEmoji) {
+  public void init (@NonNull MessagesController parent, boolean isEmoji) {
     this.parent = parent;
     this.isEmoji = isEmoji;
-    this.stickerSuggestionAdapter = new StickerSuggestionAdapter(parent, parent, manager, parent, isEmoji) {
+    this.stickerSuggestionAdapter = new StickerSuggestionAdapter(parent, manager, parent, isEmoji) {
       @Override
       public void onStickerPreviewOpened (StickerSmallView view, TGStickerObj sticker) {
         delegate.notifyChoosingEmoji(isEmoji ? EmojiMediaType.EMOJI: EmojiMediaType.STICKER, true);
@@ -107,6 +107,7 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
         }
       }
     };
+    this.stickerSuggestionAdapter.setCallback(parent);
     this.stickerSuggestionsView.setAdapter(stickerSuggestionAdapter);
 
     parent.addThemeSpecialFilterListener(stickerSuggestionArrowView, ColorId.overlayFilling);
@@ -133,6 +134,21 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
     setPivotY(stickersListTopHeight + stickerArrowHeight);
 
     stickerSuggestionArrowView.setLayoutParams(fparams);
+  }
+
+  public boolean hasStickers () {
+    return stickerSuggestionAdapter.hasStickers();
+  }
+
+  public void setStickers (@NonNull MessagesController parent, @Nullable ArrayList<TGStickerObj> stickers) {
+    stickerSuggestionAdapter.setCallback(parent);
+    stickerSuggestionAdapter.setStickers(stickers);
+    stickerSuggestionsView.scrollToPosition(0);
+  }
+
+  public void addStickers (@NonNull MessagesController parent, @Nullable ArrayList<TGStickerObj> stickers) {
+    stickerSuggestionAdapter.setCallback(parent);
+    stickerSuggestionAdapter.addStickers(stickers);
   }
 
   public void setOnScrollListener (RecyclerView.OnScrollListener onScrollListener) {
@@ -183,6 +199,7 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
       this.areStickersVisible = areVisible;
       if (areVisible) {
         updatePosition(true);
+        stickerSuggestionsView.scrollToPosition(0);
       }
       if (choosingSuggestionSent) {
         if (!areVisible) {
