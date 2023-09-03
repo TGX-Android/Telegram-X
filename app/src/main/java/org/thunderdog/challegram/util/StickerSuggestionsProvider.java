@@ -10,11 +10,13 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
 public class StickerSuggestionsProvider {
   private final Tdlib tdlib;
+  private final HashMap<String, TdApi.Stickers> cache = new HashMap<>();
   private CancellableResultHandler suggestionsHandler;
 
   private String suggestionsEmoji;
@@ -60,7 +62,12 @@ public class StickerSuggestionsProvider {
   }
 
   @UiThread
-  public void getSuggestionsImpl (boolean isLocal) {
+  public void clearCache () {
+    cache.clear();
+  }
+
+  @UiThread
+  private void getSuggestionsImpl (boolean isLocal) {
     final int stickerMode = getSearchStickersMode();
     if (stickerMode == Settings.STICKER_MODE_NONE) {
       return;
@@ -68,6 +75,12 @@ public class StickerSuggestionsProvider {
 
     if (stickerMode == Settings.STICKER_MODE_ALL && isLocal && tdlib.suggestOnlyApiStickers()) {
       getSuggestionsImpl(false);
+      return;
+    }
+
+    TdApi.Stickers cached = cache.get(makeCacheKey(suggestionsType, suggestionsEmoji));
+    if (!isLocal && cached != null) {
+      applyStickerSuggestions(cached, false);
       return;
     }
 
@@ -109,12 +122,17 @@ public class StickerSuggestionsProvider {
       suggestionsFromLocal = result;
     } else {
       suggestionsFromServer = result;
+      cache.put(makeCacheKey(suggestionsType, suggestionsEmoji), result);
     }
     if (isFinish) {
       suggestionsCallback.onResultFull(new Result(suggestionsFromLocal, suggestionsFromServer, suggestionsType));
     } else {
       getSuggestionsImpl(false);
     }
+  }
+
+  private static String makeCacheKey (TdApi.StickerType type, String emoji) {
+    return (type.getConstructor() == TdApi.StickerTypeCustomEmoji.CONSTRUCTOR ? "emoji_": "sticker_") + emoji;
   }
 
   private int getSearchStickersMode () {

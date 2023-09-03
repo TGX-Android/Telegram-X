@@ -490,6 +490,7 @@ public class EmojiToneHelper implements FactorAnimator.Target {
   private final HashMap<String, StickerSuggestionsProvider.Result> emojiSuggestionsCache = new HashMap<>();
 
   public void invalidateSuggestionsCache () {
+    stickerSuggestionsProvider.clearCache();
     emojiSuggestionsCache.clear();
   }
 
