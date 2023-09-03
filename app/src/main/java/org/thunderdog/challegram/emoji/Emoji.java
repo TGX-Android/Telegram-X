@@ -603,6 +603,9 @@ public class Emoji {
       if (lastChar == '\u200D' || lastChar == '\uFE0F') {
         return getEmojiInfo(code.subSequence(0, code.length() - 1), true);
       }
+      if (code.length() == 3 && code.charAt(1) == '\uFE0F') {
+        return getEmojiInfo(Character.toString(code.charAt(0)) + code.charAt(2));
+      }
     }
     /*if (info == null) {
       CharSequence fixedEmoji = fixEmoji(code);
@@ -611,11 +614,7 @@ public class Emoji {
       }
     }*/
     if (info == null) {
-      StringBuilder b = new StringBuilder(code.length());
-      for (int i = 0; i < code.length(); i++) {
-        b.append("\\u").append(Integer.toString(code.charAt(i), 16));
-      }
-      Log.i("Warning. No drawable for emoji: %s", b.toString());
+      Log.i("Warning. No drawable for emoji: %s", StringUtils.toUtfString(code));
       return null;
     }
 
@@ -642,8 +641,10 @@ public class Emoji {
       return null;
     if (info == null) {
       info = getEmojiInfo(code);
-      if (info == null)
-        return null;
+      if (info == null) {
+        Log.i("Invalid or unknown server emoji: %s", StringUtils.toUtfString(code));
+        // Ignore that we don't know this emoji to preserve custom emoji entity
+      }
     }
     return CustomEmojiSpanImpl.newCustomEmojiSpan(info, customEmojiSurfaceProvider, tdlib, customEmojiId);
   }
