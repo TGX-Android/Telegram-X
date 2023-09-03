@@ -125,7 +125,7 @@ public class StickerSuggestionsProvider {
       cache.put(makeCacheKey(suggestionsType, suggestionsEmoji), result);
     }
     if (isFinish) {
-      suggestionsCallback.onResultFull(new Result(suggestionsFromLocal, suggestionsFromServer, suggestionsType));
+      suggestionsCallback.onResultFull(new Result(suggestionsEmoji, suggestionsFromLocal, suggestionsFromServer, suggestionsType));
     } else {
       getSuggestionsImpl(false);
     }
@@ -144,13 +144,15 @@ public class StickerSuggestionsProvider {
   }
 
   public static class Result {
+    public final String emoji;
     public final @NonNull TdApi.Stickers stickersFromLocal;
     public final @NonNull TdApi.Stickers stickersFromServer;
     public final @NonNull TdApi.StickerType type;
 
-    public Result (@Nullable TdApi.Stickers stickersFromLocal, @Nullable TdApi.Stickers stickersFromServer, @NonNull TdApi.StickerType type) {
+    public Result (@NonNull String emoji, @Nullable TdApi.Stickers stickersFromLocal, @Nullable TdApi.Stickers stickersFromServer, @NonNull TdApi.StickerType type) {
       this.stickersFromLocal = stickersFromLocal != null ? stickersFromLocal: new TdApi.Stickers(new TdApi.Sticker[0]);
       this.stickersFromServer = stickersFromServer != null ? stickersFromServer: new TdApi.Stickers(new TdApi.Sticker[0]);
+      this.emoji = emoji;
       this.type = type;
     }
 
