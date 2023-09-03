@@ -3,6 +3,8 @@ package org.thunderdog.challegram.ui;
 import android.content.Context;
 import android.view.View;
 
+import androidx.annotation.IdRes;
+
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.R;
@@ -121,6 +123,18 @@ public class SettingsStickersAndEmojiController extends RecyclerViewController<S
               v.setData(R.string.SuggestStickersNone);
               break;
           }
+        } else if (itemId == R.id.btn_emojiSuggestions) {
+          switch (Settings.instance().getEmojiMode()) {
+            case Settings.STICKER_MODE_ALL:
+              v.setData(R.string.SuggestStickersAll);
+              break;
+            case Settings.STICKER_MODE_ONLY_INSTALLED:
+              v.setData(R.string.SuggestStickersInstalled);
+              break;
+            case Settings.STICKER_MODE_NONE:
+              v.setData(R.string.SuggestStickersNone);
+              break;
+          }
         }
       }
     };
@@ -140,7 +154,7 @@ public class SettingsStickersAndEmojiController extends RecyclerViewController<S
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_emoji, 0, R.string.Emoji).setDrawModifier(new EmojiModifier(Lang.getString(R.string.EmojiPreview), Paints.emojiPaint())));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-    items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.SuggestAnimatedEmoji).setLongId(Settings.SETTING_FLAG_NO_SUGGEST_ANIMATED_EMOJI).setBoolValue(true));
+    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_emojiSuggestions, 0, R.string.SuggestAnimatedEmoji));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.AnimatedEmoji).setLongId(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI).setBoolValue(true));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
@@ -230,28 +244,38 @@ public class SettingsStickersAndEmojiController extends RecyclerViewController<S
       c.setArguments(getArguments());
       navigateTo(c);
     } else if (viewId == R.id.btn_stickerSuggestions) {
-      showStickerOptions();
+      showStickerOptions(false);
+    } else if (viewId == R.id.btn_emojiSuggestions) {
+      showStickerOptions(true);
     }
   }
 
-  private void showStickerOptions () {
-    int stickerOption = Settings.instance().getStickerMode();
-    showSettings(new SettingsWrapBuilder(R.id.btn_stickerSuggestions).setRawItems(new ListItem[]{
-      new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_stickerSuggestionsAll, 0, R.string.SuggestStickersAll, R.id.btn_stickerSuggestions, stickerOption == Settings.STICKER_MODE_ALL),
-      new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_stickerSuggestionsInstalled, 0, R.string.SuggestStickersInstalled, R.id.btn_stickerSuggestions, stickerOption == Settings.STICKER_MODE_ONLY_INSTALLED),
-      new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_stickerSuggestionsNone, 0, R.string.SuggestStickersNone, R.id.btn_stickerSuggestions, stickerOption == Settings.STICKER_MODE_NONE),
+  private void showStickerOptions (boolean isEmoji) {
+    @IdRes int btnId = isEmoji ? R.id.btn_emojiSuggestions: R.id.btn_stickerSuggestions;
+    final int stickerOption = isEmoji ?
+      Settings.instance().getEmojiMode():
+      Settings.instance().getStickerMode();
+
+    showSettings(new SettingsWrapBuilder(btnId).setRawItems(new ListItem[]{
+      new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_stickerOrEmojiSuggestionsAll, 0, R.string.SuggestStickersAll, btnId, stickerOption == Settings.STICKER_MODE_ALL),
+      new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_stickerOrEmojiSuggestionsInstalled, 0, R.string.SuggestStickersInstalled, btnId, stickerOption == Settings.STICKER_MODE_ONLY_INSTALLED),
+      new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_stickerOrEmojiSuggestionsNone, 0, R.string.SuggestStickersNone, btnId, stickerOption == Settings.STICKER_MODE_NONE),
     }).setIntDelegate((id, result) -> {
       int newStickerMode = Settings.instance().getStickerMode();
-      int stickerResultId = result.get(R.id.btn_stickerSuggestions);
-      if (stickerResultId == R.id.btn_stickerSuggestionsAll) {
+      int stickerResultId = result.get(btnId);
+      if (stickerResultId == R.id.btn_stickerOrEmojiSuggestionsAll) {
         newStickerMode = Settings.STICKER_MODE_ALL;
-      } else if (stickerResultId == R.id.btn_stickerSuggestionsInstalled) {
+      } else if (stickerResultId == R.id.btn_stickerOrEmojiSuggestionsInstalled) {
         newStickerMode = Settings.STICKER_MODE_ONLY_INSTALLED;
-      } else if (stickerResultId == R.id.btn_stickerSuggestionsNone) {
+      } else if (stickerResultId == R.id.btn_stickerOrEmojiSuggestionsNone) {
         newStickerMode = Settings.STICKER_MODE_NONE;
       }
-      Settings.instance().setStickerMode(newStickerMode);
-      adapter.updateValuedSettingById(R.id.btn_stickerSuggestions);
+      if (isEmoji) {
+        Settings.instance().setEmojiMode(newStickerMode);
+      } else {
+        Settings.instance().setStickerMode(newStickerMode);
+      }
+      adapter.updateValuedSettingById(btnId);
     }).setAllowResize(false)); //.setHeaderItem(new SettingItem(SettingItem.TYPE_INFO, 0, 0, UI.getString(R.string.MarkdownHint), false))
   }
 

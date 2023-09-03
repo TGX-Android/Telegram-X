@@ -61,7 +61,7 @@ public class StickerSuggestionsProvider {
 
   @UiThread
   public void getSuggestionsImpl (boolean isLocal) {
-    final int stickerMode = getSearchStickersMode(suggestionsType);
+    final int stickerMode = getSearchStickersMode();
     if (stickerMode == Settings.STICKER_MODE_NONE) {
       return;
     }
@@ -104,7 +104,7 @@ public class StickerSuggestionsProvider {
     TdApi.Stickers result = new TdApi.Stickers(stickersToAdd.toArray(new TdApi.Sticker[0]));
     suggestionsCallback.onResultPart(result, suggestionsType, isLocal);
 
-    boolean isFinish = !isLocal || getSearchStickersMode(suggestionsType) != Settings.STICKER_MODE_ALL;
+    boolean isFinish = !isLocal || getSearchStickersMode() != Settings.STICKER_MODE_ALL;
     if (isLocal) {
       suggestionsFromLocal = result;
     } else {
@@ -117,10 +117,9 @@ public class StickerSuggestionsProvider {
     }
   }
 
-  private static int getSearchStickersMode (TdApi.StickerType type) {
-    if (type.getConstructor() == TdApi.StickerTypeCustomEmoji.CONSTRUCTOR) {
-      return Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_SUGGEST_ANIMATED_EMOJI) ?
-        Settings.STICKER_MODE_NONE: Settings.STICKER_MODE_ALL;
+  private int getSearchStickersMode () {
+    if (suggestionsType.getConstructor() == TdApi.StickerTypeCustomEmoji.CONSTRUCTOR) {
+      return Settings.instance().getEmojiMode();
     } else {
       return Settings.instance().getStickerMode();
     }

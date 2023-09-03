@@ -426,8 +426,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
 
   private int getSearchStickersMode (boolean isEmoji) {
     if (isEmoji) {
-      return Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_SUGGEST_ANIMATED_EMOJI) ?
-        Settings.STICKER_MODE_NONE: Settings.STICKER_MODE_ALL;
+      return Settings.instance().getEmojiMode();
     } else {
       return Settings.instance().getStickerMode();
     }
