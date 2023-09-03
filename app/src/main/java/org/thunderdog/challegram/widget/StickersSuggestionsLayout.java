@@ -143,6 +143,7 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
   public void setStickers (@NonNull MessagesController parent, @Nullable ArrayList<TGStickerObj> stickers) {
     stickerSuggestionAdapter.setCallback(parent);
     stickerSuggestionAdapter.setStickers(stickers);
+    stickerSuggestionsView.scrollToPosition(0);
   }
 
   public void addStickers (@NonNull MessagesController parent, @Nullable ArrayList<TGStickerObj> stickers) {
@@ -198,6 +199,7 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
       this.areStickersVisible = areVisible;
       if (areVisible) {
         updatePosition(true);
+        stickerSuggestionsView.scrollToPosition(0);
       }
       if (choosingSuggestionSent) {
         if (!areVisible) {
