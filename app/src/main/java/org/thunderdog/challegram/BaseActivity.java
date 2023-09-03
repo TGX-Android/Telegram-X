@@ -2027,11 +2027,11 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     if (emojiSuggestionsWrap == null) {
       emojiSuggestionsWrap = new StickersSuggestionsLayout(context.context());
       emojiSuggestionsWrap.setId(R.id.view_customEmojiSuggestions);
-      emojiSuggestionsWrap.init(context, stickers, true);
+      emojiSuggestionsWrap.init(context, true);
     }
     emojiSuggestionsWrap.setChoosingDelegate(choosingDelegate);
     emojiSuggestionsWrap.setOnScrollListener(scrollCallback);
-    emojiSuggestionsWrap.stickerSuggestionAdapter.setStickers(stickers);
+    emojiSuggestionsWrap.setStickers(context, stickers);
   }
 
   public void updateEmojiSuggestionsPosition (boolean needTranslate) {
@@ -2040,9 +2040,9 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     }
   }
 
-  public void addEmojiSuggestions (ArrayList<TGStickerObj> stickers) {
+  public void addEmojiSuggestions (MessagesController context, ArrayList<TGStickerObj> stickers) {
     if (emojiSuggestionsWrap != null && stickers != null && !stickers.isEmpty()) {
-      emojiSuggestionsWrap.stickerSuggestionAdapter.addStickers(stickers);
+      emojiSuggestionsWrap.addStickers(context, stickers);
     }
   }
 
@@ -2056,7 +2056,7 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   public boolean hasEmojiSuggestions () {
-    return emojiSuggestionsWrap != null && emojiSuggestionsWrap.stickerSuggestionAdapter.hasStickers();
+    return emojiSuggestionsWrap != null && emojiSuggestionsWrap.hasStickers();
   }
 
   public boolean isEmojiSuggestionsVisible () {

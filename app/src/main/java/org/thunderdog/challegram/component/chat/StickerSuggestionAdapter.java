@@ -50,17 +50,20 @@ public class StickerSuggestionAdapter extends RecyclerView.Adapter<StickerSugges
 
   private final RecyclerView.LayoutManager manager;
   private final ViewController<?> context;
-  private final Callback callback;
+  private Callback callback;
   private final boolean isEmoji;
   private @Nullable ArrayList<TGStickerObj> stickers;
   private @Nullable ViewController<?> themeProvider;
 
-  public StickerSuggestionAdapter (ViewController<?> context, Callback callback, RecyclerView.LayoutManager manager, @Nullable ViewController<?> themeProvider, boolean isEmoji) {
+  public StickerSuggestionAdapter (ViewController<?> context, RecyclerView.LayoutManager manager, @Nullable ViewController<?> themeProvider, boolean isEmoji) {
     this.context = context;
-    this.callback = callback;
     this.manager = manager;
     this.themeProvider = themeProvider;
     this.isEmoji = isEmoji;
+  }
+
+  public void setCallback (Callback callback) {
+    this.callback = callback;
   }
 
   public boolean hasStickers () {
