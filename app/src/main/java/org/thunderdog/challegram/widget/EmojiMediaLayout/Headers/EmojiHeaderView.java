@@ -25,9 +25,9 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.widget.EmojiLayout;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiHeaderCollapsibleSectionView;
+import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSection;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSectionView;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.StickerSectionView;
-import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSection;
 
 import java.util.ArrayList;
 
@@ -119,8 +119,8 @@ public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Targe
   private boolean mediaMustBeVisibility = false;
 
   private void checkAllowMedia () {
-    goToMediaPageSection.setVisibility(allowMedia && mediaMustBeVisibility ? VISIBLE: GONE);
-    recyclerView.setPadding(Screen.dp(DEFAULT_PADDING), 0, Screen.dp(DEFAULT_PADDING + (allowMedia? 44: 0)), 0);
+    goToMediaPageSection.setVisibility(allowMedia && mediaMustBeVisibility ? VISIBLE : GONE);
+    recyclerView.setPadding(Screen.dp(DEFAULT_PADDING), 0, Screen.dp(DEFAULT_PADDING + (allowMedia? 44 : 0)), 0);
   }
 
   public void setAllowMedia (boolean allowMedia) {
@@ -184,7 +184,7 @@ public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Targe
           }
         }
       } else if (section + OFFSET > last) {
-        int desiredScrollX = (int) Math.max(0, (section - sectionsCount + 1) * itemWidth + itemWidth * OFFSET + (emojiLayout.isAnimatedEmojiOnly() ? -itemWidth: itemWidth / 2f));
+        int desiredScrollX = (int) Math.max(0, (section - sectionsCount + 1) * itemWidth + itemWidth * OFFSET + (emojiLayout.isAnimatedEmojiOnly() ? -itemWidth : itemWidth / 2f));
         int scrollValue = desiredScrollX - scrollX;
         if (last != -1 && last == adapter.getItemCount() - 1) {
           View vr = adapter.manager.findViewByPosition(last);
@@ -385,7 +385,7 @@ public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Targe
     }
 
     public int getAddItemCount () {
-      return emojiSections.size() + (expandableItemSize > 0 ? 1: 0);
+      return emojiSections.size() + (expandableItemSize > 0 ? 1 : 0);
     }
 
     public boolean hasStickers () {
@@ -546,7 +546,7 @@ public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Targe
         ((StickerSectionView) holder.itemView).setSelectionFactor(info == selectedObject? 1f : 0f, false);
         ((StickerSectionView) holder.itemView).setStickerSet(info);
       } else if (viewType == ViewHolder.TYPE_SECTIONS_EXPANDABLE) {
-        EmojiSection obj = selectedObject instanceof EmojiSection ? ((EmojiSection) selectedObject): null;
+        EmojiSection obj = selectedObject instanceof EmojiSection ? ((EmojiSection) selectedObject) : null;
         ((EmojiHeaderCollapsibleSectionView) holder.itemView).setSelectedObject(obj, false);
       }
     }
@@ -579,7 +579,7 @@ public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Targe
 
     @Override
     public int getItemCount () {
-      return emojiSections.size() + stickerSets.size() + (expandableItemSize > 0 ? 1: 0) ;
+      return emojiSections.size() + stickerSets.size() + (expandableItemSize > 0 ? 1 : 0) ;
     }
 
     @Override

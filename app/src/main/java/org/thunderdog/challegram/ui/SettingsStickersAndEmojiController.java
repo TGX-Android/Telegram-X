@@ -251,7 +251,7 @@ public class SettingsStickersAndEmojiController extends RecyclerViewController<S
   }
 
   private void showStickerOptions (boolean isEmoji) {
-    @IdRes int btnId = isEmoji ? R.id.btn_emojiSuggestions: R.id.btn_stickerSuggestions;
+    @IdRes int btnId = isEmoji ? R.id.btn_emojiSuggestions : R.id.btn_stickerSuggestions;
     final int stickerOption = isEmoji ?
       Settings.instance().getEmojiMode():
       Settings.instance().getStickerMode();
@@ -343,7 +343,7 @@ public class SettingsStickersAndEmojiController extends RecyclerViewController<S
     }
 
     if (adapter != null) {
-      adapter.updateValuedSettingById(isEmoji ? R.id.btn_animatedEmojiSettings: R.id.btn_stickerSettings);
+      adapter.updateValuedSettingById(isEmoji ? R.id.btn_animatedEmojiSettings : R.id.btn_stickerSettings);
     }
   }
 

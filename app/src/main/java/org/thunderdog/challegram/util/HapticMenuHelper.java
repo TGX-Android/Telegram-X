@@ -310,9 +310,9 @@ public class HapticMenuHelper implements View.OnTouchListener, View.OnLongClickL
       int centerY = out[1] + viewHeight / 2;
 
       int resultCenterX = Math.max(viewWidth / 2, Math.min(parentWidth - viewWidth / 2, targetCenterX));
-      int resultCenterY = targetCenterY - targetHeight / 2 - (anchorMode == MenuMoreWrap.ANCHOR_MODE_CENTER ? Screen.dp(12): viewHeight / 2);
+      int resultCenterY = targetCenterY - targetHeight / 2 - (anchorMode == MenuMoreWrap.ANCHOR_MODE_CENTER ? Screen.dp(12) : viewHeight / 2);
 
-      v.setTranslationX(resultCenterX - centerX + (anchorMode == MenuMoreWrap.ANCHOR_MODE_CENTER ? Screen.dp(8): 0));
+      v.setTranslationX(resultCenterX - centerX + (anchorMode == MenuMoreWrap.ANCHOR_MODE_CENTER ? Screen.dp(8) : 0));
       v.setTranslationY(resultCenterY - centerY);
 
       if (anchorMode == MenuMoreWrap.ANCHOR_MODE_CENTER) {

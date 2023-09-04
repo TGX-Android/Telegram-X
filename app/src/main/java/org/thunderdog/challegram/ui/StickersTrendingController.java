@@ -129,7 +129,7 @@ public class StickersTrendingController extends ViewController<Void> implements 
   }
 
   private int getSpanCount () {
-    return isEmoji ? 8: 5;
+    return isEmoji ? 8 : 5;
   }
 
   @Override

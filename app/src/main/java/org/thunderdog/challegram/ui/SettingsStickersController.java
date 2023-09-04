@@ -64,7 +64,7 @@ public class SettingsStickersController extends ViewPagerController<SettingsCont
 
   @Override
   public CharSequence getName () {
-    return Lang.getString(type == TYPE_STICKER ? R.string.Stickers: R.string.EmojiPacks);
+    return Lang.getString(type == TYPE_STICKER ? R.string.Stickers : R.string.EmojiPacks);
   }
 
   @Override
@@ -145,7 +145,7 @@ public class SettingsStickersController extends ViewPagerController<SettingsCont
 
   @Override
   protected int getPagerItemCount () {
-    return type == TYPE_STICKER ? 4: 3;
+    return type == TYPE_STICKER ? 4 : 3;
   }
 
   @Override

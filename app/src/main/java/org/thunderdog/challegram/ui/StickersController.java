@@ -536,7 +536,7 @@ public class StickersController extends RecyclerViewController<StickersControlle
 
       if (stickerSets == null || stickerSets.isEmpty()) {
         if (mode == MODE_STICKERS_ARCHIVED) {
-          items.add(new ListItem(ListItem.TYPE_EMPTY, 0, 0, Lang.getString(!isEmoji ? R.string.ArchivedStickersInfo: R.string.ArchivedEmojiInfo, Strings.buildCounter(tdlib.getInstalledStickerSetLimit())), false));
+          items.add(new ListItem(ListItem.TYPE_EMPTY, 0, 0, Lang.getString(!isEmoji ? R.string.ArchivedStickersInfo : R.string.ArchivedEmojiInfo, Strings.buildCounter(tdlib.getInstalledStickerSetLimit())), false));
         } else {
           items.add(new ListItem(ListItem.TYPE_EMPTY, 0, 0, mode == MODE_STICKERS ? R.string.NoStickerSets : R.string.NoMasks));
         }
@@ -570,7 +570,7 @@ public class StickersController extends RecyclerViewController<StickersControlle
             items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
             itemsBreakSize = items.size() - itemsBreakIndex;
           }
-          items.add(new ListItem(itemsBreakIndex == -1 ? ListItem.TYPE_STICKER_SET: ListItem.TYPE_ARCHIVED_STICKER_SET, R.id.btn_stickerSetInfo, 0, 0).setLongId(info.getId()).setHighlightValue(searchRequest));
+          items.add(new ListItem(itemsBreakIndex == -1 ? ListItem.TYPE_STICKER_SET : ListItem.TYPE_ARCHIVED_STICKER_SET, R.id.btn_stickerSetInfo, 0, 0).setLongId(info.getId()).setHighlightValue(searchRequest));
         }
       } else if (mode == MODE_STICKERS_ARCHIVED) {
         for (TGStickerSetInfo info : stickerSets) {
@@ -626,7 +626,7 @@ public class StickersController extends RecyclerViewController<StickersControlle
 
       final ArrayList<TGStickerSetInfo> currentStickerSets = getActualStickerSetsList();
       final boolean inSearchMode = inSearchMode();
-      final int oldSize = currentStickerSets != null ? currentStickerSets.size(): 0;
+      final int oldSize = currentStickerSets != null ? currentStickerSets.size() : 0;
 
       stickerSets.addAll(stickerSetsToAdd);
 
@@ -655,7 +655,7 @@ public class StickersController extends RecyclerViewController<StickersControlle
       final boolean inSearchMode = inSearchMode();
       final int totalIndex = indexOfStickerSetById(stickerSets, id);
       final int foundIndex = indexOfStickerSetById(foundStickerSets, id);
-      final int realIndex = inSearchMode ? foundIndex: totalIndex;
+      final int realIndex = inSearchMode ? foundIndex : totalIndex;
 
       if (currentStates != null) {
         currentStates.delete(id);
@@ -692,7 +692,7 @@ public class StickersController extends RecyclerViewController<StickersControlle
     public void addStickerSet (TGStickerSetInfo info, int index) {
       final ArrayList<TGStickerSetInfo> currentStickerSets = getActualStickerSetsList();
       final boolean inSearchMode = inSearchMode();
-      final int oldSize = currentStickerSets != null ? currentStickerSets.size(): 0;
+      final int oldSize = currentStickerSets != null ? currentStickerSets.size() : 0;
       final int totalIndex = indexOfStickerSetById(stickerSets, info.getId());
       if (totalIndex != -1 || stickerSets == null) {
         if (totalIndex != -1 && mode == MODE_MASKS) {
@@ -714,7 +714,7 @@ public class StickersController extends RecyclerViewController<StickersControlle
         foundStickerSets.add(indexToInsert, info);
         realIndex = indexToInsert;
       } else {
-        realIndex = inSearchMode ? -1: index;
+        realIndex = inSearchMode ? -1 : index;
       }
 
       if (realIndex == -1) {
@@ -735,7 +735,7 @@ public class StickersController extends RecyclerViewController<StickersControlle
       if (needUpdateBreakPosition) {
         itemsBreakIndex += 1;
       }
-      adapter.addItem(position, new ListItem(info.isArchived() ? ListItem.TYPE_ARCHIVED_STICKER_SET: ListItem.TYPE_STICKER_SET, R.id.btn_stickerSetInfo, 0, 0).setHighlightValue(searchRequest).setLongId(info.getId()));
+      adapter.addItem(position, new ListItem(info.isArchived() ? ListItem.TYPE_ARCHIVED_STICKER_SET : ListItem.TYPE_STICKER_SET, R.id.btn_stickerSetInfo, 0, 0).setHighlightValue(searchRequest).setLongId(info.getId()));
       updateEmojiPacksCount();
 
       ((LinearLayoutManager) getRecyclerView().getLayoutManager()).scrollToPositionWithOffset(firstVisiblePosition, offset);
@@ -795,7 +795,7 @@ public class StickersController extends RecyclerViewController<StickersControlle
       int i = adapter.indexOfViewById(R.id.view_emojiPacksCount);
       if (i != -1) {
         ListItem item = adapter.getItems().get(i);
-        boolean changed = item.setStringIfChanged(Lang.pluralBold(R.string.xEmojiPacks, stickerSets != null ? stickerSets.size(): 0));
+        boolean changed = item.setStringIfChanged(Lang.pluralBold(R.string.xEmojiPacks, stickerSets != null ? stickerSets.size() : 0));
         if (changed) {
           adapter.notifyItemChanged(i);
         }
@@ -835,7 +835,7 @@ public class StickersController extends RecyclerViewController<StickersControlle
       ArrayList<TGStickerSetInfo> stickerSets = getActualStickerSetsList();
       int index = getIndexFromPosition(position);
 
-      return index != -1 && stickerSets != null ? stickerSets.get(index): null;
+      return index != -1 && stickerSets != null ? stickerSets.get(index) : null;
     }
 
     private boolean inSearchMode () {
@@ -844,7 +844,7 @@ public class StickersController extends RecyclerViewController<StickersControlle
 
     @Nullable
     private ArrayList<TGStickerSetInfo> getActualStickerSetsList () {
-      return inSearchMode() ? foundStickerSets: stickerSets;
+      return inSearchMode() ? foundStickerSets : stickerSets;
     }
 
     @Nullable

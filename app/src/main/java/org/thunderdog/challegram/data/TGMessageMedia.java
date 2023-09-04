@@ -278,7 +278,7 @@ public class TGMessageMedia extends TGMessage {
         this.wrapper.performDestroy();
       }
       if (!Td.isEmpty(caption)) {
-        TdApi.FormattedText fText = translatedText != null ? translatedText: caption;
+        TdApi.FormattedText fText = translatedText != null ? translatedText : caption;
         this.wrapper = new TextWrapper(fText.text, getTextStyleProvider(), getTextColorSet())
           .setEntities(TextEntity.valueOf(tdlib, fText, openParameters()), (wrapper, text, specificMedia) -> {
             if (this.wrapper == wrapper) {

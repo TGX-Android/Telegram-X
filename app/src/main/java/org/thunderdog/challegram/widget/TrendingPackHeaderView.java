@@ -17,7 +17,6 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
-import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
@@ -26,13 +25,7 @@ import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
-import org.thunderdog.challegram.util.text.FormattedText;
 import org.thunderdog.challegram.util.text.Highlight;
-import org.thunderdog.challegram.util.text.Text;
-import org.thunderdog.challegram.util.text.TextColorSets;
-import org.thunderdog.challegram.util.text.TextMedia;
-
-import me.vkryl.core.lambda.Destroyable;
 
 public class TrendingPackHeaderView extends RelativeLayout {
   private final android.widget.TextView newView;
@@ -170,16 +163,16 @@ public class TrendingPackHeaderView extends RelativeLayout {
     boolean needLock = stickerSet != null && stickerSet.isEmoji() && !stickerSet.isInstalled() && !context.tdlib().account().isPremium();
 
     newView.setVisibility(!isNew ? View.GONE : View.VISIBLE);
-    button.setVisibility(needLock ? GONE: VISIBLE);
+    button.setVisibility(needLock ? GONE : VISIBLE);
     button.setInProgress(stickerSet != null && !stickerSet.isRecent() && isInProgress, false);
     button.setIsDone(stickerSet != null && stickerSet.isInstalled(), false);
     button.setTag(stickerSet);
 
-    premiumLockIcon.setVisibility(needLock ? VISIBLE: GONE);
+    premiumLockIcon.setVisibility(needLock ? VISIBLE : GONE);
     premiumLockIcon.setTag(stickerSet);
 
-    Views.setMediumText(titleView, Highlight.toSpannable(stickerSet != null ? stickerSet.getTitle(): "", highlight));
-    subtitleView.setText(stickerSet != null ? Lang.plural(stickerSet.isEmoji() ? R.string.xEmoji: R.string.xStickers, stickerSet.getFullSize()) : "");
+    Views.setMediumText(titleView, Highlight.toSpannable(stickerSet != null ? stickerSet.getTitle() : "", highlight));
+    subtitleView.setText(stickerSet != null ? Lang.plural(stickerSet.isEmoji() ? R.string.xEmoji : R.string.xStickers, stickerSet.getFullSize()) : "");
 
     if (Views.setAlignParent(newView, Lang.rtl())) {
       int rightMargin = Screen.dp(6f);

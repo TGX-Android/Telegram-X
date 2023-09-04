@@ -3297,7 +3297,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
   private void setTextFormattingLayoutVisible (boolean visible) {
     textFormattingVisible = visible;
     if (emojiLayout != null && textFormattingLayout != null) {
-      textFormattingLayout.setVisibility(visible ? View.VISIBLE: View.GONE);
+      textFormattingLayout.setVisibility(visible ? View.VISIBLE : View.GONE);
       emojiLayout.optimizeForDisplayTextFormattingLayout(!visible);
       if (visible) {
         textFormattingLayout.checkButtonsActive(false);
@@ -3312,6 +3312,6 @@ public class ShareController extends TelegramViewController<ShareController.Args
   }
 
   public @DrawableRes int getTargetIcon () {
-    return (textInputHasSelection || (textFormattingVisible && emojiShown)) ? R.drawable.baseline_format_text_24: R.drawable.deproko_baseline_insert_emoticon_26;
+    return (textInputHasSelection || (textFormattingVisible && emojiShown)) ? R.drawable.baseline_format_text_24 : R.drawable.deproko_baseline_insert_emoticon_26;
   }
 }

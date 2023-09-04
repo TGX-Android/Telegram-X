@@ -339,7 +339,7 @@ public class ReactionsOverlayView extends ViewGroup {
           gifReceiver.getTop() - gifReceiver.getHeight() / 4f,
           gifReceiver.getRight() + gifReceiver.getWidth() / 4f,
           gifReceiver.getBottom() + gifReceiver.getHeight() / 4f,
-          Paints.getSrcInPaint(ColorUtils.fromToArgb(repaintingColorStart, repaintingColorEnd, positionAnimator != null ? positionAnimator.getFactor(): 1f)));
+          Paints.getSrcInPaint(ColorUtils.fromToArgb(repaintingColorStart, repaintingColorEnd, positionAnimator != null ? positionAnimator.getFactor() : 1f)));
         canvas.restore();
       }
 

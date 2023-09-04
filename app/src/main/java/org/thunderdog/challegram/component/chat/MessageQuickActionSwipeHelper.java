@@ -1,7 +1,5 @@
 package org.thunderdog.challegram.component.chat;
 
-import android.util.Log;
-
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.tool.Screen;
 
@@ -37,7 +35,7 @@ public class MessageQuickActionSwipeHelper {
     final boolean lockedVerticalSwipe = isLockedVerticalSwipe();
     final boolean isLeft = dx > 0;
     final float ddx = dx - currentDx;
-    final float ddy = lockedVerticalSwipe ? 0f: dy - currentDy;
+    final float ddy = lockedVerticalSwipe ? 0f : dy - currentDy;
     currentDx = dx; actualDx += ddx;
     currentDy = dy; actualDy += ddy;
     actualDy = clampActualDy(isLeft, actualDy);

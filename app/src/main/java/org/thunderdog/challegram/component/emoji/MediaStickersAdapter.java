@@ -149,7 +149,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
         }
       }
       if (position > 0) {
-        int itemCount = Math.min(stickerSet.isDefaultEmoji() ? stickerSet.getSize() + 1: stickerSet.isTrending() ? (stickerSet.isEmoji() ? 16: 5) : stickerSet.getSize(), position);
+        int itemCount = Math.min(stickerSet.isDefaultEmoji() ? stickerSet.getSize() + 1 : stickerSet.isTrending() ? (stickerSet.isEmoji() ? 16 : 5) : stickerSet.getSize(), position);
         int rowCount = (int) Math.ceil((double) itemCount / (double) spanCount);
         scrollY += rowCount * rowSize;
         position -= itemCount;
@@ -748,7 +748,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
           }
           textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
           textView.setSingleLine(true);
-          textView.setText(Lang.getString(viewType == TYPE_NO_EMOJISETS ? R.string.NoEmojiSetsFound: viewType == TYPE_COME_AGAIN_LATER ? R.string.ComeAgainLater : R.string.NoStickerSets));
+          textView.setText(Lang.getString(viewType == TYPE_NO_EMOJISETS ? R.string.NoEmojiSetsFound : viewType == TYPE_COME_AGAIN_LATER ? R.string.ComeAgainLater : R.string.NoStickerSets));
           textView.setGravity(Gravity.CENTER);
           textView.setEllipsize(TextUtils.TruncateAt.END);
           //noinspection ResourceType
@@ -766,7 +766,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
           FrameLayoutFix contentView = new FrameLayoutFix(context) {
             @Override
             protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
-              super.onMeasure(widthMeasureSpec, offsetProvider != null ? MeasureSpec.makeMeasureSpec(offsetProvider.provideReverseOffset(), MeasureSpec.EXACTLY): heightMeasureSpec);
+              super.onMeasure(widthMeasureSpec, offsetProvider != null ? MeasureSpec.makeMeasureSpec(offsetProvider.provideReverseOffset(), MeasureSpec.EXACTLY) : heightMeasureSpec);
             }
           };
           ProgressComponentView view = new ProgressComponentView(context);
@@ -781,7 +781,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
             protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
               setMeasuredDimension(
                 getDefaultSize(getSuggestedMinimumWidth(), widthMeasureSpec),
-                offsetProvider != null ? MeasureSpec.makeMeasureSpec(offsetProvider.provideOffset(), MeasureSpec.EXACTLY): heightMeasureSpec);
+                offsetProvider != null ? MeasureSpec.makeMeasureSpec(offsetProvider.provideOffset(), MeasureSpec.EXACTLY) : heightMeasureSpec);
             }
           };
           return new StickerHolder(view);

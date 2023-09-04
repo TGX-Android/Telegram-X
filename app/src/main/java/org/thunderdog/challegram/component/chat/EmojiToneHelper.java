@@ -26,7 +26,6 @@ import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 
-import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
@@ -49,7 +48,6 @@ import org.thunderdog.challegram.widget.BubbleLayout;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiToneListView;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 
 import me.vkryl.android.AnimatorUtils;
@@ -280,7 +278,7 @@ public class EmojiToneHelper implements FactorAnimator.Target {
     return visibilityAnimator != null && visibilityAnimator.getValue();
   }
   private void setIsVisible (View anchorView, boolean isVisible) {
-    visibleAnchorView = isVisible ? anchorView: null;
+    visibleAnchorView = isVisible ? anchorView : null;
     boolean wasVisible = isVisible();
     if (wasVisible != isVisible) {
       if (visibilityAnimator == null) {
@@ -498,7 +496,7 @@ public class EmojiToneHelper implements FactorAnimator.Target {
   }
 
   private boolean isInSelfChat () {
-    long chatId = delegate != null ? delegate.getCurrentChatId(): 0;
+    long chatId = delegate != null ? delegate.getCurrentChatId() : 0;
     return chatId != 0 && tdlib.isSelfChat(chatId);
   }
 
@@ -547,7 +545,7 @@ public class EmojiToneHelper implements FactorAnimator.Target {
   }
 
   public TGStickerObj getSelectedCustomEmoji () {
-    return emojiTonePicker != null ? emojiTonePicker.getSelectedCustomEmoji(): null;
+    return emojiTonePicker != null ? emojiTonePicker.getSelectedCustomEmoji() : null;
   }
 
   private RunnableData<TGStickerObj> onCustomEmojiSelectedListener;

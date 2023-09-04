@@ -105,7 +105,7 @@ public class EmojiToneListView extends FrameLayout {
     if (hasToneEmoji && toneIndexVertical == 0 || toneIndexVertical == -1) {
       return null;
     }
-    int rowStart = hasToneEmoji ? 1: 0;
+    int rowStart = hasToneEmoji ? 1 : 0;
     int index = toneIndex;
     for (int a = rowStart; a < toneIndexVertical; a++) {
       index += getRowSize(a);
@@ -174,7 +174,7 @@ public class EmojiToneListView extends FrameLayout {
       return;
     }
 
-    int row = hasToneEmoji() ? 1: 0;
+    int row = hasToneEmoji() ? 1 : 0;
     int x = getRowX(row);
     int y = getRowY(row);
 
@@ -262,7 +262,7 @@ public class EmojiToneListView extends FrameLayout {
   }
 
   public int getRowX (int rowIndex) {
-    int boundWidth = (boundView != null) ? boundView.getMeasuredWidth(): Screen.dp(48);
+    int boundWidth = (boundView != null) ? boundView.getMeasuredWidth() : Screen.dp(48);
 
     int totalWidth = calcViewWidth();
     int freeSpace = totalWidth - getRowWidth(rowIndex);
@@ -283,7 +283,7 @@ public class EmojiToneListView extends FrameLayout {
 
     boolean isStickersSmall = stickers != null && stickers.size() <= 6 && stickers.size() >= 0;
     if (isStickersSmall) {
-      return rowIndex == 0 ? Math.min(6, stickers.size()): 0;
+      return rowIndex == 0 ? Math.min(6, stickers.size()) : 0;
     }
 
     if (stickers != null) {
@@ -302,12 +302,12 @@ public class EmojiToneListView extends FrameLayout {
   public int getRowsCount () {
     boolean isStickersSmall = stickers != null && !stickers.isEmpty() && stickers.size() <= 6;
 
-    int count = (emojiColorState != EmojiData.STATE_NO_COLORS ? 1: 0);
+    int count = (emojiColorState != EmojiData.STATE_NO_COLORS ? 1 : 0);
     if (isStickersSmall) {
       count += 1;
     } else {
-      count += ((stickers != null && stickers.stickersFromServer.stickers.length > 0) ? 1: 0);
-      count += ((stickers != null && stickers.stickersFromLocal.stickers.length > 0) ? 1: 0);
+      count += ((stickers != null && stickers.stickersFromServer.stickers.length > 0) ? 1 : 0);
+      count += ((stickers != null && stickers.stickersFromLocal.stickers.length > 0) ? 1 : 0);
     }
 
     return count;

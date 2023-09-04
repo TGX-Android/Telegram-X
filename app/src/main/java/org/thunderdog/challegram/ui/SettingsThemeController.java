@@ -1383,7 +1383,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
     int customThemeId = ThemeManager.resolveCustomThemeId(themeId);
     boolean canEdit = isCustom && Settings.instance().hasThemeOwnership(customThemeId);
     boolean isCurrent = ThemeManager.instance().isCurrentTheme(themeId);
-    int size = isCustom ? (isCurrent ? 3 : 4): 1;
+    int size = isCustom ? (isCurrent ? 3 : 4) : 1;
     IntList ids = new IntList(size);
     IntList icons = new IntList(size);
     StringList strings = new StringList(size);

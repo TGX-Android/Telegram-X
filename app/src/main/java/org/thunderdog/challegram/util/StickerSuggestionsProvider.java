@@ -157,8 +157,8 @@ public class StickerSuggestionsProvider {
     public final @NonNull TdApi.StickerType type;
 
     public Result (@NonNull String emoji, @Nullable TdApi.Stickers stickersFromLocal, @Nullable TdApi.Stickers stickersFromServer, @NonNull TdApi.StickerType type) {
-      this.stickersFromLocal = stickersFromLocal != null ? stickersFromLocal: new TdApi.Stickers(new TdApi.Sticker[0]);
-      this.stickersFromServer = stickersFromServer != null ? stickersFromServer: new TdApi.Stickers(new TdApi.Sticker[0]);
+      this.stickersFromLocal = stickersFromLocal != null ? stickersFromLocal : new TdApi.Stickers(new TdApi.Sticker[0]);
+      this.stickersFromServer = stickersFromServer != null ? stickersFromServer : new TdApi.Stickers(new TdApi.Sticker[0]);
       this.emoji = emoji;
       this.type = type;
     }

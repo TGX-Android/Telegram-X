@@ -36,7 +36,6 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.emoji.MediaStickersAdapter;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.NavigationController;
@@ -495,29 +494,29 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
     final boolean disabled = isPositive && isEmoji && !tdlib.account().isPremium();
 
     if (info.stickerType.getConstructor() == TdApi.StickerTypeMask.CONSTRUCTOR) {
-      updateButton(Lang.plural(isPositive ? R.string.AddXMasks: R.string.RemoveXMasks, info.size), isPositive, animated, false);
+      updateButton(Lang.plural(isPositive ? R.string.AddXMasks : R.string.RemoveXMasks, info.size), isPositive, animated, false);
       return;
     }
 
     if (size == 1) {
       if (isEmoji) {
-        updateButton(Lang.plural(isPositive ? R.string.AddXEmoji: R.string.RemoveXEmoji, info.size), isPositive, animated, disabled);
+        updateButton(Lang.plural(isPositive ? R.string.AddXEmoji : R.string.RemoveXEmoji, info.size), isPositive, animated, disabled);
       } else {
-        updateButton(Lang.plural(isPositive ? R.string.AddXStickers: R.string.RemoveXStickers, info.size), isPositive, animated, false);
+        updateButton(Lang.plural(isPositive ? R.string.AddXStickers : R.string.RemoveXStickers, info.size), isPositive, animated, false);
       }
     } else {
       int num = installedCount == size ? installedCount : size - installedCount;
       if (isEmoji) {
-        updateButton(Lang.plural(isPositive ? R.string.AddXEmojiPacks: R.string.RemoveXEmojiPacks, num), isPositive, animated, disabled);
+        updateButton(Lang.plural(isPositive ? R.string.AddXEmojiPacks : R.string.RemoveXEmojiPacks, num), isPositive, animated, disabled);
       } else {
-        updateButton(Lang.plural(isPositive ? R.string.AddXStickerPacks: R.string.RemoveXStickerPacks, num), isPositive, animated, false);
+        updateButton(Lang.plural(isPositive ? R.string.AddXStickerPacks : R.string.RemoveXStickerPacks, num), isPositive, animated, false);
       }
     }
   }
 
   private void updateButton (String str, boolean positive, boolean animated, boolean isDisabled) {
     str = str.toUpperCase();
-    int colorId = isDisabled ? ColorId.textLight: positive ? ColorId.textNeutral : ColorId.textNegative;
+    int colorId = isDisabled ? ColorId.textLight : positive ? ColorId.textNeutral : ColorId.textNegative;
     if (!textButton.getText().toString().equals(str) || textButton.getCurrentTextColor() != Theme.getColor(colorId)) {
       if (animated) {
         if (animator == null) {

@@ -186,7 +186,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     }
 
     final int maxWidth = Screen.dp(250);
-    final int textRightOffset = Screen.dp(menuItem.isLocked ? 41: 17);
+    final int textRightOffset = Screen.dp(menuItem.isLocked ? 41 : 17);
     final Drawable finalIcon = menuItem.iconResId != 0 ? Drawables.get(getResources(), menuItem.iconResId) : menuItem.icon;
     final AvatarReceiver receiver = (menuItem.messageSenderId != null && menuItem.iconResId == 0) ?
       complexAvatarReceiver.getAvatarReceiver(Td.getSenderId(menuItem.messageSenderId)) : null;
@@ -474,7 +474,7 @@ public class MenuMoreWrap extends LinearLayout implements Animated {
     int innerY = sourceY - location[1];
 
     int index = Math.floorDiv(innerY - Screen.dp(PADDING), Screen.dp(ITEM_HEIGHT));
-    setSelectedIndex(index == MathUtils.clamp(index, 0, getChildCount() - 1) ? index: -1);
+    setSelectedIndex(index == MathUtils.clamp(index, 0, getChildCount() - 1) ? index : -1);
 
     // Log.i("HAPTIC INNER", String.format("INDEX %d", index));
   }

@@ -124,7 +124,7 @@ public final class TranslationsManager {
 
   public @Nullable String getCachedTextLanguage (String text) {
     TranslatedCachedValue cachedValue = mTranslationsCache2.get(text);
-    return (cachedValue != null ? cachedValue.originalLanguage: null);
+    return (cachedValue != null ? cachedValue.originalLanguage : null);
   }
 
   public void saveCachedTextLanguage (String text, String language) {
@@ -135,7 +135,7 @@ public final class TranslationsManager {
 
   public @Nullable TdApi.FormattedText getCachedTextTranslation (String text, String language) {
     TranslatedCachedValue cachedValue = mTranslationsCache2.get(text);
-    return (cachedValue != null ? cachedValue.translationsCache.get(language): null);
+    return (cachedValue != null ? cachedValue.translationsCache.get(language) : null);
   }
 
   public void saveCachedTextTranslation (String text, String language, TdApi.FormattedText translated) {

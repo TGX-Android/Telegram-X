@@ -457,7 +457,7 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
   public void showItems (@NonNull TdlibDelegate delegate, @Nullable ArrayList<InlineResult<?>> items, boolean needBackground, @Nullable LoadMoreCallback callback, @Nullable RecyclerView.OnScrollListener scrollCallback, @Nullable StickerSmallView.StickerMovementCallback stickerMovementCallback, boolean areHidden) {
     this.delegate = delegate;
     this.adapter.setTdlib(delegate.tdlib());
-    this.adapter.setStickerMovementCallback(stickerMovementCallback != null ? stickerMovementCallback: this);
+    this.adapter.setStickerMovementCallback(stickerMovementCallback != null ? stickerMovementCallback : this);
     this.scrollCallback = scrollCallback;
     if (items != null && !items.isEmpty()) {
       setBackgroundFactor(needBackground ? 1f : 0f, this.visibleFactor != 0f);
@@ -475,7 +475,7 @@ public class InlineResultsWrap extends FrameLayoutFix implements View.OnClickLis
   }
 
   public void addItems (TdlibDelegate delegate, @Nullable ArrayList<InlineResult<?>> items, @Nullable LoadMoreCallback callback, @Nullable RecyclerView.OnScrollListener scrollCallback, @Nullable StickerSmallView.StickerMovementCallback stickerMovementCallback) {
-    this.adapter.setStickerMovementCallback(stickerMovementCallback != null ? stickerMovementCallback: this);
+    this.adapter.setStickerMovementCallback(stickerMovementCallback != null ? stickerMovementCallback : this);
     this.scrollCallback = scrollCallback;
     if (items != null && !items.isEmpty()) {
       addItems(delegate, items);

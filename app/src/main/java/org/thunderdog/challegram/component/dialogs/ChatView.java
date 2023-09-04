@@ -620,7 +620,7 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
     counterRight -= mentionCounter.getScaledWidth(getTimePaddingLeft());
 
     Counter reactionCounter = chat.getReactionsCounter();
-    reactionCounter.draw(c, counterRight - counterRadius, counterCenterY, Gravity.RIGHT, 1f, this, chat.notificationsEnabled() ? ColorId.badgeText: ColorId.badgeMutedText);
+    reactionCounter.draw(c, counterRight - counterRadius, counterCenterY, Gravity.RIGHT, 1f, this, chat.notificationsEnabled() ? ColorId.badgeText : ColorId.badgeMutedText);
     counterRight -= reactionCounter.getScaledWidth(getTimePaddingLeft());
 
     TdlibStatusManager.Helper status = chat.statusHelper();

@@ -5895,7 +5895,7 @@ public class TD {
     }
 
     public ContentPreview (@Nullable TdApi.FormattedText text, ContentPreview copy) {
-      this(copy.emoji, copy.placeholderText, text != null ? text: copy.formattedText, copy.isTranslatable, copy.hideAuthor, copy.parentEmoji);
+      this(copy.emoji, copy.placeholderText, text != null ? text : copy.formattedText, copy.isTranslatable, copy.hideAuthor, copy.parentEmoji);
     }
 
     public ContentPreview (@Nullable Emoji emoji, int placeholderText, @Nullable TdApi.FormattedText formattedText, boolean isTranslatable, boolean hideAuthor, @Nullable Emoji parentEmoji) {
@@ -6962,7 +6962,7 @@ public class TD {
   }
 
   public static String stickerEmoji (TdApi.Sticker sticker) {
-    return !StringUtils.isEmpty(sticker.emoji) ? sticker.emoji: "😀";
+    return !StringUtils.isEmpty(sticker.emoji) ? sticker.emoji : "\uD83D\uDE00" /*😀*/;
   }
 
   public static TdApi.FormattedText toSingleEmojiText (TdApi.Sticker sticker) {

@@ -38,7 +38,6 @@ import org.thunderdog.challegram.navigation.MenuMoreWrap;
 import org.thunderdog.challegram.navigation.ToggleHeaderView2;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
-import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ColorState;
@@ -246,7 +245,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     }
 
     text.replace(makeTextWrapper(currentText = originalText), false);
-    mTranslationsManager.requestTranslation(StringUtils.isEmpty(parent.defaultLanguageToTranslate) ? Lang.getDefaultLanguageToTranslateV2(messageOriginalLanguage): parent.defaultLanguageToTranslate);
+    mTranslationsManager.requestTranslation(StringUtils.isEmpty(parent.defaultLanguageToTranslate) ? Lang.getDefaultLanguageToTranslateV2(messageOriginalLanguage) : parent.defaultLanguageToTranslate);
     if (parent.translationApplyCallback != null) { // todo remove cond ???
       wrapView.setPadding(0, 0, 0, Screen.needsKeyboardPadding(context()) ? Screen.getNavigationBarFrameDifference() : 0);
     }
@@ -282,7 +281,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
   }
 
   private void showTranslateOptions () {
-    int y = (int) Math.max(headerView != null ? headerView.getTranslationY(): 0, 0);
+    int y = (int) Math.max(headerView != null ? headerView.getTranslationY() : 0, 0);
     int maxY = parent.getTargetHeight() - Screen.dp(280 + 16);
     int pivotY = Screen.dp(8);
     if (y > maxY) {
@@ -868,9 +867,9 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
       languageView.isOriginal = isOriginal;
       languageView.isRecent = isRecent;
       languageView.titleView.setText(Lang.getLanguageName(language, language));
-      /*languageView.titleView.setTranslationY(isOriginal ? -Screen.dp(9.5f): 0);*/
-      languageView.subtitleView.setVisibility(/*isOriginal ? View.VISIBLE: */ View.GONE);
-      languageView.setPadding(Screen.dp(16), 0, Screen.dp((isSelected || isOriginal || isRecent) ? 40: 16), 0);
+      /*languageView.titleView.setTranslationY(isOriginal ? -Screen.dp(9.5f) : 0);*/
+      languageView.subtitleView.setVisibility(/*isOriginal ? View.VISIBLE : */ View.GONE);
+      languageView.setPadding(Screen.dp(16), 0, Screen.dp((isSelected || isOriginal || isRecent) ? 40 : 16), 0);
       languageView.updateDrawable();
       languageView.invalidate();
     }
@@ -932,7 +931,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     protected void dispatchDraw (Canvas canvas) {
       super.dispatchDraw(canvas);
       if (drawable != null) {
-        Drawables.draw(canvas, drawable, getMeasuredWidth() - Screen.dp(40), Screen.dp(13), Paints.getPorterDuffPaint(Theme.getColor(isSelected ? ColorId.iconActive: ColorId.icon)));
+        Drawables.draw(canvas, drawable, getMeasuredWidth() - Screen.dp(40), Screen.dp(13), Paints.getPorterDuffPaint(Theme.getColor(isSelected ? ColorId.iconActive : ColorId.icon)));
       }
     }
   }

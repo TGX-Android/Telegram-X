@@ -299,11 +299,11 @@ public class TGStickerObj {
   }
 
   public int getWidth () {
-    return isDefaultPremiumStar ? 512: sticker != null ? sticker.width : 0;
+    return isDefaultPremiumStar ? 512 : sticker != null ? sticker.width : 0;
   }
 
   public int getHeight () {
-    return isDefaultPremiumStar ? 512: sticker != null ? sticker.height : 0;
+    return isDefaultPremiumStar ? 512 : sticker != null ? sticker.height : 0;
   }
 
   // If sticker set is not loaded yet

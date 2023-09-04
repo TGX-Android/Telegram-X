@@ -1856,21 +1856,21 @@ public class MediaLayout extends FrameLayoutFix implements
     }
 
     private void update (TdApi.MessageSender sender, boolean isPersonal, boolean isAnonymous) {
-      this.senderAvatarView.setVisibility(sender != null ? VISIBLE: GONE);
+      this.senderAvatarView.setVisibility(sender != null ? VISIBLE : GONE);
       this.senderAvatarView.setMessageSender(tdlib, sender);
       this.isAnonymous = isAnonymous;
       this.isPersonal = isPersonal;
-      setVisibility(!isPersonal ? VISIBLE: GONE);
+      setVisibility(!isPersonal ? VISIBLE : GONE);
       invalidate();
     }
 
     public HapticMenuHelper.MenuItem createHapticSenderItem (TdApi.Chat chat) {
       if (isAnonymous()) {
-        return new HapticMenuHelper.MenuItem(R.id.btn_openSendersMenu, Lang.getString(R.string.SendAs), chat != null ? tdlib.getMessageSenderTitle(chat.messageSenderId): null, R.drawable.dot_baseline_acc_anon_24);
+        return new HapticMenuHelper.MenuItem(R.id.btn_openSendersMenu, Lang.getString(R.string.SendAs), chat != null ? tdlib.getMessageSenderTitle(chat.messageSenderId) : null, R.drawable.dot_baseline_acc_anon_24);
       } else if (isPersonal()) {
-        return new HapticMenuHelper.MenuItem(R.id.btn_openSendersMenu, Lang.getString(R.string.SendAs), chat != null ? tdlib.getMessageSenderTitle(chat.messageSenderId): null, R.drawable.dot_baseline_acc_personal_24);
+        return new HapticMenuHelper.MenuItem(R.id.btn_openSendersMenu, Lang.getString(R.string.SendAs), chat != null ? tdlib.getMessageSenderTitle(chat.messageSenderId) : null, R.drawable.dot_baseline_acc_personal_24);
       } else {
-        return new HapticMenuHelper.MenuItem(R.id.btn_openSendersMenu, Lang.getString(R.string.SendAs), chat != null ? tdlib.getMessageSenderTitle(chat.messageSenderId): null, 0, tdlib, chat != null ? chat.messageSenderId: null, false);
+        return new HapticMenuHelper.MenuItem(R.id.btn_openSendersMenu, Lang.getString(R.string.SendAs), chat != null ? tdlib.getMessageSenderTitle(chat.messageSenderId) : null, 0, tdlib, chat != null ? chat.messageSenderId : null, false);
       }
     }
   }

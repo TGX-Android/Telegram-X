@@ -86,7 +86,7 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
     this.stickerSuggestionAdapter = new StickerSuggestionAdapter(parent, manager, parent, isEmoji) {
       @Override
       public void onStickerPreviewOpened (StickerSmallView view, TGStickerObj sticker) {
-        delegate.notifyChoosingEmoji(isEmoji ? EmojiMediaType.EMOJI: EmojiMediaType.STICKER, true);
+        delegate.notifyChoosingEmoji(isEmoji ? EmojiMediaType.EMOJI : EmojiMediaType.STICKER, true);
         if (areStickersVisible) {
           choosingSuggestionSent = true;
         }
@@ -94,7 +94,7 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
 
       @Override
       public void onStickerPreviewChanged (StickerSmallView view, TGStickerObj otherOrThisSticker) {
-        delegate.notifyChoosingEmoji(isEmoji ? EmojiMediaType.EMOJI: EmojiMediaType.STICKER, true);
+        delegate.notifyChoosingEmoji(isEmoji ? EmojiMediaType.EMOJI : EmojiMediaType.STICKER, true);
         if (areStickersVisible) {
           choosingSuggestionSent = true;
         }
@@ -103,7 +103,7 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
       @Override
       public void onStickerPreviewClosed (StickerSmallView view, TGStickerObj thisSticker) {
         if (!choosingSuggestionSent) {
-          delegate.notifyChoosingEmoji(isEmoji ? EmojiMediaType.EMOJI: EmojiMediaType.STICKER, false);
+          delegate.notifyChoosingEmoji(isEmoji ? EmojiMediaType.EMOJI : EmojiMediaType.STICKER, false);
         }
       }
     };
@@ -113,7 +113,7 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
     parent.addThemeSpecialFilterListener(stickerSuggestionArrowView, ColorId.overlayFilling);
 
 
-    int stickersListTopHeight = Screen.dp(isEmoji ? 36: 72) + Screen.dp(2.5f);
+    int stickersListTopHeight = Screen.dp(isEmoji ? 36 : 72) + Screen.dp(2.5f);
     int stickersListTotalHeight = stickersListTopHeight + Screen.dp(6.5f);
     int stickerArrowHeight = Screen.dp(12f);
 
@@ -174,8 +174,8 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
       this.stickersFactor = factor;
 
       final float scale = .8f + .2f * factor;
-      setScaleX(scale /* (isEmoji ? 0.5f: 1f)*/);
-      setScaleY(scale /* (isEmoji ? 0.5f: 1f)*/);
+      setScaleX(scale /* (isEmoji ? 0.5f : 1f)*/);
+      setScaleY(scale /* (isEmoji ? 0.5f : 1f)*/);
       setAlpha(Math.min(1f, Math.max(0f, factor)));
     }
   }
@@ -203,7 +203,7 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
       }
       if (choosingSuggestionSent) {
         if (!areVisible) {
-          delegate.notifyChoosingEmoji(isEmoji ? EmojiMediaType.EMOJI: EmojiMediaType.STICKER, false);
+          delegate.notifyChoosingEmoji(isEmoji ? EmojiMediaType.EMOJI : EmojiMediaType.STICKER, false);
         }
         choosingSuggestionSent = false;
       }

@@ -115,7 +115,7 @@ public class ToggleHeaderView2 extends View {
     }
 
     public float getWidth () {
-      return textTrimmed != null ? textTrimmedWidth: textWidth;
+      return textTrimmed != null ? textTrimmedWidth : textWidth;
     }
 
     public void draw (Canvas canvas, int x, int y, float alpha, TextPaint paint) {

@@ -2,7 +2,6 @@ package org.thunderdog.challegram.widget.EmojiMediaLayout;
 
 import android.content.Context;
 import android.os.Build;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -11,7 +10,6 @@ import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.GridLayoutManager;
 
 import org.drinkless.tdlib.TdApi;
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.EmojiView;
 import org.thunderdog.challegram.component.emoji.MediaStickersAdapter;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
@@ -538,7 +536,7 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> i
   public boolean onStickerClick (StickerSmallView view, View clickView, TGStickerObj sticker, boolean isMenuClick, TdApi.MessageSendOptions sendOptions) {
     if (emojiLayout != null) {
       int i = indexOfStickerSetById(sticker.getStickerSetId());
-      return emojiLayout.onStickerClick(controllerId, view, clickView, i != -1 ? stickerSets.get(i): null, sticker, isMenuClick, sendOptions);
+      return emojiLayout.onStickerClick(controllerId, view, clickView, i != -1 ? stickerSets.get(i) : null, sticker, isMenuClick, sendOptions);
     }
     return false;
   }

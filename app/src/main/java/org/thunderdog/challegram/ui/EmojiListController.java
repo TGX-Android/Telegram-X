@@ -34,7 +34,6 @@ import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGDefaultEmoji;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
 import org.thunderdog.challegram.emoji.Emoji;
-import org.thunderdog.challegram.emoji.RecentEmoji;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.StickersListener;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -68,7 +67,7 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
     super(context, tdlib);
     emojiController = new EmojiLayoutRecyclerController(context, tdlib, EmojiLayout.EMOJI_INSTALLED_CONTROLLER_ID);
     emojiController.setSpanCount(controllerId -> {
-      int width = emojiController.recyclerView != null ? emojiController.recyclerView.getMeasuredWidth(): 0;
+      int width = emojiController.recyclerView != null ? emojiController.recyclerView.getMeasuredWidth() : 0;
       if (width == 0) {
         width = Screen.currentWidth();
       }
@@ -262,7 +261,7 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
   public void showEmojiSection (int section) {
     if (contentView.canChangeSection()) {
       TGStickerSetInfo info = emojiController.getStickerSetBySectionIndex(section);
-      int position = section != 0 && info != null ? info.getStartIndex(): 0;
+      int position = section != 0 && info != null ? info.getStartIndex() : 0;
 
       emojiController.scrollToStickerSet(position, false, contentView.getCurrentSection() != SECTION_TRENDING);
       if (contentView.getCurrentSection() == SECTION_TRENDING) {

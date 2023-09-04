@@ -442,9 +442,9 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
     this.isTranslatedCounterDrawable = new TranslationCounterDrawable(Drawables.get(R.drawable.baseline_translate_14));
     this.isTranslatedCounterDrawable.setColors(
-      msg.isOutgoing ? ColorId.bubbleOut_time: ColorId.bubbleIn_time,
-      msg.isOutgoing ? ColorId.bubbleOut_time: ColorId.bubbleIn_time,
-      msg.isOutgoing ? ColorId.bubbleOut_textLink: ColorId.bubbleIn_textLink
+      msg.isOutgoing ? ColorId.bubbleOut_time : ColorId.bubbleIn_time,
+      msg.isOutgoing ? ColorId.bubbleOut_time : ColorId.bubbleIn_time,
+      msg.isOutgoing ? ColorId.bubbleOut_textLink : ColorId.bubbleIn_textLink
     );
     this.isTranslatedCounter = new Counter.Builder()
       .noBackground()
@@ -794,7 +794,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   private int getAuthorWidth () {
     return hAuthorNameT != null ?
-      hAuthorNameT.getWidth() + (hAuthorEmojiStatus != null ? hAuthorEmojiStatus.getWidth(Screen.dp(3)): 0) + (hAuthorChatMark != null ? hAuthorChatMark.getWidth() + Screen.dp(16f) : 0) :
+      hAuthorNameT.getWidth() + (hAuthorEmojiStatus != null ? hAuthorEmojiStatus.getWidth(Screen.dp(3)) : 0) + (hAuthorChatMark != null ? hAuthorChatMark.getWidth() + Screen.dp(16f) : 0) :
       needName(true) ? -Screen.dp(3f) : 0;
   }
 
@@ -1965,7 +1965,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           hAdminNameT.draw(c, right, top - Screen.dp(12f));
         }
         if (useBubbles && needDrawChannelIconInHeader() && hAuthorNameT != null) {
-          isChannelHeaderCounter.draw(c, isChannelHeaderCounterX = (right - Screen.dp(6)), isChannelHeaderCounterY = (top - Screen.dp(5)), Gravity.RIGHT | Gravity.BOTTOM, 1f, view, isOutgoing() ? ColorId.bubbleOut_time: ColorId.bubbleIn_time);
+          isChannelHeaderCounter.draw(c, isChannelHeaderCounterX = (right - Screen.dp(6)), isChannelHeaderCounterY = (top - Screen.dp(5)), Gravity.RIGHT | Gravity.BOTTOM, 1f, view, isOutgoing() ? ColorId.bubbleOut_time : ColorId.bubbleIn_time);
         }
       }
     }
@@ -1985,7 +1985,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       int viewsX = pTicksLeft - Icons.getSingleTickWidth() + ((flags & FLAG_HEADER_ENABLED) != 0 ? 0 : Screen.dp(1f)) - Screen.dp(Icons.TICKS_SHIFT_X);
 
       if (needDrawChannelIconInHeader() && hAuthorNameT != null) {
-        isChannelHeaderCounter.draw(c, isChannelHeaderCounterX = ((isSending() ? clockX: viewsX) + Screen.dp(7)), isChannelHeaderCounterY = (pTicksTop + Screen.dp(5)), Gravity.LEFT, 1f, view, ColorId.iconLight);
+        isChannelHeaderCounter.draw(c, isChannelHeaderCounterX = ((isSending() ? clockX : viewsX) + Screen.dp(7)), isChannelHeaderCounterY = (pTicksTop + Screen.dp(5)), Gravity.LEFT, 1f, view, ColorId.iconLight);
         clockX -= isChannelHeaderCounter.getScaledWidth(Screen.dp(1));
         viewsX -= isChannelHeaderCounter.getScaledWidth(Screen.dp(1));
       }
@@ -6257,7 +6257,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       android.util.Log.i("HIGHLIGHT", "UPDATE");
     }
 
-    return searchResultsHighlightPool.isMostRelevant(key) ? highlight: null;
+    return searchResultsHighlightPool.isMostRelevant(key) ? highlight : null;
   }
 
   public void checkHighlightedText () {
@@ -8344,7 +8344,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         new ReactionsOverlayView.ReactionInfo(context().reactionsOverlayManager())
           .setSticker(overlaySticker, true)
           .setUseDefaultSprayAnimation(tgReaction.isCustom())
-          .setEmojiStatusEffect(tgReaction.isCustom() ? tgReaction.newCenterAnimationSicker(): null)
+          .setEmojiStatusEffect(tgReaction.isCustom() ? tgReaction.newCenterAnimationSicker() : null)
           .setPosition(new Point(bubbleX, bubbleY), Screen.dp(90))
           .setAnimatedPositionOffsetProvider(new QuickReactionAnimatedPositionOffsetProvider())
       );
@@ -8658,7 +8658,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   public void checkTranslatableText (Runnable after) {
     final TdApi.FormattedText textToTranslate = getTextToTranslateImpl();
     this.textToTranslate = textToTranslate;
-    textToTranslateOriginalLanguage = textToTranslate != null ? mTranslationsManager.getCachedTextLanguage(textToTranslate.text): null;
+    textToTranslateOriginalLanguage = textToTranslate != null ? mTranslationsManager.getCachedTextLanguage(textToTranslate.text) : null;
     if (textToTranslate != null && textToTranslateOriginalLanguage == null && translationStyleMode() != Settings.TRANSLATE_MODE_NONE) {
       LanguageDetector.detectLanguage(context(), textToTranslate.text, lang -> {
         mTranslationsManager.saveCachedTextLanguage(textToTranslate.text, textToTranslateOriginalLanguage = lang);
@@ -8678,7 +8678,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   private void setTranslatedStatus (int status, boolean animated) {
     boolean show = status != TranslationCounterDrawable.TRANSLATE_STATUS_DEFAULT || translatedCounterForceShow;
-    isTranslatedCounterDrawable.setInvalidateCallback(show? this::invalidate: null);
+    isTranslatedCounterDrawable.setInvalidateCallback(show? this::invalidate : null);
     isTranslatedCounterDrawable.setStatus(status, animated);
     if (show) {
       isTranslatedCounter.show(animated);

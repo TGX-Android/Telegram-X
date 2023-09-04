@@ -56,7 +56,7 @@ public class EmojiHeaderViewNonPremium extends FrameLayoutFix {
 
   public void setIsPremium (boolean isPremium) {
     this.isPremium = isPremium;
-    emojiSectionViews.get(0).setVisibility(isPremium ? VISIBLE: GONE);
+    emojiSectionViews.get(0).setVisibility(isPremium ? VISIBLE : GONE);
     updatePositions();
   }
 
@@ -92,13 +92,13 @@ public class EmojiHeaderViewNonPremium extends FrameLayoutFix {
   }
 
   private void updatePositions () {
-    int itemCount = (emojiSections.size() - (isPremium ? 0: 1));
+    int itemCount = (emojiSections.size() - (isPremium ? 0 : 1));
     float itemWidth = (float) (getMeasuredWidth() - Screen.dp(EmojiHeaderView.DEFAULT_PADDING * 2f)) / itemCount;
     float itemOffset = (itemWidth - Screen.dp(44)) / 2f;
     float itemPadding = (getMeasuredWidth() - Screen.dp(EmojiHeaderView.DEFAULT_PADDING * 2) - itemWidth * itemCount) / (itemCount - 1);
 
     for (int a = 0; a < itemCount; a++) {
-      EmojiSectionView v = emojiSectionViews.get(a + (isPremium ? 0: 1));
+      EmojiSectionView v = emojiSectionViews.get(a + (isPremium ? 0 : 1));
       v.setTranslationX((int) (Screen.dp(EmojiHeaderView.DEFAULT_PADDING) + itemOffset + (itemWidth + itemPadding) * a));
     }
   }

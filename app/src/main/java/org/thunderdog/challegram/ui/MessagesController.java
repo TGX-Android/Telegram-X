@@ -7044,7 +7044,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   // Silent mode
 
   public int getHorizontalInputPadding () {
-    return attachButtons.getVisibleChildrenWidth() + (canSelectSender() ? Screen.dp(47): 0);
+    return attachButtons.getVisibleChildrenWidth() + (canSelectSender() ? Screen.dp(47) : 0);
   }
 
   private void updateSilentButton (boolean visible) {
@@ -10089,7 +10089,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private void setSearchByVisible (boolean isVisible) {
     searchByButton.setVisibility(isVisible ? View.VISIBLE : View.GONE);
-    searchSetTypeFilterButton.setTranslationX(isVisible ? 0: Screen.dp(-42.5f));
+    searchSetTypeFilterButton.setTranslationX(isVisible ? 0 : Screen.dp(-42.5f));
   }
 
   private TdApi.Function<?> jumpToDateRequest;
@@ -10694,7 +10694,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public HapticMenuHelper.MenuItem createHapticSenderItem (int id, TdApi.MessageSender sender, boolean useUsername, boolean isLocked) {
-    String title = useUsername ? tdlib.senderName(sender): Lang.getString(R.string.SendAs);
+    String title = useUsername ? tdlib.senderName(sender) : Lang.getString(R.string.SendAs);
     if (tdlib.isSelfSender(sender)) {
       return new HapticMenuHelper.MenuItem(id, title, Lang.getString(R.string.YourAccount), R.drawable.dot_baseline_acc_personal_24, tdlib, sender, false);
     } else if (!tdlib.isChannel(sender)) {
@@ -10755,10 +10755,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
     boolean cameraVisible = isCameraButtonVisibleOnAttachPanel();
     boolean canSetSender = canSelectSender();
     if (cameraButton != null) {
-      cameraButton.setVisibility(cameraVisible ? View.VISIBLE: View.GONE);  //.setVisible(cameraVisible);
+      cameraButton.setVisibility(cameraVisible ? View.VISIBLE : View.GONE);  //.setVisible(cameraVisible);
     }
 
-    messageSenderButton.setVisibility((canSetSender && attachButtons.getVisibility() == View.VISIBLE) ? View.VISIBLE: View.GONE);
+    messageSenderButton.setVisibility((canSetSender && attachButtons.getVisibility() == View.VISIBLE) ? View.VISIBLE : View.GONE);
     if (canSetSender) {
       messageSenderButton.update(getChatMessageSender(), animated);
     }
@@ -10856,7 +10856,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
       final int maxCount = 5;
       final boolean needMoreButton = chatAvailableSenders.length > maxCount;
-      final int senderButtonsCount = needMoreButton ? maxCount - 1: chatAvailableSenders.length;
+      final int senderButtonsCount = needMoreButton ? maxCount - 1 : chatAvailableSenders.length;
       List<HapticMenuHelper.MenuItem> items = new ArrayList<>(Math.min(chatAvailableSenders.length, maxCount));
 
       for (int i = 0; i < senderButtonsCount; i++) {
@@ -11057,7 +11057,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     searchMessagesFilterMode = inSearchMode;
     if (searchShowOnlyFoundButton != null) {
-      searchShowOnlyFoundButton.setColorFilter(Theme.getColor(inSearchMode ? ColorId.iconActive: ColorId.icon));
+      searchShowOnlyFoundButton.setColorFilter(Theme.getColor(inSearchMode ? ColorId.iconActive : ColorId.icon));
     }
   }
 
@@ -11271,7 +11271,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private void setTextFormattingLayoutVisible (boolean visible) {
     textFormattingVisible = visible;
     if (emojiLayout != null && textFormattingLayout != null) {
-      textFormattingLayout.setVisibility(visible ? View.VISIBLE: View.GONE);
+      textFormattingLayout.setVisibility(visible ? View.VISIBLE : View.GONE);
       emojiLayout.optimizeForDisplayTextFormattingLayout(!visible);
       if (visible) {
         textFormattingLayout.checkButtonsActive(false);
@@ -11286,7 +11286,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public @DrawableRes int getTargetIcon (boolean isMessage) {
-    return (textInputHasSelection || (textFormattingVisible && emojiShown)) ? R.drawable.baseline_format_text_24: EmojiLayout.getTargetIcon(isMessage);
+    return (textInputHasSelection || (textFormattingVisible && emojiShown)) ? R.drawable.baseline_format_text_24 : EmojiLayout.getTargetIcon(isMessage);
   }
 
   @Override
@@ -11512,7 +11512,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   @Override
   public int getStickerSuggestionsTop (boolean isEmoji) {
     View v = context().getEmojiSuggestionsView();
-    return v != null ? Views.getLocationInWindow(v)[1]: 0;
+    return v != null ? Views.getLocationInWindow(v)[1] : 0;
   }
 
   @Override

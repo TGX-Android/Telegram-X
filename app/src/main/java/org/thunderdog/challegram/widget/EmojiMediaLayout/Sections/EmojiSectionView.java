@@ -35,7 +35,7 @@ public class EmojiSectionView extends View {
 
   @Override
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
-    int itemWidth = forceWidth > 0 ? forceWidth: Screen.dp(44);
+    int itemWidth = forceWidth > 0 ? forceWidth : Screen.dp(44);
     setMeasuredDimension(MeasureSpec.makeMeasureSpec(itemWidth, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(heightMeasureSpec), MeasureSpec.EXACTLY));
   }
 

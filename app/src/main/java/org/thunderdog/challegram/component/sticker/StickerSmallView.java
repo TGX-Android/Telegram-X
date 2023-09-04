@@ -39,7 +39,6 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
-import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
@@ -182,7 +181,7 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
   @Override
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
     if (isSuggestion) {
-      super.onMeasure(MeasureSpec.makeMeasureSpec(Screen.dp(isEmojiSuggestion ? 36: 72), MeasureSpec.EXACTLY), heightMeasureSpec);
+      super.onMeasure(MeasureSpec.makeMeasureSpec(Screen.dp(isEmojiSuggestion ? 36 : 72), MeasureSpec.EXACTLY), heightMeasureSpec);
     } else if (isTrending) {
       super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(Screen.smallestSide() / 5, MeasureSpec.EXACTLY));
     } else {
