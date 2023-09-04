@@ -1267,7 +1267,7 @@ public class TdlibUi extends Handler {
       UI.copyText('@' + Td.primaryUsername(user), R.string.CopiedUsername);
       return true;
     } else if (id == R.id.btn_username_copy_link) {
-      UI.copyText(TD.getLink(user), R.string.CopiedLink);
+      UI.copyText(context.tdlib().tMeUrl(user.usernames), R.string.CopiedLink);
       return true;
     } else if (id == R.id.btn_username_share) {
       shareUsername(context, user);

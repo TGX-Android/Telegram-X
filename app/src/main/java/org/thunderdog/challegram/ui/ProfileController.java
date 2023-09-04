@@ -118,7 +118,6 @@ import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
 import org.thunderdog.challegram.util.text.TextWrapper;
 import org.thunderdog.challegram.v.CustomRecyclerView;
-import org.thunderdog.challegram.v.HeaderEditText;
 import org.thunderdog.challegram.widget.AvatarView;
 import org.thunderdog.challegram.widget.BetterChatView;
 import org.thunderdog.challegram.widget.CircleButton;
@@ -777,7 +776,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     } else if (id == R.id.btn_copyLink) {
       String username = getProfileUsername();
       if (!StringUtils.isEmpty(username)) {
-        UI.copyText(TD.getLink(username), R.string.CopiedLink);
+        UI.copyText(tdlib.tMeUrl(username), R.string.CopiedLink);
       }
     } else if (id == R.id.btn_share) {
       if (!share(false)) {

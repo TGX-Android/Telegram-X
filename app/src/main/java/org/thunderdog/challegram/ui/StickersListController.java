@@ -189,15 +189,18 @@ public class StickersListController extends ViewController<StickersListControlle
       tdlib.ui().shareStickerSetUrl(this, stickerSetInfoToLoad);
     } else if (id == R.id.btn_copyLink) {
       if (stickerSetInfoToLoad != null) {
-        UI.copyText(TD.getStickerPackLink(stickerSetInfoToLoad), R.string.CopiedLink);
+        UI.copyText(tdlib.tMeStickerSetUrl(stickerSetInfoToLoad), R.string.CopiedLink);
       } else {
         StringBuilder b = new StringBuilder();
         for (StickerSection section: stickerSections) {
-          if (section.info == null) continue;
-          if (b.length() != 0) {
-            b.append("\n");
+          TdApi.StickerSetInfo stickerSetInfo = section.info != null ? section.info.getInfo() : null;
+          if (stickerSetInfo == null) {
+            continue;
           }
-          b.append(TD.getStickerPackLink(section.info.getInfo()));
+          if (b.length() != 0) {
+            b.append('\n');
+          }
+          b.append(tdlib.tMeStickerSetUrl(stickerSetInfo));
         }
         UI.copyText(b.toString(), R.string.CopiedLink);
       }

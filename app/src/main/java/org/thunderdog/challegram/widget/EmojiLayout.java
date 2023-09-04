@@ -39,7 +39,6 @@ import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -55,10 +54,10 @@ import org.thunderdog.challegram.ui.EmojiListController;
 import org.thunderdog.challegram.ui.EmojiMediaListController;
 import org.thunderdog.challegram.ui.EmojiStatusListController;
 import org.thunderdog.challegram.unsorted.Settings;
-import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSection;
-import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSectionView;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.Headers.EmojiHeaderView;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.Headers.MediaHeaderView;
+import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSection;
+import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSectionView;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.StickerSectionView;
 import org.thunderdog.challegram.widget.rtl.RtlViewPager;
 
@@ -197,7 +196,11 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
         info.unsetIsTrendingEmoji();
         parentController.tdlib().client().send(new TdApi.ChangeStickerSet(info.getId(), true, false), parentController.tdlib().okHandler());
       } else if (id == R.id.btn_copyLink) {
-        UI.copyText(TD.getStickerPackLink(info.getInfo()), R.string.CopiedLink);
+        TdApi.StickerSetInfo stickerSetInfo = info.getInfo();
+        if (stickerSetInfo != null) {
+          String url = parentController.tdlib().tMeStickerSetUrl(stickerSetInfo);
+          UI.copyText(url, R.string.CopiedLink);
+        }
       }
       return true;
     });
@@ -227,7 +230,11 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
             });
           }
         } else if (id == R.id.btn_copyLink) {
-          UI.copyText(TD.getStickerPackLink(info.getInfo()), R.string.CopiedLink);
+          TdApi.StickerSetInfo stickerSetInfo = info.getInfo();
+          if (stickerSetInfo != null) {
+            String url = parentController.tdlib().tMeStickerSetUrl(stickerSetInfo);
+            UI.copyText(url, R.string.CopiedLink);
+          }
         }
         return true;
       });

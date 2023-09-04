@@ -596,7 +596,7 @@ public class TextEntityMessage extends TextEntity {
       ids.append(R.id.btn_copyLink);
       strings.append(R.string.CopyLink);
       icons.append(R.drawable.baseline_link_24);
-      copyLink = TD.getLink(copyText.substring(1));
+      copyLink = tdlib.tMeUrl(copyText.substring(1));
     } else {
       copyLink = null;
     }
