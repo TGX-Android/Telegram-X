@@ -503,9 +503,16 @@ public class EmojiToneHelper implements FactorAnimator.Target {
     return tdlib.account().isPremium() || isInSelfChat();
   }
 
+  private int lastEmojiMode = -1;
+
   public boolean getSuggestionsFromCacheOrRequest (String emoji) {
     if (!canSearchCustomEmoji()) {
       return false;
+    }
+    int newEmojiMode = Settings.instance().getEmojiMode();  // invalidate cache if settings have changed
+    if (lastEmojiMode != newEmojiMode) {                    // todo: Refuse caching in this class, cache already exists in stickerSuggestionsProvider
+      lastEmojiMode = newEmojiMode;
+      emojiSuggestionsCache.clear();
     }
 
     if (emojiSuggestionsCache.containsKey(emoji)) {
