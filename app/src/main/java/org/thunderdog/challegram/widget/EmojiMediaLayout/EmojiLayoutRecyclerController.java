@@ -648,8 +648,7 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> i
 
   @Override
   public void replaceEmoji (int newIndex, RecentEmoji emoji) {
-    adapter.replaceItem(newIndex + getHeaderItemCount(),
-      new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_DEFAULT_EMOJI, new TGDefaultEmoji(emoji.emoji, true)));
+    adapter.replaceItem(newIndex + getHeaderItemCount(), processRecentEmojiItem(emoji));
   }
 
   @Override
@@ -727,9 +726,7 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> i
     return items;
   }
 
-  @Nullable
   private MediaStickersAdapter.StickerItem processRecentEmojiItem (RecentEmoji recentEmoji) {
-    if (recentEmoji.isBroken()) return null;
     if (recentEmoji.isCustomEmoji()) {
       final TdlibEmojiManager.Entry entry = tdlib.emoji().findOrPostponeRequest(recentEmoji.customEmojiId, this);
       final TGStickerObj stickerObj;
