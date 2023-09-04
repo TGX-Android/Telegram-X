@@ -162,17 +162,25 @@ public class EmojiView extends View implements ClickHelper.Delegate {
 
   @Override
   public boolean needLongPress (float x, float y) {
-    return toneHelper != null && toneHelper.canBeShown() && (toneHelper.getSuggestionsFromCacheOrRequest(emoji) || colorState != EmojiData.STATE_NO_COLORS);
+    return toneHelper != null && toneHelper.canBeShown() && (toneHelper.onFirstTouchDown(emoji) || colorState != EmojiData.STATE_NO_COLORS);
   }
 
   @Override
   public boolean onLongPressRequestedAt (View view, float x, float y) {
-    if (toneHelper.getSuggestionsFromCacheOrRequest(emoji) || colorState != EmojiData.STATE_NO_COLORS) {
-      UI.forceVibrate(view, false);
-      setInLongPress(true);
-      return toneHelper.openForEmoji(view, x, y, emoji, colorState, emojiTone, emojiOtherTones);
+    if (toneHelper.onLongPressRequested(emoji, () -> {
+      helper.onLongPress(view, x, y);
+      onLongClick(view, x, y);
+    })) {
+      onLongClick(view, x, y);
+      return true;
     }
     return false;
+  }
+
+  private void onLongClick (View view, float x, float y) {
+    UI.forceVibrate(view, false);
+    setInLongPress(true);
+    toneHelper.openForEmoji(view, x, y, emoji, colorState, emojiTone, emojiOtherTones);
   }
 
   @Override
