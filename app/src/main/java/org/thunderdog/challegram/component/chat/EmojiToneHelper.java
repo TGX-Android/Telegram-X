@@ -462,6 +462,9 @@ public class EmojiToneHelper implements FactorAnimator.Target {
     offsetTop = result[1];
 
     emojiTonePicker.setAnchorView(anchorView, offsetLeft);
+    emojiTonePicker.changeIndex(
+      anchorView.getMeasuredWidth() / 2f - offsetLeft,
+      anchorView.getMeasuredHeight() / 2f - offsetTop);
 
     return true;
   }
