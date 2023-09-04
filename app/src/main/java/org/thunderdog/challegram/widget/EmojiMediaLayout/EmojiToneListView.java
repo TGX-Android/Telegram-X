@@ -110,7 +110,7 @@ public class EmojiToneListView extends FrameLayout {
     for (int a = rowStart; a < toneIndexVertical; a++) {
       index += getRowSize(a);
     }
-    if (stickers != null && index >= 0 && index < stickerObjs.size()) {
+    if (stickers != null && stickerObjs != null && index >= 0 && index < stickerObjs.size()) {
       return stickerObjs.get(index);
     }
     return null;
@@ -155,8 +155,8 @@ public class EmojiToneListView extends FrameLayout {
 
 
   public boolean changeIndex (float x, float y) {
-    final int resV = MathUtils.clamp((int)((y - Screen.dp(VIEW_PADDING_TOP + ITEM_PADDING)) / Screen.dp(ITEM_SIZE)), 0, getRowsCount() - 1);
-    final int resH = MathUtils.clamp((int)((x - getRowX(resV)) / Screen.dp(ITEM_SIZE)), 0, getRowSize(resV) - 1);
+    final int resV = MathUtils.clamp((int)((y - Screen.dp(VIEW_PADDING_TOP + ITEM_PADDING)) / Screen.dp(ITEM_SIZE)), 0, Math.max(getRowsCount() - 1, 0));
+    final int resH = MathUtils.clamp((int)((x - getRowX(resV)) / Screen.dp(ITEM_SIZE)), 0, Math.max(getRowSize(resV) - 1, 0));
 
     if (resH != toneIndex || resV != toneIndexVertical) {
       toneIndex = resH;
@@ -300,7 +300,7 @@ public class EmojiToneListView extends FrameLayout {
   }
 
   public int getRowsCount () {
-    boolean isStickersSmall = stickers != null && stickers.size() <= 6 && stickers.size() >= 0;
+    boolean isStickersSmall = stickers != null && !stickers.isEmpty() && stickers.size() <= 6;
 
     int count = (emojiColorState != EmojiData.STATE_NO_COLORS ? 1: 0);
     if (isStickersSmall) {
