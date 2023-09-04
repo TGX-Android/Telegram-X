@@ -31,6 +31,7 @@ public class StickerSuggestionsProvider {
   public interface Callback {
     default void onResultPart (TdApi.Stickers stickers, TdApi.StickerType type, boolean isLocal) {}
     default void onResultFull (Result result) {}
+    default void onRequestCanceled (String emoji) {}
   }
 
   public StickerSuggestionsProvider (Tdlib tdlib) {
@@ -57,7 +58,10 @@ public class StickerSuggestionsProvider {
     if (suggestionsHandler != null) {
       suggestionsHandler.cancel();
       suggestionsHandler = null;
-      suggestionsCallback = null;
+      if (suggestionsCallback != null) {
+        suggestionsCallback.onRequestCanceled(suggestionsEmoji);
+        suggestionsCallback = null;
+      }
     }
   }
 
@@ -95,10 +99,13 @@ public class StickerSuggestionsProvider {
     return new CancellableResultHandler() {
       @Override
       public void processResult (TdApi.Object object) {
-        if (object.getConstructor() != TdApi.Stickers.CONSTRUCTOR) {
-          return;
-        }
-        UI.post(() -> applyStickerSuggestions((TdApi.Stickers) object, isLocal));
+        UI.post(() -> {
+          suggestionsHandler = null;
+          if (object.getConstructor() != TdApi.Stickers.CONSTRUCTOR) {
+            return;
+          }
+          applyStickerSuggestions((TdApi.Stickers) object, isLocal);
+        });
       }
     };
   }

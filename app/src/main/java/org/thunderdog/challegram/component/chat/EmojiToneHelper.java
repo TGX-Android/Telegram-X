@@ -531,6 +531,11 @@ public class EmojiToneHelper implements FactorAnimator.Target {
             setIsVisible(visibleAnchorView, emojiColorState != EmojiData.STATE_NO_COLORS || !result.isEmpty());
           }
         }
+
+        @Override
+        public void onRequestCanceled (String emoji) {
+          emojiSuggestionsCache.remove(emoji);
+        }
       });
 
       return true;
