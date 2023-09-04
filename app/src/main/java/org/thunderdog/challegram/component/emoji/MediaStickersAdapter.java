@@ -787,7 +787,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
           return new StickerHolder(view);
         }
         case TYPE_DEFAULT_EMOJI: {
-          EmojiView imageView = new EmojiView(context, toneHelper);
+          EmojiView imageView = new EmojiView(context, tdlib, toneHelper);
           imageView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
           imageView.setOnClickListener(classicEmojiClickListener);
           Views.setClickable(imageView);

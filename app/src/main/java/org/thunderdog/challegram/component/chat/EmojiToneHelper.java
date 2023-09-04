@@ -24,7 +24,6 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
@@ -44,13 +43,9 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
-import org.thunderdog.challegram.util.StickerSuggestionsProvider;
 import org.thunderdog.challegram.widget.BubbleLayout;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiToneListView;
 import org.thunderdog.challegram.widget.NoScrollTextView;
-
-import java.util.HashSet;
-import java.util.Set;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
@@ -59,7 +54,7 @@ import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.RunnableData;
 
-public class EmojiToneHelper implements FactorAnimator.Target, StickerSuggestionsProvider.Callback {
+public class EmojiToneHelper implements FactorAnimator.Target {
   public interface Delegate {
     default long getCurrentChatId () { return 0; };
     int[] displayBaseViewWithAnchor (EmojiToneHelper context, View anchorView, View viewToDisplay, int viewWidth, int viewHeight, int horizontalMargin, int horizontalOffset, int verticalOffset);
@@ -89,14 +84,12 @@ public class EmojiToneHelper implements FactorAnimator.Target, StickerSuggestion
   private final Context context;
   private final Delegate delegate;
   private final @Nullable ViewController<?> themeProvider;
-  private final StickerSuggestionsProvider stickerSuggestionsProvider;
 
   public EmojiToneHelper (Context context, Delegate delegate, Tdlib tdlib, @Nullable ViewController<?> themeProvider) {
     this.tdlib = tdlib;
     this.context = context;
     this.delegate = delegate;
     this.themeProvider = themeProvider;
-    this.stickerSuggestionsProvider = new StickerSuggestionsProvider(tdlib);
   }
 
   // Entry point
@@ -114,10 +107,14 @@ public class EmojiToneHelper implements FactorAnimator.Target, StickerSuggestion
 
   private static final int ANIMATOR_POSITION = 1;
 
-  public boolean openForEmoji (View anchorView, float startX, float startY, String emoji, int emojiColorState, String currentTone, String[] currentOtherTones) {
+  private TdApi.Sticker[] installedStickers, recommendedStickers;
+
+  public boolean openForEmoji (View anchorView, float startX, float startY, String emoji, int emojiColorState, String currentTone, String[] currentOtherTones, @Nullable TdApi.Sticker[] installedStickers, @Nullable TdApi.Sticker[] recommendedStickers) {
     this.emoji = emoji;
     this.emojiColorState = emojiColorState;
     this.currentTone = currentTone;
+    this.installedStickers = installedStickers;
+    this.recommendedStickers = recommendedStickers;
     int colorCount = emojiColorState >= EmojiData.STATE_HAS_TWO_COLORS ? (emojiColorState - EmojiData.STATE_HAS_TWO_COLORS + 1) : 0;
     if (colorCount > 0) {
       if (currentOtherTones != null) {
@@ -295,9 +292,6 @@ public class EmojiToneHelper implements FactorAnimator.Target, StickerSuggestion
       boolean byLayout = prepareWrap(anchorView);
       visibilityAnimator.setValue(isVisible, true, byLayout ? emojiTonePicker : null);
     }
-    if (!isVisible) {
-      requestFinishedCallback = null;
-    }
   }
   @Override
   public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
@@ -448,9 +442,7 @@ public class EmojiToneHelper implements FactorAnimator.Target, StickerSuggestion
     emojiTonePicker = new EmojiToneListView(context);
     emojiTonePicker.init(themeProvider, tdlib);
     emojiTonePicker.setEmoji(emoji, currentTone, emojiColorState);
-    emojiTonePicker.setCustomEmoji(
-      localEmojiSuggestions != null ? localEmojiSuggestions.stickers : null,
-      serverEmojiSuggestions != null ? serverEmojiSuggestions.stickers : null);
+    emojiTonePicker.setCustomEmoji(installedStickers, recommendedStickers);
     if (themeProvider != null) {
       themeProvider.addThemeInvalidateListener(emojiTonePicker);
     }
@@ -494,95 +486,13 @@ public class EmojiToneHelper implements FactorAnimator.Target, StickerSuggestion
     }
   }
 
-  public void invalidateSuggestionsCache () {
-    emojiWithoutSuggestions.clear();
+  public long getCurrentChatId () {
+    return delegate != null ? delegate.getCurrentChatId() : 0;
   }
 
-  private boolean isInSelfChat () {
+  public boolean isInSelfChat () {
     long chatId = delegate != null ? delegate.getCurrentChatId() : 0;
     return chatId != 0 && tdlib.isSelfChat(chatId);
-  }
-
-  private boolean canSearchCustomEmoji () {
-    return tdlib.account().isPremium() || isInSelfChat();
-  }
-
-  private final Set<String> emojiWithoutSuggestions = new HashSet<>();
-  private String lastRequestedEmoji;
-  private TdApi.Stickers localEmojiSuggestions;
-  private TdApi.Stickers serverEmojiSuggestions;
-  private Runnable requestFinishedCallback;
-
-  public boolean onFirstTouchDown (String emoji) {
-    checkSuggestionsCache();
-    lastRequestedEmoji = null;
-    localEmojiSuggestions = null;
-    serverEmojiSuggestions = null;
-    requestFinishedCallback = null;
-
-    if (emojiWithoutSuggestions.contains(emoji) || !canSearchCustomEmoji()) {
-      return false;
-    }
-    requestEmojiSuggestions(emoji);
-    return true;
-  }
-
-  public boolean onLongPressRequested (String emoji, Runnable onRequestCompleted) {
-    if (localEmojiSuggestions != null || emojiWithoutSuggestions.contains(emoji) || lastRequestedEmoji == null) {
-      requestFinishedCallback = null;
-      return true;      // call openForEmoji in long press handler
-    }
-    requestFinishedCallback = onRequestCompleted;     // schedule
-    return false;
-  }
-
-  private void requestEmojiSuggestions (String emoji) {
-    if (StringUtils.equalsOrBothEmpty(lastRequestedEmoji, emoji)) {
-      return;
-    }
-    lastRequestedEmoji = emoji;
-    stickerSuggestionsProvider.getSuggestions(emoji, new TdApi.StickerTypeCustomEmoji(), delegate != null ? delegate.getCurrentChatId() : 0, this);
-  }
-
-  @Override
-  public void onResultPart (@NonNull String emoji, @NonNull TdApi.Stickers stickers, @NonNull TdApi.StickerType type, boolean isLocal) {
-    if (!StringUtils.equalsOrBothEmpty(emoji, lastRequestedEmoji)) {
-      return;
-    }
-    if (isLocal) {
-      localEmojiSuggestions = stickers;
-    } else {
-      serverEmojiSuggestions = stickers;
-    }
-    if (isVisible() && !isLocal) {
-      // todo: add suggestions from server
-    }
-    if (requestFinishedCallback != null) {
-      if (stickers.stickers.length > 0 || !isLocal) {
-        requestFinishedCallback.run();
-        requestFinishedCallback = null;
-      }
-    }
-  }
-
-  @Override
-  public void onResultFull (@NonNull String emoji, @NonNull TdApi.Stickers stickersFromLocal, @NonNull TdApi.Stickers stickersFromServer, @NonNull TdApi.StickerType type) {
-    if ((stickersFromLocal.stickers.length + stickersFromServer.stickers.length == 0)) {
-      emojiWithoutSuggestions.add(emoji);
-    }
-  }
-
-  private int lastEmojiMode = -1;
-  private long lastChatId = -1;
-
-  private void checkSuggestionsCache () {
-    long chatId = delegate != null ? delegate.getCurrentChatId() : 0;
-    int emojiMode = Settings.instance().getEmojiMode();
-    if (lastEmojiMode != emojiMode || lastChatId != chatId) {
-      lastEmojiMode = emojiMode;
-      lastChatId = chatId;
-      emojiWithoutSuggestions.clear();
-    }
   }
 
   public TGStickerObj getSelectedCustomEmoji () {
