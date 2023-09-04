@@ -558,11 +558,9 @@ public class EmojiToneHelper implements FactorAnimator.Target, StickerSuggestion
       // todo: add suggestions from server
     }
     if (requestFinishedCallback != null) {
-      if (stickers.stickers.length > 0) {
+      if (stickers.stickers.length > 0 || !isLocal) {
         requestFinishedCallback.run();
         requestFinishedCallback = null;
-      } else if (!isLocal) {
-        // todo: cancel long press ?
       }
     }
   }
