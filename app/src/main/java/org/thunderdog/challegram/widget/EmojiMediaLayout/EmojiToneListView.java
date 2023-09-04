@@ -75,7 +75,7 @@ public class EmojiToneListView extends FrameLayout {
   }
 
   private int toneIndex = -1;
-  private int toneIndexVertical = 0;
+  private int toneIndexVertical = -1;
 
   public int getToneIndex () {
     return toneIndex;
@@ -102,7 +102,7 @@ public class EmojiToneListView extends FrameLayout {
   @Nullable
   public TGStickerObj getSelectedCustomEmoji () {
     boolean hasToneEmoji = hasToneEmoji();
-    if (hasToneEmoji && toneIndexVertical == 0) {
+    if (hasToneEmoji && toneIndexVertical == 0 || toneIndexVertical == -1) {
       return null;
     }
     int rowStart = hasToneEmoji ? 1: 0;
