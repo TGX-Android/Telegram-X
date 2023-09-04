@@ -11351,6 +11351,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     if (stickers == null || stickers.isEmpty()) {
       if (!isMore) {
+        context.setEmojiSuggestions(this, null, getInlineEmojiStickerScrollListener(), this::notifyChoosingEmoji);
         context().setEmojiSuggestionsVisible(false);
         canShowEmojiSuggestions = false;
       }
