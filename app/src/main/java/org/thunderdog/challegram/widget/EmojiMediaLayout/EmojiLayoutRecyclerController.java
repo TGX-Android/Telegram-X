@@ -329,7 +329,6 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> i
     }
     if (i != -1) {
       int r = indexOfStickerSetByAdapterPosition(i);
-      Log.i("WTF_DEBUG", "Set index " + r + " " + i);
       return r;
     }
     return 0;
