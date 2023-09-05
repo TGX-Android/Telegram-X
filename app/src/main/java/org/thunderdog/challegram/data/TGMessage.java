@@ -3889,7 +3889,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public final void requestReactionsResources (ComplexReceiver complexReceiver, boolean isUpdate) {
     if (messageReactions != null) {
-//      messageReactions.requestAvatarFiles(complexReceiver, isUpdate);
+      messageReactions.requestAvatarFiles(complexReceiver, isUpdate);
     }
   }
 
