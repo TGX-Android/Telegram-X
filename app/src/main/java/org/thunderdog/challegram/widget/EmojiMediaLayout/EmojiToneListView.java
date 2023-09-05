@@ -142,7 +142,7 @@ public class EmojiToneListView extends FrameLayout {
     stickerObjs = new ArrayList<>();
 
     for (int a = 0; a < 2; a++) {
-      TdApi.Sticker[] stickers = a == 0 ? stickersFromServer: stickersFromLocal;
+      TdApi.Sticker[] stickers = a == 0 ? stickersFromServer : stickersFromLocal;
       if (stickers == null) {
         continue;
       }
