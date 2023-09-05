@@ -189,15 +189,18 @@ public class StickersListController extends ViewController<StickersListControlle
       tdlib.ui().shareStickerSetUrl(this, stickerSetInfoToLoad);
     } else if (id == R.id.btn_copyLink) {
       if (stickerSetInfoToLoad != null) {
-        UI.copyText(TD.getStickerPackLink(stickerSetInfoToLoad), R.string.CopiedLink);
+        UI.copyText(tdlib.tMeStickerSetUrl(stickerSetInfoToLoad), R.string.CopiedLink);
       } else {
         StringBuilder b = new StringBuilder();
         for (StickerSection section: stickerSections) {
-          if (section.info == null) continue;
-          if (b.length() != 0) {
-            b.append("\n");
+          TdApi.StickerSetInfo stickerSetInfo = section.info != null ? section.info.getInfo() : null;
+          if (stickerSetInfo == null) {
+            continue;
           }
-          b.append(TD.getStickerPackLink(section.info.getInfo()));
+          if (b.length() != 0) {
+            b.append('\n');
+          }
+          b.append(tdlib.tMeStickerSetUrl(stickerSetInfo));
         }
         UI.copyText(b.toString(), R.string.CopiedLink);
       }
@@ -216,7 +219,7 @@ public class StickersListController extends ViewController<StickersListControlle
       }
     } else if (id == R.id.btn_delete) {
       if (getArguments() != null) {
-        getArguments().removeStickerSet(stickerSetInfoToLoad != null ? stickerSetInfoToLoad.id: -1);
+        getArguments().removeStickerSet(stickerSetInfoToLoad != null ? stickerSetInfoToLoad.id : -1);
       }
     } else if (id == R.id.btn_installStickerSet) {
       if (getArguments() != null) {
@@ -566,7 +569,7 @@ public class StickersListController extends ViewController<StickersListControlle
 
   private static int calculateSpanCount (int width, int height, boolean isEmoji) {
     int minSide = Math.min(width, height);
-    int minWidth = isEmoji ? Screen.dp(42): (minSide / 4);
+    int minWidth = isEmoji ? Screen.dp(42) : (minSide / 4);
     return minWidth != 0 ? width / minWidth : 4;
   }
 
@@ -791,7 +794,7 @@ public class StickersListController extends ViewController<StickersListControlle
     }
 
     public ArrayList<MediaStickersAdapter.StickerItem> toItems (boolean needInfo) {
-      ArrayList<MediaStickersAdapter.StickerItem> items = new ArrayList<>((info != null && needInfo ? 1: 0) + stickers.size());
+      ArrayList<MediaStickersAdapter.StickerItem> items = new ArrayList<>((info != null && needInfo ? 1 : 0) + stickers.size());
       if (info != null && needInfo) {
         items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_HEADER_TRENDING, info));
       }

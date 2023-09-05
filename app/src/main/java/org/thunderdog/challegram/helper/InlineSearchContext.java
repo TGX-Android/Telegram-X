@@ -441,7 +441,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
       return searchStickersImpl(emoji, isEmoji, true, ignoreStickerIds);
     }
     final long chatId = callback.provideInlineSearchChatId();
-    final TdApi.StickerType type = isEmoji ? new TdApi.StickerTypeCustomEmoji(): new TdApi.StickerTypeRegular();
+    final TdApi.StickerType type = isEmoji ? new TdApi.StickerTypeCustomEmoji() : new TdApi.StickerTypeRegular();
     TdApi.Function<?> function;
     if (more) {
       function = new TdApi.SearchStickers(type, emoji, 1000);

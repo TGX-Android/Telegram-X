@@ -54,7 +54,7 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
   }
 
   protected final int getHeaderHeight (boolean withOffset) {
-    return getHeaderHeight() + (withOffset ? HeaderView.getTopOffset(): 0);
+    return getHeaderHeight() + (withOffset ? HeaderView.getTopOffset() : 0);
   }
 
   protected final int getContentMinHeight () {
@@ -292,7 +292,7 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
   }
 
   protected int getTopEdge () {
-    return Math.max(0, (int) ((headerView != null ? headerTranslationY: 0) - HeaderView.getTopOffset()));
+    return Math.max(0, (int) ((headerView != null ? headerTranslationY : 0) - HeaderView.getTopOffset()));
   }
 
   @Override
@@ -315,7 +315,7 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
 
   public void checkContentScrollY (BottomSheetBaseControllerPage c) {
     int maxScrollY = maxItemsScrollYOffset();
-    int scrollY = (int) (getContentOffset() - (headerView != null ? headerTranslationY: 0) + HeaderView.getTopOffset()); //();
+    int scrollY = (int) (getContentOffset() - (headerView != null ? headerTranslationY : 0) + HeaderView.getTopOffset()); //();
     if (c != null) {
       c.ensureMaxScrollY(scrollY, maxScrollY);
     }
@@ -439,7 +439,7 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
   private @Nullable LickView lickView;
 
   protected float getLickViewFactor () {
-    return lickView != null ? lickView.getFactor(): 0;
+    return lickView != null ? lickView.getFactor() : 0;
   }
 
   protected void onUpdateLickViewFactor (float factor) {
@@ -531,7 +531,7 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
       }
 
       outRect.set(
-        0, page.needTopDecorationOffsets(parent) ? Math.max(top, 0): 0,
+        0, page.needTopDecorationOffsets(parent) ? Math.max(top, 0) : 0,
         0, page.needBottomDecorationOffsets(parent) ? Math.max(0, bottom) : 0);
     }
   }

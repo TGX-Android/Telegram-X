@@ -209,7 +209,7 @@ public class ChatMembersSearcher {
   }
 
   private void performRequestForUserChat (long userId, String query, Handler handler) {
-    long otherUserId = ChatId.isSecret(userId) ? tdlib.chatUserId(userId): userId;
+    long otherUserId = ChatId.isSecret(userId) ? tdlib.chatUserId(userId) : userId;
     long myUserId = tdlib.myUserId();
 
     boolean otherUserOk = queryUserCheck(otherUserId, query);

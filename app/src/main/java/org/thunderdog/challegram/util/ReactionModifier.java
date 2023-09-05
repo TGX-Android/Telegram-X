@@ -49,7 +49,7 @@ public class ReactionModifier implements DrawModifier {
 
   @Override
   public int getWidth () {
-    return Screen.dp(mode == MODE_INLINE ? (26 * reactions.length + 14): 48);
+    return Screen.dp(mode == MODE_INLINE ? (26 * reactions.length + 14) : 48);
   }
 
   public ReactionModifier requestFiles (ComplexReceiver complexReceiver) {

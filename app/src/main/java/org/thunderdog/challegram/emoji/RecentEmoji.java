@@ -33,10 +33,6 @@ public class RecentEmoji {
     this.customEmojiId = customEmojiId;
   }
 
-  public boolean isBroken () {
-    return isCustomEmoji ? customEmojiId == 0: !Emoji.instance().isSingleEmoji(emoji);
-  }
-
   public boolean isCustomEmoji () {
     return isCustomEmoji;
   }

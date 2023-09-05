@@ -1,3 +1,17 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * File created on 18/08/2023
+ */
 package org.thunderdog.challegram.widget.EmojiMediaLayout;
 
 import android.content.Context;
@@ -654,8 +668,7 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayoutRec
 
   @Override
   public void replaceEmoji (int newIndex, RecentEmoji emoji) {
-    adapter.replaceItem(newIndex + getHeaderItemCount(),
-      new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_DEFAULT_EMOJI, new TGDefaultEmoji(emoji.emoji, true)));
+    adapter.replaceItem(newIndex + getHeaderItemCount(), processRecentEmojiItem(emoji));
   }
 
   @Override
@@ -733,9 +746,7 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayoutRec
     return items;
   }
 
-  @Nullable
   private MediaStickersAdapter.StickerItem processRecentEmojiItem (RecentEmoji recentEmoji) {
-    if (recentEmoji.isBroken()) return null;
     if (recentEmoji.isCustomEmoji()) {
       final TdlibEmojiManager.Entry entry = tdlib.emoji().findOrPostponeRequest(recentEmoji.customEmojiId, this);
       final TGStickerObj stickerObj;

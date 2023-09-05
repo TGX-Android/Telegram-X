@@ -1,3 +1,17 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * File created on 18/08/2023
+ */
 package org.thunderdog.challegram.widget;
 
 import android.annotation.SuppressLint;
@@ -11,22 +25,15 @@ import androidx.annotation.Nullable;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
-import org.thunderdog.challegram.component.popups.MessageSeenController;
-import org.thunderdog.challegram.component.popups.ModernActionedLayout;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.data.TGStickerSetInfo;
-import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.util.text.FormattedText;
 import org.thunderdog.challegram.util.text.TextEntity;
-import org.thunderdog.challegram.widget.CustomTextView;
 
-import me.vkryl.core.StringUtils;
 import me.vkryl.td.Td;
 
 @SuppressLint("ViewConstructor")
@@ -69,7 +76,14 @@ public class EmojiPacksInfoView extends CustomTextView {
   private void updateImpl (long firstEmojiId, int emojiPacksCount, ClickableSpan onClickListener, @Nullable TdApi.StickerSetInfo info, boolean animated) {
     boolean isSingle = emojiPacksCount == 1;
 
-    String link = isSingle ? Lang.getString(R.string.xEmojiPacksEmojiSingle, info != null ? info.title: Lang.getString(R.string.LoadingMessageEmojiPack)): Lang.plural(R.string.xEmojiPacks, emojiPacksCount);
+    String link;
+    if (isSingle) {
+      link = Lang.getString(R.string.xEmojiPacksEmojiSingle,
+        info != null ? info.title : Lang.getString(R.string.LoadingMessageEmojiPack)
+      );
+    } else {
+      link = Lang.plural(R.string.xEmojiPacks, emojiPacksCount);;
+    }
     String text = Lang.getString(isSingle ? R.string.EmojiUsedFromSingle : R.string.EmojiUsedFromX, link);
 
     final int linkStart = text.indexOf(link);

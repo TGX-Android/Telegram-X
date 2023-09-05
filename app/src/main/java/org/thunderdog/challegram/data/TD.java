@@ -3082,10 +3082,6 @@ public class TD {
     return RESTRICT_MODE_NONE;
   }
 
-  public static String getTelegramMeHost () {
-    return TdConstants.TME_HOSTS[0];
-  }
-
   public static byte[] newRandomWaveform () {
     return new byte[] {0, 4, 17, -50, -93, 86, -103, -45, -12, -26, 63, -25, -3, 109, -114, -54, -4, -1,
       -1, -1, -1, -29, -1, -1, -25, -1, -1, -97, -43, 57, -57, -108, 1, -91, -4, -47, 21, 99, 10, 97, 43,
@@ -3536,32 +3532,6 @@ public class TD {
         return status.getConstructor() == TdApi.ChatMemberStatusBanned.CONSTRUCTOR;
     }
     return false;
-  }
-
-  public static String getLink (TdApi.Supergroup supergroup) {
-    return "https://" + getTelegramMeHost() + "/" + Td.primaryUsername(supergroup);
-  }
-
-  public static String getStickerPackLink (@Nullable TdApi.StickerSetInfo info) {
-    if (info == null) return "";
-
-    if (info.stickerType.getConstructor() == TdApi.StickerTypeCustomEmoji.CONSTRUCTOR) {
-      return "https://" + getTelegramMeHost() + "/addemoji/" + info.name;
-    } else {
-      return "https://" + getTelegramMeHost() + "/addstickers/" + info.name;
-    }
-  }
-
-  public static String getLink (TdApi.User user) {
-    return "https://" + getTelegramMeHost() + "/" + Td.primaryUsername(user);
-  }
-
-  public static String getLink (String username) {
-    return "https://" + getTelegramMeHost() + "/" + username;
-  }
-
-  public static String getLink (TdApi.LanguagePackInfo languagePackInfo) {
-    return "https://" + getTelegramMeHost() + "/setlanguage/" + languagePackInfo.id;
   }
 
   public static String getRoleName (@Nullable TdApi.User user, int role) {
@@ -5925,7 +5895,7 @@ public class TD {
     }
 
     public ContentPreview (@Nullable TdApi.FormattedText text, ContentPreview copy) {
-      this(copy.emoji, copy.placeholderText, text != null ? text: copy.formattedText, copy.isTranslatable, copy.hideAuthor, copy.parentEmoji);
+      this(copy.emoji, copy.placeholderText, text != null ? text : copy.formattedText, copy.isTranslatable, copy.hideAuthor, copy.parentEmoji);
     }
 
     public ContentPreview (@Nullable Emoji emoji, int placeholderText, @Nullable TdApi.FormattedText formattedText, boolean isTranslatable, boolean hideAuthor, @Nullable Emoji parentEmoji) {
@@ -6992,7 +6962,7 @@ public class TD {
   }
 
   public static String stickerEmoji (TdApi.Sticker sticker) {
-    return !StringUtils.isEmpty(sticker.emoji) ? sticker.emoji: "😀";
+    return !StringUtils.isEmpty(sticker.emoji) ? sticker.emoji : "\uD83D\uDE00" /*😀*/;
   }
 
   public static TdApi.FormattedText toSingleEmojiText (TdApi.Sticker sticker) {

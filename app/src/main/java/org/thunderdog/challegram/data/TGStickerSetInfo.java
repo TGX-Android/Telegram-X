@@ -15,7 +15,6 @@
 package org.thunderdog.challegram.data;
 
 import android.graphics.Path;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -34,7 +33,6 @@ import org.thunderdog.challegram.widget.EmojiLayout;
 import java.util.ArrayList;
 
 import me.vkryl.core.BitwiseUtils;
-import me.vkryl.core.StringUtils;
 import me.vkryl.td.Td;
 
 public class TGStickerSetInfo {
@@ -301,10 +299,10 @@ public class TGStickerSetInfo {
 
   public int getItemCount () {
     if (isTrending()) {
-      return isEmoji() ? 16: 5;
+      return isEmoji() ? 16 : 5;
     }
     if (isCollapsableEmojiSet()) {
-      return size + 1 + (isCollapsed() ? 1: 0);
+      return size + 1 + (isCollapsed() ? 1 : 0);
     }
     if (info != null) {
       return info.size + 1;
@@ -431,7 +429,7 @@ public class TGStickerSetInfo {
 
   public int getFullSize () {
     if (isCollapsableEmojiSet()) {
-      return info != null ? info.size: getSize();
+      return info != null ? info.size : getSize();
     }
     return allStickers != null ? allStickers.length : getSize();
   }
@@ -450,8 +448,8 @@ public class TGStickerSetInfo {
 
   public String getTitle () {
     if (isFakeClassicEmoji()) {
-      return titleRes != -1 ? Lang.getString(titleRes): null;
+      return titleRes != -1 ? Lang.getString(titleRes) : null;
     }
-    return isDefaultEmoji() ? Lang.getString(R.string.TrendingStatuses): isFavorite() ? "" : isRecent() ? Lang.getString(R.string.RecentStickers) : info != null ? info.title : null;
+    return isDefaultEmoji() ? Lang.getString(R.string.TrendingStatuses) : isFavorite() ? "" : isRecent() ? Lang.getString(R.string.RecentStickers) : info != null ? info.title : null;
   }
 }

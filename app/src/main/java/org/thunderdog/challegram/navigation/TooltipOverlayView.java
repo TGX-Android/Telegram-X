@@ -269,7 +269,7 @@ public class TooltipOverlayView extends ViewGroup {
       this.listener = listener;
       final String currentLang = message.getCurrentTranslatedLanguage();
       originalLanguage = Lang.getLanguageName(message.getOriginalMessageLanguage(), Lang.getString(R.string.TranslateLangUnknown));
-      translatedLanguage = Lang.getLanguageName(message.getCurrentTranslatedLanguage(), currentLang != null ? currentLang: originalLanguage);
+      translatedLanguage = Lang.getLanguageName(message.getCurrentTranslatedLanguage(), currentLang != null ? currentLang : originalLanguage);
       arrowX = (int) U.measureText(originalLanguage, Paints.getRegularTextPaint(14));
       width = (int)(arrowX + U.measureText(translatedLanguage, Paints.getRegularTextPaint(14)) + Screen.dp(18));
       arrow = Drawables.get(R.drawable.round_keyboard_arrow_right_16);

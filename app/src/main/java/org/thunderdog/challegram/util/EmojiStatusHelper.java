@@ -72,7 +72,7 @@ public class EmojiStatusHelper implements Destroyable {
   }
 
   public void invalidateEmojiStatusReceiver (@Nullable TextMedia specificMedia) {
-    invalidateEmojiStatusReceiver(emojiStatusDrawable != null ? emojiStatusDrawable.emojiStatus: null, specificMedia);
+    invalidateEmojiStatusReceiver(emojiStatusDrawable != null ? emojiStatusDrawable.emojiStatus : null, specificMedia);
   }
 
   public void invalidateEmojiStatusReceiver (Text text, @Nullable TextMedia specificMedia) {
@@ -131,11 +131,11 @@ public class EmojiStatusHelper implements Destroyable {
   }
 
   public int getLastDrawX () {
-    return emojiStatusDrawable != null ? emojiStatusDrawable.lastDrawX: 0;
+    return emojiStatusDrawable != null ? emojiStatusDrawable.lastDrawX : 0;
   }
 
   public int getLastDrawY () {
-    return emojiStatusDrawable != null ? emojiStatusDrawable.lastDrawY: 0;
+    return emojiStatusDrawable != null ? emojiStatusDrawable.lastDrawY : 0;
   }
 
   public void attach () {
@@ -156,11 +156,11 @@ public class EmojiStatusHelper implements Destroyable {
   }
 
   public int getWidth () {
-    return emojiStatusDrawable != null ? emojiStatusDrawable.getWidth(): 0;
+    return emojiStatusDrawable != null ? emojiStatusDrawable.getWidth() : 0;
   }
 
   public int getWidth (int offset) {
-    return emojiStatusDrawable != null ? emojiStatusDrawable.getWidth(offset): 0;
+    return emojiStatusDrawable != null ? emojiStatusDrawable.getWidth(offset) : 0;
   }
 
   public void draw (Canvas c, int startX, int startY) {
@@ -241,7 +241,7 @@ public class EmojiStatusHelper implements Destroyable {
       this.textColorSet = textColorSet;
       this.textMediaListener = textMediaListener;
       this.clickListener = clickListener;
-      this.starDrawable = emojiStatus == null && needDrawEmojiStatus ? Drawables.get(defaultStarIconId): null;
+      this.starDrawable = emojiStatus == null && needDrawEmojiStatus ? Drawables.get(defaultStarIconId) : null;
       this.preview = null;
       this.imageReceiver = null;
       this.gifReceiver = null;
@@ -255,7 +255,7 @@ public class EmojiStatusHelper implements Destroyable {
       this.textColorSet = textColorSet;
       this.textMediaListener = null;
       this.clickListener = clickListener;
-      this.starDrawable = needDrawEmojiStatus && (sticker == null || !TD.isFileLoaded(sticker.sticker)) ? Drawables.get(defaultStarIconId): null;
+      this.starDrawable = needDrawEmojiStatus && (sticker == null || !TD.isFileLoaded(sticker.sticker)) ? Drawables.get(defaultStarIconId) : null;
       this.needRepainting = TD.needRepainting(sticker);
 
       if (sticker != null && TD.isFileLoaded(sticker.sticker)) {
@@ -342,10 +342,10 @@ public class EmojiStatusHelper implements Destroyable {
         return emojiStatus.onTouchEvent(v, e);
       }
 
-      int width = starDrawable != null ? starDrawable.getMinimumWidth():
-        imageReceiver != null ? imageReceiver.getWidth(): 0;
-      int height = starDrawable != null ? starDrawable.getMinimumHeight():
-        imageReceiver != null ? imageReceiver.getHeight(): 0;
+      int width = starDrawable != null ? starDrawable.getMinimumWidth() :
+        imageReceiver != null ? imageReceiver.getWidth() : 0;
+      int height = starDrawable != null ? starDrawable.getMinimumHeight() :
+        imageReceiver != null ? imageReceiver.getHeight() : 0;
 
       if (clickListener == null || width == 0 || height == 0) return false;
 

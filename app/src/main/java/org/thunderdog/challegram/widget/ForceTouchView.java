@@ -439,7 +439,7 @@ public class ForceTouchView extends FrameLayoutFix implements
 
       View offsetView;
 
-      final int offsetWeight = context.shrunkenFooter ? 4: 1;
+      final int offsetWeight = context.shrunkenFooter ? 4 : 1;
 
       if (context.actionItems.size() > 1) {
         offsetView = new View(getContext());

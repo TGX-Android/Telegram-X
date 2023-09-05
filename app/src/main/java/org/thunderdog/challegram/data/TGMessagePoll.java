@@ -355,7 +355,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
   }
 
   private void setQuestion (String question) {
-    String questionToSet = (translatedTexts != null ? StringUtils.trim(translatedTexts[0]): question);
+    String questionToSet = (translatedTexts != null ? StringUtils.trim(translatedTexts[0]) : question);
     if (this.questionText == null || !StringUtils.equalsOrBothEmpty(this.questionText.getText(), questionToSet)) {
       this.questionText = new TextWrapper(questionToSet, getBiggerTextStyleProvider(), getTextColorSet())
         .setEntities(new TextEntity[] {TextEntity.valueOf(tdlib, questionToSet, new TdApi.TextEntity(0, questionToSet.length(), new TdApi.TextEntityTypeBold()), null)}, null)
@@ -367,7 +367,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     prepareOptions(options);
     int optionId = 0;
     for (TdApi.PollOption option : options) {
-      String optionToSet = (translatedTexts != null ? StringUtils.trim(translatedTexts[optionId + 1]): option.text);
+      String optionToSet = (translatedTexts != null ? StringUtils.trim(translatedTexts[optionId + 1]) : option.text);
       if (this.options[optionId].text == null || !StringUtils.equalsOrBothEmpty(this.options[optionId].text.getText(), optionToSet)) {
         this.options[optionId].text = new TextWrapper(optionToSet, getTextStyleProvider(), getTextColorSet())
           .setViewProvider(currentViews);

@@ -252,12 +252,12 @@ public class ChatEventUtil {
         if (StringUtils.isEmpty(changed.newUsername)) {
           text = new TdApi.FormattedText("", null);
         } else {
-          String link = TD.getLink(changed.newUsername);
+          String link = tdlib.tMeUrl(changed.newUsername);
           text = new TdApi.FormattedText(link, new TdApi.TextEntity[] {new TdApi.TextEntity(0, link.length(), new TdApi.TextEntityTypeUrl())});
         }
         fullMessage = new TGMessageText(context, msg, text);
         if (!StringUtils.isEmpty(changed.oldUsername)) {
-          String link = TD.getLink(changed.oldUsername);
+          String link = tdlib.tMeUrl(changed.oldUsername);
           fullMessage.setFooter(Lang.getString(R.string.EventLogPreviousLink), link, new TdApi.TextEntity[] {new TdApi.TextEntity(0, link.length(), new TdApi.TextEntityTypeUrl())});
         }
         break;

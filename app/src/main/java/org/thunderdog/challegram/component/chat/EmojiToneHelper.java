@@ -26,7 +26,6 @@ import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 
-import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
@@ -44,13 +43,9 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
-import org.thunderdog.challegram.util.StickerSuggestionsProvider;
 import org.thunderdog.challegram.widget.BubbleLayout;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiToneListView;
 import org.thunderdog.challegram.widget.NoScrollTextView;
-
-import java.util.ArrayList;
-import java.util.HashMap;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
@@ -89,14 +84,12 @@ public class EmojiToneHelper implements FactorAnimator.Target {
   private final Context context;
   private final Delegate delegate;
   private final @Nullable ViewController<?> themeProvider;
-  private final StickerSuggestionsProvider stickerSuggestionsProvider;
 
   public EmojiToneHelper (Context context, Delegate delegate, Tdlib tdlib, @Nullable ViewController<?> themeProvider) {
     this.tdlib = tdlib;
     this.context = context;
     this.delegate = delegate;
     this.themeProvider = themeProvider;
-    this.stickerSuggestionsProvider = new StickerSuggestionsProvider(tdlib);
   }
 
   // Entry point
@@ -114,10 +107,14 @@ public class EmojiToneHelper implements FactorAnimator.Target {
 
   private static final int ANIMATOR_POSITION = 1;
 
-  public boolean openForEmoji (View anchorView, float startX, float startY, String emoji, int emojiColorState, String currentTone, String[] currentOtherTones) {
+  private TdApi.Sticker[] installedStickers, recommendedStickers;
+
+  public boolean openForEmoji (View anchorView, float startX, float startY, String emoji, int emojiColorState, String currentTone, String[] currentOtherTones, @Nullable TdApi.Sticker[] installedStickers, @Nullable TdApi.Sticker[] recommendedStickers) {
     this.emoji = emoji;
     this.emojiColorState = emojiColorState;
     this.currentTone = currentTone;
+    this.installedStickers = installedStickers;
+    this.recommendedStickers = recommendedStickers;
     int colorCount = emojiColorState >= EmojiData.STATE_HAS_TWO_COLORS ? (emojiColorState - EmojiData.STATE_HAS_TWO_COLORS + 1) : 0;
     if (colorCount > 0) {
       if (currentOtherTones != null) {
@@ -137,9 +134,7 @@ public class EmojiToneHelper implements FactorAnimator.Target {
     this.buttonOffsetLeft = buttonOffsetTop = 0;
     this.visibleAnchorView = anchorView;
 
-    if (!isEmojiSuggestionsLoading(emoji)) {
-      setIsVisible(anchorView, true);
-    }
+    setIsVisible(anchorView, true);
 
     return true;
   }
@@ -280,7 +275,7 @@ public class EmojiToneHelper implements FactorAnimator.Target {
     return visibilityAnimator != null && visibilityAnimator.getValue();
   }
   private void setIsVisible (View anchorView, boolean isVisible) {
-    visibleAnchorView = isVisible ? anchorView: null;
+    visibleAnchorView = isVisible ? anchorView : null;
     boolean wasVisible = isVisible();
     if (wasVisible != isVisible) {
       if (visibilityAnimator == null) {
@@ -447,7 +442,7 @@ public class EmojiToneHelper implements FactorAnimator.Target {
     emojiTonePicker = new EmojiToneListView(context);
     emojiTonePicker.init(themeProvider, tdlib);
     emojiTonePicker.setEmoji(emoji, currentTone, emojiColorState);
-    emojiTonePicker.setCustomEmoji(emojiSuggestionsCache.get(emoji));
+    emojiTonePicker.setCustomEmoji(installedStickers, recommendedStickers);
     if (themeProvider != null) {
       themeProvider.addThemeInvalidateListener(emojiTonePicker);
     }
@@ -462,7 +457,11 @@ public class EmojiToneHelper implements FactorAnimator.Target {
     offsetTop = result[1];
 
     emojiTonePicker.setAnchorView(anchorView, offsetLeft);
-
+    if (emojiTonePicker.getRowsCount() != 1 && emojiTonePicker.hasToneEmoji()) {
+      emojiTonePicker.changeIndex(
+        anchorView.getMeasuredWidth() / 2f - offsetLeft,
+        anchorView.getMeasuredHeight() / 2f - offsetTop);
+    }
     return true;
   }
 
@@ -487,52 +486,17 @@ public class EmojiToneHelper implements FactorAnimator.Target {
     }
   }
 
-  private final HashMap<String, StickerSuggestionsProvider.Result> emojiSuggestionsCache = new HashMap<>();
-
-  public void invalidateSuggestionsCache () {
-    stickerSuggestionsProvider.clearCache();
-    emojiSuggestionsCache.clear();
+  public long getCurrentChatId () {
+    return delegate != null ? delegate.getCurrentChatId() : 0;
   }
 
-  private boolean isInSelfChat () {
-    long chatId = delegate != null ? delegate.getCurrentChatId(): 0;
+  public boolean isInSelfChat () {
+    long chatId = delegate != null ? delegate.getCurrentChatId() : 0;
     return chatId != 0 && tdlib.isSelfChat(chatId);
   }
 
-  private boolean canSearchCustomEmoji () {
-    return tdlib.account().isPremium() || isInSelfChat();
-  }
-
-  public boolean getSuggestionsFromCacheOrRequest (String emoji) {
-    if (!canSearchCustomEmoji()) {
-      return false;
-    }
-
-    if (emojiSuggestionsCache.containsKey(emoji)) {
-      StickerSuggestionsProvider.Result stickers = emojiSuggestionsCache.get(emoji);
-      return stickers == null || !stickers.isEmpty();
-    } else {
-      emojiSuggestionsCache.put(emoji, null);
-      stickerSuggestionsProvider.getSuggestions(emoji, new TdApi.StickerTypeCustomEmoji(), 0, new StickerSuggestionsProvider.Callback() {
-        @Override
-        public void onResultFull (StickerSuggestionsProvider.Result result) {
-          emojiSuggestionsCache.put(emoji, result);
-          if (StringUtils.equalsOrBothEmpty(EmojiToneHelper.this.emoji, emoji) && visibleAnchorView != null) {
-            setIsVisible(visibleAnchorView, emojiColorState != EmojiData.STATE_NO_COLORS || !result.isEmpty());
-          }
-        }
-      });
-
-      return true;
-    }
-  }
-
-  private boolean isEmojiSuggestionsLoading (String emoji) {
-    return emojiSuggestionsCache.containsKey(emoji) && emojiSuggestionsCache.get(emoji) == null;
-  }
-
   public TGStickerObj getSelectedCustomEmoji () {
-    return emojiTonePicker != null ? emojiTonePicker.getSelectedCustomEmoji(): null;
+    return emojiTonePicker != null ? emojiTonePicker.getSelectedCustomEmoji() : null;
   }
 
   private RunnableData<TGStickerObj> onCustomEmojiSelectedListener;

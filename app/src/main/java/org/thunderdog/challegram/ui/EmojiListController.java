@@ -254,7 +254,7 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
   public void showEmojiSection (int section) {
     if (contentView.canChangeSection()) {
       TGStickerSetInfo info = emojiController.getStickerSetBySectionIndex(section);
-      int position = section != 0 && info != null ? info.getStartIndex(): 0;
+      int position = section != 0 && info != null ? info.getStartIndex() : 0;
 
       emojiController.scrollToStickerSet(position, false, contentView.getCurrentSection() != SECTION_TRENDING);
       if (contentView.getCurrentSection() == SECTION_TRENDING) {
@@ -624,7 +624,6 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
   public void onInstalledStickerSetsUpdated (final long[] stickerSetIds, TdApi.StickerType stickerType) {
     if (stickerType.getConstructor() == TdApi.StickerTypeCustomEmoji.CONSTRUCTOR) {
       runOnUiThreadOptional(() -> {
-        toneHelper.invalidateSuggestionsCache();
         if (!loadingStickers) {
           changeStickers(stickerSetIds);
         }

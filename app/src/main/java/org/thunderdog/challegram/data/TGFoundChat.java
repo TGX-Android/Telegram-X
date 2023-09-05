@@ -410,7 +410,7 @@ public class TGFoundChat {
   }
 
   public @Nullable TdApi.MessageSender getMessageSenderId () {
-    return chat != null ? chat.messageSenderId: null;
+    return chat != null ? chat.messageSenderId : null;
   }
 
   public boolean isAnonymousAdmin () {

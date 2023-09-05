@@ -173,7 +173,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
             }
           }
           getArguments().setCurrentStickerSectionByPosition(EmojiLayout.STICKERS_INSTALLED_CONTROLLER_ID,
-            nextSection == SECTION_STICKERS ? (stickerSetSection != -1 ? stickerSetSection: stickersController.getStickerSetSection()) :
+            nextSection == SECTION_STICKERS ? (stickerSetSection != -1 ? stickerSetSection : stickersController.getStickerSetSection()) :
               nextSection == SECTION_TRENDING ? 2 : 1
             , nextSection == SECTION_STICKERS,true);
         }
@@ -531,7 +531,7 @@ public class EmojiMediaListController extends ViewController<EmojiLayout> implem
       } else {
         items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_HEADER_TRENDING, stickerSet).setHighlightValue(highlight));
       }
-      int itemCount = isEmojiStatuses ? stickerSetInfo.size :(stickerSetInfo.stickerType.getConstructor() == TdApi.StickerTypeCustomEmoji.CONSTRUCTOR ? 16: 5);
+      int itemCount = isEmojiStatuses ? stickerSetInfo.size : (stickerSetInfo.stickerType.getConstructor() == TdApi.StickerTypeCustomEmoji.CONSTRUCTOR ? 16 : 5);
       for (int i = 0; i < itemCount; i++) {
         TGStickerObj stickerObj = new TGStickerObj(tdlib, i < stickerSetInfo.covers.length ? stickerSetInfo.covers[i] : null, null, stickerSetInfo.stickerType);
         stickerObj.setStickerSetId(stickerSetInfo.id, null);

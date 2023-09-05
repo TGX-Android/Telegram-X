@@ -158,7 +158,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
         }
       });
 
-      stickersView = stickersViewToSet != null ? stickersViewToSet:
+      stickersView = stickersViewToSet != null ? stickersViewToSet :
         (CustomRecyclerView) Views.inflate(context(), R.layout.recycler_custom, contentView);
 
       stickersView.setHasFixedSize(true);
@@ -826,7 +826,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
             items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_KEYBOARD_TOP));
             int startIndex = 1;
 
-            final int totalRecentCount = recentStickers != null ? recentStickers.length: 0;
+            final int totalRecentCount = recentStickers != null ? recentStickers.length : 0;
             final int totalTrendingCount = trendingStickers != null ? trendingStickers.length : 0;
             if (totalRecentCount > 0) {
               TGStickerSetInfo info = new TGStickerSetInfo(tdlib, recentStickers, false, totalRecentCount);
@@ -863,7 +863,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
                   break;
                 }
               }
-              startIndex += totalTrendingCount + (needAddDefaultPremiumStar ? 2: 1);
+              startIndex += totalTrendingCount + (needAddDefaultPremiumStar ? 2 : 1);
             }
 
             for (TdApi.StickerSetInfo rawInfo : rawStickerSets) {

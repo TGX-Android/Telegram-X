@@ -299,7 +299,7 @@ public class DoubleTextWrapper implements MessageSourceProvider, UserProvider, T
   public void setForcedSubtitle (CharSequence newSubtitle) {
     this.forcedSubtitle  = newSubtitle;
     setIgnoreOnline(true);
-    setSubtitle(!StringUtils.isEmpty(forcedSubtitle) ? forcedSubtitle: subtitle);
+    setSubtitle(!StringUtils.isEmpty(forcedSubtitle) ? forcedSubtitle : subtitle);
   }
 
   public void setSubtitle (CharSequence newSubtitle) {

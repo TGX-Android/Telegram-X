@@ -1259,20 +1259,20 @@ public class SettingsController extends ViewController<Void> implements
   private final StickerSetsPreloader emojiPacksPreloader = new StickerSetsPreloader(this, new TdApi.StickerTypeCustomEmoji());
 
   public void addStickerSetListener (boolean isEmoji, StickerSetLoadListener listener) {
-    (isEmoji ? emojiPacksPreloader: stickerSetsPreloader).addStickerSetListener(listener);
+    (isEmoji ? emojiPacksPreloader : stickerSetsPreloader).addStickerSetListener(listener);
   }
 
   public void removeStickerSetListener (boolean isEmoji, StickerSetLoadListener listener) {
-    (isEmoji ? emojiPacksPreloader: stickerSetsPreloader).removeStickerSetListener(listener);
+    (isEmoji ? emojiPacksPreloader : stickerSetsPreloader).removeStickerSetListener(listener);
   }
 
   public @Nullable ArrayList<TGStickerSetInfo> getStickerSets (boolean isEmoji) {
-    return (isEmoji ? emojiPacksPreloader: stickerSetsPreloader).getStickerSets();
+    return (isEmoji ? emojiPacksPreloader : stickerSetsPreloader).getStickerSets();
   }
 
   public int getStickerSetsCount (boolean isEmoji) {
     ArrayList<TGStickerSetInfo> sets = getStickerSets(isEmoji);
-    return sets != null ? sets.size(): -1;
+    return sets != null ? sets.size() : -1;
   }
 
   private static class StickerSetsPreloader {

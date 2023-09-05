@@ -1,3 +1,17 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * File created on 18/08/2023
+ */
 package org.thunderdog.challegram.widget;
 
 import android.content.Context;
@@ -17,7 +31,6 @@ import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
-import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
@@ -26,13 +39,7 @@ import org.thunderdog.challegram.tool.Fonts;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
-import org.thunderdog.challegram.util.text.FormattedText;
 import org.thunderdog.challegram.util.text.Highlight;
-import org.thunderdog.challegram.util.text.Text;
-import org.thunderdog.challegram.util.text.TextColorSets;
-import org.thunderdog.challegram.util.text.TextMedia;
-
-import me.vkryl.core.lambda.Destroyable;
 
 public class TrendingPackHeaderView extends RelativeLayout {
   private final android.widget.TextView newView;
@@ -170,16 +177,16 @@ public class TrendingPackHeaderView extends RelativeLayout {
     boolean needLock = stickerSet != null && stickerSet.isEmoji() && !stickerSet.isInstalled() && !context.tdlib().account().isPremium();
 
     newView.setVisibility(!isNew ? View.GONE : View.VISIBLE);
-    button.setVisibility(needLock ? GONE: VISIBLE);
+    button.setVisibility(needLock ? GONE : VISIBLE);
     button.setInProgress(stickerSet != null && !stickerSet.isRecent() && isInProgress, false);
     button.setIsDone(stickerSet != null && stickerSet.isInstalled(), false);
     button.setTag(stickerSet);
 
-    premiumLockIcon.setVisibility(needLock ? VISIBLE: GONE);
+    premiumLockIcon.setVisibility(needLock ? VISIBLE : GONE);
     premiumLockIcon.setTag(stickerSet);
 
-    Views.setMediumText(titleView, Highlight.toSpannable(stickerSet != null ? stickerSet.getTitle(): "", highlight));
-    subtitleView.setText(stickerSet != null ? Lang.plural(stickerSet.isEmoji() ? R.string.xEmoji: R.string.xStickers, stickerSet.getFullSize()) : "");
+    Views.setMediumText(titleView, Highlight.toSpannable(stickerSet != null ? stickerSet.getTitle() : "", highlight));
+    subtitleView.setText(stickerSet != null ? Lang.plural(stickerSet.isEmoji() ? R.string.xEmoji : R.string.xStickers, stickerSet.getFullSize()) : "");
 
     if (Views.setAlignParent(newView, Lang.rtl())) {
       int rightMargin = Screen.dp(6f);

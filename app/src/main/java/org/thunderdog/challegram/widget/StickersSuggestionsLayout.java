@@ -1,3 +1,17 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * File created on 19/08/2023
+ */
 package org.thunderdog.challegram.widget;
 
 import android.content.Context;
@@ -86,7 +100,7 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
     this.stickerSuggestionAdapter = new StickerSuggestionAdapter(parent, manager, parent, isEmoji) {
       @Override
       public void onStickerPreviewOpened (StickerSmallView view, TGStickerObj sticker) {
-        delegate.notifyChoosingEmoji(isEmoji ? EmojiMediaType.EMOJI: EmojiMediaType.STICKER, true);
+        delegate.notifyChoosingEmoji(isEmoji ? EmojiMediaType.EMOJI : EmojiMediaType.STICKER, true);
         if (areStickersVisible) {
           choosingSuggestionSent = true;
         }
@@ -94,7 +108,7 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
 
       @Override
       public void onStickerPreviewChanged (StickerSmallView view, TGStickerObj otherOrThisSticker) {
-        delegate.notifyChoosingEmoji(isEmoji ? EmojiMediaType.EMOJI: EmojiMediaType.STICKER, true);
+        delegate.notifyChoosingEmoji(isEmoji ? EmojiMediaType.EMOJI : EmojiMediaType.STICKER, true);
         if (areStickersVisible) {
           choosingSuggestionSent = true;
         }
@@ -103,7 +117,7 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
       @Override
       public void onStickerPreviewClosed (StickerSmallView view, TGStickerObj thisSticker) {
         if (!choosingSuggestionSent) {
-          delegate.notifyChoosingEmoji(isEmoji ? EmojiMediaType.EMOJI: EmojiMediaType.STICKER, false);
+          delegate.notifyChoosingEmoji(isEmoji ? EmojiMediaType.EMOJI : EmojiMediaType.STICKER, false);
         }
       }
     };
@@ -113,7 +127,7 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
     parent.addThemeSpecialFilterListener(stickerSuggestionArrowView, ColorId.overlayFilling);
 
 
-    int stickersListTopHeight = Screen.dp(isEmoji ? 36: 72) + Screen.dp(2.5f);
+    int stickersListTopHeight = Screen.dp(isEmoji ? 36 : 72) + Screen.dp(2.5f);
     int stickersListTotalHeight = stickersListTopHeight + Screen.dp(6.5f);
     int stickerArrowHeight = Screen.dp(12f);
 
@@ -174,8 +188,8 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
       this.stickersFactor = factor;
 
       final float scale = .8f + .2f * factor;
-      setScaleX(scale /* (isEmoji ? 0.5f: 1f)*/);
-      setScaleY(scale /* (isEmoji ? 0.5f: 1f)*/);
+      setScaleX(scale /* (isEmoji ? 0.5f : 1f)*/);
+      setScaleY(scale /* (isEmoji ? 0.5f : 1f)*/);
       setAlpha(Math.min(1f, Math.max(0f, factor)));
     }
   }
@@ -203,7 +217,7 @@ public class StickersSuggestionsLayout extends AnimatedFrameLayout implements Fa
       }
       if (choosingSuggestionSent) {
         if (!areVisible) {
-          delegate.notifyChoosingEmoji(isEmoji ? EmojiMediaType.EMOJI: EmojiMediaType.STICKER, false);
+          delegate.notifyChoosingEmoji(isEmoji ? EmojiMediaType.EMOJI : EmojiMediaType.STICKER, false);
         }
         choosingSuggestionSent = false;
       }

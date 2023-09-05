@@ -39,7 +39,6 @@ import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -125,7 +124,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
   public void clearRecentStickers () {
     if (themeProvider != null && mediaSectionsView.hasRecents()) {
       themeProvider.showOptions(null, new int[] {R.id.btn_done, R.id.btn_cancel}, new String[] {
-        Lang.getString(animatedEmojiOnly ? R.string.ClearRecentEmojiStatuses: R.string.ClearRecentStickers),
+        Lang.getString(animatedEmojiOnly ? R.string.ClearRecentEmojiStatuses : R.string.ClearRecentStickers),
         Lang.getString(R.string.Cancel)
       }, new int[] {ViewController.OPTION_COLOR_RED, ViewController.OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_auto_delete_24, R.drawable.baseline_cancel_24}, (itemView, id) -> {
         if (id == R.id.btn_done) {
@@ -170,16 +169,16 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     boolean isTrending = info.isTrendingEmoji();
     themeProvider.showOptions(null, new int[] {
       R.id.btn_copyLink,
-      isTrending ? R.id.btn_addStickerSet: R.id.more_btn_delete
+      isTrending ? R.id.btn_addStickerSet : R.id.more_btn_delete
     }, new String[] {
       Lang.getString(R.string.CopyLink),
-      Lang.getString(isTrending ? R.string.AddPack: R.string.DeletePack)
+      Lang.getString(isTrending ? R.string.AddPack : R.string.DeletePack)
     }, new int[] {
       ViewController.OPTION_COLOR_NORMAL,
-      isTrending ? ViewController.OPTION_COLOR_NORMAL: ViewController.OPTION_COLOR_RED
+      isTrending ? ViewController.OPTION_COLOR_NORMAL : ViewController.OPTION_COLOR_RED
     }, new int[] {
       R.drawable.baseline_link_24,
-      isTrending ? R.drawable.deproko_baseline_insert_sticker_24: R.drawable.baseline_delete_24
+      isTrending ? R.drawable.deproko_baseline_insert_sticker_24 : R.drawable.baseline_delete_24
     }, (itemView, id) -> {
       if (id == R.id.more_btn_delete) {
         if (themeProvider != null) {
@@ -198,7 +197,11 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
         info.unsetIsTrendingEmoji();
         parentController.tdlib().client().send(new TdApi.ChangeStickerSet(info.getId(), true, false), parentController.tdlib().okHandler());
       } else if (id == R.id.btn_copyLink) {
-        UI.copyText(TD.getStickerPackLink(info.getInfo()), R.string.CopiedLink);
+        TdApi.StickerSetInfo stickerSetInfo = info.getInfo();
+        if (stickerSetInfo != null) {
+          String url = parentController.tdlib().tMeStickerSetUrl(stickerSetInfo);
+          UI.copyText(url, R.string.CopiedLink);
+        }
       }
       return true;
     });
@@ -228,7 +231,11 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
             });
           }
         } else if (id == R.id.btn_copyLink) {
-          UI.copyText(TD.getStickerPackLink(info.getInfo()), R.string.CopiedLink);
+          TdApi.StickerSetInfo stickerSetInfo = info.getInfo();
+          if (stickerSetInfo != null) {
+            String url = parentController.tdlib().tMeStickerSetUrl(stickerSetInfo);
+            UI.copyText(url, R.string.CopiedLink);
+          }
         }
         return true;
       });
@@ -309,7 +316,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     }
     */
 
-    emojiSectionsSize = 7 + (allowMedia ? 1: 0);
+    emojiSectionsSize = 7 + (allowMedia ? 1 : 0);
 
     adapter = new Adapter(context, this, allowMedia, themeProvider);
     pager = new RtlViewPager(getContext());
@@ -1010,7 +1017,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
   }
 
   private void updatePositions () {
-    float currentPageFactor = animatedEmojiOnly ? 1f: this.currentPageFactor;
+    float currentPageFactor = animatedEmojiOnly ? 1f : this.currentPageFactor;
     if (emojiHeaderView != null) {
       emojiHeaderView.setTranslationX((float) (emojiHeaderView.getMeasuredWidth()) * currentPageFactor * (Lang.rtl() ? 1f : -1f));
     }
@@ -1092,7 +1099,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
 
   @Override
   protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
-    super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(forceHeight > 0 ? forceHeight: Keyboard.getSize(), MeasureSpec.EXACTLY));
+    super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(forceHeight > 0 ? forceHeight : Keyboard.getSize(), MeasureSpec.EXACTLY));
     checkWidth(getMeasuredWidth());
   }
 

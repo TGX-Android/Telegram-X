@@ -1,3 +1,17 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * File created on 24/08/2023
+ */
 package org.thunderdog.challegram.widget.EmojiMediaLayout.Headers;
 
 import android.content.Context;
@@ -57,7 +71,7 @@ public class EmojiHeaderViewNonPremium extends FrameLayoutFix {
 
   public void setIsPremium (boolean isPremium) {
     this.isPremium = isPremium;
-    emojiSectionViews.get(0).setVisibility(isPremium ? VISIBLE: GONE);
+    emojiSectionViews.get(0).setVisibility(isPremium ? VISIBLE : GONE);
     updatePositions();
   }
 
@@ -93,13 +107,13 @@ public class EmojiHeaderViewNonPremium extends FrameLayoutFix {
   }
 
   private void updatePositions () {
-    int itemCount = (emojiSections.size() - (isPremium ? 0: 1));
+    int itemCount = (emojiSections.size() - (isPremium ? 0 : 1));
     float itemWidth = (float) (getMeasuredWidth() - Screen.dp(EmojiHeaderView.DEFAULT_PADDING * 2f)) / itemCount;
     float itemOffset = (itemWidth - Screen.dp(44)) / 2f;
     float itemPadding = (getMeasuredWidth() - Screen.dp(EmojiHeaderView.DEFAULT_PADDING * 2) - itemWidth * itemCount) / (itemCount - 1);
 
     for (int a = 0; a < itemCount; a++) {
-      EmojiSectionView v = emojiSectionViews.get(a + (isPremium ? 0: 1));
+      EmojiSectionView v = emojiSectionViews.get(a + (isPremium ? 0 : 1));
       v.setTranslationX((int) (Screen.dp(EmojiHeaderView.DEFAULT_PADDING) + itemOffset + (itemWidth + itemPadding) * a));
     }
   }

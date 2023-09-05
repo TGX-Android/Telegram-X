@@ -173,7 +173,7 @@ public class MessageOptionsController extends BottomSheetViewController.BottomSh
       this.emojiPackIds = emojiPackIds;
       this.emojiPackFirstEmoji = emojiPackFirstEmoji;
 
-      this.emojiInfoPosition = emojiPackIds.length > 0 ? 0: -1;
+      this.emojiInfoPosition = emojiPackIds.length > 0 ? 0 : -1;
       this.textInfoPosition = StringUtils.isEmpty(options.info) ? -1 : (emojiInfoPosition + 1);
     }
 

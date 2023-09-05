@@ -1,3 +1,17 @@
+/*
+ * This file is a part of Telegram X
+ * Copyright © 2014 (tgx-android@pm.me)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * File created on 19/08/2023
+ */
 package org.thunderdog.challegram.widget.EmojiMediaLayout.Headers;
 
 import android.content.Context;
@@ -19,9 +33,9 @@ import org.thunderdog.challegram.telegram.EmojiMediaType;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.widget.EmojiLayout;
+import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSection;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSectionView;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.StickerSectionView;
-import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSection;
 
 import java.util.ArrayList;
 
@@ -48,7 +62,7 @@ public class MediaHeaderView extends RecyclerView {
   
   public void init (EmojiLayout emojiLayout, ViewController<?> themeProvider, View.OnClickListener onClickListener) {
     this.emojiLayout = emojiLayout;
-    setAdapter(mediaAdapter = new MediaAdapter(getContext(), emojiLayout, onClickListener, emojiLayout.isAnimatedEmojiOnly() ? 8: emojiLayout.getEmojiSectionsSize(), !emojiLayout.isAnimatedEmojiOnly() && Settings.instance().getEmojiMediaSection() == EmojiMediaType.GIF, themeProvider, emojiLayout.isAnimatedEmojiOnly()));
+    setAdapter(mediaAdapter = new MediaAdapter(getContext(), emojiLayout, onClickListener, emojiLayout.isAnimatedEmojiOnly() ? 8 : emojiLayout.getEmojiSectionsSize(), !emojiLayout.isAnimatedEmojiOnly() && Settings.instance().getEmojiMediaSection() == EmojiMediaType.GIF, themeProvider, emojiLayout.isAnimatedEmojiOnly()));
   }
 
   public boolean hasRecents () {
@@ -129,7 +143,7 @@ public class MediaHeaderView extends RecyclerView {
             }
           }
         } else if (section + OFFSET > last) {
-          int desiredScrollX = (int) Math.max(0, (section - sectionsCount) * itemWidth + itemWidth * OFFSET + (emojiLayout.isAnimatedEmojiOnly() ? -itemWidth: itemWidth / 2));
+          int desiredScrollX = (int) Math.max(0, (section - sectionsCount) * itemWidth + itemWidth * OFFSET + (emojiLayout.isAnimatedEmojiOnly() ? -itemWidth : itemWidth / 2));
           int scrollValue = desiredScrollX - scrollX;
           if (last != -1 && last == mediaAdapter.getItemCount() - 1) {
             View vr = getLayoutManager().findViewByPosition(last);
@@ -237,8 +251,8 @@ public class MediaHeaderView extends RecyclerView {
 
     public void setShowRecentsAsFound (boolean showRecentAsFound) {
       recentSection.changeIcon(
-        showRecentAsFound ? R.drawable.baseline_emoticon_outline_24: R.drawable.baseline_access_time_24,
-        showRecentAsFound ? 0: R.drawable.baseline_watch_later_24);
+        showRecentAsFound ? R.drawable.baseline_emoticon_outline_24 : R.drawable.baseline_access_time_24,
+        showRecentAsFound ? 0 : R.drawable.baseline_watch_later_24);
     }
 
     public int getAddItemCount (boolean allowHidden) {

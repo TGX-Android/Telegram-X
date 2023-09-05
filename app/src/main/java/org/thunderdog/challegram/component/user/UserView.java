@@ -218,7 +218,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
       }
       availWidth -= maxWidth - Screen.dp(12);
     }
-    emojiStatusHelper.updateEmoji(user != null ? user.getUser(): null, new TextColorSetOverride(TextColorSets.Regular.NORMAL) {
+    emojiStatusHelper.updateEmoji(user != null ? user.getUser() : null, new TextColorSetOverride(TextColorSets.Regular.NORMAL) {
       @Override
       public int emojiStatusColor () {
         return Theme.getColor(ColorId.iconActive);
@@ -326,7 +326,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
     if (trimmedName != null) {
       trimmedName.draw(c, offsetLeft + textLeftMargin, (int) ((height - Screen.dp(DEFAULT_HEIGHT)) / 2f + Screen.dp(17f)));
     }
-    emojiStatusHelper.draw(c, offsetLeft + textLeftMargin + (trimmedName != null ? trimmedName.getWidth(): 0) + Screen.dp(6f), (int) ((height - Screen.dp(DEFAULT_HEIGHT)) / 2f + Screen.dp(17f)));
+    emojiStatusHelper.draw(c, offsetLeft + textLeftMargin + (trimmedName != null ? trimmedName.getWidth() : 0) + Screen.dp(6f), (int) ((height - Screen.dp(DEFAULT_HEIGHT)) / 2f + Screen.dp(17f)));
     if (trimmedStatus != null) {
       statusPaint.setColor(Theme.getColor(user != null && user.isOnline() ? ColorId.textNeutral : ColorId.textLight));
       c.drawText(trimmedStatus, rtl ? viewWidth - offsetLeft - textLeftMargin - trimmedStatusWidth : offsetLeft + textLeftMargin,

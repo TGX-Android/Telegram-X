@@ -560,7 +560,7 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
       super.dispatchDraw(canvas);
       if (drawable != null) {
         int color = ColorUtils.fromToArgb(Theme.iconColor(), Theme.getColor(ColorId.iconActive), isActive.getFloatValue());
-        Drawables.drawCentered(canvas, drawable, getMeasuredWidth() / 2f, getMeasuredHeight() / 2f, needDrawWithoutRepainting ? null: Paints.getPorterDuffPaint(color));
+        Drawables.drawCentered(canvas, drawable, getMeasuredWidth() / 2f, getMeasuredHeight() / 2f, needDrawWithoutRepainting ? null : Paints.getPorterDuffPaint(color));
       }
     }
 
