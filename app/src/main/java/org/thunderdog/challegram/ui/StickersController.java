@@ -317,7 +317,7 @@ public class StickersController extends RecyclerViewController<StickersControlle
   private boolean isLoading, isLoadingMore, endReached;
 
   private void loadData (boolean isMore) {
-    if (isLoading || isMore && endReached || doNotLoad) return;
+    if (isLoading || isMore && endReached) return;
 
     isLoading = true;
     isLoadingMore = isMore;
