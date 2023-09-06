@@ -492,7 +492,12 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayout> i
   }
 
   public TGStickerSetInfo getStickerSetBySectionIndex (int index) {
-    return stickerSets.get(index);
+    for (TGStickerSetInfo set: stickerSets) {
+      if (set.isFakeClassicEmoji() && set.getFakeClassicEmojiSectionId() == index) {
+        return set;
+      }
+    }
+    return null;
   }
 
   /* * */

@@ -342,11 +342,10 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     // Emoji sections
 
     if (!animatedEmojiOnly) {
-      emojiHeaderView = new EmojiHeaderView(getContext(), this, themeProvider);
+      emojiHeaderView = new EmojiHeaderView(getContext(), this, themeProvider, allowMedia);
       emojiHeaderView.setSectionsOnClickListener(this);
       emojiHeaderView.setSectionsOnLongClickListener(this::onEmojiHeaderLongClick);
       emojiHeaderView.setIsPremium(context.tdlib().hasPremium(), false);
-      emojiHeaderView.setAllowMedia(allowMedia);
       headerView.addView(emojiHeaderView);
     }
 
@@ -647,22 +646,19 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
           }
         }
       } else if (section.index >= 0) {
-        if (allowMedia && section.index == emojiSectionsSize - 1) {
-          pager.setCurrentItem(1, true);
-          newSection = getCurrentMediaEmojiSection();
-        } else {
-          scrollToEmojiSection(section.index);
-          newSection = EmojiMediaType.EMOJI;
-        }
+        scrollToEmojiSection(section.index);
+        newSection = EmojiMediaType.EMOJI;
       } else {
-        int index = -(section.index) - 1;
-        if (section.index == EmojiHeaderView.TRENDING_SECTION) {
+        if (section.index == EmojiSection.SECTION_EMOJI_TRENDING) {
           ViewController<?> c = adapter.getCachedItem(0);
           if (c instanceof EmojiListController) {
             ((EmojiListController) c).showTrending();
           }
+        } else if (section.index == EmojiSection.SECTION_SWITCH_TO_MEDIA) {
+          pager.setCurrentItem(1, true);
+          newSection = getCurrentMediaEmojiSection();
         }
-
+        int index = -(section.index) - 1;
         switch (index) {
           case 0: {
             pager.setCurrentItem(0, true);
