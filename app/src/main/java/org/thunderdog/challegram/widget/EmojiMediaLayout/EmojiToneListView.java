@@ -184,7 +184,7 @@ public class EmojiToneListView extends FrameLayout {
     int y = getRowY(row);
 
     int i = 0;
-    for (StickerSmallView v: stickerViews) {
+    for (StickerSmallView v : stickerViews) {
       v.setTranslationX(x + Screen.dp(ITEM_SIZE * i));
       v.setTranslationY(y);
       i++;

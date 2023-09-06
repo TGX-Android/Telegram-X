@@ -6952,7 +6952,7 @@ public class TD {
     if (text == null || text.text == null || text.entities == null || text.entities.length == 0) return new long[0];
 
     LongSet emojis = new LongSet();
-    for (TdApi.TextEntity entity: text.entities) {
+    for (TdApi.TextEntity entity : text.entities) {
       if (entity.type.getConstructor() == TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR) {
         emojis.add(((TdApi.TextEntityTypeCustomEmoji) entity.type).customEmojiId);
       }

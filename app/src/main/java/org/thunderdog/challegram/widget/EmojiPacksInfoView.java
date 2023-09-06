@@ -107,7 +107,7 @@ public class EmojiPacksInfoView extends CustomTextView {
 
       FormattedText formattedText = FormattedText.valueOf(parent, formattedTextRaw, null);
       if (formattedText.entities != null) {
-        for (TextEntity entity: formattedText.entities) {
+        for (TextEntity entity : formattedText.entities) {
           entity.setOnClickListener(onClickListener);
           if (!entity.isCustomEmoji()) {
             entity.makeBold(true);

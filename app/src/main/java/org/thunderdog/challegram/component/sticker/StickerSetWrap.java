@@ -740,7 +740,7 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
   }
 
   private void onMultiStickerSetsLoaded (ArrayList<TdApi.StickerSet> sets) {
-    for (TdApi.StickerSet set: sets) {
+    for (TdApi.StickerSet set : sets) {
       this.stickerSets.put(set.id, new TGStickerSetInfo(tdlib, Td.toStickerSetInfo(set)));
     }
 

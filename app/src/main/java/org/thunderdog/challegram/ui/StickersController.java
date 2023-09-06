@@ -892,7 +892,7 @@ public class StickersController extends RecyclerViewController<StickersControlle
         return new ArrayList<>();
       }
       ArrayList<TGStickerSetInfo> results = new ArrayList<>(stickerSets.size());
-      for (TGStickerSetInfo info: stickerSets) {
+      for (TGStickerSetInfo info : stickerSets) {
         if (filterImpl(info.getTitle(), request)) {
           results.add(info);
         }

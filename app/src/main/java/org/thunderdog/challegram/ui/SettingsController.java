@@ -1334,7 +1334,7 @@ public class SettingsController extends ViewController<Void> implements
 
     private void setStickerSets (@Nullable ArrayList<TGStickerSetInfo> stickerSets) {
       this.allStickerSets = stickerSets;
-      for (StickerSetLoadListener listener: listeners) {
+      for (StickerSetLoadListener listener : listeners) {
         listener.onStickerSetsLoaded(stickerSets, type);
       }
     }

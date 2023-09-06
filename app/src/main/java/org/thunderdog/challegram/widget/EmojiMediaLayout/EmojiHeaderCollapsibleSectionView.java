@@ -56,7 +56,7 @@ public class EmojiHeaderCollapsibleSectionView extends FrameLayout implements Fa
   public void init (ArrayList<EmojiSection> sections) {
     this.emojiSections = sections;
     emojiSectionsViews.clear();
-    for (EmojiSection emojiSection: sections) {
+    for (EmojiSection emojiSection : sections) {
       EmojiSectionView sectionView = new EmojiSectionView(getContext());
       sectionView.setId(R.id.btn_section);
       sectionView.setSection(emojiSection);
@@ -68,14 +68,14 @@ public class EmojiHeaderCollapsibleSectionView extends FrameLayout implements Fa
   }
 
   public void setOnButtonClickListener (View.OnClickListener listener) {
-    for (EmojiSectionView view: emojiSectionsViews) {
+    for (EmojiSectionView view : emojiSectionsViews) {
       view.setOnClickListener(listener);
     }
   }
 
   public void setThemeInvalidateListener (ViewController<?> themeProvider) {
     if (themeProvider != null) {
-      for (EmojiSectionView view: emojiSectionsViews) {
+      for (EmojiSectionView view : emojiSectionsViews) {
         themeProvider.addThemeInvalidateListener(view);
       }
     }

@@ -8710,7 +8710,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     TdApi.FormattedText text = getTextToTranslate();
     if (text == null || text.text == null || text.entities == null || text.entities.length == 0) return -1;
 
-    for (TdApi.TextEntity entity: text.entities) {
+    for (TdApi.TextEntity entity : text.entities) {
       if (entity.type.getConstructor() == TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR) {
         return ((TdApi.TextEntityTypeCustomEmoji) entity.type).customEmojiId;
       }
@@ -8723,7 +8723,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     long[] emojiIds = TD.getUniqueEmojiIdList(getTextToTranslate());
 
     LongSet emojiSets = new LongSet();
-    for (long emojiId: emojiIds) {
+    for (long emojiId : emojiIds) {
       TdlibEmojiManager.Entry entry = tdlib().emoji().find(emojiId);
       if (entry == null || entry.value == null) continue;
       emojiSets.add(entry.value.setId);

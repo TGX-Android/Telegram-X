@@ -281,7 +281,7 @@ public class MessagesSearchManagerMiddleware {
     int discardedCount = 0;
 
     ArrayList<TdApi.Message> filteredArr = new ArrayList<>();
-    for (TdApi.Message message: messages) {
+    for (TdApi.Message message : messages) {
       final boolean isFiltered = manager.filter(message);
       if (isFiltered) {
         filteredArr.add(message);
@@ -300,7 +300,7 @@ public class MessagesSearchManagerMiddleware {
   }
 
   private boolean isWasDiscardedBefore (long id) {
-    for (SendSearchRequestFilterChunkInfo part: filteredChunksInfo) {
+    for (SendSearchRequestFilterChunkInfo part : filteredChunksInfo) {
       if (part.isChunkPart(id)) return true;
     }
 

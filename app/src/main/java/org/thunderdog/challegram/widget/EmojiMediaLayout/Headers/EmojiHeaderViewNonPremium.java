@@ -88,13 +88,13 @@ public class EmojiHeaderViewNonPremium extends FrameLayoutFix {
   }
 
   public void setOnClickListener (OnClickListener onClickListener) {
-    for (EmojiSectionView view: emojiSectionViews) {
+    for (EmojiSectionView view : emojiSectionViews) {
       view.setOnClickListener(onClickListener);
     }
   }
 
   public void setOnLongClickListener (OnLongClickListener onLongClickListener) {
-    for (EmojiSectionView view: emojiSectionViews) {
+    for (EmojiSectionView view : emojiSectionViews) {
       view.setOnLongClickListener(onLongClickListener);
     }
   }

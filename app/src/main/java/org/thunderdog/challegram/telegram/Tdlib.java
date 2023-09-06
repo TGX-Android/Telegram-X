@@ -10584,7 +10584,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public boolean haveAnySettingsSuggestions () {
     synchronized (dataLock) {
-      for (TdApi.SuggestedAction action: suggestedActions) {
+      for (TdApi.SuggestedAction action : suggestedActions) {
         if (isSettingSuggestion(action))
           return true;
       }
