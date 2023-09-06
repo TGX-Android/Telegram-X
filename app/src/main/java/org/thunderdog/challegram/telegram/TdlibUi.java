@@ -6478,7 +6478,8 @@ public class TdlibUi extends Handler {
         setStickers(object, true)
       );
       if (mode == Settings.STICKER_MODE_ALL) {
-        tdlib.client().send(new TdApi.SearchStickers(stickerType, emoji, limit), object ->
+        // Request 2x more than limit for the case all of the stickers returned by GetStickers
+        tdlib.client().send(new TdApi.SearchStickers(stickerType, emoji, limit * 2), object ->
           setStickers(object, false)
         );
       }
