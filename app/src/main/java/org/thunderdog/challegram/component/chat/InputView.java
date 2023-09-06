@@ -461,7 +461,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
           boolean needContinue = true;
           TdApi.TextEntityType[] textEntityTypes = TD.toEntityType(existingSpan);
           if (textEntityTypes != null) {
-            for (TdApi.TextEntityType textEntityType: textEntityTypes) {
+            for (TdApi.TextEntityType textEntityType : textEntityTypes) {
               if (textEntityType.getConstructor() == typeForRemove.getConstructor()) {
                 needContinue = false;
                 break;
@@ -1654,7 +1654,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     final int start = selection.start;
     paste(selection, pasteText.text, needSelectPastedText);
     if (pasteText.entities != null && pasteText.entities.length > 0) {
-      for (TdApi.TextEntity entity: pasteText.entities) {
+      for (TdApi.TextEntity entity : pasteText.entities) {
         setSpan(start + entity.offset, start + entity.offset + entity.length, entity.type);
       }
       if (pasteText.text != null) {

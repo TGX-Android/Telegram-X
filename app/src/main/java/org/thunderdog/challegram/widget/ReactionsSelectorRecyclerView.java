@@ -4,13 +4,13 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.drawable.GradientDrawable;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
-import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -19,7 +19,6 @@ import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
-import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -27,20 +26,20 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.ui.ReactionsPickerController;
 import org.thunderdog.challegram.util.text.Counter;
-import org.thunderdog.challegram.v.CustomRecyclerView;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
 
 import me.vkryl.android.widget.FrameLayoutFix;
+import me.vkryl.core.MathUtils;
 
 public class ReactionsSelectorRecyclerView extends RecyclerView {
+  private final GradientDrawable gradientDrawableRight;
+  private boolean needDrawBorderGradient;
+  private ReactionsAdapter adapter;
 
   public ReactionsSelectorRecyclerView (@NonNull Context context) {
     super(context);
+    this.gradientDrawableRight = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{ 0, lastColor = Theme.backgroundColor() });
   }
 
   public void setMessage (TGMessage message) {
@@ -66,9 +65,46 @@ public class ReactionsSelectorRecyclerView extends RecyclerView {
     setAdapter(adapter = new ReactionsAdapter(getContext(), message));
   }
 
-  ReactionsAdapter adapter;
-  public void setDelegate (ReactionSelectDelegate delegate) {
+  public void setDelegate (ReactionsPickerController.OnReactionClickListener delegate) {
     adapter.setDelegate(delegate);
+  }
+
+  public void setNeedDrawBorderGradient (boolean needDrawBorderGradient) {
+    this.needDrawBorderGradient = needDrawBorderGradient;
+    this.invalidate();
+  }
+
+  @Override
+  protected void dispatchDraw (Canvas canvas) {
+    super.dispatchDraw(canvas);
+    if (!needDrawBorderGradient) {
+      return;
+    }
+
+    checkGradients();
+    float s = computeHorizontalScrollRange() - computeHorizontalScrollOffset() - computeHorizontalScrollExtent();
+    int alpha = (int) (MathUtils.clamp(s / Screen.dp(20f)) * 255);
+
+    gradientDrawableRight.setAlpha(alpha);
+    gradientDrawableRight.setBounds(getMeasuredWidth() - Screen.dp(35), 0, getMeasuredWidth(), getMeasuredHeight());
+    gradientDrawableRight.draw(canvas);
+  }
+
+  @Override
+  public void onScrolled (int dx, int dy) {
+    super.onScrolled(dx, dy);
+    if (needDrawBorderGradient) {
+      invalidate();
+    }
+  }
+
+  private int lastColor;
+
+  private void checkGradients () {
+    int color = Theme.backgroundColor();
+    if (color != lastColor) {
+      gradientDrawableRight.setColors(new int[]{ 0, lastColor = Theme.backgroundColor() });
+    }
   }
 
   private static class ReactionView extends FrameLayoutFix {
@@ -163,18 +199,16 @@ public class ReactionsSelectorRecyclerView extends RecyclerView {
     private final Context context;
     private final TGMessage message;
     private final TdApi.AvailableReaction[] reactions;
-    private final Set<String> chosen;
-    private ReactionSelectDelegate delegate;
+    private ReactionsPickerController.OnReactionClickListener delegate;
 
     ReactionsAdapter (Context context, TGMessage message) {
       this.context = context;
       this.tdlib = message.tdlib();
       this.message = message;
-      this.chosen = message.getMessageReactions().getChosen();
       this.reactions = message.getMessageAvailableReactions();
     }
 
-    public void setDelegate (ReactionSelectDelegate delegate) {
+    public void setDelegate (ReactionsPickerController.OnReactionClickListener delegate) {
       this.delegate = delegate;
     }
 
@@ -196,12 +230,12 @@ public class ReactionsSelectorRecyclerView extends RecyclerView {
       view.setReaction(reaction, tdReaction, needUseCounter);
       view.setOnClickListener((v) -> {
         if (delegate != null) {
-          delegate.onClick(v, reaction);
+          delegate.onReactionClick(v, reaction, false);
         }
       });
       view.setOnLongClickListener((v) -> {
         if (delegate != null) {
-          delegate.onLongClick(v, reaction);
+          delegate.onReactionClick(v, reaction, true);
         }
         return true;
       });
@@ -227,10 +261,5 @@ public class ReactionsSelectorRecyclerView extends RecyclerView {
     public void onViewRecycled (ReactionHolder holder) {
       ((ReactionView) holder.itemView).stickerView.performDestroy();
     }
-  }
-
-  public interface ReactionSelectDelegate {
-    void onClick (View v, TGReaction reaction);
-    void onLongClick (View v, TGReaction reaction);
   }
 }

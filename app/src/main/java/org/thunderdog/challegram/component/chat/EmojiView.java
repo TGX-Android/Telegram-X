@@ -192,7 +192,10 @@ public class EmojiView extends View implements ClickHelper.Delegate {
       @Override
       public void onStickersLoaded (TdlibUi.EmojiStickers context, TdApi.Sticker[] installedStickers, TdApi.Sticker[] recommendedStickers) {
         if (emojiStickers == context) {
-          onLongClick(view, x, y, installedStickers, recommendedStickers);
+          int totalCount = installedStickers.length + (recommendedStickers != null ? recommendedStickers.length : 0);
+          if (totalCount > 0 || colorState != EmojiData.STATE_NO_COLORS) {
+            onLongClick(view, x, y, installedStickers, recommendedStickers);
+          }
         }
       }
 

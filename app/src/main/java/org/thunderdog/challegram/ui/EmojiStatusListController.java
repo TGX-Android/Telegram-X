@@ -1276,7 +1276,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
           trendingOffset += trendingStickerSets.sets.length;
 
           ArrayList<TdApi.StickerSetInfo> filtered = new ArrayList<>();
-          for (TdApi.StickerSetInfo set: trendingStickerSets.sets) {
+          for (TdApi.StickerSetInfo set : trendingStickerSets.sets) {
             if (!isContainStickerSet(set)) {
               filtered.add(set);
             } else {
@@ -1304,7 +1304,7 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
         this.trendingSets.clear();
       }
       this.trendingSets.addAll(trendingSets);
-      for (TGStickerSetInfo info: trendingSets) {
+      for (TGStickerSetInfo info : trendingSets) {
         getArguments().onAddStickerSection(EmojiLayout.STICKERS_INSTALLED_CONTROLLER_ID, stickerSets.size(), info);
         stickerSets.add(info);
       }

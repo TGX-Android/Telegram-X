@@ -1448,7 +1448,7 @@ public class MessagesLoader implements Client.ResultHandler {
     if (scrollItemIndex == -1 && scrollMessageId != null && (scrollHighlightMode == MessagesManager.HIGHLIGHT_MODE_NORMAL || scrollHighlightMode == MessagesManager.HIGHLIGHT_MODE_NORMAL_NEXT) && specialMode == SPECIAL_MODE_SEARCH) {
       TGMessage highlightItem = null;
       long minDistance = -1;
-      for (TGMessage item: items) {
+      for (TGMessage item : items) {
         long distance = (item.getId() - scrollMessageId.getMessageId());
         if (distance >= 0 && (minDistance == -1 || distance < minDistance)) {
           minDistance = distance;

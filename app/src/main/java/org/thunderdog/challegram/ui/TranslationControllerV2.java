@@ -336,7 +336,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
 
   private void measureText (int width) {
     currentTextWidth = width;
-    for (ListAnimator.Entry<TextWrapper> entry: text) {
+    for (ListAnimator.Entry<TextWrapper> entry : text) {
       entry.item.prepare(width);
       entry.item.requestMedia(textMediaReceiver, 0, Integer.MAX_VALUE);
     }
@@ -344,7 +344,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
 
   private int getTextAnimatedHeight () {
     float height = 0;
-    for (ListAnimator.Entry<TextWrapper> entry: text) {
+    for (ListAnimator.Entry<TextWrapper> entry : text) {
       height += entry.item.getHeight() * entry.getVisibility();
     }
     return (int) height;
@@ -683,7 +683,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     @Override
     protected void onDraw (Canvas canvas) {
       float alpha = translationCounterDrawable.getLoadingTextAlpha();
-      for (ListAnimator.Entry<TextWrapper> entry: text) {
+      for (ListAnimator.Entry<TextWrapper> entry : text) {
         entry.item.draw(canvas, Screen.dp(18), Screen.dp(6), null, alpha * entry.getVisibility(), textMediaReceiver);
       }
       invalidate();
@@ -704,7 +704,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
     @Override
     public boolean onTouchEvent (MotionEvent event) {
       if (super.onTouchEvent(event)) return true;
-      for (ListAnimator.Entry<TextWrapper> entry: text) {
+      for (ListAnimator.Entry<TextWrapper> entry : text) {
         if (entry.getVisibility() == 1f && entry.item.onTouchEvent(this, event)) {
           return true;
         }
@@ -799,13 +799,13 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
 
       addLanguage(selected);
       addLanguage(original);
-      for (String lang: recents) {
+      for (String lang : recents) {
         if (StringUtils.equalsOrBothEmpty(lang, selected)) continue;
         if (StringUtils.equalsOrBothEmpty(lang, original)) continue;
         addLanguage(lang);
       }
 
-      for (String lang: Lang.getSupportedLanguagesForTranslate()) {
+      for (String lang : Lang.getSupportedLanguagesForTranslate()) {
         if (StringUtils.equalsOrBothEmpty(lang, selected)) continue;
         if (StringUtils.equalsOrBothEmpty(lang, original)) continue;
         if (recents.contains(lang)) continue;

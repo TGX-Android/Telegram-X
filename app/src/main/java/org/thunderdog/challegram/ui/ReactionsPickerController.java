@@ -73,12 +73,11 @@ public class ReactionsPickerController extends ViewController<ReactionsPickerCon
   @Override
   protected View onCreateView (Context context) {
     ArrayList<EmojiSection> emojiSections = new ArrayList<>(1);
-    emojiSections.add(new EmojiSection(this, 0, R.drawable.baseline_favorite_24, R.drawable.baseline_favorite_24)/*.setFactor(1f, false)*/.setMakeFirstTransparent().setOffsetHalf(false));
-    bottomHeaderView = new EmojiHeaderView(context, this, this, emojiSections, null);
+    emojiSections.add(new EmojiSection(this, EmojiSection.SECTION_EMOJI_RECENT, R.drawable.baseline_favorite_24, R.drawable.baseline_favorite_24)/*.setFactor(1f, false)*/.setMakeFirstTransparent().setOffsetHalf(false));
+    bottomHeaderView = new EmojiHeaderView(context, this, this, emojiSections, null, false);
     bottomHeaderView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(56), Gravity.BOTTOM));
     bottomHeaderView.setIsPremium(true, false);
     bottomHeaderView.setSectionsOnClickListener(this::onStickerSectionClick);
-    bottomHeaderView.setAllowMedia(false);
     ViewSupport.setThemedBackground(bottomHeaderView, ColorId.filling);
     addThemeInvalidateListener(bottomHeaderView);
 
@@ -161,7 +160,7 @@ public class ReactionsPickerController extends ViewController<ReactionsPickerCon
     if (reactions != null) {
       items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_EMPTY));
 
-      TGStickerSetInfo pack = new TGStickerSetInfo(tdlib, -1, reactions.length);
+      TGStickerSetInfo pack = TGStickerSetInfo.fromEmojiSection(tdlib, -1, -1, reactions.length);
       pack.setStartIndex(items.size());
       pack.setIsRecent();
       items.ensureCapacity(reactions.length);

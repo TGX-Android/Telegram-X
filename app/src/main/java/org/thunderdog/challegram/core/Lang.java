@@ -3774,7 +3774,7 @@ public class Lang {
       };
 
       StringList list = new StringList(supportedLanguagesForTranslate.length);
-      for (String lang: supportedLanguagesForTranslate) {
+      for (String lang : supportedLanguagesForTranslate) {
         if (Lang.getLanguageName(lang, null) != null) {
           list.append(lang);
         }
@@ -3786,7 +3786,7 @@ public class Lang {
 
   public static @Nullable String getDefaultLanguageToTranslateV2 (@Nullable String sourceLanguage) {
     ArrayList<String> recents = Settings.instance().getTranslateLanguageRecents();
-    for (String lang: recents) {
+    for (String lang : recents) {
       if (!StringUtils.equalsOrBothEmpty(lang, sourceLanguage)) {
         return lang;
       }
@@ -3802,7 +3802,7 @@ public class Lang {
     }
 
     String[] notTranslatableLanguages = Settings.instance().getAllNotTranslatableLanguages();
-    for (String lang: notTranslatableLanguages) {
+    for (String lang : notTranslatableLanguages) {
       if (!StringUtils.equalsOrBothEmpty(lang, sourceLanguage)) {
         return lang;
       }

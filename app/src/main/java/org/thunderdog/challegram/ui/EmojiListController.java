@@ -45,6 +45,7 @@ import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutRecyclerCont
 import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutSectionPager;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutTrendingController;
 import org.thunderdog.challegram.util.StickerSetsDataProvider;
+import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSection;
 
 import java.util.ArrayList;
 
@@ -271,7 +272,7 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
 
     ArrayList<MediaStickersAdapter.StickerItem> recentEmojiItems = emojiController.makeRecentEmojiItems();
     if (!recentEmojiItems.isEmpty()) {
-      TGStickerSetInfo pack = new TGStickerSetInfo(tdlib, -1, recentEmojiItems.size());
+      TGStickerSetInfo pack = TGStickerSetInfo.fromEmojiSection(tdlib, EmojiSection.SECTION_EMOJI_RECENT, -1, recentEmojiItems.size());
       pack.setStartIndex(items.size());
       pack.setIsRecent();
       emojiPacks.add(pack);
@@ -282,12 +283,12 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
       String[] emoji = EmojiData.dataColored[i];
       TGStickerSetInfo pack = null;
       switch (i) {
-        case 0: pack = new TGStickerSetInfo(tdlib, R.string.SmileysAndPeople, emoji.length); break;
-        case 1: pack = new TGStickerSetInfo(tdlib, R.string.AnimalsAndNature, emoji.length); break;
-        case 2: pack = new TGStickerSetInfo(tdlib, R.string.FoodDrink, emoji.length); break;
-        case 3: pack = new TGStickerSetInfo(tdlib, R.string.TravelAndPlaces, emoji.length); break;
-        case 4: pack = new TGStickerSetInfo(tdlib, R.string.SymbolsAndObjects, emoji.length); break;
-        case 5: pack = new TGStickerSetInfo(tdlib, R.string.Flags, emoji.length); break;
+        case 0: pack = TGStickerSetInfo.fromEmojiSection(tdlib, EmojiSection.SECTION_EMOJI_SMILEYS, R.string.SmileysAndPeople, emoji.length); break;
+        case 1: pack = TGStickerSetInfo.fromEmojiSection(tdlib, EmojiSection.SECTION_EMOJI_ANIMALS, R.string.AnimalsAndNature, emoji.length); break;
+        case 2: pack = TGStickerSetInfo.fromEmojiSection(tdlib, EmojiSection.SECTION_EMOJI_FOOD, R.string.FoodDrink, emoji.length); break;
+        case 3: pack = TGStickerSetInfo.fromEmojiSection(tdlib, EmojiSection.SECTION_EMOJI_TRAVEL, R.string.TravelAndPlaces, emoji.length); break;
+        case 4: pack = TGStickerSetInfo.fromEmojiSection(tdlib, EmojiSection.SECTION_EMOJI_SYMBOLS, R.string.SymbolsAndObjects, emoji.length); break;
+        case 5: pack = TGStickerSetInfo.fromEmojiSection(tdlib, EmojiSection.SECTION_EMOJI_FLAGS, R.string.Flags, emoji.length); break;
       }
       if (pack != null) {
         pack.setStartIndex(items.size());

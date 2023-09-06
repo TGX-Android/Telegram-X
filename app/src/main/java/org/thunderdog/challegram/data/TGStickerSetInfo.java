@@ -56,6 +56,7 @@ public class TGStickerSetInfo {
   private @Nullable TdApi.StickerSet stickerSet;
   private @StringRes int titleRes;
   private boolean needRepainting;
+  private int fakeClassicEmojiSectionId;
 
   private @Nullable ArrayList<TGStickerSetInfo> boundList;
   private TdApi.Sticker[] allStickers;
@@ -161,7 +162,11 @@ public class TGStickerSetInfo {
     this(tdlib, Td.toStickerSetInfo(info));
   }
 
-  public TGStickerSetInfo (Tdlib tdlib, int titleRes, int size) {
+  public static TGStickerSetInfo fromEmojiSection (Tdlib tdlib, int sectionId, int titleRes, int size) {
+    return new TGStickerSetInfo(tdlib, sectionId, titleRes, size);
+  }
+
+  private TGStickerSetInfo (Tdlib tdlib, int sectionId, int titleRes, int size) {
     this.tdlib = tdlib;
     this.info = null;
     this.previewAnimation = null;
@@ -172,6 +177,11 @@ public class TGStickerSetInfo {
     this.flags = FLAG_FAKE_CLASSIC_EMOJI;
     this.titleRes = titleRes;
     this.size = size;
+    this.fakeClassicEmojiSectionId = sectionId;
+  }
+
+  public int getFakeClassicEmojiSectionId () {
+    return fakeClassicEmojiSectionId;
   }
 
   public boolean isNeedRepaintingPreview () {

@@ -416,7 +416,7 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
     if (text == null || text.entities == null) return 0;
     int flags = 0;
 
-    for (TdApi.TextEntity entity: text.entities) {
+    for (TdApi.TextEntity entity : text.entities) {
       final int entityStart = entity.offset, entityEnd = entity.offset + entity.length;
 
       if (!(entityStart >= end || start >= entityEnd)) {

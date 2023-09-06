@@ -344,22 +344,21 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
 
     if (!animatedEmojiOnly) {
       ArrayList<EmojiSection> emojiSections = new ArrayList<>(2);
-      emojiSections.add(new EmojiSection(this, EmojiHeaderView.TRENDING_SECTION, R.drawable.outline_whatshot_24, R.drawable.baseline_whatshot_24).setMakeFirstTransparent());
-      emojiSections.add(new EmojiSection(this, 0, R.drawable.baseline_access_time_24, R.drawable.baseline_watch_later_24)/*.setFactor(1f, false)*/.setMakeFirstTransparent().setOffsetHalf(false));
+      emojiSections.add(new EmojiSection(this, EmojiSection.SECTION_EMOJI_TRENDING, R.drawable.outline_whatshot_24, R.drawable.baseline_whatshot_24).setMakeFirstTransparent());
+      emojiSections.add(new EmojiSection(this, EmojiSection.SECTION_EMOJI_RECENT, R.drawable.baseline_access_time_24, R.drawable.baseline_watch_later_24)/*.setFactor(1f, false)*/.setMakeFirstTransparent().setOffsetHalf(false));
 
       ArrayList<EmojiSection> expandableSections = new ArrayList<>(6);
-      expandableSections.add(new EmojiSection(this, 1, R.drawable.baseline_emoticon_outline_24, R.drawable.baseline_emoticon_24).setMakeFirstTransparent());
-      expandableSections.add(new EmojiSection(this, 2, R.drawable.deproko_baseline_animals_outline_24, R.drawable.deproko_baseline_animals_24));/*.setIsPanda(!useDarkMode)*/
-      expandableSections.add(new EmojiSection(this, 3, R.drawable.baseline_restaurant_menu_24, R.drawable.baseline_restaurant_menu_24));
-      expandableSections.add(new EmojiSection(this, 4, R.drawable.baseline_directions_car_24, R.drawable.baseline_directions_car_24));
-      expandableSections.add(new EmojiSection(this, 5, R.drawable.deproko_baseline_lamp_24, R.drawable.deproko_baseline_lamp_filled_24));
-      expandableSections.add(new EmojiSection(this, 6, R.drawable.deproko_baseline_flag_outline_24, R.drawable.deproko_baseline_flag_filled_24).setMakeFirstTransparent());
+      expandableSections.add(new EmojiSection(this, EmojiSection.SECTION_EMOJI_SMILEYS, R.drawable.baseline_emoticon_outline_24, R.drawable.baseline_emoticon_24).setMakeFirstTransparent());
+      expandableSections.add(new EmojiSection(this,  EmojiSection.SECTION_EMOJI_ANIMALS, R.drawable.deproko_baseline_animals_outline_24, R.drawable.deproko_baseline_animals_24));/*.setIsPanda(!useDarkMode)*/
+      expandableSections.add(new EmojiSection(this,  EmojiSection.SECTION_EMOJI_FOOD, R.drawable.baseline_restaurant_menu_24, R.drawable.baseline_restaurant_menu_24));
+      expandableSections.add(new EmojiSection(this,  EmojiSection.SECTION_EMOJI_TRAVEL, R.drawable.baseline_directions_car_24, R.drawable.baseline_directions_car_24));
+      expandableSections.add(new EmojiSection(this,  EmojiSection.SECTION_EMOJI_SYMBOLS, R.drawable.deproko_baseline_lamp_24, R.drawable.deproko_baseline_lamp_filled_24));
+      expandableSections.add(new EmojiSection(this,  EmojiSection.SECTION_EMOJI_FLAGS, R.drawable.deproko_baseline_flag_outline_24, R.drawable.deproko_baseline_flag_filled_24).setMakeFirstTransparent());
 
-      emojiHeaderView = new EmojiHeaderView(getContext(), this, themeProvider, emojiSections, expandableSections);
+      emojiHeaderView = new EmojiHeaderView(getContext(), this, themeProvider, emojiSections, expandableSections, allowMedia);
       emojiHeaderView.setSectionsOnClickListener(this);
       emojiHeaderView.setSectionsOnLongClickListener(this::onEmojiHeaderLongClick);
       emojiHeaderView.setIsPremium(context.tdlib().hasPremium(), false);
-      emojiHeaderView.setAllowMedia(allowMedia);
       headerView.addView(emojiHeaderView);
     }
 
@@ -660,22 +659,19 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
           }
         }
       } else if (section.index >= 0) {
-        if (allowMedia && section.index == emojiSectionsSize - 1) {
-          pager.setCurrentItem(1, true);
-          newSection = getCurrentMediaEmojiSection();
-        } else {
-          scrollToEmojiSection(section.index);
-          newSection = EmojiMediaType.EMOJI;
-        }
+        scrollToEmojiSection(section.index);
+        newSection = EmojiMediaType.EMOJI;
       } else {
-        int index = -(section.index) - 1;
-        if (section.index == EmojiHeaderView.TRENDING_SECTION) {
+        if (section.index == EmojiSection.SECTION_EMOJI_TRENDING) {
           ViewController<?> c = adapter.getCachedItem(0);
           if (c instanceof EmojiListController) {
             ((EmojiListController) c).showTrending();
           }
+        } else if (section.index == EmojiSection.SECTION_SWITCH_TO_MEDIA) {
+          pager.setCurrentItem(1, true);
+          newSection = getCurrentMediaEmojiSection();
         }
-
+        int index = -(section.index) - 1;
         switch (index) {
           case 0: {
             pager.setCurrentItem(0, true);

@@ -35,6 +35,17 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 
 public class EmojiSection implements FactorAnimator.Target {
+  public static final int SECTION_EMOJI_RECENT = 0;
+  public static final int SECTION_EMOJI_SMILEYS = 1;
+  public static final int SECTION_EMOJI_ANIMALS = 2;
+  public static final int SECTION_EMOJI_FOOD = 3;
+  public static final int SECTION_EMOJI_TRAVEL = 4;
+  public static final int SECTION_EMOJI_SYMBOLS = 5;
+  public static final int SECTION_EMOJI_FLAGS = 6;
+
+  public static final int SECTION_SWITCH_TO_MEDIA = -11;
+  public static final int SECTION_EMOJI_TRENDING = -12;
+
   public final int index;
   public float selectionFactor;
 

@@ -55,7 +55,6 @@ import me.vkryl.core.MathUtils;
 @SuppressLint("ViewConstructor")
 public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Target {
   public static final int DEFAULT_PADDING = 4;
-  public static final int TRENDING_SECTION = -12;
 
   private final EmojiLayoutEmojiHeaderAdapter adapter;
   private final RecyclerView recyclerView;
@@ -67,9 +66,10 @@ public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Targe
   private Paint shadowPaint;
   private boolean isPremium;
 
-  public EmojiHeaderView (@NonNull Context context, EmojiLayoutRecyclerController.Callback emojiLayout, ViewController<?> themeProvider, ArrayList<EmojiSection> emojiSections, @Nullable ArrayList<EmojiSection> expandableSections) {
+  public EmojiHeaderView (@NonNull Context context, EmojiLayoutRecyclerController.Callback emojiLayout, ViewController<?> themeProvider, ArrayList<EmojiSection> emojiSections, @Nullable ArrayList<EmojiSection> expandableSections, boolean allowMedia) {
     super(context);
     this.emojiLayout = emojiLayout;
+    this.allowMedia = allowMedia;
     setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(48)));
 
     LinearLayoutManager manager = new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, Lang.rtl());
@@ -99,7 +99,7 @@ public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Targe
     addView(recyclerView, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
     goToMediaPageSection = new EmojiSectionView(context);
-    goToMediaPageSection.setSection(new EmojiSection(emojiLayout, 7, R.drawable.deproko_baseline_stickers_24, 0).setActiveDisabled());
+    goToMediaPageSection.setSection(new EmojiSection(emojiLayout, EmojiSection.SECTION_SWITCH_TO_MEDIA, R.drawable.deproko_baseline_stickers_24, 0).setActiveDisabled());
     goToMediaPageSection.setForceWidth(Screen.dp(48));
     goToMediaPageSection.setId(R.id.btn_section);
     checkAllowMedia();
@@ -111,24 +111,19 @@ public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Targe
     addView(goToMediaPageSection, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.RIGHT));
 
     emojiHeaderViewNonPremium = new EmojiHeaderViewNonPremium(context);
-    emojiHeaderViewNonPremium.init(emojiLayout, themeProvider);
+    emojiHeaderViewNonPremium.init(emojiLayout, themeProvider, allowMedia);
     addView(emojiHeaderViewNonPremium, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
     updatePaints(Theme.fillingColor());
     setSelectedObjectByPosition(1, false);
   }
 
-  private boolean allowMedia = true;
+  private final boolean allowMedia;
   private boolean mediaMustBeVisibility = false;
 
   private void checkAllowMedia () {
     goToMediaPageSection.setVisibility(allowMedia && mediaMustBeVisibility ? VISIBLE : GONE);
     recyclerView.setPadding(Screen.dp(DEFAULT_PADDING), 0, Screen.dp(DEFAULT_PADDING + (allowMedia? 44 : 0)), 0);
-  }
-
-  public void setAllowMedia (boolean allowMedia) {
-    this.allowMedia = allowMedia;
-    checkAllowMedia();
   }
 
   public void setSectionsOnClickListener (OnClickListener onClickListener) {
@@ -148,7 +143,7 @@ public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Targe
   }
 
   public void setSelectedObjectByPosition (int i, boolean animated) {
-    emojiHeaderViewNonPremium.setSelectedIndex(i, animated);
+    emojiHeaderViewNonPremium.setSelectedIndex(i - 1, animated);
     setSelectedObject(adapter.getObject(i), animated);
   }
 
@@ -230,7 +225,6 @@ public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Targe
 
   public void setIsPremium (boolean isPremium, boolean animated) {
     this.isPremium = isPremium;
-    emojiHeaderViewNonPremium.setIsPremium(isPremium);
     checkStickerSections(animated);
   }
 

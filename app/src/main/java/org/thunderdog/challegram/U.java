@@ -412,7 +412,7 @@ public class U {
       String output = out.toString();
       if (!output.trim().isEmpty()) {
         String[] devicePoints = output.split("\n");
-        for (String voldPoint: devicePoints) {
+        for (String voldPoint : devicePoints) {
           String path = voldPoint.split(" ")[2];
           if (!StringUtils.equalsOrBothEmpty(ignorePath, path)) {
             if (results == null) {

@@ -1240,7 +1240,7 @@ public class SettingsController extends ViewController<Void> implements
 
   @Override
   public void onInstalledStickerSetsUpdated (long[] stickerSetIds, TdApi.StickerType stickerType) {
-    if (stickerType.getConstructor() == TdApi.StickerTypeRegular.CONSTRUCTOR) {
+    if (stickerType.getConstructor() == TdApi.StickerTypeRegular.CONSTRUCTOR || stickerType.getConstructor() == TdApi.StickerTypeCustomEmoji.CONSTRUCTOR) {
       runOnUiThreadOptional(() -> {
         stickerSetsPreloader.reloadStickersIfEqualTypes(stickerType);
         emojiPacksPreloader.reloadStickersIfEqualTypes(stickerType);
@@ -1334,7 +1334,7 @@ public class SettingsController extends ViewController<Void> implements
 
     private void setStickerSets (@Nullable ArrayList<TGStickerSetInfo> stickerSets) {
       this.allStickerSets = stickerSets;
-      for (StickerSetLoadListener listener: listeners) {
+      for (StickerSetLoadListener listener : listeners) {
         listener.onStickerSetsLoaded(stickerSets, type);
       }
     }

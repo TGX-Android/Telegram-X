@@ -159,7 +159,7 @@ public class StickersListController extends ViewController<StickersListControlle
         int setsToInstall = 0;
         int setsToArchive = 0;
 
-        for (StickerSection section: stickerSections) {
+        for (StickerSection section : stickerSections) {
           if (section.info == null) continue;
           if (getArguments().canArchiveStickerSet(section.info.getId())) {
             setsToArchive += 1;
@@ -192,7 +192,7 @@ public class StickersListController extends ViewController<StickersListControlle
         UI.copyText(tdlib.tMeStickerSetUrl(stickerSetInfoToLoad), R.string.CopiedLink);
       } else {
         StringBuilder b = new StringBuilder();
-        for (StickerSection section: stickerSections) {
+        for (StickerSection section : stickerSections) {
           TdApi.StickerSetInfo stickerSetInfo = section.info != null ? section.info.getInfo() : null;
           if (stickerSetInfo == null) {
             continue;
@@ -209,7 +209,7 @@ public class StickersListController extends ViewController<StickersListControlle
         if (stickerSetInfoToLoad != null) {
           getArguments().archiveStickerSet(stickerSetInfoToLoad.id);
         } else {
-          for (StickerSection section: stickerSections) {
+          for (StickerSection section : stickerSections) {
             if (section.info == null) continue;
             if (getArguments().canArchiveStickerSet(section.info.getId())) {
               getArguments().archiveStickerSet(section.info.getId());
@@ -226,7 +226,7 @@ public class StickersListController extends ViewController<StickersListControlle
         if (stickerSetInfoToLoad != null) {
           getArguments().installStickerSet(stickerSetInfoToLoad.id);
         } else {
-          for (StickerSection section: stickerSections) {
+          for (StickerSection section : stickerSections) {
             if (section.info == null) continue;
             if (getArguments().canInstallStickerSet(section.info.getId())) {
               getArguments().installStickerSet(section.info.getId());
@@ -631,7 +631,7 @@ public class StickersListController extends ViewController<StickersListControlle
 
           isInLoadSetsProgress = false;
           ArrayList<TdApi.StickerSet> sets = new ArrayList<>(loadSetsResult.length);
-          for (TdApi.StickerSet set: loadSetsResult) {
+          for (TdApi.StickerSet set : loadSetsResult) {
             if (set != null) {
               sets.add(set);
               stickerSections.add(new StickerSection(tdlib, set, Math.max(16, spanCount * 2)));
@@ -758,7 +758,7 @@ public class StickersListController extends ViewController<StickersListControlle
 
   private int getStickerSetSectionIndexById (long id) {
     int i = 0;
-    for (StickerSection section: stickerSections) {
+    for (StickerSection section : stickerSections) {
       if (section.info != null && section.info.getId() == id) {
         return i;
       }
@@ -775,7 +775,7 @@ public class StickersListController extends ViewController<StickersListControlle
       this.info = new TGStickerSetInfo(tdlib, Td.toStickerSetInfo(stickerSet), trimToSize);
       this.stickers = new ArrayList<>(stickerSet.stickers.length);
 
-      for (TdApi.Sticker sticker: stickerSet.stickers) {
+      for (TdApi.Sticker sticker : stickerSet.stickers) {
         stickers.add(new TGStickerObj(tdlib, sticker, "", sticker.fullType));
       }
     }
@@ -801,7 +801,7 @@ public class StickersListController extends ViewController<StickersListControlle
 
       if (info != null && info.isCollapsed()) {
         int i = 0;
-        for (TGStickerObj stickerObj: stickers) {
+        for (TGStickerObj stickerObj : stickers) {
           if (i++ == info.getSize()) {
             break;
           }
@@ -811,7 +811,7 @@ public class StickersListController extends ViewController<StickersListControlle
           items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_SEPARATOR_COLLAPSABLE, info));
         }
       } else {
-        for (TGStickerObj stickerObj: stickers) {
+        for (TGStickerObj stickerObj : stickers) {
           items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, stickerObj));
         }
       }

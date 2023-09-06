@@ -20,6 +20,7 @@ import android.graphics.Canvas;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -46,6 +47,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
@@ -71,7 +73,7 @@ import me.vkryl.td.Td;
 
 public class MessageOptionsPagerController extends BottomSheetViewController<OptionDelegate> implements
   FactorAnimator.Target, View.OnClickListener, Menu, DrawableProvider,
-  Counter.Callback, ReactionsSelectorRecyclerView.ReactionSelectDelegate, TextColorSet {
+  Counter.Callback, TextColorSet {
 
   private final State state;
   private final ViewPagerTopView.Item[] counters;
@@ -190,7 +192,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
         super.onThemeInvalidate(isTempUpdate);
       }
     };
-    headerCell.setReactionsSelectorDelegate(this);
+    headerCell.setReactionsSelectorDelegate(this::onReactionClick);
     addThemeInvalidateListener(headerCell);
   }
 
@@ -200,6 +202,8 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
 
     if (state.needShowReactionsPopupPicker) {
       reactionsPickerWrapper = new FrameLayoutFix(context) {
+        public final GradientDrawable gradientDrawableRight = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{ 0, Theme.backgroundColor() });
+
         @Override
         public boolean dispatchTouchEvent (MotionEvent ev) {
           float bottom = MathUtils.fromTo(headerTranslationY + getHeaderHeight(), getMeasuredHeight(), reactionsPickerVisibility.getFloatValue());
@@ -235,10 +239,16 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
           canvas.restore();
 
           float offset = reactionsPickerRecyclerView.getTranslationX();
-          canvas.drawRect(getMeasuredWidth() - state.getRightViewsWidth() + offset,
+          float x = getMeasuredWidth() - state.getRightViewsWidth() + offset;
+
+          canvas.drawRect(x,
             top, getMeasuredWidth() + offset, top + getHeaderHeight(),
             Paints.fillingPaint(me.vkryl.core.ColorUtils.alphaColor(1f - reactionsPickerVisibility.getFloatValue(), Theme.backgroundColor()))
           );
+
+          gradientDrawableRight.setAlpha((int)(255 * (1f - reactionsPickerVisibility.getFloatValue())));
+          gradientDrawableRight.setBounds((int)(x - Screen.dp(20)), (int) top, (int) x, (int)(top + getHeaderHeight()));
+          gradientDrawableRight.draw(canvas);
         }
       };
       vg.addView(reactionsPickerWrapper, 2, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -535,43 +545,6 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     return Theme.getColor(ColorId.text);
   }
 
-  // Reactions selector delegate
-
-  @Override
-  public void onClick (View v, TGReaction reaction) {
-    int[] positionCords = new int[2];
-    v.getLocationOnScreen(positionCords);
-
-    int startX = positionCords[0] + v.getMeasuredWidth() / 2;
-    int startY = positionCords[1] + v.getMeasuredHeight() / 2;
-
-    boolean hasReaction = state.message.getMessageReactions().hasReaction(reaction.type);
-    if (hasReaction || state.message.messagesController().callNonAnonymousProtection(state.message.getId() + reaction.getId(), tooltipManager().builder(v))) {
-      if (state.message.getMessageReactions().toggleReaction(reaction.type, false, true, handler(v, () -> {
-      }))) {
-        state.message.scheduleSetReactionAnimationFromBottomSheet(reaction, new Point(startX, startY));
-      }
-      hidePopupWindow(true);
-    }
-  }
-
-  @Override
-  public void onLongClick (View v, TGReaction reaction) {
-    int[] positionCords = new int[2];
-    v.getLocationOnScreen(positionCords);
-
-    int startX = positionCords[0] + v.getMeasuredWidth() / 2;
-    int startY = positionCords[1] + v.getMeasuredHeight() / 2;
-
-    if (state.message.messagesController().callNonAnonymousProtection(state.message.getId() + reaction.getId(), tooltipManager().builder(v))) {
-      if (state.message.getMessageReactions().toggleReaction(reaction.type, true, true, handler(v, () -> {
-      }))) {
-        state.message.scheduleSetReactionAnimationFullscreenFromBottomSheet(reaction, new Point(startX, startY));
-      }
-      hidePopupWindow(true);
-    }
-  }
-
   private Client.ResultHandler handler (View v, Runnable onSuccess) {
     return object -> {
       switch (object.getConstructor()) {
@@ -678,9 +651,34 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
 
   private void onReactionClick (View v, TGReaction reaction, boolean isLongClick) {
     if (isLongClick) {
-      onLongClick(v, reaction);
+      int[] positionCords = new int[2];
+      v.getLocationOnScreen(positionCords);
+
+      int startX = positionCords[0] + v.getMeasuredWidth() / 2;
+      int startY = positionCords[1] + v.getMeasuredHeight() / 2;
+
+      if (state.message.messagesController().callNonAnonymousProtection(state.message.getId() + reaction.getId(), tooltipManager().builder(v))) {
+        if (state.message.getMessageReactions().toggleReaction(reaction.type, true, true, handler(v, () -> {
+        }))) {
+          state.message.scheduleSetReactionAnimationFullscreenFromBottomSheet(reaction, new Point(startX, startY));
+        }
+        hidePopupWindow(true);
+      }
     } else {
-      onClick(v, reaction);
+      int[] positionCords = new int[2];
+      v.getLocationOnScreen(positionCords);
+
+      int startX = positionCords[0] + v.getMeasuredWidth() / 2;
+      int startY = positionCords[1] + v.getMeasuredHeight() / 2;
+
+      boolean hasReaction = state.message.getMessageReactions().hasReaction(reaction.type);
+      if (hasReaction || state.message.messagesController().callNonAnonymousProtection(state.message.getId() + reaction.getId(), tooltipManager().builder(v))) {
+        if (state.message.getMessageReactions().toggleReaction(reaction.type, false, true, handler(v, () -> {
+        }))) {
+          state.message.scheduleSetReactionAnimationFromBottomSheet(reaction, new Point(startX, startY));
+        }
+        hidePopupWindow(true);
+      }
     }
   }
 
@@ -692,6 +690,10 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
   /* * */
 
   private float getTopBorder () {
+    if (reactionsPickerRecyclerView == null) {
+      return headerTranslationY;
+    }
+
     return MathUtils.fromTo(headerTranslationY, Views.getRecyclerFirstElementTop(reactionsPickerRecyclerView), reactionsPickerVisibility.getFloatValue());
   }
 

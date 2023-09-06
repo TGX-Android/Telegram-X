@@ -374,7 +374,7 @@ public class MessagesSearchManager {
     } else {
       currentSearchResults.addAll(0, Arrays.asList(messages));
     }
-    for (TdApi.Message message: messages) {
+    for (TdApi.Message message : messages) {
       currentSearchResultsArr.append(message.id, message);
     }
   }
