@@ -4735,4 +4735,9 @@
 
   <string name="ShowXMore_one">%1$s more</string>
   <string name="ShowXMore_other">%1$s more</string>
+
+  <string name="AvatarsInReactions">Avatars in Reactions</string>
+  <string name="AvatarsInReactionsAlways">Always</string>
+  <string name="AvatarsInReactionsOnlyContacts">Only Contacts</string>
+  <string name="AvatarsInReactionsNever">Never</string>
 </resources>

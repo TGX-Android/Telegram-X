@@ -4,6 +4,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Path;
 import android.graphics.RectF;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -28,6 +29,7 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
+import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.ReactionsListAnimator;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.TextColorSet;
@@ -43,6 +45,7 @@ import java.util.Set;
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.ViewUtils;
 import me.vkryl.android.animator.FactorAnimator;
+import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.lambda.Destroyable;
@@ -219,13 +222,33 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
     if (reactions == null) {
       return;
     }
+    final int mode = Settings.instance().getReactionAvatarsMode();
+
     for (TdApi.MessageReaction reaction : reactions) {
       String reactionKey = TD.makeReactionKey(reaction.type);
       TGReactions.MessageReactionEntry entry = reactionsMapEntry.get(reactionKey);
       if (entry != null) {
-        entry.setCount(reaction.recentSenderIds, reaction.totalCount, reaction.isChosen, animated);
+        entry.setCount(
+          filterSenders(tdlib, reaction.recentSenderIds, mode),
+          reaction.totalCount, reaction.isChosen, animated);
       }
     }
+  }
+
+  private static TdApi.MessageSender[] filterSenders (Tdlib tdlib, TdApi.MessageSender[] senders, int mode) {
+    if (senders == null || senders.length == 0 || mode == Settings.REACTION_AVATARS_MODE_ALWAYS) return senders;
+    if (mode == Settings.REACTION_AVATARS_MODE_NEVER) return null;
+
+    return ArrayUtils.filter(ArrayUtils.asList(senders), sender -> {
+      TdApi.User user = tdlib.cache().user(Td.getSenderUserId(sender));
+      TdApi.Chat chat = tdlib.chat(Td.getSenderId(sender));
+
+      if (TD.isContact(user) || tdlib.isSelfChat(chat)) {
+        return true;
+      }
+
+      return false;
+    }).toArray(new TdApi.MessageSender[0]);
   }
 
   public void requestAvatarFiles (ComplexReceiver complexReceiver, boolean isUpdate) {
