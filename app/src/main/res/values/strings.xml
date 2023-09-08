@@ -4738,6 +4738,6 @@
 
   <string name="AvatarsInReactions">Avatars in Reactions</string>
   <string name="AvatarsInReactionsAlways">Always</string>
-  <string name="AvatarsInReactionsOnlyContacts">Only Contacts</string>
+  <string name="AvatarsInReactionsSmartFilter">Limited</string>
   <string name="AvatarsInReactionsNever">Never</string>
 </resources>

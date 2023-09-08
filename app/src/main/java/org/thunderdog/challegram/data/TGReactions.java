@@ -4,7 +4,6 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Path;
 import android.graphics.RectF;
-import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -229,26 +228,19 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
       TGReactions.MessageReactionEntry entry = reactionsMapEntry.get(reactionKey);
       if (entry != null) {
         entry.setCount(
-          filterSenders(tdlib, reaction.recentSenderIds, mode),
+          filterSenders(reaction.recentSenderIds, mode),
           reaction.totalCount, reaction.isChosen, animated);
       }
     }
   }
 
-  private static TdApi.MessageSender[] filterSenders (Tdlib tdlib, TdApi.MessageSender[] senders, int mode) {
+  private TdApi.MessageSender[] filterSenders (TdApi.MessageSender[] senders, int mode) {
     if (senders == null || senders.length == 0 || mode == Settings.REACTION_AVATARS_MODE_ALWAYS) return senders;
     if (mode == Settings.REACTION_AVATARS_MODE_NEVER) return null;
 
-    return ArrayUtils.filter(ArrayUtils.asList(senders), sender -> {
-      TdApi.User user = tdlib.cache().user(Td.getSenderUserId(sender));
-      TdApi.Chat chat = tdlib.chat(Td.getSenderId(sender));
-
-      if (TD.isContact(user) || tdlib.isSelfChat(chat)) {
-        return true;
-      }
-
-      return false;
-    }).toArray(new TdApi.MessageSender[0]);
+    return ArrayUtils.filter(ArrayUtils.asList(senders),
+      parent::isMatchesReactionSenderAvatarFilter
+    ).toArray(new TdApi.MessageSender[0]);
   }
 
   public void requestAvatarFiles (ComplexReceiver complexReceiver, boolean isUpdate) {

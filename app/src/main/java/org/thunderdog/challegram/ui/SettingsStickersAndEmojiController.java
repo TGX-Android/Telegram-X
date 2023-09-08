@@ -142,8 +142,8 @@ public class SettingsStickersAndEmojiController extends RecyclerViewController<S
             case Settings.REACTION_AVATARS_MODE_ALWAYS:
               v.setData(R.string.AvatarsInReactionsAlways);
               break;
-            case Settings.REACTION_AVATARS_MODE_ONLY_CONTACTS:
-              v.setData(R.string.AvatarsInReactionsOnlyContacts);
+            case Settings.REACTION_AVATARS_MODE_SMART_FILTER:
+              v.setData(R.string.AvatarsInReactionsSmartFilter);
               break;
             case Settings.REACTION_AVATARS_MODE_NEVER:
               v.setData(R.string.AvatarsInReactionsNever);
@@ -283,15 +283,15 @@ public class SettingsStickersAndEmojiController extends RecyclerViewController<S
     final int reactionAvatarsMode = Settings.instance().getReactionAvatarsMode();
     showSettings(new SettingsWrapBuilder(R.id.btn_avatarsInReactions).setRawItems(new ListItem[]{
       new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_avatarsInReactionsAlways, 0, R.string.AvatarsInReactionsAlways, R.id.btn_avatarsInReactions, reactionAvatarsMode == Settings.REACTION_AVATARS_MODE_ALWAYS),
-      new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_avatarsInReactionsOnlySmallChatsAndContacts, 0, R.string.AvatarsInReactionsOnlyContacts, R.id.btn_avatarsInReactions, reactionAvatarsMode == Settings.REACTION_AVATARS_MODE_ONLY_CONTACTS),
+      new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_avatarsInReactionsSmartFilter, 0, R.string.AvatarsInReactionsSmartFilter, R.id.btn_avatarsInReactions, reactionAvatarsMode == Settings.REACTION_AVATARS_MODE_SMART_FILTER),
       new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_avatarsInReactionsNever, 0, R.string.AvatarsInReactionsNever, R.id.btn_avatarsInReactions, reactionAvatarsMode == Settings.REACTION_AVATARS_MODE_NEVER),
     }).setIntDelegate((id, result) -> {
       int newReactionAvatarsMode = Settings.instance().getReactionAvatarsMode();
       int stickerResultId = result.get(R.id.btn_avatarsInReactions);
       if (stickerResultId == R.id.btn_avatarsInReactionsAlways) {
         newReactionAvatarsMode = Settings.REACTION_AVATARS_MODE_ALWAYS;
-      } else if (stickerResultId == R.id.btn_avatarsInReactionsOnlySmallChatsAndContacts) {
-        newReactionAvatarsMode = Settings.REACTION_AVATARS_MODE_ONLY_CONTACTS;
+      } else if (stickerResultId == R.id.btn_avatarsInReactionsSmartFilter) {
+        newReactionAvatarsMode = Settings.REACTION_AVATARS_MODE_SMART_FILTER;
       } else if (stickerResultId == R.id.btn_avatarsInReactionsNever) {
         newReactionAvatarsMode = Settings.REACTION_AVATARS_MODE_NEVER;
       }

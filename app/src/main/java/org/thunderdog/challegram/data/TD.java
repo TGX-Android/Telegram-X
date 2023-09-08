@@ -6981,4 +6981,25 @@ public class TD {
     }
     return unreadCount;
   }
+
+  public static boolean containsMention (TdApi.FormattedText text, TdApi.User user) {
+    if (text == null || user == null || text.entities == null || StringUtils.isEmpty(text.text)) {
+      return false;
+    }
+
+    for (TdApi.TextEntity entity: text.entities) {
+      TdApi.TextEntityType type = entity.type;
+      if (type.getConstructor() == TdApi.TextEntityTypeMention.CONSTRUCTOR) {
+        if (entity.length > 1 && Td.findUsername(user.usernames, text.text.substring(entity.offset + 1, entity.offset + entity.length), true)) {
+          return true;
+        }
+      } else if (type.getConstructor() == TdApi.TextEntityTypeMentionName.CONSTRUCTOR) {
+        if (user.id == ((TdApi.TextEntityTypeMentionName) type).userId) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
 }

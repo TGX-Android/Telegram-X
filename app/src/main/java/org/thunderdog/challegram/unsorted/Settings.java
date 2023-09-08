@@ -444,7 +444,7 @@ public class Settings {
   @Nullable private Integer _emojiMode;
 
   public static final int REACTION_AVATARS_MODE_NEVER = 0;
-  public static final int REACTION_AVATARS_MODE_ONLY_CONTACTS = 1;
+  public static final int REACTION_AVATARS_MODE_SMART_FILTER = 1;
   public static final int REACTION_AVATARS_MODE_ALWAYS = 2;
 
   @Nullable private Integer _reactionAvatarsMode;
@@ -2604,7 +2604,7 @@ public class Settings {
 
   public int getReactionAvatarsMode () {
     if (_reactionAvatarsMode == null)
-      _reactionAvatarsMode = pmc.getInt(KEY_REACTION_AVATARS_MODE, REACTION_AVATARS_MODE_ONLY_CONTACTS);
+      _reactionAvatarsMode = pmc.getInt(KEY_REACTION_AVATARS_MODE, REACTION_AVATARS_MODE_SMART_FILTER);
     return _reactionAvatarsMode;
   }
 

@@ -490,6 +490,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
     computeQuickButtons();
     checkHighlightedText();
+
+    UI.post(() -> updateReactionAvatars(false));
   }
 
   private static @NonNull <T> T nonNull (@Nullable T value) {
@@ -4184,6 +4186,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public final String getInReplyTo () {
     return replyData != null ? replyData.getAuthor() : null;
+  }
+
+  public final TdApi.MessageSender getInReplyToSender () {
+    return replyData != null ? replyData.getSender() : null;
   }
 
   public final int getViewCount () {
@@ -8764,4 +8770,27 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return emojiSets.toArray();
   }
 
+  /* Reaction Avatars */
+
+  // todo: update when reply message loaded
+  // todo: update when supergroup updated
+  // todo: update when text changed
+
+  public void updateReactionAvatars (boolean animated) {
+    messageReactions.updateCounterAnimators(animated);
+  }
+
+  public boolean isMatchesReactionSenderAvatarFilter (TdApi.MessageSender sender) {
+    final TdApi.FormattedText text = getTextToTranslateImpl();
+    final long senderId = Td.getSenderId(sender);
+
+    TdApi.User user = tdlib.cache().user(Td.getSenderUserId(sender));
+    TdApi.Chat chat = tdlib.chat(senderId);
+
+    return TD.isContact(user)
+      || tdlib.isSelfChat(chat)
+      || getChatId() == Td.getSenderId(sender)
+      || senderId == Td.getSenderId(getInReplyToSender())
+      || TD.containsMention(text, user);
+  }
 }
