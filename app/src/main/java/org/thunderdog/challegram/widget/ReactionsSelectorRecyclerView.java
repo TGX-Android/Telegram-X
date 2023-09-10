@@ -26,23 +26,25 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.ui.MessageOptionsPagerController;
 import org.thunderdog.challegram.ui.ReactionsPickerController;
 import org.thunderdog.challegram.util.text.Counter;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.MathUtils;
+import me.vkryl.td.Td;
 
 public class ReactionsSelectorRecyclerView extends RecyclerView {
   private final GradientDrawable gradientDrawableRight;
+  private final MessageOptionsPagerController.State state;
   private boolean needDrawBorderGradient;
   private ReactionsAdapter adapter;
 
-  public ReactionsSelectorRecyclerView (@NonNull Context context) {
+  public ReactionsSelectorRecyclerView (@NonNull Context context, MessageOptionsPagerController.State state) {
     super(context);
+    this.state = state;
     this.gradientDrawableRight = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{ 0, lastColor = Theme.backgroundColor() });
-  }
 
-  public void setMessage (TGMessage message) {
     LinearLayoutManager linearLayoutManager = new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false) {
       @Override
       protected boolean isLayoutRTL () {
@@ -62,11 +64,7 @@ public class ReactionsSelectorRecyclerView extends RecyclerView {
     });
 
     setLayoutManager(linearLayoutManager);
-    setAdapter(adapter = new ReactionsAdapter(getContext(), message));
-  }
-
-  public void setDelegate (ReactionsPickerController.OnReactionClickListener delegate) {
-    adapter.setDelegate(delegate);
+    setAdapter(adapter = new ReactionsAdapter(getContext(), state));
   }
 
   public void setNeedDrawBorderGradient (boolean needDrawBorderGradient) {
@@ -199,17 +197,14 @@ public class ReactionsSelectorRecyclerView extends RecyclerView {
     private final Context context;
     private final TGMessage message;
     private final TdApi.AvailableReaction[] reactions;
-    private ReactionsPickerController.OnReactionClickListener delegate;
+    private final MessageOptionsPagerController.State state;
 
-    ReactionsAdapter (Context context, TGMessage message) {
+    ReactionsAdapter (Context context, MessageOptionsPagerController.State state) {
       this.context = context;
-      this.tdlib = message.tdlib();
-      this.message = message;
-      this.reactions = message.getMessageAvailableReactions();
-    }
-
-    public void setDelegate (ReactionsPickerController.OnReactionClickListener delegate) {
-      this.delegate = delegate;
+      this.tdlib = state.tdlib;
+      this.message = state.message;
+      this.state = state;
+      this.reactions = state.availableReactions;
     }
 
     @NonNull
@@ -229,14 +224,10 @@ public class ReactionsSelectorRecyclerView extends RecyclerView {
       final boolean needUseCounter = (message.isChannel() || !message.canGetAddedReactions()) && !message.useReactionBubbles();
       view.setReaction(reaction, tdReaction, needUseCounter);
       view.setOnClickListener((v) -> {
-        if (delegate != null) {
-          delegate.onReactionClick(v, reaction, false);
-        }
+        state.onReactionClickListener.onReactionClick(v, reaction, false);
       });
       view.setOnLongClickListener((v) -> {
-        if (delegate != null) {
-          delegate.onReactionClick(v, reaction, true);
-        }
+        state.onReactionClickListener.onReactionClick(v, reaction, true);
         return true;
       });
     }

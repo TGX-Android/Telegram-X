@@ -127,8 +127,7 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
 
     if (this.needReactionSelector) {
       final int rightOffsetR = this.rightOffset + Screen.dp(needShowMoreButton ? 56: 0);
-      reactionsSelectorRecyclerView = new ReactionsSelectorRecyclerView(context);
-      reactionsSelectorRecyclerView.setMessage(state.message);
+      reactionsSelectorRecyclerView = new ReactionsSelectorRecyclerView(context, state);
       reactionsSelectorRecyclerView.setLayoutParams(FrameLayoutFix.newParams(
         ViewGroup.LayoutParams.MATCH_PARENT,
         ViewGroup.LayoutParams.MATCH_PARENT,
@@ -218,12 +217,6 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
   LinearGradient shader1;
   private Paint shadowPaint1;
   private final int shadowSize = Screen.dp(35);
-
-  public void setReactionsSelectorDelegate (ReactionsPickerController.OnReactionClickListener delegate) {
-    if (reactionsSelectorRecyclerView != null) {
-      reactionsSelectorRecyclerView.setDelegate(delegate);
-    }
-  }
 
   private int oldPaintsColor = 0;
 

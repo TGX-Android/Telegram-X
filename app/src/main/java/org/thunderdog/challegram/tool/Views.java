@@ -942,11 +942,15 @@ public class Views {
   }
 
   public static int getRecyclerFirstElementTop (RecyclerView recyclerView) {
+    return getRecyclerViewElementTop(recyclerView, 0);
+  }
+
+  public static int getRecyclerViewElementTop (RecyclerView recyclerView, int position) {
     if (recyclerView == null || recyclerView.getLayoutManager() == null) {
       return 0;
     }
 
-    View view = recyclerView.getLayoutManager().findViewByPosition(0);
+    View view = recyclerView.getLayoutManager().findViewByPosition(position);
     if (view != null) {
       return Math.max(view.getTop() + recyclerView.getTop(), 0);
     }

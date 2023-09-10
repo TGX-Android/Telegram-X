@@ -136,6 +136,9 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayoutRec
   }
 
   public void clearAllItems () {
+    this.classicEmojiSets = null;
+    this.stickerSets = null;
+    this.lastStickerSetInfo = null;
     adapter.removeRange(0, adapter.getItemCount());
   }
 
@@ -159,6 +162,15 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayoutRec
     }
 
     adapter.addItems(items);
+  }
+
+  public void addStickers (ArrayList<TGStickerSetInfo> stickerSets, ArrayList<MediaStickersAdapter.StickerItem> items) {
+    this.stickerSets.addAll(stickerSets);
+    this.adapter.addItems(items);
+  }
+
+  public int getItemsHeight (boolean showRecentTitle) {
+    return adapter.measureScrollTop(adapter.getItemCount(), spanCount, Integer.MAX_VALUE - 1, stickerSets, recyclerView, showRecentTitle);
   }
 
   public void applyStickerSet (TdApi.StickerSet stickerSet, TGStickerObj.DataProvider dataProvider) {

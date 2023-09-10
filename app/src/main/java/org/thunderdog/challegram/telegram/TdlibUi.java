@@ -146,6 +146,7 @@ import java.io.IOException;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -6461,6 +6462,57 @@ public class TdlibUi extends Handler {
 
   // Suggestions by emoji
 
+  public static class TextStickers {
+    private final Tdlib tdlib;
+    public final String request;
+
+
+    private EmojiStickers emojiStickers;
+    private boolean isEmpty;
+
+    private final ConditionalExecutor haveFoundEmojis = new ConditionalExecutor(() -> this.emojiStickers != null || isEmpty);
+
+    public TextStickers (Tdlib tdlib, TdApi.StickerType stickerType, String request, int limit, long chatId, int mode) {
+      this.tdlib = tdlib;
+      this.request = request;
+
+      tdlib.client().send(new TdApi.SearchEmojis(request, false, UI.getInputLanguages()), object -> UI.post(() -> {
+        final String[] emojis = object.getConstructor() == TdApi.Emojis.CONSTRUCTOR ?
+          ((TdApi.Emojis) object).emojis : new String[] {};
+
+        StringBuilder b = new StringBuilder();
+        for (String emoji : emojis) {
+          if (b.length() > 0) {
+            b.append(" ");
+          }
+          b.append(emoji);
+        }
+
+        if (b.length() == 0) {
+          isEmpty = true;
+        } else {
+          emojiStickers = new EmojiStickers(tdlib, stickerType, b.toString(), limit, chatId, mode);
+        }
+        haveFoundEmojis.notifyConditionChanged();
+      }));
+    }
+
+    public interface Callback {
+      void onStickersLoaded (TextStickers context, TdApi.Sticker[] stickers);
+    }
+
+    public void getStickers (Callback callback) {
+      haveFoundEmojis.executeOrPostponeTask(() -> {
+        if (isEmpty) {
+          tdlib.uiExecute(() -> callback.onStickersLoaded(this, new TdApi.Sticker[]{}));
+          return;
+        }
+
+        emojiStickers.getStickers((context, stickers) -> callback.onStickersLoaded(TextStickers.this, stickers));
+      });
+    }
+  }
+
   public static class EmojiStickers {
     private final Tdlib tdlib;
     public final String emoji;
@@ -6503,6 +6555,10 @@ public class TdlibUi extends Handler {
       void onStickersLoaded (EmojiStickers context, TdApi.Sticker[] installedStickers, TdApi.Sticker[] recommendedStickers);
 
       default void onRecommendedStickersLoaded (EmojiStickers context, TdApi.Sticker[] recommendedStickers) { }
+    }
+
+    public interface Callback2 {
+      void onStickersLoaded (EmojiStickers context, TdApi.Sticker[] stickers);
     }
 
     public void getStickers (Callback callback, long remoteTimeoutMs) {
@@ -6554,6 +6610,16 @@ public class TdlibUi extends Handler {
         }
       });
     }
+
+    public void getStickers (Callback2 callback2) {
+      getStickers((context, installedStickers, recommendedStickers) -> {
+        final ArrayList<TdApi.Sticker> stickers = new ArrayList<>(installedStickers.length + recommendedStickers.length);
+        stickers.addAll(Arrays.asList(installedStickers));
+        stickers.addAll(Arrays.asList(recommendedStickers));
+
+        callback2.onStickersLoaded(context, stickers.toArray(new TdApi.Sticker[0]));
+      }, 0);
+    }
   }
 
   public EmojiStickers getEmojiStickers (final TdApi.StickerType stickerType, final String emoji, int limit, long chatId) {
@@ -6566,6 +6632,14 @@ public class TdlibUi extends Handler {
     if (tdlib.suggestOnlyApiStickers() && mode == Settings.STICKER_MODE_ALL) {
       mode = Settings.STICKER_MODE_ONLY_INSTALLED;
     }
+    return getEmojiStickers(stickerType, emoji, limit, chatId, mode);
+  }
+
+  public EmojiStickers getEmojiStickers (final TdApi.StickerType stickerType, final String emoji, int limit, long chatId, int mode) {
     return new EmojiStickers(tdlib, stickerType, emoji, limit, chatId, mode);
+  }
+
+  public TextStickers getEmojiStickersByText (final TdApi.StickerType stickerType, final String request, int limit, long chatId, int mode) {
+    return new TextStickers(tdlib, stickerType, request, limit, chatId, mode);
   }
 }

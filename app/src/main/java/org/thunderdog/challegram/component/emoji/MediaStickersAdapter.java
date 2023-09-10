@@ -43,7 +43,6 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TGDefaultEmoji;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
-import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
@@ -76,6 +75,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
   private final boolean canViewStickerPackByClick;
   private final @Nullable EmojiToneHelper emojiToneHelper;
   private View.OnClickListener classicEmojiClickListener;
+  private int topPaddingHeight = EmojiLayout.getHeaderSize() + EmojiLayout.getHeaderPadding();
 
   private boolean isBig;
 
@@ -109,13 +109,17 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
     this.manager = manager;
   }
 
+  public void setTopPaddingHeight (int topPaddingHeight) {
+    this.topPaddingHeight = topPaddingHeight;
+  }
+
   public void setClassicEmojiClickListener (View.OnClickListener classicEmojiClickListener) {
     this.classicEmojiClickListener = classicEmojiClickListener;
   }
 
   @NonNull @Override
   public StickerHolder onCreateViewHolder (@NonNull ViewGroup parent, int viewType) {
-    return StickerHolder.create(context.context(), context.tdlib(), viewType, isTrending, this, classicEmojiClickListener, callback, isBig, themeProvider, offsetProvider, emojiToneHelper, repaintingColorId);
+    return StickerHolder.create(context.context(), context.tdlib(), this, viewType, isTrending, this, classicEmojiClickListener, callback, isBig, themeProvider, offsetProvider, emojiToneHelper, repaintingColorId);
   }
 
   public int measureScrollTop (int position, int spanCount, int sectionIndex, ArrayList<TGStickerSetInfo> sections, @Nullable RecyclerView recyclerView, boolean haveRecentsTitle) {
@@ -125,7 +129,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
 
     position--;
 
-    int scrollY = items.get(0).viewType == StickerHolder.TYPE_EMPTY ? 0: EmojiLayout.getHeaderSize() + EmojiLayout.getHeaderPadding();
+    int scrollY = topPaddingHeight;
     //int scrollY = EmojiLayout.getHeaderSize() + EmojiLayout.getHeaderPadding();
     if (position == 0) {
       return scrollY;
@@ -643,7 +647,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
       super(itemView);
     }
 
-    public static @NonNull StickerHolder create (Context context, Tdlib tdlib, int viewType, boolean isTrending, View.OnClickListener onClickListener, View.OnClickListener classicEmojiClickListener, StickerSmallView.StickerMovementCallback callback, boolean isBig, @Nullable ViewController<?> themeProvider, @Nullable OffsetProvider offsetProvider, @Nullable EmojiToneHelper toneHelper, @ColorId int repaintingColorId) {
+    public static @NonNull StickerHolder create (Context context, Tdlib tdlib, MediaStickersAdapter adapter, int viewType, boolean isTrending, View.OnClickListener onClickListener, View.OnClickListener classicEmojiClickListener, StickerSmallView.StickerMovementCallback callback, boolean isBig, @Nullable ViewController<?> themeProvider, @Nullable OffsetProvider offsetProvider, @Nullable EmojiToneHelper toneHelper, @ColorId int repaintingColorId) {
       switch (viewType) {
         case TYPE_EMOJI_STATUS_DEFAULT:
         case TYPE_STICKER: {
@@ -728,7 +732,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
         }
         case TYPE_KEYBOARD_TOP: {
           View view = new View(context);
-          view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, EmojiLayout.getHeaderSize() + EmojiLayout.getHeaderPadding()));
+          view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, adapter.topPaddingHeight));
           return new StickerHolder(view);
         }
         case TYPE_SEPARATOR: {

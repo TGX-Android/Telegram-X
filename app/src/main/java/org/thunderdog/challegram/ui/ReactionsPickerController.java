@@ -15,12 +15,19 @@
 package org.thunderdog.challegram.ui;
 
 import android.content.Context;
+import android.graphics.Canvas;
+import android.graphics.Rect;
+import android.graphics.drawable.GradientDrawable;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
+import androidx.core.graphics.ColorUtils;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.Client;
@@ -37,49 +44,63 @@ import org.thunderdog.challegram.data.TGStickerSetInfo;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.ViewController;
-import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.StickersListener;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
-import org.thunderdog.challegram.theme.ColorState;
+import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
+import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.EmojiLayout;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutRecyclerController;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.Headers.EmojiHeaderView;
 import org.thunderdog.challegram.util.StickerSetsDataProvider;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSection;
+import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSectionView;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.StickerSectionView;
 
 import java.util.ArrayList;
 import java.util.Set;
 
+import me.vkryl.android.AnimatorUtils;
+import me.vkryl.android.animator.BoolAnimator;
+import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.BitwiseUtils;
+import me.vkryl.core.MathUtils;
+import me.vkryl.core.StringUtils;
+import me.vkryl.core.lambda.RunnableData;
 
-public class ReactionsPickerController extends ViewController<ReactionsPickerController.Args> implements StickersListener, EmojiLayoutRecyclerController.Callback, StickerSmallView.StickerMovementCallback {
+public class ReactionsPickerController extends ViewController<MessageOptionsPagerController.State>
+  implements StickersListener, EmojiLayoutRecyclerController.Callback,
+  StickerSmallView.StickerMovementCallback, FactorAnimator.Target {
+  private final boolean canSearch;
+
   private TGMessage message;
   private Set<String> chosenReactions;
   private EmojiLayoutRecyclerController reactionsController;
   private CustomRecyclerView recyclerView;
   private MediaStickersAdapter adapter;
-  private EmojiHeaderView bottomHeaderView;
 
   public ReactionsPickerController(Context context, Tdlib tdlib) {
     super(context, tdlib);
+    canSearch = tdlib.hasPremium();
   }
 
   @Override
   protected View onCreateView (Context context) {
     ArrayList<EmojiSection> emojiSections = new ArrayList<>(1);
-    emojiSections.add(new EmojiSection(this, EmojiSection.SECTION_EMOJI_RECENT, R.drawable.baseline_favorite_24, R.drawable.baseline_favorite_24)/*.setFactor(1f, false)*/.setMakeFirstTransparent().setOffsetHalf(false));
-    bottomHeaderView = new EmojiHeaderView(context, this, this, emojiSections, null, false);
-    bottomHeaderView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(56), Gravity.BOTTOM));
-    bottomHeaderView.setIsPremium(true, false);
-    bottomHeaderView.setSectionsOnClickListener(this::onStickerSectionClick);
-    ViewSupport.setThemedBackground(bottomHeaderView, ColorId.filling);
-    addThemeInvalidateListener(bottomHeaderView);
+    if (canSearch) {
+      emojiSections.add(new EmojiSection(this, -14, R.drawable.baseline_search_24, R.drawable.baseline_search_24)/*.setFactor(1f, false)*/.setMakeFirstTransparent().setOffsetHalf(false));
+    }
+    emojiSections.add(new EmojiSection(this, EmojiSection.SECTION_EMOJI_RECENT, R.drawable.baseline_favorite_24, R.drawable.baseline_favorite_24)/*.setFactor(1f, false)*/.setMakeFirstTransparent());
+    bottomHeaderCell = new EmojiHeaderView(context, this, this, emojiSections, null, false);
+    bottomHeaderCell.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, HeaderView.getSize(false)));
+    bottomHeaderCell.setIsPremium(true, false);
+    bottomHeaderCell.setSectionsOnClickListener(this::onStickerSectionClick);
 
     recyclerView = onCreateRecyclerView();
     recyclerView.setItemAnimator(null);
@@ -95,24 +116,10 @@ public class ReactionsPickerController extends ViewController<ReactionsPickerCon
       }
     });
 
-    headerView = new HeaderView(context) {
-      @Override
-      protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(Screen.dp(56), MeasureSpec.EXACTLY));
-      }
-
-      @Override
-      public boolean onTouchEvent (MotionEvent e) {
-        super.onTouchEvent(e);
-        return true;
-      }
-    };
-    headerView.initWithSingleController(this, false);
-    headerView.setBackgroundHeight(Screen.dp(56));
-    headerView.getBackButton().setIsReverse(true);
-    addThemeInvalidateListener(headerView);
-
+    genTopHeader();
+    genBottomHeader();
     buildCells();
+    loadStickers();
     return recyclerView;
   }
 
@@ -128,8 +135,11 @@ public class ReactionsPickerController extends ViewController<ReactionsPickerCon
           ((StickerSmallView) holder.itemView).setPadding(Screen.dp(stickerObj != null && stickerObj.isReaction() ? -1: 4.5f));
           ((StickerSmallView) holder.itemView).setChosen(stickerObj != null && chosenReactions != null && stickerObj.getReactionType() != null && chosenReactions.contains(TD.makeReactionKey(stickerObj.getReactionType())));
         }
+
+        holder.itemView.setVisibility(position <= reactionsController.getSpanCount() || isFullyVisible ? View.VISIBLE: View.INVISIBLE);
       }
     };
+    adapter.setTopPaddingHeight(HeaderView.getSize(true));
     adapter.setRepaintingColorId(ColorId.text);
 
     reactionsController.setArguments(this);
@@ -141,6 +151,10 @@ public class ReactionsPickerController extends ViewController<ReactionsPickerCon
     return (CustomRecyclerView) reactionsController.getValue();
   }
 
+  public int measureItemsHeight () {
+    return reactionsController.getItemsHeight(false);
+  }
+
   public int getItemWidth () {
     return (recyclerView.getMeasuredWidth() - recyclerView.getPaddingLeft() - recyclerView.getPaddingRight()) / reactionsController.getSpanCount();
 
@@ -150,23 +164,24 @@ public class ReactionsPickerController extends ViewController<ReactionsPickerCon
     return recyclerView;
   }
 
-  private boolean isFullyVisible = true;
+  private ArrayList<TGStickerSetInfo> emojiPacks;
+  private ArrayList<MediaStickersAdapter.StickerItem> emojiItems;
+
 
   private void buildCells () {
-    ArrayList<MediaStickersAdapter.StickerItem> items = new ArrayList<>();
-    ArrayList<TGStickerSetInfo> emojiPacks = new ArrayList<>();
+    emojiItems = new ArrayList<>();
+    emojiPacks = new ArrayList<>();
 
     TdApi.AvailableReaction[] reactions = message.getMessageAvailableReactions();
     if (reactions != null) {
-      items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_EMPTY));
+      emojiItems.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_KEYBOARD_TOP));
 
       TGStickerSetInfo pack = TGStickerSetInfo.fromEmojiSection(tdlib, -1, -1, reactions.length);
-      pack.setStartIndex(items.size());
+      pack.setStartIndex(emojiItems.size());
       pack.setIsRecent();
-      items.ensureCapacity(reactions.length);
+      emojiItems.ensureCapacity(reactions.length);
       emojiPacks.add(pack);
 
-      int a = 0;
       for (TdApi.AvailableReaction reaction: reactions) {
         TGReaction reactionObj = tdlib.getReaction(reaction.type);
         TGStickerObj stickerObj = reactionObj != null ? reactionObj.newCenterAnimationSicker(): null;
@@ -177,19 +192,11 @@ public class ReactionsPickerController extends ViewController<ReactionsPickerCon
             stickerObj.getPreviewAnimation().setLooped(false);
           }
         }
-        items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, stickerObj));
-        a++;
-        if (a == reactionsController.getSpanCount() && !isFullyVisible) {
-          break;
-        }
+        emojiItems.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, stickerObj));
       }
     }
 
-    reactionsController.setDefaultEmojiPacks(emojiPacks, items);
-  }
-
-  public EmojiHeaderView getBottomHeaderView () {
-    return bottomHeaderView;
+    reactionsController.setStickers(emojiPacks, emojiItems);
   }
 
   private void onStickerSectionClick (View v) {
@@ -202,10 +209,15 @@ public class ReactionsPickerController extends ViewController<ReactionsPickerCon
       TGStickerSetInfo info = ((StickerSectionView) v).getStickerSet();
       if (info != null) {
         int index = reactionsController.indexOfStickerSet(info);
-        reactionsController.scrollToStickerSet(index, EmojiLayout.getHeaderPadding(), false, true);
+        reactionsController.scrollToStickerSet(index, HeaderView.getSize(true) + EmojiLayout.getHeaderPadding(), false, true);
       }
     } else if (viewId == R.id.btn_section) {
-      reactionsController.scrollToStickerSet(0, EmojiLayout.getHeaderPadding(), false, true);
+      EmojiSection section = ((EmojiSectionView) v).getSection();
+      if (section.index == -14) {
+        bottomHeaderView.openSearchMode();
+      } else {
+        reactionsController.scrollToStickerSet(0, HeaderView.getSize(true) + EmojiLayout.getHeaderPadding(), false, true);
+      }
     }
   }
 
@@ -213,10 +225,7 @@ public class ReactionsPickerController extends ViewController<ReactionsPickerCon
 
   public void prepareToShow () {
     reactionsController.getManager().setCanScrollVertically(true);
-    //reactionsController.clearAllItems();
-    //isFullyVisible = true;
-    //buildCells();
-    loadStickers();
+    setIsFullyVisible(true);
   }
 
   private boolean loadingStickers;
@@ -254,6 +263,10 @@ public class ReactionsPickerController extends ViewController<ReactionsPickerCon
                 TGStickerObj sticker = new TGStickerObj(tdlib, i < rawInfo.covers.length ? rawInfo.covers[i] : null, null, rawInfo.stickerType);
                 sticker.setStickerSetId(rawInfo.id, null);
                 sticker.setDataProvider(stickerSetsDataProvider());
+                if (sticker.getPreviewAnimation() != null) {
+                  sticker.getPreviewAnimation().setPlayOnce(true);
+                  sticker.getPreviewAnimation().setLooped(false);
+                }
                 items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, sticker));
               }
               startIndex += rawInfo.size + 1;
@@ -277,23 +290,20 @@ public class ReactionsPickerController extends ViewController<ReactionsPickerCon
     };
   }
 
-
   private void setStickers (ArrayList<TGStickerSetInfo> stickerSets, ArrayList<MediaStickersAdapter.StickerItem> items) {
-    this.reactionsController.setStickers(stickerSets, items);
+    this.emojiPacks.addAll(stickerSets);
+    this.emojiItems.addAll(items);
+
+    this.reactionsController.addStickers(stickerSets, items);
     this.loadingStickers = false;
     if (stickerSetsDataProvider != null) {
       this.stickerSetsDataProvider.clear();
     }
-    bottomHeaderView.setStickerSets(stickerSets);
+    bottomHeaderCell.setStickerSets(stickerSets);
     recyclerView.invalidateItemDecorations();
-    // tdlib.listeners().subscribeToStickerUpdates(this);
   }
 
   /* * */
-
-  public HeaderView getHeaderView () {
-    return headerView;
-  }
 
   @Override
   public int getId () {
@@ -335,13 +345,6 @@ public class ReactionsPickerController extends ViewController<ReactionsPickerCon
     return true;
   }
 
-  @Override
-  public void onThemeColorsChanged (boolean areTemp, ColorState state) {
-    super.onThemeColorsChanged(areTemp, state);
-    if (headerView != null) {
-      headerView.resetColors(this, null);
-    }
-  }
 /*
   @Override
   public void onScrollToTopRequested () {
@@ -365,7 +368,7 @@ public class ReactionsPickerController extends ViewController<ReactionsPickerCon
 */
 
   @Override
-  public void setArguments (Args args) {
+  public void setArguments (MessageOptionsPagerController.State args) {
     this.message = args.message;
     if (message.getMessageReactions() != null) {
       this.chosenReactions = message.getMessageReactions().getChosen();
@@ -379,51 +382,35 @@ public class ReactionsPickerController extends ViewController<ReactionsPickerCon
     reactionsController.destroy();
   }
 
-  private OnReactionClickListener onReactionClickListener;
-
-  public void setOnReactionClickListener (OnReactionClickListener onReactionClickListener) {
-    this.onReactionClickListener = onReactionClickListener;
-  }
-
-  public interface OnReactionClickListener {
-    void onReactionClick (View v, TGReaction reaction, boolean isLongClick);
-  }
-
-
-
   @Override
   public boolean onStickerClick (StickerSmallView view, View clickView, TGStickerObj sticker, boolean isMenuClick, TdApi.MessageSendOptions sendOptions) {
-    if (onReactionClickListener != null) {
-      TdApi.ReactionType reactionType = sticker.isCustomEmoji() ?
-        new TdApi.ReactionTypeCustomEmoji(sticker.getCustomEmojiId()): sticker.getReactionType();
+    TdApi.ReactionType reactionType = sticker.isCustomEmoji() ?
+      new TdApi.ReactionTypeCustomEmoji(sticker.getCustomEmojiId()): sticker.getReactionType();
 
-      TGReaction reaction = tdlib.getReaction(reactionType);
-      if (reaction == null && sticker.isCustomEmoji() && sticker.getSticker() != null) {
-        reaction = new TGReaction(tdlib, sticker.getSticker());
-      }
+    TGReaction reaction = tdlib.getReaction(reactionType);
+    if (reaction == null && sticker.isCustomEmoji() && sticker.getSticker() != null) {
+      reaction = new TGReaction(tdlib, sticker.getSticker());
+    }
 
-      if (reaction != null) {
-        onReactionClickListener.onReactionClick(clickView, reaction, false);
-        return true;
-      }
+    if (reaction != null) {
+      getArgumentsStrict().onReactionClickListener.onReactionClick(clickView, reaction, false);
+      return true;
     }
     return false;
   }
 
   @Override
   public boolean onStickerLongClick (StickerSmallView view, TGStickerObj sticker) {
-    if (onReactionClickListener != null) {
-      TdApi.ReactionType reactionType = sticker.isCustomEmoji() ?
-        new TdApi.ReactionTypeCustomEmoji(sticker.getCustomEmojiId()): sticker.getReactionType();
+    TdApi.ReactionType reactionType = sticker.isCustomEmoji() ?
+      new TdApi.ReactionTypeCustomEmoji(sticker.getCustomEmojiId()): sticker.getReactionType();
 
-      TGReaction reaction = tdlib.getReaction(reactionType);
-      if (reaction == null && sticker.isCustomEmoji() && sticker.getSticker() != null) {
-        reaction = new TGReaction(tdlib, sticker.getSticker());
-      }
+    TGReaction reaction = tdlib.getReaction(reactionType);
+    if (reaction == null && sticker.isCustomEmoji() && sticker.getSticker() != null) {
+      reaction = new TGReaction(tdlib, sticker.getSticker());
+    }
 
-      if (reaction != null) {
-        onReactionClickListener.onReactionClick(view, reaction, true);
-      }
+    if (reaction != null) {
+      getArgumentsStrict().onReactionClickListener.onReactionClick(view, reaction, true);
     }
 
     return true;
@@ -458,15 +445,6 @@ public class ReactionsPickerController extends ViewController<ReactionsPickerCon
   public int getViewportHeight () {
     return 0;
   }
-
-  public static class Args {
-    public final TGMessage message;
-
-    public Args (TGMessage message) {
-     this.message = message;
-    }
-  }
-
 
 
 
@@ -529,22 +507,22 @@ public class ReactionsPickerController extends ViewController<ReactionsPickerCon
 
   @Override
   public void setCurrentStickerSectionByPosition (int controllerId, int i, boolean isStickerSection, boolean animated) {
-    bottomHeaderView.setCurrentStickerSectionByPosition(i, animated);
+    bottomHeaderCell.setCurrentStickerSectionByPosition(i + (canSearch ? 1: 0), animated);
   }
 
   @Override
   public void onAddStickerSection (int controllerId, int section, TGStickerSetInfo info) {
-    bottomHeaderView.addStickerSection(section, info);
+    bottomHeaderCell.addStickerSection(section, info);
   }
 
   @Override
   public void onMoveStickerSection (int controllerId, int fromSection, int toSection) {
-    bottomHeaderView.moveStickerSection(fromSection, toSection);
+    bottomHeaderCell.moveStickerSection(fromSection, toSection);
   }
 
   @Override
   public void onRemoveStickerSection (int controllerId, int section) {
-    bottomHeaderView.removeStickerSection(section);
+    bottomHeaderCell.removeStickerSection(section);
   }
 
   @Override
@@ -586,5 +564,414 @@ public class ReactionsPickerController extends ViewController<ReactionsPickerCon
         }
       }
     };
+  }
+
+
+  /* Visibility control */
+
+  private boolean isFullyVisible = false;
+
+  public void setIsFullyVisible (boolean isFullyVisible) {
+    if (this.isFullyVisible == isFullyVisible) {
+      return;
+    }
+
+    this.isFullyVisible = isFullyVisible;
+
+    int itemsCount = adapter.getItemCount();
+    int start = reactionsController.getSpanCount() + 1;
+    if (itemsCount > start) {
+      adapter.notifyItemRangeChanged(start, itemsCount - start);
+    }
+  }
+
+
+
+  /* Top Header */
+
+  private LinearLayout topHeaderViewGroup;
+
+  public HeaderView getTopHeaderView () {
+    return headerView;
+  }
+
+  public ViewGroup getTopHeaderViewGroup () {
+    return topHeaderViewGroup;
+  }
+
+  public void setTopHeaderVisibility (boolean isVisible) {
+    if (topHeaderVisibility.getValue() == isVisible) {
+      return;
+    }
+
+    topHeaderVisibility.setValue(isVisible, true);
+    if (isVisible) {
+      topHeaderViewGroup.setVisibility(View.VISIBLE);
+    }
+  }
+
+  private void genTopHeader () {
+    headerView = new HeaderView(context);
+    headerView.initWithSingleController(this, false);
+    headerView.setBackgroundHeight(Screen.dp(56));
+    headerView.getBackButton().setIsReverse(true);
+    headerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+    addThemeInvalidateListener(headerView);
+
+    View lickView = new View(context) {
+      @Override
+      protected void dispatchDraw (Canvas canvas) {
+        canvas.drawRect(0, 0, getMeasuredWidth(), getMeasuredHeight(),
+          Paints.fillingPaint(ColorUtils.compositeColors(Theme.getColor(ColorId.statusBar), Theme.getColor(ColorId.headerLightBackground))));
+      }
+    };
+    lickView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, HeaderView.getTopOffset()));
+    addThemeInvalidateListener(lickView);
+
+    topHeaderViewGroup = new LinearLayout(context);
+    topHeaderViewGroup.setOrientation(LinearLayout.VERTICAL);
+    topHeaderViewGroup.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+    topHeaderViewGroup.addView(lickView);
+    topHeaderViewGroup.addView(headerView);
+    topHeaderViewGroup.setVisibility(View.GONE);
+    topHeaderViewGroup.setAlpha(0f);
+  }
+
+
+
+  /* Bottom Header */
+
+  private FakeControllerForBottomHeader fakeControllerForBottomHeader;
+  private HeaderView bottomHeaderView;
+  private EmojiHeaderView bottomHeaderCell;
+  private CustomRecyclerView emojiTypesRecyclerView;
+  private EmojiSearchTypesAdapter emojiSearchTypesAdapter;
+  private boolean ignoreSearchInputUpdates;
+
+  public HeaderView getBottomHeaderView () {
+    return bottomHeaderView;
+  }
+
+  private void genBottomHeader () {
+    fakeControllerForBottomHeader = new FakeControllerForBottomHeader(context, tdlib) {
+      @Override
+      public View getCustomHeaderCell () {
+        return bottomHeaderCell;
+      }
+
+      @Override
+      protected void onEnterSearchMode () {
+        super.onEnterSearchMode();
+        emojiSearchTypesAdapter.setActiveIndex(-1);
+        emojiTypesRecyclerView.scrollToPosition(0);
+        emojiTypesRecyclerView.setVisibility(View.VISIBLE);
+        emojiTypesRecyclerView.setAlpha(bottomHeaderSearchModeVisibility.getFloatValue());
+        bottomHeaderSearchModeVisibility.setValue(true, true);
+        searchEmojiImpl(null);
+      }
+
+      @Override
+      protected void onSearchInputChanged (String query) {
+        super.onSearchInputChanged(query);
+        if (!ignoreSearchInputUpdates) {
+          emojiSearchTypesAdapter.setActiveIndex(-1);
+          searchEmojiImpl(query);
+        }
+      }
+
+      @Override
+      protected void onLeaveSearchMode () {
+        super.onLeaveSearchMode();
+        bottomHeaderSearchModeVisibility.setValue(false, true);
+        searchEmojiImpl(null);
+      }
+    };
+
+    bottomHeaderView = new HeaderView(context);
+    bottomHeaderView.initWithSingleController(fakeControllerForBottomHeader, false);
+    bottomHeaderView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, HeaderView.getSize(false), Gravity.BOTTOM));
+
+    emojiSearchTypesAdapter = new EmojiSearchTypesAdapter(this, this::searchEmojiSection);
+    emojiTypesRecyclerView = new EmojiSearchTypesRecyclerView(context);
+    emojiTypesRecyclerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.RIGHT, Screen.dp(56), 0, 0, 0));
+    emojiTypesRecyclerView.setAdapter(emojiSearchTypesAdapter);
+    emojiTypesRecyclerView.setAlpha(0);
+    emojiTypesRecyclerView.setVisibility(View.GONE);
+    bottomHeaderView.addView(emojiTypesRecyclerView);
+  }
+
+  private String lastEmojiSearchRequest;
+
+  private void searchEmojiSection (String request) {
+    ignoreSearchInputUpdates = true;
+    fakeControllerForBottomHeader.clearSearchInput();
+    ignoreSearchInputUpdates = false;
+
+    searchEmojiImpl(request);
+  }
+
+
+
+  /* Search */
+
+  private TdlibUi.TextStickers lastEmojiStickers;
+
+  private void searchEmojiImpl (final String request) {
+    if (StringUtils.equalsOrBothEmpty(lastEmojiSearchRequest, request)) {
+      return;
+    }
+
+    lastEmojiSearchRequest = request;
+
+    if (!StringUtils.isEmpty(request)) {
+      if (lastEmojiStickers == null || !StringUtils.equalsOrBothEmpty(lastEmojiStickers.request, request)) {
+        lastEmojiStickers = tdlib.ui().getEmojiStickersByText(new TdApi.StickerTypeCustomEmoji(), request, 2000, findOutputChatId(), Settings.STICKER_MODE_ALL);
+      }
+      lastEmojiStickers.getStickers((context, stickers) -> {
+        if (StringUtils.equalsOrBothEmpty(lastEmojiSearchRequest, context.request)) {
+
+          final ArrayList<MediaStickersAdapter.StickerItem> items = new ArrayList<>(1 + stickers.length);
+          final ArrayList<TGStickerSetInfo> packs = new ArrayList<>(1);
+
+          items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_KEYBOARD_TOP));
+
+          TGStickerSetInfo pack = TGStickerSetInfo.fromEmojiSection(tdlib, -1, -1, stickers.length);
+          pack.setStartIndex(items.size());
+          pack.setIsRecent();
+          packs.add(pack);
+
+          for (TdApi.Sticker value : stickers) {
+            TGStickerObj sticker = new TGStickerObj(tdlib, value, null, value.fullType);
+            if (sticker.getPreviewAnimation() != null) {
+              sticker.getPreviewAnimation().setPlayOnce(true);
+              sticker.getPreviewAnimation().setLooped(false);
+            }
+            items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, sticker));
+          }
+
+          reactionsController.clearAllItems();
+          reactionsController.setStickers(packs, items);
+        }
+      });
+    } else {
+      reactionsController.clearAllItems();
+      reactionsController.setStickers(emojiPacks, emojiItems);
+    }
+  }
+
+
+
+  /* * */
+
+  private static class EmojiSearchTypesRecyclerView extends CustomRecyclerView {
+    private final GradientDrawable gradientDrawableLeft = new GradientDrawable(GradientDrawable.Orientation.RIGHT_LEFT, new int[]{ 0, Theme.fillingColor() });
+    private final GradientDrawable gradientDrawableRight = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{ 0, Theme.fillingColor() });
+    private final LinearLayoutManager layoutManager;
+
+    public EmojiSearchTypesRecyclerView (Context context) {
+      super(context);
+
+      layoutManager = new LinearLayoutManager(context);
+      layoutManager.setOrientation(LinearLayoutManager.HORIZONTAL);
+      setLayoutManager(layoutManager);
+
+      addItemDecoration(new ItemDecoration() {
+        @Override
+        public void getItemOffsets (@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull State state) {
+          int position = parent.getChildAdapterPosition(view);
+          if (position == 0) {
+            outRect.set(parent.getMeasuredWidth() - Screen.dp(148), 0, 0, 0);
+          }
+        }
+      });
+
+      setPadding(0, 0, Screen.dp(7), 0);
+      setClipToPadding(false);
+    }
+
+    @Override
+    protected void dispatchDraw (Canvas canvas) {
+      int sL = getFirstItemX();
+      int sR = computeHorizontalScrollRange() - computeHorizontalScrollOffset() - computeHorizontalScrollExtent();
+
+      int alphaL = (int) ((1f - (MathUtils.clamp((float) sL / Screen.dp(30f)))) * 255);
+      int alphaR = (int) (MathUtils.clamp((float) sR / Screen.dp(30f)) * 255);
+
+      canvas.drawRect(sL, 0, getMeasuredWidth(), getMeasuredHeight(), Paints.fillingPaint(Theme.fillingColor()));
+
+      super.dispatchDraw(canvas);
+
+      checkGradients();
+
+      gradientDrawableLeft.setAlpha(alphaL);
+      gradientDrawableLeft.setBounds(0, 0, Screen.dp(30), getMeasuredHeight());
+      gradientDrawableLeft.draw(canvas);
+
+      gradientDrawableRight.setAlpha(255);
+      gradientDrawableRight.setBounds(sL - Screen.dp(30), 0, sL, getMeasuredHeight());
+      gradientDrawableRight.draw(canvas);
+
+      gradientDrawableRight.setAlpha(alphaR);
+      gradientDrawableRight.setBounds(getMeasuredWidth() - Screen.dp(30), 0, getMeasuredWidth(), getMeasuredHeight());
+      gradientDrawableRight.draw(canvas);
+    }
+
+    @Override
+    public void onScrolled (int dx, int dy) {
+      super.onScrolled(dx, dy);
+      invalidate();
+    }
+
+    private int getFirstItemX () {
+      View view = layoutManager.findViewByPosition(0);
+      if (view == null) {
+        return 0;
+      }
+      return view.getLeft();
+    }
+
+    private int lastColor;
+    private void checkGradients () {
+      int color = Theme.backgroundColor();
+      if (color != lastColor) {
+        gradientDrawableRight.setColors(new int[]{ 0, lastColor = Theme.fillingColor() });
+      }
+    }
+  }
+
+  private static class EmojiSearchTypesViewHolder extends RecyclerView.ViewHolder {
+    public EmojiSearchTypesViewHolder (@NonNull View itemView) {
+      super(itemView);
+    }
+
+    public static EmojiSearchTypesViewHolder create (Context context, View.OnClickListener onClickListener) {
+      ImageView imageView = new ImageView(context);
+      imageView.setScaleType(ImageView.ScaleType.CENTER);
+      imageView.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(38), ViewGroup.LayoutParams.MATCH_PARENT));
+      imageView.setOnClickListener(onClickListener);
+      return new EmojiSearchTypesViewHolder(imageView);
+    }
+  }
+
+  private static class EmojiSearchTypesAdapter extends RecyclerView.Adapter<EmojiSearchTypesViewHolder> implements View.OnClickListener {
+    private static final int[] icons = new int[] {
+      R.drawable.baseline_favorite_24, R.drawable.baseline_emoji_thumb_up, R.drawable.baseline_emoji_thumb_down, R.drawable.baseline_emoji_party_popper,
+      R.drawable.baseline_emoji_mdi_emoticon_excited, R.drawable.baseline_emoji_mdi_emoticon_sad, R.drawable.baseline_emoji_mdi_emoticon_frown,
+      R.drawable.baseline_emoji_emoticon_neutral, R.drawable.baseline_emoji_mdi_emoticon_angry, R.drawable.baseline_emoji_emoticon_tongue
+    };
+    private static final String[] strings = new String[] {
+      "love", "like", "dislike", "party", "excited",
+      "sad", "frown", "neutral", "angry", "tongue"
+    };
+
+    private final ViewController<?> context;
+    private final RunnableData<String> onSectionClickListener;
+    private int activeIndex = -1;
+
+    public EmojiSearchTypesAdapter (ViewController<?> context, RunnableData<String> onSectionClickListener) {
+      this.context = context;
+      this.onSectionClickListener = onSectionClickListener;
+    }
+
+    @NonNull
+    @Override
+    public EmojiSearchTypesViewHolder onCreateViewHolder (@NonNull ViewGroup parent, int viewType) {
+      return EmojiSearchTypesViewHolder.create(context.context(), this);
+    }
+
+    @Override
+    public void onBindViewHolder (@NonNull EmojiSearchTypesViewHolder holder, int position) {
+      ImageView view = (ImageView) holder.itemView;
+      view.setImageResource(icons[position]);
+      view.setColorFilter(position == activeIndex ? Theme.getColor(ColorId.iconActive) : Theme.iconColor());
+      view.setTag(position);
+      // parent.addThemeFilterListener(imageView, ColorId.icon);
+    }
+
+    @Override
+    public int getItemCount () {
+      return 10;
+    }
+
+    public void setActiveIndex (int activeIndex) {
+      final int oldActiveIndex = this.activeIndex;
+      if (oldActiveIndex == activeIndex) {
+        return;
+      }
+
+      this.activeIndex = activeIndex;
+      if (activeIndex != -1) {
+        notifyItemChanged(activeIndex);
+      }
+      if (oldActiveIndex != -1) {
+        notifyItemChanged(oldActiveIndex);
+      }
+    }
+
+    @Override
+    public void onClick (View v) {
+      int index = (int) v.getTag();
+      setActiveIndex(index);
+      onSectionClickListener.runWithData(strings[index]);
+    }
+  }
+
+  private static class FakeControllerForBottomHeader extends ViewController<Void> {
+    public FakeControllerForBottomHeader (@NonNull Context context, Tdlib tdlib) {
+      super(context, tdlib);
+    }
+
+    @Override
+    protected int getHeaderColorId () {
+      return ColorId.filling;
+    }
+
+    @Override
+    protected boolean useGraySearchHeader () {
+      return true;
+    }
+
+    @Override
+    protected View onCreateView (Context context) {
+      return null;
+    }
+
+    @Override
+    public int getId () {
+      return 0;
+    }
+  }
+
+
+
+  /* Animations */
+
+  private static final int BOTTOM_HEADER_IN_SEARCH_MODE = 0;
+  private static final int TOP_HEADER_IS_VISIBILITY = 1;
+
+  private final BoolAnimator bottomHeaderSearchModeVisibility = new BoolAnimator(BOTTOM_HEADER_IN_SEARCH_MODE, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 220L, false);
+  private final BoolAnimator topHeaderVisibility = new BoolAnimator(TOP_HEADER_IS_VISIBILITY, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 220L, false);
+
+  @Override
+  public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
+    if (id == BOTTOM_HEADER_IN_SEARCH_MODE) {
+      emojiTypesRecyclerView.setAlpha(factor);
+    } else if (id == TOP_HEADER_IS_VISIBILITY) {
+      topHeaderViewGroup.setTranslationY(-HeaderView.getSize(true) * (1f - factor));
+      topHeaderViewGroup.setAlpha(factor);
+    }
+  }
+
+  @Override
+  public void onFactorChangeFinished (int id, float finalFactor, FactorAnimator callee) {
+    if (id == BOTTOM_HEADER_IN_SEARCH_MODE) {
+      if (finalFactor == 0) {
+        emojiTypesRecyclerView.setVisibility(View.GONE);
+      }
+    } else if (id == TOP_HEADER_IS_VISIBILITY) {
+      if (finalFactor == 0) {
+        topHeaderViewGroup.setVisibility(View.GONE);
+      }
+    }
   }
 }
