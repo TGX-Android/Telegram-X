@@ -209,6 +209,7 @@ public class TGUser implements UserProvider {
         updateStatus();
       } else {
         this.statusText = statusText;
+        this.statusWidth = U.measureText(statusText, UserView.getStatusPaint());
         this.flags |= FLAG_CUSTOM_STATUS_TEXT;
         this.flags &= ~FLAG_ONLINE;
       }
