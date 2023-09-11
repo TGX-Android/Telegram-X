@@ -4390,8 +4390,36 @@ public class MessagesController extends ViewController<MessagesController.Argume
   private void showMessageOptions (Options options, TGMessage message, @Nullable TdApi.ReactionType reactionType, OptionDelegate optionsDelegate) {
     MessageOptionsPagerController r = new MessageOptionsPagerController(context, tdlib, options, message, reactionType, optionsDelegate);
     r.show();
+    r.setDismissListener(p -> {
+      onHideMessageOptions();
+    });
+    prepareToShowMessageOptions();
     hideCursorsForInputView();
   }
+
+  private boolean needShowKeyboardAfterHideMessageOptions;
+  private boolean needShowEmojiKeyboardAfterHideMessageOptions;
+
+  private void prepareToShowMessageOptions () {
+    needShowKeyboardAfterHideMessageOptions = getKeyboardState();
+    needShowEmojiKeyboardAfterHideMessageOptions = emojiLayout != null && emojiLayout.getVisibility() == View.VISIBLE;
+    if (needShowKeyboardAfterHideMessageOptions) {    // показываем emoji-клавиатуру, чтобы скрыть системную
+      openEmojiKeyboard();                            // todo: делать emojiLayout невидимым для оптимизации
+    }
+    if (needShowKeyboardAfterHideMessageOptions || needShowEmojiKeyboardAfterHideMessageOptions) {
+      emojiLayout.setVisibility(View.INVISIBLE);
+    }
+  }
+
+  private void onHideMessageOptions () {
+    if (needShowEmojiKeyboardAfterHideMessageOptions) {
+      emojiLayout.setVisibility(View.VISIBLE);
+    }
+    if (needShowKeyboardAfterHideMessageOptions) {
+      showKeyboard();
+    }
+  }
+
 
   private void patchUsedEmojiPacks (PopupLayout layout, MessageContext messageContext) {
     TGMessage message = messageContext.message;

@@ -53,7 +53,6 @@ import me.vkryl.td.Td;
 public class TGReactions implements Destroyable, ReactionLoadListener {
   private final Tdlib tdlib;
   private TdApi.MessageReaction[] reactions;
-  private ComplexReceiver complexReceiver;
 
   private final TGMessage parent;
 
@@ -88,13 +87,10 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
     resetReactionsAnimator(false);
   }
 
-  public void setReceiversPool (ComplexReceiver complexReceiver) {
-    // FIXME: single TGMessage may be displayed in multiple MessageView at once.
-    //        This class wrongly relies that it cannot.
-    this.complexReceiver = complexReceiver;
+  public void requestReactionFiles (ComplexReceiver complexReceiver) {
     for (Map.Entry<String, MessageReactionEntry> pair : reactionsMapEntry.entrySet()) {
       MessageReactionEntry entry = pair.getValue();
-      entry.setComplexReceiver(complexReceiver);
+      entry.requestReactionFiles(complexReceiver);
     }
   }
 
@@ -200,9 +196,7 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
         .noBackground()
         .textColor(ColorId.badgeText, ColorId.badgeText, ColorId.badgeText);
       entry = new MessageReactionEntry(tdlib, delegate, parent, reactionObj, counterBuilder);
-      if (complexReceiver != null) {
-        entry.setComplexReceiver(complexReceiver);
-      }
+      delegate.onInvalidateReceiversRequested();
 
       reactionsMapEntry.put(reactionObj.key, entry);
     } else {
@@ -610,7 +604,7 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
 
     // Receivers
 
-    public void setComplexReceiver (ComplexReceiver complexReceiver) {
+    public void requestReactionFiles (ComplexReceiver complexReceiver) {
       if (complexReceiver == null) {
         this.centerAnimationReceiver = null;
         this.staticCenterAnimationReceiver = null;
@@ -1040,6 +1034,7 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
   public interface MessageReactionsDelegate {
     default void onClick (View v, MessageReactionEntry entry) {}
     default void onLongClick (View v, MessageReactionEntry entry) {}
+    default void onInvalidateReceiversRequested () {}
     default void onRebuildRequested () {}
   }
 

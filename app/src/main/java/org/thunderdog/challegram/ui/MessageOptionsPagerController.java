@@ -25,6 +25,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 
 import androidx.annotation.NonNull;
 import androidx.collection.SparseArrayCompat;
@@ -48,6 +49,7 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.Theme;
+import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
@@ -57,6 +59,7 @@ import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.CustomTextView;
+import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.ViewPager;
 
 import java.util.Arrays;
@@ -508,6 +511,15 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
   }
 
   @Override
+  public void hideSoftwareKeyboard () {
+    if (reactionsPickerController != null) {
+      reactionsPickerController.hideSoftwareKeyboard();
+      return;
+    }
+    super.hideSoftwareKeyboard();
+  }
+
+  @Override
   public void onThemeColorsChanged (boolean areTemp, ColorState state) {
     super.onThemeColorsChanged(areTemp, state);
     if (headerView != null) {
@@ -562,7 +574,29 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     state.message.cancelScheduledSetReactionAnimation();
   }
 
+  @Override
+  protected void setupPopupLayout (PopupLayout popupLayout) {
+    popupLayout.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+    popupLayout.setBoundController(this);
+    popupLayout.setPopupHeightProvider(this);
+    popupLayout.init(true);
+    //popupLayout.setHideKeyboard();
+    popupLayout.setNeedRootInsets();
+    popupLayout.setTouchProvider(this);
+    popupLayout.setIgnoreHorizontal();
 
+   // super.setupPopupLayout(popupLayout);
+  }
+
+  private static final int KEYBOARD_HEIGHT = 2;
+  private final FactorAnimator keyboardHeight = new FactorAnimator(KEYBOARD_HEIGHT, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 220L, 0);
+
+  @Override
+  public boolean onKeyboardStateChanged (boolean visible) {
+    final boolean r = super.onKeyboardStateChanged(visible);
+    keyboardHeight.animateTo(getKeyboardState() ? Keyboard.getSize(Keyboard.getSize()) : 0);
+    return r;
+  }
 
   /* Reactions popup picker */
 
@@ -619,7 +653,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     fixView.setVisibility(View.GONE);
 
     if (reactionsPickerBottomHeaderView == null) {
-      reactionsPickerBottomHeaderView = reactionsPickerController.getBottomHeaderView();
+      reactionsPickerBottomHeaderView = reactionsPickerController.getBottomHeaderViewGroup();
       reactionsPickerBottomHeaderView.setAlpha(0f);
       reactionsPickerController.getTopHeaderView().getBackButton().setOnClickListener(v -> {
         reactionsPickerVisibility.setValue(false, true);
@@ -747,6 +781,11 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
       reactionsPickerBottomHeaderView.setTranslationY((-Screen.currentHeight() / 3f) * (1f - factor));
       checkReactionPickerPosition();
     }
+
+    reactionsPickerBottomHeaderView.setTranslationY(
+      ((-Screen.currentHeight() / 3f) * (1f - reactionsPickerVisibility.getFloatValue())) +
+      (-keyboardHeight.getFactor())
+    );
   }
 
   @Override

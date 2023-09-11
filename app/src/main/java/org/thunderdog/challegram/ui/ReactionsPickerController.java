@@ -22,6 +22,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 
@@ -535,6 +536,14 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
     return 0;
   }
 
+  @Override
+  public void hideSoftwareKeyboard () {
+    if (fakeControllerForBottomHeader != null) {
+      fakeControllerForBottomHeader.hideSoftwareKeyboard();
+    }
+    super.hideSoftwareKeyboard();
+  }
+
 
 
   /* Data provider */
@@ -641,6 +650,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
 
   /* Bottom Header */
 
+  private FrameLayout bottomHeaderViewGroup;
   private FakeControllerForBottomHeader fakeControllerForBottomHeader;
   private HeaderView bottomHeaderView;
   private EmojiHeaderView bottomHeaderCell;
@@ -650,6 +660,10 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
 
   public HeaderView getBottomHeaderView () {
     return bottomHeaderView;
+  }
+
+  public FrameLayout getBottomHeaderViewGroup () {
+    return bottomHeaderViewGroup;
   }
 
   private void genBottomHeader () {
@@ -687,17 +701,27 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
       }
     };
 
-    bottomHeaderView = new HeaderView(context);
+    bottomHeaderView = new HeaderView(context) {
+      @Override
+      public boolean onTouchEvent (MotionEvent e) {
+        super.onTouchEvent(e);
+        return true;
+      }
+    };
     bottomHeaderView.initWithSingleController(fakeControllerForBottomHeader, false);
-    bottomHeaderView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, HeaderView.getSize(false), Gravity.BOTTOM));
+    bottomHeaderView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.BOTTOM));
 
     emojiSearchTypesAdapter = new EmojiSearchTypesAdapter(this, this::searchEmojiSection);
     emojiTypesRecyclerView = new EmojiSearchTypesRecyclerView(context);
-    emojiTypesRecyclerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.RIGHT, Screen.dp(56), 0, 0, 0));
+    emojiTypesRecyclerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.RIGHT | Gravity.BOTTOM, Screen.dp(56), 0, 0, 0));
     emojiTypesRecyclerView.setAdapter(emojiSearchTypesAdapter);
     emojiTypesRecyclerView.setAlpha(0);
     emojiTypesRecyclerView.setVisibility(View.GONE);
-    bottomHeaderView.addView(emojiTypesRecyclerView);
+
+    bottomHeaderViewGroup = new FrameLayout(context);
+    bottomHeaderViewGroup.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, HeaderView.getSize(false), Gravity.BOTTOM));
+    bottomHeaderViewGroup.addView(bottomHeaderView);
+    bottomHeaderViewGroup.addView(emojiTypesRecyclerView);
   }
 
   private String lastEmojiSearchRequest;
@@ -814,6 +838,13 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
       gradientDrawableRight.setAlpha(alphaR);
       gradientDrawableRight.setBounds(getMeasuredWidth() - Screen.dp(30), 0, getMeasuredWidth(), getMeasuredHeight());
       gradientDrawableRight.draw(canvas);
+    }
+
+    @Override
+    public boolean onTouchEvent (MotionEvent e) {
+      int sL = getFirstItemX();
+      float x = e.getX();
+      return x > sL && super.onTouchEvent(e);
     }
 
     @Override

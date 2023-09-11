@@ -350,6 +350,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           }
         });
       }
+
+      @Override
+      public void onInvalidateReceiversRequested () {
+        runOnUiThreadOptional(() -> {
+          invalidateReactionFilesReceiver();
+        });
+      }
     });
     this.commentButton = new TGCommentButton(this);
 
@@ -2628,6 +2635,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     performWithViews(view -> requestCommentsResources(view.getAvatarsReceiver(), true));
   }
 
+  public final void invalidateReactionFilesReceiver () {
+    performWithViews(view -> requestReactions(view.getReactionsComplexReceiver()));
+  }
+
   public final void invalidateTextMediaReceiver (@NonNull Text text, @Nullable TextMedia textMedia) {
     performWithViews(view -> view.invalidateTextMediaReceiver(this, text, textMedia));
   }
@@ -3879,7 +3890,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public final void requestReactions (ComplexReceiver complexReceiver) {
     currentComplexReceiver = complexReceiver;
-    messageReactions.setReceiversPool(complexReceiver);
+    messageReactions.requestReactionFiles(complexReceiver);
     computeQuickButtons();
   }
 
