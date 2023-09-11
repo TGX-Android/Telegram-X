@@ -629,7 +629,7 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
           x -= Screen.dp(24 + 3);
         }
       }
-      if (chat.isPrivate() && !chat.isSelfChat()) {
+      if (chat.needDrawReactionsPreview()) {
         chat.getReactionsCounterDrawable().draw(c, x - chat.getReactionsWidth(), getClockTop(chatListMode) + Screen.dp(7f));
       }
     }

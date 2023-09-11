@@ -930,6 +930,10 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
       emojiStatusDrawable.invalidateTextMedia();
       avail -= emojiStatusDrawable.getWidth(Screen.dp(6));
     }
+    if (needDrawReactionsPreview()) {
+      int reactionsWidth = reactionsCounterDrawable.getTargetWidth();
+      avail -= reactionsWidth + (reactionsWidth > 0 ? Screen.dp(3) : 0);
+    }
 
     if (changed || lastAvailWidth != avail) {
       lastAvailWidth = avail;
@@ -964,6 +968,10 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     if (changed && avatarPlaceholder != null) {
       setAvatar();
     }
+  }
+
+  public boolean needDrawReactionsPreview () {
+    return isPrivate() && !isSelfChat();
   }
 
   public @Nullable EmojiStatusHelper.EmojiStatusDrawable getEmojiStatus () {
@@ -1581,8 +1589,9 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
       }
     }
 
-    boolean r = reactionsAnimator.compareContents(reactionsListEntry);
+    boolean r = !reactionsAnimator.compareContents(reactionsListEntry);
     reactionsAnimator.reset(reactionsListEntry, animated);
+    layoutTitle(false);
     currentViews.invalidate();
     invalidateReactionsReceiver();
     return r;
