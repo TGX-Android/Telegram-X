@@ -39,6 +39,7 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Icons;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.EmojiStatusHelper;
 import org.thunderdog.challegram.util.ReactionsCounterDrawable;
@@ -54,7 +55,10 @@ import org.thunderdog.challegram.util.text.TextStyleProvider;
 import org.thunderdog.challegram.v.MessagesRecyclerView;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -126,6 +130,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
   private int muteLeft, verifyLeft;
   private int emojiStatusLeft;
   private int checkRight;
+  private int reactionsRight;
 
   private Text chatMark;
 
@@ -135,6 +140,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
   private final Counter counter, mentionCounter, reactionsCounter, viewCounter;
 
   private final ReactionsCounterDrawable reactionsCounterDrawable;
+  private final HashMap<String, TGReactions.MessageReactionEntry> reactionsMapEntry = new HashMap<>();
   private final ReactionsListAnimator reactionsAnimator;
   private final ArrayList<TGReactions.MessageReactionEntry> reactionsListEntry = new ArrayList<>();
   private Set<String> awaitingReactions;
@@ -193,6 +199,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
       .drawable(R.drawable.baseline_visibility_14, 14f, 3f, Gravity.RIGHT)
       .build();
     setCounter(false);
+    setReactions(false);
     setViews();
     this.scheduleAnimator.setValue(hasScheduledMessages(), false);
     checkOnline();
@@ -523,8 +530,8 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     if (getChatId() == chatId && checkLastMessageId(messageId)) {
       chat.lastMessage.interactionInfo = interactionInfo;
       setViews();
-      //setReactions();
-      return showViews();
+      boolean r = setReactions(true);
+      return showViews() || r;
     }
     return false;
   }
@@ -971,6 +978,22 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     });
   }
 
+  public void invalidateReactionsReceiver () {
+    currentViews.performWithViews(view -> {
+      if (view instanceof ChatView) {
+        requestReactionFiles(((ChatView) view).getReactionsReceiver());
+      }
+    });
+    currentViews.invalidate();
+  }
+
+  public void requestReactionFiles (ComplexReceiver complexReceiver) {
+    for (Map.Entry<String, TGReactions.MessageReactionEntry> pair : reactionsMapEntry.entrySet()) {
+      TGReactions.MessageReactionEntry entry = pair.getValue();
+      entry.requestReactionFiles(complexReceiver);
+    }
+  }
+
   private void setTitleImpl (String title) {
     this.title = title;
   }
@@ -1007,6 +1030,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     }
     timeWidth = (int) U.measureText(time, ChatView.getTimePaint());
     layoutTime();
+    setReactions(UI.inUiThread());
     setViews();
   }
 
@@ -1037,6 +1061,7 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
   private void layoutTime () {
     timeLeft = currentWidth - ChatView.getTimePaddingRight() - timeWidth;
     checkRight = timeLeft - ChatView.getTimePaddingLeft();
+    reactionsRight = checkRight - ChatView.getTimePaddingLeft();
   }
 
   public String getTime () {
@@ -1077,6 +1102,10 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
 
   public int getChecksRight () {
     return checkRight;
+  }
+
+  public int getReactionsWidth () {
+    return reactionsCounterDrawable.getMinimumWidth();
   }
 
   private int getCounterAddWidth () {
@@ -1509,46 +1538,89 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
     currentViews.detachFromAllViews();
     setViewAttached(false);
     isDestroyed = true;
-  }
-
-/*
-  public void setReactions (TdApi.MessageReaction[] reactions) {
-    this.reactionsListEntry.clear();
-    this.tdReactionsMap.clear();
-    this.reactions = reactions;
-
-    if (reactions == null || isDestroyed) {
-      return;
-    }
-
-    for (TdApi.MessageReaction reaction : reactions) {
-      String reactionKey = TD.makeReactionKey(reaction.type);
-      tdReactionsMap.put(reactionKey, reaction);
-
-      TGReaction reactionObj = tdlib.getReaction(reaction.type);
-      if (reactionObj == null) {
-        if (awaitingReactions == null) {
-          awaitingReactions = new LinkedHashSet<>();
-        }
-        if (awaitingReactions.add(reactionKey)) {
-          tdlib.listeners().addReactionLoadListener(reactionKey, this);
-        }
-        continue;
-      }
-      TGReactions.MessageReactionEntry entry = getMessageReactionEntry(reactionObj);
-      entry.setMessageReaction(reaction);
-      reactionsListEntry.add(entry);
-      if (awaitingReactions != null && awaitingReactions.remove(reactionKey)) {
+    if (awaitingReactions != null) {
+      for (String reactionKey : awaitingReactions) {
         tdlib.listeners().removeReactionLoadListener(reactionKey, this);
       }
+      awaitingReactions.clear();
     }
   }
-*/
+
+  public ReactionsCounterDrawable getReactionsCounterDrawable () {
+    return reactionsCounterDrawable;
+  }
+
+  private boolean setReactions (boolean animated) {
+    return setReactions(chat != null && chat.lastMessage != null && chat.lastMessage.interactionInfo != null ?
+      chat.lastMessage.interactionInfo.reactions : null, animated);
+  }
+
+  private boolean setReactions (TdApi.MessageReaction[] reactions, boolean animated) {
+    this.reactionsListEntry.clear();
+
+    if (reactions != null && !isDestroyed) {
+      for (TdApi.MessageReaction reaction : reactions) {
+        String reactionKey = TD.makeReactionKey(reaction.type);
+
+        TGReaction reactionObj = tdlib.getReaction(reaction.type);
+        if (reactionObj == null) {
+          if (awaitingReactions == null) {
+            awaitingReactions = new LinkedHashSet<>();
+          }
+          if (awaitingReactions.add(reactionKey)) {
+            tdlib.listeners().addReactionLoadListener(reactionKey, this);
+          }
+          continue;
+        }
+        TGReactions.MessageReactionEntry entry = getMessageReactionEntry(reactionObj);
+        entry.setMessageReaction(reaction);
+        reactionsListEntry.add(entry);
+        if (awaitingReactions != null && awaitingReactions.remove(reactionKey)) {
+          tdlib.listeners().removeReactionLoadListener(reactionKey, this);
+        }
+      }
+    }
+
+    boolean r = reactionsAnimator.compareContents(reactionsListEntry);
+    reactionsAnimator.reset(reactionsListEntry, animated);
+    currentViews.invalidate();
+    invalidateReactionsReceiver();
+    return r;
+  }
+
+  private TGReactions.MessageReactionEntry getMessageReactionEntry (TGReaction reactionObj) {
+    final TGReactions.MessageReactionEntry entry;
+    if (!reactionsMapEntry.containsKey(reactionObj.key)) {
+      entry = new TGReactions.MessageReactionEntry(tdlib, null, null, reactionObj, null) {
+        @Override
+        public int getBubbleTargetWidth () {
+          return 0;
+        }
+
+        @Override
+        public int getBubbleWidth () {
+          return 0;
+        }
+
+        @Override
+        public void invalidate () {
+          currentViews.invalidate();
+        }
+      };
+      reactionsMapEntry.put(reactionObj.key, entry);
+    } else {
+      entry = reactionsMapEntry.get(reactionObj.key);
+    }
+    return entry;
+  }
 
   @Override
   public void onReactionLoaded (String reactionKey) {
     if (awaitingReactions != null && awaitingReactions.remove(reactionKey)) {
-      //delegate.onRebuildRequested();
+      UI.post(() -> {
+        setReactions(true);
+        invalidateReactionsReceiver();
+      });
     }
   }
 }

@@ -174,6 +174,7 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
   private final AvatarReceiver avatarReceiver;
   private final ComplexReceiver emojiStatusReceiver;
   private final ComplexReceiver textMediaReceiver;
+  private final ComplexReceiver reactionsReceiver;
 
   private final BoolAnimator isSelected = new BoolAnimator(this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
 
@@ -186,6 +187,7 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
     RippleSupport.setTransparentSelector(this);
     int chatListMode = getChatListMode();
     emojiStatusReceiver = new ComplexReceiver(this, Config.MAX_ANIMATED_EMOJI_REFRESH_RATE);
+    reactionsReceiver = new ComplexReceiver(this, Config.MAX_ANIMATED_EMOJI_REFRESH_RATE);
     avatarReceiver = new AvatarReceiver(this);
     avatarReceiver.setAvatarRadiusPropertyIds(PropertyId.AVATAR_RADIUS_CHAT_LIST, PropertyId.AVATAR_RADIUS_CHAT_LIST_FORUM);
     avatarReceiver.setBounds(getAvatarLeft(chatListMode), getAvatarTop(chatListMode), getAvatarLeft(chatListMode) + getAvatarSize(chatListMode), getAvatarTop(chatListMode) + getAvatarSize(chatListMode));
@@ -201,6 +203,7 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
     avatarReceiver.setAnimationDisabled(disabled);
     textMediaReceiver.setAnimationDisabled(disabled);
     emojiStatusReceiver.setAnimationDisabled(disabled);
+    reactionsReceiver.setAnimationDisabled(disabled);
   }
 
   public static int getViewHeight (int chatListMode) {
@@ -334,12 +337,14 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
     avatarReceiver.attach();
     textMediaReceiver.attach();
     emojiStatusReceiver.attach();
+    reactionsReceiver.attach();
   }
 
   public void detach () {
     avatarReceiver.detach();
     textMediaReceiver.detach();
     emojiStatusReceiver.detach();
+    reactionsReceiver.detach();
   }
 
   public void setChat (TGChat chat) {
@@ -408,6 +413,18 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
     }
   }
 
+  public ComplexReceiver getReactionsReceiver () {
+    return reactionsReceiver;
+  }
+
+  public void requestReactionFiles () {
+    if (chat != null) {
+      chat.requestReactionFiles(reactionsReceiver);
+    } else {
+      reactionsReceiver.clear();
+    }
+  }
+
   private void requestTextContent () {
     Text text = chat != null ? chat.getText() : null;
     if (text != null) {
@@ -420,6 +437,7 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
   private void requestContent () {
     requestTextContent();
     requestEmojiStatus();
+    requestReactionFiles();
     if (chat != null) {
       AvatarPlaceholder.Metadata avatarPlaceholder = chat.getAvatarPlaceholder();
       if (avatarPlaceholder != null) {
@@ -527,6 +545,7 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
     if (this.chat == cause) {
       requestTextContent();
       requestEmojiStatus();
+      requestReactionFiles();
       return true;
     }
     return false;
@@ -591,20 +610,27 @@ public class ChatView extends BaseView implements TdlibSettingsManager.Preferenc
     if (chat.isSending()) {
       int x = chat.getChecksRight() - Screen.dp(10f) - Screen.dp(Icons.CLOCK_SHIFT_X);
       Drawables.drawRtl(c, Icons.getClockIcon(ColorId.iconLight), x, getClockTop(chatListMode) - Screen.dp(Icons.CLOCK_SHIFT_Y), Paints.getIconLightPorterDuffPaint(), viewWidth, rtl);
-    } else if (chat.isOutgoing() && !chat.isSelfChat()) {
+    } else {
       int x = chat.getChecksRight();
-      int y = getClockTop(chatListMode);
-      if (chat.showViews()) {
-        y -= Screen.dp(.5f);
-      } else if (chat.isUnread()) {
-        x += Screen.dp(4f);
+      if (chat.isOutgoing() && !chat.isSelfChat()) {
+        int y = getClockTop(chatListMode);
+        if (chat.showViews()) {
+          y -= Screen.dp(.5f);
+        } else if (chat.isUnread()) {
+          x += Screen.dp(4f);
+        }
+        if (chat.showViews()) {
+          chat.getViewCounter().draw(c, x + Screen.dp(3f), y + Screen.dp(14f) / 2f, Gravity.RIGHT, 1f, this, ColorId.ticksRead);
+          x -= chat.getViewCounter().getScaledWidth(Screen.dp(3));
+        } else {
+          int iconX = x - Screen.dp(Icons.TICKS_SHIFT_X) - Screen.dp(14f);
+          boolean unread = chat.isUnread();
+          Drawables.drawRtl(c, unread ? Icons.getSingleTick(ColorId.ticks) : Icons.getDoubleTick(ColorId.ticks), iconX, y - Screen.dp(Icons.TICKS_SHIFT_Y), unread ? Paints.getTicksPaint() : Paints.getTicksReadPaint(), viewWidth, rtl);
+          x -= Screen.dp(24 + 3);
+        }
       }
-      if (chat.showViews()) {
-        chat.getViewCounter().draw(c, x + Screen.dp(3f), y + Screen.dp(14f) / 2f, Gravity.RIGHT, 1f, this, ColorId.ticksRead);
-      } else {
-        int iconX = x - Screen.dp(Icons.TICKS_SHIFT_X) - Screen.dp(14f);
-        boolean unread = chat.isUnread();
-        Drawables.drawRtl(c, unread ? Icons.getSingleTick(ColorId.ticks) : Icons.getDoubleTick(ColorId.ticks), iconX, y - Screen.dp(Icons.TICKS_SHIFT_Y), unread ? Paints.getTicksPaint() : Paints.getTicksReadPaint(), viewWidth, rtl);
+      if (chat.isPrivate() && !chat.isSelfChat()) {
+        chat.getReactionsCounterDrawable().draw(c, x - chat.getReactionsWidth(), getClockTop(chatListMode) + Screen.dp(7f));
       }
     }
 

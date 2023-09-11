@@ -550,8 +550,8 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
     private final TGReaction reactionObj;
     private final TGMessage message;
 
-    @Nullable private Receiver staticCenterAnimationReceiver;
-    @Nullable private GifReceiver centerAnimationReceiver;
+    @Nullable private Receiver staticCenterAnimationReceiver;   // FIXME: single TGMessage may be displayed in multiple MessageView at once.
+    @Nullable private GifReceiver centerAnimationReceiver;      // This class wrongly relies that it cannot.
     @Nullable private final GifFile animation;
     private final float animationScale;
     private final GifFile staticAnimationFile;
@@ -576,9 +576,13 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
       this.path = new Path();
       this.rect = new RectF();
 
-      this.counter = counter.colorSet(this).build();
-      this.avatars = new TGAvatars(tdlib, message, message.currentViews);
-      this.avatars.setDimensions(getReactionAvatarRadiusDp(), getReactionAvatarOutlineDp(), getReactionAvatarSpacingDp());
+      this.counter = counter != null ? counter.colorSet(this).build() : null;
+      if (message != null) {
+        this.avatars = new TGAvatars(tdlib, message, message.currentViews);
+        this.avatars.setDimensions(getReactionAvatarRadiusDp(), getReactionAvatarOutlineDp(), getReactionAvatarSpacingDp());
+      } else {
+        this.avatars = null;
+      }
 
       TGStickerObj stickerObj = reactionObj.newCenterAnimationSicker();
       animation = stickerObj.getFullAnimation();
@@ -813,7 +817,7 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
       }
     }
 
-    private void invalidate () {
+    public void invalidate () {
       message.invalidate();
     }
 
