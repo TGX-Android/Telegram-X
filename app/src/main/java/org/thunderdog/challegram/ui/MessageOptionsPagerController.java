@@ -59,6 +59,7 @@ import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.CustomTextView;
+import org.thunderdog.challegram.widget.EmojiLayout;
 import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.ViewPager;
 
@@ -670,7 +671,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
         @Override
         public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
           reactionsPickerWrapper.invalidate();
-          reactionsPickerController.setTopHeaderVisibility(Views.getRecyclerViewElementTop(recyclerView, 1) <= HeaderView.getSize(true));
+          reactionsPickerController.setTopHeaderVisibility(Views.getRecyclerViewElementTop(recyclerView, 1) <= HeaderView.getSize(true) + EmojiLayout.getHeaderPadding());
         }
       });
     }
@@ -738,7 +739,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
   }
 
   private int getReactionPickerOffsetTopReal () {
-    return getContentOffset() - HeaderView.getSize(false) + ((getHeaderHeight() - reactionsPickerController.getItemWidth()) / 2);
+    return getContentOffset() - HeaderView.getSize(false) - EmojiLayout.getHeaderPadding() + ((getHeaderHeight() - reactionsPickerController.getItemWidth()) / 2);
   }
 
   private int getReactionPickerOffsetTopDefault () {

@@ -349,13 +349,14 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayoutRec
   }
 
   public int getStickerSetSection () {
+    return getStickerSetSection(0);
+  }
+
+  public int getStickerSetSection (int offset) {
     if (spanCount == 0 || manager == null) {
       return -1;
     }
-    int i = manager.findFirstCompletelyVisibleItemPosition();
-    if (i == -1) {
-      i = manager.findFirstVisibleItemPosition();
-    }
+    int i = Views.findFirstCompletelyVisibleItemPositionWithOffset(manager, offset);
     if (i != -1) {
       int r = indexOfStickerSetByAdapterPosition(i);
       return r;

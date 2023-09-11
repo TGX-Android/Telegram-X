@@ -112,7 +112,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
       @Override
       public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
         if (!reactionsController.isNeedIgnoreScroll()) {
-          setCurrentStickerSectionByPosition(EmojiLayout.STICKERS_INSTALLED_CONTROLLER_ID, reactionsController.getStickerSetSection(), true, true);
+          setCurrentStickerSectionByPosition(EmojiLayout.STICKERS_INSTALLED_CONTROLLER_ID, reactionsController.getStickerSetSection(HeaderView.getSize(true) + EmojiLayout.getHeaderPadding()), true, true);
         }
       }
     });
@@ -140,7 +140,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
         holder.itemView.setVisibility(position <= reactionsController.getSpanCount() || isFullyVisible ? View.VISIBLE: View.INVISIBLE);
       }
     };
-    adapter.setTopPaddingHeight(HeaderView.getSize(true));
+    adapter.setTopPaddingHeight(HeaderView.getSize(true) + EmojiLayout.getHeaderPadding());
     adapter.setRepaintingColorId(ColorId.text);
 
     reactionsController.setArguments(this);

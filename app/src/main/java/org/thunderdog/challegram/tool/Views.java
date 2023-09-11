@@ -975,4 +975,21 @@ public class Views {
 
     return coordinates;
   }
+
+  public static int findFirstCompletelyVisibleItemPositionWithOffset (LinearLayoutManager manager, int topOffset) {
+    int i = manager.findFirstCompletelyVisibleItemPosition();
+    if (i == -1) {
+      i = manager.findFirstVisibleItemPosition();
+    }
+
+    View v = manager.findViewByPosition(i);
+    while (v != null) {
+      if (v.getTop() >= topOffset) {
+        return i;
+      }
+      v = manager.findViewByPosition(++i);
+    }
+
+    return -1;
+  }
 }
