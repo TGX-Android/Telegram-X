@@ -76,17 +76,7 @@ public class Emoji {
   private final HashMap<String, EmojiInfo> rects;
   private final ReferenceList<EmojiChangeListener> emojiChangeListeners = new ReferenceList<>();
 
-  private final CountLimiter singleLimiter = new org.thunderdog.challegram.emoji.Emoji.CountLimiter() {
-    @Override
-    public int getEmojiCount () {
-      return 0;
-    }
-
-    @Override
-    public boolean incrementEmojiCount () {
-      return false;
-    }
-  };
+  private final CountLimiter singleLimiter = newSingleLimiter();
 
   public static boolean equals (String a, String b) {
     int end1 = a.length();
@@ -504,13 +494,19 @@ public class Emoji {
 
   @Nullable
   public static String extractSingleEmoji (String str) {
-    CharSequence emoji = Emoji.instance().replaceEmoji(str);
+    CharSequence emoji = Emoji.instance().replaceEmoji(str, 0, str.length(), newSingleLimiter());
     if (emoji instanceof Spanned) {
-      EmojiSpan[] emojis = ((Spanned) emoji).getSpans(0, emoji.length(), EmojiSpan.class);
-      if (emojis != null && emojis.length > 0) {
-        int start = ((Spanned) emoji).getSpanStart(emojis[0]);
-        int end = ((Spanned) emoji).getSpanEnd(emojis[0]);
-        return start == 0 && end == emoji.length() ? emoji.toString() : emoji.subSequence(start, end).toString();
+      Spanned spanned = (Spanned) emoji;
+      int end = spanned.length();
+      int next;
+      for (int i = 0; i < end; i = next) {
+        next = spanned.nextSpanTransition(i, end, EmojiSpan.class);
+        EmojiSpan[] emojis = spanned.getSpans(i, next, EmojiSpan.class);
+        if (emojis != null && emojis.length > 0) {
+          int emojiStart = ((Spanned) emoji).getSpanStart(emojis[0]);
+          int emojiEnd = ((Spanned) emoji).getSpanEnd(emojis[0]);
+          return emojiStart == 0 && emojiEnd == emoji.length() ? emoji.toString() : emoji.subSequence(emojiStart, emojiEnd).toString();
+        }
       }
     }
     return null;
@@ -686,6 +682,20 @@ public class Emoji {
 
   public CountLimiter singleLimiter () {
     return singleLimiter;
+  }
+
+  public static CountLimiter newSingleLimiter () {
+    return new org.thunderdog.challegram.emoji.Emoji.CountLimiter() {
+      @Override
+      public int getEmojiCount () {
+        return 0;
+      }
+
+      @Override
+      public boolean incrementEmojiCount () {
+        return false;
+      }
+    };
   }
 
   public interface CountLimiter {
