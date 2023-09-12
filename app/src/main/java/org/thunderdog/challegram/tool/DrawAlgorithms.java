@@ -40,9 +40,13 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.TGStickerSetInfo;
 import org.thunderdog.challegram.loader.AvatarReceiver;
+import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
+import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.mediaview.paint.PaintState;
 import org.thunderdog.challegram.telegram.TdlibStatusManager;
 import org.thunderdog.challegram.theme.ColorId;
@@ -1381,6 +1385,40 @@ public class DrawAlgorithms {
        int d = (int) ((float) lineHeight * f2);
        c.drawLine(cx - lineRadius, cy - lineRadius, cx - lineRadius + d, cy - lineRadius + d, paint);
      }
+   }
+ }
+
+ public static void drawRepaintedSticker (Canvas c, TGStickerSetInfo info, GifReceiver gifReceiver, ImageReceiver receiver, Path contour) {
+   final boolean needRepainting = info.isNeedRepaintingPreview();
+   final int count;
+
+   if (needRepainting) {
+     count = c.saveLayerAlpha(gifReceiver.getLeft(), gifReceiver.getTop(), gifReceiver.getRight(), gifReceiver.getBottom(), 255, Canvas.ALL_SAVE_FLAG);
+   } else {
+     count = -1;
+   }
+
+   if (info != null && info.isAnimated()) {
+     if (gifReceiver.needPlaceholder()) {
+       if (receiver.needPlaceholder()) {
+         receiver.drawPlaceholderContour(c, contour);
+       }
+       receiver.draw(c);
+     }
+     gifReceiver.draw(c);
+   } else {
+     if (receiver.needPlaceholder()) {
+       receiver.drawPlaceholderContour(c, contour);
+     }
+     receiver.draw(c);
+   }
+   if (Config.DEBUG_STICKER_OUTLINES) {
+     receiver.drawPlaceholderContour(c, contour);
+   }
+
+   if (needRepainting) {
+     c.drawRect(gifReceiver.getLeft(), gifReceiver.getTop(), gifReceiver.getRight(), gifReceiver.getBottom(), Paints.getSrcInPaint(Theme.getColor(ColorId.iconActive)));
+     Views.restore(c, count);
    }
  }
 }

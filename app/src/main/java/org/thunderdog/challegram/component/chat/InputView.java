@@ -82,6 +82,7 @@ import org.thunderdog.challegram.emoji.EmojiFilter;
 import org.thunderdog.challegram.emoji.EmojiInfo;
 import org.thunderdog.challegram.emoji.EmojiSpan;
 import org.thunderdog.challegram.emoji.EmojiUpdater;
+import org.thunderdog.challegram.emoji.PreserveCustomEmojiFilter;
 import org.thunderdog.challegram.filegen.PhotoGenerationInfo;
 import org.thunderdog.challegram.helper.InlineSearchContext;
 import org.thunderdog.challegram.loader.ComplexReceiver;
@@ -103,7 +104,6 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.CharacterStyleFilter;
 import org.thunderdog.challegram.util.ExternalEmojiFilter;
 import org.thunderdog.challegram.util.FinalNewLineFilter;
-import org.thunderdog.challegram.emoji.PreserveCustomEmojiFilter;
 import org.thunderdog.challegram.util.TextSelection;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
@@ -326,6 +326,11 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         }
       }
     });
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+      setOnScrollChangeListener((v, scrollX, scrollY, oldScrollX, oldScrollY) -> {
+        ((BaseActivity) getContext()).updateEmojiSuggestionsPosition(false);
+      });
+    }
 
     showPlaceholder.setValue(true, false);
   }
@@ -456,7 +461,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
           boolean needContinue = true;
           TdApi.TextEntityType[] textEntityTypes = TD.toEntityType(existingSpan);
           if (textEntityTypes != null) {
-            for (TdApi.TextEntityType textEntityType: textEntityTypes) {
+            for (TdApi.TextEntityType textEntityType : textEntityTypes) {
               if (textEntityType.getConstructor() == typeForRemove.getConstructor()) {
                 needContinue = false;
                 break;
@@ -866,11 +871,11 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       if (this.lastPlaceholderAvailWidth != availWidth) {
         this.lastPlaceholderAvailWidth = availWidth;
 
-        placeholderTitle = !StringUtils.isEmpty(placeholderTitleText)? new Text.Builder(tdlib, placeholderTitleText, null, availWidth, Paints.robotoStyleProvider(Screen.px(getTextSize())), TextColorSets.PLACEHOLDER, null)
-          .singleLine().clipTextArea().build(): null;
+        placeholderTitle = !StringUtils.isEmpty(placeholderTitleText) ? new Text.Builder(tdlib, placeholderTitleText, null, availWidth, Paints.robotoStyleProvider(Screen.px(getTextSize())), TextColorSets.PLACEHOLDER, null)
+          .singleLine().clipTextArea().build() : null;
 
         placeholderSubTitle = !StringUtils.isEmpty(placeholderSubtitleText) ? new Text.Builder(tdlib, placeholderSubtitleText, null, availWidth, Paints.robotoStyleProvider(Screen.px(getTextSize()) / 3f * 2f), TextColorSets.PLACEHOLDER, null)
-          .singleLine().clipTextArea().build(): null;
+          .singleLine().clipTextArea().build() : null;
 
         subtitleReplaceAnimator.replace(placeholderSubTitle, UI.inUiThread());
 
@@ -961,9 +966,13 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   }
 
   @Override
-  public void showInlineStickers (ArrayList<TGStickerObj> stickers, boolean isMore) {
+  public void showInlineStickers (ArrayList<TGStickerObj> stickers, String foundByEmoji, boolean isEmoji, boolean isMore) {
     if (controller != null) {
-      controller.showStickerSuggestions(stickers, isMore);
+      if (!isEmoji) {
+        controller.showStickerSuggestions(stickers, isMore);
+      } else {
+        controller.showEmojiSuggestions(stickers, foundByEmoji, isMore);
+      }
     }
   }
 
@@ -993,7 +1002,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
   @Override
   public void hideInlineResults () {
     if (controller != null) {
-      controller.hideStickerSuggestions();
+      controller.onHideEmojiAndStickerSuggestionsFinally();
     }
     if (inputListener != null && inputListener.canSearchInline(this)) {
       inputListener.showInlineResults(this, null, false);
@@ -1097,6 +1106,56 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       getText().insert(selection.start, s);
     } else {
       getText().replace(selection.start, selection.end, s);
+    }
+    setSelection(after);
+  }
+
+  public void onCustomEmojiSelected (TGStickerObj stickerObj) {
+    onCustomEmojiSelected(stickerObj, false);
+  }
+
+  public void onCustomEmojiSelected (TdApi.Sticker sticker) {
+    onCustomEmojiSelected(sticker, false);
+  }
+
+  public void onCustomEmojiSelected (TGStickerObj stickerObj, boolean needReplace) {
+    onCustomEmojiSelected(stickerObj.getSticker(), needReplace);
+  }
+
+  public void onCustomEmojiSelected (TdApi.Sticker stickerObj, boolean needReplace) {
+    TextSelection selection = getTextSelection();
+    if (selection == null)
+      return;
+
+    final Editable editable = getText();
+    final int start = selection.start;
+
+    String emoji = TD.stickerEmoji(stickerObj);
+    int after = start + emoji.length();
+    if (needReplace && !isEmpty() && selection.isEmpty()) {
+      EmojiSpan emojiSpan = Emoji.findPrecedingEmojiSpan(editable, start);
+      if (emojiSpan != null) {
+        int oldSpanStart = editable.getSpanStart(emojiSpan);
+        int oldSpanEnd = editable.getSpanEnd(emojiSpan);
+        editable.removeSpan(emojiSpan);
+        if (emojiSpan instanceof Destroyable) {
+          ((Destroyable) emojiSpan).performDestroy();
+        }
+        editable.setSpan(
+          Emoji.instance().newCustomSpan(emoji, null, this, tdlib, Td.customEmojiId(stickerObj)), oldSpanStart, oldSpanEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        if (inlineContext != null) {
+          inlineContext.reset();
+        }
+        return;
+      }
+    }
+
+    SpannableString s = new SpannableString(emoji);
+    s.setSpan(Emoji.instance().newCustomSpan(emoji, null, this, tdlib, Td.customEmojiId(stickerObj)), 0, s.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+    if (selection.isEmpty()) {
+      editable.insert(selection.start, s);
+    } else {
+      editable.replace(selection.start, selection.end, s);
     }
     setSelection(after);
   }
@@ -1602,7 +1661,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     final int start = selection.start;
     paste(selection, pasteText.text, needSelectPastedText);
     if (pasteText.entities != null && pasteText.entities.length > 0) {
-      for (TdApi.TextEntity entity: pasteText.entities) {
+      for (TdApi.TextEntity entity : pasteText.entities) {
         setSpan(start + entity.offset, start + entity.offset + entity.length, entity.type);
       }
       if (pasteText.text != null) {
@@ -1709,5 +1768,37 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     if (visibility == View.VISIBLE) {
       doBugfix();
     }
+  }
+
+  private final int[]
+    cords1 = new int[2],
+    cords2 = new int[2],
+    cords3 = new int[2];
+
+  public void getSymbolUnderCursorPosition (int[] coordinates) {
+    TextSelection selection = getTextSelection();
+    if (selection == null) {
+      coordinates[0] = coordinates[1] = 0;
+      return;
+    }
+
+    Views.getCharacterCoordinates(this, selection.start, cords1);
+    cords2[0] = cords1[0];
+    cords2[1] = cords1[1];
+    int[] cords2 = this.cords2;
+
+    for (int a = selection.start - 1; a >= 0; a--) {
+      Views.getCharacterCoordinates(this, a, cords3);
+      if (cords3[1] != cords1[1]) {
+        cords2[0] /= 2;
+        break;
+      }
+      if (cords3[0] == cords1[0]) continue;
+      cords2 = cords3;
+      break;
+    }
+
+    coordinates[0] = (cords1[0] + cords2[0]) / 2;
+    coordinates[1] = cords1[1];
   }
 }

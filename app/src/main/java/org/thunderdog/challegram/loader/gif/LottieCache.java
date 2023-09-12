@@ -258,7 +258,7 @@ public class LottieCache {
       keepAliveMs = 0;
     }
     String colorKey = fitzpatrickType != 0 ? Integer.toString(fitzpatrickType) : null;
-    int accountId = file.tdlib() != null ? file.tdlib().id(): TdlibAccount.NO_ID;
+    int accountId = file.tdlib() != null ? file.tdlib().id() : TdlibAccount.NO_ID;
     File cacheDir = getCacheDir(accountId, size, optimize, colorKey);
     if (cacheDir == null)
       return null;
@@ -285,7 +285,7 @@ public class LottieCache {
         cacheFile.delete();
       } else {
         String colorKey = fitzpatrickType != 0 ? Integer.toString(fitzpatrickType) : null;
-        String key = getCacheFileKey(file.tdlib != null ? file.tdlib.accountId(): TdlibAccount.NO_ID, optimize, size, colorKey, new File(file.getFilePath()).getName());
+        String key = getCacheFileKey(file.tdlib != null ? file.tdlib.accountId() : TdlibAccount.NO_ID, optimize, size, colorKey, new File(file.getFilePath()).getName());
         long time = Settings.instance().getLong(key, 0);
         if (time == 0 || System.currentTimeMillis() >= time) {
           cacheFile.delete();

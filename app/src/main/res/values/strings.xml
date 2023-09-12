@@ -4686,4 +4686,51 @@
   <string name="TextFormatting">Text formatting</string>
   <string name="TextFormattingTools">Tools</string>
   <string name="TextFormattingTranslate">Translate</string>
+
+  <string name="xEmoji_one">%1$s emoji</string>
+  <string name="xEmoji_other">%1$s emoji</string>
+  <string name="xEmojiPacks_one">%1$s emoji pack</string>
+  <string name="xEmojiPacks_other">%1$s emoji packs</string>
+  <string name="xStickerPacks_one">%1$s sticker pack</string>
+  <string name="xStickerPacks_other">%1$s sticker packs</string>
+  <string name="AddXEmoji_one">Add %1$s emoji</string>
+  <string name="AddXEmoji_other">Add %1$s emoji</string>
+  <string name="RemoveXEmoji_one">Remove %1$s emoji</string>
+  <string name="RemoveXEmoji_other">Remove %1$s emoji</string>
+  <string name="AddXEmojiPacks_one">Add %1$s emoji pack</string>
+  <string name="AddXEmojiPacks_other">Add %1$s emoji packs</string>
+  <string name="RemoveXEmojiPacks_one">Remove %1$s emoji pack</string>
+  <string name="RemoveXEmojiPacks_other">Remove %1$s emoji packs</string>
+  <string name="AddXStickerPacks_one">Add %1$s sticker set</string>
+  <string name="AddXStickerPacks_other">Add %1$s sticker sets</string>
+  <string name="RemoveXStickerPacks_one">Remove %1$s sticker set</string>
+  <string name="RemoveXStickerPacks_other">Remove %1$s sticker sets</string>
+  <string name="EmojiOnlyForPremium">Available only with Telegram Premium subscription</string>
+  <string name="LoadingMessageEmojiPack">Loading…</string>
+  <string name="EmojiUsedFromSingle">Emoji used from %1$s pack</string>
+  <string name="EmojiUsedFromX">Emoji used from %1$s</string>
+  <string name="xEmojiPacksEmojiSingle">* %1$s</string>
+  <string name="ArchivedEmojiInfo">You can add up to %1$s emoji packs. Unused packs are archive when you add more.</string>
+
+  <string name="SuggestAnimatedEmoji">Suggest Animated Emoji</string>
+  <string name="EmojiPacks">Emoji Packs</string>
+  <string name="StickerPacks">Sticker Packs</string>
+  <string name="EmojiHeader">Emoji</string>
+  <string name="StickersAndEmoji">Stickers and Emoji</string>
+  <string name="PasteCustomEmoji">Paste Emoji</string>
+  <string name="LoopAnimatedEmoji">Loop Animated Emoji</string>
+
+  <string name="xStickerSetsInstalled_one">%1$s set installed</string>
+  <string name="xStickerSetsInstalled_other">%1$s set installed</string>
+  <string name="xStickerSetsInstalledUnknown">Sticker set settings</string>
+  <string name="xEmojiSetsInstalled_one">%1$s set installed</string>
+  <string name="xEmojiSetsInstalled_other">%1$s set installed</string>
+  <string name="xEmojiSetsInstalledUnknown">Emoji packs settings</string>
+  <string name="xStickersHide_one">Archive %1$s pack</string>
+  <string name="xStickersHide_other">Archive %1$s packs</string>
+  <string name="xStickersInstall_one">Install %1$s pack</string>
+  <string name="xStickersInstall_other">Install %1$s packs</string>
+
+  <string name="ShowXMore_one">%1$s more</string>
+  <string name="ShowXMore_other">%1$s more</string>
 </resources>

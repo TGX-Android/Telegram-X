@@ -420,7 +420,7 @@ public class SearchManager {
   private void setTopChats (final int currentContextId, final @Nullable TdApi.ChatList chatList, final @Nullable String query, final @Nullable ArrayList<TGFoundChat> topChats, final long[] topChatIds, final boolean isCheck) {
     boolean isSilent = this.contextId != currentContextId || isCheck;
     final int oldChatsCount = this.topChats != null ? this.topChats.size() : 0;
-    final int newChatsCount = topChats != null ? topChats.size(): 0;
+    final int newChatsCount = topChats != null ? topChats.size() : 0;
 
     if (oldChatsCount == 0 && newChatsCount == 0) {
       if (!isSilent) {
@@ -442,7 +442,7 @@ public class SearchManager {
     }
 
     final int oldChatsCount = this.topChats != null ? this.topChats.size() : 0;
-    final int newChatsCount = topChats != null ? topChats.size(): 0;
+    final int newChatsCount = topChats != null ? topChats.size() : 0;
 
     if (oldChatsCount != newChatsCount) {
       if (oldChatsCount == 0) {

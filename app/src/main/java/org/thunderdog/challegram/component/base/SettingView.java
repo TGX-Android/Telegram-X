@@ -40,14 +40,15 @@ import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.user.RemoveHelper;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.ComplexReceiver;
+import org.thunderdog.challegram.loader.ComplexReceiverProvider;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
-import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -79,7 +80,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 
-public class SettingView extends FrameLayoutFix implements FactorAnimator.Target, TGLegacyManager.EmojiLoadListener, AttachDelegate, Destroyable, RemoveHelper.RemoveDelegate, TextColorSet, TooltipOverlayView.LocationProvider {
+public class SettingView extends FrameLayoutFix implements FactorAnimator.Target, TGLegacyManager.EmojiLoadListener, AttachDelegate, Destroyable, RemoveHelper.RemoveDelegate, TextColorSet, TooltipOverlayView.LocationProvider, ComplexReceiverProvider {
   public static final int TYPE_INFO = 0x01;
   public static final int TYPE_SETTING = 0x02;
   public static final int TYPE_RADIO = 0x03;
@@ -238,6 +239,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     return receiver;
   }
 
+  @Override
   public ComplexReceiver getComplexReceiver () {
     return complexReceiver;
   }

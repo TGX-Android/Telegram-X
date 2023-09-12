@@ -578,10 +578,11 @@
   <item type="id" name="btn_quickTranslate" />
   <item type="id" name="btn_translate" />
   <item type="id" name="btn_toggleCollapseRecentStickers" />
+  <item type="id" name="btn_emojiSuggestions" />
   <item type="id" name="btn_stickerSuggestions" />
-  <item type="id" name="btn_stickerSuggestionsAll" />
-  <item type="id" name="btn_stickerSuggestionsInstalled" />
-  <item type="id" name="btn_stickerSuggestionsNone" />
+  <item type="id" name="btn_stickerOrEmojiSuggestionsAll" />
+  <item type="id" name="btn_stickerOrEmojiSuggestionsInstalled" />
+  <item type="id" name="btn_stickerOrEmojiSuggestionsNone" />
   <item type="id" name="btn_switchPmButton" />
   <item type="id" name="btn_updateAutomatically" />
   <item type="id" name="btn_updateAutomaticallyWiFi" />
@@ -758,6 +759,7 @@
   <item type="id" name="btn_openLink" />
   <item type="id" name="btn_copyLink" />
   <item type="id" name="btn_archive" />
+  <item type="id" name="btn_installStickerSet" />
   <item type="id" name="btn_shareLink" />
   <item type="id" name="btn_disabled" />
   <item type="id" name="membersList" />
@@ -1287,4 +1289,17 @@
   <item type="id" name="btn_themeExportSetAuthor" />
 
   <item type="id" name="btn_featureToggles" />
+
+  <!-- * -->
+
+  <item type="id" name="view_emojiPacksCount" />
+  <item type="id" name="view_customEmojiSuggestions" />
+  <item type="id" name="btn_animatedEmojiSettings" />
+  <item type="id" name="btn_stickerSettingsAndEmoji" />
+  <item type="id" name="controller_stickersAndEmoji" />
+
+  <item type="id" name="controller_emojiLayoutStickers" />
+  <item type="id" name="controller_emojiLayoutStickersTrending" />
+  <item type="id" name="controller_emojiLayoutEmoji" />
+  <item type="id" name="controller_emojiLayoutEmojiTrending" />
 </resources>

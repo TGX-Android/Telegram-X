@@ -323,7 +323,7 @@ public class DrawerItemView extends BaseView implements FactorAnimator.Target, A
     if (trimmedText != null) {
       trimmedText.draw(c, textLeft, textLeft + trimmedText.getWidth(), 0, Screen.dp(17f));
     }
-    emojiStatusHelper.draw(c, textLeft + (trimmedText != null ? trimmedText.getWidth() + Screen.dp(6): 0), Screen.dp(17f));
+    emojiStatusHelper.draw(c, textLeft + (trimmedText != null ? trimmedText.getWidth() + Screen.dp(6) : 0), Screen.dp(17f));
     if (receiver != null) {
       layoutReceiver();
       if (receiver.needPlaceholder()) {

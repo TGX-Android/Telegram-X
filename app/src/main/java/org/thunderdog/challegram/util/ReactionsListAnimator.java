@@ -355,7 +355,7 @@ public final class ReactionsListAnimator implements Iterable<ReactionsListAnimat
     for (Entry entry : actualList) {
       TGReactions.MessageReactionEntry item = entry.item;
 
-      int itemWidth = item.getBubbleWidth();
+      int itemWidth = item.getBubbleTargetWidth(); // item.getBubbleWidth();
       int itemHeight = item.getBubbleHeight();
 
       int left = item.getX();

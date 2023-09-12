@@ -33,6 +33,7 @@ import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ComplexReceiver;
+import org.thunderdog.challegram.loader.ComplexReceiverProvider;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibContactManager;
@@ -57,7 +58,7 @@ import java.util.List;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 
-public class UserView extends BaseView implements Destroyable, RemoveHelper.RemoveDelegate, TooltipOverlayView.LocationProvider {
+public class UserView extends BaseView implements Destroyable, RemoveHelper.RemoveDelegate, TooltipOverlayView.LocationProvider, ComplexReceiverProvider {
   /*private static final int ACCENT_COLOR = 0xff569ace;
   private static final int DECENT_COLOR = 0xff8a8a8a;*/
 
@@ -146,6 +147,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
     avatarReceiver.detach();
   }
 
+  @Override
   public ComplexReceiver getComplexReceiver () {
     return complexReceiver;
   }
@@ -174,6 +176,13 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
       statusWidth = 0;
     }
     float availWidth = getMeasuredWidth() - textLeftMargin - offsetLeft - paddingRight - (unregisteredContact != null ? Screen.dp(32f) : 0);
+    if (drawModifiers != null) {
+      int maxWidth = 0;
+      for (DrawModifier modifier : drawModifiers) {
+        maxWidth = Math.max(maxWidth, modifier.getWidth());
+      }
+      availWidth -= maxWidth;
+    }
     if (availWidth > 0) {
       sourceStatus = status;
       if (statusWidth > availWidth) {
@@ -204,8 +213,14 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
       name = null;
     }
     float availWidth = getMeasuredWidth() - textLeftMargin - offsetLeft - paddingRight - (unregisteredContact != null ? Screen.dp(32f) : 0);
-
-    emojiStatusHelper.updateEmoji(user != null ? user.getUser(): null, new TextColorSetOverride(TextColorSets.Regular.NORMAL) {
+    if (drawModifiers != null) {
+      int maxWidth = 0;
+      for (DrawModifier modifier : drawModifiers) {
+        maxWidth = Math.max(maxWidth, modifier.getWidth());
+      }
+      availWidth -= maxWidth - Screen.dp(12);
+    }
+    emojiStatusHelper.updateEmoji(user != null ? user.getUser() : null, new TextColorSetOverride(TextColorSets.Regular.NORMAL) {
       @Override
       public int emojiStatusColor () {
         return Theme.getColor(ColorId.iconActive);
@@ -313,7 +328,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
     if (trimmedName != null) {
       trimmedName.draw(c, offsetLeft + textLeftMargin, (int) ((height - Screen.dp(DEFAULT_HEIGHT)) / 2f + Screen.dp(17f)));
     }
-    emojiStatusHelper.draw(c, offsetLeft + textLeftMargin + (trimmedName != null ? trimmedName.getWidth(): 0) + Screen.dp(6f), (int) ((height - Screen.dp(DEFAULT_HEIGHT)) / 2f + Screen.dp(17f)));
+    emojiStatusHelper.draw(c, offsetLeft + textLeftMargin + (trimmedName != null ? trimmedName.getWidth() : 0) + Screen.dp(6f), (int) ((height - Screen.dp(DEFAULT_HEIGHT)) / 2f + Screen.dp(17f)));
     if (trimmedStatus != null) {
       statusPaint.setColor(Theme.getColor(user != null && user.isOnline() ? ColorId.textNeutral : ColorId.textLight));
       c.drawText(trimmedStatus, rtl ? viewWidth - offsetLeft - textLeftMargin - trimmedStatusWidth : offsetLeft + textLeftMargin,

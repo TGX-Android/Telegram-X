@@ -16,6 +16,7 @@
 package org.thunderdog.challegram.emoji;
 
 import android.text.InputFilter;
+import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 
@@ -240,6 +241,21 @@ public class EmojiFilter implements InputFilter {
         EmojiSpan[] spans = dest.getSpans(dend, dest.length(), EmojiSpan.class);
         if (spans != null) {
           this.emojiCount += spans.length;
+        }
+      }
+    }
+    if (dest instanceof Spannable && dend - dstart > 0) {
+      EmojiSpan[] spansToRemove = dest.getSpans(dstart, dend, EmojiSpan.class);
+      if (spansToRemove != null) {
+        for (EmojiSpan span : spansToRemove) {
+          int spanStart = dest.getSpanStart(span);
+          int spanEnd = dest.getSpanEnd(span);
+          if (spanEnd < dstart || spanStart >= dend)
+            continue;
+          ((Spannable) dest).removeSpan(span);
+          if (span instanceof Destroyable) {
+            ((Destroyable) span).performDestroy();
+          }
         }
       }
     }

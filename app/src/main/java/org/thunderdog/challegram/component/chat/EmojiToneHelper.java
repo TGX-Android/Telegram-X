@@ -15,10 +15,6 @@
 package org.thunderdog.challegram.component.chat;
 
 import android.content.Context;
-import android.graphics.Canvas;
-import android.graphics.Rect;
-import android.graphics.RectF;
-import android.graphics.drawable.Drawable;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.MotionEvent;
@@ -30,23 +26,25 @@ import android.widget.TextView;
 
 import androidx.annotation.Nullable;
 
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.emoji.Emoji;
-import org.thunderdog.challegram.emoji.EmojiInfo;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.RippleSupport;
+import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.EmojiData;
 import org.thunderdog.challegram.tool.Fonts;
-import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.widget.BubbleLayout;
+import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiToneListView;
 import org.thunderdog.challegram.widget.NoScrollTextView;
 
 import me.vkryl.android.AnimatorUtils;
@@ -54,9 +52,11 @@ import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.lambda.RunnableData;
 
 public class EmojiToneHelper implements FactorAnimator.Target {
   public interface Delegate {
+    default long getCurrentChatId () { return 0; };
     int[] displayBaseViewWithAnchor (EmojiToneHelper context, View anchorView, View viewToDisplay, int viewWidth, int viewHeight, int horizontalMargin, int horizontalOffset, int verticalOffset);
     void removeView (EmojiToneHelper context, View displayedView);
   }
@@ -80,17 +80,20 @@ public class EmojiToneHelper implements FactorAnimator.Target {
     return new int[] {left - x, top - y};
   }
 
+  private final Tdlib tdlib;
   private final Context context;
   private final Delegate delegate;
   private final @Nullable ViewController<?> themeProvider;
 
-  public EmojiToneHelper (Context context, Delegate delegate, @Nullable ViewController<?> themeProvider) {
+  public EmojiToneHelper (Context context, Delegate delegate, Tdlib tdlib, @Nullable ViewController<?> themeProvider) {
+    this.tdlib = tdlib;
     this.context = context;
     this.delegate = delegate;
     this.themeProvider = themeProvider;
   }
 
   // Entry point
+  private View visibleAnchorView;
 
   private String emoji;
   private int emojiColorState;
@@ -104,10 +107,14 @@ public class EmojiToneHelper implements FactorAnimator.Target {
 
   private static final int ANIMATOR_POSITION = 1;
 
-  public boolean openForEmoji (View anchorView, float startX, float startY, String emoji, int emojiColorState, String currentTone, String[] currentOtherTones) {
+  private TdApi.Sticker[] installedStickers, recommendedStickers;
+
+  public boolean openForEmoji (View anchorView, float startX, float startY, String emoji, int emojiColorState, String currentTone, String[] currentOtherTones, @Nullable TdApi.Sticker[] installedStickers, @Nullable TdApi.Sticker[] recommendedStickers) {
     this.emoji = emoji;
     this.emojiColorState = emojiColorState;
     this.currentTone = currentTone;
+    this.installedStickers = installedStickers;
+    this.recommendedStickers = recommendedStickers;
     int colorCount = emojiColorState >= EmojiData.STATE_HAS_TWO_COLORS ? (emojiColorState - EmojiData.STATE_HAS_TWO_COLORS + 1) : 0;
     if (colorCount > 0) {
       if (currentOtherTones != null) {
@@ -125,7 +132,10 @@ public class EmojiToneHelper implements FactorAnimator.Target {
     this.startX = startX;
     this.offsetLeft = offsetTop = 0;
     this.buttonOffsetLeft = buttonOffsetTop = 0;
+    this.visibleAnchorView = anchorView;
+
     setIsVisible(anchorView, true);
+
     return true;
   }
 
@@ -149,29 +159,17 @@ public class EmojiToneHelper implements FactorAnimator.Target {
     if (startedMoving) {
       float relativeX = x - offsetLeft;
       float relativeY = y - offsetTop;
-      switch (emojiColorState) {
-        case EmojiData.STATE_NO_COLORS:
-          // Do nothing
-          break;
-        case EmojiData.STATE_HAS_ONE_COLOR:
-          // Offer to apply tone to all emoji
-          processSingleToneMovement(anchorView, e, x, y, relativeX, relativeY);
-          break;
-        case EmojiData.STATE_HAS_TWO_COLORS:
-        default:
-          // Show picker of the more tones, no apply to all
-          processMultipleToneMovement(anchorView, e, x, y, relativeX, relativeY, emojiColorState - EmojiData.STATE_HAS_TWO_COLORS + 1);
-          break;
-      }
+
+      processSingleToneMovement(anchorView, e, x, y, relativeX, relativeY);
     }
   }
 
   private void processSingleToneMovement (View anchorView, MotionEvent e, float x, float y, float relativeX, float relativeY) {
     boolean updatePosition = false;
 
-    if (relativeY >= 0 && !applyButtonPressed && emojiTonePicker.changeIndex(relativeX)) {
+    if (relativeY >= 0 && !applyButtonPressed && emojiTonePicker.changeIndex(relativeX, relativeY)) {
       toneChanged = true;
-      currentTone = EmojiData.emojiColors[emojiTonePicker.toneIndex];
+      currentTone = EmojiData.emojiColors[emojiTonePicker.getToneIndex()];
       updatePosition = true;
       if (!needPositionAnimation()) {
         updatePosition = false;
@@ -179,15 +177,15 @@ public class EmojiToneHelper implements FactorAnimator.Target {
       }
     }
 
-    boolean canShowApply = Emoji.instance().canApplyDefaultTone(currentTone);
+    boolean canShowApply = emojiTonePicker.hasToneEmoji() && emojiTonePicker.getToneIndexVertical() == 0 && Emoji.instance().canApplyDefaultTone(currentTone);
     if (showingApplyButton) {
-      if (!canShowApply || (relativeY > Screen.dp(46f) && !(toneChanged && (Config.SHOW_EMOJI_TONE_PICKER_ALWAYS || Settings.instance().needTutorial(Settings.TUTORIAL_EMOJI_TONE_ALL))))) {
+      if (!canShowApply || (relativeY > Screen.dp(EmojiToneListView.ITEM_SIZE + EmojiToneListView.ITEM_PADDING) && !(toneChanged && (Config.SHOW_EMOJI_TONE_PICKER_ALWAYS || Settings.instance().needTutorial(Settings.TUTORIAL_EMOJI_TONE_ALL))))) {
         setApplyButtonPressed(anchorView, false, e, x - buttonOffsetLeft - applyButton.getTranslationX(), y - buttonOffsetTop);
         setShowingApplyButton(anchorView, false);
         updatePosition = false;
       }
     } else if (canShowApply) {
-      if (relativeY < Screen.dp(46f) * .95f || (toneChanged && (Config.SHOW_EMOJI_TONE_PICKER_ALWAYS || Settings.instance().needTutorial(Settings.TUTORIAL_EMOJI_TONE_ALL)))) {
+      if (relativeY < Screen.dp(EmojiToneListView.ITEM_SIZE + EmojiToneListView.ITEM_PADDING) * .95f || (toneChanged && (Config.SHOW_EMOJI_TONE_PICKER_ALWAYS || Settings.instance().needTutorial(Settings.TUTORIAL_EMOJI_TONE_ALL)))) {
         setShowingApplyButton(anchorView, true);
         // UI.forceVibrate(anchorView, false);
       }
@@ -205,29 +203,13 @@ public class EmojiToneHelper implements FactorAnimator.Target {
     }
   }
 
-  private void processMultipleToneMovement (View anchorView, MotionEvent e, float x, float y, float relativeX, float relativeY, int toneCount) {
-    processSingleToneMovement(anchorView, e, x, y, relativeX, relativeY);
-    // TODO
-    /*int canShowCount;
-    if (Strings.isEmpty(currentTone)) {
-      canShowCount = 1;
-    } else {
-      canShowCount = 2;
-      for (String otherTone : currentOtherTones) {
-        if (Strings.isEmpty(otherTone))
-          break;
-        canShowCount++;
-      }
-    }*/
-  }
-
   private float positionFactor;
   private FactorAnimator positionAnimator;
 
   private void setPositionFactor (float factor, boolean animated) {
     if (animated) {
       if (positionAnimator == null) {
-        positionAnimator = new FactorAnimator(ANIMATOR_POSITION, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l, this.positionFactor);
+        positionAnimator = new FactorAnimator(ANIMATOR_POSITION, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180L, this.positionFactor);
       }
       positionAnimator.animateTo(factor);
     } else {
@@ -293,6 +275,7 @@ public class EmojiToneHelper implements FactorAnimator.Target {
     return visibilityAnimator != null && visibilityAnimator.getValue();
   }
   private void setIsVisible (View anchorView, boolean isVisible) {
+    visibleAnchorView = isVisible ? anchorView : null;
     boolean wasVisible = isVisible();
     if (wasVisible != isVisible) {
       if (visibilityAnimator == null) {
@@ -352,8 +335,7 @@ public class EmojiToneHelper implements FactorAnimator.Target {
 
   private void updateApplyPosition () {
     if (applyButton != null) {
-      int paddingHorizontal = Screen.dp(4.5f);
-      int totalWidth = (Screen.dp(TONES_WIDTH) - paddingHorizontal * 2);
+      int totalWidth = Screen.dp(EmojiToneListView.ITEM_SIZE * 6);
       int itemWidth = totalWidth / EmojiData.emojiColors.length;
 
       float factor = positionFactor / (float) (EmojiData.emojiColors.length - 1);
@@ -392,8 +374,8 @@ public class EmojiToneHelper implements FactorAnimator.Target {
       return;
     }
 
-    int paddingHorizontal = Screen.dp(4.5f);
-    int itemWidth = paddingHorizontal + (Screen.dp(TONES_WIDTH) - paddingHorizontal * 2) / EmojiData.emojiColors.length;
+    int paddingHorizontal = Screen.dp(EmojiToneListView.VIEW_PADDING_HORIZONTAL);
+    int itemWidth = paddingHorizontal + Screen.dp(EmojiToneListView.ITEM_SIZE);
 
     applyButton = new BubbleLayout(context, themeProvider, false) {
       @Override
@@ -431,7 +413,7 @@ public class EmojiToneHelper implements FactorAnimator.Target {
     sendView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT));
     applyButton.addView(sendView);
 
-    int tonesHeight = Screen.dp(46f) + Screen.dp(2f) + Screen.dp(4f) + Screen.dp(8f);
+    int tonesHeight = emojiTonePicker.calcViewHeight() + Screen.dp(4f);
 
     int[] result = delegate.displayBaseViewWithAnchor(this, anchorView, applyButton, ViewGroup.LayoutParams.WRAP_CONTENT, Screen.dp(48f) + applyButton.getPaddingTop() + applyButton.getPaddingBottom(), Screen.dp(4f), offsetLeft, Screen.dp(8f) - tonesHeight + Screen.dp(6f));
 
@@ -446,9 +428,9 @@ public class EmojiToneHelper implements FactorAnimator.Target {
   }
 
   private void animatePosition (boolean animate) {
-    if (positionIndex != emojiTonePicker.toneIndex || !animate) {
-      positionIndex = emojiTonePicker.toneIndex;
-      setPositionFactor(emojiTonePicker.toneIndex, animate);
+    if (positionIndex != emojiTonePicker.getToneIndex() || !animate) {
+      positionIndex = emojiTonePicker.getToneIndex();
+      setPositionFactor(emojiTonePicker.getToneIndex(), animate);
     }
   }
 
@@ -458,135 +440,29 @@ public class EmojiToneHelper implements FactorAnimator.Target {
     }
 
     emojiTonePicker = new EmojiToneListView(context);
-    emojiTonePicker.init(themeProvider, false);
-    emojiTonePicker.setEmoji(emoji, currentTone);
+    emojiTonePicker.init(themeProvider, tdlib);
+    emojiTonePicker.setEmoji(emoji, currentTone, emojiColorState);
+    emojiTonePicker.setCustomEmoji(installedStickers, recommendedStickers);
     if (themeProvider != null) {
       themeProvider.addThemeInvalidateListener(emojiTonePicker);
     }
 
     animatePosition(false);
 
-    int tonesWidth = Screen.dp(TONES_WIDTH);
-    int tonesHeight = Screen.dp(46f) + Screen.dp(2f) + Screen.dp(4f) + Screen.dp(8f);
+    int tonesWidth = emojiTonePicker.calcViewWidth();
+    int tonesHeight = emojiTonePicker.calcViewHeight() + Screen.dp(4f);
     int[] result = delegate.displayBaseViewWithAnchor(this, anchorView, emojiTonePicker, tonesWidth, tonesHeight, Screen.dp(4f), anchorView.getMeasuredWidth() / 2 - Math.min(Screen.dp(23f), tonesWidth / 2), Screen.dp(8f));
 
     offsetLeft = result[0];
     offsetTop = result[1];
 
     emojiTonePicker.setAnchorView(anchorView, offsetLeft);
-
+    if (emojiTonePicker.getRowsCount() != 1 && emojiTonePicker.hasToneEmoji()) {
+      emojiTonePicker.changeIndex(
+        anchorView.getMeasuredWidth() / 2f - offsetLeft,
+        anchorView.getMeasuredHeight() / 2f - offsetTop);
+    }
     return true;
-  }
-
-  private static final float TONES_WIDTH = 240f;
-
-  private static class EmojiToneListView extends View {
-    private EmojiInfo[] tones;
-    private Drawable backgroundDrawable, cornerDrawable;
-
-    public EmojiToneListView (Context context) {
-      super(context);
-    }
-
-    private void init (ViewController<?> themeProvider, boolean is2d) {
-      this.tones = new EmojiInfo[EmojiData.emojiColors.length - (is2d ? 1 : 0)];
-      this.backgroundDrawable = Theme.filteredDrawable(R.drawable.stickers_back_all, ColorId.overlayFilling, themeProvider);
-      this.cornerDrawable = Theme.filteredDrawable(R.drawable.stickers_back_arrow, ColorId.overlayFilling, themeProvider);
-    }
-
-    private View boundView;
-    private int offsetLeft;
-
-    public void setAnchorView (View view, int offsetLeft) {
-      this.boundView = view;
-      this.offsetLeft = offsetLeft;
-      setPivotX(view.getMeasuredWidth() / 2 - offsetLeft);
-      setPivotY(Screen.dp(46f) + Screen.dp(3.5f) + Screen.dp(8f) / 2);
-    }
-
-    public View getAnchorView () {
-      return boundView;
-    }
-
-    private int toneIndex = -1;
-
-    public void setEmoji (String emoji, String currentTone) {
-      int i = 0;
-      for (String tone : EmojiData.emojiColors) {
-        if (tone == null && currentTone == null) {
-          toneIndex = 0;
-        } else if (StringUtils.equalsOrBothEmpty(tone, currentTone)) {
-          toneIndex = i;
-        }
-        tones[i] = Emoji.instance().getEmojiInfo(EmojiData.instance().colorize(emoji, tone));
-        i++;
-      }
-    }
-
-    public boolean changeIndex (float x) {
-      int paddingHorizontal = Screen.dp(4.5f);
-      x -= paddingHorizontal;
-      int viewWidth = (Screen.dp(TONES_WIDTH) - paddingHorizontal * 2);
-
-      int result;
-      if (x <= 0) {
-        result = 0;
-      } else if (x >= viewWidth) {
-        result = tones.length - 1;
-      } else {
-        result = Math.max(0, Math.min(tones.length - 1, (int) ((x / (float) viewWidth) * ((float) tones.length))));
-      }
-
-      if (result != -1 && result != toneIndex) {
-        toneIndex = result;
-        invalidate();
-        return true;
-      }
-      return false;
-    }
-
-    @Override
-    protected void onDraw (Canvas c) {
-      int paddingVertical = Screen.dp(4f);
-      int paddingHorizontal = Screen.dp(4.5f);
-      int itemWidth = (Screen.dp(TONES_WIDTH) - paddingHorizontal * 2) / tones.length;
-      int itemHeight = Screen.dp(46f);
-
-      int x = paddingHorizontal;
-      int y = Screen.dp(2.5f);
-
-      backgroundDrawable.setBounds(0, 0, getMeasuredWidth(),  itemHeight + paddingVertical * 2);
-      backgroundDrawable.draw(c);
-
-      int cornerWidth = Screen.dp(18f);
-      int cornerHeight = Screen.dp(8f);
-      int cornerX = 0;
-      int cornerY =  itemHeight + Screen.dp(3.5f);
-      if (boundView != null) {
-        cornerX = boundView.getMeasuredWidth() / 2 - offsetLeft - cornerWidth / 2;
-      }
-      cornerDrawable.setBounds(cornerX, cornerY, cornerX + cornerWidth, cornerY + cornerHeight);
-      cornerDrawable.draw(c);
-
-      int rectX = x + itemWidth * toneIndex;
-      int rectY = y + paddingVertical / 2;
-      RectF rectF = Paints.getRectF();
-      rectF.set(rectX, rectY, rectX + itemWidth, rectY + itemHeight - paddingVertical);
-      c.drawRoundRect(rectF, Screen.dp(4f), Screen.dp(4f), Paints.fillingPaint(Theme.HALF_RIPPLE_COLOR));
-
-      for (EmojiInfo info : tones) {
-        int cx = x + itemWidth / 2;
-        int cy = y + itemHeight / 2;
-        int itemSize = Math.min(itemWidth, itemHeight) - Screen.dp(4f);
-        Rect rect = Paints.getRect();
-        rect.left = cx - itemSize / 2;
-        rect.top = cy - itemSize / 2;
-        rect.right = rect.left + itemSize;
-        rect.bottom = rect.top + itemSize;
-        Emoji.instance().draw(c, info, rect);
-        x += itemWidth;
-      }
-    }
   }
 
   private void destroyWrap () {
@@ -607,6 +483,31 @@ public class EmojiToneHelper implements FactorAnimator.Target {
       delegate.removeView(this, applyButton);
       applyButton.removeThemeListeners();
       applyButton = null;
+    }
+  }
+
+  public long getCurrentChatId () {
+    return delegate != null ? delegate.getCurrentChatId() : 0;
+  }
+
+  public boolean isInSelfChat () {
+    long chatId = delegate != null ? delegate.getCurrentChatId() : 0;
+    return chatId != 0 && tdlib.isSelfChat(chatId);
+  }
+
+  public TGStickerObj getSelectedCustomEmoji () {
+    return emojiTonePicker != null ? emojiTonePicker.getSelectedCustomEmoji() : null;
+  }
+
+  private RunnableData<TGStickerObj> onCustomEmojiSelectedListener;
+
+  public void setOnCustomEmojiSelectedListener (RunnableData<TGStickerObj> onCustomEmojiSelectedListener) {
+    this.onCustomEmojiSelectedListener = onCustomEmojiSelectedListener;
+  }
+
+  public void onCustomEmojiSelected (TGStickerObj stickerObj) {
+    if (onCustomEmojiSelectedListener != null) {
+      onCustomEmojiSelectedListener.runWithData(stickerObj);
     }
   }
 }

@@ -199,6 +199,7 @@ public class Settings {
   private static final String KEY_MAP_PROVIDER_TYPE = "settings_map_provider";
   private static final String KEY_MAP_PROVIDER_TYPE_CLOUD = "settings_map_provider_cloud";
   private static final String KEY_STICKER_MODE = "settings_sticker";
+  private static final String KEY_EMOJI_MODE = "settings_emoji";
   private static final String KEY_AUTO_UPDATE_MODE = "settings_auto_update";
   private static final String KEY_INCOGNITO = "settings_incognito";
   private static final String KEY_NIGHT_MODE = "settings_night_mode";
@@ -389,6 +390,7 @@ public class Settings {
   public static final long SETTING_FLAG_FORCE_EXO_PLAYER_EXTENSIONS = 1 << 7;
   public static final long SETTING_FLAG_NO_AUDIO_COMPRESSION = 1 << 8;
   public static final long SETTING_FLAG_DOWNLOAD_BETAS = 1 << 9;
+  public static final long SETTING_FLAG_NO_ANIMATED_EMOJI_LOOP = 1 << 10;
 
   public static final long SETTING_FLAG_CAMERA_NO_FLIP = 1 << 10;
   public static final long SETTING_FLAG_CAMERA_KEEP_DISCARDED_MEDIA = 1 << 11;
@@ -437,8 +439,8 @@ public class Settings {
   public static final int STICKER_MODE_ONLY_INSTALLED = 1;
   public static final int STICKER_MODE_NONE = 2;
 
-  @Nullable
-  private Integer _stickerMode;
+  @Nullable private Integer _stickerMode;
+  @Nullable private Integer _emojiMode;
 
   public static final int AUTO_UPDATE_MODE_PROMPT = 0;
   public static final int AUTO_UPDATE_MODE_NEVER = 1;
@@ -2575,6 +2577,21 @@ public class Settings {
       remove(KEY_STICKER_MODE);
     } else {
       putInt(KEY_STICKER_MODE, mode);
+    }
+  }
+
+  public int getEmojiMode () {
+    if (_emojiMode == null)
+      _emojiMode = pmc.getInt(KEY_EMOJI_MODE, STICKER_MODE_ALL);
+    return _emojiMode;
+  }
+
+  public void setEmojiMode (int mode) {
+    this._emojiMode = mode;
+    if (mode == STICKER_MODE_ALL) {
+      remove(KEY_EMOJI_MODE);
+    } else {
+      putInt(KEY_EMOJI_MODE, mode);
     }
   }
 

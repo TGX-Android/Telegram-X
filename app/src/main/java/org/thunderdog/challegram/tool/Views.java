@@ -25,6 +25,7 @@ import android.graphics.Paint;
 import android.graphics.Typeface;
 import android.os.Build;
 import android.text.Editable;
+import android.text.Layout;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -48,12 +49,14 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkmore.Tracer;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.DiffMatchPatch;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewTranslator;
-import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.util.TextSelection;
 import org.thunderdog.challegram.util.WebViewHolder;
 import org.thunderdog.challegram.util.text.Text;
@@ -363,6 +366,15 @@ public class Views {
 
   public static View inflate (Context context, int resource, ViewGroup contentView) {
     return LayoutInflater.from(context).inflate(resource, contentView, false);
+  }
+
+  public static int saveRepainting (Canvas c, Receiver receiver) {
+    return c.saveLayerAlpha(receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom(), 255, Canvas.ALL_SAVE_FLAG);
+  }
+
+  public static void restoreRepainting (Canvas c, Receiver receiver, int count, int color) {
+    c.drawRect(receiver.getLeft(), receiver.getTop(), receiver.getRight(), receiver.getBottom(), Paints.getSrcInPaint(color));
+    restore(c, count);
   }
 
   public static int save (Canvas c) {
@@ -925,6 +937,24 @@ public class Views {
     int newFlags = BitwiseUtils.setFlag(flags, Paint.FAKE_BOLD_TEXT_FLAG, fakeBold);
     if (flags != newFlags) {
       view.setPaintFlags(newFlags);
+    }
+  }
+
+  public static void getCharacterCoordinates(TextView textView, int offset, int[] coordinates) {
+    if (coordinates.length != 2)
+      throw new IllegalArgumentException();
+    coordinates[0] = coordinates[1] = 0;
+
+    Editable editable = textView.getEditableText();
+    Layout layout = textView.getLayout();
+
+    if (layout != null) {
+      int line = layout.getLineForOffset(offset);
+      int lineStartOffset = layout.getLineStart(line);
+      int xPos = (int) U.measureEmojiText(editable.subSequence(lineStartOffset, offset), layout.getPaint());
+      int yPos = layout.getLineBaseline(line) - textView.getScrollY();
+      coordinates[0] = xPos;
+      coordinates[1] = yPos;
     }
   }
 }

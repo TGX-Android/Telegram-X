@@ -344,7 +344,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   @CallSuper
   protected void handleLanguageDirectionChange () {
     if (searchHeaderView != null)
-      HeaderView.updateEditTextDirection(searchHeaderView, Screen.dp(68f), Screen.dp(49f));
+      HeaderView.updateEditTextDirection(searchHeaderView.editView(), Screen.dp(68f), Screen.dp(49f));
     if (counterHeaderView != null)
       HeaderView.updateLayoutMargins(counterHeaderView, Screen.dp(68f), 0);
     View headerCell = getCustomHeaderCell();
@@ -627,14 +627,14 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   protected void updateSearchMode (boolean inSearch, boolean needUpdateKeyboard) {
     if (inSearch) {
       cachedLockFocusView = lockFocusView;
-      lockFocusView = searchHeaderView;
+      lockFocusView = searchHeaderView.editView();
       if (needUpdateKeyboard) {
-        Keyboard.show(searchHeaderView);
+        Keyboard.show(searchHeaderView.editView());
       }
     } else {
       lockFocusView = cachedLockFocusView;
       if (needUpdateKeyboard) {
-        Keyboard.hide(searchHeaderView);
+        Keyboard.hide(searchHeaderView.editView());
       }
       cachedLockFocusView = null;
     }
@@ -744,7 +744,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       return getCounterHeaderView(headerView);
     }
     if ((flags & FLAG_IN_SEARCH_MODE) != 0) {
-      return getSearchHeaderView(headerView);
+      return getSearchHeaderView(headerView).view();
     }
     if ((flags & FLAG_IN_CUSTOM_MODE) != 0) {
       return getCustomModeHeaderView(headerView);
@@ -1043,7 +1043,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
   // Search mode header
 
-  private HeaderEditText searchHeaderView;
+  private SearchEditTextDelegate searchHeaderView;
 
   protected void modifySearchHeaderView (HeaderEditText headerEditText) {
     // called only once
@@ -1053,11 +1053,24 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
     return false;
   }
 
-  protected final HeaderEditText genSearchHeader (HeaderView headerView) {
-    return useGraySearchHeader() ? headerView.genGreySearchHeader(this) : headerView.genSearchHeader(useLightSearchHeader(), this);
+  protected SearchEditTextDelegate genSearchHeader (HeaderView headerView) {
+    HeaderEditText view = useGraySearchHeader() ? headerView.genGreySearchHeader(this) : headerView.genSearchHeader(useLightSearchHeader(), this);
+    return new SearchEditTextDelegate() {
+      @NonNull
+      @Override
+      public View view () {
+        return view;
+      }
+
+      @NonNull
+      @Override
+      public HeaderEditText editView () {
+        return view;
+      }
+    };
   }
 
-  protected HeaderEditText getSearchHeaderView (HeaderView headerView) {
+  protected SearchEditTextDelegate getSearchHeaderView (HeaderView headerView) {
     if (searchHeaderView == null) {
       FrameLayoutFix.LayoutParams params;
 
@@ -1072,7 +1085,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       }
 
       searchHeaderView = genSearchHeader(headerView);
-      searchHeaderView.addTextChangedListener(new TextWatcher() {
+      searchHeaderView.editView().addTextChangedListener(new TextWatcher() {
         @Override
         public void beforeTextChanged (CharSequence s, int start, int count, int after) {
 
@@ -1095,10 +1108,10 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
 
         }
       });
-      searchHeaderView.setHint(Lang.getString(bindLocaleChanger(getSearchHint(), searchHeaderView, true, false)));
-      searchHeaderView.setLayoutParams(params);
+      searchHeaderView.editView().setHint(Lang.getString(bindLocaleChanger(getSearchHint(), searchHeaderView.editView(), true, false)));
+      searchHeaderView.view().setLayoutParams(params);
 
-      modifySearchHeaderView(searchHeaderView);
+      modifySearchHeaderView(searchHeaderView.editView());
     }
     return searchHeaderView;
   }
@@ -1122,9 +1135,9 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
       if (reset) {
         lastSearchInput = text;
       }
-      searchHeaderView.setText(text);
+      searchHeaderView.editView().setText(text);
       if (!text.isEmpty()) {
-        searchHeaderView.setSelection(text.length());
+        searchHeaderView.editView().setSelection(text.length());
       }
       updateClearSearchButton(!text.isEmpty(), false);
     }
@@ -3059,7 +3072,7 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   @CallSuper
   public void hideSoftwareKeyboard () {
     if (inSearchMode()) {
-      Keyboard.hide(searchHeaderView);
+      Keyboard.hide(searchHeaderView.editView());
     }
     if (lockFocusView != null) {
       Keyboard.hide(lockFocusView);
@@ -3411,4 +3424,11 @@ public abstract class ViewController<T> implements Future<View>, ThemeChangeList
   public final void forceFastAnimationOnce () {
     forceFadeModeOnce = true;
   }
+
+
+  public interface SearchEditTextDelegate {
+    @NonNull View view();
+    @NonNull HeaderEditText editView();
+  }
+
 }

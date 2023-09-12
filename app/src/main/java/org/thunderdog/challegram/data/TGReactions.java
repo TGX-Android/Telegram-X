@@ -150,7 +150,7 @@ public class TGReactions implements Destroyable, ReactionLoadListener {
 
       for (TdApi.MessageReaction reaction : message.interactionInfo.reactions) {
         final String reactionKey = TD.makeReactionKey(reaction.type);
-         TdApi.MessageReaction fakeReaction = reactionsHashMap.get(reactionKey);
+        TdApi.MessageReaction fakeReaction = reactionsHashMap.get(reactionKey);
         if (fakeReaction == null) {
           fakeReaction = new TdApi.MessageReaction(reaction.type, 0, false, new TdApi.MessageSender[0]);
           reactionsHashMap.put(reactionKey, fakeReaction);

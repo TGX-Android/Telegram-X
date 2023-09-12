@@ -229,7 +229,7 @@ public class ViewPagerHeaderViewCompact extends FrameLayoutFix implements PagerH
     return !(e.getAction() == MotionEvent.ACTION_DOWN && !canTouchAt(e.getX(), e.getY())) && super.onTouchEvent(e);
   }
 
-  private boolean canTouchAt (float x, float y) {
+  protected boolean canTouchAt (float x, float y) {
     y -= recyclerView.getTop() + (int) recyclerView.getTranslationY();
     return y >= 0 && y < adapter.topView.getMeasuredHeight();
   }

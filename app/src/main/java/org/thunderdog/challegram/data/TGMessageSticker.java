@@ -28,7 +28,6 @@ import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
@@ -48,7 +47,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import me.vkryl.core.collection.IntSet;
-import me.vkryl.core.lambda.FutureBool;
 import me.vkryl.td.Td;
 import me.vkryl.td.TdConstants;
 
@@ -88,7 +86,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
         if (allowNoLoop) {
           this.animatedFile.setPlayOnce(
             forcePlayOnce ||
-            (specialType != SPECIAL_TYPE_NONE && !(Config.LOOP_BIG_CUSTOM_EMOJI && specialType == SPECIAL_TYPE_ANIMATED_EMOJI && Td.customEmojiId(sticker) != 0)) ||
+            (specialType != SPECIAL_TYPE_NONE && !(Config.LOOP_BIG_CUSTOM_EMOJI/*!Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI_LOOP)*/ && specialType == SPECIAL_TYPE_ANIMATED_EMOJI && Td.customEmojiId(sticker) != 0)) ||
             Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_STICKERS_LOOP)
           );
           if (specialType == SPECIAL_TYPE_DICE) {
@@ -661,18 +659,6 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
           isCaught = false;
           boolean tapProcessed = false;
           TdApi.Sticker sticker = getBaseSticker();
-          FutureBool fallbackAct = () -> {
-            GifFile animatedFile = view.getComplexReceiver().getGifReceiver(0).getCurrentFile();
-            if (animatedFile != null && Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_STICKERS_LOOP) && animatedFile.setLooped(false)) {
-              invalidate();
-              return true;
-            }
-            if (sticker != null && sticker.setId != 0) {
-              openStickerSet();
-              return true;
-            }
-            return false;
-          };
           switch (specialType) {
             case SPECIAL_TYPE_DICE: {
               tapProcessed = true;
@@ -703,20 +689,11 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
               break;
             }
             case SPECIAL_TYPE_ANIMATED_EMOJI: {
-              GifFile animatedFile = view.getComplexReceiver() != null ? view.getComplexReceiver().getGifReceiver(0).getCurrentFile() : null;
-              if (Config.LOOP_BIG_CUSTOM_EMOJI && Td.customEmojiId(sticker) != 0) {
-                tapProcessed = fallbackAct.getBoolValue();
-              } else if (animatedFile != null) {
-                tapProcessed = animatedFile.setVibrationPattern(Emoji.instance().getVibrationPatternType(sticker.emoji));
-                if (animatedFile.setLooped(false)) {
-                  tapProcessed = true;
-                  invalidate();
-                }
-              }
+              tapProcessed = openOrLoopSticker(view, sticker, !Config.LOOP_BIG_CUSTOM_EMOJI /*Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI_LOOP)*/);
               break;
             }
             default: {
-              tapProcessed = fallbackAct.getBoolValue();
+              tapProcessed = openOrLoopSticker(view, sticker, Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_STICKERS_LOOP));
               break;
             }
           }
@@ -730,5 +707,41 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
     }
 
     return isCaught;
+  }
+
+  private boolean openOrLoopSticker (MessageView view, TdApi.Sticker sticker, boolean noLoopSettingEnabled) {
+    GifFile animatedFile = view.getComplexReceiver().getGifReceiver(0).getCurrentFile();
+    if (animatedFile != null && noLoopSettingEnabled && animatedFile.setLooped(false)) {
+      invalidate();
+      return true;
+    }
+    if (sticker != null && sticker.setId != 0 && sticker.setId != TdConstants.TELEGRAM_ANIMATED_EMOJI_STICKER_SET_ID) {
+      openStickerSet();
+      return true;
+    }
+    return false;
+  }
+
+  @Override
+  public long getFirstEmojiId () {
+    if (sticker != null && sticker.getConstructor() == TdApi.DiceStickersRegular.CONSTRUCTOR) {
+      TdApi.Sticker sticker1 = ((TdApi.DiceStickersRegular) sticker).sticker;
+      return Td.customEmojiId(sticker1);
+    }
+    return 0;
+  }
+
+  @Override
+  public long[] getUniqueEmojiPackIdList () {
+    if (sticker != null && sticker.getConstructor() == TdApi.DiceStickersRegular.CONSTRUCTOR) {
+      TdApi.Sticker sticker1 = ((TdApi.DiceStickersRegular) sticker).sticker;
+      if (Td.customEmojiId(sticker1) != 0) {
+        return new long[] {
+          sticker1.setId
+        };
+      }
+    }
+
+    return new long[0];
   }
 }

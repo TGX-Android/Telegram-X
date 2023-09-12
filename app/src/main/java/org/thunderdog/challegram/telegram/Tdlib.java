@@ -6430,7 +6430,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   public String tMeUrl () {
-    return StringUtils.isEmpty(tMeUrl) ? "https://" + TD.getTelegramMeHost() + "/" : tMeUrl;
+    return StringUtils.isEmpty(tMeUrl) ? "https://" + TdConstants.TME_HOSTS[0] + "/" : tMeUrl;
   }
 
   public String tMeMessageUrl (String username, long messageId) {
@@ -6491,6 +6491,17 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public String tMeLanguageUrl (String languagePackId) {
     return tMeUrl("setlanguage/" + languagePackId);
+  }
+
+  public String tMeStickerSetUrl (@NonNull TdApi.StickerSetInfo stickerSetInfo) {
+    switch (stickerSetInfo.stickerType.getConstructor()) {
+      case TdApi.StickerTypeCustomEmoji.CONSTRUCTOR:
+        return tMeUrl("addemoji/" + stickerSetInfo.name);
+      case TdApi.StickerTypeMask.CONSTRUCTOR:
+      case TdApi.StickerTypeRegular.CONSTRUCTOR:
+        return tMeUrl("addstickers/" + stickerSetInfo.name);
+    }
+    throw new UnsupportedOperationException(stickerSetInfo.stickerType.toString());
   }
 
   public String tMeHost () {
@@ -10573,7 +10584,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   public boolean haveAnySettingsSuggestions () {
     synchronized (dataLock) {
-      for (TdApi.SuggestedAction action: suggestedActions) {
+      for (TdApi.SuggestedAction action : suggestedActions) {
         if (isSettingSuggestion(action))
           return true;
       }

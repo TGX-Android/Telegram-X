@@ -134,9 +134,11 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
   }
 
   private StickerSmallView controllerView;
+  private @ColorId int repaintingColorId;
 
   public void setControllerView (StickerSmallView stickerView) {
     this.controllerView = stickerView;
+    this.repaintingColorId = stickerView != null ? stickerView.getRepaintingColorId() : ColorId.iconActive;
   }
 
   @Override
@@ -615,22 +617,25 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
 
   private void makeMenuForSticker (final TGStickerObj sticker, final View.OnClickListener onClickListener) {
     boolean isFavorite = tdlib.isStickerFavorite(sticker.getId());
+    boolean isEmoji = sticker.isCustomEmoji();
 
-    ImageView imageView = new ImageView(getContext());
-    imageView.setId(R.id.btn_favorite);
-    imageView.setScaleType(ImageView.ScaleType.CENTER);
-    imageView.setOnClickListener(onClickListener);
-    imageView.setImageResource(isFavorite ? R.drawable.baseline_star_24 : R.drawable.baseline_star_border_24);
-    imageView.setColorFilter(Theme.getColor(ColorId.textNeutral));
-    themeListenerList.addThemeFilterListener(imageView, ColorId.textNeutral);
-    imageView.setLayoutParams(new ViewGroup.LayoutParams(Screen.dp(48f), ViewGroup.LayoutParams.MATCH_PARENT));
-    imageView.setPadding(Lang.rtl() ? 0 : Screen.dp(8f), 0, Lang.rtl() ? Screen.dp(8f) : 0, 0);
-    RippleSupport.setTransparentBlackSelector(imageView);
-    Views.setClickable(imageView);
-    if (Lang.rtl())
-      menu.addView(imageView, 0);
-    else
-      menu.addView(imageView);
+    if (!isEmoji) {
+      ImageView imageView = new ImageView(getContext());
+      imageView.setId(R.id.btn_favorite);
+      imageView.setScaleType(ImageView.ScaleType.CENTER);
+      imageView.setOnClickListener(onClickListener);
+      imageView.setImageResource(isFavorite ? R.drawable.baseline_star_24 : R.drawable.baseline_star_border_24);
+      imageView.setColorFilter(Theme.getColor(ColorId.textNeutral));
+      themeListenerList.addThemeFilterListener(imageView, ColorId.textNeutral);
+      imageView.setLayoutParams(new ViewGroup.LayoutParams(Screen.dp(48f), ViewGroup.LayoutParams.MATCH_PARENT));
+      imageView.setPadding(Lang.rtl() ? 0 : Screen.dp(8f), 0, Lang.rtl() ? Screen.dp(8f) : 0, 0);
+      RippleSupport.setTransparentBlackSelector(imageView);
+      Views.setClickable(imageView);
+      if (Lang.rtl())
+        menu.addView(imageView, 0);
+      else
+        menu.addView(imageView);
+    }
 
     boolean needViewPackButton = sticker.needViewPackButton();
 
@@ -640,7 +645,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
     sendView.setTypeface(Fonts.getRobotoMedium());
     sendView.setTextColor(Theme.getColor(ColorId.textNeutral));
     themeListenerList.addThemeColorListener(sendView, ColorId.textNeutral);
-    Views.setMediumText(sendView, Lang.getString(R.string.SendSticker).toUpperCase());
+    Views.setMediumText(sendView, Lang.getString(isEmoji ? R.string.PasteCustomEmoji : R.string.SendSticker).toUpperCase());
     sendView.setOnClickListener(onClickListener);
     RippleSupport.setTransparentBlackSelector(sendView);
     int paddingLeft = Screen.dp(12f);
@@ -682,7 +687,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
         menu.addView(viewView);
     }
 
-    if (sticker.isRecent()) {
+    if (sticker.isRecent() && !sticker.isCustomEmoji()) {
       ImageView removeRecentView = new ImageView(getContext());
       removeRecentView.setId(R.id.btn_removeRecent);
       removeRecentView.setScaleType(ImageView.ScaleType.CENTER);
@@ -821,6 +826,8 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
     @Override
     protected void onDraw (Canvas c) {
       final boolean needRepainting = currentSticker != null && currentSticker.isNeedRepainting();
+      int restoreToRepainting = -1;
+
       final boolean savedAppear = appearFactor != 1f;
       if (savedAppear) {
         final float fromScale = (float) fromWidth / (float) stickerWidth;
@@ -853,12 +860,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
       }
 
       if (needRepainting) {
-        c.saveLayerAlpha(
-          receiver.getLeft() - receiver.getWidth() / 4f,
-          receiver.getTop() - receiver.getHeight() / 4f,
-          receiver.getRight() + receiver.getWidth() / 4f,
-          receiver.getBottom() + receiver.getHeight() / 4f,
-          255, Canvas.ALL_SAVE_FLAG);
+        restoreToRepainting = Views.saveRepainting(c, receiver);
       }
 
       final boolean savedReplace = replaceFactor != 0f;
@@ -908,13 +910,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
       }
 
       if (needRepainting) {
-        c.drawRect(
-          receiver.getLeft() - receiver.getWidth() / 4f,
-          receiver.getTop() - receiver.getHeight() / 4f,
-          receiver.getRight() + receiver.getWidth() / 4f,
-          receiver.getBottom() + receiver.getHeight() / 4f,
-          Paints.getSrcInPaint(Theme.getColor(ColorId.iconActive)));
-        c.restore();
+        Views.restoreRepainting(c, receiver, restoreToRepainting, Theme.getColor(repaintingColorId));
       }
 
       if (savedAppear) {

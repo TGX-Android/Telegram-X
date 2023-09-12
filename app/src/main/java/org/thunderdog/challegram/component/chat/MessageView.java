@@ -100,6 +100,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   private final AvatarReceiver avatarReceiver;
   private final GifReceiver gifReceiver;
   private final ComplexReceiver avatarsReceiver;
+  private final ComplexReceiver reactionAvatarsReceiver;
   private final ComplexReceiver emojiStatusReceiver;
   private final ComplexReceiver reactionsComplexReceiver, textMediaReceiver, replyTextMediaReceiver;
   private final DoubleImageReceiver replyReceiver;
@@ -117,6 +118,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     this.refreshRateLimiter = new RefreshRateLimiter(this, Config.MAX_ANIMATED_EMOJI_REFRESH_RATE);
     avatarReceiver = new AvatarReceiver(this);
     avatarsReceiver = new ComplexReceiver(this);
+    reactionAvatarsReceiver = new ComplexReceiver(this);
     gifReceiver = new GifReceiver(this); // TODO use refreshRateLimiter?
     reactionsComplexReceiver = new ComplexReceiver()
       .setUpdateListener(new RefreshRateLimiter(this, 60.0f)); // Limit by 60fps
@@ -155,6 +157,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   public void performDestroy () {
     avatarReceiver.destroy();
     avatarsReceiver.performDestroy();
+    reactionAvatarsReceiver.performDestroy();
     replyReceiver.destroy();
     replyTextMediaReceiver.performDestroy();
     gifReceiver.destroy();
@@ -286,6 +289,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     message.requestAvatar(avatarReceiver);
     message.requestReactions(reactionsComplexReceiver);
     message.requestCommentsResources(avatarsReceiver, false);
+    message.requestReactionsResources(reactionAvatarsReceiver, false);
     message.requestAllTextMedia(this);
 
     if ((flags & FLAG_USE_COMMON_RECEIVER) != 0) {
@@ -408,6 +412,10 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
     return avatarsReceiver;
   }
 
+  public ComplexReceiver getReactionAvatarsReceiver () {
+    return reactionAvatarsReceiver;
+  }
+
   public ImageReceiver getContentReceiver () {
     return contentReceiver;
   }
@@ -453,6 +461,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       isAttached = true;
       avatarReceiver.attach();
       avatarsReceiver.attach();
+      reactionAvatarsReceiver.attach();
       gifReceiver.attach();
       reactionsComplexReceiver.attach();
       textMediaReceiver.attach();
@@ -474,6 +483,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       isAttached = false;
       avatarReceiver.detach();
       avatarsReceiver.detach();
+      reactionAvatarsReceiver.detach();
       gifReceiver.detach();
       reactionsComplexReceiver.detach();
       textMediaReceiver.detach();

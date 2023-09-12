@@ -3,6 +3,7 @@ package org.thunderdog.challegram.ui;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
+import android.text.style.ClickableSpan;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -33,15 +34,19 @@ import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.text.TextEntity;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.CustomTextView;
+import org.thunderdog.challegram.widget.EmojiPacksInfoView;
 import org.thunderdog.challegram.widget.EmojiTextView;
 
 import me.vkryl.core.StringUtils;
 
 public class MessageOptionsController extends BottomSheetViewController.BottomSheetBaseRecyclerViewController<MessageOptionsController.Args> {
   private Options options;
+  private long[] emojiPackIds;
+  private long emojiPackFirstEmoji;
   private View.OnClickListener listener;
   private OptionsAdapter adapter;
   private ThemeListenerList themeProvider;
+  private Runnable hideWindowDelegate;
 
 
   public MessageOptionsController (Context context, Tdlib tdlib, ThemeListenerList themeProvider) {
@@ -54,6 +59,9 @@ public class MessageOptionsController extends BottomSheetViewController.BottomSh
     super.setArguments(args);
     this.options = args.options;
     this.listener = args.listener;
+    this.emojiPackIds = args.emojiPackIds;
+    this.emojiPackFirstEmoji = args.emojiPackFirstEmoji;
+    this.hideWindowDelegate = args.hideWindowDelegate;
   }
 
   @Override
@@ -73,7 +81,7 @@ public class MessageOptionsController extends BottomSheetViewController.BottomSh
 
   @Override
   protected void onCreateView (Context context, CustomRecyclerView recyclerView) {
-    adapter = new OptionsAdapter(context, this, options, listener, themeProvider);
+    adapter = new OptionsAdapter(context, this, options, emojiPackFirstEmoji, emojiPackIds, listener, themeProvider);
     LinearLayoutManager manager = new LinearLayoutManager(context);
     addThemeInvalidateListener(recyclerView);
     recyclerView.setOverScrollMode(View.OVER_SCROLL_NEVER);
@@ -89,10 +97,16 @@ public class MessageOptionsController extends BottomSheetViewController.BottomSh
   public static class Args {
     public Options options;
     public View.OnClickListener listener;
+    public long[] emojiPackIds;
+    public long emojiPackFirstEmoji;
+    public Runnable hideWindowDelegate;
 
-    public Args (Options options, View.OnClickListener listener) {
+    public Args (Options options, View.OnClickListener listener, long emojiPackFirstEmoji, long[] emojiPackIds, Runnable hideWindowDelegate) {
       this.options = options;
       this.listener = listener;
+      this.emojiPackIds = emojiPackIds;
+      this.emojiPackFirstEmoji = emojiPackFirstEmoji;
+      this.hideWindowDelegate = hideWindowDelegate;
     }
   }
 
@@ -102,7 +116,7 @@ public class MessageOptionsController extends BottomSheetViewController.BottomSh
       super(itemView);
     }
 
-    public static OptionHolder create (Context context, Tdlib tdlib, int viewType, View.OnClickListener onClickListener) {
+    public static OptionHolder create (Context context, ViewController<?> parent, int viewType, View.OnClickListener onClickListener) {
       if (viewType == OptionsAdapter.TYPE_OPTION) {
         EmojiTextView text = new EmojiTextView(context);
         text.setScrollDisabled(true);
@@ -118,8 +132,11 @@ public class MessageOptionsController extends BottomSheetViewController.BottomSh
         Views.setClickable(text);
         RippleSupport.setTransparentSelector(text);
         return new OptionHolder(text);
+      } else if (viewType == OptionsAdapter.TYPE_EMOJI_PACK_INFO) {
+        EmojiPacksInfoView textView= new EmojiPacksInfoView(context, parent, parent.tdlib());
+        return new OptionHolder(textView);
       } else {
-        CustomTextView textView = new CustomTextView(context, tdlib);
+        CustomTextView textView = new CustomTextView(context, parent.tdlib());
         textView.setTextColorId(ColorId.textLight);
         textView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         textView.setPadding(Screen.dp(16f), Screen.dp(14f), Screen.dp(16f), Screen.dp(6f));
@@ -133,26 +150,37 @@ public class MessageOptionsController extends BottomSheetViewController.BottomSh
     private final View.OnClickListener onClickListener;
     private final Options options;
     private final Tdlib tdlib;
-    private final ViewController<?> parent;
+    private final MessageOptionsController parent;
     @Nullable
     private final ThemeListenerList themeProvider;
+    private final long[] emojiPackIds;
+    private final long emojiPackFirstEmoji;
+
+    private final int textInfoPosition;
+    private final int emojiInfoPosition;
 
     public static final int TYPE_OPTION = 0;
     public static final int TYPE_INFO = 1;
+    public static final int TYPE_EMOJI_PACK_INFO = 2;
 
-    OptionsAdapter (Context context, ViewController<?> parent, Options options, View.OnClickListener onClickListener, @Nullable ThemeListenerList themeProvider) {
+    OptionsAdapter (Context context, MessageOptionsController parent, Options options, long emojiPackFirstEmoji, long[] emojiPackIds, View.OnClickListener onClickListener, @Nullable ThemeListenerList themeProvider) {
       this.parent = parent;
       this.tdlib = parent.tdlib();
       this.onClickListener = onClickListener;
       this.context = context;
       this.options = options;
       this.themeProvider = themeProvider;
+      this.emojiPackIds = emojiPackIds;
+      this.emojiPackFirstEmoji = emojiPackFirstEmoji;
+
+      this.emojiInfoPosition = emojiPackIds.length > 0 ? 0 : -1;
+      this.textInfoPosition = StringUtils.isEmpty(options.info) ? -1 : (emojiInfoPosition + 1);
     }
 
     @NonNull
     @Override
     public OptionHolder onCreateViewHolder (@NonNull ViewGroup parent, int viewType) {
-      return OptionHolder.create(context, tdlib, viewType, onClickListener);
+      return OptionHolder.create(context, this.parent, viewType, onClickListener);
     }
 
     @Override
@@ -161,6 +189,9 @@ public class MessageOptionsController extends BottomSheetViewController.BottomSh
 
       if (type == TYPE_OPTION) {
         if (!StringUtils.isEmpty(options.info)) {
+          position -= 1;
+        }
+        if (emojiInfoPosition > -1) {
           position -= 1;
         }
 
@@ -199,12 +230,28 @@ public class MessageOptionsController extends BottomSheetViewController.BottomSh
         textView.setTextColorId(ColorId.textLight);
         textView.setText(str, parsed, false);
       }
+
+      if (type == TYPE_EMOJI_PACK_INFO) {
+        EmojiPacksInfoView textView = ((EmojiPacksInfoView) holder.itemView);
+        textView.setTextSize(15f);
+        textView.setTextColorId(ColorId.textLight);
+        textView.update(emojiPackFirstEmoji, emojiPackIds, new ClickableSpan() {
+          @Override
+          public void onClick (@NonNull View widget) {
+            tdlib.ui().showStickerSets(parent, emojiPackIds, true, null);
+            parent.hideWindowDelegate.run();
+          }
+        }, false);
+      }
     }
 
     @Override
     public int getItemViewType (int position) {
-      if (position == 0 && !StringUtils.isEmpty(options.info)) {
+      if (position == textInfoPosition) {
         return TYPE_INFO;
+      }
+      if (position == emojiInfoPosition) {
+        return TYPE_EMOJI_PACK_INFO;
       }
 
       return TYPE_OPTION;
@@ -212,13 +259,13 @@ public class MessageOptionsController extends BottomSheetViewController.BottomSh
 
     @Override
     public int getItemCount () {
-      return options.items.length + (StringUtils.isEmpty(options.info) ? 0 : 1);
+      return options.items.length + (textInfoPosition > -1 ? 1 : 0) + (emojiInfoPosition > -1 ? 1 : 0);
     }
   }
 
   @Override
   public int getItemsHeight (RecyclerView recyclerView) {
-    int totalHeight = options.items.length * Screen.dp(54);
+    int totalHeight = (options.items.length + 2) * Screen.dp(54);
     if (!StringUtils.isEmpty(options.info)) {
       View view = recyclerView.getLayoutManager().findViewByPosition(0);
       int hintHeight =
@@ -234,6 +281,9 @@ public class MessageOptionsController extends BottomSheetViewController.BottomSh
           totalHeight += Screen.dp(14f) + Screen.dp(6f) + Screen.dp(15f);
         }
       }
+    }
+    if (emojiPackIds.length > 0) {
+      totalHeight += Screen.dp(40);
     }
     return totalHeight;
   }

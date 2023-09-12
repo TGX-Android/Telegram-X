@@ -37,6 +37,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.StringRes;
 import androidx.collection.LongSparseArray;
+import androidx.core.os.CancellationSignal;
 
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
@@ -160,6 +161,7 @@ import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
+import me.vkryl.core.collection.LongSet;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.Future;
 import me.vkryl.core.lambda.FutureBool;
@@ -167,6 +169,7 @@ import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.core.lambda.RunnableLong;
 import me.vkryl.core.unit.ByteUnit;
+import me.vkryl.core.util.ConditionalExecutor;
 import me.vkryl.td.ChatId;
 import me.vkryl.td.ChatPosition;
 import me.vkryl.td.MessageId;
@@ -1267,7 +1270,7 @@ public class TdlibUi extends Handler {
       UI.copyText('@' + Td.primaryUsername(user), R.string.CopiedUsername);
       return true;
     } else if (id == R.id.btn_username_copy_link) {
-      UI.copyText(TD.getLink(user), R.string.CopiedLink);
+      UI.copyText(context.tdlib().tMeUrl(user.usernames), R.string.CopiedLink);
       return true;
     } else if (id == R.id.btn_username_share) {
       shareUsername(context, user);
@@ -1672,21 +1675,11 @@ public class TdlibUi extends Handler {
       switch (object.getConstructor()) {
         case TdApi.StickerSet.CONSTRUCTOR: {
           TdApi.StickerSet stickerSet = (TdApi.StickerSet) object;
-          if (stickerSet.stickerType.getConstructor() == TdApi.StickerTypeCustomEmoji.CONSTRUCTOR) {
-            // TODO support custom emoji sets
-            showLinkTooltip(context.tdlib(), R.drawable.baseline_warning_24, Lang.getString(R.string.InternalUrlUnsupported), openParameters);
-            return;
-          }
           StickerSetWrap.showStickerSet(context, stickerSet);
           break;
         }
         case TdApi.StickerSetInfo.CONSTRUCTOR: {
           TdApi.StickerSetInfo stickerSetInfo = (TdApi.StickerSetInfo) object;
-          if (stickerSetInfo.stickerType.getConstructor() == TdApi.StickerTypeCustomEmoji.CONSTRUCTOR) {
-            // TODO support custom emoji sets
-            showLinkTooltip(context.tdlib(), R.drawable.baseline_warning_24, Lang.getString(R.string.InternalUrlUnsupported), openParameters);
-            return;
-          }
           StickerSetWrap.showStickerSet(context, stickerSetInfo);
           break;
         }
@@ -1706,6 +1699,14 @@ public class TdlibUi extends Handler {
   public void showStickerSet (TdlibDelegate context, long setId, @Nullable UrlOpenParameters openParameters) {
     // TODO progress
     tdlib.client().send(new TdApi.GetStickerSet(setId), newStickerSetHandler(context, openParameters));
+  }
+
+  public void showStickerSets (TdlibDelegate context, long[] setIds, boolean isEmojiPacks, @Nullable UrlOpenParameters openParameters) {
+    if (setIds.length == 1) {
+      showStickerSet(context, setIds[0], openParameters);
+    } else {
+      StickerSetWrap.showStickerSets(context, setIds, isEmojiPacks);
+    }
   }
 
   // Confirm phone
@@ -6456,5 +6457,115 @@ public class TdlibUi extends Handler {
 
   public void openVoiceChat (ViewController<?> context, int groupCallId, @Nullable UrlOpenParameters openParameters) {
     // TODO open voice chat layer
+  }
+
+  // Suggestions by emoji
+
+  public static class EmojiStickers {
+    private final Tdlib tdlib;
+    public final String emoji;
+
+    private TdApi.Stickers installedStickers;
+    private TdApi.Stickers recommendedStickers;
+
+    public EmojiStickers (Tdlib tdlib, TdApi.StickerType stickerType, String emoji, int limit, long chatId, int mode) {
+      this.tdlib = tdlib;
+      this.emoji = emoji;
+      if (mode != Settings.STICKER_MODE_ALL) {
+        setStickers(new TdApi.Stickers(new TdApi.Sticker[0]), false);
+      }
+      tdlib.client().send(new TdApi.GetStickers(stickerType, emoji, limit, chatId), object ->
+        setStickers(object, true)
+      );
+      if (mode == Settings.STICKER_MODE_ALL) {
+        // Request 2x more than limit for the case all of the stickers returned by GetStickers
+        tdlib.client().send(new TdApi.SearchStickers(stickerType, emoji, limit * 2), object ->
+          setStickers(object, false)
+        );
+      }
+    }
+
+    void setStickers (TdApi.Object stickersRaw, boolean areLocal) {
+      TdApi.Stickers stickers = stickersRaw.getConstructor() == TdApi.Stickers.CONSTRUCTOR ? (TdApi.Stickers) stickersRaw : new TdApi.Stickers(new TdApi.Sticker[0]);
+      if (areLocal) {
+        this.installedStickers = stickers;
+        haveInstalledStickers.notifyConditionChanged();
+      } else {
+        this.recommendedStickers = stickers;
+        haveRecommendedStickers.notifyConditionChanged();
+      }
+    }
+
+    private final ConditionalExecutor haveInstalledStickers = new ConditionalExecutor(() -> this.installedStickers != null);
+    private final ConditionalExecutor haveRecommendedStickers = new ConditionalExecutor(() -> this.recommendedStickers != null);
+
+    public interface Callback {
+      void onStickersLoaded (EmojiStickers context, TdApi.Sticker[] installedStickers, TdApi.Sticker[] recommendedStickers);
+
+      default void onRecommendedStickersLoaded (EmojiStickers context, TdApi.Sticker[] recommendedStickers) { }
+    }
+
+    public void getStickers (Callback callback, long remoteTimeoutMs) {
+      haveInstalledStickers.executeOrPostponeTask(() -> {
+        CancellationSignal timeoutSignal = new CancellationSignal();
+
+        int installedStickersCount = installedStickers.stickers.length;
+        List<TdApi.Sticker> installed = new ArrayList<>(installedStickersCount);
+        Collections.addAll(installed, installedStickers.stickers);
+
+        haveRecommendedStickers.executeOrPostponeTask(() -> {
+          boolean isAdditionalLoad = timeoutSignal.isCanceled();
+          timeoutSignal.cancel();
+          int recommendedStickersCount = recommendedStickers != null ? recommendedStickers.stickers.length : 0;
+          List<TdApi.Sticker> recommended = new ArrayList<>(recommendedStickersCount);
+          if (recommendedStickersCount > 0) {
+            LongSet installedStickerIds = new LongSet(installedStickersCount);
+            for (TdApi.Sticker installedSticker : installedStickers.stickers) {
+              installedStickerIds.add(installedSticker.id);
+            }
+            for (TdApi.Sticker recommendedSticker : recommendedStickers.stickers) {
+              if (!installedStickerIds.has(recommendedSticker.id)) {
+                recommended.add(recommendedSticker);
+              }
+            }
+          }
+          if (isAdditionalLoad) {
+            if (recommendedStickersCount > 0) {
+              tdlib.uiExecute(() ->
+                callback.onRecommendedStickersLoaded(this, recommended.toArray(new TdApi.Sticker[0]))
+              );
+            }
+          } else {
+            tdlib.uiExecute(() ->
+              callback.onStickersLoaded(this, installed.toArray(new TdApi.Sticker[0]), recommended.toArray(new TdApi.Sticker[0]))
+            );
+          }
+        });
+        if (remoteTimeoutMs > 0 && !timeoutSignal.isCanceled()) {
+          tdlib.runOnTdlibThread(() -> {
+            if (timeoutSignal.isCanceled()) {
+              return;
+            }
+            timeoutSignal.cancel();
+            tdlib.uiExecute(() ->
+              callback.onStickersLoaded(this, installed.toArray(new TdApi.Sticker[0]), null)
+            );
+          }, (double) remoteTimeoutMs / 1000.0, false);
+        }
+      });
+    }
+  }
+
+  public EmojiStickers getEmojiStickers (final TdApi.StickerType stickerType, final String emoji, int limit, long chatId) {
+    int mode;
+    if (stickerType.getConstructor() == TdApi.StickerTypeCustomEmoji.CONSTRUCTOR) {
+      mode = Settings.instance().getEmojiMode();
+    } else {
+      mode = Settings.instance().getStickerMode();
+    }
+    if (tdlib.suggestOnlyApiStickers() && mode == Settings.STICKER_MODE_ALL) {
+      mode = Settings.STICKER_MODE_ONLY_INSTALLED;
+    }
+    return new EmojiStickers(tdlib, stickerType, emoji, limit, chatId, mode);
   }
 }

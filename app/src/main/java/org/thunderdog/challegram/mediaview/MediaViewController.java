@@ -66,6 +66,7 @@ import org.thunderdog.challegram.component.chat.EmojiToneHelper;
 import org.thunderdog.challegram.component.chat.InlineResultsWrap;
 import org.thunderdog.challegram.component.chat.InputView;
 import org.thunderdog.challegram.component.preview.FlingDetector;
+import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.InlineResult;
@@ -583,6 +584,11 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   @Override
   public void onEnterEmoji (String emoji) {
     ((InputView) captionView).onEmojiSelected(emoji);
+  }
+
+  @Override
+  public void onEnterCustomEmoji (TGStickerObj sticker) {
+    ((InputView) captionView).onCustomEmojiSelected(sticker);
   }
 
   @Override
@@ -8485,7 +8491,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   private void setTextFormattingLayoutVisible (boolean visible) {
     textFormattingVisible = visible;
     if (emojiLayout != null && textFormattingLayout != null) {
-      textFormattingLayout.setVisibility(visible ? View.VISIBLE: View.GONE);
+      textFormattingLayout.setVisibility(visible ? View.VISIBLE : View.GONE);
       emojiLayout.optimizeForDisplayTextFormattingLayout(!visible);
       if (visible) {
         textFormattingLayout.checkButtonsActive(false);
@@ -8500,6 +8506,6 @@ public class MediaViewController extends ViewController<MediaViewController.Args
   }
 
   public @DrawableRes int getTargetIcon () {
-    return (textInputHasSelection || (textFormattingVisible && emojiShown)) ? R.drawable.baseline_format_text_24: R.drawable.deproko_baseline_insert_emoticon_26;
+    return (textInputHasSelection || (textFormattingVisible && emojiShown)) ? R.drawable.baseline_format_text_24 : R.drawable.deproko_baseline_insert_emoticon_26;
   }
 }
