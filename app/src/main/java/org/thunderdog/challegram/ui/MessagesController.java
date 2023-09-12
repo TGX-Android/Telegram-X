@@ -10704,7 +10704,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return new HapticMenuHelper.MenuItem(id, title, Lang.getString(R.string.AnonymousAdmin), R.drawable.dot_baseline_acc_anon_24, tdlib, sender, false);
     } else {
       String username = tdlib.chatUsername(Td.getSenderId(sender));
-      String subtitle = useUsername && !StringUtils.isEmpty(username)? ("@" + username): tdlib.getMessageSenderTitle(sender);
+      String subtitle = useUsername && !StringUtils.isEmpty(username) ? ("@" + username) : tdlib.getMessageSenderTitle(sender);
       return new HapticMenuHelper.MenuItem(id, title, subtitle, 0, tdlib, sender, isLocked);
     }
   }

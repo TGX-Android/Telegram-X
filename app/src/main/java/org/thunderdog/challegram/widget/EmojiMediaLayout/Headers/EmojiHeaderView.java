@@ -134,7 +134,7 @@ public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Targe
 
   private void checkAllowMedia () {
     goToMediaPageSection.setVisibility(allowMedia && mediaMustBeVisibility ? VISIBLE : GONE);
-    recyclerView.setPadding(Screen.dp(DEFAULT_PADDING), 0, Screen.dp(DEFAULT_PADDING + (allowMedia? 44 : 0)), 0);
+    recyclerView.setPadding(Screen.dp(DEFAULT_PADDING), 0, Screen.dp(DEFAULT_PADDING + (allowMedia ? 44 : 0)), 0);
   }
 
   public void setSectionsOnClickListener (OnClickListener onClickListener) {
@@ -551,7 +551,7 @@ public class EmojiHeaderView extends FrameLayout implements FactorAnimator.Targe
         ((EmojiSectionView) holder.itemView).setSection(emojiSections.get(position));
       } else if (viewType == ViewHolder.TYPE_STICKER_SET) {
         TGStickerSetInfo info = stickerSets.get(position - emojiSections.size());
-        ((StickerSectionView) holder.itemView).setSelectionFactor(info == selectedObject? 1f : 0f, false);
+        ((StickerSectionView) holder.itemView).setSelectionFactor(info == selectedObject ? 1f : 0f, false);
         ((StickerSectionView) holder.itemView).setStickerSet(info);
       } else if (viewType == ViewHolder.TYPE_SECTIONS_EXPANDABLE) {
         EmojiSection obj = selectedObject instanceof EmojiSection ? ((EmojiSection) selectedObject) : null;

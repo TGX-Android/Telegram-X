@@ -871,11 +871,11 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
       if (this.lastPlaceholderAvailWidth != availWidth) {
         this.lastPlaceholderAvailWidth = availWidth;
 
-        placeholderTitle = !StringUtils.isEmpty(placeholderTitleText)? new Text.Builder(tdlib, placeholderTitleText, null, availWidth, Paints.robotoStyleProvider(Screen.px(getTextSize())), TextColorSets.PLACEHOLDER, null)
-          .singleLine().clipTextArea().build(): null;
+        placeholderTitle = !StringUtils.isEmpty(placeholderTitleText) ? new Text.Builder(tdlib, placeholderTitleText, null, availWidth, Paints.robotoStyleProvider(Screen.px(getTextSize())), TextColorSets.PLACEHOLDER, null)
+          .singleLine().clipTextArea().build() : null;
 
         placeholderSubTitle = !StringUtils.isEmpty(placeholderSubtitleText) ? new Text.Builder(tdlib, placeholderSubtitleText, null, availWidth, Paints.robotoStyleProvider(Screen.px(getTextSize()) / 3f * 2f), TextColorSets.PLACEHOLDER, null)
-          .singleLine().clipTextArea().build(): null;
+          .singleLine().clipTextArea().build() : null;
 
         subtitleReplaceAnimator.replace(placeholderSubTitle, UI.inUiThread());
 
