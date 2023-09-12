@@ -1127,28 +1127,32 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     if (selection == null)
       return;
 
+    final Editable editable = getText();
     final int start = selection.start;
 
     String emoji = TD.stickerEmoji(stickerObj);
-    int after = selection.start + emoji.length();
-    SpannableString s = new SpannableString(emoji);
-    s.setSpan(Emoji.instance().newCustomSpan(emoji, null, this, tdlib, Td.customEmojiId(stickerObj)), 0, s.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+    int after = start + emoji.length();
     if (needReplace && !isEmpty() && selection.isEmpty()) {
-      CharSequence emojiToRemove = Emoji.extractSingleEmojiLast(getText().subSequence(0, selection.start));
-      if (emojiToRemove != null && start >= emojiToRemove.length()) {
-        getText().replace(start - emojiToRemove.length(), start, s);
-        int newStart = start - emojiToRemove.length() + s.length();
-        setSelection(newStart);
-        if (inlineContext != null && newStart == start) {
+      EmojiSpan emojiSpan = Emoji.findPrecedingEmojiSpan(editable, start);
+      if (emojiSpan != null) {
+        int oldSpanStart = editable.getSpanStart(emojiSpan);
+        int oldSpanEnd = editable.getSpanEnd(emojiSpan);
+        editable.removeSpan(emojiSpan);
+        editable.setSpan(
+          Emoji.instance().newCustomSpan(emoji, null, this, tdlib, Td.customEmojiId(stickerObj)), oldSpanStart, oldSpanEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+        if (inlineContext != null) {
           inlineContext.reset();
         }
         return;
       }
     }
+
+    SpannableString s = new SpannableString(emoji);
+    s.setSpan(Emoji.instance().newCustomSpan(emoji, null, this, tdlib, Td.customEmojiId(stickerObj)), 0, s.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
     if (selection.isEmpty()) {
-      getText().insert(selection.start, s);
+      editable.insert(selection.start, s);
     } else {
-      getText().replace(selection.start, selection.end, s);
+      editable.replace(selection.start, selection.end, s);
     }
     setSelection(after);
   }

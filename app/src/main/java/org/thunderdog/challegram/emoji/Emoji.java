@@ -533,10 +533,10 @@ public class Emoji {
   @Nullable
   public static CharSequence extractSingleEmojiLast (CharSequence emoji) {
     if (emoji instanceof Spanned) {
-      EmojiSpan[] emojis = ((Spanned) emoji).getSpans(0, emoji.length(), EmojiSpan.class);
-      if (emojis != null && emojis.length > 0) {
-        int start = ((Spanned) emoji).getSpanStart(emojis[emojis.length - 1]);
-        int end = ((Spanned) emoji).getSpanEnd(emojis[emojis.length - 1]);
+      EmojiSpan span = findPrecedingEmojiSpan((Spanned) emoji, emoji.length());
+      if (span != null) {
+        int start = ((Spanned) emoji).getSpanStart(span);
+        int end = ((Spanned) emoji).getSpanEnd(span);
         return start == 0 && end == emoji.length() ? emoji : emoji.subSequence(start, end);
       }
     }
