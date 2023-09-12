@@ -24,6 +24,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 import androidx.collection.LongSparseArray;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -394,6 +395,13 @@ public class StickersListController extends ViewController<StickersListControlle
          // recentSet.setSize(spanCount * 2);
          // adapter.removeRange(recentSet.getEndIndex(), endIndex - recentSet.getEndIndex());
          // shiftStickerSets(existingIndex, recentSet.getEndIndex() - endIndex);
+        }
+      }
+
+      @Override
+      public void updateCollapseView (TextView collapseView, TGStickerSetInfo stickerSet, @StringRes int showMoreRes) {
+        if (stickerSet != null && stickerSet.isCollapsed()) {       // ignore updates for expanded sets
+          super.updateCollapseView(collapseView, stickerSet, showMoreRes);
         }
       }
     });
