@@ -379,7 +379,7 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
 
   private void setInProgress (boolean inProgress) {
     if (this.inProgress != inProgress) {
-      UI.post(() -> this.inProgress = inProgress);
+      this.inProgress = inProgress;
       button.setEnabled(!inProgress);
       if (scheduledProgress != null) {
         scheduledProgress.cancel();
