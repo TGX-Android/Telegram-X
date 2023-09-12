@@ -1138,6 +1138,9 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         int oldSpanStart = editable.getSpanStart(emojiSpan);
         int oldSpanEnd = editable.getSpanEnd(emojiSpan);
         editable.removeSpan(emojiSpan);
+        if (emojiSpan instanceof Destroyable) {
+          ((Destroyable) emojiSpan).performDestroy();
+        }
         editable.setSpan(
           Emoji.instance().newCustomSpan(emoji, null, this, tdlib, Td.customEmojiId(stickerObj)), oldSpanStart, oldSpanEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
         if (inlineContext != null) {
