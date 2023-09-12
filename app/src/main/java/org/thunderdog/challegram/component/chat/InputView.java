@@ -1763,24 +1763,35 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     }
   }
 
-  public int[] getSymbolUnderCursorPosition () {
-    TextSelection selection = getTextSelection();
-    if (selection == null) return new int[]{0, 0};
+  private final int[]
+    cords1 = new int[2],
+    cords2 = new int[2],
+    cords3 = new int[2];
 
-    int[] cords1 = Views.getCharacterCoordinates(this, selection.start);
-    int[] cords2 = new int[]{ cords1[0], cords1[1]};
+  public void getSymbolUnderCursorPosition (int[] coordinates) {
+    TextSelection selection = getTextSelection();
+    if (selection == null) {
+      coordinates[0] = coordinates[1] = 0;
+      return;
+    }
+
+    Views.getCharacterCoordinates(this, selection.start, cords1);
+    cords2[0] = cords1[0];
+    cords2[1] = cords1[1];
+    int[] cords2 = this.cords2;
 
     for (int a = selection.start - 1; a >= 0; a--) {
-      int[] cords3 = Views.getCharacterCoordinates(this, a);
+      Views.getCharacterCoordinates(this, a, cords3);
       if (cords3[1] != cords1[1]) {
         cords2[0] /= 2;
         break;
-      };
+      }
       if (cords3[0] == cords1[0]) continue;
       cords2 = cords3;
       break;
     }
 
-    return new int[]{ (cords1[0] + cords2[0]) / 2, cords1[1] };
+    coordinates[0] = (cords1[0] + cords2[0]) / 2;
+    coordinates[1] = cords1[1];
   }
 }

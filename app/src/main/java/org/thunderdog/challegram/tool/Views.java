@@ -940,8 +940,10 @@ public class Views {
     }
   }
 
-  public static int[] getCharacterCoordinates(TextView textView, int offset) {
-    int[] coordinates = new int[2];
+  public static void getCharacterCoordinates(TextView textView, int offset, int[] coordinates) {
+    if (coordinates.length != 2)
+      throw new IllegalArgumentException();
+    coordinates[0] = coordinates[1] = 0;
 
     Editable editable = textView.getEditableText();
     Layout layout = textView.getLayout();
@@ -954,7 +956,5 @@ public class Views {
       coordinates[0] = xPos;
       coordinates[1] = yPos;
     }
-
-    return coordinates;
   }
 }

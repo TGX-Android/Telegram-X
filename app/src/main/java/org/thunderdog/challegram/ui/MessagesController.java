@@ -8133,14 +8133,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
     manager.onViewportMeasure();
   }
 
+  private final int[] cursorCoordinates = new int[2], symbolUnderCursorPosition = new int[2];
+
   public int[] getInputCursorOffset () {
     if (inputView == null) {
-      return new int[]{0, 0};
+      cursorCoordinates[0] = cursorCoordinates[1] = 0;
+      return cursorCoordinates;
     }
-    int[] cords = inputView.getSymbolUnderCursorPosition();
-    cords[0] = cords[0] + inputView.getLeft() + inputView.getPaddingLeft();
-    cords[1] = cords[1] - inputView.getLineHeight() + Screen.currentHeight() - getInputOffset(true) - Screen.dp(40);
-    return cords;
+    inputView.getSymbolUnderCursorPosition(symbolUnderCursorPosition);
+    cursorCoordinates[0] = symbolUnderCursorPosition[0] + inputView.getLeft() + inputView.getPaddingLeft();
+    cursorCoordinates[1] = symbolUnderCursorPosition[1] - inputView.getLineHeight() + Screen.currentHeight() - getInputOffset(true) - Screen.dp(40);
+    return cursorCoordinates;
   }
 
   public int getInputOffset (boolean excludeTranslation) {
