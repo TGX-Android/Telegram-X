@@ -10,19 +10,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  *
- * File created on 12/11/2018
+ * File created on 13/09/2023
  */
-package org.thunderdog.challegram.util;
+package org.thunderdog.challegram.loader;
 
-import android.graphics.Canvas;
-import android.view.View;
-
-import androidx.annotation.Nullable;
-
-import org.thunderdog.challegram.loader.ComplexReceiver;
-
-public interface DrawModifier {
-  default void beforeDraw (View view, Canvas c) { }
-  default void afterDraw (View view, Canvas c) { }
-  default int getWidth () { return 0; }
+public interface ComplexReceiverProvider {
+  ComplexReceiver getComplexReceiver ();
 }

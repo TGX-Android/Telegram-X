@@ -40,6 +40,7 @@ import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.user.RemoveHelper;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.ComplexReceiver;
+import org.thunderdog.challegram.loader.ComplexReceiverProvider;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
@@ -79,7 +80,7 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 
-public class SettingView extends FrameLayoutFix implements FactorAnimator.Target, TGLegacyManager.EmojiLoadListener, AttachDelegate, Destroyable, RemoveHelper.RemoveDelegate, TextColorSet, TooltipOverlayView.LocationProvider {
+public class SettingView extends FrameLayoutFix implements FactorAnimator.Target, TGLegacyManager.EmojiLoadListener, AttachDelegate, Destroyable, RemoveHelper.RemoveDelegate, TextColorSet, TooltipOverlayView.LocationProvider, ComplexReceiverProvider {
   public static final int TYPE_INFO = 0x01;
   public static final int TYPE_SETTING = 0x02;
   public static final int TYPE_RADIO = 0x03;
@@ -238,6 +239,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     return receiver;
   }
 
+  @Override
   public ComplexReceiver getComplexReceiver () {
     return complexReceiver;
   }
@@ -859,7 +861,7 @@ public class SettingView extends FrameLayoutFix implements FactorAnimator.Target
     }
     if (drawModifiers != null) {
       for (int i = drawModifiers.size() - 1; i >= 0; i--) {
-        drawModifiers.get(i).afterDraw(this, c, getComplexReceiver());
+        drawModifiers.get(i).afterDraw(this, c);
       }
     }
     if (counter != null)

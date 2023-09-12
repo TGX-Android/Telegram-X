@@ -33,6 +33,7 @@ import org.thunderdog.challegram.data.AvatarPlaceholder;
 import org.thunderdog.challegram.data.TGUser;
 import org.thunderdog.challegram.loader.AvatarReceiver;
 import org.thunderdog.challegram.loader.ComplexReceiver;
+import org.thunderdog.challegram.loader.ComplexReceiverProvider;
 import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibContactManager;
@@ -57,7 +58,7 @@ import java.util.List;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 
-public class UserView extends BaseView implements Destroyable, RemoveHelper.RemoveDelegate, TooltipOverlayView.LocationProvider {
+public class UserView extends BaseView implements Destroyable, RemoveHelper.RemoveDelegate, TooltipOverlayView.LocationProvider, ComplexReceiverProvider {
   /*private static final int ACCENT_COLOR = 0xff569ace;
   private static final int DECENT_COLOR = 0xff8a8a8a;*/
 
@@ -146,6 +147,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
     avatarReceiver.detach();
   }
 
+  @Override
   public ComplexReceiver getComplexReceiver () {
     return complexReceiver;
   }
@@ -387,7 +389,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
 
     if (drawModifiers != null) {
       for (int i = drawModifiers.size() - 1; i >= 0; i--) {
-        drawModifiers.get(i).afterDraw(this, c, getComplexReceiver());
+        drawModifiers.get(i).afterDraw(this, c);
       }
     }
   }
