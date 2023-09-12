@@ -37,6 +37,7 @@ import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.EmojiCode;
 import org.thunderdog.challegram.tool.EmojiData;
+import org.thunderdog.challegram.tool.Emojis;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
@@ -491,6 +492,23 @@ public class Emoji {
   }
 
   // emoji
+
+  public static EmojiSpan findPrecedingEmojiSpan (Spanned spanned, int end) {
+    int next;
+    for (int i = Math.max(0, end - Emojis.MAX_EMOJI_LENGTH); i < end; i = next) {
+      next = spanned.nextSpanTransition(i, end, EmojiSpan.class);
+      EmojiSpan[] emojiSpans = spanned.getSpans(i, next, EmojiSpan.class);
+      if (emojiSpans != null) {
+        for (EmojiSpan emojiSpan : emojiSpans) {
+          int emojiEnd = spanned.getSpanEnd(emojiSpan);
+          if (emojiEnd == end) {
+            return emojiSpan;
+          }
+        }
+      }
+    }
+    return null;
+  }
 
   @Nullable
   public static String extractSingleEmoji (String str) {
