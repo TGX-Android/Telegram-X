@@ -23,7 +23,6 @@ import android.view.ViewGroup;
 
 import androidx.annotation.Nullable;
 
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;

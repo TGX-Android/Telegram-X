@@ -27,8 +27,8 @@ import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.util.DrawModifier;
 
 import me.vkryl.core.ArrayUtils;
-import me.vkryl.core.StringUtils;
 import me.vkryl.core.BitwiseUtils;
+import me.vkryl.core.StringUtils;
 
 public class ListItem {
   public static final int TYPE_CUSTOM = -1;

@@ -25,7 +25,6 @@ import org.thunderdog.challegram.component.emoji.MediaStickersAdapter;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
-import org.thunderdog.challegram.telegram.EmojiMediaType;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.ui.EmojiMediaListController;

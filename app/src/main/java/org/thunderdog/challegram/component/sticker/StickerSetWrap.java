@@ -30,11 +30,9 @@ import android.widget.TextView;
 import androidx.annotation.Nullable;
 import androidx.collection.LongSparseArray;
 
-import org.checkerframework.checker.units.qual.A;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.R;
-import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.emoji.MediaStickersAdapter;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
