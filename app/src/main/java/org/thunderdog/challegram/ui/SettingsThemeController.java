@@ -31,7 +31,6 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.luckycatlabs.sunrisesunset.SunriseSunsetCalculator;
 
-import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BuildConfig;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
@@ -41,13 +40,10 @@ import org.thunderdog.challegram.component.user.RemoveHelper;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.config.Device;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.data.TD;
-import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.helper.LocationHelper;
 import org.thunderdog.challegram.navigation.SettingsWrapBuilder;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
-import org.thunderdog.challegram.telegram.TGLegacyManager;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeCustom;
@@ -56,15 +52,12 @@ import org.thunderdog.challegram.theme.ThemeId;
 import org.thunderdog.challegram.theme.ThemeInfo;
 import org.thunderdog.challegram.theme.ThemeManager;
 import org.thunderdog.challegram.tool.Fonts;
-import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Strings;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.AppUpdater;
 import org.thunderdog.challegram.util.DrawableModifier;
-import org.thunderdog.challegram.util.EmojiModifier;
 import org.thunderdog.challegram.util.Permissions;
-import org.thunderdog.challegram.util.ReactionModifier;
 import org.thunderdog.challegram.util.StringList;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.RadioView;
@@ -84,7 +77,7 @@ import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.collection.IntList;
 
-public class SettingsThemeController extends RecyclerViewController<SettingsThemeController.Args> implements View.OnClickListener, ViewController.SettingsIntDelegate, SliderWrapView.RealTimeChangeListener, View.OnLongClickListener, TGLegacyManager.EmojiLoadListener, AppUpdater.Listener {
+public class SettingsThemeController extends RecyclerViewController<SettingsThemeController.Args> implements View.OnClickListener, ViewController.SettingsIntDelegate, SliderWrapView.RealTimeChangeListener, View.OnLongClickListener, AppUpdater.Listener {
   public SettingsThemeController (Context context, Tdlib tdlib) {
     super(context, tdlib);
   }
@@ -137,7 +130,6 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
   public void destroy () {
     super.destroy();
     cancelLocationRequest();
-    TGLegacyManager.instance().removeEmojiListener(this);
     context().appUpdater().removeListener(this);
   }
 
@@ -160,42 +152,6 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
           RadioView view = v.findRadioView();
           if (view != null)
             view.setChecked(item.isSelected(), isUpdate);
-        } else if (itemId == R.id.btn_emoji) {
-          Settings.EmojiPack emojiPack = Settings.instance().getEmojiPack();
-          if (emojiPack.identifier.equals(BuildConfig.EMOJI_BUILTIN_ID)) {
-            v.setData(R.string.EmojiBuiltIn);
-          } else {
-            v.setData(emojiPack.displayName);
-          }
-        } else if (itemId == R.id.btn_quick_reaction) {
-          final String[] reactions = Settings.instance().getQuickReactions(tdlib);
-          tdlib.ensureReactionsAvailable(reactions, reactionsUpdated -> {
-            if (reactionsUpdated) {
-              runOnUiThreadOptional(() -> {
-                updateQuickReaction();
-              });
-            }
-          });
-          StringBuilder stringBuilder = new StringBuilder();
-          if (reactions.length > 0) {
-            final List<TGReaction> tgReactions = new ArrayList<>(reactions.length);
-            for (String reactionKey : reactions) {
-              TdApi.ReactionType reactionType = TD.toReactionType(reactionKey);
-              final TGReaction tgReaction = tdlib.getReaction(reactionType, false);
-              if (tgReaction != null) {
-                tgReactions.add(tgReaction);
-                if (stringBuilder.length() > 0) {
-                  stringBuilder.append(Lang.getConcatSeparator());
-                }
-                stringBuilder.append(tgReaction.getTitle());
-              }
-            }
-            v.setDrawModifier(new ReactionModifier(v.getComplexReceiver(), tgReactions.toArray(new TGReaction[0])));
-            v.setData(stringBuilder.toString());
-          } else {
-            v.setDrawModifier(null);
-            v.setData(R.string.QuickReactionDisabled);
-          }
         } else if (itemId == R.id.btn_icon) {
           v.setData(R.string.IconsBuiltIn);
         } else if (itemId == R.id.btn_reduceMotion) {
@@ -271,18 +227,6 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
               v.setData(R.string.ChatListStyle1);
               break;
           }
-        } else if (itemId == R.id.btn_stickerSuggestions) {
-          switch (Settings.instance().getStickerMode()) {
-            case Settings.STICKER_MODE_ALL:
-              v.setData(R.string.SuggestStickersAll);
-              break;
-            case Settings.STICKER_MODE_ONLY_INSTALLED:
-              v.setData(R.string.SuggestStickersInstalled);
-              break;
-            case Settings.STICKER_MODE_NONE:
-              v.setData(R.string.SuggestStickersNone);
-              break;
-          }
         } else if (itemId == R.id.btn_autoNightModeScheduled_location) {
           if (isUpdate) {
             v.setEnabledAnimated(locationHelper == null);
@@ -309,8 +253,6 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
           v.getToggler().setRadioEnabled(tdlib.ignoreSensitiveContentRestrictions(), isUpdate);
         } else if (itemId == R.id.btn_ignoreContentRestrictions) {
           v.getToggler().setRadioEnabled(!Settings.instance().needRestrictContent(), isUpdate);
-        } else if (itemId == R.id.btn_useBigEmoji) {
-          v.getToggler().setRadioEnabled(Settings.instance().useBigEmoji(), isUpdate);
         } else if (itemId == R.id.btn_markdown) {
           v.getToggler().setRadioEnabled(Settings.instance().getNewSetting(Settings.SETTING_FLAG_EDIT_MARKDOWN), isUpdate);
         } else if (itemId == R.id.btn_forceExoPlayerExtensions) {
@@ -338,21 +280,6 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
         } else if (itemId == R.id.btn_autoNightModeScheduled_timeOff || itemId == R.id.btn_autoNightModeScheduled_timeOn) {
           int time = v.getId() == R.id.btn_autoNightModeScheduled_timeOn ? Settings.instance().getNightModeScheduleOn() : Settings.instance().getNightModeScheduleOff();
           v.setData(U.timeToString(time));
-        } else if (itemId == R.id.btn_big_reactions) {
-          StringBuilder b = new StringBuilder();
-          if (Settings.instance().getBigReactionsInChats()) {
-            b.append(Lang.getString(R.string.BigReactionsChats));
-          }
-          if (Settings.instance().getBigReactionsInChannels()) {
-            if (b.length() > 0) {
-              b.append(Lang.getConcatSeparator());
-            }
-            b.append(Lang.getString(R.string.BigReactionsChannels));
-          }
-          if (b.length() == 0) {
-            b.append(Lang.getString(R.string.BigReactionsNone));
-          }
-          v.setData(b.toString());
         } else if (itemId == R.id.btn_chatSwipes) {
           StringBuilder b = new StringBuilder();
           if (Settings.instance().needChatQuickShare()) {
@@ -460,18 +387,10 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       items.add(new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_forcePlainChannels, 0, R.string.ChatStyleBubblesChannel, R.id.btn_forcePlainChannels, !tdlib.settings().forcePlainModeInChannels()));
 
       if (!tdlib.account().isDebug()) {
-        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_emoji, 0, R.string.Emoji).setDrawModifier(new EmojiModifier(Lang.getString(R.string.EmojiPreview), Paints.emojiPaint())));
-        TGLegacyManager.instance().addEmojiListener(this);
-
         if (BuildConfig.DEBUG) {
           items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
           items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_icon, 0, R.string.Icons).setDrawModifier(new DrawableModifier(R.drawable.baseline_star_20, R.drawable.baseline_account_balance_wallet_20, R.drawable.baseline_location_on_20, R.drawable.baseline_favorite_20)));
         }
-      }
-      if (!tdlib.account().isDebug() || BuildConfig.DEBUG) {
-        items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-        items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_quick_reaction, 0, R.string.QuickReaction));
       }
 
       items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
@@ -632,15 +551,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
 
       items.add(new ListItem(ListItem.TYPE_HEADER, 0, 0, R.string.Chats));
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
-      items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.AnimatedEmoji).setLongId(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI).setBoolValue(true));
-      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-      items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_useBigEmoji, 0, R.string.BigEmoji));
-      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_big_reactions, 0, R.string.BigReactions));
-      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-      items.add(new ListItem(ListItem.TYPE_RADIO_SETTING, R.id.btn_toggleNewSetting, 0, R.string.LoopAnimatedStickers).setLongId(Settings.SETTING_FLAG_NO_ANIMATED_STICKERS_LOOP).setBoolValue(true));
-      items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-      items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_stickerSuggestions, 0, R.string.SuggestStickers));
+
       boolean sideLoaded = U.isAppSideLoaded();
       if (tdlib.canIgnoreSensitiveContentRestriction() && (sideLoaded || tdlib.ignoreSensitiveContentRestrictions())) {
         items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
@@ -803,43 +714,9 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
     return new ListItem(ListItem.TYPE_DESCRIPTION, 0, 0, R.string.CameraFlipInfo);
   }
 
-  public void updateSelectedEmoji () {
-    if (adapter != null)
-      adapter.updateValuedSettingById(R.id.btn_emoji);
-  }
-
-  public void updateQuickReaction () {
-    if (adapter != null)
-      adapter.updateValuedSettingById(R.id.btn_quick_reaction);
-  }
-
   public void updateSelectedIconPack () {
     if (adapter != null)
       adapter.updateValuedSettingById(R.id.btn_icon);
-  }
-
-  @Override
-  public void onPrepareToShow () {
-    super.onPrepareToShow();
-    updateQuickReaction();
-  }
-
-  @Override
-  public void onEmojiUpdated (boolean isPackSwitch) {
-    if (isPackSwitch) {
-      updateSelectedEmoji();
-    } else {
-      invalidateById(R.id.btn_emoji);
-    }
-  }
-
-  private void invalidateById (int id) {
-    if (adapter != null) {
-      int index = adapter.indexOfViewById(id);
-      View view = getRecyclerView().getLayoutManager().findViewByPosition(index);
-      if (view != null)
-        view.invalidate();
-    }
   }
 
   private static ListItem newItem (ThemeInfo theme) {
@@ -1075,14 +952,6 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
     if (viewId == R.id.btn_reduceMotion) {
       Settings.instance().toggleReduceMotion();
       adapter.updateValuedSettingById(R.id.btn_reduceMotion);
-    } else if (viewId == R.id.btn_quick_reaction) {
-      EditEnabledReactionsController c = new EditEnabledReactionsController(context, tdlib);
-      c.setArguments(new EditEnabledReactionsController.Args(null, EditEnabledReactionsController.TYPE_QUICK_REACTION));
-      navigateTo(c);
-    } else if (viewId == R.id.btn_emoji) {
-      SettingsCloudEmojiController c = new SettingsCloudEmojiController(context, tdlib);
-      c.setArguments(new SettingsCloudController.Args<>(this));
-      navigateTo(c);
     } else if (viewId == R.id.btn_icon) {
       SettingsCloudIconController c = new SettingsCloudIconController(context, tdlib);
       c.setArguments(new SettingsCloudController.Args<>(this));
@@ -1310,12 +1179,8 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       tdlib.setIgnoreSensitiveContentRestrictions(adapter.toggleView(v));
     } else if (viewId == R.id.btn_ignoreContentRestrictions) {
       Settings.instance().setRestrictContent(!adapter.toggleView(v));
-    } else if (viewId == R.id.btn_useBigEmoji) {
-      Settings.instance().setUseBigEmoji(adapter.toggleView(v));
     } else if (viewId == R.id.btn_secret_batmanTransitions) {
       Settings.instance().setNewSetting(Settings.SETTING_FLAG_BATMAN_POLL_TRANSITIONS, adapter.toggleView(v));
-    } else if (viewId == R.id.btn_stickerSuggestions) {
-      showStickerOptions();
     } else if (viewId == R.id.btn_chatListStyle) {
       showChatListOptions();
     } else if (viewId == R.id.btn_instantViewMode) {
@@ -1327,16 +1192,6 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       }, (id, result) -> {
         Settings.instance().setDisableChatQuickActions(result.get(R.id.btn_messageShare) != R.id.btn_messageShare, result.get(R.id.btn_messageReply) != R.id.btn_messageReply);
         adapter.updateValuedSettingById(R.id.btn_chatSwipes);
-      });
-    } else if (viewId == R.id.btn_big_reactions) {
-      showSettings(R.id.btn_big_reactions, new ListItem[] {
-        new ListItem(ListItem.TYPE_INFO, 0, 0, R.string.BigReactionsInfo),
-        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_bigReactionsChats, 0, R.string.BigReactionsChats, R.id.btn_bigReactionsChats, Settings.instance().getBigReactionsInChats()),
-        new ListItem(ListItem.TYPE_CHECKBOX_OPTION, R.id.btn_bigReactionsChannels, 0, R.string.BigReactionsChannels, R.id.btn_bigReactionsChannels, Settings.instance().getBigReactionsInChannels())
-      }, (id, result) -> {
-        Settings.instance().setBigReactionsInChannels(result.get(R.id.btn_bigReactionsChannels) == R.id.btn_bigReactionsChannels);
-        Settings.instance().setBigReactionsInChats(result.get(R.id.btn_bigReactionsChats) == R.id.btn_bigReactionsChats);
-        adapter.updateValuedSettingById(R.id.btn_big_reactions);
       });
     } else if (viewId == R.id.btn_systemEmoji) {
       Settings.instance().setUseSystemEmoji(adapter.toggleView(v));
@@ -1528,7 +1383,7 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
     int customThemeId = ThemeManager.resolveCustomThemeId(themeId);
     boolean canEdit = isCustom && Settings.instance().hasThemeOwnership(customThemeId);
     boolean isCurrent = ThemeManager.instance().isCurrentTheme(themeId);
-    int size = isCustom ? (isCurrent ? 3 : 4): 1;
+    int size = isCustom ? (isCurrent ? 3 : 4) : 1;
     IntList ids = new IntList(size);
     IntList icons = new IntList(size);
     StringList strings = new StringList(size);
@@ -1840,27 +1695,6 @@ public class SettingsThemeController extends RecyclerViewController<SettingsThem
       }
       Settings.instance().setChatListMode(newChatListStyle);
       adapter.updateValuedSettingById(R.id.btn_chatListStyle);
-    }).setAllowResize(false)); //.setHeaderItem(new SettingItem(SettingItem.TYPE_INFO, 0, 0, UI.getString(R.string.MarkdownHint), false))
-  }
-
-  private void showStickerOptions () {
-    int stickerOption = Settings.instance().getStickerMode();
-    showSettings(new SettingsWrapBuilder(R.id.btn_stickerSuggestions).setRawItems(new ListItem[]{
-      new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_stickerSuggestionsAll, 0, R.string.SuggestStickersAll, R.id.btn_stickerSuggestions, stickerOption == Settings.STICKER_MODE_ALL),
-      new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_stickerSuggestionsInstalled, 0, R.string.SuggestStickersInstalled, R.id.btn_stickerSuggestions, stickerOption == Settings.STICKER_MODE_ONLY_INSTALLED),
-      new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_stickerSuggestionsNone, 0, R.string.SuggestStickersNone, R.id.btn_stickerSuggestions, stickerOption == Settings.STICKER_MODE_NONE),
-    }).setIntDelegate((id, result) -> {
-      int newStickerMode = Settings.instance().getStickerMode();
-      int stickerResultId = result.get(R.id.btn_stickerSuggestions);
-      if (stickerResultId == R.id.btn_stickerSuggestionsAll) {
-        newStickerMode = Settings.STICKER_MODE_ALL;
-      } else if (stickerResultId == R.id.btn_stickerSuggestionsInstalled) {
-        newStickerMode = Settings.STICKER_MODE_ONLY_INSTALLED;
-      } else if (stickerResultId == R.id.btn_stickerSuggestionsNone) {
-        newStickerMode = Settings.STICKER_MODE_NONE;
-      }
-      Settings.instance().setStickerMode(newStickerMode);
-      adapter.updateValuedSettingById(R.id.btn_stickerSuggestions);
     }).setAllowResize(false)); //.setHeaderItem(new SettingItem(SettingItem.TYPE_INFO, 0, 0, UI.getString(R.string.MarkdownHint), false))
   }
 

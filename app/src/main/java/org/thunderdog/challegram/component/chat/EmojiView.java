@@ -21,14 +21,18 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewParent;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import org.drinkless.tdlib.TdApi;
+import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.emoji.EmojiInfo;
+import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.tool.EmojiData;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
-import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.unsorted.Settings;
 
 import me.vkryl.android.util.ClickHelper;
@@ -36,10 +40,12 @@ import me.vkryl.core.StringUtils;
 
 public class EmojiView extends View implements ClickHelper.Delegate {
   private final ClickHelper helper;
+  private final Tdlib tdlib;
   private final EmojiToneHelper toneHelper;
 
-  public EmojiView (Context context, EmojiToneHelper toneHelper) {
+  public EmojiView (Context context, Tdlib tdlib, EmojiToneHelper toneHelper) {
     super(context);
+    this.tdlib = tdlib;
     this.toneHelper = toneHelper;
     this.helper = new ClickHelper( this);
   }
@@ -161,17 +167,50 @@ public class EmojiView extends View implements ClickHelper.Delegate {
 
   @Override
   public boolean needLongPress (float x, float y) {
-    return colorState != EmojiData.STATE_NO_COLORS && toneHelper != null && toneHelper.canBeShown();
+    if (toneHelper != null && toneHelper.canBeShown()) {
+      if (tdlib.hasPremium() || toneHelper.isInSelfChat()) {
+        preliminaryLoadCustomEmoji(emoji);
+        return true;
+      }
+      return colorState != EmojiData.STATE_NO_COLORS;
+    }
+    return false;
+  }
+
+  private TdlibUi.EmojiStickers emojiStickers;
+
+  private void preliminaryLoadCustomEmoji (String emoji) {
+    emojiStickers = tdlib.ui().getEmojiStickers(new TdApi.StickerTypeCustomEmoji(), emoji, 6, toneHelper.getCurrentChatId());
   }
 
   @Override
   public boolean onLongPressRequestedAt (View view, float x, float y) {
-    if (colorState != EmojiData.STATE_NO_COLORS) {
-      UI.forceVibrate(view, false);
-      setInLongPress(true);
-      return toneHelper.openForEmoji(view, x, y, emoji, colorState, emojiTone, emojiOtherTones);
+    if (emojiStickers == null || !emojiStickers.emoji.equals(this.emoji)) {
+      return false;
     }
+    emojiStickers.getStickers(new TdlibUi.EmojiStickers.Callback() {
+      @Override
+      public void onStickersLoaded (TdlibUi.EmojiStickers context, TdApi.Sticker[] installedStickers, TdApi.Sticker[] recommendedStickers) {
+        if (emojiStickers == context) {
+          int totalCount = installedStickers.length + (recommendedStickers != null ? recommendedStickers.length : 0);
+          if (totalCount > 0 || colorState != EmojiData.STATE_NO_COLORS) {
+            onLongClick(view, x, y, installedStickers, recommendedStickers);
+          }
+        }
+      }
+
+      @Override
+      public void onRecommendedStickersLoaded (TdlibUi.EmojiStickers context, TdApi.Sticker[] recommendedStickers) {
+        // TODO show recommended stickers
+      }
+    }, 300);
     return false;
+  }
+
+  private void onLongClick (View view, float x, float y, @NonNull TdApi.Sticker[] installedStickers, @Nullable TdApi.Sticker[] recommendedStickers) {
+    helper.onLongPress(view, x, y);
+    setInLongPress(true);
+    toneHelper.openForEmoji(view, x, y, emoji, colorState, emojiTone, emojiOtherTones, installedStickers, recommendedStickers);
   }
 
   @Override
@@ -181,6 +220,7 @@ public class EmojiView extends View implements ClickHelper.Delegate {
 
   @Override
   public void onLongPressCancelled (View view, float x, float y) {
+    emojiStickers = null;
     setInLongPress(false);
     toneHelper.hide(view);
   }
@@ -190,15 +230,19 @@ public class EmojiView extends View implements ClickHelper.Delegate {
     if (view != this)
       throw new AssertionError();
     completeToneSelection();
+    emojiStickers = null;
   }
 
   public void completeToneSelection () {
     String emoji = toneHelper.getSelectedEmoji();
     String selectedTone = toneHelper.getSelectedTone();
     String[] selectedOtherTones = toneHelper.getSelectedOtherTones();
+    TGStickerObj selectedCustomEmoji = toneHelper.getSelectedCustomEmoji();
     boolean needApplyToAll = toneHelper.needApplyToAll();
 
-    if (needApplyToAll) {
+    if (selectedCustomEmoji != null) {
+      toneHelper.onCustomEmojiSelected(selectedCustomEmoji);
+    } else if (needApplyToAll) {
       if (toneHelper.needForgetApplyToAll()) {
         Settings.instance().markTutorialAsComplete(Settings.TUTORIAL_EMOJI_TONE_ALL);
       }

@@ -1112,7 +1112,11 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
       openSearchMode();
     } else if (id == R.id.menu_btn_clear) {
       clearSearchInput();
-    } else if (id == R.id.menu_btn_more) {// Archive / unarchive
+    } else if (id == R.id.menu_btn_more) {
+      if (selectedChats == null || selectedChats.isEmpty()) {
+        return;
+      }
+      // Archive / unarchive
       // Mark as Read / Unread
       // Report
       // Clear History

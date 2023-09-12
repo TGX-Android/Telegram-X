@@ -65,6 +65,7 @@ public abstract class SettingsCloudController<T extends Settings.CloudSetting> e
   public static class Args <T extends Settings.CloudSetting> {
     T applySetting;
     SettingsThemeController parentController;
+    SettingsStickersAndEmojiController parentControllerStickers;
 
     public Args (T applySetting) {
       this.applySetting = applySetting;
@@ -73,10 +74,18 @@ public abstract class SettingsCloudController<T extends Settings.CloudSetting> e
     public Args (SettingsThemeController parentController) {
       this.parentController = parentController;
     }
+
+    public Args (SettingsStickersAndEmojiController parentController) {
+      this.parentControllerStickers = parentController;
+    }
   }
 
   protected final SettingsThemeController getThemeController () {
     return getArguments() != null ? getArguments().parentController : null;
+  }
+
+  protected final SettingsStickersAndEmojiController getStickersAndEmojiController () {
+    return getArguments() != null ? getArguments().parentControllerStickers : null;
   }
 
   protected abstract T getCurrentSetting ();

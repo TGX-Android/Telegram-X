@@ -80,6 +80,10 @@ public class TGStickerObj {
     return reactionType != null && reactionType.getConstructor() == TdApi.ReactionTypeCustomEmoji.CONSTRUCTOR;
   }
 
+  public boolean isCustomEmoji () {
+    return stickerType != null && stickerType.getConstructor() == TdApi.StickerTypeCustomEmoji.CONSTRUCTOR;
+  }
+
   public boolean needGenericAnimation () {
     return isCustomReaction();
   }
@@ -136,6 +140,16 @@ public class TGStickerObj {
 
   public long getStickerSetId () {
     return stickerSetId != 0 ? stickerSetId : sticker != null ? sticker.setId : 0;
+  }
+
+  private long tag;
+
+  public void setTag (long tag) {
+    this.tag = tag;
+  }
+
+  public long getTag () {
+    return tag;
   }
 
   public boolean isPremium () {
@@ -285,11 +299,11 @@ public class TGStickerObj {
   }
 
   public int getWidth () {
-    return isDefaultPremiumStar ? 512: sticker != null ? sticker.width : 0;
+    return isDefaultPremiumStar ? 512 : sticker != null ? sticker.width : 0;
   }
 
   public int getHeight () {
-    return isDefaultPremiumStar ? 512: sticker != null ? sticker.height : 0;
+    return isDefaultPremiumStar ? 512 : sticker != null ? sticker.height : 0;
   }
 
   // If sticker set is not loaded yet

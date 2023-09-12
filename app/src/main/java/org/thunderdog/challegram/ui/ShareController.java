@@ -58,6 +58,7 @@ import org.thunderdog.challegram.component.attach.GridSpacingItemDecoration;
 import org.thunderdog.challegram.component.chat.EmojiToneHelper;
 import org.thunderdog.challegram.component.chat.InputView;
 import org.thunderdog.challegram.component.dialogs.SearchManager;
+import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
@@ -237,8 +238,13 @@ public class ShareController extends TelegramViewController<ShareController.Args
     }
 
     public Args (TdApi.Sticker sticker) {
-      this.mode = MODE_STICKER;
-      this.sticker = sticker;
+      if (Td.customEmojiId(sticker) != 0) {
+        this.mode = MODE_TEXT;
+        this.text = TD.toSingleEmojiText(sticker);
+      } else {
+        this.mode = MODE_STICKER;
+        this.sticker = sticker;
+      }
     }
 
     public Args (ShareProviderDelegate delegate) {
@@ -1251,6 +1257,7 @@ public class ShareController extends TelegramViewController<ShareController.Args
     inputView.setSingleLine(false);
     inputView.setMaxLines(4);
     inputView.setSelectionChangeListener(this);
+    inputView.setSpanChangeListener(this::onInputSpansChanged);
     bottomWrap.addView(inputView);
 
     if (OPEN_KEYBOARD_WITH_AUTOSCROLL) {
@@ -2869,6 +2876,11 @@ public class ShareController extends TelegramViewController<ShareController.Args
   }
 
   @Override
+  public void onEnterCustomEmoji (TGStickerObj sticker) {
+    inputView.onCustomEmojiSelected(sticker);
+  }
+
+  @Override
   public void onDeleteEmoji () {
     if (inputView.length() > 0) {
       inputView.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL));
@@ -3448,10 +3460,16 @@ public class ShareController extends TelegramViewController<ShareController.Args
     }
   }
 
+  public void onInputSpansChanged (InputView view) {
+    if (textFormattingLayout != null) {
+      textFormattingLayout.onInputViewSpansChanged();
+    }
+  }
+
   private void setTextFormattingLayoutVisible (boolean visible) {
     textFormattingVisible = visible;
     if (emojiLayout != null && textFormattingLayout != null) {
-      textFormattingLayout.setVisibility(visible ? View.VISIBLE: View.GONE);
+      textFormattingLayout.setVisibility(visible ? View.VISIBLE : View.GONE);
       emojiLayout.optimizeForDisplayTextFormattingLayout(!visible);
       if (visible) {
         textFormattingLayout.checkButtonsActive(false);
@@ -3466,6 +3484,6 @@ public class ShareController extends TelegramViewController<ShareController.Args
   }
 
   public @DrawableRes int getTargetIcon () {
-    return (textInputHasSelection || (textFormattingVisible && emojiShown)) ? R.drawable.baseline_format_text_24: R.drawable.deproko_baseline_insert_emoticon_26;
+    return (textInputHasSelection || (textFormattingVisible && emojiShown)) ? R.drawable.baseline_format_text_24 : R.drawable.deproko_baseline_insert_emoticon_26;
   }
 }

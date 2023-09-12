@@ -644,7 +644,7 @@ public class CallController extends ViewController<CallController.Arguments> imp
     }
     if (nameView != null) {
       this.nameView.setText(TD.getUserName(user));
-      this.nameView.setPadding(0, 0, user != null && user.isPremium ? emojiStatusHelper.getWidth(Screen.dp(7)): 0, 0);
+      this.nameView.setPadding(0, 0, user != null && user.isPremium ? emojiStatusHelper.getWidth(Screen.dp(7)) : 0, 0);
       this.nameView.requestLayout();
     }
     if (emojiViewHint != null)

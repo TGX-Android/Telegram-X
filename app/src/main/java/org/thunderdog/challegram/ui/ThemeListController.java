@@ -324,7 +324,7 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
     String arg1 = matcher.group(2);
     String arg2 = matcher.group(3);
     String arg3 = matcher.group(4);
-    String arg4 = groupCount > 5 ? matcher.group(5): null;
+    String arg4 = groupCount > 5 ? matcher.group(5) : null;
     int alpha = arg4 != null ? parseAlpha(arg4) : 255;
     switch (type) {
       case "rgb":
@@ -1490,7 +1490,7 @@ public class ThemeListController extends RecyclerViewController<ThemeListControl
       case ColorId.badge:
       case ColorId.badgeMuted:
       case ColorId.badgeFailed:
-        modifier.setCounter(id == ColorId.badgeFailed ? Tdlib.CHAT_FAILED: 1);
+        modifier.setCounter(id == ColorId.badgeFailed ? Tdlib.CHAT_FAILED : 1);
         modifier.noColorPreview = true;
         break;
       case ColorId.textSelectionHighlight:

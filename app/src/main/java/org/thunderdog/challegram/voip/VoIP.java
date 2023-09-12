@@ -89,7 +89,13 @@ public class VoIP {
   }
 
   public static boolean isForceDisabled (String version) {
-    return forceDisabledVersions != null && forceDisabledVersions.contains(version);
+    if (forceDisabledVersions != null) {
+      return forceDisabledVersions.contains(version);
+    } else if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
+      return !version.equals(VoIPController.getVersion());
+    } else {
+      return false;
+    }
   }
 
   private static boolean forceDisableAcousticEchoCancellation, forceDisableNoiseSuppressor, forceDisableAutomaticGainControl;

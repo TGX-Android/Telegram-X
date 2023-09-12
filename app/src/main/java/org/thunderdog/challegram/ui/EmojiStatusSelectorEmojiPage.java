@@ -36,8 +36,6 @@ import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.dialogs.SearchManager;
-import org.thunderdog.challegram.component.emoji.AnimatedEmojiDrawable;
-import org.thunderdog.challegram.component.emoji.AnimatedEmojiEffect;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.core.Lang;
@@ -142,7 +140,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
         final int position = parent.getChildAdapterPosition(view);
         final int itemCount = parent.getAdapter().getItemCount();
         if (position == itemCount - 1) {
-          int bottom = getKeyboardState() ? Keyboard.getSize(Keyboard.getSize()): 0;
+          int bottom = getKeyboardState() ? Keyboard.getSize(Keyboard.getSize()) : 0;
           outRect.set(0, 0, 0, bottom);
         }
       }
@@ -359,7 +357,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
   public void onEnterEmoji (String emoji) {
     closeEmojiSelectMode();
     setSearchInput(emojiSearchRequest = emoji);
-    getSearchHeaderView(headerView).setEnabled(false);
+    getSearchHeaderView(headerView).editView().setEnabled(false);
   }
 
   private boolean inEmojiSelectMode;
@@ -383,7 +381,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
   protected void onEnterSearchMode () {
     super.onEnterSearchMode();
     searchModeVisibility.setValue(true, true);
-    getSearchHeaderView(headerView).setEnabled(true);
+    getSearchHeaderView(headerView).editView().setEnabled(true);
     scheduleScrollOffsetDisable();
   }
 
@@ -402,8 +400,8 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
     super.onSearchInputChanged(currentSearchInput = input);
     if (StringUtils.isEmpty(input)) {
       searchModeVisibility.setValue(true, true);
-      getSearchHeaderView(headerView).setEnabled(true);
-      Keyboard.show(getSearchHeaderView(headerView));
+      getSearchHeaderView(headerView).editView().setEnabled(true);
+      Keyboard.show(getSearchHeaderView(headerView).editView());
       if (!StringUtils.isEmpty(emojiSearchRequest)) {
         emojiSearchRequest = null;
       }
@@ -445,10 +443,10 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
     isScrollOffsetDisableScheduled &= offsetDisabled;
 
     LinearLayoutManager manager = (LinearLayoutManager) customRecyclerView.getLayoutManager();
-    int firstVisiblePosition = manager != null ? manager.findFirstVisibleItemPosition(): -1;
+    int firstVisiblePosition = manager != null ? manager.findFirstVisibleItemPosition() : -1;
     customRecyclerView.invalidateItemDecorations();
     if (firstVisiblePosition == 0) {
-      ScrollJumpCompensator.compensate(customRecyclerView, parent.getContentOffset() * (offsetDisabled ? -1: 1));
+      ScrollJumpCompensator.compensate(customRecyclerView, parent.getContentOffset() * (offsetDisabled ? -1 : 1));
     }
   }
 
@@ -484,7 +482,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
 
   @Override
   public CharSequence getName () {
-    return Lang.getString(inEmojiSelectMode ? R.string.FilterByEmoji: R.string.SelectEmojiStatus);
+    return Lang.getString(inEmojiSelectMode ? R.string.FilterByEmoji : R.string.SelectEmojiStatus);
   }
 
   @Override
@@ -595,10 +593,10 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
 
     private void setFactors (float clearVisibility, float searchVisibility, float emojiVisibility, float keyboardVisibility, boolean updateViewVisibility) {
       if (updateViewVisibility) {
-        clearButton.setVisibility(clearVisibility > 0f ? VISIBLE: GONE);
-        searchButton.setVisibility(searchVisibility > 0f ? VISIBLE: GONE);
-        emojiButton.setVisibility(emojiVisibility > 0f ? VISIBLE: GONE);
-        keyboardButton.setVisibility(keyboardVisibility > 0f ? VISIBLE: GONE);
+        clearButton.setVisibility(clearVisibility > 0f ? VISIBLE : GONE);
+        searchButton.setVisibility(searchVisibility > 0f ? VISIBLE : GONE);
+        emojiButton.setVisibility(emojiVisibility > 0f ? VISIBLE : GONE);
+        keyboardButton.setVisibility(keyboardVisibility > 0f ? VISIBLE : GONE);
       }
       clearButton.setAlpha(clearVisibility);
       searchButton.setAlpha(searchVisibility);

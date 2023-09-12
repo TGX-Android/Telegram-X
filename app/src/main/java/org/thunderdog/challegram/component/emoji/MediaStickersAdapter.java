@@ -15,28 +15,36 @@
 package org.thunderdog.challegram.component.emoji;
 
 import android.content.Context;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 import androidx.collection.LongSparseArray;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.charts.LayoutHelper;
+import org.thunderdog.challegram.component.chat.EmojiToneHelper;
+import org.thunderdog.challegram.component.chat.EmojiView;
 import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.TGDefaultEmoji;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
 import org.thunderdog.challegram.navigation.ViewController;
+import org.thunderdog.challegram.support.RippleSupport;
 import org.thunderdog.challegram.support.ViewSupport;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
@@ -49,20 +57,24 @@ import org.thunderdog.challegram.widget.NoScrollTextView;
 import org.thunderdog.challegram.widget.NonMaterialButton;
 import org.thunderdog.challegram.widget.ProgressComponentView;
 import org.thunderdog.challegram.widget.SeparatorView;
+import org.thunderdog.challegram.widget.TrendingPackHeaderView;
 
 import java.util.ArrayList;
-import java.util.Random;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 
 public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdapter.StickerHolder> implements View.OnClickListener {
 
   private final ViewController<?> context;
-  private final ArrayList<StickerItem> items;
+  protected final ArrayList<StickerItem> items;
   private final StickerSmallView.StickerMovementCallback callback;
   private final boolean isTrending;
   private @Nullable RecyclerView.LayoutManager manager;
-  private @Nullable ViewController<?> themeProvider;
+  private final @Nullable ViewController<?> themeProvider;
+  private final @Nullable OffsetProvider offsetProvider;
+  private final boolean canViewStickerPackByClick;
+  private final @Nullable EmojiToneHelper emojiToneHelper;
+  private View.OnClickListener classicEmojiClickListener;
 
   private boolean isBig;
 
@@ -76,15 +88,33 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
     this.isTrending = isTrending;
     this.themeProvider = themeProvider;
     this.items = new ArrayList<>();
+    this.offsetProvider = null;
+    this.canViewStickerPackByClick = true;
+    this.emojiToneHelper = null;
+  }
+
+  public MediaStickersAdapter (ViewController<?> context, StickerSmallView.StickerMovementCallback callback, boolean isTrending, @Nullable ViewController<?> themeProvider, OffsetProvider offsetProvider, boolean canViewStickerPackByClick,  @Nullable EmojiToneHelper emojiToneHelper) {
+    this.context = context;
+    this.callback = callback;
+    this.isTrending = isTrending;
+    this.themeProvider = themeProvider;
+    this.items = new ArrayList<>();
+    this.offsetProvider = offsetProvider;
+    this.canViewStickerPackByClick = canViewStickerPackByClick;
+    this.emojiToneHelper = emojiToneHelper;
   }
 
   public void setManager (@NonNull RecyclerView.LayoutManager manager) {
     this.manager = manager;
   }
 
-  @Override
+  public void setClassicEmojiClickListener (View.OnClickListener classicEmojiClickListener) {
+    this.classicEmojiClickListener = classicEmojiClickListener;
+  }
+
+  @NonNull @Override
   public StickerHolder onCreateViewHolder (@NonNull ViewGroup parent, int viewType) {
-    return StickerHolder.create(context.context(), context.tdlib(), viewType, isTrending, this, callback, isBig, themeProvider);
+    return StickerHolder.create(context.context(), context.tdlib(), viewType, isTrending, this, classicEmojiClickListener, callback, isBig, themeProvider, offsetProvider, emojiToneHelper, repaintingColorId);
   }
 
   public int measureScrollTop (int position, int spanCount, int sectionIndex, ArrayList<TGStickerSetInfo> sections, boolean haveRecentsTitle) {
@@ -112,14 +142,14 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
       } else if (stickerSet.isFavorite()) {
         // position--;
         hadFavorite = true;
-      } else if (stickerSet.isRecent()) {
+      } else if (stickerSet.isRecent() && !stickerSet.isFakeClassicEmoji()) {
         position--;
         if (haveRecentsTitle) {
           scrollY += Screen.dp(32f);
         }
       }
       if (position > 0) {
-        int itemCount = Math.min(stickerSet.isDefaultEmoji() ? stickerSet.getSize() + 1: stickerSet.isTrending() ? 5 : stickerSet.getSize(), position);
+        int itemCount = Math.min(stickerSet.isDefaultEmoji() ? stickerSet.getSize() + 1 : stickerSet.isTrending() ? (stickerSet.isEmoji() ? 16 : 5) : stickerSet.getSize(), position);
         int rowCount = (int) Math.ceil((double) itemCount / (double) spanCount);
         scrollY += rowCount * rowSize;
         position -= itemCount;
@@ -219,12 +249,16 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
       TGStickerSetInfo stickerSet = (TGStickerSetInfo) tag;
       final int viewId = v.getId();
       if (viewId == R.id.btn_addStickerSet) {
-        ((NonMaterialButton) v).setInProgress(true, true);
-        installStickerSet(stickerSet);
+        if (stickerSet.isEmoji() && !context.tdlib().account().isPremium()) {
+          context.context().tooltipManager().builder(v).show(context.tdlib(), R.string.EmojiOnlyForPremium);
+        } else {
+          ((NonMaterialButton) v).setInProgress(true, true);
+          installStickerSet(stickerSet);
+        }
       } else if (viewId == R.id.btn_toggleCollapseRecentStickers) {
         onToggleCollapseRecentStickers((TextView) v, stickerSet);
         updateCollapseView((TextView) v, stickerSet);
-      } else {
+      } else if (canViewStickerPackByClick) {
         stickerSet.show(context);
       }
     }
@@ -238,10 +272,14 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
   }
 
   public void updateCollapseView (TextView collapseView, TGStickerSetInfo stickerSet) {
+    updateCollapseView(collapseView, stickerSet, R.string.ShowXMoreStickers);
+  }
+
+  public void updateCollapseView (TextView collapseView, TGStickerSetInfo stickerSet, @StringRes int showMoreRes) {
     if (stickerSet != null && stickerSet.getFullSize() > Config.DEFAULT_SHOW_RECENT_STICKERS_COUNT) {
       if (stickerSet.isCollapsed()) {
         int moreSize = stickerSet.getFullSize() - stickerSet.getSize();
-        collapseView.setText(Lang.pluralBold(R.string.ShowXMoreStickers, moreSize));
+        collapseView.setText(Lang.pluralBold(showMoreRes, moreSize));
       } else {
         collapseView.setText(R.string.ShowLessStickers);
       }
@@ -272,6 +310,13 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
         Views.setTextGravity((TextView) holder.itemView, Lang.gravity());
         break;
       }
+      case StickerHolder.TYPE_SEPARATOR_COLLAPSABLE: {
+        TGStickerSetInfo stickerSet = getStickerSet(position);
+        TextView collapseView = ((CollapsableSeparatorView) holder.itemView).textView;
+        updateCollapseView(collapseView, stickerSet, R.string.ShowXMore);
+        collapseView.setTag(stickerSet);
+        break;
+      }
       case StickerHolder.TYPE_HEADER_COLLAPSABLE: {
         TGStickerSetInfo stickerSet = getStickerSet(position);
         TextView titleView = (TextView) ((ViewGroup) holder.itemView).getChildAt(0);
@@ -285,65 +330,22 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
       }
       case StickerHolder.TYPE_HEADER_TRENDING: {
         TGStickerSetInfo stickerSet = getStickerSet(position);
+        String highlight = getHighlightText(position);
         if (stickerSet != null && !stickerSet.isViewed()) {
           stickerSet.view();
         }
-        RelativeLayout contentView = (RelativeLayout) holder.itemView;
-        View newView = contentView.getChildAt(0);
-        NonMaterialButton button = (NonMaterialButton) contentView.getChildAt(1);
-        TextView titleView = (TextView) contentView.getChildAt(2);
-        TextView subtitleView = (TextView) contentView.getChildAt(3);
-
-        contentView.setTag(stickerSet);
-
-        newView.setVisibility(stickerSet == null || stickerSet.isViewed() ? View.GONE : View.VISIBLE);
-
-        button.setInProgress(stickerSet != null && !stickerSet.isRecent() && isInProgress(stickerSet.getId()), false);
-        button.setIsDone(stickerSet != null && stickerSet.isInstalled(), false);
-        button.setTag(stickerSet);
-
-        Views.setMediumText(titleView, stickerSet != null ? stickerSet.getTitle() : "");
-        subtitleView.setText(stickerSet != null ? Lang.plural(R.string.xStickers, stickerSet.getSize()) : "");
-
-        if (Views.setAlignParent(newView, Lang.rtl())) {
-          int rightMargin = Screen.dp(6f);
-          int topMargin = Screen.dp(3f);
-          Views.setMargins(newView, Lang.rtl() ? rightMargin : 0, topMargin, Lang.rtl() ? 0 : rightMargin, 0);
-          Views.updateLayoutParams(newView);
-        }
-
-        if (Views.setAlignParent(button, Lang.rtl() ? RelativeLayout.ALIGN_PARENT_LEFT : RelativeLayout.ALIGN_PARENT_RIGHT)) {
-          int leftMargin = Screen.dp(16f);
-          int topMargin = Screen.dp(5f);
-          Views.setMargins(button, Lang.rtl() ? 0 : leftMargin, topMargin, Lang.rtl() ? leftMargin : 0, 0);
-          Views.updateLayoutParams(button);
-        }
-
-        RelativeLayout.LayoutParams params;
-        params = (RelativeLayout.LayoutParams) titleView.getLayoutParams();
-        if (Lang.rtl()) {
-          int leftMargin = Screen.dp(12f);
-          if (params.leftMargin != leftMargin) {
-            params.leftMargin = leftMargin;
-            params.rightMargin = 0;
-            params.addRule(RelativeLayout.LEFT_OF, R.id.btn_new);
-            params.addRule(RelativeLayout.RIGHT_OF, R.id.btn_addStickerSet);
-            Views.updateLayoutParams(titleView);
-          }
-        } else {
-          int rightMargin = Screen.dp(12f);
-          if (params.rightMargin != rightMargin) {
-            params.rightMargin = rightMargin;
-            params.leftMargin = 0;
-            params.addRule(RelativeLayout.RIGHT_OF, R.id.btn_new);
-            params.addRule(RelativeLayout.LEFT_OF, R.id.btn_addStickerSet);
-            Views.updateLayoutParams(titleView);
-          }
-        }
-        Views.setTextGravity(titleView, Lang.gravity());
-
-        if (Views.setAlignParent(subtitleView, Lang.rtl())) {
-          Views.updateLayoutParams(subtitleView);
+        TrendingPackHeaderView contentView = (TrendingPackHeaderView) holder.itemView;
+        contentView.setStickerSetInfo(context, stickerSet, highlight,
+          stickerSet != null && isInProgress(stickerSet.getId()),
+          stickerSet != null && !stickerSet.isViewed()
+        );
+        break;
+      }
+      case StickerHolder.TYPE_DEFAULT_EMOJI: {
+        TGDefaultEmoji defaultEmoji = getDefaultEmojiString(position);
+        if (defaultEmoji != null) {
+          holder.itemView.setId(defaultEmoji.isRecent ? R.id.emoji_recent : R.id.emoji);
+          ((EmojiView) holder.itemView).setEmoji(defaultEmoji.emoji, defaultEmoji.emojiColorState);
         }
         break;
       }
@@ -362,6 +364,10 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
         ((ProgressComponentView) holder.itemView).attach();
         break;
       }
+      case StickerHolder.TYPE_PROGRESS_OFFSETABLE: {
+        ((ProgressComponentView) ((ViewGroup) (holder.itemView)).getChildAt(0)).attach();
+        break;
+      }
     }
   }
 
@@ -377,6 +383,10 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
         ((ProgressComponentView) holder.itemView).detach();
         break;
       }
+      case StickerHolder.TYPE_PROGRESS_OFFSETABLE: {
+        ((ProgressComponentView) ((ViewGroup) (holder.itemView)).getChildAt(0)).detach();
+        break;
+      }
     }
   }
 
@@ -390,6 +400,10 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
       }
       case StickerHolder.TYPE_PROGRESS: {
         ((ProgressComponentView) holder.itemView).performDestroy();
+        break;
+      }
+      case StickerHolder.TYPE_PROGRESS_OFFSETABLE: {
+        ((ProgressComponentView) ((ViewGroup) (holder.itemView)).getChildAt(0)).performDestroy();
         break;
       }
     }
@@ -469,27 +483,51 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
     return -1;
   }
 
+  public interface OffsetProvider {
+    int provideOffset ();
+    int provideReverseOffset ();
+    void onContentScroll (float shadowFactor);
+    void onScrollFinished ();
+  }
+
   public static class StickerItem {
     public int viewType;
     public final TGStickerObj sticker;
     public final TGStickerSetInfo stickerSet;
+    public final TGDefaultEmoji defaultEmoji;
+    public String highlight;
 
     public StickerItem (int viewType) {
       this.viewType = viewType;
       this.sticker = null;
       this.stickerSet = null;
+      this.defaultEmoji = null;
     }
 
     public StickerItem (int viewType, TGStickerObj sticker) {
       this.viewType = viewType;
       this.sticker = sticker;
       this.stickerSet = null;
+      this.defaultEmoji = null;
     }
 
     public StickerItem (int viewType, TGStickerSetInfo info) {
       this.viewType = viewType;
       this.sticker = null;
       this.stickerSet = info;
+      this.defaultEmoji = null;
+    }
+
+    public StickerItem (int viewType, TGDefaultEmoji defaultEmojiString) {
+      this.viewType = viewType;
+      this.sticker = null;
+      this.stickerSet = null;
+      this.defaultEmoji = defaultEmojiString;
+    }
+
+    public StickerItem setHighlightValue (String highlight) {
+      this.highlight = highlight;
+      return this;
     }
 
     public boolean setViewType (int viewType) {
@@ -511,6 +549,15 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
       items.add(item);
       notifyItemInserted(0);
     }
+  }
+
+  public void replaceItem (int index, StickerItem item) {
+    items.set(index, item);
+    notifyItemChanged(index);
+  }
+
+  public ArrayList<StickerItem> getItems () {
+    return items;
   }
 
   private void clear () {
@@ -537,6 +584,12 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
     }
   }
 
+  public void addItem (StickerItem item) {
+    int index = this.items.size();
+    this.items.add(item);
+    notifyItemRangeInserted(index, 1);
+  }
+
   @Override
   public int getItemViewType (int position) {
     return items.get(position).viewType;
@@ -548,6 +601,20 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
 
   public @Nullable TGStickerSetInfo getStickerSet (int position) {
     return position >= 0 && position < items.size() ? items.get(position).stickerSet : null;
+  }
+
+  public @Nullable TGDefaultEmoji getDefaultEmojiString (int position) {
+    return position >= 0 && position < items.size() ? items.get(position).defaultEmoji : null;
+  }
+
+  public @Nullable String getHighlightText (int position) {
+    return position >= 0 && position < items.size() ? items.get(position).highlight : null;
+  }
+
+  private @ColorId int repaintingColorId = ColorId.iconActive;
+
+  public void setRepaintingColorId (@ColorId int repaintingColorId) {
+    this.repaintingColorId = repaintingColorId;
   }
 
   public static class StickerHolder extends RecyclerView.ViewHolder {
@@ -563,18 +630,23 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
     public static final int TYPE_SEPARATOR = 10;
     public static final int TYPE_EMOJI_STATUS_DEFAULT = 11;
     public static final int TYPE_NO_EMOJISETS = 12;
+    public static final int TYPE_PROGRESS_OFFSETABLE = 13;
+    public static final int TYPE_PADDING_OFFSETABLE = 14;
+    public static final int TYPE_DEFAULT_EMOJI = 15;
+    public static final int TYPE_SEPARATOR_COLLAPSABLE = 16;
 
     public StickerHolder (View itemView) {
       super(itemView);
     }
 
-    public static @NonNull StickerHolder create (Context context, Tdlib tdlib, int viewType, boolean isTrending, View.OnClickListener onClickListener, StickerSmallView.StickerMovementCallback callback, boolean isBig, @Nullable ViewController<?> themeProvider) {
+    public static @NonNull StickerHolder create (Context context, Tdlib tdlib, int viewType, boolean isTrending, View.OnClickListener onClickListener, View.OnClickListener classicEmojiClickListener, StickerSmallView.StickerMovementCallback callback, boolean isBig, @Nullable ViewController<?> themeProvider, @Nullable OffsetProvider offsetProvider, @Nullable EmojiToneHelper toneHelper, @ColorId int repaintingColorId) {
       switch (viewType) {
         case TYPE_EMOJI_STATUS_DEFAULT:
         case TYPE_STICKER: {
           StickerSmallView view;
           view = new StickerSmallView(context);
           view.init(tdlib);
+          view.setRepaintingColorId(repaintingColorId);
           if (isTrending) {
             view.setIsTrending();
           }
@@ -604,6 +676,11 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
           textView.setPadding(Screen.dp(14f), Screen.dp(5f), Screen.dp(14f), Screen.dp(5f));
           textView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(32f)));
           return new StickerHolder(textView);
+        }
+        case TYPE_SEPARATOR_COLLAPSABLE: {
+          CollapsableSeparatorView v = new CollapsableSeparatorView(context);
+          v.init(themeProvider, onClickListener);
+          return new StickerHolder(v);
         }
         case TYPE_HEADER_COLLAPSABLE: {
           LinearLayout viewGroup = new LinearLayout(context);
@@ -636,92 +713,12 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
           return new StickerHolder(viewGroup);
         }
         case TYPE_HEADER_TRENDING: {
-          RelativeLayout contentView = new RelativeLayout(context);
+          TrendingPackHeaderView contentView = new TrendingPackHeaderView(context);
           contentView.setOnClickListener(onClickListener);
           contentView.setPadding(Screen.dp(16f), Screen.dp(isBig ? 18f : 13f) - EmojiLayout.getHeaderPadding(), Screen.dp(16f), 0);
           contentView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(isBig ? 57f : 52f)));
-          RelativeLayout.LayoutParams params;
-
-          params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, Screen.dp(16f));
-          params.addRule(Lang.alignParent());
-          if (Lang.rtl()) {
-            params.leftMargin = Screen.dp(6f);
-          } else {
-            params.rightMargin = Screen.dp(6f);
-          }
-          params.topMargin = Screen.dp(3f);
-          TextView newView = new NoScrollTextView(context);
-          ViewSupport.setThemedBackground(newView, ColorId.promo, themeProvider).setCornerRadius(3f);
-          newView.setId(R.id.btn_new);
-          newView.setSingleLine(true);
-          newView.setPadding(Screen.dp(4f), Screen.dp(1f), Screen.dp(4f), 0);
-          newView.setTextColor(Theme.getColor(ColorId.promoContent));
-          if (themeProvider != null) {
-            themeProvider.addThemeTextColorListener(newView, ColorId.promoContent);
-            themeProvider.addThemeInvalidateListener(newView);
-          }
-          newView.setTypeface(Fonts.getRobotoBold());
-          newView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 10f);
-          newView.setText(Lang.getString(R.string.New).toUpperCase());
-          newView.setLayoutParams(params);
-
-          params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, Screen.dp(28f));
-          if (Lang.rtl()) {
-            params.rightMargin = Screen.dp(16f);
-          } else {
-            params.leftMargin = Screen.dp(16f);
-          }
-          params.topMargin = Screen.dp(5f);
-          params.addRule(Lang.rtl() ? RelativeLayout.ALIGN_PARENT_LEFT : RelativeLayout.ALIGN_PARENT_RIGHT);
-          NonMaterialButton button = new NonMaterialButton(context);
-          if (themeProvider != null) {
-            themeProvider.addThemeInvalidateListener(button);
-          }
-          button.setId(R.id.btn_addStickerSet);
-          button.setText(R.string.Add);
-          button.setOnClickListener(onClickListener);
-          button.setLayoutParams(params);
-
-          params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-          if (Lang.rtl()) {
-            params.leftMargin = Screen.dp(12f);
-            params.addRule(RelativeLayout.LEFT_OF, R.id.btn_new);
-            params.addRule(RelativeLayout.RIGHT_OF, R.id.btn_addStickerSet);
-          } else {
-            params.rightMargin = Screen.dp(12f);
-            params.addRule(RelativeLayout.RIGHT_OF, R.id.btn_new);
-            params.addRule(RelativeLayout.LEFT_OF, R.id.btn_addStickerSet);
-          }
-          TextView titleView = new NoScrollTextView(context);
-          titleView.setTypeface(Fonts.getRobotoMedium());
-          titleView.setTextColor(Theme.textAccentColor());
-          titleView.setGravity(Lang.gravity());
-          if (themeProvider != null) {
-            themeProvider.addThemeTextAccentColorListener(titleView);
-          }
-          titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16f);
-          titleView.setSingleLine(true);
-          titleView.setEllipsize(TextUtils.TruncateAt.END);
-          titleView.setLayoutParams(params);
-
-          params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-          params.addRule(Lang.alignParent());
-          params.topMargin = Screen.dp(22f);
-          TextView subtitleView = new NoScrollTextView(context);
-          subtitleView.setTypeface(Fonts.getRobotoRegular());
-          subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
-          subtitleView.setTextColor(Theme.textDecentColor());
-          if (themeProvider != null) {
-            themeProvider.addThemeTextDecentColorListener(subtitleView);
-          }
-          subtitleView.setSingleLine(true);
-          subtitleView.setEllipsize(TextUtils.TruncateAt.END);
-          subtitleView.setLayoutParams(params);
-
-          contentView.addView(newView);
-          contentView.addView(button);
-          contentView.addView(titleView);
-          contentView.addView(subtitleView);
+          contentView.setButtonOnClickListener(onClickListener);
+          contentView.setThemeProvider(themeProvider);
 
           return new StickerHolder(contentView);
         }
@@ -751,7 +748,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
           }
           textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
           textView.setSingleLine(true);
-          textView.setText(Lang.getString(viewType == TYPE_NO_EMOJISETS ? R.string.NoEmojiSetsFound: viewType == TYPE_COME_AGAIN_LATER ? R.string.ComeAgainLater : R.string.NoStickerSets));
+          textView.setText(Lang.getString(viewType == TYPE_NO_EMOJISETS ? R.string.NoEmojiSetsFound : viewType == TYPE_COME_AGAIN_LATER ? R.string.ComeAgainLater : R.string.NoStickerSets));
           textView.setGravity(Gravity.CENTER);
           textView.setEllipsize(TextUtils.TruncateAt.END);
           //noinspection ResourceType
@@ -761,13 +758,96 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
         case TYPE_PROGRESS: {
           ProgressComponentView progressView = new ProgressComponentView(context);
           progressView.initBig(1f);
-          //noinspection ResourceType
           progressView.setPadding(0, isBig ? 0 : EmojiLayout.getHeaderSize(), 0, 0);
           progressView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
           return new StickerHolder(progressView);
         }
+        case TYPE_PROGRESS_OFFSETABLE: {
+          FrameLayoutFix contentView = new FrameLayoutFix(context) {
+            @Override
+            protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
+              super.onMeasure(widthMeasureSpec, offsetProvider != null ? MeasureSpec.makeMeasureSpec(offsetProvider.provideReverseOffset(), MeasureSpec.EXACTLY) : heightMeasureSpec);
+            }
+          };
+          ProgressComponentView view = new ProgressComponentView(context);
+          view.initBig(1f);
+          view.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER));
+          contentView.addView(view);
+          return new StickerHolder(contentView);
+        }
+        case TYPE_PADDING_OFFSETABLE: {
+          View view = new View(context) {
+            @Override
+            protected void onMeasure (int widthMeasureSpec, int heightMeasureSpec) {
+              setMeasuredDimension(
+                getDefaultSize(getSuggestedMinimumWidth(), widthMeasureSpec),
+                offsetProvider != null ? MeasureSpec.makeMeasureSpec(offsetProvider.provideOffset(), MeasureSpec.EXACTLY) : heightMeasureSpec);
+            }
+          };
+          return new StickerHolder(view);
+        }
+        case TYPE_DEFAULT_EMOJI: {
+          EmojiView imageView = new EmojiView(context, tdlib, toneHelper);
+          imageView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+          imageView.setOnClickListener(classicEmojiClickListener);
+          Views.setClickable(imageView);
+          RippleSupport.setTransparentSelector(imageView);
+          return new StickerHolder(imageView);
+        }
       }
       throw new UnsupportedOperationException("viewType == " + viewType);
+    }
+  }
+
+  public static class CollapsableSeparatorView extends FrameLayoutFix {
+    private final TextView textView;
+    private final LinearLayout linearLayout;
+    private final ImageView imageView;
+    private final SeparatorView separatorView;
+
+    public CollapsableSeparatorView (@NonNull Context context) {
+      super(context);
+
+      textView = new NoScrollTextView(context);
+      textView.setTextColor(Theme.textDecentColor());
+      textView.setGravity(Lang.gravity() | Gravity.CENTER_VERTICAL);
+      textView.setSingleLine(true);
+      textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13f);
+      textView.setTypeface(Fonts.getRobotoRegular());
+      textView.setId(R.id.btn_toggleCollapseRecentStickers);
+      textView.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER_VERTICAL));
+
+      imageView = new ImageView(context);
+      imageView.setScaleType(ImageView.ScaleType.CENTER);
+      imageView.setImageResource(R.drawable.baseline_small_arrow_down_18);
+      imageView.setColorFilter(new PorterDuffColorFilter(Theme.iconColor(), PorterDuff.Mode.SRC_IN));
+      imageView.setLayoutParams(LayoutHelper.createLinear(18, 18, 0, Gravity.NO_GRAVITY, 0, 0, 4, 0));
+
+      separatorView = new SeparatorView(context);
+      separatorView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(5f), Gravity.CENTER));
+
+      linearLayout = new LinearLayout(context);
+      linearLayout.setOrientation(LinearLayout.HORIZONTAL);
+      linearLayout.setGravity(Gravity.CENTER);
+      linearLayout.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER));
+      linearLayout.addView(imageView);
+      linearLayout.addView(textView);
+      linearLayout.setPadding(Screen.dp(24), Screen.dp(3), Screen.dp(24), Screen.dp(3));
+      ViewSupport.setThemedBackground(linearLayout, ColorId.filling);
+
+      setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(24f)));
+      addView(separatorView);
+      addView(linearLayout);
+    }
+
+    public void init (ViewController<?> themeProvider, View.OnClickListener onClickListener) {
+      if (themeProvider != null) {
+        themeProvider.addThemeTextDecentColorListener(textView);
+        themeProvider.addThemeInvalidateListener(linearLayout);
+        themeProvider.addThemeSpecialFilterListener(imageView, ColorId.icon);
+        themeProvider.addThemeInvalidateListener(separatorView);
+      }
+      linearLayout.setOnClickListener(v -> onClickListener.onClick(textView));
     }
   }
 }

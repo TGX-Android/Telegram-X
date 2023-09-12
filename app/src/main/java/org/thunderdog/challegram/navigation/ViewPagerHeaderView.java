@@ -19,7 +19,6 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.unsorted.Size;
 

@@ -23,11 +23,10 @@ import androidx.annotation.Dimension;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.Nullable;
 
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.PorterDuffColorId;
 import org.thunderdog.challegram.theme.Theme;
-import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -267,7 +266,15 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
     }
   }
 
-  public void setCount (int count, boolean muted, boolean animated) {
+  public boolean getVisibilityTarget () {
+    return isVisibleTarget;
+  }
+
+  public void setCount (long count, boolean muted, boolean animated) {
+    setCount(count, muted, null, animated);
+  }
+
+  public void setCount (long count, boolean muted, @Nullable String textRepresentation, boolean animated) {
     if (animated && (callback == null || !callback.needAnimateChanges(this)))
       animated = false;
     if (animated && !UI.inUiThread())
@@ -281,7 +288,7 @@ public final class Counter implements FactorAnimator.Target, CounterAnimator.Cal
     } else if (count == Tdlib.CHAT_FAILED && drawableRes == 0) {
       counter.setCounter(count, "!", animateChanges);
     } else if (count > 0 || (visibleIfZero && count == 0)) {
-      counter.setCounter(count, Strings.buildCounter(count), animateChanges);
+      counter.setCounter(count, textRepresentation != null ? textRepresentation : Strings.buildCounter(count), animateChanges);
     } else {
       counter.hideCounter(animateChanges);
     }

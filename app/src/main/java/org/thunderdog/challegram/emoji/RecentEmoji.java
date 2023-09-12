@@ -17,9 +17,23 @@ package org.thunderdog.challegram.emoji;
 public class RecentEmoji {
   public final String emoji;
   public final RecentInfo info;
+  public final boolean isCustomEmoji;
+  public final long customEmojiId;
 
   public RecentEmoji (String emoji, RecentInfo info) {
     this.emoji = emoji;
     this.info = info;
+    this.isCustomEmoji = emoji.startsWith(Emoji.CUSTOM_EMOJI_CACHE);
+    long customEmojiId = 0;
+    if (isCustomEmoji) {
+      try {
+        customEmojiId = Long.parseLong(emoji.substring(Emoji.CUSTOM_EMOJI_CACHE.length()));
+      } catch (Throwable ignored) {}
+    }
+    this.customEmojiId = customEmojiId;
+  }
+
+  public boolean isCustomEmoji () {
+    return isCustomEmoji;
   }
 }

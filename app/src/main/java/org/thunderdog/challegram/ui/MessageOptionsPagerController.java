@@ -70,6 +70,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
 
   private final TdApi.MessageReaction[] reactions;
   private final ViewPagerTopView.Item[] counters;
+  private final long[] emojiPackIds;
   private int baseCountersWidth;
   private int startPage = 0;
 
@@ -80,6 +81,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     setArguments(optionDelegate);
     this.options = options;
     this.message = message;
+    this.emojiPackIds = message.getUniqueEmojiPackIdList();
 
     final boolean needHideViews = !message.canGetViewers() || message.isUnread() || message.noUnread();
     this.reactions = message.getMessageReactions().getReactions();
@@ -306,6 +308,9 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
       } else {
         hintHeight = 0;
       }
+      if (emojiPackIds.length > 0) {
+        hintHeight += Screen.dp(40);
+      }
       return (
         getTargetHeight()
           - (Screen.dp(54) + HeaderView.getTopOffset())
@@ -337,7 +342,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
       };
 
       MessageOptionsController c = new MessageOptionsController(context, this.tdlib, getThemeListeners());
-      c.setArguments(new MessageOptionsController.Args(options, onClickListener));
+      c.setArguments(new MessageOptionsController.Args(options, onClickListener, message.getFirstEmojiId(), emojiPackIds, () -> hidePopupWindow(true)));
       c.getValue();
       setHeaderPosition(getContentOffset() + HeaderView.getTopOffset());
       setDefaultListenersAndDecorators(c);

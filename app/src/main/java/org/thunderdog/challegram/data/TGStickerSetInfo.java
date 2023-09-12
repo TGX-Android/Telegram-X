@@ -15,10 +15,10 @@
 package org.thunderdog.challegram.data;
 
 import android.graphics.Path;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
@@ -33,7 +33,6 @@ import org.thunderdog.challegram.widget.EmojiLayout;
 import java.util.ArrayList;
 
 import me.vkryl.core.BitwiseUtils;
-import me.vkryl.core.StringUtils;
 import me.vkryl.td.Td;
 
 public class TGStickerSetInfo {
@@ -42,6 +41,8 @@ public class TGStickerSetInfo {
   private static final int FLAG_FAVORITE = 1 << 3;
   private static final int FLAG_TRENDING_EMOJI = 1 << 4;
   private static final int FLAG_DEFAULT_EMOJI = 1 << 5;
+  private static final int FLAG_FAKE_CLASSIC_EMOJI = 1 << 6;
+  private static final int FLAG_COLLAPSABLE_EMOJI = 1 << 7;
 
   private final Tdlib tdlib;
   private final @Nullable TdApi.StickerSetInfo info;
@@ -53,6 +54,9 @@ public class TGStickerSetInfo {
   private int size;
   private int startIndex;
   private @Nullable TdApi.StickerSet stickerSet;
+  private @StringRes int titleRes;
+  private boolean needRepainting;
+  private int fakeClassicEmojiSectionId;
 
   private @Nullable ArrayList<TGStickerSetInfo> boundList;
   private TdApi.Sticker[] allStickers;
@@ -78,6 +82,10 @@ public class TGStickerSetInfo {
   }
 
   public TGStickerSetInfo (Tdlib tdlib, @NonNull TdApi.StickerSetInfo info) {
+    this(tdlib, info, -1);
+  }
+
+  public TGStickerSetInfo (Tdlib tdlib, @NonNull TdApi.StickerSetInfo info, int trimToSize) {
     this.tdlib = tdlib;
     this.info = info;
     if (info.thumbnail != null) {
@@ -127,6 +135,7 @@ public class TGStickerSetInfo {
         this.previewImage = null;
         this.previewAnimation = null;
       }
+      this.needRepainting = TD.needRepainting(info.covers[0]);
     } else {
       this.previewOutline = null;
       this.previewImage = null;
@@ -142,10 +151,41 @@ public class TGStickerSetInfo {
       this.previewAnimation.setOptimizationMode(GifFile.OptimizationMode.STICKER_PREVIEW);
       this.previewAnimation.setScaleType(ImageFile.FIT_CENTER);
     }
+
+    if (trimToSize > 0 && info.size > trimToSize) {
+      this.size = trimToSize;
+      this.flags |= FLAG_COLLAPSABLE_EMOJI;
+    }
   }
 
   public TGStickerSetInfo (Tdlib tdlib, TdApi.StickerSet info) {
     this(tdlib, Td.toStickerSetInfo(info));
+  }
+
+  public static TGStickerSetInfo fromEmojiSection (Tdlib tdlib, int sectionId, int titleRes, int size) {
+    return new TGStickerSetInfo(tdlib, sectionId, titleRes, size);
+  }
+
+  private TGStickerSetInfo (Tdlib tdlib, int sectionId, int titleRes, int size) {
+    this.tdlib = tdlib;
+    this.info = null;
+    this.previewAnimation = null;
+    this.previewImage = null;
+    this.previewOutline = null;
+    this.previewWidth = 0;
+    this.previewHeight = 0;
+    this.flags = FLAG_FAKE_CLASSIC_EMOJI;
+    this.titleRes = titleRes;
+    this.size = size;
+    this.fakeClassicEmojiSectionId = sectionId;
+  }
+
+  public int getFakeClassicEmojiSectionId () {
+    return fakeClassicEmojiSectionId;
+  }
+
+  public boolean isNeedRepaintingPreview () {
+    return needRepainting;
   }
 
   public void setBoundList (@Nullable ArrayList<TGStickerSetInfo> list) {
@@ -214,6 +254,9 @@ public class TGStickerSetInfo {
     return (flags & FLAG_DEFAULT_EMOJI) != 0;
   }
 
+  public boolean isFakeClassicEmoji () {
+    return (flags & FLAG_FAKE_CLASSIC_EMOJI) != 0;
+  }
 
   public void setIsTrendingEmoji () {
     flags |= FLAG_TRENDING_EMOJI;
@@ -233,6 +276,10 @@ public class TGStickerSetInfo {
 
   public boolean isTrending () {
     return (flags & FLAG_TRENDING) != 0;
+  }
+
+  public boolean isCollapsableEmojiSet () {
+    return BitwiseUtils.hasFlag(flags, FLAG_COLLAPSABLE_EMOJI);
   }
 
   @Override
@@ -262,12 +309,15 @@ public class TGStickerSetInfo {
 
   public int getItemCount () {
     if (isTrending()) {
-      return 5;
+      return isEmoji() ? 16 : 5;
+    }
+    if (isCollapsableEmojiSet()) {
+      return size + 1 + (isCollapsed() ? 1 : 0);
     }
     if (info != null) {
       return info.size + 1;
     }
-    if (isFavorite()) {
+    if (isFavorite() || isFakeClassicEmoji()) {
       return size;
     }
     return size + 1;
@@ -283,7 +333,7 @@ public class TGStickerSetInfo {
   }
 
   public void setSize (int size) {
-    if (info != null) {
+    if (info != null && !isCollapsableEmojiSet()) {
       info.size = size;
     } else {
       this.size = size;
@@ -352,6 +402,10 @@ public class TGStickerSetInfo {
     return info != null && info.stickerType.getConstructor() == TdApi.StickerTypeMask.CONSTRUCTOR;
   }
 
+  public boolean isEmoji () {
+    return info != null && info.stickerType.getConstructor() == TdApi.StickerTypeCustomEmoji.CONSTRUCTOR;
+  }
+
   public long getId () {
     return info != null ? info.id : 0;
   }
@@ -377,10 +431,16 @@ public class TGStickerSetInfo {
   }
 
   public int getSize () {
+    if (isCollapsableEmojiSet()) {
+      return size;
+    }
     return info != null ? info.size : size;
   }
 
   public int getFullSize () {
+    if (isCollapsableEmojiSet()) {
+      return info != null ? info.size : getSize();
+    }
     return allStickers != null ? allStickers.length : getSize();
   }
 
@@ -388,11 +448,18 @@ public class TGStickerSetInfo {
     return getFullSize() > getSize();
   }
 
+  public int getTitleRes () {
+    return titleRes;
+  }
+
   public String getName () {
     return info != null ? info.name : null;
   }
 
   public String getTitle () {
-    return isDefaultEmoji() ? Lang.getString(R.string.TrendingStatuses): isFavorite() ? "" : isRecent() ? Lang.getString(R.string.RecentStickers) : info != null ? info.title : null;
+    if (isFakeClassicEmoji()) {
+      return titleRes != -1 ? Lang.getString(titleRes) : null;
+    }
+    return isDefaultEmoji() ? Lang.getString(R.string.TrendingStatuses) : isFavorite() ? "" : isRecent() ? Lang.getString(R.string.RecentStickers) : info != null ? info.title : null;
   }
 }

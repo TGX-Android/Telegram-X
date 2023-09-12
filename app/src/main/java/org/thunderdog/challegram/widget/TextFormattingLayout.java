@@ -191,16 +191,15 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
   }
 
   public void onInputViewSelectionChanged (int start, int end) {
-    if (!ignoreSelectionChangesForTranslatedText) {
-      if (originalTextToTranslate != null) {
-        originalTextToTranslate = null;
-        translationsManager.stopTranslation();
-      }
-    }
+    stopTranslationIfNeeded();
     if (start != end) {
       closeTextFormattingKeyboardDelay(false);
     }
     checkButtonsActive(true);
+  }
+
+  public void onInputViewSpansChanged () {
+    stopTranslationIfNeeded();
   }
 
   public void onInputViewTouchEvent (MotionEvent event) {
@@ -221,6 +220,13 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
     }
     langSelector.setIsEnabled(!isEmpty, animated);
     clearButtonIsEnabled.setValue(BitwiseUtils.hasFlag(flags, FLAG_CLEAR), animated);
+  }
+
+  private void stopTranslationIfNeeded () {
+    if (!ignoreSelectionChangesForTranslatedText && originalTextToTranslate != null) {
+      originalTextToTranslate = null;
+      translationsManager.stopTranslation();
+    }
   }
 
   private void setLanguageToTranslate (String language) {
@@ -410,7 +416,7 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
     if (text == null || text.entities == null) return 0;
     int flags = 0;
 
-    for (TdApi.TextEntity entity: text.entities) {
+    for (TdApi.TextEntity entity : text.entities) {
       final int entityStart = entity.offset, entityEnd = entity.offset + entity.length;
 
       if (!(entityStart >= end || start >= entityEnd)) {
@@ -554,7 +560,7 @@ public class TextFormattingLayout extends FrameLayout implements TranslationsMan
       super.dispatchDraw(canvas);
       if (drawable != null) {
         int color = ColorUtils.fromToArgb(Theme.iconColor(), Theme.getColor(ColorId.iconActive), isActive.getFloatValue());
-        Drawables.drawCentered(canvas, drawable, getMeasuredWidth() / 2f, getMeasuredHeight() / 2f, needDrawWithoutRepainting ? null: Paints.getPorterDuffPaint(color));
+        Drawables.drawCentered(canvas, drawable, getMeasuredWidth() / 2f, getMeasuredHeight() / 2f, needDrawWithoutRepainting ? null : Paints.getPorterDuffPaint(color));
       }
     }
 

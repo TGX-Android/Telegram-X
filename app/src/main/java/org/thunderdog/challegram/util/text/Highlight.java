@@ -15,10 +15,14 @@
 
 package org.thunderdog.challegram.util.text;
 
-import android.util.Pair;
+import android.text.Spannable;
+import android.text.SpannableStringBuilder;
 import android.util.SparseArray;
 
 import androidx.annotation.Nullable;
+
+import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.util.CustomTypefaceSpan;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -384,5 +388,17 @@ public class Highlight {
       mostRelevantHighlightKey = KEY_NONE;
       highlights.clear();
     }
+  }
+
+  public static CharSequence toSpannable (String text, String highlight) {
+    Highlight h = valueOf(text, highlight);
+    if (h == null) {
+      return text;
+    }
+    SpannableStringBuilder b = new SpannableStringBuilder(text);
+    for (Highlight.Part part : h.parts) {
+      b.setSpan(new CustomTypefaceSpan(null, ColorId.textSearchQueryHighlight), part.start, part.end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+    }
+    return b;
   }
 }

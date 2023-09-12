@@ -81,7 +81,7 @@ public class SetSenderControllerPage extends BottomSheetViewController.BottomShe
       @Override
       public void getItemOffsets (@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
         super.getItemOffsets(outRect, view, parent, state);
-        int bottom = view instanceof EmptySmartView && getKeyboardState() ? -Keyboard.getSize(Keyboard.getSize()): 0;
+        int bottom = view instanceof EmptySmartView && getKeyboardState() ? -Keyboard.getSize(Keyboard.getSize()) : 0;
         outRect.set(0, bottom, 0, 0);
       }
     });

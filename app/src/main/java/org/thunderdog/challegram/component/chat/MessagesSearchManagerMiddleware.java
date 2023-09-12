@@ -281,7 +281,7 @@ public class MessagesSearchManagerMiddleware {
     int discardedCount = 0;
 
     ArrayList<TdApi.Message> filteredArr = new ArrayList<>();
-    for (TdApi.Message message: messages) {
+    for (TdApi.Message message : messages) {
       final boolean isFiltered = manager.filter(message);
       if (isFiltered) {
         filteredArr.add(message);
@@ -300,7 +300,7 @@ public class MessagesSearchManagerMiddleware {
   }
 
   private boolean isWasDiscardedBefore (long id) {
-    for (SendSearchRequestFilterChunkInfo part: filteredChunksInfo) {
+    for (SendSearchRequestFilterChunkInfo part : filteredChunksInfo) {
       if (part.isChunkPart(id)) return true;
     }
 
@@ -348,7 +348,7 @@ public class MessagesSearchManagerMiddleware {
     final String contextId = makeContextId(query, sender);
     checkContextId(contextId);
 
-    TdApi.FoundMessages cached = secretMessagesCache.get(query.offset != null ? query.offset: "");
+    TdApi.FoundMessages cached = secretMessagesCache.get(query.offset != null ? query.offset : "");
     if (cached != null) {
       resultHandler.onResult(cached);
       return;
@@ -492,9 +492,9 @@ public class MessagesSearchManagerMiddleware {
 
     if (queryIsEmpty) {
       if (hasMediaFilter) {
-        return new TdApi.SearchChatMessages(query.chatId, query.query, null, !StringUtils.isEmpty(query.offset) ? Long.parseLong(query.offset): 0, 0, query.limit, safeFilter, 0);
+        return new TdApi.SearchChatMessages(query.chatId, query.query, null, !StringUtils.isEmpty(query.offset) ? Long.parseLong(query.offset) : 0, 0, query.limit, safeFilter, 0);
       } else {
-        return new TdApi.GetChatHistory(query.chatId, !StringUtils.isEmpty(query.offset) ? Long.parseLong(query.offset): 0, 0, query.limit, false);
+        return new TdApi.GetChatHistory(query.chatId, !StringUtils.isEmpty(query.offset) ? Long.parseLong(query.offset) : 0, 0, query.limit, false);
       }
     }
 
@@ -506,7 +506,7 @@ public class MessagesSearchManagerMiddleware {
   }
 
   private static TdApi.SearchChatMessages safeSearchChatQuery (TdApi.SearchChatMessages query, boolean withoutSenderId, boolean withoutFilter) {
-    return new TdApi.SearchChatMessages(query.chatId, query.query, withoutSenderId ? null : query.senderId, query.fromMessageId, query.offset, query.limit, withoutFilter ? null: safeFilter(query.filter), query.messageThreadId);
+    return new TdApi.SearchChatMessages(query.chatId, query.query, withoutSenderId ? null : query.senderId, query.fromMessageId, query.offset, query.limit, withoutFilter ? null : safeFilter(query.filter), query.messageThreadId);
   }
 
   private static TdApi.SearchChatMessages cloneSearchChatQuery (TdApi.SearchChatMessages query, long newFromMessageId, int newOffset) {

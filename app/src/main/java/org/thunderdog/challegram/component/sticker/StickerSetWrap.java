@@ -14,6 +14,7 @@
  */
 package org.thunderdog.challegram.component.sticker;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.os.Build;
@@ -22,19 +23,27 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+
+import androidx.annotation.Nullable;
+import androidx.collection.LongSparseArray;
 
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.component.emoji.MediaStickersAdapter;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
+import org.thunderdog.challegram.data.TGStickerSetInfo;
 import org.thunderdog.challegram.navigation.HeaderView;
 import org.thunderdog.challegram.navigation.NavigationController;
 import org.thunderdog.challegram.navigation.OverlayView;
+import org.thunderdog.challegram.navigation.TooltipOverlayView;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewSupport;
+import org.thunderdog.challegram.telegram.StickersListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibDelegate;
 import org.thunderdog.challegram.telegram.TdlibUi;
@@ -55,20 +64,31 @@ import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.ProgressComponentView;
 import org.thunderdog.challegram.widget.ShadowView;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
+import me.vkryl.core.collection.LongList;
 import me.vkryl.core.lambda.CancellableRunnable;
+import me.vkryl.core.lambda.RunnableBool;
+import me.vkryl.td.Td;
 
-public class StickerSetWrap extends FrameLayoutFix implements StickersListController.StickerSetProvider, StickersListController.OffsetProvider, View.OnClickListener, FactorAnimator.Target, PopupLayout.PopupHeightProvider {
-  private HeaderView headerView;
-  private StickersListController stickersController;
-  private FrameLayoutFix bottomWrap;
-  private TextView textButton;
-  private ShadowView topShadow;
-  private RelativeLayout button;
-  private ProgressComponentView progressView;
+@SuppressLint("ViewConstructor")
+public class StickerSetWrap extends FrameLayoutFix implements StickersListController.StickerSetProvider, MediaStickersAdapter.OffsetProvider, View.OnClickListener, FactorAnimator.Target, PopupLayout.PopupHeightProvider, StickersListener {
+  private final HeaderView headerView;
+  private final StickersListController stickersController;
+  private final FrameLayoutFix bottomWrap;
+  private final TextView textButton;
+  private final ShadowView topShadow;
+  private final RelativeLayout button;
+  private final ProgressComponentView progressView;
+
+  private final HashMap<Long, TGStickerSetInfo> stickerSets = new HashMap<>();
 
   private boolean isOneShot = true;
 
@@ -175,13 +195,14 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
       topLick = new LickView(context);
       themeListener.addThemeInvalidateListener(topLick);
     }
-
+    themeListener.addThemeInvalidateListener(this);
     updateHeader();
   }
 
   @Override
   public void invalidate () {
     headerView.resetColors(stickersController, null);
+    super.invalidate();
   }
 
   @Override
@@ -193,7 +214,11 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
         return false;
       }
       if (c instanceof MessagesController && ((MessagesController) c).canWriteMessages()) {
-        if (((MessagesController) c).onSendSticker(view, sticker, sendOptions)) {
+        if (sticker.isCustomEmoji()) {
+          ((MessagesController) c).onEnterCustomEmoji(sticker);
+          popupLayout.hideWindow(true);
+          return true;
+        } else if (((MessagesController) c).onSendSticker(view, sticker, sendOptions)) {
           popupLayout.hideWindow(true);
           return true;
         }
@@ -220,18 +245,26 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
   }
 
   @Override
-  public boolean canArchiveStickerSet () {
-    return info.isInstalled && !info.isArchived;
+  public boolean canArchiveStickerSet (long id) {
+    TGStickerSetInfo info = stickerSets.get(id);
+    return info != null && info.isInstalled() && !info.isArchived();
   }
 
   @Override
-  public boolean canRemoveStickerSet () {
-    return !info.isInstalled && info.isArchived;
+  public boolean canRemoveStickerSet (long id) {
+    TGStickerSetInfo info = stickerSets.get(id);
+    return info != null && !info.isInstalled() && info.isArchived();
   }
 
   @Override
-  public void removeStickerSet () {
-    makeRequest(STATE_UNINSTALLED);
+  public boolean canInstallStickerSet (long id) {
+    TGStickerSetInfo info = stickerSets.get(id);
+    return info != null && !info.isInstalled();
+  }
+
+  @Override
+  public void removeStickerSets (long[] setIds) {
+    makeRequest(STATE_UNINSTALLED, setIds);
   }
 
   @Override
@@ -240,8 +273,13 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
   }
 
   @Override
-  public void archiveStickerSet () {
-    archive();
+  public void archiveStickerSets (long[] setIds) {
+    makeRequest(STATE_ARCHIVED, setIds);
+  }
+
+  @Override
+  public void installStickerSets (long[] setIds) {
+    makeRequest(STATE_INSTALLED, setIds);
   }
 
   private float statusBarFactor;
@@ -286,9 +324,11 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
       }
     }
 
-    if (headerView != null && headerView.getFilling() != null) {
+    if (headerView.getFilling() != null) {
       headerView.getFilling().setShadowAlpha(factor);
     }
+
+    super.invalidate();
   }
 
   @Override
@@ -351,14 +391,8 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
             progressView.animateFactor(1f);
           }
         };
-        button.postDelayed(scheduledProgress, 180l);
+        button.postDelayed(scheduledProgress, 180L);
       }
-    }
-  }
-
-  private void archive () {
-    if (!inProgress) {
-      makeRequest(STATE_ARCHIVED);
     }
   }
 
@@ -366,7 +400,28 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
   private static final int STATE_ARCHIVED = 1;
   private static final int STATE_INSTALLED = 2;
 
-  private void makeRequest (final int state) {
+  private final AtomicInteger pendingRequests = new AtomicInteger();
+
+  private void makeRequest (final int state, final long[] setIds) {
+    if (setIds.length > 0) {
+      setInProgress(true);
+      pendingRequests.getAndSet(setIds.length);
+      for (long setId : setIds) {
+        performRequest(state, setId, success -> {
+          if (pendingRequests.decrementAndGet() == 0) {
+            setInProgress(false);
+            if (isOneShot && success) {
+              popupLayout.hideWindow(true);
+            } else {
+              updateButton(true);
+            }
+          }
+        });
+      }
+    }
+  }
+
+  private void performRequest (final int state, final long setId, RunnableBool after) {
     final boolean isInstalled, isArchived;
     switch (state) {
       case STATE_ARCHIVED:
@@ -382,55 +437,101 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
         isInstalled = isArchived = false;
         break;
     }
-    if (!inProgress) {
-      setInProgress(true);
-      tdlib.client().send(new TdApi.ChangeStickerSet(info.id, isInstalled, isArchived), object -> {
-        final boolean ok = object.getConstructor() == TdApi.Ok.CONSTRUCTOR;
-        tdlib.ui().post(() -> {
-          setInProgress(false);
-          if (ok) {
-            info.isInstalled = isInstalled;
-            info.isArchived = isArchived;
+    tdlib.client().send(new TdApi.ChangeStickerSet(setId, isInstalled, isArchived), object -> {
+      final boolean ok = object.getConstructor() == TdApi.Ok.CONSTRUCTOR;
+      tdlib.ui().post(() -> {
+        if (ok) {
+          TGStickerSetInfo info = stickerSets.get(setId);
+          if (info != null) {
+            if (isArchived) {
+              info.setIsArchived();
+            } else if (isInstalled) {
+              info.setIsInstalled();
+            } else {
+              info.setIsNotInstalled();
+            }
             switch (state) {
               case STATE_ARCHIVED:
-                tdlib.listeners().notifyStickerSetArchived(info);
+                tdlib.listeners().notifyStickerSetArchived(info.getInfo());
                 break;
               case STATE_INSTALLED:
-                tdlib.listeners().notifyStickerSetInstalled(info);
+                tdlib.listeners().notifyStickerSetInstalled(info.getInfo());
                 break;
               case STATE_UNINSTALLED:
-                tdlib.listeners().notifyStickerSetRemoved(info);
+                tdlib.listeners().notifyStickerSetRemoved(info.getInfo());
                 break;
             }
-            if (isOneShot) {
-              popupLayout.hideWindow(true);
-            } else {
-              updateButton(true);
-            }
-          } else if (object.getConstructor() == TdApi.Error.CONSTRUCTOR) {
-            UI.showError(object);
-            updateButton(true);
           }
-        });
+        } else if (object.getConstructor() == TdApi.Error.CONSTRUCTOR) {
+          UI.showError(object);
+        }
+        if (after != null) {
+          after.runWithBool(ok);
+        }
       });
+    });
+  }
+
+  private int getInstalledStickersCount () {
+    int installedCount = 0;
+    for(Map.Entry<Long, TGStickerSetInfo> entry : stickerSets.entrySet()) {
+      TdApi.StickerSetInfo setInfo = entry.getValue().getInfo();
+      if (setInfo != null && setInfo.isInstalled && !setInfo.isArchived) {
+        installedCount++;
+      }
     }
+
+    return installedCount;
+  }
+
+  private @Nullable TdApi.StickerSetInfo  getFirstStickersSetInfo () {
+    for(Map.Entry<Long, TGStickerSetInfo> entry : stickerSets.entrySet()) {
+      return entry.getValue().getInfo();
+    }
+
+    return null;
   }
 
   private void updateButton (boolean animated) {
+    if (stickerSets.isEmpty()) return;
+
+    final TdApi.StickerSetInfo info = getFirstStickersSetInfo();
+    if (info == null) return;
+
+    final int size = stickerSets.size();
+    final int installedCount = getInstalledStickersCount();
+    final boolean isEmoji = info.stickerType.getConstructor() == TdApi.StickerTypeCustomEmoji.CONSTRUCTOR;
+    final boolean isPositive = installedCount != size;
+    final boolean disabled = isPositive && isEmoji && !tdlib.account().isPremium();
+
     if (info.stickerType.getConstructor() == TdApi.StickerTypeMask.CONSTRUCTOR) {
-      updateButton(Lang.plural(info.isInstalled && !info.isArchived ? R.string.RemoveXMasks : R.string.AddXMasks, info.size), !info.isInstalled || info.isArchived, animated);
+      updateButton(Lang.plural(isPositive ? R.string.AddXMasks : R.string.RemoveXMasks, info.size), isPositive, animated, false);
+      return;
+    }
+
+    if (size == 1) {
+      if (isEmoji) {
+        updateButton(Lang.plural(isPositive ? R.string.AddXEmoji : R.string.RemoveXEmoji, info.size), isPositive, animated, disabled);
+      } else {
+        updateButton(Lang.plural(isPositive ? R.string.AddXStickers : R.string.RemoveXStickers, info.size), isPositive, animated, false);
+      }
     } else {
-      updateButton(Lang.plural(info.isInstalled && !info.isArchived ? R.string.RemoveXStickers : R.string.AddXStickers, info.size), !info.isInstalled || info.isArchived, animated);
+      int num = installedCount == size ? installedCount : size - installedCount;
+      if (isEmoji) {
+        updateButton(Lang.plural(isPositive ? R.string.AddXEmojiPacks : R.string.RemoveXEmojiPacks, num), isPositive, animated, disabled);
+      } else {
+        updateButton(Lang.plural(isPositive ? R.string.AddXStickerPacks : R.string.RemoveXStickerPacks, num), isPositive, animated, false);
+      }
     }
   }
 
-  private void updateButton (String str, boolean positive, boolean animated) {
+  private void updateButton (String str, boolean positive, boolean animated, boolean isDisabled) {
     str = str.toUpperCase();
-    int colorId = positive ? ColorId.textNeutral : ColorId.textNegative;
+    int colorId = isDisabled ? ColorId.textLight : positive ? ColorId.textNeutral : ColorId.textNegative;
     if (!textButton.getText().toString().equals(str) || textButton.getCurrentTextColor() != Theme.getColor(colorId)) {
       if (animated) {
         if (animator == null) {
-          animator = new FactorAnimator(0, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180l);
+          animator = new FactorAnimator(0, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 180L);
         } else {
           animator.forceFactor(0f);
         }
@@ -453,20 +554,27 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
     updateHeader();
   }
 
-  private TdApi.StickerSetInfo info;
-
   public void initWithInfo (TdApi.StickerSetInfo info) {
-    this.info = info;
+    this.stickerSets.put(info.id, new TGStickerSetInfo(tdlib, info));
     updateButton(false);
     stickersController.setStickerSetInfo(info);
     addViews();
   }
 
   public void initWithSet (TdApi.StickerSet set) {
-    this.info = new TdApi.StickerSetInfo(set.id, set.title, set.name, set.thumbnail, set.thumbnailOutline, set.isInstalled, set.isArchived, set.isOfficial, set.stickerFormat, set.stickerType, false, set.stickers.length, null);
+    TdApi.StickerSetInfo info = new TdApi.StickerSetInfo(set.id, set.title, set.name, set.thumbnail, set.thumbnailOutline, set.isInstalled, set.isArchived, set.isOfficial, set.stickerFormat, set.stickerType, false, set.stickers.length, null);
+    this.stickerSets.put(set.id, new TGStickerSetInfo(tdlib, info));
     updateButton(false);
     stickersController.setStickerSetInfo(info);
     stickersController.setStickers(set.stickers, info.stickerType, set.emojis);
+    addViews();
+  }
+
+  private void initWithSets (long[] ids, boolean isEmojiPacks) {
+    updateButton(false);
+    stickersController.setStickerSets(ids);
+    stickersController.setIsEmojiPack(isEmojiPacks);
+    stickersController.setLoadStickerSetsListener(this::onMultiStickerSetsLoaded);
     addViews();
   }
 
@@ -479,6 +587,12 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
     }
     addView(headerView);
     addView(bottomWrap);
+  }
+
+  @Override
+  protected void dispatchDraw (Canvas canvas) {
+    canvas.drawRect(0, provideOffset() - stickersController.getOffsetScroll(), getMeasuredWidth(), getMeasuredHeight(), Paints.fillingPaint(Theme.fillingColor()));
+    super.dispatchDraw(canvas);
   }
 
   private int getHeaderTop () {
@@ -540,19 +654,59 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
 
   @Override
   public void onClick (View v) {
+    TdApi.StickerSetInfo info = getFirstStickersSetInfo();
     if (info == null || inProgress) {
       return;
     }
 
-    if (info.isArchived || info.isOfficial) {
-      if (info.isArchived) {
-        makeRequest(STATE_INSTALLED);
-      } else {
-        archive();
-      }
-    } else {
-      makeRequest(info.isInstalled ? STATE_UNINSTALLED : STATE_INSTALLED);
+    final int size = stickerSets.size();
+    final int installedCount = getInstalledStickersCount();
+    final boolean isEmoji = info.stickerType.getConstructor() == TdApi.StickerTypeCustomEmoji.CONSTRUCTOR;
+    final boolean isPositive = installedCount != size;
+    final boolean disabled = isPositive && isEmoji && !tdlib.account().isPremium();
+
+    if (disabled) {
+      tooltipManager().builder(textButton).offset(rect -> rect.offset(0, Screen.dp(10))).show(tdlib, R.string.EmojiOnlyForPremium);
+      return;
     }
+
+    LongList stickerSetsToInstall = null;
+    LongList stickerSetsToArchive = null;
+    LongList stickerSetsToUninstall = null;
+
+    for (Map.Entry<Long, TGStickerSetInfo> entry : stickerSets.entrySet()) {
+      TdApi.StickerSetInfo setInfo = entry.getValue().getInfo();
+      if (isPositive) {
+        if (!setInfo.isInstalled || setInfo.isArchived) {
+          if (stickerSetsToInstall == null) {
+            stickerSetsToInstall = new LongList(stickerSets.size());
+          }
+          stickerSetsToInstall.append(setInfo.id);
+        }
+      } else {
+        if (setInfo.isOfficial) {
+          if (stickerSetsToArchive == null) {
+            stickerSetsToArchive = new LongList(stickerSets.size());
+          }
+          stickerSetsToArchive.append(setInfo.id);
+        } else if (setInfo.isInstalled) {
+          if (stickerSetsToUninstall == null) {
+            stickerSetsToUninstall = new LongList(stickerSets.size());
+          }
+          stickerSetsToUninstall.append(setInfo.id);
+        }
+      }
+    }
+    if (stickerSetsToInstall != null) {
+      makeRequest(STATE_INSTALLED, stickerSetsToInstall.get());
+    }
+    if (stickerSetsToArchive != null) {
+      makeRequest(STATE_ARCHIVED, stickerSetsToArchive.get());
+    }
+    if (stickerSetsToUninstall != null) {
+      makeRequest(STATE_ARCHIVED, stickerSetsToUninstall.get());
+    }
+
   }
 
   // Show
@@ -560,14 +714,14 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
   private PopupLayout popupLayout;
 
   public void showStickerSet () {
+    tdlib.listeners().subscribeToStickerUpdates(this);
     popupLayout = new PopupLayout(getContext());
     popupLayout.setDismissListener(popup -> {
       stickersController.destroy();
       progressView.performDestroy();
+      tdlib.listeners().unsubscribeFromStickerUpdates(this);
     });
-    popupLayout.setShowListener(popup -> {
-      stickersController.setItemAnimator();
-    });
+    popupLayout.setShowListener(popup -> stickersController.setItemAnimator());
     popupLayout.setPopupHeightProvider(this);
     popupLayout.init(true);
     popupLayout.setHideKeyboard();
@@ -587,5 +741,96 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
     wrap.initWithSet(set);
     wrap.showStickerSet();
     return wrap;
+  }
+
+  public static StickerSetWrap showStickerSets (TdlibDelegate context, long[] ids, boolean isEmojiPacks) {
+    StickerSetWrap wrap = new StickerSetWrap(context.context(), context.tdlib());
+    wrap.initWithSets(ids, isEmojiPacks);
+    wrap.showStickerSet();
+    return wrap;
+  }
+
+
+
+  /* * */
+
+  private TooltipOverlayView tooltipOverlayView;
+
+  private TooltipOverlayView tooltipManager () {
+    if (tooltipOverlayView == null) {
+      tooltipOverlayView = new TooltipOverlayView(getContext());
+      tooltipOverlayView.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+      tooltipOverlayView.setAvailabilityListener((overlayView, hasChildren) -> {
+        if (hasChildren) {
+          if (tooltipOverlayView.getParent() != null)
+            return;
+          addView(tooltipOverlayView);
+        } else {
+          removeView(tooltipOverlayView);
+        }
+      });
+    }
+    return tooltipOverlayView;
+  }
+
+  private void onMultiStickerSetsLoaded (ArrayList<TdApi.StickerSet> sets) {
+    for (TdApi.StickerSet set : sets) {
+      this.stickerSets.put(set.id, new TGStickerSetInfo(tdlib, Td.toStickerSetInfo(set)));
+    }
+
+    updateButton(true);
+  }
+
+
+
+  /* * */
+
+  private void onUpdateStickerSet (long id, TdApi.StickerSetInfo stickerSet) {
+    TGStickerSetInfo info = stickerSets.get(id);
+    if (info != null) {
+      info.updateState(stickerSet);
+    }
+    updateButton(true);
+  }
+
+  @Override
+  public void onInstalledStickerSetsUpdated (long[] stickerSetIds, TdApi.StickerType stickerType) {
+    final LongSparseArray<TGStickerSetInfo> sets = new LongSparseArray<>(stickerSetIds.length);
+    for (long setId : stickerSetIds) {
+      sets.put(setId, null);
+    }
+    UI.post(() -> {
+      for(Map.Entry<Long, TGStickerSetInfo> entry : stickerSets.entrySet()) {
+        TGStickerSetInfo info = entry.getValue();
+        TdApi.StickerSetInfo setInfo = info.getInfo();
+        if (setInfo != null) {
+          int i = sets.indexOfKey(info.getId());
+          if (i >= 0) {
+            info.setIsInstalled();
+          } else {
+            info.setIsNotInstalled();
+          }
+        }
+      }
+      updateButton(true);
+    });
+  }
+
+  @Override
+  public void onStickerSetArchived (TdApi.StickerSetInfo stickerSet) {
+    final long id = stickerSet.id;
+    UI.post(() -> this.onUpdateStickerSet(id, stickerSet));
+  }
+
+  @Override
+  public void onStickerSetRemoved (TdApi.StickerSetInfo stickerSet) {
+    final long id = stickerSet.id;
+    UI.post(() -> this.onUpdateStickerSet(id, stickerSet));
+  }
+
+  @Override
+  public void onStickerSetInstalled (TdApi.StickerSetInfo stickerSet) {
+    final long id = stickerSet.id;
+    UI.post(() -> this.onUpdateStickerSet(id, stickerSet));
   }
 }

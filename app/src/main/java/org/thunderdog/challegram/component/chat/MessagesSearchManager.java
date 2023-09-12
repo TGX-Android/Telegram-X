@@ -116,7 +116,7 @@ public class MessagesSearchManager {
     currentIsSecret = isSecret;
     currentFromSender = fromSender;
     foundTargetMessageId = foundMsgId;
-    currentDisplayedMessage = foundMsgId != null ? foundMsgId.getMessageId(): 0;
+    currentDisplayedMessage = foundMsgId != null ? foundMsgId.getMessageId() : 0;
     currentSearchFilter = filter;
     searchManagerMiddleware.setDelegate(newTotalCount -> {
       delegate.onSearchUpdateTotalCount(getMessageIndex(currentDisplayedMessage), currentTotalCount = newTotalCount, knownIndex(), knownTotalCount());
@@ -182,7 +182,7 @@ public class MessagesSearchManager {
       TdApi.SearchSecretMessages query = new TdApi.SearchSecretMessages(chatId, input, nextSearchOffset, SEARCH_LOAD_LIMIT, filter);
       searchManagerMiddleware.search(query, fromSender, handler);
     } else {
-      final int offset = direction == SEARCH_DIRECTION_TOP ? 0 : ( direction == SEARCH_DIRECTION_BOTTOM ? -19: -10);
+      final int offset = direction == SEARCH_DIRECTION_TOP ? 0 : ( direction == SEARCH_DIRECTION_BOTTOM ? -19 : -10);
       TdApi.SearchChatMessages function = new TdApi.SearchChatMessages(chatId, input, fromSender, fromMessageId, offset, SEARCH_LOAD_LIMIT, filter, messageThreadId);
       searchManagerMiddleware.search(function, handler);
     }
@@ -245,7 +245,7 @@ public class MessagesSearchManager {
     if (isMore) {
       TdApi.Message currentMessage = currentSearchResultsArr.get(currentDisplayedMessage);
       if (messages == null || messages.length == 0) {
-        flags &= ~(direction == SEARCH_DIRECTION_TOP ? FLAG_CAN_LOAD_MORE_TOP: FLAG_CAN_LOAD_MORE_BOTTOM);
+        flags &= ~(direction == SEARCH_DIRECTION_TOP ? FLAG_CAN_LOAD_MORE_TOP : FLAG_CAN_LOAD_MORE_BOTTOM);
         if (currentMessage != null) {
           delegate.showSearchResult(getMessageIndex(currentMessage.id), currentTotalCount, knownIndex(), knownTotalCount(), new MessageId(currentMessage.chatId, currentMessage.id));
         }
@@ -254,7 +254,7 @@ public class MessagesSearchManager {
       addAllMessages(messages, direction);
       TdApi.Message message = getNextMessage(direction == SEARCH_DIRECTION_TOP);
       if (message == null) {
-        flags &= ~(direction == SEARCH_DIRECTION_TOP ? FLAG_CAN_LOAD_MORE_TOP: FLAG_CAN_LOAD_MORE_BOTTOM);
+        flags &= ~(direction == SEARCH_DIRECTION_TOP ? FLAG_CAN_LOAD_MORE_TOP : FLAG_CAN_LOAD_MORE_BOTTOM);
         if (currentMessage != null) {
           delegate.showSearchResult(getMessageIndex(currentMessage.id), currentTotalCount, knownIndex(), knownTotalCount(), new MessageId(currentMessage.chatId, currentMessage.id));
         }
@@ -319,11 +319,11 @@ public class MessagesSearchManager {
     if (0 <= nextIndex && nextIndex < currentSearchResultsArr.size()) {
       TdApi.Message message = getMessageByIndex(nextIndex);
       delegate.showSearchResult(getMessageIndex(currentDisplayedMessage = message.id), currentTotalCount, knownIndex(), knownTotalCount(), new MessageId(message.chatId, message.id));
-    } else if (next ? canLoadTop(): canLoadBottom()) {
+    } else if (next ? canLoadTop() : canLoadBottom()) {
       flags |= FLAG_LOADING;
       delegate.onAwaitNext(next);
       searchInternal(contextId, currentChatId, currentMessageThreadId, currentFromSender, currentSearchFilter, currentIsSecret, currentInput,
-        currentDisplayedMessage, currentSecretOffset, next ? SEARCH_DIRECTION_TOP: SEARCH_DIRECTION_BOTTOM);
+        currentDisplayedMessage, currentSecretOffset, next ? SEARCH_DIRECTION_TOP : SEARCH_DIRECTION_BOTTOM);
     }
   }
 
@@ -374,7 +374,7 @@ public class MessagesSearchManager {
     } else {
       currentSearchResults.addAll(0, Arrays.asList(messages));
     }
-    for (TdApi.Message message: messages) {
+    for (TdApi.Message message : messages) {
       currentSearchResultsArr.append(message.id, message);
     }
   }
@@ -385,7 +385,7 @@ public class MessagesSearchManager {
 
   private int getMessageIndex (long msgId) {
     int index = currentSearchResultsArr.indexOfKey(msgId);
-    return (index < 0) ? -1: (currentSearchResultsArr.size() - 1 - index);
+    return (index < 0) ? -1 : (currentSearchResultsArr.size() - 1 - index);
   }
 
   private boolean knownIndex () {

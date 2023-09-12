@@ -26,6 +26,7 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.animator.ListAnimator;
 import me.vkryl.android.util.ViewProvider;
+import me.vkryl.core.MathUtils;
 import me.vkryl.td.Td;
 
 public final class TGAvatars implements FactorAnimator.Target {
@@ -134,17 +135,17 @@ public final class TGAvatars implements FactorAnimator.Target {
     }
   }
 
-  public void requestFiles (ComplexReceiver complexReceiver, boolean isUpdate) {
+  public void requestFiles (ComplexReceiver complexReceiver, boolean isUpdate, boolean neverClear) {
     if (complexReceiver != null) {
       if (entries != null && !entries.isEmpty()) {
         for (AvatarEntry entry : entries) {
           AvatarReceiver receiver = complexReceiver.getAvatarReceiver(entry.id());
           receiver.requestMessageSender(tdlib, entry.senderId, AvatarReceiver.Options.NONE);
         }
-        if (!isUpdate) {
+        if (!isUpdate && !neverClear) {
           complexReceiver.clearReceivers((receiverType, receiver, key) -> receiverType == ComplexReceiver.RECEIVER_TYPE_AVATAR && entriesIds != null && entriesIds.contains(key));
         }
-      } else {
+      } else if (!neverClear) {
         complexReceiver.clear();
       }
     }
@@ -162,13 +163,27 @@ public final class TGAvatars implements FactorAnimator.Target {
     return avatarSize + (avatarSize + Screen.dp(avatarSpacing)) * (factor - 1f);
   }
 
-  public void draw (@NonNull MessageView view, @NonNull Canvas c, int x, int cy, int gravity, float alpha) {
-    if (animator == null || animator.size() == 0 || alpha == 0f) {
-      return;
+  public float getTargetWidth (float offset) {
+    if (countAnimator == null) {
+      return 0f;
     }
+    float factor = countAnimator.getToFactor();
+    int avatarSize = Screen.dp(avatarRadius) * 2;
+    if (factor < 1f) {
+      return avatarSize * factor;
+    }
+    return avatarSize + (avatarSize + Screen.dp(avatarSpacing)) * (factor - 1f) + offset * MathUtils.clamp(countAnimator.getToFactor());
+  }
 
-    ComplexReceiver avatarsReceiver = view.getAvatarsReceiver();
-    if (avatarsReceiver == null) {
+  public float getAvatarsVisibility () {
+    if (countAnimator == null) {
+      return 0f;
+    }
+    return MathUtils.clamp(countAnimator.getFactor());
+  }
+
+  public void draw (@NonNull MessageView view, @NonNull Canvas c, @Nullable ComplexReceiver avatarsReceiver, int x, int cy, int gravity, float alpha) {
+    if (animator == null || animator.size() == 0 || alpha == 0f || avatarsReceiver == null) {
       return;
     }
 

@@ -62,6 +62,7 @@ import androidx.activity.ComponentActivity;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.collection.SparseArrayCompat;
+import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
 import org.drinkmore.Tracer;
@@ -130,6 +131,7 @@ import org.thunderdog.challegram.widget.DragDropLayout;
 import org.thunderdog.challegram.widget.ForceTouchView;
 import org.thunderdog.challegram.widget.NetworkStatusBarView;
 import org.thunderdog.challegram.widget.PopupLayout;
+import org.thunderdog.challegram.widget.StickersSuggestionsLayout;
 
 import java.lang.ref.Reference;
 import java.util.ArrayList;
@@ -235,6 +237,16 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
     if (tooltipIndex != -1) {
       i = i == -1 ? tooltipIndex : Math.min(tooltipIndex, i);
     }
+
+    if (view == inlineResultsView) {
+      View customEmojiSuggestonsView = rootView.findViewById(R.id.view_customEmojiSuggestions);
+      int customEmojiSuggestionsIndex = customEmojiSuggestonsView != null ?
+        rootView.indexOfChild(customEmojiSuggestonsView) : -1;
+      if (customEmojiSuggestionsIndex != -1) {
+        i = i == -1 ? customEmojiSuggestionsIndex : Math.min(customEmojiSuggestionsIndex, i);
+      }
+    }
+
     if (i != -1) {
       rootView.addView(view, i);
     } else {
@@ -1946,9 +1958,13 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
   // Inline results
 
+  private StickersSuggestionsLayout emojiSuggestionsWrap;
   private InlineResultsWrap inlineResultsView;
 
   public void updateHackyOverlaysPositions () {
+    if (emojiSuggestionsWrap != null && emojiSuggestionsWrap.getParent() != null) {
+      emojiSuggestionsWrap.updatePosition(true);
+    }
     if (inlineResultsView != null && inlineResultsView.getParent() != null) {
       inlineResultsView.updatePosition(true);
     }
@@ -1962,6 +1978,10 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
   }
 
   public void showInlineResults (ViewController<?> context, Tdlib tdlib, @Nullable ArrayList<InlineResult<?>> results, boolean needBackground, @Nullable InlineResultsWrap.LoadMoreCallback callback) {
+    showInlineResults(context, tdlib, results, needBackground, callback, null, null);
+  }
+
+  public void showInlineResults (ViewController<?> context, Tdlib tdlib, @Nullable ArrayList<InlineResult<?>> results, boolean needBackground, @Nullable InlineResultsWrap.LoadMoreCallback callback, @Nullable RecyclerView.OnScrollListener scrollCallback, @Nullable StickerSmallView.StickerMovementCallback stickerMovementCallback) {
     if (inlineResultsView == null) {
       if (results == null || results.isEmpty()) {
         return;
@@ -1974,12 +1994,16 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
       addToRoot(inlineResultsView, false);
     }
 
-    inlineResultsView.showItems(context, results, needBackground, callback, !context.isFocused());
+    inlineResultsView.showItems(context, results, needBackground, callback, scrollCallback, stickerMovementCallback, !context.isFocused());
   }
 
   public void addInlineResults (ViewController<?> context, ArrayList<InlineResult<?>> results, InlineResultsWrap.LoadMoreCallback callback) {
+    addInlineResults(context, results, callback, null, null);
+  }
+
+  public void addInlineResults (ViewController<?> context, ArrayList<InlineResult<?>> results, InlineResultsWrap.LoadMoreCallback callback, @Nullable RecyclerView.OnScrollListener scrollCallback, @Nullable StickerSmallView.StickerMovementCallback stickerMovementCallback) {
     if (inlineResultsView != null) {
-      inlineResultsView.addItems(context, results, callback);
+      inlineResultsView.addItems(context, results, callback, scrollCallback, stickerMovementCallback);
     }
   }
 
@@ -1992,6 +2016,56 @@ public abstract class BaseActivity extends ComponentActivity implements View.OnT
 
   public boolean areInlineResultsVisible () {
     return inlineResultsView != null && inlineResultsView.isDisplayingItems();
+  }
+
+  @Nullable
+  public InlineResultsWrap getInlineResultsView () {
+    return inlineResultsView;
+  }
+
+  public void setEmojiSuggestions (MessagesController context, @Nullable ArrayList<TGStickerObj> stickers, @Nullable RecyclerView.OnScrollListener scrollCallback, StickersSuggestionsLayout.Delegate choosingDelegate) {
+    if (emojiSuggestionsWrap == null) {
+      emojiSuggestionsWrap = new StickersSuggestionsLayout(context.context());
+      emojiSuggestionsWrap.setId(R.id.view_customEmojiSuggestions);
+      emojiSuggestionsWrap.init(context, true);
+    }
+    emojiSuggestionsWrap.setChoosingDelegate(choosingDelegate);
+    emojiSuggestionsWrap.setOnScrollListener(scrollCallback);
+    emojiSuggestionsWrap.setStickers(context, stickers);
+  }
+
+  public void updateEmojiSuggestionsPosition (boolean needTranslate) {
+    if (emojiSuggestionsWrap != null) {
+      emojiSuggestionsWrap.updatePosition(needTranslate);
+    }
+  }
+
+  public void addEmojiSuggestions (MessagesController context, ArrayList<TGStickerObj> stickers) {
+    if (emojiSuggestionsWrap != null && stickers != null && !stickers.isEmpty()) {
+      emojiSuggestionsWrap.addStickers(context, stickers);
+    }
+  }
+
+  public void setEmojiSuggestionsVisible (boolean visible) {
+    if (emojiSuggestionsWrap != null) {
+      if (visible) {
+        emojiSuggestionsWrap.updatePosition(false);
+      }
+      emojiSuggestionsWrap.setStickersVisible(visible);
+    }
+  }
+
+  public boolean hasEmojiSuggestions () {
+    return emojiSuggestionsWrap != null && emojiSuggestionsWrap.hasStickers();
+  }
+
+  public boolean isEmojiSuggestionsVisible () {
+    return emojiSuggestionsWrap != null && emojiSuggestionsWrap.isStickersVisible();
+  }
+
+  @Nullable
+  public StickersSuggestionsLayout getEmojiSuggestionsView () {
+    return emojiSuggestionsWrap;
   }
 
   // etc
