@@ -259,6 +259,7 @@ public final class TGAvatars implements FactorAnimator.Target {
       AvatarReceiver receiver = complexReceiver.getAvatarReceiver(id);
 
       receiver.drawPlaceholderRounded(c, receiver.getDisplayRadius(), outline, Paints.getErasePaint());
+
       if (alpha != 1f) {
         receiver.setPaintAlpha(receiver.getPaintAlpha() * alpha);
       }
