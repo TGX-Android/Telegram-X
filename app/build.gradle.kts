@@ -109,7 +109,7 @@ android {
         dimension = "abi"
         versionCode = (abi + 1)
         minSdk = variant.minSdkVersion
-        buildConfigBool("WEBP_ENABLED", variant.minSdkVersion < 19)
+        buildConfigBool("WEBP_ENABLED", true) // variant.minSdkVersion < 19
         buildConfigBool("SIDE_LOAD_ONLY", variant.sideLoadOnly)
         ndk.abiFilters.clear()
         ndk.abiFilters.addAll(variant.filters)

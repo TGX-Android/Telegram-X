@@ -18,11 +18,12 @@ set(UTILS_DIR "${THIRDPARTY_DIR}/jni-utils")
 set(ENABLE_TG_CALLS yes)
 
 # Using webp only if building for 32-bit platform
-if (${ANDROID_ABI} STREQUAL "armeabi-v7a" OR ${ANDROID_ABI} STREQUAL "x86")
-  set(USE_WEBP yes)
-else()
-  set(USE_WEBP no)
-endif()
+#if (${ANDROID_ABI} STREQUAL "armeabi-v7a" OR ${ANDROID_ABI} STREQUAL "x86")
+#  set(USE_WEBP yes)
+#else()
+#  set(USE_WEBP no)
+#endif()
+set(USE_WEBP yes)
 
 if (${ANDROID_ABI} STREQUAL "x86_64" OR ${ANDROID_ABI} STREQUAL "arm64-v8a")
   set(FFMPEG_ABI ${ANDROID_ABI})
