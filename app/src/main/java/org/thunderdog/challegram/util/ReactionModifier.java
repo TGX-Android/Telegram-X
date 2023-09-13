@@ -4,9 +4,6 @@ import android.graphics.Canvas;
 import android.view.View;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-
-import androidx.annotation.NonNull;
 
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.data.TD;

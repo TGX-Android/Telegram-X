@@ -82,7 +82,6 @@ import org.thunderdog.challegram.emoji.EmojiFilter;
 import org.thunderdog.challegram.emoji.EmojiInfo;
 import org.thunderdog.challegram.emoji.EmojiSpan;
 import org.thunderdog.challegram.emoji.EmojiUpdater;
-import org.thunderdog.challegram.emoji.PreserveCustomEmojiFilter;
 import org.thunderdog.challegram.filegen.PhotoGenerationInfo;
 import org.thunderdog.challegram.helper.InlineSearchContext;
 import org.thunderdog.challegram.loader.ComplexReceiver;
@@ -104,6 +103,7 @@ import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.util.CharacterStyleFilter;
 import org.thunderdog.challegram.util.ExternalEmojiFilter;
 import org.thunderdog.challegram.util.FinalNewLineFilter;
+import org.thunderdog.challegram.emoji.PreserveCustomEmojiFilter;
 import org.thunderdog.challegram.util.TextSelection;
 import org.thunderdog.challegram.util.text.Text;
 import org.thunderdog.challegram.util.text.TextColorSets;
@@ -1102,49 +1102,6 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
     int after = selection.start + emoji.length();
     SpannableString s = new SpannableString(emoji);
     s.setSpan(Emoji.instance().newSpan(emoji, null), 0, s.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-    if (selection.isEmpty()) {
-      getText().insert(selection.start, s);
-    } else {
-      getText().replace(selection.start, selection.end, s);
-    }
-    setSelection(after);
-  }
-
-  public void onCustomEmojiSelected (TGStickerObj stickerObj) {
-    onCustomEmojiSelected(stickerObj, false);
-  }
-
-  public void onCustomEmojiSelected (TdApi.Sticker sticker) {
-    onCustomEmojiSelected(sticker, false);
-  }
-
-  public void onCustomEmojiSelected (TGStickerObj stickerObj, boolean needReplace) {
-    onCustomEmojiSelected(stickerObj.getSticker(), needReplace);
-  }
-
-  public void onCustomEmojiSelected (TdApi.Sticker stickerObj, boolean needReplace) {
-    TextSelection selection = getTextSelection();
-    if (selection == null)
-      return;
-
-    final int start = selection.start;
-
-    String emoji = TD.stickerEmoji(stickerObj);
-    int after = selection.start + emoji.length();
-    SpannableString s = new SpannableString(emoji);
-    s.setSpan(Emoji.instance().newCustomSpan(emoji, null, this, tdlib, Td.customEmojiId(stickerObj)), 0, s.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-    if (needReplace && !isEmpty() && selection.isEmpty()) {
-      CharSequence emojiToRemove = Emoji.extractSingleEmojiLast(getText().subSequence(0, selection.start));
-      if (emojiToRemove != null && start >= emojiToRemove.length()) {
-        getText().replace(start - emojiToRemove.length(), start, s);
-        int newStart = start - emojiToRemove.length() + s.length();
-        setSelection(newStart);
-        if (inlineContext != null && newStart == start) {
-          inlineContext.reset();
-        }
-        return;
-      }
-    }
     if (selection.isEmpty()) {
       getText().insert(selection.start, s);
     } else {

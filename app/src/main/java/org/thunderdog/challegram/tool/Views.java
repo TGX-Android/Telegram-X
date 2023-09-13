@@ -53,8 +53,6 @@ import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.core.DiffMatchPatch;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.Receiver;
-import org.thunderdog.challegram.navigation.HeaderView;
-import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewTranslator;
 import org.thunderdog.challegram.theme.ColorId;
@@ -959,23 +957,6 @@ public class Views {
     return 0;
   }
 
-  public static int findFirstCompletelyVisibleItemPositionWithOffset (LinearLayoutManager manager, int topOffset) {
-    int i = manager.findFirstCompletelyVisibleItemPosition();
-    if (i == -1) {
-      i = manager.findFirstVisibleItemPosition();
-    }
-
-    View v = manager.findViewByPosition(i);
-    while (v != null) {
-      if (v.getTop() >= topOffset) {
-        return i;
-      }
-      v = manager.findViewByPosition(++i);
-    }
-
-    return -1;
-  }
-
   public static void getCharacterCoordinates(TextView textView, int offset, int[] coordinates) {
     if (coordinates.length != 2)
       throw new IllegalArgumentException();
@@ -992,5 +973,22 @@ public class Views {
       coordinates[0] = xPos;
       coordinates[1] = yPos;
     }
+  }
+
+  public static int findFirstCompletelyVisibleItemPositionWithOffset (LinearLayoutManager manager, int topOffset) {
+    int i = manager.findFirstCompletelyVisibleItemPosition();
+    if (i == -1) {
+      i = manager.findFirstVisibleItemPosition();
+    }
+
+    View v = manager.findViewByPosition(i);
+    while (v != null) {
+      if (v.getTop() >= topOffset) {
+        return i;
+      }
+      v = manager.findViewByPosition(++i);
+    }
+
+    return -1;
   }
 }

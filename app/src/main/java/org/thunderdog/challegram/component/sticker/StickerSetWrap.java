@@ -67,10 +67,6 @@ import org.thunderdog.challegram.widget.ShadowView;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import me.vkryl.android.AnimatorUtils;
@@ -80,7 +76,6 @@ import me.vkryl.core.ColorUtils;
 import me.vkryl.core.collection.LongList;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.RunnableBool;
-import me.vkryl.td.Td;
 import me.vkryl.td.Td;
 
 @SuppressLint("ViewConstructor")
@@ -497,26 +492,6 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
     return null;
   }
 
-  private int getInstalledStickersCount () {
-    int installedCount = 0;
-    for(Map.Entry<Long, TGStickerSetInfo> entry : stickerSets.entrySet()) {
-      TdApi.StickerSetInfo setInfo = entry.getValue().getInfo();
-      if (setInfo != null && setInfo.isInstalled && !setInfo.isArchived) {
-        installedCount++;
-      }
-    }
-
-    return installedCount;
-  }
-
-  private @Nullable TdApi.StickerSetInfo  getFirstStickersSetInfo () {
-    for(Map.Entry<Long, TGStickerSetInfo> entry : stickerSets.entrySet()) {
-      return entry.getValue().getInfo();
-    }
-
-    return null;
-  }
-
   private void updateButton (boolean animated) {
     if (stickerSets.isEmpty()) return;
 
@@ -592,14 +567,6 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
     updateButton(false);
     stickersController.setStickerSetInfo(info);
     stickersController.setStickers(set.stickers, info.stickerType, set.emojis);
-    addViews();
-  }
-
-  private void initWithSets (long[] ids, boolean isEmojiPacks) {
-    updateButton(false);
-    stickersController.setStickerSets(ids);
-    stickersController.setIsEmojiPack(isEmojiPacks);
-    stickersController.setLoadStickerSetsListener(this::onMultiStickerSetsLoaded);
     addViews();
   }
 

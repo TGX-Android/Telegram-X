@@ -7002,38 +7002,4 @@ public class TD {
 
     return false;
   }
-
-  public static long[] getUniqueEmojiIdList (@Nullable TdApi.FormattedText text) {
-    if (text == null || text.text == null || text.entities == null || text.entities.length == 0) return new long[0];
-
-    LongSet emojis = new LongSet();
-    for (TdApi.TextEntity entity : text.entities) {
-      if (entity.type.getConstructor() == TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR) {
-        emojis.add(((TdApi.TextEntityTypeCustomEmoji) entity.type).customEmojiId);
-      }
-    }
-
-    return emojis.toArray();
-  }
-
-  public static String stickerEmoji (TdApi.Sticker sticker) {
-    return !StringUtils.isEmpty(sticker.emoji) ? sticker.emoji : "\uD83D\uDE00" /*😀*/;
-  }
-
-  public static TdApi.FormattedText toSingleEmojiText (TdApi.Sticker sticker) {
-    String emoji = stickerEmoji(sticker);
-    return new TdApi.FormattedText(emoji, new TdApi.TextEntity[]{
-      new TdApi.TextEntity(0, emoji.length(), new TdApi.TextEntityTypeCustomEmoji(Td.customEmojiId(sticker)))
-    });
-  }
-
-  public static int getStickerSetsUnreadCount (TdApi.StickerSetInfo[] stickerSets) {
-    int unreadCount = 0;
-    for (TdApi.StickerSetInfo stickerSet : stickerSets) {
-      if (!stickerSet.isViewed) {
-        unreadCount++;
-      }
-    }
-    return unreadCount;
-  }
 }

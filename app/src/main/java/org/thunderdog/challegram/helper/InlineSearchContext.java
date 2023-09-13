@@ -14,15 +14,9 @@
  */
 package org.thunderdog.challegram.helper;
 
-import android.content.Context;
-import android.content.res.Resources;
 import android.location.Location;
-import android.os.Build;
-import android.os.LocaleList;
 import android.os.SystemClock;
 import android.text.Spanned;
-import android.view.inputmethod.InputMethodManager;
-import android.view.inputmethod.InputMethodSubtype;
 
 import androidx.annotation.IntRange;
 import androidx.annotation.NonNull;
@@ -35,7 +29,6 @@ import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.R;
-import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.chat.InlineResultsWrap;
 import org.thunderdog.challegram.component.popups.ModernOptions;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
@@ -62,9 +55,7 @@ import org.thunderdog.challegram.util.CancellableResultHandler;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 
-import me.vkryl.android.LocaleUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.td.ChatId;
