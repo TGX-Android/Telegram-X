@@ -389,7 +389,7 @@ public class UserView extends BaseView implements Destroyable, RemoveHelper.Remo
 
     if (drawModifiers != null) {
       for (int i = drawModifiers.size() - 1; i >= 0; i--) {
-        drawModifiers.get(i).afterDraw(this, c, getComplexReceiver());
+        drawModifiers.get(i).afterDraw(this, c);
       }
     }
   }

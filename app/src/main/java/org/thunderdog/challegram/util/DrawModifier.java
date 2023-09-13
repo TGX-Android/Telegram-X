@@ -23,10 +23,6 @@ import org.thunderdog.challegram.loader.ComplexReceiver;
 
 public interface DrawModifier {
   default void beforeDraw (View view, Canvas c) { }
-  @Deprecated
   default void afterDraw (View view, Canvas c) { }
-  default void afterDraw (View view, Canvas c, @Nullable ComplexReceiver complexReceiver) {
-    afterDraw(view, c);
-  }
   default int getWidth () { return 0; }
 }
