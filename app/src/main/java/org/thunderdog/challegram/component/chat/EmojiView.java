@@ -180,17 +180,17 @@ public class EmojiView extends View implements ClickHelper.Delegate {
   private TdlibUi.EmojiStickers emojiStickers;
 
   private void preliminaryLoadCustomEmoji (String emoji) {
-    emojiStickers = tdlib.ui().getEmojiStickers(new TdApi.StickerTypeCustomEmoji(), emoji, 6, toneHelper.getCurrentChatId());
+    emojiStickers = tdlib.ui().getEmojiStickers(new TdApi.StickerTypeCustomEmoji(), emoji, false, 6, toneHelper.getCurrentChatId());
   }
 
   @Override
   public boolean onLongPressRequestedAt (View view, float x, float y) {
-    if (emojiStickers == null || !emojiStickers.emoji.equals(this.emoji)) {
+    if (emojiStickers == null || !emojiStickers.query.equals(this.emoji)) {
       return false;
     }
     emojiStickers.getStickers(new TdlibUi.EmojiStickers.Callback() {
       @Override
-      public void onStickersLoaded (TdlibUi.EmojiStickers context, TdApi.Sticker[] installedStickers, TdApi.Sticker[] recommendedStickers) {
+      public void onStickersLoaded (TdlibUi.EmojiStickers context, TdApi.Sticker[] installedStickers, TdApi.Sticker[] recommendedStickers, boolean expectMoreStickers) {
         if (emojiStickers == context) {
           int totalCount = installedStickers.length + (recommendedStickers != null ? recommendedStickers.length : 0);
           if (totalCount > 0 || colorState != EmojiData.STATE_NO_COLORS) {

@@ -23,6 +23,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.os.SystemClock;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.TextUtils;
@@ -6461,102 +6462,239 @@ public class TdlibUi extends Handler {
 
   // Suggestions by emoji
 
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    StickersType.INSTALLED,
+    StickersType.INSTALLED_EXTRA,
+    StickersType.RECOMMENDED
+  })
+  public @interface StickersType {
+    int INSTALLED = 0, INSTALLED_EXTRA = 1, RECOMMENDED = 2;
+  }
+
   public static class EmojiStickers {
     private final Tdlib tdlib;
-    public final String emoji;
+    public final String query;
+    public final boolean isComplexQuery;
 
     private TdApi.Stickers installedStickers;
+    private TdApi.Stickers installedExtraStickers;
     private TdApi.Stickers recommendedStickers;
 
-    public EmojiStickers (Tdlib tdlib, TdApi.StickerType stickerType, String emoji, int limit, long chatId, int mode) {
+    public EmojiStickers (Tdlib tdlib, TdApi.StickerType stickerType, String query, boolean isComplexQuery, int limit, long chatId, boolean needRecommended) {
       this.tdlib = tdlib;
-      this.emoji = emoji;
-      if (mode != Settings.STICKER_MODE_ALL) {
-        setStickers(new TdApi.Stickers(new TdApi.Sticker[0]), false);
-      }
-      tdlib.client().send(new TdApi.GetStickers(stickerType, emoji, limit, chatId), object ->
-        setStickers(object, true)
+      this.query = query;
+      this.isComplexQuery = isComplexQuery;
+
+      this.haveInstalledStickers = new ConditionalExecutor(() ->
+        this.installedStickers != null
       );
-      if (mode == Settings.STICKER_MODE_ALL) {
-        // Request 2x more than limit for the case all of the stickers returned by GetStickers
-        tdlib.client().send(new TdApi.SearchStickers(stickerType, emoji, limit * 2), object ->
-          setStickers(object, false)
-        );
+      this.haveInstalledExtraStickers  = new ConditionalExecutor(() ->
+        this.installedExtraStickers != null
+      );
+      this.haveRecommendedStickers = new ConditionalExecutor(() ->
+        this.recommendedStickers != null
+      );
+
+      if (!isComplexQuery) {
+        setStickers(noStickers(), StickersType.INSTALLED_EXTRA);
       }
-    }
-
-    void setStickers (TdApi.Object stickersRaw, boolean areLocal) {
-      TdApi.Stickers stickers = stickersRaw.getConstructor() == TdApi.Stickers.CONSTRUCTOR ? (TdApi.Stickers) stickersRaw : new TdApi.Stickers(new TdApi.Sticker[0]);
-      if (areLocal) {
-        this.installedStickers = stickers;
-        haveInstalledStickers.notifyConditionChanged();
-      } else {
-        this.recommendedStickers = stickers;
-        haveRecommendedStickers.notifyConditionChanged();
+      if (!needRecommended) {
+        setStickers(noStickers(), StickersType.RECOMMENDED);
       }
-    }
-
-    private final ConditionalExecutor haveInstalledStickers = new ConditionalExecutor(() -> this.installedStickers != null);
-    private final ConditionalExecutor haveRecommendedStickers = new ConditionalExecutor(() -> this.recommendedStickers != null);
-
-    public interface Callback {
-      void onStickersLoaded (EmojiStickers context, TdApi.Sticker[] installedStickers, TdApi.Sticker[] recommendedStickers);
-
-      default void onRecommendedStickersLoaded (EmojiStickers context, TdApi.Sticker[] recommendedStickers) { }
-    }
-
-    public void getStickers (Callback callback, long remoteTimeoutMs) {
-      haveInstalledStickers.executeOrPostponeTask(() -> {
-        CancellationSignal timeoutSignal = new CancellationSignal();
-
-        int installedStickersCount = installedStickers.stickers.length;
-        List<TdApi.Sticker> installed = new ArrayList<>(installedStickersCount);
-        Collections.addAll(installed, installedStickers.stickers);
-
-        haveRecommendedStickers.executeOrPostponeTask(() -> {
-          boolean isAdditionalLoad = timeoutSignal.isCanceled();
-          timeoutSignal.cancel();
-          int recommendedStickersCount = recommendedStickers != null ? recommendedStickers.stickers.length : 0;
-          List<TdApi.Sticker> recommended = new ArrayList<>(recommendedStickersCount);
-          if (recommendedStickersCount > 0) {
-            LongSet installedStickerIds = new LongSet(installedStickersCount);
-            for (TdApi.Sticker installedSticker : installedStickers.stickers) {
-              installedStickerIds.add(installedSticker.id);
-            }
-            for (TdApi.Sticker recommendedSticker : recommendedStickers.stickers) {
-              if (!installedStickerIds.has(recommendedSticker.id)) {
-                recommended.add(recommendedSticker);
-              }
-            }
-          }
-          if (isAdditionalLoad) {
-            if (recommendedStickersCount > 0) {
-              tdlib.uiExecute(() ->
-                callback.onRecommendedStickersLoaded(this, recommended.toArray(new TdApi.Sticker[0]))
+      tdlib.client().send(new TdApi.GetStickers(stickerType, query, limit, chatId), object ->
+        setStickers(object, StickersType.INSTALLED)
+      );
+      if (isComplexQuery) {
+        tdlib.client().send(new TdApi.SearchEmojis(query, false, U.getInputLanguages()), result -> {
+          String[] emojis = result.getConstructor() == TdApi.Emojis.CONSTRUCTOR ? ((TdApi.Emojis) result).emojis : null;
+          if (emojis != null && emojis.length > 0) {
+            String emojisQuery = TextUtils.join(" ", emojis);
+            // Request 2x more than limit for the case all of the stickers returned by GetStickers
+            tdlib.client().send(new TdApi.GetStickers(stickerType, emojisQuery, limit * 2, chatId), object ->
+              setStickers(object, StickersType.INSTALLED_EXTRA)
+            );
+            if (needRecommended) {
+              tdlib.client().send(new TdApi.SearchStickers(stickerType, emojisQuery, limit * 3), object ->
+                setStickers(object, StickersType.RECOMMENDED)
               );
             }
           } else {
-            tdlib.uiExecute(() ->
-              callback.onStickersLoaded(this, installed.toArray(new TdApi.Sticker[0]), recommended.toArray(new TdApi.Sticker[0]))
-            );
+            setStickers(noStickers(), StickersType.INSTALLED_EXTRA);
+            if (needRecommended) {
+              setStickers(noStickers(), StickersType.RECOMMENDED);
+            }
           }
         });
-        if (remoteTimeoutMs > 0 && !timeoutSignal.isCanceled()) {
-          tdlib.runOnTdlibThread(() -> {
-            if (timeoutSignal.isCanceled()) {
-              return;
+      } else {
+        if (needRecommended) {
+          // Request 2x more than limit for the case all of the stickers returned by GetStickers
+          tdlib.client().send(new TdApi.SearchStickers(stickerType, query, limit * 2), object ->
+            setStickers(object, StickersType.RECOMMENDED)
+          );
+        }
+      }
+    }
+
+    private static TdApi.Stickers noStickers () {
+      return new TdApi.Stickers(new TdApi.Sticker[0]);
+    }
+
+    private boolean isLoading () {
+      return installedStickers == null || installedExtraStickers == null || recommendedStickers == null;
+    }
+
+    void setStickers (TdApi.Object stickersRaw, @StickersType int type) {
+      TdApi.Stickers stickers = stickersRaw.getConstructor() == TdApi.Stickers.CONSTRUCTOR ? (TdApi.Stickers) stickersRaw : new TdApi.Stickers(new TdApi.Sticker[0]);
+      switch (type) {
+        case StickersType.INSTALLED:
+          this.installedStickers = stickers;
+          haveInstalledStickers.notifyConditionChanged();
+          break;
+        case StickersType.INSTALLED_EXTRA:
+          this.installedExtraStickers = stickers;
+          haveInstalledExtraStickers.notifyConditionChanged();
+          break;
+        case StickersType.RECOMMENDED:
+          this.recommendedStickers = stickers;
+          haveRecommendedStickers.notifyConditionChanged();
+          break;
+      }
+    }
+
+    private final ConditionalExecutor haveInstalledStickers;
+    private final ConditionalExecutor haveInstalledExtraStickers;
+    private final ConditionalExecutor haveRecommendedStickers;
+
+    private TdApi.Sticker[] getInstalledStickers (boolean onlyExtra) {
+      int installedCount = (this.installedStickers != null ? this.installedStickers.stickers.length : 0);
+      int maxCount = installedCount + (this.installedExtraStickers != null ? this.installedExtraStickers.stickers.length : 0);
+      List<TdApi.Sticker> stickers = new ArrayList<>(maxCount);
+      if (this.installedStickers != null && !onlyExtra) {
+        Collections.addAll(stickers, this.installedStickers.stickers);
+      }
+      if (this.installedExtraStickers != null && this.installedExtraStickers.stickers.length > 0) {
+        LongSet excludeStickerIds = new LongSet(installedCount);
+        if (installedCount > 0) {
+          for (TdApi.Sticker sticker : this.installedStickers.stickers) {
+            excludeStickerIds.add(sticker.id);
+          }
+        }
+        ArrayUtils.ensureCapacity(stickers, stickers.size() + this.installedExtraStickers.stickers.length);
+        for (TdApi.Sticker sticker : this.installedExtraStickers.stickers) {
+          if (!excludeStickerIds.has(sticker.id)) {
+            stickers.add(sticker);
+          }
+        }
+      }
+      return stickers.toArray(new TdApi.Sticker[0]);
+    }
+
+    private TdApi.Sticker[] getRecommendedStickers (@Nullable TdApi.Sticker[] excludeStickers) {
+      int maxCount = this.recommendedStickers != null ? this.recommendedStickers.stickers.length : 0;
+      List<TdApi.Sticker> stickers = new ArrayList<>(maxCount);
+      if (this.recommendedStickers != null) {
+        if (excludeStickers != null && excludeStickers.length > 0) {
+          LongSet excludeStickerIds = new LongSet(excludeStickers.length);
+          for (TdApi.Sticker sticker : excludeStickers) {
+            excludeStickerIds.add(sticker.id);
+          }
+          for (TdApi.Sticker sticker : this.recommendedStickers.stickers) {
+            if (!excludeStickerIds.has(sticker.id)) {
+              stickers.add(sticker);
             }
+          }
+        } else {
+          Collections.addAll(stickers, this.recommendedStickers.stickers);
+        }
+      }
+      return stickers.toArray(new TdApi.Sticker[0]);
+    }
+
+    public interface Callback {
+      void onStickersLoaded (EmojiStickers context, @NonNull TdApi.Sticker[] installedStickers, @Nullable TdApi.Sticker[] recommendedStickers, boolean expectMoreStickers);
+
+      default void onMoreInstalledStickersLoaded (EmojiStickers context, @NonNull TdApi.Sticker[] moreInstalledStickers) { }
+      default void onRecommendedStickersLoaded (EmojiStickers context, @NonNull TdApi.Sticker[] recommendedStickers) { }
+      default void onAllStickersFinishedLoading (EmojiStickers context) { }
+    }
+
+    public void getStickers (Callback callback, long totalTimeoutMs) {
+      if (totalTimeoutMs <= 0) {
+        // Lazy path: wait for all methods to finish, invoke callback.onStickersLoaded
+        haveInstalledStickers.executeOrPostponeTask(() -> {
+          haveInstalledExtraStickers.executeOrPostponeTask(() -> {
+            haveRecommendedStickers.executeOrPostponeTask(() -> {
+              TdApi.Sticker[] installedStickers = getInstalledStickers(false);
+              TdApi.Sticker[] recommendedStickers = getRecommendedStickers(installedStickers);
+              callback.onStickersLoaded(this, installedStickers, recommendedStickers, false);
+            });
+          });
+        });
+        return;
+      }
+
+      // Async path: wait up to max(totalTimeoutMs, first non-empty result)
+      // Then invoke callback.onStickersLoaded with at least one sticker.
+      // If `expectMoreStickers` was true:
+      // - callback.onMoreInstalledStickersLoaded gets called if more installed stickers were loaded (non-empty)
+      // - callback.onRecommendedStickersLoaded gets called if recommended stickers were loaded (might be empty)
+      // - callback.onAllStickersFinishedLoading gets called after all requests are complete, no more stickers
+
+      final long startTime = SystemClock.uptimeMillis();
+
+      haveInstalledStickers.executeOrPostponeTask(() -> {
+        CancellationSignal timeoutSignal = new CancellationSignal();
+        AtomicBoolean timeoutPostponed = new AtomicBoolean(false);
+        AtomicBoolean isExpectingMoreStickers = new AtomicBoolean(false);
+        Runnable postponeTimeout = () -> {
+          if (timeoutPostponed.getAndSet(true)) {
+            return;
+          }
+          final long elapsedMs = SystemClock.uptimeMillis() - startTime;
+          final long timeoutMs = Math.max(0, totalTimeoutMs - elapsedMs);
+          tdlib.runOnTdlibThread(() -> {
+            if (!timeoutSignal.isCanceled()) {
+              TdApi.Sticker[] installedStickers = getInstalledStickers(false);
+              TdApi.Sticker[] recommendedStickers = this.recommendedStickers != null ? getRecommendedStickers(installedStickers) : null;
+              boolean expectMoreStickers = isLoading();
+              callback.onStickersLoaded(this, installedStickers, recommendedStickers, expectMoreStickers);
+              isExpectingMoreStickers.set(expectMoreStickers);
+              timeoutSignal.cancel();
+            }
+          }, (double) timeoutMs / 1000.0, false);
+        };
+        haveInstalledExtraStickers.executeOrPostponeTask(() -> {
+          if (installedExtraStickers.stickers.length > 0) {
+            if (isExpectingMoreStickers.get()) {
+              callback.onMoreInstalledStickersLoaded(this, getInstalledStickers(true));
+            }
+          }
+
+          haveRecommendedStickers.executeOrPostponeTask(() -> {
             timeoutSignal.cancel();
-            tdlib.uiExecute(() ->
-              callback.onStickersLoaded(this, installed.toArray(new TdApi.Sticker[0]), null)
-            );
-          }, (double) remoteTimeoutMs / 1000.0, false);
+            TdApi.Sticker[] installedStickers = getInstalledStickers(false);
+            TdApi.Sticker[] recommendedStickers = getRecommendedStickers(installedStickers);
+            if (isExpectingMoreStickers.get()) {
+              callback.onRecommendedStickersLoaded(this, recommendedStickers);
+              callback.onAllStickersFinishedLoading(this);
+            } else {
+              callback.onStickersLoaded(this, installedStickers, recommendedStickers, false);
+            }
+          });
+
+          if (installedExtraStickers.stickers.length > 0) {
+            postponeTimeout.run();
+          }
+        });
+        if (installedStickers.stickers.length > 0) {
+          postponeTimeout.run();
         }
       });
     }
   }
 
-  public EmojiStickers getEmojiStickers (final TdApi.StickerType stickerType, final String emoji, int limit, long chatId) {
+  public EmojiStickers getEmojiStickers (final TdApi.StickerType stickerType, final String query, final boolean isComplexQuery, int limit, long chatId) {
     int mode;
     if (stickerType.getConstructor() == TdApi.StickerTypeCustomEmoji.CONSTRUCTOR) {
       mode = Settings.instance().getEmojiMode();
@@ -6566,6 +6704,6 @@ public class TdlibUi extends Handler {
     if (tdlib.suggestOnlyApiStickers() && mode == Settings.STICKER_MODE_ALL) {
       mode = Settings.STICKER_MODE_ONLY_INSTALLED;
     }
-    return new EmojiStickers(tdlib, stickerType, emoji, limit, chatId, mode);
+    return new EmojiStickers(tdlib, stickerType, query, isComplexQuery, limit, chatId, mode == Settings.STICKER_MODE_ALL);
   }
 }

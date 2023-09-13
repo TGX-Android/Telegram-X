@@ -24,6 +24,7 @@ import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
+import android.content.res.Resources;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -51,6 +52,7 @@ import android.opengl.GLES20;
 import android.opengl.GLUtils;
 import android.os.Build;
 import android.os.Environment;
+import android.os.LocaleList;
 import android.os.Parcelable;
 import android.os.PowerManager;
 import android.os.StatFs;
@@ -69,6 +71,8 @@ import android.util.TypedValue;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
+import android.view.inputmethod.InputMethodSubtype;
 import android.webkit.MimeTypeMap;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -156,6 +160,7 @@ import java.util.zip.GZIPInputStream;
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGL11;
 
+import me.vkryl.android.LocaleUtils;
 import me.vkryl.android.SdkVersion;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.BitwiseUtils;
@@ -3556,5 +3561,102 @@ public class U {
       return true;
     }
     return false;
+  }
+
+  public static String[] getInputLanguages () {
+    final List<String> inputLanguages = new ArrayList<>();
+    InputMethodManager imm = (InputMethodManager) UI.getAppContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+    if (imm != null) {
+      String inputLanguageCode = null;
+      try {
+        inputLanguageCode = toLanguageCode(imm.getCurrentInputMethodSubtype());
+      } catch (Throwable ignored) { }
+      if (StringUtils.isEmpty(inputLanguageCode)) {
+        try {
+          inputLanguageCode = toLanguageCode(imm.getLastInputMethodSubtype());
+        } catch (Throwable ignored) { }
+      }
+      if (!StringUtils.isEmpty(inputLanguageCode)) {
+        inputLanguages.add(inputLanguageCode);
+      }
+
+      /*if (Strings.isEmpty(inputLanguageCode)) {
+        try {
+          String id = android.provider.Settings.Secure.getString(
+            UI.getAppContext().getContentResolver(),
+            android.provider.Settings.Secure.DEFAULT_INPUT_METHOD
+          );
+          if (!Strings.isEmpty(id)) {
+            List<InputMethodInfo> list = imm.getInputMethodList();
+            lookup:
+            for (InputMethodInfo info : list) {
+              if (id.equals(info.getId())) {
+                List<InputMethodSubtype> subtypes = imm.getEnabledInputMethodSubtypeList(info, true);
+                for (InputMethodSubtype subtype : subtypes) {
+                  String languageCode = toLanguageCode(subtype);
+                  if (!Strings.isEmpty(languageCode)) {
+                    inputLanguageCode = languageCode;
+                    break lookup;
+                  }
+                }
+              }
+            }
+          }
+        } catch (Throwable ignored) { }
+      }
+      if (Strings.isEmpty(inputLanguageCode) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        try {
+          LocaleList localeList = ((InputView) callback).getImeHintLocales();
+          if (localeList != null) {
+            for (int i = 0; i < localeList.size(); i++) {
+              inputLanguageCode = U.toBcp47Language(localeList.get(i));
+              if (!Strings.isEmpty(inputLanguageCode))
+                break;
+            }
+          }
+        } catch (Throwable ignored) { }
+      }*/
+    }
+    if (inputLanguages.isEmpty()) {
+      try {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+          LocaleList locales = Resources.getSystem().getConfiguration().getLocales();
+          for (int i = 0; i < locales.size(); i++) {
+            String code = LocaleUtils.toBcp47Language(locales.get(i));
+            if (!StringUtils.isEmpty(code) && !inputLanguages.contains(code))
+              inputLanguages.add(code);
+          }
+        } else {
+          String code = LocaleUtils.toBcp47Language(Resources.getSystem().getConfiguration().locale);
+          if (!StringUtils.isEmpty(code)) {
+            inputLanguages.add(code);
+          }
+        }
+      } catch (Throwable ignored) { }
+    }
+    if (!inputLanguages.isEmpty()) {
+      return inputLanguages.toArray(new String[0]);
+    } else {
+      return null;
+    }
+  }
+
+  private static String toLanguageCode (InputMethodSubtype ims) {
+    if (ims != null) {
+      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        String languageTag = ims.getLanguageTag();
+        if (!StringUtils.isEmpty(languageTag)) {
+          return languageTag;
+        }
+      }
+      String locale = ims.getLocale();
+      if (!StringUtils.isEmpty(locale)) {
+        Locale l = U.getDisplayLocaleOfSubtypeLocale(locale);
+        if (l != null) {
+          return LocaleUtils.toBcp47Language(l);
+        }
+      }
+    }
+    return null;
   }
 }
