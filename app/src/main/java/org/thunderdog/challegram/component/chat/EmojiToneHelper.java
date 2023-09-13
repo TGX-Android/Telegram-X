@@ -335,12 +335,12 @@ public class EmojiToneHelper implements FactorAnimator.Target {
 
   private void updateApplyPosition () {
     if (applyButton != null) {
-      int totalWidth = Screen.dp(EmojiToneListView.ITEM_SIZE * 6);
+      int totalWidth = Screen.dp(EmojiToneListView.ITEM_SIZE * 6 + (EmojiToneListView.VIEW_PADDING_HORIZONTAL + EmojiToneListView.ITEM_PADDING) * 2);
       int itemWidth = totalWidth / EmojiData.emojiColors.length;
 
       float factor = positionFactor / (float) (EmojiData.emojiColors.length - 1);
       int buttonWidth = applyButton.getMeasuredWidth();
-      int margin = itemWidth / 2;
+      int margin = itemWidth / 2 + Screen.dp(EmojiToneListView.VIEW_PADDING_HORIZONTAL + EmojiToneListView.ITEM_PADDING);
       applyButton.setCornerCenterX(margin + (int) ((float) (buttonWidth - margin * 2) * factor));
       applyButton.setTranslationX((float) (totalWidth - buttonWidth) * factor);
     }

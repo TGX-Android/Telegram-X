@@ -160,7 +160,7 @@ public class EmojiToneListView extends FrameLayout {
   }
 
   public boolean changeIndex (float x, float y) {
-    final int resV = MathUtils.clamp((int)((y - Screen.dp(VIEW_PADDING_TOP + ITEM_PADDING)) / Screen.dp(ITEM_SIZE)), 0, Math.max(getRowsCount() - 1, 0));
+    final int resV = MathUtils.clamp((int)((y - Screen.dp(VIEW_PADDING_TOP + ITEM_PADDING)) / Screen.dp(ITEM_SIZE + ITEM_PADDING * 3)), 0, Math.max(getRowsCount() - 1, 0));
     final int resH = MathUtils.clamp((int)((x - getRowX(resV)) / Screen.dp(ITEM_SIZE)), 0, Math.max(getRowSize(resV) - 1, 0));
 
     if (resH != toneIndex || resV != toneIndexVertical) {
