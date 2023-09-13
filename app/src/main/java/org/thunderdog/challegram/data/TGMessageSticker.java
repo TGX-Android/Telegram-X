@@ -28,7 +28,6 @@ import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.emoji.Emoji;
 import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageFile;
@@ -48,7 +47,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import me.vkryl.core.collection.IntSet;
-import me.vkryl.core.lambda.FutureBool;
 import me.vkryl.td.Td;
 import me.vkryl.td.TdConstants;
 

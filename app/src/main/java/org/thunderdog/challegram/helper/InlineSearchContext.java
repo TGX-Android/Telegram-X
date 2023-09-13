@@ -20,6 +20,7 @@ import android.location.Location;
 import android.os.Build;
 import android.os.LocaleList;
 import android.os.SystemClock;
+import android.text.Spanned;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.InputMethodSubtype;
 
@@ -903,9 +904,13 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
     this.lastHandledPosition = cursorPosition;
 
     if (cursorPosition > 0 && canSearchCustomEmoji() && cursorPosition <= currentCs.length()) {
-      CharSequence se = Emoji.instance().lastSymbolIsSingleEmoji(currentCs.subSequence(0, cursorPosition));
-      String singleEmoji = se != null ? se.toString() : null;
-      if (singleEmoji != null) {
+      final String singleEmoji;
+      if (currentCs instanceof Spanned) {
+        singleEmoji = Emoji.extractPrecedingEmoji((Spanned) currentCs, cursorPosition, false);
+      } else {
+        singleEmoji = null;
+      }
+      if (!StringUtils.isEmpty(singleEmoji)) {
         setCurrentMode(MODE_EMOJI);
         searchStickers(singleEmoji, false, true, null);
         return true;

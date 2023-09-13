@@ -8161,14 +8161,17 @@ public class MessagesController extends ViewController<MessagesController.Argume
     manager.onViewportMeasure();
   }
 
+  private final int[] cursorCoordinates = new int[2], symbolUnderCursorPosition = new int[2];
+
   public int[] getInputCursorOffset () {
     if (inputView == null) {
-      return new int[]{0, 0};
+      cursorCoordinates[0] = cursorCoordinates[1] = 0;
+      return cursorCoordinates;
     }
-    int[] cords = inputView.getSymbolUnderCursorPosition();
-    cords[0] = cords[0] + inputView.getLeft() + inputView.getPaddingLeft();
-    cords[1] = cords[1] - inputView.getLineHeight() + Screen.currentHeight() - getInputOffset(true) - Screen.dp(40);
-    return cords;
+    inputView.getSymbolUnderCursorPosition(symbolUnderCursorPosition);
+    cursorCoordinates[0] = symbolUnderCursorPosition[0] + inputView.getLeft() + inputView.getPaddingLeft();
+    cursorCoordinates[1] = symbolUnderCursorPosition[1] - inputView.getLineHeight() + Screen.currentHeight() - getInputOffset(true) - Screen.dp(40);
+    return cursorCoordinates;
   }
 
   public int getInputOffset (boolean excludeTranslation) {
@@ -8262,6 +8265,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return false;
     }
     if (Td.isPremium(sticker) && tdlib.ui().showPremiumAlert(this, view, TdlibUi.PremiumFeature.STICKER)) {
+      return false;
+    }
+    if (Td.customEmojiId(sticker) != 0 && canWriteMessages() && inputView != null) {
+      inputView.onCustomEmojiSelected(sticker);
       return false;
     }
     if (Td.customEmojiId(sticker) != 0 && canWriteMessages() && inputView != null) {
@@ -10729,7 +10736,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return new HapticMenuHelper.MenuItem(id, title, Lang.getString(R.string.AnonymousAdmin), R.drawable.dot_baseline_acc_anon_24, tdlib, sender, false);
     } else {
       String username = tdlib.chatUsername(Td.getSenderId(sender));
-      String subtitle = useUsername && !StringUtils.isEmpty(username)? ("@" + username): tdlib.getMessageSenderTitle(sender);
+      String subtitle = useUsername && !StringUtils.isEmpty(username) ? ("@" + username) : tdlib.getMessageSenderTitle(sender);
       return new HapticMenuHelper.MenuItem(id, title, subtitle, 0, tdlib, sender, isLocked);
     }
   }

@@ -6,10 +6,13 @@ import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import androidx.annotation.NonNull;
+
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.loader.ComplexReceiver;
+import org.thunderdog.challegram.loader.ComplexReceiverProvider;
 import org.thunderdog.challegram.loader.ImageFile;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.gif.GifFile;
@@ -37,7 +40,8 @@ public class ReactionModifier implements DrawModifier {
   }
 
   @Override
-  public void afterDraw (View view, Canvas c, @Nullable ComplexReceiver complexReceiver) {
+  public void afterDraw (View view, Canvas c) {
+    ComplexReceiver complexReceiver = view instanceof ComplexReceiverProvider ? ((ComplexReceiverProvider) view).getComplexReceiver() : null;
     if (complexReceiver == null) return;
 
     if (mode == MODE_GRID) {

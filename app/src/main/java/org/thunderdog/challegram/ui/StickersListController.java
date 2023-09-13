@@ -25,6 +25,10 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.collection.LongSparseArray;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.StringRes;
+import androidx.collection.LongSparseArray;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -61,6 +65,7 @@ import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ArrayUtils;
 import me.vkryl.core.collection.IntList;
+import me.vkryl.core.collection.LongList;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.td.Td;
@@ -75,9 +80,9 @@ public class StickersListController extends ViewController<StickersListControlle
     boolean canRemoveStickerSet (long setId);
     boolean canInstallStickerSet (long setId);
     boolean canViewPack ();
-    void archiveStickerSet (long setId);
-    void installStickerSet (long setId);
-    void removeStickerSet (long setId);
+    void archiveStickerSets (long[] setIds);
+    void installStickerSets (long[] setIds);
+    void removeStickerSets (long[] setIds);
     boolean onStickerClick (View view, TGStickerObj obj, boolean isMenuClick, TdApi.MessageSendOptions sendOptions);
     long getStickerOutputChatId ();
   }
@@ -207,31 +212,38 @@ public class StickersListController extends ViewController<StickersListControlle
     } else if (id == R.id.btn_archive) {
       if (getArguments() != null) {
         if (stickerSetInfoToLoad != null) {
-          getArguments().archiveStickerSet(stickerSetInfoToLoad.id);
+          getArguments().archiveStickerSets(new long[] {stickerSetInfoToLoad.id});
         } else {
+          LongList stickerSetsToArchive = new LongList(stickerSections.size());
           for (StickerSection section : stickerSections) {
             if (section.info == null) continue;
-            if (getArguments().canArchiveStickerSet(section.info.getId())) {
-              getArguments().archiveStickerSet(section.info.getId());
+            long setId = section.info.getId();
+            if (getArguments().canArchiveStickerSet(setId)) {
+              stickerSetsToArchive.append(setId);
             }
           }
+          getArguments().archiveStickerSets(stickerSetsToArchive.get());
         }
       }
     } else if (id == R.id.btn_delete) {
       if (getArguments() != null) {
-        getArguments().removeStickerSet(stickerSetInfoToLoad != null ? stickerSetInfoToLoad.id : -1);
+        long stickerSetId = stickerSetInfoToLoad != null ? stickerSetInfoToLoad.id : -1;
+        getArguments().removeStickerSets(new long[] {stickerSetId});
       }
     } else if (id == R.id.btn_installStickerSet) {
       if (getArguments() != null) {
         if (stickerSetInfoToLoad != null) {
-          getArguments().installStickerSet(stickerSetInfoToLoad.id);
+          getArguments().installStickerSets(new long[] {stickerSetInfoToLoad.id});
         } else {
+          LongList stickerSetsToInstall = new LongList(stickerSections.size());
           for (StickerSection section : stickerSections) {
             if (section.info == null) continue;
-            if (getArguments().canInstallStickerSet(section.info.getId())) {
-              getArguments().installStickerSet(section.info.getId());
+            final long setId = section.info.getId();
+            if (getArguments().canInstallStickerSet(setId)) {
+              stickerSetsToInstall.append(setId);
             }
           }
+          getArguments().installStickerSets(stickerSetsToInstall.get());
         }
       }
     }
@@ -386,6 +398,13 @@ public class StickersListController extends ViewController<StickersListControlle
          // recentSet.setSize(spanCount * 2);
          // adapter.removeRange(recentSet.getEndIndex(), endIndex - recentSet.getEndIndex());
          // shiftStickerSets(existingIndex, recentSet.getEndIndex() - endIndex);
+        }
+      }
+
+      @Override
+      public void updateCollapseView (TextView collapseView, TGStickerSetInfo stickerSet, @StringRes int showMoreRes) {
+        if (stickerSet != null && stickerSet.isCollapsed()) {       // ignore updates for expanded sets
+          super.updateCollapseView(collapseView, stickerSet, showMoreRes);
         }
       }
     });

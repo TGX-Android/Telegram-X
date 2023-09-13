@@ -60,6 +60,11 @@ import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSectionVi
 import org.thunderdog.challegram.widget.EmojiMediaLayout.Headers.EmojiHeaderView;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.Headers.MediaHeaderView;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.StickerSectionView;
+import org.thunderdog.challegram.widget.EmojiMediaLayout.Headers.EmojiHeaderView;
+import org.thunderdog.challegram.widget.EmojiMediaLayout.Headers.MediaHeaderView;
+import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSection;
+import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSectionView;
+import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.StickerSectionView;
 import org.thunderdog.challegram.widget.rtl.RtlViewPager;
 
 import java.util.ArrayList;

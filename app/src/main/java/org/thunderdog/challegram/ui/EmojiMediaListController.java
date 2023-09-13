@@ -60,6 +60,9 @@ import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutRecyclerCont
 import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutSectionPager;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutTrendingController;
 import org.thunderdog.challegram.util.StickerSetsDataProvider;
+import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutRecyclerController;
+import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutSectionPager;
+import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutTrendingController;
 import org.thunderdog.challegram.widget.ForceTouchView;
 
 import java.util.ArrayList;
@@ -69,6 +72,7 @@ import me.vkryl.android.util.ClickHelper;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.collection.IntList;
 import me.vkryl.core.collection.LongList;
+import me.vkryl.core.collection.LongSparseIntArray;
 
 public class EmojiMediaListController extends ViewController<EmojiLayout> implements
   StickersListener,

@@ -39,7 +39,6 @@ import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Drawables;
-import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
@@ -227,16 +226,17 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     float originalScale = sticker != null ? sticker.getDisplayScale() : 1f;
     boolean saved = originalScale != 1f || factor != 0f;
     boolean repainting = sticker != null && sticker.isNeedRepainting();
-    int saveCount = -1;
+    int restoreToCount = -1;
+    int repaintingRestoreToCount = -1;
     int cx = imageReceiver.centerX();
     int cy = imageReceiver.centerY();
     if (saved) {
-      c.save();
+      restoreToCount = Views.save(c);
       float scale = originalScale * (MIN_SCALE + (1f - MIN_SCALE) * (1f - factor));
       c.scale(scale, scale, cx, cy);
     }
     if (repainting) {
-      saveCount = Views.saveRepainting(c, imageReceiver);
+      repaintingRestoreToCount = Views.saveRepainting(c, imageReceiver);
     }
     if (premiumStarDrawable != null) {
       Drawables.drawCentered(c, premiumStarDrawable, cx, cy, null);
@@ -258,10 +258,10 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
       imageReceiver.drawPlaceholderContour(c, contour);
     }
     if (repainting) {
-      Views.restoreRepainting(c, imageReceiver, saveCount, Theme.getColor(repaintingColorId));
+      Views.restoreRepainting(c, imageReceiver, repaintingRestoreToCount, Theme.getColor(repaintingColorId));
     }
     if (saved) {
-      c.restore();
+      Views.restore(c, restoreToCount);
     }
   }
 

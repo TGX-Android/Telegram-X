@@ -54,10 +54,11 @@ import org.thunderdog.challegram.core.DiffMatchPatch;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.navigation.HeaderView;
+import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.support.ViewTranslator;
-import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.util.TextSelection;
 import org.thunderdog.challegram.util.WebViewHolder;
 import org.thunderdog.challegram.util.text.Text;
@@ -958,24 +959,6 @@ public class Views {
     return 0;
   }
 
-  public static int[] getCharacterCoordinates(TextView textView, int offset) {
-    int[] coordinates = new int[2];
-
-    Editable editable = textView.getEditableText();
-    Layout layout = textView.getLayout();
-
-    if (layout != null) {
-      int line = layout.getLineForOffset(offset);
-      int lineStartOffset = layout.getLineStart(line);
-      int xPos = (int) U.measureEmojiText(editable.subSequence(lineStartOffset, offset), layout.getPaint());
-      int yPos = layout.getLineBaseline(line) - textView.getScrollY();
-      coordinates[0] = xPos;
-      coordinates[1] = yPos;
-    }
-
-    return coordinates;
-  }
-
   public static int findFirstCompletelyVisibleItemPositionWithOffset (LinearLayoutManager manager, int topOffset) {
     int i = manager.findFirstCompletelyVisibleItemPosition();
     if (i == -1) {
@@ -991,5 +974,23 @@ public class Views {
     }
 
     return -1;
+  }
+
+  public static void getCharacterCoordinates(TextView textView, int offset, int[] coordinates) {
+    if (coordinates.length != 2)
+      throw new IllegalArgumentException();
+    coordinates[0] = coordinates[1] = 0;
+
+    Editable editable = textView.getEditableText();
+    Layout layout = textView.getLayout();
+
+    if (layout != null) {
+      int line = layout.getLineForOffset(offset);
+      int lineStartOffset = layout.getLineStart(line);
+      int xPos = (int) U.measureEmojiText(editable.subSequence(lineStartOffset, offset), layout.getPaint());
+      int yPos = layout.getLineBaseline(line) - textView.getScrollY();
+      coordinates[0] = xPos;
+      coordinates[1] = yPos;
+    }
   }
 }

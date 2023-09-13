@@ -30,6 +30,10 @@ import org.thunderdog.challegram.ui.MessageOptionsPagerController;
 import org.thunderdog.challegram.ui.ReactionsPickerController;
 import org.thunderdog.challegram.util.text.Counter;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.MathUtils;
 import me.vkryl.td.Td;

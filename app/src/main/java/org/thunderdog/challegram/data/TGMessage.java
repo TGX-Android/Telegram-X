@@ -8727,7 +8727,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   private void setTranslatedStatus (int status, boolean animated) {
     boolean show = status != TranslationCounterDrawable.TRANSLATE_STATUS_DEFAULT || translatedCounterForceShow;
-    isTranslatedCounterDrawable.setInvalidateCallback(show? this::invalidate : null);
+    isTranslatedCounterDrawable.setInvalidateCallback(show ? this::invalidate : null);
     isTranslatedCounterDrawable.setStatus(status, animated);
     if (show) {
       isTranslatedCounter.show(animated);

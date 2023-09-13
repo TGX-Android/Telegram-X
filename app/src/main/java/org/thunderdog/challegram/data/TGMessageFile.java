@@ -726,7 +726,7 @@ public class TGMessageFile extends TGMessage {
       }
     }
 
-    return filesWithCaption > 0? Td.trim(resultText) : null;
+    return filesWithCaption > 0 ? Td.trim(resultText) : null;
   }
 
   @Override

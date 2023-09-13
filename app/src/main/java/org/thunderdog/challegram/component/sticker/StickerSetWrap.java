@@ -68,11 +68,19 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.ColorUtils;
+import me.vkryl.core.collection.LongList;
 import me.vkryl.core.lambda.CancellableRunnable;
+import me.vkryl.core.lambda.RunnableBool;
+import me.vkryl.td.Td;
 import me.vkryl.td.Td;
 
 @SuppressLint("ViewConstructor")
@@ -260,8 +268,8 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
   }
 
   @Override
-  public void removeStickerSet (long setId) {
-    makeRequest(STATE_UNINSTALLED, setId);
+  public void removeStickerSets (long[] setIds) {
+    makeRequest(STATE_UNINSTALLED, setIds);
   }
 
   @Override
@@ -270,13 +278,13 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
   }
 
   @Override
-  public void archiveStickerSet (long setId) {
-    archive(setId);
+  public void archiveStickerSets (long[] setIds) {
+    makeRequest(STATE_ARCHIVED, setIds);
   }
 
   @Override
-  public void installStickerSet (long setId) {
-    makeRequest(STATE_INSTALLED, setId);
+  public void installStickerSets (long[] setIds) {
+    makeRequest(STATE_INSTALLED, setIds);
   }
 
   private float statusBarFactor;
@@ -393,17 +401,32 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
     }
   }
 
-  private void archive (final long setId) {
-    if (!inProgress) {
-      makeRequest(STATE_ARCHIVED, setId);
-    }
-  }
-
   private static final int STATE_UNINSTALLED = 0;
   private static final int STATE_ARCHIVED = 1;
   private static final int STATE_INSTALLED = 2;
 
-  private void makeRequest (final int state, final long setId) {
+  private final AtomicInteger pendingRequests = new AtomicInteger();
+
+  private void makeRequest (final int state, final long[] setIds) {
+    if (setIds.length > 0) {
+      setInProgress(true);
+      pendingRequests.getAndSet(setIds.length);
+      for (long setId : setIds) {
+        performRequest(state, setId, success -> {
+          if (pendingRequests.decrementAndGet() == 0) {
+            setInProgress(false);
+            if (isOneShot && success) {
+              popupLayout.hideWindow(true);
+            } else {
+              updateButton(true);
+            }
+          }
+        });
+      }
+    }
+  }
+
+  private void performRequest (final int state, final long setId, RunnableBool after) {
     final boolean isInstalled, isArchived;
     switch (state) {
       case STATE_ARCHIVED:
@@ -419,46 +442,59 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
         isInstalled = isArchived = false;
         break;
     }
-    if (!inProgress) {
-      setInProgress(true);
-      tdlib.client().send(new TdApi.ChangeStickerSet(setId, isInstalled, isArchived), object -> {
-        final boolean ok = object.getConstructor() == TdApi.Ok.CONSTRUCTOR;
-        tdlib.ui().post(() -> {
-          setInProgress(false);
-          if (ok) {
-            TGStickerSetInfo info = stickerSets.get(setId);
-            if (info != null) {
-              if (isArchived) {
-                info.setIsArchived();
-              } else if (isInstalled) {
-                info.setIsInstalled();
-              } else {
-                info.setIsNotInstalled();
-              }
-              switch (state) {
-                case STATE_ARCHIVED:
-                  tdlib.listeners().notifyStickerSetArchived(info.getInfo());
-                  break;
-                case STATE_INSTALLED:
-                  tdlib.listeners().notifyStickerSetInstalled(info.getInfo());
-                  break;
-                case STATE_UNINSTALLED:
-                  tdlib.listeners().notifyStickerSetRemoved(info.getInfo());
-                  break;
-              }
-            }
-            if (isOneShot) {
-              popupLayout.hideWindow(true);
+    tdlib.client().send(new TdApi.ChangeStickerSet(setId, isInstalled, isArchived), object -> {
+      final boolean ok = object.getConstructor() == TdApi.Ok.CONSTRUCTOR;
+      tdlib.ui().post(() -> {
+        if (ok) {
+          TGStickerSetInfo info = stickerSets.get(setId);
+          if (info != null) {
+            if (isArchived) {
+              info.setIsArchived();
+            } else if (isInstalled) {
+              info.setIsInstalled();
             } else {
-              updateButton(true);
+              info.setIsNotInstalled();
             }
-          } else if (object.getConstructor() == TdApi.Error.CONSTRUCTOR) {
-            UI.showError(object);
-            updateButton(true);
+            switch (state) {
+              case STATE_ARCHIVED:
+                tdlib.listeners().notifyStickerSetArchived(info.getInfo());
+                break;
+              case STATE_INSTALLED:
+                tdlib.listeners().notifyStickerSetInstalled(info.getInfo());
+                break;
+              case STATE_UNINSTALLED:
+                tdlib.listeners().notifyStickerSetRemoved(info.getInfo());
+                break;
+            }
           }
-        });
+        } else if (object.getConstructor() == TdApi.Error.CONSTRUCTOR) {
+          UI.showError(object);
+        }
+        if (after != null) {
+          after.runWithBool(ok);
+        }
       });
+    });
+  }
+
+  private int getInstalledStickersCount () {
+    int installedCount = 0;
+    for(Map.Entry<Long, TGStickerSetInfo> entry : stickerSets.entrySet()) {
+      TdApi.StickerSetInfo setInfo = entry.getValue().getInfo();
+      if (setInfo != null && setInfo.isInstalled && !setInfo.isArchived) {
+        installedCount++;
+      }
     }
+
+    return installedCount;
+  }
+
+  private @Nullable TdApi.StickerSetInfo  getFirstStickersSetInfo () {
+    for(Map.Entry<Long, TGStickerSetInfo> entry : stickerSets.entrySet()) {
+      return entry.getValue().getInfo();
+    }
+
+    return null;
   }
 
   private int getInstalledStickersCount () {
@@ -567,6 +603,14 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
     addViews();
   }
 
+  private void initWithSets (long[] ids, boolean isEmojiPacks) {
+    updateButton(false);
+    stickersController.setStickerSets(ids);
+    stickersController.setIsEmojiPack(isEmojiPacks);
+    stickersController.setLoadStickerSetsListener(this::onMultiStickerSetsLoaded);
+    addViews();
+  }
+
   private void addViews () {
     headerView.initWithSingleController(stickersController, false);
     addView(stickersController.getValue());
@@ -659,20 +703,43 @@ public class StickerSetWrap extends FrameLayoutFix implements StickersListContro
       return;
     }
 
+    LongList stickerSetsToInstall = null;
+    LongList stickerSetsToArchive = null;
+    LongList stickerSetsToUninstall = null;
+
     for (Map.Entry<Long, TGStickerSetInfo> entry : stickerSets.entrySet()) {
       TdApi.StickerSetInfo setInfo = entry.getValue().getInfo();
       if (isPositive) {
         if (!setInfo.isInstalled || setInfo.isArchived) {
-          makeRequest(STATE_INSTALLED, setInfo.id);
+          if (stickerSetsToInstall == null) {
+            stickerSetsToInstall = new LongList(stickerSets.size());
+          }
+          stickerSetsToInstall.append(setInfo.id);
         }
       } else {
         if (setInfo.isOfficial) {
-          archive(setInfo.id);
+          if (stickerSetsToArchive == null) {
+            stickerSetsToArchive = new LongList(stickerSets.size());
+          }
+          stickerSetsToArchive.append(setInfo.id);
         } else if (setInfo.isInstalled) {
-          makeRequest(STATE_UNINSTALLED, setInfo.id);
+          if (stickerSetsToUninstall == null) {
+            stickerSetsToUninstall = new LongList(stickerSets.size());
+          }
+          stickerSetsToUninstall.append(setInfo.id);
         }
       }
     }
+    if (stickerSetsToInstall != null) {
+      makeRequest(STATE_INSTALLED, stickerSetsToInstall.get());
+    }
+    if (stickerSetsToArchive != null) {
+      makeRequest(STATE_ARCHIVED, stickerSetsToArchive.get());
+    }
+    if (stickerSetsToUninstall != null) {
+      makeRequest(STATE_ARCHIVED, stickerSetsToUninstall.get());
+    }
+
   }
 
   // Show
