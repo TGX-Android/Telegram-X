@@ -228,6 +228,14 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
           return y > a && y < b;
         }
 
+        private int lastColor;
+        private void checkGradients () {
+          int color = Theme.backgroundColor();
+          if (color != lastColor) {
+            gradientDrawableRight.setColors(new int[]{ 0, lastColor = Theme.backgroundColor() });
+          }
+        }
+
         @Override
         protected void dispatchDraw (Canvas canvas) {
           float topClip = MathUtils.fromTo(headerTranslationY, Views.getRecyclerFirstElementTop(reactionsPickerRecyclerView) - Screen.dp(10), reactionsPickerVisibility.getFloatValue());
@@ -249,6 +257,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
             Paints.fillingPaint(me.vkryl.core.ColorUtils.alphaColor(1f - reactionsPickerVisibility.getFloatValue(), Theme.backgroundColor()))
           );
 
+          checkGradients();
           gradientDrawableRight.setAlpha((int)(255 * (1f - reactionsPickerVisibility.getFloatValue())));
           gradientDrawableRight.setBounds((int)(x - Screen.dp(20)), (int) top, (int) x, (int)(top + getHeaderHeight()));
           gradientDrawableRight.draw(canvas);
@@ -664,7 +673,9 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
         }
       });
 
-      wrapView.addView(reactionsPickerBottomHeaderView);
+      if (state.needShowCustomEmojiInsidePicker) {
+        wrapView.addView(reactionsPickerBottomHeaderView);
+      }
       wrapView.addView(reactionsPickerController.getTopHeaderViewGroup());
       reactionsPickerController.prepareToShow();
       reactionsPickerRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
@@ -672,6 +683,14 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
         public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
           reactionsPickerWrapper.invalidate();
           reactionsPickerController.setTopHeaderVisibility(Views.getRecyclerViewElementTop(recyclerView, 1) <= HeaderView.getSize(true) + EmojiLayout.getHeaderPadding());
+        }
+
+        @Override
+        public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {
+          if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+            reactionsPickerWrapper.invalidate();
+            reactionsPickerController.setTopHeaderVisibility(Views.getRecyclerViewElementTop(recyclerView, 1) <= HeaderView.getSize(true) + EmojiLayout.getHeaderPadding());
+          }
         }
       });
     }
@@ -783,10 +802,12 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
       checkReactionPickerPosition();
     }
 
-    reactionsPickerBottomHeaderView.setTranslationY(
-      ((-Screen.currentHeight() / 3f) * (1f - reactionsPickerVisibility.getFloatValue())) +
-      (-keyboardHeight.getFactor())
-    );
+    if (reactionsPickerBottomHeaderView != null) {
+      reactionsPickerBottomHeaderView.setTranslationY(
+        ((-Screen.currentHeight() / 3f) * (1f - reactionsPickerVisibility.getFloatValue())) +
+          (-keyboardHeight.getFactor())
+      );
+    }
   }
 
   @Override
@@ -817,6 +838,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     public final boolean needShowMessageViews;
     public final boolean needShowMessageReactionSenders;
     public final boolean needShowReactionsPopupPicker;
+    public final boolean needShowCustomEmojiInsidePicker;
 
     public final OnReactionClickListener onReactionClickListener;
     public final int headerButtonsVisibleWidth;
@@ -844,6 +866,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
       this.needShowMessageReactionSenders = messageReactions != null && message.canGetAddedReactions() && message.getMessageReactions().getTotalCount() > 0;
 
       this.headerButtonsVisibleWidth = needShowReactionsPopupPicker ? Screen.dp(56): 0;
+      this.needShowCustomEmojiInsidePicker = isPremium && message.isCustomEmojiReactionsAvailable();
     }
 
     public int getPagesCount () {

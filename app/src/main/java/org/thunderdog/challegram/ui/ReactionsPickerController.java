@@ -39,7 +39,6 @@ import org.thunderdog.challegram.component.sticker.StickerSmallView;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.TD;
-import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGReaction;
 import org.thunderdog.challegram.data.TGStickerSetInfo;
 import org.thunderdog.challegram.navigation.BackHeaderButton;
@@ -49,6 +48,7 @@ import org.thunderdog.challegram.telegram.StickersListener;
 import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
+import org.thunderdog.challegram.theme.ColorState;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
@@ -62,6 +62,7 @@ import org.thunderdog.challegram.util.StickerSetsDataProvider;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSection;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.EmojiSectionView;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.StickerSectionView;
+import org.thunderdog.challegram.widget.ShadowView;
 
 import java.util.ArrayList;
 import java.util.Set;
@@ -78,9 +79,8 @@ import me.vkryl.core.lambda.RunnableData;
 public class ReactionsPickerController extends ViewController<MessageOptionsPagerController.State>
   implements StickersListener, EmojiLayoutRecyclerController.Callback,
   StickerSmallView.StickerMovementCallback, FactorAnimator.Target {
-  private final boolean canSearch;
 
-  private TGMessage message;
+  private MessageOptionsPagerController.State state;
   private Set<String> chosenReactions;
   private EmojiLayoutRecyclerController reactionsController;
   private CustomRecyclerView recyclerView;
@@ -88,13 +88,12 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
 
   public ReactionsPickerController(Context context, Tdlib tdlib) {
     super(context, tdlib);
-    canSearch = tdlib.hasPremium();
   }
 
   @Override
   protected View onCreateView (Context context) {
     ArrayList<EmojiSection> emojiSections = new ArrayList<>(1);
-    if (canSearch) {
+    if (state.needShowCustomEmojiInsidePicker) {
       emojiSections.add(new EmojiSection(this, -14, R.drawable.baseline_search_24, R.drawable.baseline_search_24)/*.setFactor(1f, false)*/.setMakeFirstTransparent().setOffsetHalf(false));
     }
     emojiSections.add(new EmojiSection(this, EmojiSection.SECTION_EMOJI_RECENT, R.drawable.baseline_favorite_24, R.drawable.baseline_favorite_24)/*.setFactor(1f, false)*/.setMakeFirstTransparent());
@@ -173,7 +172,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
     emojiItems = new ArrayList<>();
     emojiPacks = new ArrayList<>();
 
-    TdApi.AvailableReaction[] reactions = message.getMessageAvailableReactions();
+    TdApi.AvailableReaction[] reactions = state.availableReactions;
     if (reactions != null) {
       emojiItems.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_KEYBOARD_TOP));
 
@@ -232,7 +231,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
   private boolean loadingStickers;
 
   private void loadStickers () {
-    if (loadingStickers || !message.isCustomEmojiReactionsAvailable()) {
+    if (loadingStickers || !state.needShowCustomEmojiInsidePicker) {
       return;
     }
 
@@ -328,7 +327,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
 
   @Override
   protected int getHeaderTextColorId () {
-    return ColorId.headerText;
+    return ColorId.text;
   }
 
   @Override
@@ -338,7 +337,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
 
   @Override
   protected int getHeaderIconColorId () {
-    return ColorId.headerIcon;
+    return ColorId.icon;
   }
 
   @Override
@@ -370,9 +369,9 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
 
   @Override
   public void setArguments (MessageOptionsPagerController.State args) {
-    this.message = args.message;
-    if (message.getMessageReactions() != null) {
-      this.chosenReactions = message.getMessageReactions().getChosen();
+    this.state = args;
+    if (state.message.getMessageReactions() != null) {
+      this.chosenReactions = state.message.getMessageReactions().getChosen();
     }
     super.setArguments(args);
   }
@@ -508,7 +507,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
 
   @Override
   public void setCurrentStickerSectionByPosition (int controllerId, int i, boolean isStickerSection, boolean animated) {
-    bottomHeaderCell.setCurrentStickerSectionByPosition(i + (canSearch ? 1: 0), animated);
+    bottomHeaderCell.setCurrentStickerSectionByPosition(i + (state.needShowCustomEmojiInsidePicker ? 1: 0), animated);
   }
 
   @Override
@@ -542,6 +541,18 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
       fakeControllerForBottomHeader.hideSoftwareKeyboard();
     }
     super.hideSoftwareKeyboard();
+  }
+
+
+  @Override
+  public void onThemeColorsChanged (boolean areTemp, ColorState state) {
+    super.onThemeColorsChanged(areTemp, state);
+    if (headerView != null) {
+      headerView.resetColors(this, null);
+    }
+    if (bottomHeaderView != null) {
+      bottomHeaderView.resetColors(this, null);
+    }
   }
 
 
@@ -624,7 +635,6 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
     headerView.initWithSingleController(this, false);
     headerView.setBackgroundHeight(Screen.dp(56));
     headerView.getBackButton().setIsReverse(true);
-    headerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
     addThemeInvalidateListener(headerView);
 
     View lickView = new View(context) {
@@ -639,7 +649,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
 
     topHeaderViewGroup = new LinearLayout(context);
     topHeaderViewGroup.setOrientation(LinearLayout.VERTICAL);
-    topHeaderViewGroup.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+    topHeaderViewGroup.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, HeaderView.getSize(true) + ShadowView.simpleBottomShadowHeight()));
     topHeaderViewGroup.addView(lickView);
     topHeaderViewGroup.addView(headerView);
     topHeaderViewGroup.setVisibility(View.GONE);
