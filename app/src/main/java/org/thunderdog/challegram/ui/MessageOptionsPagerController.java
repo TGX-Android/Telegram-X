@@ -204,8 +204,6 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
 
     if (state.needShowReactionsPopupPicker) {
       reactionsPickerWrapper = new FrameLayoutFix(context) {
-        public final GradientDrawable gradientDrawableRight = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{ 0, Theme.backgroundColor() });
-
         @Override
         public boolean dispatchTouchEvent (MotionEvent ev) {
           float bottom = MathUtils.fromTo(headerTranslationY + getHeaderHeight(), getMeasuredHeight(), reactionsPickerVisibility.getFloatValue());
@@ -228,14 +226,6 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
           return y > a && y < b;
         }
 
-        private int lastColor;
-        private void checkGradients () {
-          int color = Theme.backgroundColor();
-          if (color != lastColor) {
-            gradientDrawableRight.setColors(new int[]{ 0, lastColor = Theme.backgroundColor() });
-          }
-        }
-
         @Override
         protected void dispatchDraw (Canvas canvas) {
           float topClip = MathUtils.fromTo(headerTranslationY, Views.getRecyclerFirstElementTop(reactionsPickerRecyclerView) - Screen.dp(10), reactionsPickerVisibility.getFloatValue());
@@ -248,19 +238,6 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
           canvas.drawRect(0, top, getMeasuredWidth(), bottom, Paints.fillingPaint(color));
           super.dispatchDraw(canvas);
           canvas.restore();
-
-          float offset = reactionsPickerRecyclerView.getTranslationX();
-          float x = getMeasuredWidth() - state.getRightViewsWidth() + offset;
-
-          canvas.drawRect(x,
-            top, getMeasuredWidth() + offset, top + getHeaderHeight(),
-            Paints.fillingPaint(me.vkryl.core.ColorUtils.alphaColor(1f - reactionsPickerVisibility.getFloatValue(), Theme.backgroundColor()))
-          );
-
-          checkGradients();
-          gradientDrawableRight.setAlpha((int)(255 * (1f - reactionsPickerVisibility.getFloatValue())));
-          gradientDrawableRight.setBounds((int)(x - Screen.dp(20)), (int) top, (int) x, (int)(top + getHeaderHeight()));
-          gradientDrawableRight.draw(canvas);
         }
       };
       vg.addView(reactionsPickerWrapper, 2, FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));

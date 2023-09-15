@@ -132,9 +132,9 @@ public class TGStickerObj {
       if (sticker != null && (sticker.thumbnail != null || !Td.isAnimated(sticker.format))) {
         this.preview = TD.toImageFile(tdlib, sticker.thumbnail);
         if (this.preview != null) {
-          this.preview.setSize(Screen.dp(82f));
-          this.preview.setWebp();
-          this.preview.setScaleType(ImageFile.FIT_CENTER);
+          this.preview.setSize(Screen.dp(isCustomEmoji() ? 40f : 82f));   // In some cases, emoji are drawn at more than 40 dp;
+          this.preview.setWebp();                                         // perhaps, in order not to lose quality when scaling,
+          this.preview.setScaleType(ImageFile.FIT_CENTER);                //  it is worth adding an arbitrary preview size
         }
       } else {
         this.preview = null;

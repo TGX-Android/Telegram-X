@@ -20,7 +20,6 @@ import android.graphics.Canvas;
 import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.Shader;
-import android.graphics.drawable.GradientDrawable;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -34,9 +33,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
-import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.support.RippleSupport;
-import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ThemeInvalidateListener;
@@ -44,8 +41,8 @@ import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.ui.MessageOptionsPagerController;
-import org.thunderdog.challegram.ui.ReactionsPickerController;
 import org.thunderdog.challegram.unsorted.Size;
+import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutRecyclerController;
 import org.thunderdog.challegram.widget.ReactionsSelectorRecyclerView;
 
 import me.vkryl.android.widget.FrameLayoutFix;
@@ -207,13 +204,22 @@ public class ViewPagerHeaderViewReactionsCompact extends FrameLayoutFix implemen
     setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(54)));
     updatePaints(Theme.backgroundColor());
   }
-/*
+
   @Override
   protected void dispatchDraw (Canvas c) {
+    int x = (int)(reactionsSelectorRecyclerView != null ? reactionsSelectorRecyclerView.getTranslationX() : 0);
+    int buttonsWidth = state.getRightViewsWidth();
+
+    int emojiPickerWidthWithoutPadding = getMeasuredWidth() - Screen.dp(16);
+    int emojiPickerSpanCount = EmojiLayoutRecyclerController.calculateSpanCount(emojiPickerWidthWithoutPadding, 9, Screen.dp(38));
+    float emojiPickerItemSize = (float) emojiPickerWidthWithoutPadding / emojiPickerSpanCount;
+    int width = (int)(Math.ceil(((float) buttonsWidth - Screen.dp(8 + 8)) / emojiPickerItemSize)
+      * emojiPickerItemSize + Screen.dp(8));
+
+    c.drawRect(getMeasuredWidth() - width + x, 0, getMeasuredWidth() + x, getMeasuredHeight(), Paints.fillingPaint(Theme.backgroundColor()));
     super.dispatchDraw(c);
-    c.drawRect(getMeasuredWidth() - rightOffset, 0, getMeasuredWidth(), getMeasuredHeight(), Paints.fillingPaint(0xFF00FF00));
   }
-*/
+
   LinearGradient shader1;
   private Paint shadowPaint1;
   private final int shadowSize = Screen.dp(35);

@@ -920,8 +920,12 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayoutRec
       final int width = recyclerView != null ?
         recyclerView.getMeasuredWidth() - recyclerView.getPaddingLeft() - recyclerView.getPaddingRight():
         Screen.currentWidth();
-      return Math.max(minSpan, width / Screen.dp(itemWidthDp));
+      return calculateSpanCount(width, minSpan, Screen.dp(itemWidthDp));
     });
+  }
+
+  public static int calculateSpanCount (int width, int minSpan, int itemWidthDp) {
+    return Math.max(minSpan, width / Screen.dp(itemWidthDp));
   }
 
   public final void setSpanCount (int spanCount) {

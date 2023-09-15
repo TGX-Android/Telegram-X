@@ -86,7 +86,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
   private CustomRecyclerView recyclerView;
   private MediaStickersAdapter adapter;
 
-  public ReactionsPickerController(Context context, Tdlib tdlib) {
+  public ReactionsPickerController (Context context, Tdlib tdlib) {
     super(context, tdlib);
   }
 
