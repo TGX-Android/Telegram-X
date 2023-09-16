@@ -628,10 +628,10 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
       return;
     }
 
-    topHeaderVisibility.setValue(isVisible, true);
-    if (isVisible) {
+    UI.post(() -> {
       topHeaderViewGroup.setVisibility(View.VISIBLE);
-    }
+      topHeaderVisibility.setValue(isVisible, true);
+    });
   }
 
   private void genTopHeader () {
