@@ -55,6 +55,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.OptionDelegate;
+import org.thunderdog.challegram.util.ScrollJumpCompensator;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.v.CustomRecyclerView;
@@ -206,20 +207,26 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
       reactionsPickerWrapper = new FrameLayoutFix(context) {
         @Override
         public boolean dispatchTouchEvent (MotionEvent ev) {
-          float bottom = MathUtils.fromTo(headerTranslationY + getHeaderHeight(), getMeasuredHeight(), reactionsPickerVisibility.getFloatValue());
-          return between(ev.getY(), getTopBorder(), bottom) && super.dispatchTouchEvent(ev);
+          if (ev.getAction() == MotionEvent.ACTION_DOWN && !between(ev.getY(), getPickerTop(), getPickerBottom())) {
+            return false;
+          }
+          return super.dispatchTouchEvent(ev);
         }
 
         @Override
         public boolean onInterceptTouchEvent (MotionEvent ev) {
-          float bottom = MathUtils.fromTo(headerTranslationY + getHeaderHeight(), getMeasuredHeight(), reactionsPickerVisibility.getFloatValue());
-          return between(ev.getY(), getTopBorder(), bottom) && super.onInterceptTouchEvent(ev);
+          if (ev.getAction() == MotionEvent.ACTION_DOWN && !between(ev.getY(), getPickerTop(), getPickerBottom())) {
+            return false;
+          }
+          return super.onInterceptTouchEvent(ev);
         }
 
         @Override
         public boolean onTouchEvent (MotionEvent ev) {
-          float bottom = MathUtils.fromTo(headerTranslationY + getHeaderHeight(), getMeasuredHeight(), reactionsPickerVisibility.getFloatValue());
-          return between(ev.getY(), getTopBorder(), bottom) && super.onTouchEvent(ev);
+          if (ev.getAction() == MotionEvent.ACTION_DOWN && !between(ev.getY(), getPickerTop(), getPickerBottom())) {
+            return false;
+          }
+          return super.onTouchEvent(ev);
         }
 
         private boolean between (float y, float a, float b) {
@@ -228,13 +235,13 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
 
         @Override
         protected void dispatchDraw (Canvas canvas) {
-          float topClip = MathUtils.fromTo(headerTranslationY, Views.getRecyclerFirstElementTop(reactionsPickerRecyclerView) - Screen.dp(10), reactionsPickerVisibility.getFloatValue());
-          float top = MathUtils.fromTo(headerTranslationY, Views.getRecyclerFirstElementTop(reactionsPickerRecyclerView) + HeaderView.getSize(true) - Screen.dp(10), reactionsPickerVisibility.getFloatValue());
-          float bottom = MathUtils.fromTo(headerTranslationY + getHeaderHeight(), getMeasuredHeight(), reactionsPickerVisibility.getFloatValue());
           int color = me.vkryl.core.ColorUtils.fromToArgb(reactionsPickerBackgroundColor, Theme.backgroundColor(), reactionsPickerVisibility.getFloatValue());
+          float top = getPickerTop();
+          float bottom = getPickerBottom();
+          if (bottom <= top) return;
 
           canvas.save();
-          canvas.clipRect(0, topClip, getMeasuredWidth(), bottom);
+          canvas.clipRect(0, top, getMeasuredWidth(), bottom);
           canvas.drawRect(0, top, getMeasuredWidth(), bottom, Paints.fillingPaint(color));
           super.dispatchDraw(canvas);
           canvas.restore();
@@ -596,9 +603,10 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
   private CustomRecyclerView reactionsPickerRecyclerView;
   private View reactionsPickerBottomHeaderView;
   private int reactionsPickerBackgroundColor;
+  private boolean isPickerOpenedByScroll;
 
   private CustomRecyclerView createReactionsPopupPicker () {
-    reactionsPickerVisibility = new BoolAnimator(REACTIONS_PICKER_VISIBILITY_ANIMATOR_ID, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 220L, false);
+    reactionsPickerVisibility = new BoolAnimator(REACTIONS_PICKER_VISIBILITY_ANIMATOR_ID, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 280L, false);
     reactionsPickerController = new ReactionsPickerController(context, tdlib);
     reactionsPickerController.setArguments(state);
     reactionsPickerController.getValue();
@@ -606,13 +614,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     reactionsPickerRecyclerView = reactionsPickerController.getRecyclerView();
     reactionsPickerRecyclerView.setPadding(Screen.dp(9.5f), 0, Screen.dp(9.5f), 0);
 
-    reactionsPickerRecyclerView.addItemDecoration(new BottomOffsetDecoration(new BottomOffsetDecoration.Delegate() {
-      @Override
-      public int getItemsHeight () {
-        return reactionsPickerController.measureItemsHeight();
-      }
-    }, 64));
-
+    reactionsPickerRecyclerView.addItemDecoration(new BottomOffsetDecoration(() -> reactionsPickerController.measureItemsHeight(), 64));
     reactionsPickerRecyclerView.addItemDecoration(new RecyclerView.ItemDecoration() {
       @Override
       public void getItemOffsets (@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
@@ -622,7 +624,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
         int top = 0, bottom = 0;
 
         if (position == 0 || isUnknown) {
-          top = getReactionPickerOffsetTopDefault();
+          top = Math.max(getReactionPickerOffsetTopDefault(), getReactionPickerOffsetTopReal());
         }
         if (position == itemCount - 1 || isUnknown) {
           bottom = Screen.dp(56);
@@ -632,6 +634,59 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
       }
     });
     reactionsPickerRecyclerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+    reactionsPickerRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+      @Override
+      public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
+        reactionsPickerWrapper.invalidate();
+        reactionsPickerController.setTopHeaderVisibility(Views.getRecyclerViewElementTop(recyclerView, 1) <= HeaderView.getSize(true) + EmojiLayout.getHeaderPadding());
+      }
+
+      @Override
+      public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {
+        if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+          reactionsPickerWrapper.invalidate();
+          reactionsPickerController.setTopHeaderVisibility(Views.getRecyclerViewElementTop(recyclerView, 1) <= HeaderView.getSize(true) + EmojiLayout.getHeaderPadding());
+        }
+      }
+    });
+    reactionsPickerRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+      private int totalDy;
+      private boolean ignore;
+
+      @Override
+      public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
+        if (reactionsPickerVisibility.getValue()) {
+          return;
+        }
+
+        totalDy += dy;
+        if (Math.abs(totalDy) > Screen.dp(30) && !ignore) {
+          isPickerOpenedByScroll = true;
+          totalDy = 0;
+          recyclerView.stopScroll();
+          showReactionPicker();
+        }
+      }
+
+      @Override
+      public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {
+        if (reactionsPickerVisibility.getValue()) {
+          return;
+        }
+
+        if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+          if (!ignore) {
+            ignore = true;
+            if (totalDy != 0) {
+              reactionsPickerRecyclerView.smoothScrollBy(0, -totalDy);
+            }
+          } else {
+            ignore = false;
+          }
+          totalDy = 0;
+        }
+      }
+    });
 
     return reactionsPickerRecyclerView;
   }
@@ -655,21 +710,6 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
       }
       wrapView.addView(reactionsPickerController.getTopHeaderViewGroup());
       reactionsPickerController.prepareToShow();
-      reactionsPickerRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-        @Override
-        public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
-          reactionsPickerWrapper.invalidate();
-          reactionsPickerController.setTopHeaderVisibility(Views.getRecyclerViewElementTop(recyclerView, 1) <= HeaderView.getSize(true) + EmojiLayout.getHeaderPadding());
-        }
-
-        @Override
-        public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {
-          if (newState == RecyclerView.SCROLL_STATE_IDLE) {
-            reactionsPickerWrapper.invalidate();
-            reactionsPickerController.setTopHeaderVisibility(Views.getRecyclerViewElementTop(recyclerView, 1) <= HeaderView.getSize(true) + EmojiLayout.getHeaderPadding());
-          }
-        }
-      });
     }
 
     reactionsPickerVisibility.setValue(true, true);
@@ -682,23 +722,16 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
       return;
     }
 
-    float y = MathUtils.fromTo(getReactionPickerOffsetTopReal() - getReactionPickerOffsetTopDefault(), 0, reactionsPickerVisibility.getFloatValue());
-    if (y <= 0) {
+    float defaultTranslation = getReactionPickerTranslationDefault();
+    float y = MathUtils.fromTo(Math.min(defaultTranslation, 0), Math.min(-defaultTranslation, 0), reactionsPickerVisibility.getFloatValue());
+    boolean isNotInScroll = reactionsPickerRecyclerView.getScrollState() == RecyclerView.SCROLL_STATE_IDLE;
+    if (isNotInScroll && !isPickerOpenedByScroll) {
       ((LinearLayoutManager) reactionsPickerRecyclerView.getLayoutManager()).scrollToPositionWithOffset(0, (int) y);
-    } else {
-      ((LinearLayoutManager) reactionsPickerRecyclerView.getLayoutManager()).scrollToPositionWithOffset(0, 0);
     }
 
-    reactionsPickerRecyclerView.setTranslationY(getReactionPickerViewTranslation());
+    reactionsPickerRecyclerView.setTranslationY((headerTranslationY - getContentOffset() - HeaderView.getTopOffset())
+      * (1f - reactionsPickerVisibility.getFloatValue()));
     reactionsPickerWrapper.invalidate();
-  }
-
-  private float getReactionPickerViewTranslation () {
-    return (Math.max(getReactionPickerOffsetTopReal() - getReactionPickerOffsetTopDefault(), 0)
-      + headerTranslationY
-      - getContentOffset()
-      - HeaderView.getTopOffset()
-    ) * (1f - reactionsPickerVisibility.getFloatValue());
   }
 
   private void onReactionClick (View v, TGReaction reaction, boolean isLongClick) {
@@ -734,33 +767,17 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     }
   }
 
-  private int getReactionPickerOffsetTopReal () {
-    return getContentOffset() - HeaderView.getSize(false) - EmojiLayout.getHeaderPadding() + ((getHeaderHeight() - reactionsPickerController.getItemWidth()) / 2);
-  }
-
-  private int getReactionPickerOffsetTopDefault () {
-    return (Screen.currentHeight() - Screen.dp(56) - HeaderView.getSize(true)) / 2;
-  }
-
 
   /* * */
 
-  private float getTopBorder () {
-    if (reactionsPickerRecyclerView == null) {
-      return headerTranslationY;
-    }
-
-    return MathUtils.fromTo(headerTranslationY, Views.getRecyclerFirstElementTop(reactionsPickerRecyclerView), reactionsPickerVisibility.getFloatValue());
-  }
-
   @Override
   protected int getTopEdge () {
-    return Math.max(0, (int) (getTopBorder() - HeaderView.getTopOffset()));
+    return Math.max(0, (int) (getPickerTop() - HeaderView.getTopOffset()));
   }
 
   @Override
   public boolean shouldTouchOutside (float x, float y) {
-    return headerView != null && y < getTopBorder() - HeaderView.getSize(true);
+    return headerView != null && y < getPickerTop() - HeaderView.getSize(true);
   }
 
 
@@ -796,9 +813,47 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
           headerView.setVisibility(View.GONE);
         }
       }
+      isPickerOpenedByScroll = false;
     }
   }
 
+
+
+  /* Picker layout */
+
+  private float getPickerTop () {
+    if (reactionsPickerRecyclerView == null || reactionsPickerWrapper == null || reactionsPickerVisibility == null) {
+      return headerTranslationY;
+    }
+
+    float top = Views.getRecyclerViewElementTop(reactionsPickerRecyclerView, 1) + reactionsPickerRecyclerView.getTranslationY() - getPickerTopPadding();
+    return MathUtils.fromTo(Math.min(top, headerTranslationY), top, reactionsPickerVisibility.getFloatValue());
+  }
+
+  private float getPickerBottom () {
+    if (reactionsPickerRecyclerView == null || reactionsPickerWrapper == null || reactionsPickerVisibility == null) {
+      return headerTranslationY + getHeaderHeight();
+    }
+
+    return MathUtils.fromTo(headerTranslationY + getHeaderHeight(), reactionsPickerWrapper.getMeasuredHeight(), reactionsPickerVisibility.getFloatValue());
+  }
+
+  private static float getPickerTopPadding () {
+    return Screen.dp(7); // ((getHeaderHeight() - Screen.dp(40)) / 2f);
+  }
+
+  private int getReactionPickerOffsetTopReal () {
+    return getContentOffset() - HeaderView.getSize(false) - EmojiLayout.getHeaderPadding() + ((getHeaderHeight() - reactionsPickerController.getItemHeight()) / 2);
+  }
+
+  private static int getReactionPickerOffsetTopDefault () {
+    return (Screen.currentHeight() - Screen.dp(56) - HeaderView.getSize(true)) / 2;
+  }
+
+  private int getReactionPickerTranslationDefault () {
+    // Picker offset in closed state, if more than zero is shifted due to setTranslation, else scrollWithOffset
+    return getReactionPickerOffsetTopReal() - getReactionPickerOffsetTopDefault();
+  }
 
   /*  */
 

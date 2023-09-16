@@ -62,6 +62,7 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
   private Path contour;
   private Tdlib tdlib;
   private int padding;
+  private int forceHeight = -1;
 
   public StickerSmallView (Context context) {
     super(context);
@@ -88,6 +89,10 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
   public void setPadding (int padding) {
     this.padding = padding;
     measureReceivers();
+  }
+
+  public void setForceHeight (int forceHeight) {
+    this.forceHeight = forceHeight;
   }
 
   public void setSticker (@Nullable TGStickerObj sticker) {
@@ -193,8 +198,7 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     } else if (isTrending) {
       super.onMeasure(widthMeasureSpec, MeasureSpec.makeMeasureSpec(Screen.smallestSide() / 5, MeasureSpec.EXACTLY));
     } else {
-      //noinspection SuspiciousNameCombination
-      super.onMeasure(widthMeasureSpec, widthMeasureSpec);
+      super.onMeasure(widthMeasureSpec, forceHeight > 0 ? MeasureSpec.makeMeasureSpec(forceHeight, MeasureSpec.EXACTLY) : widthMeasureSpec);
     }
     measureReceivers();
   }

@@ -221,7 +221,7 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
   protected float lastHeaderPosition;
 
   protected void checkHeaderPosition (RecyclerView recyclerView) {
-    lastHeaderPosition = Views.getRecyclerFirstElementTop(recyclerView) + HeaderView.getTopOffset();
+    lastHeaderPosition = Math.max(Views.getRecyclerFirstElementTop(recyclerView), 0) + HeaderView.getTopOffset();
     setHeaderPosition(lastHeaderPosition);
     /*
     View view = null;

@@ -132,7 +132,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
         int type = getItemViewType(position);
         if (type == StickerHolder.TYPE_STICKER) {
           TGStickerObj stickerObj = getSticker(position);
-          ((StickerSmallView) holder.itemView).setPadding(Screen.dp(stickerObj != null && stickerObj.isReaction() ? -1: 4.5f));
+          ((StickerSmallView) holder.itemView).setPadding(Screen.dp(stickerObj != null && stickerObj.isReaction() ? 0: 4.5f));
           ((StickerSmallView) holder.itemView).setChosen(stickerObj != null && chosenReactions != null && stickerObj.getReactionType() != null && chosenReactions.contains(TD.makeReactionKey(stickerObj.getReactionType())));
         }
 
@@ -140,13 +140,14 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
       }
     };
     adapter.setTopPaddingHeight(HeaderView.getSize(true) + EmojiLayout.getHeaderPadding());
+    adapter.setStickerViewForceHeight(Screen.dp(40));
     adapter.setRepaintingColorId(ColorId.text);
 
     reactionsController.setArguments(this);
     reactionsController.setAdapter(adapter);
     reactionsController.setItemWidth(9, 38);
     reactionsController.getValue();
-    reactionsController.getManager().setCanScrollVertically(false);
+    reactionsController.getManager();
 
     return (CustomRecyclerView) reactionsController.getValue();
   }
@@ -157,7 +158,10 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
 
   public int getItemWidth () {
     return (recyclerView.getMeasuredWidth() - recyclerView.getPaddingLeft() - recyclerView.getPaddingRight()) / reactionsController.getSpanCount();
+  }
 
+  public int getItemHeight () {
+    return Screen.dp(40);
   }
 
   public CustomRecyclerView getRecyclerView () {
@@ -224,7 +228,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
   /* * */
 
   public void prepareToShow () {
-    reactionsController.getManager().setCanScrollVertically(true);
+    reactionsController.getManager();
     setIsFullyVisible(true);
   }
 
@@ -631,7 +635,13 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
   }
 
   private void genTopHeader () {
-    headerView = new HeaderView(context);
+    headerView = new HeaderView(context) {
+      @Override
+      public boolean onTouchEvent (MotionEvent e) {
+        super.onTouchEvent(e);
+        return true;
+      }
+    };
     headerView.initWithSingleController(this, false);
     headerView.setBackgroundHeight(Screen.dp(56));
     headerView.getBackButton().setIsReverse(true);

@@ -941,20 +941,28 @@ public class Views {
   }
 
   public static int getRecyclerFirstElementTop (RecyclerView recyclerView) {
-    return getRecyclerViewElementTop(recyclerView, 0);
+    return getRecyclerViewElementTop(recyclerView, 0, 0);
+  }
+
+  public static int getRecyclerFirstElementTop (RecyclerView recyclerView, int valueIfPositionNotFound) {
+    return getRecyclerViewElementTop(recyclerView, 0, valueIfPositionNotFound);
   }
 
   public static int getRecyclerViewElementTop (RecyclerView recyclerView, int position) {
+    return getRecyclerViewElementTop(recyclerView, position, 0);
+  }
+
+  public static int getRecyclerViewElementTop (RecyclerView recyclerView, int position, int valueIfPositionNotFound) {
     if (recyclerView == null || recyclerView.getLayoutManager() == null) {
-      return 0;
+      return valueIfPositionNotFound;
     }
 
     View view = recyclerView.getLayoutManager().findViewByPosition(position);
     if (view != null) {
-      return Math.max(view.getTop() + recyclerView.getTop(), 0);
+      return view.getTop() + recyclerView.getTop();
     }
 
-    return 0;
+    return valueIfPositionNotFound;
   }
 
   public static void getCharacterCoordinates(TextView textView, int offset, int[] coordinates) {

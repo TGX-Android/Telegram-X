@@ -75,7 +75,9 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
   private final boolean canViewStickerPackByClick;
   private final @Nullable EmojiToneHelper emojiToneHelper;
   private View.OnClickListener classicEmojiClickListener;
+
   private int topPaddingHeight = EmojiLayout.getHeaderSize() + EmojiLayout.getHeaderPadding();
+  private int stickerViewForceHeight = -1;
 
   private boolean isBig;
 
@@ -113,6 +115,10 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
     this.topPaddingHeight = topPaddingHeight;
   }
 
+  public void setStickerViewForceHeight (int stickerViewForceHeight) {
+    this.stickerViewForceHeight = stickerViewForceHeight;
+  }
+
   public void setClassicEmojiClickListener (View.OnClickListener classicEmojiClickListener) {
     this.classicEmojiClickListener = classicEmojiClickListener;
   }
@@ -137,7 +143,8 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
 
 
     final int recyclerWidth = recyclerView != null ? recyclerView.getMeasuredWidth() - recyclerView.getPaddingLeft() - recyclerView.getPaddingRight(): 0;
-    final int rowSize = ((sections.get(0).isTrending() ? Screen.smallestSide() : (recyclerWidth > 0 ? recyclerWidth: Screen.currentWidth())) / spanCount);
+    final int stickersRowHeight = stickerViewForceHeight > 0 ? stickerViewForceHeight :
+      ((sections.get(0).isTrending() ? Screen.smallestSide() : (recyclerWidth > 0 ? recyclerWidth: Screen.currentWidth())) / spanCount);
     // final int rowSize = ((sections.get(0).isTrending() ? Screen.smallestSide() : Screen.currentWidth()) / spanCount);
 
     boolean hadFavorite = false;
@@ -159,7 +166,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
       if (position > 0) {
         int itemCount = Math.min(stickerSet.isDefaultEmoji() ? stickerSet.getSize() + 1 : stickerSet.isTrending() ? (stickerSet.isEmoji() ? 16 : 5) : stickerSet.getSize(), position);
         int rowCount = (int) Math.ceil((double) itemCount / (double) spanCount);
-        scrollY += rowCount * rowSize;
+        scrollY += rowCount * stickersRowHeight;
         position -= itemCount;
       }
     }
@@ -653,6 +660,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
         case TYPE_STICKER: {
           StickerSmallView view;
           view = new StickerSmallView(context);
+          view.setForceHeight(adapter.stickerViewForceHeight);
           view.init(tdlib);
           view.setRepaintingColorId(repaintingColorId);
           if (isTrending) {
