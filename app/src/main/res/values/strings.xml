@@ -1761,6 +1761,7 @@
   <string name="QuickReaction">Quick Reaction</string>
   <string name="QuickReactionDisabled">Disabled</string>
   <string name="BigReactionsInfo">Big reactions are interactive buttons under messages presenting each reaction</string>
+  <string name="ReactionAvatarsInfo">Limited options shows avatar on limited scenarios like where the recent reactor is your contact or a mentioned user etc.</string>
   <string name="BigReactions">Big Reactions</string>
   <string name="BigReactionsChats">Chats</string>
   <string name="BigReactionsChannels">Channels</string>

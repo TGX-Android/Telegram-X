@@ -282,6 +282,7 @@ public class SettingsStickersAndEmojiController extends RecyclerViewController<S
   private void showReactionAvatarsOptions () {
     final int reactionAvatarsMode = Settings.instance().getReactionAvatarsMode();
     showSettings(new SettingsWrapBuilder(R.id.btn_avatarsInReactions).setRawItems(new ListItem[]{
+      new ListItem(ListItem.TYPE_INFO, 0, 0, R.string.ReactionAvatarsInfo),
       new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_avatarsInReactionsAlways, 0, R.string.AvatarsInReactionsAlways, R.id.btn_avatarsInReactions, reactionAvatarsMode == Settings.REACTION_AVATARS_MODE_ALWAYS),
       new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_avatarsInReactionsSmartFilter, 0, R.string.AvatarsInReactionsSmartFilter, R.id.btn_avatarsInReactions, reactionAvatarsMode == Settings.REACTION_AVATARS_MODE_SMART_FILTER),
       new ListItem(ListItem.TYPE_RADIO_OPTION, R.id.btn_avatarsInReactionsNever, 0, R.string.AvatarsInReactionsNever, R.id.btn_avatarsInReactions, reactionAvatarsMode == Settings.REACTION_AVATARS_MODE_NEVER),
