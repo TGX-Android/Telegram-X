@@ -4402,10 +4402,10 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private void prepareToShowMessageOptions () {
     needShowKeyboardAfterHideMessageOptions = getKeyboardState();
-    needShowEmojiKeyboardAfterHideMessageOptions = emojiLayout != null && emojiLayout.getVisibility() == View.VISIBLE;
+    needShowEmojiKeyboardAfterHideMessageOptions = emojiShown;
     if (needShowKeyboardAfterHideMessageOptions) {    // показываем emoji-клавиатуру, чтобы скрыть системную
-      openEmojiKeyboard();                            // todo: делать emojiLayout невидимым для оптимизации
-    }
+      openEmojiKeyboard();                            // делаем emojiLayout невидимым для оптимизации
+    }                                                 // todo: если меню сообщения ниже EmojiLayout, то не скрывать?
     if (needShowKeyboardAfterHideMessageOptions || needShowEmojiKeyboardAfterHideMessageOptions) {
       emojiLayout.setVisibility(View.INVISIBLE);
     }
@@ -4413,9 +4413,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   private void onHideMessageOptions () {
     if (needShowEmojiKeyboardAfterHideMessageOptions) {
-      emojiLayout.setVisibility(View.VISIBLE);
-    }
-    if (needShowKeyboardAfterHideMessageOptions) {
+      if (emojiShown) {
+        emojiLayout.setVisibility(View.VISIBLE);
+      } else {
+        openEmojiKeyboard();
+      }
+    } else if (needShowKeyboardAfterHideMessageOptions) {
       showKeyboard();
     }
   }
@@ -6417,6 +6420,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       return;
     }
 
+    needShowEmojiKeyboardAfterHideMessageOptions = false;
     saveDraft();
 
     if (inSelectMode()) {
@@ -7980,7 +7984,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
         }
         contentView.getViewTreeObserver().addOnPreDrawListener(emojiLayout);
       } else {
-        emojiLayout.setVisibility(View.VISIBLE);
+        emojiLayout.setVisibility(View.VISIBLE);    // todo: set invisible if message options is visible ?
       }
 
       // updateButtonsY();
