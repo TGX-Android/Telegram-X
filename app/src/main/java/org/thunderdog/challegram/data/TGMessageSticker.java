@@ -109,7 +109,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
         if (allowNoLoop) {
           this.animatedFile.setPlayOnce(
             forcePlayOnce ||
-            (specialType != SPECIAL_TYPE_NONE && !(Config.LOOP_BIG_CUSTOM_EMOJI/*!Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI_LOOP)*/ && specialType == SPECIAL_TYPE_ANIMATED_EMOJI && Td.customEmojiId(sticker) != 0)) ||
+            (specialType != SPECIAL_TYPE_NONE && !(specialType == SPECIAL_TYPE_ANIMATED_EMOJI && Td.customEmojiId(sticker) != 0)) ||
             Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_STICKERS_LOOP)
           );
           if (specialType == SPECIAL_TYPE_DICE) {
@@ -791,10 +791,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
                 .show(tdlib, Lang.getString(TD.EMOJI_DART.textRepresentation.equals(dice.emoji) ? R.string.SendDartHint : TD.EMOJI_DICE.textRepresentation.equals(dice.emoji) ? R.string.SendDiceHint : R.string.SendUnknownDiceHint, dice.emoji));
               break;
             }
-            case SPECIAL_TYPE_ANIMATED_EMOJI: {
-              tapProcessed = openOrLoopSticker(view, sticker, !Config.LOOP_BIG_CUSTOM_EMOJI /*Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI_LOOP)*/);
-              break;
-            }
+            case SPECIAL_TYPE_ANIMATED_EMOJI:
             default: {
               tapProcessed = openOrLoopSticker(view, sticker, Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_STICKERS_LOOP));
               break;
@@ -813,12 +810,14 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
   }
 
   private boolean openOrLoopSticker (MessageView view, TdApi.Sticker sticker, boolean noLoopSettingEnabled) {
+    final boolean isAnimatedEmojiStickerSet = sticker != null && sticker.setId == TdConstants.TELEGRAM_ANIMATED_EMOJI_STICKER_SET_ID;
+
     GifFile animatedFile = view.getComplexReceiver().getGifReceiver(0).getCurrentFile();
-    if (animatedFile != null && noLoopSettingEnabled && animatedFile.setLooped(false)) {
+    if (animatedFile != null && (noLoopSettingEnabled || isAnimatedEmojiStickerSet) && animatedFile.setLooped(false)) {
       invalidate();
       return true;
     }
-    if (sticker != null && sticker.setId != 0 && sticker.setId != TdConstants.TELEGRAM_ANIMATED_EMOJI_STICKER_SET_ID) {
+    if (sticker != null && sticker.setId != 0 && !isAnimatedEmojiStickerSet) {
       openStickerSet();
       return true;
     }
