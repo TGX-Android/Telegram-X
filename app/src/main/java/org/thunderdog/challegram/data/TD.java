@@ -6981,4 +6981,26 @@ public class TD {
     }
     return unreadCount;
   }
+
+  public static boolean isOnlyCustomEmojiText (TdApi.FormattedText text) {
+    if (text == null || text.entities == null || text.text == null || text.entities.length == 0) {
+      return false;
+    }
+
+    int end = 0;
+    for (TdApi.TextEntity entity: text.entities) {
+      if (entity.type.getConstructor() != TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR) {
+        return false;
+      }
+      if (entity.offset != end) {
+        return false;
+      }
+      end = entity.offset + entity.length;
+      while (text.text.length() > end && text.text.charAt(end) == 10) {
+        end += 1;
+      }
+    }
+
+    return end == text.text.length();
+  }
 }

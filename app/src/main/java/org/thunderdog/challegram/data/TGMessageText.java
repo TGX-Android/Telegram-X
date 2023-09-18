@@ -136,7 +136,13 @@ public class TGMessageText extends TGMessage {
   protected int onMessagePendingContentChanged (long chatId, long messageId, int oldHeight) {
     if (currentMessageText != null) {
       TdApi.MessageContent messageContent = tdlib.getPendingMessageText(chatId, messageId);
-      if (messageContent != null && messageContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR && Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI)) {
+      boolean allowEmoji = !Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI);
+      if (messageContent != null && messageContent.getConstructor() == TdApi.MessageText.CONSTRUCTOR && allowEmoji) {
+        if (TD.isOnlyCustomEmojiText(((TdApi.MessageText) messageContent).text)) {
+          return MESSAGE_REPLACE_REQUIRED;
+        }
+      }
+      if (messageContent != null && messageContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR && !allowEmoji) {
         messageContent = new TdApi.MessageText(Td.textOrCaption(messageContent), null);
       }
       if (this.pendingMessageText != messageContent) {
@@ -329,8 +335,12 @@ public class TGMessageText extends TGMessage {
 
   @Override
   protected boolean isSupportedMessageContent (TdApi.Message message, TdApi.MessageContent messageContent) {
+    final boolean allowEmoji = !Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI);
+    if (messageContent.getConstructor() == TdApi.MessageText.CONSTRUCTOR) {
+      return !(TD.isOnlyCustomEmojiText(((TdApi.MessageText) messageContent).text) && allowEmoji);
+    }
     if (messageContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR)
-      return Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI);
+      return !allowEmoji;
     return super.isSupportedMessageContent(message, messageContent);
   }
 

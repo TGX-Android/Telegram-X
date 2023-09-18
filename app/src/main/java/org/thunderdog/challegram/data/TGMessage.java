@@ -7447,6 +7447,40 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return valueOf(context, msg, msg.content);
   }
 
+  @Nullable
+  private static TGMessage checkPendingContent (MessagesManager context, TdApi.Message msg, TdApi.MessageContent oldContent, @Nullable TdApi.MessageContent pendingContent, boolean allowCustomEmoji) {
+    if (pendingContent == null) {
+      return null;
+    }
+
+    final TdApi.MessageText pendingMessageText = pendingContent.getConstructor() == TdApi.MessageText.CONSTRUCTOR ?
+      ((TdApi.MessageText) pendingContent) : null;
+    final TdApi.MessageAnimatedEmoji pendingMessageEmoji = pendingContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR ?
+      ((TdApi.MessageAnimatedEmoji) pendingContent) : null;
+    final boolean pendingContentIsCustomEmoji = allowCustomEmoji && (
+      (pendingMessageText != null && TD.isOnlyCustomEmojiText(pendingMessageText.text)) ||
+      (pendingMessageEmoji != null));
+
+    if (oldContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR) {
+      TdApi.MessageAnimatedEmoji oldEmoji = nonNull((TdApi.MessageAnimatedEmoji) oldContent);
+      if (pendingContentIsCustomEmoji) {
+        return new TGMessageSticker(context, msg, oldEmoji, pendingContent);
+      } else {
+        return new TGMessageText(context, msg, new TdApi.MessageText(Td.textOrCaption(oldEmoji), null),
+          new TdApi.MessageText(Td.textOrCaption(pendingContent), null));
+      }
+    } else if (oldContent.getConstructor() == TdApi.MessageText.CONSTRUCTOR) {
+      TdApi.MessageText oldText = nonNull((TdApi.MessageText) oldContent);
+      if (pendingContentIsCustomEmoji) {
+        return new TGMessageSticker(context, msg, oldContent, pendingContent);
+      } else {
+        return new TGMessageText(context, msg, oldText, pendingMessageText);
+      }
+    }
+
+    return null;
+  }
+
   public static TGMessage valueOf (MessagesManager context, TdApi.Message msg, TdApi.MessageContent content) {
     final Tdlib tdlib = context.controller().tdlib();
     try {
@@ -7466,31 +7500,29 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
       int unsupportedStringRes = R.string.UnsupportedMessage;
 
+      final boolean allowEmoji = !Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI);
+      final TdApi.MessageContent pendingContent = tdlib.getPendingMessageText(msg.chatId, msg.id);
+
+      TGMessage message = checkPendingContent(context, msg, content, pendingContent, allowEmoji);
+      if (message != null) {
+        return message;
+      }
+
       switch (content.getConstructor()) {
         case TdApi.MessageAnimatedEmoji.CONSTRUCTOR: {
           TdApi.MessageAnimatedEmoji emoji = nonNull((TdApi.MessageAnimatedEmoji) content);
-          TdApi.MessageContent pendingContent = tdlib.getPendingMessageText(msg.chatId, msg.id);
-          if (pendingContent != null) {
-            if (pendingContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR && !Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI)) {
-              return new TGMessageSticker(context, msg, emoji, (TdApi.MessageAnimatedEmoji) pendingContent);
-            } else {
-              return new TGMessageText(context, msg, new TdApi.MessageText(Td.textOrCaption(emoji), null), new TdApi.MessageText(Td.textOrCaption(pendingContent), null));
-            }
-          }
-          if (Settings.instance().getNewSetting(Settings.SETTING_FLAG_NO_ANIMATED_EMOJI)) {
+          if (!allowEmoji) {
             return new TGMessageText(context, msg, new TdApi.MessageText(Td.textOrCaption(emoji), null), null);
           } else {
             return new TGMessageSticker(context, msg, emoji, null);
           }
         }
-
         case TdApi.MessageText.CONSTRUCTOR: {
-          TdApi.MessageContent pendingContent = tdlib.getPendingMessageText(msg.chatId, msg.id);
-          if (pendingContent != null && pendingContent.getConstructor() == TdApi.MessageAnimatedEmoji.CONSTRUCTOR) {
-            TdApi.MessageAnimatedEmoji animatedEmoji = (TdApi.MessageAnimatedEmoji) pendingContent;
-            return new TGMessageSticker(context, msg, null, animatedEmoji);
+          TdApi.MessageText messageText = nonNull((TdApi.MessageText) content);
+          if (allowEmoji && TD.isOnlyCustomEmojiText(messageText.text)) {
+            return new TGMessageSticker(context, msg, messageText, null);
           }
-          return new TGMessageText(context, msg, nonNull((TdApi.MessageText) content), (TdApi.MessageText) pendingContent);
+          return new TGMessageText(context, msg, nonNull((TdApi.MessageText) content), null);
         }
         case TdApi.MessageCall.CONSTRUCTOR: {
           return new TGMessageCall(context, msg, nonNull(((TdApi.MessageCall) content)));
