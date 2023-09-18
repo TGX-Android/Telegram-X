@@ -29,6 +29,7 @@ import org.thunderdog.challegram.BaseActivity;
 import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.N;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.U;
 import org.thunderdog.challegram.component.chat.InlineResultsWrap;
 import org.thunderdog.challegram.component.popups.ModernOptions;
 import org.thunderdog.challegram.component.sticker.TGStickerObj;

@@ -27,6 +27,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -65,6 +66,7 @@ import org.thunderdog.challegram.widget.EmojiMediaLayout.Sections.StickerSection
 import org.thunderdog.challegram.widget.ShadowView;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Set;
 
 import me.vkryl.android.AnimatorUtils;
@@ -758,7 +760,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
 
   /* Search */
 
-  private TdlibUi.TextStickers lastEmojiStickers;
+  private TdlibUi.EmojiStickers lastEmojiStickers;
 
   private void searchEmojiImpl (final String request) {
     if (StringUtils.equalsOrBothEmpty(lastEmojiSearchRequest, request)) {
@@ -768,18 +770,22 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
     lastEmojiSearchRequest = request;
 
     if (!StringUtils.isEmpty(request)) {
-      if (lastEmojiStickers == null || !StringUtils.equalsOrBothEmpty(lastEmojiStickers.request, request)) {
-        lastEmojiStickers = tdlib.ui().getEmojiStickersByText(new TdApi.StickerTypeCustomEmoji(), request, 2000, findOutputChatId(), Settings.STICKER_MODE_ALL);
+      if (lastEmojiStickers == null || !StringUtils.equalsOrBothEmpty(lastEmojiStickers.query, request)) {
+        lastEmojiStickers = tdlib.ui().getEmojiStickers(new TdApi.StickerTypeCustomEmoji(), request, true, 2000, findOutputChatId());
       }
-      lastEmojiStickers.getStickers((context, stickers) -> {
-        if (StringUtils.equalsOrBothEmpty(lastEmojiSearchRequest, context.request)) {
+      lastEmojiStickers.getStickers((context, installedStickers, recommendedStickers, b) -> {
+        if (StringUtils.equalsOrBothEmpty(lastEmojiSearchRequest, context.query)) {
+          final ArrayList<TdApi.Sticker> stickers = new ArrayList<>(Arrays.asList(installedStickers));
+          if (recommendedStickers != null) {
+            stickers.addAll(Arrays.asList(recommendedStickers));
+          }
 
-          final ArrayList<MediaStickersAdapter.StickerItem> items = new ArrayList<>(1 + stickers.length);
+          final ArrayList<MediaStickersAdapter.StickerItem> items = new ArrayList<>(1 + stickers.size());
           final ArrayList<TGStickerSetInfo> packs = new ArrayList<>(1);
 
           items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_KEYBOARD_TOP));
 
-          TGStickerSetInfo pack = TGStickerSetInfo.fromEmojiSection(tdlib, -1, -1, stickers.length);
+          TGStickerSetInfo pack = TGStickerSetInfo.fromEmojiSection(tdlib, -1, -1, stickers.size());
           pack.setStartIndex(items.size());
           pack.setIsRecent();
           packs.add(pack);
@@ -796,7 +802,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
           reactionsController.clearAllItems();
           reactionsController.setStickers(packs, items);
         }
-      });
+      }, 0);
     } else {
       reactionsController.clearAllItems();
       reactionsController.setStickers(emojiPacks, emojiItems);
