@@ -6962,7 +6962,7 @@ public class TD {
         return false;
       }
       end = entity.offset + entity.length;
-      while (text.text.length() > end && text.text.charAt(end) == 10) {
+      while (text.text.length() > end && text.text.charAt(end) == '\n') {
         end += 1;
       }
     }
