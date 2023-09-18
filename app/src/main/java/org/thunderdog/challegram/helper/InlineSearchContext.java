@@ -1275,7 +1275,7 @@ public class InlineSearchContext implements LocationHelper.LocationChangeListene
         }
 
         if (!StringUtils.isEmpty(query)) {
-          tdlib.client().send(new TdApi.SearchEmojis(query, false, UI.getInputLanguages()), result -> {
+          tdlib.client().send(new TdApi.SearchEmojis(query, false, U.getInputLanguages()), result -> {
             if (result.getConstructor() == TdApi.Emojis.CONSTRUCTOR) {
               TdApi.Emojis emojis = (TdApi.Emojis) result;
               ArrayList<InlineResult<?>> addedResults = new ArrayList<>(emojis.emojis.length);
