@@ -509,6 +509,11 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
 
       int xIndex = 0, yIndex = 0, end, index = 0, maxRow = 0;
       for (TdApi.TextEntity entity: text.entities) {
+        if (xIndex >= maxRowSize) {
+          xIndex = 0;
+          yIndex += 1;
+        }
+
         if (representation != null && representation.size() > index) {
           Representation repr = representation.get(index);
           repr.xIndex = xIndex;
@@ -520,12 +525,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
         xIndex += 1;
         maxRow = Math.max(maxRow, xIndex);
 
-        if (xIndex >= maxRowSize) {
-          xIndex = 0;
-          yIndex += 1;
-        }
-
-        while (text.text.length() > end && text.text.charAt(end) == 10) {
+        while (text.text.length() > end && text.text.charAt(end) == '\n') {
           end += 1;
           xIndex = 0;
           yIndex += 1;
@@ -559,7 +559,10 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
 
   @Override
   protected int getContentHeight () {
-    return Math.max(Screen.dp(56f), stickerHeight * stickerRowsCount) + (specialType == SPECIAL_TYPE_DICE && useBubbles() && !useForward() ? getBubbleTimePartOffsetY() + getBubbleTimePartHeight() + Screen.dp(2f) : 0);
+    final boolean isInMultiEmojiMode = stickersMaxRowSize > 1 || stickerRowsCount > 1;
+    return Math.max(isInMultiEmojiMode ? 0 : Screen.dp(56f), stickerHeight * stickerRowsCount)
+      + ((specialType == SPECIAL_TYPE_DICE || isInMultiEmojiMode) && useBubbles() && !useForward() ?
+      getBubbleTimePartOffsetY() + getBubbleTimePartHeight() + Screen.dp(2f) : 0);
   }
 
   @Override
