@@ -52,6 +52,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.collection.IntSet;
+import me.vkryl.core.collection.LongSet;
 import me.vkryl.td.Td;
 import me.vkryl.td.TdConstants;
 
@@ -823,6 +824,13 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
 
   @Override
   public long getFirstEmojiId () {
+    if (formattedText != null && formattedText.entities != null) {
+      for (TdApi.TextEntity entity: formattedText.entities) {
+        if (entity.type.getConstructor() == TdApi.TextEntityTypeCustomEmoji.CONSTRUCTOR) {
+          return ((TdApi.TextEntityTypeCustomEmoji) entity.type).customEmojiId;
+        }
+      }
+    }
     if (sticker != null && sticker.getConstructor() == TdApi.DiceStickersRegular.CONSTRUCTOR) {
       TdApi.Sticker sticker1 = ((TdApi.DiceStickersRegular) sticker).sticker;
       return Td.customEmojiId(sticker1);
@@ -832,6 +840,17 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
 
   @Override
   public long[] getUniqueEmojiPackIdList () {
+    if (formattedText != null) {
+      long[] emojiIds = TD.getUniqueEmojiIdList(formattedText);
+      LongSet emojiSets = new LongSet();
+      for (long emojiId : emojiIds) {
+        TdlibEmojiManager.Entry entry = tdlib().emoji().find(emojiId);
+        if (entry == null || entry.value == null) continue;
+        emojiSets.add(entry.value.setId);
+      }
+      return emojiSets.toArray();
+    }
+
     if (sticker != null && sticker.getConstructor() == TdApi.DiceStickersRegular.CONSTRUCTOR) {
       TdApi.Sticker sticker1 = ((TdApi.DiceStickersRegular) sticker).sticker;
       if (Td.customEmojiId(sticker1) != 0) {
