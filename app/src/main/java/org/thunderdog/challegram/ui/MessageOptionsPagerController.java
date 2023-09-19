@@ -20,7 +20,7 @@ import android.graphics.Canvas;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.GradientDrawable;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -55,7 +55,6 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.OptionDelegate;
-import org.thunderdog.challegram.util.ScrollJumpCompensator;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.v.CustomRecyclerView;
@@ -184,7 +183,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     }
 
     return headerView;
-  };
+  }
 
   @Override
   protected void onBeforeCreateView () {
@@ -843,7 +842,9 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
   }
 
   private int getReactionPickerOffsetTopReal () {
-    return getContentOffset() - HeaderView.getSize(false) - EmojiLayout.getHeaderPadding() + ((getHeaderHeight() - reactionsPickerController.getItemHeight()) / 2);
+    int offset = getContentOffset();
+    Log.i("WTF_DEBUG", "offset: " + getContentOffset());
+    return offset - HeaderView.getSize(false) - EmojiLayout.getHeaderPadding() + ((getHeaderHeight() - reactionsPickerController.getItemHeight()) / 2);
   }
 
   private static int getReactionPickerOffsetTopDefault () {

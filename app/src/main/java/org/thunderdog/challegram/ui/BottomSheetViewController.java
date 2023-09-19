@@ -4,6 +4,7 @@ import android.animation.Animator;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Rect;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -240,10 +241,13 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
   }
 
   protected int getTargetHeight () {
-    return Screen.currentHeight()
+    final int r = Screen.currentHeight()
       + (context.isKeyboardVisible() ? Keyboard.getSize() : 0)
       - (Screen.needsKeyboardPadding(context) ? Screen.getNavigationBarFrameDifference() : 0)
       + (context.isKeyboardVisible() && Device.NEED_ADD_KEYBOARD_SIZE ? Screen.getNavigationBarHeight() : 0);
+    Log.i("WTF_DEBUG", "target height: " + r);
+
+    return r;
   }
 
   protected void invalidateAllItemDecorations () {

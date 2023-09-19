@@ -76,9 +76,6 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
   private final @Nullable EmojiToneHelper emojiToneHelper;
   private View.OnClickListener classicEmojiClickListener;
 
-  private int topPaddingHeight = EmojiLayout.getHeaderSize() + EmojiLayout.getHeaderPadding();
-  private int stickerViewForceHeight = -1;
-
   private boolean isBig;
 
   public void setIsBig () {
@@ -111,14 +108,6 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
     this.manager = manager;
   }
 
-  public void setTopPaddingHeight (int topPaddingHeight) {
-    this.topPaddingHeight = topPaddingHeight;
-  }
-
-  public void setStickerViewForceHeight (int stickerViewForceHeight) {
-    this.stickerViewForceHeight = stickerViewForceHeight;
-  }
-
   public void setClassicEmojiClickListener (View.OnClickListener classicEmojiClickListener) {
     this.classicEmojiClickListener = classicEmojiClickListener;
   }
@@ -135,13 +124,12 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
 
     position--;
 
-    int scrollY = topPaddingHeight;
-    //int scrollY = EmojiLayout.getHeaderSize() + EmojiLayout.getHeaderPadding();
+    int scrollY = LayoutParams.getKeyboardTopViewHeight(layoutParams);
     if (position == 0) {
       return scrollY;
     }
 
-
+    final int stickerViewForceHeight = LayoutParams.getStickerViewForceHeight(layoutParams);
     final int recyclerWidth = recyclerView != null ? recyclerView.getMeasuredWidth() - recyclerView.getPaddingLeft() - recyclerView.getPaddingRight(): 0;
     final int stickersRowHeight = stickerViewForceHeight > 0 ? stickerViewForceHeight :
       ((sections.get(0).isTrending() ? Screen.smallestSide() : (recyclerWidth > 0 ? recyclerWidth: Screen.currentWidth())) / spanCount);
@@ -152,7 +140,8 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
     for (int i = 0; i < sectionIndex + 1 && position > 0 && i < sections.size(); i++) {
       TGStickerSetInfo stickerSet = sections.get(i);
       if (!stickerSet.isSystem() || stickerSet.isDefaultEmoji()) {
-        scrollY += Screen.dp(stickerSet.isTrending() ? 52f : 32f);
+        scrollY += Screen.dp(stickerSet.isTrending() ? 52f : 27f)
+          + (stickerSet.isTrending() ? 0: LayoutParams.getHeaderViewPaddingTop(layoutParams));
         position--;
       } else if (stickerSet.isFavorite()) {
         // position--;
@@ -160,7 +149,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
       } else if (stickerSet.isRecent() && !stickerSet.isFakeClassicEmoji()) {
         position--;
         if (haveRecentsTitle) {
-          scrollY += Screen.dp(32f);
+          scrollY += Screen.dp(27f) + LayoutParams.getHeaderViewPaddingTop(layoutParams);;
         }
       }
       if (position > 0) {
@@ -660,7 +649,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
         case TYPE_STICKER: {
           StickerSmallView view;
           view = new StickerSmallView(context);
-          view.setForceHeight(adapter.stickerViewForceHeight);
+          view.setForceHeight(LayoutParams.getStickerViewForceHeight(adapter.layoutParams));
           view.init(tdlib);
           view.setRepaintingColorId(repaintingColorId);
           if (isTrending) {
@@ -679,6 +668,9 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
           return new StickerHolder(view);
         }
         case TYPE_HEADER: {
+          final int paddingTop = LayoutParams.getHeaderViewPaddingTop(adapter.layoutParams);
+          final int paddingHorizontal = LayoutParams.getHeaderViewPaddingHorizontal(adapter.layoutParams);
+
           TextView textView = new NoScrollTextView(context);
           textView.setTypeface(Fonts.getRobotoMedium());
           textView.setTextColor(Theme.textDecentColor());
@@ -689,8 +681,8 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
           textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
           textView.setSingleLine(true);
           textView.setEllipsize(TextUtils.TruncateAt.END);
-          textView.setPadding(Screen.dp(14f), Screen.dp(5f), Screen.dp(14f), Screen.dp(5f));
-          textView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(32f)));
+          textView.setPadding(paddingHorizontal, paddingTop, paddingHorizontal, Screen.dp(5f));
+          textView.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, Screen.dp(27f) + paddingTop));
           return new StickerHolder(textView);
         }
         case TYPE_SEPARATOR_COLLAPSABLE: {
@@ -740,7 +732,7 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
         }
         case TYPE_KEYBOARD_TOP: {
           View view = new View(context);
-          view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, adapter.topPaddingHeight));
+          view.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, LayoutParams.getKeyboardTopViewHeight(adapter.layoutParams)));
           return new StickerHolder(view);
         }
         case TYPE_SEPARATOR: {
@@ -864,6 +856,56 @@ public class MediaStickersAdapter extends RecyclerView.Adapter<MediaStickersAdap
         themeProvider.addThemeInvalidateListener(separatorView);
       }
       linearLayout.setOnClickListener(v -> onClickListener.onClick(textView));
+    }
+  }
+
+  @Nullable
+  private LayoutParams layoutParams;
+
+  public void setLayoutParams (LayoutParams layoutParams) {
+    this.layoutParams = layoutParams;
+  }
+
+  public static class LayoutParams {    // todo: make Builder class?
+    public final static int DEFAULT = -1;
+
+    public final int keyboardTopViewHeight;
+    public final int recyclerHorizontalPadding;
+    public final int headerViewPaddingTop;
+    public final int headerViewPaddingHorizontal;
+    public final int stickerViewHeight;
+
+    public LayoutParams (int keyboardTopViewHeight, int recyclerHorizontalPadding, int headerViewPaddingTop, int headerViewPaddingHorizontal, int stickerViewHeight) {
+      this.keyboardTopViewHeight = keyboardTopViewHeight;
+      this.recyclerHorizontalPadding = recyclerHorizontalPadding;
+      this.headerViewPaddingTop = headerViewPaddingTop;
+      this.headerViewPaddingHorizontal = headerViewPaddingHorizontal;
+      this.stickerViewHeight = stickerViewHeight;
+    }
+
+    public static int getKeyboardTopViewHeight (LayoutParams layoutParams) {
+      return layoutParams != null && layoutParams.keyboardTopViewHeight != LayoutParams.DEFAULT ?
+        layoutParams.keyboardTopViewHeight : EmojiLayout.getHeaderSize() + EmojiLayout.getHeaderPadding();
+    }
+
+    public static int getRecyclerViewPaddingHorizontal (LayoutParams layoutParams) {
+      return layoutParams != null && layoutParams.recyclerHorizontalPadding != LayoutParams.DEFAULT ?
+        layoutParams.recyclerHorizontalPadding : 0;
+    }
+
+    public static int getHeaderViewPaddingTop (LayoutParams layoutParams) {
+      return layoutParams != null && layoutParams.headerViewPaddingTop != LayoutParams.DEFAULT ?
+        layoutParams.headerViewPaddingTop : Screen.dp(5);
+    }
+
+    public static int getHeaderViewPaddingHorizontal (LayoutParams layoutParams) {
+      return layoutParams != null && layoutParams.headerViewPaddingHorizontal != LayoutParams.DEFAULT ?
+        layoutParams.headerViewPaddingHorizontal : Screen.dp(14);
+    }
+
+    public static int getStickerViewForceHeight (LayoutParams layoutParams) {
+      return layoutParams != null && layoutParams.stickerViewHeight != LayoutParams.DEFAULT ?
+        layoutParams.stickerViewHeight : -1;
     }
   }
 }

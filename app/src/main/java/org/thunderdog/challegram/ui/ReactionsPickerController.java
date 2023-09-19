@@ -141,8 +141,15 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
         holder.itemView.setVisibility(position <= reactionsController.getSpanCount() || isFullyVisible ? View.VISIBLE: View.INVISIBLE);
       }
     };
-    adapter.setTopPaddingHeight(HeaderView.getSize(true) + EmojiLayout.getHeaderPadding());
-    adapter.setStickerViewForceHeight(Screen.dp(40));
+
+
+    adapter.setLayoutParams(new MediaStickersAdapter.LayoutParams(
+      HeaderView.getSize(true) + EmojiLayout.getHeaderPadding(),
+      Screen.dp(9.5f),
+      Screen.dp(8f),
+      Screen.dp(21 - 9.5f),
+      getItemHeight()
+    ));
     adapter.setRepaintingColorId(ColorId.text);
 
     reactionsController.setArguments(this);
@@ -163,7 +170,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
   }
 
   public int getItemHeight () {
-    return Screen.dp(40);
+    return Screen.dp(45);
   }
 
   public CustomRecyclerView getRecyclerView () {
@@ -215,14 +222,14 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
       TGStickerSetInfo info = ((StickerSectionView) v).getStickerSet();
       if (info != null) {
         int index = reactionsController.indexOfStickerSet(info);
-        reactionsController.scrollToStickerSet(index, HeaderView.getSize(true) + EmojiLayout.getHeaderPadding(), false, true);
+        reactionsController.scrollToStickerSet(index, HeaderView.getSize(true) /*+ EmojiLayout.getHeaderPadding()*/, false, true);
       }
     } else if (viewId == R.id.btn_section) {
       EmojiSection section = ((EmojiSectionView) v).getSection();
       if (section.index == -14) {
-        bottomHeaderView.openSearchMode();
+        bottomHeaderView.openSearchMode(true, false);
       } else {
-        reactionsController.scrollToStickerSet(0, HeaderView.getSize(true) + EmojiLayout.getHeaderPadding(), false, true);
+        reactionsController.scrollToStickerSet(0, HeaderView.getSize(true) /*+ EmojiLayout.getHeaderPadding()*/, false, true);
       }
     }
   }
@@ -269,10 +276,6 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
                 TGStickerObj sticker = new TGStickerObj(tdlib, i < rawInfo.covers.length ? rawInfo.covers[i] : null, null, rawInfo.stickerType);
                 sticker.setStickerSetId(rawInfo.id, null);
                 sticker.setDataProvider(stickerSetsDataProvider());
-                if (sticker.getPreviewAnimation() != null) {
-                  sticker.getPreviewAnimation().setPlayOnce(true);
-                  sticker.getPreviewAnimation().setLooped(false);
-                }
                 items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, sticker));
               }
               startIndex += rawInfo.size + 1;
@@ -773,7 +776,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
       if (lastEmojiStickers == null || !StringUtils.equalsOrBothEmpty(lastEmojiStickers.query, request)) {
         lastEmojiStickers = tdlib.ui().getEmojiStickers(new TdApi.StickerTypeCustomEmoji(), request, true, 2000, findOutputChatId());
       }
-      lastEmojiStickers.getStickers((context, installedStickers, recommendedStickers, b) -> {
+      lastEmojiStickers.getStickers((context, installedStickers, recommendedStickers, b) -> UI.post(() -> {
         if (StringUtils.equalsOrBothEmpty(lastEmojiSearchRequest, context.query)) {
           final ArrayList<TdApi.Sticker> stickers = new ArrayList<>(Arrays.asList(installedStickers));
           if (recommendedStickers != null) {
@@ -792,17 +795,13 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
 
           for (TdApi.Sticker value : stickers) {
             TGStickerObj sticker = new TGStickerObj(tdlib, value, null, value.fullType);
-            if (sticker.getPreviewAnimation() != null) {
-              sticker.getPreviewAnimation().setPlayOnce(true);
-              sticker.getPreviewAnimation().setLooped(false);
-            }
             items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, sticker));
           }
 
           reactionsController.clearAllItems();
           reactionsController.setStickers(packs, items);
         }
-      }, 0);
+      }), 0);
     } else {
       reactionsController.clearAllItems();
       reactionsController.setStickers(emojiPacks, emojiItems);
