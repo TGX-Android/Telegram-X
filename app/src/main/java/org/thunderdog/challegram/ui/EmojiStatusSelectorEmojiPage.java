@@ -627,7 +627,7 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
       super(context);
 
       foregroundEmojiLayout = new EmojiLayout(context);
-      foregroundEmojiLayout.initWithMediasEnabled(controller, false, controller, controller, false);
+      foregroundEmojiLayout.initWithMediasEnabled(controller, false, false, controller, controller, false, true);
       foregroundEmojiLayout.setCircleVisible(false, false);
       foregroundEmojiLayout.setBackgroundColor(Theme.fillingColor());
 

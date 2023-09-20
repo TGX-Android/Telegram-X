@@ -62,11 +62,14 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
   private EmojiLayoutSectionPager contentView;
   private final EmojiLayoutRecyclerController emojiController;
   private final EmojiLayoutTrendingController trendingSetsController;
+  private final boolean onlyClassicEmoji;
 
-  public EmojiListController (Context context, Tdlib tdlib) {
+  public EmojiListController (Context context, Tdlib tdlib, boolean onlyClassicEmoji) {
     super(context, tdlib);
+    this.onlyClassicEmoji = onlyClassicEmoji;
     emojiController = new EmojiLayoutRecyclerController(context, tdlib, EmojiLayout.EMOJI_INSTALLED_CONTROLLER_ID);
     emojiController.setItemWidth(8, 45);
+    emojiController.setOnlyClassicEmoji(onlyClassicEmoji);
 
     trendingSetsController = new EmojiLayoutTrendingController(context, tdlib, EmojiLayout.EMOJI_TRENDING_CONTROLLER_ID);
     trendingSetsController.setCallbacks(stickerSetsDataProvider(), new TdApi.StickerTypeCustomEmoji());
@@ -190,7 +193,9 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
   @Override
   public void destroy () {
     super.destroy();
-    tdlib.listeners().unsubscribeFromStickerUpdates(this);
+    if (!onlyClassicEmoji) {
+      tdlib.listeners().unsubscribeFromStickerUpdates(this);
+    }
     emojiController.destroy();
     trendingSetsController.destroy();
   }
@@ -355,7 +360,7 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
   private boolean loadingStickers;
 
   private void loadStickers () {
-    if (!loadingStickers) {
+    if (!loadingStickers && !onlyClassicEmoji) {
       loadingStickers = true;
       tdlib.client().send(new TdApi.GetInstalledStickerSets(new TdApi.StickerTypeCustomEmoji()), stickerSetsHandler());
     }
@@ -414,7 +419,9 @@ public class EmojiListController extends ViewController<EmojiLayout> implements 
     if (stickerSetsDataProvider != null) {
       stickerSetsDataProvider.clear();
     }
-    tdlib.listeners().subscribeToStickerUpdates(this);
+    if (!onlyClassicEmoji) {
+      tdlib.listeners().subscribeToStickerUpdates(this);
+    }
   }
 
   public void applyScheduledChanges () {

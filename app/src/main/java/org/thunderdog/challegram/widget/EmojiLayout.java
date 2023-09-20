@@ -257,6 +257,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
   private @Nullable ViewController<?> themeProvider;
   private boolean allowMedia;
   private boolean animatedEmojiOnly;
+  private boolean classicEmojiOnly;
   private boolean useDarkMode;
 
   public EmojiToneHelper.Delegate getToneDelegate () {
@@ -280,23 +281,24 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
   }
 
   public void initWithEmojiStatus (ViewController<?> context, @NonNull Listener listener, @Nullable ViewController<?> themeProvider) {
-    initWithMediasEnabled(context, false, true, listener, themeProvider, false);
+    initWithMediasEnabled(context, false, true, listener, themeProvider, false, false);
   }
 
   public void initWithMediasEnabled (ViewController<?> context, boolean allowMedia, @NonNull Listener listener, @Nullable ViewController<?> themeProvider, boolean useDarkMode) {
-    initWithMediasEnabled(context, allowMedia, false, listener, themeProvider, useDarkMode);
+    initWithMediasEnabled(context, allowMedia, false, listener, themeProvider, useDarkMode, false);
   }
 
   public int getEmojiSectionsSize () {
     return emojiSectionsSize;
   }
 
-  public void initWithMediasEnabled (ViewController<?> context, boolean allowMedia, boolean animatedEmojiOnly, @NonNull Listener listener, @Nullable ViewController<?> themeProvider, boolean useDarkMode) {
+  public void initWithMediasEnabled (ViewController<?> context, boolean allowMedia, boolean animatedEmojiOnly, @NonNull Listener listener, @Nullable ViewController<?> themeProvider, boolean useDarkMode, boolean classicEmojiOnly) {
     this.parentController = context;
     this.listener = listener;
     this.themeProvider = themeProvider;
     this.allowMedia = allowMedia && !animatedEmojiOnly;
     this.animatedEmojiOnly = animatedEmojiOnly;
+    this.classicEmojiOnly = classicEmojiOnly;
     this.useDarkMode = useDarkMode;
 
     /*
@@ -358,7 +360,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
       emojiHeaderView = new EmojiHeaderView(getContext(), this, themeProvider, emojiSections, expandableSections, allowMedia);
       emojiHeaderView.setSectionsOnClickListener(this);
       emojiHeaderView.setSectionsOnLongClickListener(this::onEmojiHeaderLongClick);
-      emojiHeaderView.setIsPremium(context.tdlib().hasPremium(), false);
+      emojiHeaderView.setIsPremium(context.tdlib().hasPremium() && !classicEmojiOnly, false);
       headerView.addView(emojiHeaderView);
     }
 
@@ -961,7 +963,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
             mediaListController.setArguments(parent);
             c = mediaListController;
           } else {
-            EmojiListController emojiListController = new EmojiListController(context.context(), context.tdlib());
+            EmojiListController emojiListController = new EmojiListController(context.context(), context.tdlib(), parent.classicEmojiOnly);
             emojiListController.setArguments(parent);
             c = emojiListController;
           }

@@ -155,6 +155,15 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
 
   // Create view
 
+  private float headerViewOverTranslation;
+
+  public void setHeaderViewOverTranslation (float headerViewOvertranslation) {
+    this.headerViewOverTranslation = headerViewOvertranslation;
+    if (headerView != null) {
+      headerView.setTranslationY(headerView.getTranslationY());
+    }
+  }
+
   @Override
   protected HeaderView onCreateHeaderView () {
     HeaderView headerView = new HeaderView(context) {
@@ -170,6 +179,18 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
           setCurrentPagerPosition(startPage, false);
           startPage = 0;
         }
+      }
+
+      private float rTranslationY;
+
+      @Override
+      public void setTranslationY (float translationY) {
+        super.setTranslationY(translationY + (rTranslationY = headerViewOverTranslation));
+      }
+
+      @Override
+      public float getTranslationY () {
+        return super.getTranslationY() - rTranslationY;
       }
     };
     headerView.initWithSingleController(this, false);
@@ -252,6 +273,13 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     return vg;
   }
 
+  private void invalidatePickerWrapper () {
+    if (reactionsPickerWrapper != null) {
+      reactionsPickerWrapper.invalidate();
+      setHeaderViewOverTranslation(getPickerTop() - headerTranslationY);
+    }
+  }
+
   @Override
   protected void setHeaderPosition (float y) {
     super.setHeaderPosition(y);
@@ -326,7 +354,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
 
     if (reactionsPickerRecyclerView != null) {
       reactionsPickerRecyclerView.setTranslationX(-MathUtils.clamp(position + positionOffset) * reactionsPickerRecyclerView.getMeasuredWidth());
-      reactionsPickerWrapper.invalidate();
+      invalidatePickerWrapper();
     }
 
     super.onPageScrolled(position, positionOffset, positionOffsetPixels);
@@ -347,9 +375,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     if (headerCell != null) {
       headerCell.updatePaints(headerBackground);
     }
-    if (reactionsPickerWrapper != null) {
-      reactionsPickerWrapper.invalidate();
-    }
+    invalidatePickerWrapper();
   }
 
   //
@@ -636,14 +662,14 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     reactionsPickerRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
       @Override
       public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
-        reactionsPickerWrapper.invalidate();
+        invalidatePickerWrapper();
         reactionsPickerController.setTopHeaderVisibility(Views.getRecyclerViewElementTop(recyclerView, 1) <= HeaderView.getSize(true) + EmojiLayout.getHeaderPadding());
       }
 
       @Override
       public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {
         if (newState == RecyclerView.SCROLL_STATE_IDLE) {
-          reactionsPickerWrapper.invalidate();
+          invalidatePickerWrapper();
           reactionsPickerController.setTopHeaderVisibility(Views.getRecyclerViewElementTop(recyclerView, 1) <= HeaderView.getSize(true) + EmojiLayout.getHeaderPadding());
         }
       }
@@ -730,7 +756,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
 
     reactionsPickerRecyclerView.setTranslationY((headerTranslationY - getContentOffset() - HeaderView.getTopOffset())
       * (1f - reactionsPickerVisibility.getFloatValue()));
-    reactionsPickerWrapper.invalidate();
+    invalidatePickerWrapper();
   }
 
   private void onReactionClick (View v, TGReaction reaction, boolean isLongClick) {
@@ -785,7 +811,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
   @Override
   public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
     if (id == REACTIONS_PICKER_VISIBILITY_ANIMATOR_ID) {
-      reactionsPickerWrapper.invalidate();
+      invalidatePickerWrapper();
       contentView.setTranslationY(factor * (Screen.currentHeight() / 3f) /*getReactionPickerOffsetTop()*/);
       if (headerView != null) {
         headerView.setAlpha(1f - factor);
@@ -838,7 +864,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
   }
 
   private static float getPickerTopPadding () {
-    return Screen.dp(7); // ((getHeaderHeight() - Screen.dp(40)) / 2f);
+    return Screen.dp(4.5f); // ((getHeaderHeight() - Screen.dp(45)) / 2f);
   }
 
   private int getReactionPickerOffsetTopReal () {
