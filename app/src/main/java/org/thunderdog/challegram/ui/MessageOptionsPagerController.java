@@ -830,7 +830,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     return MathUtils.fromTo(headerTranslationY + getHeaderHeight(), reactionsPickerWrapper.getMeasuredHeight(), reactionsPickerVisibility.getFloatValue());
   }
 
-  private static float getPickerTopPadding () {
+  public static float getPickerTopPadding () {
     return Screen.dp(4.5f); // ((getHeaderHeight() - Screen.dp(45)) / 2f);
   }
 

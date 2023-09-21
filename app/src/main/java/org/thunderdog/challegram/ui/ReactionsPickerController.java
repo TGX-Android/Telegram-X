@@ -144,7 +144,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
 
 
     adapter.setLayoutParams(new MediaStickersAdapter.LayoutParams(
-      HeaderView.getSize(true) + EmojiLayout.getHeaderPadding(),
+      (int) (HeaderView.getSize(true) + MessageOptionsPagerController.getPickerTopPadding()),
       Screen.dp(9.5f),
       Screen.dp(8f),
       Screen.dp(21 - 9.5f),
@@ -199,10 +199,13 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
         TGReaction reactionObj = tdlib.getReaction(reaction.type);
         TGStickerObj stickerObj = reactionObj != null ? reactionObj.newCenterAnimationSicker(): null;
         if (stickerObj != null) {
-          stickerObj.setIsReaction();
-          if (stickerObj.getPreviewAnimation() != null) {
-            stickerObj.getPreviewAnimation().setPlayOnce(true);
-            stickerObj.getPreviewAnimation().setLooped(false);
+          stickerObj.setDisplayScale(1);
+          if (reaction.type.getConstructor() == TdApi.ReactionTypeEmoji.CONSTRUCTOR) {
+            stickerObj.setIsReaction();
+            if (stickerObj.getPreviewAnimation() != null) {
+              stickerObj.getPreviewAnimation().setPlayOnce(true);
+              stickerObj.getPreviewAnimation().setLooped(false);
+            }
           }
         }
         emojiItems.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, stickerObj));
@@ -222,14 +225,14 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
       TGStickerSetInfo info = ((StickerSectionView) v).getStickerSet();
       if (info != null) {
         int index = reactionsController.indexOfStickerSet(info);
-        reactionsController.scrollToStickerSet(index, HeaderView.getSize(true) /*+ EmojiLayout.getHeaderPadding()*/, false, true);
+        reactionsController.scrollToStickerSet(index, HeaderView.getSize(true), false, true);
       }
     } else if (viewId == R.id.btn_section) {
       EmojiSection section = ((EmojiSectionView) v).getSection();
       if (section.index == -14) {
         bottomHeaderView.openSearchMode(true, false);
       } else {
-        reactionsController.scrollToStickerSet(0, HeaderView.getSize(true) /*+ EmojiLayout.getHeaderPadding()*/, false, true);
+        reactionsController.scrollToStickerSet(0, HeaderView.getSize(true), false, true);
       }
     }
   }
