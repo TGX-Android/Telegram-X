@@ -52,6 +52,7 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Keyboard;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.OptionDelegate;
@@ -626,6 +627,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
   private FrameLayoutFix reactionsPickerWrapper;
   private ReactionsPickerController reactionsPickerController;
   private CustomRecyclerView reactionsPickerRecyclerView;
+  private PickerOpenerScrollListener reactionsPickerScrollListener;
   private View reactionsPickerBottomHeaderView;
   private int reactionsPickerBackgroundColor;
   private boolean isPickerOpenedByScroll;
@@ -674,44 +676,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
         }
       }
     });
-    reactionsPickerRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-      private int totalDy;
-      private boolean ignore;
-
-      @Override
-      public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
-        if (reactionsPickerVisibility.getValue()) {
-          return;
-        }
-
-        totalDy += dy;
-        if (Math.abs(totalDy) > Screen.dp(30) && !ignore) {
-          isPickerOpenedByScroll = true;
-          totalDy = 0;
-          recyclerView.stopScroll();
-          showReactionPicker();
-        }
-      }
-
-      @Override
-      public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {
-        if (reactionsPickerVisibility.getValue()) {
-          return;
-        }
-
-        if (newState == RecyclerView.SCROLL_STATE_IDLE) {
-          if (!ignore) {
-            ignore = true;
-            if (totalDy != 0) {
-              reactionsPickerRecyclerView.smoothScrollBy(0, -totalDy);
-            }
-          } else {
-            ignore = false;
-          }
-          totalDy = 0;
-        }
-      }
-    });
+    reactionsPickerRecyclerView.addOnScrollListener(reactionsPickerScrollListener = new PickerOpenerScrollListener());
 
     return reactionsPickerRecyclerView;
   }
@@ -723,6 +688,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
       reactionsPickerBottomHeaderView = reactionsPickerController.getBottomHeaderViewGroup();
       reactionsPickerBottomHeaderView.setAlpha(0f);
       reactionsPickerController.getTopHeaderView().getBackButton().setOnClickListener(v -> {
+        reactionsPickerRecyclerView.stopScroll();
         reactionsPickerVisibility.setValue(false, true);
         contentView.setVisibility(View.VISIBLE);
         if (headerView != null) {
@@ -838,6 +804,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
           headerView.setVisibility(View.GONE);
         }
       }
+      reactionsPickerScrollListener.reset(false);
       isPickerOpenedByScroll = false;
     }
   }
@@ -880,6 +847,46 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
   private int getReactionPickerTranslationDefault () {
     // Picker offset in closed state, if more than zero is shifted due to setTranslation, else scrollWithOffset
     return getReactionPickerOffsetTopReal() - getReactionPickerOffsetTopDefault();
+  }
+
+  private class PickerOpenerScrollListener extends RecyclerView.OnScrollListener {
+    private int totalDy;
+    private boolean ignore;
+
+    @Override
+    public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
+      if (ignore || reactionsPickerVisibility.getFloatValue() > 0f) {
+        return;
+      }
+
+      totalDy += dy;
+      if (Math.abs(totalDy) > Screen.dp(30)) {
+        UI.post(() -> {
+          isPickerOpenedByScroll = true;
+          reset(true);
+          recyclerView.stopScroll();
+          showReactionPicker();
+        });
+      }
+    }
+
+    @Override
+    public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {
+      if (newState != RecyclerView.SCROLL_STATE_IDLE || reactionsPickerVisibility.getFloatValue() > 0f) {
+        return;
+      }
+
+      ignore = false;
+      if (totalDy != 0) {
+        reactionsPickerRecyclerView.smoothScrollBy(0, -totalDy);
+        reset(true);
+      }
+    }
+
+    public void reset (boolean ignoreNextScrolls) {
+      ignore = ignoreNextScrolls;
+      totalDy = 0;
+    }
   }
 
   /*  */
