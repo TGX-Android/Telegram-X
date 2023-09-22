@@ -221,11 +221,20 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     return repaintingColorId;
   }
 
+  private Path tmpClipPath = new Path();
+
   @Override
   protected void onDraw (Canvas c) {
+    int restoreToCountClip = -1;
     if (isChosen) {
       float radius = Math.min(getMeasuredWidth(), getMeasuredHeight()) / 2f;
       c.drawCircle(getMeasuredWidth() / 2f, getMeasuredHeight() / 2f, radius, Paints.fillingPaint(Theme.getColor(ColorId.fillingPositive)));
+
+      tmpClipPath.reset();
+      tmpClipPath.addCircle(getMeasuredWidth() / 2f, getMeasuredHeight() / 2f, radius - Screen.dp(1), Path.Direction.CW);
+      tmpClipPath.close();
+      restoreToCountClip = Views.save(c);
+      c.clipPath(tmpClipPath);
     }
 
     float originalScale = sticker != null ? sticker.getDisplayScale() : 1f;
@@ -268,6 +277,10 @@ public class StickerSmallView extends View implements FactorAnimator.Target, Des
     if (saved) {
       Views.restore(c, restoreToCount);
     }
+    if (isChosen) {
+      Views.restore(c, restoreToCountClip);
+    }
+    // c.drawRect(padding, padding, getMeasuredWidth() - padding, getMeasuredHeight() - padding, Paints.strokeSmallPaint(0XFF00FF00));
   }
 
   // Touch

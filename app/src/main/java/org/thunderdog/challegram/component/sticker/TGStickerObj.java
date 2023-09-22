@@ -47,7 +47,6 @@ public class TGStickerObj {
   private static final int FLAG_TRENDING = 1 << 2;
   private static final int FLAG_FAVORITE = 1 << 3;
   private static final int FLAG_NO_VIEW_PACK = 1 << 4;
-  private static final int FLAG_IS_REACTION = 1 << 5;
 
   public TGStickerObj (Tdlib tdlib, @Nullable TdApi.Sticker sticker, @Nullable String foundByEmoji, TdApi.StickerFullType stickerType) {
     this(tdlib, sticker, foundByEmoji, Td.toType(stickerType));
@@ -79,6 +78,10 @@ public class TGStickerObj {
 
   public boolean isCustomReaction () {
     return reactionType != null && reactionType.getConstructor() == TdApi.ReactionTypeCustomEmoji.CONSTRUCTOR;
+  }
+
+  public boolean isEmojiReaction () {
+    return reactionType != null && reactionType.getConstructor() == TdApi.ReactionTypeEmoji.CONSTRUCTOR;
   }
 
   public boolean isCustomEmoji () {
@@ -282,14 +285,6 @@ public class TGStickerObj {
 
   public boolean isFavorite () {
     return (flags & FLAG_FAVORITE) != 0;
-  }
-
-  public void setIsReaction () {
-    flags |= FLAG_IS_REACTION;
-  }
-
-  public boolean isReaction () {
-    return (flags & FLAG_IS_REACTION) != 0;
   }
 
   public void setIsTrending () {

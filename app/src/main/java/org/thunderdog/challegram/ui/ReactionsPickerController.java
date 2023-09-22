@@ -77,6 +77,7 @@ import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.RunnableData;
+import me.vkryl.td.Td;
 
 public class ReactionsPickerController extends ViewController<MessageOptionsPagerController.State>
   implements StickersListener, EmojiLayoutRecyclerController.Callback,
@@ -105,6 +106,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
     bottomHeaderCell.setSectionsOnClickListener(this::onStickerSectionClick);
 
     recyclerView = onCreateRecyclerView();
+    recyclerView.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> reactionsController.invalidateStickerObjModifiers());
     recyclerView.setItemAnimator(null);
     recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
       @Override
@@ -125,8 +127,11 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
     return recyclerView;
   }
 
+  private static final float DEFAULT_STICKER_PADDING_DP = 4.5f;
+
   public CustomRecyclerView onCreateRecyclerView () {
     reactionsController = new EmojiLayoutRecyclerController(context, tdlib, R.id.controller_emojiLayoutReactions);
+    reactionsController.setStickerObjModifier(this::modifyStickerObj);
     adapter = new MediaStickersAdapter(this, this, false, this) {
       @Override
       public void onBindViewHolder (StickerHolder holder, int position) {
@@ -134,7 +139,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
         int type = getItemViewType(position);
         if (type == StickerHolder.TYPE_STICKER) {
           TGStickerObj stickerObj = getSticker(position);
-          ((StickerSmallView) holder.itemView).setPadding(Screen.dp(stickerObj != null && stickerObj.isReaction() ? 0: 4.5f));
+          ((StickerSmallView) holder.itemView).setPadding(Screen.dp(stickerObj != null && stickerObj.isEmojiReaction() ? -1: DEFAULT_STICKER_PADDING_DP));
           ((StickerSmallView) holder.itemView).setChosen(stickerObj != null && chosenReactions != null && stickerObj.getReactionType() != null && chosenReactions.contains(TD.makeReactionKey(stickerObj.getReactionType())));
         }
 
@@ -199,9 +204,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
         TGReaction reactionObj = tdlib.getReaction(reaction.type);
         TGStickerObj stickerObj = reactionObj != null ? reactionObj.newCenterAnimationSicker(): null;
         if (stickerObj != null) {
-          stickerObj.setDisplayScale(1);
           if (reaction.type.getConstructor() == TdApi.ReactionTypeEmoji.CONSTRUCTOR) {
-            stickerObj.setIsReaction();
             if (stickerObj.getPreviewAnimation() != null) {
               stickerObj.getPreviewAnimation().setPlayOnce(true);
               stickerObj.getPreviewAnimation().setLooped(false);
@@ -592,7 +595,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
       @Override
       protected void applyStickerSet (TdApi.StickerSet stickerSet, int flags) {
         if (BitwiseUtils.hasFlag(flags, FLAG_REGULAR)) {
-          reactionsController.applyStickerSet(stickerSet, this);
+          reactionsController.applyStickerSet(stickerSet, this, false);
         }
       }
     };
@@ -798,6 +801,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
 
           for (TdApi.Sticker value : stickers) {
             TGStickerObj sticker = new TGStickerObj(tdlib, value, null, value.fullType);
+            sticker.setReactionType(new TdApi.ReactionTypeCustomEmoji(value.id));
             items.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, sticker));
           }
 
@@ -809,6 +813,23 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
       reactionsController.clearAllItems();
       reactionsController.setStickers(emojiPacks, emojiItems);
     }
+  }
+
+  public TGStickerObj modifyStickerObj (TGStickerObj sticker) {
+    sticker.setDisplayScale(1f);
+
+   // sticker.setDisplayScale(//sticker.isEmojiReaction() ?
+   //   //getScaleForClassicEmojiReaction(sticker.getSticker(), getItemWidth() - Screen.dp(DEFAULT_STICKER_PADDING_DP * 2)) :
+   //   TextMedia.getScale(sticker.getSticker(), getItemWidth() - Screen.dp(DEFAULT_STICKER_PADDING_DP * 2)));
+    return sticker;
+  }
+
+  public static float getScaleForClassicEmojiReaction (@Nullable TdApi.Sticker sticker, int size) {
+    if (sticker != null && Td.isAnimated(sticker.format) &&
+      sticker.format.getConstructor() != TdApi.StickerFormatWebm.CONSTRUCTOR) {
+      return 200.0f / 100.0f - (size != 0 ? Screen.dp(1f) * 2 / (float) size : 0);
+    }
+    return 1f;
   }
 
 
