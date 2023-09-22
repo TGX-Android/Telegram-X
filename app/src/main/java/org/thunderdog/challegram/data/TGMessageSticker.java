@@ -817,7 +817,7 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
       invalidate();
       return true;
     }
-    if (sticker != null && sticker.setId != 0 && !isAnimatedEmojiStickerSet) {
+    if (sticker != null && sticker.setId != 0 && (!isAnimatedEmojiStickerSet || specialType != SPECIAL_TYPE_ANIMATED_EMOJI)) {
       openStickerSet();
       return true;
     }
