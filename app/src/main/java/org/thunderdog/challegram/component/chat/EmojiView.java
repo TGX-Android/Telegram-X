@@ -190,17 +190,19 @@ public class EmojiView extends View implements ClickHelper.Delegate {
     }
     emojiStickers.getStickers(new TdlibUi.EmojiStickers.Callback() {
       @Override
-      public void onStickersLoaded (TdlibUi.EmojiStickers context, TdApi.Sticker[] installedStickers, TdApi.Sticker[] recommendedStickers, boolean expectMoreStickers) {
-        if (emojiStickers == context) {
-          int totalCount = installedStickers.length + (recommendedStickers != null ? recommendedStickers.length : 0);
-          if (totalCount > 0 || colorState != EmojiData.STATE_NO_COLORS) {
-            onLongClick(view, x, y, installedStickers, recommendedStickers);
+      public void onStickersLoaded (TdlibUi.EmojiStickers context, @NonNull TdApi.Sticker[] installedStickers, @Nullable TdApi.Sticker[] recommendedStickers, boolean expectMoreStickers) {
+        tdlib.ui().execute(() -> {
+          if (emojiStickers == context) {
+            int totalCount = installedStickers.length + (recommendedStickers != null ? recommendedStickers.length : 0);
+            if (totalCount > 0 || colorState != EmojiData.STATE_NO_COLORS) {
+              onLongClick(view, x, y, installedStickers, recommendedStickers);
+            }
           }
-        }
+        });
       }
 
       @Override
-      public void onRecommendedStickersLoaded (TdlibUi.EmojiStickers context, TdApi.Sticker[] recommendedStickers) {
+      public void onRecommendedStickersLoaded (TdlibUi.EmojiStickers context, @NonNull TdApi.Sticker[] recommendedStickers) {
         // TODO show recommended stickers
       }
     }, 300);
