@@ -193,7 +193,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private static final int FLAG_BEING_ADDED = 1 << 31;
 
   protected TdApi.Message msg;
-  protected TdApi.SponsoredMessage sponsoredMessage;
+  protected final TdApi.SponsoredMessage sponsoredMessage;
   private int flags;
 
   protected int mergeTime, mergeIndex;
@@ -293,6 +293,14 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private final TranslationsManager mTranslationsManager;
 
   protected TGMessage (MessagesManager manager, TdApi.Message msg) {
+    this(manager, msg, null);
+  }
+
+  protected TGMessage (MessagesManager manager, long inChatId, TdApi.SponsoredMessage sponsoredMessage) {
+    this(manager, SponsoredMessageUtils.sponsoredToTd(inChatId, sponsoredMessage, manager.controller().tdlib()), sponsoredMessage);
+  }
+
+  private TGMessage (MessagesManager manager, TdApi.Message msg, @Nullable TdApi.SponsoredMessage sponsoredMessage) {
     if (!initialized) {
       synchronized (TGMessage.class) {
         if (!initialized) {
@@ -316,6 +324,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     this.currentViews = new MultipleViewProvider();
     this.currentViews.setContentProvider(this);
     this.msg = msg;
+    this.sponsoredMessage = sponsoredMessage;
     this.messageReactions = new TGReactions(this, tdlib, msg.interactionInfo != null ? msg.interactionInfo.reactions : null, new TGReactions.MessageReactionsDelegate() {
       @Override
       public void onClick (View v, TGReactions.MessageReactionEntry entry) {
@@ -354,31 +363,38 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     });
     this.commentButton = new TGCommentButton(this);
 
-    TdApi.MessageSender sender = msg.senderId;
-    if (tdlib.isSelfChat(msg.chatId)) {
-      flags |= FLAG_SELF_CHAT;
-      if (msg.forwardInfo != null) {
-        switch (msg.forwardInfo.origin.getConstructor()) {
-          case TdApi.MessageForwardOriginUser.CONSTRUCTOR:
-            sender = new TdApi.MessageSenderUser(((TdApi.MessageForwardOriginUser) msg.forwardInfo.origin).senderUserId);
-            break;
-          case TdApi.MessageForwardOriginChat.CONSTRUCTOR:
-            sender = new TdApi.MessageSenderChat(((TdApi.MessageForwardOriginChat) msg.forwardInfo.origin).senderChatId);
-            break;
-          case TdApi.MessageForwardOriginChannel.CONSTRUCTOR:
-            TdApi.MessageForwardOriginChannel info = (TdApi.MessageForwardOriginChannel) msg.forwardInfo.origin;
-            if ((msg.forwardInfo.fromChatId == 0 && msg.forwardInfo.fromMessageId == 0)) {
-              msg.forwardInfo.fromChatId = info.chatId;
-              msg.forwardInfo.fromMessageId = info.messageId;
-            }
-            break;
-          case TdApi.MessageForwardOriginHiddenUser.CONSTRUCTOR:
-          case TdApi.MessageForwardOriginMessageImport.CONSTRUCTOR:
-            break;
+    if (isSponsoredMessage()) {
+      this.sender = new TdlibSender(tdlib, msg.chatId, sponsoredMessage.sponsor);
+    } else {
+      TdApi.MessageSender sender = msg.senderId;
+      if (sender == null) {
+        throw new IllegalArgumentException();
+      }
+      if (tdlib.isSelfChat(msg.chatId)) {
+        flags |= FLAG_SELF_CHAT;
+        if (msg.forwardInfo != null) {
+          switch (msg.forwardInfo.origin.getConstructor()) {
+            case TdApi.MessageForwardOriginUser.CONSTRUCTOR:
+              sender = new TdApi.MessageSenderUser(((TdApi.MessageForwardOriginUser) msg.forwardInfo.origin).senderUserId);
+              break;
+            case TdApi.MessageForwardOriginChat.CONSTRUCTOR:
+              sender = new TdApi.MessageSenderChat(((TdApi.MessageForwardOriginChat) msg.forwardInfo.origin).senderChatId);
+              break;
+            case TdApi.MessageForwardOriginChannel.CONSTRUCTOR:
+              TdApi.MessageForwardOriginChannel info = (TdApi.MessageForwardOriginChannel) msg.forwardInfo.origin;
+              if ((msg.forwardInfo.fromChatId == 0 && msg.forwardInfo.fromMessageId == 0)) {
+                msg.forwardInfo.fromChatId = info.chatId;
+                msg.forwardInfo.fromMessageId = info.messageId;
+              }
+              break;
+            case TdApi.MessageForwardOriginHiddenUser.CONSTRUCTOR:
+            case TdApi.MessageForwardOriginMessageImport.CONSTRUCTOR:
+              break;
+          }
         }
       }
+      this.sender = new TdlibSender(tdlib, msg.chatId, sender, manager, !msg.isOutgoing && isDemoChat());
     }
-    this.sender = new TdlibSender(tdlib, msg.chatId, sender, manager, !msg.isOutgoing && isDemoChat());
 
     this.isPinned = new Counter.Builder()
       .noBackground()
@@ -535,7 +551,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (isEventLog()) {
       return Lang.getRelativeTimestampShort(msg.date, TimeUnit.SECONDS);
     } else if (isSponsoredMessage()) {
-      return Lang.getString(R.string.SponsoredSign);
+      return Lang.getString(sponsoredMessage.isRecommended ? R.string.RecommendedSign : R.string.SponsoredSign);
     }
     StringBuilder b = new StringBuilder();
     String signature;
@@ -2738,7 +2754,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           break;
         }
         case CLICK_TYPE_AVATAR: {
-          openProfile(view, null, null, null, ((MessageView) view).getAvatarReceiver());
+          onAvatarClick(view);
           break;
         }
       }
@@ -2958,6 +2974,10 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   protected static final float LETTERS_SIZE = 16f;
   protected static final float LETTERS_SIZE_SMALL = 15f;
 
+  private boolean onAvatarClick (View view) {
+    return openProfile(view, null, null, null, ((MessageView) view).getAvatarReceiver());
+  }
+
   private boolean onNameClick (View view, Text text, TextPart part, @Nullable TdlibUi.UrlOpenParameters openParameters) {
     if (part.getEntity() != null && part.getEntity().getTag() instanceof Long) {
       manager.controller().setInputInlineBot(msg.viaBotUserId, viaBotUsername);
@@ -2972,6 +2992,8 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private boolean openProfile (View view, @Nullable Text text, TextPart part, @Nullable TdlibUi.UrlOpenParameters openParameters, @Nullable Receiver receiver) {
     if (forceForwardedInfo()) {
       forwardInfo.open(view, text, part, openParameters, receiver);
+    } else if (isSponsoredMessage()) {
+      openSponsoredMessage();
     } else if (sender.isUser()) {
       tdlib.ui().openPrivateProfile(controller(), sender.getUserId(), openParameters);
     } else if (sender.isChat()) {
@@ -3202,9 +3224,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   private String getDisplayAuthor () {
-    if (isSponsoredMessage()) {
-      return tdlib.sponsorName(sponsoredMessage.sponsor);
-    } else if (forceForwardedInfo()) {
+    if (forceForwardedInfo()) {
       return forwardInfo.getAuthorName();
     } else {
       return sender.getName();
@@ -3892,16 +3912,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
               receiver.requestChat(tdlib, publicChannel.chatId, AvatarReceiver.Options.NONE);
               break;
             }
-            case TdApi.MessageSponsorTypePrivateChannel.CONSTRUCTOR: {
-              TdApi.MessageSponsorTypePrivateChannel privateChannel = (TdApi.MessageSponsorTypePrivateChannel) sponsor.type;
-              receiver.requestPlaceholder(tdlib, new AvatarPlaceholder.Metadata(ColorId.avatarGreen, TD.getLetters(privateChannel.title)), AvatarReceiver.Options.NONE);
-              break;
-            }
+            case TdApi.MessageSponsorTypePrivateChannel.CONSTRUCTOR:
             case TdApi.MessageSponsorTypeWebsite.CONSTRUCTOR: {
-              TdApi.MessageSponsorTypeWebsite website = (TdApi.MessageSponsorTypeWebsite) sponsor.type;
-              receiver.requestPlaceholder(tdlib, new AvatarPlaceholder.Metadata(ColorId.avatarGreen, TD.getLetters(website.name)), AvatarReceiver.Options.NONE);
+              receiver.requestPlaceholder(tdlib, sender.getPlaceholderMetadata(), AvatarReceiver.Options.NONE);
               break;
             }
+            default:
+              throw new UnsupportedOperationException(sponsor.type.toString());
           }
         }
       } else if (forceForwardedInfo()) {
@@ -4262,7 +4279,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (msg.content.getConstructor() == TdApiExt.MessageChatEvent.CONSTRUCTOR) {
       return true;
     }
-    return isSponsoredMessage() || isDemoChat();
+    return isDemoChat();
   }
 
   public final void getIds (@NonNull LongSet ids, long afterMessageId, long beforeMessageId) {
@@ -4869,7 +4886,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public boolean needRefreshViewCount () {
-    return viewCounter != null && !isSending();
+    return !isSponsoredMessage() && viewCounter != null && !isSending();
   }
 
   public void markAsUnread () {
@@ -7168,6 +7185,47 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       public boolean forceInstantView (String link) {
         return hasInstantView(link);
       }
+
+      @Override
+      public boolean onUsernameClick (String username) {
+        if (isSponsoredMessage()) {
+          TdApi.Usernames usernames = sender.getUsernames();
+          if (usernames != null && Td.findUsername(usernames, username.substring(1), true)) {
+            openSponsoredMessage();
+            return true;
+          }
+        }
+        trackSponsoredMessageClicked();
+        return false;
+      }
+
+      @Override
+      public boolean onUserClick (long userId) {
+        if (isSponsoredMessage() && userId != 0 && sender.getUserId() == userId) {
+          openSponsoredMessage();
+          return true;
+        }
+        trackSponsoredMessageClicked();
+        return false;
+      }
+
+      @Override
+      public boolean onEmailClick (String email) {
+        trackSponsoredMessageClicked();
+        return false;
+      }
+
+      @Override
+      public boolean onPhoneNumberClick (String phoneNumber) {
+        trackSponsoredMessageClicked();
+        return false;
+      }
+
+      @Override
+      public boolean onUrlClick (View view, String link, boolean promptUser, @NonNull TdlibUi.UrlOpenParameters openParameters) {
+        trackSponsoredMessageClicked();
+        return false;
+      }
     };
   }
 
@@ -7825,7 +7883,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public final void checkMessageFlags (Runnable r) {
     TdApi.Message msg = getMessage(getSmallestId());
-    if (msg == null || isFakeMessage()) {
+    if (msg == null || isFakeMessage() || isSponsoredMessage()) {
       r.run();
       return;
     }
@@ -8785,14 +8843,21 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   // Sponsored-related tools
 
-  public boolean isSponsoredMessage () {
+  public final boolean isSponsoredMessage () {
     return sponsoredMessage != null;
+  }
+
+  public void trackSponsoredMessageClicked () {
+    if (isSponsoredMessage()) {
+      tdlib.client().send(new TdApi.ClickChatSponsoredMessage(msg.chatId, sponsoredMessage.messageId), tdlib.silentHandler());
+    }
   }
 
   public void openSponsoredMessage () {
     if (!isSponsoredMessage()) {
       return;
     }
+    trackSponsoredMessageClicked();
     TdApi.MessageSponsor sponsor = sponsoredMessage.sponsor;
     switch (sponsor.type.getConstructor()) {
       case TdApi.MessageSponsorTypeBot.CONSTRUCTOR: {
@@ -8849,8 +8914,12 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
   }
 
+  public TdApi.SponsoredMessage getSponsoredMessage () {
+    return sponsoredMessage;
+  }
+
   public String getSponsoredMessageUrl () {
-    if (!isSponsoredMessage()) {
+    if (!isSponsoredMessage() || !Config.ALLOW_SPONSORED_MESSAGE_LINK_COPY) {
       return null;
     }
 

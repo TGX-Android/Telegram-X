@@ -299,4 +299,6 @@ public class Config {
 
   public static final int VOIP_CONNECTION_MIN_LAYER = 65;
   public static final boolean FORCE_DIRECT_TGVOIP = false;
+
+  public static final boolean ALLOW_SPONSORED_MESSAGE_LINK_COPY = true;
 }

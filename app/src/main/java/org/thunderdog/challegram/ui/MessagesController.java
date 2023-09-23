@@ -4346,6 +4346,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
         b.append(Lang.getString(R.string.SendFailureInfo, Strings.join(", ", (Object[]) errors)));
       }
     }
+    if (msg.isSponsoredMessage()) {
+      String additionalInfo = msg.getSponsoredMessage().additionalInfo;
+      if (!StringUtils.isEmpty(additionalInfo)) {
+        if (b.length() > 0) {
+          b.append('\n');
+        }
+        b.append(additionalInfo);
+      }
+    }
     if (!msg.canBeSaved()) {
       if (b.length() > 0) {
         // b.append("\n\n");
