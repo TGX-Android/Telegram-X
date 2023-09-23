@@ -17,6 +17,7 @@ package org.thunderdog.challegram.loader;
 import android.os.Build;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.palette.graphics.Palette;
 
 import org.drinkless.tdlib.TdApi;
@@ -566,14 +567,14 @@ public class ImageFile {
 
   // TTL
 
-  private int ttl;
+  private @Nullable TdApi.MessageSelfDestructType selfDestructType;
 
-  public int getTTL () {
-    return ttl;
+  public @Nullable TdApi.MessageSelfDestructType getSelfDestructType () {
+    return selfDestructType;
   }
 
-  public void setTTL (int ttl) {
-    this.ttl = ttl;
+  public void setSelfDestructType (@Nullable TdApi.MessageSelfDestructType selfDestructType) {
+    this.selfDestructType = selfDestructType;
   }
 
   public static ImageFile copyOf (ImageFile imageFile) {

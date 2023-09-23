@@ -33,7 +33,6 @@ import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Background;
 import org.thunderdog.challegram.core.Lang;
 import org.thunderdog.challegram.data.ChatEventUtil;
-import org.thunderdog.challegram.data.SponsoredMessageUtils;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TdApiExt;
@@ -133,8 +132,6 @@ public class MessagesLoader implements Client.ResultHandler {
 
           if (object.getConstructor() == TdApi.SponsoredMessages.CONSTRUCTOR) {
             message = ((TdApi.SponsoredMessages) object);
-          } else if (tdlib.account().isDebug()) {
-            message = SponsoredMessageUtils.generateSponsoredMessages(tdlib);
           } else {
             message = null;
           }
@@ -1174,8 +1171,8 @@ public class MessagesLoader implements Client.ResultHandler {
       false,
       event.date, 0,
       null, null, null,
-      0, 0, 0,
-      0, 0, 0,
+      null, 0,
+      null, 0, 0,
       0, null,
       0,
       null,
@@ -1517,7 +1514,7 @@ public class MessagesLoader implements Client.ResultHandler {
 
         if (!items.isEmpty()) {
           for (TGMessage message : items) {
-            if (!message.isSponsored()) {
+            if (!message.isSponsoredMessage()) {
               suitableMessage = message;
               break;
             }

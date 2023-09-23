@@ -178,7 +178,7 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
     switch (notification.type.getConstructor()) {
       case TdApi.NotificationTypeNewMessage.CONSTRUCTOR: {
         TdApi.Message message = ((TdApi.NotificationTypeNewMessage) notification.type).message;
-        return !TD.isSecret(message) && ((TdApi.NotificationTypeNewMessage) notification.type).message.selfDestructTime == 0;
+        return !Td.isSecret(message.content) && ((TdApi.NotificationTypeNewMessage) notification.type).message.selfDestructType == null;
       }
       case TdApi.NotificationTypeNewPushMessage.CONSTRUCTOR: {
         TdApi.PushMessageContent push = ((TdApi.NotificationTypeNewPushMessage) notification.type).content;
@@ -317,7 +317,7 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
     boolean isForward = false;
     for (TdlibNotification notification : mergedList) {
       TdApi.Message message = notification.findMessage();
-      if (ChatId.isSecret(group.getChatId()) && message.selfDestructTime != 0) {
+      if (ChatId.isSecret(group.getChatId()) && message.selfDestructType != null) {
         return Lang.plural(R.string.xNewMessages, mergedList.size());
       }
       if (message.forwardInfo != null) {
@@ -343,7 +343,7 @@ public class TdlibNotification implements Comparable<TdlibNotification> {
       case TdApi.NotificationTypeNewMessage.CONSTRUCTOR: {
         TdApi.Message message = ((TdApi.NotificationTypeNewMessage) notification.type).message;
 
-        if (ChatId.isSecret(group.getChatId()) && message.selfDestructTime != 0) {
+        if (ChatId.isSecret(group.getChatId()) && message.selfDestructType != null) {
           return Lang.getString(R.string.YouHaveNewMessage);
         }
 

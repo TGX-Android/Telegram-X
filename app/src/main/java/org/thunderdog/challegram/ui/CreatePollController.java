@@ -679,7 +679,7 @@ public class CreatePollController extends RecyclerViewController<CreatePollContr
     };
     final TdApi.MessageSendOptions finalSendOptions = Td.newSendOptions(sendOptions, tdlib.chatDefaultDisableNotifications(chatId));
     if (!getArgumentsStrict().callback.onSendPoll(this, chatId, messageThread != null ? messageThread.getMessageThreadId() : 0, poll, finalSendOptions, after)) {
-      tdlib.sendMessage(chatId, messageThread != null ? messageThread.getMessageThreadId() : 0, 0, finalSendOptions, poll, after);
+      tdlib.sendMessage(chatId, messageThread != null ? messageThread.getMessageThreadId() : 0, null, finalSendOptions, poll, after);
     }
   }
 }

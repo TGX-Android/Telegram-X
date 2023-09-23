@@ -121,7 +121,7 @@ public class SettingsWebsitesController extends RecyclerViewController<SettingsP
         TdApi.ConnectedWebsite website = (TdApi.ConnectedWebsite) item.getData();
         titleView.setText(Emoji.instance().replaceEmoji(website.domainName));
         subtextView.setText(Strings.concat(", ", Emoji.instance().replaceEmoji(tdlib.cache().userName(website.botUserId)), website.browser, website.platform));
-        locationView.setText(Strings.concatIpLocation(website.ip, website.location));
+        locationView.setText(Strings.concatIpLocation(website.ipAddress, website.location));
         timeView.setText(Lang.timeOrDateShort(website.lastActiveDate, TimeUnit.SECONDS));
         avatarView.setUser(tdlib, website.botUserId, false);
 
@@ -280,7 +280,7 @@ public class SettingsWebsitesController extends RecyclerViewController<SettingsP
     }));
 
     if (banUser) {
-      tdlib.blockSender(new TdApi.MessageSenderUser(website.botUserId), true, tdlib.okHandler());
+      tdlib.blockSender(new TdApi.MessageSenderUser(website.botUserId), new TdApi.BlockListMain(), tdlib.okHandler());
     }
   }
 

@@ -175,8 +175,8 @@ public class EmojiStatusSelectorEmojiPage extends BottomSheetViewController.Bott
   private int destX, destY;
 
   @Override
-  public boolean onSetEmojiStatus (@Nullable View view, TGStickerObj sticker, int duration) {
-    tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(sticker.getCustomEmojiId()), duration), tdlib.okHandler());
+  public boolean onSetEmojiStatus (@Nullable View view, TGStickerObj sticker, TdApi.EmojiStatus emojiStatus) {
+    tdlib.client().send(new TdApi.SetEmojiStatus(emojiStatus), tdlib.okHandler());
     parent.hidePopupWindow(true);
     if (view == null) return true;
 

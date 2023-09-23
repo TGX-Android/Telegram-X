@@ -221,7 +221,7 @@ public class ImageGalleryFile extends ImageFile implements Comparable<ImageGalle
   }
 
   public boolean canSendAsFile () {
-    if (getTTL() > 0)
+    if (getSelfDestructType() != null)
       return false;
     if (isVideo()) {
       return VideoGenerationInfo.canSendInOriginalQuality(this);

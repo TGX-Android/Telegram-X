@@ -132,7 +132,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
           if (args.member.status.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR) {
             TdApi.ChatMemberStatusCreator creator = (TdApi.ChatMemberStatusCreator) args.member.status;
             // TODO bot defaults
-            targetAdmin = new TdApi.ChatMemberStatusAdministrator(creator.customTitle, true, new TdApi.ChatAdministratorRights(true, true, true, true, true, true, true, true, true, true, true, creator.isAnonymous));
+            targetAdmin = new TdApi.ChatMemberStatusAdministrator(creator.customTitle, true, new TdApi.ChatAdministratorRights(true, true, true, true, true, true, true, true, true, true, true, true, true, true, creator.isAnonymous));
           } else if (args.member.status.getConstructor() == TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR) {
             TdApi.ChatMemberStatusAdministrator admin = (TdApi.ChatMemberStatusAdministrator) args.member.status;
             targetAdmin = (TdApi.ChatMemberStatusAdministrator) Td.copyOf(admin);
@@ -160,7 +160,7 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         return new TdApi.ChatMemberStatusAdministrator(null, true, Td.copyOf(me.rights));
       }
     }
-    return new TdApi.ChatMemberStatusAdministrator(null, true, new TdApi.ChatAdministratorRights(true, true, true, true, true, true, true, true, false, true, true, false));
+    return new TdApi.ChatMemberStatusAdministrator(null, true, new TdApi.ChatAdministratorRights(true, true, true, true, true, true, true, true, false, true, true, true, true, true, false));
   }
 
   @Override
@@ -723,6 +723,12 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
               return me.rights.canPinMessages;
             case RightId.MANAGE_VIDEO_CHATS:
               return me.rights.canManageVideoChats;
+            case RightId.POST_STORIES:
+              return me.rights.canPostStories;
+            case RightId.EDIT_STORIES:
+              return me.rights.canEditStories;
+            case RightId.DELETE_STORIES:
+              return me.rights.canDeleteStories;
             case RightId.REMAIN_ANONYMOUS:
               return me.rights.isAnonymous;
             case RightId.SEND_BASIC_MESSAGES:
@@ -1004,6 +1010,9 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         RightId.DELETE_MESSAGES,
         RightId.INVITE_USERS,
         RightId.MANAGE_VIDEO_CHATS,
+        RightId.POST_STORIES,
+        RightId.EDIT_STORIES,
+        RightId.DELETE_STORIES,
         RightId.ADD_NEW_ADMINS
       };
     } else {
@@ -1378,6 +1387,15 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       case RightId.MANAGE_VIDEO_CHATS:
         targetAdmin.rights.canManageVideoChats = newValue;
         break;
+      case RightId.POST_STORIES:
+        targetAdmin.rights.canPostStories = newValue;
+        break;
+      case RightId.EDIT_STORIES:
+        targetAdmin.rights.canEditStories = newValue;
+        break;
+      case RightId.DELETE_STORIES:
+        targetAdmin.rights.canDeleteStories = newValue;
+        break;
       case RightId.REMAIN_ANONYMOUS:
         targetAdmin.rights.isAnonymous = newValue;
         break;
@@ -1496,6 +1514,12 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         return targetAdmin.rights.canPromoteMembers;
       case RightId.MANAGE_VIDEO_CHATS:
         return targetAdmin.rights.canManageVideoChats;
+      case RightId.POST_STORIES:
+        return targetAdmin.rights.canPostStories;
+      case RightId.EDIT_STORIES:
+        return targetAdmin.rights.canEditStories;
+      case RightId.DELETE_STORIES:
+        return targetAdmin.rights.canDeleteStories;
       case RightId.REMAIN_ANONYMOUS:
         return targetAdmin.rights.isAnonymous;
       case RightId.EDIT_MESSAGES:
@@ -1544,6 +1568,12 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         return R.string.RightEditMessages;
       case RightId.MANAGE_VIDEO_CHATS:
         return isChannel ? R.string.RightLiveStreams : R.string.RightVoiceChats;
+      case RightId.POST_STORIES:
+        return R.string.RightStoriesPost;
+      case RightId.EDIT_STORIES:
+        return R.string.RightStoriesEdit;
+      case RightId.DELETE_STORIES:
+        return R.string.RightStoriesDelete;
       case RightId.REMAIN_ANONYMOUS:
         return R.string.RightAnonymous;
     }

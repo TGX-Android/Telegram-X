@@ -569,7 +569,7 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
         break;
       }
       case TYPE_TELEGRAM_AD: {
-        parent.callSponsorButton();
+        parent.openSponsoredMessage();
         break;
       }
       case TGWebPage.TYPE_PHOTO:
@@ -957,48 +957,48 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
   private TGInlineKeyboard rippleButton;
 
   private void buildRippleButton () {
-    int message = 0;
+    int stringRes = 0;
     int icon = 0;
 
     if (needInstantView()) {
-      message = R.string.InstantView;
+      stringRes = R.string.InstantView;
       icon = R.drawable.deproko_baseline_instantview_24;
     } else {
       switch (type) {
         case TYPE_TELEGRAM_USER:
-          message = R.string.OpenProfile;
+          stringRes = R.string.OpenProfile;
           break;
         case TYPE_TELEGRAM_MESSAGE:
         case TYPE_TELEGRAM_ALBUM:
           if (parent.tdlib().isTmeUrl(url))
-            message = R.string.OpenMessage;
+            stringRes = R.string.OpenMessage;
           break;
         case TYPE_TELEGRAM_CHANNEL:
-          message = R.string.OpenChannel;
+          stringRes = R.string.OpenChannel;
           break;
         case TYPE_TELEGRAM_MEGAGROUP:
-          message = R.string.OpenGroup;
+          stringRes = R.string.OpenGroup;
           break;
         case TYPE_TELEGRAM_BOT:
-          message = R.string.OpenBot;
+          stringRes = R.string.OpenBot;
           break;
         case TYPE_TELEGRAM_AD:
-          message = parent.getSponsorButtonName();
+          stringRes = parent.getSponsoredMessageButtonResId();
           break;
         case TYPE_TELEGRAM_CHAT:
-          message = R.string.OpenChat;
+          stringRes = R.string.OpenChat;
           break;
         case TYPE_TELEGRAM_BACKGROUND:
-          message = R.string.ChatBackgroundView;
+          stringRes = R.string.ChatBackgroundView;
           break;
       }
     }
 
-    if (message != 0) {
+    if (stringRes != 0) {
       rippleButtonY = height + Screen.dp(6f);
       height = rippleButtonY + TGInlineKeyboard.getButtonHeight();
       rippleButton = new TGInlineKeyboard(parent, false);
-      rippleButton.setCustom(icon, Lang.getString(message), availWidth - paddingLeft, type != TYPE_TELEGRAM_AD, this);
+      rippleButton.setCustom(icon, Lang.getString(stringRes), availWidth - paddingLeft, type != TYPE_TELEGRAM_AD, this);
     }
   }
 
@@ -1023,16 +1023,11 @@ public class TGWebPage implements FileProgressComponent.SimpleListener, MediaWra
         return false;
       }
 
-      String url;
-
-      if (parent.isSponsored()) {
-        url = parent.getSponsoredButtonUrl();
-      } else {
-        String username = parent.tdlib.chatUsername(parent.getSponsorChatId());
-        url = parent.tdlib.tMeUrl(username);
+      String url = parent.getSponsoredMessageUrl();
+      if (!StringUtils.isEmpty(url)) {
+        c.showCopyUrlOptions(url, parent.openParameters(), null);
+        return true;
       }
-
-      c.showCopyUrlOptions(url, parent.openParameters(), null);
     }
 
     return false;
