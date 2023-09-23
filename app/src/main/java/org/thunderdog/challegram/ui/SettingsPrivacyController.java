@@ -227,7 +227,7 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
     adapter.setItems(items, false);
     recyclerView.setAdapter(adapter);
 
-    tdlib.client().send(new TdApi.GetBlockedMessageSenders(0, 1), this);
+    tdlib.client().send(new TdApi.GetBlockedMessageSenders(new TdApi.BlockListMain(), 0, 1), this);
     fetchSessions();
     tdlib.client().send(new TdApi.GetPasswordState(), this);
     tdlib.client().send(new TdApi.GetAccountTtl(), this);
@@ -407,7 +407,7 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
       });
     } else if (id == R.id.btn_blockedSenders) {
       SettingsBlockedController c = new SettingsBlockedController(context, tdlib);
-      c.setArguments(this);
+      c.setArguments(new TdApi.BlockListMain());
       navigateTo(c);
     } else if (id == R.id.btn_privacyRule) {
       TdApi.UserPrivacySetting setting = (TdApi.UserPrivacySetting) ((ListItem) v.getTag()).getData();
@@ -524,10 +524,10 @@ public class SettingsPrivacyController extends RecyclerViewController<SettingsPr
   }
 
   @Override
-  public void onChatBlocked (long chatId, boolean isBlocked) {
+  public void onChatBlockListChanged (long chatId, @Nullable TdApi.BlockList blockList) {
     runOnUiThread(() -> {
       if (!isDestroyed()) {
-        tdlib.client().send(new TdApi.GetBlockedMessageSenders(0, 1), SettingsPrivacyController.this);
+        tdlib.client().send(new TdApi.GetBlockedMessageSenders(new TdApi.BlockListMain(), 0, 1), SettingsPrivacyController.this);
       }
     }, 350l);
   }

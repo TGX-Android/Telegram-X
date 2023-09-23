@@ -1480,7 +1480,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
         long timestamp = System.currentTimeMillis();
         long chatId = controller.getChatId();
         long messageThreadId = controller.getMessageThreadId();
-        long replyToMessageId = controller.obtainReplyId();
+        TdApi.MessageReplyTo replyTo = controller.obtainReplyTo();
         boolean silent = controller.obtainSilentMode();
         boolean needMenu = controller.areScheduledOnly();
 
@@ -1520,13 +1520,13 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
             content = tdlib.filegen().createThumbnail(new TdApi.InputMessageSticker(generated, null, imageWidth, imageHeight, null), isSecretChat);
           } else {
             TdApi.InputFileGenerated generated = PhotoGenerationInfo.newFile(path, 0, timestamp, false, 0);
-            content = tdlib.filegen().createThumbnail(new TdApi.InputMessagePhoto(generated, null, null, imageWidth, imageHeight, null, 0, false), isSecretChat);
+            content = tdlib.filegen().createThumbnail(new TdApi.InputMessagePhoto(generated, null, null, imageWidth, imageHeight, null, null, false), isSecretChat);
           }
           if (needMenu) {
             tdlib.ui().post(() -> {
               tdlib.ui().showScheduleOptions(controller, chatId, false,
                 (sendOptions, disableMarkdown) ->
-                  tdlib.sendMessage(chatId, messageThreadId, replyToMessageId,
+                  tdlib.sendMessage(chatId, messageThreadId, replyTo,
                     Td.newSendOptions(sendOptions, silent),
                     content,
                     null
@@ -1534,7 +1534,7 @@ public class InputView extends NoClipEditText implements InlineSearchContext.Cal
                 null, null);
             });
           } else {
-            tdlib.sendMessage(chatId, messageThreadId, replyToMessageId, Td.newSendOptions(silent), content);
+            tdlib.sendMessage(chatId, messageThreadId, replyTo, Td.newSendOptions(silent), content);
           }
         });
         // read and display inputContentInfo asynchronously.

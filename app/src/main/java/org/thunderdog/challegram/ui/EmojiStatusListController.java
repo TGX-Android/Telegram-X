@@ -1011,10 +1011,10 @@ public class EmojiStatusListController extends ViewController<EmojiLayout> imple
     tdlib.client().send(req, object2 -> {
       switch (object2.getConstructor()) {
         case TdApi.EmojiStatuses.CONSTRUCTOR: {
-          TdApi.EmojiStatus[] emojiStatuses2 = ((TdApi.EmojiStatuses) object2).emojiStatuses;
-          for (TdApi.EmojiStatus emojiStatus : emojiStatuses2) {
+          long[] customEmojiIds = ((TdApi.EmojiStatuses) object2).customEmojiIds;
+          for (long customEmojiId : customEmojiIds) {
             if (longList.size() >= 200) break;
-            longList.append(emojiStatus.customEmojiId);
+            longList.append(customEmojiId);
           }
           onReceive.run();
           break;

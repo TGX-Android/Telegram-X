@@ -14,6 +14,7 @@
  */
 package org.thunderdog.challegram.telegram;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
@@ -34,9 +35,10 @@ public interface ChatListener extends ForumTopicInfoListener {
   default void onChatReadOutbox (long chatId, long lastReadOutboxMessageId) { }
   default void onChatMarkedAsUnread (long chatId, boolean isMarkedAsUnread) { }
   default void onChatIsTranslatableChanged (long chatId, boolean isTranslatable) { }
-  default void onChatBlocked (long chatId, boolean isBlocked) { }
+  default void onChatBlockListChanged (long chatId, @Nullable TdApi.BlockList blockList) { }
   default void onChatOnlineMemberCountChanged (long chatId, int onlineMemberCount) { }
   default void onChatMessageTtlSettingChanged (long chatId, int messageTtlSetting) { }
+  default void onChatActiveStoriesChanged (@NonNull TdApi.ChatActiveStories activeStories) { }
   default void onChatVideoChatChanged (long chatId, TdApi.VideoChat videoChat) { }
   default void onChatPendingJoinRequestsChanged (long chatId, TdApi.ChatJoinRequestsInfo pendingJoinRequests) { }
   default void onChatReplyMarkupChanged (long chatId, long replyMarkupMessageId) { }

@@ -173,7 +173,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   // Public API
 
   public boolean requestPlaceholder (Tdlib tdlib, AvatarPlaceholder.Metadata specificPlaceholder, @Options int options) {
-    return requestData(tdlib, DataType.PLACEHOLDER, specificPlaceholder != null ? specificPlaceholder.colorId : 0, specificPlaceholder, null, null, options | Options.NO_UPDATES);
+    return requestData(tdlib, DataType.PLACEHOLDER, specificPlaceholder != null ? specificPlaceholder.colorId : 0, specificPlaceholder, null, null, null, options | Options.NO_UPDATES);
   }
 
   public boolean isDisplayingPlaceholder (AvatarPlaceholder.Metadata specificPlaceholder) {
@@ -183,7 +183,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   }
 
   public boolean requestSpecific (Tdlib tdlib, FullChatPhoto specificPhoto, @Options int options) {
-    return requestData(tdlib, DataType.SPECIFIC_PHOTO, specificPhoto != null ? specificPhoto.chatPhoto.id : 0, null, specificPhoto, null, options | Options.NO_UPDATES);
+    return requestData(tdlib, DataType.SPECIFIC_PHOTO, specificPhoto != null ? specificPhoto.chatPhoto.id : 0, null, specificPhoto, null, null, options | Options.NO_UPDATES);
   }
 
   public boolean isDisplayingSpecificPhoto (TdApi.ChatPhoto specificPhoto) {
@@ -193,7 +193,11 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   }
 
   public boolean requestSpecific (Tdlib tdlib, ImageFile specificFile, @Options int options) {
-    return requestData(tdlib, DataType.SPECIFIC_FILE, specificFile != null ? specificFile.getId() : 0, null, null, specificFile, options);
+    return requestData(tdlib, DataType.SPECIFIC_FILE, specificFile != null ? specificFile.getId() : 0, null, null, specificFile, null, options);
+  }
+
+  public boolean requestSpecific (Tdlib tdlib, TdApi.ChatPhotoInfo photoInfo, @Options int options) {
+    return requestData(tdlib, DataType.SPECIFIC_PHOTO_INFO, BitwiseUtils.mergeLong(photoInfo.small.id, photoInfo.big.id), null, null, null, photoInfo, options | Options.NO_UPDATES);
   }
 
   public void requestMessageSender (@Nullable Tdlib tdlib, @Nullable TdApi.MessageSender sender, @Options int options) {
@@ -222,7 +226,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   }
 
   public boolean requestUser (Tdlib tdlib, long userId, @Options int options) {
-    return requestData(tdlib, DataType.USER, userId, null, null, null, options);
+    return requestData(tdlib, DataType.USER, userId, null, null, null, null, options);
   }
 
   public boolean isDisplayingUser (long userId) {
@@ -230,7 +234,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   }
 
   public boolean requestChat (Tdlib tdlib, long chatId, @Options int options) {
-    return requestData(tdlib, DataType.CHAT, chatId, null, null, null, options);
+    return requestData(tdlib, DataType.CHAT, chatId, null, null, null, null, options);
   }
 
   public boolean isDisplayingChat (long chatId) {
@@ -263,6 +267,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
     DataType.PLACEHOLDER,
     DataType.SPECIFIC_PHOTO,
     DataType.SPECIFIC_FILE,
+    DataType.SPECIFIC_PHOTO_INFO,
     DataType.USER,
     DataType.CHAT
   })
@@ -272,8 +277,9 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
       PLACEHOLDER = 1,
       SPECIFIC_PHOTO = 2,
       SPECIFIC_FILE = 3,
-      USER = 4,
-      CHAT = 5;
+      SPECIFIC_PHOTO_INFO = 4,
+      USER = 5,
+      CHAT = 6;
   }
 
   private Tdlib tdlib;
@@ -282,6 +288,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   private AvatarPlaceholder.Metadata specificPlaceholder;
   private FullChatPhoto specificPhoto;
   private ImageFile specificFile;
+  private TdApi.ChatPhotoInfo specificPhotoInfo;
   private @Options int options;
 
   private void subscribeToUpdates () {
@@ -289,6 +296,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
       case DataType.NONE:
       case DataType.PLACEHOLDER:
       case DataType.SPECIFIC_FILE:
+      case DataType.SPECIFIC_PHOTO_INFO:
         break;
       case DataType.SPECIFIC_PHOTO:
         if (this.additionalDataId != 0) {
@@ -331,6 +339,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
       case DataType.NONE:
       case DataType.PLACEHOLDER:
       case DataType.SPECIFIC_FILE:
+      case DataType.SPECIFIC_PHOTO_INFO:
         break;
       case DataType.SPECIFIC_PHOTO:
         if (this.additionalDataId != 0) {
@@ -362,7 +371,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
   }
 
   @UiThread
-  private boolean requestData (@Nullable Tdlib tdlib, @DataType int dataType, long dataId, @Nullable AvatarPlaceholder.Metadata specificPlaceholder, FullChatPhoto specificPhoto, ImageFile specificFile, @Options int options) {
+  private boolean requestData (@Nullable Tdlib tdlib, @DataType int dataType, long dataId, @Nullable AvatarPlaceholder.Metadata specificPlaceholder, FullChatPhoto specificPhoto, ImageFile specificFile, TdApi.ChatPhotoInfo specificPhotoInfo, @Options int options) {
     if (!UI.inUiThread())
       throw new IllegalStateException();
     if (dataType == DataType.NONE || dataId == 0 || (tdlib == null && !(dataType == DataType.SPECIFIC_FILE || dataType == DataType.PLACEHOLDER))) {
@@ -372,6 +381,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
       specificPhoto = null;
       specificPlaceholder = null;
       specificFile = null;
+      specificPhotoInfo = null;
       options = Options.NONE;
     }
     if (this.tdlib != tdlib || this.dataType != dataType || this.dataId != dataId) {
@@ -383,6 +393,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
       this.specificPlaceholder = specificPlaceholder;
       this.specificPhoto = specificPhoto;
       this.specificFile = specificFile;
+      this.specificPhotoInfo = specificPhotoInfo;
       this.options = options;
       if (dataType == DataType.CHAT) {
         switch (ChatId.getType(dataId)) {
@@ -555,6 +566,14 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
       case DataType.SPECIFIC_FILE: {
         if (specificFile != null) {
           requestPhoto(specificFile, options);
+        } else {
+          requestEmpty();
+        }
+        break;
+      }
+      case DataType.SPECIFIC_PHOTO_INFO: {
+        if (specificPhotoInfo != null) {
+          requestPhoto(specificPhotoInfo, null, BitwiseUtils.hasFlag(options, Options.FORCE_ANIMATION), options);
         } else {
           requestEmpty();
         }
@@ -978,7 +997,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
 
   @Override
   public void destroy () {
-    requestData(null, DataType.NONE, 0, null, null, null, Options.NONE);
+    requestData(null, DataType.NONE, 0, null, null, null, null, Options.NONE);
   }
 
   @Override

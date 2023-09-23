@@ -277,11 +277,11 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
   @Override public void onClickAt (View view, float x, float y) {
     if (context.isRepliesChat()) {
       TdApi.MessageForwardInfo forwardInfo = context.msg.forwardInfo;
-      MessageId replyToMessageId = new MessageId(context.msg.replyInChatId, context.msg.replyToMessageId);
+      MessageId replyToMessageId = MessageId.valueOf(context.msg.replyTo);
       if (forwardInfo != null && forwardInfo.fromChatId != 0 && forwardInfo.fromMessageId != 0) {
         MessageId replyMessageId = new MessageId(forwardInfo.fromChatId, forwardInfo.fromMessageId);
         context.openMessageThread(replyMessageId, replyToMessageId);
-      } else {
+      } else if (replyToMessageId != null) {
         context.openMessageThread(replyToMessageId);
       }
     } else {
@@ -626,11 +626,12 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
   private void openCommentsPreviewAsync (int x, int y) {
     MessageId messageId, fallbackMessageId;
     if (context.isRepliesChat()) {
+      MessageId replyToMessageId = MessageId.valueOf(context.msg.replyTo);
       if (context.msg.forwardInfo != null) {
         messageId = new MessageId(context.msg.forwardInfo.fromChatId, context.msg.forwardInfo.fromMessageId);
-        fallbackMessageId = new MessageId(context.msg.replyInChatId, context.msg.replyToMessageId);
+        fallbackMessageId = replyToMessageId;
       } else {
-        messageId = new MessageId(context.msg.replyInChatId, context.msg.replyToMessageId);
+        messageId = replyToMessageId;
         fallbackMessageId = null;
       }
     } else {
@@ -642,7 +643,9 @@ public final class TGCommentButton implements FactorAnimator.Target, TextColorSe
         return;
       }
     }
-    openCommentsPreviewAsync(messageId, fallbackMessageId, x, y);
+    if (messageId != null) {
+      openCommentsPreviewAsync(messageId, fallbackMessageId, x, y);
+    }
   }
 
   private void openCommentsPreviewAsync (@NonNull MessageId messageId, @Nullable MessageId fallbackMessageId, int x, int y) {

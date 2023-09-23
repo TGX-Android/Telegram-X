@@ -23,7 +23,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.TdApi;
-import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.component.chat.MessageView;
 import org.thunderdog.challegram.component.chat.MessagesManager;
 import org.thunderdog.challegram.config.Config;
@@ -34,7 +33,6 @@ import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
-import org.thunderdog.challegram.telegram.TdlibUi;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.Strings;
@@ -55,8 +53,6 @@ public class TGMessageText extends TGMessage {
   private TGWebPage webPage;
   private TdApi.MessageText currentMessageText, pendingMessageText;
 
-  public TdApi.SponsoredMessage sponsoredMetadata;
-
   public TGMessageText (MessagesManager context, TdApi.Message msg, TdApi.MessageText text, @Nullable TdApi.MessageText pendingMessageText) {
     super(context, msg);
     this.currentMessageText = text;
@@ -70,10 +66,10 @@ public class TGMessageText extends TGMessage {
     }
   }
 
-  public TGMessageText (MessagesManager context, TdApi.Message msg, TdApi.SponsoredMessage text) {
+  public TGMessageText (MessagesManager context, TdApi.Message msg, TdApi.SponsoredMessage sponsoredMessage) {
     super(context, msg);
-    this.sponsoredMetadata = text;
-    this.currentMessageText = (TdApi.MessageText) text.content;
+    this.sponsoredMessage = sponsoredMessage;
+    this.currentMessageText = (TdApi.MessageText) sponsoredMessage.content;
     setText(currentMessageText.text, false);
   }
 
@@ -531,103 +527,6 @@ public class TGMessageText extends TGMessage {
   @Override
   public boolean onTouchEvent (MessageView view, MotionEvent e) {
     return super.onTouchEvent(view, e) || wrapper.onTouchEvent(view, e) || (webPage != null && webPage.onTouchEvent(view, e, getContentX(), getWebY(), clickCallback()));
-  }
-
-  // Sponsor-related stuff
-  // TODO: better be separated in a different object
-
-  @Override
-  public boolean isSponsored () {
-    return sponsoredMetadata != null;
-  }
-
-  public boolean isBotSponsor () {
-    return isSponsored() && sponsoredMetadata.link != null && sponsoredMetadata.link.getConstructor() == TdApi.InternalLinkTypeBotStart.CONSTRUCTOR;
-  }
-
-  public int getSponsorButtonName () {
-    if (!isSponsored() || sponsoredMetadata.link == null) {
-      return R.string.OpenChannel;
-    }
-
-    switch (sponsoredMetadata.link.getConstructor()) {
-      case TdApi.InternalLinkTypeMessage.CONSTRUCTOR: {
-        return R.string.OpenMessage;
-      }
-
-      case TdApi.InternalLinkTypeBotStart.CONSTRUCTOR: {
-        return R.string.OpenBot;
-      }
-
-      default: {
-        return R.string.OpenChannel;
-      }
-    }
-  }
-
-  public String getSponsoredButtonUrl () {
-    if (!isSponsored() || sponsoredMetadata.link == null) {
-      return tdlib.tMeUrl(tdlib.chatUsername(getSponsorChatId()));
-    }
-
-    switch (sponsoredMetadata.link.getConstructor()) {
-      case TdApi.InternalLinkTypeMessage.CONSTRUCTOR: {
-        TdApi.InternalLinkTypeMessage link = (TdApi.InternalLinkTypeMessage) sponsoredMetadata.link;
-        return link.url;
-      }
-
-      case TdApi.InternalLinkTypeBotStart.CONSTRUCTOR: {
-        TdApi.InternalLinkTypeBotStart link = (TdApi.InternalLinkTypeBotStart) sponsoredMetadata.link;
-        return tdlib.tMeStartUrl(link.botUsername, link.startParameter, false);
-      }
-
-      default: {
-        return tdlib.tMeUrl(tdlib.chatUsername(getSponsorChatId()));
-      }
-    }
-  }
-
-  public void callSponsorButton () {
-    if (!isSponsored()) {
-      return;
-    }
-
-    long sponsorId = getSponsorChatId();
-
-    if (sponsoredMetadata.link == null) {
-      tdlib.ui().openChat(this, sponsorId, new TdlibUi.ChatOpenParameters().keepStack());
-      return;
-    }
-
-    switch (sponsoredMetadata.link.getConstructor()) {
-      case TdApi.InternalLinkTypeMessage.CONSTRUCTOR: {
-        TdApi.InternalLinkTypeMessage link = (TdApi.InternalLinkTypeMessage) sponsoredMetadata.link;
-        tdlib.client().send(new TdApi.GetMessageLinkInfo(link.url), messageLinkResult -> {
-          if (messageLinkResult.getConstructor() == TdApi.MessageLinkInfo.CONSTRUCTOR) {
-            TdApi.MessageLinkInfo messageLinkInfo = (TdApi.MessageLinkInfo) messageLinkResult;
-            tdlib.ui().post(() -> {
-              tdlib.ui().openMessage(this, messageLinkInfo, null);
-            });
-          }
-        });
-        break;
-      }
-
-      case TdApi.InternalLinkTypeBotStart.CONSTRUCTOR: {
-        TdApi.InternalLinkTypeBotStart link = (TdApi.InternalLinkTypeBotStart) sponsoredMetadata.link;
-        tdlib.ui().openChat(this, sponsorId, new TdlibUi.ChatOpenParameters().shareItem(new TGBotStart(sponsorId, link.startParameter, false)).keepStack());
-        break;
-      }
-
-      default: {
-        tdlib.ui().openChat(this, sponsorId, new TdlibUi.ChatOpenParameters().keepStack());
-        break;
-      }
-    }
-  }
-
-  public long getSponsorChatId () {
-    return isSponsored() ? sponsoredMetadata.sponsorChatId : 0;
   }
 
   private TdApi.FormattedText translatedText;

@@ -785,7 +785,7 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
             Args args = getArgumentsStrict();
             inShareProgress = true;
             adapter.updateValuedSettingById(R.id.liveLocationSelf);
-            tdlib.sendMessage(args.chatId, args.messageThreadId, 0, Td.newSendOptions(tdlib.chatDefaultDisableNotifications(args.chatId)), new TdApi.InputMessageLocation(new TdApi.Location(myLocation.latitude, myLocation.longitude, myLocation.accuracy), arg1, myLocation.heading, 0));
+            tdlib.sendMessage(args.chatId, args.messageThreadId, null, Td.newSendOptions(tdlib.chatDefaultDisableNotifications(args.chatId)), new TdApi.InputMessageLocation(new TdApi.Location(myLocation.latitude, myLocation.longitude, myLocation.accuracy), arg1, myLocation.heading, 0));
           }
         });
         break;
@@ -1793,7 +1793,7 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
   }
 
   @Override
-  public void onMessageSendFailed (TdApi.Message message, long oldMessageId, int errorCode, String errorMessage) { }
+  public void onMessageSendFailed (TdApi.Message message, long oldMessageId, TdApi.Error error) { }
 
   @Override
   public int compare (LocationPoint<T> o1, LocationPoint<T> o2) {

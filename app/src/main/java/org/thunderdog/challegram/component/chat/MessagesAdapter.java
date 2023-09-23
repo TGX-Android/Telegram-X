@@ -473,11 +473,11 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
 
     TGMessage bottomMessage = top ? null : getMessage(0);
     TGMessage topMessage = top ? getMessage(getMessageCount() - 1) : null;
-    boolean sponsoredFlag = bottomMessage != null && bottomMessage.isSponsored();
+    boolean sponsoredFlag = bottomMessage != null && bottomMessage.isSponsoredMessage();
 
     if (sponsoredFlag && items != null) {
       for (TGMessage msg : items) {
-        if (!msg.isSponsored()) {
+        if (!msg.isSponsoredMessage()) {
           bottomMessage = msg;
           break;
         }
@@ -506,7 +506,7 @@ public class MessagesAdapter extends RecyclerView.Adapter<MessagesHolder> {
       }
     }
     message.mergeWith(bottomMessage, !top || this.items == null || this.items.isEmpty());
-    if (bottomMessage != null && getBottomMessage().isSponsored() && !message.isSponsored()) {
+    if (bottomMessage != null && getBottomMessage().isSponsoredMessage() && !message.isSponsoredMessage()) {
       bottomMessage.setNeedExtraPresponsoredPadding(false);
       bottomMessage.setNeedExtraPadding(false);
       message.setNeedExtraPresponsoredPadding(true);

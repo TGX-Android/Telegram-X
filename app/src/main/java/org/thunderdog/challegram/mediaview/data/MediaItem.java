@@ -1186,13 +1186,13 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
     return -1;
   }
 
-  public int getTTL () {
-    return sourceGalleryFile != null ? sourceGalleryFile.getTTL() : 0;
+  public @Nullable TdApi.MessageSelfDestructType getSelfDestructType () {
+    return sourceGalleryFile != null ? sourceGalleryFile.getSelfDestructType() : null;
   }
 
-  public void setTTL (int ttl) {
+  public void setSelfDestructType (@Nullable TdApi.MessageSelfDestructType selfDestructType) {
     if (sourceGalleryFile != null) {
-      sourceGalleryFile.setTTL(ttl);
+      sourceGalleryFile.setSelfDestructType(selfDestructType);
     }
   }
 
@@ -1672,11 +1672,11 @@ public class MediaItem implements MessageSourceProvider, InvalidateContentProvid
             return new TdApi.InputMessageAnimation(file, null, null, 3, targetFile.length, targetFile.length, null, false);
           }
         }
-        return new TdApi.InputMessagePhoto(file, null, null, 640, 640, caption, 0, false);
+        return new TdApi.InputMessagePhoto(file, null, null, 640, 640, caption, null, false);
       case TYPE_PHOTO:
-        return new TdApi.InputMessagePhoto(file, null, null, width, height, caption, 0, false);
+        return new TdApi.InputMessagePhoto(file, null, null, width, height, caption, null, false);
       case TYPE_VIDEO:
-        return new TdApi.InputMessageVideo(file, null, null, sourceVideo.duration, sourceVideo.width, sourceVideo.height, sourceVideo.supportsStreaming, caption, 0, false);
+        return new TdApi.InputMessageVideo(file, null, null, sourceVideo.duration, sourceVideo.width, sourceVideo.height, sourceVideo.supportsStreaming, caption, null, false);
       case TYPE_GIF:
         return new TdApi.InputMessageAnimation(file, null, null, sourceAnimation.duration, sourceAnimation.width, sourceAnimation.height, caption, false);
     }

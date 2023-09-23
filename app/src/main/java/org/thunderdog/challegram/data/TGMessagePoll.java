@@ -128,7 +128,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
           fromTo(fromState.options[i].progress, toState.options[i].progress, factor)
         );
       }
-      this.poll = new TdApi.Poll(toState.poll.id, toState.poll.question, options, toState.poll.totalVoterCount, toState.poll.recentVoterUserIds, toState.poll.isAnonymous, toState.poll.type, toState.poll.openPeriod, toState.poll.closeDate, toState.poll.isClosed);
+      this.poll = new TdApi.Poll(toState.poll.id, toState.poll.question, options, toState.poll.totalVoterCount, toState.poll.recentVoterIds, toState.poll.isAnonymous, toState.poll.type, toState.poll.openPeriod, toState.poll.closeDate, toState.poll.isClosed);
     }
 
     public int size () {
@@ -251,21 +251,22 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
   private static final float VOTER_OUTLINE = 1f;
   private static final float VOTER_SPACING = 4f;
 
-  private static class UserEntry {
-    private final long userId;
+  private static class SenderEntry {
+    private final TdApi.MessageSender senderId;
 
-    public UserEntry (Tdlib tdlib, long userId) {
-      this.userId = userId;
+    public SenderEntry (Tdlib tdlib, TdApi.MessageSender senderId) {
+      this.senderId = senderId;
     }
 
     @Override
     public boolean equals (@Nullable Object obj) {
-      return obj instanceof UserEntry && ((UserEntry) obj).userId == this.userId;
+      return obj instanceof SenderEntry && Td.equalsTo(((SenderEntry) obj).senderId, this.senderId);
     }
 
     @Override
     public int hashCode() {
-      return (int) (userId ^ (userId >>> 32));
+      long senderId = Td.getSenderId(this.senderId);
+      return (int) (senderId ^ (senderId >>> 32));
     }
 
     public void draw (Canvas c, TGMessage context, ComplexReceiver complexReceiver, float cx, float cy, final float alpha) {
@@ -275,7 +276,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
       int replaceColor = context.getContentReplaceColor();
       int radius = Screen.dp(VOTER_RADIUS);
 
-      AvatarReceiver receiver = complexReceiver.getAvatarReceiver(userId);
+      AvatarReceiver receiver = complexReceiver.getAvatarReceiver(Td.getSenderId(senderId));
       if (alpha != 1f)
         receiver.setPaintAlpha(receiver.getPaintAlpha() * alpha);
       receiver.setBounds((int) (cx - radius), (int) (cy - radius), (int) (cx + radius), (int) (cy + radius));
@@ -304,7 +305,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     }
   }
 
-  private ListAnimator<UserEntry> recentVoters;
+  private ListAnimator<SenderEntry> recentVoters;
 
   // Impl
 
@@ -401,7 +402,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
   @Override
   protected void buildContent (int maxWidth) {
     if (questionText == null) {
-      setRecentVoters(state.poll.recentVoterUserIds, false);
+      setRecentVoters(state.poll.recentVoterIds, false);
       setQuestion(state.poll.question);
       setOptions(state.poll.options);
       prepareProgress(state.poll.options);
@@ -437,8 +438,8 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
   @Override
   public boolean filterKey (int receiverType, Receiver receiver, long key) {
     if (recentVoters != null) {
-      for (ListAnimator.Entry<UserEntry> recentVoter : recentVoters) {
-        if (recentVoter.item.userId == key) {
+      for (ListAnimator.Entry<SenderEntry> recentVoter : recentVoters) {
+        if (Td.getSenderId(recentVoter.item.senderId) == key) {
           return true;
         }
       }
@@ -454,9 +455,10 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
   @Override
   public void requestMediaContent (ComplexReceiver complexReceiver, boolean invalidate, int invalidateArg) {
     if (recentVoters != null) {
-      for (ListAnimator.Entry<UserEntry> entry : recentVoters) {
-        AvatarReceiver receiver = complexReceiver.getAvatarReceiver(entry.item.userId);
-        receiver.requestUser(tdlib, entry.item.userId, AvatarReceiver.Options.NONE);
+      for (ListAnimator.Entry<SenderEntry> entry : recentVoters) {
+        long senderId = Td.getSenderId(entry.item.senderId);
+        AvatarReceiver receiver = complexReceiver.getAvatarReceiver(senderId);
+        receiver.requestUser(tdlib, senderId, AvatarReceiver.Options.NONE);
       }
     }
     complexReceiver.clearReceivers(this);
@@ -477,7 +479,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
       int cx = startX + pollStatusText.getWidth() + Screen.dp(VOTER_RADIUS) + Screen.dp(6f);
       int spacing = Screen.dp(VOTER_RADIUS) * 2 - Screen.dp(VOTER_SPACING);
       for (int index = recentVoters.size() - 1; index >= 0; index--) {
-        ListAnimator.Entry<UserEntry> item = recentVoters.getEntry(index);
+        ListAnimator.Entry<SenderEntry> item = recentVoters.getEntry(index);
         int x = cx + item.getIndex() * spacing;
         if (x + Screen.dp(VOTER_RADIUS) + Screen.dp(2f) <= startX + maxWidth) {
           item.item.draw(c, this, receiver, cx + item.getPosition() * spacing, startY, item.getVisibility());
@@ -892,11 +894,11 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     return true;
   }
 
-  private void setRecentVoters (long[] recentVoterUserIds, boolean animated) {
-    if (recentVoterUserIds != null && recentVoterUserIds.length > 0) {
-      List<UserEntry> entries = new ArrayList<>(recentVoterUserIds.length);
-      for (long userId : recentVoterUserIds) {
-        entries.add(new UserEntry(tdlib, userId));
+  private void setRecentVoters (TdApi.MessageSender[] recentVoterIds, boolean animated) {
+    if (recentVoterIds != null && recentVoterIds.length > 0) {
+      List<SenderEntry> entries = new ArrayList<>(recentVoterIds.length);
+      for (TdApi.MessageSender senderId : recentVoterIds) {
+        entries.add(new SenderEntry(tdlib, senderId));
       }
       if (this.recentVoters == null)
         this.recentVoters = new ListAnimator<>(currentViews);
@@ -925,7 +927,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     if (animated) {
       resetPollAnimation(true);
       futureState = new PollState(tdlib, updatedPoll);
-      setRecentVoters(updatedPoll.recentVoterUserIds, true);
+      setRecentVoters(updatedPoll.recentVoterIds, true);
       setButton(true);
       if (recentVoters != null) {
         invalidateContentReceiver();
@@ -991,7 +993,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
     } else {
       resetPollAnimation(false);
       this.state = new PollState(tdlib, updatedPoll);
-      setRecentVoters(updatedPoll.recentVoterUserIds, false);
+      setRecentVoters(updatedPoll.recentVoterIds, false);
       if (recentVoters != null) {
         invalidateContentReceiver();
       }

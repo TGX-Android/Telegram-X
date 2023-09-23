@@ -2203,7 +2203,7 @@ public class MediaViewController extends ViewController<MediaViewController.Args
         skipCount--;
         continue;
       }
-      if (TD.isSecret(msg) || (!ChatId.isSecret(msg.chatId) && msg.selfDestructTime != 0)) // skip self-destructing images
+      if (Td.isSecret(msg.content)) // skip self-destructing images
         continue;
 
       MediaItem item = MediaItem.valueOf(context(), tdlib, msg);
@@ -7471,8 +7471,22 @@ public class MediaViewController extends ViewController<MediaViewController.Args
     cropOrStickerButton.setEdited(allowEditState && hasAppliedCrop(), animated);
     paintOrMuteButton.setEdited(hasAppliedPaints(), animated);
     if (stopwatchButton != null) {
-      int ttl = stack.getCurrent().getTTL();
-      String value = ttl != 0 ? TdlibUi.getDuration(ttl, TimeUnit.SECONDS, false) : null;
+      TdApi.MessageSelfDestructType selfDestructType = stack.getCurrent().getSelfDestructType();
+      String value;
+      if (selfDestructType != null) {
+        switch (selfDestructType.getConstructor()) {
+          case TdApi.MessageSelfDestructTypeImmediately.CONSTRUCTOR:
+            value = TdlibUi.getDuration(0, TimeUnit.SECONDS, false); // FIXME
+            break;
+          case TdApi.MessageSelfDestructTypeTimer.CONSTRUCTOR:
+            value = TdlibUi.getDuration(((TdApi.MessageSelfDestructTypeTimer) selfDestructType).selfDestructTime, TimeUnit.SECONDS, false);
+            break;
+          default:
+            throw new UnsupportedOperationException(selfDestructType.toString());
+        }
+      } else {
+        value = null;
+      }
       if (animated) {
         stopwatchButton.setValue(value, false);
       } else {
@@ -8021,12 +8035,24 @@ public class MediaViewController extends ViewController<MediaViewController.Args
 
   private void showTTLOptions () {
     final MediaItem item = stack.getCurrent();
-    tdlib.ui().showTTLPicker(context(), item.getTTL(), true, true, item.isVideo() ? R.string.MessageLifetimeVideo : R.string.MessageLifetimePhoto, result -> {
+    tdlib.ui().showTTLPicker(context(), item.getSelfDestructType(), true, true, item.isVideo() ? R.string.MessageLifetimeVideo : R.string.MessageLifetimePhoto, result -> {
       if (stack.getCurrent() == item) {
-        int newTTL = result.getTtlTime();
-        item.setTTL(newTTL);
-        stopwatchButton.setValue(newTTL != 0 ? TdlibUi.getDuration(newTTL, TimeUnit.SECONDS, false) : null);
-        if (newTTL != 0) {
+        TdApi.MessageSelfDestructType selfDestructType;
+        String textRepresentation;
+        if (result.isOff()) {
+          selfDestructType = null;
+          textRepresentation = null;
+        } else if (result.isImmediate()) {
+          selfDestructType = new TdApi.MessageSelfDestructTypeImmediately();
+          textRepresentation = TdlibUi.getDuration(0, TimeUnit.SECONDS, false); // FIXME
+        } else {
+          int newTTL = result.getTtlTime();
+          textRepresentation = TdlibUi.getDuration(newTTL, TimeUnit.SECONDS, false);
+          selfDestructType = new TdApi.MessageSelfDestructTypeTimer(newTTL);
+        }
+        item.setSelfDestructType(selfDestructType);
+        stopwatchButton.setValue(textRepresentation);
+        if (selfDestructType != null) {
           selectMediaIfItsNot();
         }
       }
