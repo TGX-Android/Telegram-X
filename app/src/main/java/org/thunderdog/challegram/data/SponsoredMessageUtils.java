@@ -32,7 +32,7 @@ public class SponsoredMessageUtils {
     fMsgContent.webPage.url = "";
 
     TdApi.Message fMsg = new TdApi.Message();
-    fMsg.senderId = tdlib.sender(sMsg.sponsorChatId);
+    fMsg.senderId = null;
     fMsg.content = fMsgContent;
     fMsg.authorSignature = Lang.getString(R.string.SponsoredSign);
     fMsg.id = sMsg.messageId;
@@ -43,17 +43,5 @@ public class SponsoredMessageUtils {
     fMsg.isChannelPost = tdlib.isChannel(chatId);
 
     return fMsg;
-  }
-
-  public static TdApi.SponsoredMessages generateSponsoredMessages (Tdlib tdlib) {
-    return generateUserSponsoredMessages(tdlib);
-  }
-
-  private static TdApi.SponsoredMessages generateUserSponsoredMessages (Tdlib tdlib) {
-    TdApi.SponsoredMessage msg = new TdApi.SponsoredMessage();
-    msg.sponsorChatId = tdlib.myUserId();
-    msg.messageId = 1;
-    msg.content = new TdApi.MessageText(new TdApi.FormattedText("Test ad message (from user/channel)", null), null);
-    return new TdApi.SponsoredMessages(new TdApi.SponsoredMessage[] {msg}, 0);
   }
 }

@@ -78,7 +78,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
     default boolean onSendGIF (@Nullable View view, TdApi.Animation animation) {
       return false;
     }
-    default boolean onSetEmojiStatus (@Nullable View view, TGStickerObj sticker, int duration) {
+    default boolean onSetEmojiStatus (@Nullable View view, TGStickerObj sticker, TdApi.EmojiStatus emojiStatus) {
       return false;
     }
 
@@ -559,7 +559,7 @@ public class EmojiLayout extends FrameLayoutFix implements ViewTreeObserver.OnPr
   }
 
   public boolean setEmojiStatus (View view, TGStickerObj sticker, int duration) {
-    return listener != null && listener.onSetEmojiStatus(view, sticker, duration);
+    return listener != null && listener.onSetEmojiStatus(view, sticker, new TdApi.EmojiStatus(sticker.getCustomEmojiId(), duration));
   }
 
   public boolean sendSticker (View view, TGStickerObj sticker, TdApi.MessageSendOptions sendOptions) {

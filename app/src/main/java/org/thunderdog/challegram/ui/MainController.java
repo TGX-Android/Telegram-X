@@ -1429,7 +1429,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
         int height = rotation == 90 || rotation == 270 ? opts.outWidth / inSampleSize : opts.outHeight / inSampleSize;
 
         TdApi.InputFileGenerated inputFile = PhotoGenerationInfo.newFile(filePath, rotation);
-        out.add(new TdApi.InputMessagePhoto(inputFile, null, null, width, height, messageCaption, 0, false));
+        out.add(new TdApi.InputMessagePhoto(inputFile, null, null, width, height, messageCaption, null, false));
         return messageCaption != null;
       }
 
@@ -1467,7 +1467,7 @@ public class MainController extends ViewPagerController<Void> implements Menu, M
 
           U.closeRetriever(media);
 
-          out.add(new TdApi.InputMessageVideo(inputVideo, null, null, duration, width, height, U.canStreamVideo(inputVideo), messageCaption, 0, false));
+          out.add(new TdApi.InputMessageVideo(inputVideo, null, null, duration, width, height, U.canStreamVideo(inputVideo), messageCaption, null, false));
           return messageCaption != null;
         }
       }

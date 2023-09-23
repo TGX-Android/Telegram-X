@@ -50,6 +50,7 @@ import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.util.ClickHelper;
 import me.vkryl.core.collection.IntList;
+import me.vkryl.td.Td;
 
 public class SharedMediaController extends SharedBaseController<MediaItem> implements ClickHelper.Delegate, ForceTouchView.ActionListener {
   public SharedMediaController (Context context, Tdlib tdlib) {
@@ -294,7 +295,7 @@ public class SharedMediaController extends SharedBaseController<MediaItem> imple
   @Override
   protected MediaItem parseObject (TdApi.Object object) {
     TdApi.Message message = (TdApi.Message) object;
-    if (message.selfDestructTime > 0 && message.selfDestructTime <= 60) {
+    if (Td.isSecret(message.content)) {
       return null;
     }
     MediaItem item = MediaItem.valueOf(context(), tdlib, message);

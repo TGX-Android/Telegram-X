@@ -41,6 +41,9 @@ import java.lang.annotation.RetentionPolicy;
   RightId.INVITE_USERS,
   RightId.PIN_MESSAGES,
   RightId.MANAGE_VIDEO_CHATS,
+  RightId.POST_STORIES,
+  RightId.EDIT_STORIES,
+  RightId.DELETE_STORIES,
   RightId.ADD_NEW_ADMINS,
   RightId.REMAIN_ANONYMOUS
 })
@@ -64,6 +67,9 @@ public @interface RightId {
     INVITE_USERS = 16,
     PIN_MESSAGES = 17,
     MANAGE_VIDEO_CHATS = 18,
-    ADD_NEW_ADMINS = 19,
-    REMAIN_ANONYMOUS = 20;
+    POST_STORIES = 19,
+    EDIT_STORIES = 20,
+    DELETE_STORIES = 21,
+    ADD_NEW_ADMINS = 22,
+    REMAIN_ANONYMOUS = 23;
 }

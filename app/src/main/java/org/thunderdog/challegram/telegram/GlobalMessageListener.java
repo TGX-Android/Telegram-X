@@ -23,7 +23,7 @@ public interface GlobalMessageListener {
 
   void onMessageSendSucceeded (Tdlib tdlib, TdApi.Message message, long oldMessageId);
 
-  void onMessageSendFailed (Tdlib tdlib, TdApi.Message message, long oldMessageId, int errorCode, String errorMessage);
+  void onMessageSendFailed (Tdlib tdlib, TdApi.Message message, long oldMessageId, TdApi.Error error);
 
   void onMessagesDeleted (Tdlib tdlib, long chatId, long[] messageIds);
 }
