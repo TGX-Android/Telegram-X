@@ -1354,7 +1354,11 @@ public class TdlibNotificationManager implements UI.StateListener, Passcode.Lock
   }
 
   private static TdApi.ScopeNotificationSettings newDefaults () {
-    return new TdApi.ScopeNotificationSettings(0, 0, true, false, false);
+    return new TdApi.ScopeNotificationSettings(
+      0, 0, true,
+      true, false, 0, true,
+      false, false
+    );
   }
 
   // Ringtone

@@ -597,7 +597,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
 
     // Promotion
 
-    if (msg.isSponsored()) {
+    if (msg.isSponsoredMessage()) {
       ids.append(R.id.btn_messageCopy);
       strings.append(R.string.Copy);
       icons.append(R.drawable.baseline_content_copy_24);
@@ -1424,7 +1424,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
   }
 
   private boolean startSwipeIfNeeded (float diffX) {
-    if (msg == null || msg.isNotSent() || !msg.canSwipe() || msg.isSponsored() || UI.getContext(getContext()).getRecordAudioVideoController().isOpen()) {
+    if (msg == null || msg.isNotSent() || !msg.canSwipe() || msg.isSponsoredMessage() || UI.getContext(getContext()).getRecordAudioVideoController().isOpen()) {
       return false;
     }
     MessagesController m = msg.messagesController();

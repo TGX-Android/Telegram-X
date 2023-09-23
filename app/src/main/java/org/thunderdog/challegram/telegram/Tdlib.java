@@ -20,6 +20,7 @@ import android.os.Build;
 import android.os.Looper;
 import android.os.Message;
 import android.os.SystemClock;
+import android.util.SparseIntArray;
 import android.widget.Toast;
 
 import androidx.annotation.AnyThread;
@@ -430,6 +431,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private final Object clientLock = new Object();
   private final Object dataLock = new Object();
   private final HashMap<Long, TdApi.Chat> chats = new HashMap<>();
+  private final HashMap<Long, TdApi.ChatActiveStories> activeStories = new HashMap<>();
+  private final SparseIntArray storyListChatCount = new SparseIntArray();
+  private final SparseArrayCompat<StoryList> storyLists = new SparseArrayCompat<>();
   private final HashMap<String, TdApi.ForumTopicInfo> forumTopicInfos = new HashMap<>();
   private final HashMap<String, TdlibChatList> chatLists = new HashMap<>();
   private final StickerSet
@@ -483,6 +487,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private long unixTime;
   private long unixTimeReceived;
   private long utcTimeOffset;
+
+  private int storyStealthModeActiveUntilDate;
+  private int storyStealthModeCooldownUntilDate;
 
   private Boolean disableTopChats;
   private boolean disableSentScheduledMessageNotifications;
@@ -1507,7 +1514,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
               }
             };
             for (TdApi.InputMessageContent content : updates) {
-              client().send(new TdApi.AddLocalMessage(chatId, new TdApi.MessageSenderUser(TdConstants.TELEGRAM_ACCOUNT_ID) /*TODO: @tgx_android?*/, 0, true, content), localMessageHandler);
+              client().send(new TdApi.AddLocalMessage(chatId, new TdApi.MessageSenderUser(TdConstants.TELEGRAM_ACCOUNT_ID) /*TODO: @tgx_android?*/, null, true, content), localMessageHandler);
             }
           }
         };
@@ -3100,19 +3107,19 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return supergroup != null && supergroup.isForum;
   }
 
-  public boolean chatBlocked (TdApi.Chat chat) {
-    return chat != null && chatBlocked(chat.id);
+  public @Nullable TdApi.BlockList chatBlockList (TdApi.Chat chat) {
+    return chat != null ? chatBlockList(chat.id) : null;
   }
 
-  public boolean chatBlocked (long chatId) {
+  public @Nullable TdApi.BlockList chatBlockList (long chatId) {
     TdApi.Chat chat = chat(chatId);
-    return chat != null && chat.isBlocked;
+    return chat != null ? chat.blockList : null;
   }
 
-  public boolean userBlocked (long userId) {
-    return chatBlocked(ChatId.fromUserId(userId));
+  public boolean chatFullyBlocked (long chatId) {
+    TdApi.BlockList blockList = chatBlockList(chatId);
+    return blockList != null && blockList.getConstructor() == TdApi.BlockListMain.CONSTRUCTOR;
   }
-
   @Nullable
   public String chatUsername (TdApi.Chat chat) {
     TdApi.Usernames usernames = chatUsernames(chat);
@@ -3430,6 +3437,29 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         return ((TdApi.MessageForwardOriginUser) msg.forwardInfo.origin).senderUserId;
     }
     return Td.getSenderUserId(msg);
+  }
+
+  public String sponsorName (TdApi.MessageSponsor sponsor) {
+    switch (sponsor.type.getConstructor()) {
+      case TdApi.MessageSponsorTypeBot.CONSTRUCTOR: {
+        TdApi.MessageSponsorTypeBot bot = (TdApi.MessageSponsorTypeBot) sponsor.type;
+        return cache().userName(bot.botUserId);
+      }
+      case TdApi.MessageSponsorTypePublicChannel.CONSTRUCTOR: {
+        TdApi.MessageSponsorTypePublicChannel publicChannel = (TdApi.MessageSponsorTypePublicChannel) sponsor.type;
+        return chatTitle(publicChannel.chatId);
+      }
+      case TdApi.MessageSponsorTypePrivateChannel.CONSTRUCTOR: {
+        TdApi.MessageSponsorTypePrivateChannel privateChannel = (TdApi.MessageSponsorTypePrivateChannel) sponsor.type;
+        return privateChannel.title;
+      }
+      case TdApi.MessageSponsorTypeWebsite.CONSTRUCTOR: {
+        TdApi.MessageSponsorTypeWebsite website = (TdApi.MessageSponsorTypeWebsite) sponsor.type;
+        return website.name;
+      }
+      default:
+        throw new UnsupportedOperationException(sponsor.type.toString());
+    }
   }
 
   public String senderName (TdApi.Message msg, boolean allowForward, boolean shorten) {
@@ -4270,7 +4300,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
           final long chatId = openedChatsTimes.keyAt(i);
           TdApi.Chat chat = chat(chatId);
           if (/*hasWritePermission(chat) && */(ChatId.isSecret(chatId) || ui().shouldSendScreenshotHint(chat))) {
-            sendScreenshotMessage(chatId);
+            sendScreenshotMessage(chatId, null);
           }
         }
       }
@@ -4329,31 +4359,31 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
 
   // Actions
 
-  public void sendScreenshotMessage (long chatId) {
-    client().send(new TdApi.SendChatScreenshotTakenNotification(chatId), messageHandler());
+  public void sendScreenshotMessage (long chatId, long[] messageIds) {
+    client().send(new TdApi.ViewMessages(chatId, messageIds, new TdApi.MessageSourceScreenshot(), false), messageHandler());
   }
 
-  public void sendMessage (long chatId, long messageThreadId, long replyToMessageId, TdApi.MessageSendOptions options, TdApi.Animation animation) {
+  public void sendMessage (long chatId, long messageThreadId, @Nullable TdApi.MessageReplyTo replyTo, TdApi.MessageSendOptions options, TdApi.Animation animation) {
     TdApi.InputMessageContent inputMessageContent = new TdApi.InputMessageAnimation(new TdApi.InputFileId(animation.animation.id), null, null, animation.duration, animation.width, animation.height, null, false);
-    sendMessage(chatId, messageThreadId, replyToMessageId, options, inputMessageContent);
+    sendMessage(chatId, messageThreadId, replyTo, options, inputMessageContent);
   }
 
-  public void sendMessage (long chatId, long messageThreadId, long replyToMessageId, TdApi.MessageSendOptions options, TdApi.Audio audio) {
+  public void sendMessage (long chatId, long messageThreadId, @Nullable TdApi.MessageReplyTo replyTo, TdApi.MessageSendOptions options, TdApi.Audio audio) {
     TdApi.InputMessageContent inputMessageContent = new TdApi.InputMessageAudio(new TdApi.InputFileId(audio.audio.id), null, audio.duration, audio.title, audio.performer, null);
-    sendMessage(chatId, messageThreadId, replyToMessageId, options, inputMessageContent);
+    sendMessage(chatId, messageThreadId, replyTo, options, inputMessageContent);
   }
 
-  public void sendMessage (long chatId, long messageThreadId, long replyToMessageId, TdApi.MessageSendOptions options, TdApi.Sticker sticker, @Nullable String emoji) {
+  public void sendMessage (long chatId, long messageThreadId, @Nullable TdApi.MessageReplyTo replyTo, TdApi.MessageSendOptions options, TdApi.Sticker sticker, @Nullable String emoji) {
     TdApi.InputMessageContent inputMessageContent = new TdApi.InputMessageSticker(new TdApi.InputFileId(sticker.sticker.id), null, 0, 0, emoji);
-    sendMessage(chatId, messageThreadId, replyToMessageId, options, inputMessageContent);
+    sendMessage(chatId, messageThreadId, replyTo, options, inputMessageContent);
   }
 
-  public void sendMessage (long chatId, long messageThreadId, long replyToMessageId, TdApi.MessageSendOptions options, TdApi.InputMessageContent inputMessageContent) {
-    sendMessage(chatId, messageThreadId, replyToMessageId, options, inputMessageContent, null);
+  public void sendMessage (long chatId, long messageThreadId, @Nullable TdApi.MessageReplyTo replyTo, TdApi.MessageSendOptions options, TdApi.InputMessageContent inputMessageContent) {
+    sendMessage(chatId, messageThreadId, replyTo, options, inputMessageContent, null);
   }
 
-  public void sendMessage (long chatId, long messageThreadId, long replyToMessageId, TdApi.MessageSendOptions options, TdApi.InputMessageContent inputMessageContent, @Nullable RunnableData<TdApi.Message> after) {
-    client().send(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, options, null, inputMessageContent), after != null ? result -> {
+  public void sendMessage (long chatId, long messageThreadId, @Nullable TdApi.MessageReplyTo replyTo, TdApi.MessageSendOptions options, TdApi.InputMessageContent inputMessageContent, @Nullable RunnableData<TdApi.Message> after) {
+    client().send(new TdApi.SendMessage(chatId, messageThreadId, replyTo, options, null, inputMessageContent), after != null ? result -> {
       messageHandler.onResult(result);
       after.runWithData(result instanceof TdApi.Message ? (TdApi.Message) result : null);
     } : messageHandler());
@@ -4591,8 +4621,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     client().send(new TdApi.ForwardMessages(chatId, messageThreadId, fromChatId, new long[] {messageId}, options, false, false, false), messageHandler());
   }
 
-  public void sendInlineQueryResult (long chatId, long messageThreadId, long replyToMessageId, TdApi.MessageSendOptions options, long queryId, String resultId) {
-    client().send(new TdApi.SendInlineQueryResultMessage(chatId, messageThreadId, replyToMessageId, options, queryId, resultId, false), messageHandler());
+  public void sendInlineQueryResult (long chatId, long messageThreadId, @Nullable TdApi.MessageReplyTo replyTo, TdApi.MessageSendOptions options, long queryId, String resultId) {
+    client().send(new TdApi.SendInlineQueryResultMessage(chatId, messageThreadId, replyTo, options, queryId, resultId, false), messageHandler());
   }
 
   public void sendBotStartMessage (long botUserId, long chatId, String parameter) {
@@ -4715,8 +4745,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return CHAT_ACCESS_OK;
   }
 
-  public void blockSender (TdApi.MessageSender sender, boolean block, Client.ResultHandler handler) {
-    client().send(new TdApi.ToggleMessageSenderIsBlocked(sender, block), handler);
+  public void blockSender (TdApi.MessageSender sender, @Nullable TdApi.BlockList blockList, Client.ResultHandler handler) {
+    client().send(new TdApi.SetMessageSenderBlockList(sender, blockList), handler);
+  }
+
+  public void unblockSender (TdApi.MessageSender sender, Client.ResultHandler handler) {
+    blockSender(sender, null, handler);
   }
 
   public void setScopeNotificationSettings (TdApi.NotificationSettingsScope scope, TdApi.ScopeNotificationSettings settings) {
@@ -6481,6 +6515,17 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       .toString();
   }
 
+  public String tMeChatUrl (long chatId) {
+    String username = chatUsername(chatId);
+    if (!StringUtils.isEmpty(username)) {
+      return tMeUrl(username);
+    }
+    if (ChatId.isSupergroup(chatId)) {
+      return tMeUrl("c/" + ChatId.toSupergroupId(chatId));
+    }
+    return null;
+  }
+
   public String tMeBackgroundUrl (String backgroundId) {
     return tMeUrl("bg/" + backgroundId);
   }
@@ -6860,6 +6905,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     // chats.clear();
     resetChatsData();
     activeCalls.clear();
+    activeStories.clear();
+    storyLists.clear();
+    storyStealthModeActiveUntilDate = storyStealthModeCooldownUntilDate = 0;
     accessibleChatTimers.clear();
     chatOnlineMemberCount.clear();
     myProfilePhoto = null;
@@ -7898,16 +7946,149 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   @TdlibThread
-  private void updateChatIsBlocked (TdApi.UpdateChatIsBlocked update) {
+  private void updateChatIsBlocked (TdApi.UpdateChatBlockList update) {
     synchronized (dataLock) {
       final TdApi.Chat chat = chats.get(update.chatId);
       if (TdlibUtils.assertChat(update.chatId, chat, update)) {
         return;
       }
-      chat.isBlocked = update.isBlocked;
+      chat.blockList = update.blockList;
     }
 
-    listeners.updateChatIsBlocked(update);
+    listeners.updateChatBlockList(update);
+  }
+
+  // Updates: STORIES
+
+  private final Comparator<TdApi.ChatActiveStories> storiesComparator = (o1, o2) -> {
+    if (o1.order != o2.order) {
+      return o1.order > o2.order ? -1 : 1;
+    }
+    if (o1.chatId != o2.chatId) {
+      return o1.chatId > o2.chatId ? -1 : 1;
+    }
+    return 0;
+  };
+
+  public Comparator<TdApi.ChatActiveStories> storiesComparator () {
+    return storiesComparator;
+  }
+
+  @NonNull
+  public StoryList getStoryList (@NonNull TdApi.StoryList list) {
+    synchronized (dataLock) {
+      StoryList storyList = storyLists.get(list.getConstructor());
+      if (storyList == null) {
+        storyList = new StoryList(this, list);
+        storyLists.put(list.getConstructor(), storyList);
+      }
+      return storyList;
+    }
+  }
+
+  @Nullable
+  public TdApi.ChatActiveStories getActiveStories (long chatId, boolean allowRequest, @Nullable RunnableData<TdApi.ChatActiveStories> onLoaded) {
+    synchronized (dataLock) {
+      TdApi.ChatActiveStories stories = this.activeStories.get(chatId);
+      if (stories != null) {
+        return stories;
+      }
+    }
+    if (allowRequest) {
+      client().send(new TdApi.GetChatActiveStories(chatId), result -> {
+        switch (result.getConstructor()) {
+          case TdApi.ChatActiveStories.CONSTRUCTOR: {
+            TdApi.ChatActiveStories stories = getActiveStories(chatId, false, null);
+            if (stories == null) {
+              throw new IllegalStateException();
+            }
+            if (onLoaded != null) {
+              onLoaded.runWithData(stories);
+            }
+            break;
+          }
+          case TdApi.Error.CONSTRUCTOR: {
+            UI.showError(result);
+            break;
+          }
+        }
+      });
+    }
+    return null;
+  }
+  
+  @TdlibThread
+  private void updateStoryListChatCount (TdApi.UpdateStoryListChatCount update) {
+    synchronized (dataLock) {
+      storyListChatCount.put(update.storyList.getConstructor(), update.chatCount);
+    }
+    StoryList storyList = getStoryList(update.storyList);
+    storyList.notifyApproximateTotalItemCountChanged();
+  }
+
+  public int getStoryListChatCount (@NonNull TdApi.StoryList list) {
+    synchronized (dataLock) {
+      return storyListChatCount.get(list.getConstructor());
+    }
+  }
+
+  @TdlibThread
+  private void updateChatActiveStories (TdApi.UpdateChatActiveStories update) {
+    final TdApi.ChatActiveStories prevActiveStories;
+    synchronized (dataLock) {
+      final long chatId = update.activeStories.chatId;
+      prevActiveStories = activeStories.remove(chatId);
+      activeStories.put(chatId, update.activeStories);
+    }
+    listeners.updateChatActiveStories(update);
+    boolean wasPresent = prevActiveStories != null && prevActiveStories.stories.length > 0 && prevActiveStories.list != null;
+    boolean nowPresent = update.activeStories.stories.length > 0 && update.activeStories.list != null;
+    boolean sameList = wasPresent && nowPresent && Td.equalsTo(prevActiveStories.list, update.activeStories.list);
+    if (sameList) {
+      // Moved or just updated within the same list
+      StoryList storyList = getStoryList(update.activeStories.list);
+      storyList.moveItem(update.activeStories, prevActiveStories);
+    } else {
+      if (wasPresent) {
+        // Removed from prevActiveStories.list
+        StoryList storyList = getStoryList(prevActiveStories.list);
+        storyList.removeItem(prevActiveStories);
+      }
+      if (nowPresent) {
+        // Added to update.activeStories.list
+        StoryList storyList = getStoryList(update.activeStories.list);
+        storyList.addItem(update.activeStories);
+      }
+    }
+  }
+
+  @TdlibThread
+  private void updateStory (TdApi.UpdateStory update) {
+    listeners.updateStory(update);
+  }
+
+  @TdlibThread
+  private void updateStoryDeleted (TdApi.UpdateStoryDeleted update) {
+    listeners.updateStoryDeleted(update);
+  }
+
+  @TdlibThread
+  private void updateStorySendSucceeded (TdApi.UpdateStorySendSucceeded update) {
+    listeners.updateStorySendSucceeded(update);
+  }
+
+  @TdlibThread
+  private void updateStorySendFailed (TdApi.UpdateStorySendFailed update) {
+    listeners.updateStorySendFailed(update);
+  }
+
+  @TdlibThread
+  private void updateStoryStealthMode (TdApi.UpdateStoryStealthMode update) {
+    synchronized (dataLock) {
+      this.storyStealthModeActiveUntilDate = update.activeUntilDate;
+      this.storyStealthModeCooldownUntilDate = update.cooldownUntilDate;
+    }
+    listeners.updateStoryStealthMode(update);
   }
 
   // Updates: CHAT STATUS
@@ -8074,6 +8255,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         }
       }
     });
+  }
+
+  @TdlibThread
+  private void updateUnconfirmedSession (TdApi.UpdateUnconfirmedSession update) {
+
   }
 
   // Updates: FILES
@@ -9024,6 +9210,36 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         break;
       }
 
+      // Stories
+      case TdApi.UpdateStoryListChatCount.CONSTRUCTOR: {
+        updateStoryListChatCount((TdApi.UpdateStoryListChatCount) update);
+        break;
+      }
+      case TdApi.UpdateChatActiveStories.CONSTRUCTOR: {
+        updateChatActiveStories((TdApi.UpdateChatActiveStories) update);
+        break;
+      }
+      case TdApi.UpdateStory.CONSTRUCTOR: {
+        updateStory((TdApi.UpdateStory) update);
+        break;
+      }
+      case TdApi.UpdateStoryDeleted.CONSTRUCTOR: {
+        updateStoryDeleted((TdApi.UpdateStoryDeleted) update);
+        break;
+      }
+      case TdApi.UpdateStorySendSucceeded.CONSTRUCTOR: {
+        updateStorySendSucceeded((TdApi.UpdateStorySendSucceeded) update);
+        break;
+      }
+      case TdApi.UpdateStorySendFailed.CONSTRUCTOR: {
+        updateStorySendFailed((TdApi.UpdateStorySendFailed) update);
+        break;
+      }
+      case TdApi.UpdateStoryStealthMode.CONSTRUCTOR: {
+        updateStoryStealthMode((TdApi.UpdateStoryStealthMode) update);
+        break;
+      }
+
       // Voice chats
       case TdApi.UpdateChatVideoChat.CONSTRUCTOR: {
         updateChatVideoChat((TdApi.UpdateChatVideoChat) update);
@@ -9097,8 +9313,8 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         updateChatIsTranslatable((TdApi.UpdateChatIsTranslatable) update);
         break;
       }
-      case TdApi.UpdateChatIsBlocked.CONSTRUCTOR: {
-        updateChatIsBlocked((TdApi.UpdateChatIsBlocked) update);
+      case TdApi.UpdateChatBlockList.CONSTRUCTOR: {
+        updateChatIsBlocked((TdApi.UpdateChatBlockList) update);
         break;
       }
       case TdApi.UpdateChatDefaultDisableNotification.CONSTRUCTOR: {
@@ -9265,6 +9481,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       // Security
       case TdApi.UpdateServiceNotification.CONSTRUCTOR: {
         updateServiceNotification((TdApi.UpdateServiceNotification) update);
+        break;
+      }
+      case TdApi.UpdateUnconfirmedSession.CONSTRUCTOR: {
+        updateUnconfirmedSession((TdApi.UpdateUnconfirmedSession) update);
         break;
       }
 

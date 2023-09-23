@@ -493,7 +493,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
       } else if (viewId == R.id.btn_setEmojiStatus) {
         final long emojiId = sticker.getCustomEmojiId();
         controllerView.onSetEmojiStatus(v, sticker, emojiId, 0);
-        tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(emojiId), 0), tdlib.okHandler());
+        tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(emojiId, 0)), tdlib.okHandler());
         closePreviewIfNeeded();
       } else if (viewId == R.id.btn_setEmojiStatusTimed) {
         ViewController<?> context = findRoot();
@@ -534,7 +534,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
               context.showDateTimePicker(tdlib, Lang.getString(titleRes), todayRes, tomorrowRes, futureRes, millis -> {
                 int duration = (int) ((millis - System.currentTimeMillis()) / 1000L);
                 controllerView.onSetEmojiStatus(v, sticker, emojiId, duration);
-                tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(emojiId), duration), tdlib.okHandler());
+                tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(emojiId, duration)), tdlib.okHandler());
                 closePreviewIfNeeded();
               }, null);
               return true;
@@ -553,7 +553,7 @@ public class StickerPreviewView extends FrameLayoutFix implements FactorAnimator
               duration = 0;
             }
             controllerView.onSetEmojiStatus(v, sticker, emojiId, duration);
-            tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(emojiId), duration), tdlib.okHandler());
+            tdlib.client().send(new TdApi.SetEmojiStatus(new TdApi.EmojiStatus(emojiId, duration)), tdlib.okHandler());
             closePreviewIfNeeded();
             return true;
           });

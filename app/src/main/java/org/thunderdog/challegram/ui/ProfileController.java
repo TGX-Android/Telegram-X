@@ -585,9 +585,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     }
 
     //if (!isBot || !((TdApi.UserTypeBot) user.type).isInline) {
-    if (!user.isSupport || tdlib.chatBlocked(chatId)) {
+    boolean isFullyBlocked = tdlib.chatFullyBlocked(chatId);
+    if (!user.isSupport || isFullyBlocked) {
       ids.append(R.id.more_btn_block);
-      strings.append(tdlib.chatBlocked(chatId) ? isBot ? R.string.UnblockBot : R.string.Unblock : isBot ? R.string.BlockBot : R.string.BlockContact);
+      strings.append(isFullyBlocked ? isBot ? R.string.UnblockBot : R.string.Unblock : isBot ? R.string.BlockBot : R.string.BlockContact);
     }
     //}
 
@@ -596,7 +597,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
       strings.append(R.string.PasscodeTitle);
     }
 
-    if (!tdlib.chatBlocked(chatId)) {
+    if (!tdlib.chatFullyBlocked(chatId)) {
       ids.append(R.id.more_btn_privacy);
       strings.append(R.string.EditPrivacy);
     }
@@ -644,7 +645,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
         ids.append(R.id.more_btn_viewAdmins);
         strings.append(R.string.ViewAdmins);
       }
-      if (!tdlib.chatBlocked(getChatId())) {
+      if (!tdlib.chatFullyBlocked(getChatId())) {
         ids.append(R.id.more_btn_privacy);
         strings.append(R.string.EditPrivacy);
       }
@@ -694,12 +695,12 @@ public class ProfileController extends ViewController<ProfileController.Args> im
           } else if (id == R.id.more_btn_privacy) {
             openPrivacyExceptions();
           } else if (id == R.id.more_btn_block) {
-            final boolean needBlock = !tdlib.chatBlocked(chat.id);
+            final boolean needBlock = !tdlib.chatFullyBlocked(chat.id);
             final boolean isBot = tdlib.isBotChat(chat.id);
             if (needBlock) {
               showOptions(Lang.getStringBold(isBot ? R.string.BlockBotConfirm : R.string.BlockUserConfirm, tdlib.chatTitle(chat.id)), new int[] {R.id.btn_blockSender, R.id.btn_cancel}, new String[] {Lang.getString(isBot ? R.string.BlockBot : R.string.BlockContact), Lang.getString(R.string.Cancel)}, new int[] {OPTION_COLOR_RED, OPTION_COLOR_NORMAL}, new int[] {R.drawable.baseline_block_24, R.drawable.baseline_cancel_24}, (itemView, id1) -> {
                 if (!isDestroyed() && id1 == R.id.btn_blockSender) {
-                  tdlib.blockSender(tdlib.sender(chat.id), true, result -> {
+                  tdlib.blockSender(tdlib.sender(chat.id), new TdApi.BlockListMain(), result -> {
                     if (TD.isOk(result)) {
                       UI.showToast(Lang.getStringBold(isBot ? R.string.BlockedBot : R.string.BlockedUser, tdlib.chatTitle(chat.id)), Toast.LENGTH_SHORT);
                     } else {
@@ -710,7 +711,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
                 return true;
               });
             } else {
-              tdlib.blockSender(tdlib.sender(chat.id), false, result -> {
+              tdlib.unblockSender(tdlib.sender(chat.id), result -> {
                 if (TD.isOk(result)) {
                   UI.showToast(Lang.getStringBold(isBot ? R.string.UnblockedBot : R.string.UnblockedUser, tdlib.chatTitle(chat.id)), Toast.LENGTH_SHORT);
                 } else {
@@ -3641,7 +3642,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     TdApi.ChatMemberStatus myStatus = supergroup != null ? supergroup.status : group.status;
 
     int itemCount = 0;
-    if ((supergroupFull != null && supergroupFull.canSetUsername) || (group != null && TD.isCreator(group.status))) { // TODO TDLib: canSetUsername for basicGroupFull
+    if (canSetUsername()) {
       items.add(new ListItem(ListItem.TYPE_SHADOW_TOP));
       items.add(new ListItem(ListItem.TYPE_VALUED_SETTING, R.id.btn_channelType, 0, mode == MODE_EDIT_CHANNEL ? R.string.ChannelLink : R.string.GroupLink));
       itemCount++;
@@ -4487,7 +4488,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     } else if (viewId == R.id.btn_useExplicitDice) {
       Settings.instance().setNewSetting(((ListItem) v.getTag()).getLongId(), baseAdapter.toggleView(v));
     } else if (viewId == R.id.btn_username) {
-      boolean canSetUsername = supergroupFull != null && supergroupFull.canSetUsername;
+      boolean canSetUsername = canSetUsername();
       boolean canInviteUsers = chat != null && tdlib.canManageInviteLinks(chat);
 
       int size = 3;
@@ -4589,6 +4590,10 @@ public class ProfileController extends ViewController<ProfileController.Args> im
     } else if (viewId == R.id.btn_toggleJoinByRequest) {
       toggleJoinByRequests(v);
     }
+  }
+
+  private boolean canSetUsername () {
+    return (supergroup != null && TD.isCreator(supergroup.status)) || (group != null && TD.isCreator(group.status));
   }
 
   private TranslationControllerV2.Wrapper translationPopup;

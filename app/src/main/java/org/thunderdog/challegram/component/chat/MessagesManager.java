@@ -34,7 +34,6 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
-import org.thunderdog.challegram.data.MessageListManager;
 import org.thunderdog.challegram.data.SponsoredMessageUtils;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
@@ -46,6 +45,7 @@ import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.player.TGPlayerController;
 import org.thunderdog.challegram.telegram.ListManager;
 import org.thunderdog.challegram.telegram.MessageEditListener;
+import org.thunderdog.challegram.telegram.MessageListManager;
 import org.thunderdog.challegram.telegram.MessageListener;
 import org.thunderdog.challegram.telegram.MessageThreadListener;
 import org.thunderdog.challegram.telegram.Tdlib;
@@ -263,7 +263,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       View view = manager.findViewByPosition(i);
       if (view instanceof MessageProvider) {
         TGMessage message = ((MessageProvider) view).getMessage();
-        if (message != null && !message.canBeSaved() && !message.isSponsored()) {
+        if (message != null && !message.canBeSaved() && !message.isSponsoredMessage()) {
           hasVisibleProtectedContent = true;
           break;
         }
@@ -342,7 +342,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       }
       TGMessage msg = view instanceof MessageProvider ? ((MessageProvider) view).getMessage() : null;
       if (msg != null && msg.getChatId() == loader.getChatId()) {
-        if (!msg.canBeSaved() && !msg.isSponsored()) {
+        if (!msg.canBeSaved() && !msg.isSponsoredMessage()) {
           hasProtectedContent = true;
         }
         if (isHeaderMessage(msg)) {
@@ -884,7 +884,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     }
 
     if (!Config.SMOOTH_SCROLL_TO_BOTTOM_ENABLED || !smooth) {
-      if (adapter.getBottomMessage() != null && adapter.getBottomMessage().isSponsored()) {
+      if (adapter.getBottomMessage() != null && adapter.getBottomMessage().isSponsoredMessage()) {
         controller.setScrollToBottomVisible(false, false, false);
         if (controller.canWriteMessages()) {
           manager.scrollToPosition(1);
@@ -1568,7 +1568,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         message.onDestroy();
         return;
       }
-      boolean scrollToBottom = (message.isSending() || (atBottom && (!message.isOld() || message.isChatMember()))) && !message.isSponsored();
+      boolean scrollToBottom = (message.isSending() || (atBottom && (!message.isOld() || message.isChatMember()))) && !message.isSponsoredMessage();
       // message.mergeWith(bottomMessage, true);
       if (scrollToBottom) {
         boolean hasScrolled = adapter.addMessage(message, false, scrollToBottom);
@@ -1586,7 +1586,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
         boolean bottomFullyVisible = manager.findFirstCompletelyVisibleItemPosition() == 0;
         if (!adapter.addMessage(message, false, scrollToBottom)) {
-          if (message.isSponsored() && bottomFullyVisible) {
+          if (message.isSponsoredMessage() && bottomFullyVisible) {
             if (controller.canWriteMessages()) {
               manager.scrollToPosition(1);
             } else {
@@ -1770,11 +1770,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     if (!adapter.isEmpty() && items != null) {
       int i = 0;
       for (TGMessage item : items) {
-        TdApi.Message msg = item.getMessage();
         if (item.isDescendantOrSelf(messageId)) {
           replaceMessageContent(item, i, messageId, content);
-        } else if (msg.replyToMessageId == messageId) {
-          item.replaceReplyContent(messageId, content);
+        } else {
+          item.replaceReplyContent(chatId, messageId, content);
         }
         i++;
       }
@@ -1792,10 +1791,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
         ArrayList<TGMessage> items = adapter.getItems();
         if (!adapter.isEmpty() && items != null) {
           for (TGMessage item : items) {
-            TdApi.Message msg = item.getMessage();
-            if (msg.replyToMessageId == messageId) {
-              item.replaceReplyTranslation(messageId, translatedText);
-            }
+            item.replaceReplyTranslation(chatId, messageId, translatedText);
           }
         }
       }
@@ -1914,9 +1910,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
       for (long messageId : messageIds) {
         switch (item.removeMessage(messageId)) {
           case TGMessage.REMOVE_NOTHING: {
-            if (item.getMessage().replyToMessageId == messageId) {
-              item.removeReply(messageId);
-            }
+            item.removeReply(chatId, messageId);
             break;
           }
           case TGMessage.REMOVE_COMBINATION: {
@@ -2009,7 +2003,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     AtomicInteger addedAfter = new AtomicInteger();
 
     RunnableData<TdApi.Message> callback = message -> {
-      if (TD.isSecret(message))
+      if (Td.isSecret(message.content))
         return;
       boolean matchesFilter = filter == null || Td.matchesFilter(message, filter);
       MediaItem item = matchesFilter ? MediaItem.valueOf(controller.context(), tdlib, message) : null;
@@ -2266,7 +2260,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
 
     if (i != -1 && MessagesHolder.isMessageType(adapter.getItemViewType(i))) {
       TGMessage message = adapter.getMessage(i);
-      boolean isBottomSponsored = adapter.getBottomMessage() != null && adapter.getBottomMessage().isSponsored() && adapter.getMessageCount() > 1;
+      boolean isBottomSponsored = adapter.getBottomMessage() != null && adapter.getBottomMessage().isSponsoredMessage() && adapter.getMessageCount() > 1;
 
       ThreadInfo threadInfo = loader.getMessageThread();
       if (message != null && message.getChatId() != 0) {
@@ -2288,7 +2282,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           scrollMessageId = scrollMessageChatId = 0;
           scrollMessageOtherIds = null;
         } else if (isBottomSponsored) {
-          if (message.isSponsored()) {
+          if (message.isSponsoredMessage()) {
             // the bottom VISIBLE message is sponsored - no need to save that data
             scrollMessageId = scrollMessageChatId = scrollOffsetInPixels = 0;
             scrollMessageOtherIds = null;

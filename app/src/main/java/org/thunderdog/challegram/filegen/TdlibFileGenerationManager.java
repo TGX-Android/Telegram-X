@@ -78,6 +78,7 @@ import me.vkryl.core.BitwiseUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
 import me.vkryl.core.unit.ByteUnit;
+import me.vkryl.td.Td;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.OkHttpClient;
@@ -1497,7 +1498,7 @@ public final class TdlibFileGenerationManager {
   }
 
   public <T extends TdApi.InputMessageContent> T createThumbnail (@NonNull final T content, final boolean isSecretChat, @Nullable final TdApi.File file) {
-    final boolean isSecret = isSecretChat || TD.isSecret(content);
+    final boolean isSecret = isSecretChat || Td.isSecret(content);
     final int resolution = content.getConstructor() == TdApi.InputMessageSticker.CONSTRUCTOR || isSecret ? SMALL_THUMB_RESOLUTION : BIG_THUMB_RESOLUTION;
 
     switch (content.getConstructor()) {

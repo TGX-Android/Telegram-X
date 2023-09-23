@@ -41,6 +41,7 @@ public class TdlibListeners {
   final ReferenceList<MessageEditListener> messageEditListeners;
   final ReferenceList<ChatListener> chatListeners;
   final ReferenceMap<String, ChatListListener> chatListListeners;
+  final ReferenceList<StoryListener> storyListeners;
   final ReferenceList<NotificationSettingsListener> settingsListeners;
   final ReferenceList<StickersListener> stickersListeners;
   final ReferenceList<AnimationsListener> animationsListeners;
@@ -64,6 +65,7 @@ public class TdlibListeners {
   final ReferenceLongMap<MessageListener> messageChatListeners;
   final ReferenceLongMap<MessageEditListener> messageEditChatListeners;
   final ReferenceLongMap<ChatListener> specificChatListeners;
+  final ReferenceMap<String, StoryListener> specificStoryListeners;
   final ReferenceMap<String, ForumTopicInfoListener> specificForumTopicListeners;
   final ReferenceLongMap<NotificationSettingsListener> chatSettingsListeners;
   final ReferenceIntMap<FileUpdateListener> fileUpdateListeners;
@@ -79,6 +81,7 @@ public class TdlibListeners {
     this.messageListeners = new ReferenceList<>();
     this.messageEditListeners = new ReferenceList<>();
     this.chatListeners = new ReferenceList<>();
+    this.storyListeners = new ReferenceList<>();
     this.chatListListeners = new ReferenceMap<>(true);
     this.settingsListeners = new ReferenceList<>(true);
     this.stickersListeners = new ReferenceList<>(true);
@@ -105,6 +108,7 @@ public class TdlibListeners {
     this.messageChatListeners = new ReferenceLongMap<>();
     this.messageEditChatListeners = new ReferenceLongMap<>();
     this.specificChatListeners = new ReferenceLongMap<>();
+    this.specificStoryListeners = new ReferenceMap<>();
     this.specificForumTopicListeners = new ReferenceMap<>(true);
     this.chatSettingsListeners = new ReferenceLongMap<>(true);
     this.fileUpdateListeners = new ReferenceIntMap<>();
@@ -1267,6 +1271,104 @@ public class TdlibListeners {
     updateChatMessageAutoDeleteTime(update.chatId, update.messageAutoDeleteTime, specificChatListeners.iterator(update.chatId));
   }
 
+  // updateChatActiveStories
+
+  private static void updateChatActiveStories (TdApi.ChatActiveStories activeStories, @Nullable Iterator<ChatListener> list) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onChatActiveStoriesChanged(activeStories);
+      }
+    }
+  }
+
+  void updateChatActiveStories (TdApi.UpdateChatActiveStories update) {
+    updateChatActiveStories(update.activeStories, chatListeners.iterator());
+    updateChatActiveStories(update.activeStories, specificChatListeners.iterator(update.activeStories.chatId));
+  }
+
+  // updateStory
+
+  private static String uniqueStoryKey (TdApi.Story story) {
+    return uniqueStoryKey(story.senderChatId, story.id);
+  }
+
+  private static String uniqueStoryKey (long storySenderChatId, int storyId) {
+    return storySenderChatId + "_" + storyId;
+  }
+
+  private static void updateStory (TdApi.Story story, @Nullable Iterator<StoryListener> list) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onStoryUpdated(story);
+      }
+    }
+  }
+
+  void updateStory (TdApi.UpdateStory update) {
+    updateStory(update.story, storyListeners.iterator());
+    updateStory(update.story, specificStoryListeners.iterator(uniqueStoryKey(update.story)));
+  }
+
+  // updateStoryDeleted
+
+  private static void updateStoryDeleted (long storySenderChatId, int storyId, @Nullable Iterator<StoryListener> list) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onStoryDeleted(storySenderChatId, storyId);
+      }
+    }
+  }
+
+  void updateStoryDeleted (TdApi.UpdateStoryDeleted update) {
+    updateStoryDeleted(update.storySenderChatId, update.storyId, storyListeners.iterator());
+    updateStoryDeleted(update.storySenderChatId, update.storyId, specificStoryListeners.iterator(uniqueStoryKey(update.storySenderChatId, update.storyId)));
+  }
+
+  // updateStorySendSucceeded
+
+  private static void updateStorySendSucceeded (TdApi.Story story, int oldStoryId, @Nullable Iterator<StoryListener> list) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onStorySendSucceeded(story, oldStoryId);
+      }
+    }
+  }
+
+  void updateStorySendSucceeded (TdApi.UpdateStorySendSucceeded update) {
+    updateStorySendSucceeded(update.story, update.oldStoryId, storyListeners.iterator());
+    updateStorySendSucceeded(update.story, update.oldStoryId, specificStoryListeners.iterator(uniqueStoryKey(update.story.senderChatId, update.oldStoryId)));
+  }
+
+  // updateStorySendFailed
+
+  private static void updateStorySendFailed (TdApi.Story story, @Nullable TdApi.CanSendStoryResult error, int errorCode, String errorMessage, @Nullable Iterator<StoryListener> list) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onStorySendFailed(story, error, errorCode, errorMessage);
+      }
+    }
+  }
+
+  void updateStorySendFailed (TdApi.UpdateStorySendFailed update) {
+    updateStorySendFailed(update.story, update.error, update.errorCode, update.errorMessage, storyListeners.iterator());
+    updateStorySendFailed(update.story, update.error, update.errorCode, update.errorMessage, specificStoryListeners.iterator(uniqueStoryKey(update.story)));
+  }
+
+  // updateStoryStealthMode
+
+  private static void updateStoryStealthMode (int activeUntilDate, int cooldownUntilDate, @Nullable Iterator<StoryListener> list) {
+    if (list != null) {
+      while (list.hasNext()) {
+        list.next().onStoryStealthModeUpdated(activeUntilDate, cooldownUntilDate);
+      }
+    }
+  }
+
+  void updateStoryStealthMode (TdApi.UpdateStoryStealthMode update) {
+    updateStoryStealthMode(update.activeUntilDate, update.cooldownUntilDate, storyListeners.iterator());
+    updateStoryStealthMode(update.activeUntilDate, update.cooldownUntilDate, specificStoryListeners.combinedIterator());
+  }
+
   // updateChatVoiceChat
 
   private static void updateChatVideoChat (long chatId, TdApi.VideoChat voiceChat, @Nullable Iterator<ChatListener> list) {
@@ -1374,17 +1476,17 @@ public class TdlibListeners {
 
   // updateChatIsBlocked
 
-  private static void updateChatIsBlocked (long chatId, boolean isBlocked, @Nullable Iterator<ChatListener> list) {
+  private static void updateChatBlockList (long chatId, @Nullable TdApi.BlockList blockList, @Nullable Iterator<ChatListener> list) {
     if (list != null) {
       while (list.hasNext()) {
-        list.next().onChatBlocked(chatId, isBlocked);
+        list.next().onChatBlockListChanged(chatId, blockList);
       }
     }
   }
 
-  void updateChatIsBlocked (TdApi.UpdateChatIsBlocked update) {
-    updateChatIsBlocked(update.chatId, update.isBlocked, chatListeners.iterator());
-    updateChatIsBlocked(update.chatId, update.isBlocked, specificChatListeners.iterator(update.chatId));
+  void updateChatBlockList (TdApi.UpdateChatBlockList update) {
+    updateChatBlockList(update.chatId, update.blockList, chatListeners.iterator());
+    updateChatBlockList(update.chatId, update.blockList, specificChatListeners.iterator(update.chatId));
   }
 
   // updateChatClientDataChanged

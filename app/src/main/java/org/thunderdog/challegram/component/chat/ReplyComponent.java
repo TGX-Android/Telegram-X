@@ -62,6 +62,9 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.Destroyable;
 import me.vkryl.td.Td;
 
+// It's a good idea to fully rework this component at some point to make it more flexible & animated
+// by using newer tools that were implemented after this component was created.
+@Deprecated
 public class ReplyComponent implements Client.ResultHandler, Destroyable {
   private static final int FLAG_ALLOW_TOUCH_EVENTS = 1 << 1;
   private static final int FLAG_FORCE_TITLE = 1 << 3;
@@ -506,36 +509,54 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     setContent(title, content, false, null, preview, image, false, false);
   }
 
-  private @Nullable TdApi.Function<TdApi.Message> retryFunction;
+  private @Nullable TdApi.Function<?> retryFunction;
 
   public void load () {
     if (parent == null)
       return;
     TdApi.Message message = parent.getMessage();
-    if (message.chatId == message.replyInChatId && message.replyToMessageId != 0) {
-      TdApi.Message foundMessage = parent.manager().getAdapter().tryFindMessage(message.replyInChatId, message.replyToMessageId);
-      if (foundMessage != null) {
-        setMessage(foundMessage, false, true);
-        return;
+    if (message.replyTo == null) {
+      return;
+    }
+    final TdApi.Function<?> function, retryFunction;
+    switch (message.replyTo.getConstructor()) {
+      case TdApi.MessageReplyToMessage.CONSTRUCTOR: {
+        TdApi.MessageReplyToMessage replyToMessage = (TdApi.MessageReplyToMessage) message.replyTo;
+        if (message.chatId == replyToMessage.chatId) {
+          TdApi.Message foundMessage = parent.manager().getAdapter().tryFindMessage(replyToMessage.chatId, replyToMessage.messageId);
+          if (foundMessage != null) {
+            setMessage(foundMessage, false, true);
+            return;
+          }
+        }
+        if (message.forwardInfo != null && message.forwardInfo.fromChatId != 0 && message.forwardInfo.fromMessageId != 0 && !parent.isRepliesChat()) {
+          function = new TdApi.GetRepliedMessage(message.forwardInfo.fromChatId, message.forwardInfo.fromMessageId);
+        } else {
+          function = new TdApi.GetRepliedMessage(message.chatId, message.id);
+        }
+        retryFunction = new TdApi.GetMessage(replyToMessage.chatId, replyToMessage.messageId);
+        break;
       }
+      case TdApi.MessageReplyToStory.CONSTRUCTOR: {
+        TdApi.MessageReplyToStory replyToStory = (TdApi.MessageReplyToStory) message.replyTo;
+        function = new TdApi.GetStory(replyToStory.storySenderChatId, replyToStory.storyId, true);
+        retryFunction = new TdApi.GetStory(replyToStory.storySenderChatId, replyToStory.storyId, false);
+        break;
+      }
+      default:
+        throw new UnsupportedOperationException(message.replyTo.toString());
     }
     flags |= FLAG_LOADING;
-    final TdApi.Function<TdApi.Message> function;
-    if (message.forwardInfo != null && message.forwardInfo.fromChatId != 0 && message.forwardInfo.fromMessageId != 0 && !parent.isRepliesChat()) {
-      function = new TdApi.GetRepliedMessage(message.forwardInfo.fromChatId, message.forwardInfo.fromMessageId);
-    } else {
-      function = new TdApi.GetRepliedMessage(message.chatId, message.id);
-    }
-    if (message.replyInChatId != 0 && message.replyToMessageId != 0) {
-      retryFunction = new TdApi.GetMessage(message.replyInChatId, message.replyToMessageId);
-    } else {
-      retryFunction = null;
-    }
+    this.retryFunction = retryFunction;
     tdlib.send(function, this);
   }
 
   private void parseContent (final TdApi.Message msg, final boolean forceRequestImage) {
     Background.instance().post(() -> setMessage(msg, forceRequestImage, false));
+  }
+
+  private void parseContent (final TdApi.Story story, final boolean forceRequestImage) {
+    Background.instance().post(() -> setStory(story, forceRequestImage, false));
   }
 
   public void setChannelTitle (final String title) {
@@ -605,6 +626,10 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
 
   // private boolean isPrivate;
 
+  private void setStory (TdApi.Story story, boolean forceRequestImage, boolean forceLocal) {
+    // TODO
+  }
+
   private void setMessage (TdApi.Message msg, boolean forceRequestImage, boolean forceLocal) {
     currentMessage = msg;
     if ((flags & FLAG_USE_COLORIZE) != 0 && !tdlib.isSelfSender(msg)) {
@@ -612,7 +637,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     } else {
       nameColorId = ColorId.NONE;
     }
-    boolean isPrivate = msg.selfDestructTime != 0;
+    boolean isPrivate = Td.isSecret(msg.content);
     Path contour = null;
     TdApi.Thumbnail thumbnail = null;
     TdApi.PhotoSize photoSize = null;
@@ -814,6 +839,10 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     switch (object.getConstructor()) {
       case TdApi.Message.CONSTRUCTOR: {
         parseContent((TdApi.Message) object, false);
+        break;
+      }
+      case TdApi.Story.CONSTRUCTOR: {
+        parseContent((TdApi.Story) object, false);
         break;
       }
       case TdApi.Error.CONSTRUCTOR: {

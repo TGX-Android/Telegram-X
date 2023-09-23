@@ -1152,7 +1152,8 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
         }
         if (tdlib.canReportChatSpam(chat))
           canReportSpam++;
-        if (tdlib.chatBlocked(chat)) {
+        TdApi.BlockList blockList = tdlib.chatBlockList(chat);
+        if (blockList != null && blockList.getConstructor() == TdApi.BlockListMain.CONSTRUCTOR) {
           canUnblock++;
         } else {
           canBlock++;
@@ -1611,7 +1612,7 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
         if (isUnblock) {
           for (int i = selectedChats.size() - 1; i >= 0; i--) {
             long chatId = selectedChats.keyAt(i);
-            tdlib.blockSender(tdlib.sender(chatId), false, tdlib.okHandler());
+            tdlib.unblockSender(tdlib.sender(chatId), tdlib.okHandler());
           }
         } else {
           showOptions(
@@ -1624,7 +1625,8 @@ public class ChatsController extends TelegramViewController<ChatsController.Argu
               if (optionId == R.id.btn_unblockSender || optionId == R.id.btn_blockSender) {
                 for (int i = selectedChats.size() - 1; i >= 0; i--) {
                   long chatId = selectedChats.keyAt(i);
-                  tdlib.blockSender(tdlib.sender(chatId), optionId == R.id.btn_blockSender, tdlib.okHandler(after));
+                  TdApi.MessageSender sender = tdlib.sender(chatId);
+                  tdlib.blockSender(sender, optionId == R.id.btn_blockSender ? new TdApi.BlockListMain() : null, tdlib.okHandler(after));
                 }
               }
               return true;

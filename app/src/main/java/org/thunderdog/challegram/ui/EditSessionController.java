@@ -217,9 +217,9 @@ public class EditSessionController extends EditBaseController<EditSessionControl
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
     items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_sessionPlatform, SessionIconKt.asIcon(session), (session.platform + " " + session.systemVersion).trim(), false));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_sessionCountry, R.drawable.baseline_location_on_24, StringUtils.isEmpty(session.country) ? Lang.getString(R.string.SessionLocationUnknown) : session.country, false));
+    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_sessionCountry, R.drawable.baseline_location_on_24, StringUtils.isEmpty(session.location) ? Lang.getString(R.string.SessionLocationUnknown) : session.location, false));
     items.add(new ListItem(ListItem.TYPE_SEPARATOR_FULL));
-    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_sessionIp, R.drawable.baseline_router_24, StringUtils.isEmpty(session.ip) ? Lang.getString(R.string.SessionIpUnknown) : session.ip, false));
+    items.add(new ListItem(ListItem.TYPE_VALUED_SETTING_COMPACT, R.id.btn_sessionIp, R.drawable.baseline_router_24, StringUtils.isEmpty(session.ipAddress) ? Lang.getString(R.string.SessionIpUnknown) : session.ipAddress, false));
     items.add(new ListItem(ListItem.TYPE_SHADOW_BOTTOM));
 
     if (!session.isPasswordPending) {

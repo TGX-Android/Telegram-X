@@ -87,8 +87,13 @@ public class ThreadInfo {
     return threadInfo.messages != null && threadInfo.messages.length > 0;
   }
 
-  public boolean isRootMessage (long messageId) {
-    return getMessage(messageId) != null;
+  public boolean isRootMessage (@Nullable TdApi.MessageReplyTo replyTo) {
+    if (replyTo != null && replyTo.getConstructor() == TdApi.MessageReplyToMessage.CONSTRUCTOR) {
+      TdApi.MessageReplyToMessage replyToMessage = (TdApi.MessageReplyToMessage) replyTo;
+      TdApi.Message message = getMessage(replyToMessage.messageId);
+      return message != null && message.chatId == replyToMessage.chatId;
+    }
+    return false;
   }
 
   public @Nullable TdApi.Message getMessage (long messageId) {

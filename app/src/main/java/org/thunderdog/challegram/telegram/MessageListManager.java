@@ -10,7 +10,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-package org.thunderdog.challegram.data;
+package org.thunderdog.challegram.telegram;
 
 import androidx.annotation.Nullable;
 import androidx.annotation.UiThread;
@@ -18,9 +18,7 @@ import androidx.annotation.UiThread;
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.Log;
-import org.thunderdog.challegram.telegram.ListManager;
-import org.thunderdog.challegram.telegram.MessageListener;
-import org.thunderdog.challegram.telegram.Tdlib;
+import org.thunderdog.challegram.data.TD;
 
 import java.util.ArrayList;
 import java.util.Arrays;

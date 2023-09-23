@@ -193,6 +193,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private static final int FLAG_BEING_ADDED = 1 << 31;
 
   protected TdApi.Message msg;
+  protected TdApi.SponsoredMessage sponsoredMessage;
   private int flags;
 
   protected int mergeTime, mergeIndex;
@@ -480,11 +481,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
 
     ThreadInfo messageThread = messagesController().getMessageThread();
-    if (msg.replyToMessageId != 0 && (messageThread == null || !messageThread.isRootMessage(msg.replyToMessageId))) {
-      loadReply();
+    if (msg.replyTo != null && (messageThread == null || !messageThread.isRootMessage(msg.replyTo))) {
+      if (msg.replyTo.getConstructor() == TdApi.MessageReplyToMessage.CONSTRUCTOR) { // TODO: support replies to stories
+        loadReply();
+      }
     }
 
-    if (isHot() && needHotTimer() && msg.selfDestructIn < msg.selfDestructTime) {
+    if (isHot() && needHotTimer() && isHotOpened()) {
       startHotTimer(false);
     }
 
@@ -531,7 +534,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   private String genTime () {
     if (isEventLog()) {
       return Lang.getRelativeTimestampShort(msg.date, TimeUnit.SECONDS);
-    } else if (isSponsored()) {
+    } else if (isSponsoredMessage()) {
       return Lang.getString(R.string.SponsoredSign);
     }
     StringBuilder b = new StringBuilder();
@@ -648,7 +651,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   public final boolean mergeWith (@Nullable TGMessage top, boolean isBottom) {
     if (top != null) {
       top.setNeedExtraPadding(false);
-      top.setNeedExtraPresponsoredPadding(isSponsored());
+      top.setNeedExtraPresponsoredPadding(isSponsoredMessage());
       flags |= MESSAGE_FLAG_HAS_OLDER_MESSAGE;
     } else {
       flags &= ~MESSAGE_FLAG_HAS_OLDER_MESSAGE;
@@ -669,7 +672,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         top.setIsBottom(true);
       }
       setHeaderEnabled(!headerDisabled());
-      if ((top != null || getDate() != 0 || isScheduled()) && !isSponsored() && (!isBelowHeader || messagesController().areScheduledOnly())) {
+      if ((top != null || getDate() != 0 || isScheduled()) && !isSponsoredMessage() && (!isBelowHeader || messagesController().areScheduledOnly())) {
         flags |= FLAG_SHOW_DATE;
         setDate(genDate());
       } else {
@@ -890,7 +893,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   protected final boolean needCommentButton () {
-    if (isScheduled() || isSponsored() || !allowInteraction()) {
+    if (isScheduled() || isSponsoredMessage() || !allowInteraction()) {
       return false;
     }
     if (isChannel()) {
@@ -958,12 +961,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           TdApi.MessageThreadInfo messageThread = (TdApi.MessageThreadInfo) result;
           ThreadInfo threadInfo = ThreadInfo.openedFromChat(tdlib, messageThread, getChatId());
           if (Config.SHOW_CHANNEL_POST_REPLY_INFO_IN_COMMENTS && isChannel() &&
-            msg.replyInChatId != 0 && msg.replyToMessageId != 0 &&
+            msg.replyTo != null &&
             msg.chatId == query.chatId && isDescendantOrSelf(query.messageId)) {
             TdApi.Message message = threadInfo.getOldestMessage();
-            if (message != null && message.replyToMessageId == 0 && tdlib.isChannelAutoForward(message)) {
-              message.replyInChatId = msg.replyInChatId;
-              message.replyToMessageId = msg.replyToMessageId;
+            if (message != null && message.replyTo == null && tdlib.isChannelAutoForward(message)) {
+              message.replyTo = msg.replyTo;
             }
           }
           TdlibUi.ChatOpenParameters params = new TdlibUi.ChatOpenParameters().keepStack().messageThread(threadInfo).after(chatId -> {
@@ -1341,6 +1343,14 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (!useBubbles()) {
       return true;
     }
+    if (isSponsoredMessage()) {
+      switch (sponsoredMessage.sponsor.type.getConstructor()) {
+        case TdApi.MessageSponsorTypeWebsite.CONSTRUCTOR:
+        case TdApi.MessageSponsorTypePrivateChannel.CONSTRUCTOR:
+          return false;
+      }
+      return true;
+    }
     if (isThreadHeader() && messagesController().getMessageThread().areComments()) {
       return false;
     }
@@ -1388,7 +1398,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (!useBubble() || separateReplyFromBubble()) {
       return false;
     }
-    if (isSponsored() && useBubbles())
+    if (isSponsoredMessage() && useBubbles())
       return true;
     if (isPsa() && forceForwardedInfo())
       return true;
@@ -2235,7 +2245,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       RectF rectF = Paints.getRectF();
       rectF.set(lineLeft, lineTop, lineRight, lineBottom);
       final int lineColor = getVerticalLineColor();
-      c.drawRoundRect(rectF, lineWidth / 2, lineWidth / 2, Paints.fillingPaint(lineColor));
+      c.drawRoundRect(rectF, lineWidth / 2f, lineWidth / 2f, Paints.fillingPaint(lineColor));
 
       if (mergeTop) {
         c.drawRect(lineLeft, lineTop, lineRight, lineTop + lineWidth, Paints.fillingPaint(lineColor));
@@ -2649,7 +2659,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   @CallSuper
   public boolean performLongPress (View view, float x, float y) {
-    if (isSponsored()) {
+    if (isSponsoredMessage()) {
       return false;
     }
     boolean result = false;
@@ -2712,16 +2722,17 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         }
         case CLICK_TYPE_REPLY: {
           if (replyData != null && replyData.hasValidMessage()) {
-            if (msg.replyInChatId != msg.chatId) {
+            TdApi.MessageReplyToMessage replyToMessage = (TdApi.MessageReplyToMessage) msg.replyTo;
+            if (replyToMessage.chatId != msg.chatId) {
               if (isMessageThread() && isThreadHeader()) {
-                tdlib.ui().openMessage(controller(), msg.replyInChatId, new MessageId(msg.replyInChatId, msg.replyToMessageId), openParameters());
+                tdlib.ui().openMessage(controller(), replyToMessage.chatId, new MessageId(replyToMessage), openParameters());
               } else {
-                openMessageThread(new MessageId(msg.replyInChatId, msg.replyToMessageId));
+                openMessageThread(new MessageId(replyToMessage));
               }
             } else if (isScheduled()) {
-              tdlib.ui().openMessage(controller(), msg.replyInChatId, new MessageId(msg.replyInChatId, msg.replyToMessageId), openParameters());
+              tdlib.ui().openMessage(controller(), replyToMessage.chatId, new MessageId(replyToMessage), openParameters());
             } else {
-              highlightOtherMessage(msg.replyToMessageId);
+              highlightOtherMessage(replyToMessage.messageId);
             }
           }
           break;
@@ -3081,12 +3092,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         hAdminNameT = null;
       }
 
-      final String authorName;
-      if (forceForwardedInfo()) {
-        authorName = forwardInfo.getAuthorName();
-      } else {
-        authorName = sender.getName();
-      }
+      final String authorName = getDisplayAuthor();
       if (needName(true) && maxWidth > 0) {
         if (!forceForwardedInfo() && sender.hasChatMark()) {
           hAuthorChatMark = makeChatMark(maxWidth);
@@ -3195,6 +3201,16 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     }
   }
 
+  private String getDisplayAuthor () {
+    if (isSponsoredMessage()) {
+      return tdlib.sponsorName(sponsoredMessage.sponsor);
+    } else if (forceForwardedInfo()) {
+      return forwardInfo.getAuthorName();
+    } else {
+      return sender.getName();
+    }
+  }
+
   private void loadForward () {
     if (msg.forwardInfo == null) {
       return;
@@ -3279,20 +3295,20 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     replyData.load();
   }
 
-  public final void replaceReplyContent (long messageId, TdApi.MessageContent newContent) {
-    if (msg.replyToMessageId == messageId && replyData != null) {
+  public final void replaceReplyContent (long chatId, long messageId, TdApi.MessageContent newContent) {
+    if (Td.equalsTo(msg.replyTo, chatId, messageId) && replyData != null) {
       replyData.replaceMessageContent(messageId, newContent);
     }
   }
 
-  public final void replaceReplyTranslation (long messageId, @Nullable TdApi.FormattedText translation) {
-    if (msg.replyToMessageId == messageId && replyData != null) {
+  public final void replaceReplyTranslation (long chatId, long messageId, @Nullable TdApi.FormattedText translation) {
+    if (Td.equalsTo(msg.replyTo, chatId, messageId) && replyData != null) {
       replyData.replaceMessageTranslation(messageId, translation);
     }
   }
 
-  public final void removeReply (long messageId) {
-    if (msg.replyToMessageId == messageId && replyData != null) {
+  public final void removeReply (long chatId, long messageId) {
+    if (Td.equalsTo(msg.replyTo, chatId, messageId) && replyData != null) {
       replyData.deleteMessageContent(messageId);
     }
   }
@@ -3860,8 +3876,35 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   public final void requestAvatar (AvatarReceiver receiver, boolean force) {
     if (hasAvatar || force) {
-      final float avatarRadiusDp = useBubbles() ? BUBBLE_AVATAR_RADIUS : AVATAR_RADIUS;
-      if (forceForwardedInfo()) {
+      if (isSponsoredMessage()) {
+        if (sponsoredMessage.sponsor.photo != null) {
+          receiver.requestSpecific(tdlib, sponsoredMessage.sponsor.photo, AvatarReceiver.Options.NONE);
+        } else {
+          TdApi.MessageSponsor sponsor = sponsoredMessage.sponsor;
+          switch (sponsor.type.getConstructor()) {
+            case TdApi.MessageSponsorTypeBot.CONSTRUCTOR: {
+              TdApi.MessageSponsorTypeBot bot = (TdApi.MessageSponsorTypeBot) sponsor.type;
+              receiver.requestUser(tdlib, bot.botUserId, AvatarReceiver.Options.NONE);
+              break;
+            }
+            case TdApi.MessageSponsorTypePublicChannel.CONSTRUCTOR: {
+              TdApi.MessageSponsorTypePublicChannel publicChannel = (TdApi.MessageSponsorTypePublicChannel) sponsor.type;
+              receiver.requestChat(tdlib, publicChannel.chatId, AvatarReceiver.Options.NONE);
+              break;
+            }
+            case TdApi.MessageSponsorTypePrivateChannel.CONSTRUCTOR: {
+              TdApi.MessageSponsorTypePrivateChannel privateChannel = (TdApi.MessageSponsorTypePrivateChannel) sponsor.type;
+              receiver.requestPlaceholder(tdlib, new AvatarPlaceholder.Metadata(ColorId.avatarGreen, TD.getLetters(privateChannel.title)), AvatarReceiver.Options.NONE);
+              break;
+            }
+            case TdApi.MessageSponsorTypeWebsite.CONSTRUCTOR: {
+              TdApi.MessageSponsorTypeWebsite website = (TdApi.MessageSponsorTypeWebsite) sponsor.type;
+              receiver.requestPlaceholder(tdlib, new AvatarPlaceholder.Metadata(ColorId.avatarGreen, TD.getLetters(website.name)), AvatarReceiver.Options.NONE);
+              break;
+            }
+          }
+        }
+      } else if (forceForwardedInfo()) {
         forwardInfo.requestAvatar(receiver);
       } else if (sender.isDemo()) {
         receiver.requestPlaceholder(tdlib, sender.getPlaceholderMetadata(), AvatarReceiver.Options.NONE);
@@ -4219,7 +4262,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (msg.content.getConstructor() == TdApiExt.MessageChatEvent.CONSTRUCTOR) {
       return true;
     }
-    return isSponsored() || isDemoChat();
+    return isSponsoredMessage() || isDemoChat();
   }
 
   public final void getIds (@NonNull LongSet ids, long afterMessageId, long beforeMessageId) {
@@ -4255,7 +4298,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public final boolean isMessageThreadRoot () {
-    return canGetMessageThread() && (isChannel() || (isMessageThread() && isThreadHeader()) || (msg.messageThreadId != 0 && msg.replyToMessageId == 0));
+    return canGetMessageThread() && (isChannel() || (isMessageThread() && isThreadHeader()) || (msg.messageThreadId != 0 && msg.replyTo == null));
   }
 
   public final long getMessageThreadId () {
@@ -4387,7 +4430,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   @AnyThread
   public final boolean wouldCombineWith (TdApi.Message message) {
-    if (msg.mediaAlbumId == 0 || msg.mediaAlbumId != message.mediaAlbumId || msg.selfDestructTime != message.selfDestructTime || isHot() || isEventLog() || isSponsored()) {
+    if (msg.mediaAlbumId == 0 || msg.mediaAlbumId != message.mediaAlbumId || !Td.equalsTo(msg.selfDestructType, message.selfDestructType) || isHot() || isEventLog() || isSponsoredMessage()) {
       return false;
     }
     int combineMode = TD.getCombineMode(msg);
@@ -4486,7 +4529,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
 
   private String getAdministratorSign () {
     String result = null;
-    if (isSponsored()) {
+    if (isSponsoredMessage()) {
       return null;
     } else if (administrator != null) {
       if (!StringUtils.isEmpty(administrator.customTitle))
@@ -4569,10 +4612,6 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     boolean isTransparent = !useBubble() || useCircleBubble();
     boolean isWhite = isTransparent || (drawBubbleTimeOverContent() && !useForward());
     return (isWhite && isTransparent);
-  }
-
-  public boolean isSponsored () {
-    return false;
   }
 
   public final int getPinnedMessageCount () {
@@ -4728,11 +4767,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public boolean canBeSelected () {
-    return (!isNotSent() || canResend()) && (flags & FLAG_UNSUPPORTED) == 0 && allowInteraction() && !isSponsored() && !messagesController().inSearchMode();
+    return (!isNotSent() || canResend()) && (flags & FLAG_UNSUPPORTED) == 0 && allowInteraction() && !isSponsoredMessage() && !messagesController().inSearchMode();
   }
 
   public boolean canBePinned () {
-    return !isNotSent() && allowInteraction() && !isSponsored();
+    return !isNotSent() && allowInteraction() && !isSponsoredMessage();
   }
 
   public boolean canEditText () {
@@ -4744,7 +4783,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public boolean canBeReacted () {
-    return !isSponsored() && !isEventLog() && !(msg.content instanceof TdApi.MessageCall) && !Td.isEmpty(messageAvailableReactions);
+    return !isSponsoredMessage() && !isEventLog() && !(msg.content instanceof TdApi.MessageCall) && !Td.isEmpty(messageAvailableReactions);
   }
 
   public boolean canBeSaved () {
@@ -4940,7 +4979,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     if (msg.forwardInfo != null) {
       if (isRepliesChat()) {
         MessageId replyMessageId = new MessageId(msg.forwardInfo.fromChatId, msg.forwardInfo.fromMessageId);
-        MessageId replyToMessageId = new MessageId(msg.replyInChatId, msg.replyToMessageId);
+        MessageId replyToMessageId = Td.toMessageId(msg.replyTo);
         openMessageThread(replyMessageId, replyToMessageId);
       } else {
         tdlib.ui().openMessage(controller(), msg.forwardInfo.fromChatId, new MessageId(msg.forwardInfo.fromChatId, msg.forwardInfo.fromMessageId), openParameters());
@@ -5092,7 +5131,15 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public boolean isHotDone () {
-    return isOutgoing() && msg.selfDestructIn < msg.selfDestructTime;
+    return isOutgoing() && isHotOpened();
+  }
+
+  public boolean isHotOpened () {
+    if (msg.selfDestructType != null && msg.selfDestructType.getConstructor() == TdApi.MessageSelfDestructTypeTimer.CONSTRUCTOR) {
+      TdApi.MessageSelfDestructTypeTimer timer = (TdApi.MessageSelfDestructTypeTimer) msg.selfDestructType;
+      return msg.selfDestructIn < timer.selfDestructTime;
+    }
+    return false;
   }
 
   protected boolean needHotTimer () {
@@ -5174,7 +5221,11 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   }
 
   public float getHotExpiresFactor () {
-    return (float) (msg.selfDestructIn / msg.selfDestructTime);
+    if (msg.selfDestructType != null && msg.selfDestructType.getConstructor() == TdApi.MessageSelfDestructTypeTimer.CONSTRUCTOR) {
+      TdApi.MessageSelfDestructTypeTimer timer = (TdApi.MessageSelfDestructTypeTimer) msg.selfDestructType;
+      return (float) (msg.selfDestructIn / timer.selfDestructTime);
+    }
+    return 0f;
   }
 
   public String getHotTimerText () {
@@ -8732,4 +8783,108 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
     return emojiSets.toArray();
   }
 
+  // Sponsored-related tools
+
+  public boolean isSponsoredMessage () {
+    return sponsoredMessage != null;
+  }
+
+  public void openSponsoredMessage () {
+    if (!isSponsoredMessage()) {
+      return;
+    }
+    TdApi.MessageSponsor sponsor = sponsoredMessage.sponsor;
+    switch (sponsor.type.getConstructor()) {
+      case TdApi.MessageSponsorTypeBot.CONSTRUCTOR: {
+        TdApi.MessageSponsorTypeBot bot = (TdApi.MessageSponsorTypeBot) sponsor.type;
+        tdlib.ui().openInternalLinkType(this, null, bot.link, openParameters(), null);
+        break;
+      }
+      case TdApi.MessageSponsorTypePublicChannel.CONSTRUCTOR: {
+        TdApi.MessageSponsorTypePublicChannel publicChannel = (TdApi.MessageSponsorTypePublicChannel) sponsor.type;
+        if (publicChannel.link != null) {
+          tdlib.ui().openInternalLinkType(this, null, publicChannel.link, openParameters(), null);
+        } else {
+          tdlib.ui().openChat(this, publicChannel.chatId, new TdlibUi.ChatOpenParameters().urlOpenParameters(openParameters()).keepStack());
+        }
+        break;
+      }
+      case TdApi.MessageSponsorTypePrivateChannel.CONSTRUCTOR: {
+        TdApi.MessageSponsorTypePrivateChannel privateChannel = (TdApi.MessageSponsorTypePrivateChannel) sponsor.type;
+        tdlib.ui().openUrl(this, privateChannel.inviteLink, openParameters());
+        break;
+      }
+      case TdApi.MessageSponsorTypeWebsite.CONSTRUCTOR: {
+        TdApi.MessageSponsorTypeWebsite website = (TdApi.MessageSponsorTypeWebsite) sponsor.type;
+        tdlib.ui().openUrl(this, website.url, openParameters());
+        break;
+      }
+      default:
+        throw new UnsupportedOperationException(sponsor.type.toString());
+    }
+  }
+
+  public @StringRes int getSponsoredMessageButtonResId () {
+    if (!isSponsoredMessage()) {
+      return 0;
+    }
+    TdApi.MessageSponsor sponsor = sponsoredMessage.sponsor;
+    switch (sponsor.type.getConstructor()) {
+      case TdApi.MessageSponsorTypeBot.CONSTRUCTOR:
+        return R.string.AdOpenBot;
+      case TdApi.MessageSponsorTypePrivateChannel.CONSTRUCTOR:
+        return R.string.AdOpenChannel;
+      case TdApi.MessageSponsorTypePublicChannel.CONSTRUCTOR: {
+        TdApi.MessageSponsorTypePublicChannel publicChannel = (TdApi.MessageSponsorTypePublicChannel) sponsor.type;
+        if (publicChannel.link != null && publicChannel.link.getConstructor() == TdApi.InternalLinkTypeMessage.CONSTRUCTOR) {
+          return R.string.AdOpenPost;
+        }
+        return R.string.AdOpenChannel;
+      }
+      case TdApi.MessageSponsorTypeWebsite.CONSTRUCTOR: {
+        return R.string.AdOpenWebsite;
+      }
+      default:
+        throw new UnsupportedOperationException(sponsor.type.toString());
+    }
+  }
+
+  public String getSponsoredMessageUrl () {
+    if (!isSponsoredMessage()) {
+      return null;
+    }
+
+    TdApi.MessageSponsor sponsor = sponsoredMessage.sponsor;
+    switch (sponsor.type.getConstructor()) {
+      case TdApi.MessageSponsorTypeBot.CONSTRUCTOR: {
+        TdApi.MessageSponsorTypeBot bot = (TdApi.MessageSponsorTypeBot) sponsor.type;
+        if (bot.link.getConstructor() == TdApi.InternalLinkTypeBotStart.CONSTRUCTOR) {
+          TdApi.InternalLinkTypeBotStart botStart = (TdApi.InternalLinkTypeBotStart) bot.link;
+          return tdlib.tMeStartUrl(botStart.botUsername, botStart.startParameter, false);
+        }
+        // Ignoring other types
+        break;
+      }
+      case TdApi.MessageSponsorTypePrivateChannel.CONSTRUCTOR: {
+        TdApi.MessageSponsorTypePrivateChannel privateChannel = (TdApi.MessageSponsorTypePrivateChannel) sponsor.type;
+        return privateChannel.inviteLink;
+      }
+      case TdApi.MessageSponsorTypePublicChannel.CONSTRUCTOR: {
+        TdApi.MessageSponsorTypePublicChannel publicChannel = (TdApi.MessageSponsorTypePublicChannel) sponsor.type;
+        if (publicChannel.link != null) {
+          if (publicChannel.link.getConstructor() == TdApi.InternalLinkTypeMessage.CONSTRUCTOR) {
+            return ((TdApi.InternalLinkTypeMessage) publicChannel.link).url;
+          }
+        } else {
+          return tdlib.tMeChatUrl(publicChannel.chatId);
+        }
+      }
+      case TdApi.MessageSponsorTypeWebsite.CONSTRUCTOR: {
+        TdApi.MessageSponsorTypeWebsite website = (TdApi.MessageSponsorTypeWebsite) sponsor.type;
+        return website.url;
+      }
+    }
+
+    return null;
+  }
 }

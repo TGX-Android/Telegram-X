@@ -853,6 +853,7 @@
   <string name="MessageLifetime">Self-Destruct Timer</string>
   <string name="Done">Done</string>
   <string name="Off">Off</string>
+  <string name="TimerInstant">Immediately</string>
   <string name="Chats">Chats</string>
   <string name="Notifications">Notifications</string>
   <string name="NotificationsEnabled">Enabled</string>
@@ -1624,6 +1625,10 @@
   <string name="OpenProfile">View Profile</string>
   <string name="OpenChannel">View Channel</string>
   <string name="OpenGroup">View Group</string>
+  <string name="AdOpenChannel">View Channel</string>
+  <string name="AdOpenPost">View Post</string>
+  <string name="AdOpenWebsite">Open Website</string>
+  <string name="AdOpenBot">Open Bot</string>
   <string name="OpenBot">View Bot</string>
   <string name="SendAsCopy">Send as copy</string>
   <string name="RemoveCaptions">Remove captions in copies</string>

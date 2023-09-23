@@ -255,19 +255,6 @@ public class TD {
     return false;
   }
 
-  public static boolean isSecret (TdApi.InputMessageContent content) {
-    int selfDestructTime = 0;
-    switch (content.getConstructor()) {
-      case TdApi.InputMessagePhoto.CONSTRUCTOR:
-        selfDestructTime = ((TdApi.InputMessagePhoto) content).selfDestructTime;
-        break;
-      case TdApi.InputMessageVideo.CONSTRUCTOR:
-        selfDestructTime = ((TdApi.InputMessageVideo) content).selfDestructTime;
-        break;
-    }
-    return selfDestructTime != 0 && selfDestructTime <= 60;
-  }
-
   public static CharSequence formatString (@Nullable TdlibDelegate context, String text, TdApi.TextEntity[] entities, @Nullable Typeface defaultTypeface, @Nullable CustomTypefaceSpan.OnClickListener onClickListener) {
     if (entities == null || entities.length == 0)
       return text;
@@ -1500,10 +1487,6 @@ public class TD {
     return TimeUnit.SECONDS.toDays(muteForSeconds) / 365 > 0;
   }
 
-  public static boolean isSecret (TdApi.Message message) {
-    return Td.isSecret(message.content);
-  }
-
   public static boolean canSendToSecretChat (TdApi.MessageContent content) {
     switch (content.getConstructor()) {
       case TdApi.MessagePoll.CONSTRUCTOR:
@@ -1576,7 +1559,7 @@ public class TD {
               if (allowAnimation && durationSeconds < 30 && info.knownSize < ByteUnit.MB.toBytes(10) && !metadata.hasAudio) {
                 return new TdApi.InputMessageAnimation(inputFile, null, null, durationSeconds, videoWidth, videoHeight, caption, hasSpoiler);
               } else if (allowVideo && durationSeconds > 0) {
-                return new TdApi.InputMessageVideo(inputFile, null, null, durationSeconds, videoWidth, videoHeight, U.canStreamVideo(inputFile), caption, 0, hasSpoiler);
+                return new TdApi.InputMessageVideo(inputFile, null, null, durationSeconds, videoWidth, videoHeight, U.canStreamVideo(inputFile), caption, null, hasSpoiler);
               }
             }
           }
@@ -1617,16 +1600,18 @@ public class TD {
   }
 
   public static int getCombineMode (TdApi.Message message) {
-    if (message != null && !isSecret(message)) {
-      switch (message.content.getConstructor()) {
-        case TdApi.MessagePhoto.CONSTRUCTOR:
-        case TdApi.MessageVideo.CONSTRUCTOR:
-        case TdApi.MessageAnimation.CONSTRUCTOR:
-          return COMBINE_MODE_MEDIA;
-        case TdApi.MessageDocument.CONSTRUCTOR:
-          return COMBINE_MODE_FILES;
-        case TdApi.MessageAudio.CONSTRUCTOR:
-          return COMBINE_MODE_AUDIO;
+    if (message != null) {
+      if (!Td.isSecret(message.content)) {
+        switch (message.content.getConstructor()) {
+          case TdApi.MessagePhoto.CONSTRUCTOR:
+          case TdApi.MessageVideo.CONSTRUCTOR:
+          case TdApi.MessageAnimation.CONSTRUCTOR:
+            return COMBINE_MODE_MEDIA;
+          case TdApi.MessageDocument.CONSTRUCTOR:
+            return COMBINE_MODE_FILES;
+          case TdApi.MessageAudio.CONSTRUCTOR:
+            return COMBINE_MODE_AUDIO;
+        }
       }
     }
     return COMBINE_MODE_NONE;
@@ -1636,9 +1621,9 @@ public class TD {
     if (content != null) {
       switch (content.getConstructor()) {
         case TdApi.InputMessagePhoto.CONSTRUCTOR:
-          return ((TdApi.InputMessagePhoto) content).selfDestructTime == 0 ? COMBINE_MODE_MEDIA : COMBINE_MODE_NONE;
+          return ((TdApi.InputMessagePhoto) content).selfDestructType == null ? COMBINE_MODE_MEDIA : COMBINE_MODE_NONE;
         case TdApi.InputMessageVideo.CONSTRUCTOR:
-          return ((TdApi.InputMessageVideo) content).selfDestructTime == 0 ? COMBINE_MODE_MEDIA : COMBINE_MODE_NONE;
+          return ((TdApi.InputMessageVideo) content).selfDestructType == null ? COMBINE_MODE_MEDIA : COMBINE_MODE_NONE;
         case TdApi.InputMessageAnimation.CONSTRUCTOR:
           return COMBINE_MODE_MEDIA;
         case TdApi.InputMessageDocument.CONSTRUCTOR:
@@ -2394,9 +2379,11 @@ public class TD {
       false,
       false,
       false,
+      false,
       null,
       false,
       false,
+      false, false,
       true,
       new TdApi.UserTypeRegular(),
       null,
@@ -3105,12 +3092,12 @@ public class TD {
     } else {
       TdApi.InputMessageContent[] array = new TdApi.InputMessageContent[album.size()];
       album.toArray(array);
-      functions.add(new TdApi.SendMessageAlbum(chatId, 0, 0, options, array, false));
+      functions.add(new TdApi.SendMessageAlbum(chatId, 0, null, options, array, false));
     }
     album.clear();
   }
 
-  public static List<TdApi.Function<?>> toFunctions (long chatId, long messageThreadId, long replyToMessageId, TdApi.MessageSendOptions options, TdApi.InputMessageContent[] content, boolean needGroupMedia) {
+  public static List<TdApi.Function<?>> toFunctions (long chatId, long messageThreadId, @Nullable TdApi.MessageReplyTo replyTo, TdApi.MessageSendOptions options, TdApi.InputMessageContent[] content, boolean needGroupMedia) {
     if (content.length == 0)
       return Collections.emptyList();
 
@@ -3145,14 +3132,14 @@ public class TD {
       }
 
       if (sliceSize == 1) {
-        functions.add(new TdApi.SendMessage(chatId, messageThreadId, functions.isEmpty() ? replyToMessageId : 0, options, null, slice[0]));
+        functions.add(new TdApi.SendMessage(chatId, messageThreadId, functions.isEmpty() ? replyTo : null, options, null, slice[0]));
       } else {
         for (TdApi.InputMessageContent inputContent : slice) {
           if (inputContent.getConstructor() == TdApi.InputMessageDocument.CONSTRUCTOR) {
             ((TdApi.InputMessageDocument) inputContent).disableContentTypeDetection = true;
           }
         }
-        functions.add(new TdApi.SendMessageAlbum(chatId, messageThreadId, functions.isEmpty() ? replyToMessageId : 0, options, slice, false));
+        functions.add(new TdApi.SendMessageAlbum(chatId, messageThreadId, functions.isEmpty() ? replyTo : null, options, slice, false));
       }
 
       remaining -= sliceSize;
@@ -3163,7 +3150,7 @@ public class TD {
   }
 
   public static void processSingle (Tdlib tdlib, long chatId, TdApi.MessageSendOptions options, List<TdApi.Function<?>> functions, TdApi.InputMessageContent content) {
-    functions.add(new TdApi.SendMessage(chatId, 0, 0, options, null, content));
+    functions.add(new TdApi.SendMessage(chatId, 0, null, options, null, content));
   }
 
   public static boolean withinDistance (TdApi.File file, long offset) {
@@ -3582,6 +3569,10 @@ public class TD {
 
   public static boolean isChannel (TdApi.ChatType type) {
     return type != null && type.getConstructor() == TdApi.ChatTypeSupergroup.CONSTRUCTOR && ((TdApi.ChatTypeSupergroup) type).isChannel;
+  }
+
+  public static boolean isChannel (TdApi.InviteLinkChatType type) {
+    return type != null && type.getConstructor() == TdApi.InviteLinkChatTypeChannel.CONSTRUCTOR;
   }
 
   public static boolean isSupergroup (TdApi.ChatType type) {
@@ -5778,11 +5769,11 @@ public class TD {
     return -1;
   }
 
-  public static List<TdApi.SendMessage> sendMessageText (long chatId, long messageThreadId, long replyToMessageId, TdApi.MessageSendOptions sendOptions, @NonNull TdApi.InputMessageContent content, int maxCodePointCount) {
+  public static List<TdApi.SendMessage> sendMessageText (long chatId, long messageThreadId, @Nullable TdApi.MessageReplyTo replyTo, TdApi.MessageSendOptions sendOptions, @NonNull TdApi.InputMessageContent content, int maxCodePointCount) {
     List<TdApi.InputMessageContent> list = explodeText(content, maxCodePointCount);
     List<TdApi.SendMessage> result = new ArrayList<>(list.size());
     for (TdApi.InputMessageContent item : list) {
-      result.add(new TdApi.SendMessage(chatId, messageThreadId, replyToMessageId, sendOptions, null, item));
+      result.add(new TdApi.SendMessage(chatId, messageThreadId, replyTo, sendOptions, null, item));
     }
     return result;
   }
