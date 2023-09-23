@@ -127,7 +127,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
     return recyclerView;
   }
 
-  private static final float DEFAULT_STICKER_PADDING_DP = 4.5f;
+  private static final float DEFAULT_STICKER_PADDING_DP = 5.5f;
 
   public CustomRecyclerView onCreateRecyclerView () {
     reactionsController = new EmojiLayoutRecyclerController(context, tdlib, R.id.controller_emojiLayoutReactions);
@@ -139,7 +139,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
         int type = getItemViewType(position);
         if (type == StickerHolder.TYPE_STICKER) {
           TGStickerObj stickerObj = getSticker(position);
-          ((StickerSmallView) holder.itemView).setPadding(Screen.dp(stickerObj != null && stickerObj.isEmojiReaction() ? -1: DEFAULT_STICKER_PADDING_DP));
+          ((StickerSmallView) holder.itemView).setPadding(Screen.dp(stickerObj != null && stickerObj.isEmojiReaction() ? 0: DEFAULT_STICKER_PADDING_DP));
           ((StickerSmallView) holder.itemView).setChosen(stickerObj != null && chosenReactions != null && stickerObj.getReactionType() != null && chosenReactions.contains(TD.makeReactionKey(stickerObj.getReactionType())));
         }
 

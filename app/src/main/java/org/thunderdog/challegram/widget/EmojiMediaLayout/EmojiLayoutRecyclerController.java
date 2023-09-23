@@ -102,7 +102,13 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayoutRec
       }
     });
 
-    recyclerView = new CustomRecyclerView(context);
+    recyclerView = new CustomRecyclerView(context) {
+      @Override
+      protected void onMeasure (int widthSpec, int heightSpec) {
+        super.onMeasure(widthSpec, heightSpec);
+        checkWidth(getMeasuredWidth());
+      }
+    };
     recyclerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
     recyclerView.setOverScrollMode(Config.HAS_NICE_OVER_SCROLL_EFFECT ? View.OVER_SCROLL_IF_CONTENT_SCROLLS :View.OVER_SCROLL_NEVER);
     recyclerView.setHasFixedSize(true);
@@ -123,6 +129,16 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayoutRec
 
   public int getSpanCount () {
     return spanCount;
+  }
+
+
+  private int lastMeasuredWidth;
+
+  private void checkWidth (int width) {
+    if (width != 0 && lastMeasuredWidth != width) {
+      lastMeasuredWidth = width;
+      checkSpanCount();
+    }
   }
 
   public void checkSpanCount () {
@@ -970,8 +986,8 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayoutRec
     });
   }
 
-  public static int calculateSpanCount (int width, int minSpan, int itemWidthDp) {
-    return Math.max(minSpan, width / Screen.dp(itemWidthDp));
+  public static int calculateSpanCount (int width, int minSpan, int itemWidth) {
+    return Math.max(minSpan, width / itemWidth);
   }
 
   public final void setSpanCount (int spanCount) {

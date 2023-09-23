@@ -36,6 +36,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.component.emoji.MediaStickersAdapter;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGReaction;
@@ -640,6 +641,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
 
     reactionsPickerRecyclerView = reactionsPickerController.getRecyclerView();
     reactionsPickerRecyclerView.setPadding(Screen.dp(9.5f), 0, Screen.dp(9.5f), 0);
+    reactionsPickerRecyclerView.setClipToPadding(false);
 
     reactionsPickerRecyclerView.addItemDecoration(new BottomOffsetDecoration(() -> reactionsPickerController.measureItemsHeight(), 64));
     reactionsPickerRecyclerView.addItemDecoration(new RecyclerView.ItemDecoration() {
@@ -647,17 +649,18 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
       public void getItemOffsets (@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
         final int position = parent.getChildAdapterPosition(view);
         final int itemCount = parent.getAdapter().getItemCount();
+        final int itemType = parent.getAdapter().getItemViewType(position);
         final boolean isUnknown = position == RecyclerView.NO_POSITION;
-        int top = 0, bottom = 0;
+        int top = 0, leftRight = 0;
 
         if (position == 0 || isUnknown) {
           top = Math.max(getReactionPickerOffsetTopDefault(), getReactionPickerOffsetTopReal());
         }
-        if (position == itemCount - 1 || isUnknown) {
-          bottom = Screen.dp(56);
+        if (itemType == MediaStickersAdapter.StickerHolder.TYPE_STICKER) {
+          leftRight = Screen.dp(-1);
         }
 
-        outRect.set(0, top, 0, /*bottom*/0);
+        outRect.set(leftRight, top, leftRight, 0);
       }
     });
     reactionsPickerRecyclerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
