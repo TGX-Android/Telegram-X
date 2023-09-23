@@ -3896,14 +3896,14 @@ public class MessagesController extends ViewController<MessagesController.Argume
         // TODO save local draft
       } else if (inputView != null && inputView.textChangedSinceChatOpened() && isFocused()) {
         final TdApi.FormattedText outputText = inputView.getOutputText(false);
-        final TdApi.MessageReplyToMessage replyTo = getCurrentReplyId();
+        final @Nullable TdApi.MessageReplyToMessage replyTo = getCurrentReplyId();
         final long date = tdlib.currentTime(TimeUnit.SECONDS);
         final TdApi.InputMessageText inputMessageText = new TdApi.InputMessageText(
           outputText,
           getCurrentAllowLinkPreview(),
           false
         );
-        final TdApi.DraftMessage draftMessage = new TdApi.DraftMessage(replyTo.messageId, (int) date, inputMessageText);
+        final TdApi.DraftMessage draftMessage = new TdApi.DraftMessage(replyTo != null ? replyTo.messageId : 0, (int) date, inputMessageText);
         final long outputChatId = messageThread != null ? messageThread.getChatId() : getChatId();
         final long messageThreadId = messageThread != null ? messageThread.getMessageThreadId() : 0;
         if (messageThread != null) {
@@ -8777,7 +8777,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
     long chatId = getChatId();
     long messageThreadId = getMessageThreadId();
-    TdApi.MessageReplyTo replyTo = allowReply ? (clearInput ? getCurrentReplyId() : obtainReplyTo()) : null;
+    final @Nullable TdApi.MessageReplyTo replyTo = allowReply ? (clearInput ? getCurrentReplyId() : obtainReplyTo()) : null;
 
     TdApi.InputMessageContent content;
     if (allowDice && tdlib.shouldSendAsDice(msg)) {
