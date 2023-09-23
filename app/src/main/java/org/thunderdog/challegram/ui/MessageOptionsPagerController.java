@@ -229,7 +229,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
       reactionsPickerWrapper = new FrameLayoutFix(context) {
         @Override
         public boolean dispatchTouchEvent (MotionEvent ev) {
-          if (ev.getAction() == MotionEvent.ACTION_DOWN && !between(ev.getY(), getPickerTop(), getPickerBottom())) {
+          if (needIgnoreTouchEvent(ev)) {
             return false;
           }
           return super.dispatchTouchEvent(ev);
@@ -237,7 +237,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
 
         @Override
         public boolean onInterceptTouchEvent (MotionEvent ev) {
-          if (ev.getAction() == MotionEvent.ACTION_DOWN && !between(ev.getY(), getPickerTop(), getPickerBottom())) {
+          if (needIgnoreTouchEvent(ev)) {
             return false;
           }
           return super.onInterceptTouchEvent(ev);
@@ -245,10 +245,16 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
 
         @Override
         public boolean onTouchEvent (MotionEvent ev) {
-          if (ev.getAction() == MotionEvent.ACTION_DOWN && !between(ev.getY(), getPickerTop(), getPickerBottom())) {
+          if (needIgnoreTouchEvent(ev)) {
             return false;
           }
           return super.onTouchEvent(ev);
+        }
+
+        private boolean needIgnoreTouchEvent (MotionEvent ev) {
+          return (ev.getAction() == MotionEvent.ACTION_DOWN && !between(ev.getY(), getPickerTop()
+            + HeaderView.getSize(true) * reactionsPickerController.getTopHeaderVisibility() * reactionsPickerVisibility.getFloatValue(),
+            getPickerBottom()));
         }
 
         private boolean between (float y, float a, float b) {
@@ -631,7 +637,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
   private PickerOpenerScrollListener reactionsPickerScrollListener;
   private View reactionsPickerBottomHeaderView;
   private int reactionsPickerBackgroundColor;
-  private boolean isPickerOpenedByScroll;
+  private boolean doNotUpdateScrollReactionPicker;
 
   private CustomRecyclerView createReactionsPopupPicker () {
     reactionsPickerVisibility = new BoolAnimator(REACTIONS_PICKER_VISIBILITY_ANIMATOR_ID, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 280L, false);
@@ -648,13 +654,12 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
       @Override
       public void getItemOffsets (@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
         final int position = parent.getChildAdapterPosition(view);
-        final int itemCount = parent.getAdapter().getItemCount();
         final int itemType = parent.getAdapter().getItemViewType(position);
         final boolean isUnknown = position == RecyclerView.NO_POSITION;
         int top = 0, leftRight = 0;
 
         if (position == 0 || isUnknown) {
-          top = Math.max(getReactionPickerOffsetTopDefault(), getReactionPickerOffsetTopReal());
+          top = getReactionPickerOffsetTopReal();
         }
         if (itemType == MediaStickersAdapter.StickerHolder.TYPE_STICKER) {
           leftRight = Screen.dp(-1);
@@ -691,8 +696,14 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
       reactionsPickerBottomHeaderView = reactionsPickerController.getBottomHeaderViewGroup();
       reactionsPickerBottomHeaderView.setAlpha(0f);
       reactionsPickerController.getTopHeaderView().getBackButton().setOnClickListener(v -> {
+        doNotUpdateScrollReactionPicker = true;
         reactionsPickerRecyclerView.stopScroll();
+        reactionsPickerScrollListener.reset(true);
         reactionsPickerVisibility.setValue(false, true);
+
+        reactionsPickerController.scrollToDefaultPosition(getReactionPickerOffsetTopReal());
+        // reactionsPickerRecyclerView.smoothScrollToPosition(0);
+
         contentView.setVisibility(View.VISIBLE);
         if (headerView != null) {
           headerView.setVisibility(View.VISIBLE);
@@ -716,10 +727,9 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
       return;
     }
 
-    float defaultTranslation = getReactionPickerTranslationDefault();
-    float y = MathUtils.fromTo(Math.min(defaultTranslation, 0), Math.min(-defaultTranslation, 0), reactionsPickerVisibility.getFloatValue());
+    float y = MathUtils.fromTo(0, Math.min(getReactionPickerOffsetTopDefault() - getReactionPickerOffsetTopReal(), 0), reactionsPickerVisibility.getFloatValue());
     boolean isNotInScroll = reactionsPickerRecyclerView.getScrollState() == RecyclerView.SCROLL_STATE_IDLE;
-    if (isNotInScroll && !isPickerOpenedByScroll) {
+    if (isNotInScroll && !doNotUpdateScrollReactionPicker) {
       ((LinearLayoutManager) reactionsPickerRecyclerView.getLayoutManager()).scrollToPositionWithOffset(0, (int) y);
     }
 
@@ -808,7 +818,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
         }
       }
       reactionsPickerScrollListener.reset(false);
-      isPickerOpenedByScroll = false;
+      doNotUpdateScrollReactionPicker = false;
     }
   }
 
@@ -847,25 +857,20 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     return (Screen.currentHeight() - Screen.dp(56) - HeaderView.getSize(true)) / 2;
   }
 
-  private int getReactionPickerTranslationDefault () {
-    // Picker offset in closed state, if more than zero is shifted due to setTranslation, else scrollWithOffset
-    return getReactionPickerOffsetTopReal() - getReactionPickerOffsetTopDefault();
-  }
-
   private class PickerOpenerScrollListener extends RecyclerView.OnScrollListener {
     private int totalDy;
     private boolean ignore;
 
     @Override
     public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
-      if (ignore || reactionsPickerVisibility.getFloatValue() > 0f) {
+      if (ignore || reactionsPickerRecyclerView.isScrollDisabled() || reactionsPickerVisibility.getFloatValue() > 0f) {
         return;
       }
 
       totalDy += dy;
       if (Math.abs(totalDy) > Screen.dp(30)) {
         UI.post(() -> {
-          isPickerOpenedByScroll = true;
+          doNotUpdateScrollReactionPicker = true;
           reset(true);
           recyclerView.stopScroll();
           showReactionPicker();

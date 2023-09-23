@@ -178,6 +178,10 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
     return Screen.dp(45);
   }
 
+  public float getTopHeaderVisibility () {
+    return topHeaderVisibility.getFloatValue();
+  }
+
   public CustomRecyclerView getRecyclerView () {
     return recyclerView;
   }
@@ -238,6 +242,10 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
         reactionsController.scrollToStickerSet(0, HeaderView.getSize(true), false, true);
       }
     }
+  }
+
+  public void scrollToDefaultPosition (int offset) {
+    reactionsController.scrollToStickerSet(0, offset, -offset, false, true);
   }
 
   /* * */
@@ -465,9 +473,15 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
 
   /* Emoji Layout Callbacks */
 
+  private boolean isIgnoreMovement;
+
+  public boolean isIgnoreMovement () {
+    return isIgnoreMovement;
+  }
+
   @Override
   public void setIgnoreMovement (boolean silent) {
-
+    isIgnoreMovement = silent;
   }
 
   @Override
@@ -644,6 +658,8 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
       topHeaderVisibility.setValue(isVisible, true);
     });
   }
+
+
 
   private void genTopHeader () {
     headerView = new HeaderView(context) {

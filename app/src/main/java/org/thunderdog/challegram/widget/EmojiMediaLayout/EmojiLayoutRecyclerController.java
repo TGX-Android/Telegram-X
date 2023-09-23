@@ -523,6 +523,10 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayoutRec
   }
 
   public void scrollToStickerSet (int stickerSetIndex, int scrollOffset, boolean showRecentTitle, boolean animated) {
+    scrollToStickerSet(stickerSetIndex, scrollOffset, Integer.MIN_VALUE, showRecentTitle, animated);
+  }
+
+  public void scrollToStickerSet (int stickerSetIndex, int scrollOffset, int forceScrollTop, boolean showRecentTitle, boolean animated) {
     final int futureSection = indexOfStickerSetByAdapterPosition(stickerSetIndex);
     if (futureSection == -1) {
       return;
@@ -546,7 +550,9 @@ public class EmojiLayoutRecyclerController extends ViewController<EmojiLayoutRec
     } else {
       final int scrollTop;
 
-      if (stickerSetIndex == 0) {
+      if (forceScrollTop != Integer.MIN_VALUE) {
+        scrollTop = forceScrollTop;
+      } else if (stickerSetIndex == 0) {
         scrollTop = 0;
       } else {
         scrollTop = Math.max(0, adapter.measureScrollTop(stickerSetIndex, spanCount, futureSection, stickerSets, recyclerView, showRecentTitle) - scrollOffset);
