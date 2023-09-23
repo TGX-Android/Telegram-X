@@ -3101,7 +3101,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   @Override
-  public void onMessageSendFailed (final TdApi.Message message, final long oldMessageId, int errorCode, String errorMessage) {
+  public void onMessageSendFailed (final TdApi.Message message, final long oldMessageId, TdApi.Error error) {
     int sentMessageIndex = indexOfSentMessage(message.chatId, oldMessageId);
     if (sentMessageIndex != -1) {
       sentMessages.set(sentMessageIndex, message);

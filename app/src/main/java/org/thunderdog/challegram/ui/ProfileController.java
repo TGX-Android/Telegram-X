@@ -6255,7 +6255,7 @@ public class ProfileController extends ViewController<ProfileController.Args> im
   }
 
   @Override
-  public void onMessageSendFailed (final TdApi.Message message, final long oldMessageId, int errorCode, String errorMessage) {
+  public void onMessageSendFailed (final TdApi.Message message, final long oldMessageId, TdApi.Error error) {
     runOnUiThreadOptional(() -> {
       if (chat.id == message.chatId) {
         removeMessages(new long[]{oldMessageId});

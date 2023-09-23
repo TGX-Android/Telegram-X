@@ -7200,7 +7200,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   }
 
   private void updateMessageSendFailed (TdApi.UpdateMessageSendFailed update) {
-    UI.showError(new TdApi.Error(update.errorCode, update.errorMessage));
+    UI.showError(update.error);
     synchronized (dataLock) {
       Settings.instance().updateScrollMessageId(accountId, update.message.chatId, update.oldMessageId, update.message.id);
     }
@@ -10707,6 +10707,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         case RightId.EDIT_MESSAGES:
         case RightId.INVITE_USERS:
         case RightId.MANAGE_VIDEO_CHATS:
+        case RightId.POST_STORIES:
+        case RightId.EDIT_STORIES:
+        case RightId.DELETE_STORIES:
         case RightId.PIN_MESSAGES:
         case RightId.READ_MESSAGES:
         case RightId.REMAIN_ANONYMOUS:
@@ -10777,6 +10780,9 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       case RightId.EDIT_MESSAGES:
       case RightId.INVITE_USERS:
       case RightId.MANAGE_VIDEO_CHATS:
+      case RightId.POST_STORIES:
+      case RightId.EDIT_STORIES:
+      case RightId.DELETE_STORIES:
       case RightId.PIN_MESSAGES:
       case RightId.READ_MESSAGES:
       case RightId.REMAIN_ANONYMOUS:

@@ -1793,7 +1793,7 @@ public abstract class MapController<V extends View, T> extends ViewController<Ma
   }
 
   @Override
-  public void onMessageSendFailed (TdApi.Message message, long oldMessageId, int errorCode, String errorMessage) { }
+  public void onMessageSendFailed (TdApi.Message message, long oldMessageId, TdApi.Error error) { }
 
   @Override
   public int compare (LocationPoint<T> o1, LocationPoint<T> o2) {

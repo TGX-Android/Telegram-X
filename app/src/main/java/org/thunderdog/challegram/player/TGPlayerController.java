@@ -1661,7 +1661,7 @@ public class TGPlayerController implements GlobalMessageListener, ProximityManag
   }
 
   @Override
-  public void onMessageSendFailed (Tdlib tdlib, final TdApi.Message message, final long oldMessageId, int errorCode, String errorMessage) {
+  public void onMessageSendFailed (Tdlib tdlib, final TdApi.Message message, final long oldMessageId, TdApi.Error error) {
     moveListeners(tdlib, message, oldMessageId);
   }
 

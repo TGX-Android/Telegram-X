@@ -1800,6 +1800,9 @@
   <string name="RightEditMessages">Edit Messages</string>
   <string name="RightVoiceChats">Manage video chats</string>
   <string name="RightLiveStreams">Manage live streams</string>
+  <string name="RightStoriesPost">Post Stories</string>
+  <string name="RightStoriesEdit">Edit Stories of Others</string>
+  <string name="RightStoriesDelete">Delete Stories of Others</string>
   <string name="RightAnonymous">Remain anonymous</string>
   <string name="NoGroupsToShow">No groups to show</string>
   <string name="GroupsWillBeShownHere">Groups in common will be shown here</string>

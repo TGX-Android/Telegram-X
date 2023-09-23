@@ -589,7 +589,7 @@ public class TdlibListeners {
   private static void updateMessageSendFailed (TdApi.UpdateMessageSendFailed update, @Nullable Iterator<MessageListener> list) {
     if (list != null) {
       while (list.hasNext()) {
-        list.next().onMessageSendFailed(update.message, update.oldMessageId, update.errorCode, update.errorMessage);
+        list.next().onMessageSendFailed(update.message, update.oldMessageId, update.error);
       }
     }
   }
@@ -1341,17 +1341,17 @@ public class TdlibListeners {
 
   // updateStorySendFailed
 
-  private static void updateStorySendFailed (TdApi.Story story, @Nullable TdApi.CanSendStoryResult error, int errorCode, String errorMessage, @Nullable Iterator<StoryListener> list) {
+  private static void updateStorySendFailed (TdApi.Story story, TdApi.Error error, @Nullable TdApi.CanSendStoryResult errorType, @Nullable Iterator<StoryListener> list) {
     if (list != null) {
       while (list.hasNext()) {
-        list.next().onStorySendFailed(story, error, errorCode, errorMessage);
+        list.next().onStorySendFailed(story, error, errorType);
       }
     }
   }
 
   void updateStorySendFailed (TdApi.UpdateStorySendFailed update) {
-    updateStorySendFailed(update.story, update.error, update.errorCode, update.errorMessage, storyListeners.iterator());
-    updateStorySendFailed(update.story, update.error, update.errorCode, update.errorMessage, specificStoryListeners.iterator(uniqueStoryKey(update.story)));
+    updateStorySendFailed(update.story, update.error, update.errorType, storyListeners.iterator());
+    updateStorySendFailed(update.story, update.error, update.errorType, specificStoryListeners.iterator(uniqueStoryKey(update.story)));
   }
 
   // updateStoryStealthMode

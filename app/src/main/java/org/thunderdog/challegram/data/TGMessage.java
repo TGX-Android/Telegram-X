@@ -4701,13 +4701,13 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         for (TdApi.Message msg : combinedMessages) {
           if (msg.sendingState instanceof TdApi.MessageSendingStateFailed) {
             TdApi.MessageSendingStateFailed failed = (TdApi.MessageSendingStateFailed) msg.sendingState;
-            errors.add(TD.toErrorString(new TdApi.Error(failed.errorCode, failed.errorMessage)));
+            errors.add(TD.toErrorString(failed.error));
           }
         }
       } else {
         if (msg.sendingState instanceof TdApi.MessageSendingStateFailed) {
           TdApi.MessageSendingStateFailed failed = (TdApi.MessageSendingStateFailed) msg.sendingState;
-          errors.add(TD.toErrorString(new TdApi.Error(failed.errorCode, failed.errorMessage)));
+          errors.add(TD.toErrorString(failed.error));
         }
       }
     }

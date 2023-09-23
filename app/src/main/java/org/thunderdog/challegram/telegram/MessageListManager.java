@@ -354,7 +354,7 @@ public class MessageListManager extends ListManager<TdApi.Message> implements Me
   }
 
   @Override
-  public void onMessageSendFailed (TdApi.Message message, long oldMessageId, int errorCode, String errorMessage) {
+  public void onMessageSendFailed (TdApi.Message message, long oldMessageId, TdApi.Error error) {
     if (message.chatId == chatId) {
       runOnUiThreadIfReady(() ->
         replaceMessage(message, oldMessageId, CAUSE_SEND_FAILED)
