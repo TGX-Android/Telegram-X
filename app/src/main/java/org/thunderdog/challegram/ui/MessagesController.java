@@ -10793,7 +10793,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   public boolean callNonAnonymousProtection (long hash, @Nullable TooltipOverlayView.TooltipBuilder tooltipBuilder) {
-    if (chat == null || chat.messageSenderId == null || tdlib.isSelfSender(chat.messageSenderId)) {
+    if (chat == null || tdlib.isSelfSender(chat.messageSenderId) || (chat.messageSenderId == null && !tdlib.isAnonymousAdmin(chat.id))) {
       return true;
     }
 
