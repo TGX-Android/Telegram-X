@@ -115,7 +115,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
 
       @Override
       public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
-        if (!reactionsController.isNeedIgnoreScroll()) {
+        if (!reactionsController.isNeedIgnoreScroll() && !isIgnoreMovement) {
           setCurrentStickerSectionByPosition(EmojiLayout.STICKERS_INSTALLED_CONTROLLER_ID, reactionsController.getStickerSetSection(HeaderView.getSize(true) + EmojiLayout.getHeaderPadding()), true, true);
         }
       }

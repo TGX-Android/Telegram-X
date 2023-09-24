@@ -254,7 +254,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
 
         private boolean needIgnoreTouchEvent (MotionEvent ev) {
           return (ev.getAction() == MotionEvent.ACTION_DOWN && !between(ev.getY(), getPickerTop()
-            + HeaderView.getSize(true) * reactionsPickerController.getTopHeaderVisibility() * reactionsPickerVisibility.getFloatValue(),
+            - HeaderView.getSize(true) * reactionsPickerController.getTopHeaderVisibility() * reactionsPickerVisibility.getFloatValue(),
             getPickerBottom()));
         }
 
@@ -264,7 +264,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
 
         @Override
         protected void dispatchDraw (Canvas canvas) {
-          int color = me.vkryl.core.ColorUtils.fromToArgb(reactionsPickerBackgroundColor, Theme.backgroundColor(), reactionsPickerVisibility.getFloatValue());
+          int color = Theme.backgroundColor(); // me.vkryl.core.ColorUtils.fromToArgb(reactionsPickerBackgroundColor, Theme.backgroundColor(), reactionsPickerVisibility.getFloatValue());
           float top = getPickerTop();
           float bottom = getPickerBottom();
           if (bottom <= top) return;
@@ -653,14 +653,14 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     reactionsPickerRecyclerView.setPadding(Screen.dp(9.5f), 0, Screen.dp(9.5f), 0);
     reactionsPickerRecyclerView.setClipToPadding(false);
 
-    reactionsPickerRecyclerView.addItemDecoration(new BottomOffsetDecoration((view, parent) -> Math.max(parent.getMeasuredHeight() - reactionsPickerController.measureItemsHeight(), Screen.dp(64))));
     reactionsPickerRecyclerView.addItemDecoration(new RecyclerView.ItemDecoration() {
       @Override
       public void getItemOffsets (@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
         final int position = parent.getChildAdapterPosition(view);
         final int itemType = parent.getAdapter().getItemViewType(position);
+        final int itemCount = parent.getAdapter().getItemCount();
         final boolean isUnknown = position == RecyclerView.NO_POSITION;
-        int top = 0, leftRight = 0;
+        int top = 0, leftRight = 0, bottom = 0;
 
         if (position == 0 || isUnknown) {
           top = getReactionPickerOffsetTopReal();
@@ -669,7 +669,12 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
           leftRight = Screen.dp(-1);
         }
 
-        outRect.set(leftRight, top, leftRight, 0);
+        if (position == itemCount - 1 || isUnknown) {
+          int keyboardHeight = getKeyboardState() ? Keyboard.getSize(Keyboard.getSize()) : 0;
+          bottom = Math.max(parent.getMeasuredHeight() - reactionsPickerController.measureItemsHeight(), keyboardHeight + Screen.dp(64));
+        }
+
+        outRect.set(leftRight, top, leftRight, bottom);
       }
     });
     reactionsPickerRecyclerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -677,18 +682,19 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
       @Override
       public void onScrolled (@NonNull RecyclerView recyclerView, int dx, int dy) {
         invalidatePickerWrapper();
-        reactionsPickerController.setTopHeaderVisibility(Views.getRecyclerViewElementTop(recyclerView, 1) <= HeaderView.getSize(true) + EmojiLayout.getHeaderPadding());
+        checkReactionPickerHeaderTopVisibility();
       }
 
       @Override
       public void onScrollStateChanged (@NonNull RecyclerView recyclerView, int newState) {
         if (newState == RecyclerView.SCROLL_STATE_IDLE) {
           invalidatePickerWrapper();
-          reactionsPickerController.setTopHeaderVisibility(Views.getRecyclerViewElementTop(recyclerView, 1) <= HeaderView.getSize(true) + EmojiLayout.getHeaderPadding());
+          checkReactionPickerHeaderTopVisibility();
         }
       }
     });
     reactionsPickerRecyclerView.addOnScrollListener(reactionsPickerScrollListener = new PickerOpenerScrollListener());
+    reactionsPickerRecyclerView.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> invalidatePickerWrapper());
 
     return reactionsPickerRecyclerView;
   }
@@ -719,9 +725,17 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     }
 
     reactionsPickerVisibility.setValue(true, true);
+
   }
 
-
+  @Override
+  protected void onCustomShowComplete () {
+    super.onCustomShowComplete();
+    if (reactionsPickerRecyclerView != null) {
+      reactionsPickerRecyclerView.invalidateItemDecorations();
+      reactionsPickerRecyclerView.scrollToPosition(0);
+    }
+  }
 
   private void checkReactionPickerPosition () {
     if (reactionsPickerWrapper == null) {
@@ -734,9 +748,10 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
       ((LinearLayoutManager) reactionsPickerRecyclerView.getLayoutManager()).scrollToPositionWithOffset(0, (int) y);
     }
 
-    reactionsPickerRecyclerView.setTranslationY((headerTranslationY - getContentOffset() - HeaderView.getTopOffset())
+    reactionsPickerRecyclerView.setTranslationY((headerTranslationY - Math.max(getHeaderHeight(), getContentOffset()) - HeaderView.getTopOffset())
       * (1f - reactionsPickerVisibility.getFloatValue()));
     invalidatePickerWrapper();
+    checkReactionPickerHeaderTopVisibility();
   }
 
   private void onReactionClick (View v, TGReaction reaction, boolean isLongClick) {
@@ -820,6 +835,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
       }
       reactionsPickerScrollListener.reset(false);
       doNotUpdateScrollReactionPicker = false;
+      checkReactionPickerHeaderTopVisibility();
     }
   }
 
@@ -848,14 +864,29 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     return Screen.dp(4.5f); // ((getHeaderHeight() - Screen.dp(45)) / 2f);
   }
 
+  private int lastReactionPickerOffsetReal;
+
   private int getReactionPickerOffsetTopReal () {
-    int offset = getContentOffset();
-    Log.i("WTF_DEBUG", "offset: " + getContentOffset());
-    return offset - HeaderView.getSize(false) - EmojiLayout.getHeaderPadding() + ((getHeaderHeight() - reactionsPickerController.getItemHeight()) / 2);
+    int offset = Math.max(0, getContentOffset() - HeaderView.getSize(false) - EmojiLayout.getHeaderPadding() + ((getHeaderHeight() - reactionsPickerController.getItemHeight()) / 2));
+    if (offset != lastReactionPickerOffsetReal) {
+      lastReactionPickerOffsetReal = offset;
+      Log.i("WTF_DEBUG", "offset: " + lastReactionPickerOffsetReal + " " + offset);
+      if (reactionsPickerRecyclerView  != null) {
+        reactionsPickerRecyclerView.invalidateItemDecorations();
+      }
+      checkReactionPickerPosition();
+    }
+    return offset;
   }
 
   private static int getReactionPickerOffsetTopDefault () {
     return (Screen.currentHeight() - Screen.dp(56) - HeaderView.getSize(true)) / 2;
+  }
+
+  private void checkReactionPickerHeaderTopVisibility () {
+    if (reactionsPickerController != null) {
+      reactionsPickerController.setTopHeaderVisibility(reactionsPickerVisibility.getValue() && Views.getRecyclerViewElementTop(reactionsPickerRecyclerView, 1) <= HeaderView.getSize(true) + EmojiLayout.getHeaderPadding());
+    }
   }
 
   private class PickerOpenerScrollListener extends RecyclerView.OnScrollListener {
@@ -966,30 +997,6 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
 
     public int getRightViewsWidth () {
       return headerAlwaysVisibleCountersWidth + headerButtonsVisibleWidth;
-    }
-  }
-
-  public static class BottomOffsetDecoration extends RecyclerView.ItemDecoration {
-    private final Delegate delegate;
-
-    public interface Delegate {
-      int getLastItemBottomOffset (@NonNull View view, @NonNull RecyclerView parent);
-    }
-
-    public BottomOffsetDecoration (Delegate delegate) {
-      this.delegate = delegate;
-    }
-
-    @Override
-    public void getItemOffsets (@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
-      final RecyclerView.Adapter<?> adapter = parent.getAdapter();
-      final int position = parent.getChildAdapterPosition(view);
-      final int itemCount = adapter != null ? adapter.getItemCount() : 0;
-      final boolean isUnknown = position == RecyclerView.NO_POSITION;
-
-      if (position == itemCount - 1 || isUnknown) {
-        outRect.set(0, 0, 0, delegate.getLastItemBottomOffset(view, parent));
-      }
     }
   }
 }
