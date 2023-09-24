@@ -1800,6 +1800,7 @@
   <string name="RightEditMessages">Edit Messages</string>
   <string name="RightVoiceChats">Manage video chats</string>
   <string name="RightLiveStreams">Manage live streams</string>
+  <string name="RightTopics">Manage topics</string>
   <string name="RightStoriesPost">Post Stories</string>
   <string name="RightStoriesEdit">Edit Stories of Others</string>
   <string name="RightStoriesDelete">Delete Stories of Others</string>
@@ -1984,7 +1985,11 @@
   <string name="EventLogPromotedPostMessages">Post messages</string>
   <string name="EventLogPromotedEditMessages">Edit messages</string>
   <string name="EventLogPromotedDeleteMessages">Delete messages</string>
+  <string name="EventLogPromotedPostStories">Post stories</string>
+  <string name="EventLogPromotedEditStories">Edit stories of others</string>
+  <string name="EventLogPromotedDeleteStories">Delete stories of others</string>
   <string name="EventLogPromotedAddAdmins">Add admins</string>
+  <string name="EventLogPromotedManageTopics">Manage topics</string>
   <string name="EventLogPromotedRemainAnonymous">Remain anonymous</string>
   <string name="EventLogPromotedManageVoiceChats">Manage video chats</string>
   <string name="EventLogPromotedManageLiveStreams">Manage live streams</string>

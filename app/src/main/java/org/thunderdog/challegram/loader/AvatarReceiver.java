@@ -496,7 +496,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
         break;
       }
       case DataType.SPECIFIC_PHOTO: {
-        setIsForum(BitwiseUtils.hasFlag(options, Options.FORCE_FORUM) || (specificPhoto != null && tdlib.chatForum(specificPhoto.chatId)), isUpdate);
+        setIsForum(BitwiseUtils.hasFlag(options, Options.FORCE_FORUM) || (specificPhoto != null && tdlib.isForum(specificPhoto.chatId)), isUpdate);
         break;
       }
       case DataType.SPECIFIC_FILE:
@@ -506,7 +506,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
         break;
       }
       case DataType.CHAT: {
-        setIsForum(BitwiseUtils.hasFlag(options, Options.FORCE_FORUM) || tdlib.chatForum(dataId), isUpdate);
+        setIsForum(BitwiseUtils.hasFlag(options, Options.FORCE_FORUM) || tdlib.isForum(dataId), isUpdate);
         break;
       }
     }
@@ -604,7 +604,7 @@ public class AvatarReceiver implements Receiver, ChatListener, TdlibCache.UserDa
       }
       case DataType.CHAT: {
         TdApi.Chat chat = tdlib.chat(dataId);
-        setIsForum(tdlib.chatForum(dataId), isUpdate);
+        setIsForum(tdlib.isForum(dataId), isUpdate);
         boolean allowAnimation = BitwiseUtils.hasFlag(options, Options.FORCE_ANIMATION) || tdlib.needAvatarPreviewAnimation(dataId);
         TdApi.ChatPhotoInfo chatPhotoInfo = chat != null && !tdlib.isSelfChat(dataId) ? chat.photo : null;
         if (chatPhotoInfo == null) {
