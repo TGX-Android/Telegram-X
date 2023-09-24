@@ -650,12 +650,20 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     reactionsPickerController = new ReactionsPickerController(context, tdlib) {
       @Override
       protected void onBottomHeaderEnterSearchMode () {
+        int firstVisiblePosition = ((LinearLayoutManager) reactionsPickerRecyclerView.getLayoutManager()).findFirstVisibleItemPosition();
         reactionsPickerRecyclerView.invalidateItemDecorations();
+        if (firstVisiblePosition == 0) {
+          ScrollJumpCompensator.compensate(reactionsPickerRecyclerView, -getReactionPickerOffsetTopReal(), () -> checkReactionPickerHeaderTopVisibility());
+        }
       }
 
       @Override
       protected void onBottomHeaderLeaveSearchMode () {
+        int firstVisiblePosition = ((LinearLayoutManager) reactionsPickerRecyclerView.getLayoutManager()).findFirstVisibleItemPosition();
         reactionsPickerRecyclerView.invalidateItemDecorations();
+        if (firstVisiblePosition == 0) {
+          ScrollJumpCompensator.compensate(reactionsPickerRecyclerView, getReactionPickerOffsetTopReal(), () -> checkReactionPickerHeaderTopVisibility());
+        }
       }
     };
     reactionsPickerController.setArguments(state);
@@ -686,7 +694,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
           bottom = Math.max(parent.getMeasuredHeight() - reactionsPickerController.measureItemsHeight(), keyboardHeight + Screen.dp(64));
         }
 
-        if (reactionsPickerController.inBottomHeaderSearchMode()) {
+        if (reactionsPickerController.inBottomHeaderSearchMode() && reactionsPickerVisibility.getValue()) {
           top = 0;
         }
 
@@ -821,22 +829,20 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
 
   @Override
   public void onFactorChanged (int id, float factor, float fraction, FactorAnimator callee) {
+    float pickerOffset = Math.min(getOptionItemsHeight(), getTargetHeight());
+
     if (id == REACTIONS_PICKER_VISIBILITY_ANIMATOR_ID) {
       invalidatePickerWrapper();
-      contentView.setTranslationY(factor * (Screen.currentHeight() / 3f) /*getReactionPickerOffsetTop()*/);
+      contentView.setTranslationY(pickerOffset * factor);
       if (headerView != null) {
         headerView.setAlpha(1f - factor);
       }
       reactionsPickerBottomHeaderView.setAlpha(factor * (state.isPremium ? 1f: 0f));
-      reactionsPickerBottomHeaderView.setTranslationY((-Screen.currentHeight() / 3f) * (1f - factor));
       checkReactionPickerPosition();
     }
 
     if (reactionsPickerBottomHeaderView != null) {
-      reactionsPickerBottomHeaderView.setTranslationY(
-        ((-Screen.currentHeight() / 3f) * (1f - reactionsPickerVisibility.getFloatValue())) +
-          (-keyboardHeight.getFactor())
-      );
+      reactionsPickerBottomHeaderView.setTranslationY(-pickerOffset * (1f - reactionsPickerVisibility.getFloatValue()) - keyboardHeight.getFactor());
     }
   }
 
