@@ -1018,7 +1018,7 @@ public class MessageView extends SparseDrawableView implements Destroyable, Draw
       }
     }
 
-    if (msg.canBeReported() && !msg.isFakeMessage()) {
+    if (msg.canBeReported() && !msg.isFakeMessage() && !msg.isSponsoredMessage()) {
       if (isMore) {
         ids.append(R.id.btn_messageReport);
         strings.append(R.string.MessageReport);
