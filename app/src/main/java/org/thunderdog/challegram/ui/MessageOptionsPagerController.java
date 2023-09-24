@@ -729,11 +729,13 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     if (reactionsPickerBottomHeaderView == null) {
       reactionsPickerBottomHeaderView = reactionsPickerController.getBottomHeaderViewGroup();
       reactionsPickerBottomHeaderView.setAlpha(0f);
+      reactionsPickerBottomHeaderView.setVisibility(View.GONE);
       reactionsPickerController.getTopHeaderView().getBackButton().setOnClickListener(v -> {
         doNotUpdateScrollReactionPicker = true;
         reactionsPickerRecyclerView.stopScroll();
         reactionsPickerScrollListener.reset(true);
         reactionsPickerVisibility.setValue(false, true);
+        reactionsPickerController.closeBottomHeaderSearchMode(false);
         reactionsPickerController.scrollToDefaultPosition(getReactionPickerOffsetTopReal());
         contentView.setVisibility(View.VISIBLE);
         if (headerView != null) {
@@ -837,7 +839,9 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
       if (headerView != null) {
         headerView.setAlpha(1f - factor);
       }
-      reactionsPickerBottomHeaderView.setAlpha(factor * (state.isPremium ? 1f: 0f));
+      float alpha = factor * (state.isPremium ? 1f: 0f);
+      reactionsPickerBottomHeaderView.setAlpha(alpha);
+      reactionsPickerBottomHeaderView.setVisibility(alpha > 0f ? View.VISIBLE: View.GONE);
       checkReactionPickerPosition();
     }
 

@@ -723,6 +723,10 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
     return fakeControllerForBottomHeader.inSearchMode();
   }
 
+  public void closeBottomHeaderSearchMode (boolean animated) {
+    bottomHeaderView.closeSearchMode(animated, null);
+  }
+
   private void genBottomHeader () {
     fakeControllerForBottomHeader = new FakeControllerForBottomHeader(context, tdlib) {
       @Override
