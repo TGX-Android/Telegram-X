@@ -458,7 +458,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
       for (ListAnimator.Entry<SenderEntry> entry : recentVoters) {
         long senderId = Td.getSenderId(entry.item.senderId);
         AvatarReceiver receiver = complexReceiver.getAvatarReceiver(senderId);
-        receiver.requestUser(tdlib, senderId, AvatarReceiver.Options.NONE);
+        receiver.requestMessageSender(tdlib, entry.item.senderId, AvatarReceiver.Options.NONE);
       }
     }
     complexReceiver.clearReceivers(this);

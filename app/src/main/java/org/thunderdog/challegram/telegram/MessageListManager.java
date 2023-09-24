@@ -30,7 +30,7 @@ import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.RunnableInt;
 import me.vkryl.td.Td;
 
-public class MessageListManager extends ListManager<TdApi.Message> implements MessageListener, Comparator<TdApi.Message> {
+public final class MessageListManager extends ListManager<TdApi.Message> implements MessageListener, Comparator<TdApi.Message> {
   public interface ChangeListener extends ListManager.ListChangeListener<TdApi.Message> { }
 
   private final long chatId;

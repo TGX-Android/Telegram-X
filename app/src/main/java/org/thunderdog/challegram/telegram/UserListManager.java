@@ -12,15 +12,19 @@
  */
 package org.thunderdog.challegram.telegram;
 
+import androidx.annotation.IntDef;
 import androidx.annotation.Nullable;
 
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.List;
 
 import me.vkryl.core.collection.LongSet;
+import me.vkryl.core.lambda.RunnableInt;
 
 public abstract class UserListManager extends ListManager<Long> implements TdlibCache.UserDataChangeListener, TdlibCache.UserStatusChangeListener {
   public interface ChangeListener extends ListManager.ListChangeListener<Long> { }
@@ -30,6 +34,9 @@ public abstract class UserListManager extends ListManager<Long> implements Tdlib
   public UserListManager (Tdlib tdlib, int initialLoadCount, int loadCount, @Nullable ChangeListener listener) {
     super(tdlib, initialLoadCount, loadCount, false, listener);
   }
+
+  @Override
+  protected abstract TdApi.Function<TdApi.Users> nextLoadFunction (boolean reverse, int itemCount, int loadCount);
 
   @Override
   protected void subscribeToUpdates() {
@@ -42,7 +49,7 @@ public abstract class UserListManager extends ListManager<Long> implements Tdlib
   }
 
   @Override
-  protected Response<Long> processResponse (TdApi.Object response, Client.ResultHandler retryHandler, int retryLoadCount, boolean reverse) {
+  protected final Response<Long> processResponse (TdApi.Object response, Client.ResultHandler retryHandler, int retryLoadCount, boolean reverse) {
     TdApi.Users users = (TdApi.Users) response;
     long[] rawUserIds = users.userIds;
     List<Long> userIds = new ArrayList<>(rawUserIds.length);
@@ -56,50 +63,51 @@ public abstract class UserListManager extends ListManager<Long> implements Tdlib
 
   // Updates
 
-  private void runWithUser (long userId, Runnable act) {
-    runOnUiThreadIfReady(() -> {
-      if (userIdsCheck.has(userId)) {
-        act.run();
-      }
-    });
+  private void runWithUser (long userId, RunnableInt act) {
+    if (userIdsCheck.has(userId)) {
+      runOnUiThreadIfReady(() -> {
+        int index = indexOfItem(userId);
+        if (index != -1) {
+          // This check is needed, because
+          // userIdsCheck is modified on TDLib thread,
+          // but items list is modified on main thread
+          act.runWithInt(index);
+        }
+      });
+    }
   }
 
-  public static final int REASON_USER_CHANGED = 0;
-  public static final int REASON_USER_FULL_CHANGED = 1;
-  public static final int REASON_STATUS_CHANGED = 2;
+  @Retention(RetentionPolicy.SOURCE)
+  @IntDef({
+    UpdateReason.USER_CHANGED,
+    UpdateReason.USER_FULL_CHANGED,
+    UpdateReason.USER_STATUS_CHANGED,
+  })
+  public @interface UpdateReason {
+    int
+      USER_CHANGED = 1,
+      USER_FULL_CHANGED = 2,
+      USER_STATUS_CHANGED = 3;
+  }
+
+  private void notifyUserChanged (long userId, @UpdateReason int reason) {
+    runWithUser(userId, index ->
+      notifyItemChanged(index, reason)
+    );
+  }
 
   @Override
   public void onUserUpdated (TdApi.User user) {
-    runWithUser(user.id, () -> {
-      int index = indexOfItem(user.id);
-      if (index != -1) {
-        notifyItemChanged(index, REASON_USER_CHANGED);
-      }
-    });
+    notifyUserChanged(user.id, UpdateReason.USER_CHANGED);
   }
 
   @Override
   public void onUserFullUpdated (long userId, TdApi.UserFullInfo userFull) {
-    runWithUser(userId, () -> {
-      int index = indexOfItem(userId);
-      if (index != -1) {
-        notifyItemChanged(index, REASON_USER_FULL_CHANGED);
-      }
-    });
+    notifyUserChanged(userId, UpdateReason.USER_FULL_CHANGED);
   }
 
   @Override
   public void onUserStatusChanged(long userId, TdApi.UserStatus status, boolean uiOnly) {
-    runWithUser(userId, () -> {
-      int index = indexOfItem(userId);
-      if (index != -1) {
-        notifyItemChanged(index, REASON_STATUS_CHANGED);
-      }
-    });
-  }
-
-  @Override
-  public boolean needUserStatusUiUpdates() {
-    return false;
+    notifyUserChanged(userId, UpdateReason.USER_STATUS_CHANGED);
   }
 }
