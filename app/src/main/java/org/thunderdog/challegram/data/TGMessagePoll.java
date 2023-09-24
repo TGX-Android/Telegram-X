@@ -1446,7 +1446,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
               }
               int[] selectedOptionIds = selectedOptions.get();
               int[] currentOptionIds = currentOptions.get();
-              if (isAnonymous() || messagesController().callNonAnonymousProtection(msg.id + R.id.btn_vote, this, makeVoteButtonLocationProvider())) {
+              if (!Config.PROTECT_ANONYMOUS_VOTING || isAnonymous() || messagesController().callNonAnonymousProtection(msg.id + R.id.btn_vote, this, makeVoteButtonLocationProvider())) {
                 if (Arrays.equals(selectedOptionIds, currentOptionIds)) {
                   tdlib.client().send(new TdApi.SetPollAnswer(msg.chatId, msg.id, null), tdlib.okHandler());
                 } else {
@@ -1512,7 +1512,7 @@ public class TGMessagePoll extends TGMessage implements ClickHelper.Delegate, Co
   }
 
   private void chooseOption (final int optionId) {
-    if (isAnonymous() || messagesController().callNonAnonymousProtection(msg.id + optionId, this, makeButtonLocationProvider(optionId))) {
+    if (!Config.PROTECT_ANONYMOUS_VOTING || isAnonymous() || messagesController().callNonAnonymousProtection(msg.id + optionId, this, makeButtonLocationProvider(optionId))) {
       if (getPoll().options[optionId].isBeingChosen) {
         tdlib.client().send(new TdApi.SetPollAnswer(msg.chatId, msg.id, null), tdlib.okHandler());
       } else {

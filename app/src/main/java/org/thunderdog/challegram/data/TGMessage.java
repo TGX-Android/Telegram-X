@@ -329,7 +329,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       @Override
       public void onClick (View v, TGReactions.MessageReactionEntry entry) {
         boolean hasReaction = messageReactions.hasReaction(entry.getReactionType());
-        if (hasReaction || messagesController().callNonAnonymousProtection(getId() + entry.hashCode(), TGMessage.this, getReactionBubbleLocationProvider(entry))) {
+        if (!Config.PROTECT_ANONYMOUS_REACTIONS || hasReaction || messagesController().callNonAnonymousProtection(getId() + entry.hashCode(), TGMessage.this, getReactionBubbleLocationProvider(entry))) {
           boolean needAnimation = messageReactions.toggleReaction(entry.getReactionType(), false, false, handler(v, entry, () -> {
           }));
           if (needAnimation) {
@@ -8062,7 +8062,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         final boolean isOdd = a % 2 == 1;
         final SwipeQuickAction quickReaction = new SwipeQuickAction(reactionObj.getTitle(), reactionDrawable, () -> {
           boolean hasReaction = messageReactions.hasReaction(reactionType);
-          if (hasReaction || !canGetAddedReactions() || messagesController().callNonAnonymousProtection(getId() + reactionObj.hashCode(), null)) {
+          if (!Config.PROTECT_ANONYMOUS_REACTIONS || hasReaction || !canGetAddedReactions() || messagesController().callNonAnonymousProtection(getId() + reactionObj.hashCode(), null)) {
             if (messageReactions.toggleReaction(reactionType, false, false, handler(findCurrentView(), null, () -> {}))) {
               scheduleSetReactionAnimation(new NextReactionAnimation(reactionObj, NextReactionAnimation.TYPE_QUICK));
             }
