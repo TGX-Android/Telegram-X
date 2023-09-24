@@ -826,6 +826,9 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     } else {
       setContent(title, contentPreview, hasSpoiler, contour, miniPreview, preview, previewCircle, false);
     }
+    if (parent != null) {
+      UI.execute(() -> parent.updateReactionAvatars(true));
+    }
   }
 
   private void setTitleImpl (CharSequence title) {

@@ -5089,6 +5089,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
       if (width != getWidth() || contentWidth != getContentWidth()) {
         buildMarkup();
       }
+      updateReactionAvatars(UI.inUiThread());
       return height == getHeight() ? MESSAGE_INVALIDATED : MESSAGE_CHANGED;
     }
     return MESSAGE_REPLACE_REQUIRED;
@@ -8892,9 +8893,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
   
   /* Reaction Avatars */
 
-  // todo: update when reply message loaded
   // todo: update when supergroup updated
-  // todo: update when text changed
 
   public void updateReactionAvatars (boolean animated) {
     messageReactions.updateCounterAnimators(animated);
