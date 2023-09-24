@@ -804,7 +804,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
       int startY = positionCords[1] + v.getMeasuredHeight() / 2;
 
       boolean hasReaction = state.message.getMessageReactions().hasReaction(reaction.type);
-      if (!Config.PROTECT_ANONYMOUS_REACTIONS || state.message.messagesController().callNonAnonymousProtection(state.message.getId() + reaction.getId(), tooltipManager().builder(v))) {
+      if (!Config.PROTECT_ANONYMOUS_REACTIONS || hasReaction || state.message.messagesController().callNonAnonymousProtection(state.message.getId() + reaction.getId(), tooltipManager().builder(v))) {
         if (state.message.getMessageReactions().toggleReaction(reaction.type, false, true, handler(v, () -> {
         }))) {
           state.message.scheduleSetReactionAnimationFromBottomSheet(reaction, new Point(startX, startY));
