@@ -66,6 +66,7 @@ import org.thunderdog.challegram.widget.PopupLayout;
 import org.thunderdog.challegram.widget.ViewPager;
 
 import java.util.Arrays;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import me.vkryl.android.AnimatorUtils;
@@ -622,6 +623,9 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
   public boolean onKeyboardStateChanged (boolean visible) {
     final boolean r = super.onKeyboardStateChanged(visible);
     keyboardHeight.animateTo(getKeyboardState() ? Keyboard.getSize(Keyboard.getSize()) : 0);
+    if (reactionsPickerRecyclerView != null) {
+      reactionsPickerRecyclerView.invalidateItemDecorations();
+    }
     return r;
   }
 
@@ -649,7 +653,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     reactionsPickerRecyclerView.setPadding(Screen.dp(9.5f), 0, Screen.dp(9.5f), 0);
     reactionsPickerRecyclerView.setClipToPadding(false);
 
-    reactionsPickerRecyclerView.addItemDecoration(new BottomOffsetDecoration(() -> reactionsPickerController.measureItemsHeight(), 64));
+    reactionsPickerRecyclerView.addItemDecoration(new BottomOffsetDecoration((view, parent) -> Math.max(parent.getMeasuredHeight() - reactionsPickerController.measureItemsHeight(), Screen.dp(64))));
     reactionsPickerRecyclerView.addItemDecoration(new RecyclerView.ItemDecoration() {
       @Override
       public void getItemOffsets (@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
@@ -700,10 +704,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
         reactionsPickerRecyclerView.stopScroll();
         reactionsPickerScrollListener.reset(true);
         reactionsPickerVisibility.setValue(false, true);
-
         reactionsPickerController.scrollToDefaultPosition(getReactionPickerOffsetTopReal());
-        // reactionsPickerRecyclerView.smoothScrollToPosition(0);
-
         contentView.setVisibility(View.VISIBLE);
         if (headerView != null) {
           headerView.setVisibility(View.VISIBLE);
@@ -905,6 +906,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     public final TGMessage message;
     public final TdApi.MessageReaction[] messageReactions;
     public final TdApi.AvailableReaction[] availableReactions;
+    public final Set<String> chosenReactions;
     public final long[] emojiPackIds;
     public final boolean isPremium;
 
@@ -913,6 +915,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     public final boolean needShowMessageReactionSenders;
     public final boolean needShowReactionsPopupPicker;
     public final boolean needShowCustomEmojiInsidePicker;
+    public final boolean hasNonSelectedCustomReactions;
 
     public final OnReactionClickListener onReactionClickListener;
     public final int headerButtonsVisibleWidth;
@@ -932,6 +935,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
       this.isPremium = message.tdlib().hasPremium();
 
       this.messageReactions = message.getMessageReactions().getReactions();
+      this.chosenReactions = message.getMessageReactions().getChosen();
       this.availableReactions = message.getMessageAvailableReactions();
       this.needShowMessageViews = !(!message.canGetViewers() || message.isUnread() || message.noUnread());
       this.needShowMessageOptions = options != null;
@@ -941,6 +945,17 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
 
       this.headerButtonsVisibleWidth = needShowReactionsPopupPicker ? Screen.dp(56): 0;
       this.needShowCustomEmojiInsidePicker = isPremium && message.isCustomEmojiReactionsAvailable();
+
+      boolean hasNonSelectedCustomReactions = false;
+      if (availableReactions != null) {
+        for (TdApi.AvailableReaction reaction : availableReactions) {
+          if (reaction.type.getConstructor() == TdApi.ReactionTypeCustomEmoji.CONSTRUCTOR && !chosenReactions.contains(TD.makeReactionKey(reaction.type))) {
+            hasNonSelectedCustomReactions = true;
+            break;
+          }
+        }
+      }
+      this.hasNonSelectedCustomReactions = hasNonSelectedCustomReactions;
     }
 
     public int getPagesCount () {
@@ -956,15 +971,13 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
 
   public static class BottomOffsetDecoration extends RecyclerView.ItemDecoration {
     private final Delegate delegate;
-    private final int minimalOffsetInDp;
 
     public interface Delegate {
-      int getItemsHeight ();
+      int getLastItemBottomOffset (@NonNull View view, @NonNull RecyclerView parent);
     }
 
-    public BottomOffsetDecoration (Delegate delegate, int minimalOffsetInDp) {
+    public BottomOffsetDecoration (Delegate delegate) {
       this.delegate = delegate;
-      this.minimalOffsetInDp = minimalOffsetInDp;
     }
 
     @Override
@@ -973,11 +986,9 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
       final int position = parent.getChildAdapterPosition(view);
       final int itemCount = adapter != null ? adapter.getItemCount() : 0;
       final boolean isUnknown = position == RecyclerView.NO_POSITION;
-      final int recyclerHeight = parent.getMeasuredHeight();
-      final int itemsHeight = delegate.getItemsHeight();
 
       if (position == itemCount - 1 || isUnknown) {
-        outRect.set(0, 0, 0, Math.max(Screen.dp(minimalOffsetInDp), Math.max(recyclerHeight - itemsHeight, 0)));
+        outRect.set(0, 0, 0, delegate.getLastItemBottomOffset(view, parent));
       }
     }
   }

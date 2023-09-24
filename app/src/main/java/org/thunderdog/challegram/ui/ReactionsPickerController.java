@@ -54,7 +54,6 @@ import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
-import org.thunderdog.challegram.unsorted.Settings;
 import org.thunderdog.challegram.v.CustomRecyclerView;
 import org.thunderdog.challegram.widget.EmojiLayout;
 import org.thunderdog.challegram.widget.EmojiMediaLayout.EmojiLayoutRecyclerController;
@@ -84,7 +83,6 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
   StickerSmallView.StickerMovementCallback, FactorAnimator.Target {
 
   private MessageOptionsPagerController.State state;
-  private Set<String> chosenReactions;
   private EmojiLayoutRecyclerController reactionsController;
   private CustomRecyclerView recyclerView;
   private MediaStickersAdapter adapter;
@@ -95,11 +93,14 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
 
   @Override
   protected View onCreateView (Context context) {
-    ArrayList<EmojiSection> emojiSections = new ArrayList<>(1);
+    ArrayList<EmojiSection> emojiSections = new ArrayList<>(3);
     if (state.needShowCustomEmojiInsidePicker) {
       emojiSections.add(new EmojiSection(this, -14, R.drawable.baseline_search_24, R.drawable.baseline_search_24)/*.setFactor(1f, false)*/.setMakeFirstTransparent().setOffsetHalf(false));
     }
-    emojiSections.add(new EmojiSection(this, EmojiSection.SECTION_EMOJI_RECENT, R.drawable.baseline_favorite_24, R.drawable.baseline_favorite_24)/*.setFactor(1f, false)*/.setMakeFirstTransparent());
+    emojiSections.add(new EmojiSection(this, 0, R.drawable.baseline_favorite_24, R.drawable.baseline_favorite_24)/*.setFactor(1f, false)*/.setMakeFirstTransparent());
+    if (state.hasNonSelectedCustomReactions) {
+      emojiSections.add(new EmojiSection(this, 1, R.drawable.baseline_access_time_24, R.drawable.baseline_watch_later_24)/*.setFactor(1f, false)*/.setMakeFirstTransparent());
+    }
     bottomHeaderCell = new EmojiHeaderView(context, this, this, emojiSections, null, false);
     bottomHeaderCell.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, HeaderView.getSize(false)));
     bottomHeaderCell.setIsPremium(true, false);
@@ -140,7 +141,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
         if (type == StickerHolder.TYPE_STICKER) {
           TGStickerObj stickerObj = getSticker(position);
           ((StickerSmallView) holder.itemView).setPadding(Screen.dp(stickerObj != null && stickerObj.isEmojiReaction() ? 0: DEFAULT_STICKER_PADDING_DP));
-          ((StickerSmallView) holder.itemView).setChosen(stickerObj != null && chosenReactions != null && stickerObj.getReactionType() != null && chosenReactions.contains(TD.makeReactionKey(stickerObj.getReactionType())));
+          ((StickerSmallView) holder.itemView).setChosen(stickerObj != null && state.chosenReactions != null && stickerObj.getReactionType() != null && state.chosenReactions.contains(TD.makeReactionKey(stickerObj.getReactionType())));
         }
 
         holder.itemView.setVisibility(position <= reactionsController.getSpanCount() || isFullyVisible ? View.VISIBLE: View.INVISIBLE);
@@ -194,29 +195,48 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
     emojiItems = new ArrayList<>();
     emojiPacks = new ArrayList<>();
 
+    ArrayList<MediaStickersAdapter.StickerItem> emojiItemsCustom = new ArrayList<>();
+
     TdApi.AvailableReaction[] reactions = state.availableReactions;
     if (reactions != null) {
       emojiItems.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_KEYBOARD_TOP));
 
-      TGStickerSetInfo pack = TGStickerSetInfo.fromEmojiSection(tdlib, -1, -1, reactions.length);
+      TGStickerSetInfo pack = TGStickerSetInfo.fromEmojiSection(tdlib, 0, -1, reactions.length);
       pack.setStartIndex(emojiItems.size());
       pack.setIsRecent();
       emojiItems.ensureCapacity(reactions.length);
       emojiPacks.add(pack);
 
       for (TdApi.AvailableReaction reaction: reactions) {
+        final boolean isClassicEmojiReaction = reaction.type.getConstructor() == TdApi.ReactionTypeEmoji.CONSTRUCTOR;
         TGReaction reactionObj = tdlib.getReaction(reaction.type);
         TGStickerObj stickerObj = reactionObj != null ? reactionObj.newCenterAnimationSicker(): null;
         if (stickerObj != null) {
-          if (reaction.type.getConstructor() == TdApi.ReactionTypeEmoji.CONSTRUCTOR) {
+          if (isClassicEmojiReaction) {
             if (stickerObj.getPreviewAnimation() != null) {
               stickerObj.getPreviewAnimation().setPlayOnce(true);
               stickerObj.getPreviewAnimation().setLooped(false);
             }
           }
         }
-        emojiItems.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, stickerObj));
+        if (isClassicEmojiReaction || state.chosenReactions.contains(TD.makeReactionKey(reaction.type))) {
+          emojiItems.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, stickerObj));
+        } else {
+          emojiItemsCustom.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, stickerObj));
+        }
       }
+    }
+
+    if (!emojiItemsCustom.isEmpty()) {
+      TGStickerSetInfo pack = TGStickerSetInfo.fromEmojiSection(tdlib, 1, R.string.Recent, emojiItemsCustom.size());
+      pack.setStartIndex(emojiItems.size());
+      pack.setIsDefaultEmoji();
+
+      emojiPacks.get(0).setSize(reactions.length - emojiItemsCustom.size());
+
+      emojiPacks.add(pack);
+      emojiItems.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_HEADER, pack));
+      emojiItems.addAll(emojiItemsCustom);
     }
 
     reactionsController.setStickers(emojiPacks, emojiItems);
@@ -238,8 +258,8 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
       EmojiSection section = ((EmojiSectionView) v).getSection();
       if (section.index == -14) {
         bottomHeaderView.openSearchMode(true, false);
-      } else {
-        reactionsController.scrollToStickerSet(0, HeaderView.getSize(true), false, true);
+      } else if (section.index >= 0 && section.index < emojiPacks.size()) {
+        reactionsController.scrollToStickerSet(section.index == 0 ? 0 : emojiPacks.get(section.index).getStartIndex(), HeaderView.getSize(true), false, true);
       }
     }
   }
@@ -393,9 +413,6 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
   @Override
   public void setArguments (MessageOptionsPagerController.State args) {
     this.state = args;
-    if (state.message.getMessageReactions() != null) {
-      this.chosenReactions = state.message.getMessageReactions().getChosen();
-    }
     super.setArguments(args);
   }
 
@@ -798,7 +815,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
       if (lastEmojiStickers == null || !StringUtils.equalsOrBothEmpty(lastEmojiStickers.query, request)) {
         lastEmojiStickers = tdlib.ui().getEmojiStickers(new TdApi.StickerTypeCustomEmoji(), request, true, 2000, findOutputChatId());
       }
-      lastEmojiStickers.getStickers((context, installedStickers, recommendedStickers, b) -> UI.post(() -> {
+      lastEmojiStickers.getStickers((context, installedStickers, recommendedStickers, b) -> {
         if (StringUtils.equalsOrBothEmpty(lastEmojiSearchRequest, context.query)) {
           final ArrayList<TdApi.Sticker> stickers = new ArrayList<>(Arrays.asList(installedStickers));
           if (recommendedStickers != null) {
@@ -824,7 +841,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
           reactionsController.clearAllItems();
           reactionsController.setStickers(packs, items);
         }
-      }), 0);
+      }, 0);
     } else {
       reactionsController.clearAllItems();
       reactionsController.setStickers(emojiPacks, emojiItems);
