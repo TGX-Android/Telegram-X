@@ -66,9 +66,8 @@ public class TGMessageText extends TGMessage {
     }
   }
 
-  public TGMessageText (MessagesManager context, TdApi.Message msg, TdApi.SponsoredMessage sponsoredMessage) {
-    super(context, msg);
-    this.sponsoredMessage = sponsoredMessage;
+  public TGMessageText (MessagesManager context, long inChatId, TdApi.SponsoredMessage sponsoredMessage) {
+    super(context, inChatId, sponsoredMessage);
     this.currentMessageText = (TdApi.MessageText) sponsoredMessage.content;
     setText(currentMessageText.text, false);
   }

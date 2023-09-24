@@ -517,12 +517,32 @@ public class ChatEventUtil {
         } else if (isAnonymous) {
           appendRight(b, R.string.EventLogPromotedRemainAnonymous, ((TdApi.ChatMemberStatusCreator) oldStatus).isAnonymous, ((TdApi.ChatMemberStatusCreator) newStatus).isAnonymous, false);
         } else if (isPromote) {
+          if (false) {
+            // Cause compilation error if signature changes
+            new TdApi.ChatAdministratorRights(
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true,
+              true
+            );
+          }
           final TdApi.ChatMemberStatusAdministrator oldAdmin = (TdApi.ChatMemberStatusAdministrator) oldStatus;
           final TdApi.ChatMemberStatusAdministrator newAdmin = (TdApi.ChatMemberStatusAdministrator) newStatus;
           appendRight(b, msg.isChannelPost ? R.string.EventLogPromotedManageChannel : R.string.EventLogPromotedManageGroup, oldAdmin.rights.canManageChat, newAdmin.rights.canManageChat, false);
           appendRight(b, msg.isChannelPost ? R.string.EventLogPromotedChangeChannelInfo : R.string.EventLogPromotedChangeGroupInfo, oldAdmin.rights.canChangeInfo, newAdmin.rights.canChangeInfo, false);
           if (msg.isChannelPost) {
-            appendRight(b, R.string.EventLogPromotedPostMessages, oldAdmin.rights.canChangeInfo, newAdmin.rights.canChangeInfo, false);
+            appendRight(b, R.string.EventLogPromotedPostMessages, oldAdmin.rights.canPostMessages, newAdmin.rights.canPostMessages, false);
             appendRight(b, R.string.EventLogPromotedEditMessages, oldAdmin.rights.canEditMessages, newAdmin.rights.canEditMessages, false);
           }
           appendRight(b, R.string.EventLogPromotedDeleteMessages, oldAdmin.rights.canDeleteMessages, newAdmin.rights.canDeleteMessages, false);
@@ -532,7 +552,12 @@ public class ChatEventUtil {
             appendRight(b, R.string.EventLogPromotedPinMessages, oldAdmin.rights.canPinMessages, newAdmin.rights.canPinMessages, false);
           }
           appendRight(b, msg.isChannelPost ? R.string.EventLogPromotedManageLiveStreams : R.string.EventLogPromotedManageVoiceChats, oldAdmin.rights.canManageVideoChats, newAdmin.rights.canManageVideoChats, false);
-          if (!msg.isChannelPost) {
+          if (msg.isChannelPost) {
+            appendRight(b, R.string.EventLogPromotedPostStories, oldAdmin.rights.canPostStories, newAdmin.rights.canPostStories, false);
+            appendRight(b, R.string.EventLogPromotedEditStories, oldAdmin.rights.canEditStories, newAdmin.rights.canEditStories, false);
+            appendRight(b, R.string.EventLogPromotedDeleteStories, oldAdmin.rights.canDeleteStories, newAdmin.rights.canDeleteStories, false);
+          } else {
+            appendRight(b, R.string.EventLogPromotedManageTopics, oldAdmin.rights.canManageTopics, newAdmin.rights.canManageTopics, false);
             appendRight(b, R.string.EventLogPromotedRemainAnonymous, oldAdmin.rights.isAnonymous, newAdmin.rights.isAnonymous, false);
           }
           appendRight(b, R.string.EventLogPromotedAddAdmins, oldAdmin.rights.canPromoteMembers, newAdmin.rights.canPromoteMembers, false);

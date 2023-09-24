@@ -37,6 +37,7 @@ public class TGFoundChat {
   private static final int FLAG_SELF = 1 << 2;
   private static final int FLAG_USE_TME = 1 << 3;
   private static final int FLAG_FORCE_USERNAME = 1 << 4;
+  private static final int FLAG_NO_ANONYMOUS_BADGE = 1 << 5;
 
   private int flags;
 
@@ -60,6 +61,29 @@ public class TGFoundChat {
     this.userId = userId;
     this.flags |= FLAG_SELF;
     setTitleImpl(Lang.getString(R.string.Saved), null);
+  }
+
+  public TGFoundChat (Tdlib tdlib, TdApi.MessageSender sender, boolean isGlobal) {
+    this.tdlib = tdlib;
+    this.chatList = null;
+    switch (sender.getConstructor()) {
+      case TdApi.MessageSenderUser.CONSTRUCTOR: {
+        TdApi.MessageSenderUser user = (TdApi.MessageSenderUser) sender;
+        this.chatId = 0;
+        this.userId = user.userId;
+        setUser(tdlib.cache().userStrict(user.userId), null);
+        break;
+      }
+      case TdApi.MessageSenderChat.CONSTRUCTOR: {
+        TdApi.MessageSenderChat chat = (TdApi.MessageSenderChat) sender;
+        this.chatId = chat.chatId;
+        this.userId = ChatId.toUserId(chat.chatId);
+        setChat(tdlib.chatStrict(chat.chatId), null, isGlobal);
+        break;
+      }
+      default:
+        throw new UnsupportedOperationException(sender.toString());
+    }
   }
 
   public TGFoundChat (Tdlib tdlib, TdApi.ChatList chatList, long chatId, boolean isGlobal) {
@@ -128,6 +152,11 @@ public class TGFoundChat {
 
   public TGFoundChat setNoUnread () {
     this.flags |= FLAG_NO_UNREAD;
+    return this;
+  }
+
+  public TGFoundChat setNoAnonymousBadge () {
+    this.flags |= FLAG_NO_ANONYMOUS_BADGE;
     return this;
   }
 
@@ -414,6 +443,9 @@ public class TGFoundChat {
   }
 
   public boolean isAnonymousAdmin () {
+    if (BitwiseUtils.hasFlag(flags, FLAG_NO_ANONYMOUS_BADGE)) {
+      return false;
+    }
     TdApi.ChatMemberStatus status = tdlib.chatStatus(getChatId());
     return status != null && Td.isAnonymous(status);
   }

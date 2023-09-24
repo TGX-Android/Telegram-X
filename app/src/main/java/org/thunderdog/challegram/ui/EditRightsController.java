@@ -104,13 +104,14 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
 
   private TdApi.ChatMemberStatusAdministrator targetAdmin;
   private TdApi.ChatMemberStatusRestricted targetRestrict;
-  private boolean canViewMessages;
+  private boolean canViewMessages, isForum;
 
   @Override
   public void setArguments (Args args) {
     super.setArguments(args);
 
     canViewMessages = tdlib.isChannel(args.chatId);
+    isForum = tdlib.isForum(args.chatId);
 
     switch (args.mode) {
       case MODE_RESTRICTION: {
@@ -131,8 +132,27 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         if (args.member != null) {
           if (args.member.status.getConstructor() == TdApi.ChatMemberStatusCreator.CONSTRUCTOR) {
             TdApi.ChatMemberStatusCreator creator = (TdApi.ChatMemberStatusCreator) args.member.status;
-            // TODO bot defaults
-            targetAdmin = new TdApi.ChatMemberStatusAdministrator(creator.customTitle, true, new TdApi.ChatAdministratorRights(true, true, true, true, true, true, true, true, true, true, true, true, true, true, creator.isAnonymous));
+            targetAdmin = new TdApi.ChatMemberStatusAdministrator(
+              creator.customTitle,
+              true,
+              new TdApi.ChatAdministratorRights(
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                true,
+                creator.isAnonymous
+              )
+            );
           } else if (args.member.status.getConstructor() == TdApi.ChatMemberStatusAdministrator.CONSTRUCTOR) {
             TdApi.ChatMemberStatusAdministrator admin = (TdApi.ChatMemberStatusAdministrator) args.member.status;
             targetAdmin = (TdApi.ChatMemberStatusAdministrator) Td.copyOf(admin);
@@ -160,7 +180,28 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         return new TdApi.ChatMemberStatusAdministrator(null, true, Td.copyOf(me.rights));
       }
     }
-    return new TdApi.ChatMemberStatusAdministrator(null, true, new TdApi.ChatAdministratorRights(true, true, true, true, true, true, true, true, false, true, true, true, true, true, false));
+    // TODO bot defaults
+    return new TdApi.ChatMemberStatusAdministrator(
+      null,
+      true,
+      new TdApi.ChatAdministratorRights(
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        isForum,
+        true,
+        true,
+        true,
+        true,
+        true,
+        false
+      )
+    );
   }
 
   @Override
@@ -723,6 +764,8 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
               return me.rights.canPinMessages;
             case RightId.MANAGE_VIDEO_CHATS:
               return me.rights.canManageVideoChats;
+            case RightId.MANAGE_TOPICS:
+              return me.rights.canManageTopics;
             case RightId.POST_STORIES:
               return me.rights.canPostStories;
             case RightId.EDIT_STORIES:
@@ -1013,6 +1056,18 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         RightId.POST_STORIES,
         RightId.EDIT_STORIES,
         RightId.DELETE_STORIES,
+        RightId.ADD_NEW_ADMINS
+      };
+    } else if (isForum) {
+      rightIds = new int[] {
+        RightId.CHANGE_CHAT_INFO,
+        RightId.DELETE_MESSAGES,
+        RightId.BAN_USERS,
+        RightId.INVITE_USERS,
+        RightId.PIN_MESSAGES,
+        RightId.MANAGE_VIDEO_CHATS,
+        RightId.MANAGE_TOPICS,
+        RightId.REMAIN_ANONYMOUS,
         RightId.ADD_NEW_ADMINS
       };
     } else {
@@ -1387,6 +1442,9 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
       case RightId.MANAGE_VIDEO_CHATS:
         targetAdmin.rights.canManageVideoChats = newValue;
         break;
+      case RightId.MANAGE_TOPICS:
+        targetAdmin.rights.canManageTopics = newValue;
+        break;
       case RightId.POST_STORIES:
         targetAdmin.rights.canPostStories = newValue;
         break;
@@ -1514,6 +1572,8 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         return targetAdmin.rights.canPromoteMembers;
       case RightId.MANAGE_VIDEO_CHATS:
         return targetAdmin.rights.canManageVideoChats;
+      case RightId.MANAGE_TOPICS:
+        return targetAdmin.rights.canManageTopics;
       case RightId.POST_STORIES:
         return targetAdmin.rights.canPostStories;
       case RightId.EDIT_STORIES:
@@ -1568,6 +1628,8 @@ public class EditRightsController extends EditBaseController<EditRightsControlle
         return R.string.RightEditMessages;
       case RightId.MANAGE_VIDEO_CHATS:
         return isChannel ? R.string.RightLiveStreams : R.string.RightVoiceChats;
+      case RightId.MANAGE_TOPICS:
+        return R.string.RightTopics;
       case RightId.POST_STORIES:
         return R.string.RightStoriesPost;
       case RightId.EDIT_STORIES:

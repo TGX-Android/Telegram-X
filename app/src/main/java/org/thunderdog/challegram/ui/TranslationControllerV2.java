@@ -181,7 +181,7 @@ public class TranslationControllerV2 extends BottomSheetViewController.BottomShe
       }
       linearLayout.addView(senderTextView, LayoutHelper.createLinear(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, 2, Gravity.LEFT | Gravity.CENTER_VERTICAL));
 
-      if (!message.isFakeMessage()) {
+      if (!message.isFakeMessage() && !message.isSponsoredMessage()) {
         dateTextView = new TextView(context);
         dateTextView.setTextColor(Theme.getColor(ColorId.textLight));
         dateTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);

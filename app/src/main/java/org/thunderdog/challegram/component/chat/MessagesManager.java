@@ -1343,7 +1343,7 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
           if (lastMessage == null) return;
           controller.sponsoredMessageLoaded = true;
           boolean isFirstItemVisible = manager.findFirstCompletelyVisibleItemPosition() == 0;
-          adapter.addMessage(SponsoredMessageUtils.sponsoredToTgx(this, loader.getChatId(), lastMessage.getDate(), sponsoredMessages.messages[0]), false, false);
+          adapter.addMessage(SponsoredMessageUtils.sponsoredToTgx(this, loader.getChatId(), sponsoredMessages.messages[0]), false, false);
           if (isFirstItemVisible && !isScrolling && !controller.canWriteMessages()) {
             manager.scrollToPositionWithOffset(1, Screen.dp(48f));
           }

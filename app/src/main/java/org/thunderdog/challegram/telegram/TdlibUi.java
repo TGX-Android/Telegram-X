@@ -6669,7 +6669,9 @@ public class TdlibUi extends Handler {
             haveRecommendedStickers.executeOrPostponeTask(() -> {
               TdApi.Sticker[] installedStickers = getInstalledStickers(false);
               TdApi.Sticker[] recommendedStickers = getRecommendedStickers(installedStickers);
-              callback.onStickersLoaded(this, installedStickers, recommendedStickers, false);
+              tdlib.uiExecute(() ->
+                callback.onStickersLoaded(this, installedStickers, recommendedStickers, false)
+              );
             });
           });
         });
@@ -6696,11 +6698,17 @@ public class TdlibUi extends Handler {
           final long elapsedMs = SystemClock.uptimeMillis() - startTime;
           final long timeoutMs = Math.max(0, totalTimeoutMs - elapsedMs);
           tdlib.runOnTdlibThread(() -> {
-            if (!timeoutSignal.isCanceled()) {
+            synchronized (isExpectingMoreStickers) {
+              if (timeoutSignal.isCanceled()) {
+                // Do nothing, because result was already sent
+                return;
+              }
               TdApi.Sticker[] installedStickers = getInstalledStickers(false);
               TdApi.Sticker[] recommendedStickers = this.recommendedStickers != null ? getRecommendedStickers(installedStickers) : null;
               boolean expectMoreStickers = isLoading();
-              callback.onStickersLoaded(this, installedStickers, recommendedStickers, expectMoreStickers);
+              tdlib.ui().post(() ->
+                callback.onStickersLoaded(this, installedStickers, recommendedStickers, expectMoreStickers)
+              );
               isExpectingMoreStickers.set(expectMoreStickers);
               timeoutSignal.cancel();
             }
@@ -6708,20 +6716,35 @@ public class TdlibUi extends Handler {
         };
         haveInstalledExtraStickers.executeOrPostponeTask(() -> {
           if (installedExtraStickers.stickers.length > 0) {
-            if (isExpectingMoreStickers.get()) {
-              callback.onMoreInstalledStickersLoaded(this, getInstalledStickers(true));
+            synchronized (isExpectingMoreStickers) {
+              if (isExpectingMoreStickers.get()) {
+                TdApi.Sticker[] installedStickers = getInstalledStickers(true);
+                tdlib.ui().post(() ->
+                  callback.onMoreInstalledStickersLoaded(this, installedStickers)
+                );
+              }
             }
           }
 
           haveRecommendedStickers.executeOrPostponeTask(() -> {
-            timeoutSignal.cancel();
-            TdApi.Sticker[] installedStickers = getInstalledStickers(false);
-            TdApi.Sticker[] recommendedStickers = getRecommendedStickers(installedStickers);
-            if (isExpectingMoreStickers.get()) {
-              callback.onRecommendedStickersLoaded(this, recommendedStickers);
-              callback.onAllStickersFinishedLoading(this);
-            } else {
-              callback.onStickersLoaded(this, installedStickers, recommendedStickers, false);
+            TdApi.Sticker[] installedStickers, recommendedStickers;
+            boolean callbackExecuted;
+            synchronized (isExpectingMoreStickers) {
+              timeoutSignal.cancel();
+              installedStickers = getInstalledStickers(false);
+              recommendedStickers = getRecommendedStickers(installedStickers);
+              callbackExecuted = isExpectingMoreStickers.get();
+              if (callbackExecuted) {
+                tdlib.ui().post(() -> {
+                  callback.onRecommendedStickersLoaded(this, recommendedStickers);
+                  callback.onAllStickersFinishedLoading(this);
+                });
+              }
+            }
+            if (!callbackExecuted) {
+              tdlib.uiExecute(() ->
+                callback.onStickersLoaded(this, installedStickers, recommendedStickers, false)
+              );
             }
           });
 

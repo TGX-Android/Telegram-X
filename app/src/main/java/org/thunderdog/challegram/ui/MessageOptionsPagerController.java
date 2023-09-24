@@ -27,6 +27,7 @@ import androidx.core.graphics.ColorUtils;
 import org.drinkless.tdlib.Client;
 import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.data.TD;
 import org.thunderdog.challegram.data.TGMessage;
 import org.thunderdog.challegram.data.TGReaction;
@@ -482,7 +483,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     int startY = positionCords[1] + v.getMeasuredHeight() / 2;
 
     boolean hasReaction = message.getMessageReactions().hasReaction(reaction.type);
-    if (hasReaction || message.messagesController().callNonAnonymousProtection(message.getId() + reaction.getId(), tooltipManager().builder(v))) {
+    if (!Config.PROTECT_ANONYMOUS_REACTIONS || hasReaction || message.messagesController().callNonAnonymousProtection(message.getId() + reaction.getId(), tooltipManager().builder(v))) {
       if (message.getMessageReactions().toggleReaction(reaction.type, false, true, handler(v, () -> {
       }))) {
         message.scheduleSetReactionAnimationFromBottomSheet(reaction, new Point(startX, startY));
@@ -499,7 +500,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     int startX = positionCords[0] + v.getMeasuredWidth() / 2;
     int startY = positionCords[1] + v.getMeasuredHeight() / 2;
 
-    if (message.messagesController().callNonAnonymousProtection(message.getId() + reaction.getId(), tooltipManager().builder(v))) {
+    if (!Config.PROTECT_ANONYMOUS_REACTIONS || message.messagesController().callNonAnonymousProtection(message.getId() + reaction.getId(), tooltipManager().builder(v))) {
       if (message.getMessageReactions().toggleReaction(reaction.type, true, true, handler(v, () -> {
       }))) {
         message.scheduleSetReactionAnimationFullscreenFromBottomSheet(reaction, new Point(startX, startY));

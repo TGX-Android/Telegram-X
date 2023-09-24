@@ -2644,6 +2644,11 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     }
   }
 
+  public boolean isAnonymousAdmin (long chatId) {
+    TdApi.ChatMemberStatus status = chatStatus(chatId);
+    return status != null && Td.isAnonymous(status);
+  }
+
   public @Nullable TdApi.ChatMemberStatus chatStatus (long chatId) {
     if (chatId == 0) {
       return null;
@@ -3102,7 +3107,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return user != null && user.type.getConstructor() == TdApi.UserTypeDeleted.CONSTRUCTOR;
   }
 
-  public boolean chatForum (long chatId) {
+  public boolean isForum (long chatId) {
     TdApi.Supergroup supergroup = chatToSupergroup(chatId);
     return supergroup != null && supergroup.isForum;
   }
@@ -10707,6 +10712,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
         case RightId.EDIT_MESSAGES:
         case RightId.INVITE_USERS:
         case RightId.MANAGE_VIDEO_CHATS:
+        case RightId.MANAGE_TOPICS:
         case RightId.POST_STORIES:
         case RightId.EDIT_STORIES:
         case RightId.DELETE_STORIES:
@@ -10780,6 +10786,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       case RightId.EDIT_MESSAGES:
       case RightId.INVITE_USERS:
       case RightId.MANAGE_VIDEO_CHATS:
+      case RightId.MANAGE_TOPICS:
       case RightId.POST_STORIES:
       case RightId.EDIT_STORIES:
       case RightId.DELETE_STORIES:
