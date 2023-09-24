@@ -131,7 +131,10 @@ public abstract class BottomSheetViewController<T> extends ViewPagerController<T
           final int height = getTargetHeight();
           if (height != oldHeight) {
             invalidateAllItemDecorations();
+            boolean disallowKeyboardHide = isDisallowKeyboardHideOnPageScrolled();
+            setDisallowKeyboardHideOnPageScrolled(true);
             onPageScrolled(currentMediaPosition, currentPositionOffset, 0);
+            setDisallowKeyboardHideOnPageScrolled(disallowKeyboardHide);
             oldHeight = height;
           }
         });

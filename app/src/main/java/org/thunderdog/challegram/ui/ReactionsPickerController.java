@@ -730,6 +730,18 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
     return bottomHeaderViewGroup;
   }
 
+  protected void onBottomHeaderEnterSearchMode () {
+
+  }
+
+  protected void onBottomHeaderLeaveSearchMode () {
+
+  }
+
+  public boolean inBottomHeaderSearchMode () {
+    return fakeControllerForBottomHeader.inSearchMode();
+  }
+
   private void genBottomHeader () {
     fakeControllerForBottomHeader = new FakeControllerForBottomHeader(context, tdlib) {
       @Override
@@ -746,6 +758,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
         emojiTypesRecyclerView.setAlpha(bottomHeaderSearchModeVisibility.getFloatValue());
         bottomHeaderSearchModeVisibility.setValue(true, true);
         searchEmojiImpl(null);
+        onBottomHeaderEnterSearchMode();
       }
 
       @Override
@@ -762,6 +775,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
         super.onLeaveSearchMode();
         bottomHeaderSearchModeVisibility.setValue(false, true);
         searchEmojiImpl(null);
+        onBottomHeaderLeaveSearchMode();
       }
     };
 

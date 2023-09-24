@@ -57,6 +57,7 @@ import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.util.DrawableProvider;
 import org.thunderdog.challegram.util.OptionDelegate;
+import org.thunderdog.challegram.util.ScrollJumpCompensator;
 import org.thunderdog.challegram.util.text.Counter;
 import org.thunderdog.challegram.util.text.TextColorSet;
 import org.thunderdog.challegram.v.CustomRecyclerView;
@@ -407,35 +408,36 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
   private CharSequence cachedHint;
   private int cachedHintHeight, cachedHintAvailWidth;
 
+  private int getOptionItemsHeight () {
+    int optionItemsHeight = Screen.dp(54) * state.options.items.length;
+    int hintHeight;
+    if (!StringUtils.isEmpty(state.options.info)) {
+      int availWidth = Screen.currentWidth() - Screen.dp(16f) * 2; // FIXME: rely on parent view width
+      if (cachedHint != null && cachedHintAvailWidth == availWidth && cachedHint.equals(state.options.info)) {
+        hintHeight = cachedHintHeight;
+      } else {
+        hintHeight = CustomTextView.measureHeight(this, state.options.info, 15f, availWidth);
+        cachedHint = state.options.info;
+        cachedHintAvailWidth = availWidth;
+        cachedHintHeight = hintHeight;
+      }
+      hintHeight += Screen.dp(14f) + Screen.dp(6f);
+    } else {
+      hintHeight = 0;
+    }
+    if (state.emojiPackIds.length > 0) {
+      hintHeight += Screen.dp(40);
+    }
+    return optionItemsHeight + hintHeight;
+  }
+
   @Override
   protected int getContentOffset () {
     if (state.needShowMessageOptions) {
-      int optionItemsHeight = Screen.dp(54) * state.options.items.length;
-      int hintHeight;
-      if (!StringUtils.isEmpty(state.options.info)) {
-        int availWidth = Screen.currentWidth() - Screen.dp(16f) * 2; // FIXME: rely on parent view width
-        if (cachedHint != null && cachedHintAvailWidth == availWidth && cachedHint.equals(state.options.info)) {
-          hintHeight = cachedHintHeight;
-        } else {
-          hintHeight = CustomTextView.measureHeight(this, state.options.info, 15f, availWidth);
-          cachedHint = state.options.info;
-          cachedHintAvailWidth = availWidth;
-          cachedHintHeight = hintHeight;
-        }
-        hintHeight += Screen.dp(14f) + Screen.dp(6f);
-      } else {
-        hintHeight = 0;
-      }
-      if (state.emojiPackIds.length > 0) {
-        hintHeight += Screen.dp(40);
-      }
-      return (
-        getTargetHeight()
-          - (Screen.dp(54) + HeaderView.getTopOffset())
-          - optionItemsHeight
-          - hintHeight
-          - Screen.dp(1)
-      );
+      return (getTargetHeight()
+        - (Screen.dp(54) + HeaderView.getTopOffset())
+        - getOptionItemsHeight()
+        - Screen.dp(1));
     } else {
       return Screen.currentHeight() / 2;
     }
@@ -645,7 +647,17 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
 
   private CustomRecyclerView createReactionsPopupPicker () {
     reactionsPickerVisibility = new BoolAnimator(REACTIONS_PICKER_VISIBILITY_ANIMATOR_ID, this, AnimatorUtils.DECELERATE_INTERPOLATOR, 280L, false);
-    reactionsPickerController = new ReactionsPickerController(context, tdlib);
+    reactionsPickerController = new ReactionsPickerController(context, tdlib) {
+      @Override
+      protected void onBottomHeaderEnterSearchMode () {
+        reactionsPickerRecyclerView.invalidateItemDecorations();
+      }
+
+      @Override
+      protected void onBottomHeaderLeaveSearchMode () {
+        reactionsPickerRecyclerView.invalidateItemDecorations();
+      }
+    };
     reactionsPickerController.setArguments(state);
     reactionsPickerController.getValue();
 
@@ -672,6 +684,10 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
         if (position == itemCount - 1 || isUnknown) {
           int keyboardHeight = getKeyboardState() ? Keyboard.getSize(Keyboard.getSize()) : 0;
           bottom = Math.max(parent.getMeasuredHeight() - reactionsPickerController.measureItemsHeight(), keyboardHeight + Screen.dp(64));
+        }
+
+        if (reactionsPickerController.inBottomHeaderSearchMode()) {
+          top = 0;
         }
 
         outRect.set(leftRight, top, leftRight, bottom);
@@ -870,11 +886,17 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
     int offset = Math.max(0, getContentOffset() - HeaderView.getSize(false) - EmojiLayout.getHeaderPadding() + ((getHeaderHeight() - reactionsPickerController.getItemHeight()) / 2));
     if (offset != lastReactionPickerOffsetReal) {
       lastReactionPickerOffsetReal = offset;
-      Log.i("WTF_DEBUG", "offset: " + lastReactionPickerOffsetReal + " " + offset);
-      if (reactionsPickerRecyclerView  != null) {
-        reactionsPickerRecyclerView.invalidateItemDecorations();
+      if (reactionsPickerRecyclerView != null) {
+        if (!reactionsPickerRecyclerView.isComputingLayout()) {
+          reactionsPickerRecyclerView.invalidateItemDecorations();
+          checkReactionPickerPosition();
+        } else {
+          UI.post(() -> {
+            reactionsPickerRecyclerView.invalidateItemDecorations();
+            checkReactionPickerPosition();
+          });
+        }
       }
-      checkReactionPickerPosition();
     }
     return offset;
   }

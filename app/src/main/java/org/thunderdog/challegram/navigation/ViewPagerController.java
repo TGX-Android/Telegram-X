@@ -365,13 +365,23 @@ public abstract class ViewPagerController<T> extends TelegramViewController<T> i
     onPageSelected(adapter.reversePosition(position), position);
   }
 
+  private boolean disallowKeyboardHideOnPageScrolled;
+
+  public void setDisallowKeyboardHideOnPageScrolled (boolean disallowKeyboardHideOnPageScrolled) {
+    this.disallowKeyboardHideOnPageScrolled = disallowKeyboardHideOnPageScrolled;
+  }
+
+  public boolean isDisallowKeyboardHideOnPageScrolled () {
+    return disallowKeyboardHideOnPageScrolled;
+  }
+
   @Override
   public void onPageScrolled (int position, float positionOffset, int positionOffsetPixels) {
     if (headerCell != null) {
       headerCell.getTopView().setSelectionFactor((float) position + positionOffset);
     }
     onPageScrolled(adapter.reversePosition(position), position, positionOffset, positionOffsetPixels);
-    if (getKeyboardState()) {
+    if (getKeyboardState() && !disallowKeyboardHideOnPageScrolled) {
       hideSoftwareKeyboard();
     }
   }
