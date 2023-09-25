@@ -3696,7 +3696,7 @@ public class TD {
   }
 
   /**
-   * TODO Support properly all missing cases in {@link #getContentPreview(Tdlib, long, TdApi.Message, boolean, boolean)} and remove this method.
+   * TODO Support properly all missing cases in {@link #getContentPreview(Tdlib, long, TdApi.Message, boolean, boolean, boolean)} and remove this method.
    */
   @Deprecated
   private static String buildShortPreviewImpl (Tdlib tdlib, @Nullable TdApi.Message m, int flags, @Nullable RunnableBool isTranslatable) {
@@ -5978,13 +5978,13 @@ public class TD {
   }
 
   @NonNull
-  public static ContentPreview getChatListPreview (Tdlib tdlib, long chatId, TdApi.Message message) {
-    return getContentPreview(tdlib, chatId, message, true, true);
+  public static ContentPreview getChatListPreview (Tdlib tdlib, long chatId, TdApi.Message message, boolean checkChatRestrictions) {
+    return getContentPreview(tdlib, chatId, message, true, true, checkChatRestrictions);
   }
 
   @NonNull
   public static ContentPreview getNotificationPreview (Tdlib tdlib, long chatId, TdApi.Message message, boolean allowContent) {
-    return getContentPreview(tdlib, chatId, message, allowContent, false);
+    return getContentPreview(tdlib, chatId, message, allowContent, false, true);
   }
 
   private static final int ARG_NONE = 0;
@@ -6006,12 +6006,12 @@ public class TD {
   }
 
   @NonNull
-  private static ContentPreview getContentPreview (Tdlib tdlib, long chatId, TdApi.Message message, boolean allowContent, boolean isChatList) {
+  private static ContentPreview getContentPreview (Tdlib tdlib, long chatId, TdApi.Message message, boolean allowContent, boolean isChatList, boolean checkChatRestrictions) {
     if (Settings.instance().needRestrictContent()) {
       if (!StringUtils.isEmpty(message.restrictionReason)) {
         return new ContentPreview(TD.EMOJI_ERROR, 0, message.restrictionReason, false);
       }
-      if (!isChatList) { // Otherwise lookup is done inside TGChat for performance reason
+      if (checkChatRestrictions) { // Otherwise lookup is handled by the caller
         String restrictionReason = tdlib.chatRestrictionReason(chatId);
         if (restrictionReason != null) {
           return new TD.ContentPreview(TD.EMOJI_ERROR, 0, restrictionReason, false);
@@ -6157,12 +6157,12 @@ public class TD {
           pinnedMessage = null;
         }
         if (pinnedMessage != null) {
-          return new ContentPreview(EMOJI_PIN, getContentPreview(tdlib, chatId, pinnedMessage, allowContent, isChatList));
+          return new ContentPreview(EMOJI_PIN, getContentPreview(tdlib, chatId, pinnedMessage, allowContent, isChatList, checkChatRestrictions));
         } else {
           return new ContentPreview(EMOJI_PIN, R.string.ChatContentPinned)
             .setRefresher((oldPreview, callback) -> tdlib.getMessage(chatId, pinnedMessageId, remotePinnedMessage -> {
             if (remotePinnedMessage != null) {
-              callback.onContentPreviewChanged(chatId, message.id, new ContentPreview(EMOJI_PIN, getContentPreview(tdlib, chatId, remotePinnedMessage, allowContent, isChatList)), oldPreview);
+              callback.onContentPreviewChanged(chatId, message.id, new ContentPreview(EMOJI_PIN, getContentPreview(tdlib, chatId, remotePinnedMessage, allowContent, isChatList, checkChatRestrictions)), oldPreview);
             } else {
               callback.onContentPreviewNotChanged(chatId, message.id, oldPreview);
             }

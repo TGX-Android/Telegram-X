@@ -3870,6 +3870,10 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
     return false;
   }
 
+  public boolean chatRestricted (long chatId) {
+    return !StringUtils.isEmpty(chatRestrictionReason(chatId));
+  }
+
   public boolean chatRestricted (TdApi.Chat chat) {
     return !StringUtils.isEmpty(chatRestrictionReason(chat));
   }

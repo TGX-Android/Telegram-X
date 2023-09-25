@@ -343,8 +343,10 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
   }
 
   private void processAuthorizationStateChange (TdlibAccount account, TdApi.AuthorizationState authorizationState, @Tdlib.Status int status) {
+    ViewController<?> current = navigation.isEmpty() ? null : navigation.getStack().getCurrent();
+    boolean currentScreenBelongsToTargetAccount = current != null && current.isSameAccount(account);
     if (this.account.id != account.id) {
-      if (navigation.isEmpty() || !navigation.getCurrentStackItem().isSameAccount(account)) {
+      if (navigation.isEmpty() || !currentScreenBelongsToTargetAccount) {
         return;
       }
     }
@@ -352,8 +354,6 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
       initController(this.account.tdlib(), this.account.tdlib().authorizationStatus());
       return;
     }
-
-    ViewController<?> current = navigation.getStack().getCurrent();
 
     if (status == Tdlib.Status.READY) {
       ViewController<?> first = navigation.getStack().get(0);
@@ -369,10 +369,15 @@ public class MainActivity extends BaseActivity implements GlobalAccountListener,
       return;
     }
 
-    if (status == Tdlib.Status.UNAUTHORIZED && this.account.id == account.id) {
-      int nextAccountId = tdlib.context().findNextAccountId(this.account.id);
-      if (nextAccountId != TdlibAccount.NO_ID) {
-        tdlib.context().changePreferredAccountId(nextAccountId, TdlibManager.SWITCH_REASON_UNAUTHORIZED);
+    if (status == Tdlib.Status.UNAUTHORIZED) {
+      if (this.account.id == account.id) {
+        int nextAccountId = tdlib.context().findNextAccountId(account.id);
+        if (nextAccountId != TdlibAccount.NO_ID) {
+          tdlib.context().changePreferredAccountId(nextAccountId, TdlibManager.SWITCH_REASON_UNAUTHORIZED);
+          return;
+        }
+      } else if (currentScreenBelongsToTargetAccount && !current.isUnauthorized() && tdlib.context().hasActiveAccounts()) {
+        // MainController shall be shown in onAccountSwitched
         return;
       }
     }
