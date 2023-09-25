@@ -45,6 +45,7 @@ import org.thunderdog.challegram.tool.Screen;
 import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.tool.Views;
 import org.thunderdog.challegram.unsorted.Settings;
+import org.thunderdog.challegram.util.text.TextMedia;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -627,24 +628,40 @@ public class TGMessageSticker extends TGMessage implements AnimatedEmojiListener
         }
       }
 
-      index = 0;
-      for (Representation representation : representation) {
-        int left = leftDefault + stickerWidth * (representation.xIndex);
-        int top = topDefault + stickerHeight * (representation.yIndex);
-        int right = left + stickerWidth;
-        int bottom = top + stickerHeight;
+      boolean needScale = representation.size() > 1 && specialType == SPECIAL_TYPE_ANIMATED_EMOJI;
+      for (int a = 0; a < 2; a++) {
+        index = 0;
+        for (Representation representation : representation) {
+          final boolean isTgsSticker = representation.sticker != null && representation.sticker.format.getConstructor() == TdApi.StickerFormatTgs.CONSTRUCTOR;
+          if (isTgsSticker && a == 1 || !isTgsSticker && a == 0) {
+            final float scale = needScale && representation.sticker != null ? TextMedia.getScale(representation.sticker, stickerWidth) : 1f;
 
-        int saveRepaintingToCount = -1;
-        DoubleImageReceiver preview = receiver.getPreviewReceiver(index);
-        Receiver target = representation.isAnimated() ? receiver.getGifReceiver(index) : receiver.getImageReceiver(index);
-        if (representation.needRepainting) {
-          saveRepaintingToCount = Views.saveRepainting(c, target);
+            int left = leftDefault + stickerWidth * (representation.xIndex);
+            int top = topDefault + stickerHeight * (representation.yIndex);
+            int right = left + stickerWidth;
+            int bottom = top + stickerHeight;
+
+            int saveRepaintingToCount = -1;
+            int saveScaleToCount = -1;
+            if (scale != 1f) {
+              saveScaleToCount = Views.save(c);
+              c.scale(scale, scale, left + stickerWidth / 2f, top + stickerHeight / 2f);
+            }
+            DoubleImageReceiver preview = receiver.getPreviewReceiver(index);
+            Receiver target = representation.isAnimated() ? receiver.getGifReceiver(index) : receiver.getImageReceiver(index);
+            if (representation.needRepainting) {
+              saveRepaintingToCount = Views.saveRepainting(c, target);
+            }
+            DrawAlgorithms.drawReceiver(c, preview, target, !representation.isAnimated(), false, left, top, right, bottom);
+            if (representation.needRepainting) {
+              Views.restoreRepainting(c, target, saveRepaintingToCount, getTextColorSet().emojiStatusColor());
+            }
+            if (scale != 1f) {
+              Views.restore(c, saveScaleToCount);
+            }
+          }
+          index++;
         }
-        DrawAlgorithms.drawReceiver(c, preview, target, !representation.isAnimated(), false, left, top, right, bottom);
-        if (representation.needRepainting) {
-          Views.restoreRepainting(c, target, saveRepaintingToCount, getTextColorSet().emojiStatusColor());
-        }
-        index++;
       }
 
       if (Config.DEBUG_STICKER_OUTLINES) {
