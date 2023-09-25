@@ -506,7 +506,10 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   }
 
   private void checkPinnedMessages () {
-    setPinnedMessagesAvailable(pinnedMessages != null && pinnedMessages.isAvailable() && !tdlib.settings().isMessageDismissed(loader.getChatId(), pinnedMessages.getMaxMessageId()));
+    long chatId = loader.getChatId();
+    setPinnedMessagesAvailable(pinnedMessages != null && pinnedMessages.isAvailable() &&
+      !(tdlib.settings().isMessageDismissed(chatId, pinnedMessages.getMaxMessageId()) || tdlib.chatRestricted(chatId))
+    );
   }
 
   @Override
@@ -661,7 +664,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
     @Override
     public void onMaxMessageIdChanged (ListManager<TdApi.Message> list, long maxMessageId) {
       if (maxMessageId != 0) {
-        setPinnedMessagesAvailable(!tdlib.settings().isMessageDismissed(loader.getChatId(), maxMessageId));
+        long chatId = loader.getChatId();
+        setPinnedMessagesAvailable(!(tdlib.settings().isMessageDismissed(chatId, maxMessageId) || tdlib.chatRestricted(chatId)));
       } else if (!list.isAvailable()) {
         setPinnedMessagesAvailable(false);
       }
@@ -670,7 +674,8 @@ public class MessagesManager implements Client.ResultHandler, MessagesSearchMana
   private final MessageListManager.ChangeListener pinnedMessageListener = new MessageListManager.ChangeListener() {
     @Override
     public void onAvailabilityChanged (ListManager<TdApi.Message> list, boolean isAvailable) {
-      if (!isAvailable || !tdlib.settings().hasDismissedMessages(loader.getChatId())) {
+      long chatId = loader.getChatId();
+      if (!isAvailable || !(tdlib.settings().hasDismissedMessages(chatId) || tdlib.chatRestricted(chatId))) {
         // Either list became unavailable,
         // or it has no dismissed pinned messages
         setPinnedMessagesAvailable(isAvailable);

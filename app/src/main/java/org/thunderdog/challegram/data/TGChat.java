@@ -1302,7 +1302,8 @@ public class TGChat implements TdlibStatusManager.HelperTarget, TD.ContentPrevie
 
     TdApi.Message msg = chat.lastMessage;
     if (msg != null) {
-      TD.ContentPreview preview = TD.getChatListPreview(tdlib, msg.chatId, msg);
+      // No need to check tdlib.chatRestrictionReason, because it's already handled above
+      TD.ContentPreview preview = TD.getChatListPreview(tdlib, msg.chatId, msg, false);
       setContentPreview(preview);
     } else {
       setTextValue(R.string.DeletedMessage);
