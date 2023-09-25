@@ -819,7 +819,7 @@ public class MessageOptionsPagerController extends BottomSheetViewController<Opt
 
   @Override
   protected int getTopEdge () {
-    return Math.max(0, (int) (getPickerTop() - HeaderView.getTopOffset() - HeaderView.getSize(true) * reactionsPickerController.getTopHeaderVisibility() * reactionsPickerVisibility.getFloatValue()));
+    return Math.max(0, (int) (getPickerTop() - HeaderView.getTopOffset() - HeaderView.getSize(true) * (reactionsPickerController != null ? reactionsPickerController.getTopHeaderVisibility() * reactionsPickerVisibility.getFloatValue() : 0f)));
   }
 
   @Override
