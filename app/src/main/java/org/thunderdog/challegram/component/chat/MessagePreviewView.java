@@ -167,7 +167,7 @@ public class MessagePreviewView extends BaseView implements AttachDelegate, Dest
   }
 
   private void buildPreview () {
-    this.contentPreview = TD.getChatListPreview(tdlib, message.chatId, message);
+    this.contentPreview = TD.getChatListPreview(tdlib, message.chatId, message, true);
     if (contentPreview.hasRefresher() && !(ignoreAlbumRefreshers && contentPreview.isMediaGroup())) {
       contentPreview.refreshContent((chatId, messageId, newPreview, oldPreview) -> {
         tdlib.runOnUiThread(() -> {

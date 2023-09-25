@@ -767,7 +767,7 @@ public class ReplyComponent implements Client.ResultHandler, Destroyable {
     } else {
       miniPreview = null;
     }
-    TD.ContentPreview contentPreview = TD.getChatListPreview(tdlib, msg.chatId, msg);
+    TD.ContentPreview contentPreview = TD.getChatListPreview(tdlib, msg.chatId, msg, true);
     if (msg.forwardInfo != null && (parent != null && parent.getMessage().forwardInfo != null)) {
       switch (msg.forwardInfo.origin.getConstructor()) {
         case TdApi.MessageForwardOriginUser.CONSTRUCTOR:
