@@ -18,6 +18,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.graphics.drawable.GradientDrawable;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -219,6 +220,8 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
               stickerObj.getPreviewAnimation().setLooped(false);
             }
           }
+        } else {
+          Log.i("WTF_DEBUG", "Can't load sticker");
         }
         if (isClassicEmojiReaction || state.chosenReactions.contains(TD.makeReactionKey(reaction.type))) {
           emojiItems.add(new MediaStickersAdapter.StickerItem(MediaStickersAdapter.StickerHolder.TYPE_STICKER, stickerObj));

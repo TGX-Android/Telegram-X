@@ -17,14 +17,23 @@ package org.thunderdog.challegram.widget;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 import android.view.View;
 
 import androidx.annotation.DrawableRes;
+import androidx.annotation.Nullable;
 
+import org.drinkless.tdlib.TdApi;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.component.sticker.TGStickerObj;
+import org.thunderdog.challegram.config.Config;
+import org.thunderdog.challegram.data.TGReaction;
+import org.thunderdog.challegram.loader.ImageReceiver;
+import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.support.RippleSupport;
+import org.thunderdog.challegram.telegram.Tdlib;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.tool.DrawAlgorithms;
@@ -39,8 +48,9 @@ import me.vkryl.android.animator.FactorAnimator;
 import me.vkryl.core.ColorUtils;
 import me.vkryl.core.MathUtils;
 import me.vkryl.core.StringUtils;
+import me.vkryl.core.lambda.Destroyable;
 
-public class CircleButton extends View implements FactorAnimator.Target {
+public class CircleButton extends View implements FactorAnimator.Target, Destroyable {
   private Drawable icon;
   private int offsetLeft;
 
@@ -50,9 +60,21 @@ public class CircleButton extends View implements FactorAnimator.Target {
 
   private int crossBackgroundColorId, crossIconColorId;
 
+  private final Tdlib tdlib;
+  private final ImageReceiver imageReceiver;
+  private final GifReceiver gifReceiver;
+
   public CircleButton (Context context) {
+    this(context, null);
+  }
+
+  public CircleButton (Context context, Tdlib tdlib) {
     super(context);
     Views.setClickable(this);
+
+    this.tdlib = tdlib;
+    this.imageReceiver = new ImageReceiver(this, 0);
+    this.gifReceiver = new GifReceiver(this);
   }
 
   public void setIconColorId (int colorId) {
@@ -377,15 +399,54 @@ public class CircleButton extends View implements FactorAnimator.Target {
 
   @Override
   protected void onDraw (Canvas c) {
-    float width = getMeasuredWidth();
-    float height = getMeasuredHeight();
+    int width = getMeasuredWidth();
+    int height = getMeasuredHeight();
 
     int cx = (int) (width * .5f) + offsetLeft;
     int cy = (int) (height * .5f);
 
     boolean hasText = !StringUtils.isEmpty(bottomText);
 
-    if (icon != null) {
+    if (sticker != null) {
+      imageReceiver.setBounds(cx - width / 3, cy - height / 3, cx + width / 3, cy + height / 3);
+      gifReceiver.setBounds(cx - width / 3, cy - height / 3, cx + width / 3, cy + height / 3);
+
+      final float MIN_SCALE = .82f;
+      final boolean isAnimation = sticker.isAnimated();
+      float originalScale = sticker.getDisplayScale();
+      boolean saved = originalScale != 1f || factor != 0f;
+      boolean repainting = sticker.isNeedRepainting();
+      int restoreToCount = -1;
+      int repaintingRestoreToCount = -1;
+      if (saved) {
+        restoreToCount = Views.save(c);
+        float scale = originalScale * (MIN_SCALE + (1f - MIN_SCALE) * (1f - factor));
+        c.scale(scale, scale, cx, cy);
+      }
+      if (repainting) {
+        repaintingRestoreToCount = Views.saveRepainting(c, imageReceiver);
+      }
+      if (isAnimation) {
+        if (gifReceiver.needPlaceholder()) {
+          //if (imageReceiver.needPlaceholder()) {
+          //  imageReceiver.drawPlaceholderContour(c, contour);
+          //}
+          imageReceiver.draw(c);
+        }
+        gifReceiver.draw(c);
+      } else {
+        //if (imageReceiver.needPlaceholder()) {
+        //  imageReceiver.drawPlaceholderContour(c, contour);
+        //}
+        imageReceiver.draw(c);
+      }
+      if (repainting) {
+        Views.restoreRepainting(c, imageReceiver, repaintingRestoreToCount, Theme.getColor(ColorId.iconActive));
+      }
+      if (saved) {
+        Views.restore(c, restoreToCount);
+      }
+    } else if (icon != null) {
       final int iconColor = iconColorIsId ? Theme.getColor(this.iconColor) : this.iconColor;
       final int crossIconColor = ColorUtils.fromToArgb(iconColor, crossIconColorId != 0 ? Theme.getColor(crossIconColorId) : iconColor, factor);
       final Paint bitmapPaint = getIconPaint(iconColor);
@@ -414,7 +475,7 @@ public class CircleButton extends View implements FactorAnimator.Target {
           // TODO scale text down if it does not fit
           c.drawText(bottomText, cx - bottomTextWidth / 2, cy + Screen.dp(17f), Paints.getRegularTextPaint(14f, ColorUtils.alphaColor(scaleFactor, iconColor)));
         }
-        Drawables.draw(c, icon, cx - icon.getMinimumWidth() / 2, cy - icon.getMinimumHeight() / 2 - (hasText ? Screen.dp(8f) : 0), bitmapPaint);
+        Drawables.draw(c, icon, cx - icon.getMinimumWidth() / 2f, cy - icon.getMinimumHeight() / 2f - (hasText ? Screen.dp(8f) : 0), bitmapPaint);
         if (savedRotation) {
           c.restore();
         }
@@ -444,7 +505,7 @@ public class CircleButton extends View implements FactorAnimator.Target {
           final float factor = this.factor / STEP_FACTOR;
 
           bitmapPaint.setAlpha((int) ((float) sourceAlpha * (1f - factor)));
-          Drawables.draw(c, icon, cx - icon.getMinimumWidth() / 2, cy - icon.getMinimumHeight() / 2, bitmapPaint);
+          Drawables.draw(c, icon, cx - icon.getMinimumWidth() / 2f, cy - icon.getMinimumHeight() / 2f, bitmapPaint);
           bitmapPaint.setAlpha(sourceAlpha);
         }
 
@@ -468,5 +529,46 @@ public class CircleButton extends View implements FactorAnimator.Target {
         DrawAlgorithms.drawCross(c, cx, cy - Screen.dp(6f), crossFactor, iconColor, RippleSupport.getCurrentViewColor(this), Screen.dp(27f));
       }
     }
+  }
+
+  @Nullable
+  private TGReaction reaction;
+  private TGStickerObj sticker;
+
+  public void setUnreadReaction (TdApi.UnreadReaction unreadReaction) {
+    reaction = unreadReaction != null ? tdlib.getReaction(unreadReaction.type) : null;
+    sticker = reaction != null ? reaction.newCenterAnimationSicker() : null;
+    if (sticker != null) {
+      if (sticker.getPreviewAnimation() != null && sticker.isEmojiReaction()) {
+        sticker.getPreviewAnimation().setPlayOnce(true);
+        sticker.getPreviewAnimation().setLooped(false);
+      }
+      gifReceiver.requestFile(sticker.getPreviewAnimation());
+      imageReceiver.requestFile(sticker.getImage());
+    } else {
+      gifReceiver.clear();
+      imageReceiver.clear();
+    }
+    invalidate();
+  }
+
+  @Override
+  protected void onAttachedToWindow () {
+    super.onAttachedToWindow();
+    gifReceiver.attach();
+    imageReceiver.attach();
+  }
+
+  @Override
+  protected void onDetachedFromWindow () {
+    super.onDetachedFromWindow();
+    gifReceiver.detach();
+    imageReceiver.detach();
+  }
+
+  @Override
+  public void performDestroy () {
+    imageReceiver.destroy();
+    gifReceiver.destroy();
   }
 }

@@ -42,6 +42,7 @@ import org.thunderdog.challegram.Log;
 import org.thunderdog.challegram.R;
 import org.thunderdog.challegram.TDLib;
 import org.thunderdog.challegram.U;
+import org.thunderdog.challegram.component.chat.TdlibSingleUnreadReactionsManager;
 import org.thunderdog.challegram.component.dialogs.ChatView;
 import org.thunderdog.challegram.config.Config;
 import org.thunderdog.challegram.core.Lang;
@@ -454,6 +455,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
   private final TdlibWallpaperManager wallpaperManager;
   private final TdlibNotificationManager notificationManager;
   private final TdlibFileGenerationManager fileGenerationManager;
+  private final TdlibSingleUnreadReactionsManager unreadReactionsManager;
 
   private final HashSet<Long> channels = new HashSet<>();
   private final LongSparseLongArray accessibleChatTimers = new LongSparseLongArray();
@@ -650,6 +652,7 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       Log.v("INITIALIZATION: Tdlib.fileGenerationManager -> %dms", SystemClock.uptimeMillis() - ms);
       ms = SystemClock.uptimeMillis();
     }
+    this.unreadReactionsManager = new TdlibSingleUnreadReactionsManager(this);
     this.applicationConfigJson = settings().getApplicationConfig();
     if (!StringUtils.isEmpty(applicationConfigJson)) {
       TdApi.JsonValue value = JSON.parse(applicationConfigJson);
@@ -10813,6 +10816,12 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       }
       return count;
     }
+  }
+
+  @Nullable
+  public TdApi.UnreadReaction getSingleUnreadReaction (long chatId) {
+    // If chat has one unread reaction, returns it. May be null
+    return null; // unreadReactionsManager.getSingleUnreadReaction(chatId);
   }
 
   public boolean haveAnySettingsSuggestions () {

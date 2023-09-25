@@ -946,7 +946,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     fparams = FrameLayoutFix.newParams(Screen.dp(24f) * 2 + padding * 2, Screen.dp(24f) * 2 + padding * 2, Gravity.RIGHT | Gravity.BOTTOM);
     params.rightMargin = params.bottomMargin = Screen.dp(16f) - padding;
 
-    reactionsButton = new CircleButton(context());
+    reactionsButton = new CircleButton(context(), tdlib);
     reactionsButton.setId(R.id.btn_reaction);
     reactionsButton.setOnClickListener(this);
     addThemeInvalidateListener(reactionsButton);
@@ -5915,6 +5915,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       boolean visible = reactionCount > 0;
       boolean animate = isFocused();
       reactionsCountView.setCounter(reactionCount, true, animate && reactionButtonFactor > 0f);
+      reactionsButton.setUnreadReaction(tdlib.getSingleUnreadReaction(getChatId()));
       setReactionButtonVisible(visible, animate);
     }
   }
