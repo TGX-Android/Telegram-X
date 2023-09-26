@@ -48,8 +48,6 @@ public class EmojiCategoriesRecyclerView extends CustomRecyclerView {
         layoutManager.setOrientation(LinearLayoutManager.HORIZONTAL);
     setLayoutManager(layoutManager);
 
-
-
     addItemDecoration(new RecyclerView.ItemDecoration() {
       @Override
       public void getItemOffsets (@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull State state) {
@@ -180,6 +178,11 @@ public class EmojiCategoriesRecyclerView extends CustomRecyclerView {
         @Override
         public boolean canFindChildViewUnder (StickerSmallView view, int recyclerX, int recyclerY) {
           return false;
+        }
+
+        @Override
+        public boolean onStickerLongClick (StickerSmallView view, TGStickerObj sticker) {
+          return true;
         }
 
         @Override
