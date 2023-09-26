@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.graphics.drawable.GradientDrawable;
+import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,28 +15,36 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.drinkless.tdlib.TdApi;
-import org.thunderdog.challegram.R;
+import org.thunderdog.challegram.component.sticker.StickerSmallView;
+import org.thunderdog.challegram.component.sticker.TGStickerObj;
 import org.thunderdog.challegram.navigation.ViewController;
 import org.thunderdog.challegram.theme.ColorId;
 import org.thunderdog.challegram.theme.Theme;
 import org.thunderdog.challegram.tool.Paints;
 import org.thunderdog.challegram.tool.Screen;
+import org.thunderdog.challegram.tool.UI;
 import org.thunderdog.challegram.v.CustomRecyclerView;
+
+import java.util.Arrays;
 
 import me.vkryl.android.widget.FrameLayoutFix;
 import me.vkryl.core.MathUtils;
+import me.vkryl.core.StringUtils;
 import me.vkryl.core.lambda.RunnableData;
 
 public class EmojiCategoriesRecyclerView extends CustomRecyclerView {
   private final GradientDrawable gradientDrawableLeft = new GradientDrawable(GradientDrawable.Orientation.RIGHT_LEFT, new int[]{ 0, Theme.fillingColor() });
   private final GradientDrawable gradientDrawableRight = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, new int[]{ 0, Theme.fillingColor() });
   private final LinearLayoutManager layoutManager;
+  private EmojiSearchTypesAdapter emojiSearchTypesAdapter;
 
   public EmojiCategoriesRecyclerView (Context context) {
     super(context);
     layoutManager = new LinearLayoutManager(context);
         layoutManager.setOrientation(LinearLayoutManager.HORIZONTAL);
     setLayoutManager(layoutManager);
+
+
 
     addItemDecoration(new RecyclerView.ItemDecoration() {
       @Override
@@ -49,6 +58,23 @@ public class EmojiCategoriesRecyclerView extends CustomRecyclerView {
 
     setPadding(0, 0, Screen.dp(7), 0);
     setClipToPadding(false);
+  }
+
+  public void init (ViewController<?> controller, RunnableData<String> onSelectCategoryListener) {
+    emojiSearchTypesAdapter = new EmojiSearchTypesAdapter(controller, layoutManager);
+    emojiSearchTypesAdapter.setOnSectionClickListener(onSelectCategoryListener);
+    setAdapter(emojiSearchTypesAdapter);
+
+    controller.tdlib().send(new TdApi.GetEmojiCategories(new TdApi.EmojiCategoryTypeDefault()), object -> {
+      if (object.getConstructor() == TdApi.EmojiCategories.CONSTRUCTOR) {
+        TdApi.EmojiCategories categories = (TdApi.EmojiCategories) object;
+        UI.post(() -> emojiSearchTypesAdapter.setEmojiCategories(categories.categories));
+      }
+    });
+  }
+
+  public void reset () {
+    emojiSearchTypesAdapter.setActiveIndex(-1);
   }
 
   @Override
@@ -116,53 +142,86 @@ public class EmojiCategoriesRecyclerView extends CustomRecyclerView {
       super(itemView);
     }
 
-    public static EmojiSearchTypesViewHolder create (Context context, View.OnClickListener onClickListener) {
-      ImageView imageView = new ImageView(context);
-      imageView.setScaleType(ImageView.ScaleType.CENTER);
-      imageView.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(38), ViewGroup.LayoutParams.MATCH_PARENT));
-      imageView.setOnClickListener(onClickListener);
-      return new EmojiSearchTypesViewHolder(imageView);
+    public static EmojiSearchTypesViewHolder create (ViewController<?> context, View.OnClickListener onClickListener) {
+      StickerSmallView stickerSmallView = new StickerSmallView(context.context());
+      stickerSmallView.setLayoutParams(FrameLayoutFix.newParams(Screen.dp(38), ViewGroup.LayoutParams.MATCH_PARENT, Gravity.CENTER, 0, Screen.dp(9), 0, Screen.dp(9)));
+      stickerSmallView.setOnClickListener(onClickListener);
+      stickerSmallView.setPadding(Screen.dp(5.5f));
+      stickerSmallView.setStickerMovementCallback(new StickerSmallView.StickerMovementCallback() {
+        @Override
+        public boolean onStickerClick (StickerSmallView view, View clickView, TGStickerObj sticker, boolean isMenuClick, TdApi.MessageSendOptions sendOptions) {
+          onClickListener.onClick(view);
+          return true;
+        }
+
+        @Override
+        public long getStickerOutputChatId () {
+          return 0;
+        }
+
+        @Override
+        public void setStickerPressed (StickerSmallView view, TGStickerObj sticker, boolean isPressed) {
+
+        }
+
+        @Override
+        public boolean canFindChildViewUnder (StickerSmallView view, int recyclerX, int recyclerY) {
+          return false;
+        }
+
+        @Override
+        public boolean needsLongDelay (StickerSmallView view) {
+          return false;
+        }
+
+        @Override
+        public int getStickersListTop () {
+          return 0;
+        }
+
+        @Override
+        public int getViewportHeight () {
+          return 0;
+        }
+      });
+      context.addThemeInvalidateListener(stickerSmallView);
+
+      return new EmojiSearchTypesViewHolder(stickerSmallView);
     }
   }
 
   public static class EmojiSearchTypesAdapter extends RecyclerView.Adapter<EmojiSearchTypesViewHolder> implements View.OnClickListener {
-    private static final int[] icons = new int[] {
-      R.drawable.baseline_favorite_24, R.drawable.baseline_emoji_thumb_up, R.drawable.baseline_emoji_thumb_down, R.drawable.baseline_emoji_party_popper,
-      R.drawable.baseline_emoji_mdi_emoticon_excited, R.drawable.baseline_emoji_mdi_emoticon_sad, R.drawable.baseline_emoji_mdi_emoticon_frown,
-      R.drawable.baseline_emoji_emoticon_neutral, R.drawable.baseline_emoji_mdi_emoticon_angry, R.drawable.baseline_emoji_emoticon_tongue
-    };
-    private static final String[] strings = new String[] {
-      "love", "like", "dislike", "party", "excited",
-      "sad", "frown", "neutral", "angry", "tongue"
-    };
-
     private final ViewController<?> context;
-    private final RunnableData<String> onSectionClickListener;
+    private final RecyclerView.LayoutManager manager;
+    private RunnableData<String> onSectionClickListener;
     private int activeIndex = -1;
 
-    public EmojiSearchTypesAdapter (ViewController<?> context, RunnableData<String> onSectionClickListener) {
+    public EmojiSearchTypesAdapter (ViewController<?> context, RecyclerView.LayoutManager manager) {
       this.context = context;
+      this.manager = manager;
+    }
+
+    public void setOnSectionClickListener (RunnableData<String> onSectionClickListener) {
       this.onSectionClickListener = onSectionClickListener;
     }
 
     @NonNull
     @Override
     public EmojiSearchTypesViewHolder onCreateViewHolder (@NonNull ViewGroup parent, int viewType) {
-      return EmojiSearchTypesViewHolder.create(context.context(), this);
+      return EmojiSearchTypesViewHolder.create(context, this);
     }
 
     @Override
     public void onBindViewHolder (@NonNull EmojiSearchTypesViewHolder holder, int position) {
-      ImageView view = (ImageView) holder.itemView;
-      view.setImageResource(icons[position]);
-      view.setColorFilter(position == activeIndex ? Theme.getColor(ColorId.iconActive) : Theme.iconColor());
+      StickerSmallView view = (StickerSmallView) holder.itemView;
+      view.setSticker(categoryStickers[position]);
+      view.setRepaintingColorId(position == activeIndex ? ColorId.iconActive : ColorId.icon);
       view.setTag(position);
-      // parent.addThemeFilterListener(imageView, ColorId.icon);
     }
 
     @Override
     public int getItemCount () {
-      return 10;
+      return categories != null ? categories.length : 0;
     }
 
     public void setActiveIndex (int activeIndex) {
@@ -173,10 +232,22 @@ public class EmojiCategoriesRecyclerView extends CustomRecyclerView {
 
       this.activeIndex = activeIndex;
       if (activeIndex != -1) {
-        notifyItemChanged(activeIndex);
+        View view = manager.findViewByPosition(activeIndex);
+        if (view instanceof StickerSmallView) {
+          ((StickerSmallView) view).setRepaintingColorId(ColorId.iconActive);
+          view.invalidate();
+        } else {
+          notifyItemChanged(activeIndex);
+        }
       }
       if (oldActiveIndex != -1) {
-        notifyItemChanged(oldActiveIndex);
+        View view = manager.findViewByPosition(oldActiveIndex);
+        if (view instanceof StickerSmallView) {
+          ((StickerSmallView) view).setRepaintingColorId(ColorId.icon);
+          view.invalidate();
+        } else {
+          notifyItemChanged(oldActiveIndex);
+        }
       }
     }
 
@@ -184,14 +255,24 @@ public class EmojiCategoriesRecyclerView extends CustomRecyclerView {
     public void onClick (View v) {
       int index = (int) v.getTag();
       setActiveIndex(index);
-      onSectionClickListener.runWithData(strings[index]);
+      onSectionClickListener.runWithData(StringUtils.join(" ", " ", Arrays.asList(categories[index].emojis)));
     }
 
-
+    private TdApi.EmojiCategory[] categories;
+    private TGStickerObj[] categoryStickers;
 
     public void setEmojiCategories (TdApi.EmojiCategory[] categories) {
-
+      notifyItemRangeRemoved(0, getItemCount());
+      this.categories = categories;
+      this.categoryStickers = new TGStickerObj[categories.length];
+      for (int a = 0; a < categories.length; a++) {
+        TdApi.EmojiCategory category = categories[a];
+        categoryStickers[a] = new TGStickerObj(context.tdlib(), category.icon, category.icon.fullType, category.emojis);
+        if (categoryStickers[a].getPreviewAnimation() != null) {
+          categoryStickers[a].getPreviewAnimation().setPlayOnce(true);
+        }
+      }
+      notifyItemRangeInserted(0, categories.length);
     }
   }
-
 }

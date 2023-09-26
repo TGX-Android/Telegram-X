@@ -702,8 +702,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
   private FakeControllerForBottomHeader fakeControllerForBottomHeader;
   private HeaderView bottomHeaderView;
   private EmojiHeaderView bottomHeaderCell;
-  private CustomRecyclerView emojiTypesRecyclerView;
-  private EmojiCategoriesRecyclerView.EmojiSearchTypesAdapter emojiSearchTypesAdapter;
+  private EmojiCategoriesRecyclerView emojiTypesRecyclerView;
   private boolean ignoreSearchInputUpdates;
 
   public HeaderView getBottomHeaderView () {
@@ -740,12 +739,13 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
       @Override
       protected void onEnterSearchMode () {
         super.onEnterSearchMode();
-        emojiSearchTypesAdapter.setActiveIndex(-1);
+
+        emojiTypesRecyclerView.reset();
         emojiTypesRecyclerView.scrollToPosition(0);
         emojiTypesRecyclerView.setVisibility(View.VISIBLE);
         emojiTypesRecyclerView.setAlpha(bottomHeaderSearchModeVisibility.getFloatValue());
         bottomHeaderSearchModeVisibility.setValue(true, true);
-        searchEmojiImpl(null);
+        searchEmojiImpl(null, false);
         onBottomHeaderEnterSearchMode();
       }
 
@@ -753,8 +753,8 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
       protected void onSearchInputChanged (String query) {
         super.onSearchInputChanged(query);
         if (!ignoreSearchInputUpdates) {
-          emojiSearchTypesAdapter.setActiveIndex(-1);
-          searchEmojiImpl(query);
+          emojiTypesRecyclerView.reset();
+          searchEmojiImpl(query, false);
         }
       }
 
@@ -762,7 +762,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
       protected void onLeaveSearchMode () {
         super.onLeaveSearchMode();
         bottomHeaderSearchModeVisibility.setValue(false, true);
-        searchEmojiImpl(null);
+        searchEmojiImpl(null, false);
       }
 
       @Override
@@ -782,26 +782,16 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
     bottomHeaderView.initWithSingleController(fakeControllerForBottomHeader, false);
     bottomHeaderView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.BOTTOM));
 
-    emojiSearchTypesAdapter = new EmojiCategoriesRecyclerView.EmojiSearchTypesAdapter(this, this::searchEmojiSection);
     emojiTypesRecyclerView = new EmojiCategoriesRecyclerView(context);
     emojiTypesRecyclerView.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, Gravity.RIGHT | Gravity.BOTTOM, Screen.dp(56), 0, 0, 0));
-    emojiTypesRecyclerView.setAdapter(emojiSearchTypesAdapter);
     emojiTypesRecyclerView.setAlpha(0);
     emojiTypesRecyclerView.setVisibility(View.GONE);
+    emojiTypesRecyclerView.init(this, this::searchEmojiSection);
 
     bottomHeaderViewGroup = new FrameLayout(context);
     bottomHeaderViewGroup.setLayoutParams(FrameLayoutFix.newParams(ViewGroup.LayoutParams.MATCH_PARENT, HeaderView.getSize(false), Gravity.BOTTOM));
     bottomHeaderViewGroup.addView(bottomHeaderView);
     bottomHeaderViewGroup.addView(emojiTypesRecyclerView);
-
-
-
-    tdlib.send(new TdApi.GetEmojiCategories(new TdApi.EmojiCategoryTypeDefault()), object -> {
-      if (object.getConstructor() == TdApi.EmojiCategories.CONSTRUCTOR) {
-        TdApi.EmojiCategories categories = (TdApi.EmojiCategories) object;
-        UI.post(() -> emojiSearchTypesAdapter.setEmojiCategories(categories.categories));
-      }
-    });
   }
 
   private String lastEmojiSearchRequest;
@@ -811,7 +801,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
     fakeControllerForBottomHeader.clearSearchInput();
     ignoreSearchInputUpdates = false;
 
-    searchEmojiImpl(request);
+    searchEmojiImpl(request, true);
   }
 
 
@@ -820,7 +810,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
 
   private TdlibUi.EmojiStickers lastEmojiStickers;
 
-  private void searchEmojiImpl (final String request) {
+  private void searchEmojiImpl (final String request, boolean isEmojiString) {
     if (StringUtils.equalsOrBothEmpty(lastEmojiSearchRequest, request)) {
       return;
     }
@@ -829,7 +819,7 @@ public class ReactionsPickerController extends ViewController<MessageOptionsPage
 
     if (!StringUtils.isEmpty(request)) {
       if (lastEmojiStickers == null || !StringUtils.equalsOrBothEmpty(lastEmojiStickers.query, request)) {
-        lastEmojiStickers = tdlib.ui().getEmojiStickers(new TdApi.StickerTypeCustomEmoji(), request, true, 2000, findOutputChatId());
+        lastEmojiStickers = tdlib.ui().getEmojiStickers(new TdApi.StickerTypeCustomEmoji(), request, !isEmojiString, 2000, findOutputChatId());
       }
       lastEmojiStickers.getStickers((context, installedStickers, recommendedStickers, b) -> {
         if (StringUtils.equalsOrBothEmpty(lastEmojiSearchRequest, context.query)) {
