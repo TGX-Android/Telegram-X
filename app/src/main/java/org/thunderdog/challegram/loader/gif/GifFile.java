@@ -142,6 +142,19 @@ public class GifFile {
 
   public void setTotalFrameCount (long totalFrameCount) {
     this.totalFrameCount = totalFrameCount;
+    if (onTotalFrameCountLoadListener != null) {
+      tdlib.ui().post(() -> {
+        if (onTotalFrameCountLoadListener != null) {
+          onTotalFrameCountLoadListener.run();
+        }
+      });
+    }
+  }
+
+  private Runnable onTotalFrameCountLoadListener;
+
+  public void setOnTotalFrameCountLoadListener (Runnable onTotalFrameCountLoadListener) {
+    this.onTotalFrameCountLoadListener = onTotalFrameCountLoadListener;
   }
 
   public boolean hasFrame (long frameNo) {

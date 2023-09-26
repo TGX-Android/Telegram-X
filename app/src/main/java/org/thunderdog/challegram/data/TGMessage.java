@@ -70,6 +70,7 @@ import org.thunderdog.challegram.loader.ComplexReceiver;
 import org.thunderdog.challegram.loader.DoubleImageReceiver;
 import org.thunderdog.challegram.loader.ImageReceiver;
 import org.thunderdog.challegram.loader.Receiver;
+import org.thunderdog.challegram.loader.gif.GifFile;
 import org.thunderdog.challegram.loader.gif.GifReceiver;
 import org.thunderdog.challegram.mediaview.MediaViewThumbLocation;
 import org.thunderdog.challegram.mediaview.data.MediaItem;
@@ -8442,6 +8443,7 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
         }
 
         TGStickerObj activateAnimation = nextSetReactionAnimation.reaction.activateAnimationSicker();
+        final GifFile activateFullAnimation = activateAnimation.getFullAnimation();
         if (activateAnimation.getFullAnimation() != null) {
           if (!activateAnimation.isCustomReaction()) {
             activateAnimation.getFullAnimation().setPlayOnce(true);
@@ -8449,6 +8451,15 @@ public abstract class TGMessage implements InvalidateContentProvider, TdlibDeleg
           }
           activateAnimation.getFullAnimation().addLoopListener(() -> {
             if (nextSetReactionAnimation != null) {
+              nextSetReactionAnimation.fullscreenEmojiFinished = true;
+              if (nextSetReactionAnimation.fullscreenEffectFinished) {
+                finishAnimation.cancel();
+                tdlib().ui().postDelayed(finishRunnable, 180l);
+              }
+            }
+          });
+          activateFullAnimation.setOnTotalFrameCountLoadListener(() -> {
+            if (nextSetReactionAnimation != null && !activateFullAnimation.hasFrame(1)) {
               nextSetReactionAnimation.fullscreenEmojiFinished = true;
               if (nextSetReactionAnimation.fullscreenEffectFinished) {
                 finishAnimation.cancel();
